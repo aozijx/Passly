@@ -537,7 +537,7 @@ class MigrationBoundaryTest {
 
     @Test
     fun domainDoesNotEmitTelemetryOrUserMessages() {
-        val forbidden = listOf("TelemetryEmitter", "AppNoticePublisher", "AppLog")
+        val forbidden = listOf("TelemetryReporter", "AppNoticePublisher", "AppLog")
         val offenders = productionKotlinFiles
             .filter { "/domain/" in it.invariantSeparatorsPath }
             .filter { "/domain/notice/port/" !in it.invariantSeparatorsPath }

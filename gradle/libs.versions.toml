@@ -40,6 +40,7 @@ protobuf-plugin = "0.10.0"
 protobuf-javalite = "4.33.0"
 # ❗ 序列化库版本建议与 Kotlin 版本保持兼容性检查
 kotlinxSerializationJson = "1.11.0"
+kotlinxCoroutines = "1.10.2"
 # ❗ SQLCipher 是 SQLite 的加密层，升级其中之一需确保 native 库不冲突
 sqlite = "2.7.0"
 sqlcipher = "4.17.0"
@@ -115,6 +116,7 @@ androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", 
 androidx-datastore = { module = "androidx.datastore:datastore", version.ref = "datastore" }
 protobuf-javalite = { module = "com.google.protobuf:protobuf-javalite", version.ref = "protobuf-javalite" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
 sqlcipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher" }
 uuid-creator = { module = "com.github.f4b6a3:uuid-creator", version.ref = "uuidCreator" }

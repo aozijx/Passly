@@ -9,7 +9,7 @@ import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.EventLevel
 import com.aozijx.passly.core.telemetry.OperationCode
 import com.aozijx.passly.core.telemetry.SafeLogValue
-import com.aozijx.passly.core.telemetry.TelemetryEmitter
+import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.TelemetryEvent
 import com.aozijx.passly.core.telemetry.reporting.ErrorReportContext
 import org.junit.Assert.assertEquals
@@ -23,7 +23,7 @@ class TelemetryAppErrorReporterTest {
     @Test
     fun `reports only whitelist fields, no free text`() {
         val events = mutableListOf<TelemetryEvent>()
-        val emitter = TelemetryEmitter { events.add(it) }
+        val emitter = TelemetryReporter { events.add(it) }
         val reporter = TelemetryAppErrorReporter(emitter)
 
         val error = DatabaseInitFailed()
@@ -63,7 +63,7 @@ class TelemetryAppErrorReporterTest {
     @Test
     fun `maps severity to event level`() {
         val events = mutableListOf<TelemetryEvent>()
-        val emitter = TelemetryEmitter { events.add(it) }
+        val emitter = TelemetryReporter { events.add(it) }
         val reporter = TelemetryAppErrorReporter(emitter)
 
         // ERROR severity → EventLevel.ERROR
@@ -90,7 +90,7 @@ class TelemetryAppErrorReporterTest {
     @Test
     fun `correlation ID is set from errorId`() {
         val events = mutableListOf<TelemetryEvent>()
-        val emitter = TelemetryEmitter { events.add(it) }
+        val emitter = TelemetryReporter { events.add(it) }
         val reporter = TelemetryAppErrorReporter(emitter)
 
         val error = ValidationError()
@@ -109,7 +109,7 @@ class TelemetryAppErrorReporterTest {
     @Test
     fun `conflict is not reported as error but as warn`() {
         val events = mutableListOf<TelemetryEvent>()
-        val emitter = TelemetryEmitter { events.add(it) }
+        val emitter = TelemetryReporter { events.add(it) }
         val reporter = TelemetryAppErrorReporter(emitter)
 
         reporter.report(
@@ -128,7 +128,7 @@ class TelemetryAppErrorReporterTest {
     @Test
     fun `throwableType is null for manually created AppError`() {
         val events = mutableListOf<TelemetryEvent>()
-        val emitter = TelemetryEmitter { events.add(it) }
+        val emitter = TelemetryReporter { events.add(it) }
         val reporter = TelemetryAppErrorReporter(emitter)
 
         // Manually created AppError (e.g., throw Conflict()) has no throwableType
@@ -146,7 +146,7 @@ class TelemetryAppErrorReporterTest {
     @Test
     fun `throwableType is set when mapped from real exception`() {
         val events = mutableListOf<TelemetryEvent>()
-        val emitter = TelemetryEmitter { events.add(it) }
+        val emitter = TelemetryReporter { events.add(it) }
         val reporter = TelemetryAppErrorReporter(emitter)
 
         val mappedError = AppError.fromThrowable(IOException("disk full"))

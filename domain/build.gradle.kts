@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    `java-library`
 }
 
 kotlin {
@@ -7,7 +8,6 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":core:common"))
-    implementation(project(":core:telemetry"))
+    api(project(":core:common"))
     testImplementation(libs.junit)
 }

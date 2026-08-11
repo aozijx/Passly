@@ -5,7 +5,7 @@ import com.aozijx.passly.core.error.model.ErrorSeverity
 import com.aozijx.passly.core.telemetry.ErrorCode
 import com.aozijx.passly.core.telemetry.EventLevel
 import com.aozijx.passly.core.telemetry.SafeLogValue
-import com.aozijx.passly.core.telemetry.TelemetryEmitter
+import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.TelemetryEvent
 import com.aozijx.passly.core.telemetry.reporting.AppErrorReporter
 import com.aozijx.passly.core.telemetry.reporting.ErrorReportContext
@@ -19,7 +19,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class TelemetryAppErrorReporter @Inject constructor(
-    private val emitter: TelemetryEmitter
+    private val telemetry: TelemetryReporter
 ) : AppErrorReporter {
 
     override fun report(error: AppError, context: ErrorReportContext) {
@@ -33,7 +33,7 @@ class TelemetryAppErrorReporter @Inject constructor(
                 ?.takeIf { SAFE_TYPE_NAME.matches(it) },
             correlationId = error.errorId
         )
-        emitter.emit(event)
+        telemetry.emit(event)
     }
 
     private fun buildFields(

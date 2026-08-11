@@ -2,7 +2,7 @@ package com.aozijx.passly.core.error.result
 
 import com.aozijx.passly.core.error.mapping.fromThrowable
 import com.aozijx.passly.core.error.model.AppError
-import kotlinx.coroutines.CancellationException
+import java.util.concurrent.CancellationException
 
 sealed class AppResult<out T> {
 

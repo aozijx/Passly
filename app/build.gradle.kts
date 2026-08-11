@@ -126,6 +126,9 @@ room {
 }
 
 dependencies {
+    implementation(project(":core:common"))
+    implementation(project(":core:telemetry"))
+
     // Android Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)

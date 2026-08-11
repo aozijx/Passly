@@ -2,24 +2,24 @@ package com.aozijx.passly.core.error.model
 
 import com.github.f4b6a3.uuid.UuidCreator
 
-// ===== 数据库领域错误 =====
+// ===== 加密/安全领域错误 =====
 
-class DatabaseLocked(
+class CryptoError(
     errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     throwableType: String? = null,
 ) : DataError(
-    code = DATABASE_LOCKED,
-    recoverable = true,
-    severity = ErrorSeverity.WARNING,
+    code = CRYPTO_ERROR,
+    recoverable = false,
+    severity = ErrorSeverity.ERROR,
     errorId = errorId,
     throwableType = throwableType,
 )
 
-class DatabaseInitFailed(
+class CryptoDataCorrupted(
     errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     throwableType: String? = null,
 ) : DataError(
-    code = DATABASE_INIT_FAILED,
+    code = CRYPTO_DATA_CORRUPTED,
     recoverable = false,
     severity = ErrorSeverity.ERROR,
     errorId = errorId,
