@@ -93,7 +93,7 @@ internal class BackupOperationCoordinator @Inject constructor(
         state: BackupUiState,
         targetUri: Uri,
     ): BackupExecutionResult {
-        val password = state.backupPassword.takeIf(String::isNotEmpty)?.toCharArray()
+        val password = state.backupPassword.takeUnless { it.isEmpty }?.toCharArray()
         return try {
             val result = if (state.isExporting) {
                 backupService.export(

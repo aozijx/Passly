@@ -17,6 +17,7 @@ import com.aozijx.passly.feature.backup.internal.presentation.BackupViewModel
 import com.aozijx.passly.feature.backup.internal.ui.BackupRestoreDetail
 import com.aozijx.passly.feature.backup.internal.ui.BackupRestoreSheetHost
 import com.aozijx.passly.feature.backup.internal.ui.BackupSheet
+import com.aozijx.passly.security.crypto.SecureString
 
 /**
  * Public settings entry point for the Backup feature.
@@ -109,7 +110,9 @@ fun BackupSettingsFeature(
             viewModel.onAction(BackupAction.PrepareExport(format))
             activeSheet = BackupSheet.EXPORT_OPTIONS
         },
-        onPasswordChange = { viewModel.onAction(BackupAction.UpdatePassword(it)) },
+        onPasswordChange = {
+            viewModel.onAction(BackupAction.UpdatePassword(SecureString.fromString(it)))
+        },
         onIncludeIconsChange = { viewModel.onAction(BackupAction.UpdateIncludeIcons(it)) },
         onIncludeAttachmentsChange = {
             viewModel.onAction(BackupAction.UpdateIncludeAttachments(it))

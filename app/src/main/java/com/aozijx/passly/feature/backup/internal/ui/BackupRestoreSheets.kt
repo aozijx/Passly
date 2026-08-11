@@ -49,6 +49,7 @@ import com.aozijx.passly.core.ui.text.localizedName
 import com.aozijx.passly.domain.backup.model.BackupExportUiFormat
 import com.aozijx.passly.domain.backup.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
 
 internal enum class BackupSheet {
@@ -191,7 +192,7 @@ private fun BackupExportOptionsContent(
 
         if (state.selectedExportFormat.requiresPassword) {
             OutlinedTextField(
-                value = state.backupPassword,
+                value = state.backupPassword.toTextFieldString(),
                 onValueChange = onPasswordChange,
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(stringResource(R.string.settings_backup_password_label)) },
@@ -398,7 +399,7 @@ private fun BackupImportOptionsContent(
             onClick = { onImportModeChange(ImportMode.OVERWRITE) }
         )
         OutlinedTextField(
-            value = state.backupPassword,
+            value = state.backupPassword.toTextFieldString(),
             onValueChange = onPasswordChange,
             modifier = Modifier.fillMaxWidth(),
             label = { Text(stringResource(R.string.settings_backup_import_password_label)) },
@@ -425,6 +426,15 @@ private fun BackupImportOptionsContent(
                 )
             )
         }
+    }
+}
+
+private fun SensitiveValue.toTextFieldString(): String {
+    val chars = toCharArray()
+    return try {
+        chars.concatToString()
+    } finally {
+        chars.fill('\u0000')
     }
 }
 

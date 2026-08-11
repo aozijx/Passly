@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.backup.model.BackupExportUiFormat
 import com.aozijx.passly.domain.notice.model.NoticeCode
 import com.aozijx.passly.domain.notice.model.newAppNotice
 import com.aozijx.passly.domain.notice.port.AppNoticePublisher
+import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.backup.internal.contract.BackupAction
 import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,8 +39,7 @@ internal class BackupViewModel @Inject constructor(
 
             BackupAction.StartExportInConfiguredDirectory -> exportToConfiguredDirectory()
             is BackupAction.StartImport -> prepareImport(action.uri)
-            is BackupAction.UpdatePassword ->
-                mutate(BackupMutation.PasswordUpdated(action.password))
+            is BackupAction.UpdatePassword -> replacePassword(action.password)
 
             is BackupAction.UpdateImportMode ->
                 mutate(BackupMutation.ImportModeUpdated(action.mode))
@@ -56,8 +56,9 @@ internal class BackupViewModel @Inject constructor(
             is BackupAction.UpdateIncludedEntryTypes ->
                 mutate(BackupMutation.IncludedEntryTypesUpdated(action.types))
 
-            BackupAction.CancelPendingOperation ->
-                mutate(BackupMutation.PendingOperationCleared)
+            BackupAction.CancelPendingOperation -> clearPasswordAndMutate(
+                BackupMutation.PendingOperationCleared
+            )
 
             BackupAction.ProcessBackupAction -> processPendingOperation()
         }
@@ -76,7 +77,7 @@ internal class BackupViewModel @Inject constructor(
 
     private fun prepareExport(format: BackupExportUiFormat) {
         if (!requireSession(sessionPolicy.regularExportDenial(), BackupOperation.EXPORT)) return
-        mutate(
+        clearPasswordAndMutate(
             BackupMutation.ExportPrepared(
                 format = format,
                 fileName = operationCoordinator.buildExportFileName(format),
@@ -94,7 +95,7 @@ internal class BackupViewModel @Inject constructor(
 
     private fun prepareImport(uri: android.net.Uri) {
         if (!requireSession(sessionPolicy.importDenial(), BackupOperation.IMPORT)) return
-        mutate(BackupMutation.ImportPrepared(uri))
+        clearPasswordAndMutate(BackupMutation.ImportPrepared(uri))
     }
 
     private fun exportToConfiguredDirectory() {
@@ -136,16 +137,20 @@ internal class BackupViewModel @Inject constructor(
             BackupExecutionResult.Success -> {
                 noticePublisher.publish(newAppNotice(operation.successNotice()))
                 mutate(BackupMutation.OperationSucceeded)
-                if (clearPendingFields) mutate(BackupMutation.PendingFieldsCleared)
+                if (clearPendingFields) {
+                    clearPasswordAndMutate(BackupMutation.PendingFieldsCleared)
+                }
             }
 
             BackupExecutionResult.Cancelled ->
-                mutate(BackupMutation.PendingOperationCleared)
+                clearPasswordAndMutate(BackupMutation.PendingOperationCleared)
 
             is BackupExecutionResult.Failure -> {
                 noticePublisher.publish(newAppNotice(operation.failureNotice()))
                 mutate(BackupMutation.OperationFailed(result.error))
-                if (clearPendingFields) mutate(BackupMutation.PendingFieldsCleared)
+                if (clearPendingFields) {
+                    clearPasswordAndMutate(BackupMutation.PendingFieldsCleared)
+                }
             }
         }
     }
@@ -155,7 +160,7 @@ internal class BackupViewModel @Inject constructor(
 
     private fun canUseMode(state: BackupUiState, operation: BackupOperation): Boolean {
         if (requireSession(sessionPolicy.pendingOperationDenial(), operation)) return true
-        mutate(BackupMutation.PendingFieldsCleared)
+        clearPasswordAndMutate(BackupMutation.PendingFieldsCleared)
         return false
     }
 
@@ -171,6 +176,22 @@ internal class BackupViewModel @Inject constructor(
 
     private fun mutate(mutation: BackupMutation) {
         _uiState.update { state -> BackupReducer.reduce(state, mutation) }
+    }
+
+    private fun replacePassword(password: SensitiveValue) {
+        val previous = _uiState.value.backupPassword
+        mutate(BackupMutation.PasswordUpdated(password))
+        if (previous !== password) previous.wipe()
+    }
+
+    private fun clearPasswordAndMutate(mutation: BackupMutation) {
+        val password = _uiState.value.backupPassword
+        mutate(mutation)
+        password.wipe()
+    }
+
+    override fun onCleared() {
+        _uiState.value.backupPassword.wipe()
     }
 }
 

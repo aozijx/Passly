@@ -1411,6 +1411,45 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun backupPasswordStateIsWipeableAndClearedAtLifecycleBoundaries() {
+        val contract = File(
+            "src/main/java/com/aozijx/passly/feature/backup/internal/contract/" +
+                    "BackupUiState.kt"
+        ).readText()
+        val action = File(
+            "src/main/java/com/aozijx/passly/feature/backup/internal/contract/" +
+                    "BackupAction.kt"
+        ).readText()
+        val viewModel = File(
+            "src/main/java/com/aozijx/passly/feature/backup/internal/presentation/" +
+                    "BackupViewModel.kt"
+        ).readText()
+        val coordinator = File(
+            "src/main/java/com/aozijx/passly/feature/backup/internal/presentation/" +
+                    "BackupOperationCoordinator.kt"
+        ).readText()
+
+        assertTrue(
+            "Backup password contracts must not retain immutable String state",
+            "backupPassword: SensitiveValue" in contract &&
+                    "backupPassword: String" !in contract &&
+                    "UpdatePassword(val password: SensitiveValue)" in action,
+        )
+        assertTrue(
+            "Replacing, cancelling and clearing Backup must wipe password storage",
+            "previous.wipe()" in viewModel &&
+                    "clearPasswordAndMutate" in viewModel &&
+                    "override fun onCleared()" in viewModel &&
+                    "backupPassword.wipe()" in viewModel,
+        )
+        assertTrue(
+            "Operation password copies must be wiped after use",
+            "backupPassword.takeUnless { it.isEmpty }?.toCharArray()" in coordinator &&
+                    "password?.fill('\\u0000')" in coordinator,
+        )
+    }
+
+    @Test
     fun detailMviUsesAPureMutationReducer() {
         val viewModel = File(
             "src/main/java/com/aozijx/passly/feature/detail/DetailViewModel.kt"

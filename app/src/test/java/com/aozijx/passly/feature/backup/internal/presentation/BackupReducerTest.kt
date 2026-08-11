@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.backup.model.BackupOperationStatus
 import com.aozijx.passly.domain.backup.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
+import com.aozijx.passly.security.crypto.SecureString
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -19,7 +20,7 @@ class BackupReducerTest {
         val initial = BackupUiState(
             status = BackupOperationStatus.Failure,
             error = BackupFailed(),
-            backupPassword = "stale password",
+            backupPassword = SecureString.fromString("stale password"),
             importMode = ImportMode.OVERWRITE,
             includeIcons = true,
             includeAttachments = true,
@@ -37,7 +38,7 @@ class BackupReducerTest {
         assertTrue(state.isExporting)
         assertEquals(BackupExportUiFormat.TEXT, state.selectedExportFormat)
         assertEquals("backup.txt", state.pendingExportFileName)
-        assertEquals("", state.backupPassword)
+        assertTrue(state.backupPassword.isEmpty)
         assertFalse(state.includeIcons)
         assertFalse(state.includeAttachments)
         assertEquals(EntryType.entries.toSet(), state.includedEntryTypes)
@@ -51,7 +52,7 @@ class BackupReducerTest {
         val failed = BackupReducer.reduce(
             BackupUiState(
                 isExporting = true,
-                backupPassword = "temporary",
+                backupPassword = SecureString.fromString("temporary"),
                 pendingExportFileName = "recovery.passly",
                 deleteTargetOnFailure = true,
             ),
@@ -62,7 +63,7 @@ class BackupReducerTest {
 
         assertSame(BackupOperationStatus.Failure, cleared.status)
         assertSame(error, cleared.error)
-        assertEquals("", cleared.backupPassword)
+        assertTrue(cleared.backupPassword.isEmpty)
         assertNull(cleared.pendingExportFileName)
         assertFalse(cleared.deleteTargetOnFailure)
     }
@@ -73,7 +74,7 @@ class BackupReducerTest {
             BackupUiState(
                 status = BackupOperationStatus.Failure,
                 error = BackupFailed(),
-                backupPassword = "temporary",
+                backupPassword = SecureString.fromString("temporary"),
                 pendingExportFileName = "backup.passly",
             ),
             BackupMutation.PendingOperationCleared,
@@ -81,7 +82,7 @@ class BackupReducerTest {
 
         assertSame(BackupOperationStatus.Idle, state.status)
         assertNull(state.error)
-        assertEquals("", state.backupPassword)
+        assertTrue(state.backupPassword.isEmpty)
         assertNull(state.pendingExportFileName)
     }
 }

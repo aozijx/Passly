@@ -6,6 +6,8 @@ import com.aozijx.passly.domain.backup.model.BackupExportUiFormat
 import com.aozijx.passly.domain.backup.model.BackupOperationStatus
 import com.aozijx.passly.domain.backup.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
+import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
 
 internal sealed interface BackupMutation {
@@ -22,7 +24,7 @@ internal sealed interface BackupMutation {
     ) : BackupMutation
 
     data class ImportPrepared(val uri: Uri) : BackupMutation
-    data class PasswordUpdated(val password: String) : BackupMutation
+    data class PasswordUpdated(val password: SensitiveValue) : BackupMutation
     data class ImportModeUpdated(val mode: ImportMode) : BackupMutation
     data class IncludeIconsUpdated(val include: Boolean) : BackupMutation
     data class IncludeAttachmentsUpdated(val include: Boolean) : BackupMutation
@@ -48,7 +50,7 @@ internal object BackupReducer {
                     isExporting = true,
                     selectedExportFormat = mutation.format,
                     backupUri = null,
-                    backupPassword = "",
+                    backupPassword = EmptySensitiveValue,
                     includeIcons = includeResources,
                     includeAttachments = includeResources,
                     includeDeleted = true,
@@ -69,7 +71,7 @@ internal object BackupReducer {
             is BackupMutation.ImportPrepared -> state.copy(
                 isExporting = false,
                 backupUri = mutation.uri,
-                backupPassword = "",
+                backupPassword = EmptySensitiveValue,
                 importMode = ImportMode.APPEND,
                 pendingExportFileName = null,
                 deleteTargetOnFailure = false,
@@ -108,7 +110,7 @@ internal object BackupReducer {
 
 private fun BackupUiState.clearPendingFields(): BackupUiState = copy(
     backupUri = null,
-    backupPassword = "",
+    backupPassword = EmptySensitiveValue,
     pendingExportFileName = null,
     deleteTargetOnFailure = false,
 )
