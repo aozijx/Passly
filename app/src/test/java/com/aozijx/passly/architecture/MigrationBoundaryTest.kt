@@ -6,9 +6,26 @@ import java.io.File
 
 class MigrationBoundaryTest {
 
+    private val projectRoot = File("..").canonicalFile
+    private val appKotlinRoot = File("src/main/java").canonicalFile
+    private val moduleKotlinRoots = listOf(
+        appKotlinRoot,
+        File(projectRoot, "core/common/src/main/kotlin"),
+        File(projectRoot, "core/telemetry/src/main/kotlin"),
+        File(projectRoot, "domain/src/main/kotlin")
+    )
+
     private val productionKotlinFiles: Sequence<File>
-        get() = File("src/main/java").walkTopDown()
-            .filter { it.isFile && it.extension == "kt" }
+        get() = moduleKotlinRoots.asSequence().flatMap { root ->
+            root.walkTopDown().filter { it.isFile && it.extension == "kt" }
+        }
+
+    private fun moduleSource(relativePath: String): File =
+        moduleKotlinRoots
+            .asSequence()
+            .map { root -> File(root, relativePath) }
+            .firstOrNull(File::isFile)
+            ?: error("Source file not found in configured modules: $relativePath")
 
     @Test
     fun productionSourcesDoNotReferenceLegacyFeaturePackage() {
@@ -46,7 +63,7 @@ class MigrationBoundaryTest {
         val offenders = productionKotlinFiles
             .filter { "/domain/" in it.invariantSeparatorsPath }
             .filter { source -> forbidden.any { it in source.readText() } }
-            .map { it.relativeTo(File("src/main/java")).path }
+            .map { it.relativeTo(projectRoot).path }
             .toList()
 
         assertTrue("Domain boundary violations: $offenders", offenders.isEmpty())
@@ -64,7 +81,7 @@ class MigrationBoundaryTest {
                 exemptPaths.none { it in source.invariantSeparatorsPath }
             }
             .filter { "import com.aozijx.passly.data." in it.readText() }
-            .map { it.relativeTo(File("src/main/java")).path }
+            .map { it.relativeTo(projectRoot).path }
             .toList()
 
         assertTrue("Data implementation leaks: $offenders", offenders.isEmpty())
@@ -209,8 +226,8 @@ class MigrationBoundaryTest {
             "src/main/java/com/aozijx/passly/security/authentication/" +
                     "DefaultAuthenticationMethodProvisioner.kt"
         ).readText()
-        val authenticationModels = File(
-            "src/main/java/com/aozijx/passly/domain/authentication/AuthenticationModels.kt"
+        val authenticationModels = moduleSource(
+            "com/aozijx/passly/domain/authentication/AuthenticationModels.kt"
         ).readText()
         val mainScreen = File(
             "src/main/java/com/aozijx/passly/feature/main/ui/MainScreen.kt"
@@ -267,8 +284,10 @@ class MigrationBoundaryTest {
 
     @Test
     fun packageNamesMatchSourceDirectories() {
-        val sourceRoot = File("src/main/java")
         val offenders = productionKotlinFiles.mapNotNull { source ->
+            val sourceRoot = moduleKotlinRoots.first { root ->
+                source.toPath().startsWith(root.toPath())
+            }
             val declaredPackage = source.useLines { lines ->
                 lines.firstOrNull { it.startsWith("package ") }
                     ?.removePrefix("package ")
@@ -288,7 +307,7 @@ class MigrationBoundaryTest {
         val offenders = productionKotlinFiles
             .filter { it.name.endsWith("ViewModel.kt") }
             .filter { topLevelContractPattern.containsMatchIn(it.readText()) }
-            .map { it.relativeTo(File("src/main/java")).path }
+            .map { it.relativeTo(projectRoot).path }
             .toList()
 
         assertTrue(
@@ -311,7 +330,7 @@ class MigrationBoundaryTest {
                         !it.name.endsWith("Screen.kt")
             }
             .filter { "androidx.compose" in it.readText() }
-            .map { it.relativeTo(File("src/main/java")).path }
+            .map { it.relativeTo(projectRoot).path }
             .toList()
 
         assertTrue(
@@ -322,8 +341,8 @@ class MigrationBoundaryTest {
 
     @Test
     fun vaultQuickFilterModelDoesNotOwnUiPresentation() {
-        val vaultQuickFilter = File(
-            "src/main/java/com/aozijx/passly/domain/settings/model/VaultQuickFilter.kt"
+        val vaultQuickFilter = moduleSource(
+            "com/aozijx/passly/domain/settings/model/VaultQuickFilter.kt"
         ).readText()
 
         assertTrue(
@@ -426,7 +445,7 @@ class MigrationBoundaryTest {
                         "ActivityResultContracts.RequestPermission" in text ||
                         "ActivityResultContracts.RequestMultiplePermissions" in text
             }
-            .map { it.relativeTo(File("src/main/java")).path }
+            .map { it.relativeTo(projectRoot).path }
             .toList()
 
         assertTrue(
@@ -529,7 +548,7 @@ class MigrationBoundaryTest {
         )
         val offenders = productionKotlinFiles
             .filter { source -> forbiddenSymbols.any { it in source.readText() } }
-            .map { it.relativeTo(File("src/main/java")).path }
+            .map { it.relativeTo(projectRoot).path }
             .toList()
 
         assertTrue("Legacy message/permission references: $offenders", offenders.isEmpty())
@@ -542,7 +561,7 @@ class MigrationBoundaryTest {
             .filter { "/domain/" in it.invariantSeparatorsPath }
             .filter { "/domain/notice/port/" !in it.invariantSeparatorsPath }
             .filter { source -> forbidden.any { it in source.readText() } }
-            .map { it.relativeTo(File("src/main/java")).path }
+            .map { it.relativeTo(projectRoot).path }
             .toList()
 
         assertTrue("Domain side effects: $offenders", offenders.isEmpty())
@@ -559,7 +578,7 @@ class MigrationBoundaryTest {
         )
         val offenders = productionKotlinFiles
             .filter { source -> forbiddenSymbols.any { it in source.readText() } }
-            .map { it.relativeTo(File("src/main/java")).path }
+            .map { it.relativeTo(projectRoot).path }
             .toList()
 
         assertTrue("Legacy authentication references: $offenders", offenders.isEmpty())
@@ -630,9 +649,8 @@ class MigrationBoundaryTest {
             "src/main/java/com/aozijx/passly/service/autofill/credential/" +
                     "CredentialPlatformAdapter.kt"
         ).readText()
-        val responseUseCases = File(
-            "src/main/java/com/aozijx/passly/domain/autofill/usecase/" +
-                    "CredentialResponseUseCases.kt"
+        val responseUseCases = moduleSource(
+            "com/aozijx/passly/domain/autofill/usecase/CredentialResponseUseCases.kt"
         ).readText()
         val providerConfig = File("src/main/res/xml/credential_service_config.xml").readText()
 
@@ -690,8 +708,8 @@ class MigrationBoundaryTest {
         val authenticationManager = File(
             "src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt"
         ).readText()
-        val authPolicy = File(
-            "src/main/java/com/aozijx/passly/domain/authentication/AuthenticationMethodPolicy.kt"
+        val authPolicy = moduleSource(
+            "com/aozijx/passly/domain/authentication/AuthenticationMethodPolicy.kt"
         ).readText()
         val credentialExecutor = File(
             "src/main/java/com/aozijx/passly/security/authentication/CredentialMethodExecutor.kt"
@@ -742,7 +760,7 @@ class MigrationBoundaryTest {
         )
         assertTrue(
             "A recovered database must open before authentication state is published",
-            recoveryCompletion.indexOf("sessionManager.lockState != LockState.UNLOCKED") <
+            recoveryCompletion.indexOf("sessionManager.lockState != SecureSessionState.UNLOCKED") <
                 recoveryCompletion.indexOf("markAuthenticatedInternal()")
         )
     }
@@ -758,7 +776,7 @@ class MigrationBoundaryTest {
 
         assertTrue(
             "Sealed biometric sessions must open the database",
-            "if (lockLevel == VaultLockState.SEALED)" in sessionController &&
+            "if (lockLevel == SecureSessionState.SEALED)" in sessionController &&
                 "val err = sessionManager.unlock()" in sessionController
         )
         assertTrue(
@@ -802,7 +820,7 @@ class MigrationBoundaryTest {
                 val text = source.readText()
                 forbiddenSymbols.any(text::contains)
             }
-            .map { it.relativeTo(File("src/main/java")).path }
+            .map { it.relativeTo(projectRoot).path }
             .toList()
 
         assertTrue("Legacy logging references: $legacyReferences", legacyReferences.isEmpty())
@@ -846,7 +864,7 @@ class MigrationBoundaryTest {
                     .not()
             }
             .filter { "android.util.Log" in it.readText() || "printStackTrace(" in it.readText() }
-            .map { it.relativeTo(File("src/main/java")).path }
+            .map { it.relativeTo(projectRoot).path }
             .toList()
         val directNotificationOffenders = productionKotlinFiles
             .filter {
@@ -858,7 +876,7 @@ class MigrationBoundaryTest {
                 val text = it.readText()
                 "NotificationManagerCompat" in text || "NotificationCompat." in text
             }
-            .map { it.relativeTo(File("src/main/java")).path }
+            .map { it.relativeTo(projectRoot).path }
             .toList()
         val directPermissionOffenders = productionKotlinFiles
             .filter {
@@ -871,7 +889,7 @@ class MigrationBoundaryTest {
                 "Manifest.permission." in text ||
                     "ActivityResultContracts.RequestPermission" in text
             }
-            .map { it.relativeTo(File("src/main/java")).path }
+            .map { it.relativeTo(projectRoot).path }
             .toList()
 
         assertTrue("Direct logging bypasses AndroidLogSink: $directLogOffenders", directLogOffenders.isEmpty())
@@ -894,7 +912,7 @@ class MigrationBoundaryTest {
             File("src/main/java/com/aozijx/passly/core/permission"),
             File("src/main/java/com/aozijx/passly/data/notice"),
             File("src/main/java/com/aozijx/passly/data/diagnostics"),
-            File("src/main/java/com/aozijx/passly/domain/notice")
+            File(projectRoot, "domain/src/main/kotlin/com/aozijx/passly/domain/notice")
         )
         val offenders = scopedRoots.asSequence()
             .filter(File::exists)
@@ -904,7 +922,7 @@ class MigrationBoundaryTest {
                 val text = it.readText()
                 "TODO" in text || "FIXME" in text || "StubSystemNotificationGateway" in text
             }
-            .map { it.relativeTo(File("src/main/java")).path }
+            .map { it.relativeTo(projectRoot).path }
             .toList()
 
         assertTrue("Incomplete center implementations: $offenders", offenders.isEmpty())
@@ -975,11 +993,11 @@ class MigrationBoundaryTest {
 
     @Test
     fun recoveryCodeCannotActAsEverydayUnlockMethod() {
-        val authPolicy = File(
-            "src/main/java/com/aozijx/passly/domain/authentication/AuthenticationMethodPolicy.kt"
+        val authPolicy = moduleSource(
+            "com/aozijx/passly/domain/authentication/AuthenticationMethodPolicy.kt"
         ).readText()
-        val authModels = File(
-            "src/main/java/com/aozijx/passly/domain/authentication/AuthenticationModels.kt"
+        val authModels = moduleSource(
+            "com/aozijx/passly/domain/authentication/AuthenticationModels.kt"
         ).readText()
         val authManager = File(
             "src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt"
@@ -993,8 +1011,8 @@ class MigrationBoundaryTest {
         val provisioner = File(
             "src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationMethodProvisioner.kt"
         ).readText()
-        val provisionerInterface = File(
-            "src/main/java/com/aozijx/passly/domain/authentication/AuthenticationMethodProvisioner.kt"
+        val provisionerInterface = moduleSource(
+            "com/aozijx/passly/domain/authentication/AuthenticationMethodProvisioner.kt"
         ).readText()
         val authViewModel = File(
             "src/main/java/com/aozijx/passly/feature/auth/presentation/AuthenticationViewModel.kt"
@@ -1395,7 +1413,7 @@ class MigrationBoundaryTest {
                         "fun onIntent(" !in text &&
                         "fun handleIntent(" !in text
             }
-            .map { it.relativeTo(File("src/main/java")).path }
+            .map { it.relativeTo(projectRoot).path }
             .toList()
 
         assertTrue(
@@ -1427,7 +1445,7 @@ class MigrationBoundaryTest {
             .mapNotNull { file ->
                 val lineCount = file.useLines { it.count() }
                 if (lineCount > maxLines) {
-                    "${file.relativeTo(File("src/main/java")).path} ($lineCount lines)"
+                    "${file.relativeTo(projectRoot).path} ($lineCount lines)"
                 } else {
                     null
                 }
@@ -1526,7 +1544,7 @@ class MigrationBoundaryTest {
     fun stringTextFieldsDoNotRecreateTextFieldValueAndLoseSelection() {
         val offenders = productionKotlinFiles
             .filter { "value = TextFieldValue(" in it.readText() }
-            .map { it.relativeTo(File("src/main/java")).path }
+            .map { it.relativeTo(projectRoot).path }
             .toList()
 
         assertTrue(

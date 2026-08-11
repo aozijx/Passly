@@ -128,6 +128,7 @@ room {
 dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:telemetry"))
+    implementation(project(":domain"))
 
     // Android Core
     implementation(libs.androidx.core.ktx)

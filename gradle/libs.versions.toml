@@ -120,6 +120,7 @@ kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
 sqlcipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher" }
 uuid-creator = { module = "com.github.f4b6a3:uuid-creator", version.ref = "uuidCreator" }
+javax-inject = { module = "javax.inject:javax.inject", version = "1" }
 
 # 凭据管理器 / 自动填充 (Credentials & Autofill)
 # Android 14+ 系统凭据框架，支持 Passkey 和统一账号选择器

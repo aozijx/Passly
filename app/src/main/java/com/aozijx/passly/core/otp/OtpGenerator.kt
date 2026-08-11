@@ -1,6 +1,7 @@
 package com.aozijx.passly.core.otp
 
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
@@ -12,7 +13,7 @@ import javax.crypto.spec.SecretKeySpec
  * RFC 4226 / RFC 6238 兼容的 OTP 生成器。
  *
  * 原则：
- * - 生成失败返回 [OtpError] 类型化错误，不返回占位字符串
+ * - 生成失败返回 [OtpGenerationError] 类型化错误，不返回占位字符串
  * - Steam 是 [OtpType.STEAM] 类型，使用 Steam 字符表（5 位）
  * - Base32 解码遇到非法字符必须失败，不能静默跳过
  * - HOTP 使用 counter，生成后由调用方持久化递增后的 counter
@@ -41,10 +42,10 @@ object OtpGenerator {
                 OtpType.TOTP, OtpType.STEAM -> generateTimed(config, timestamp)
                 OtpType.HOTP -> generateCounterBased(config, overrideCounter ?: config.counter)
             }
-        } catch (e: OtpError) {
+        } catch (e: OtpGenerationError) {
             OtpResult.Failure(e)
         } catch (e: Exception) {
-            OtpResult.Failure(OtpError.CryptoError(e))
+            OtpResult.Failure(OtpGenerationError.CryptoError(e))
         }
     }
 
@@ -55,7 +56,7 @@ object OtpGenerator {
      */
     fun base32DecodeStrict(input: String): ByteArray {
         val clean = input.trim().uppercase()
-        if (clean.isEmpty()) throw OtpError.InvalidSecret
+        if (clean.isEmpty()) throw OtpGenerationError.InvalidSecret
 
         val output = ByteArray((clean.length * 5 + 7) / 8)
         var buffer = 0
@@ -71,7 +72,7 @@ object OtpGenerator {
                     break
                 }
 
-                else -> throw OtpError.InvalidSecret
+                else -> throw OtpGenerationError.InvalidSecret
             }
 
             buffer = (buffer shl 5) or value
@@ -98,8 +99,8 @@ object OtpGenerator {
     }
 
     private fun generateCounterBased(config: OtpConfig, counter: Long?): OtpResult {
-        val c = counter ?: return OtpResult.Failure(OtpError.InvalidCounter)
-        if (c < 0) return OtpResult.Failure(OtpError.InvalidCounter)
+        val c = counter ?: return OtpResult.Failure(OtpGenerationError.InvalidCounter)
+        if (c < 0) return OtpResult.Failure(OtpGenerationError.InvalidCounter)
         val result = computeOtp(config, c, config.digits)
         // HOTP 生成成功后返回递增后的 counter
         return if (result is OtpResult.Success) {
@@ -111,7 +112,7 @@ object OtpGenerator {
 
     private fun computeOtp(config: OtpConfig, movingFactor: Long, digits: Int): OtpResult {
         val decoded = decodeSecret(config)
-        if (decoded.isEmpty()) return OtpResult.Failure(OtpError.InvalidSecret)
+        if (decoded.isEmpty()) return OtpResult.Failure(OtpGenerationError.InvalidSecret)
 
         val algorithm = if (config.type == OtpType.STEAM) {
             OtpHashAlgorithm.SHA1
@@ -180,7 +181,7 @@ object OtpGenerator {
                 try {
                     Base64.getDecoder().decode(config.secret.trim())
                 } catch (e: Exception) {
-                    throw OtpError.InvalidSecret
+                    throw OtpGenerationError.InvalidSecret
                 }
             }
         }
@@ -203,5 +204,5 @@ sealed class OtpResult {
      * @param nextCounter HOTP 递增后的新 counter 值（仅 HOTP 有效，TOTP/STEAM 为 null）
      */
     data class Success(val code: String, val nextCounter: Long? = null) : OtpResult()
-    data class Failure(val error: OtpError) : OtpResult()
+    data class Failure(val error: OtpGenerationError) : OtpResult()
 }

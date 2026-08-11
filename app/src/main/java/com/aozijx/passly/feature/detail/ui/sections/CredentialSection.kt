@@ -124,8 +124,9 @@ fun CredentialSection(
                                 )
                             )
                         }
-                        if (revealedPassword == null && item.secret.login?.password?.isNotEmpty() == true) {
-                            onPasswordRevealed(item.secret.login.password)
+                        val password = item.secret.login?.password
+                        if (revealedPassword == null && password?.isNotEmpty() == true) {
+                            onPasswordRevealed(password)
                             onEvent(
                                 DetailIntent.RecordAction(
                                     "password",

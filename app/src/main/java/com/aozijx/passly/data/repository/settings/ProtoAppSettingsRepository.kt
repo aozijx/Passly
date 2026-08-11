@@ -86,7 +86,8 @@ class ProtoAppSettingsRepository @Inject constructor(
 
                 is SettingsCommand.SelectManualThemeColor -> {
                     val ab = proto.appearance.toBuilder()
-                    if (command.argb != null) ab.manualThemeColorArgb = command.argb
+                    val argb = command.argb
+                    if (argb != null) ab.manualThemeColorArgb = argb
                     else ab.clearManualThemeColorArgb()
                     ab.dynamicColorEnabled = false
                     b.setAppearance(ab)

@@ -3,6 +3,7 @@ package com.aozijx.passly.core.session
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.error.model.DatabaseInitFailed
 import com.aozijx.passly.data.local.database.AppDatabase
+import com.aozijx.passly.domain.authentication.SecureSessionState
 import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.security.crypto.DekManager
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +43,7 @@ class UnifiedSessionManager @Inject constructor(
 
     // ============================== SessionStateProvider ==============================
 
-    override val lockState: LockState
+    override val lockState: SecureSessionState
         get() = leaseGate.lockState.value
 
     override val lockStateFlow = leaseGate.lockState
@@ -89,7 +90,7 @@ class UnifiedSessionManager @Inject constructor(
     suspend fun unlock(): Throwable? {
         val currentLock = leaseGate.lockState.value
         // SOFT_LOCKED → UNLOCKED: 数据库已打开，仅恢复状态
-        if (currentLock == LockState.SOFT_LOCKED) {
+        if (currentLock == SecureSessionState.SOFT_LOCKED) {
             return leaseGate.unlock(ByteArray(0)) // DEK 不被使用，传空数组
         }
         // SEALED → UNLOCKED: 需要 DEK 打开数据库

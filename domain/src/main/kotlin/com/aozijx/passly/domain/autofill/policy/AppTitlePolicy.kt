@@ -1,7 +1,5 @@
 package com.aozijx.passly.domain.autofill.policy
 
-import com.aozijx.passly.core.util.PackageDisplayNameFormatter
-
 /**
  * 应用标题生成策略：
  * 从应用标签和包名生成智能的自动填充标题。
@@ -17,6 +15,6 @@ object AppTitlePolicy {
     fun generate(appLabel: String?, packageName: String?, fallback: String): String {
         if (appLabel != null && appLabel.isNotBlank()) return appLabel.trim()
 
-        return PackageDisplayNameFormatter.format(packageName, fallback)
+        return ApplicationLabelFormatter.format(packageName, fallback)
     }
 }

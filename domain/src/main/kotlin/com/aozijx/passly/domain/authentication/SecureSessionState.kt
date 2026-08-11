@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.session
+package com.aozijx.passly.domain.authentication
 
 /**
  * 数据库访问闸门状态。
@@ -16,8 +16,11 @@ package com.aozijx.passly.core.session
  *   原生连接内部仍掌握数据库解密能力，不是完整的密码学封存。
  * - **SEALED**：完整封存，关闭数据库连接并擦除密钥。
  */
-enum class LockState {
-    SOFT_LOCKED,
-    SEALED,
-    UNLOCKED
+enum class SecureSessionState(val strength: Int) {
+    UNLOCKED(0),
+    SOFT_LOCKED(1),
+    SEALED(2);
+
+    infix fun shouldEscalateTo(target: SecureSessionState): Boolean =
+        strength < target.strength
 }

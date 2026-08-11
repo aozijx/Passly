@@ -22,10 +22,10 @@ interface NoticeDeduplicator {
 }
 
 sealed interface DeduplicationClaim {
-    class Acquired internal constructor(
+    data class Acquired(
         val eventId: String,
-        internal val token: Long,
-        internal val ttlMs: Long
+        val token: Long,
+        val ttlMs: Long
     ) : DeduplicationClaim
 
     data object Duplicate : DeduplicationClaim

@@ -1,10 +1,10 @@
 package com.aozijx.passly.domain.auth.policy
 
 import com.aozijx.passly.domain.settings.model.LockTimeoutConstraints
-import dagger.Reusable
 import javax.inject.Inject
+import javax.inject.Singleton
 
-@Reusable
+@Singleton
 class AuthRequestValidator @Inject constructor() {
 
     sealed interface AuthRequestValidationResult {

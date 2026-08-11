@@ -1,5 +1,6 @@
 package com.aozijx.passly.core.otp
 
+import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
@@ -110,7 +111,7 @@ class OtpGeneratorTest {
         val failure = result as OtpResult.Failure
         assertTrue(
             "HOTP counter=null 应返回 InvalidCounter",
-            failure.error is OtpError.InvalidCounter
+            failure.error is OtpGenerationError.InvalidCounter
         )
     }
 
@@ -129,7 +130,7 @@ class OtpGeneratorTest {
         val failure = result as OtpResult.Failure
         assertTrue(
             "HOTP counter=-1 应返回 InvalidCounter",
-            failure.error is OtpError.InvalidCounter
+            failure.error is OtpGenerationError.InvalidCounter
         )
     }
 
@@ -310,7 +311,7 @@ class OtpGeneratorTest {
             try {
                 OtpGenerator.base32DecodeStrict(input)
                 assertTrue("输入 '$input' 应抛出 InvalidSecret", false)
-            } catch (e: OtpError.InvalidSecret) {
+            } catch (e: OtpGenerationError.InvalidSecret) {
                 // 预期的异常
             }
         }
@@ -321,7 +322,7 @@ class OtpGeneratorTest {
         try {
             OtpGenerator.base32DecodeStrict("")
             assertTrue("空输入应抛出 InvalidSecret", false)
-        } catch (e: OtpError.InvalidSecret) {
+        } catch (e: OtpGenerationError.InvalidSecret) {
             // 预期的异常
         }
     }
@@ -352,7 +353,7 @@ class OtpGeneratorTest {
         val failure = result as OtpResult.Failure
         assertTrue(
             "空 secret 应返回 InvalidSecret",
-            failure.error is OtpError.InvalidSecret
+            failure.error is OtpGenerationError.InvalidSecret
         )
     }
 
@@ -371,7 +372,7 @@ class OtpGeneratorTest {
         val failure = result as OtpResult.Failure
         assertTrue(
             "非法 Base32 应返回 InvalidSecret",
-            failure.error is OtpError.InvalidSecret
+            failure.error is OtpGenerationError.InvalidSecret
         )
     }
 

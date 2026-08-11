@@ -1,11 +1,11 @@
-package com.aozijx.passly.core.util
+package com.aozijx.passly.domain.autofill.policy
 
 /**
  * Android 包名展示名格式化：
  * 从 Android 包名中提取有意义的名称，
  * 用于自动填充场景下的标题生成。
  */
-object PackageDisplayNameFormatter {
+object ApplicationLabelFormatter {
     /**
      * 从包名中提取可读名称
      * @param packageName Android 包名（如 com.example.app）

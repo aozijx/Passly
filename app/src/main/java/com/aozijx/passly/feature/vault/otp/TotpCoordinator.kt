@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.otp
 
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.core.otp.OtpError
+import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.core.otp.OtpResult
 import com.aozijx.passly.domain.authentication.SessionLockedException
 import com.aozijx.passly.domain.entry.model.OtpUiState
@@ -79,7 +79,7 @@ internal class TotpCoordinator(
                     return
                 }
                 if (config == null || config.secret.isBlank()) {
-                    refreshed[entryId] = OtpUiState(error = OtpError.InvalidSecret)
+                    refreshed[entryId] = OtpUiState(error = OtpGenerationError.InvalidSecret)
                     continue
                 }
                 applyConfig(entryId, config, nowSeconds, refreshed)
@@ -116,16 +116,16 @@ internal class TotpCoordinator(
      * 生成 HOTP 验证码（用户主动触发）。
      */
     suspend fun generateHotpCode(entryId: String): OtpResult {
-        if (!sessionUnlocked) return OtpResult.Failure(OtpError.InvalidSecret)
+        if (!sessionUnlocked) return OtpResult.Failure(OtpGenerationError.InvalidSecret)
         val config = try {
             loadOtpConfig(entryId)
         } catch (_: SessionLockedException) {
             handleSessionLocked()
-            return OtpResult.Failure(OtpError.InvalidSecret)
-        } ?: return OtpResult.Failure(OtpError.InvalidSecret)
-        if (config.type != OtpType.HOTP) return OtpResult.Failure(OtpError.InvalidSecret)
-        val counter = config.counter ?: return OtpResult.Failure(OtpError.InvalidCounter)
-        if (counter < 0) return OtpResult.Failure(OtpError.InvalidCounter)
+            return OtpResult.Failure(OtpGenerationError.InvalidSecret)
+        } ?: return OtpResult.Failure(OtpGenerationError.InvalidSecret)
+        if (config.type != OtpType.HOTP) return OtpResult.Failure(OtpGenerationError.InvalidSecret)
+        val counter = config.counter ?: return OtpResult.Failure(OtpGenerationError.InvalidCounter)
+        if (counter < 0) return OtpResult.Failure(OtpGenerationError.InvalidCounter)
 
         val result = codeGenerator(config)
 
@@ -161,7 +161,7 @@ internal class TotpCoordinator(
         }
         if (config == null || config.secret.isBlank()) {
             AppTelemetry.w("TotpCoordinator", "OTP activation failed: missing config for $entryId")
-            _states.update { it + (entryId to OtpUiState(error = OtpError.InvalidSecret)) }
+            _states.update { it + (entryId to OtpUiState(error = OtpGenerationError.InvalidSecret)) }
             return
         }
         val nowSeconds = System.currentTimeMillis() / 1000

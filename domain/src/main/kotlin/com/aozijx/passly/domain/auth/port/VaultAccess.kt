@@ -3,7 +3,7 @@ package com.aozijx.passly.domain.auth.port
 import com.aozijx.passly.domain.auth.model.AuthInput
 import com.aozijx.passly.domain.auth.model.AuthorizationResult
 import com.aozijx.passly.domain.auth.model.UnlockResult
-import com.aozijx.passly.domain.auth.model.VaultLockState
+import com.aozijx.passly.domain.authentication.SecureSessionState
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.LockReason
 import kotlinx.coroutines.flow.StateFlow
@@ -24,12 +24,12 @@ import kotlinx.coroutines.flow.StateFlow
  * - [lock] — 锁定 Vault（可指定锁定强度）
  */
 interface VaultAccess {
-    val state: StateFlow<VaultLockState>
+    val state: StateFlow<SecureSessionState>
 
     /**
      * 解锁 Vault。
      *
-     * 内部根据当前 [VaultLockState] 自动选择：
+     * 内部根据当前 [SecureSessionState] 自动选择：
      * - SOFT_LOCKED → 仅恢复 Gate（不重置 DEK）
      * - SEALED → 解封 Envelope、设置 DEK、打开数据库
      */

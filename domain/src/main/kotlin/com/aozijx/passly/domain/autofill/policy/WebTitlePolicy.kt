@@ -1,7 +1,5 @@
 package com.aozijx.passly.domain.autofill.policy
 
-import com.aozijx.passly.core.util.DomainNormalizer
-
 /**
  * 网页标题生成策略：
  * 从网页标题和域名生成智能的自动填充标题。
@@ -32,7 +30,7 @@ object WebTitlePolicy {
                 else -> pageTitle
             }
         } else {
-            domain.removePrefix("www.").let { DomainNormalizer.removeCommonDomainSuffix(it) }
+            domain.removePrefix("www.").let { DomainNameNormalizer.removeCommonDomainSuffix(it) }
         }
     }
 }

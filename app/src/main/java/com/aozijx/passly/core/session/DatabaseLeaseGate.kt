@@ -4,6 +4,7 @@ import androidx.room.withTransaction
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.DatabaseProvider
+import com.aozijx.passly.domain.authentication.SecureSessionState
 import com.aozijx.passly.domain.authentication.SessionLockedException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -65,8 +66,8 @@ class DatabaseLeaseGate @Inject constructor(
 
     // ============================== 状态 ==============================
 
-    private val _lockState = MutableStateFlow(LockState.SEALED)
-    val lockState: StateFlow<LockState> = _lockState.asStateFlow()
+    private val _lockState = MutableStateFlow(SecureSessionState.SEALED)
+    val lockState: StateFlow<SecureSessionState> = _lockState.asStateFlow()
 
     private val activeLeases = AtomicInteger(0)
     private val leaseMutex = Mutex()
@@ -149,7 +150,7 @@ class DatabaseLeaseGate @Inject constructor(
      */
     suspend fun unlock(dek: ByteArray): Throwable? {
         if (database != null) {
-            _lockState.value = LockState.UNLOCKED
+            _lockState.value = SecureSessionState.UNLOCKED
             AppTelemetry.i(TAG, "Resumed from SOFT_LOCKED to UNLOCKED")
             return null
         }
@@ -161,7 +162,7 @@ class DatabaseLeaseGate @Inject constructor(
      * 适用于 UI 手动锁定或短暂遮挡认证页面。
      */
     suspend fun softLock() {
-        _lockState.value = LockState.SOFT_LOCKED
+        _lockState.value = SecureSessionState.SOFT_LOCKED
         AppTelemetry.i(TAG, "Soft locked, database kept open")
     }
 
@@ -172,7 +173,7 @@ class DatabaseLeaseGate @Inject constructor(
      * 适用于应用进后台、完整性异常、删除 Vault 等场景。
      */
     suspend fun seal(timeout: Duration = 5.seconds) {
-        _lockState.value = LockState.SEALED
+        _lockState.value = SecureSessionState.SEALED
 
         val drained = withTimeoutOrNull(timeout) {
             while (activeLeases.get() > 0) {
@@ -213,7 +214,7 @@ class DatabaseLeaseGate @Inject constructor(
      */
     private suspend fun acquireLease() {
         leaseMutex.withLock {
-            if (_lockState.value != LockState.UNLOCKED) {
+            if (_lockState.value != SecureSessionState.UNLOCKED) {
                 throw SessionLockedException("Session is ${_lockState.value.name}")
             }
             activeLeases.incrementAndGet()
@@ -225,7 +226,7 @@ class DatabaseLeaseGate @Inject constructor(
     }
 
     private fun ensureUnlocked() {
-        if (_lockState.value != LockState.UNLOCKED) {
+        if (_lockState.value != SecureSessionState.UNLOCKED) {
             throw SessionLockedException("Session is ${_lockState.value.name}")
         }
     }
@@ -241,13 +242,13 @@ class DatabaseLeaseGate @Inject constructor(
         return try {
             val db = databaseProvider.open(dek)
             dbMutex.withLock { database = db }
-            _lockState.value = LockState.UNLOCKED
+            _lockState.value = SecureSessionState.UNLOCKED
             AppTelemetry.i(TAG, "Database opened, state UNLOCKED")
             null
         } catch (e: Exception) {
             AppTelemetry.e(TAG, "Failed to open database", e)
             dbMutex.withLock { database = null }
-            _lockState.value = LockState.SEALED
+            _lockState.value = SecureSessionState.SEALED
             e
         }
     }

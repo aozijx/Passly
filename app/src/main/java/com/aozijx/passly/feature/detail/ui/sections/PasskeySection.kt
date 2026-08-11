@@ -79,15 +79,16 @@ fun PasskeySection(
             }
         )
 
-        if (!entry.secret.passkey?.hardwareKeyInfo.isNullOrBlank()) {
+        val hardwareKeyInfo = entry.secret.passkey?.hardwareKeyInfo
+        if (!hardwareKeyInfo.isNullOrBlank()) {
             DetailItem(
                 label = hardwareKeyInfoLabel,
-                value = entry.secret.passkey.hardwareKeyInfo,
+                value = hardwareKeyInfo,
                 isRevealed = true,
                 onCopy = {
                     ClipboardUtils.copy(
                         context,
-                        entry.secret.passkey.hardwareKeyInfo
+                        hardwareKeyInfo
                     )
                     Toast.makeText(
                         context,

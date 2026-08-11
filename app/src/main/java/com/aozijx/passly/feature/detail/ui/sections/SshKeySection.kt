@@ -198,7 +198,8 @@ fun SshKeySection(
         if (revealedSshPrivateKey == null && revealedPassword == null) {
             Button(
                 onClick = {
-                    val sshKey = entry.secret.ssh?.privateKey
+                    val sshSecret = entry.secret.ssh
+                    val sshKey = sshSecret?.privateKey
                     if (!sshKey.isNullOrBlank()) {
                         onAuthenticate.reveal(SensitiveAccessLevel.HIGH) {
                             onSshPrivateKeyRevealed(sshKey)
@@ -208,7 +209,7 @@ fun SshKeySection(
                                     ActivityType.VIEW
                                 )
                             )
-                            val passphrase = entry.secret.ssh.passphrase
+                            val passphrase = sshSecret.passphrase
                             if (!passphrase.isNullOrEmpty()) {
                                 onPasswordRevealed(passphrase)
                                 actionHandler.record("passphrase", ActivityType.VIEW)

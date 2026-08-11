@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.entry.model
 
-import com.aozijx.passly.core.otp.OtpError
+import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 
 /**
  * OTP UI 状态 —— 不包含敏感数据（secret 仅在短生命周期的生成器中存在）。
@@ -13,5 +13,5 @@ import com.aozijx.passly.core.otp.OtpError
 data class OtpUiState(
     val code: String? = null,
     val progress: Float = 0f,
-    val error: OtpError? = null
+    val error: OtpGenerationError? = null
 )

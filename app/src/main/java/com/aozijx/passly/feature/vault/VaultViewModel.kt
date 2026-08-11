@@ -289,7 +289,7 @@ class VaultViewModel @Inject constructor(
         viewModelScope.launch {
             sessionStateProvider.lockStateFlow.collect { lockState ->
                 totp.onSessionStateChanged(
-                    unlocked = lockState == com.aozijx.passly.core.session.LockState.UNLOCKED
+                    unlocked = lockState == com.aozijx.passly.domain.authentication.SecureSessionState.UNLOCKED
                 )
             }
         }
