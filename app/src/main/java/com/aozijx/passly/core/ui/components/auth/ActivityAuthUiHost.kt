@@ -257,7 +257,6 @@ internal object BiometricPromptSpecFactory {
         AuthenticationPurpose.UNLOCK_VAULT -> R.string.auth_purpose_unlock_vault
         AuthenticationPurpose.AUTOFILL -> R.string.auth_purpose_autofill
         AuthenticationPurpose.BACKUP_EXPORT -> R.string.auth_purpose_backup_export
-        AuthenticationPurpose.RECOVERY_EXPORT -> R.string.auth_purpose_recovery_export
         AuthenticationPurpose.BACKUP_IMPORT -> R.string.auth_purpose_backup_import
         AuthenticationPurpose.EXPORT_DIAGNOSTICS ->
             R.string.auth_purpose_export_diagnostics

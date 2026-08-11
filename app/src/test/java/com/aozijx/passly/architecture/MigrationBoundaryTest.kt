@@ -1122,10 +1122,9 @@ class MigrationBoundaryTest {
             "AuthenticationPurpose.RECOVER_AUTH_METHODS" in credentialExecutor &&
                     "commitRecoveryUnlock" in credentialExecutor
         )
-        assertTrue(
-            "RECOVERY_EXPORT must call commitRecoveryUnlock",
-            "AuthenticationPurpose.RECOVERY_EXPORT" in credentialExecutor &&
-                    "commitRecoveryUnlock" in credentialExecutor
+        assertFalse(
+            "Recovery export authentication purpose must not exist",
+            "RECOVERY_EXPORT" in authModels || "RECOVERY_EXPORT" in credentialExecutor
         )
 
         // 5. AuthenticationManager must gate recovery mode purposes
@@ -1172,14 +1171,10 @@ class MigrationBoundaryTest {
             "LockReason.RECOVERY_EXIT" in mainViewModel
         )
 
-        // 10. Backup flow must support recovery export
-        assertTrue(
-            "Backup coordinator must use RECOVERY_EXPORT purpose",
-            "AuthenticationPurpose.RECOVERY_EXPORT" in backupCoordinator
-        )
-        assertTrue(
-            "Backup coordinator must preserve the recovery export boundary",
-            "isRecoveryExport" in backupCoordinator
+        // 10. Backup requires a full authenticated session and has no recovery path.
+        assertFalse(
+            "Backup coordinator must not expose a recovery export path",
+            "RECOVERY_EXPORT" in backupCoordinator || "isRecoveryExport" in backupCoordinator
         )
         val sensitiveUnlockPolicy = authManager
             .substringAfter("private fun AuthenticationPurpose.unlocksSensitiveDataKey")
@@ -1191,10 +1186,7 @@ class MigrationBoundaryTest {
             "Normal backup export must unlock the sensitive data key",
             "AuthenticationPurpose.BACKUP_EXPORT" in sensitiveUnlockPolicy
         )
-        assertFalse(
-            "Recovery export must never unlock the sensitive data key",
-            "AuthenticationPurpose.RECOVERY_EXPORT" in sensitiveUnlockPolicy
-        )
+        assertFalse("Recovery export must not exist", "RECOVERY_EXPORT" in sensitiveUnlockPolicy)
 
         // 11. Plain Vault repositories must not treat an open recovery database as full access.
         assertTrue(
@@ -1245,6 +1237,12 @@ class MigrationBoundaryTest {
             "AuthenticationState.RecoveryMode" in recoveryModeViewModel &&
                     "ensureRecoveryMode" in recoveryModeViewModel
         )
+        assertFalse(
+            "Recovery mode may only replace the app password",
+            "BackupArchiveService" in recoveryModeViewModel ||
+                    "BackupStorageSupport" in recoveryModeViewModel ||
+                    "rotateBiometricPolicy" in recoveryModeViewModel
+        )
         assertTrue(
             "Recovery password reset must seal recovery session instead of promoting it",
             "wasRecoveryMode" in provisioner &&
@@ -1259,11 +1257,11 @@ class MigrationBoundaryTest {
                     ).substringBefore("} else")
         )
         assertTrue(
-            "BackupViewModel must gate normal backup versus recovery export",
+            "BackupViewModel must require full secure-session access",
             "BackupSessionPolicy" in backupViewModel &&
                     "SecureSessionAccessState" !in backupViewModel &&
                     "hasFullSecureSessionAccess()" in backupSessionPolicy &&
-                    "isRecoveryMode()" in backupSessionPolicy
+                    "isRecoveryMode()" !in backupSessionPolicy
         )
         assertTrue(
             "DataManagementSettingsViewModel must gate trash operations",

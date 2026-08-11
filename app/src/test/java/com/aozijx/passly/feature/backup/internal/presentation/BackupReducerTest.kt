@@ -30,13 +30,11 @@ class BackupReducerTest {
             initial,
             BackupMutation.ExportPrepared(
                 format = BackupExportUiFormat.TEXT,
-                isRecoveryExport = false,
                 fileName = "backup.txt",
             ),
         )
 
         assertTrue(state.isExporting)
-        assertFalse(state.isRecoveryExport)
         assertEquals(BackupExportUiFormat.TEXT, state.selectedExportFormat)
         assertEquals("backup.txt", state.pendingExportFileName)
         assertEquals("", state.backupPassword)
@@ -48,29 +46,11 @@ class BackupReducerTest {
     }
 
     @Test
-    fun recoveryExportPrepared_keepsResourceOptionsEnabled() {
-        val state = BackupReducer.reduce(
-            BackupUiState(),
-            BackupMutation.ExportPrepared(
-                format = BackupExportUiFormat.ENCRYPTED,
-                isRecoveryExport = true,
-                fileName = "recovery.passly",
-            ),
-        )
-
-        assertTrue(state.isRecoveryExport)
-        assertTrue(state.includeIcons)
-        assertTrue(state.includeAttachments)
-        assertFalse(state.canSubmitExport)
-    }
-
-    @Test
     fun clearingPendingFields_afterFailure_preservesFailureForRendering() {
         val error = BackupFailed()
         val failed = BackupReducer.reduce(
             BackupUiState(
                 isExporting = true,
-                isRecoveryExport = true,
                 backupPassword = "temporary",
                 pendingExportFileName = "recovery.passly",
                 deleteTargetOnFailure = true,
@@ -85,7 +65,6 @@ class BackupReducerTest {
         assertEquals("", cleared.backupPassword)
         assertNull(cleared.pendingExportFileName)
         assertFalse(cleared.deleteTargetOnFailure)
-        assertFalse(cleared.isRecoveryExport)
     }
 
     @Test
@@ -94,7 +73,6 @@ class BackupReducerTest {
             BackupUiState(
                 status = BackupOperationStatus.Failure,
                 error = BackupFailed(),
-                isRecoveryExport = true,
                 backupPassword = "temporary",
                 pendingExportFileName = "backup.passly",
             ),
@@ -105,6 +83,5 @@ class BackupReducerTest {
         assertNull(state.error)
         assertEquals("", state.backupPassword)
         assertNull(state.pendingExportFileName)
-        assertFalse(state.isRecoveryExport)
     }
 }

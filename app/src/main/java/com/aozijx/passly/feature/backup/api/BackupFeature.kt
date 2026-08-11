@@ -13,7 +13,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.domain.backup.model.BackupExportUiFormat
 import com.aozijx.passly.feature.backup.internal.contract.BackupAction
-import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
 import com.aozijx.passly.feature.backup.internal.presentation.BackupViewModel
 import com.aozijx.passly.feature.backup.internal.ui.BackupRestoreDetail
 import com.aozijx.passly.feature.backup.internal.ui.BackupRestoreSheetHost
@@ -137,57 +136,5 @@ fun BackupSettingsFeature(
             activeSheet = null
             viewModel.onAction(BackupAction.ProcessBackupAction)
         },
-    )
-}
-
-/**
- * Narrow Recovery-facing API. Recovery owns its restricted-mode workflow while Backup owns
- * the reusable form UI and its internal presentation models.
- */
-@Composable
-fun RecoveryBackupExportSheet(
-    visible: Boolean,
-    password: String,
-    includeIcons: Boolean,
-    includeAttachments: Boolean,
-    includeDeleted: Boolean,
-    onDismiss: () -> Unit,
-    onPasswordChange: (String) -> Unit,
-    onIncludeIconsChange: (Boolean) -> Unit,
-    onIncludeAttachmentsChange: (Boolean) -> Unit,
-    onIncludeDeletedChange: (Boolean) -> Unit,
-    onExport: () -> Unit,
-) {
-    val state = remember(
-        password,
-        includeIcons,
-        includeAttachments,
-        includeDeleted,
-    ) {
-        BackupUiState(
-            isExporting = true,
-            isRecoveryExport = true,
-            backupPassword = password,
-            selectedExportFormat = BackupExportUiFormat.ENCRYPTED,
-            includeIcons = includeIcons,
-            includeAttachments = includeAttachments,
-            includeDeleted = includeDeleted,
-        )
-    }
-
-    BackupRestoreSheetHost(
-        sheet = BackupSheet.EXPORT_OPTIONS.takeIf { visible },
-        state = state,
-        configuredDirectoryLabel = null,
-        onDismiss = onDismiss,
-        onFormatSelected = {},
-        onPasswordChange = onPasswordChange,
-        onIncludeIconsChange = onIncludeIconsChange,
-        onIncludeAttachmentsChange = onIncludeAttachmentsChange,
-        onIncludeDeletedChange = onIncludeDeletedChange,
-        onIncludedEntryTypesChange = {},
-        onImportModeChange = {},
-        onExport = onExport,
-        onImport = {},
     )
 }

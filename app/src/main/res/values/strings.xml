@@ -376,7 +376,6 @@
     <string name="auth_purpose_unlock_vault">解锁Passly</string>
     <string name="auth_purpose_autofill">验证后自动填充</string>
     <string name="auth_purpose_backup_export">验证后导出备份</string>
-    <string name="auth_purpose_recovery_export">使用恢复码导出加密备份</string>
     <string name="auth_purpose_backup_import">验证后导入备份</string>
     <string name="auth_purpose_export_diagnostics">验证后导出诊断</string>
     <string name="auth_purpose_recover_database">验证后保留故障库并创建新库</string>
@@ -388,13 +387,8 @@
     <string name="app_package_picker_action">选择应用</string>
     <string name="entry_type">条目类型</string>
     <string name="recovery_mode_title">恢复模式</string>
-    <string name="recovery_mode_description">恢复码不会创建普通Passly会话。你只能重建主认证方式，或使用新的备份密码导出加密备份。重设密码后应用会锁定，请使用新密码重新解锁。</string>
+    <string name="recovery_mode_description">恢复模式只能设置新的应用密码，不能读取或导出密码数据。设置成功后应用会立即锁定，请使用新密码重新解锁。</string>
     <string name="recovery_mode_set_password">重设应用密码</string>
     <string name="recovery_mode_password_reset_success">应用密码已重设，请使用新密码重新解锁。</string>
-    <string name="recovery_mode_reconfigure_biometric">重新配置生物识别</string>
-    <string name="recovery_mode_biometric_success">生物识别已重新配置。重设应用密码后可使用新认证方式解锁。</string>
-    <string name="recovery_mode_biometric_failed">无法重新配置生物识别</string>
-    <string name="recovery_mode_export">使用恢复码导出备份</string>
-    <string name="recovery_mode_export_failed">恢复备份导出失败</string>
     <string name="recovery_mode_exit">退出并锁定</string>
 </resources>

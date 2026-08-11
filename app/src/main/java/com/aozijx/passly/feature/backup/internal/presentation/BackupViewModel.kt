@@ -31,7 +31,6 @@ internal class BackupViewModel @Inject constructor(
         when (action) {
             is BackupAction.CheckDirectoryPermission -> checkDirectoryPermission(action.uri)
             is BackupAction.PrepareExport -> prepareExport(action.format)
-            BackupAction.PrepareRecoveryExport -> prepareRecoveryExport()
             is BackupAction.StartExport -> selectExportTarget(
                 uri = action.uri,
                 deleteOnFailure = action.deleteOnFailure,
@@ -80,19 +79,6 @@ internal class BackupViewModel @Inject constructor(
         mutate(
             BackupMutation.ExportPrepared(
                 format = format,
-                isRecoveryExport = false,
-                fileName = operationCoordinator.buildExportFileName(format),
-            ),
-        )
-    }
-
-    private fun prepareRecoveryExport() {
-        if (!requireSession(sessionPolicy.recoveryExportDenial(), BackupOperation.EXPORT)) return
-        val format = BackupExportUiFormat.ENCRYPTED
-        mutate(
-            BackupMutation.ExportPrepared(
-                format = format,
-                isRecoveryExport = true,
                 fileName = operationCoordinator.buildExportFileName(format),
             ),
         )
@@ -168,7 +154,7 @@ internal class BackupViewModel @Inject constructor(
         canUseMode(_uiState.value, operation)
 
     private fun canUseMode(state: BackupUiState, operation: BackupOperation): Boolean {
-        if (requireSession(sessionPolicy.pendingOperationDenial(state), operation)) return true
+        if (requireSession(sessionPolicy.pendingOperationDenial(), operation)) return true
         mutate(BackupMutation.PendingFieldsCleared)
         return false
     }

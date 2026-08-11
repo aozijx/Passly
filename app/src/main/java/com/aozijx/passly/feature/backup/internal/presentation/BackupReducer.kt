@@ -13,7 +13,6 @@ internal sealed interface BackupMutation {
 
     data class ExportPrepared(
         val format: BackupExportUiFormat,
-        val isRecoveryExport: Boolean,
         val fileName: String,
     ) : BackupMutation
 
@@ -44,11 +43,9 @@ internal object BackupReducer {
             )
 
             is BackupMutation.ExportPrepared -> {
-                val includeResources =
-                    mutation.isRecoveryExport || mutation.format.supportsResources
+                val includeResources = mutation.format.supportsResources
                 state.copy(
                     isExporting = true,
-                    isRecoveryExport = mutation.isRecoveryExport,
                     selectedExportFormat = mutation.format,
                     backupUri = null,
                     backupPassword = "",
@@ -71,7 +68,6 @@ internal object BackupReducer {
 
             is BackupMutation.ImportPrepared -> state.copy(
                 isExporting = false,
-                isRecoveryExport = false,
                 backupUri = mutation.uri,
                 backupPassword = "",
                 importMode = ImportMode.APPEND,
@@ -115,5 +111,4 @@ private fun BackupUiState.clearPendingFields(): BackupUiState = copy(
     backupPassword = "",
     pendingExportFileName = null,
     deleteTargetOnFailure = false,
-    isRecoveryExport = false,
 )

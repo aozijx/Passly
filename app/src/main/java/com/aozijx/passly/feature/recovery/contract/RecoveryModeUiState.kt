@@ -6,18 +6,4 @@ data class RecoveryModeUiState(
     val confirmPassword: String = "",
     val isSettingPassword: Boolean = false,
     val passwordSetupError: String? = null,
-
-    val biometricResult: Boolean? = null,
-    val isReconfiguringBiometric: Boolean = false,
-
-    val showExportOptions: Boolean = false,
-    val exportPassword: String = "",
-    val includeIcons: Boolean = true,
-    val includeAttachments: Boolean = true,
-    val includeDeleted: Boolean = true,
-    val exportError: String? = null,
-    val isExporting: Boolean = false,
-) {
-    val canSubmitExport: Boolean
-        get() = exportPassword.isNotBlank()
-}
+)

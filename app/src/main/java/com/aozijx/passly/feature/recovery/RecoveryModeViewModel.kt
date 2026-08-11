@@ -2,23 +2,10 @@ package com.aozijx.passly.feature.recovery
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.app.message.mapping.toUiMessage
-import com.aozijx.passly.core.backup.BackupStorageSupport
-import com.aozijx.passly.core.error.mapping.fromThrowable
-import com.aozijx.passly.core.error.model.AppError
-import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
-import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.authentication.AuthenticationState
-import com.aozijx.passly.domain.backup.model.BackupExportOptions
-import com.aozijx.passly.domain.backup.model.BackupExportRequest
-import com.aozijx.passly.domain.backup.model.BackupFormats
-import com.aozijx.passly.domain.backup.service.BackupArchiveService
-import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.recovery.contract.DocumentRef
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeEffect
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeIntent
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeUiState
@@ -37,8 +24,6 @@ import javax.inject.Inject
 class RecoveryModeViewModel @Inject constructor(
     private val authenticationManager: AuthenticationManager,
     private val methodProvisioner: AuthenticationMethodProvisioner,
-    private val backupService: BackupArchiveService,
-    private val storageSupport: BackupStorageSupport,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RecoveryModeUiState())
@@ -57,24 +42,10 @@ class RecoveryModeViewModel @Inject constructor(
                     it.copy(confirmPassword = intent.value, passwordSetupError = null)
                 }
             RecoveryModeIntent.SubmitNewPassword -> submitNewPassword()
-            RecoveryModeIntent.ReconfigureBiometricClicked -> reconfigureBiometric()
-            RecoveryModeIntent.ExportClicked -> prepareExport()
-            is RecoveryModeIntent.ExportPasswordChanged ->
-                _uiState.update { it.copy(exportPassword = intent.value, exportError = null) }
-            is RecoveryModeIntent.IncludeIconsChanged ->
-                _uiState.update { it.copy(includeIcons = intent.include) }
-            is RecoveryModeIntent.IncludeAttachmentsChanged ->
-                _uiState.update { it.copy(includeAttachments = intent.include) }
-            is RecoveryModeIntent.IncludeDeletedChanged ->
-                _uiState.update { it.copy(includeDeleted = intent.include) }
-            RecoveryModeIntent.SubmitExport -> submitExport()
-            is RecoveryModeIntent.ExportTargetPicked -> handleExportTarget(intent.target)
             RecoveryModeIntent.ExitClicked -> exitRecovery()
-            RecoveryModeIntent.DismissSheet -> dismissSheet()
+            RecoveryModeIntent.DismissPasswordDialog -> dismissPasswordDialog()
         }
     }
-
-    fun buildExportFileName(): String = storageSupport.buildBackupFileName("passly")
 
     // --- Set Password ---
 
@@ -131,125 +102,19 @@ class RecoveryModeViewModel @Inject constructor(
         }
     }
 
-    // --- Biometric ---
-
-    private fun reconfigureBiometric() {
-        if (!ensureRecoveryMode()) return
-        _uiState.update { it.copy(biometricResult = null, isReconfiguringBiometric = true) }
-        viewModelScope.launch {
-            val result = methodProvisioner.rotateBiometricPolicy(invalidateOnEnrollment = true)
-            _uiState.update {
-                it.copy(
-                    biometricResult = result is AuthenticationResult.Success,
-                    isReconfiguringBiometric = false
-                )
-            }
-        }
-    }
-
-    // --- Export ---
-
-    private fun prepareExport() {
-        if (!ensureRecoveryMode()) return
-        _uiState.update {
-            it.copy(
-                showExportOptions = true,
-                exportError = null
-            )
-        }
-    }
-
-    private fun submitExport() {
-        val state = _uiState.value
-        if (!ensureRecoveryMode()) return
-        if (!state.canSubmitExport) return
-        viewModelScope.launch {
-            _effect.send(RecoveryModeEffect.PickExportTarget(buildExportFileName()))
-        }
-    }
-
-    private fun handleExportTarget(target: DocumentRef?) {
-        if (!ensureRecoveryMode()) return
-        if (target == null) {
-            dismissSheet()
-            return
-        }
-        _uiState.update { it.copy(isExporting = true, showExportOptions = false) }
-        viewModelScope.launch {
-            try {
-                val authResult = authenticationManager.authenticate(
-                    AuthenticationRequest(purpose = AuthenticationPurpose.RECOVERY_EXPORT)
-                )
-                if (authResult !is AuthenticationResult.Success) {
-                    _uiState.update { it.copy(isExporting = false) }
-                    return@launch
-                }
-
-                val state = _uiState.value
-                val password = state.exportPassword.toCharArray()
-                try {
-                    when (val result =
-                        backupService.export(state.toExportRequest(target.value, password))) {
-                        is AppResult.Success -> {
-                            _uiState.update {
-                                it.copy(
-                                    isExporting = false,
-                                    exportPassword = "",
-                                    exportError = null
-                                )
-                            }
-                            _effect.send(RecoveryModeEffect.ExportCompleted)
-                        }
-
-                        is AppResult.Failure -> {
-                            _uiState.update {
-                                it.copy(
-                                    isExporting = false,
-                                    exportError = result.error.toUiMessage("备份导出失败")
-                                )
-                            }
-                        }
-                    }
-                } finally {
-                    password.fill('\u0000')
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isExporting = false,
-                        exportError = AppError.fromThrowable(e).toUiMessage("备份导出失败")
-                    )
-                }
-            }
-        }
-    }
-
-    private fun RecoveryModeUiState.toExportRequest(
-        targetUri: String,
-        password: CharArray
-    ): BackupExportRequest = BackupExportRequest(
-        targetUri = targetUri,
-        format = BackupFormats.PASSLY_ENCRYPTED,
-        password = password,
-        options = BackupExportOptions(
-            includeIcons = includeIcons,
-            includeAttachments = includeAttachments,
-            includeDeleted = includeDeleted,
-            includedEntryTypes = EntryType.entries.toSet()
-        )
-    )
-
     private fun exitRecovery() {
         viewModelScope.launch {
             _effect.send(RecoveryModeEffect.ExitRecovery)
         }
     }
 
-    private fun dismissSheet() {
+    private fun dismissPasswordDialog() {
         _uiState.update {
             it.copy(
-                showExportOptions = false,
-                exportError = null
+                showSetPasswordDialog = false,
+                newPassword = "",
+                confirmPassword = "",
+                passwordSetupError = null
             )
         }
     }
@@ -260,12 +125,8 @@ class RecoveryModeViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 showSetPasswordDialog = false,
-                showExportOptions = false,
                 isSettingPassword = false,
-                isReconfiguringBiometric = false,
-                isExporting = false,
-                passwordSetupError = "当前不在恢复模式",
-                exportError = "当前不在恢复模式"
+                passwordSetupError = "当前不在恢复模式"
             )
         }
         return false

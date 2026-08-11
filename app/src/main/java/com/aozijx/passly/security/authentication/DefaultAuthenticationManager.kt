@@ -106,8 +106,7 @@ class DefaultAuthenticationManager @Inject constructor(
         val wasUnlocked = session.isUnlocked()
         val wasRecoveryMode = session.isRecoveryMode()
         val opensSession = request.purpose == AuthenticationPurpose.UNLOCK_VAULT ||
-            request.purpose == AuthenticationPurpose.RECOVER_AUTH_METHODS ||
-            request.purpose == AuthenticationPurpose.RECOVERY_EXPORT
+            request.purpose == AuthenticationPurpose.RECOVER_AUTH_METHODS
         try {
             if (wasRecoveryMode && request.purpose !in AuthenticationMethodPolicy.RECOVERY_MODE_PURPOSES) {
                 return finish(

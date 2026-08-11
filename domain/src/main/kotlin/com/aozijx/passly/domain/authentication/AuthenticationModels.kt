@@ -20,9 +20,6 @@ enum class AuthenticationPurpose {
     COPY_SECRET,
     DELETE_ENTRY,
     BACKUP_EXPORT,
-
-    /** Recovery-code-only encrypted export from the restricted recovery session. */
-    RECOVERY_EXPORT,
     BACKUP_IMPORT,
     MANAGE_APP_PASSWORD,
     MANAGE_RECOVERY_CODE,

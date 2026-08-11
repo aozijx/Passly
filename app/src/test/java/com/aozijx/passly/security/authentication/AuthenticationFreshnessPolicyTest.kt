@@ -76,10 +76,6 @@ class AuthenticationFreshnessPolicyTest {
         val recoveryOnly = setOf(AuthenticationMethod.RECOVERY_CODE)
         assertEquals(
             recoveryOnly,
-            AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.RECOVERY_EXPORT)
-        )
-        assertEquals(
-            recoveryOnly,
             AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.RECOVER_AUTH_METHODS)
         )
     }
@@ -124,11 +120,10 @@ class AuthenticationFreshnessPolicyTest {
     fun recoveryModePurposesAreExplicitlyScoped() {
         val recoveryPurposes = AuthenticationMethodPolicy.RECOVERY_MODE_PURPOSES
         assertEquals(
-            "Recovery mode must allow exactly 2 purposes",
-            2,
+            "Recovery mode must allow only credential rebuilding",
+            1,
             recoveryPurposes.size
         )
-        assertTrue(AuthenticationPurpose.RECOVERY_EXPORT in recoveryPurposes)
         assertTrue(AuthenticationPurpose.RECOVER_AUTH_METHODS in recoveryPurposes)
         assertFalse(
             "UNLOCK_VAULT must not be in recovery mode purposes",
@@ -146,28 +141,6 @@ class AuthenticationFreshnessPolicyTest {
             "RECOVERY_MODE_REUSABLE_PURPOSES must match RECOVERY_MODE_PURPOSES",
             AuthenticationMethodPolicy.RECOVERY_MODE_PURPOSES,
             AuthenticationMethodPolicy.RECOVERY_MODE_REUSABLE_PURPOSES
-        )
-    }
-
-    // ==================== 恢复码导出 ====================
-
-    @Test
-    fun recoveryExportRequiresOnlyRecoveryCode() {
-        val methods = AuthenticationMethodPolicy.allowedAuthenticationMethods(
-            AuthenticationPurpose.RECOVERY_EXPORT
-        )
-        assertEquals(
-            "RECOVERY_EXPORT must allow only RECOVERY_CODE",
-            setOf(AuthenticationMethod.RECOVERY_CODE),
-            methods
-        )
-        assertFalse(
-            "APP_PASSWORD must not be allowed for RECOVERY_EXPORT",
-            AuthenticationMethod.APP_PASSWORD in methods
-        )
-        assertFalse(
-            "BIOMETRIC must not be allowed for RECOVERY_EXPORT",
-            AuthenticationMethod.BIOMETRIC in methods
         )
     }
 
@@ -244,13 +217,4 @@ class AuthenticationFreshnessPolicyTest {
         )
     }
 
-    @Test
-    fun recoveryExportRequiresFreshAuthentication() {
-        assertTrue(
-            AuthenticationMethodPolicy.requiresFreshAuthentication(
-                AuthenticationPurpose.RECOVERY_EXPORT,
-                reauthenticateSensitiveCopies = false
-            )
-        )
-    }
 }

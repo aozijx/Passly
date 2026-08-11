@@ -39,7 +39,7 @@ internal class BackupOperationCoordinator @Inject constructor(
     }
 
     suspend fun exportToConfiguredDirectory(state: BackupUiState): BackupExecutionResult {
-        authenticate(state.exportAuthenticationPurpose()).let { authResult ->
+        authenticate(AuthenticationPurpose.BACKUP_EXPORT).let { authResult ->
             if (authResult != BackupExecutionResult.Success) return authResult
         }
         val directoryUri = settingsRepository.settings.first().backup.directoryTreeUri
@@ -68,7 +68,7 @@ internal class BackupOperationCoordinator @Inject constructor(
     suspend fun executePending(state: BackupUiState): BackupExecutionResult {
         val targetUri = state.backupUri ?: return BackupExecutionResult.Failure(BackupFailed())
         val purpose = if (state.isExporting) {
-            state.exportAuthenticationPurpose()
+            AuthenticationPurpose.BACKUP_EXPORT
         } else {
             AuthenticationPurpose.BACKUP_IMPORT
         }
@@ -93,13 +93,6 @@ internal class BackupOperationCoordinator @Inject constructor(
         state: BackupUiState,
         targetUri: Uri,
     ): BackupExecutionResult {
-        if (state.isRecoveryExport &&
-            (state.selectedExportFormat != BackupExportUiFormat.ENCRYPTED ||
-                    state.backupPassword.isBlank())
-        ) {
-            return BackupExecutionResult.Failure(BackupFailed())
-        }
-
         val password = state.backupPassword.takeIf(String::isNotEmpty)?.toCharArray()
         return try {
             val result = if (state.isExporting) {
@@ -150,12 +143,6 @@ internal class BackupOperationCoordinator @Inject constructor(
         }
     }
 
-    private fun BackupUiState.exportAuthenticationPurpose(): AuthenticationPurpose =
-        if (isRecoveryExport) {
-            AuthenticationPurpose.RECOVERY_EXPORT
-        } else {
-            AuthenticationPurpose.BACKUP_EXPORT
-        }
 }
 
 internal sealed interface BackupExecutionResult {

@@ -23,7 +23,6 @@ object AuthenticationMethodPolicy {
      * any other purpose will fail with [AuthenticationFailureCode.SESSION_MODE_RESTRICTED].
      */
     val RECOVERY_MODE_PURPOSES: Set<AuthenticationPurpose> = setOf(
-        AuthenticationPurpose.RECOVERY_EXPORT,
         AuthenticationPurpose.RECOVER_AUTH_METHODS
     )
 
@@ -32,7 +31,6 @@ object AuthenticationMethodPolicy {
      * re-authentication.
      */
     val RECOVERY_MODE_REUSABLE_PURPOSES: Set<AuthenticationPurpose> = setOf(
-        AuthenticationPurpose.RECOVERY_EXPORT,
         AuthenticationPurpose.RECOVER_AUTH_METHODS
     )
 
@@ -48,7 +46,6 @@ object AuthenticationMethodPolicy {
             AuthenticationPurpose.BACKUP_EXPORT,
             AuthenticationPurpose.CLEAR_DATABASE -> PRIMARY_METHODS
 
-            AuthenticationPurpose.RECOVERY_EXPORT,
             AuthenticationPurpose.RECOVER_AUTH_METHODS -> setOf(AuthenticationMethod.RECOVERY_CODE)
 
             AuthenticationPurpose.RECOVER_DATABASE -> AuthenticationMethod.entries.toSet()

@@ -289,7 +289,6 @@
     <string name="auth_purpose_unlock_vault">Passlyをロック解除</string>
     <string name="auth_purpose_autofill">認証して自動入力</string>
     <string name="auth_purpose_backup_export">認証してバックアップをエクスポート</string>
-    <string name="auth_purpose_recovery_export">復旧コードで暗号化バックアップをエクスポート</string>
     <string name="auth_purpose_backup_import">認証してバックアップをインポート</string>
     <string name="auth_purpose_export_diagnostics">認証して診断情報をエクスポート</string>
     <string name="auth_purpose_recover_database">認証して障害データベースを保持し、新規作成</string>
@@ -301,12 +300,7 @@
     <string name="app_package_picker_action">アプリを選択</string>
     <string name="entry_type">エントリ種別</string>
     <string name="recovery_mode_title">復旧モード</string>
-    <string name="recovery_mode_description">復旧モードでは通常の保管庫セッションは作成されません。主認証の再構築、または新しいバックアップパスワードで保護された暗号化バックアップの出力のみ行えます。</string>
+    <string name="recovery_mode_description">復旧モードでは新しいアプリパスワードの設定だけが可能です。パスワードデータの読み取りや出力はできません。設定後は直ちにロックされます。</string>
     <string name="recovery_mode_set_password">新しいアプリパスワードを設定</string>
-    <string name="recovery_mode_reconfigure_biometric">生体認証を再設定</string>
-    <string name="recovery_mode_biometric_success">生体認証を再設定しました。通常セッションに戻るには新しいアプリパスワードを設定してください。</string>
-    <string name="recovery_mode_biometric_failed">生体認証を再設定できませんでした</string>
-    <string name="recovery_mode_export">復旧コードでバックアップを出力</string>
-    <string name="recovery_mode_export_failed">復旧バックアップの出力に失敗しました</string>
     <string name="recovery_mode_exit">終了してロック</string>
 </resources>

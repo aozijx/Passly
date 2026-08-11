@@ -71,8 +71,7 @@ class CredentialMethodExecutor @Inject constructor(
                             }
                         }
 
-                        AuthenticationPurpose.RECOVER_AUTH_METHODS,
-                        AuthenticationPurpose.RECOVERY_EXPORT -> {
+                        AuthenticationPurpose.RECOVER_AUTH_METHODS -> {
                             if (session.commitRecoveryUnlock(ownedDek, request.correlationId)) {
                                 attemptLimiter.recordSuccess(method)
                                 MethodExecutionResult.Success(method)

@@ -1,8 +1,6 @@
 package com.aozijx.passly.feature.recovery
 
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -15,8 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.FileDownload
-import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.LockReset
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.Icon
@@ -39,8 +35,6 @@ import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.settingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.feature.backup.api.RecoveryBackupExportSheet
-import com.aozijx.passly.feature.recovery.contract.DocumentRef
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeEffect
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeIntent
 
@@ -53,16 +47,9 @@ fun RecoveryModeScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    val exportPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/octet-stream")
-    ) { uri ->
-        viewModel.onIntent(RecoveryModeIntent.ExportTargetPicked(uri?.let { DocumentRef(it.toString()) }))
-    }
-
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is RecoveryModeEffect.PickExportTarget -> exportPicker.launch(effect.fileName)
                 is RecoveryModeEffect.ExitRecovery -> onExit()
                 is RecoveryModeEffect.PasswordResetCompleted ->
                     Toast.makeText(
@@ -70,9 +57,6 @@ fun RecoveryModeScreen(
                         R.string.recovery_mode_password_reset_success,
                         Toast.LENGTH_LONG
                     ).show()
-                is RecoveryModeEffect.ExportCompleted ->
-                    Toast.makeText(context, R.string.backup_export_success, Toast.LENGTH_SHORT)
-                        .show()
             }
         }
     }
@@ -116,42 +100,6 @@ fun RecoveryModeScreen(
                         subtitle = stringResource(R.string.settings_security_app_password_description),
                         isLoading = state.isSettingPassword,
                         onClick = { viewModel.onIntent(RecoveryModeIntent.SetPasswordClicked) }
-                    ),
-                    navigationSettingsGroupItem(
-                        key = "recovery.reconfigure_biometric",
-                        icon = Icons.Default.Fingerprint,
-                        title = stringResource(R.string.recovery_mode_reconfigure_biometric),
-                        subtitle = state.biometricResult?.let { success ->
-                            stringResource(
-                                if (success) R.string.recovery_mode_biometric_success
-                                else R.string.recovery_mode_biometric_failed
-                            )
-                        },
-                        isLoading = state.isReconfiguringBiometric,
-                        onClick = {
-                            viewModel.onIntent(RecoveryModeIntent.ReconfigureBiometricClicked)
-                        }
-                    )
-                )
-            )
-        }
-
-        Spacer(Modifier.height(16.dp))
-        SettingsSection(modifier = Modifier.fillMaxWidth()) {
-            SettingsSectionTitle(text = stringResource(R.string.settings_backup_restore_section))
-            RoundedGroup(
-                items = listOf(
-                    navigationSettingsGroupItem(
-                        key = "recovery.export_backup",
-                        icon = Icons.Default.FileDownload,
-                        title = stringResource(R.string.recovery_mode_export),
-                        subtitle = if (state.exportError != null) {
-                            stringResource(R.string.recovery_mode_export_failed)
-                        } else {
-                            stringResource(R.string.settings_backup_format_encrypted_description)
-                        },
-                        isLoading = state.isExporting,
-                        onClick = { viewModel.onIntent(RecoveryModeIntent.ExportClicked) }
                     )
                 )
             )
@@ -185,33 +133,10 @@ fun RecoveryModeScreen(
                 viewModel.onIntent(RecoveryModeIntent.ConfirmPasswordChanged(it))
             },
             onConfirm = { viewModel.onIntent(RecoveryModeIntent.SubmitNewPassword) },
-            onDismiss = { viewModel.onIntent(RecoveryModeIntent.DismissSheet) },
+            onDismiss = { viewModel.onIntent(RecoveryModeIntent.DismissPasswordDialog) },
             isBusy = state.isSettingPassword,
             errorMessage = state.passwordSetupError
         )
     }
 
-    RecoveryBackupExportSheet(
-        visible = state.showExportOptions,
-        password = state.exportPassword,
-        includeIcons = state.includeIcons,
-        includeAttachments = state.includeAttachments,
-        includeDeleted = state.includeDeleted,
-        onDismiss = { viewModel.onIntent(RecoveryModeIntent.DismissSheet) },
-        onPasswordChange = {
-            viewModel.onIntent(RecoveryModeIntent.ExportPasswordChanged(it))
-        },
-        onIncludeIconsChange = {
-            viewModel.onIntent(RecoveryModeIntent.IncludeIconsChanged(it))
-        },
-        onIncludeAttachmentsChange = {
-            viewModel.onIntent(RecoveryModeIntent.IncludeAttachmentsChanged(it))
-        },
-        onIncludeDeletedChange = {
-            viewModel.onIntent(RecoveryModeIntent.IncludeDeletedChanged(it))
-        },
-        onExport = {
-            viewModel.onIntent(RecoveryModeIntent.SubmitExport)
-        }
-    )
 }

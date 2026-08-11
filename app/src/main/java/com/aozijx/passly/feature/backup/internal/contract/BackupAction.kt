@@ -11,9 +11,6 @@ sealed interface BackupAction {
 
     data class PrepareExport(val format: BackupExportUiFormat) : BackupAction
 
-    /** Prepare the recovery-code-only path. This always exports encrypted Passly format. */
-    data object PrepareRecoveryExport : BackupAction
-
     data class StartExport(
         val uri: Uri,
         val deleteOnFailure: Boolean = false,
