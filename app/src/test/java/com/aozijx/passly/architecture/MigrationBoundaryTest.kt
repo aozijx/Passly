@@ -1460,6 +1460,40 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun authenticationMviKeepsSecretWipingOutsideItsPureReducer() {
+        val viewModel = File(
+            "src/main/java/com/aozijx/passly/feature/auth/presentation/" +
+                    "AuthenticationViewModel.kt"
+        ).readText()
+        val reducer = File(
+            "src/main/java/com/aozijx/passly/feature/auth/presentation/" +
+                    "AuthenticationReducer.kt"
+        ).readText()
+        val reducerDependencies = listOf(
+            "AuthenticationManager",
+            "AuthenticationMethodProvisioner",
+            "MemoryCleaner",
+            "viewModelScope",
+            "MutableStateFlow",
+        ).filter(reducer::contains)
+
+        assertTrue(
+            "AuthenticationViewModel must use one reducer state-write entry",
+            "AuthenticationReducer.reduce" in viewModel && "_uiState.update" !in viewModel,
+        )
+        assertTrue(
+            "Secret cleanup must remain an explicit ViewModel side effect",
+            ".wipe()" in viewModel && "MemoryCleaner.wipeCharArray" in viewModel,
+        )
+        assertTrue(
+            "AuthenticationReducer must remain pure: $reducerDependencies",
+            "internal object AuthenticationReducer" in reducer &&
+                    ".wipe()" !in reducer &&
+                    reducerDependencies.isEmpty(),
+        )
+    }
+
+    @Test
     fun mviViewModelsHaveOneActionEntryPoint() {
         // 只检查有对应 Intent/Action 合约文件的 ViewModel（完整 MVI 页面）。
         // 简单 UDF 页面（仅有 UiState）不强制统一事件入口。

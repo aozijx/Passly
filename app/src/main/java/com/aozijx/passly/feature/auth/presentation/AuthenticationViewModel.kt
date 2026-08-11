@@ -11,14 +11,12 @@ import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.feature.auth.contract.AuthenticationIntent
 import com.aozijx.passly.feature.auth.contract.AuthenticationUiState
-import com.aozijx.passly.feature.auth.contract.AuthenticationVerificationFailure
 import com.aozijx.passly.security.MemoryCleaner
 import com.aozijx.passly.security.crypto.SecureString
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -60,7 +58,7 @@ class AuthenticationViewModel @Inject constructor(
         recoveryRevealTapCount += 1
         if (recoveryRevealTapCount >= RECOVERY_REVEAL_TAP_THRESHOLD) {
             recoveryRevealTapCount = 0
-            _uiState.update { it.copy(recoveryUnlockVisible = true) }
+            mutate(AuthenticationMutation.RecoveryUnlockVisibilityChanged(true))
         }
     }
 
@@ -72,7 +70,7 @@ class AuthenticationViewModel @Inject constructor(
             AuthenticationMethod.BIOMETRIC,
             null -> {
                 recoveryRevealTapCount = 0
-                _uiState.update { it.copy(recoveryUnlockVisible = false) }
+                mutate(AuthenticationMutation.RecoveryUnlockVisibilityChanged(false))
             }
         }
     }
@@ -83,35 +81,23 @@ class AuthenticationViewModel @Inject constructor(
     }
 
     private fun onAppPasswordChange(value: String) {
-        updateSecureInput({ appPassword.wipe() }) {
-            it.copy(appPassword = SecureString.fromString(value), verificationFailure = null)
-        }
+        _uiState.value.appPassword.wipe()
+        mutate(AuthenticationMutation.AppPasswordChanged(SecureString.fromString(value)))
     }
 
     private fun onRecoveryCodeChange(value: String) {
-        updateSecureInput({ recoveryCode.wipe() }) {
-            it.copy(recoveryCode = SecureString.fromString(value), verificationFailure = null)
-        }
+        _uiState.value.recoveryCode.wipe()
+        mutate(AuthenticationMutation.RecoveryCodeChanged(SecureString.fromString(value)))
     }
 
     private fun onNewAppPasswordChange(value: String) {
-        updateSecureInput({ newAppPassword.wipe() }) {
-            it.copy(newAppPassword = SecureString.fromString(value), setupFailure = null)
-        }
+        _uiState.value.newAppPassword.wipe()
+        mutate(AuthenticationMutation.NewAppPasswordChanged(SecureString.fromString(value)))
     }
 
     private fun onConfirmAppPasswordChange(value: String) {
-        updateSecureInput({ confirmAppPassword.wipe() }) {
-            it.copy(confirmAppPassword = SecureString.fromString(value), setupFailure = null)
-        }
-    }
-
-    private fun updateSecureInput(
-        wipeCurrent: AuthenticationUiState.() -> Unit,
-        update: (AuthenticationUiState) -> AuthenticationUiState
-    ) {
-        _uiState.value.wipeCurrent()
-        _uiState.update(update)
+        _uiState.value.confirmAppPassword.wipe()
+        mutate(AuthenticationMutation.ConfirmAppPasswordChanged(SecureString.fromString(value)))
     }
 
     private fun onInputExpanded(method: AuthenticationMethod, expanded: Boolean) {
@@ -119,17 +105,11 @@ class AuthenticationViewModel @Inject constructor(
             _uiState.value.expandedMethod
                 ?.takeUnless { it == method }
                 ?.let(::clearCredential)
-            _uiState.update {
-                it.copy(expandedMethod = method, verificationFailure = null)
-            }
+            mutate(AuthenticationMutation.ExpandedMethodChanged(method))
         } else {
             clearCredential(method)
-            _uiState.update {
-                if (it.expandedMethod == method) {
-                    it.copy(expandedMethod = null, verificationFailure = null)
-                } else {
-                    it
-                }
+            if (_uiState.value.expandedMethod == method) {
+                mutate(AuthenticationMutation.ExpandedMethodChanged(null))
             }
         }
     }
@@ -149,21 +129,13 @@ class AuthenticationViewModel @Inject constructor(
         )
     }
 
-    private fun onShowSetPasswordDialog() = _uiState.update {
-        it.copy(showSetPasswordDialog = true, setupFailure = null)
-    }
+    private fun onShowSetPasswordDialog() =
+        mutate(AuthenticationMutation.SetPasswordDialogVisibilityChanged(true))
 
     private fun onDismissSetPasswordDialog() {
         _uiState.value.newAppPassword.wipe()
         _uiState.value.confirmAppPassword.wipe()
-        _uiState.update {
-            it.copy(
-                showSetPasswordDialog = false,
-                newAppPassword = EmptySensitiveValue,
-                confirmAppPassword = EmptySensitiveValue,
-                setupFailure = null
-            )
-        }
+        mutate(AuthenticationMutation.SetPasswordDialogVisibilityChanged(false))
     }
 
     private fun bootstrapAppPassword() {
@@ -176,40 +148,31 @@ class AuthenticationViewModel @Inject constructor(
             return
         }
 
-        _uiState.update {
-            it.copy(isSettingAppPassword = true, setupFailure = null)
-        }
+        mutate(AuthenticationMutation.SetupStarted)
         viewModelScope.launch {
             try {
                 when (val result = methodProvisioner.setAppPassword(password)) {
                     is AuthenticationResult.Success -> {
                         wipeSetupPasswords()
                         resetInputState()
-                        _uiState.update {
-                            it.copy(
-                                showSetPasswordDialog = false,
-                                newAppPassword = EmptySensitiveValue,
-                                confirmAppPassword = EmptySensitiveValue,
-                                setupFailure = null
-                            )
-                        }
+                        mutate(AuthenticationMutation.SetupCompleted)
                     }
 
                     is AuthenticationResult.Cancelled -> Unit
                     is AuthenticationResult.Failure -> {
-                        _uiState.update { it.copy(setupFailure = result.failure) }
+                        mutate(AuthenticationMutation.SetupFailed(result.failure))
                     }
                 }
             } finally {
                 MemoryCleaner.wipeCharArray(password)
                 MemoryCleaner.wipeCharArray(confirm)
-                _uiState.update { it.copy(isSettingAppPassword = false) }
+                mutate(AuthenticationMutation.SetupFinished)
             }
         }
     }
 
     private fun clearVerificationFailure() {
-        _uiState.update { it.copy(verificationFailure = null) }
+        mutate(AuthenticationMutation.VerificationFailureCleared)
     }
 
     private fun authenticate(
@@ -221,9 +184,7 @@ class AuthenticationViewModel @Inject constructor(
             credential?.let(MemoryCleaner::wipeCharArray)
             return
         }
-        _uiState.update {
-            it.copy(activeMethod = method, verificationFailure = null)
-        }
+        mutate(AuthenticationMutation.AuthenticationStarted(method))
         viewModelScope.launch {
             try {
                 when (
@@ -238,19 +199,12 @@ class AuthenticationViewModel @Inject constructor(
                     is AuthenticationResult.Success -> resetInputState()
                     is AuthenticationResult.Cancelled -> Unit
                     is AuthenticationResult.Failure -> {
-                        _uiState.update {
-                            it.copy(
-                                verificationFailure = AuthenticationVerificationFailure(
-                                    method = method,
-                                    failure = result.failure
-                                )
-                            )
-                        }
+                        mutate(AuthenticationMutation.AuthenticationFailed(method, result.failure))
                     }
                 }
             } finally {
                 credential?.let(MemoryCleaner::wipeCharArray)
-                _uiState.update { it.copy(activeMethod = null) }
+                mutate(AuthenticationMutation.AuthenticationFinished)
             }
         }
     }
@@ -259,12 +213,12 @@ class AuthenticationViewModel @Inject constructor(
         when (method) {
             AuthenticationMethod.APP_PASSWORD -> {
                 _uiState.value.appPassword.wipe()
-                _uiState.update { it.copy(appPassword = EmptySensitiveValue) }
+                mutate(AuthenticationMutation.AppPasswordChanged(EmptySensitiveValue))
             }
 
             AuthenticationMethod.RECOVERY_CODE -> {
                 _uiState.value.recoveryCode.wipe()
-                _uiState.update { it.copy(recoveryCode = EmptySensitiveValue) }
+                mutate(AuthenticationMutation.RecoveryCodeChanged(EmptySensitiveValue))
             }
 
             AuthenticationMethod.BIOMETRIC -> Unit
@@ -274,15 +228,11 @@ class AuthenticationViewModel @Inject constructor(
     private fun resetInputState() {
         recoveryRevealTapCount = 0
         wipeUnlockInputs()
-        _uiState.update {
-            it.copy(
-                appPassword = EmptySensitiveValue,
-                recoveryCode = EmptySensitiveValue,
-                recoveryUnlockVisible = false,
-                expandedMethod = null,
-                verificationFailure = null
-            )
-        }
+        mutate(AuthenticationMutation.UnlockInputsReset)
+    }
+
+    private fun mutate(mutation: AuthenticationMutation) {
+        _uiState.value = AuthenticationReducer.reduce(_uiState.value, mutation)
     }
 
     override fun onCleared() {
