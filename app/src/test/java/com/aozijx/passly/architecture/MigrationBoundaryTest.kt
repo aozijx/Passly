@@ -11,9 +11,15 @@ class MigrationBoundaryTest {
     private val appKotlinRoot = File("src/main/java").canonicalFile
     private val moduleKotlinRoots = listOf(
         appKotlinRoot,
+        File(projectRoot, "core/android/src/main/kotlin"),
         File(projectRoot, "core/common/src/main/kotlin"),
+        File(projectRoot, "core/security/src/main/kotlin"),
         File(projectRoot, "core/telemetry/src/main/kotlin"),
-        File(projectRoot, "domain/src/main/kotlin")
+        File(projectRoot, "core/ui/src/main/kotlin"),
+        File(projectRoot, "domain/src/main/kotlin"),
+        File(projectRoot, "feature/auth/api/src/main/kotlin"),
+        File(projectRoot, "feature/recovery/api/src/main/kotlin"),
+        File(projectRoot, "runtime/session/src/main/kotlin"),
     )
 
     private val productionKotlinFiles: Sequence<File>
@@ -51,23 +57,6 @@ class MigrationBoundaryTest {
             "CandidateResolver must not use the data implementation",
             "CredentialServiceRepositoryImpl" !in source
         )
-    }
-
-    @Test
-    fun domainHasNoAndroidDataOrFeatureDependencies() {
-        val forbidden = listOf(
-            "import android.",
-            "import androidx.",
-            "import com.aozijx.passly.data.",
-            "import com.aozijx.passly.feature."
-        )
-        val offenders = productionKotlinFiles
-            .filter { "/domain/" in it.invariantSeparatorsPath }
-            .filter { source -> forbidden.any { it in source.readText() } }
-            .map { it.relativeTo(projectRoot).path }
-            .toList()
-
-        assertTrue("Domain boundary violations: $offenders", offenders.isEmpty())
     }
 
     @Test
@@ -936,49 +925,6 @@ class MigrationBoundaryTest {
     }
 
     @Test
-    fun coreErrorDoesNotDependOnTelemetryOrMessageOrAppTelemetry() {
-        val errorRoot = File("src/main/java/com/aozijx/passly/core/error")
-        val forbidden = listOf(
-            "import com.aozijx.passly.core.telemetry",
-            "import com.aozijx.passly.app.diagnostics.AppTelemetry",
-            "import com.aozijx.passly.app.message",
-            "import com.aozijx.passly.domain.notice",
-        )
-        val offenders = errorRoot.walkTopDown()
-            .filter { it.isFile && it.extension == "kt" }
-            .filter { source -> forbidden.any { it in source.readText() } }
-            .map { it.relativeTo(errorRoot).path }
-            .toList()
-
-        assertTrue(
-            "core/error must not depend on telemetry, message, AppTelemetry: $offenders",
-            offenders.isEmpty()
-        )
-    }
-
-    @Test
-    fun coreErrorDoesNotDependOnAndroid() {
-        val errorRoot = File("src/main/java/com/aozijx/passly/core/error")
-        val forbidden = listOf(
-            "import android.",
-            "import androidx.",
-        )
-        // boundary exceptions are allowed to use Android types since they wrap platform exceptions
-        val exemptPaths = listOf("boundary" + File.separator)
-        val offenders = errorRoot.walkTopDown()
-            .filter { it.isFile && it.extension == "kt" }
-            .filter { source -> exemptPaths.none { it in source.relativeTo(errorRoot).path } }
-            .filter { source -> forbidden.any { it in source.readText() } }
-            .map { it.relativeTo(errorRoot).path }
-            .toList()
-
-        assertTrue(
-            "core/error model/result/mapping must not depend on Android: $offenders",
-            offenders.isEmpty()
-        )
-    }
-
-    @Test
     fun errorMessagesLiveInAppMessageMappingNotCoreError() {
         val oldPresentationDir = File(
             "src/main/java/com/aozijx/passly/core/error/presentation"
@@ -1359,76 +1305,6 @@ class MigrationBoundaryTest {
     // ============================================================
     // 阶段 0 — 护栏扩展：跨 Feature 依赖、MVI 入口、文件大小
     // ============================================================
-
-    @Test
-    fun featureDependenciesUseApprovedPublicApisAndStayAcyclic() {
-        // main 是当前 App 导航组合根，允许导入其他 feature 进行组装。
-        // 其他 feature 只能通过目标 feature 的 api 包形成显式、有向依赖。
-        val compositionRoot = setOf("main")
-        val allowedDependencies = setOf(
-            "settings" to "backup",
-            "recovery" to "backup",
-        )
-        val featureRoots = File("src/main/java/com/aozijx/passly/feature")
-            .listFiles(File::isDirectory) ?: emptyArray()
-        val offenders = mutableListOf<String>()
-        val dependencies = mutableMapOf<String, MutableSet<String>>()
-        val featureImport = Regex(
-            """import com\.aozijx\.passly\.feature\.([^.\s]+)\.([\w.]+)"""
-        )
-
-        for (featureDir in featureRoots) {
-            if (featureDir.name in compositionRoot) continue
-            featureDir.walkTopDown()
-                .filter { it.isFile && it.extension == "kt" }
-                .forEach { source ->
-                    featureImport.findAll(source.readText()).forEach { match ->
-                        val targetFeature = match.groupValues[1]
-                        if (targetFeature != featureDir.name) {
-                            dependencies.getOrPut(featureDir.name) { mutableSetOf() }
-                                .add(targetFeature)
-                            val importedMember = match.groupValues[2]
-                            val throughPublicApi =
-                                importedMember == "api" || importedMember.startsWith("api.")
-                            val allowedEdge =
-                                featureDir.name to targetFeature in allowedDependencies
-                            if (!throughPublicApi || !allowedEdge) {
-                                offenders += buildString {
-                                    append(source.relativeTo(featureDir).path)
-                                    append(": ")
-                                    append(match.value)
-                                }
-                            }
-                        }
-                    }
-                }
-        }
-
-        assertTrue(
-            "Feature cross-imports must use an explicitly allowed api edge: $offenders",
-            offenders.isEmpty()
-        )
-
-        val visiting = mutableSetOf<String>()
-        val visited = mutableSetOf<String>()
-        fun containsCycle(feature: String): Boolean {
-            if (feature in visiting) return true
-            if (!visited.add(feature)) return false
-            visiting += feature
-            val cyclic = dependencies[feature].orEmpty().any(::containsCycle)
-            visiting -= feature
-            return cyclic
-        }
-
-        val cyclicRoots = featureRoots
-            .map(File::getName)
-            .filter(::containsCycle)
-
-        assertTrue(
-            "Feature dependency graph must stay acyclic: $dependencies",
-            cyclicRoots.isEmpty()
-        )
-    }
 
     @Test
     fun coreDoesNotOwnBackupFeaturePresentation() {

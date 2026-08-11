@@ -18,6 +18,7 @@
 .\gradlew.bat :app:testDebugUnitTest
 .\gradlew.bat :domain:test :runtime:session:test
 .\gradlew.bat :core:android:testDebugUnitTest :core:ui:testDebugUnitTest
+.\gradlew.bat verifyModuleBoundaries
 .\gradlew.bat :app:lintDebug
 .\gradlew.bat :app:assembleDebug
 .\gradlew.bat :app:assembleDebugAndroidTest

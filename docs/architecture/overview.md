@@ -38,6 +38,11 @@ flowchart LR
 依赖注入只负责在应用边界把 Domain 契约与 Data/Security 实现连接起来，不改变源码依赖方向。共享模块不得
 依赖 `:app`；这一规则由 Gradle/编译器边界保证。
 
+`verifyModuleBoundaries` 校验每个真实 Gradle 模块的直接项目依赖白名单和依赖环，并自动接入各模块的
+`check` 生命周期。新增模块必须先声明允许的依赖方向；未加入依赖的实现类型不会进入编译 classpath，因此
+类型可见性继续由 Kotlin/Java 编译器保证。仍位于 `:app` 的包目录不等同于模块边界，其临时包级护栏要在对应
+feature/data 模块迁出后删除。
+
 ## 数据流
 
 ```mermaid
