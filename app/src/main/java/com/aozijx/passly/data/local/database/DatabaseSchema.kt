@@ -14,7 +14,9 @@ object DatabaseSchema {
     // 功能表
     const val TABLE_REVISIONS = "entry_revisions"
     const val TABLE_ACTIVITY = "entry_activities"
-    const val TABLE_ATTACHMENT = "entry_attachments"
+    const val TABLE_ATTACHMENT_RESOURCES = "attachment_resources"
+    const val TABLE_ATTACHMENT_REFS = "attachment_refs"
+    const val TABLE_REVISION_ATTACHMENT_REFS = "revision_attachment_refs"
+    const val TABLE_ATTACHMENT_GC_QUEUE = "attachment_gc_queue"
     const val TABLE_SEARCH_TOKENS = "entry_search_tokens"
-    const val TABLE_DRAFTS = "entry_drafts"
 }

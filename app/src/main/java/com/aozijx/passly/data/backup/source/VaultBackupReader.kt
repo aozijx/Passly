@@ -12,17 +12,15 @@ import com.aozijx.passly.data.backup.model.BackupLinkRecord
 import com.aozijx.passly.data.backup.model.BackupResourceKind
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
-import com.aozijx.passly.data.crypto.AadProvider
-import com.aozijx.passly.data.crypto.AttachmentCipher
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
 import com.aozijx.passly.data.repository.entry.internal.SensitiveFieldPersistence
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.withHighSensitivity
-import com.aozijx.passly.security.crypto.FieldEncryptor
+import com.aozijx.passly.security.crypto.AttachmentContentCrypto
+import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
-import java.util.Base64
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -45,7 +43,8 @@ class VaultBackupReader @Inject constructor(
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
     private val sensitiveFieldPersistence: SensitiveFieldPersistence,
-    private val fieldEncryptor: FieldEncryptor,
+    private val attachmentContentCrypto: AttachmentContentCrypto,
+    private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
     private val documentMapper: BackupDocumentMapper
 ) {
 
@@ -128,53 +127,30 @@ class VaultBackupReader @Inject constructor(
             }
 
             if (includeAttachments) {
-                val attachmentRoot = VaultResourcePaths.attachmentDir(context).canonicalFile
-                entryAttachmentQueryDao().getCommittedByEntryIds(entryIds).forEach { entity ->
-                    val payload = AttachmentCipher.decrypt(
-                        entity.encryptedBlob,
-                        entity.entryId,
-                        entity.attachmentId,
-                        fieldEncryptor
-                    )
-                    val encryptedFile = File(
-                        context.filesDir,
-                        "${VaultResourcePaths.ATTACHMENTS}/${entity.entryId}/${entity.attachmentId}.enc"
-                    ).canonicalFile
-                    require(
-                        encryptedFile.path.startsWith(
-                            attachmentRoot.path + File.separator
-                        )
-                    ) {
-                        "附件路径超出应用附件目录: ${entity.attachmentId}"
+                attachmentRefQueryDao().getCommittedByEntryIds(entryIds).forEach { entity ->
+                    val resource = requireNotNull(attachmentResourceDao().getById(entity.resourceId)) {
+                        "附件资源缺失: ${entity.attachmentId}"
                     }
+                    val encryptedFile = attachmentGarbageCollector.resourceFile(resource.resourceId)
                     require(encryptedFile.isFile) {
                         "附件文件缺失: ${entity.attachmentId}"
                     }
                     require(encryptedFile.length() <= BackupBundleValidator.MAX_RESOURCE_BYTES * 2L) {
                         "附件密文过大: ${entity.attachmentId}"
                     }
-                    val encodedContent = fieldEncryptor.decrypt(
-                        encryptedFile.readBytes(),
-                        AadProvider.attachmentContent(entity.entryId, entity.attachmentId)
+                    val content = attachmentContentCrypto.decrypt(
+                        encryptedFile.readBytes(), resource.resourceId
                     )
-                    val content = try {
-                        Base64.getDecoder().decode(encodedContent)
-                    } catch (error: IllegalArgumentException) {
-                        throw IllegalArgumentException(
-                            "附件内容损坏: ${entity.attachmentId}",
-                            error
-                        )
-                    }
                     require(content.size <= BackupBundleValidator.MAX_RESOURCE_BYTES) {
                         "附件过大: ${entity.attachmentId}"
                     }
                     val sha256 = BackupBundleValidator.sha256Hex(content)
-                    require(payload.sha256 == null || payload.sha256.equals(sha256, true)) {
+                    require(attachmentContentCrypto.verifyContentId(content, resource.resourceId)) {
                         "附件校验失败: ${entity.attachmentId}"
                     }
                     resourceRecords += com.aozijx.passly.data.backup.model.BackupResourceRecord(
                         id = entity.attachmentId,
-                        entryId = entity.entryId,
+                        entryId = requireNotNull(entity.entryId),
                         kind = BackupResourceKind.ATTACHMENT,
                         fileName = entity.fileName,
                         mimeType = entity.mimeType,
@@ -183,7 +159,7 @@ class VaultBackupReader @Inject constructor(
                         createdAt = entity.createdAt
                     )
                     resourceData[entity.attachmentId] = content
-                    attachmentIdsByEntry.getOrPut(entity.entryId, ::mutableListOf)
+                    attachmentIdsByEntry.getOrPut(requireNotNull(entity.entryId), ::mutableListOf)
                         .add(entity.attachmentId)
                 }
             }

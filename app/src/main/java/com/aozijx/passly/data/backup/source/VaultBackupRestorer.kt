@@ -10,14 +10,13 @@ import com.aozijx.passly.data.backup.model.BackupBundle
 import com.aozijx.passly.data.backup.model.BackupResourceKind
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
-import com.aozijx.passly.data.crypto.AadProvider
-import com.aozijx.passly.data.crypto.AttachmentCipher
 import com.aozijx.passly.data.local.database.maintenance.VaultDatabaseCleaner
-import com.aozijx.passly.data.model.entity.EntryAttachmentEntity
+import com.aozijx.passly.data.model.entity.AttachmentResourceEntity
+import com.aozijx.passly.data.model.entity.AttachmentResourceState
+import com.aozijx.passly.data.model.entity.AttachmentRefEntity
 import com.aozijx.passly.data.model.entity.EntryEntity
 import com.aozijx.passly.data.model.entity.EntryLinkEntity
 import com.aozijx.passly.data.model.entity.EntrySecretEntity
-import com.aozijx.passly.data.model.payload.attachment.AttachmentPayload
 import com.aozijx.passly.data.repository.entry.internal.SensitiveFieldPersistence
 import com.aozijx.passly.domain.backup.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
@@ -25,10 +24,10 @@ import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.extractHighSensitivity
 import com.aozijx.passly.domain.entry.model.link.EntryRelationType
 import com.aozijx.passly.domain.entry.model.withoutHighSensitivity
-import com.aozijx.passly.security.crypto.FieldEncryptor
+import com.aozijx.passly.security.crypto.AttachmentContentCrypto
+import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
-import java.util.Base64
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -51,10 +50,12 @@ class VaultBackupRestorer @Inject constructor(
     private val secretCodec: EntrySecretCodec,
     private val sensitiveFieldPersistence: SensitiveFieldPersistence,
     private val documentMapper: BackupDocumentMapper,
-    private val fieldEncryptor: FieldEncryptor
+    private val attachmentContentCrypto: AttachmentContentCrypto,
+    private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
 
-    suspend fun restore(bundle: BackupBundle, mode: ImportMode) {
+    suspend fun restore(bundle: BackupBundle, mode: ImportMode) =
+        attachmentGarbageCollector.withMutationLock {
         BackupBundleValidator.validate(
             bundle,
             requireResourceData = bundle.document.resources.isNotEmpty()
@@ -132,48 +133,46 @@ class VaultBackupRestorer @Inject constructor(
 
                     attachmentResources.forEach { resource ->
                         val content = requireNotNull(bundle.resourceData[resource.id])
-                        val attachmentDir =
-                            File(
-                                context.filesDir,
-                                "${VaultResourcePaths.ATTACHMENTS}/$entryId"
-                            ).apply { mkdirs() }
-                        val target = File(attachmentDir, "${resource.id}.enc")
-                        val encryptedContent = fieldEncryptor.encrypt(
-                            Base64.getEncoder().encodeToString(content),
-                            AadProvider.attachmentContent(entryId, resource.id)
-                        )
-                        try {
-                            fileJournal.replace(target, encryptedContent)
-                            restoredFiles += target.canonicalPath
-                        } finally {
-                            encryptedContent.fill(0)
+                        val resourceId = attachmentContentCrypto.contentId(content)
+                        val existingResource = attachmentResourceDao().getById(resourceId)
+                        if (existingResource == null) {
+                            attachmentResourceDao().insertStrict(
+                                AttachmentResourceEntity(
+                                    resourceId = resourceId,
+                                    fileSize = content.size.toLong(),
+                                    createdAt = resource.createdAt ?: record.updatedAt,
+                                )
+                            )
+                        } else {
+                            require(existingResource.fileSize == content.size.toLong()) {
+                                "附件资源哈希碰撞: ${resource.id}"
+                            }
+                            if (existingResource.lifecycleState != AttachmentResourceState.ACTIVE) {
+                                attachmentGarbageCollector.reactivateInTransaction(this, resourceId)
+                            }
+                        }
+                        val target = attachmentGarbageCollector.resourceFile(resourceId)
+                        target.parentFile?.mkdirs()
+                        if (!target.isFile) {
+                            val encryptedContent = attachmentContentCrypto.encrypt(content, resourceId)
+                            try {
+                                fileJournal.replace(target, encryptedContent)
+                                restoredFiles += target.canonicalPath
+                            } finally {
+                                encryptedContent.fill(0)
+                            }
                         }
 
-                        val payload = AttachmentPayload(
-                            attachmentId = resource.id,
-                            fileName = resource.fileName.orEmpty(),
-                            mimeType = resource.mimeType.orEmpty(),
-                            fileSize = resource.size,
-                            encryptedPath = "$entryId/${resource.id}.enc",
-                            sha256 = resource.sha256,
-                            createdAt = resource.createdAt ?: record.updatedAt
-                        )
-                        entryAttachmentCommandDao().insertStrict(
-                            EntryAttachmentEntity(
+                        attachmentRefCommandDao().insertStrict(
+                            AttachmentRefEntity(
                                 attachmentId = resource.id,
                                 entryId = entryId,
+                                resourceId = resourceId,
                                 fileName = resource.fileName.orEmpty(),
-                                fileSize = resource.size,
                                 mimeType = resource.mimeType,
                                 status = AttachmentStatus.COMMITTED.name,
-                                owner = entryId,
-                                encryptedBlob = AttachmentCipher.encrypt(
-                                    payload,
-                                    entryId,
-                                    resource.id,
-                                    fieldEncryptor
-                                ),
-                                createdAt = resource.createdAt ?: record.updatedAt
+                                stagingOwnerId = null,
+                                createdAt = resource.createdAt ?: record.updatedAt,
                             )
                         )
                     }

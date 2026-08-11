@@ -153,8 +153,8 @@ class EntryRevisionLifecycleDaoTest {
         revisionId = revisionId,
         entryId = entryId,
         version = version,
-        regularSnapshotBlob = byteArrayOf(version.toByte()),
-        sensitiveFieldsSnapshotBlob = byteArrayOf(),
+        entryContentCipher = byteArrayOf(version.toByte()),
+        sensitiveFieldCipherSet = byteArrayOf(),
         changeType = "value_changed",
         createdAt = createdAt,
     )

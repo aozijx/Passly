@@ -7,7 +7,7 @@ interface AttachmentRepository {
     suspend fun getAttachments(entryId: String): List<EntryAttachment>
 
     /** 获取草稿下未提交的附件（status = PENDING, owner = draftId） */
-    suspend fun getPendingAttachments(draftId: String): List<EntryAttachment>
+    suspend fun getPendingAttachments(stagingOwnerId: String): List<EntryAttachment>
 
     /**
      * 保存附件元数据及加密文件内容。
@@ -16,7 +16,12 @@ interface AttachmentRepository {
      * @param attachment 附件元数据
      * @param content   原始文件内容（由本方法负责加密落盘并计算 SHA-256）
      */
-    suspend fun saveAttachment(entryId: String, attachment: EntryAttachment, content: ByteArray)
+    suspend fun saveAttachment(entryId: String?, attachment: EntryAttachment, content: ByteArray)
+
+    /** Atomically binds all persisted pending refs owned by this editor session. */
+    suspend fun commitPendingAttachments(stagingOwnerId: String, entryId: String)
+
+    suspend fun discardPendingAttachments(stagingOwnerId: String)
 
     /** 删除附件（同时删除磁盘加密文件） */
     suspend fun deleteAttachment(attachmentId: String)

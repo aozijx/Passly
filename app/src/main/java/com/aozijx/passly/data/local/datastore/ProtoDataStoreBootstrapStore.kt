@@ -98,6 +98,17 @@ class ProtoDataStoreBootstrapStore @Inject constructor(
         return if (envelope.isEmpty) null else envelope.toByteArray()
     }
 
+    override suspend fun saveAttachmentKeyEnvelope(envelope: ByteArray) {
+        dataStore.updateData {
+            it.toBuilder().setAttachmentKeyEnvelope(ByteString.copyFrom(envelope)).build()
+        }
+    }
+
+    override suspend fun loadAttachmentKeyEnvelope(): ByteArray? {
+        val envelope = dataStore.data.first().attachmentKeyEnvelope
+        return if (envelope.isEmpty) null else envelope.toByteArray()
+    }
+
     override suspend fun loadBiometricState(): BiometricBootstrapState {
         val data = dataStore.data.first()
         val binding = data.takeIf { it.hasBiometricBinding() }
@@ -186,6 +197,7 @@ class ProtoDataStoreBootstrapStore @Inject constructor(
                 .clearEnvelopes()
                 .clearVerificationTag()
                 .clearSensitiveKeyEnvelope()
+                .clearAttachmentKeyEnvelope()
                 .clearBiometricBinding()
                 .clearBiometricRotation()
                 .clearBiometricCleanupAliases()

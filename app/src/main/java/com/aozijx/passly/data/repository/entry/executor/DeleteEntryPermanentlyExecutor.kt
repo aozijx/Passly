@@ -5,6 +5,7 @@ import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.repository.VaultTransactionRunner
+import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.repository.entry.internal.DeletedEntryResources
 import com.aozijx.passly.data.repository.entry.internal.EntryResourceCleaner
 import javax.inject.Inject
@@ -18,7 +19,8 @@ import javax.inject.Inject
 class DeleteEntryPermanentlyExecutor @Inject constructor(
     private val transactionRunner: VaultTransactionRunner,
     private val summaryCodec: EntrySummaryCodec,
-    private val resourceCleaner: EntryResourceCleaner
+    private val resourceCleaner: EntryResourceCleaner,
+    private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
     suspend fun execute(id: String, expectedVersion: Int): AppResult<Unit> {
         val result = transactionRunner.write("entry.deletePermanently") {
@@ -34,13 +36,16 @@ class DeleteEntryPermanentlyExecutor @Inject constructor(
             val affected = entryCommandDao().deleteDeletedOptimistic(id, expectedVersion)
             transactionRunner.checkAffectedRows(affected)
 
+            attachmentGarbageCollector.scheduleInTransaction(this)
             DeletedEntryResources(
                 entryId = id,
-                customIconPath = summary.iconCustomPath
+                customIconPath = summary.iconCustomPath,
             )
         }
 
-        result.onSuccessSuspend { resourceCleaner.clean(listOf(it)) }
+        result.onSuccessSuspend {
+            resourceCleaner.clean(listOf(it))
+        }
         return result.map { }
     }
 }

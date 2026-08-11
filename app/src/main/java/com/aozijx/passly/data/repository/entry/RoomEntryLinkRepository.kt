@@ -5,6 +5,7 @@ import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.model.entity.EntryLinkEntity
 import com.aozijx.passly.data.repository.VaultTransactionRunner
+import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.repository.entry.internal.EntryRevisionHelper
 import com.aozijx.passly.data.util.Clock
 import com.aozijx.passly.domain.authentication.SecureSessionAccessState
@@ -28,6 +29,7 @@ class RoomEntryLinkRepository @Inject constructor(
     private val sessionState: SecureSessionAccessState,
     private val revisionHelper: EntryRevisionHelper,
     private val clock: Clock,
+    private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) : EntryLinkRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -74,8 +76,8 @@ class RoomEntryLinkRepository @Inject constructor(
             }
         }
 
-    override suspend fun upsert(link: EntryLink): AppResult<Unit> =
-        transactionRunner.write("entry-link.upsert") {
+    override suspend fun upsert(link: EntryLink): AppResult<Unit> {
+        val result = transactionRunner.write("entry-link.upsert") {
             val endpoints = entryQueryDao().getByIds(
                 listOf(link.sourceEntryId.value, link.targetEntryId.value)
             ).associateBy { it.entryId }
@@ -103,11 +105,16 @@ class RoomEntryLinkRepository @Inject constructor(
                 }
             }
             val now = clock.now()
-            affectedEntryIds.forEach { revisionHelper.snapshotCurrent(this, it, now) }
+            affectedEntryIds.forEach {
+                revisionHelper.snapshotCurrent(this, it, now)
+            }
         }
+        result.onSuccessSuspend { attachmentGarbageCollector.drain() }
+        return result
+    }
 
-    override suspend fun delete(linkId: EntryLinkId): AppResult<Unit> =
-        transactionRunner.write("entry-link.delete") {
+    override suspend fun delete(linkId: EntryLinkId): AppResult<Unit> {
+        val result = transactionRunner.write("entry-link.delete") {
             val link = entryLinkQueryDao().getById(linkId.value)
             entryLinkCommandDao().deleteById(linkId.value)
             if (link != null) {
@@ -118,6 +125,9 @@ class RoomEntryLinkRepository @Inject constructor(
             }
             Unit
         }
+        result.onSuccessSuspend { attachmentGarbageCollector.drain() }
+        return result
+    }
 
     private fun EntryLinkEntity.toDomain(): EntryLink = EntryLink.create(
         id = EntryLinkId(linkId),

@@ -37,6 +37,7 @@ class DatabaseProvider @Inject constructor(
             DatabaseSchema.DATABASE_NAME
         )
             .openHelperFactory(factory)
+            .addCallback(AttachmentRefConstraints)
             .build()
 
         runCatching { db.openHelper.writableDatabase }

@@ -7,6 +7,7 @@ import com.aozijx.passly.data.mapper.search.toLookupFields
 import com.aozijx.passly.data.model.entity.EntryEntity
 import com.aozijx.passly.data.model.entity.EntrySecretEntity
 import com.aozijx.passly.data.repository.VaultTransactionRunner
+import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.repository.entry.internal.EntryActivityHelper
 import com.aozijx.passly.data.repository.entry.internal.EntryBlindIndexHelper
 import com.aozijx.passly.data.repository.entry.internal.EntryRevisionHelper
@@ -35,10 +36,11 @@ class CreateEntryExecutor @Inject constructor(
     private val blindIndexHelper: EntryBlindIndexHelper,
     private val snapshotHelper: EntryRevisionHelper,
     private val activityHelper: EntryActivityHelper,
-    private val clock: Clock
+    private val clock: Clock,
+    private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
-    suspend fun execute(entry: EntryAggregate): AppResult<EntryId> =
-        transactionRunner.write("entry.create") {
+    suspend fun execute(entry: EntryAggregate): AppResult<EntryId> {
+        val result = transactionRunner.write("entry.create") {
             val now = clock.now()
             val entryId = entry.id.ifEmpty { UuidCreator.getTimeOrderedEpoch().toString() }
 
@@ -97,4 +99,7 @@ class CreateEntryExecutor @Inject constructor(
 
             EntryId(entryId)
         }
+        result.onSuccessSuspend { attachmentGarbageCollector.drain() }
+        return result
+    }
 }

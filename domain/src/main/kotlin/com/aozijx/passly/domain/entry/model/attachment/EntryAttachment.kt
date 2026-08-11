@@ -2,12 +2,13 @@ package com.aozijx.passly.domain.entry.model.attachment
 
 data class EntryAttachment(
     val attachmentId: String,
-    val entryId: String,
+    val entryId: String?,
     val fileName: String,
     val fileSize: Long,
     val mimeType: String?,
     val status: AttachmentStatus,
-    val owner: String = "",
+    val stagingOwnerId: String? = null,
+    val displayOrder: Int = 0,
     val createdAt: Long = System.currentTimeMillis()
 )
 

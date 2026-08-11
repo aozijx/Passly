@@ -7,6 +7,7 @@ import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
 import com.aozijx.passly.data.mapper.search.toLookupFields
 import com.aozijx.passly.data.repository.VaultTransactionRunner
+import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.repository.entry.internal.EntryActivityHelper
 import com.aozijx.passly.data.repository.entry.internal.EntryBlindIndexHelper
 import com.aozijx.passly.data.repository.entry.internal.EntryRevisionHelper
@@ -38,13 +39,15 @@ class UpdateEntryExecutor @Inject constructor(
     private val blindIndexHelper: EntryBlindIndexHelper,
     private val snapshotHelper: EntryRevisionHelper,
     private val activityHelper: EntryActivityHelper,
-    private val clock: Clock
+    private val clock: Clock,
+    private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
     suspend fun execute(
         id: String,
         expectedVersion: Int,
         changes: EntryChanges
-    ): AppResult<Unit> = transactionRunner.write("entry.update") {
+    ): AppResult<Unit> {
+        val result = transactionRunner.write("entry.update") {
         val metaEntity = entryQueryDao().getById(id)
             ?: throw NotFound()
         val oldSummary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
@@ -119,5 +122,8 @@ class UpdateEntryExecutor @Inject constructor(
         if (sensitiveValuesChanged) {
             activityHelper.recordActivity(this, id, ActivityType.SENSITIVE_CHANGE, now)
         }
+        }
+        result.onSuccessSuspend { attachmentGarbageCollector.drain() }
+        return result
     }
 }

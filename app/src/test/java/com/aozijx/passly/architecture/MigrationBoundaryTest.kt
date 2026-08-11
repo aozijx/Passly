@@ -2331,7 +2331,7 @@ class MigrationBoundaryTest {
         assertTrue(
             "Revision helper must capture links, attachment refs and existing high-field ciphertext",
             "entryLinkQueryDao().getByEntryId" in helper &&
-                    "entryAttachmentQueryDao().getByEntryId" in helper &&
+                    "attachmentRefQueryDao().getCommittedByEntryId" in helper &&
                     "sensitiveFieldQueryDao().getFields" in helper
         )
         assertTrue(
@@ -2341,8 +2341,8 @@ class MigrationBoundaryTest {
         )
         assertTrue(
             "Revision storage must separate regular encrypted snapshot from high-field ciphertexts",
-            "regularSnapshotBlob" in revisionEntity &&
-                    "sensitiveFieldsSnapshotBlob" in revisionEntity
+            "entryContentCipher" in revisionEntity &&
+                    "sensitiveFieldCipherSet" in revisionEntity
         )
         assertTrue("Each entry must retain at most 50 revisions", "REVISION_LIMIT = 50" in helper)
 

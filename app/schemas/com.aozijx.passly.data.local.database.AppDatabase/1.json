@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "1808a5076c3d675c6206e7986481a1d7",
+    "identityHash": "4ce47a32165e8af44e9218eeb1f36097",
     "entities": [
       {
         "tableName": "entries",
@@ -316,7 +316,7 @@
       },
       {
         "tableName": "entry_revisions",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`revisionId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `version` INTEGER NOT NULL, `regularSnapshotBlob` BLOB NOT NULL, `sensitiveFieldsSnapshotBlob` BLOB NOT NULL, `changeType` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`revisionId`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`revisionId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `version` INTEGER NOT NULL, `entryContentCipher` BLOB NOT NULL, `sensitiveFieldCipherSet` BLOB NOT NULL, `changeType` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`revisionId`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "revisionId",
@@ -337,14 +337,14 @@
             "notNull": true
           },
           {
-            "fieldPath": "regularSnapshotBlob",
-            "columnName": "regularSnapshotBlob",
+            "fieldPath": "entryContentCipher",
+            "columnName": "entryContentCipher",
             "affinity": "BLOB",
             "notNull": true
           },
           {
-            "fieldPath": "sensitiveFieldsSnapshotBlob",
-            "columnName": "sensitiveFieldsSnapshotBlob",
+            "fieldPath": "sensitiveFieldCipherSet",
+            "columnName": "sensitiveFieldCipherSet",
             "affinity": "BLOB",
             "notNull": true
           },
@@ -489,24 +489,12 @@
         ]
       },
       {
-        "tableName": "entry_attachments",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`attachmentId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `fileName` TEXT NOT NULL, `fileSize` INTEGER NOT NULL, `mimeType` TEXT, `status` TEXT NOT NULL, `owner` TEXT NOT NULL, `encryptedBlob` BLOB NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`attachmentId`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "tableName": "attachment_resources",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`resourceId` TEXT NOT NULL, `fileSize` INTEGER NOT NULL, `lifecycleState` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`resourceId`))",
         "fields": [
           {
-            "fieldPath": "attachmentId",
-            "columnName": "attachmentId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "entryId",
-            "columnName": "entryId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "fileName",
-            "columnName": "fileName",
+            "fieldPath": "resourceId",
+            "columnName": "resourceId",
             "affinity": "TEXT",
             "notNull": true
           },
@@ -517,26 +505,72 @@
             "notNull": true
           },
           {
+            "fieldPath": "lifecycleState",
+            "columnName": "lifecycleState",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "resourceId"
+          ]
+        }
+      },
+      {
+        "tableName": "attachment_refs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`attachmentId` TEXT NOT NULL, `resourceId` TEXT NOT NULL, `entryId` TEXT, `stagingOwnerId` TEXT, `fileName` TEXT NOT NULL, `mimeType` TEXT, `displayOrder` INTEGER NOT NULL, `status` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`attachmentId`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`resourceId`) REFERENCES `attachment_resources`(`resourceId`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "attachmentId",
+            "columnName": "attachmentId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resourceId",
+            "columnName": "resourceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entryId",
+            "columnName": "entryId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "stagingOwnerId",
+            "columnName": "stagingOwnerId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fileName",
+            "columnName": "fileName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
             "fieldPath": "mimeType",
             "columnName": "mimeType",
             "affinity": "TEXT"
           },
           {
+            "fieldPath": "displayOrder",
+            "columnName": "displayOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
             "fieldPath": "status",
             "columnName": "status",
             "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "owner",
-            "columnName": "owner",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "encryptedBlob",
-            "columnName": "encryptedBlob",
-            "affinity": "BLOB",
             "notNull": true
           },
           {
@@ -554,22 +588,40 @@
         },
         "indices": [
           {
-            "name": "index_entry_attachments_entryId",
+            "name": "index_attachment_refs_entryId",
             "unique": false,
             "columnNames": [
               "entryId"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_entry_attachments_entryId` ON `${TABLE_NAME}` (`entryId`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_attachment_refs_entryId` ON `${TABLE_NAME}` (`entryId`)"
           },
           {
-            "name": "index_entry_attachments_status",
+            "name": "index_attachment_refs_resourceId",
+            "unique": false,
+            "columnNames": [
+              "resourceId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_attachment_refs_resourceId` ON `${TABLE_NAME}` (`resourceId`)"
+          },
+          {
+            "name": "index_attachment_refs_status",
             "unique": false,
             "columnNames": [
               "status"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_entry_attachments_status` ON `${TABLE_NAME}` (`status`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_attachment_refs_status` ON `${TABLE_NAME}` (`status`)"
+          },
+          {
+            "name": "index_attachment_refs_stagingOwnerId",
+            "unique": false,
+            "columnNames": [
+              "stagingOwnerId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_attachment_refs_stagingOwnerId` ON `${TABLE_NAME}` (`stagingOwnerId`)"
           }
         ],
         "foreignKeys": [
@@ -582,6 +634,165 @@
             ],
             "referencedColumns": [
               "entryId"
+            ]
+          },
+          {
+            "table": "attachment_resources",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "resourceId"
+            ],
+            "referencedColumns": [
+              "resourceId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "revision_attachment_refs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`revisionId` TEXT NOT NULL, `attachmentId` TEXT NOT NULL, `resourceId` TEXT NOT NULL, `fileName` TEXT NOT NULL, `mimeType` TEXT, `displayOrder` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`revisionId`, `attachmentId`), FOREIGN KEY(`revisionId`) REFERENCES `entry_revisions`(`revisionId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`resourceId`) REFERENCES `attachment_resources`(`resourceId`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "revisionId",
+            "columnName": "revisionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attachmentId",
+            "columnName": "attachmentId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resourceId",
+            "columnName": "resourceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fileName",
+            "columnName": "fileName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mimeType",
+            "columnName": "mimeType",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "displayOrder",
+            "columnName": "displayOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "revisionId",
+            "attachmentId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_revision_attachment_refs_resourceId",
+            "unique": false,
+            "columnNames": [
+              "resourceId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_revision_attachment_refs_resourceId` ON `${TABLE_NAME}` (`resourceId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "entry_revisions",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "revisionId"
+            ],
+            "referencedColumns": [
+              "revisionId"
+            ]
+          },
+          {
+            "table": "attachment_resources",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "resourceId"
+            ],
+            "referencedColumns": [
+              "resourceId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "attachment_gc_queue",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`resourceId` TEXT NOT NULL, `enqueuedAt` INTEGER NOT NULL, `attemptCount` INTEGER NOT NULL, `lastAttemptAt` INTEGER, PRIMARY KEY(`resourceId`), FOREIGN KEY(`resourceId`) REFERENCES `attachment_resources`(`resourceId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "resourceId",
+            "columnName": "resourceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enqueuedAt",
+            "columnName": "enqueuedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attemptCount",
+            "columnName": "attemptCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastAttemptAt",
+            "columnName": "lastAttemptAt",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "resourceId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_attachment_gc_queue_enqueuedAt",
+            "unique": false,
+            "columnNames": [
+              "enqueuedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_attachment_gc_queue_enqueuedAt` ON `${TABLE_NAME}` (`enqueuedAt`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "attachment_resources",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "resourceId"
+            ],
+            "referencedColumns": [
+              "resourceId"
             ]
           }
         ]
@@ -664,100 +875,11 @@
             ]
           }
         ]
-      },
-      {
-        "tableName": "entry_drafts",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`draftId` TEXT NOT NULL, `entryId` TEXT, `draftBlob` BLOB NOT NULL, `status` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`draftId`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
-        "fields": [
-          {
-            "fieldPath": "draftId",
-            "columnName": "draftId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "entryId",
-            "columnName": "entryId",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "draftBlob",
-            "columnName": "draftBlob",
-            "affinity": "BLOB",
-            "notNull": true
-          },
-          {
-            "fieldPath": "status",
-            "columnName": "status",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "createdAt",
-            "columnName": "createdAt",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "updatedAt",
-            "columnName": "updatedAt",
-            "affinity": "INTEGER",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "draftId"
-          ]
-        },
-        "indices": [
-          {
-            "name": "index_entry_drafts_entryId",
-            "unique": false,
-            "columnNames": [
-              "entryId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_entry_drafts_entryId` ON `${TABLE_NAME}` (`entryId`)"
-          },
-          {
-            "name": "index_entry_drafts_status",
-            "unique": false,
-            "columnNames": [
-              "status"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_entry_drafts_status` ON `${TABLE_NAME}` (`status`)"
-          },
-          {
-            "name": "index_entry_drafts_updatedAt",
-            "unique": false,
-            "columnNames": [
-              "updatedAt"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_entry_drafts_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
-          }
-        ],
-        "foreignKeys": [
-          {
-            "table": "entries",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "entryId"
-            ],
-            "referencedColumns": [
-              "entryId"
-            ]
-          }
-        ]
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1808a5076c3d675c6206e7986481a1d7')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4ce47a32165e8af44e9218eeb1f36097')"
     ]
   }
 }

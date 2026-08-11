@@ -4,6 +4,7 @@ import android.content.Context
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.platform.VaultResourcePaths
 import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -24,37 +25,28 @@ data class DeletedEntryResources(
  */
 @Singleton
 class EntryResourceCleaner @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
-    private val attachmentRoot: File
-        get() = VaultResourcePaths.attachmentDir(context)
-
     private val imageRoot: File
         get() = VaultResourcePaths.vaultImagesDir(context)
 
-    suspend fun clean(resources: Collection<DeletedEntryResources>) = withContext(Dispatchers.IO) {
-        resources
-            .distinctBy(DeletedEntryResources::entryId)
-            .forEach { resource ->
-                runCatching {
-                    deleteEntryAttachments(resource.entryId)
-                    deleteCustomIcon(resource.customIconPath)
-                }.onFailure { error ->
-                    AppTelemetry.w(
-                        EventCategory.FILE_IO,
-                        "trash.resource_cleanup_failed",
-                        throwable = error
-                    )
+    suspend fun clean(resources: Collection<DeletedEntryResources>) {
+        attachmentGarbageCollector.drain()
+        withContext(Dispatchers.IO) {
+            resources
+                .distinctBy(DeletedEntryResources::entryId)
+                .forEach { resource ->
+                    runCatching {
+                        deleteCustomIcon(resource.customIconPath)
+                    }.onFailure { error ->
+                        AppTelemetry.w(
+                            EventCategory.FILE_IO,
+                            "trash.resource_cleanup_failed",
+                            throwable = error
+                        )
+                    }
                 }
-            }
-    }
-
-    private fun deleteEntryAttachments(entryId: String) {
-        val root = attachmentRoot.canonicalFile
-        val target = File(root, entryId).canonicalFile
-        require(target.parentFile == root) { "Invalid attachment cleanup target" }
-        if (target.exists()) {
-            require(target.deleteRecursively()) { "Unable to delete attachment directory" }
         }
     }
 

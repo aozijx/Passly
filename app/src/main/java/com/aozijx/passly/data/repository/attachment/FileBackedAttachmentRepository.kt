@@ -1,153 +1,169 @@
 package com.aozijx.passly.data.repository.attachment
 
-import android.content.Context
 import com.aozijx.passly.core.error.model.SessionModeRestricted
-import com.aozijx.passly.core.platform.VaultResourcePaths
 import com.aozijx.passly.core.session.UnifiedSessionManager
-import com.aozijx.passly.data.crypto.AadProvider
-import com.aozijx.passly.data.crypto.AttachmentCipher
-import com.aozijx.passly.data.mapper.attachment.AttachmentMapper
-import com.aozijx.passly.data.model.payload.attachment.AttachmentPayload
+import com.aozijx.passly.data.mapper.attachment.AttachmentRefMapper
+import com.aozijx.passly.data.model.entity.AttachmentResourceEntity
+import com.aozijx.passly.data.model.entity.AttachmentResourceState
+import com.aozijx.passly.data.repository.entry.internal.EntryRevisionHelper
 import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.attachment.EntryAttachment
 import com.aozijx.passly.domain.entry.repository.AttachmentRepository
-import com.aozijx.passly.security.crypto.FieldEncryptor
-import dagger.hilt.android.qualifiers.ApplicationContext
+import com.aozijx.passly.security.crypto.AttachmentContentCrypto
 import java.io.File
 import java.io.FileOutputStream
-import java.security.MessageDigest
-import java.util.Base64
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * 附件 Repository 实现。
- *
- * 元数据（文件名、MIME 等）作为明文列存储，无需解密即可列表查询；
- * 加密元数据（加密文件路径 + SHA-256）在 [AttachmentPayload] 中序列化后
- * 经 [AttachmentCipher] 加密写入 [EntryAttachmentEntity.encryptedBlob]。
- * 文件内容经 [FieldEncryptor] 加密后落盘。
- *
- * ## 文件存储目录
- * `{filesDir}/attachments/{entryId}/{attachmentId}.enc`
- *
- * ## 哈希验证
- * 保存时计算原始内容的 SHA-256，读取时解密后重算比对。
- */
 @Singleton
 class FileBackedAttachmentRepository @Inject constructor(
-    @param:ApplicationContext private val context: Context,
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: SecureSessionAccessState,
-    private val fieldEncryptor: FieldEncryptor
+    private val contentCrypto: AttachmentContentCrypto,
+    private val garbageCollector: AttachmentResourceGarbageCollector,
+    private val revisionHelper: EntryRevisionHelper,
 ) : AttachmentRepository {
 
-    /** 附件文件根目录 */
-    private val attachmentsDir: File
-        get() = VaultResourcePaths.attachmentDir(context)
-
     override suspend fun getAttachments(entryId: String): List<EntryAttachment> =
-        if (!sessionState.hasFullSecureSessionAccess()) {
-            emptyList()
-        } else {
+        if (!sessionState.hasFullSecureSessionAccess()) emptyList() else {
+            garbageCollector.drain()
             sessionManager.query {
-                entryAttachmentQueryDao().getByEntryId(entryId)
-                    .map { AttachmentMapper.toDomain(it) }
+            attachmentRefQueryDao().getCommittedByEntryId(entryId).map { ref ->
+                val resource = requireNotNull(attachmentResourceDao().getById(ref.resourceId))
+                AttachmentRefMapper.toDomain(ref, resource.fileSize)
+            }
             }
         }
 
-    override suspend fun getPendingAttachments(draftId: String): List<EntryAttachment> =
-        if (!sessionState.hasFullSecureSessionAccess()) {
-            emptyList()
-        } else {
+    override suspend fun getPendingAttachments(stagingOwnerId: String): List<EntryAttachment> =
+        if (!sessionState.hasFullSecureSessionAccess()) emptyList() else {
+            garbageCollector.drain()
             sessionManager.query {
-                entryAttachmentQueryDao().getPendingByOwner(draftId)
-                    .map { AttachmentMapper.toDomain(it) }
+            attachmentRefQueryDao().getPendingByOwner(stagingOwnerId).map { ref ->
+                val resource = requireNotNull(attachmentResourceDao().getById(ref.resourceId))
+                AttachmentRefMapper.toDomain(ref, resource.fileSize)
+            }
             }
         }
 
     override suspend fun saveAttachment(
-        entryId: String,
+        entryId: String?,
         attachment: EntryAttachment,
-        content: ByteArray
+        content: ByteArray,
     ) {
         requireFullSecureSessionAccess()
-        sessionManager.transaction {
-            val now = System.currentTimeMillis()
-            val attachmentId = attachment.attachmentId
-
-            // 1. 准备加密内容；先完成 DB 严格插入，避免 ID 冲突覆盖已有文件。
-            val sha256Hex = sha256Hex(content)
-            val encryptedContent = fieldEncryptor.encrypt(
-                Base64.getEncoder().encodeToString(content),
-                AadProvider.attachmentContent(entryId, attachmentId)
-            )
-            val file = resolveFile(entryId, attachmentId)
-
-            try {
-                // 2. 构建加密元数据（AttachmentPayload → encryptedBlob）
-                val payload = AttachmentPayload(
-                    attachmentId = attachmentId,
-                    fileName = attachment.fileName,
-                    mimeType = attachment.mimeType ?: "",
-                    fileSize = attachment.fileSize,
-                    encryptedPath = "${entryId}/${attachmentId}.enc",
-                    sha256 = sha256Hex,
-                    createdAt = now
-                )
-                val encryptedBlob =
-                    AttachmentCipher.encrypt(payload, entryId, attachmentId, fieldEncryptor)
-
-                // 3. 写入 DB
-                val entity = AttachmentMapper.toEntity(
-                    attachment.copy(createdAt = now),
-                    encryptedBlob
-                )
-                entryAttachmentCommandDao().insertStrict(entity)
-                if (entity.status == AttachmentStatus.COMMITTED.name) {
-                    entryCommandDao().addCapability(entryId, EntryCapabilityFlags.HAS_ATTACHMENTS)
+        val normalized = attachment.copy(
+            entryId = entryId,
+            fileSize = content.size.toLong(),
+            createdAt = System.currentTimeMillis(),
+        )
+        validateRef(normalized)
+        garbageCollector.withMutationLock {
+            val resourceId = contentCrypto.contentId(content)
+            val existing = sessionManager.query { attachmentResourceDao().getById(resourceId) }
+            require(existing == null || existing.fileSize == content.size.toLong()) {
+                "Attachment keyed content ID collision"
+            }
+            val file = garbageCollector.resourceFile(resourceId)
+            if (existing == null || !file.isFile) {
+                val encrypted = contentCrypto.encrypt(content, resourceId)
+                try {
+                    writeAtomically(file, encrypted)
+                } finally {
+                    encrypted.fill(0)
                 }
-
-                // 4. 最后原子替换文件；失败会抛出并回滚 Room 事务。
-                writeAtomically(file, encryptedContent)
-            } finally {
-                encryptedContent.fill(0)
+            }
+            try {
+                sessionManager.transaction {
+                    if (existing == null) {
+                        attachmentResourceDao().insertStrict(
+                            AttachmentResourceEntity(
+                                resourceId = resourceId,
+                                fileSize = content.size.toLong(),
+                                createdAt = normalized.createdAt,
+                            )
+                        )
+                    } else if (existing.lifecycleState == AttachmentResourceState.PENDING_GC) {
+                        garbageCollector.reactivateInTransaction(this, resourceId)
+                    }
+                    attachmentRefCommandDao().insertStrict(
+                        AttachmentRefMapper.toEntity(normalized, resourceId)
+                    )
+                    if (normalized.status == AttachmentStatus.COMMITTED) {
+                        val committedEntryId = requireNotNull(normalized.entryId)
+                        entryCommandDao().addCapability(committedEntryId, EntryCapabilityFlags.HAS_ATTACHMENTS)
+                        revisionHelper.snapshotCurrent(this, committedEntryId, normalized.createdAt)
+                    }
+                }
+            } catch (error: Throwable) {
+                if (existing == null) runCatching { file.delete() }
+                throw error
             }
         }
+        garbageCollector.drain()
     }
 
     override suspend fun deleteAttachment(attachmentId: String) {
         requireFullSecureSessionAccess()
         sessionManager.transaction {
-            // 先查实体获取路径
-            val entity = entryAttachmentQueryDao().getById(attachmentId) ?: return@transaction
-            entryAttachmentCommandDao().deleteById(attachmentId)
-            if (
-                entity.status == AttachmentStatus.COMMITTED.name &&
-                entryAttachmentQueryDao().countCommittedByEntryId(entity.entryId) == 0
-            ) {
-                entryCommandDao().retainCapabilities(
-                    entity.entryId,
-                    EntryCapabilityFlags.HAS_ATTACHMENTS.inv()
-                )
+            val ref = attachmentRefQueryDao().getById(attachmentId) ?: return@transaction
+            attachmentRefCommandDao().deleteById(attachmentId)
+            if (ref.status == AttachmentStatus.COMMITTED.name) {
+                val entryId = requireNotNull(ref.entryId)
+                if (attachmentRefQueryDao().countCommittedByEntryId(entryId) == 0) {
+                    entryCommandDao().retainCapabilities(entryId, EntryCapabilityFlags.HAS_ATTACHMENTS.inv())
+                }
+                revisionHelper.snapshotCurrent(this, entryId, System.currentTimeMillis())
             }
-
-            // 删除对应磁盘文件
-            val file = resolveFile(entity.entryId, attachmentId)
-            if (file.exists()) file.delete()
+            garbageCollector.scheduleInTransaction(this)
         }
+        garbageCollector.drain()
     }
 
-    // ======== 内部工具 ========
+    override suspend fun commitPendingAttachments(stagingOwnerId: String, entryId: String) {
+        requireFullSecureSessionAccess()
+        require(stagingOwnerId.isNotBlank() && entryId.isNotBlank())
+        sessionManager.transaction {
+            check(entryQueryDao().exists(entryId)) { "Attachment target entry does not exist" }
+            val pendingCount = attachmentRefQueryDao().getPendingByOwner(stagingOwnerId).size
+            if (pendingCount == 0) return@transaction
+            check(attachmentRefCommandDao().commitByOwner(stagingOwnerId, entryId) == pendingCount)
+            entryCommandDao().addCapability(entryId, EntryCapabilityFlags.HAS_ATTACHMENTS)
+            revisionHelper.snapshotCurrent(this, entryId, System.currentTimeMillis())
+        }
+        garbageCollector.drain()
+    }
 
-    private fun resolveFile(entryId: String, attachmentId: String): File =
-        File(attachmentsDir, "${entryId}/${attachmentId}.enc")
+    override suspend fun discardPendingAttachments(stagingOwnerId: String) {
+        requireFullSecureSessionAccess()
+        require(stagingOwnerId.isNotBlank())
+        sessionManager.transaction {
+            attachmentRefCommandDao().deletePendingByOwner(stagingOwnerId)
+            garbageCollector.scheduleInTransaction(this)
+        }
+        garbageCollector.drain()
+    }
+
+    private fun validateRef(attachment: EntryAttachment) {
+        when (attachment.status) {
+            AttachmentStatus.PENDING -> {
+                require(attachment.entryId == null) { "Pending attachment cannot reference an entry" }
+                require(!attachment.stagingOwnerId.isNullOrBlank()) { "Pending attachment needs a staging owner" }
+            }
+            AttachmentStatus.COMMITTED -> {
+                require(!attachment.entryId.isNullOrBlank()) { "Committed attachment needs an entry" }
+                require(attachment.stagingOwnerId == null) { "Committed attachment cannot have a staging owner" }
+            }
+        }
+        require(attachment.fileName.isNotBlank()) { "Attachment filename cannot be blank" }
+        require(attachment.displayOrder >= 0) { "Attachment display order cannot be negative" }
+    }
 
     private fun writeAtomically(target: File, content: ByteArray) {
         val parent = requireNotNull(target.parentFile)
-        require(parent.isDirectory || parent.mkdirs()) { "无法创建附件目录" }
+        require(parent.isDirectory || parent.mkdirs()) { "Unable to create attachment directory" }
         val temporary = File(parent, ".${target.name}.importing")
         try {
             FileOutputStream(temporary).use { output ->
@@ -155,21 +171,14 @@ class FileBackedAttachmentRepository @Inject constructor(
                 output.flush()
                 output.fd.sync()
             }
-            if (target.exists()) require(target.delete()) { "无法替换已有附件文件" }
-            require(temporary.renameTo(target)) { "无法提交附件文件" }
+            if (target.exists()) require(target.delete()) { "Unable to replace attachment content" }
+            require(temporary.renameTo(target)) { "Unable to commit attachment content" }
         } finally {
             temporary.delete()
         }
     }
 
-    private fun sha256Hex(data: ByteArray): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        return digest.digest(data).joinToString("") { "%02x".format(it) }
-    }
-
     private fun requireFullSecureSessionAccess() {
-        if (!sessionState.hasFullSecureSessionAccess()) {
-            throw SessionModeRestricted()
-        }
+        if (!sessionState.hasFullSecureSessionAccess()) throw SessionModeRestricted()
     }
 }

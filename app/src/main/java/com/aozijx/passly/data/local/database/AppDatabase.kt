@@ -8,8 +8,11 @@ import com.aozijx.passly.core.error.boundary.DatabaseException
 import com.aozijx.passly.data.local.dao.activity.EntryActivityAnalyticsDao
 import com.aozijx.passly.data.local.dao.activity.EntryActivityCommandDao
 import com.aozijx.passly.data.local.dao.activity.EntryActivityQueryDao
-import com.aozijx.passly.data.local.dao.attachment.EntryAttachmentCommandDao
-import com.aozijx.passly.data.local.dao.attachment.EntryAttachmentQueryDao
+import com.aozijx.passly.data.local.dao.attachment.AttachmentRefCommandDao
+import com.aozijx.passly.data.local.dao.attachment.AttachmentRefQueryDao
+import com.aozijx.passly.data.local.dao.attachment.AttachmentResourceDao
+import com.aozijx.passly.data.local.dao.attachment.AttachmentGcQueueDao
+import com.aozijx.passly.data.local.dao.attachment.RevisionAttachmentRefDao
 import com.aozijx.passly.data.local.dao.entry.EntryCommandDao
 import com.aozijx.passly.data.local.dao.entry.EntryQueryDao
 import com.aozijx.passly.data.local.dao.entry.EntrySecretCommandDao
@@ -28,12 +31,14 @@ import com.aozijx.passly.data.local.database.converter.EntryRelationTypeConverte
 import com.aozijx.passly.data.local.database.converter.EntryTypeConverter
 import com.aozijx.passly.data.local.database.converter.LookupFieldConverter
 import com.aozijx.passly.data.model.entity.EntryActivityEntity
-import com.aozijx.passly.data.model.entity.EntryAttachmentEntity
+import com.aozijx.passly.data.model.entity.AttachmentResourceEntity
+import com.aozijx.passly.data.model.entity.AttachmentRefEntity
+import com.aozijx.passly.data.model.entity.AttachmentGcQueueEntity
 import com.aozijx.passly.data.model.entity.EntryLinkEntity
 import com.aozijx.passly.data.model.entity.EntrySensitiveFieldEntity
-import com.aozijx.passly.data.model.entity.EntryDraftEntity
 import com.aozijx.passly.data.model.entity.EntryEntity
 import com.aozijx.passly.data.model.entity.EntryRevisionEntity
+import com.aozijx.passly.data.model.entity.RevisionAttachmentRefEntity
 import com.aozijx.passly.data.model.entity.EntrySecretEntity
 import com.aozijx.passly.data.model.entity.SearchTokenEntity
 
@@ -45,9 +50,11 @@ import com.aozijx.passly.data.model.entity.SearchTokenEntity
         EntryLinkEntity::class,
         EntryRevisionEntity::class,
         EntryActivityEntity::class,
-        EntryAttachmentEntity::class,
-        SearchTokenEntity::class,
-        EntryDraftEntity::class
+        AttachmentResourceEntity::class,
+        AttachmentRefEntity::class,
+        RevisionAttachmentRefEntity::class,
+        AttachmentGcQueueEntity::class,
+        SearchTokenEntity::class
     ],
     version = DatabaseSchema.VERSION,
     exportSchema = BuildConfig.EXPORT_ROOM_SCHEMA
@@ -73,8 +80,11 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun entryActivityQueryDao(): EntryActivityQueryDao
     abstract fun entryActivityCommandDao(): EntryActivityCommandDao
     abstract fun entryActivityAnalyticsDao(): EntryActivityAnalyticsDao
-    abstract fun entryAttachmentQueryDao(): EntryAttachmentQueryDao
-    abstract fun entryAttachmentCommandDao(): EntryAttachmentCommandDao
+    abstract fun attachmentRefQueryDao(): AttachmentRefQueryDao
+    abstract fun attachmentRefCommandDao(): AttachmentRefCommandDao
+    abstract fun attachmentResourceDao(): AttachmentResourceDao
+    abstract fun attachmentGcQueueDao(): AttachmentGcQueueDao
+    abstract fun revisionAttachmentRefDao(): RevisionAttachmentRefDao
     abstract fun searchTokenQueryDao(): SearchTokenQueryDao
     abstract fun searchTokenCommandDao(): SearchTokenCommandDao
     abstract fun vaultMaintenanceDao(): VaultMaintenanceDao
