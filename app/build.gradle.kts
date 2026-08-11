@@ -38,12 +38,12 @@ val hasReleaseSigningConfig = listOf(
 // Android 配置
 android {
     namespace = "com.aozijx.passly"
-    compileSdk = 36
+    compileSdk = libs.versions.androidCompileSdk.get().toInt()
 
     defaultConfig {
         applicationId = "com.aozijx.passly"
-        minSdk = 31
-        targetSdk = 36
+        minSdk = libs.versions.androidMinSdk.get().toInt()
+        targetSdk = libs.versions.androidTargetSdk.get().toInt()
         versionCode = 8
         versionName = "0.3.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -117,7 +117,7 @@ android {
 
 // Kotlin 配置
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(libs.versions.jvmToolchain.get().toInt())
 }
 
 room {
@@ -226,7 +226,7 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:4.33.0"
+        artifact = libs.protobuf.protoc.get().toString()
     }
     generateProtoTasks {
         all().configureEach {

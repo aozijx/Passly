@@ -7,6 +7,10 @@ kotlin = "2.3.20"
 ksp = "2.3.9"
 # Hilt 版本建议与 hilt-navigation-compose 保持库兼容性
 hilt = "2.59.2"
+androidCompileSdk = "36"
+androidMinSdk = "31"
+androidTargetSdk = "36"
+jvmToolchain = "21"
 
 # Android 核心 (Android Core)
 coreKtx = "1.18.0"
@@ -115,6 +119,7 @@ androidx-room-paging = { group = "androidx.room", name = "room-paging", version.
 androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging" }
 androidx-datastore = { module = "androidx.datastore:datastore", version.ref = "datastore" }
 protobuf-javalite = { module = "com.google.protobuf:protobuf-javalite", version.ref = "protobuf-javalite" }
+protobuf-protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf-javalite" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
