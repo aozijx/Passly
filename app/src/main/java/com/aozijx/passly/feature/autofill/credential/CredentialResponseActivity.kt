@@ -47,7 +47,7 @@ class CredentialResponseActivity : AppCompatActivity() {
             viewModel.state.collectLatest { state ->
                 when (state) {
                     is CredentialResponseUiState.Complete -> {
-                if (!resultFinishing.compareAndSet(false, true)) return@collectLatest
+                        if (!resultFinishing.compareAndSet(false, true)) return@collectLatest
                         // PendingIntentHandler requires RESULT_OK for both valid
                         // responses and valid Credential Manager exceptions.
                         setResult(RESULT_OK, state.resultIntent)
@@ -64,16 +64,18 @@ class CredentialResponseActivity : AppCompatActivity() {
         }
 
         when (val action = intent.action) {
-            ModernCredentialService.ACTION_GET_PASSWORD -> viewModel.handlePasswordGet(intent)
+            ModernCredentialService.ACTION_GET_PASSWORD ->
+                viewModel.onIntent(CredentialResponseIntent.PasswordGet(intent))
 
-            ModernCredentialService.ACTION_UNLOCK -> viewModel.handleUnlock(intent)
+            ModernCredentialService.ACTION_UNLOCK ->
+                viewModel.onIntent(CredentialResponseIntent.Unlock(intent))
 
             ModernCredentialService.ACTION_CREATE_PASSWORD ->
-                viewModel.handlePasswordCreate(intent)
+                viewModel.onIntent(CredentialResponseIntent.PasswordCreate(intent))
 
             else -> {
                 AppTelemetry.w(TAG, "Unknown action: $action")
-                viewModel.rejectUnknownAction()
+                viewModel.onIntent(CredentialResponseIntent.UnknownAction)
             }
         }
     }

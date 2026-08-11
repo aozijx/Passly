@@ -638,6 +638,10 @@ class MigrationBoundaryTest {
             "src/main/java/com/aozijx/passly/feature/autofill/credential/" +
                     "CredentialResponseActivity.kt"
         ).readText()
+        val requestParser = File(
+            "src/main/java/com/aozijx/passly/feature/autofill/credential/" +
+                    "CredentialRequestParser.kt"
+        ).readText()
         val pendingIntentFactory = File(
             "src/main/java/com/aozijx/passly/service/autofill/credential/" +
                     "CredentialPendingIntentFactory.kt"
@@ -657,8 +661,10 @@ class MigrationBoundaryTest {
 
         assertTrue(
             "Final get/create phases must trust the system-injected provider request",
-            "retrieveProviderGetCredentialRequest(sourceIntent)" in responseViewModel &&
-                    "retrieveProviderCreateCredentialRequest(sourceIntent)" in responseViewModel &&
+            "CredentialRequestParser.parsePasswordGet" in responseViewModel &&
+                    "CredentialRequestParser.parsePasswordCreate" in responseViewModel &&
+                    "retrieveProviderGetCredentialRequest(sourceIntent)" in requestParser &&
+                    "retrieveProviderCreateCredentialRequest(sourceIntent)" in requestParser &&
                     "EXTRA_PACKAGE_NAME" !in pendingIntentFactory
         )
         assertTrue(
@@ -1693,6 +1699,51 @@ class MigrationBoundaryTest {
         assertTrue(
             "CreateEntry access dependency must use secure-session semantics",
             "secureSessionAccessState" in viewModel && "vaultAccessState" !in viewModel,
+        )
+    }
+
+    @Test
+    fun credentialResponseSeparatesIntentParsingStateAndAuthenticationMapping() {
+        val viewModel = File(
+            "src/main/java/com/aozijx/passly/feature/autofill/credential/" +
+                    "CredentialResponseViewModel.kt"
+        ).readText()
+        val activity = File(
+            "src/main/java/com/aozijx/passly/feature/autofill/credential/" +
+                    "CredentialResponseActivity.kt"
+        ).readText()
+        val parser = File(
+            "src/main/java/com/aozijx/passly/feature/autofill/credential/" +
+                    "CredentialRequestParser.kt"
+        ).readText()
+        val reducer = File(
+            "src/main/java/com/aozijx/passly/feature/autofill/credential/" +
+                    "CredentialResponseReducer.kt"
+        ).readText()
+
+        assertTrue(
+            "Credential response Activity must use one typed intent entry point",
+            "fun onIntent(" in viewModel &&
+                    "viewModel.handlePassword" !in activity &&
+                    "viewModel.handleUnlock" !in activity &&
+                    "viewModel.rejectUnknownAction" !in activity,
+        )
+        assertTrue(
+            "Android Credential Manager request parsing belongs in its parser",
+            "CredentialRequestParser.parsePasswordGet" in viewModel &&
+                    "retrieveProviderGetCredentialRequest" !in viewModel &&
+                    "retrieveProviderGetCredentialRequest" in parser,
+        )
+        assertTrue(
+            "Credential response state must transition only through its reducer",
+            "CredentialResponseReducer.reduce" in viewModel &&
+                    Regex("_state\\.value\\s*=").findAll(viewModel).count() == 1,
+        )
+        assertTrue(
+            "Credential response reducer must not own parsing or authentication",
+            "PendingIntentHandler" !in reducer &&
+                    "AuthenticationResult" !in reducer &&
+                    "CredentialResponseUseCases" !in reducer,
         )
     }
 
