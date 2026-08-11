@@ -49,7 +49,13 @@ fun ActivityTimelineSection(activityList: List<EntryActivity>) {
         when (currentFilter) {
             ActivityFilter.ALL -> activityList
             ActivityFilter.ACTIONS -> activityList.filter {
-                it.activityType in listOf(ActivityType.CREATE, ActivityType.UPDATE, ActivityType.DELETE, ActivityType.RESTORE)
+                it.activityType in listOf(
+                    ActivityType.CREATE,
+                    ActivityType.UPDATE,
+                    ActivityType.SENSITIVE_CHANGE,
+                    ActivityType.DELETE,
+                    ActivityType.RESTORE,
+                )
             }
             ActivityFilter.AUTOFILL -> activityList.filter {
                 it.activityType == ActivityType.AUTOFILL
@@ -166,6 +172,7 @@ private fun formatActivityDescription(activity: EntryActivity): String {
     return when (activity.activityType) {
         ActivityType.CREATE -> stringResource(R.string.vault_detail_activity_create)
         ActivityType.UPDATE -> stringResource(R.string.vault_detail_activity_update)
+        ActivityType.SENSITIVE_CHANGE -> stringResource(R.string.vault_detail_activity_sensitive_change)
         ActivityType.DELETE -> stringResource(R.string.vault_detail_activity_delete)
         ActivityType.RESTORE -> stringResource(R.string.vault_detail_activity_restore)
         ActivityType.AUTOFILL -> stringResource(R.string.vault_detail_activity_autofill)
@@ -181,6 +188,7 @@ private fun getActivityColor(type: ActivityType): Color {
     return when (type) {
         ActivityType.CREATE -> Color(0xFF4CAF50)
         ActivityType.UPDATE -> Color(0xFF6750A4)
+        ActivityType.SENSITIVE_CHANGE -> Color(0xFF6750A4)
         ActivityType.DELETE -> Color(0xFFF44336)
         ActivityType.RESTORE -> Color(0xFF2196F3)
         ActivityType.AUTOFILL -> Color(0xFFFF9800)

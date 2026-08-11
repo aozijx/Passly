@@ -25,6 +25,7 @@
     <string name="vault_detail_history_restore">Restore</string>
     <string name="vault_detail_activity_create">Created</string>
     <string name="vault_detail_activity_update">Updated</string>
+    <string name="vault_detail_activity_sensitive_change">Protected fields changed</string>
     <string name="vault_detail_activity_delete">Deleted</string>
     <string name="vault_detail_activity_restore">Restored</string>
     <string name="vault_detail_activity_autofill">Autofilled</string>

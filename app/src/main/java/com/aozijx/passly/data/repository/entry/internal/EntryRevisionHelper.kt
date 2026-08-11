@@ -38,7 +38,8 @@ class EntryRevisionHelper @Inject constructor(
         entryVersion: Int,
         summary: EntrySummary,
         secret: EntrySecret,
-        now: Long
+        now: Long,
+        changeType: RevisionType = RevisionType.VALUE_CHANGED,
     ) {
         with(db) {
             val links = entryLinkQueryDao().getByEntryId(entryId).map { link ->
@@ -69,7 +70,7 @@ class EntryRevisionHelper @Inject constructor(
                     entryId = entryId,
                     regularSnapshotBlob = regularSnapshotBlob,
                     sensitiveFieldsSnapshotBlob = sensitiveRevisionCodec.encode(sensitiveFields),
-                    changeType = RevisionType.VALUE_CHANGED.value,
+                    changeType = changeType.value,
                     createdAt = now
                 )
             )
@@ -82,6 +83,7 @@ class EntryRevisionHelper @Inject constructor(
         db: AppDatabase,
         entryId: String,
         now: Long,
+        changeType: RevisionType = RevisionType.VALUE_CHANGED,
     ) = with(db) {
         val metadata = entryQueryDao().getById(entryId) ?: return@with
         val secretEntity = entrySecretQueryDao().getByEntryId(entryId) ?: return@with
@@ -100,6 +102,7 @@ class EntryRevisionHelper @Inject constructor(
             summary = summary,
             secret = secret,
             now = now,
+            changeType = changeType,
         )
     }
 

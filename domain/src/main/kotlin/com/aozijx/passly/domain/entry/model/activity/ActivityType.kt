@@ -12,6 +12,7 @@ enum class ActivityType(
     IMPORT(isUsage = true),
     CREATE(isVersionChange = true),
     UPDATE(isVersionChange = true),
+    SENSITIVE_CHANGE(isVersionChange = true),
     DELETE(isVersionChange = true),
     RESTORE(isVersionChange = true);
 

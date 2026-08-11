@@ -1,12 +1,10 @@
 package com.aozijx.passly.domain.entry.repository
 
-import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.auth.model.AuthorizationPermit
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
-import com.aozijx.passly.domain.sensitive.SensitiveValue
 
 /**
  * Persistence boundary for high-sensitivity values.
@@ -30,14 +28,4 @@ interface SensitiveFieldRepository {
         permit: AuthorizationPermit,
     ): List<RevealedSensitiveField>
 
-    suspend fun upsert(
-        entryId: EntryId,
-        key: SensitiveFieldKey,
-        value: SensitiveValue
-    ): AppResult<Unit>
-
-    suspend fun delete(
-        entryId: EntryId,
-        key: SensitiveFieldKey
-    ): AppResult<Unit>
 }

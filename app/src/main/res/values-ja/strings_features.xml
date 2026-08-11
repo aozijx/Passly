@@ -25,6 +25,7 @@
     <string name="vault_detail_history_restore">復元</string>
     <string name="vault_detail_activity_create">作成</string>
     <string name="vault_detail_activity_update">更新</string>
+    <string name="vault_detail_activity_sensitive_change">保護フィールドを変更</string>
     <string name="vault_detail_activity_delete">削除</string>
     <string name="vault_detail_activity_restore">復元</string>
     <string name="vault_detail_activity_autofill">自動入力</string>

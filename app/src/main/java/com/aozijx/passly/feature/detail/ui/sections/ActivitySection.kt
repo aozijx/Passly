@@ -144,6 +144,7 @@ private fun ActivityTabContent(activityList: List<EntryActivity>) {
 private fun activityDescription(activity: EntryActivity): String = when (activity.activityType) {
     ActivityType.CREATE -> stringResource(R.string.vault_detail_activity_create)
     ActivityType.UPDATE -> stringResource(R.string.vault_detail_activity_update)
+    ActivityType.SENSITIVE_CHANGE -> stringResource(R.string.vault_detail_activity_sensitive_change)
     ActivityType.DELETE -> stringResource(R.string.vault_detail_activity_delete)
     ActivityType.RESTORE -> stringResource(R.string.vault_detail_activity_restore)
     ActivityType.AUTOFILL -> stringResource(R.string.vault_detail_activity_autofill)

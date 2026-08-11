@@ -31,3 +31,11 @@ data class RevealedSensitiveField(
     val key: SensitiveFieldKey,
     val value: SensitiveValue
 )
+
+/** A decrypted high-sensitivity value from one immutable revision snapshot. */
+data class RevealedRevisionSensitiveField(
+    val revisionId: String,
+    val entryId: EntryId,
+    val key: SensitiveFieldKey,
+    val value: SensitiveValue,
+)

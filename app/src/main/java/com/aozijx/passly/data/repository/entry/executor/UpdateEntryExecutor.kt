@@ -116,5 +116,8 @@ class UpdateEntryExecutor @Inject constructor(
 
         // 5. 活动记录与数据更新处于同一事务，失败时一起回滚。
         activityHelper.recordActivity(this, id, ActivityType.UPDATE, now)
+        if (sensitiveValuesChanged) {
+            activityHelper.recordActivity(this, id, ActivityType.SENSITIVE_CHANGE, now)
+        }
     }
 }

@@ -20,7 +20,26 @@ sealed interface AuthorizationScope {
         }
     }
 
+    data class SensitiveRevision(
+        val entryId: EntryId,
+        val revisionId: String,
+        val fieldKeys: Set<SensitiveFieldKey>,
+        val action: SensitiveRevisionAccessAction,
+        override val purpose: AuthenticationPurpose =
+            AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET,
+    ) : AuthorizationScope {
+        init {
+            require(revisionId.isNotBlank()) { "Sensitive revision ID cannot be blank" }
+            require(fieldKeys.isNotEmpty()) { "Sensitive revision scope cannot be empty" }
+        }
+    }
+
     data class Global(
         override val purpose: AuthenticationPurpose,
     ) : AuthorizationScope
+}
+
+enum class SensitiveRevisionAccessAction {
+    REVEAL,
+    RESTORE,
 }

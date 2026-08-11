@@ -181,6 +181,7 @@
     <string name="vault_detail_history_restore">恢复</string>
     <string name="vault_detail_activity_create">创建</string>
     <string name="vault_detail_activity_update">更新</string>
+    <string name="vault_detail_activity_sensitive_change">高敏字段已更改</string>
     <string name="vault_detail_activity_delete">删除</string>
     <string name="vault_detail_activity_restore">恢复</string>
     <string name="vault_detail_activity_autofill">自动填充</string>

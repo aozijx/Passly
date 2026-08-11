@@ -3,6 +3,7 @@ package com.aozijx.passly.security.authorization
 import com.aozijx.passly.domain.auth.model.AuthorizationPermit
 import com.aozijx.passly.domain.auth.model.AuthorizationScope
 import com.aozijx.passly.domain.auth.model.MonotonicClock
+import com.aozijx.passly.domain.auth.model.SensitiveRevisionAccessAction
 import com.aozijx.passly.domain.authentication.SensitiveAccessAction
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -51,5 +52,26 @@ class AuthorizationPermitRegistryTest {
         registry.revokeAll()
         assertFalse(registry.consume(revoked, scope))
         assertEquals(0, registry.activePermitCount())
+    }
+
+    @Test
+    fun `revision permit is bound to revision fields and action`() {
+        val revisionScope = AuthorizationScope.SensitiveRevision(
+            entryId = EntryId("entry-1"),
+            revisionId = "revision-1",
+            fieldKeys = setOf(SensitiveFieldKey.CARD_CVV),
+            action = SensitiveRevisionAccessAction.REVEAL,
+        )
+        val wrongRevision = revisionScope.copy(revisionId = "revision-2")
+        val permit = registry.issue(revisionScope, ttlMs = 1_000L)
+
+        assertFalse(registry.consume(permit, wrongRevision))
+        assertFalse(registry.consume(permit, revisionScope))
+
+        val restorePermit = registry.issue(
+            revisionScope.copy(action = SensitiveRevisionAccessAction.RESTORE),
+            ttlMs = 1_000L,
+        )
+        assertFalse(registry.consume(restorePermit, revisionScope))
     }
 }

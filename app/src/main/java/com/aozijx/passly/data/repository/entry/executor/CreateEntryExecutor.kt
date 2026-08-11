@@ -86,6 +86,14 @@ class CreateEntryExecutor @Inject constructor(
 
             // 活动记录
             activityHelper.recordActivity(this, entryId, ActivityType.CREATE, now)
+            if (!highSensitivitySecret.isEmpty) {
+                activityHelper.recordActivity(
+                    this,
+                    entryId,
+                    ActivityType.SENSITIVE_CHANGE,
+                    now,
+                )
+            }
 
             EntryId(entryId)
         }
