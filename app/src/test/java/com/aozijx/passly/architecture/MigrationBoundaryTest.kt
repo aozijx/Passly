@@ -1280,6 +1280,45 @@ class MigrationBoundaryTest {
         )
     }
 
+    @Test
+    fun recoveryLifecycleConsumesCodesAndSealsAfterPasswordProvisioning() {
+        val sessionController = File(
+            "src/main/java/com/aozijx/passly/security/authentication/" +
+                    "VaultSessionController.kt"
+        ).readText()
+        val provisioner = File(
+            "src/main/java/com/aozijx/passly/security/authentication/" +
+                    "DefaultAuthenticationMethodProvisioner.kt"
+        ).readText()
+        val manager = File(
+            "src/main/java/com/aozijx/passly/security/authentication/" +
+                    "DefaultAuthenticationManager.kt"
+        ).readText()
+
+        assertTrue(
+            "Recovery success must durably consume the recovery envelope first",
+            "bootstrapStore.delete(EnvelopeType.RECOVERY)" in sessionController &&
+                    "consumeRecoveryEnvelope()" in sessionController &&
+                    sessionController.indexOf("consumeRecoveryEnvelope()") <
+                    sessionController.indexOf("markRecoveryModeInternal()"),
+        )
+        assertTrue(
+            "Recovery consumption failures must seal database and wipe the staged DEK",
+            "sealStagedRecoverySession()" in sessionController &&
+                    "sessionManager.seal()" in sessionController &&
+                    "dekManager.lock()" in sessionController,
+        )
+        assertTrue(
+            "Provisioning a primary password in recovery mode must seal before returning",
+            "finishRecoveryPasswordProvisioning" in provisioner &&
+                    "session.lock(LockReason.RECOVERY_EXIT)" in provisioner,
+        )
+        assertTrue(
+            "Consumed recovery availability must be invalidated in the current process",
+            "copy(recoveryCode = false)" in manager,
+        )
+    }
+
     // ============================================================
     // 阶段 0 — 护栏扩展：跨 Feature 依赖、MVI 入口、文件大小
     // ============================================================

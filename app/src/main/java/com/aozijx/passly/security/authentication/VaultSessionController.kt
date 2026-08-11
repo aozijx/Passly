@@ -12,6 +12,7 @@ import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.security.crypto.DekManager
 import com.aozijx.passly.security.crypto.SensitiveDataKeyManager
 import com.aozijx.passly.security.crypto.UnlockResult
+import com.aozijx.passly.security.envelope.BootstrapStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -33,6 +34,7 @@ class VaultSessionController @Inject constructor(
     private val sensitiveDataKeyManager: SensitiveDataKeyManager,
     private val authorizationPermitRevoker: AuthorizationPermitRevoker,
     private val sessionManager: UnifiedSessionManager,
+    private val bootstrapStore: BootstrapStore,
     idleTimeoutSettings: com.aozijx.passly.domain.settings.repository.IdleTimeoutSettings
 ) : SecureSessionAccessState {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -132,9 +134,10 @@ class VaultSessionController @Inject constructor(
             val error = sessionManager.unlock()
             if (error != null) {
                 _databaseFailure.value = error
-                transition(AuthenticationState.Locked)
+                sealStagedRecoverySession()
                 return@withLock false
             }
+            if (!consumeRecoveryEnvelope()) return@withLock false
             _databaseFailure.value = null
             lockLevel = SecureSessionState.UNLOCKED
             markRecoveryModeInternal()
@@ -226,12 +229,17 @@ class VaultSessionController @Inject constructor(
     ): Boolean = mutex.withLock {
         val dek = ownedDek.consume()
         return try {
-            if (dekManager.isUnlocked.value) {
+            val staged = if (dekManager.isUnlocked.value) {
                 // SOFT_LOCKED: DEK 仍在内存中，无需重新设置
                 true
             } else {
                 dekManager.setDek(type, dek) is UnlockResult.Success
             }
+            if (!staged) return@withLock false
+            if (type == EnvelopeType.RECOVERY && !consumeRecoveryEnvelope()) {
+                return@withLock false
+            }
+            true
         } finally {
             dek.fill(0)
             ownedDek.discard()
@@ -265,6 +273,23 @@ class VaultSessionController @Inject constructor(
 
     fun clearDatabaseFailure() {
         _databaseFailure.value = null
+    }
+
+    private suspend fun consumeRecoveryEnvelope(): Boolean =
+        consumeRecoveryCodeOrRollback(
+            consume = { bootstrapStore.delete(EnvelopeType.RECOVERY) },
+            rollback = { sealStagedRecoverySession() }
+        )
+
+    /** Closes a session whose recovery code could not be durably consumed. */
+    private suspend fun sealStagedRecoverySession() {
+        runCatching { sessionManager.seal() }
+            .onFailure { error ->
+                AppTelemetry.e(EventCategory.DATABASE, "recovery_rollback_seal_failed", throwable = error)
+            }
+        dekManager.lock()
+        lockLevel = SecureSessionState.SEALED
+        transition(AuthenticationState.Locked)
     }
 
     // ============================== 锁定 ==============================

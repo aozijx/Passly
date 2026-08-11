@@ -71,10 +71,13 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
                         KdfAlgorithm.ARGON2ID
                     )
                 }
-                authenticationManager.refreshAvailability()
                 if (wasRecoveryMode) {
-                    session.lock(LockReason.RECOVERY_EXIT)
+                    finishRecoveryPasswordProvisioning(
+                        seal = { session.lock(LockReason.RECOVERY_EXIT) },
+                        refreshAvailability = authenticationManager::refreshAvailability
+                    )
                 } else {
+                    authenticationManager.refreshAvailability()
                     session.markAuthenticated()
                 }
                 AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)

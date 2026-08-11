@@ -223,6 +223,10 @@ class DefaultAuthenticationManager @Inject constructor(
             }
             val result = when (execution) {
                 is MethodExecutionResult.Success -> {
+                    if (execution.method == AuthenticationMethod.RECOVERY_CODE) {
+                        // Successful recovery authentication durably consumes its envelope.
+                        _methods.value = _methods.value.copy(recoveryCode = false)
+                    }
                     if (request.purpose.unlocksSensitiveDataKey()) {
                         sensitiveDataKeyManager.unlockAfterFreshAuthentication()
                     }
