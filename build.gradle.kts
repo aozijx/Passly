@@ -19,7 +19,7 @@ moduleBoundaries {
         ":core:security",
         ":core:telemetry",
         ":core:ui",
-        ":data:database",
+        ":data",
         ":domain",
         ":feature:auth:api",
         ":feature:recovery",
@@ -31,8 +31,10 @@ moduleBoundaries {
     module(":core:telemetry", ":core:common")
     module(":core:ui", ":domain")
     module(
-        ":data:database",
+        ":data",
+        ":core:android",
         ":core:common",
+        ":core:security",
         ":core:telemetry",
         ":domain",
         ":runtime:session",

@@ -1,6 +1,6 @@
 # 设置存储
 
-应用设置使用 Proto DataStore，Schema 位于 `app/src/main/proto/app_settings.proto`。Proto2 presence
+应用设置使用 Proto DataStore，Schema 位于 `data/src/main/proto/app_settings.proto`。Proto2 presence
 与显式默认值共同保证“未写入”不被误解为 Kotlin/Proto 的零值。
 
 ## 加密边界

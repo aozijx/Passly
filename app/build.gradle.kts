@@ -4,12 +4,9 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
-    alias(libs.plugins.protobuf)
 }
-
 // Release 签名优先读取环境变量，其次读取本地未跟踪 keystore.properties
 val keystoreProperties = Properties().apply {
     val keystoreFile = rootProject.file("keystore.properties")
@@ -118,7 +115,7 @@ dependencies {
     implementation(project(":core:security"))
     implementation(project(":core:ui"))
     implementation(project(":core:telemetry"))
-    implementation(project(":data:database"))
+    implementation(project(":data"))
     implementation(project(":domain"))
     implementation(project(":feature:auth:api"))
     implementation(project(":feature:recovery"))
@@ -160,22 +157,13 @@ dependencies {
     // Security & Biometric
     implementation(libs.androidx.biometric)
 
-    // Security KDF
-    implementation(libs.argon2kt)
-
     // Credentials & Autofill
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.androidx.autofill)
 
-    // SQLCipher & SQLite
-    implementation(libs.androidx.sqlite)
-
-    // Data Persistence
-    implementation(libs.androidx.datastore)
-    implementation(libs.protobuf.javalite)
+    // Data-facing UI adapters
     implementation(libs.androidx.paging.compose)
-    implementation(libs.kotlinx.serialization.json)
     implementation(libs.uuid.creator)
 
     // CameraX
@@ -209,23 +197,4 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-}
-
-protobuf {
-    protoc {
-        artifact = libs.protobuf.protoc.get().toString()
-    }
-    generateProtoTasks {
-        all().configureEach {
-            builtins {
-                create("java") {
-                    option("lite")
-                    // AGP 9 registers outputBaseDir as the generated Java source root.
-                    // Avoid an extra /java layer that Gradle can compile but the IDE
-                    // indexes as a mismatched package hierarchy.
-                    outputSubDir = ""
-                }
-            }
-        }
-    }
 }

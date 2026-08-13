@@ -15,13 +15,14 @@ flowchart TB
     DAO --> Room
 ```
 
-`:data:database` 拥有 Room Entity、DAO、converter、Schema、`AppDatabase`、SQLCipher provider
-及数据库强类型 session adapter。`DatabaseProvider` 使用调用方经 `SessionKeySource` 提供的会话密钥创建
+`:data` 统一拥有 Room Entity、DAO、converter、Schema、`AppDatabase`、SQLCipher provider、数据库强类型
+session adapter，以及 Entry、Settings、Backup、Diagnostics 等数据实现。数据库相关代码是该模块内部的一个
+内聚子域。`DatabaseProvider` 使用调用方经 `SessionKeySource` 提供的会话密钥创建
 加密数据库；`UnifiedSessionManager` 延迟打开，并在应用锁定或进入后台时关闭实例。Repository 必须经
 session adapter 访问数据库，不能长期缓存 DAO 或 Room 实例。
 
-数据库模块只依赖 Core、Domain 与 `:runtime:session`，不依赖 App 或 Feature。DEK 的具体实现仍由
-App composition root 绑定到 `SessionKeySource`，因此数据库模块无法反向访问认证或 UI 实现。
+`:data` 只依赖 Core、Domain 与 `:runtime:session`，不依赖 App 或 Feature。App 只负责把该模块中的
+实现绑定到 Domain 契约以及组装 Android 入口。
 
 ## 当前表
 
@@ -39,7 +40,7 @@ App composition root 绑定到 `SessionKeySource`，因此数据库模块无法�
 | `attachment_gc_queue` | 文件删除第二阶段的持久队列 |
 | `entry_search_tokens` | keyed blind-index token；可由当前 Entry 重建 |
 
-Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `data/database/schemas`，本文不复制完整字段声明。
+Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `data/schemas`，本文不复制完整字段声明。
 当前没有独立 `entry_drafts` 表；未提交的编辑表单只存在于 UI 生命周期，只有附件通过
 `PENDING + stagingOwnerId` 支持进程重启后的暂存恢复。
 
@@ -77,7 +78,7 @@ Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `data/database/
   共享不可变内容资源。单 Entry 最多保留 50 条，全库最多保留 1000 条。
 - 软删除保留历史；永久删除和清空回收站在同一事务中删除相关历史，事务失败整体回滚。
 - 附件正文不进入 Room Blob，而是保存为
-  `filesDir/attachments/resources/<resourceId>.enc`。`resourceId` 是 keyed content ID，同时作为
+  `filesDir/attachments/content/<resourceId>.enc`。`resourceId` 是 keyed content ID，同时作为
   附件密文的 AAD；文件名、可空 MIME 和显示顺序属于 ref，不属于内容资源。
 - 只有当前引用和历史引用均为 0 时，资源才进入 `attachment_gc_queue`。数据库事务先标记
   `PENDING_GC`，文件删除成功后再删除资源行；外键 `RESTRICT` 防止仍被引用的内容误删。
@@ -118,8 +119,8 @@ stateDiagram-v2
 
 ## 相关实现
 
-- `data/database/src/main/java/com/aozijx/passly/data/local/database/AppDatabase.kt`
-- `data/database/src/main/java/com/aozijx/passly/data/local/database/DatabaseProvider.kt`
-- `data/database/src/main/java/com/aozijx/passly/data/local/database/session/UnifiedSessionManager.kt`
-- `data/database/src/main/java/com/aozijx/passly/data/model/entity/`
+- `data/src/main/java/com/aozijx/passly/data/local/database/AppDatabase.kt`
+- `data/src/main/java/com/aozijx/passly/data/local/database/DatabaseProvider.kt`
+- `data/src/main/java/com/aozijx/passly/data/local/database/session/UnifiedSessionManager.kt`
+- `data/src/main/java/com/aozijx/passly/data/model/entity/`
 - [ADR-0018](../decisions/ADR-0018-lookup-metadata-strategy.md)

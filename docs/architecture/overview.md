@@ -1,7 +1,7 @@
 # 架构总览
 
-Passly 已开始按依赖方向拆分 Gradle 模块。稳定的通用契约与运行时能力已离开 `app`；尚未完成模块化的
-`data / security / feature` 实现仍暂时位于 `app`，不能把包目录误认为已经存在的模块边界。
+Passly 已开始按依赖方向拆分 Gradle 模块。稳定的通用契约、运行时能力与数据实现已离开 `app`；尚未完成
+模块化的 feature 实现仍暂时位于 `app`，不能把包目录误认为已经存在的模块边界。
 
 当前模块：
 
@@ -12,17 +12,18 @@ Passly 已开始按依赖方向拆分 Gradle 模块。稳定的通用契约与�
 - `:core:security`：敏感值与内存擦除等纯 JVM 安全基础能力；
 - `:core:ui`：不依赖业务 feature 和 app 资源的共享 Compose UI；
 - `:runtime:session`：资源无关的安全会话状态机与租约管理；
+- `:data`：Room、Proto DataStore、Repository、备份、诊断与数据侧安全实现；
 - `:feature:auth:api`：认证 feature 的稳定 Intent/UI state 集成契约；
 - `:feature:recovery:api`：恢复模式 feature 的稳定 Intent/UI state/effect 契约；
 - `:feature:recovery`：恢复模式 UI、ViewModel 和状态归约实现；
-- `:app`：应用壳、导航和 DI 组装，以及尚待拆分的 data/security/feature 实现。
+- `:app`：应用壳、导航和 DI 组装，以及尚待拆分的 feature 实现。
 
 ## 依赖方向
 
 ```mermaid
 flowchart LR
     APP[":app · Shell / navigation / DI"] --> FEATURE["已模块化与待拆分 feature 实现"]
-    APP --> DATA["待拆分 data / security 实现"]
+    APP --> DATA[":data · 数据与持久化实现"]
     FEATURE --> UI[":core:ui"]
     FEATURE --> ANDROID[":core:android"]
     FEATURE --> SECURITY[":core:security"]
@@ -43,7 +44,7 @@ flowchart LR
 `verifyModuleBoundaries` 校验每个真实 Gradle 模块的直接项目依赖白名单和依赖环，并自动接入各模块的
 `check` 生命周期。新增模块必须先声明允许的依赖方向；未加入依赖的实现类型不会进入编译 classpath，因此
 类型可见性继续由 Kotlin/Java 编译器保证。仍位于 `:app` 的包目录不等同于模块边界，其临时包级护栏要在对应
-feature/data 模块迁出后删除。
+feature 模块迁出后删除。
 
 ## 数据流
 
