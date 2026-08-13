@@ -1,8 +1,11 @@
 package com.aozijx.passly.data.backup.source
 
 import android.content.Context
-import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.platform.VaultResourcePaths
+import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.telemetry.EventLevel
+import com.aozijx.passly.core.telemetry.TelemetryReporter
+import com.aozijx.passly.core.telemetry.report
 import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
 import com.aozijx.passly.data.backup.BackupBundleValidator
 import com.aozijx.passly.data.backup.mapper.BackupDocumentMapper
@@ -42,7 +45,7 @@ import javax.inject.Singleton
  * - 重建或标记 Blind Index 待重建
  */
 @Singleton
-class VaultBackupRestorer @Inject constructor(
+internal class VaultBackupRestorer @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val sessionManager: UnifiedSessionManager,
     private val databaseCleaner: VaultDatabaseCleaner,
@@ -52,6 +55,7 @@ class VaultBackupRestorer @Inject constructor(
     private val documentMapper: BackupDocumentMapper,
     private val attachmentContentCrypto: AttachmentContentCrypto,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
+    private val telemetry: TelemetryReporter,
 ) {
 
     suspend fun restore(bundle: BackupBundle, mode: ImportMode) =
@@ -202,8 +206,8 @@ class VaultBackupRestorer @Inject constructor(
                         roots = VaultResourcePaths.resourceDirectories(context),
                         retainedCanonicalPaths = restoredFiles
                     )
-                }.onFailure {
-                    AppTelemetry.w("VaultBackupRestorer", "恢复成功，但旧资源清理未完全完成")
+                }.onFailure { error ->
+                    report("backup.resource_cleanup_failed", error)
                 }
             }
         } catch (error: Throwable) {
@@ -221,12 +225,16 @@ class VaultBackupRestorer @Inject constructor(
                 if (candidate == root) return@candidateLoop
                 if (candidate.isFile && candidate.canonicalPath !in retainedCanonicalPaths) {
                     if (!candidate.delete()) {
-                        AppTelemetry.w("VaultBackupRestorer", "无法删除未引用恢复文件: ${candidate.name}")
+                        report("backup.resource_delete_failed")
                     }
                 } else if (candidate.isDirectory) {
                     candidate.delete()
                 }
             }
         }
+    }
+
+    private fun report(name: String, throwable: Throwable? = null) {
+        telemetry.report(EventLevel.WARN, EventCategory.BACKUP, name, throwable)
     }
 }

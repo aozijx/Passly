@@ -1,6 +1,9 @@
 package com.aozijx.passly.security.crypto
 
-import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.telemetry.EventLevel
+import com.aozijx.passly.core.telemetry.TelemetryReporter
+import com.aozijx.passly.core.telemetry.report
 import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.auth.model.envelope.KdfAlgorithm
 import com.aozijx.passly.domain.auth.model.envelope.KeyEnvelope
@@ -20,12 +23,9 @@ import javax.inject.Singleton
 @Singleton
 class DekManager @Inject constructor(
     private val bootstrapStore: BootstrapStore,
-    private val sessionKeyManager: SessionKeyManager
+    private val sessionKeyManager: SessionKeyManager,
+    private val telemetry: TelemetryReporter
 ) {
-    companion object {
-        private const val TAG = "DekManager"
-    }
-
     private val mutex = Mutex()
 
     @Volatile
@@ -57,7 +57,7 @@ class DekManager @Inject constructor(
                 bootstrapStore.save(
                     EnvelopeCrypto.wrapWithKey(type, dek, wrappingKey, salt, algorithm)
                 )
-                AppTelemetry.i(TAG, "Vault initialized with envelope: ${type.value}")
+                report(EventLevel.INFO, "security.vault_initialized")
                 cacheAndUnlock(dek)
             } finally {
                 MemoryCleaner.wipeByteArray(dek)
@@ -76,7 +76,7 @@ class DekManager @Inject constructor(
             try {
                 bootstrapStore.saveVerificationTag(VerificationTag.create(dek))
                 bootstrapStore.save(EnvelopeCrypto.wrapWithCipher(type, dek, cipher))
-                AppTelemetry.i(TAG, "Vault initialized with cipher envelope: ${type.value}")
+                report(EventLevel.INFO, "security.vault_initialized")
                 cacheAndUnlock(dek)
             } finally {
                 MemoryCleaner.wipeByteArray(dek)
@@ -100,16 +100,16 @@ class DekManager @Inject constructor(
                 } finally {
                     MemoryCleaner.wipeByteArray(dek)
                 }
-                AppTelemetry.i(TAG, "Unlocked via ${type.value}")
+                report(EventLevel.INFO, "security.vault_unlocked")
                 UnlockResult.Success
             } catch (e: javax.crypto.AEADBadTagException) {
-                AppTelemetry.logCryptoException(TAG, "Cipher unlock", e)
+                report(EventLevel.WARN, "security.authentication_failed", e)
                 UnlockResult.Failed(UnlockError.AUTH_FAILED)
             } catch (e: IllegalArgumentException) {
-                AppTelemetry.logCryptoException(TAG, "DEK verification", e)
+                report(EventLevel.ERROR, "security.dek_verification_failed", e)
                 UnlockResult.Failed(UnlockError.DEK_VERIFY_FAILED)
             } catch (e: Exception) {
-                AppTelemetry.logCryptoException(TAG, "Unlock", e)
+                report(EventLevel.ERROR, "security.unlock_failed", e)
                 UnlockResult.Failed(UnlockError.UNKNOWN)
             }
         }
@@ -125,17 +125,17 @@ class DekManager @Inject constructor(
                     VerificationTag.verify(dek, tag, type.value)
                 } else {
                     bootstrapStore.saveVerificationTag(VerificationTag.create(dek))
-                    AppTelemetry.i(TAG, "VerificationTag created (bootstrap: ${type.value})")
+                    report(EventLevel.INFO, "security.verification_tag_created")
                 }
 
                 cacheAndUnlock(dek)
-                AppTelemetry.i(TAG, "Unlocked with DEK via ${type.value}")
+                report(EventLevel.INFO, "security.vault_unlocked")
                 UnlockResult.Success
             } catch (e: IllegalArgumentException) {
-                AppTelemetry.logCryptoException(TAG, "DEK verification", e)
+                report(EventLevel.ERROR, "security.dek_verification_failed", e)
                 UnlockResult.Failed(UnlockError.DEK_VERIFY_FAILED)
             } catch (e: Exception) {
-                AppTelemetry.logCryptoException(TAG, "setDek", e)
+                report(EventLevel.ERROR, "security.dek_install_failed", e)
                 UnlockResult.Failed(UnlockError.UNKNOWN)
             }
         }
@@ -148,7 +148,7 @@ class DekManager @Inject constructor(
                 "DEK not loaded, current: ${current::class.simpleName}"
             }
             bootstrapStore.save(EnvelopeCrypto.wrapWithCipher(type, current.dek, cipher))
-            AppTelemetry.i(TAG, "Envelope re-keyed: ${type.value}")
+            report(EventLevel.INFO, "security.envelope_rekeyed")
         }
     }
 
@@ -166,7 +166,7 @@ class DekManager @Inject constructor(
             bootstrapStore.save(
                 EnvelopeCrypto.wrapWithKey(type, current.dek, wrappingKey, salt, algorithm)
             )
-            AppTelemetry.i(TAG, "Envelope re-keyed with key: ${type.value}")
+            report(EventLevel.INFO, "security.envelope_rekeyed")
         }
     }
 
@@ -197,18 +197,18 @@ class DekManager @Inject constructor(
         mutex.withLock {
             _state = DekState.Locking
             _isUnlocked.value = false
-            AppTelemetry.i(TAG, "Lock initiated")
+            report(EventLevel.INFO, "security.lock_started")
         }
         try {
             lockCallback?.invoke()
         } catch (e: Exception) {
-            AppTelemetry.e(TAG, "Database close failed during lock, continuing", e)
+            report(EventLevel.ERROR, "security.lock_callback_failed", e)
         }
         mutex.withLock {
             wipeCurrentDek()
             sessionKeyManager.clearSessionKey()
             _state = DekState.Locked
-            AppTelemetry.i(TAG, "Lock completed")
+            report(EventLevel.INFO, "security.lock_completed")
         }
     }
 
@@ -216,19 +216,19 @@ class DekManager @Inject constructor(
         mutex.withLock {
             _state = DekState.Deleting
             _isUnlocked.value = false
-            AppTelemetry.i(TAG, "Vault deletion initiated")
+            report(EventLevel.INFO, "security.vault_deletion_started")
         }
         try {
             lockCallback?.invoke()
         } catch (e: Exception) {
-            AppTelemetry.e(TAG, "Database close failed during deletion, continuing", e)
+            report(EventLevel.ERROR, "security.deletion_callback_failed", e)
         }
         mutex.withLock {
             wipeCurrentDek()
             sessionKeyManager.clearSessionKey()
             bootstrapStore.clear()
             _state = DekState.Locked
-            AppTelemetry.i(TAG, "Vault deleted")
+            report(EventLevel.INFO, "security.vault_deleted")
         }
     }
 
@@ -246,5 +246,9 @@ class DekManager @Inject constructor(
             is DekState.Unlocked -> MemoryCleaner.wipeByteArray(s.dek)
             else -> {}
         }
+    }
+
+    private fun report(level: EventLevel, name: String, throwable: Throwable? = null) {
+        telemetry.report(level, EventCategory.SECURITY, name, throwable)
     }
 }

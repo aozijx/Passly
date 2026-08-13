@@ -2,6 +2,8 @@ package com.aozijx.passly.data.diagnostics
 
 import android.content.Context
 import com.aozijx.passly.core.telemetry.EventLevel
+import com.aozijx.passly.core.telemetry.TelemetryFileStore
+import com.aozijx.passly.core.telemetry.TelemetryFileStoreFactory
 import com.aozijx.passly.core.telemetry.TelemetryEvent
 import com.aozijx.passly.data.diagnostics.EncryptedLogFileManager.FileEntry
 import java.io.DataOutputStream
@@ -14,10 +16,13 @@ import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import com.aozijx.passly.data.diagnostics.TelemetryRecordCodec as RecordCodec
+import javax.inject.Inject
+import javax.inject.Singleton
 
 // ============================== 公共类型 ==============================
 
@@ -65,12 +70,12 @@ data class DiagnosticsPage(
 /**
  * 加密日志存储 v1。文件 I/O 委托给 [EncryptedLogFileManager]。
  */
-class EncryptedLogStore(
+internal class EncryptedLogStore(
     context: Context,
     private val loggingEnabledUntil: AtomicLong,
     private val directory: File = File(context.noBackupFilesDir, DIRECTORY_NAME),
     private val emitEnabled: (TelemetryEvent) -> Boolean = { true }
-) {
+) : TelemetryFileStore {
     private val random = SecureRandom()
     private val writeLock = Any()
     private val fileManager = EncryptedLogFileManager(directory, random, writeLock)
@@ -103,7 +108,7 @@ class EncryptedLogStore(
 
     // ============================== 写入 ==============================
 
-    fun write(event: TelemetryEvent) {
+    override fun write(event: TelemetryEvent) {
         if (!emitEnabled(event) || loggingEnabledUntil.get() < System.currentTimeMillis()) return
         try {
             writer.execute {
@@ -123,7 +128,7 @@ class EncryptedLogStore(
         }
     }
 
-    fun crashEmergencyWrite(event: TelemetryEvent, timeoutMs: Long = 200L): Boolean {
+    override fun crashEmergencyWrite(event: TelemetryEvent, timeoutMs: Long): Boolean {
         if (!crashEmergencyClaimed.compareAndSet(false, true)) return false
         val entry =
             synchronized(writeLock) { crashEmergencyEntry?.let { fileManager.copyEntry(it) } }
@@ -284,14 +289,17 @@ class EncryptedLogStore(
         return DiagnosticsPage(events = result, totalRecords = total, nextCursor = nextCursor)
     }
 
+    override fun readEvents(limit: Int): List<TelemetryEvent> =
+        readPage(cursor = null, limit = limit).events
+
     // ============================== 生命周期 ==============================
 
-    fun flush(timeoutMs: Long = 300L): Boolean = runCatching {
+    override fun flush(timeoutMs: Long): Boolean = runCatching {
         writer.submit { }.get(timeoutMs, TimeUnit.MILLISECONDS)
         true
     }.getOrDefault(false)
 
-    fun clear() {
+    override fun clear() {
         flush(500)
         synchronized(writeLock) {
             directory.listFiles()
@@ -302,7 +310,7 @@ class EncryptedLogStore(
         }
     }
 
-    fun close() {
+    override fun close() {
         writer.shutdown()
         runCatching { writer.awaitTermination(500, TimeUnit.MILLISECONDS) }
         synchronized(writeLock) {
@@ -396,4 +404,15 @@ class EncryptedLogStore(
         const val MAX_PAGE_RECORDS = 500
         const val EMERGENCY_QUEUE_FALLBACK_MS = 50L
     }
+}
+
+@Singleton
+internal class EncryptedTelemetryFileStoreFactory @Inject constructor(
+    @param:ApplicationContext private val context: Context
+) : TelemetryFileStoreFactory {
+    override fun create(loggingEnabledUntil: AtomicLong): TelemetryFileStore =
+        EncryptedLogStore(
+            context = context,
+            loggingEnabledUntil = loggingEnabledUntil
+        )
 }

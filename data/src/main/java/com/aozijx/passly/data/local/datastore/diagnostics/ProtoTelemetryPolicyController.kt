@@ -18,7 +18,7 @@ private val Context.diagnosticsDataStore: DataStore<DiagnosticsSettings> by data
 )
 
 @Singleton
-class ProtoTelemetryPolicyController @Inject constructor(
+internal class ProtoTelemetryPolicyController @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) : TelemetryPolicyController {
     override val policies: Flow<TelemetryPolicy> = context.diagnosticsDataStore.data.map {

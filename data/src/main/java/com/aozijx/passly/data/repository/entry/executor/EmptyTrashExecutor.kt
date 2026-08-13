@@ -11,7 +11,7 @@ import javax.inject.Inject
 /**
  * 原子清空回收站中的数据库记录，并在提交后清理对应文件资源。
  */
-class EmptyTrashExecutor @Inject constructor(
+internal class EmptyTrashExecutor @Inject constructor(
     private val transactionRunner: VaultTransactionRunner,
     private val summaryCodec: EntrySummaryCodec,
     private val resourceCleaner: EntryResourceCleaner,

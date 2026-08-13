@@ -1,9 +1,11 @@
 package com.aozijx.passly.data.repository.entry.internal
 
 import android.content.Context
-import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.platform.VaultResourcePaths
 import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.telemetry.EventLevel
+import com.aozijx.passly.core.telemetry.TelemetryReporter
+import com.aozijx.passly.core.telemetry.report
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -24,9 +26,10 @@ data class DeletedEntryResources(
  * 这里只记录结构化诊断事件，不把已经成功的数据库删除伪装成失败。
  */
 @Singleton
-class EntryResourceCleaner @Inject constructor(
+internal class EntryResourceCleaner @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
+    private val telemetry: TelemetryReporter,
 ) {
     private val imageRoot: File
         get() = VaultResourcePaths.vaultImagesDir(context)
@@ -40,10 +43,11 @@ class EntryResourceCleaner @Inject constructor(
                     runCatching {
                         deleteCustomIcon(resource.customIconPath)
                     }.onFailure { error ->
-                        AppTelemetry.w(
+                        telemetry.report(
+                            EventLevel.WARN,
                             EventCategory.FILE_IO,
                             "trash.resource_cleanup_failed",
-                            throwable = error
+                            error
                         )
                     }
                 }

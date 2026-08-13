@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.otp.OtpGenerator
-import com.aozijx.passly.core.platform.VaultDataRefreshNotifier
+import com.aozijx.passly.domain.entry.runtime.EntryDataRefreshNotifier
 import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.entry.model.EntryHeader
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -59,7 +59,7 @@ class VaultViewModel @Inject constructor(
     private val entryCommandRepository: EntryCommandRepository,
     private val faviconRepository: FaviconRepository,
     val entryFieldReader: EntryFieldReader,
-    private val vaultDataRefreshNotifier: VaultDataRefreshNotifier,
+    private val dataRefreshNotifier: EntryDataRefreshNotifier,
     private val sessionStateProvider: SessionStateProvider,
     private val accessPolicy: SecureSessionAccessPolicy
 ) : ViewModel() {
@@ -272,7 +272,7 @@ class VaultViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            vaultDataRefreshNotifier.events.collect {
+            dataRefreshNotifier.events.collect {
                 requestFullReload()
             }
         }

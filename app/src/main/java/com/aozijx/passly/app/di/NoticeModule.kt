@@ -3,11 +3,11 @@ package com.aozijx.passly.app.di
 import com.aozijx.passly.app.message.presentation.AndroidNoticeTextResolver
 import com.aozijx.passly.app.message.runtime.ProcessAppVisibilityProvider
 import com.aozijx.passly.app.message.system.AndroidSystemNotificationGateway
-import com.aozijx.passly.data.notice.DefaultAppNoticeDispatcher
-import com.aozijx.passly.data.notice.DefaultInAppNoticeSink
-import com.aozijx.passly.data.notice.DefaultMessageSettingsSnapshotProvider
-import com.aozijx.passly.data.notice.DefaultNoticeDeduplicator
-import com.aozijx.passly.data.notice.DefaultNoticeRouter
+import com.aozijx.passly.app.message.runtime.DefaultAppNoticeDispatcher
+import com.aozijx.passly.app.message.runtime.DefaultInAppNoticeSink
+import com.aozijx.passly.app.message.runtime.DefaultMessageSettingsSnapshotProvider
+import com.aozijx.passly.app.message.runtime.DefaultNoticeDeduplicator
+import com.aozijx.passly.app.message.runtime.DefaultNoticeRouter
 import com.aozijx.passly.domain.notice.port.AppNoticeDispatcher
 import com.aozijx.passly.domain.notice.port.AppNoticePublisher
 import com.aozijx.passly.domain.notice.port.AppVisibilityProvider

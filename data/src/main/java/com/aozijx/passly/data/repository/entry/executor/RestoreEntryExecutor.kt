@@ -17,7 +17,7 @@ import javax.inject.Inject
  *
  * 使用乐观锁版本校验，原子写入：恢复 + 版本自增 + 盲索引重建 + 活动记录。
  */
-class RestoreEntryExecutor @Inject constructor(
+internal class RestoreEntryExecutor @Inject constructor(
     private val transactionRunner: VaultTransactionRunner,
     private val summaryCodec: EntrySummaryCodec,
     private val blindIndexHelper: EntryBlindIndexHelper,

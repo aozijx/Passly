@@ -35,7 +35,7 @@ import javax.inject.Singleton
  * small matched set and verifies the association against the plaintext request.
  */
 @Singleton
-class CredentialServiceRepositoryImpl @Inject constructor(
+internal class CredentialServiceRepositoryImpl @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: SecureSessionAccessState,
     private val summaryCodec: EntrySummaryCodec,

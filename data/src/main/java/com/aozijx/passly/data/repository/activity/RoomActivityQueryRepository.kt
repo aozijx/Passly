@@ -17,7 +17,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class RoomActivityQueryRepository @Inject constructor(
+internal class RoomActivityQueryRepository @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: SecureSessionAccessState
 ) : ActivityQueryRepository {

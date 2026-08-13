@@ -17,7 +17,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class RoomSensitiveFieldRepository @Inject constructor(
+internal class RoomSensitiveFieldRepository @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: SecureSessionAccessState,
     private val codec: SensitiveFieldCodec,

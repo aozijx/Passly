@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.notice
+package com.aozijx.passly.app.message.runtime
 
 import com.aozijx.passly.domain.notice.model.AppNotice
 import com.aozijx.passly.domain.notice.model.DeliveryPolicy

@@ -31,7 +31,7 @@ import javax.inject.Inject
  * 覆盖所有字段（title, username, password, email, notes, otp, card,
  * ssh, customFields 等），替代原有的多个单字段命令。
  */
-class UpdateEntryExecutor @Inject constructor(
+internal class UpdateEntryExecutor @Inject constructor(
     private val transactionRunner: VaultTransactionRunner,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,

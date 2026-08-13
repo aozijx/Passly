@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.platform
+package com.aozijx.passly.domain.entry.runtime
 
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -12,7 +12,7 @@ import javax.inject.Singleton
  * 例如：清除数据库后通知 [VaultViewModel] 重新查询。
  */
 @Singleton
-class VaultDataRefreshNotifier @Inject constructor() {
+class EntryDataRefreshNotifier @Inject constructor() {
 
     private val _events = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val events = _events.asSharedFlow()

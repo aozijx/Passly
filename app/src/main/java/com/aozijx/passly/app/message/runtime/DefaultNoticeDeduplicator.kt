@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.notice
+package com.aozijx.passly.app.message.runtime
 
 import android.os.SystemClock
 import com.aozijx.passly.domain.notice.model.NoticeCode

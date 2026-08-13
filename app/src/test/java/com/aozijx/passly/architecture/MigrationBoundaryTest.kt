@@ -85,6 +85,52 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun appDoesNotImportDataImplementations() {
+        val offenders = appKotlinRoot.walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .filter { "import com.aozijx.passly.data." in it.readText() }
+            .map { it.relativeTo(appKotlinRoot).path }
+            .toList()
+
+        assertTrue(
+            "App must consume data through Domain/Core contracts: $offenders",
+            offenders.isEmpty()
+        )
+    }
+
+    @Test
+    fun dataModuleContainsOnlyDataOwnedPackages() {
+        val dataRoot = File(projectRoot, "data/src/main/java")
+        val offenders = dataRoot.walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .filterNot { source ->
+                source.useLines { lines ->
+                    lines.firstOrNull { it.startsWith("package ") }
+                        ?.startsWith("package com.aozijx.passly.data") == true
+                }
+            }
+            .map { it.relativeTo(projectRoot).path }
+            .toList()
+
+        assertTrue("Non-data packages inside :data: $offenders", offenders.isEmpty())
+    }
+
+    @Test
+    fun dataModuleDoesNotReExportImplementationDependencies() {
+        val buildFile = File(projectRoot, "data/build.gradle.kts").readText()
+        val reExportedDependencies = Regex("""(?m)^\s*api\(""")
+            .findAll(buildFile)
+            .map { it.value.trim() }
+            .toList()
+
+        assertTrue(
+            "The implementation-only :data module must not re-export dependencies: " +
+                reExportedDependencies,
+            reExportedDependencies.isEmpty()
+        )
+    }
+
+    @Test
     fun vaultFeatureDoesNotDependOnSiblingFeaturesOrInternalBucket() {
         val vaultRoot = File("src/main/java/com/aozijx/passly/feature/vault")
         val siblingFeatureImport = Regex(
@@ -912,7 +958,7 @@ class MigrationBoundaryTest {
             File("src/main/java/com/aozijx/passly/app/permission"),
             File("src/main/java/com/aozijx/passly/app/diagnostics"),
             File("src/main/java/com/aozijx/passly/core/permission"),
-            File(projectRoot, "data/src/main/java/com/aozijx/passly/data/notice"),
+            File("src/main/java/com/aozijx/passly/app/message/runtime"),
             File(projectRoot, "data/src/main/java/com/aozijx/passly/data/diagnostics"),
             File(projectRoot, "domain/src/main/kotlin/com/aozijx/passly/domain/notice")
         )

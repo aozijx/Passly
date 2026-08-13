@@ -14,7 +14,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class BlindIndexRepository @Inject constructor(
+internal class BlindIndexRepository @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: SecureSessionAccessState,
     private val blindIndexer: BlindIndexer

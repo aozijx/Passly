@@ -9,7 +9,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class RoomOtpConfigRepository @Inject constructor(
+internal class RoomOtpConfigRepository @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: SecureSessionAccessState,
     private val secretCodec: EntrySecretCodec

@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.di.repository
+package com.aozijx.passly.data.di
 
 import com.aozijx.passly.data.local.datastore.ProtoDataStoreBootstrapStore
 import com.aozijx.passly.security.envelope.BootstrapStore
@@ -10,7 +10,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class DataModule {
+internal abstract class BootstrapStoreModule {
 
     @Binds
     @Singleton

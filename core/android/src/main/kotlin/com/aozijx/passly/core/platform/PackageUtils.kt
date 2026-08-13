@@ -7,11 +7,12 @@ import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.LruCache
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.graphics.scale
-import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.telemetry.EventLevel
+import com.aozijx.passly.core.telemetry.TelemetryReporter
+import com.aozijx.passly.core.telemetry.report
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -21,7 +22,8 @@ import javax.inject.Singleton
 
 @Singleton
 class PackageUtils @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    private val telemetry: TelemetryReporter
 ) {
     private val packageManager: PackageManager = context.packageManager
 
@@ -30,7 +32,6 @@ class PackageUtils @Inject constructor(
         LruCache<String, AppMetadata>(MAX_METADATA_CACHE_SIZE)
 
     companion object {
-        private const val TAG = "PackageUtils"
         private const val MAX_ICON_CACHE_SIZE = 60
         private const val MAX_METADATA_CACHE_SIZE = 60
         private const val DEFAULT_ICON_SIZE_DP = 48
@@ -52,7 +53,7 @@ class PackageUtils @Inject constructor(
             metadataCache.put(packageName, metadata)
             metadata
         } catch (e: PackageManager.NameNotFoundException) {
-            AppTelemetry.w(TAG, "App not found for package: $packageName", e)
+            report(EventLevel.WARN, "platform.package_not_found", e)
             null
         }
     }
@@ -79,21 +80,21 @@ class PackageUtils @Inject constructor(
             )
     }
 
-    fun loadIcon(packageName: String): ImageBitmap? {
+    fun loadIcon(packageName: String): Bitmap? {
         val cachedBitmap = iconCache.get(packageName)
-        if (cachedBitmap != null) return cachedBitmap.asImageBitmap()
+        if (cachedBitmap != null) return cachedBitmap
 
         return try {
             val appIcon = packageManager.getApplicationIcon(packageName)
             val bitmap = convertDrawableToBitmap(appIcon)
             if (bitmap != null) {
                 iconCache.put(packageName, bitmap)
-                bitmap.asImageBitmap()
+                bitmap
             } else {
                 null
             }
         } catch (e: PackageManager.NameNotFoundException) {
-            AppTelemetry.w(TAG, "Icon not found for package: $packageName", e)
+            report(EventLevel.WARN, "platform.package_icon_not_found", e)
             null
         }
     }
@@ -117,11 +118,15 @@ class PackageUtils @Inject constructor(
                 try {
                     drawable.toBitmap(targetSize, targetSize)
                 } catch (e: Exception) {
-                    AppTelemetry.e(TAG, "Failed to convert drawable to bitmap", e)
+                    report(EventLevel.ERROR, "platform.package_icon_decode_failed", e)
                     null
                 }
             }
         }
+    }
+
+    private fun report(level: EventLevel, name: String, throwable: Throwable? = null) {
+        telemetry.report(level, EventCategory.APPLICATION, name, throwable)
     }
 }
 

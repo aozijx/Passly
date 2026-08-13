@@ -19,7 +19,7 @@ import javax.inject.Singleton
  * Backup encoding and restoration deliberately live outside this class.
  */
 @Singleton
-class BackupExportStorageSupport @Inject constructor(
+internal class BackupExportStorageSupport @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) : BackupStorageSupport {
 

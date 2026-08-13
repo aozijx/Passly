@@ -21,8 +21,8 @@ session adapter，以及 Entry、Settings、Backup、Diagnostics 等数据实现
 加密数据库；`UnifiedSessionManager` 延迟打开，并在应用锁定或进入后台时关闭实例。Repository 必须经
 session adapter 访问数据库，不能长期缓存 DAO 或 Room 实例。
 
-`:data` 只依赖 Core、Domain 与 `:runtime:session`，不依赖 App 或 Feature。App 只负责把该模块中的
-实现绑定到 Domain 契约以及组装 Android 入口。
+`:data` 只依赖 Core、Domain 与 `:runtime:session`，不依赖 App 或 Feature。Repository 与存储实现的
+Hilt binding 由 `:data` 自己拥有；App 只提供会话密钥来源、遥测 reporter 等进程级依赖并组装 Android 入口。
 
 ## 当前表
 

@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.di.repository
+package com.aozijx.passly.data.di
 
 import com.aozijx.passly.data.local.database.maintenance.VaultDatabaseCleaner
 import com.aozijx.passly.data.local.database.maintenance.VaultDatabaseCleanerImpl
@@ -32,7 +32,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class VaultRepositoryModule {
+internal abstract class EntryRepositoryModule {
 
     @Binds
     @Singleton

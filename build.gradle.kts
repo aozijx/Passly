@@ -25,9 +25,9 @@ moduleBoundaries {
         ":feature:recovery",
         ":runtime:session",
     )
-    module(":core:android")
+    module(":core:android", ":core:telemetry")
     module(":core:common")
-    module(":core:security", ":domain")
+    module(":core:security", ":core:common", ":core:telemetry", ":domain")
     module(":core:telemetry", ":core:common")
     module(":core:ui", ":domain")
     module(

@@ -22,7 +22,7 @@ import javax.inject.Singleton
  * 删除一条索引或升级分词算法后，版本不匹配即可自动检测并修复。
  */
 @Singleton
-class BlindIndexMaintenance @Inject constructor(
+internal class BlindIndexMaintenance @Inject constructor(
     private val transactionRunner: VaultTransactionRunner,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,

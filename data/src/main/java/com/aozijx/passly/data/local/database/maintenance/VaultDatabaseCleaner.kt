@@ -35,7 +35,7 @@ interface VaultDatabaseCleaner {
  * 同时统计草稿和暂存附件的删除数量。
  */
 @Singleton
-class VaultDatabaseCleanerImpl @Inject constructor(
+internal class VaultDatabaseCleanerImpl @Inject constructor(
     private val sessionManager: UnifiedSessionManager
 ) : VaultDatabaseCleaner {
 

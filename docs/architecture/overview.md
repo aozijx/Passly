@@ -8,15 +8,16 @@ Passly 已开始按依赖方向拆分 Gradle 模块。稳定的通用契约、�
 - `:domain`：纯领域模型、契约与用例；
 - `:core:common`：纯 Kotlin 错误与通用能力；
 - `:core:telemetry`：遥测模型和报告契约；
-- `:core:android`：Android 平台能力及其实现；
-- `:core:security`：敏感值与内存擦除等纯 JVM 安全基础能力；
+- `:core:android`：Android 平台能力及其实现，包括包信息、文件路径与存储选择支持；
+- `:core:security`：密码学、DEK/会话密钥、信封与 Blind Index 安全能力；因 Argon2 为 AAR，模块是
+  Android library，但源码不反向依赖 Data 或 App；
 - `:core:ui`：不依赖业务 feature 和 app 资源的共享 Compose UI；
 - `:runtime:session`：资源无关的安全会话状态机与租约管理；
-- `:data`：Room、Proto DataStore、Repository、备份、诊断与数据侧安全实现；
+- `:data`：Room、Proto DataStore、Repository、Mapper、备份与加密诊断存储实现；
 - `:feature:auth:api`：认证 feature 的稳定 Intent/UI state 集成契约；
 - `:feature:recovery:api`：恢复模式 feature 的稳定 Intent/UI state/effect 契约；
 - `:feature:recovery`：恢复模式 UI、ViewModel 和状态归约实现；
-- `:app`：应用壳、导航和 DI 组装，以及尚待拆分的 feature 实现。
+- `:app`：应用壳、导航、平台入口、Notice 运行时与尚待拆分的 feature 实现。
 
 ## 依赖方向
 
@@ -30,16 +31,20 @@ flowchart LR
     FEATURE --> D[":domain"]
     FEATURE --> FEATURE_API["feature API"]
     DATA --> SESSION[":runtime:session"]
+    DATA --> ANDROID
     DATA --> SECURITY
+    DATA --> TELEMETRY[":core:telemetry"]
     DATA --> D
+    SECURITY --> TELEMETRY
+    SECURITY --> D
     UI --> D
-    ANDROID --> D
+    ANDROID --> TELEMETRY
     SESSION --> D
     D --> COMMON[":core:common"]
 ```
 
-依赖注入只负责在应用边界把 Domain 契约与 Data/Security 实现连接起来，不改变源码依赖方向。共享模块不得
-依赖 `:app`；这一规则由 Gradle/编译器边界保证。
+Data 自己拥有 Repository、存储与数据策略的 Hilt binding；App 只提供进程级或 Android 入口级依赖，
+例如会话密钥来源和遥测 reporter。共享模块不得依赖 `:app`；这一规则由 Gradle/编译器边界保证。
 
 `verifyModuleBoundaries` 校验每个真实 Gradle 模块的直接项目依赖白名单和依赖环，并自动接入各模块的
 `check` 生命周期。新增模块必须先声明允许的依赖方向；未加入依赖的实现类型不会进入编译 classpath，因此

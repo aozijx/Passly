@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.di.repository
+package com.aozijx.passly.data.di
 
 import com.aozijx.passly.data.repository.settings.ProtoAppSettingsRepository
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
@@ -12,7 +12,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class SettingsRepositoryModule {
+internal abstract class SettingsRepositoryModule {
 
     @Binds
     @Singleton

@@ -28,7 +28,7 @@ import javax.inject.Singleton
  * 事务入口统一由 [VaultTransactionRunner] 管理，执行器不直接引用 DAO。
  */
 @Singleton
-class RoomEntryCommandRepository @Inject constructor(
+internal class RoomEntryCommandRepository @Inject constructor(
     private val createEntryExecutor: CreateEntryExecutor,
     private val updateEntryExecutor: UpdateEntryExecutor,
     private val trashEntryExecutor: TrashEntryExecutor,

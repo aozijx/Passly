@@ -18,7 +18,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class FileBackedAttachmentRepository @Inject constructor(
+internal class FileBackedAttachmentRepository @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: SecureSessionAccessState,
     private val contentCrypto: AttachmentContentCrypto,

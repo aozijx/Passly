@@ -27,7 +27,7 @@ import javax.inject.Singleton
  * 读/写操作的租约管理由 [UnifiedSessionManager] 负责，本类不再额外调用 [SessionStateProvider]。
  */
 @Singleton
-class VaultTransactionRunner @Inject constructor(
+internal class VaultTransactionRunner @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: SecureSessionAccessState,
     private val errorReporter: AppErrorReporter

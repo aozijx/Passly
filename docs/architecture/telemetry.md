@@ -9,7 +9,8 @@
 
 业务事件名使用受控 lower-dot 标识符。持久化字段只允许计数、时长、有限比率、布尔、枚举名、错误码和操作码。
 自由文本 message、Throwable message、密码、Token、邮箱、URL 与文件路径不得进入事件。无法注入的 framework
-回调可以使用 `AppTelemetry` 桥；其 legacy message 会被丢弃，普通对象优先注入 `TelemetryEmitter`。
+App/Android 框架回调可以使用 `AppTelemetry` 桥；其 legacy message 会被丢弃。Data、Security 和普通对象
+必须注入 `TelemetryReporter`，共享模块不得依赖应用级全局桥。
 
 ## 加密文件 v1
 

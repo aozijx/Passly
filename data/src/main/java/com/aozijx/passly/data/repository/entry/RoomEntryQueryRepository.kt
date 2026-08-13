@@ -15,7 +15,7 @@ import javax.inject.Singleton
  * 直接对接 DAO 查询，无写操作副作用。
  */
 @Singleton
-class RoomEntryQueryRepository @Inject constructor(
+internal class RoomEntryQueryRepository @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: SecureSessionAccessState,
     private val summaryCodec: EntrySummaryCodec,

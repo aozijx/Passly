@@ -28,7 +28,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class RoomEntryListQueryRepository @Inject constructor(
+internal class RoomEntryListQueryRepository @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: SecureSessionAccessState,
     private val summaryCodec: EntrySummaryCodec,

@@ -16,7 +16,7 @@ import javax.inject.Inject
  * 只允许删除 deletedAt 非空且版本匹配的条目；Room 外键负责级联删除 Secret、
  * 修订、活动、附件元数据和搜索索引，事务提交后再清理附件文件及自定义图标。
  */
-class DeleteEntryPermanentlyExecutor @Inject constructor(
+internal class DeleteEntryPermanentlyExecutor @Inject constructor(
     private val transactionRunner: VaultTransactionRunner,
     private val summaryCodec: EntrySummaryCodec,
     private val resourceCleaner: EntryResourceCleaner,

@@ -1,15 +1,18 @@
 package com.aozijx.passly.data.repository.database
 
 import android.content.Context
-import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.core.platform.VaultDataRefreshNotifier
 import com.aozijx.passly.core.platform.VaultResourcePaths
+import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.telemetry.EventLevel
+import com.aozijx.passly.core.telemetry.TelemetryReporter
+import com.aozijx.passly.core.telemetry.report
 import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
 import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.data.local.database.maintenance.DatabaseRecoveryStore
 import com.aozijx.passly.domain.diagnostics.repository.DatabaseController
 import com.aozijx.passly.domain.diagnostics.repository.DatabaseQuarantineResult
+import com.aozijx.passly.domain.entry.runtime.EntryDataRefreshNotifier
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -24,11 +27,12 @@ import javax.inject.Singleton
  * 包含内部重试机制，以处理解锁状态的瞬时竞争。
  */
 @Singleton
-class DatabaseControllerImpl @Inject constructor(
+internal class DatabaseControllerImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val sessionManager: UnifiedSessionManager,
     private val recoveryStore: DatabaseRecoveryStore,
-    private val vaultDataRefreshNotifier: VaultDataRefreshNotifier
+    private val dataRefreshNotifier: EntryDataRefreshNotifier,
+    private val telemetry: TelemetryReporter
 ) : DatabaseController {
 
     private companion object {
@@ -42,15 +46,12 @@ class DatabaseControllerImpl @Inject constructor(
         for (i in 1..MAX_RETRIES) {
             lastError = probe()
             if (lastError == null) {
-                if (i > 1) AppTelemetry.i(TAG, "Database preWarm succeeded after $i attempts")
+                if (i > 1) report(EventLevel.INFO, "database.prewarm_recovered")
                 return@withContext null
             }
 
             if (i < MAX_RETRIES) {
-                AppTelemetry.w(
-                    TAG,
-                    "Database probe failed (attempt $i/$MAX_RETRIES), retrying... ${lastError.message}"
-                )
+                report(EventLevel.WARN, "database.prewarm_retry", lastError)
                 delay(RETRY_DELAY_MS)
             }
         }
@@ -82,12 +83,12 @@ class DatabaseControllerImpl @Inject constructor(
             }
         } catch (error: Throwable) {
             recoveryError = error
-            AppTelemetry.e(TAG, "Database recovery cleanup failed", error)
+            report(EventLevel.ERROR, "database.recovery_cleanup_failed", error)
         }
 
         val reopenError = sessionManager.unlock()
         if (reopenError == null) {
-            vaultDataRefreshNotifier.notifyRefresh()
+            dataRefreshNotifier.notifyRefresh()
         }
         recoveryError ?: reopenError
     }
@@ -128,5 +129,9 @@ class DatabaseControllerImpl @Inject constructor(
         if (target.exists() && !target.deleteRecursively()) {
             throw IOException("Unable to delete Vault file directory: $name")
         }
+    }
+
+    private fun report(level: EventLevel, name: String, throwable: Throwable? = null) {
+        telemetry.report(level, EventCategory.DATABASE, name, throwable)
     }
 }

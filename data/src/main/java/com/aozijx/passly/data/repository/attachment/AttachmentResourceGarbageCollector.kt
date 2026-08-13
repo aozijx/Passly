@@ -1,10 +1,12 @@
 package com.aozijx.passly.data.repository.attachment
 
 import android.content.Context
-import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.platform.VaultResourcePaths
 import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
 import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.telemetry.EventLevel
+import com.aozijx.passly.core.telemetry.TelemetryReporter
+import com.aozijx.passly.core.telemetry.report
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.model.entity.AttachmentGcQueueEntity
 import com.aozijx.passly.data.model.entity.AttachmentResourceState
@@ -18,9 +20,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AttachmentResourceGarbageCollector @Inject constructor(
+internal class AttachmentResourceGarbageCollector @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val sessionManager: UnifiedSessionManager,
+    private val telemetry: TelemetryReporter,
 ) {
     private val mutationMutex = Mutex()
 
@@ -71,7 +74,11 @@ class AttachmentResourceGarbageCollector @Inject constructor(
             sessionManager.transaction {
                 attachmentGcQueueDao().recordAttempt(item.resourceId, System.currentTimeMillis())
             }
-            AppTelemetry.w(EventCategory.FILE_IO, "attachment.resource_gc_failed")
+            telemetry.report(
+                EventLevel.WARN,
+                EventCategory.FILE_IO,
+                "attachment.resource_gc_failed"
+            )
             return
         }
 

@@ -24,7 +24,7 @@ import javax.inject.Singleton
  * 封装修订的加密与写入，供各 Command Executor 在事务内调用。
  */
 @Singleton
-class EntryRevisionHelper @Inject constructor(
+internal class EntryRevisionHelper @Inject constructor(
     private val contentSnapshotCodec: EntryContentSnapshotCodec,
     private val sensitiveRevisionCodec: SensitiveRevisionSnapshotCodec,
     private val summaryCodec: EntrySummaryCodec,

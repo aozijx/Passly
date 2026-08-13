@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.di
+package com.aozijx.passly.data.di
 
 import com.aozijx.passly.core.backup.BackupStorageSupport
 import com.aozijx.passly.data.backup.AndroidBackupFileStore
@@ -21,7 +21,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class BackupModule {
+internal abstract class BackupModule {
 
     @Binds
     @Singleton

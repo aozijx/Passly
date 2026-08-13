@@ -1,11 +1,6 @@
 package com.aozijx.passly.app.di.database
 
 import com.aozijx.passly.core.session.DekSessionKeySource
-import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
-import com.aozijx.passly.data.repository.database.DatabaseControllerImpl
-import com.aozijx.passly.domain.authentication.DatabaseSessionLifecycle
-import com.aozijx.passly.domain.authentication.SessionStateProvider
-import com.aozijx.passly.domain.diagnostics.repository.DatabaseController
 import com.aozijx.passly.runtime.session.SessionKeySource
 import dagger.Binds
 import dagger.Module
@@ -28,23 +23,5 @@ abstract class DatabaseModule {
     internal abstract fun bindSessionKeySource(
         impl: DekSessionKeySource
     ): SessionKeySource
-
-    @Binds
-    @Singleton
-    internal abstract fun bindDatabaseController(
-        impl: DatabaseControllerImpl
-    ): DatabaseController
-
-    @Binds
-    @Singleton
-    internal abstract fun bindSessionStateProvider(
-        impl: UnifiedSessionManager
-    ): SessionStateProvider
-
-    @Binds
-    @Singleton
-    internal abstract fun bindDatabaseSessionLifecycle(
-        impl: UnifiedSessionManager
-    ): DatabaseSessionLifecycle
 
 }

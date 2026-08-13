@@ -36,7 +36,7 @@ import javax.inject.Singleton
  * 排除 Draft、SearchToken 等派生/临时数据。
  */
 @Singleton
-class VaultBackupReader @Inject constructor(
+internal class VaultBackupReader @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val sessionManager: UnifiedSessionManager,
     private val summaryCodec: EntrySummaryCodec,

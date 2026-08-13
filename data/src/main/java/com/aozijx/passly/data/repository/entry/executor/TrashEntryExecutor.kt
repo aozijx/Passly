@@ -13,7 +13,7 @@ import javax.inject.Inject
  *
  * 原子写入：Metadata 软删除 + 盲索引清理 + 活动记录。
  */
-class TrashEntryExecutor @Inject constructor(
+internal class TrashEntryExecutor @Inject constructor(
     private val transactionRunner: VaultTransactionRunner,
     private val blindIndexHelper: EntryBlindIndexHelper,
     private val activityHelper: EntryActivityHelper,

@@ -28,7 +28,7 @@ import javax.inject.Inject
  *
  * 原子写入：Metadata + Credential + 盲索引 + 历史快照 + 活动记录。
  */
-class CreateEntryExecutor @Inject constructor(
+internal class CreateEntryExecutor @Inject constructor(
     private val transactionRunner: VaultTransactionRunner,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,

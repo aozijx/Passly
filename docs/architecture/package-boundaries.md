@@ -11,6 +11,9 @@
 | `feature`  | 导航、ViewModel、UI state/effect、Compose UI   | DAO、Entity、具体 Repository 实现           |
 | `service`  | Android Service 入口与系统生命周期桥接               | 独立业务真相源                               |
 
+真实模块还要求源码命名空间与职责一致：`:data` 只包含 `com.aozijx.passly.data.*`。密码学实现归
+`:core:security`，共享 Android 能力归 `:core:android`，应用消息调度与全局框架桥归 `:app`。
+
 ## 强制规则
 
 ```text
@@ -18,7 +21,11 @@ domain -X-> data | feature | android.*
 core   -X-> data repository implementation
 feature-X-> entity | dao
 security-X-> data implementation
+app     -X-> data implementation import
 ```
+
+App 仍通过 Gradle 依赖 `:data` 让 Hilt 聚合实现模块，但业务源码只消费 Domain/Core 契约，不直接 import
+DAO、Entity、Repository 实现或 Data DI module。
 
 分页应通过纯 Kotlin 契约传递；Android Paging 可留在 Data/UI 适配边界。Feature 需要凭据候选时依赖
 `CredentialServiceRepository` 等 Domain 接口，不直接构造 Entity 或具体 Repository。

@@ -37,7 +37,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class RoomEntryRevisionRepository @Inject constructor(
+internal class RoomEntryRevisionRepository @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: SecureSessionAccessState,
     private val transactionRunner: VaultTransactionRunner,

@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.di.repository
+package com.aozijx.passly.data.di
 
 import com.aozijx.passly.data.repository.autofill.AutofillStatusRepositoryImpl
 import com.aozijx.passly.domain.autofill.repository.AutofillStatusRepository
@@ -10,7 +10,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class AutofillRepositoryModule {
+internal abstract class AutofillRepositoryModule {
 
     @Binds
     @Singleton

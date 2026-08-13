@@ -16,7 +16,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ProtoAppSettingsRepository @Inject constructor(
+internal class ProtoAppSettingsRepository @Inject constructor(
     @ApplicationContext context: Context
 ) : AppSettingsRepository {
 

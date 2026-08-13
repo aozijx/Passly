@@ -28,7 +28,7 @@ private val Context.bootstrapDataStore: DataStore<BootstrapData> by dataStore(
 )
 
 @Singleton
-class ProtoDataStoreBootstrapStore @Inject constructor(
+internal class ProtoDataStoreBootstrapStore @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) : BootstrapStore {
 

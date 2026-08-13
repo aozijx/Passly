@@ -13,7 +13,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AndroidBackupFileStore @Inject constructor(
+internal class AndroidBackupFileStore @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) : BackupFileStore {
 

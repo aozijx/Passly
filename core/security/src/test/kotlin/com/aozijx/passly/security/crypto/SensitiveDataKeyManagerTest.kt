@@ -1,5 +1,6 @@
 package com.aozijx.passly.security.crypto
 
+import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.auth.model.envelope.KeyEnvelope
 import com.aozijx.passly.security.envelope.BiometricBootstrapState
@@ -29,7 +30,7 @@ class SensitiveDataKeyManagerTest {
     fun setUp() = runBlocking {
         store = InMemoryBootstrapStore()
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        val dekManager = DekManager(store, SessionKeyManager())
+        val dekManager = DekManager(store, SessionKeyManager(), TelemetryReporter { })
         val result = dekManager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { it.toByte() })
         check(result == UnlockResult.Success)
         manager = SensitiveDataKeyManager(store, dekManager, scope)

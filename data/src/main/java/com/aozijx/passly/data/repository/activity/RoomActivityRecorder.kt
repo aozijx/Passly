@@ -13,7 +13,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class RoomActivityRecorder @Inject constructor(
+internal class RoomActivityRecorder @Inject constructor(
     private val transactionRunner: VaultTransactionRunner,
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: SecureSessionAccessState,

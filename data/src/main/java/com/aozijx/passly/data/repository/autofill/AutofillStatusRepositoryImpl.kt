@@ -16,8 +16,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AutofillStatusRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context
+internal class AutofillStatusRepositoryImpl @Inject constructor(
+    @param:ApplicationContext private val context: Context
 ) : AutofillStatusRepository {
 
     override fun isAutofillServiceEnabled(): Boolean {

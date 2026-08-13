@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -82,7 +83,9 @@ fun AppPackagePickerDialog(
                 LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
                     items(filtered, key = PackageUtils.AppMetadata::packageName) { app ->
                         val icon = remember(app.packageName) {
-                            packageUtils.loadIcon(app.packageName)?.let(::BitmapPainter)
+                            packageUtils.loadIcon(app.packageName)
+                                ?.asImageBitmap()
+                                ?.let(::BitmapPainter)
                         }
                         Row(
                             modifier = Modifier
