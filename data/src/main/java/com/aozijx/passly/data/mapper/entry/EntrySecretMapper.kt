@@ -1,189 +1,164 @@
 package com.aozijx.passly.data.mapper.entry
 
-import com.aozijx.passly.data.codec.entry.payload.CardSecretPayload
+import com.aozijx.passly.data.codec.entry.payload.CardCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.CustomFieldPayload
-import com.aozijx.passly.data.codec.entry.payload.IdentitySecretPayload
-import com.aozijx.passly.data.codec.entry.payload.LoginSecretPayload
+import com.aozijx.passly.data.codec.entry.payload.IdentityCredentialPayload
+import com.aozijx.passly.data.codec.entry.payload.LoginCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.OtpConfigPayload
+import com.aozijx.passly.data.codec.entry.payload.OtpCredentialEncodingPayload
+import com.aozijx.passly.data.codec.entry.payload.OtpCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.OtpHashAlgorithmPayload
-import com.aozijx.passly.data.codec.entry.payload.OtpSecretEncodingPayload
-import com.aozijx.passly.data.codec.entry.payload.OtpSecretPayload
 import com.aozijx.passly.data.codec.entry.payload.OtpTypePayload
-import com.aozijx.passly.data.codec.entry.payload.PasskeySecretPayload
+import com.aozijx.passly.data.codec.entry.payload.PasskeyCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.SecretPayload
-import com.aozijx.passly.data.codec.entry.payload.SshSecretPayload
-import com.aozijx.passly.data.codec.entry.payload.WifiSecretPayload
+import com.aozijx.passly.data.codec.entry.payload.SshCredentialPayload
+import com.aozijx.passly.data.codec.entry.payload.WifiCredentialPayload
 import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.credential.CardCredential
+import com.aozijx.passly.domain.entry.model.credential.CustomField
+import com.aozijx.passly.domain.entry.model.credential.CustomFieldKind
+import com.aozijx.passly.domain.entry.model.credential.EntryCredential
+import com.aozijx.passly.domain.entry.model.credential.IdentityCredential
+import com.aozijx.passly.domain.entry.model.credential.LoginCredential
+import com.aozijx.passly.domain.entry.model.credential.OtpCredential
+import com.aozijx.passly.domain.entry.model.credential.PasskeyCredential
+import com.aozijx.passly.domain.entry.model.credential.SshCredential
+import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.domain.entry.model.secret.CardSecret
-import com.aozijx.passly.domain.entry.model.secret.CustomField
-import com.aozijx.passly.domain.entry.model.secret.IdentitySecret
-import com.aozijx.passly.domain.entry.model.secret.LoginSecret
-import com.aozijx.passly.domain.entry.model.secret.OtpSecret
-import com.aozijx.passly.domain.entry.model.secret.PasskeySecret
-import com.aozijx.passly.domain.entry.model.secret.SshSecret
-import com.aozijx.passly.domain.entry.model.secret.WifiSecret
 
 object EntrySecretMapper {
-
-    fun toPayload(secret: EntrySecret): SecretPayload = SecretPayload(
-        login = secret.login?.let { login ->
-            LoginSecretPayload(
-                email = login.email,
-                password = login.password
-            )
-        },
-        notes = secret.notes,
-        card = secret.card?.let { card ->
-            CardSecretPayload(
-                cardNumber = card.cardNumber,
-                cardExpiry = card.cardExpiry,
-                cardCvv = card.cardCvv,
-                cardHolder = card.cardHolder,
-                paymentPin = card.paymentPin,
-                paymentPlatform = card.paymentPlatform,
-                hasCardNumber = card.hasCardNumber,
-                hasCardCvv = card.hasCardCvv,
-                hasPaymentPin = card.hasPaymentPin
-            )
-        },
-        identity = secret.identity?.let { identity ->
-            IdentitySecretPayload(
-                idNumber = identity.idNumber,
-                securityQuestion = identity.securityQuestion,
-                securityAnswer = identity.securityAnswer,
-                seedPhrase = identity.seedPhrase,
-                recoveryCodes = identity.recoveryCodes
-            )
-        },
-        ssh = secret.ssh?.let { ssh ->
-            SshSecretPayload(
-                privateKey = ssh.privateKey,
-                publicKey = ssh.publicKey,
-                passphrase = ssh.passphrase
-            )
-        },
-        wifi = secret.wifi?.let { wifi ->
-            WifiSecretPayload(
-                password = wifi.password,
-                securityType = wifi.securityType,
-                isHidden = wifi.isHidden
-            )
-        },
-        passkey = secret.passkey?.let { passkey ->
-            PasskeySecretPayload(
-                credentialId = passkey.credentialId,
-                rpId = passkey.rpId,
-                userHandle = passkey.userHandle,
-                privateKeyReference = passkey.privateKeyReference,
-                hardwareKeyInfo = passkey.hardwareKeyInfo
-            )
-        },
-        otp = secret.otp?.let { otp ->
-            OtpSecretPayload(
-                config = otp.config?.let { config ->
-                    OtpConfigPayload(
-                        type = OtpTypePayload.valueOf(config.type.name),
-                        secret = config.secret,
-                        algorithm = OtpHashAlgorithmPayload.valueOf(config.algorithm.name),
-                        digits = config.digits,
-                        periodSeconds = config.periodSeconds,
-                        counter = config.counter,
-                        encoding = OtpSecretEncodingPayload.valueOf(config.encoding.name),
-                        issuer = config.issuer,
-                        accountName = config.accountName
-                    )
-                }
-            )
-        },
-        customFields = secret.customFields.map { cf ->
-            CustomFieldPayload(
-                name = cf.name,
-                value = cf.value,
-                type = cf.type
-            )
-        }
-    )
+    fun toPayload(secret: EntrySecret): SecretPayload {
+        val credential = secret.credential
+        return SecretPayload(
+            login = (credential as? LoginCredential)?.let {
+                LoginCredentialPayload(email = it.email, password = it.password)
+            },
+            card = (credential as? CardCredential)?.let {
+                CardCredentialPayload(
+                    cardType = it.cardType,
+                    cardNumber = it.cardNumber,
+                    cardExpiry = it.cardExpiry,
+                    cardCvv = it.cardCvv,
+                    cardHolder = it.cardHolder,
+                    paymentPin = it.paymentPin,
+                    paymentPlatform = it.paymentPlatform,
+                    billingAddress = it.billingAddress,
+                    hasCardNumber = !it.cardNumber.isNullOrBlank(),
+                    hasCardCvv = !it.cardCvv.isNullOrBlank(),
+                    hasPaymentPin = !it.paymentPin.isNullOrBlank(),
+                )
+            },
+            identity = (credential as? IdentityCredential)?.let {
+                IdentityCredentialPayload(
+                    idNumber = it.idNumber,
+                    securityQuestion = it.securityQuestion,
+                    securityAnswer = it.securityAnswer,
+                    seedPhrase = it.seedPhrase,
+                    recoveryCodes = it.recoveryCodes,
+                )
+            },
+            ssh = (credential as? SshCredential)?.let {
+                SshCredentialPayload(it.privateKey, it.publicKey, it.passphrase)
+            },
+            wifi = (credential as? WifiCredential)?.let {
+                WifiCredentialPayload(it.ssid, it.password, it.securityType, it.isHidden)
+            },
+            passkey = (credential as? PasskeyCredential)?.let {
+                PasskeyCredentialPayload(
+                    it.credentialId,
+                    it.rpId,
+                    it.userHandle,
+                    it.privateKeyReference,
+                    it.hardwareKeyInfo,
+                )
+            },
+            otp = (credential as? OtpCredential)?.let {
+                OtpCredentialPayload(it.config.toPayload())
+            },
+            notes = secret.notes,
+            customFields = secret.customFields.map {
+                CustomFieldPayload(it.name, it.value, if (it.kind == CustomFieldKind.HIDDEN) 1 else 0)
+            },
+        )
+    }
 
     fun toDomain(payload: SecretPayload): EntrySecret = EntrySecret(
-        login = payload.login?.let { login ->
-            LoginSecret(
-                email = login.email,
-                password = login.password
-            )
-        },
+        credential = payload.toCredential(),
         notes = payload.notes,
-        card = payload.card?.let { card ->
-            CardSecret(
-                cardNumber = card.cardNumber,
-                cardExpiry = card.cardExpiry,
-                cardCvv = card.cardCvv,
-                cardHolder = card.cardHolder,
-                paymentPin = card.paymentPin,
-                paymentPlatform = card.paymentPlatform,
-                hasCardNumber = card.hasCardNumber,
-                hasCardCvv = card.hasCardCvv,
-                hasPaymentPin = card.hasPaymentPin
-            )
-        },
-        identity = payload.identity?.let { identity ->
-            IdentitySecret(
-                idNumber = identity.idNumber,
-                securityQuestion = identity.securityQuestion,
-                securityAnswer = identity.securityAnswer,
-                seedPhrase = identity.seedPhrase,
-                recoveryCodes = identity.recoveryCodes
-            )
-        },
-        ssh = payload.ssh?.let { ssh ->
-            SshSecret(
-                privateKey = ssh.privateKey,
-                publicKey = ssh.publicKey,
-                passphrase = ssh.passphrase
-            )
-        },
-        wifi = payload.wifi?.let { wifi ->
-            WifiSecret(
-                password = wifi.password,
-                securityType = wifi.securityType,
-                isHidden = wifi.isHidden
-            )
-        },
-        passkey = payload.passkey?.let { passkey ->
-            PasskeySecret(
-                credentialId = passkey.credentialId,
-                rpId = passkey.rpId,
-                userHandle = passkey.userHandle,
-                privateKeyReference = passkey.privateKeyReference,
-                hardwareKeyInfo = passkey.hardwareKeyInfo
-            )
-        },
-        otp = payload.otp?.let { otp ->
-            OtpSecret(
-                config = otp.config?.let { p ->
-                    OtpConfig(
-                        type = OtpType.valueOf(p.type.name),
-                        secret = p.secret,
-                        algorithm = OtpHashAlgorithm.valueOf(p.algorithm.name),
-                        digits = p.digits,
-                        periodSeconds = p.periodSeconds,
-                        counter = p.counter,
-                        encoding = OtpSecretEncoding.valueOf(p.encoding.name),
-                        issuer = p.issuer,
-                        accountName = p.accountName
-                    )
-                }
-            )
-        },
-        customFields = payload.customFields.map { cf ->
+        customFields = payload.customFields.map {
             CustomField(
-                name = cf.name,
-                value = cf.value,
-                type = cf.type
+                name = it.name,
+                value = it.value,
+                kind = if (it.type == 1) CustomFieldKind.HIDDEN else CustomFieldKind.TEXT,
             )
-        }
+        },
+    )
+
+    private fun SecretPayload.toCredential(): EntryCredential {
+        val credentials = listOfNotNull(
+            login?.let { LoginCredential(it.email, it.password) },
+            card?.let {
+                CardCredential(
+                    cardType = it.cardType,
+                    cardNumber = it.cardNumber,
+                    cardExpiry = it.cardExpiry,
+                    cardCvv = it.cardCvv,
+                    cardHolder = it.cardHolder,
+                    paymentPin = it.paymentPin,
+                    paymentPlatform = it.paymentPlatform,
+                    billingAddress = it.billingAddress,
+                )
+            },
+            identity?.let {
+                IdentityCredential(
+                    it.idNumber,
+                    it.securityQuestion,
+                    it.securityAnswer,
+                    it.seedPhrase,
+                    it.recoveryCodes,
+                )
+            },
+            ssh?.let { SshCredential(it.privateKey, it.publicKey, it.passphrase) },
+            wifi?.let { WifiCredential(it.ssid, it.password, it.securityType, it.isHidden) },
+            passkey?.let {
+                PasskeyCredential(
+                    it.credentialId,
+                    it.rpId,
+                    it.userHandle,
+                    it.privateKeyReference,
+                    it.hardwareKeyInfo,
+                )
+            },
+            otp?.config?.let { OtpCredential(it.toDomain()) },
+        )
+        require(credentials.size <= 1) { "Secret payload contains multiple credential kinds" }
+        return credentials.singleOrNull() ?: EntryCredential.None
+    }
+
+    private fun OtpConfig.toPayload() = OtpConfigPayload(
+        type = OtpTypePayload.valueOf(type.name),
+        secret = secret,
+        algorithm = OtpHashAlgorithmPayload.valueOf(algorithm.name),
+        digits = digits,
+        periodSeconds = periodSeconds,
+        counter = counter,
+        encoding = OtpCredentialEncodingPayload.valueOf(encoding.name),
+        issuer = issuer,
+        accountName = accountName,
+    )
+
+    private fun OtpConfigPayload.toDomain() = OtpConfig(
+        type = OtpType.valueOf(type.name),
+        secret = secret,
+        algorithm = OtpHashAlgorithm.valueOf(algorithm.name),
+        digits = digits,
+        periodSeconds = periodSeconds,
+        counter = counter,
+        encoding = OtpSecretEncoding.valueOf(encoding.name),
+        issuer = issuer,
+        accountName = accountName,
     )
 }

@@ -2,9 +2,9 @@ package com.aozijx.passly.data.repository.otp
 
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.repository.OtpConfigRepository
+import com.aozijx.passly.domain.entry.port.OtpConfigRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 

@@ -3,7 +3,7 @@ package com.aozijx.passly.data.repository.entry.command
 import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
+import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.repository.entry.command.EntryResourceCleaner
@@ -17,7 +17,7 @@ import javax.inject.Inject
  */
 internal class DeleteEntryPermanentlyExecutor @Inject constructor(
     private val databaseTransactions: DatabaseTransactionRunner,
-    private val summaryCodec: EntrySummaryCodec,
+    private val summaryCodec: EntryProfileCodec,
     private val resourceCleaner: EntryResourceCleaner,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
@@ -38,7 +38,7 @@ internal class DeleteEntryPermanentlyExecutor @Inject constructor(
             attachmentGarbageCollector.scheduleInTransaction(this)
             DeletedEntryResources(
                 entryId = id,
-                customIconPath = summary.iconCustomPath,
+                customIconPath = summary.icon.customReference,
             )
         }
 

@@ -2,8 +2,8 @@ package com.aozijx.passly.data.repository.entry.command
 
 import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
-import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
+import com.aozijx.passly.data.codec.entry.EntryProfileCodec
+import com.aozijx.passly.data.mapper.entry.EntryAssembler
 import com.aozijx.passly.data.mapper.search.toLookupFields
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.repository.entry.command.EntryActivityWriter
@@ -19,7 +19,7 @@ import javax.inject.Inject
  */
 internal class RestoreEntryExecutor @Inject constructor(
     private val databaseTransactions: DatabaseTransactionRunner,
-    private val summaryCodec: EntrySummaryCodec,
+    private val summaryCodec: EntryProfileCodec,
     private val searchIndexWriter: EntrySearchIndexWriter,
     private val activityWriter: EntryActivityWriter,
     private val clock: DatabaseClock
@@ -34,7 +34,7 @@ internal class RestoreEntryExecutor @Inject constructor(
             val metaEntity = entryQueryDao().getById(id)
                 ?: throw NotFound()
             val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
-            val vaultEntry = EntryAggregateAssembler.assembleFromDatabase(
+            val vaultEntry = EntryAssembler.assembleFromDatabase(
                 metaEntity, summary, null
             )
             searchIndexWriter.rebuildForEntry(this, id, vaultEntry.toLookupFields())

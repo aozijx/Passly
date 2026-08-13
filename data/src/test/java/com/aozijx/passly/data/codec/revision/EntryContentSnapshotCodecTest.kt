@@ -2,11 +2,11 @@ package com.aozijx.passly.data.codec.revision
 
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.EntrySummary
-import com.aozijx.passly.domain.entry.model.link.EntryLink
-import com.aozijx.passly.domain.entry.model.link.EntryLinkId
-import com.aozijx.passly.domain.entry.model.link.EntryRelationType
-import com.aozijx.passly.domain.entry.model.secret.LoginSecret
+import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.relation.EntryLink
+import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
+import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
+import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.security.crypto.FieldEncryptor
 import com.aozijx.passly.security.crypto.SessionKeyManager
 import kotlinx.coroutines.runBlocking
@@ -17,9 +17,9 @@ class EntryContentSnapshotCodecTest {
     @Test
     fun `versioned compressed content snapshot round trips without attachment ownership`() = runBlocking {
         withCodec { codec ->
-            val summary = EntrySummary(title = "Example", username = "person@example.com")
+            val summary = EntryProfile(title = "Example", username = "person@example.com")
             val secret = EntrySecret(
-                login = LoginSecret(password = "secret"),
+                login = LoginCredential(password = "secret"),
                 notes = "repeated ".repeat(2_000),
             )
             val link = EntryLink.create(

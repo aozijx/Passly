@@ -2,16 +2,16 @@ package com.aozijx.passly.data.codec.revision
 
 import com.aozijx.passly.data.codec.DatabaseRecordAad
 import com.aozijx.passly.data.mapper.entry.EntrySecretMapper
-import com.aozijx.passly.data.mapper.entry.EntrySummaryMapper
+import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.data.codec.entry.payload.SecretPayload
 import com.aozijx.passly.data.codec.entry.payload.SummaryPayload
 import com.aozijx.passly.data.codec.json.AppJson
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.EntrySummary
-import com.aozijx.passly.domain.entry.model.link.EntryLink
-import com.aozijx.passly.domain.entry.model.link.EntryLinkId
-import com.aozijx.passly.domain.entry.model.link.EntryRelationType
+import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.relation.EntryLink
+import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
+import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.security.crypto.FieldEncryptor
 import kotlinx.serialization.Serializable
 import java.io.ByteArrayInputStream
@@ -80,7 +80,7 @@ private data class EntryLinkSnapshot(
 )
 
 data class DecodedEntryContentSnapshot(
-    val summary: EntrySummary,
+    val summary: EntryProfile,
     val secret: EntrySecret,
     val links: List<EntryLink>,
 )
@@ -90,13 +90,13 @@ class EntryContentSnapshotCodec @Inject constructor(
     private val fieldEncryptor: FieldEncryptor,
 ) {
     suspend fun encrypt(
-        summary: EntrySummary,
+        summary: EntryProfile,
         secret: EntrySecret,
         entryId: String,
         links: List<EntryLink>,
     ): ByteArray {
         val summaryJson = AppJson.encodeToString(
-            SummaryPayload.serializer(), EntrySummaryMapper.toPayload(summary)
+            SummaryPayload.serializer(), EntryProfileMapper.toPayload(summary)
         ).toByteArray()
         val secretJson = AppJson.encodeToString(
             SecretPayload.serializer(), EntrySecretMapper.toPayload(secret)
@@ -126,7 +126,7 @@ class EntryContentSnapshotCodec @Inject constructor(
             EntryRelationsSnapshot.serializer(), String(snapshot.relationsJson)
         )
         return DecodedEntryContentSnapshot(
-            summary = EntrySummaryMapper.toDomain(summary),
+            summary = EntryProfileMapper.toDomain(summary),
             secret = EntrySecretMapper.toDomain(secret),
             links = relations.links.map(EntryLinkSnapshot::toDomain),
         )

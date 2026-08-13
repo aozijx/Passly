@@ -2,16 +2,16 @@ package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.codec.entry.SensitiveFieldCodec
-import com.aozijx.passly.domain.auth.model.AuthorizationPermit
-import com.aozijx.passly.domain.auth.model.AuthorizationScope
-import com.aozijx.passly.domain.auth.port.AuthorizationPermitVerifier
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
-import com.aozijx.passly.domain.authentication.SensitiveAccessAction
+import com.aozijx.passly.domain.access.model.AuthorizationPermit
+import com.aozijx.passly.domain.access.model.AuthorizationScope
+import com.aozijx.passly.domain.access.port.AuthorizationPermitVerifier
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.access.model.SensitiveAccessAction
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
-import com.aozijx.passly.domain.entry.repository.SensitiveFieldRepository
+import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.security.crypto.SecureString
 import javax.inject.Inject
 import javax.inject.Singleton

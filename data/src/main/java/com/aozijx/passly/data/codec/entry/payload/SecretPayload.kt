@@ -2,7 +2,7 @@ package com.aozijx.passly.data.codec.entry.payload
 
 import kotlinx.serialization.Serializable
 
-// --- Enum mirrors for domain OtpType, OtpHashAlgorithm, OtpSecretEncoding ---
+// --- Enum mirrors for domain OtpType, OtpHashAlgorithm, OtpCredentialEncoding ---
 
 @Serializable
 enum class OtpTypePayload {
@@ -19,7 +19,7 @@ enum class OtpHashAlgorithmPayload {
 }
 
 @Serializable
-enum class OtpSecretEncodingPayload {
+enum class OtpCredentialEncodingPayload {
     BASE32,
     BASE64
 }
@@ -34,7 +34,7 @@ data class OtpConfigPayload(
     val digits: Int = 6,
     val periodSeconds: Int? = 30,
     val counter: Long? = null,
-    val encoding: OtpSecretEncodingPayload = OtpSecretEncodingPayload.BASE32,
+    val encoding: OtpCredentialEncodingPayload = OtpCredentialEncodingPayload.BASE32,
     val issuer: String? = null,
     val accountName: String? = null
 )
@@ -42,26 +42,28 @@ data class OtpConfigPayload(
 // --- Secret data payloads ---
 
 @Serializable
-data class LoginSecretPayload(
+data class LoginCredentialPayload(
     val email: String? = null,
     val password: String? = null
 )
 
 @Serializable
-data class CardSecretPayload(
+data class CardCredentialPayload(
+    val cardType: String? = null,
     val cardNumber: String? = null,
     val cardExpiry: String? = null,
     val cardCvv: String? = null,
     val cardHolder: String? = null,
     val paymentPin: String? = null,
     val paymentPlatform: String? = null,
+    val billingAddress: String? = null,
     val hasCardNumber: Boolean = false,
     val hasCardCvv: Boolean = false,
     val hasPaymentPin: Boolean = false
 )
 
 @Serializable
-data class IdentitySecretPayload(
+data class IdentityCredentialPayload(
     val idNumber: String? = null,
     val securityQuestion: String? = null,
     val securityAnswer: String? = null,
@@ -70,21 +72,22 @@ data class IdentitySecretPayload(
 )
 
 @Serializable
-data class SshSecretPayload(
+data class SshCredentialPayload(
     val privateKey: String? = null,
     val publicKey: String? = null,
     val passphrase: String? = null
 )
 
 @Serializable
-data class WifiSecretPayload(
+data class WifiCredentialPayload(
+    val ssid: String,
     val password: String? = null,
     val securityType: String? = null,
     val isHidden: Boolean = false
 )
 
 @Serializable
-data class PasskeySecretPayload(
+data class PasskeyCredentialPayload(
     val credentialId: String? = null,
     val rpId: String? = null,
     val userHandle: String? = null,
@@ -93,7 +96,7 @@ data class PasskeySecretPayload(
 )
 
 @Serializable
-data class OtpSecretPayload(
+data class OtpCredentialPayload(
     val config: OtpConfigPayload? = null
 )
 
@@ -115,14 +118,14 @@ data class CustomFieldPayload(
  */
 @Serializable
 data class SecretPayload(
-    val login: LoginSecretPayload? = null,
+    val login: LoginCredentialPayload? = null,
     val notes: String? = null,
-    val card: CardSecretPayload? = null,
-    val identity: IdentitySecretPayload? = null,
-    val ssh: SshSecretPayload? = null,
-    val wifi: WifiSecretPayload? = null,
-    val passkey: PasskeySecretPayload? = null,
-    val otp: OtpSecretPayload? = null,
+    val card: CardCredentialPayload? = null,
+    val identity: IdentityCredentialPayload? = null,
+    val ssh: SshCredentialPayload? = null,
+    val wifi: WifiCredentialPayload? = null,
+    val passkey: PasskeyCredentialPayload? = null,
+    val otp: OtpCredentialPayload? = null,
     val customFields: List<CustomFieldPayload> = emptyList(),
     val schemaVersion: Int = 1
 )

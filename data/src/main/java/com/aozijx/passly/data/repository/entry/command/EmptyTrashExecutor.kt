@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.entry.command
 
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
+import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.repository.entry.command.EntryResourceCleaner
@@ -12,7 +12,7 @@ import javax.inject.Inject
  */
 internal class EmptyTrashExecutor @Inject constructor(
     private val databaseTransactions: DatabaseTransactionRunner,
-    private val summaryCodec: EntrySummaryCodec,
+    private val summaryCodec: EntryProfileCodec,
     private val resourceCleaner: EntryResourceCleaner,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
@@ -23,7 +23,7 @@ internal class EmptyTrashExecutor @Inject constructor(
                 val summary = summaryCodec.decrypt(entity.summaryBlob, entity.entryId)
                 DeletedEntryResources(
                     entryId = entity.entryId,
-                    customIconPath = summary.iconCustomPath
+                    customIconPath = summary.icon.customReference
                 )
             }
             // 与父记录删除处于同一事务；活动、附件等仍由外键级联负责。

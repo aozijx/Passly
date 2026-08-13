@@ -1,8 +1,8 @@
 package com.aozijx.passly.data.mapper.entry
 
 import com.aozijx.passly.domain.entry.model.EntryHighSensitivitySecret
-import com.aozijx.passly.domain.entry.model.HighSensitivityCardSecret
-import com.aozijx.passly.domain.entry.model.HighSensitivityIdentitySecret
+import com.aozijx.passly.domain.entry.model.HighSensitivityCardCredential
+import com.aozijx.passly.domain.entry.model.HighSensitivityIdentityCredential
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -12,8 +12,8 @@ class SensitiveFieldSetMapperTest {
     @Test
     fun `high sensitivity aggregate splits into independent field values`() {
         val fields = EntryHighSensitivitySecret(
-            card = HighSensitivityCardSecret(cardNumber = "4111", cardCvv = "123"),
-            identity = HighSensitivityIdentitySecret(recoveryCodes = listOf("one", "two"))
+            card = HighSensitivityCardCredential(cardNumber = "4111", cardCvv = "123"),
+            identity = HighSensitivityIdentityCredential(recoveryCodes = listOf("one", "two"))
         ).toSensitiveFieldValues()
 
         assertEquals("4111", fields[SensitiveFieldKey.CARD_NUMBER])

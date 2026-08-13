@@ -11,33 +11,33 @@ import com.aozijx.passly.data.local.datastore.settings.SecurityPreferences
 import com.aozijx.passly.data.local.datastore.settings.TopicMessagePreference
 import com.aozijx.passly.data.local.datastore.settings.VaultSortPreference
 import com.aozijx.passly.data.local.datastore.settings.VaultViewPreferences
-import com.aozijx.passly.domain.notice.model.AppMessageSettings
-import com.aozijx.passly.domain.notice.model.NoticeLevel
-import com.aozijx.passly.domain.notice.model.NoticeTopic
-import com.aozijx.passly.domain.notice.model.TopicMessageSettings
-import com.aozijx.passly.domain.settings.model.AppLanguage
-import com.aozijx.passly.domain.settings.model.AppearanceSettings
-import com.aozijx.passly.domain.settings.model.AutofillPresentation
-import com.aozijx.passly.domain.settings.model.AutofillSettings
-import com.aozijx.passly.domain.settings.model.BackupSettings
-import com.aozijx.passly.domain.settings.model.CardDensity
-import com.aozijx.passly.domain.settings.model.EntryCardPresentation
-import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
-import com.aozijx.passly.domain.settings.model.ExportFormat
-import com.aozijx.passly.domain.settings.model.FallbackPalette
-import com.aozijx.passly.domain.settings.model.FontFamilyMode
-import com.aozijx.passly.domain.settings.model.ImportMode
-import com.aozijx.passly.domain.settings.model.InteractionSettings
-import com.aozijx.passly.domain.settings.model.InterfaceSettings
-import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
-import com.aozijx.passly.domain.settings.model.SecuritySettings
-import com.aozijx.passly.domain.settings.model.SortDirection
-import com.aozijx.passly.domain.settings.model.SwipeActionType
-import com.aozijx.passly.domain.settings.model.ThemeMode
-import com.aozijx.passly.domain.settings.model.LibrarySortField
-import com.aozijx.passly.domain.settings.model.LibrarySortSpec
-import com.aozijx.passly.domain.settings.model.LibraryViewSettings
-import com.aozijx.passly.domain.settings.model.VisibleQuickFiltersConfig
+import com.aozijx.passly.data.message.model.AppMessageSettings
+import com.aozijx.passly.data.message.model.NoticeLevel
+import com.aozijx.passly.data.message.model.NoticeTopic
+import com.aozijx.passly.data.message.model.TopicMessageSettings
+import com.aozijx.passly.data.settings.model.AppLanguage
+import com.aozijx.passly.data.settings.model.AppearanceSettings
+import com.aozijx.passly.data.settings.model.AutofillPresentation
+import com.aozijx.passly.data.settings.model.AutofillSettings
+import com.aozijx.passly.data.settings.model.BackupSettings
+import com.aozijx.passly.data.settings.model.CardDensity
+import com.aozijx.passly.data.settings.model.EntryCardPresentation
+import com.aozijx.passly.data.settings.model.EntryHierarchyDisplayMode
+import com.aozijx.passly.data.settings.model.ExportFormat
+import com.aozijx.passly.data.settings.model.FallbackPalette
+import com.aozijx.passly.data.settings.model.FontFamilyMode
+import com.aozijx.passly.data.settings.model.ImportMode
+import com.aozijx.passly.data.settings.model.InteractionSettings
+import com.aozijx.passly.data.settings.model.InterfaceSettings
+import com.aozijx.passly.data.settings.model.InterfaceStyleConstraints
+import com.aozijx.passly.data.settings.model.SecuritySettings
+import com.aozijx.passly.data.settings.model.SortDirection
+import com.aozijx.passly.data.settings.model.SwipeActionType
+import com.aozijx.passly.data.settings.model.ThemeMode
+import com.aozijx.passly.data.settings.model.LibrarySortField
+import com.aozijx.passly.data.settings.model.LibrarySortSpec
+import com.aozijx.passly.data.settings.model.LibraryViewSettings
+import com.aozijx.passly.data.settings.model.VisibleQuickFiltersConfig
 import com.aozijx.passly.data.local.datastore.settings.CardDensity as ProtoCardDensity
 import com.aozijx.passly.data.local.datastore.settings.EntryCardPresentation as ProtoEntryCardPresentation
 import com.aozijx.passly.data.local.datastore.settings.FallbackPalette as ProtoFallbackPalette
@@ -268,7 +268,7 @@ internal fun decodeMessageSettings(proto: MessagePreferences?): AppMessageSettin
     return AppMessageSettings(
         optionalMessagesEnabled = proto.optionalMessagesEnabled,
         systemNotificationsEnabled = proto.systemNotificationsEnabled,
-        topicSettings = com.aozijx.passly.domain.notice.model.defaultTopicSettings() +
+        topicSettings = com.aozijx.passly.data.message.model.defaultTopicSettings() +
                 configured
     )
 }

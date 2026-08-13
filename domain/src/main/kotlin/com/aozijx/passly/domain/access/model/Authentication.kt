@@ -54,10 +54,14 @@ data class AuthenticationRequest(
 sealed interface AuthenticationState {
     data object Locked : AuthenticationState
 
+    data class AwaitingHost(val requestId: AuthenticationRequestId) : AuthenticationState
+
     data class Authenticating(
         val requestId: AuthenticationRequestId,
         val method: AuthenticationMethod,
     ) : AuthenticationState
+
+    data class Unlocking(val requestId: AuthenticationRequestId) : AuthenticationState
 
     data class Authenticated(val authenticatedAtMs: Long) : AuthenticationState
 
@@ -91,9 +95,11 @@ enum class CancellationReason { USER, CALLER, SESSION_LOCKED }
 
 enum class AuthenticationFailureCode {
     BUSY,
+    HOST_UNAVAILABLE,
     METHOD_UNAVAILABLE,
     KEY_MISSING,
     KEY_INVALIDATED,
+    CRYPTO_OBJECT_INVALID,
     CREDENTIAL_INCORRECT,
     PASSWORD_POLICY_VIOLATION,
     ENVELOPE_CORRUPTED,

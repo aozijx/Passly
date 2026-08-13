@@ -5,7 +5,7 @@ import androidx.room.Query
 import androidx.room.RawQuery
 import androidx.sqlite.db.SupportSQLiteQuery
 import com.aozijx.passly.data.local.database.entity.SearchTokenEntity
-import com.aozijx.passly.domain.entry.model.lookup.LookupField
+import com.aozijx.passly.domain.entry.model.query.LookupField
 
 @Dao
 interface SearchTokenQueryDao {

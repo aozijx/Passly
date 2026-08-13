@@ -8,7 +8,7 @@ import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.OperationCode
 import com.aozijx.passly.core.telemetry.reporting.AppErrorReporter
 import com.aozijx.passly.core.telemetry.reporting.ErrorReportContext
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import javax.inject.Inject
 import javax.inject.Singleton
 

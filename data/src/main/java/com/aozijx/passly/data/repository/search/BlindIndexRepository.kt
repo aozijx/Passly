@@ -2,9 +2,9 @@ package com.aozijx.passly.data.repository.search
 
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.local.database.query.buildEntryIdIntersectionQuery
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
-import com.aozijx.passly.domain.entry.model.lookup.LookupField
-import com.aozijx.passly.domain.entry.repository.SearchIndexRepository
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.entry.model.query.LookupField
+import com.aozijx.passly.domain.entry.port.SearchIndexRepository
 import com.aozijx.passly.security.search.BlindIndexer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow

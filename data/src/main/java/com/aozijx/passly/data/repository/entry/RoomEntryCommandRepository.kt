@@ -8,10 +8,11 @@ import com.aozijx.passly.data.repository.entry.command.EmptyTrashExecutor
 import com.aozijx.passly.data.repository.entry.command.RestoreEntryExecutor
 import com.aozijx.passly.data.repository.entry.command.TrashEntryExecutor
 import com.aozijx.passly.data.repository.entry.command.UpdateEntryExecutor
-import com.aozijx.passly.domain.entry.model.EntryChanges
+import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.EntryAggregate
-import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
+import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -38,29 +39,29 @@ internal class RoomEntryCommandRepository @Inject constructor(
     private val emptyTrashExecutor: EmptyTrashExecutor
 ) : EntryCommandRepository {
 
-    override suspend fun createEntry(entry: EntryAggregate): AppResult<EntryId> =
+    override suspend fun createEntry(entry: Entry): AppResult<EntryId> =
         createEntryExecutor.execute(entry)
 
     override suspend fun updateEntry(
-        id: String,
-        expectedVersion: Int,
-        changes: EntryChanges
-    ): AppResult<Unit> = updateEntryExecutor.execute(id, expectedVersion, changes)
+        id: EntryId,
+        expectedVersion: EntryVersion,
+        changes: EntryUpdate
+    ): AppResult<Unit> = updateEntryExecutor.execute(id.value, expectedVersion.value, changes)
 
     override suspend fun moveToTrash(
-        id: String,
-        expectedVersion: Int
-    ): AppResult<Unit> = trashEntryExecutor.execute(id, expectedVersion)
+        id: EntryId,
+        expectedVersion: EntryVersion
+    ): AppResult<Unit> = trashEntryExecutor.execute(id.value, expectedVersion.value)
 
     override suspend fun restoreEntry(
-        id: String,
-        expectedVersion: Int
-    ): AppResult<Unit> = restoreEntryExecutor.execute(id, expectedVersion)
+        id: EntryId,
+        expectedVersion: EntryVersion
+    ): AppResult<Unit> = restoreEntryExecutor.execute(id.value, expectedVersion.value)
 
     override suspend fun deletePermanently(
-        id: String,
-        expectedVersion: Int
-    ): AppResult<Unit> = deleteEntryPermanentlyExecutor.execute(id, expectedVersion)
+        id: EntryId,
+        expectedVersion: EntryVersion
+    ): AppResult<Unit> = deleteEntryPermanentlyExecutor.execute(id.value, expectedVersion.value)
 
     override suspend fun emptyTrash(): AppResult<Int> = emptyTrashExecutor.execute()
 }

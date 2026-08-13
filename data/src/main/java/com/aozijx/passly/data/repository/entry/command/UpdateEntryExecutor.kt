@@ -2,38 +2,26 @@ package com.aozijx.passly.data.repository.entry.command
 
 import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
-import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
-import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
-import com.aozijx.passly.data.mapper.search.toLookupFields
-import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
-import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
-import com.aozijx.passly.data.repository.entry.command.EntryActivityWriter
-import com.aozijx.passly.data.repository.entry.command.EntrySearchIndexWriter
-import com.aozijx.passly.data.repository.entry.command.EntryRevisionWriter
-import com.aozijx.passly.data.repository.entry.SensitiveFieldStore
 import com.aozijx.passly.data.local.database.DatabaseClock
-import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
-import com.aozijx.passly.domain.entry.model.EntryChanges
+import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
+import com.aozijx.passly.data.mapper.entry.EntryAssembler
+import com.aozijx.passly.data.mapper.entry.hasEntryCapability
+import com.aozijx.passly.data.mapper.entry.toDatabaseFlags
+import com.aozijx.passly.data.mapper.search.toLookupFields
+import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
+import com.aozijx.passly.data.repository.entry.SensitiveFieldStore
 import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.extractHighSensitivity
-import com.aozijx.passly.domain.entry.model.mergeWith
-import com.aozijx.passly.domain.entry.model.withHighSensitivity
-import com.aozijx.passly.domain.entry.model.withoutHighSensitivity
-import com.aozijx.passly.domain.entry.service.EntrySecretPolicy
+import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
+import com.aozijx.passly.domain.entry.model.query.EntryCapability
 import javax.inject.Inject
 
-/**
- * 更新条目事务执行器。
- *
- * 原子写入：Metadata(含版本) + Credential + 盲索引 + 历史快照 + 活动记录。
- * 覆盖所有字段（title, username, password, email, notes, otp, card,
- * ssh, customFields 等），替代原有的多个单字段命令。
- */
 internal class UpdateEntryExecutor @Inject constructor(
     private val databaseTransactions: DatabaseTransactionRunner,
-    private val summaryCodec: EntrySummaryCodec,
+    private val summaryCodec: EntryProfileCodec,
     private val secretCodec: EntrySecretCodec,
     private val sensitiveFieldStore: SensitiveFieldStore,
     private val searchIndexWriter: EntrySearchIndexWriter,
@@ -42,86 +30,58 @@ internal class UpdateEntryExecutor @Inject constructor(
     private val clock: DatabaseClock,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
-    suspend fun execute(
-        id: String,
-        expectedVersion: Int,
-        changes: EntryChanges
-    ): AppResult<Unit> {
+    suspend fun execute(id: String, expectedVersion: Int, changes: EntryUpdate): AppResult<Unit> {
         val result = databaseTransactions.write("entry.update") {
-        val metaEntity = entryQueryDao().getById(id)
-            ?: throw NotFound()
-        val oldSummary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
-        val credEntity = entrySecretQueryDao().getByEntryId(id)
-        val oldSecret = credEntity?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
-        val newSummary = changes.summary ?: oldSummary
-        val changedHighSensitivitySecret = changes.secret?.extractHighSensitivity()
-            ?: changes.highSensitivitySecret
-        val sensitiveValuesChanged = changedHighSensitivitySecret != null
-        val oldHighSensitivitySecret = if (sensitiveValuesChanged) {
-            sensitiveFieldStore.readAllForMutation(this, id)
-        } else {
-            com.aozijx.passly.domain.entry.model.EntryHighSensitivitySecret.EMPTY
-        }
-        val newHighSensitivitySecret = when {
-            changedHighSensitivitySecret != null ->
-                oldHighSensitivitySecret.mergeWith(changedHighSensitivitySecret)
-            else -> oldHighSensitivitySecret
-        }
-        val newSecretInput = changes.secret ?: (oldSecret ?: EntrySecret())
-        val newFullSecret = newSecretInput.withHighSensitivity(newHighSensitivitySecret)
-        val newPersistedSecret = newFullSecret.withoutHighSensitivity()
-        val now = clock.now()
-        if (changes.secret != null || changes.highSensitivitySecret != null) {
-            EntrySecretPolicy.requireValid(metaEntity.entryType, newFullSecret)
-        }
+            val entity = entryQueryDao().getById(id) ?: throw NotFound()
+            val oldProfile = summaryCodec.decrypt(entity.summaryBlob, id)
+            val secretEntity = entrySecretQueryDao().getByEntryId(id)
+            val oldSecret = secretEntity?.let { secretCodec.decrypt(it.secretBlob, id) }
+                ?: EntrySecret()
+            val newProfile = changes.profile ?: oldProfile
+            val newSecret = changes.secret ?: oldSecret
+            require(newSecret.credential.kind == entity.entryType.credentialKind) {
+                "${entity.entryType} cannot contain ${newSecret.credential.kind} credentials"
+            }
 
-        // 1. 版本校验 + metadata 更新（原子操作）
-        val metaBlob = summaryCodec.encrypt(newSummary, id)
-        val capabilityFlags = EntryCapabilityFlags.computeFrom(
-            secret = newPersistedSecret,
-            hasAttachments = EntryCapabilityFlags.has(
-                metaEntity.capabilityFlags,
-                EntryCapabilityFlags.HAS_ATTACHMENTS
+            val now = clock.now()
+            val hasAttachments = entity.capabilityFlags.hasEntryCapability(EntryCapability.ATTACHMENTS)
+            val flags = EntryCapabilities.from(newSecret, hasAttachments).toDatabaseFlags()
+            val affected = entryCommandDao().optimisticUpdate(
+                id,
+                expectedVersion,
+                summaryCodec.encrypt(newProfile, id),
+                flags,
+                newSecret.otp?.config?.type?.name,
+                now,
             )
-        )
-        val otpType = EntryCapabilityFlags.otpTypeFrom(newFullSecret)
-        val affected = entryCommandDao().optimisticUpdate(
-            id, expectedVersion, metaBlob, capabilityFlags, otpType, now
-        )
-        databaseTransactions.checkAffectedRows(affected)
+            databaseTransactions.checkAffectedRows(affected)
 
-        // 2. 写入 Secret（有变更或首次创建凭据时更新）
-        if (changes.secret != null || changes.highSensitivitySecret != null || oldSecret == null) {
-            val credBlob = secretCodec.encrypt(newPersistedSecret, id)
-            entrySecretCommandDao().updateBlob(id, credBlob)
-            sensitiveFieldStore.replaceAll(this, id, newHighSensitivitySecret)
-        }
+            if (changes.secret != null || secretEntity == null) {
+                entrySecretCommandDao().updateBlob(id, secretCodec.encrypt(newSecret, id))
+                sensitiveFieldStore.replaceAll(this, id, newSecret)
+            }
 
-        // 3. 重建盲索引（仅搜索相关字段变化时）
-        val searchFieldsChanged =
-            oldSummary.title != newSummary.title || oldSummary.username != newSummary.username
-        if (changes.summary != null && searchFieldsChanged) {
-            val vaultEntry = EntryAggregateAssembler.assembleFromDatabase(
-                metaEntity, newSummary, null
+            if (changes.profile != null || changes.secret != null) {
+                val updated = EntryAssembler.assembleFromDatabase(
+                    entity.copy(version = expectedVersion + 1, updatedAt = now),
+                    newProfile,
+                    newSecret,
+                )
+                searchIndexWriter.rebuildForEntry(this, id, updated.toLookupFields())
+            }
+
+            revisionWriter.snapshotChanges(
+                db = this,
+                entryId = id,
+                entryVersion = expectedVersion + 1,
+                summary = newProfile,
+                secret = newSecret,
+                now = now,
             )
-            searchIndexWriter.rebuildForEntry(this, id, vaultEntry.toLookupFields())
-        }
-
-        // 4. 历史快照（保存 newSummary + newSecret，版本使用更新后的 EntryEntity.version）
-        revisionWriter.snapshotChanges(
-            db = this,
-            entryId = id,
-            entryVersion = metaEntity.version + 1,
-            summary = newSummary,
-            secret = newPersistedSecret,
-            now = now
-        )
-
-        // 5. 活动记录与数据更新处于同一事务，失败时一起回滚。
-        activityWriter.recordActivity(this, id, ActivityType.UPDATE, now)
-        if (sensitiveValuesChanged) {
-            activityWriter.recordActivity(this, id, ActivityType.SENSITIVE_CHANGE, now)
-        }
+            activityWriter.recordActivity(this, id, ActivityType.UPDATE, now)
+            if (changes.secret != null) {
+                activityWriter.recordActivity(this, id, ActivityType.SENSITIVE_CHANGE, now)
+            }
         }
         result.onSuccessSuspend { attachmentGarbageCollector.drain() }
         return result

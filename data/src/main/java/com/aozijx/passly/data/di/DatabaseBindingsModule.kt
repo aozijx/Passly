@@ -2,9 +2,9 @@ package com.aozijx.passly.data.di
 
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.repository.database.DatabaseControllerImpl
-import com.aozijx.passly.domain.authentication.DatabaseSessionLifecycle
-import com.aozijx.passly.domain.authentication.SessionStateProvider
-import com.aozijx.passly.domain.diagnostics.repository.DatabaseController
+import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
+import com.aozijx.passly.runtime.session.SessionStateProvider
+import com.aozijx.passly.data.database.port.DatabaseController
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

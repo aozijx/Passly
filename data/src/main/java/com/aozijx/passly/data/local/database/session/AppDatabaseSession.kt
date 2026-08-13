@@ -6,9 +6,9 @@ import com.aozijx.passly.core.telemetry.EventLevel
 import com.aozijx.passly.core.telemetry.TelemetryEvent
 import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.data.local.database.AppDatabase
-import com.aozijx.passly.domain.authentication.SecureSessionState
-import com.aozijx.passly.domain.authentication.DatabaseSessionLifecycle
-import com.aozijx.passly.domain.authentication.SessionStateProvider
+import com.aozijx.passly.runtime.session.SecureSessionState
+import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
+import com.aozijx.passly.runtime.session.SessionStateProvider
 import com.aozijx.passly.runtime.session.RuntimeSessionManager
 import com.aozijx.passly.runtime.session.SessionEventSink
 import com.aozijx.passly.runtime.session.SessionKeySource

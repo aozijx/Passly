@@ -1,7 +1,7 @@
 package com.aozijx.passly.security.search
 
-import com.aozijx.passly.domain.entry.model.lookup.LookupField
-import com.aozijx.passly.domain.entry.model.lookup.LookupFieldValue
+import com.aozijx.passly.domain.entry.model.query.LookupField
+import com.aozijx.passly.domain.entry.model.query.LookupFieldValue
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import javax.inject.Inject
@@ -72,7 +72,7 @@ class BlindIndexer @Inject constructor(
             LookupField.EMAIL -> 8
             LookupField.DOMAIN -> 7
             LookupField.URL -> 6
-            LookupField.PACKAGE -> 6
+            LookupField.APPLICATION_ID -> 6
         }
     }
 }

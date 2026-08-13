@@ -3,8 +3,8 @@ package com.aozijx.passly.data.repository.favicon
 import android.content.Context
 import com.aozijx.passly.domain.entry.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.entry.model.favicon.FaviconResult
-import com.aozijx.passly.domain.entry.repository.FaviconRepository
-import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
+import com.aozijx.passly.domain.entry.port.FaviconRepository
+import com.aozijx.passly.data.settings.port.AppSettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject

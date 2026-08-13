@@ -1,6 +1,6 @@
 package com.aozijx.passly.security.search
 
-import com.aozijx.passly.domain.entry.model.lookup.LookupField
+import com.aozijx.passly.domain.entry.model.query.LookupField
 
 data class TokenGram(val gram: String, val length: Int)
 

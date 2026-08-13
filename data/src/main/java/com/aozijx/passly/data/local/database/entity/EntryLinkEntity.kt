@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.aozijx.passly.domain.entry.model.link.EntryRelationType
+import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 
 @Entity(
     tableName = "entry_links",

@@ -2,7 +2,7 @@ package com.aozijx.passly.data.local.database.query
 
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.aozijx.passly.data.local.database.DatabaseSchema
-import com.aozijx.passly.domain.entry.model.lookup.LookupField
+import com.aozijx.passly.domain.entry.model.query.LookupField
 import com.aozijx.passly.security.search.SearchToken
 
 /**

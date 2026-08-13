@@ -6,11 +6,12 @@ import com.aozijx.passly.data.mapper.attachment.AttachmentRefMapper
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
 import com.aozijx.passly.data.repository.entry.command.EntryRevisionWriter
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
-import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.data.mapper.entry.databaseFlag
+import com.aozijx.passly.domain.entry.model.query.EntryCapability
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.attachment.EntryAttachment
-import com.aozijx.passly.domain.entry.repository.AttachmentRepository
+import com.aozijx.passly.domain.entry.port.AttachmentRepository
 import com.aozijx.passly.security.crypto.AttachmentContentCrypto
 import java.io.File
 import java.io.FileOutputStream
@@ -93,7 +94,7 @@ internal class FileBackedAttachmentRepository @Inject constructor(
                     )
                     if (normalized.status == AttachmentStatus.COMMITTED) {
                         val committedEntryId = requireNotNull(normalized.entryId)
-                        entryCommandDao().addCapability(committedEntryId, EntryCapabilityFlags.HAS_ATTACHMENTS)
+                        entryCommandDao().addCapability(committedEntryId, databaseFlag(EntryCapability.ATTACHMENTS))
                         revisionHelper.snapshotCurrent(this, committedEntryId, normalized.createdAt)
                     }
                 }
@@ -113,7 +114,7 @@ internal class FileBackedAttachmentRepository @Inject constructor(
             if (ref.status == AttachmentStatus.COMMITTED.name) {
                 val entryId = requireNotNull(ref.entryId)
                 if (attachmentRefQueryDao().countCommittedByEntryId(entryId) == 0) {
-                    entryCommandDao().retainCapabilities(entryId, EntryCapabilityFlags.HAS_ATTACHMENTS.inv())
+                    entryCommandDao().retainCapabilities(entryId, databaseFlag(EntryCapability.ATTACHMENTS).inv())
                 }
                 revisionHelper.snapshotCurrent(this, entryId, System.currentTimeMillis())
             }
@@ -130,7 +131,7 @@ internal class FileBackedAttachmentRepository @Inject constructor(
             val pendingCount = attachmentRefQueryDao().getPendingByOwner(stagingOwnerId).size
             if (pendingCount == 0) return@transaction
             check(attachmentRefCommandDao().commitByOwner(stagingOwnerId, entryId) == pendingCount)
-            entryCommandDao().addCapability(entryId, EntryCapabilityFlags.HAS_ATTACHMENTS)
+            entryCommandDao().addCapability(entryId, databaseFlag(EntryCapability.ATTACHMENTS))
             revisionHelper.snapshotCurrent(this, entryId, System.currentTimeMillis())
         }
         garbageCollector.drain()

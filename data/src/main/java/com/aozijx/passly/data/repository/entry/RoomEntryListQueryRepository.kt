@@ -1,20 +1,22 @@
 package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
-import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
+import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.local.database.query.buildEntryIdIntersectionQuery
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.mapper.entry.EntryListItemMapper
 import com.aozijx.passly.data.local.database.entity.EntryEntity
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
-import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.data.mapper.entry.databaseFlag
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.lookup.EntryFilter
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.domain.entry.model.lookup.LookupField
-import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
-import com.aozijx.passly.domain.entry.service.EntryAccountGraph
+import com.aozijx.passly.domain.entry.model.query.EntryFilter
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.domain.entry.model.query.EntryCapability
+import com.aozijx.passly.domain.entry.model.query.EntryUsage
+import com.aozijx.passly.domain.entry.model.query.LookupField
+import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
+import com.aozijx.passly.domain.entry.policy.EntryAccountGraph
 import com.aozijx.passly.security.search.BlindIndexer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -31,7 +33,7 @@ import javax.inject.Singleton
 internal class RoomEntryListQueryRepository @Inject constructor(
     private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
-    private val summaryCodec: EntrySummaryCodec,
+    private val summaryCodec: EntryProfileCodec,
     private val blindIndexer: BlindIndexer
 ) : EntryListQueryRepository {
 
@@ -64,11 +66,11 @@ internal class RoomEntryListQueryRepository @Inject constructor(
                 val entryFlow = when (filter) {
                     EntryFilter.ALL -> entryQueryDao().observeActive()
                     EntryFilter.TOTP_ONLY -> entryQueryDao().observeActiveWithCapability(
-                        EntryCapabilityFlags.HAS_OTP
+                        databaseFlag(EntryCapability.OTP)
                     )
 
                     EntryFilter.PASSWORD_ONLY -> entryQueryDao().observeActiveWithCapability(
-                        EntryCapabilityFlags.HAS_PASSWORD
+                        databaseFlag(EntryCapability.PASSWORD)
                     )
                 }
                 val statsFlow =
@@ -78,8 +80,8 @@ internal class RoomEntryListQueryRepository @Inject constructor(
                     val statsMap = statsList.associateBy { it.entryId }
                     val accountGraph = EntryAccountGraph(
                         linkEntities.map { link ->
-                            com.aozijx.passly.domain.entry.model.link.EntryLink.create(
-                                id = com.aozijx.passly.domain.entry.model.link.EntryLinkId(link.linkId),
+                            com.aozijx.passly.domain.entry.model.relation.EntryLink.create(
+                                id = com.aozijx.passly.domain.entry.model.relation.EntryLinkId(link.linkId),
                                 sourceEntryId = EntryId(link.sourceEntryId),
                                 targetEntryId = EntryId(link.targetEntryId),
                                 relationType = link.relationType,
@@ -100,13 +102,15 @@ internal class RoomEntryListQueryRepository @Inject constructor(
                         EntryListItemMapper.assemble(it, summary)
                     }
                         .map { item ->
-                            val stats = statsMap[item.id]
+                            val stats = statsMap[item.id.value]
                             val groupedItem = item.copy(
-                                accountEntryId = accountGraph.accountFor(EntryId(item.id))?.value
+                                accountId = accountGraph.accountFor(item.id)
                             )
                             if (stats != null) groupedItem.copy(
-                                usageCount = stats.usageCount,
-                                lastUsedAt = stats.lastUsedAt
+                                usage = EntryUsage(
+                                    count = stats.usageCount,
+                                    lastUsedAtMs = stats.lastUsedAt,
+                                )
                             ) else groupedItem
                         }
                         .filter { item ->

@@ -1,6 +1,6 @@
 package com.aozijx.passly.security.search
 
-import com.aozijx.passly.domain.entry.model.lookup.LookupField
+import com.aozijx.passly.domain.entry.model.query.LookupField
 import java.text.Normalizer
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,7 +23,7 @@ class DefaultTokenizer @Inject constructor() : Tokenizer {
         LookupField.USERNAME -> TokenizerConfig(true, DEFAULT_MIN_GRAM, USERNAME_MAX_GRAM)
         LookupField.EMAIL -> TokenizerConfig(true, DEFAULT_MIN_GRAM, EMAIL_MAX_GRAM)
         LookupField.URL -> TokenizerConfig(true, DEFAULT_MIN_GRAM, Int.MAX_VALUE)
-        LookupField.PACKAGE -> TokenizerConfig(true, DEFAULT_MIN_GRAM, Int.MAX_VALUE)
+        LookupField.APPLICATION_ID -> TokenizerConfig(true, DEFAULT_MIN_GRAM, Int.MAX_VALUE)
     }
 
     override fun normalize(text: String): String {

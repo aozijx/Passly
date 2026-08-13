@@ -6,7 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Upsert
 import com.aozijx.passly.data.local.database.entity.SearchTokenEntity
-import com.aozijx.passly.domain.entry.model.lookup.LookupField
+import com.aozijx.passly.domain.entry.model.query.LookupField
 
 @Dao
 interface SearchTokenCommandDao {

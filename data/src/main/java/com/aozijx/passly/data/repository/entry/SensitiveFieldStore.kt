@@ -2,11 +2,10 @@ package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.data.codec.entry.SensitiveFieldCodec
 import com.aozijx.passly.data.local.database.AppDatabase
-import com.aozijx.passly.data.mapper.entry.toHighSensitivitySecret
 import com.aozijx.passly.data.mapper.entry.toSensitiveFieldValues
 import com.aozijx.passly.data.local.database.entity.EntrySensitiveFieldEntity
 import com.aozijx.passly.data.local.database.DatabaseClock
-import com.aozijx.passly.domain.entry.model.EntryHighSensitivitySecret
+import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import javax.inject.Inject
 
@@ -14,30 +13,10 @@ class SensitiveFieldStore @Inject internal constructor(
     private val codec: SensitiveFieldCodec,
     private val clock: DatabaseClock
 ) {
-    suspend fun readAllForMutation(
-        db: AppDatabase,
-        entryId: String
-    ): EntryHighSensitivitySecret {
-        return db.sensitiveFieldQueryDao().getFields(entryId).associate { entity ->
-            val key = SensitiveFieldKey.valueOf(entity.fieldKey)
-            key to codec.decryptProvisioned(entryId, key, entity.valueCipher)
-        }.toHighSensitivitySecret()
-    }
-
-    suspend fun readAllUnlocked(
-        db: AppDatabase,
-        entryId: String
-    ): EntryHighSensitivitySecret {
-        return db.sensitiveFieldQueryDao().getFields(entryId).associate { entity ->
-            val key = SensitiveFieldKey.valueOf(entity.fieldKey)
-            key to codec.decrypt(entryId, key, entity.valueCipher)
-        }.toHighSensitivitySecret()
-    }
-
     suspend fun replaceAll(
         db: AppDatabase,
         entryId: String,
-        secret: EntryHighSensitivitySecret
+        secret: EntrySecret
     ) {
         db.sensitiveFieldCommandDao().deleteAll(entryId)
         val now = clock.now()

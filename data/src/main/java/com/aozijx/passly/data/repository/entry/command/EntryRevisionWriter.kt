@@ -3,17 +3,17 @@ package com.aozijx.passly.data.repository.entry.command
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
-import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
+import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.data.local.database.entity.RevisionAttachmentRefEntity
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.EntrySummary
-import com.aozijx.passly.domain.entry.model.link.EntryLink
-import com.aozijx.passly.domain.entry.model.link.EntryLinkId
-import com.aozijx.passly.domain.entry.model.revision.RevisionType
+import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.relation.EntryLink
+import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
+import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -27,7 +27,7 @@ import javax.inject.Singleton
 internal class EntryRevisionWriter @Inject constructor(
     private val contentSnapshotCodec: EntryContentSnapshotCodec,
     private val sensitiveRevisionCodec: SensitiveRevisionSnapshotCodec,
-    private val summaryCodec: EntrySummaryCodec,
+    private val summaryCodec: EntryProfileCodec,
     private val secretCodec: EntrySecretCodec,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
@@ -39,10 +39,10 @@ internal class EntryRevisionWriter @Inject constructor(
         db: AppDatabase,
         entryId: String,
         entryVersion: Int,
-        summary: EntrySummary,
+        summary: EntryProfile,
         secret: EntrySecret,
         now: Long,
-        changeType: RevisionType = RevisionType.VALUE_CHANGED,
+        change: RevisionChange = RevisionChange.VALUE_CHANGED,
     ) = with(db) {
         val links = entryLinkQueryDao().getByEntryId(entryId).map { link ->
             EntryLink.create(
@@ -70,7 +70,7 @@ internal class EntryRevisionWriter @Inject constructor(
                 entryId = entryId,
                 entryContentCipher = entryContentCipher,
                 sensitiveFieldCipherSet = sensitiveRevisionCodec.encode(sensitiveFields),
-                changeType = changeType.value,
+                changeType = change.name,
                 createdAt = now
             )
         )
@@ -97,7 +97,7 @@ internal class EntryRevisionWriter @Inject constructor(
         db: AppDatabase,
         entryId: String,
         now: Long,
-        changeType: RevisionType = RevisionType.VALUE_CHANGED,
+        change: RevisionChange = RevisionChange.VALUE_CHANGED,
     ) = with(db) {
         val metadata = entryQueryDao().getById(entryId) ?: return@with
         val secretEntity = entrySecretQueryDao().getByEntryId(entryId)
@@ -117,7 +117,7 @@ internal class EntryRevisionWriter @Inject constructor(
             summary = summary,
             secret = secret,
             now = now,
-            changeType = changeType,
+            change = change,
         )
     }
 

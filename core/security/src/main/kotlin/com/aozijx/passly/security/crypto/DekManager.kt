@@ -4,9 +4,9 @@ import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.EventLevel
 import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.report
-import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
-import com.aozijx.passly.domain.auth.model.envelope.KdfAlgorithm
-import com.aozijx.passly.domain.auth.model.envelope.KeyEnvelope
+import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.model.KdfAlgorithm
+import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.security.MemoryCleaner
 import com.aozijx.passly.security.envelope.BootstrapStore
 import com.aozijx.passly.security.vault.VerificationTag

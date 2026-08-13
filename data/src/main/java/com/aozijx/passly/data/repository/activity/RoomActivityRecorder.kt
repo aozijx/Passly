@@ -5,10 +5,10 @@ import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.local.database.entity.EntryActivityEntity
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
-import com.aozijx.passly.domain.entry.repository.ActivityRecorder
+import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import javax.inject.Inject
 import javax.inject.Singleton
 

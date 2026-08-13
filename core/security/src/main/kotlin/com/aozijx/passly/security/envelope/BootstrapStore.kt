@@ -1,7 +1,7 @@
 package com.aozijx.passly.security.envelope
 
-import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
-import com.aozijx.passly.domain.auth.model.envelope.KeyEnvelope
+import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.model.KeyEnvelope
 
 interface BootstrapStore {
 

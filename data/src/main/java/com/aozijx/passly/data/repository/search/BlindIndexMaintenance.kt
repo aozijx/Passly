@@ -2,13 +2,13 @@ package com.aozijx.passly.data.repository.search
 
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
-import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
-import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
+import com.aozijx.passly.data.codec.entry.EntryProfileCodec
+import com.aozijx.passly.data.mapper.entry.EntryAssembler
 import com.aozijx.passly.data.mapper.search.toLookupFields
 import com.aozijx.passly.data.local.database.entity.SearchTokenEntity
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.repository.entry.command.EntrySearchIndexWriter
-import com.aozijx.passly.domain.entry.repository.SearchIndexMaintenance
+import com.aozijx.passly.domain.entry.port.SearchIndexMaintenance
 import com.aozijx.passly.security.search.BlindIndexRecord
 import com.aozijx.passly.security.search.BlindIndexer
 import javax.inject.Inject
@@ -24,7 +24,7 @@ import javax.inject.Singleton
 @Singleton
 internal class BlindIndexMaintenance @Inject constructor(
     private val databaseTransactions: DatabaseTransactionRunner,
-    private val summaryCodec: EntrySummaryCodec,
+    private val summaryCodec: EntryProfileCodec,
     private val secretCodec: EntrySecretCodec,
     private val blindIndexer: BlindIndexer,
     private val searchIndexWriter: EntrySearchIndexWriter
@@ -61,7 +61,7 @@ internal class BlindIndexMaintenance @Inject constructor(
                     val secret = credEntity?.let {
                         secretCodec.decrypt(it.secretBlob, it.entryId)
                     }
-                    val entry = EntryAggregateAssembler.assembleFromDatabase(
+                    val entry = EntryAssembler.assembleFromDatabase(
                         metaEntity, summary, secret
                     )
                     // rebuildForEntry 内部：删除旧索引 -> 生成新索引 -> 更新 searchIndexVersion

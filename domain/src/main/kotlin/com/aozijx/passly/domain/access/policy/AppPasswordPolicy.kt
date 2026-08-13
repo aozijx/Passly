@@ -25,6 +25,8 @@ data class AppPasswordPolicy(
         }
     }
 
+    fun acceptsLength(length: Int): Boolean = length >= minimumLength
+
     companion object {
         val DEFAULT = AppPasswordPolicy()
     }

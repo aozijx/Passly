@@ -3,15 +3,15 @@ package com.aozijx.passly.data.local.database.converter
 import androidx.room.TypeConverter
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.link.EntryRelationType
-import com.aozijx.passly.domain.entry.model.lookup.LookupField
+import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
+import com.aozijx.passly.domain.entry.model.query.LookupField
 
 object EntryTypeConverter {
     @TypeConverter
     fun fromEntryType(value: EntryType): String = value.name
 
     @TypeConverter
-    fun toEntryType(value: String): EntryType = EntryType.fromName(value)
+    fun toEntryType(value: String): EntryType = EntryType.valueOf(value)
 }
 
 object ActivityTypeConverter {

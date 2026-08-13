@@ -16,22 +16,24 @@ import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCol
 import com.aozijx.passly.data.repository.entry.command.EntryActivityWriter
 import com.aozijx.passly.data.repository.entry.command.EntryRevisionWriter
 import com.aozijx.passly.data.local.database.DatabaseClock
-import com.aozijx.passly.domain.auth.model.AuthorizationPermit
-import com.aozijx.passly.domain.auth.model.AuthorizationScope
-import com.aozijx.passly.domain.auth.model.SensitiveRevisionAccessAction
-import com.aozijx.passly.domain.auth.port.AuthorizationPermitVerifier
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
-import com.aozijx.passly.domain.entry.model.EntryHeader
+import com.aozijx.passly.domain.access.model.AuthorizationPermit
+import com.aozijx.passly.domain.access.model.AuthorizationScope
+import com.aozijx.passly.domain.access.model.SensitiveRevisionAccessAction
+import com.aozijx.passly.domain.access.port.AuthorizationPermitVerifier
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.revision.EntryRevision
-import com.aozijx.passly.domain.entry.model.revision.RevisionType
+import com.aozijx.passly.domain.entry.model.history.EntryRevision
+import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
+import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedRevisionSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.domain.entry.repository.EntryRevisionRepository
-import com.aozijx.passly.domain.entry.service.SensitiveRevisionRestorePolicy
+import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
+import com.aozijx.passly.domain.entry.policy.SensitiveRevisionRestorePolicy
 import com.aozijx.passly.security.crypto.SecureString
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -51,11 +53,11 @@ internal class RoomEntryRevisionRepository @Inject constructor(
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) : EntryRevisionRepository {
 
-    override suspend fun getRevisions(entryId: String): List<EntryRevision> {
+    override suspend fun getRevisions(entryId: EntryId): List<EntryRevision> {
         if (!sessionState.hasFullSecureSessionAccess()) return emptyList()
         return databaseSession.query {
-            val metadata = entryQueryDao().getById(entryId) ?: return@query emptyList()
-            entryRevisionQueryDao().getByEntryId(entryId).map { entity ->
+            val metadata = entryQueryDao().getById(entryId.value) ?: return@query emptyList()
+            entryRevisionQueryDao().getByEntryId(entryId.value).map { entity ->
                 entity.toDomain(
                     metadata,
                     revisionAttachmentRefDao().getByRevisionId(entity.revisionId)
@@ -66,11 +68,11 @@ internal class RoomEntryRevisionRepository @Inject constructor(
         }
     }
 
-    override suspend fun getLatestRevision(entryId: String): EntryRevision? {
+    override suspend fun getLatestRevision(entryId: EntryId): EntryRevision? {
         if (!sessionState.hasFullSecureSessionAccess()) return null
         return databaseSession.query {
-            val entity = entryRevisionQueryDao().getLatest(entryId) ?: return@query null
-            val metadata = entryQueryDao().getById(entryId) ?: return@query null
+            val entity = entryRevisionQueryDao().getLatest(entryId.value) ?: return@query null
+            val metadata = entryQueryDao().getById(entryId.value) ?: return@query null
             entity.toDomain(
                 metadata,
                 revisionAttachmentRefDao().getByRevisionId(entity.revisionId)
@@ -189,7 +191,7 @@ internal class RoomEntryRevisionRepository @Inject constructor(
                 db = this,
                 entryId = entryId.value,
                 now = now,
-                changeType = RevisionType.VERSION_RESTORED,
+                change = RevisionChange.VERSION_RESTORED,
             )
             activityWriter.recordActivity(
                 db = this,
@@ -207,29 +209,32 @@ internal class RoomEntryRevisionRepository @Inject constructor(
         attachmentIds: List<String>,
     ): EntryRevision {
         val snapshot = contentSnapshotCodec.decrypt(entryContentCipher, entryId)
-        val entry = EntryAggregate(
-            header = EntryHeader(
+        val entry = Entry(
+            identity = EntryIdentity(
                 id = EntryId(entryId),
-                entryType = metadata.entryType,
+                type = metadata.entryType,
                 version = EntryVersion(version),
-                createdAt = metadata.createdAt,
-                updatedAt = createdAt,
-                deletedAt = metadata.deletedAt
+                timestamps = EntryTimestamps(
+                    createdAtMs = metadata.createdAt,
+                    updatedAtMs = createdAt,
+                    deletedAtMs = metadata.deletedAt,
+                ),
             ),
-            summary = snapshot.summary,
+            profile = snapshot.summary,
             secret = snapshot.secret,
         )
         return EntryRevision(
-            revisionId = revisionId,
-            version = version,
-            entryId = entryId,
-            entry = entry,
+            id = EntryRevisionId(revisionId),
+            entryId = EntryId(entryId),
+            version = EntryVersion(version),
+            createdAtMs = createdAt,
+            change = runCatching { RevisionChange.valueOf(changeType) }
+                .getOrDefault(RevisionChange.VALUE_CHANGED),
+            snapshot = entry,
             links = snapshot.links,
-            attachmentIds = attachmentIds,
+            attachmentIds = attachmentIds.toSet(),
             sensitiveFieldKeys = sensitiveRevisionCodec.decode(sensitiveFieldCipherSet)
                 .mapTo(linkedSetOf()) { it.key },
-            changeType = RevisionType.fromValue(changeType),
-            createdAt = createdAt,
         )
     }
 

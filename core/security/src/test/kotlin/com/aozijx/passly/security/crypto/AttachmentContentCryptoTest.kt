@@ -1,8 +1,8 @@
 package com.aozijx.passly.security.crypto
 
 import com.aozijx.passly.core.telemetry.TelemetryReporter
-import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
-import com.aozijx.passly.domain.auth.model.envelope.KeyEnvelope
+import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.security.envelope.BiometricBinding
 import com.aozijx.passly.security.envelope.BiometricBootstrapState
 import com.aozijx.passly.security.envelope.BiometricRotationJournal

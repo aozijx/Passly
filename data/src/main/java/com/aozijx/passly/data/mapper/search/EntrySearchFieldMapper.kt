@@ -1,45 +1,45 @@
 package com.aozijx.passly.data.mapper.search
 
-import com.aozijx.passly.domain.entry.model.EntryAggregate
-import com.aozijx.passly.domain.entry.model.lookup.LookupField
-import com.aozijx.passly.domain.entry.model.lookup.LookupFieldValue
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.query.LookupField
+import com.aozijx.passly.domain.entry.model.query.LookupFieldValue
 
-fun EntryAggregate.buildSearchText(): String = buildString {
-    title.takeIf { it.isNotBlank() }?.let { append(it); append("\n") }
-    username.takeIf { it.isNotBlank() }?.let { append(it); append("\n") }
+fun Entry.buildSearchText(): String = buildString {
+    profile.title.takeIf { it.isNotBlank() }?.let { append(it); append("\n") }
+    profile.username.takeIf { it.isNotBlank() }?.let { append(it); append("\n") }
     val email = secret.login?.email
     email?.takeIf { it.isNotBlank() }?.let { append(it); append("\n") }
-    website?.matchDomains?.forEach { domain ->
+    profile.associations.domains.forEach { domain ->
         domain.takeIf { it.isNotBlank() }?.let { append(it); append("\n") }
     }
-    website?.primaryUrl?.takeIf { it.isNotBlank() }?.let { append(it); append("\n") }
-    website?.packageNames?.forEach { packageName ->
+    profile.associations.primaryUrl?.takeIf { it.isNotBlank() }?.let { append(it); append("\n") }
+    profile.associations.applicationIds.forEach { packageName ->
         packageName.takeIf { it.isNotBlank() }?.let { append(it); append("\n") }
     }
 }.trim()
 
-fun EntryAggregate.toLookupFields(): List<LookupFieldValue> = buildList {
-    title.takeIf { it.isNotBlank() }?.let {
+fun Entry.toLookupFields(): List<LookupFieldValue> = buildList {
+    profile.title.takeIf { it.isNotBlank() }?.let {
         add(LookupFieldValue(LookupField.TITLE, it))
     }
-    username.takeIf { it.isNotBlank() }?.let {
+    profile.username.takeIf { it.isNotBlank() }?.let {
         add(LookupFieldValue(LookupField.USERNAME, it))
     }
     val email = secret.login?.email
     email?.takeIf { it.isNotBlank() }?.let {
         add(LookupFieldValue(LookupField.EMAIL, it))
     }
-    website?.matchDomains?.forEach { domain ->
+    profile.associations.domains.forEach { domain ->
         domain.takeIf { it.isNotBlank() }?.let {
             add(LookupFieldValue(LookupField.DOMAIN, it))
         }
     }
-    website?.primaryUrl?.takeIf { it.isNotBlank() }?.let {
+    profile.associations.primaryUrl?.takeIf { it.isNotBlank() }?.let {
         add(LookupFieldValue(LookupField.URL, it))
     }
-    website?.packageNames?.forEach { packageName ->
+    profile.associations.applicationIds.forEach { packageName ->
         packageName.takeIf { it.isNotBlank() }?.let {
-            add(LookupFieldValue(LookupField.PACKAGE, it))
+            add(LookupFieldValue(LookupField.APPLICATION_ID, it))
         }
     }
 }

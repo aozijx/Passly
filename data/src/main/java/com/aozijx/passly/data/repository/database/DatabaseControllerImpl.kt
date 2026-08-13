@@ -10,9 +10,9 @@ import com.aozijx.passly.core.telemetry.report
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.data.local.database.maintenance.DatabaseRecoveryStore
-import com.aozijx.passly.domain.diagnostics.repository.DatabaseController
-import com.aozijx.passly.domain.diagnostics.repository.DatabaseQuarantineResult
-import com.aozijx.passly.domain.entry.runtime.EntryDataRefreshNotifier
+import com.aozijx.passly.data.database.port.DatabaseController
+import com.aozijx.passly.data.database.port.DatabaseQuarantineResult
+import com.aozijx.passly.domain.entry.signal.EntryDataRefreshNotifier
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay

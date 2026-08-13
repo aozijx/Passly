@@ -1,8 +1,8 @@
 package com.aozijx.passly.data.di
 
 import com.aozijx.passly.data.repository.settings.ProtoAppSettingsRepository
-import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
-import com.aozijx.passly.domain.settings.repository.IdleTimeoutSettings
+import com.aozijx.passly.data.settings.port.AppSettingsRepository
+import com.aozijx.passly.data.settings.port.IdleTimeoutSettings
 
 import dagger.Binds
 import dagger.Module

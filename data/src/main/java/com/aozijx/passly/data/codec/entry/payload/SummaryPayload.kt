@@ -3,7 +3,7 @@ package com.aozijx.passly.data.codec.entry.payload
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class WebsiteInfoPayload(
+data class EntryAssociationsPayload(
     val primaryUrl: String? = null,
     val matchDomains: Set<String> = emptySet(),
     val packageNames: Set<String> = emptySet()
@@ -13,7 +13,7 @@ data class WebsiteInfoPayload(
 data class SummaryPayload(
     val title: String,
     val username: String,
-    val website: WebsiteInfoPayload? = null,
+    val website: EntryAssociationsPayload? = null,
     val icon: String? = null,
     val iconCustomPath: String? = null,
     val favorite: Boolean = false,
