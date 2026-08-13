@@ -6,7 +6,7 @@ import android.service.autofill.FillCallback
 import android.service.autofill.FillRequest
 import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
-import com.aozijx.passly.app.di.Heuristic
+import com.aozijx.passly.core.autofill.di.Heuristic
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
 import com.aozijx.passly.core.error.result.AppResult

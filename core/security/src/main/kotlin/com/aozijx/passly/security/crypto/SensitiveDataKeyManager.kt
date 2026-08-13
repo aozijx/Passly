@@ -1,6 +1,7 @@
 package com.aozijx.passly.security.crypto
 
 import com.aozijx.passly.security.MemoryCleaner
+import com.aozijx.passly.security.SecurityCoroutineScope
 import com.aozijx.passly.security.envelope.BootstrapStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -20,7 +21,7 @@ import javax.inject.Singleton
 class SensitiveDataKeyManager @Inject constructor(
     private val bootstrapStore: BootstrapStore,
     private val dekManager: DekManager,
-    private val scope: CoroutineScope
+    @param:SecurityCoroutineScope private val scope: CoroutineScope
 ) {
     private val mutex = Mutex()
     private val random = SecureRandom()

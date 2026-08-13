@@ -23,6 +23,8 @@ import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import com.aozijx.passly.security.crypto.SensitiveDataKeyManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -33,7 +35,6 @@ import javax.inject.Singleton
 
 @Singleton
 class DefaultAuthenticationManager @Inject constructor(
-    private val scope: CoroutineScope,
     private val hostRegistry: AuthenticationHostRegistry,
     private val biometricExecutor: BiometricMethodExecutor,
     private val credentialExecutor: CredentialMethodExecutor,
@@ -42,6 +43,7 @@ class DefaultAuthenticationManager @Inject constructor(
     private val availabilityResolver: AuthenticationAvailabilityResolver,
     private val sensitiveDataKeyManager: SensitiveDataKeyManager
 ) : AuthenticationManager {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val requestMutex = Mutex()
     private val _methods = MutableStateFlow(AuthenticationMethods())
 

@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.di
+package com.aozijx.passly.app.message.di
 
 import com.aozijx.passly.app.message.presentation.AndroidNoticeTextResolver
 import com.aozijx.passly.app.message.runtime.ProcessAppVisibilityProvider

@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.di
+package com.aozijx.passly.core.autofill.di
 
 import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
 import com.aozijx.passly.core.autofill.matcher.FieldMatchStrategy
@@ -7,16 +7,12 @@ import com.aozijx.passly.core.autofill.matcher.StrictMatchStrategy
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.core.autofill.pipeline.ResponseFactory
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.access.model.MonotonicClock
 import com.aozijx.passly.data.settings.port.AppSettingsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
@@ -30,7 +26,7 @@ annotation class Heuristic
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class ServiceModule {
+internal abstract class AutofillModule {
 
     @Binds
     @Singleton
@@ -43,16 +39,6 @@ abstract class ServiceModule {
     abstract fun bindHeuristicStrategy(impl: HeuristicMatchStrategy): FieldMatchStrategy
 
     companion object {
-        @Provides
-        @Singleton
-        fun provideApplicationScope(): CoroutineScope =
-            CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-
-        @Provides
-        @Singleton
-        fun provideMonotonicClock(): MonotonicClock =
-            MonotonicClock { System.nanoTime() / 1_000_000L }
-
         @Provides
         @Singleton
         @Heuristic

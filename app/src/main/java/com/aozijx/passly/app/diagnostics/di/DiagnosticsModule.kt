@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.di
+package com.aozijx.passly.app.diagnostics.di
 
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
 import com.aozijx.passly.app.diagnostics.TelemetryAppErrorReporter

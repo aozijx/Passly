@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.di.entry
+package com.aozijx.passly.app.entry.di
 
 import com.aozijx.passly.domain.entry.policy.DefaultEntryDefaultsProvider
 import com.aozijx.passly.domain.entry.policy.DefaultEntryFieldReader

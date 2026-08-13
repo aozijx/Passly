@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.di.security
+package com.aozijx.passly.security.search.di
 
 import com.aozijx.passly.security.search.DefaultTokenizer
 import com.aozijx.passly.security.search.Tokenizer
@@ -9,11 +9,11 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 /**
- * 加密相关绑定。
+ * 搜索索引使用的安全分词绑定。
  */
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class CryptoModule {
+internal abstract class SearchSecurityModule {
 
     @Binds
     @Singleton
