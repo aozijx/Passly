@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.otp
 
-import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig

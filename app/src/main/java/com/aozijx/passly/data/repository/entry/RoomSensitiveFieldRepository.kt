@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.entry
 
-import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
 import com.aozijx.passly.data.codec.entry.SensitiveFieldCodec
 import com.aozijx.passly.domain.auth.model.AuthorizationPermit
 import com.aozijx.passly.domain.auth.model.AuthorizationScope

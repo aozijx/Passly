@@ -3,7 +3,7 @@ package com.aozijx.passly.data.backup.source
 import android.content.Context
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.platform.VaultResourcePaths
-import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
 import com.aozijx.passly.data.backup.BackupBundleValidator
 import com.aozijx.passly.data.backup.mapper.BackupDocumentMapper
 import com.aozijx.passly.data.backup.model.BackupBundle

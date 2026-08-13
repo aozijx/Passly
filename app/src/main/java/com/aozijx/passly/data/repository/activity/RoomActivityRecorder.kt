@@ -2,7 +2,7 @@ package com.aozijx.passly.data.repository.activity
 
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
 import com.aozijx.passly.data.model.entity.EntryActivityEntity
 import com.aozijx.passly.data.repository.VaultTransactionRunner
 import com.aozijx.passly.domain.authentication.SecureSessionAccessState

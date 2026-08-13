@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.session
+package com.aozijx.passly.data.local.database.session
 
 import androidx.room.withTransaction
 import com.aozijx.passly.data.local.database.AppDatabase

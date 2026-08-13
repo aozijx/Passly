@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.autofill
 
 import com.aozijx.passly.core.platform.PackageUtils
-import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.local.dao.buildRecentEntryIdIntersectionQuery

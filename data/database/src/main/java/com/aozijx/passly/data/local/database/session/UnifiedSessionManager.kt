@@ -1,12 +1,17 @@
-package com.aozijx.passly.core.session
+package com.aozijx.passly.data.local.database.session
 
-import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.error.model.DatabaseInitFailed
+import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.telemetry.EventLevel
+import com.aozijx.passly.core.telemetry.TelemetryEvent
+import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.domain.authentication.SecureSessionState
+import com.aozijx.passly.domain.authentication.DatabaseSessionLifecycle
 import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.runtime.session.RuntimeSessionManager
 import com.aozijx.passly.runtime.session.SessionEventSink
+import com.aozijx.passly.runtime.session.SessionKeySource
 import com.aozijx.passly.runtime.session.SessionRuntimeEvent
 import com.aozijx.passly.runtime.session.SessionUnlockResult
 import kotlinx.coroutines.flow.Flow
@@ -19,12 +24,9 @@ import kotlin.time.Duration.Companion.seconds
 @Singleton
 class UnifiedSessionManager @Inject internal constructor(
     resource: AppDatabaseSessionResource,
-    keySource: DekSessionKeySource,
-) : SessionStateProvider {
-    private companion object {
-        const val TAG = "UnifiedSessionManager"
-    }
-
+    keySource: SessionKeySource,
+    private val telemetry: TelemetryReporter,
+) : SessionStateProvider, DatabaseSessionLifecycle {
     private val runtime = RuntimeSessionManager(
         resource = resource,
         keySource = keySource,
@@ -43,7 +45,7 @@ class UnifiedSessionManager @Inject internal constructor(
     fun <T> observeFlow(block: suspend AppDatabase.() -> Flow<T>): Flow<T> =
         runtime.observe(block)
 
-    suspend fun unlock(): Throwable? = when (val result = runtime.unlock()) {
+    override suspend fun unlock(): Throwable? = when (val result = runtime.unlock()) {
         SessionUnlockResult.Success -> null
         is SessionUnlockResult.KeyUnavailable -> DatabaseInitFailed(
             throwableType = result.cause.javaClass.simpleName,
@@ -51,9 +53,11 @@ class UnifiedSessionManager @Inject internal constructor(
         is SessionUnlockResult.OpenFailed -> result.cause
     }
 
-    suspend fun softLock() = runtime.softLock()
+    override suspend fun softLock() = runtime.softLock()
 
-    suspend fun seal(timeout: Duration = 5.seconds) = runtime.seal(timeout)
+    override suspend fun seal() = runtime.seal(5.seconds)
+
+    suspend fun seal(timeout: Duration) = runtime.seal(timeout)
 
     suspend fun closeDatabase() = runtime.closeResource()
 
@@ -61,10 +65,25 @@ class UnifiedSessionManager @Inject internal constructor(
         when (event) {
             SessionRuntimeEvent.OPEN_FAILED,
             SessionRuntimeEvent.CLOSE_FAILED,
-            -> AppTelemetry.e(TAG, event.name, error)
+            -> emitRuntimeEvent(EventLevel.ERROR, event, error)
 
-            SessionRuntimeEvent.SEAL_DRAIN_TIMEOUT -> AppTelemetry.w(TAG, event.name)
-            else -> AppTelemetry.i(TAG, event.name)
+            SessionRuntimeEvent.SEAL_DRAIN_TIMEOUT -> emitRuntimeEvent(EventLevel.WARN, event)
+            else -> emitRuntimeEvent(EventLevel.INFO, event)
         }
+    }
+
+    private fun emitRuntimeEvent(
+        level: EventLevel,
+        event: SessionRuntimeEvent,
+        error: Throwable? = null,
+    ) {
+        telemetry.emit(
+            TelemetryEvent(
+                level = level,
+                category = EventCategory.DATABASE,
+                name = "database.session.${event.name.lowercase()}",
+                throwableType = error?.javaClass?.simpleName,
+            )
+        )
     }
 }

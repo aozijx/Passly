@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.attachment
 
 import com.aozijx.passly.core.error.model.SessionModeRestricted
-import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
 import com.aozijx.passly.data.mapper.attachment.AttachmentRefMapper
 import com.aozijx.passly.data.model.entity.AttachmentResourceEntity
 import com.aozijx.passly.data.model.entity.AttachmentResourceState

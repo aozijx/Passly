@@ -2,7 +2,7 @@ package com.aozijx.passly.security.authentication
 
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.domain.authentication.SecureSessionState
-import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.domain.authentication.DatabaseSessionLifecycle
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.auth.port.AuthorizationPermitRevoker
@@ -33,7 +33,7 @@ class VaultSessionController @Inject constructor(
     private val dekManager: DekManager,
     private val sensitiveDataKeyManager: SensitiveDataKeyManager,
     private val authorizationPermitRevoker: AuthorizationPermitRevoker,
-    private val sessionManager: UnifiedSessionManager,
+    private val sessionManager: DatabaseSessionLifecycle,
     private val bootstrapStore: BootstrapStore,
     idleTimeoutSettings: com.aozijx.passly.domain.settings.repository.IdleTimeoutSettings
 ) : SecureSessionAccessState {

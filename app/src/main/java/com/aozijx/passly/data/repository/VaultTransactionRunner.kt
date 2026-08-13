@@ -3,7 +3,7 @@ package com.aozijx.passly.data.repository
 import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.OperationCode
 import com.aozijx.passly.core.telemetry.reporting.AppErrorReporter

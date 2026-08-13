@@ -5,8 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 /**
  * 会话状态提供者（Domain 层契约）。
  *
- * Repository 和 UseCase 依赖此接口而非 [com.aozijx.passly.core.session.UnifiedSessionManager]，
- * 实现依赖倒置，便于单元测试时注入永远活跃的 Fake。
+ * Repository 和 UseCase 依赖此接口而非具体数据库实现，便于单元测试时注入永远活跃的 Fake。
  *
  * 当前仅暴露锁状态供 Repository 判断是否可访问；
  * 实际的资源租约管理由 runtime session 模块负责。

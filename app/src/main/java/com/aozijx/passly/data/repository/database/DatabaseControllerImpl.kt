@@ -5,7 +5,7 @@ import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.platform.VaultDataRefreshNotifier
 import com.aozijx.passly.core.platform.VaultResourcePaths
-import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
 import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.data.local.database.maintenance.DatabaseRecoveryStore
 import com.aozijx.passly.domain.diagnostics.repository.DatabaseController

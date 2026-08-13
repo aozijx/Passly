@@ -19,6 +19,7 @@ moduleBoundaries {
         ":core:security",
         ":core:telemetry",
         ":core:ui",
+        ":data:database",
         ":domain",
         ":feature:auth:api",
         ":feature:recovery",
@@ -29,6 +30,13 @@ moduleBoundaries {
     module(":core:security", ":domain")
     module(":core:telemetry", ":core:common")
     module(":core:ui", ":domain")
+    module(
+        ":data:database",
+        ":core:common",
+        ":core:telemetry",
+        ":domain",
+        ":runtime:session",
+    )
     module(":domain", ":core:common")
     module(":feature:auth:api", ":domain")
     module(

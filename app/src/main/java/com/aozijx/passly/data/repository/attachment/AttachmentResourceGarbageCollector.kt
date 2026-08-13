@@ -3,7 +3,7 @@ package com.aozijx.passly.data.repository.attachment
 import android.content.Context
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.platform.VaultResourcePaths
-import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.model.entity.AttachmentGcQueueEntity

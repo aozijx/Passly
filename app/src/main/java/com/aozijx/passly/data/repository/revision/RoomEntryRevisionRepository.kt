@@ -4,7 +4,7 @@ import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
 import com.aozijx.passly.data.codec.entry.SensitiveFieldCodec

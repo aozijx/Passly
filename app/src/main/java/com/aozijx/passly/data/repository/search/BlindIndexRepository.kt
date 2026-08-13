@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.search
 
-import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
 import com.aozijx.passly.data.local.dao.buildEntryIdIntersectionQuery
 import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.lookup.LookupField

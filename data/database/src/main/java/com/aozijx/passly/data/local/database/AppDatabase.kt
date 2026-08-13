@@ -3,7 +3,7 @@ package com.aozijx.passly.data.local.database
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.aozijx.passly.BuildConfig
+import com.aozijx.passly.data.database.BuildConfig
 import com.aozijx.passly.core.error.boundary.DatabaseException
 import com.aozijx.passly.data.local.dao.activity.EntryActivityAnalyticsDao
 import com.aozijx.passly.data.local.dao.activity.EntryActivityCommandDao

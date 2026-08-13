@@ -2,7 +2,7 @@ package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.error.model.ValidationError
-import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
 import com.aozijx.passly.data.model.entity.EntryLinkEntity
 import com.aozijx.passly.data.repository.VaultTransactionRunner
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector

@@ -16,6 +16,7 @@ class MigrationBoundaryTest {
         File(projectRoot, "core/security/src/main/kotlin"),
         File(projectRoot, "core/telemetry/src/main/kotlin"),
         File(projectRoot, "core/ui/src/main/kotlin"),
+        File(projectRoot, "data/database/src/main/java"),
         File(projectRoot, "domain/src/main/kotlin"),
         File(projectRoot, "feature/auth/api/src/main/kotlin"),
         File(projectRoot, "feature/recovery/src/main/kotlin"),
@@ -63,7 +64,7 @@ class MigrationBoundaryTest {
     @Test
     fun upperLayersDoNotReachIntoDataImplementations() {
         val guardedPackages = listOf("/core/", "/feature/", "/security/")
-        val exemptPaths = listOf("/core/session/")
+        val exemptPaths = emptyList<String>()
         val offenders = productionKotlinFiles
             .filter { source ->
                 guardedPackages.any { it in source.invariantSeparatorsPath }
@@ -175,7 +176,7 @@ class MigrationBoundaryTest {
     @Test
     fun associatedPackagesStayEncryptedAndVisibleInEntryDetails() {
         val entryEntity = File(
-            "src/main/java/com/aozijx/passly/data/model/entity/EntryEntity.kt"
+            "../data/database/src/main/java/com/aozijx/passly/data/model/entity/EntryEntity.kt"
         ).readText()
         val summaryPayload = File(
             "src/main/java/com/aozijx/passly/data/model/payload/summary/SummaryPayload.kt"
@@ -1269,7 +1270,7 @@ class MigrationBoundaryTest {
     @Test
     fun entryRevisionLifecycleHasPerEntryGlobalAndDeletionPolicies() {
         val revisionDao = File(
-            "src/main/java/com/aozijx/passly/data/local/dao/revision/" +
+            "../data/database/src/main/java/com/aozijx/passly/data/local/dao/revision/" +
                     "EntryRevisionCommandDao.kt"
         ).readText()
         val revisionHelper = File(
@@ -2200,7 +2201,7 @@ class MigrationBoundaryTest {
             "src/main/java/com/aozijx/passly/data/repository/entry/executor/UpdateEntryExecutor.kt"
         ).readText()
         val revisionEntity = File(
-            "src/main/java/com/aozijx/passly/data/model/entity/EntryRevisionEntity.kt"
+            "../data/database/src/main/java/com/aozijx/passly/data/model/entity/EntryRevisionEntity.kt"
         ).readText()
 
         assertTrue(

@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.local.database.maintenance
 
-import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
 import javax.inject.Inject
 import javax.inject.Singleton
 
