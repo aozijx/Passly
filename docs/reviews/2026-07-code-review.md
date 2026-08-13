@@ -54,7 +54,7 @@ Domain/认证编排不依赖全局 UI 消息中心。
 
 ### P2：Room 仍保留失效 KeyEnvelope 实现
 
-当前 Envelope 真相源是 Proto `BootstrapStore`，但 `AppDatabase` 仍注册 `KeyEnvelopeEntity/Dao`
+当前 Envelope 真相源是 Proto `VaultBootstrapStore`，但 `AppDatabase` 仍注册 `KeyEnvelopeEntity/Dao`
 。仓库中没有业务调用；Entity 缺少当前 Proto Envelope 的 `iv`，且 `type` 为 `String`，DAO 的
 `getByType/deleteByType` 却接收 `Int`。这既扩大 Schema，也容易让后续代码误用两个真相源。
 

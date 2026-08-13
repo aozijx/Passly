@@ -26,7 +26,7 @@ flowchart TB
 | UI/ViewModel   | 短生命周期明文、`CharArray` 输入、UI state         | 持久化密钥、记录凭据日志            |
 | Repository     | 解锁会话中的领域明文                              | 向 Domain 暴露 Entity/密文细节 |
 | Security       | DEK、派生密钥、Envelope 操作                    | 依赖 Room/DataStore 具体实现  |
-| BootstrapStore | Envelope 密文、salt、nonce、verification tag | 明文 DEK                  |
+| VaultBootstrapStore | Envelope 密文、salt、nonce、verification tag | 明文 DEK                  |
 | Room/SQLCipher | 加密数据库与字段密文                              | 自动删库恢复                  |
 
 ## 开发约束

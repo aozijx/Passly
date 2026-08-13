@@ -7,12 +7,14 @@
 | `core`     | 日志、错误、平台适配、权限、消息、媒体等通用能力                  | DAO、Repository 实现、业务页面                |
 | `domain`   | 领域模型、端口、策略、验证                           | `android.*`、资源 ID、Entity、Feature/设置类型 |
 | `data`     | Room、Proto DataStore、Mapper、Repository 实现 | Compose 页面、业务流程、备份协议与格式              |
-| `security` | 密码学原语、DEK/会话、信封接口、Keystore                | Room Entity、DataStore 具体实现、Feature 类型 |
+| `core.crypto` | 无状态密码学原语、算法实现、加密格式                    | 认证流程、持久化、Android Keystore          |
+| `security` | DEK/派生密钥生命周期、信封、Keystore、锁与认证编排            | Room Entity、DataStore 具体实现、Feature UI |
 | `feature`  | app 内的导航、业务流程、ViewModel、UI state/effect、UI | 无边界地访问 DAO、Entity、具体 Repository 实现 |
 | `service`  | Android Service 入口与系统生命周期桥接               | 独立业务真相源                               |
 
-真实模块还要求源码命名空间与职责一致：`:data` 只包含 `com.aozijx.passly.data.*`。密码学实现归
-`:core:security`，共享 Android 能力归 `:core:android`，应用消息调度与全局框架桥归 `:app`。
+真实模块还要求源码命名空间与职责一致：`:data` 只包含 `com.aozijx.passly.data.*`。密码学与不依赖 App 的
+密钥安全能力归 `:core:crypto`；Android Keystore、锁状态和认证编排归 `:app/security`。共享 Android 能力归
+`:core:android`，应用消息调度与全局框架桥归 `:app`。
 
 ## 强制规则
 

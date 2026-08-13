@@ -8,7 +8,7 @@ sequenceDiagram
     participant UI as Verification UI
     participant Auth as AuthenticationManager
     participant DEK as DekManager
-    participant Boot as BootstrapStore
+    participant Boot as VaultBootstrapStore
     participant DB as DatabaseSession
     User->>UI: 生物识别 / 应用密码
     UI->>Auth: 验证凭据
@@ -19,7 +19,7 @@ sequenceDiagram
     Note over DEK,DB: 锁定时先关闭数据库，再擦除 DEK 与派生会话密钥
 ```
 
-`BootstrapStore` 位于数据库之外，使应用在 SQLCipher 尚未打开时也能取得信封。当前实现由 Proto DataStore
+`VaultBootstrapStore` 位于数据库之外，使应用在 SQLCipher 尚未打开时也能取得信封。当前实现由 Proto DataStore
 提供，DEK 解锁后 `DatabaseProvider` 才能创建 Room 实例。
 
 恢复码走独立流程：`RECOVER_AUTH_METHODS` 解封同一个 DEK 后只发布 `RecoveryMode`，不会发布普通
