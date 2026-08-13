@@ -262,6 +262,7 @@ internal object BiometricPromptSpecFactory {
             R.string.auth_purpose_export_diagnostics
 
         AuthenticationPurpose.RECOVER_DATABASE -> R.string.auth_purpose_recover_database
+        AuthenticationPurpose.RESTORE_DATABASE -> R.string.auth_purpose_restore_database
         AuthenticationPurpose.RECOVER_AUTH_METHODS -> R.string.auth_purpose_recover_auth_methods
         AuthenticationPurpose.CLEAR_DATABASE -> R.string.auth_purpose_clear_database
         else -> R.string.auth_verify_identity

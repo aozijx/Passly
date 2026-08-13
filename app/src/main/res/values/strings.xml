@@ -122,6 +122,26 @@
     <string name="vault_database_retry">重试打开数据库</string>
     <string name="vault_plain_export_db_error_dismiss">关闭应用</string>
     <string name="database_recovery_create_new_action">保留故障库并创建新库</string>
+    <string name="auth_purpose_restore_database">验证身份以恢复故障数据库</string>
+    <string name="settings_database_recovery_title">数据库恢复</string>
+    <string name="settings_database_recovery_summary">扫描并恢复已隔离的故障数据库</string>
+    <string name="database_recovery_empty">没有已保存的故障数据库</string>
+    <string name="database_recovery_scan">预检</string>
+    <string name="database_recovery_restore">恢复有效数据</string>
+    <string name="database_recovery_delete">删除恢复包</string>
+    <string name="database_recovery_delete_confirm_title">删除恢复包？</string>
+    <string name="database_recovery_delete_confirm_message">原始故障数据库将永久删除，且无法撤销。</string>
+    <string name="database_recovery_package_label">恢复包 %1$s</string>
+    <string name="database_recovery_package_details">%1$s · %2$s</string>
+    <string name="database_recovery_scan_summary">可恢复 %1$d 条，冲突 %2$d 条，损坏 %3$d 条；附件 %4$d 个</string>
+    <string name="database_recovery_report_summary">已恢复 %1$d 条、%2$d 个附件、%3$d 个历史版本；跳过 %4$d 个冲突</string>
+    <string name="database_recovery_select_types">选择条目类型</string>
+    <string name="database_recovery_close">关闭</string>
+    <string name="database_recovery_status_pending">待预检</string>
+    <string name="database_recovery_status_recoverable">可恢复</string>
+    <string name="database_recovery_status_partial">部分可恢复</string>
+    <string name="database_recovery_status_restored">已恢复</string>
+    <string name="database_recovery_status_unreadable">当前版本无法读取</string>
 
     <!-- 详情与编辑 -->
     <string name="vault_editor_section_basic_info">基本信息</string>

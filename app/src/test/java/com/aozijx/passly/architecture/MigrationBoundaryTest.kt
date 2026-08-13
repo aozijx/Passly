@@ -805,7 +805,7 @@ class MigrationBoundaryTest {
             "com/aozijx/passly/data/repository/database/DatabaseControllerImpl.kt"
         ).readText()
         val recoveryStore = moduleSource(
-            "com/aozijx/passly/data/local/database/maintenance/DatabaseRecoveryStore.kt"
+            "com/aozijx/passly/data/local/database/recovery/DatabaseRecoveryStore.kt"
         ).readText()
         val authenticationManager = File(
             "src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt"
@@ -821,6 +821,14 @@ class MigrationBoundaryTest {
         ).readText()
         val recoveryCompletion =
             sessionController.substringAfter("suspend fun completeDatabaseRecovery")
+        val dataManagementViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/settings/datamanagement/" +
+                "DataManagementSettingsViewModel.kt"
+        ).readText()
+        val savedRecovery = moduleSource(
+            "com/aozijx/passly/data/local/database/recovery/" +
+                "DatabaseRecoveryRepositoryImpl.kt"
+        ).readText()
 
         assertTrue(
             "Crash recovery must request its non-destructive authentication purpose",
@@ -857,6 +865,13 @@ class MigrationBoundaryTest {
                     "CLEAR_DATABASE -> PRIMARY_METHODS" in authPolicy
         )
         assertTrue(
+            "Saved database restoration must reject the recovery code",
+            Regex(
+                "AuthenticationPurpose\\.RESTORE_DATABASE,\\s*" +
+                    "AuthenticationPurpose\\.CLEAR_DATABASE -> PRIMARY_METHODS",
+            ).containsMatchIn(authPolicy)
+        )
+        assertTrue(
             "Cold-start recovery must stage the DEK without opening the broken database",
             "session.stageDatabaseRecovery(type, ownedDek)" in credentialExecutor
         )
@@ -864,6 +879,17 @@ class MigrationBoundaryTest {
             "A recovered database must open before authentication state is published",
             recoveryCompletion.indexOf("sessionManager.lockState != SecureSessionState.UNLOCKED") <
                 recoveryCompletion.indexOf("markAuthenticatedInternal()")
+        )
+        assertTrue(
+            "Saved database restoration requires a full session and fresh primary authentication",
+            "hasFullSecureSessionAccess()" in dataManagementViewModel &&
+                "AuthenticationPurpose.RESTORE_DATABASE" in dataManagementViewModel
+        )
+        assertTrue(
+            "Saved database restoration must work from a copy and wipe its copied key",
+            "source.copyTo" in savedRecovery &&
+                "key.fill(0)" in savedRecovery &&
+                "deleteWorkDatabase(workName)" in savedRecovery
         )
     }
 

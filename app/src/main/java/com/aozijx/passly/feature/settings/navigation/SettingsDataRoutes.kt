@@ -118,6 +118,7 @@ internal fun DataSettingsRouteContent(
                         onClearTrashError = {
                             dataViewModel.onAction(DataManagementSettingsAction.ClearTrashError)
                         },
+                        onRecoveryAction = dataViewModel::onAction,
                         onClearDatabase = {
                             settingsViewModel.handleIntent(SettingsIntent.ClearDatabase)
                         }

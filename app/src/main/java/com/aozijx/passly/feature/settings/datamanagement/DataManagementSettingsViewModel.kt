@@ -4,6 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.message.mapping.toUiMessage
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.data.database.model.DatabaseRecoverySelection
+import com.aozijx.passly.data.database.port.DatabaseRecoveryRepository
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationRequest
+import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
@@ -24,7 +30,9 @@ class DataManagementSettingsViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
     private val entryListQueryRepository: EntryListQueryRepository,
     private val entryCommandRepository: EntryCommandRepository,
-    private val secureSessionAccessState: SecureSessionAccessState
+    private val secureSessionAccessState: SecureSessionAccessState,
+    private val authenticationManager: AuthenticationManager,
+    private val databaseRecoveryRepository: DatabaseRecoveryRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DataManagementSettingsUiState())
@@ -54,6 +62,7 @@ class DataManagementSettingsViewModel @Inject constructor(
                     mutate(DataManagementSettingsMutation.TrashLoaded(entries))
                 }
         }
+        loadRecoveryPackages()
     }
 
     fun onAction(action: DataManagementSettingsAction) {
@@ -84,7 +93,142 @@ class DataManagementSettingsViewModel @Inject constructor(
             is DataManagementSettingsAction.ClearTrashError -> {
                 mutate(DataManagementSettingsMutation.TrashErrorCleared)
             }
+            DataManagementSettingsAction.RefreshRecoveryPackages -> loadRecoveryPackages()
+            is DataManagementSettingsAction.ScanRecoveryPackage ->
+                scanRecoveryPackage(action.packageId)
+            is DataManagementSettingsAction.ToggleRecoveryType ->
+                mutate(DataManagementSettingsMutation.RecoveryTypeToggled(action.entryType))
+            is DataManagementSettingsAction.RestoreRecoveryPackage ->
+                restoreRecoveryPackage(action.packageId)
+            is DataManagementSettingsAction.DeleteRecoveryPackage ->
+                deleteRecoveryPackage(action.packageId)
+            DataManagementSettingsAction.ClearRecoveryResult ->
+                mutate(DataManagementSettingsMutation.RecoveryResultCleared)
         }
+    }
+
+    private fun loadRecoveryPackages() {
+        viewModelScope.launch {
+            if (!requireRecoveryAccess()) return@launch
+            runCatching { databaseRecoveryRepository.listPackages() }
+                .onSuccess {
+                    mutate(DataManagementSettingsMutation.RecoveryPackagesLoaded(it))
+                }
+                .onFailure {
+                    mutate(
+                        DataManagementSettingsMutation.RecoveryOperationFailed(
+                            it.toUiMessage("无法读取数据库恢复包"),
+                        ),
+                    )
+                }
+        }
+    }
+
+    private fun scanRecoveryPackage(packageId: String) {
+        if (_uiState.value.isRecoveryBusy) return
+        viewModelScope.launch {
+            if (!requireRecoveryAccess()) return@launch
+            mutate(DataManagementSettingsMutation.RecoveryOperationStarted(packageId))
+            runCatching { databaseRecoveryRepository.scan(packageId) }
+                .onSuccess {
+                    mutate(DataManagementSettingsMutation.RecoveryScanCompleted(it))
+                    refreshRecoveryPackagesAfterOperation()
+                }
+                .onFailure {
+                    mutate(
+                        DataManagementSettingsMutation.RecoveryOperationFailed(
+                            it.toUiMessage("恢复包预检失败"),
+                        ),
+                    )
+                    refreshRecoveryPackagesAfterOperation()
+                }
+        }
+    }
+
+    private fun restoreRecoveryPackage(packageId: String) {
+        val state = _uiState.value
+        if (state.isRecoveryBusy || state.recoveryScan?.packageId != packageId ||
+            state.selectedRecoveryTypes.isEmpty()
+        ) return
+        viewModelScope.launch {
+            if (!requireRecoveryAccess()) return@launch
+            when (
+                authenticationManager.authenticate(
+                    AuthenticationRequest(AuthenticationPurpose.RESTORE_DATABASE),
+                )
+            ) {
+                is AuthenticationResult.Success -> {
+                    if (!requireRecoveryAccess()) return@launch
+                    mutate(DataManagementSettingsMutation.RecoveryOperationStarted(packageId))
+                    runCatching {
+                        databaseRecoveryRepository.restore(
+                            packageId,
+                            DatabaseRecoverySelection(state.selectedRecoveryTypes),
+                        )
+                    }.onSuccess {
+                        mutate(DataManagementSettingsMutation.RecoveryRestoreCompleted(it))
+                        refreshRecoveryPackagesAfterOperation()
+                    }.onFailure {
+                        mutate(
+                            DataManagementSettingsMutation.RecoveryOperationFailed(
+                                it.toUiMessage("数据库恢复失败"),
+                            ),
+                        )
+                    }
+                }
+                is AuthenticationResult.Cancelled -> Unit
+                is AuthenticationResult.Failure -> mutate(
+                    DataManagementSettingsMutation.RecoveryOperationFailed("身份验证失败"),
+                )
+            }
+        }
+    }
+
+    private fun deleteRecoveryPackage(packageId: String) {
+        if (_uiState.value.isRecoveryBusy) return
+        viewModelScope.launch {
+            if (!requireRecoveryAccess()) return@launch
+            when (
+                authenticationManager.authenticate(
+                    AuthenticationRequest(AuthenticationPurpose.RESTORE_DATABASE),
+                )
+            ) {
+                is AuthenticationResult.Success -> {
+                    mutate(DataManagementSettingsMutation.RecoveryOperationStarted(packageId))
+                    runCatching { databaseRecoveryRepository.delete(packageId) }
+                        .onSuccess {
+                            mutate(DataManagementSettingsMutation.RecoveryResultCleared)
+                            refreshRecoveryPackagesAfterOperation()
+                        }
+                        .onFailure {
+                            mutate(
+                                DataManagementSettingsMutation.RecoveryOperationFailed(
+                                    it.toUiMessage("无法删除数据库恢复包"),
+                                ),
+                            )
+                        }
+                }
+                is AuthenticationResult.Cancelled -> Unit
+                is AuthenticationResult.Failure -> mutate(
+                    DataManagementSettingsMutation.RecoveryOperationFailed("身份验证失败"),
+                )
+            }
+        }
+    }
+
+    private suspend fun refreshRecoveryPackagesAfterOperation() {
+        runCatching { databaseRecoveryRepository.listPackages() }
+            .onSuccess { mutate(DataManagementSettingsMutation.RecoveryPackagesLoaded(it)) }
+    }
+
+    private fun requireRecoveryAccess(): Boolean {
+        if (secureSessionAccessState.hasFullSecureSessionAccess()) return true
+        mutate(
+            DataManagementSettingsMutation.RecoveryOperationFailed(
+                "当前会话不能访问数据库恢复包",
+            ),
+        )
+        return false
     }
 
     private fun updateSettings(command: SettingsCommand) {

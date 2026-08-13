@@ -201,7 +201,7 @@ class AppShellViewModel @Inject constructor(
                     mutate(AppShellMutation.DatabaseInitializationFinished(recoveryError))
                     if (sessionRecovered) {
                         val recoveryMessage = outcome.recoveryId?.let {
-                            "故障库已保留（恢复编号：$it），已创建新数据库"
+                            "故障库已保留（恢复编号：$it）。可在设置 → 数据管理 → 数据库恢复中查看"
                         } ?: "已创建新数据库"
                         emitEffect(AppShellEffect.ShowToast(recoveryMessage))
                         rebuildSearchIndex()

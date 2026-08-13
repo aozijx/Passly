@@ -26,6 +26,7 @@ enum class AuthenticationPurpose {
     CHANGE_BIOMETRIC_POLICY,
     EXPORT_DIAGNOSTICS,
     RECOVER_DATABASE,
+    RESTORE_DATABASE,
     CLEAR_DATABASE,
 }
 

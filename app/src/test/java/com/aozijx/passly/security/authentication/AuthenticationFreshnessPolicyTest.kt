@@ -63,6 +63,10 @@ class AuthenticationFreshnessPolicyTest {
         )
         assertEquals(
             primaryMethods,
+            AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.RESTORE_DATABASE)
+        )
+        assertEquals(
+            primaryMethods,
             AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.REVEAL_SECRET)
         )
         assertEquals(
@@ -85,6 +89,22 @@ class AuthenticationFreshnessPolicyTest {
         assertEquals(
             AuthenticationMethod.entries.toSet(),
             AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.RECOVER_DATABASE)
+        )
+    }
+
+    @Test
+    fun savedDatabaseRestoreRequiresFreshPrimaryAuthentication() {
+        assertEquals(
+            AuthenticationMethodPolicy.PRIMARY_METHODS,
+            AuthenticationMethodPolicy.allowedAuthenticationMethods(
+                AuthenticationPurpose.RESTORE_DATABASE,
+            ),
+        )
+        assertTrue(
+            AuthenticationMethodPolicy.requiresFreshAuthentication(
+                AuthenticationPurpose.RESTORE_DATABASE,
+                reauthenticateSensitiveCopies = false,
+            ),
         )
     }
 
