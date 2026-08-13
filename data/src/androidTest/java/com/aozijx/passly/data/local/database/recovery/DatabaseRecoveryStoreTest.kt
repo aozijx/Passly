@@ -14,6 +14,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 class DatabaseRecoveryStoreTest {
@@ -67,6 +68,40 @@ class DatabaseRecoveryStoreTest {
         preserved.appendBytes(byteArrayOf(9))
 
         assertTrue(runCatching { store.verify(id) }.isFailure)
+    }
+
+    @Test
+    fun legacyV1PackageRemainsRecoverable() {
+        val id = "${System.currentTimeMillis()}-${UUID.randomUUID()}"
+        val root = File(context.noBackupFilesDir, "database_recovery/$id")
+        val database = File(root, "database/${DatabaseSchema.DATABASE_NAME}")
+        database.parentFile?.mkdirs()
+        database.writeBytes(byteArrayOf(1, 2, 3))
+        File(root, "manifest.properties").writeText(
+            buildString {
+                appendLine("formatVersion=1")
+                appendLine("databaseName=${DatabaseSchema.DATABASE_NAME}")
+                appendLine("createdAtEpochMs=${System.currentTimeMillis()}")
+                appendLine("databaseFiles=${DatabaseSchema.DATABASE_NAME}")
+                appendLine("resourceDirectories=")
+            },
+        )
+
+        assertEquals(id, store.verify(id).info.id)
+        assertEquals(DatabaseRecoveryStatus.PENDING_SCAN, store.listPackages().single().status)
+    }
+
+    @Test
+    fun invalidPackageIsVisibleAndCanBeDeleted() {
+        val id = "${System.currentTimeMillis()}-${UUID.randomUUID()}"
+        val root = File(context.noBackupFilesDir, "database_recovery/$id")
+        root.mkdirs()
+        File(root, "manifest.properties").writeText("not-a-manifest")
+
+        val listed = store.listPackages().single()
+        assertEquals(DatabaseRecoveryStatus.UNREADABLE, listed.status)
+        store.delete(id)
+        assertTrue(store.listPackages().isEmpty())
     }
 
     private fun clean() {

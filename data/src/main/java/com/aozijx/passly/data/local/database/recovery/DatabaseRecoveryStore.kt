@@ -43,6 +43,13 @@ class DatabaseRecoveryStore @Inject constructor(
             "totalBytes",
             "contentSha256",
         )
+        val LEGACY_MANIFEST_KEYS = setOf(
+            "formatVersion",
+            "databaseName",
+            "createdAtEpochMs",
+            "databaseFiles",
+            "resourceDirectories",
+        )
     }
 
     class VerifiedPackage internal constructor(
@@ -136,28 +143,29 @@ class DatabaseRecoveryStore @Inject constructor(
         if (!root.isDirectory) return emptyList()
         return root.listFiles().orEmpty()
             .asSequence()
-            .filter { it.isDirectory && !it.name.startsWith('.') }
-            .mapNotNull { directory -> runCatching { verify(directory.name).info }.getOrNull() }
+            .filter { it.isDirectory && RECOVERY_ID.matches(it.name) }
+            .map { directory ->
+                runCatching { verify(directory.name).info }.getOrElse {
+                    unreadablePackage(directory)
+                }
+            }
             .sortedByDescending(DatabaseRecoveryPackage::createdAtEpochMs)
             .toList()
     }
 
     fun verify(packageId: String): VerifiedPackage {
-        require(RECOVERY_ID.matches(packageId)) { "Invalid database recovery package ID" }
-        val root = recoveryRoot().canonicalFile
-        val packageRoot = File(root, packageId).canonicalFile
-        require(packageRoot.parentFile == root && packageRoot.isDirectory) {
-            "Database recovery package does not exist"
-        }
+        val packageRoot = resolvePackageRoot(packageId)
         val manifestFile = File(packageRoot, MANIFEST_FILE)
         require(manifestFile.isFile && manifestFile.length() in 1..MAX_MANIFEST_BYTES) {
             "Invalid database recovery manifest"
         }
         val manifest = parseManifest(manifestFile)
-        require(manifest.keys == EXPECTED_MANIFEST_KEYS) { "Unexpected recovery manifest fields" }
-        require(manifest.getValue("formatVersion").toInt() == RECOVERY_FORMAT_VERSION) {
+        val formatVersion = manifest.getValue("formatVersion").toInt()
+        require(formatVersion in 1..RECOVERY_FORMAT_VERSION) {
             "Unsupported database recovery format"
         }
+        val expectedKeys = if (formatVersion == 1) LEGACY_MANIFEST_KEYS else EXPECTED_MANIFEST_KEYS
+        require(manifest.keys == expectedKeys) { "Unexpected recovery manifest fields" }
         require(manifest.getValue("databaseName") == DatabaseSchema.DATABASE_NAME) {
             "Unexpected recovery database name"
         }
@@ -212,14 +220,16 @@ class DatabaseRecoveryStore @Inject constructor(
             .toList()
         val totalBytes = contentFiles.sumOf(File::length)
         require(totalBytes <= MAX_PACKAGE_BYTES) { "Database recovery package is too large" }
-        require(contentFiles.size == manifest.getValue("fileCount").toInt()) {
-            "Recovery file count does not match"
-        }
-        require(totalBytes == manifest.getValue("totalBytes").toLong()) {
-            "Recovery size does not match"
-        }
-        require(contentDigest(packageRoot, contentFiles) == manifest.getValue("contentSha256")) {
-            "Recovery content digest does not match"
+        if (formatVersion >= 2) {
+            require(contentFiles.size == manifest.getValue("fileCount").toInt()) {
+                "Recovery file count does not match"
+            }
+            require(totalBytes == manifest.getValue("totalBytes").toLong()) {
+                "Recovery size does not match"
+            }
+            require(contentDigest(packageRoot, contentFiles) == manifest.getValue("contentSha256")) {
+                "Recovery content digest does not match"
+            }
         }
         return VerifiedPackage(
             info = DatabaseRecoveryPackage(
@@ -262,8 +272,8 @@ class DatabaseRecoveryStore @Inject constructor(
     }
 
     fun delete(packageId: String) {
-        val verified = verify(packageId)
-        check(verified.root.deleteRecursively()) { "Unable to delete database recovery package" }
+        val packageRoot = resolvePackageRoot(packageId)
+        check(packageRoot.deleteRecursively()) { "Unable to delete database recovery package" }
         File(stateRoot(), "$packageId.status").delete()
         File(stateRoot(), "$packageId.report.enc").delete()
     }
@@ -292,6 +302,31 @@ class DatabaseRecoveryStore @Inject constructor(
     private fun readStatus(packageId: String): DatabaseRecoveryStatus = runCatching {
         DatabaseRecoveryStatus.valueOf(File(stateRoot(), "$packageId.status").readText().trim())
     }.getOrDefault(DatabaseRecoveryStatus.PENDING_SCAN)
+
+    private fun resolvePackageRoot(packageId: String): File {
+        require(RECOVERY_ID.matches(packageId)) { "Invalid database recovery package ID" }
+        val root = recoveryRoot().canonicalFile
+        val packageRoot = File(root, packageId).canonicalFile
+        require(packageRoot.parentFile == root && packageRoot.isDirectory) {
+            "Database recovery package does not exist"
+        }
+        return packageRoot
+    }
+
+    private fun unreadablePackage(directory: File): DatabaseRecoveryPackage {
+        val size = directory.walkTopDown().filter(File::isFile).fold(0L) { total, file ->
+            (total + file.length().coerceAtMost(MAX_PACKAGE_BYTES))
+                .coerceAtMost(MAX_PACKAGE_BYTES)
+        }
+        val createdAt = directory.name.substringBefore('-').toLongOrNull()
+            ?: directory.lastModified().coerceAtLeast(0L)
+        return DatabaseRecoveryPackage(
+            id = directory.name,
+            createdAtEpochMs = createdAt,
+            sizeBytes = size,
+            status = DatabaseRecoveryStatus.UNREADABLE,
+        )
+    }
 
     private fun allowedDatabaseFileNames(): Set<String> {
         val name = DatabaseSchema.DATABASE_NAME

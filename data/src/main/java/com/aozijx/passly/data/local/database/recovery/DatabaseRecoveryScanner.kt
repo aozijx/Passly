@@ -7,6 +7,7 @@ import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.report
 import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
+import com.aozijx.passly.data.codec.entry.SensitiveFieldCodec
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
 import com.aozijx.passly.data.database.model.DatabaseRecoveryIssue
@@ -30,6 +31,7 @@ internal class DatabaseRecoveryScanner @Inject constructor(
     private val secretCodec: EntrySecretCodec,
     private val revisionCodec: EntryContentSnapshotCodec,
     private val sensitiveRevisionCodec: SensitiveRevisionSnapshotCodec,
+    private val sensitiveFieldCodec: SensitiveFieldCodec,
     private val attachmentCrypto: AttachmentContentCrypto,
     private val telemetry: TelemetryReporter,
 ) {
@@ -44,7 +46,11 @@ internal class DatabaseRecoveryScanner @Inject constructor(
         var damaged = 0
         var attachments = 0
         var damagedResources = 0
-        source.entryQueryDao().getAll().forEach { entity ->
+        readEntryIds(source, issues).forEach { entryId ->
+            val entity = readEntry(source, verified.info.id, entryId, issues) ?: run {
+                damaged++
+                return@forEach
+            }
             val candidate = recoverEntry(source, verified, entity, issues)
             if (candidate == null) {
                 damaged++
@@ -76,7 +82,9 @@ internal class DatabaseRecoveryScanner @Inject constructor(
         val issues = mutableListOf<DatabaseRecoveryIssue>()
         val entries = mutableListOf<RecoverableEntry>()
         var conflicts = 0
-        source.entryQueryDao().getAll().filter { it.entryType in selectedTypes }.forEach { entity ->
+        readEntryIds(source, issues).forEach { entryId ->
+            val entity = readEntry(source, verified.info.id, entryId, issues) ?: return@forEach
+            if (entity.entryType !in selectedTypes) return@forEach
             val recovered = recoverEntry(source, verified, entity, issues) ?: return@forEach
             if (databaseSession.query { entryQueryDao().exists(entity.entryId) }) conflicts++
             else entries += recovered
@@ -199,7 +207,13 @@ internal class DatabaseRecoveryScanner @Inject constructor(
         issues: MutableList<DatabaseRecoveryIssue>,
     ): RecoverableRevision? = runCatching {
         revisionCodec.decrypt(revision.entryContentCipher, revision.entryId)
-        sensitiveRevisionCodec.decode(revision.sensitiveFieldCipherSet)
+        sensitiveRevisionCodec.decode(revision.sensitiveFieldCipherSet).forEach { field ->
+            sensitiveFieldCodec.decryptProvisioned(
+                revision.entryId,
+                field.key,
+                field.valueCipher,
+            )
+        }
         val attachments = source.revisionAttachmentRefDao().getByRevisionId(revision.revisionId)
             .mapNotNull { ref ->
                 validateResource(source, verified, ref.resourceId, anonymousId, issues)
@@ -227,6 +241,41 @@ internal class DatabaseRecoveryScanner @Inject constructor(
     private fun anonymousId(packageId: String, recordId: String): String =
         sha256("$packageId:$recordId").take(16)
 
+    private fun readEntryIds(
+        source: AppDatabase,
+        issues: MutableList<DatabaseRecoveryIssue>,
+    ): List<String> {
+        val result = mutableListOf<String>()
+        source.openHelper.readableDatabase.query("SELECT entryId FROM entries ORDER BY rowid")
+            .use { cursor ->
+                val index = cursor.getColumnIndexOrThrow("entryId")
+                while (cursor.moveToNext()) {
+                    if (result.size >= MAX_ENTRIES) {
+                        issues += issue("entry", null, "ENTRY_LIMIT_EXCEEDED")
+                        break
+                    }
+                    val entryId = cursor.getString(index)
+                    if (entryId.isNullOrBlank() || entryId.length > MAX_ENTRY_ID_LENGTH) {
+                        issues += issue("entry", null, "ENTRY_ID_INVALID")
+                    } else {
+                        result += entryId
+                    }
+                }
+            }
+        return result
+    }
+
+    private suspend fun readEntry(
+        source: AppDatabase,
+        packageId: String,
+        entryId: String,
+        issues: MutableList<DatabaseRecoveryIssue>,
+    ): EntryEntity? = runCatching {
+        requireNotNull(source.entryQueryDao().getById(entryId))
+    }.onFailure {
+        issues += issue("entry", anonymousId(packageId, entryId), "ENTRY_ROW_DAMAGED")
+    }.getOrNull()
+
     private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
         .digest(value.toByteArray()).joinToString("") { "%02x".format(it) }
 
@@ -240,5 +289,7 @@ internal class DatabaseRecoveryScanner @Inject constructor(
         const val MAX_RESOURCE_BYTES = 128L * 1024L * 1024L
         const val MAX_ICON_BYTES = 16L * 1024L * 1024L
         const val MAX_REPORTED_ISSUES = 500
+        const val MAX_ENTRIES = 100_000
+        const val MAX_ENTRY_ID_LENGTH = 128
     }
 }
