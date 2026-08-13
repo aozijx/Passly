@@ -12,7 +12,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.aozijx.passly.R
-import com.aozijx.passly.data.settings.model.FallbackPalette
 import com.aozijx.passly.data.settings.model.FontFamilyMode
 import com.aozijx.passly.data.settings.model.InterfaceStyleConstraints
 import com.aozijx.passly.data.settings.model.ThemeMode
@@ -166,19 +165,6 @@ internal fun manualThemePalette(color: Long?): ThemePalette? =
     color
         ?.takeIf { it != 0L }
         ?.let { selected -> themePresets.firstOrNull { it.color == selected }?.palette }
-
-fun themePresetByFallbackPalette(palette: FallbackPalette): ThemePreset {
-    val color = when (palette) {
-        FallbackPalette.BLUE -> 0xFF4285F4
-        FallbackPalette.GREEN -> 0xFF34A853
-        FallbackPalette.RED -> 0xFFEA4335
-        FallbackPalette.PURPLE -> 0xFF9C27B0
-        FallbackPalette.ORANGE -> 0xFFFF9800
-        FallbackPalette.TEAL -> 0xFF009688
-        FallbackPalette.PINK -> 0xFFE91E63
-    }
-    return themePresetByColor(color)
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
