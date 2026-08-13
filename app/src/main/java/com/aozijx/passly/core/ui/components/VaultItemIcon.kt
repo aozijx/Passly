@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Key
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -33,6 +31,21 @@ fun VaultItemIcon(
     iconName = iconable.profile.icon.name,
     iconCustomPath = iconable.profile.icon.customReference,
     associatedAppPackage = iconable.profile.associations.applicationIds.firstOrNull(),
+    classificationInput = EntryClassificationInput(
+        entryType = iconable.entryType,
+        title = iconable.title,
+        username = iconable.username,
+        urls = setOfNotNull(iconable.profile.associations.primaryUrl),
+        domains = iconable.profile.associations.domains,
+        packageNames = iconable.profile.associations.applicationIds,
+        appNames = setOfNotNull(
+            iconable.title.takeIf {
+                iconable.profile.associations.applicationIds.isNotEmpty() &&
+                    iconable.profile.associations.primaryUrl == null &&
+                    iconable.profile.associations.domains.isEmpty()
+            },
+        ),
+    ),
     tint = tint,
 )
 
@@ -46,6 +59,19 @@ fun VaultItemIcon(
     iconName = iconable.iconName,
     iconCustomPath = iconable.iconCustomPath,
     associatedAppPackage = iconable.associatedAppPackage,
+    classificationInput = EntryClassificationInput(
+        entryType = iconable.entryType,
+        title = iconable.displayName,
+        username = iconable.username,
+        urls = setOfNotNull(iconable.associatedDomain),
+        domains = setOfNotNull(iconable.associatedDomain),
+        packageNames = setOfNotNull(iconable.associatedAppPackage),
+        appNames = setOfNotNull(
+            iconable.displayName.takeIf {
+                iconable.associatedAppPackage != null && iconable.associatedDomain == null
+            },
+        ),
+    ),
     tint = tint,
 )
 
@@ -55,6 +81,7 @@ private fun VaultItemIcon(
     iconName: String?,
     iconCustomPath: String?,
     associatedAppPackage: String?,
+    classificationInput: EntryClassificationInput,
     tint: Color,
 ) {
     val appIconPainter = rememberAppIcon(associatedAppPackage)
@@ -63,7 +90,10 @@ private fun VaultItemIcon(
             ?.takeIf { it.isNotBlank() }
             ?.let(VaultIcons::getIconByName)
     }
-    val fallbackIconVector = explicitIconVector ?: Icons.Default.Key
+    val visualCategory = remember(classificationInput) {
+        EntryVisualCategoryClassifier.classify(classificationInput)
+    }
+    val fallbackIconVector = explicitIconVector ?: VaultIcons.getIconByCategory(visualCategory)
     val fallbackPainter = rememberVectorPainter(fallbackIconVector)
     val placeholderPainter = appIconPainter ?: fallbackPainter
 

@@ -99,4 +99,28 @@ object VaultIcons {
     fun getIconByRes(resId: Int?): ImageVector {
         return allIcons[resId] ?: Icons.Default.Key
     }
+
+    internal fun getIconByCategory(category: EntryVisualCategory): ImageVector = when (category) {
+        EntryVisualCategory.PERSONAL -> Icons.Default.Fingerprint
+        EntryVisualCategory.BANK -> Icons.Default.AccountBalance
+        EntryVisualCategory.PAYMENT -> Icons.Default.Payments
+        EntryVisualCategory.FINANCE -> Icons.AutoMirrored.Filled.TrendingUp
+        EntryVisualCategory.ACCOUNT -> Icons.Default.VpnKey
+        EntryVisualCategory.SOCIAL -> Icons.Default.Forum
+        EntryVisualCategory.EMAIL -> Icons.Default.Email
+        EntryVisualCategory.APP -> Icons.Default.Apps
+        EntryVisualCategory.GAME -> Icons.Default.SportsEsports
+        EntryVisualCategory.VIDEO -> Icons.Default.Subscriptions
+        EntryVisualCategory.SHOPPING -> Icons.Default.ShoppingCart
+        EntryVisualCategory.HEALTH -> Icons.Default.HealthAndSafety
+        EntryVisualCategory.NOTE -> Icons.Default.EditNote
+        EntryVisualCategory.WORK -> Icons.Default.Work
+        EntryVisualCategory.SCHOOL -> Icons.Default.School
+        EntryVisualCategory.TRAVEL -> Icons.Default.Train
+        EntryVisualCategory.WIFI -> Icons.Default.Wifi
+        EntryVisualCategory.SECURITY -> Icons.Default.Security
+        EntryVisualCategory.IDENTITY -> Icons.Default.Badge
+        EntryVisualCategory.TECHNICAL -> Icons.Default.Terminal
+        EntryVisualCategory.WALLET -> Icons.Default.AccountBalanceWallet
+    }
 }
