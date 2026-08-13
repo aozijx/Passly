@@ -2357,4 +2357,28 @@ class MigrationBoundaryTest {
                     "previous?.let" in linkRepository
         )
     }
+
+    @Test
+    fun composeLazyListsUseBundleSaveableEntryKeys() {
+        val lazyListFiles = listOf(
+            File(
+                "src/main/java/com/aozijx/passly/feature/vault/components/list/" +
+                        "VaultPagerContent.kt"
+            ),
+            File(
+                "src/main/java/com/aozijx/passly/feature/settings/datamanagement/" +
+                        "TrashBottomSheet.kt"
+            )
+        )
+        val sources = lazyListFiles.associateWith(File::readText)
+
+        assertTrue(
+            "Compose lazy-list keys must not pass the EntryId value object to SaveableStateHolder",
+            sources.values.none { "key = EntryListItem::id" in it }
+        )
+        assertTrue(
+            "Every entry lazy-list key must unwrap EntryId to its Bundle-saveable String value",
+            sources.values.all { ".id.value" in it }
+        )
+    }
 }

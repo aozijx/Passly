@@ -110,7 +110,7 @@ fun VaultPagerContent(
             ) {
                 items(
                     items = displayItems,
-                    key = EntryListItem::id,
+                    key = { item -> item.id.value },
                     contentType = EntryListItem::entryType
                 ) { item ->
                     EntryListItemRow(

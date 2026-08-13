@@ -107,7 +107,7 @@ internal fun TrashBottomSheet(
                     ),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(entries, key = EntryListItem::id) { entry ->
+                    items(entries, key = { entry -> entry.id.value }) { entry ->
                         TrashEntryCard(
                             entry = entry,
                             busy = isBusy,
