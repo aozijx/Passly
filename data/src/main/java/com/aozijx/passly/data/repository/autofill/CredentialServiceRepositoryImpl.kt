@@ -129,11 +129,13 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
         val applicationId = normalizeApplicationId(packageName)
         val domain = normalizeDomain(webDomain)
         val appLabel = applicationId?.let(packageUtils::getAppMetadata)?.appName
-        val title = pageTitle?.trim()?.takeIf { it.any(Char::isLetter) }
-            ?: domain
-            ?: appLabel
-            ?: applicationId
-            ?: usernameValue.ifBlank { "Login" }
+        val title = resolveAutofillCredentialTitle(
+            applicationId = applicationId,
+            appLabel = appLabel,
+            domain = domain,
+            pageTitle = pageTitle,
+            usernameValue = usernameValue,
+        )
         val now = System.currentTimeMillis()
         val entry = Entry(
             identity = EntryIdentity(
@@ -200,5 +202,33 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
                 URI(uri).host?.lowercase()?.removeSuffix(".")
             }.getOrNull() ?: normalized.substringBefore('/').substringBefore(':')
         }
+    }
+}
+
+internal fun resolveAutofillCredentialTitle(
+    applicationId: String?,
+    appLabel: String?,
+    domain: String?,
+    pageTitle: String?,
+    usernameValue: String,
+): String {
+    fun String.isApplicationIdTitle(): Boolean = applicationId != null &&
+            (equals(applicationId, ignoreCase = true) ||
+                    startsWith("$applicationId/", ignoreCase = true))
+
+    val normalizedAppLabel = appLabel?.trim()
+        ?.takeIf(String::isNotBlank)
+        ?.takeUnless(String::isApplicationIdTitle)
+    val normalizedPageTitle = pageTitle?.trim()
+        ?.takeIf { it.any(Char::isLetter) }
+        ?.takeUnless(String::isApplicationIdTitle)
+
+    return if (domain != null) {
+        normalizedPageTitle ?: domain
+    } else {
+        normalizedAppLabel
+            ?: normalizedPageTitle
+            ?: usernameValue.trim().takeIf(String::isNotBlank)
+            ?: "Login"
     }
 }
