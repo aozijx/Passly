@@ -1,10 +1,14 @@
 package com.aozijx.passly.feature.vault.list
 
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.lookup.EntryFilter
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryIdentity
+import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
+import com.aozijx.passly.domain.entry.model.query.EntryFilter
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
+import com.aozijx.passly.data.settings.model.LibraryQuickFilter
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -76,23 +80,11 @@ class VaultListCoordinatorTest {
         title: String,
         tags: List<String>
     ): EntryListItem = EntryListItem(
-        id = id,
-        entryType = EntryType.LOGIN,
-        title = title,
-        username = "",
-        icon = null,
-        iconCustomPath = null,
-        website = null,
-        favorite = false,
-        tags = tags,
-        color = null,
-        createdAt = 0L,
-        updatedAt = 0L,
-        deletedAt = null,
-        expiresAt = null,
-        lastUsedAt = null,
-        usageCount = 0,
-        capabilityFlags = 0,
-        entryVersion = 1
+        identity = EntryIdentity(
+            id = EntryId(id),
+            type = EntryType.LOGIN,
+            timestamps = EntryTimestamps(0L),
+        ),
+        profile = EntryProfile(title = title, tags = tags.toSet()),
     )
 }

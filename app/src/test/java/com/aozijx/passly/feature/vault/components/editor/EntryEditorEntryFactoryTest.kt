@@ -8,7 +8,7 @@ import org.junit.Test
 class EntryEditorEntryFactoryTest {
 
     @Test
-    fun `toEntryAggregate stores user category in summary tags without changing entry type`() {
+    fun `toEntry stores user category in summary tags without changing entry type`() {
         val schema = AddType.BANK_CARD.toEntryEditorSchema()
         val state = EntryEditorFormState().apply {
             update(EntryEditorFieldKey.TITLE, "Card")
@@ -17,9 +17,9 @@ class EntryEditorEntryFactoryTest {
             update(EntryEditorFieldKey.SECRET, "4111111111111111")
         }
 
-        val entry = schema.toEntryAggregate(state)
+        val entry = schema.toEntry(state)
 
-        assertEquals(EntryType.BANK_CARD, entry.entryType)
-        assertEquals(listOf("Finance", "工作", "个人"), entry.summary.tags)
+        assertEquals(EntryType.BANK_CARD, entry.type)
+        assertEquals(setOf("Finance", "工作", "个人"), entry.profile.tags)
     }
 }

@@ -1,4 +1,4 @@
-package com.aozijx.passly.domain.backup.model
+package com.aozijx.passly.feature.backup.internal.model
 
 import com.aozijx.passly.domain.entry.model.EntryType
 import org.junit.Assert.assertEquals

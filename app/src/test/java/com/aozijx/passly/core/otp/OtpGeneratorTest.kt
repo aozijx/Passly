@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -97,41 +98,31 @@ class OtpGeneratorTest {
     }
 
     @Test
-    fun `hotp - 空 counter 返回 InvalidCounter`() {
-        val config = OtpConfig(
-            type = OtpType.HOTP,
-            secret = SECRET_20,
-            algorithm = OtpHashAlgorithm.SHA1,
-            digits = 6,
-            counter = null,
-            encoding = OtpSecretEncoding.BASE32
-        )
-        val result = OtpGenerator.generate(config, overrideCounter = null)
-        assertTrue("HOTP counter=null 应返回失败", result is OtpResult.Failure)
-        val failure = result as OtpResult.Failure
-        assertTrue(
-            "HOTP counter=null 应返回 InvalidCounter",
-            failure.error is OtpGenerationError.InvalidCounter
-        )
+    fun `hotp - 空 counter 在领域配置构造时被拒绝`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            OtpConfig(
+                type = OtpType.HOTP,
+                secret = SECRET_20,
+                algorithm = OtpHashAlgorithm.SHA1,
+                digits = 6,
+                counter = null,
+                encoding = OtpSecretEncoding.BASE32
+            )
+        }
     }
 
     @Test
-    fun `hotp - 负 counter 返回 InvalidCounter`() {
-        val config = OtpConfig(
-            type = OtpType.HOTP,
-            secret = SECRET_20,
-            algorithm = OtpHashAlgorithm.SHA1,
-            digits = 6,
-            counter = -1L,
-            encoding = OtpSecretEncoding.BASE32
-        )
-        val result = OtpGenerator.generate(config, overrideCounter = -1)
-        assertTrue("HOTP counter=-1 应返回失败", result is OtpResult.Failure)
-        val failure = result as OtpResult.Failure
-        assertTrue(
-            "HOTP counter=-1 应返回 InvalidCounter",
-            failure.error is OtpGenerationError.InvalidCounter
-        )
+    fun `hotp - 负 counter 在领域配置构造时被拒绝`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            OtpConfig(
+                type = OtpType.HOTP,
+                secret = SECRET_20,
+                algorithm = OtpHashAlgorithm.SHA1,
+                digits = 6,
+                counter = -1L,
+                encoding = OtpSecretEncoding.BASE32
+            )
+        }
     }
 
     // ============================================================
@@ -339,22 +330,17 @@ class OtpGeneratorTest {
     // ============================================================
 
     @Test
-    fun `error - 空 secret 返回 InvalidSecret`() {
-        val config = OtpConfig(
-            type = OtpType.TOTP,
-            secret = "",
-            algorithm = OtpHashAlgorithm.SHA1,
-            digits = 6,
-            periodSeconds = 30,
-            encoding = OtpSecretEncoding.BASE32
-        )
-        val result = OtpGenerator.generate(config)
-        assertTrue("空 secret 应返回 Failure", result is OtpResult.Failure)
-        val failure = result as OtpResult.Failure
-        assertTrue(
-            "空 secret 应返回 InvalidSecret",
-            failure.error is OtpGenerationError.InvalidSecret
-        )
+    fun `error - 空 secret 在领域配置构造时被拒绝`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            OtpConfig(
+                type = OtpType.TOTP,
+                secret = "",
+                algorithm = OtpHashAlgorithm.SHA1,
+                digits = 6,
+                periodSeconds = 30,
+                encoding = OtpSecretEncoding.BASE32
+            )
+        }
     }
 
     @Test

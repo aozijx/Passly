@@ -19,7 +19,7 @@ class EntryContentSnapshotCodecTest {
         withCodec { codec ->
             val summary = EntryProfile(title = "Example", username = "person@example.com")
             val secret = EntrySecret(
-                login = LoginCredential(password = "secret"),
+                credential = LoginCredential(password = "secret"),
                 notes = "repeated ".repeat(2_000),
             )
             val link = EntryLink.create(

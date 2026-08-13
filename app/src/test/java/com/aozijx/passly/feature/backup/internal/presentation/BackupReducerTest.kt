@@ -1,9 +1,9 @@
 package com.aozijx.passly.feature.backup.internal.presentation
 
 import com.aozijx.passly.core.error.model.BackupFailed
-import com.aozijx.passly.domain.backup.model.BackupExportUiFormat
-import com.aozijx.passly.domain.backup.model.BackupOperationStatus
-import com.aozijx.passly.domain.backup.model.ImportMode
+import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
+import com.aozijx.passly.feature.backup.internal.model.BackupOperationStatus
+import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
 import com.aozijx.passly.security.crypto.SecureString

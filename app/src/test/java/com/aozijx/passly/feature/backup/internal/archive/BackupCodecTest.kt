@@ -15,17 +15,17 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupCustomField
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupLoginSecret
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupLoginCredential
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupLinkRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpConfig
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpSecret
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpCredential
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupSecretRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupSummaryRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupWebsiteRecord
-import com.aozijx.passly.domain.backup.model.BackupFormats
-import com.aozijx.passly.domain.entry.model.link.EntryRelationType
+import com.aozijx.passly.feature.backup.internal.model.BackupFormats
+import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertArrayEquals
@@ -483,7 +483,7 @@ class BackupCodecTest {
                         website = BackupWebsiteRecord(primaryUrl = "https://example.com")
                     ),
                     secret = BackupSecretRecord(
-                        login = BackupLoginSecret(password = "secret"),
+                        login = BackupLoginCredential(password = "secret"),
                         customFields = listOf(BackupCustomField("PIN", "1234"))
                     )
                 )
@@ -550,7 +550,7 @@ class BackupCodecTest {
             updatedAt = 1,
             summary = BackupSummaryRecord("Example login", "alice"),
             secret = BackupSecretRecord(
-                login = BackupLoginSecret(password = "secret")
+                login = BackupLoginCredential(password = "secret")
             )
         )
         val valid = BackupBundle(
@@ -579,7 +579,7 @@ class BackupCodecTest {
 
         val mixed = login.copy(
             secret = login.secret.copy(
-                otp = BackupOtpSecret(BackupOtpConfig(secret = "JBSWY3DPEHPK3PXP"))
+                otp = BackupOtpCredential(BackupOtpConfig(secret = "JBSWY3DPEHPK3PXP"))
             )
         )
         assertThrows(IllegalArgumentException::class.java) {

@@ -20,14 +20,14 @@ class PasswordEntryFactoryTest {
             now = 123L
         )
 
-        assertEquals(EntryType.LOGIN, entry.entryType)
-        assertEquals("Mail", entry.summary.title)
-        assertEquals("user@example.com", entry.summary.username)
-        assertEquals("https://example.com", entry.summary.website?.primaryUrl)
+        assertEquals(EntryType.LOGIN, entry.type)
+        assertEquals("Mail", entry.profile.title)
+        assertEquals("user@example.com", entry.profile.username)
+        assertEquals("https://example.com", entry.profile.associations.primaryUrl)
         assertEquals(" secret ", entry.secret.login?.password)
         assertEquals("personal account", entry.secret.notes)
-        assertEquals(123L, entry.header.createdAt)
-        assertEquals(123L, entry.header.updatedAt)
+        assertEquals(123L, entry.timestamps.createdAtMs)
+        assertEquals(123L, entry.timestamps.updatedAtMs)
     }
 
     @Test
@@ -41,7 +41,7 @@ class PasswordEntryFactoryTest {
             )
         )
 
-        assertNull(entry.summary.website)
+        assertNull(entry.profile.associations.primaryUrl)
         assertNull(entry.secret.notes)
     }
 }

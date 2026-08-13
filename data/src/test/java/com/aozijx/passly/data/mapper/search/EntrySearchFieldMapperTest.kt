@@ -6,9 +6,11 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.query.LookupField
+import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -17,23 +19,22 @@ class EntrySearchFieldMapperTest {
     @Test
     fun `all autofill associations are added to the blind index`() {
         val entry = Entry(
-            header = EntryIdentity(
+            identity = EntryIdentity(
                 id = EntryId("entry"),
-                entryType = EntryType.LOGIN,
+                type = EntryType.LOGIN,
                 version = EntryVersion.INITIAL,
-                createdAt = 1L,
-                updatedAt = 1L,
+                timestamps = EntryTimestamps(1L),
             ),
-            summary = EntryProfile(
+            profile = EntryProfile(
                 title = "Example",
                 username = "person",
-                website = EntryAssociations(
+                associations = EntryAssociations(
                     primaryUrl = "https://login.example.com/account",
-                    matchDomains = setOf("example.com", "login.example.com"),
-                    packageNames = setOf("com.example.one", "com.example.two"),
+                    domains = setOf("example.com", "login.example.com"),
+                    applicationIds = setOf("com.example.one", "com.example.two"),
                 ),
             ),
-            secret = EntrySecret(),
+            secret = EntrySecret(credential = LoginCredential()),
         )
 
         val fields = entry.toLookupFields()
@@ -44,7 +45,7 @@ class EntrySearchFieldMapperTest {
         )
         assertEquals(
             setOf("com.example.one", "com.example.two"),
-            fields.filter { it.field == LookupField.PACKAGE }.map { it.text }.toSet(),
+            fields.filter { it.field == LookupField.APPLICATION_ID }.map { it.text }.toSet(),
         )
         assertEquals(
             listOf("https://login.example.com/account"),

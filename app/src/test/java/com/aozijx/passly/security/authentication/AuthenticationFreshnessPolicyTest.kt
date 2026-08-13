@@ -1,8 +1,8 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.domain.authentication.AuthenticationMethodPolicy
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
+import com.aozijx.passly.domain.access.policy.AuthenticationMethodPolicy
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

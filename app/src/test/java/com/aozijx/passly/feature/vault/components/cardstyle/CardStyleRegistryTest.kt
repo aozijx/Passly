@@ -1,9 +1,14 @@
 package com.aozijx.passly.feature.vault.components.cardstyle
 
-import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
+import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
+import com.aozijx.passly.domain.entry.model.query.EntryCapability
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryIdentity
+import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.domain.settings.model.EntryCardPresentation
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.data.settings.model.EntryCardPresentation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
@@ -13,7 +18,7 @@ class CardStyleRegistryTest {
     @Test
     fun `presentation is selected by primary entry type`() {
         val style = CardStyleRegistry.resolveStyle(
-            entry(type = EntryType.LOGIN, flags = EntryCapabilityFlags.HAS_PASSWORD),
+            entry(type = EntryType.LOGIN, capabilities = setOf(EntryCapability.PASSWORD)),
             listOf(EntryCardPresentation(entryTypeKey = "login", variantKey = "password")),
         )
 
@@ -25,7 +30,7 @@ class CardStyleRegistryTest {
         val style = CardStyleRegistry.resolveStyle(
             entry(
                 type = EntryType.LOGIN,
-                flags = EntryCapabilityFlags.HAS_PASSWORD or EntryCapabilityFlags.HAS_OTP,
+                capabilities = setOf(EntryCapability.PASSWORD, EntryCapability.OTP),
             ),
             listOf(
                 EntryCardPresentation(entryTypeKey = "login", variantKey = "password"),
@@ -39,7 +44,7 @@ class CardStyleRegistryTest {
     @Test
     fun `totp style falls back when the entry has no otp capability`() {
         val style = CardStyleRegistry.resolveStyle(
-            entry(type = EntryType.LOGIN, flags = EntryCapabilityFlags.HAS_PASSWORD),
+            entry(type = EntryType.LOGIN, capabilities = setOf(EntryCapability.PASSWORD)),
             listOf(EntryCardPresentation(entryTypeKey = "login", variantKey = "totp")),
         )
 
@@ -49,7 +54,7 @@ class CardStyleRegistryTest {
     @Test
     fun `password style falls back when the entry has no password capability`() {
         val style = CardStyleRegistry.resolveStyle(
-            entry(type = EntryType.LOGIN, flags = EntryCapabilityFlags.HAS_OTP),
+            entry(type = EntryType.LOGIN, capabilities = setOf(EntryCapability.OTP)),
             listOf(EntryCardPresentation(entryTypeKey = "login", variantKey = "password")),
         )
 
@@ -59,7 +64,7 @@ class CardStyleRegistryTest {
     @Test
     fun `unknown style key falls back to the default component`() {
         val style = CardStyleRegistry.resolveStyle(
-            entry(type = EntryType.LOGIN, flags = EntryCapabilityFlags.HAS_PASSWORD),
+            entry(type = EntryType.LOGIN, capabilities = setOf(EntryCapability.PASSWORD)),
             listOf(EntryCardPresentation(entryTypeKey = "login", variantKey = "not-registered")),
         )
 
@@ -74,24 +79,13 @@ class CardStyleRegistryTest {
         )
     }
 
-    private fun entry(type: EntryType, flags: Int) = EntryListItem(
-        id = "entry",
-        entryType = type,
-        title = "Example",
-        username = "user",
-        icon = null,
-        iconCustomPath = null,
-        website = null,
-        favorite = false,
-        tags = emptyList(),
-        color = null,
-        createdAt = 1L,
-        updatedAt = 1L,
-        deletedAt = null,
-        expiresAt = null,
-        lastUsedAt = null,
-        usageCount = 0,
-        entryVersion = 1,
-        capabilityFlags = flags,
+    private fun entry(type: EntryType, capabilities: Set<EntryCapability>) = EntryListItem(
+        identity = EntryIdentity(
+            id = EntryId("entry"),
+            type = type,
+            timestamps = EntryTimestamps(1L),
+        ),
+        profile = EntryProfile(title = "Example", username = "user"),
+        capabilities = EntryCapabilities(capabilities),
     )
 }

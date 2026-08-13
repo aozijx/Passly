@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.vault.list
 
-import com.aozijx.passly.domain.entry.model.lookup.EntryFilter
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
+import com.aozijx.passly.domain.entry.model.query.EntryFilter
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first

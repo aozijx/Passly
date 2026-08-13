@@ -1,20 +1,20 @@
 package com.aozijx.passly.app.message.runtime
 
-import com.aozijx.passly.domain.notice.model.AppMessageSettings
-import com.aozijx.passly.domain.notice.model.NoticeCode
-import com.aozijx.passly.domain.notice.model.newAppNotice
-import com.aozijx.passly.domain.notice.port.AppVisibility
-import com.aozijx.passly.domain.notice.port.AppVisibilityProvider
-import com.aozijx.passly.domain.notice.port.MessageSettingsSnapshotProvider
-import com.aozijx.passly.domain.notice.port.NoticeCodeRegistry
-import com.aozijx.passly.domain.notice.port.NoticeDispatchStatus
-import com.aozijx.passly.domain.notice.port.NoticeSink
-import com.aozijx.passly.domain.notice.port.NoticeTarget
-import com.aozijx.passly.domain.notice.port.SinkResult
-import com.aozijx.passly.domain.notice.port.SystemNotificationState
-import com.aozijx.passly.domain.notice.port.SystemNotificationStateProvider
-import com.aozijx.passly.domain.notice.port.VersionedMessageSettings
-import com.aozijx.passly.domain.notice.port.defaultNoticeCodePolicy
+import com.aozijx.passly.data.message.model.AppMessageSettings
+import com.aozijx.passly.data.message.model.NoticeCode
+import com.aozijx.passly.data.message.model.newAppNotice
+import com.aozijx.passly.app.message.contract.AppVisibility
+import com.aozijx.passly.app.message.contract.AppVisibilityProvider
+import com.aozijx.passly.app.message.contract.MessageSettingsSnapshotProvider
+import com.aozijx.passly.app.message.contract.NoticeCodeRegistry
+import com.aozijx.passly.app.message.contract.NoticeDispatchStatus
+import com.aozijx.passly.app.message.contract.NoticeSink
+import com.aozijx.passly.app.message.contract.NoticeTarget
+import com.aozijx.passly.app.message.contract.SinkResult
+import com.aozijx.passly.app.message.contract.SystemNotificationState
+import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
+import com.aozijx.passly.app.message.contract.VersionedMessageSettings
+import com.aozijx.passly.app.message.contract.defaultNoticeCodePolicy
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -138,7 +138,7 @@ class DefaultAppNoticeDispatcherTest {
     ) = object : NoticeSink {
         override val target: NoticeTarget = sinkTarget
         override suspend fun deliver(
-            notice: com.aozijx.passly.domain.notice.model.AppNotice
+            notice: com.aozijx.passly.data.message.model.AppNotice
         ): SinkResult = delivery()
     }
 }

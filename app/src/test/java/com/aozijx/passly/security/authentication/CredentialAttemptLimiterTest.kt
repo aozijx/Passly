@@ -1,9 +1,9 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
-import com.aozijx.passly.domain.authentication.AuthenticationRequest
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -16,9 +16,9 @@ class CredentialAttemptLimiterTest {
         val request = request()
 
         val first = limiter.recordIncorrect(AuthenticationMethod.APP_PASSWORD, request)
-        assertEquals(AuthenticationFailureCode.CREDENTIAL_INCORRECT, first.authCode)
-        assertEquals(1, first.attemptCount)
-        assertEquals(4, first.remainingAttempts)
+        assertEquals(AuthenticationFailureCode.CREDENTIAL_INCORRECT, first.code)
+        assertEquals(1, first.attempts.used)
+        assertEquals(4, first.attempts.remaining)
         assertNull(limiter.beforeAttempt(AuthenticationMethod.APP_PASSWORD, request))
 
         repeat(3) {
@@ -26,13 +26,13 @@ class CredentialAttemptLimiterTest {
         }
 
         val locked = limiter.recordIncorrect(AuthenticationMethod.APP_PASSWORD, request)
-        assertEquals(AuthenticationFailureCode.RATE_LIMITED, locked.authCode)
-        assertEquals(CredentialAttemptLimiter.MAX_ATTEMPTS, locked.attemptCount)
+        assertEquals(AuthenticationFailureCode.RATE_LIMITED, locked.code)
+        assertEquals(CredentialAttemptLimiter.MAX_ATTEMPTS, locked.attempts.used)
         assertEquals(30_000L, locked.retryAfterMs)
 
         now += 1_000L
         val blocked = limiter.beforeAttempt(AuthenticationMethod.APP_PASSWORD, request)
-        assertEquals(AuthenticationFailureCode.RATE_LIMITED, blocked?.authCode)
+        assertEquals(AuthenticationFailureCode.RATE_LIMITED, blocked?.code)
         assertEquals(29_000L, blocked?.retryAfterMs)
     }
 
@@ -46,7 +46,7 @@ class CredentialAttemptLimiterTest {
 
         assertNull(limiter.beforeAttempt(AuthenticationMethod.APP_PASSWORD, request))
         val next = limiter.recordIncorrect(AuthenticationMethod.APP_PASSWORD, request)
-        assertEquals(1, next.attemptCount)
+        assertEquals(1, next.attempts.used)
     }
 
     @Test
@@ -63,6 +63,5 @@ class CredentialAttemptLimiterTest {
 
     private fun request() = AuthenticationRequest(
         purpose = AuthenticationPurpose.UNLOCK_VAULT,
-        correlationId = "test-correlation"
     )
 }

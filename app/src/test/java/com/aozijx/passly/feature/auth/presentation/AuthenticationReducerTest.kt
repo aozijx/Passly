@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.auth.presentation
 
-import com.aozijx.passly.domain.authentication.AuthenticationFailure
-import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.feature.auth.contract.AuthenticationUiState
 import com.aozijx.passly.security.crypto.SecureString
@@ -18,8 +18,7 @@ class AuthenticationReducerTest {
     @Test
     fun `authentication lifecycle preserves authoritative failure`() {
         val failure = AuthenticationFailure(
-            authCode = AuthenticationFailureCode.CREDENTIAL_INCORRECT,
-            correlationId = "test",
+            code = AuthenticationFailureCode.CREDENTIAL_INCORRECT,
         )
         val started = AuthenticationReducer.reduce(
             AuthenticationUiState(),

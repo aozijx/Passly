@@ -1,4 +1,4 @@
-package com.aozijx.passly.domain.settings.model
+package com.aozijx.passly.data.settings.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

@@ -1,7 +1,7 @@
 package com.aozijx.passly.app.message.runtime
 
-import com.aozijx.passly.domain.notice.model.NoticeCode
-import com.aozijx.passly.domain.notice.port.DeduplicationClaim
+import com.aozijx.passly.data.message.model.NoticeCode
+import com.aozijx.passly.app.message.contract.DeduplicationClaim
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test

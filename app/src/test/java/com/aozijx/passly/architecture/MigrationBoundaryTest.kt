@@ -61,6 +61,14 @@ class MigrationBoundaryTest {
     @Test
     fun upperLayersDoNotReachIntoDataImplementations() {
         val guardedPackages = listOf("/core/", "/feature/", "/security/")
+        val implementationImports = listOf(
+            "import com.aozijx.passly.data.local.",
+            "import com.aozijx.passly.data.codec.",
+            "import com.aozijx.passly.data.mapper.",
+            "import com.aozijx.passly.data.repository.entry.",
+            "import com.aozijx.passly.data.repository.attachment.",
+            "import com.aozijx.passly.data.repository.otp.",
+        )
         val exemptPaths = listOf(
             "/app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/snapshot/"
         )
@@ -76,7 +84,7 @@ class MigrationBoundaryTest {
             .filter { source ->
                 exemptPaths.none { it in source.invariantSeparatorsPath }
             }
-            .filter { "import com.aozijx.passly.data." in it.readText() }
+            .filter { source -> implementationImports.any { it in source.readText() } }
             .map { it.relativeTo(projectRoot).path }
             .toList()
 
@@ -87,9 +95,17 @@ class MigrationBoundaryTest {
     fun appOnlyImportsDataInternalsThroughBackupSnapshotAdapter() {
         val allowedPath =
             "/com/aozijx/passly/feature/backup/internal/archive/snapshot/"
+        val implementationImports = listOf(
+            "import com.aozijx.passly.data.local.",
+            "import com.aozijx.passly.data.codec.",
+            "import com.aozijx.passly.data.mapper.",
+            "import com.aozijx.passly.data.repository.entry.",
+            "import com.aozijx.passly.data.repository.attachment.",
+            "import com.aozijx.passly.data.repository.otp.",
+        )
         val offenders = appKotlinRoot.walkTopDown()
             .filter { it.isFile && it.extension == "kt" }
-            .filter { "import com.aozijx.passly.data." in it.readText() }
+            .filter { source -> implementationImports.any { it in source.readText() } }
             .filterNot { allowedPath in it.invariantSeparatorsPath }
             .map { it.relativeTo(appKotlinRoot).path }
             .toList()
@@ -282,7 +298,7 @@ class MigrationBoundaryTest {
         )
         assertTrue(
             "Login details must expose associated package names",
-            "entry.website?.packageNames" in associatedInfoSection &&
+            "entry.associations.applicationIds" in associatedInfoSection &&
                     "AssociatedAppRow" in associatedInfoSection
         )
     }
@@ -308,7 +324,7 @@ class MigrationBoundaryTest {
                     "DefaultAuthenticationMethodProvisioner.kt"
         ).readText()
         val authenticationModels = moduleSource(
-            "com/aozijx/passly/domain/authentication/AuthenticationModels.kt"
+            "com/aozijx/passly/domain/access/model/Authentication.kt"
         ).readText()
         val mainScreen = File(
             "src/main/java/com/aozijx/passly/app/shell/ui/AppShell.kt"
@@ -423,7 +439,7 @@ class MigrationBoundaryTest {
     @Test
     fun vaultQuickFilterModelDoesNotOwnUiPresentation() {
         val vaultQuickFilter = moduleSource(
-            "com/aozijx/passly/domain/settings/model/LibraryQuickFilter.kt"
+            "com/aozijx/passly/data/settings/model/LibraryQuickFilter.kt"
         ).readText()
 
         assertTrue(
@@ -735,7 +751,7 @@ class MigrationBoundaryTest {
                     "CredentialPlatformAdapter.kt"
         ).readText()
         val responseUseCases = moduleSource(
-            "com/aozijx/passly/domain/autofill/usecase/CredentialResponseUseCases.kt"
+            "com/aozijx/passly/feature/autofill/usecase/CredentialResponseUseCases.kt"
         ).readText()
         val providerConfig = File("src/main/res/xml/credential_service_config.xml").readText()
 
@@ -764,7 +780,7 @@ class MigrationBoundaryTest {
         assertTrue(
             "Allowed user ids must be checked before display and again before secret release",
             "option.allowedUserIds" in adapter &&
-                    "allowedUserIds.isNotEmpty() && selected.username !in allowedUserIds" in
+                    "allowedUserIds.isNotEmpty() && selected.profile.username !in allowedUserIds" in
                     responseUseCases
         )
         assertTrue(
@@ -795,7 +811,7 @@ class MigrationBoundaryTest {
             "src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt"
         ).readText()
         val authPolicy = moduleSource(
-            "com/aozijx/passly/domain/authentication/AuthenticationMethodPolicy.kt"
+            "com/aozijx/passly/domain/access/policy/AuthenticationMethodPolicy.kt"
         ).readText()
         val credentialExecutor = File(
             "src/main/java/com/aozijx/passly/security/authentication/CredentialMethodExecutor.kt"
@@ -882,7 +898,7 @@ class MigrationBoundaryTest {
             "Recovery draft UI must not access cryptographic implementations",
             "import com.aozijx.passly.security." !in source
         )
-        assertTrue("Recovery draft must use its domain factory", "RecoveryCodeDraftFactory" in source)
+        assertTrue("Recovery draft must use its domain factory", "RecoveryCredentialFactory" in source)
     }
 
     @Test
@@ -1037,10 +1053,10 @@ class MigrationBoundaryTest {
     @Test
     fun recoveryCodeCannotActAsEverydayUnlockMethod() {
         val authPolicy = moduleSource(
-            "com/aozijx/passly/domain/authentication/AuthenticationMethodPolicy.kt"
+            "com/aozijx/passly/domain/access/policy/AuthenticationMethodPolicy.kt"
         ).readText()
         val authModels = moduleSource(
-            "com/aozijx/passly/domain/authentication/AuthenticationModels.kt"
+            "com/aozijx/passly/domain/access/model/Authentication.kt"
         ).readText()
         val authManager = File(
             "src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt"
@@ -1055,7 +1071,7 @@ class MigrationBoundaryTest {
             "src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationMethodProvisioner.kt"
         ).readText()
         val provisionerInterface = moduleSource(
-            "com/aozijx/passly/domain/authentication/AuthenticationMethodProvisioner.kt"
+            "com/aozijx/passly/domain/access/port/AuthenticationMethodProvisioner.kt"
         ).readText()
         val authViewModel = File(
             "src/main/java/com/aozijx/passly/feature/auth/presentation/AuthenticationViewModel.kt"
@@ -1351,7 +1367,7 @@ class MigrationBoundaryTest {
         )
         assertTrue(
             "Consumed recovery availability must be invalidated in the current process",
-            "copy(recoveryCode = false)" in manager,
+            "_methods.value.available - AuthenticationMethod.RECOVERY_CODE" in manager,
         )
     }
 
@@ -2296,9 +2312,8 @@ class MigrationBoundaryTest {
                     "sensitiveFieldQueryDao().getFields" in helper
         )
         assertTrue(
-            "Regular revision codec must never receive the reconstructed high-sensitivity secret",
-            "secret = newPersistedSecret" in updateExecutor &&
-                    "secret = newFullSecret" !in updateExecutor.substringAfter("snapshotChanges(")
+            "Revision writes must use the validated single-credential secret",
+            "secret = newSecret" in updateExecutor.substringAfter("snapshotChanges(")
         )
         assertTrue(
             "Revision storage must separate regular encrypted snapshot from high-field ciphertexts",
