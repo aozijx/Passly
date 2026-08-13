@@ -49,30 +49,28 @@ jobs:
           build-mode: manual
 
     steps:
+    # 拉取仓库代码
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # Add any setup steps before running the `github/codeql-action/init` action.
+    # 安装并配置 JDK 21 环境，供后续 Gradle 构建使用
     - name: Set up JDK 21
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         java-version: '21'
         distribution: 'temurin'
         cache: gradle
 
-    # Initializes the CodeQL tools for scanning.
+    # 初始化 CodeQL 工具，为指定语言准备分析环境
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+      uses: github/codeql-action/init@v4
       with:
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
         # If you wish to specify custom queries, you can do so here or in a config file.
         # queries: security-extended,security-and-quality
 
-    # If the analyze step fails for one of the languages you are analyzing with
-    # "We were unable to automatically build your code", modify the matrix above
-    # to set the build mode to "manual" for that language. Then modify this step
-    # to build your code.
+    # build-mode 为 manual 时，手动执行 Gradle 构建、单元测试和 lint 检查
     - name: Run manual build steps
       if: matrix.build-mode == 'manual'
       shell: bash
@@ -83,7 +81,8 @@ jobs:
           -Dorg.gradle.parallel=false \
           --stacktrace
 
+    # 对构建产物执行 CodeQL 静态分析，并按语言分类上传结果
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      uses: github/codeql-action/analyze@v4
       with:
         category: "/language:${{matrix.language}}"
