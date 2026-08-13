@@ -33,4 +33,4 @@ Registry 扩展，外部格式先映射到 canonical `BackupBundle`。
 
 ## 关联
 
-[备份格式](../data/backup-format.md)
+[Backup 功能与备份协议](../features/backup.md)

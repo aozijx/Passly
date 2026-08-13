@@ -16,28 +16,27 @@ moduleBoundaries {
         ":app",
         ":core:android",
         ":core:common",
-        ":core:security",
+        ":core:crypto",
         ":core:telemetry",
         ":core:ui",
+        ":data",
         ":domain",
-        ":feature:auth:api",
-        ":feature:recovery",
         ":runtime:session",
     )
-    module(":core:android")
+    module(":core:android", ":core:telemetry")
     module(":core:common")
-    module(":core:security", ":domain")
+    module(":core:crypto", ":core:common", ":core:telemetry", ":domain")
     module(":core:telemetry", ":core:common")
     module(":core:ui", ":domain")
-    module(":domain", ":core:common")
-    module(":feature:auth:api", ":domain")
     module(
-        ":feature:recovery",
-        ":core:security",
-        ":core:ui",
+        ":data",
+        ":core:android",
+        ":core:common",
+        ":core:crypto",
+        ":core:telemetry",
         ":domain",
-        ":feature:recovery:api",
+        ":runtime:session",
     )
-    module(":feature:recovery:api", ":domain")
+    module(":domain", ":core:common")
     module(":runtime:session", ":domain")
 }

@@ -8,7 +8,7 @@ import androidx.compose.ui.graphics.Color
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.PasswordStrengthLevel
 import com.aozijx.passly.domain.entry.model.PasswordStrengthResult
-import com.aozijx.passly.domain.entry.service.PasswordStrengthEvaluator
+import com.aozijx.passly.domain.entry.policy.PasswordStrengthEvaluator
 
 data class PasswordStrengthUiState(
     val progress: Float,

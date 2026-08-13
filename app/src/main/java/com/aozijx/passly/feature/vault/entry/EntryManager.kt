@@ -3,13 +3,13 @@ package com.aozijx.passly.feature.vault.entry
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.domain.entry.model.EntryChanges
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.domain.entry.model.EntryUpdate
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.entry.model.favicon.FaviconResult
-import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
-import com.aozijx.passly.domain.entry.repository.EntryQueryRepository
-import com.aozijx.passly.domain.entry.repository.FaviconRepository
+import com.aozijx.passly.domain.entry.port.EntryCommandRepository
+import com.aozijx.passly.domain.entry.port.EntryQueryRepository
+import com.aozijx.passly.domain.entry.port.FaviconRepository
 import com.aozijx.passly.feature.vault.otp.TotpCoordinator
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -34,24 +34,26 @@ internal class EntryManager(
     private val deletingIds = mutableSetOf<String>()
     private val deletingIdsMutex = Mutex()
 
-    fun addItem(entry: EntryAggregate, domain: String? = null, onComplete: () -> Unit = {}) {
+    fun addItem(entry: Entry, domain: String? = null, onComplete: () -> Unit = {}) {
         scope.launch(Dispatchers.IO + handler) {
             when (val insertResult = entryCommandRepository.createEntry(entry)) {
                 is AppResult.Success -> {
-                    val entryId = insertResult.data.value
+                    val entryId = insertResult.data
                     if (!domain.isNullOrBlank()) {
                         val outcome = downloadFavicon(domain)
                         if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
-                            val savedEntry = entryQueryRepository.getByIdWithoutHighSensitivity(entryId)
+                            val savedEntry = entryQueryRepository.getById(entryId)
                             if (savedEntry != null) {
-                                val iconSummary = savedEntry.summary.copy(
-                                    icon = null,
-                                    iconCustomPath = outcome.filePath
+                                val iconProfile = savedEntry.profile.copy(
+                                    icon = savedEntry.profile.icon.copy(
+                                        name = null,
+                                        customReference = outcome.filePath,
+                                    ),
                                 )
                                 entryCommandRepository.updateEntry(
                                     savedEntry.id,
-                                    savedEntry.entryVersion,
-                                    EntryChanges(summary = iconSummary)
+                                    savedEntry.version,
+                                    EntryUpdate(profile = iconProfile)
                                 )
                             }
                         }
@@ -68,36 +70,36 @@ internal class EntryManager(
 
     /**
      * 将来自详情页面的完整条目更新原子提交。
-     * 比较当前数据库条目与传入条目导出变更集 [EntryChanges]，
+     * 比较当前数据库条目与传入条目导出变更集 [EntryUpdate]，
      * 一次事务写入所有变化字段（Metadata + Credential + 版本 + 盲索引 + 快照）。
      * 覆盖 title、username、password、email、notes、otp、card、ssh、customFields 等全部字段。
      */
-    fun updateEntry(entry: EntryAggregate) {
+    fun updateEntry(entry: Entry) {
         scope.launch(Dispatchers.IO + handler) {
-            val current = entryQueryRepository.getByIdWithoutHighSensitivity(entry.id) ?: return@launch
+            val current = entryQueryRepository.getById(entry.id) ?: return@launch
 
-            val metaChanged = current.summary != entry.summary
+            val metaChanged = current.profile != entry.profile
             val credChanged = current.secret != entry.secret
 
             if (!metaChanged && !credChanged) return@launch
 
-            val changes = EntryChanges(
-                summary = if (metaChanged) entry.summary else null,
+            val changes = EntryUpdate(
+                profile = if (metaChanged) entry.profile else null,
                 secret = if (credChanged) entry.secret else null
             )
 
-            entryCommandRepository.updateEntry(entry.id, current.entryVersion, changes)
+            entryCommandRepository.updateEntry(entry.id, current.version, changes)
                 .onSuccess {
-                    totp.onEntryUpdated(entry.id)
+                    totp.onEntryUpdated(entry.id.value)
                 }.onFailure { error ->
                     onError(error.code)
                 }
         }
     }
 
-    fun deleteEntry(entry: EntryAggregate) {
+    fun deleteEntry(entry: Entry) {
         scope.launch(Dispatchers.IO + handler) {
-            deleteEntryInternal(entry.id, presetEntry = entry)
+            deleteEntryInternal(entry.id.value, presetEntry = entry)
         }
     }
 
@@ -107,19 +109,21 @@ internal class EntryManager(
         }
     }
 
-    private suspend fun deleteEntryInternal(entryId: String, presetEntry: EntryAggregate? = null) {
+    private suspend fun deleteEntryInternal(entryId: String, presetEntry: Entry? = null) {
         val acquired = deletingIdsMutex.withLock {
             if (deletingIds.contains(entryId)) false else deletingIds.add(entryId)
         }
         if (!acquired) return
 
         try {
-            val entry = presetEntry ?: entryQueryRepository.getByIdWithoutHighSensitivity(entryId)
+            val entry = presetEntry ?: entryQueryRepository.getById(
+                com.aozijx.passly.domain.entry.model.EntryId(entryId)
+            )
             if (entry == null) return
             when (
                 val result = entryCommandRepository.moveToTrash(
                     entry.id,
-                    entry.entryVersion
+                    entry.version
                 )
             ) {
                 is AppResult.Success -> {

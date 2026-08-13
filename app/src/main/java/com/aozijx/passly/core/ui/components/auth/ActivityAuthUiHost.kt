@@ -8,8 +8,8 @@ import androidx.lifecycle.Lifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.security.authentication.SecretChars
 import com.aozijx.passly.security.authentication.host.AuthHostSnapshot
 import com.aozijx.passly.security.authentication.host.AuthUiHost
@@ -262,6 +262,7 @@ internal object BiometricPromptSpecFactory {
             R.string.auth_purpose_export_diagnostics
 
         AuthenticationPurpose.RECOVER_DATABASE -> R.string.auth_purpose_recover_database
+        AuthenticationPurpose.RESTORE_DATABASE -> R.string.auth_purpose_restore_database
         AuthenticationPurpose.RECOVER_AUTH_METHODS -> R.string.auth_purpose_recover_auth_methods
         AuthenticationPurpose.CLEAR_DATABASE -> R.string.auth_purpose_clear_database
         else -> R.string.auth_verify_identity

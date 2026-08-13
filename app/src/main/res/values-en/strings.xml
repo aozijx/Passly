@@ -1,51 +1,48 @@
 <resources>
 
-    <!-- Common strings -->
-    <string name="auth_title">Security Verification</string>
+    <!-- Common actions -->
     <string name="verify">Verify</string>
     <string name="save">Save</string>
     <string name="copy">Copy</string>
-    <string name="edit">Edit</string>
     <string name="cancel">Cancel</string>
     <string name="close">Close</string>
     <string name="back">Back</string>
     <string name="search">Search</string>
     <string name="more">More</string>
     <string name="add">Add</string>
-    <string name="paste">Paste</string>
-    <string name="username">Username</string>
-    <string name="password">Password</string>
-    <string name="title">Title</string>
-    <string name="remark">Note</string>
-    <string name="default_label">Default</string>
-    <string name="edit_field">Edit %s</string>
+
+    <!-- Common fields -->
+    <string name="field_username">Username</string>
+    <string name="password_label">Password</string>
+    <string name="field_title">Title</string>
+    <string name="field_notes">Notes</string>
+    <string name="field_edit_action">Edit %s</string>
+    <string name="field_copy_success_message">%1$s copied</string>
     <string name="show_password">Show password</string>
     <string name="hide_password">Hide password</string>
-    <string name="username_hint">Username / Email</string>
-    <string name="entry_category">Category</string>
+    <string name="field_username_hint">Username or email</string>
+    <string name="field_category">Category</string>
+    <string name="authentication_label">Authentication</string>
+    <string name="app_password_unlock_description">Unlock the app with a separate password</string>
+    <string name="recovery_code_label">Recovery code</string>
+    <string name="restore_access">Restore access</string>
+    <string name="recovery_code_verify">Verify recovery code</string>
+    <string name="restore">Restore</string>
 
     <!-- Entry Type Names -->
     <string name="entry_type_account">Account</string>
     <string name="entry_type_login">Login</string>
     <string name="entry_type_note">Note</string>
-    <string name="entry_type_card">Card</string>
-    <string name="entry_type_identity">Identity</string>
     <string name="entry_type_ssh_key">SSH Key</string>
-    <string name="entry_type_wifi" translatable="false">Wi-Fi</string>
-    <string name="entry_type_passkey" translatable="false">Passkey</string>
-    <string name="entry_type_otp" translatable="false">OTP</string>
     <string name="entry_type_passport">Passport</string>
-    <string name="entry_type_license">License</string>
-    <string name="entry_type_database">Database</string>
-    <string name="entry_type_server">Server</string>
-    <string name="entry_type_api_key" translatable="false">API Key</string>
+    <string name="entry_type_driver_license">Driver’s license</string>
+    <string name="entry_type_database_credential">Database credential</string>
+    <string name="entry_type_server_credential">Server credential</string>
     <string name="entry_type_crypto_wallet">Crypto Wallet</string>
     <string name="entry_type_bank_card">Bank Card</string>
     <string name="entry_type_id_card">ID Card</string>
     <string name="entry_type_seed_phrase">Seed Phrase</string>
     <string name="entry_type_recovery_code">Recovery Code</string>
-
-    <!-- App info -->
 
     <!-- Autofill service -->
     <string name="autofill_entry_compact_title">Choose account</string>
@@ -59,28 +56,28 @@
         <item quantity="other">%d matching accounts · Tap to select</item>
     </plurals>
 
-    <!-- Autofill title generation -->
-
-    <!-- Vault - adjusted for clearer distinction -->
+    <!-- Vault status -->
     <string name="vault_auth_subtitle">Verify your identity to access Passly</string>
-    <string name="main_notification_permission_denied">Notification permission is disabled, so background sync progress will be hidden.</string>
+    <string name="notification_permission_denied_message">Notification permission is disabled, so background sync progress won’t be shown.</string>
     <string name="vault_locked_title">Passly is locked</string>
     <string name="credential_create_password_description">Save the password securely in Passly</string>
     <string name="vault_auth_decrypt_subtitle_generic">Please verify to continue</string>
 
-    <!-- Vault - other strings -->
+    <!-- Vault browsing -->
     <string name="vault_search_placeholder">Search items…</string>
+    <string name="vault_title_category">Category: %s</string>
+    <string name="vault_search_category">Search categories</string>
+    <string name="vault_search_category_hint">Search categories…</string>
     <string name="vault_clear_filter">Clear filter</string>
     <string name="vault_menu_filter">Filter by category</string>
     <string name="vault_menu_hide_totp">Hide codes</string>
     <string name="vault_menu_show_totp">Show codes</string>
     <string name="tab_all">All</string>
-    <string name="otp">otp</string>
 
     <string name="vault_scan">Scan</string>
     <string name="vault_add_entry_save_failed">Couldn\'t save entry</string>
     <string name="vault_empty_placeholder">No items yet, tap + to add one</string>
-    <string name="vault_scanner_error_not_otp">Scanned successfully, but not a valid QR code</string>
+    <string name="vault_scanner_error_not_otp">This QR code doesn’t contain valid OTP information</string>
     <string name="vault_scanner_action_album">Import from album</string>
     <string name="vault_scanner_result_title">Secret Found</string>
     <string name="scanner_waiting_for_permission">Waiting for camera permission…</string>
@@ -97,6 +94,12 @@
     <string name="backup_directory_permission_ok">Backup directory write permission is available</string>
     <string name="backup_directory_permission_failed">Backup directory write test failed. Please reselect the directory.</string>
 
+    <!-- Database recovery -->
+    <string name="database_open_error_title">Unable to open database</string>
+    <string name="database_open_error_message">The database key or schema doesn’t match. Try again first. If the problem continues, verify your identity to preserve the failed database, attachments, and images before creating an empty database. Existing data won’t be overwritten automatically.</string>
+    <string name="database_open_retry_action">Retry opening database</string>
+    <string name="database_open_close_app_action">Close app</string>
+
     <!-- Detail additions -->
     <string name="vault_editor_section_basic_info">Basic info</string>
     <string name="vault_editor_section_credentials">Credentials</string>
@@ -112,7 +115,7 @@
     <string name="vault_detail_associated_domain">Associated Domain</string>
     <string name="vault_detail_associated_package">Associated App</string>
 
-    <string name="vault_export_qr_title">Export otp Secret</string>
+    <string name="vault_export_qr_title">Export OTP secret</string>
     <string name="vault_export_qr_message">Scan this QR code with another authenticator app</string>
 
     <string name="vault_add_otp_title">Add OTP</string>
@@ -120,17 +123,11 @@
     <string name="vault_otp_uri_parsed">URI parsed successfully</string>
     <string name="vault_otp_uri_parse_failed">Failed to parse URI</string>
 
-    <!-- Icon Picker -->
-    <string name="icon_picker_title">Select Icon</string>
-    <string name="icon_picker_subtitle">Choose a suitable icon for your account entry</string>
-    <string name="icon_picker_action_add_photo">Add Custom Image</string>
-
     <!-- TOTP Config -->
     <string name="totp_secret">Secret (Base32)</string>
     <string name="totp_period">Period (Seconds)</string>
     <string name="totp_digits">Digits</string>
     <string name="totp_algorithm">Algorithm</string>
-    <string name="twofa_uri_hint">URI</string>
 
     <!-- Detail page new strings -->
     <string name="vault_detail_totp_label">Two-Factor Code</string>
@@ -161,104 +158,8 @@
     <string name="password_strength_good">Good</string>
     <string name="password_strength_strong">Strong</string>
 
-    <!-- Settings: Appearance -->
     <string name="notification_channel_app_messages">App information</string>
     <string name="notification_channel_app_messages_summary">Status bar information such as download results</string>
-    <!-- Categories -->
-
-    <!-- Widget & Shortcuts -->
-
-    <!-- Changelog (kept original URL) -->
-
-    <!-- Category keyword arrays (translated to English keywords for matching) -->
-    <string-array name="category_keywords_personal">
-        <item>personal</item>
-        <item>privacy</item>
-    </string-array>
-    <string-array name="category_keywords_bank">
-        <item>bank card</item>
-        <item>finance</item>
-        <item>online banking</item>
-        <item>bank</item>
-    </string-array>
-    <string-array name="category_keywords_payment">
-        <item>payment</item>
-        <item>top up</item>
-        <item>transfer</item>
-    </string-array>
-    <string-array name="category_keywords_finance">
-        <item>withdraw</item>
-        <item>investment</item>
-        <item>savings</item>
-    </string-array>
-    <string-array name="category_keywords_account">
-        <item>account</item>
-        <item>login</item>
-    </string-array>
-    <string-array name="category_keywords_social">
-        <item>social</item>
-        <item>chat</item>
-        <item>messaging</item>
-    </string-array>
-    <string-array name="category_keywords_email">
-        <item>email</item>
-        <item>mail</item>
-    </string-array>
-    <string-array name="category_keywords_apps">
-        <item>app</item>
-    </string-array>
-    <string-array name="category_keywords_game">
-        <item>game</item>
-    </string-array>
-    <string-array name="category_keywords_video">
-        <item>video</item>
-        <item>membership</item>
-        <item>streaming</item>
-        <item>movie</item>
-    </string-array>
-    <string-array name="category_keywords_shopping">
-        <item>shopping</item>
-        <item>e-commerce</item>
-        <item>Taobao</item>
-        <item>JD</item>
-    </string-array>
-    <string-array name="category_keywords_health">
-        <item>provident fund</item>
-        <item>social security</item>
-        <item>medical insurance</item>
-        <item>health</item>
-    </string-array>
-    <string-array name="category_keywords_note">
-        <item>note</item>
-        <item>memo</item>
-        <item>diary</item>
-    </string-array>
-    <string-array name="category_keywords_work">
-        <item>work</item>
-        <item>job</item>
-    </string-array>
-    <string-array name="category_keywords_school">
-        <item>study</item>
-        <item>education</item>
-        <item>campus</item>
-    </string-array>
-    <string-array name="category_keywords_travel">
-        <item>travel</item>
-        <item>high-speed rail</item>
-        <item>train</item>
-    </string-array>
-    <string-array name="category_keywords_wifi">
-        <item>wifi</item>
-        <item>network</item>
-        <item>wireless</item>
-    </string-array>
-    <string-array name="category_keywords_security">
-        <item>security</item>
-        <item>permission</item>
-    </string-array>
-
-    <!-- Settings: Interface behavior -->
-
     <string name="notice_clipboard_cleared">Sensitive clipboard content was cleared</string>
     <string name="notice_clipboard_clear_failed">Could not clear sensitive clipboard content</string>
     <string name="notice_app_locked">Passly locked</string>
@@ -270,14 +171,27 @@
     <string name="notice_database_index_rebuild_failed">Search index rebuild failed</string>
     <string name="notice_database_operation_failed">Database operation failed</string>
 
-    <string name="sort_last_used">Last used</string>
-    <string name="sort_entry_type">Entry type</string>
     <string name="not_set">Not set</string>
-    <string name="vault_plain_export_db_error_title">Unable to open database</string>
-    <string name="vault_plain_export_db_error_message">The database key or schema does not match. Try again first. If the problem continues, you can verify your identity, preserve the failed database, attachments, and images, and then create a new empty database. Existing data will not be overwritten automatically.</string>
-    <string name="vault_database_retry">Retry opening database</string>
-    <string name="vault_plain_export_db_error_dismiss">Close app</string>
     <string name="database_recovery_create_new_action">Preserve failed database and create a new one</string>
+    <string name="auth_purpose_restore_database">Verify identity to restore a failed database</string>
+    <string name="settings_database_recovery_title">Database recovery</string>
+    <string name="settings_database_recovery_summary">Scan and recover quarantined databases</string>
+    <string name="database_recovery_empty">No saved failed databases</string>
+    <string name="database_recovery_scan">Preflight scan</string>
+    <string name="database_recovery_restore">Restore valid data</string>
+    <string name="database_recovery_delete">Delete recovery package</string>
+    <string name="database_recovery_delete_confirm_title">Delete recovery package?</string>
+    <string name="database_recovery_delete_confirm_message">The original failed database will be permanently deleted. This cannot be undone.</string>
+    <string name="database_recovery_package_label">Recovery package %1$s</string>
+    <string name="database_recovery_package_details">%1$s · %2$s</string>
+    <string name="database_recovery_scan_summary">%1$d recoverable, %2$d conflicts, %3$d damaged; %4$d attachments</string>
+    <string name="database_recovery_report_summary">Restored %1$d entries, %2$d attachments and %3$d revisions; skipped %4$d conflicts</string>
+    <string name="database_recovery_select_types">Select entry types</string>
+    <string name="database_recovery_status_pending">Not scanned</string>
+    <string name="database_recovery_status_recoverable">Recoverable</string>
+    <string name="database_recovery_status_partial">Partially recoverable</string>
+    <string name="database_recovery_status_restored">Restored</string>
+    <string name="database_recovery_status_unreadable">Unreadable by this version</string>
     <string name="otp_type">OTP type</string>
     <string name="otp_secret_encoding">Secret encoding</string>
     <string name="otp_counter">Counter</string>
@@ -287,7 +201,6 @@
     <string name="continue_action">Continue</string>
     <string name="auth_verify_identity">Verify identity</string>
     <string name="auth_method_biometric">Biometrics</string>
-    <string name="auth_method_recovery_code">Restore access</string>
     <string name="auth_biometric_subtitle">Verify your identity to continue</string>
     <string name="auth_purpose_unlock_vault">Unlock Passly</string>
     <string name="auth_purpose_autofill">Verify to autofill</string>
@@ -300,6 +213,4 @@
     <string name="related_entries">Related entries</string>
     <string name="app_package_picker_title">Choose associated app</string>
     <string name="app_package_picker_search">Search apps or package names</string>
-    <string name="app_package_picker_action">Choose app</string>
-    <string name="entry_type">Entry type</string>
 </resources>

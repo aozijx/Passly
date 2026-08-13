@@ -12,10 +12,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.settings.model.FallbackPalette
-import com.aozijx.passly.domain.settings.model.FontFamilyMode
-import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
-import com.aozijx.passly.domain.settings.model.ThemeMode
+import com.aozijx.passly.data.settings.model.FallbackPalette
+import com.aozijx.passly.data.settings.model.FontFamilyMode
+import com.aozijx.passly.data.settings.model.InterfaceStyleConstraints
+import com.aozijx.passly.data.settings.model.ThemeMode
 
 /**
  * [color] 是兼容既有 DataStore 字段的选择键；真正应用的是包含三组强调色的 [palette]。
@@ -121,7 +121,7 @@ private val TealThemePalette = ThemePalette(AquaAccent, SlateAccent, OliveAccent
 private val PinkThemePalette = ThemePalette(PinkAccent, RoseAccent, OrangeAccent)
 
 val themePresets = listOf(
-    ThemePreset(0, R.string.default_label),
+    ThemePreset(0, R.string.settings_theme_color_default),
     ThemePreset(
         color = 0xFF4285F4,
         nameKey = R.string.settings_theme_color_blue,

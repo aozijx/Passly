@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault
 
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import javax.inject.Inject
 
 class SecureSessionAccessPolicy @Inject constructor(

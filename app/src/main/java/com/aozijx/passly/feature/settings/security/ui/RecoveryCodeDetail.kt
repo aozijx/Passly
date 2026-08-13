@@ -29,7 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.common.InputActionButton
-import com.aozijx.passly.security.crypto.SecureString
+import com.aozijx.passly.domain.sensitive.SecureString
 
 @Composable
 fun RecoveryCodeDetail(
@@ -102,7 +102,7 @@ fun RecoveryCodeDetail(
 
             // 验证恢复码
             Text(
-                text = stringResource(R.string.settings_recovery_code_verify_title),
+                text = stringResource(R.string.recovery_code_verify),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Medium
             )
@@ -120,9 +120,9 @@ fun RecoveryCodeDetail(
                     false -> MaterialTheme.colorScheme.errorContainer
                     else -> null
                 },
-                collapsedText = stringResource(R.string.auth_use_recovery_code),
-                expandedText = stringResource(R.string.auth_recovery_code_unlock),
-                inputLabel = stringResource(R.string.auth_recovery_code_label),
+                collapsedText = stringResource(R.string.restore_access),
+                expandedText = stringResource(R.string.recovery_code_verify),
+                inputLabel = stringResource(R.string.recovery_code_label),
                 successText = stringResource(R.string.settings_recovery_code_verify_valid),
                 errorText = stringResource(R.string.settings_recovery_code_verify_invalid),
                 onValueChange = {

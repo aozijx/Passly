@@ -1,7 +1,7 @@
 package com.aozijx.passly.app.shell.presentation
 
-import com.aozijx.passly.domain.settings.model.AppearanceSettings
-import com.aozijx.passly.domain.settings.model.InterfaceSettings
+import com.aozijx.passly.data.settings.model.AppearanceSettings
+import com.aozijx.passly.data.settings.model.InterfaceSettings
 import com.aozijx.passly.app.shell.contract.AppShellUiState
 
 internal sealed interface AppShellMutation {

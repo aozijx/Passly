@@ -1,9 +1,9 @@
 package com.aozijx.passly.app.message.presentation
 
 import androidx.lifecycle.ViewModel
-import com.aozijx.passly.domain.notice.model.NoticeLevel
-import com.aozijx.passly.domain.notice.port.InAppNoticeStream
-import com.aozijx.passly.domain.notice.port.NoticeTextResolver
+import com.aozijx.passly.data.message.model.NoticeLevel
+import com.aozijx.passly.app.message.contract.InAppNoticeStream
+import com.aozijx.passly.app.message.contract.NoticeTextResolver
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow

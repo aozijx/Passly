@@ -7,13 +7,13 @@ import com.aozijx.passly.feature.vault.model.AddType
 @get:StringRes
 val AddType.labelRes: Int
     get() = when (this) {
-        AddType.PASSWORD -> R.string.password
-        AddType.TOTP -> R.string.otp
+        AddType.PASSWORD -> R.string.password_label
+        AddType.TOTP -> R.string.vault_add_type_totp
         AddType.BANK_CARD -> R.string.vault_fab_bank_card
         AddType.WIFI -> R.string.vault_fab_wifi
         AddType.SSH_KEY -> R.string.vault_fab_ssh_key
         AddType.ID_CARD -> R.string.vault_fab_id_card
-        AddType.SEED_PHRASE -> R.string.vault_fab_seed_phrase
+        AddType.SEED_PHRASE -> R.string.seed_phrase
         AddType.PASSKEY -> R.string.vault_fab_passkey
-        AddType.RECOVERY_CODE -> R.string.vault_fab_recovery_code
+        AddType.RECOVERY_CODE -> R.string.recovery_code_label
     }

@@ -1,9 +1,10 @@
 package com.aozijx.passly.security.authentication
 
 import android.hardware.biometrics.BiometricManager
-import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
-import com.aozijx.passly.domain.authentication.AuthMethodAvailability
-import com.aozijx.passly.security.envelope.BootstrapStore
+import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationMethods
+import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -17,28 +18,33 @@ import javax.inject.Singleton
  */
 @Singleton
 class AuthenticationAvailabilityResolver @Inject constructor(
-    private val bootstrapStore: BootstrapStore,
+    private val vaultBootstrapStore: VaultBootstrapStore,
     private val biometricManager: BiometricManager
 ) {
-    suspend fun resolve(): AuthMethodAvailability = withContext(Dispatchers.Default) {
-        val biometricState = bootstrapStore.loadBiometricState()
-        AuthMethodAvailability(
-            biometric = biometricManager.canAuthenticate(
+    suspend fun resolve(): AuthenticationMethods = withContext(Dispatchers.Default) {
+        val biometricState = vaultBootstrapStore.loadBiometricState()
+        AuthenticationMethods(buildSet {
+            if (biometricManager.canAuthenticate(
                 BiometricManager.Authenticators.BIOMETRIC_STRONG
             ) == BiometricManager.BIOMETRIC_SUCCESS &&
-                    bootstrapStore.load(EnvelopeType.BIOMETRIC) != null &&
-                    biometricState.binding != null,
-            appPassword = bootstrapStore.load(EnvelopeType.APP_PASSWORD) != null,
-            recoveryCode = bootstrapStore.load(EnvelopeType.RECOVERY) != null
-        )
+                    vaultBootstrapStore.load(EnvelopeType.BIOMETRIC) != null &&
+                    biometricState.binding != null
+            ) add(AuthenticationMethod.BIOMETRIC)
+            if (vaultBootstrapStore.load(EnvelopeType.APP_PASSWORD) != null) {
+                add(AuthenticationMethod.APP_PASSWORD)
+            }
+            if (vaultBootstrapStore.load(EnvelopeType.RECOVERY) != null) {
+                add(AuthenticationMethod.RECOVERY_CODE)
+            }
+        })
     }
 
     /** 是否存在除 [method] 之外的其他可用 primary factor。 */
     suspend fun hasAlternativePrimaryFactor(excluding: EnvelopeType): Boolean =
         resolve().let { availability ->
             when (excluding) {
-                EnvelopeType.APP_PASSWORD -> availability.biometric
-                EnvelopeType.BIOMETRIC -> availability.appPassword
+                EnvelopeType.APP_PASSWORD -> AuthenticationMethod.BIOMETRIC in availability
+                EnvelopeType.BIOMETRIC -> AuthenticationMethod.APP_PASSWORD in availability
                 else -> false
             }
         }

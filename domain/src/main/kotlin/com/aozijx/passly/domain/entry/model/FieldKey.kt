@@ -23,6 +23,7 @@ enum class FieldKey {
     SSH_KEY,
     SEED_PHRASE,
 
+    CARD_NUMBER,
     CARD_EXPIRATION,
     CARD_CVV,
     PAYMENT_PIN,

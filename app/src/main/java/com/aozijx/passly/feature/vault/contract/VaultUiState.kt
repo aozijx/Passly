@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.vault.contract
 
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
-import com.aozijx.passly.domain.settings.model.LibrarySortSpec
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.data.settings.model.LibraryQuickFilter
+import com.aozijx.passly.data.settings.model.LibrarySortSpec
 import com.aozijx.passly.feature.vault.model.AddType
 
 data class VaultUiState(

@@ -6,21 +6,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.EntryAggregate
-import com.aozijx.passly.domain.entry.model.WebsiteInfo
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.model.secret.OtpSecret
+import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 
 /**
  * 条目详情页统一编辑状态
  */
-class EntryEditState(initialEntry: EntryAggregate) {
+class EntryEditState(initialEntry: Entry) {
     var editedTitle by mutableStateOf(initialEntry.title)
     var editedUsername by mutableStateOf("")
     var editedPassword by mutableStateOf("")
     var editedNotes by mutableStateOf(initialEntry.secret.notes.toTextFieldValue())
-    var editedDomain by mutableStateOf(initialEntry.associatedDomain ?: "")
-    var editedPackage by mutableStateOf(initialEntry.associatedAppPackage ?: "")
+    var editedDomain by mutableStateOf(initialEntry.associations.primaryUrl ?: "")
+    var editedPackage by mutableStateOf(initialEntry.associations.applicationIds.firstOrNull() ?: "")
     var editedTotpSecret by mutableStateOf(
         initialEntry.secret.otp?.config?.secret ?: ""
     )
@@ -38,24 +38,24 @@ class EntryEditState(initialEntry: EntryAggregate) {
     var isEditingPassword by mutableStateOf(false)
     var isEditingTotp by mutableStateOf(false)
 
-    fun applyTo(entry: EntryAggregate): EntryAggregate {
-        val newSummary = entry.summary.copy(
+    fun applyTo(entry: Entry): Entry {
+        val newProfile = entry.profile.copy(
             title = editedTitle,
-            website = buildWebsite(entry.summary.website)
+            associations = buildAssociations(entry.profile.associations)
         )
         val newSecret = updateSecret(entry.secret)
-        return entry.copy(summary = newSummary, secret = newSecret)
+        return entry.copy(profile = newProfile, secret = newSecret)
     }
 
-    fun applyTitleOnly(entry: EntryAggregate): EntryAggregate = entry.copy(
-        summary = entry.summary.copy(title = editedTitle)
+    fun applyTitleOnly(entry: Entry): Entry = entry.copy(
+        profile = entry.profile.copy(title = editedTitle)
     )
 
-    fun applyNotesOnly(entry: EntryAggregate): EntryAggregate =
+    fun applyNotesOnly(entry: Entry): Entry =
         entry.copy(secret = updateSecretNotes(entry.secret))
 
-    fun applyAssociatedOnly(entry: EntryAggregate): EntryAggregate = entry.copy(
-        summary = entry.summary.copy(website = buildWebsite(entry.summary.website))
+    fun applyAssociatedOnly(entry: Entry): Entry = entry.copy(
+        profile = entry.profile.copy(associations = buildAssociations(entry.profile.associations))
     )
 
     fun startNotesEditing(notes: String?) {
@@ -63,13 +63,12 @@ class EntryEditState(initialEntry: EntryAggregate) {
         isEditingNotes = true
     }
 
-    private fun buildWebsite(existing: WebsiteInfo?): WebsiteInfo? {
+    private fun buildAssociations(existing: EntryAssociations): EntryAssociations {
         val domain = editedDomain.ifBlank { null }
         val pkg = editedPackage.ifBlank { null }
-        if (domain == null && pkg == null && existing == null) return null
-        return (existing ?: WebsiteInfo()).copy(
+        return existing.copy(
             primaryUrl = domain,
-            packageNames = if (pkg == null) existing?.packageNames ?: emptySet() else setOf(pkg)
+            applicationIds = if (pkg == null) existing.applicationIds else setOf(pkg)
         )
     }
 
@@ -85,7 +84,7 @@ class EntryEditState(initialEntry: EntryAggregate) {
             }
             secret.copy(
                 notes = notes,
-                otp = (currentOtpData ?: OtpSecret()).copy(config = newConfig)
+                credential = OtpCredential(config = newConfig)
             )
         } else {
             secret.copy(notes = notes)

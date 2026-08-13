@@ -13,13 +13,11 @@ class MigrationBoundaryTest {
         appKotlinRoot,
         File(projectRoot, "core/android/src/main/kotlin"),
         File(projectRoot, "core/common/src/main/kotlin"),
-        File(projectRoot, "core/security/src/main/kotlin"),
+        File(projectRoot, "core/crypto/src/main/kotlin"),
         File(projectRoot, "core/telemetry/src/main/kotlin"),
         File(projectRoot, "core/ui/src/main/kotlin"),
+        File(projectRoot, "data/src/main/java"),
         File(projectRoot, "domain/src/main/kotlin"),
-        File(projectRoot, "feature/auth/api/src/main/kotlin"),
-        File(projectRoot, "feature/recovery/src/main/kotlin"),
-        File(projectRoot, "feature/recovery/api/src/main/kotlin"),
         File(projectRoot, "runtime/session/src/main/kotlin"),
     )
 
@@ -63,19 +61,127 @@ class MigrationBoundaryTest {
     @Test
     fun upperLayersDoNotReachIntoDataImplementations() {
         val guardedPackages = listOf("/core/", "/feature/", "/security/")
-        val exemptPaths = listOf("/core/session/")
+        val implementationImports = listOf(
+            "import com.aozijx.passly.data.local.",
+            "import com.aozijx.passly.data.codec.",
+            "import com.aozijx.passly.data.mapper.",
+            "import com.aozijx.passly.data.repository.entry.",
+            "import com.aozijx.passly.data.repository.attachment.",
+            "import com.aozijx.passly.data.repository.otp.",
+        )
+        val exemptPaths = listOf(
+            "/app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/snapshot/"
+        )
         val offenders = productionKotlinFiles
+            .filterNot { source ->
+                source.invariantSeparatorsPath.startsWith(
+                    File(projectRoot, "data").invariantSeparatorsPath
+                )
+            }
             .filter { source ->
                 guardedPackages.any { it in source.invariantSeparatorsPath }
             }
             .filter { source ->
                 exemptPaths.none { it in source.invariantSeparatorsPath }
             }
-            .filter { "import com.aozijx.passly.data." in it.readText() }
+            .filter { source -> implementationImports.any { it in source.readText() } }
             .map { it.relativeTo(projectRoot).path }
             .toList()
 
         assertTrue("Data implementation leaks: $offenders", offenders.isEmpty())
+    }
+
+    @Test
+    fun appOnlyImportsDataInternalsThroughBackupSnapshotAdapter() {
+        val allowedPath =
+            "/com/aozijx/passly/feature/backup/internal/archive/snapshot/"
+        val implementationImports = listOf(
+            "import com.aozijx.passly.data.local.",
+            "import com.aozijx.passly.data.codec.",
+            "import com.aozijx.passly.data.mapper.",
+            "import com.aozijx.passly.data.repository.entry.",
+            "import com.aozijx.passly.data.repository.attachment.",
+            "import com.aozijx.passly.data.repository.otp.",
+        )
+        val offenders = appKotlinRoot.walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .filter { source -> implementationImports.any { it in source.readText() } }
+            .filterNot { allowedPath in it.invariantSeparatorsPath }
+            .map { it.relativeTo(appKotlinRoot).path }
+            .toList()
+
+        assertTrue(
+            "Only Backup's database snapshot adapter may access data implementation: $offenders",
+            offenders.isEmpty()
+        )
+    }
+
+    @Test
+    fun dataModuleContainsOnlyDataOwnedPackages() {
+        val dataRoot = File(projectRoot, "data/src/main/java")
+        val offenders = dataRoot.walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .filterNot { source ->
+                source.useLines { lines ->
+                    lines.firstOrNull { it.startsWith("package ") }
+                        ?.startsWith("package com.aozijx.passly.data") == true
+                }
+            }
+            .map { it.relativeTo(projectRoot).path }
+            .toList()
+
+        assertTrue("Non-data packages inside :data: $offenders", offenders.isEmpty())
+    }
+
+    @Test
+    fun dataModuleDoesNotReExportImplementationDependencies() {
+        val buildFile = File(projectRoot, "data/build.gradle.kts").readText()
+        val reExportedDependencies = Regex("""(?m)^\s*api\(""")
+            .findAll(buildFile)
+            .map { it.value.trim() }
+            .toList()
+
+        assertTrue(
+            "The implementation-only :data module must not re-export dependencies: " +
+                reExportedDependencies,
+            reExportedDependencies.isEmpty()
+        )
+    }
+
+    @Test
+    fun featureImplementationsStayInsideApp() {
+        val settingsFile = File(projectRoot, "settings.gradle.kts").readText()
+        val standaloneFeatureDirectories = File(projectRoot, "feature")
+            .takeIf(File::exists)
+            ?.walkTopDown()
+            ?.filter { file ->
+                file.isFile &&
+                    (file.name == "build.gradle.kts" || "/src/" in file.invariantSeparatorsPath)
+            }
+            ?.map { it.relativeTo(projectRoot).path }
+            ?.toList()
+            .orEmpty()
+
+        assertFalse(
+            "Business features must remain package slices inside :app",
+            Regex("""include\(\s*[\"']:(?:feature:|backup)[^\"']*[\"']\s*\)""")
+                .containsMatchIn(settingsFile),
+        )
+        assertTrue(
+            "Standalone feature module files must be removed: $standaloneFeatureDirectories",
+            standaloneFeatureDirectories.isEmpty(),
+        )
+    }
+
+    @Test
+    fun backupIsOwnedByTheAppFeature() {
+        val dataBackupRoot = File(projectRoot, "data/src/main/java/com/aozijx/passly/data/backup")
+        val appBackupRoot = File(
+            "src/main/java/com/aozijx/passly/feature/backup/internal/archive"
+        )
+
+        assertFalse("Backup must not be implemented by :data", dataBackupRoot.exists())
+        assertTrue("Backup archive implementation must live in app feature.backup", appBackupRoot.isDirectory)
     }
 
     @Test
@@ -175,10 +281,10 @@ class MigrationBoundaryTest {
     @Test
     fun associatedPackagesStayEncryptedAndVisibleInEntryDetails() {
         val entryEntity = File(
-            "src/main/java/com/aozijx/passly/data/model/entity/EntryEntity.kt"
+            "../data/src/main/java/com/aozijx/passly/data/local/database/entity/EntryEntity.kt"
         ).readText()
-        val summaryPayload = File(
-            "src/main/java/com/aozijx/passly/data/model/payload/summary/SummaryPayload.kt"
+        val summaryPayload = moduleSource(
+            "com/aozijx/passly/data/codec/entry/payload/SummaryPayload.kt"
         ).readText()
         val associatedInfoSection = File(
             "src/main/java/com/aozijx/passly/feature/detail/ui/sections/" +
@@ -192,7 +298,7 @@ class MigrationBoundaryTest {
         )
         assertTrue(
             "Login details must expose associated package names",
-            "entry.website?.packageNames" in associatedInfoSection &&
+            "entry.associations.applicationIds" in associatedInfoSection &&
                     "AssociatedAppRow" in associatedInfoSection
         )
     }
@@ -218,7 +324,7 @@ class MigrationBoundaryTest {
                     "DefaultAuthenticationMethodProvisioner.kt"
         ).readText()
         val authenticationModels = moduleSource(
-            "com/aozijx/passly/domain/authentication/AuthenticationModels.kt"
+            "com/aozijx/passly/domain/access/model/Authentication.kt"
         ).readText()
         val mainScreen = File(
             "src/main/java/com/aozijx/passly/app/shell/ui/AppShell.kt"
@@ -232,7 +338,7 @@ class MigrationBoundaryTest {
                     "AuthenticationViewModel.kt"
         ).readText()
         val authenticationUiState = File(
-            "../feature/auth/api/src/main/kotlin/com/aozijx/passly/feature/auth/contract/" +
+            "src/main/java/com/aozijx/passly/feature/auth/contract/" +
                     "AuthenticationUiState.kt"
         ).readText()
 
@@ -333,7 +439,7 @@ class MigrationBoundaryTest {
     @Test
     fun vaultQuickFilterModelDoesNotOwnUiPresentation() {
         val vaultQuickFilter = moduleSource(
-            "com/aozijx/passly/domain/settings/model/LibraryQuickFilter.kt"
+            "com/aozijx/passly/data/settings/model/LibraryQuickFilter.kt"
         ).readText()
 
         assertTrue(
@@ -645,7 +751,7 @@ class MigrationBoundaryTest {
                     "CredentialPlatformAdapter.kt"
         ).readText()
         val responseUseCases = moduleSource(
-            "com/aozijx/passly/domain/autofill/usecase/CredentialResponseUseCases.kt"
+            "com/aozijx/passly/feature/autofill/usecase/CredentialResponseUseCases.kt"
         ).readText()
         val providerConfig = File("src/main/res/xml/credential_service_config.xml").readText()
 
@@ -674,7 +780,7 @@ class MigrationBoundaryTest {
         assertTrue(
             "Allowed user ids must be checked before display and again before secret release",
             "option.allowedUserIds" in adapter &&
-                    "allowedUserIds.isNotEmpty() && selected.username !in allowedUserIds" in
+                    "allowedUserIds.isNotEmpty() && selected.profile.username !in allowedUserIds" in
                     responseUseCases
         )
         assertTrue(
@@ -695,18 +801,17 @@ class MigrationBoundaryTest {
         val recoveryDialog = File(
             "src/main/java/com/aozijx/passly/core/ui/components/DatabaseRecoveryDialog.kt"
         ).readText()
-        val controller = File(
-            "src/main/java/com/aozijx/passly/data/repository/database/DatabaseControllerImpl.kt"
+        val controller = moduleSource(
+            "com/aozijx/passly/data/repository/database/DatabaseControllerImpl.kt"
         ).readText()
-        val recoveryStore = File(
-            "src/main/java/com/aozijx/passly/data/local/database/maintenance/" +
-                "DatabaseRecoveryStore.kt"
+        val recoveryStore = moduleSource(
+            "com/aozijx/passly/data/local/database/recovery/DatabaseRecoveryStore.kt"
         ).readText()
         val authenticationManager = File(
             "src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt"
         ).readText()
         val authPolicy = moduleSource(
-            "com/aozijx/passly/domain/authentication/AuthenticationMethodPolicy.kt"
+            "com/aozijx/passly/domain/access/policy/AuthenticationMethodPolicy.kt"
         ).readText()
         val credentialExecutor = File(
             "src/main/java/com/aozijx/passly/security/authentication/CredentialMethodExecutor.kt"
@@ -716,6 +821,14 @@ class MigrationBoundaryTest {
         ).readText()
         val recoveryCompletion =
             sessionController.substringAfter("suspend fun completeDatabaseRecovery")
+        val dataManagementViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/settings/datamanagement/" +
+                "DataManagementSettingsViewModel.kt"
+        ).readText()
+        val savedRecovery = moduleSource(
+            "com/aozijx/passly/data/local/database/recovery/" +
+                "DatabaseRecoveryRepositoryImpl.kt"
+        ).readText()
 
         assertTrue(
             "Crash recovery must request its non-destructive authentication purpose",
@@ -752,6 +865,13 @@ class MigrationBoundaryTest {
                     "CLEAR_DATABASE -> PRIMARY_METHODS" in authPolicy
         )
         assertTrue(
+            "Saved database restoration must reject the recovery code",
+            Regex(
+                "AuthenticationPurpose\\.RESTORE_DATABASE,\\s*" +
+                    "AuthenticationPurpose\\.CLEAR_DATABASE -> PRIMARY_METHODS",
+            ).containsMatchIn(authPolicy)
+        )
+        assertTrue(
             "Cold-start recovery must stage the DEK without opening the broken database",
             "session.stageDatabaseRecovery(type, ownedDek)" in credentialExecutor
         )
@@ -759,6 +879,17 @@ class MigrationBoundaryTest {
             "A recovered database must open before authentication state is published",
             recoveryCompletion.indexOf("sessionManager.lockState != SecureSessionState.UNLOCKED") <
                 recoveryCompletion.indexOf("markAuthenticatedInternal()")
+        )
+        assertTrue(
+            "Saved database restoration requires a full session and fresh primary authentication",
+            "hasFullSecureSessionAccess()" in dataManagementViewModel &&
+                "AuthenticationPurpose.RESTORE_DATABASE" in dataManagementViewModel
+        )
+        assertTrue(
+            "Saved database restoration must work from a copy and wipe its copied key",
+            "source.copyTo" in savedRecovery &&
+                "key.fill(0)" in savedRecovery &&
+                "deleteWorkDatabase(workName)" in savedRecovery
         )
     }
 
@@ -773,7 +904,7 @@ class MigrationBoundaryTest {
 
         assertTrue(
             "Sealed biometric sessions must open the database",
-            "if (lockLevel == SecureSessionState.SEALED)" in sessionController &&
+            "if (lockStateManager.state == SecureSessionState.SEALED)" in sessionController &&
                 "val err = sessionManager.unlock()" in sessionController
         )
         assertTrue(
@@ -793,7 +924,7 @@ class MigrationBoundaryTest {
             "Recovery draft UI must not access cryptographic implementations",
             "import com.aozijx.passly.security." !in source
         )
-        assertTrue("Recovery draft must use its domain factory", "RecoveryCodeDraftFactory" in source)
+        assertTrue("Recovery draft must use its domain factory", "RecoveryCredentialFactory" in source)
     }
 
     @Test
@@ -831,8 +962,8 @@ class MigrationBoundaryTest {
 
     @Test
     fun encryptedDiagnosticsUseBoundedQueueAndPreparedCrashKey() {
-        val source = File(
-            "src/main/java/com/aozijx/passly/data/diagnostics/EncryptedLogStore.kt"
+        val source = moduleSource(
+            "com/aozijx/passly/data/diagnostics/EncryptedLogStore.kt"
         ).readText()
         val emergencyBlock = source
             .substringAfter("fun crashEmergencyWrite")
@@ -907,8 +1038,8 @@ class MigrationBoundaryTest {
             File("src/main/java/com/aozijx/passly/app/permission"),
             File("src/main/java/com/aozijx/passly/app/diagnostics"),
             File("src/main/java/com/aozijx/passly/core/permission"),
-            File("src/main/java/com/aozijx/passly/data/notice"),
-            File("src/main/java/com/aozijx/passly/data/diagnostics"),
+            File("src/main/java/com/aozijx/passly/app/message/runtime"),
+            File(projectRoot, "data/src/main/java/com/aozijx/passly/data/diagnostics"),
             File(projectRoot, "domain/src/main/kotlin/com/aozijx/passly/domain/notice")
         )
         val offenders = scopedRoots.asSequence()
@@ -948,10 +1079,10 @@ class MigrationBoundaryTest {
     @Test
     fun recoveryCodeCannotActAsEverydayUnlockMethod() {
         val authPolicy = moduleSource(
-            "com/aozijx/passly/domain/authentication/AuthenticationMethodPolicy.kt"
+            "com/aozijx/passly/domain/access/policy/AuthenticationMethodPolicy.kt"
         ).readText()
         val authModels = moduleSource(
-            "com/aozijx/passly/domain/authentication/AuthenticationModels.kt"
+            "com/aozijx/passly/domain/access/model/Authentication.kt"
         ).readText()
         val authManager = File(
             "src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt"
@@ -966,7 +1097,7 @@ class MigrationBoundaryTest {
             "src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationMethodProvisioner.kt"
         ).readText()
         val provisionerInterface = moduleSource(
-            "com/aozijx/passly/domain/authentication/AuthenticationMethodProvisioner.kt"
+            "com/aozijx/passly/domain/access/port/AuthenticationMethodProvisioner.kt"
         ).readText()
         val authViewModel = File(
             "src/main/java/com/aozijx/passly/feature/auth/presentation/AuthenticationViewModel.kt"
@@ -995,20 +1126,20 @@ class MigrationBoundaryTest {
         val securityViewModel = File(
             "src/main/java/com/aozijx/passly/feature/settings/security/SecuritySettingsViewModel.kt"
         ).readText()
-        val transactionRunner = File(
-            "src/main/java/com/aozijx/passly/data/repository/VaultTransactionRunner.kt"
+        val databaseTransactions = moduleSource(
+            "com/aozijx/passly/data/local/database/DatabaseTransactionRunner.kt"
         ).readText()
-        val entryQueryRepository = File(
-            "src/main/java/com/aozijx/passly/data/repository/entry/RoomEntryQueryRepository.kt"
+        val entryQueryRepository = moduleSource(
+            "com/aozijx/passly/data/repository/entry/RoomEntryQueryRepository.kt"
         ).readText()
-        val sensitiveFieldRepository = File(
-            "src/main/java/com/aozijx/passly/data/repository/entry/RoomSensitiveFieldRepository.kt"
+        val sensitiveFieldRepository = moduleSource(
+            "com/aozijx/passly/data/repository/entry/RoomSensitiveFieldRepository.kt"
         ).readText()
-        val otpConfigRepository = File(
-            "src/main/java/com/aozijx/passly/data/repository/otp/RoomOtpConfigRepository.kt"
+        val otpConfigRepository = moduleSource(
+            "com/aozijx/passly/data/repository/otp/RoomOtpConfigRepository.kt"
         ).readText()
-        val attachmentRepository = File(
-            "src/main/java/com/aozijx/passly/data/repository/attachment/FileBackedAttachmentRepository.kt"
+        val attachmentRepository = moduleSource(
+            "com/aozijx/passly/data/repository/attachment/FileBackedAttachmentRepository.kt"
         ).readText()
         val vaultViewModel = File(
             "src/main/java/com/aozijx/passly/feature/vault/VaultViewModel.kt"
@@ -1143,9 +1274,9 @@ class MigrationBoundaryTest {
 
         // 11. Plain Vault repositories must not treat an open recovery database as full access.
         assertTrue(
-            "VaultTransactionRunner must require full Vault access before write/read",
-            "hasFullSecureSessionAccess()" in transactionRunner &&
-                    "SessionModeRestricted" in transactionRunner
+            "DatabaseTransactionRunner must require full Vault access before write/read",
+            "hasFullSecureSessionAccess()" in databaseTransactions &&
+                    "SessionModeRestricted" in databaseTransactions
         )
         assertTrue(
             "Entry query repository must gate normal reads",
@@ -1244,7 +1375,7 @@ class MigrationBoundaryTest {
 
         assertTrue(
             "Recovery success must durably consume the recovery envelope first",
-            "bootstrapStore.delete(EnvelopeType.RECOVERY)" in sessionController &&
+            "vaultBootstrapStore.delete(EnvelopeType.RECOVERY)" in sessionController &&
                     "consumeRecoveryEnvelope()" in sessionController &&
                     sessionController.indexOf("consumeRecoveryEnvelope()") <
                     sessionController.indexOf("markRecoveryModeInternal()"),
@@ -1262,27 +1393,24 @@ class MigrationBoundaryTest {
         )
         assertTrue(
             "Consumed recovery availability must be invalidated in the current process",
-            "copy(recoveryCode = false)" in manager,
+            "_methods.value.available - AuthenticationMethod.RECOVERY_CODE" in manager,
         )
     }
 
     @Test
     fun entryRevisionLifecycleHasPerEntryGlobalAndDeletionPolicies() {
         val revisionDao = File(
-            "src/main/java/com/aozijx/passly/data/local/dao/revision/" +
+            "../data/src/main/java/com/aozijx/passly/data/local/database/dao/revision/" +
                     "EntryRevisionCommandDao.kt"
         ).readText()
-        val revisionHelper = File(
-            "src/main/java/com/aozijx/passly/data/repository/entry/internal/" +
-                    "EntryRevisionHelper.kt"
+        val revisionHelper = moduleSource(
+            "com/aozijx/passly/data/repository/entry/command/EntryRevisionWriter.kt"
         ).readText()
-        val permanentDelete = File(
-            "src/main/java/com/aozijx/passly/data/repository/entry/executor/" +
-                    "DeleteEntryPermanentlyExecutor.kt"
+        val permanentDelete = moduleSource(
+            "com/aozijx/passly/data/repository/entry/command/DeleteEntryPermanentlyExecutor.kt"
         ).readText()
-        val emptyTrash = File(
-            "src/main/java/com/aozijx/passly/data/repository/entry/executor/" +
-                    "EmptyTrashExecutor.kt"
+        val emptyTrash = moduleSource(
+            "com/aozijx/passly/data/repository/entry/command/EmptyTrashExecutor.kt"
         ).readText()
 
         assertTrue(
@@ -2155,8 +2283,8 @@ class MigrationBoundaryTest {
             "src/main/java/com/aozijx/passly/feature/detail/internal/presentation/" +
                     "DetailReducer.kt"
         ).readText()
-        val sensitiveRepository = File(
-            "src/main/java/com/aozijx/passly/data/repository/entry/RoomSensitiveFieldRepository.kt"
+        val sensitiveRepository = moduleSource(
+            "com/aozijx/passly/data/repository/entry/RoomSensitiveFieldRepository.kt"
         ).readText()
         val sessionController = File(
             "src/main/java/com/aozijx/passly/security/authentication/VaultSessionController.kt"
@@ -2193,14 +2321,14 @@ class MigrationBoundaryTest {
 
     @Test
     fun entryRevisionsStoreCompleteSnapshotsWithoutHighSensitivityPlaintext() {
-        val helper = File(
-            "src/main/java/com/aozijx/passly/data/repository/entry/internal/EntryRevisionHelper.kt"
+        val helper = moduleSource(
+            "com/aozijx/passly/data/repository/entry/command/EntryRevisionWriter.kt"
         ).readText()
-        val updateExecutor = File(
-            "src/main/java/com/aozijx/passly/data/repository/entry/executor/UpdateEntryExecutor.kt"
+        val updateExecutor = moduleSource(
+            "com/aozijx/passly/data/repository/entry/command/UpdateEntryExecutor.kt"
         ).readText()
         val revisionEntity = File(
-            "src/main/java/com/aozijx/passly/data/model/entity/EntryRevisionEntity.kt"
+            "../data/src/main/java/com/aozijx/passly/data/local/database/entity/EntryRevisionEntity.kt"
         ).readText()
 
         assertTrue(
@@ -2210,9 +2338,8 @@ class MigrationBoundaryTest {
                     "sensitiveFieldQueryDao().getFields" in helper
         )
         assertTrue(
-            "Regular revision codec must never receive the reconstructed high-sensitivity secret",
-            "secret = newPersistedSecret" in updateExecutor &&
-                    "secret = newFullSecret" !in updateExecutor.substringAfter("snapshotChanges(")
+            "Revision writes must use the validated single-credential secret",
+            "secret = newSecret" in updateExecutor.substringAfter("snapshotChanges(")
         )
         assertTrue(
             "Revision storage must separate regular encrypted snapshot from high-field ciphertexts",
@@ -2221,13 +2348,37 @@ class MigrationBoundaryTest {
         )
         assertTrue("Each entry must retain at most 50 revisions", "REVISION_LIMIT = 50" in helper)
 
-        val linkRepository = File(
-            "src/main/java/com/aozijx/passly/data/repository/entry/RoomEntryLinkRepository.kt"
+        val linkRepository = moduleSource(
+            "com/aozijx/passly/data/repository/entry/RoomEntryLinkRepository.kt"
         ).readText()
         assertTrue(
             "Link upsert and delete must snapshot every affected endpoint",
             linkRepository.split("revisionHelper.snapshotCurrent").size - 1 >= 2 &&
                     "previous?.let" in linkRepository
+        )
+    }
+
+    @Test
+    fun composeLazyListsUseBundleSaveableEntryKeys() {
+        val lazyListFiles = listOf(
+            File(
+                "src/main/java/com/aozijx/passly/feature/vault/components/list/" +
+                        "VaultPagerContent.kt"
+            ),
+            File(
+                "src/main/java/com/aozijx/passly/feature/settings/datamanagement/" +
+                        "TrashBottomSheet.kt"
+            )
+        )
+        val sources = lazyListFiles.associateWith(File::readText)
+
+        assertTrue(
+            "Compose lazy-list keys must not pass the EntryId value object to SaveableStateHolder",
+            sources.values.none { "key = EntryListItem::id" in it }
+        )
+        assertTrue(
+            "Every entry lazy-list key must unwrap EntryId to its Bundle-saveable String value",
+            sources.values.all { ".id.value" in it }
         )
     }
 }

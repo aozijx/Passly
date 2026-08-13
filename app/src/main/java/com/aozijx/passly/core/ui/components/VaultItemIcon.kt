@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Key
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -19,26 +17,87 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.media.toLocalIconImageModel
-import com.aozijx.passly.domain.entry.model.EntryIconSource
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
 
 @Composable
 fun VaultItemIcon(
     modifier: Modifier = Modifier,
-    iconable: EntryIconSource,
-    tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
+    iconable: EntryListItem,
+    tint: Color = MaterialTheme.colorScheme.onSecondaryContainer,
+) = VaultItemIcon(
+    modifier = modifier,
+    iconName = iconable.profile.icon.name,
+    iconCustomPath = iconable.profile.icon.customReference,
+    associatedAppPackage = iconable.profile.associations.applicationIds.firstOrNull(),
+    classificationInput = EntryClassificationInput(
+        entryType = iconable.entryType,
+        title = iconable.title,
+        username = iconable.username,
+        urls = setOfNotNull(iconable.profile.associations.primaryUrl),
+        domains = iconable.profile.associations.domains,
+        packageNames = iconable.profile.associations.applicationIds,
+        appNames = setOfNotNull(
+            iconable.title.takeIf {
+                iconable.profile.associations.applicationIds.isNotEmpty() &&
+                    iconable.profile.associations.primaryUrl == null &&
+                    iconable.profile.associations.domains.isEmpty()
+            },
+        ),
+    ),
+    tint = tint,
+)
+
+@Composable
+fun VaultItemIcon(
+    modifier: Modifier = Modifier,
+    iconable: ResolvedCandidate,
+    tint: Color = MaterialTheme.colorScheme.onSecondaryContainer,
+) = VaultItemIcon(
+    modifier = modifier,
+    iconName = iconable.iconName,
+    iconCustomPath = iconable.iconCustomPath,
+    associatedAppPackage = iconable.associatedAppPackage,
+    classificationInput = EntryClassificationInput(
+        entryType = iconable.entryType,
+        title = iconable.displayName,
+        username = iconable.username,
+        urls = setOfNotNull(iconable.associatedDomain),
+        domains = setOfNotNull(iconable.associatedDomain),
+        packageNames = setOfNotNull(iconable.associatedAppPackage),
+        appNames = setOfNotNull(
+            iconable.displayName.takeIf {
+                iconable.associatedAppPackage != null && iconable.associatedDomain == null
+            },
+        ),
+    ),
+    tint = tint,
+)
+
+@Composable
+private fun VaultItemIcon(
+    modifier: Modifier,
+    iconName: String?,
+    iconCustomPath: String?,
+    associatedAppPackage: String?,
+    classificationInput: EntryClassificationInput,
+    tint: Color,
 ) {
-    val appIconPainter = rememberAppIcon(iconable.associatedAppPackage)
-    val explicitIconVector = remember(iconable.iconName) {
-        iconable.iconName
+    val appIconPainter = rememberAppIcon(associatedAppPackage)
+    val explicitIconVector = remember(iconName) {
+        iconName
             ?.takeIf { it.isNotBlank() }
             ?.let(VaultIcons::getIconByName)
     }
-    val fallbackIconVector = explicitIconVector ?: Icons.Default.Key
+    val visualCategory = remember(classificationInput) {
+        EntryVisualCategoryClassifier.classify(classificationInput)
+    }
+    val fallbackIconVector = explicitIconVector ?: VaultIcons.getIconByCategory(visualCategory)
     val fallbackPainter = rememberVectorPainter(fallbackIconVector)
     val placeholderPainter = appIconPainter ?: fallbackPainter
 
-    val customModel = remember(iconable.iconCustomPath) { toLocalIconImageModel(iconable.iconCustomPath) }
+    val customModel = remember(iconCustomPath) { toLocalIconImageModel(iconCustomPath) }
     Box(
         modifier = modifier.size(36.dp), contentAlignment = Alignment.Center
     ) {

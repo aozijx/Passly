@@ -2,11 +2,11 @@ package com.aozijx.passly.feature.settings.general
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.notice.model.NoticeLevel
-import com.aozijx.passly.domain.notice.model.NoticeTopic
-import com.aozijx.passly.domain.notice.port.SystemNotificationStateProvider
-import com.aozijx.passly.domain.settings.command.SettingsCommand
-import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
+import com.aozijx.passly.data.message.model.NoticeLevel
+import com.aozijx.passly.data.message.model.NoticeTopic
+import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
+import com.aozijx.passly.data.settings.model.SettingsCommand
+import com.aozijx.passly.data.settings.port.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

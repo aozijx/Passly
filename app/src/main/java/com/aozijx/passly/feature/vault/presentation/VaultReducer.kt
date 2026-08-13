@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.vault.presentation
 
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
-import com.aozijx.passly.domain.settings.model.LibrarySortSpec
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.data.settings.model.LibraryQuickFilter
+import com.aozijx.passly.data.settings.model.LibrarySortSpec
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.model.AddType
 
@@ -46,7 +46,7 @@ internal object VaultReducer {
             is VaultMutation.AddTypeChanged -> state.copy(addType = mutation.type)
             is VaultMutation.PendingDeleteChanged -> state.copy(pendingDelete = mutation.item)
             is VaultMutation.DeletedEntryHandled -> state.copy(
-                pendingDelete = state.pendingDelete?.takeUnless { it.id == mutation.entryId },
+                pendingDelete = state.pendingDelete?.takeUnless { it.id.value == mutation.entryId },
             )
             is VaultMutation.VisibleQuickFiltersChanged ->
                 state.copy(visibleQuickFilters = mutation.filters)

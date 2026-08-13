@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault.model
 
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
+import com.aozijx.passly.data.settings.model.LibraryQuickFilter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

@@ -6,10 +6,10 @@ import androidx.lifecycle.LifecycleOwner
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
 import com.aozijx.passly.core.platform.ClipboardUtils
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.authentication.AuthenticationState
-import com.aozijx.passly.domain.authentication.LockReason
-import com.aozijx.passly.domain.settings.repository.IdleTimeoutSettings
+import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.data.settings.port.IdleTimeoutSettings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

@@ -9,7 +9,7 @@ import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.data.settings.model.SwipeActionType
 
 @Composable
 fun SwipeGestureSettingsSection(

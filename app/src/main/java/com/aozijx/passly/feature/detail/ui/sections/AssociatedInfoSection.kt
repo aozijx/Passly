@@ -44,18 +44,18 @@ import com.aozijx.passly.core.ui.components.AppPackagePickerDialog
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.core.ui.components.rememberAppIcon
 import com.aozijx.passly.core.ui.components.rememberAppMetadata
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 
 @Composable
 fun AssociatedInfoSection(
     modifier: Modifier = Modifier,
-    entry: EntryAggregate,
+    entry: Entry,
     editState: EntryEditState,
     isFaviconDownloading: Boolean,
     onDownloadFavicon: (String) -> Unit,
-    onEntryUpdated: (EntryAggregate) -> Unit
+    onEntryUpdated: (Entry) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
     val haptic = LocalHapticFeedback.current
@@ -92,7 +92,7 @@ fun AssociatedInfoSection(
         )
 
         AssociatedAppsCard(
-            packageNames = entry.website?.packageNames.orEmpty().sorted(),
+            packageNames = entry.associations.applicationIds.sorted(),
             onLongClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 showPackagePicker = true
@@ -257,9 +257,9 @@ private fun DomainEditor(
 }
 
 private fun saveAssociated(
-    entry: EntryAggregate,
+    entry: Entry,
     editState: EntryEditState,
-    onEntryUpdated: (EntryAggregate) -> Unit
+    onEntryUpdated: (Entry) -> Unit
 ) {
     val updated = editState.applyAssociatedOnly(entry)
     onEntryUpdated(updated)

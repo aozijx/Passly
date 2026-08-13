@@ -1,9 +1,9 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.domain.authentication.AuthenticationFailure
-import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
-import com.aozijx.passly.domain.authentication.AuthenticationRequest
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -53,12 +53,13 @@ class CredentialAttemptLimiter internal constructor(
             rateLimitedFailure(method, request, state, now)
         } else {
             AuthenticationFailure(
-                authCode = AuthenticationFailureCode.CREDENTIAL_INCORRECT,
-                correlationId = request.correlationId,
+                code = AuthenticationFailureCode.CREDENTIAL_INCORRECT,
+                requestId = request.id,
                 method = method,
-                attemptCount = attempts,
-                maxAttempts = MAX_ATTEMPTS,
-                remainingAttempts = MAX_ATTEMPTS - attempts
+                attempts = com.aozijx.passly.domain.access.model.AttemptStatus(
+                    used = attempts,
+                    limit = MAX_ATTEMPTS,
+                ),
             )
         }
     }
@@ -74,12 +75,13 @@ class CredentialAttemptLimiter internal constructor(
         state: AttemptState,
         nowMs: Long
     ) = AuthenticationFailure(
-        authCode = AuthenticationFailureCode.RATE_LIMITED,
-        correlationId = request.correlationId,
+        code = AuthenticationFailureCode.RATE_LIMITED,
+        requestId = request.id,
         method = method,
-        attemptCount = state.attemptCount,
-        maxAttempts = MAX_ATTEMPTS,
-        remainingAttempts = 0,
+        attempts = com.aozijx.passly.domain.access.model.AttemptStatus(
+            used = state.attemptCount,
+            limit = MAX_ATTEMPTS,
+        ),
         retryAfterMs = (state.lockedUntilMs - nowMs).coerceAtLeast(0L)
     )
 

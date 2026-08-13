@@ -35,9 +35,9 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.apppassword.AppPasswordSetDialog
 import com.aozijx.passly.core.ui.components.common.ActionButton
 import com.aozijx.passly.core.ui.components.common.InputActionButton
-import com.aozijx.passly.domain.authentication.AuthenticationFailure
-import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.feature.auth.contract.AuthenticationIntent
 import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
 
@@ -50,7 +50,7 @@ fun AuthenticationScreen(
     val subtitle = stringResource(R.string.vault_auth_subtitle)
     val activeMethod = uiState.activeMethod
     val appPasswordLabel = stringResource(R.string.auth_app_password_label)
-    val recoveryCodeLabel = stringResource(R.string.auth_recovery_code_label)
+    val recoveryCodeLabel = stringResource(R.string.recovery_code_label)
     val verificationFailure = uiState.verificationFailure
     val appPasswordFailure = verificationFailure?.takeIf {
         it.method == AuthenticationMethod.APP_PASSWORD
@@ -125,7 +125,7 @@ fun AuthenticationScreen(
             }
             Spacer(modifier = Modifier.height(24.dp))
 
-            if (methods.biometric) {
+            if (AuthenticationMethod.BIOMETRIC in methods) {
                 ActionButton(
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.Fingerprint,
@@ -136,7 +136,7 @@ fun AuthenticationScreen(
                 )
             }
 
-            if (methods.appPassword) {
+            if (AuthenticationMethod.APP_PASSWORD in methods) {
                 Spacer(modifier = Modifier.height(8.dp))
                 InputActionButton(
                     value = uiState.appPassword,
@@ -167,7 +167,7 @@ fun AuthenticationScreen(
                 )
             }
 
-            if (!methods.biometric && !methods.appPassword && !methods.recoveryCode) {
+            if (methods.available.isEmpty()) {
                 ActionButton(
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.Password,
@@ -184,15 +184,15 @@ fun AuthenticationScreen(
                 )
             }
 
-            if (methods.recoveryCode && uiState.recoveryUnlockVisible) {
+            if (AuthenticationMethod.RECOVERY_CODE in methods && uiState.recoveryUnlockVisible) {
                 Spacer(modifier = Modifier.height(8.dp))
                 InputActionButton(
                     value = uiState.recoveryCode,
                     expanded = uiState.expandedMethod == AuthenticationMethod.RECOVERY_CODE,
                     progress = activeMethod == AuthenticationMethod.RECOVERY_CODE,
                     icon = Icons.Default.Restore,
-                    collapsedText = stringResource(R.string.auth_use_recovery_code),
-                    expandedText = stringResource(R.string.auth_recovery_code_unlock),
+                    collapsedText = stringResource(R.string.restore_access),
+                    expandedText = stringResource(R.string.recovery_code_verify),
                     inputLabel = recoveryCodeLabel,
                     result = recoveryCodeFailure?.let { false },
                     errorText = recoveryCodeFailure?.message(recoveryCodeLabel)
@@ -242,29 +242,29 @@ private fun AuthenticationFailure.message(
     forSetup: Boolean = false
 ): String {
     if (
-        authCode == AuthenticationFailureCode.CREDENTIAL_INCORRECT &&
+        code == AuthenticationFailureCode.CREDENTIAL_INCORRECT &&
         methodLabel != null
     ) {
-        if (remainingAttempts > 0) {
+        if ((attempts.remaining ?: 0) > 0) {
             return stringResource(
                 R.string.auth_error_method_incorrect_attempts,
                 methodLabel,
-                remainingAttempts
+                attempts.remaining ?: 0
             )
         }
         return stringResource(R.string.auth_error_method_incorrect, methodLabel)
     }
 
     val message = when {
-        forSetup && authCode == AuthenticationFailureCode.PASSWORD_POLICY_VIOLATION ->
+        forSetup && code == AuthenticationFailureCode.PASSWORD_POLICY_VIOLATION ->
             R.string.auth_error_password_too_short
 
-        authCode == AuthenticationFailureCode.RATE_LIMITED -> R.string.auth_error_rate_limited
+        code == AuthenticationFailureCode.RATE_LIMITED -> R.string.auth_error_rate_limited
         forSetup -> R.string.auth_error_app_password_setup_failed
         else -> R.string.auth_error_failed
     }
-    return if (authCode == AuthenticationFailureCode.RATE_LIMITED) {
-        stringResource(message, ((retryAfterMs + 999L) / 1000L).coerceAtLeast(1L))
+    return if (code == AuthenticationFailureCode.RATE_LIMITED) {
+        stringResource(message, (((retryAfterMs ?: 0L) + 999L) / 1000L).coerceAtLeast(1L))
     } else {
         stringResource(message)
     }

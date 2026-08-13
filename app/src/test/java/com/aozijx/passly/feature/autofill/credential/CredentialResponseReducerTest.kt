@@ -1,8 +1,9 @@
 package com.aozijx.passly.feature.autofill.credential
 
-import com.aozijx.passly.domain.authentication.AuthenticationFailure
-import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
-import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.model.CancellationReason
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -20,7 +21,7 @@ class CredentialResponseReducerTest {
 
     @Test
     fun `cancelled authentication maps to credential cancellation`() {
-        val authentication = AuthenticationResult.Cancelled(byUser = true)
+        val authentication = AuthenticationResult.Cancelled(CancellationReason.USER)
 
         val getException = CredentialAuthenticationExceptionMapper.toGetException(authentication)
         val createException =
@@ -39,14 +40,13 @@ class CredentialResponseReducerTest {
     fun `authentication failure does not leak domain details`() {
         val authentication = AuthenticationResult.Failure(
             AuthenticationFailure(
-                authCode = AuthenticationFailureCode.CREDENTIAL_INCORRECT,
-                correlationId = "sensitive-correlation",
+                code = AuthenticationFailureCode.CREDENTIAL_INCORRECT,
             )
         )
 
         val exception = CredentialAuthenticationExceptionMapper.toGetException(authentication)
 
         assertTrue(exception is androidx.credentials.exceptions.GetCredentialUnknownException)
-        assertTrue("sensitive-correlation" !in exception.message.orEmpty())
+        assertTrue("CREDENTIAL_INCORRECT" !in exception.message.orEmpty())
     }
 }

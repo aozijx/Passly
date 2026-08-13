@@ -1,18 +1,20 @@
 package com.aozijx.passly.security.authentication
 
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.domain.authentication.SecureSessionState
-import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.runtime.session.SecureSessionState
+import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
 import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
-import com.aozijx.passly.domain.auth.port.AuthorizationPermitRevoker
-import com.aozijx.passly.domain.authentication.AuthenticationState
-import com.aozijx.passly.domain.authentication.LockReason
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
-import com.aozijx.passly.security.crypto.DekManager
-import com.aozijx.passly.security.crypto.SensitiveDataKeyManager
-import com.aozijx.passly.security.crypto.UnlockResult
-import com.aozijx.passly.security.envelope.BootstrapStore
+import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.port.AuthorizationPermitRevoker
+import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.model.AuthenticationRequestId
+import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.security.dek.DekManager
+import com.aozijx.passly.security.dek.SensitiveDataKeyManager
+import com.aozijx.passly.security.dek.DekUnlockResult
+import com.aozijx.passly.domain.access.port.VaultBootstrapStore
+import com.aozijx.passly.security.lock.LockStateManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -33,9 +35,10 @@ class VaultSessionController @Inject constructor(
     private val dekManager: DekManager,
     private val sensitiveDataKeyManager: SensitiveDataKeyManager,
     private val authorizationPermitRevoker: AuthorizationPermitRevoker,
-    private val sessionManager: UnifiedSessionManager,
-    private val bootstrapStore: BootstrapStore,
-    idleTimeoutSettings: com.aozijx.passly.domain.settings.repository.IdleTimeoutSettings
+    private val sessionManager: DatabaseSessionLifecycle,
+    private val vaultBootstrapStore: VaultBootstrapStore,
+    private val lockStateManager: LockStateManager,
+    idleTimeoutSettings: com.aozijx.passly.data.settings.port.IdleTimeoutSettings
 ) : SecureSessionAccessState {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutex = Mutex()
@@ -44,16 +47,12 @@ class VaultSessionController @Inject constructor(
     private var idleJob: Job? = null
     private var timeoutMs = 30_000L
 
-    /** 内部锁强度追踪，解决 SoftLocked 无法可靠升级为 Sealed 的问题 */
-    @Volatile
-    private var lockLevel: SecureSessionState = SecureSessionState.SEALED
-
     override val authenticationState: StateFlow<AuthenticationState> = _state.asStateFlow()
     val databaseFailure: StateFlow<Throwable?> = _databaseFailure.asStateFlow()
 
-    override fun isUnlocked(): Boolean = lockLevel == SecureSessionState.UNLOCKED
+    override fun isUnlocked(): Boolean = lockStateManager.isUnlocked()
     override fun isRecoveryMode(): Boolean = _state.value is AuthenticationState.RecoveryMode
-    override fun isLocked(): Boolean = lockLevel != SecureSessionState.UNLOCKED
+    override fun isLocked(): Boolean = lockStateManager.isLocked()
 
     init {
         scope.launch { idleTimeoutSettings.lockTimeout.collect { timeoutMs = it } }
@@ -73,7 +72,7 @@ class VaultSessionController @Inject constructor(
     ): Boolean = mutex.withLock {
         val dek = ownedDek.consume()
         return try {
-            transition(AuthenticationState.Unlocking(correlationId))
+            transition(AuthenticationState.Unlocking(AuthenticationRequestId(correlationId)))
 
             if (dekManager.isUnlocked.value) {
                 // SOFT_LOCKED: DEK 仍在内存中，凭据已验证，只需恢复数据库会话
@@ -84,10 +83,10 @@ class VaultSessionController @Inject constructor(
                     return@withLock false
                 }
                 _databaseFailure.value = null
-                lockLevel = SecureSessionState.UNLOCKED
+                lockStateManager.mark(SecureSessionState.UNLOCKED)
             } else {
                 when (dekManager.setDek(type, dek)) {
-                    UnlockResult.Success -> {
+                    DekUnlockResult.Success -> {
                         val err = sessionManager.unlock()
                         if (err != null) {
                             _databaseFailure.value = err
@@ -95,10 +94,10 @@ class VaultSessionController @Inject constructor(
                             return@withLock false
                         }
                         _databaseFailure.value = null
-                        lockLevel = SecureSessionState.UNLOCKED
+                        lockStateManager.mark(SecureSessionState.UNLOCKED)
                     }
 
-                    is UnlockResult.Failed -> {
+                    is DekUnlockResult.Failed -> {
                         transition(AuthenticationState.Locked)
                         return@withLock false
                     }
@@ -124,9 +123,9 @@ class VaultSessionController @Inject constructor(
     ): Boolean = mutex.withLock {
         val dek = ownedDek.consume()
         return try {
-            transition(AuthenticationState.Unlocking(correlationId))
+            transition(AuthenticationState.Unlocking(AuthenticationRequestId(correlationId)))
             if (!dekManager.isUnlocked.value) {
-                if (dekManager.setDek(EnvelopeType.RECOVERY, dek) !is UnlockResult.Success) {
+                if (dekManager.setDek(EnvelopeType.RECOVERY, dek) !is DekUnlockResult.Success) {
                     transition(AuthenticationState.Locked)
                     return@withLock false
                 }
@@ -139,7 +138,7 @@ class VaultSessionController @Inject constructor(
             }
             if (!consumeRecoveryEnvelope()) return@withLock false
             _databaseFailure.value = null
-            lockLevel = SecureSessionState.UNLOCKED
+            lockStateManager.mark(SecureSessionState.UNLOCKED)
             markRecoveryModeInternal()
             true
         } finally {
@@ -157,7 +156,7 @@ class VaultSessionController @Inject constructor(
      * @return true 如果恢复成功
      */
     suspend fun resumeSoftLock(correlationId: String = ""): Boolean = mutex.withLock {
-        if (lockLevel != SecureSessionState.SOFT_LOCKED) return@withLock false
+        if (lockStateManager.state != SecureSessionState.SOFT_LOCKED) return@withLock false
         val err = sessionManager.unlock()
         if (err != null) {
             _databaseFailure.value = err
@@ -165,7 +164,7 @@ class VaultSessionController @Inject constructor(
             return@withLock false
         }
         _databaseFailure.value = null
-        lockLevel = SecureSessionState.UNLOCKED
+        lockStateManager.mark(SecureSessionState.UNLOCKED)
         markAuthenticatedInternal()
         true
     }
@@ -177,7 +176,7 @@ class VaultSessionController @Inject constructor(
      * 但仍必须在发布 Authenticated 前真正打开数据库。
      */
     suspend fun markAuthenticated(): Boolean = mutex.withLock {
-        if (lockLevel == SecureSessionState.UNLOCKED) {
+        if (lockStateManager.state == SecureSessionState.UNLOCKED) {
             if (_state.value is AuthenticationState.RecoveryMode) {
                 // Recovery mode must not be promoted by a generic session marker.
                 // Leaving recovery after rebuilding a primary method is handled by
@@ -189,7 +188,7 @@ class VaultSessionController @Inject constructor(
             return@withLock true
         }
         // 尝试恢复软锁定；如果不是 SOFT_LOCKED 则走完整解锁路径
-        if (lockLevel == SecureSessionState.SOFT_LOCKED) {
+        if (lockStateManager.state == SecureSessionState.SOFT_LOCKED) {
             val err = sessionManager.unlock()
             if (err != null) {
                 _databaseFailure.value = err
@@ -197,9 +196,9 @@ class VaultSessionController @Inject constructor(
                 return@withLock false
             }
             _databaseFailure.value = null
-            lockLevel = SecureSessionState.UNLOCKED
+            lockStateManager.mark(SecureSessionState.UNLOCKED)
         }
-        if (lockLevel == SecureSessionState.SEALED) {
+        if (lockStateManager.state == SecureSessionState.SEALED) {
             val err = sessionManager.unlock()
             if (err != null) {
                 _databaseFailure.value = err
@@ -207,7 +206,7 @@ class VaultSessionController @Inject constructor(
                 return@withLock false
             }
             _databaseFailure.value = null
-            lockLevel = SecureSessionState.UNLOCKED
+            lockStateManager.mark(SecureSessionState.UNLOCKED)
         }
         markAuthenticatedInternal()
         true
@@ -215,7 +214,7 @@ class VaultSessionController @Inject constructor(
 
     /** Restores the restricted state after a cancelled or failed attempt to leave recovery mode. */
     suspend fun markRecoveryMode(): Boolean = mutex.withLock {
-        if (lockLevel != SecureSessionState.UNLOCKED) return@withLock false
+        if (lockStateManager.state != SecureSessionState.UNLOCKED) return@withLock false
         markRecoveryModeInternal()
         true
     }
@@ -233,7 +232,7 @@ class VaultSessionController @Inject constructor(
                 // SOFT_LOCKED: DEK 仍在内存中，无需重新设置
                 true
             } else {
-                dekManager.setDek(type, dek) is UnlockResult.Success
+                dekManager.setDek(type, dek) is DekUnlockResult.Success
             }
             if (!staged) return@withLock false
             if (type == EnvelopeType.RECOVERY && !consumeRecoveryEnvelope()) {
@@ -252,7 +251,7 @@ class VaultSessionController @Inject constructor(
     suspend fun completeDatabaseRecovery(): Boolean = mutex.withLock {
         if (sessionManager.lockState != SecureSessionState.UNLOCKED) return@withLock false
         _databaseFailure.value = null
-        lockLevel = SecureSessionState.UNLOCKED
+        lockStateManager.mark(SecureSessionState.UNLOCKED)
         markAuthenticatedInternal()
         true
     }
@@ -277,7 +276,7 @@ class VaultSessionController @Inject constructor(
 
     private suspend fun consumeRecoveryEnvelope(): Boolean =
         consumeRecoveryCodeOrRollback(
-            consume = { bootstrapStore.delete(EnvelopeType.RECOVERY) },
+            consume = { vaultBootstrapStore.delete(EnvelopeType.RECOVERY) },
             rollback = { sealStagedRecoverySession() }
         )
 
@@ -288,7 +287,7 @@ class VaultSessionController @Inject constructor(
                 AppTelemetry.e(EventCategory.DATABASE, "recovery_rollback_seal_failed", throwable = error)
             }
         dekManager.lock()
-        lockLevel = SecureSessionState.SEALED
+        lockStateManager.mark(SecureSessionState.SEALED)
         transition(AuthenticationState.Locked)
     }
 
@@ -314,9 +313,9 @@ class VaultSessionController @Inject constructor(
             } else {
                 reason.toLockLevel()
             }
-            if (!lockLevel.shouldEscalateTo(targetLevel)) {
+            if (!lockStateManager.state.shouldEscalateTo(targetLevel)) {
                 // SEALED 状态仍需确保残留 DEK 被擦除。例如数据库打开失败时，
-                // lockLevel 尚未解锁，但认证执行器可能已暂存 DEK。
+                // 当前锁状态尚未解锁，但认证执行器可能已暂存 DEK。
                 if (targetLevel == SecureSessionState.SEALED) {
                     runCatching { sessionManager.seal() }
                     dekManager.lock()
@@ -333,7 +332,7 @@ class VaultSessionController @Inject constructor(
                         .onFailure { e ->
                             AppTelemetry.e(EventCategory.DATABASE, "soft_lock_failed", throwable = e)
                         }
-                    lockLevel = SecureSessionState.SOFT_LOCKED
+                    lockStateManager.mark(SecureSessionState.SOFT_LOCKED)
                 }
 
                 SecureSessionState.SEALED -> {
@@ -342,7 +341,7 @@ class VaultSessionController @Inject constructor(
                             AppTelemetry.e(EventCategory.DATABASE, "seal_failed", throwable = e)
                         }
                     dekManager.lock()
-                    lockLevel = SecureSessionState.SEALED
+                    lockStateManager.mark(SecureSessionState.SEALED)
                 }
 
                 SecureSessionState.UNLOCKED -> { /* 锁定不可能目标是 UNLOCKED */

@@ -1,41 +1,43 @@
 package com.aozijx.passly.feature.vault.editor.otp
 
-import com.aozijx.passly.domain.entry.model.EntryHeader
+import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.EntrySummary
+import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.EntryAggregate
-import com.aozijx.passly.domain.entry.model.WebsiteInfo
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.domain.entry.model.secret.OtpSecret
+import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.feature.vault.model.OtpFormState
+import com.github.f4b6a3.uuid.UuidCreator
 
 internal object OtpEntryFactory {
 
     fun create(
         state: OtpFormState,
         now: Long = System.currentTimeMillis()
-    ): EntryAggregate = EntryAggregate(
-        header = EntryHeader(
-            id = EntryId(""),
-            entryType = EntryType.OTP,
+    ): Entry = Entry(
+        identity = EntryIdentity(
+            id = EntryId(UuidCreator.getTimeOrderedEpoch().toString()),
+            type = EntryType.OTP,
             version = EntryVersion.INITIAL,
-            createdAt = now,
-            updatedAt = now
+            timestamps = EntryTimestamps(now),
         ),
-        summary = EntrySummary(
+        profile = EntryProfile(
             title = state.title.trim(),
             username = state.username.trim(),
-            website = state.domain.trim()
+            associations = state.domain.trim()
                 .takeIf(String::isNotEmpty)
-                ?.let { WebsiteInfo(primaryUrl = it) }
+                ?.let { EntryAssociations(primaryUrl = it) }
+                ?: EntryAssociations(),
         ),
         secret = EntrySecret(
-            otp = OtpSecret(config = createConfig(state))
+            credential = OtpCredential(config = createConfig(state))
         )
     )
 

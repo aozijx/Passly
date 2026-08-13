@@ -10,7 +10,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
-import com.aozijx.passly.domain.entry.model.OtpUiState
+import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.ui.components.TotpCard
@@ -24,7 +24,7 @@ fun TotpSection(
     onEvent: (DetailIntent) -> Unit,
 ) {
     val context = LocalContext.current
-    val msgCopySuccess = stringResource(R.string.msg_copy_success)
+    val msgCopySuccess = stringResource(R.string.field_copy_success_message)
     val totpLabel = stringResource(R.string.vault_detail_totp_label)
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {

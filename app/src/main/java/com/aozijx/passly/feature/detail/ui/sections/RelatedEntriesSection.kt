@@ -16,13 +16,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.text.localizedName
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 
 @Composable
 fun RelatedEntriesSection(
-    entries: List<EntryAggregate>,
-    onOpenEntry: (EntryAggregate) -> Unit
+    entries: List<Entry>,
+    onOpenEntry: (Entry) -> Unit
 ) {
     if (entries.isEmpty()) return
     InfoGroupCard(title = stringResource(R.string.related_entries)) {
@@ -30,7 +30,7 @@ fun RelatedEntriesSection(
             entries.forEachIndexed { index, entry ->
                 ListItem(
                     headlineContent = { Text(entry.title) },
-                    supportingContent = { Text(entry.entryType.localizedName()) },
+                    supportingContent = { Text(entry.type.localizedName()) },
                     trailingContent = {
                         Icon(Icons.Default.ChevronRight, contentDescription = null)
                     },

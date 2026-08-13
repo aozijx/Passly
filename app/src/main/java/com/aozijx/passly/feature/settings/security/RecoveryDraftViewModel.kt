@@ -3,14 +3,14 @@ package com.aozijx.passly.feature.settings.security
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
-import com.aozijx.passly.domain.authentication.AuthenticationRequest
-import com.aozijx.passly.domain.authentication.AuthenticationResult
-import com.aozijx.passly.domain.authentication.AuthenticationState
-import com.aozijx.passly.domain.authentication.RecoveryCodeDraft
-import com.aozijx.passly.domain.authentication.RecoveryCodeDraftCreation
-import com.aozijx.passly.domain.authentication.RecoveryCodeDraftFactory
+import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationRequest
+import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.model.RecoveryCredentialDraft
+import com.aozijx.passly.domain.access.model.RecoveryCredentialCreation
+import com.aozijx.passly.domain.access.model.RecoveryCredentialFactory
 import com.aozijx.passly.feature.settings.security.presentation.RecoveryDraftMutation
 import com.aozijx.passly.feature.settings.security.presentation.RecoveryDraftReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,9 +25,9 @@ import javax.inject.Inject
 class RecoveryDraftViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val authenticationManager: AuthenticationManager,
-    private val draftFactory: RecoveryCodeDraftFactory
+    private val draftFactory: RecoveryCredentialFactory
 ) : ViewModel() {
-    private var draft: RecoveryCodeDraft? = null
+    private var draft: RecoveryCredentialDraft? = null
     private val _state = MutableStateFlow<RecoveryDraftState>(
         if (savedStateHandle.get<Boolean>(WAS_DISCLOSURE_OPEN) == true) RecoveryDraftState.DraftExpired
         else RecoveryDraftState.Empty
@@ -99,7 +99,7 @@ class RecoveryDraftViewModel @Inject constructor(
     }
 
     private fun clearDraft() {
-        draft?.clear()
+        draft?.close()
         draft = null
         savedStateHandle[WAS_DISCLOSURE_OPEN] = false
         savedStateHandle[DRAFT_GENERATION_ID] = null as String?
@@ -109,14 +109,14 @@ class RecoveryDraftViewModel @Inject constructor(
         mutate(RecoveryDraftMutation.GenerationStarted)
         try {
             when (val creation = draftFactory.create()) {
-                is RecoveryCodeDraftCreation.Ready -> {
-                    draft?.clear()
+                is RecoveryCredentialCreation.Ready -> {
+                    draft?.close()
                     draft = creation.draft
                     savedStateHandle[WAS_DISCLOSURE_OPEN] = true
-                    savedStateHandle[DRAFT_GENERATION_ID] = creation.draft.generationId
-                    mutate(RecoveryDraftMutation.DraftReady(creation.draft.generationId))
+                    savedStateHandle[DRAFT_GENERATION_ID] = creation.draft.id.value
+                    mutate(RecoveryDraftMutation.DraftReady(creation.draft.id.value))
                 }
-                is RecoveryCodeDraftCreation.Failed -> mutate(RecoveryDraftMutation.Failed)
+                is RecoveryCredentialCreation.Failed -> mutate(RecoveryDraftMutation.Failed)
             }
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -130,7 +130,7 @@ class RecoveryDraftViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        draft?.clear()
+        draft?.close()
         draft = null
     }
 

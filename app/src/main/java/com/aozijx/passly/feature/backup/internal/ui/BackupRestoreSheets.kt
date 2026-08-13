@@ -46,8 +46,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.text.localizedName
-import com.aozijx.passly.domain.backup.model.BackupExportUiFormat
-import com.aozijx.passly.domain.backup.model.ImportMode
+import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
+import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.backup.internal.contract.BackupUiState

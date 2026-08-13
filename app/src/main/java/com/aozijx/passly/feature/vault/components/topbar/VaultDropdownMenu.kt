@@ -22,7 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.settings.model.LibrarySortSpec
+import com.aozijx.passly.data.settings.model.LibrarySortSpec
 
 private enum class MenuPage { MAIN, SORT, CATEGORY_FILTER }
 

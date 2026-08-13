@@ -115,12 +115,12 @@ private fun PasswordForm(
         EntryTitleField(
             value = state.title,
             onValueChange = onTitleChange,
-            label = stringResource(R.string.title)
+            label = stringResource(R.string.field_title)
         )
         EntryUsernameField(
             value = state.username,
             onValueChange = onUsernameChange,
-            label = stringResource(R.string.username_hint)
+            label = stringResource(R.string.field_username_hint)
         )
     }
 
@@ -137,7 +137,7 @@ private fun PasswordForm(
         EntryTagsField(
             value = state.tags,
             onValueChange = onTagsChange,
-            label = stringResource(R.string.entry_category)
+            label = stringResource(R.string.field_category)
         )
         EntryWebsiteField(
             value = state.website,
@@ -147,7 +147,7 @@ private fun PasswordForm(
         EntryNotesField(
             value = state.notes,
             onValueChange = onNotesChange,
-            label = stringResource(R.string.remark),
+            label = stringResource(R.string.field_notes),
             keyboardActions = KeyboardActions(
                 onDone = {
                     if (state.isValid) onSave()

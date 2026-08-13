@@ -1,32 +1,24 @@
 package com.aozijx.passly.feature.vault.action
 
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryIdentity
+import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.data.settings.model.SwipeActionType
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class VaultSwipeActionHandlerTest {
 
     private val item = EntryListItem(
-        id = "entry",
-        title = "Example",
-        username = "user",
-        entryType = EntryType.LOGIN,
-        icon = null,
-        iconCustomPath = null,
-        website = null,
-        favorite = false,
-        tags = emptyList(),
-        color = null,
-        createdAt = 0L,
-        updatedAt = 0L,
-        deletedAt = null,
-        expiresAt = null,
-        lastUsedAt = null,
-        usageCount = 0,
-        entryVersion = 1,
-        capabilityFlags = 0
+        identity = EntryIdentity(
+            id = EntryId("entry"),
+            type = EntryType.LOGIN,
+            timestamps = EntryTimestamps(0L),
+        ),
+        profile = EntryProfile(title = "Example", username = "user"),
     )
 
     @Test

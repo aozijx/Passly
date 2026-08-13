@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.settings.contract
 
-import com.aozijx.passly.domain.authentication.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
 
 sealed interface SettingsEffect {
     data class ShowError(val message: String) : SettingsEffect

@@ -11,8 +11,8 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.autofill.model.FillAvailability
 import com.aozijx.passly.core.autofill.model.InternalFillResponse
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
-import com.aozijx.passly.domain.entry.model.lookup.MatchType
-import com.aozijx.passly.domain.settings.model.AutofillPresentation
+import com.aozijx.passly.domain.entry.model.query.MatchType
+import com.aozijx.passly.data.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.framework.AutofillFillActivity
 import com.aozijx.passly.feature.autofill.framework.AutofillRemoteViewFactory
 import com.aozijx.passly.service.autofill.framework.parser.ParsedStructure
@@ -130,7 +130,7 @@ internal object LegacyResponseFactory {
 
     private fun buildBadge(context: Context, candidate: ResolvedCandidate): String {
         return when (candidate.matchedBy) {
-            MatchType.PACKAGE_NAME -> context.getString(R.string.autofill_badge_app)
+            MatchType.APPLICATION_ID -> context.getString(R.string.autofill_badge_app)
             MatchType.WEB_DOMAIN -> context.getString(R.string.autofill_badge_website)
             else -> ""
         }

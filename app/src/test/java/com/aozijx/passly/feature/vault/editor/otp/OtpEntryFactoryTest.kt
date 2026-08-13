@@ -29,10 +29,10 @@ class OtpEntryFactoryTest {
         )
 
         val config = requireNotNull(entry.secret.otp?.config)
-        assertEquals(EntryType.OTP, entry.entryType)
-        assertEquals("Example", entry.summary.title)
-        assertEquals("user@example.com", entry.summary.username)
-        assertEquals("example.com", entry.summary.website?.primaryUrl)
+        assertEquals(EntryType.OTP, entry.type)
+        assertEquals("Example", entry.profile.title)
+        assertEquals("user@example.com", entry.profile.username)
+        assertEquals("example.com", entry.profile.associations.primaryUrl)
         assertEquals(OtpType.TOTP, config.type)
         assertEquals("JBSWY3DPEHPK3PXP", config.secret)
         assertEquals(60, config.periodSeconds)
@@ -40,8 +40,8 @@ class OtpEntryFactoryTest {
         assertEquals(OtpHashAlgorithm.SHA256, config.algorithm)
         assertEquals("Example Inc", config.issuer)
         assertEquals("user@example.com", config.accountName)
-        assertEquals(123L, entry.header.createdAt)
-        assertEquals(123L, entry.header.updatedAt)
+        assertEquals(123L, entry.timestamps.createdAtMs)
+        assertEquals(123L, entry.timestamps.updatedAtMs)
     }
 
     @Test

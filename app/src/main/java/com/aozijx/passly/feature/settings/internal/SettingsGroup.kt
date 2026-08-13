@@ -75,7 +75,7 @@ internal enum class SettingsGroup(
     RECOVERY_CODE(
         sectionTitleRes = R.string.settings_section_data,
         icon = Icons.Default.Key,
-        titleRes = R.string.settings_page_recovery_code,
+        titleRes = R.string.recovery_code_label,
         subtitleRes = R.string.settings_page_recovery_code_summary,
         route = SettingsRoute.RecoveryCode
     ),

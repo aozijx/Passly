@@ -24,7 +24,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.contract.DetailIntent
@@ -39,7 +39,7 @@ import com.aozijx.passly.feature.detail.ui.components.DetailItem
 
 @Composable
 fun BankCardSection(
-    entry: EntryAggregate,
+    entry: Entry,
     editState: EntryEditState,
     revealedCardholder: String?,
     revealedCardNumber: String?,
@@ -47,26 +47,23 @@ fun BankCardSection(
     revealedPaymentPin: String?,
     onRevealField: (String, String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
-    onEntryUpdated: (EntryAggregate) -> Unit,
+    onEntryUpdated: (Entry) -> Unit,
     onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
     val label = stringResource(R.string.vault_fab_bank_card)
-    val cardCopiedMsg = stringResource(R.string.msg_copy_success, label)
+    val cardCopiedMsg = stringResource(R.string.field_copy_success_message, label)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
         onEvent = onEvent
     )
     val cardSecret = entry.secret.card
-    val hasCardNumber = cardSecret?.hasCardNumber == true ||
-        !cardSecret?.cardNumber.isNullOrBlank() ||
+    val hasCardNumber = !cardSecret?.cardNumber.isNullOrBlank() ||
         revealedCardNumber != null
-    val hasCardCvv = cardSecret?.hasCardCvv == true ||
-        !cardSecret?.cardCvv.isNullOrBlank() ||
+    val hasCardCvv = !cardSecret?.cardCvv.isNullOrBlank() ||
         revealedCvv != null ||
         editState.isEditingTotp
-    val hasPaymentPin = cardSecret?.hasPaymentPin == true ||
-        !cardSecret?.paymentPin.isNullOrBlank() ||
+    val hasPaymentPin = !cardSecret?.paymentPin.isNullOrBlank() ||
         revealedPaymentPin != null
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -75,7 +72,7 @@ fun BankCardSection(
                 value = editState.editedUsername,
                 onValueChange = { editState.editedUsername = it },
                 label = stringResource(
-                    R.string.edit_field,
+                    R.string.field_edit_action,
                     stringResource(R.string.cardholder)
                 ),
                 modifier = Modifier.fillMaxWidth(),
@@ -120,7 +117,7 @@ fun BankCardSection(
                 value = editState.editedPassword,
                 onValueChange = { editState.editedPassword = it },
                 label = stringResource(
-                    R.string.edit_field,
+                    R.string.field_edit_action,
                     stringResource(R.string.card_number)
                 ),
                 modifier = Modifier.fillMaxWidth(),
@@ -172,7 +169,7 @@ fun BankCardSection(
                 value = editState.editedTotp,
                 onValueChange = { editState.editedTotp = it },
                 label = stringResource(
-                    R.string.edit_field,
+                    R.string.field_edit_action,
                     stringResource(R.string.card_cvv)
                 ),
                 modifier = Modifier.fillMaxWidth(),

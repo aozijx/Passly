@@ -1,36 +1,37 @@
 package com.aozijx.passly.feature.vault.editor.bankcard
 
-import com.aozijx.passly.domain.entry.model.EntryHeader
+import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.EntrySummary
+import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.EntryAggregate
-import com.aozijx.passly.domain.entry.model.secret.CardSecret
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.credential.CardCredential
+import com.github.f4b6a3.uuid.UuidCreator
 
 internal object BankCardEntryFactory {
 
     fun create(
         state: AddBankCardFormState,
         now: Long = System.currentTimeMillis()
-    ): EntryAggregate = EntryAggregate(
-        header = EntryHeader(
-            id = EntryId(""),
-            entryType = EntryType.BANK_CARD,
+    ): Entry = Entry(
+        identity = EntryIdentity(
+            id = EntryId(UuidCreator.getTimeOrderedEpoch().toString()),
+            type = EntryType.BANK_CARD,
             version = EntryVersion.INITIAL,
-            createdAt = now,
-            updatedAt = now
+            timestamps = EntryTimestamps(now),
         ),
-        summary = EntrySummary(
+        profile = EntryProfile(
             title = state.title.trim(),
             username = state.cardholder.trim(),
             tags = state.tags.split(",")
                 .map { it.trim() }
-                .filter { it.isNotEmpty() }
+                .filter { it.isNotEmpty() }.toSet()
         ),
         secret = EntrySecret(
-            card = CardSecret(
+            credential = CardCredential(
                 cardType = state.cardType?.name,
                 cardNumber = state.cardNumber.trim(),
                 cardExpiry = buildExpiry(state.cardExpiryMonth, state.cardExpiryYear),
@@ -38,9 +39,6 @@ internal object BankCardEntryFactory {
                 cardHolder = state.cardholder.trim(),
                 paymentPin = state.paymentPin.trim().takeIf(String::isNotEmpty),
                 billingAddress = state.billingAddress.trim().takeIf(String::isNotEmpty),
-                hasCardNumber = state.cardNumber.isNotBlank(),
-                hasCardCvv = state.cardCvv.isNotBlank(),
-                hasPaymentPin = state.paymentPin.isNotBlank()
             ),
             notes = state.notes.trim().takeIf(String::isNotEmpty)
         )

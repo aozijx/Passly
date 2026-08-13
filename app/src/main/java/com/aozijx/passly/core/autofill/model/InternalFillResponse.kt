@@ -1,6 +1,6 @@
 package com.aozijx.passly.core.autofill.model
 
-import com.aozijx.passly.domain.settings.model.AutofillPresentation
+import com.aozijx.passly.data.settings.model.AutofillPresentation
 
 /**
  * 解耦系统 API 的纯数据填充响应。

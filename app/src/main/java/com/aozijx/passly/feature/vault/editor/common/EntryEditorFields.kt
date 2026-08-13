@@ -140,7 +140,7 @@ fun EntryPasswordField(
     isVisible: Boolean,
     onVisibilityChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    label: String = stringResource(R.string.password),
+    label: String = stringResource(R.string.password_label),
     imeAction: ImeAction = ImeAction.Next,
     isError: Boolean = false,
     supportingText: String? = null

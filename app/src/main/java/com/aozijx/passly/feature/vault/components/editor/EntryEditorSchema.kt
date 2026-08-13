@@ -53,7 +53,7 @@ fun AddType.toEntryEditorSchema(): EntryEditorSchema {
                 fields = listOf(
                     EntryEditorFieldSchema(
                         key = EntryEditorFieldKey.TITLE,
-                        labelRes = R.string.title,
+                        labelRes = R.string.field_title,
                         required = true
                     ),
                     EntryEditorFieldSchema(
@@ -62,7 +62,7 @@ fun AddType.toEntryEditorSchema(): EntryEditorSchema {
                     ),
                     EntryEditorFieldSchema(
                         key = EntryEditorFieldKey.TAGS,
-                        labelRes = R.string.entry_category
+                        labelRes = R.string.field_category
                     )
                 )
             ),
@@ -75,7 +75,7 @@ fun AddType.toEntryEditorSchema(): EntryEditorSchema {
                 fields = listOf(
                     EntryEditorFieldSchema(
                         key = EntryEditorFieldKey.NOTES,
-                        labelRes = R.string.remark,
+                        labelRes = R.string.field_notes,
                         kind = EntryEditorFieldKind.Notes,
                         singleLine = false
                     )
@@ -99,7 +99,7 @@ private fun AddType.toEntryType(): EntryType = when (this) {
 private fun AddType.summaryFieldLabelRes(): Int = when (this) {
     AddType.BANK_CARD -> R.string.cardholder
     AddType.WIFI -> R.string.wifi_ssid
-    else -> R.string.username_hint
+    else -> R.string.field_username_hint
 }
 
 private fun AddType.secretFieldSchema(): EntryEditorFieldSchema = when (this) {
@@ -140,13 +140,13 @@ private fun AddType.secretFieldSchema(): EntryEditorFieldSchema = when (this) {
 
     AddType.RECOVERY_CODE -> EntryEditorFieldSchema(
         key = EntryEditorFieldKey.SECRET,
-        labelRes = R.string.vault_fab_recovery_code,
+        labelRes = R.string.recovery_code_label,
         singleLine = false
     )
 
     else -> EntryEditorFieldSchema(
         key = EntryEditorFieldKey.SECRET,
-        labelRes = R.string.password,
+        labelRes = R.string.password_label,
         kind = EntryEditorFieldKind.Password
     )
 }

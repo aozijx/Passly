@@ -4,7 +4,6 @@ import android.app.assist.AssistStructure
 import android.service.autofill.FillContext
 import android.text.InputType
 import android.view.autofill.AutofillId
-import com.aozijx.passly.domain.autofill.policy.DomainNameNormalizer
 
 data class ParsedStructure(
     val usernameId: AutofillId? = null,
@@ -23,7 +22,10 @@ data class ParsedStructure(
     val normalizedPackageName: String?
         get() = packageName?.trim()?.lowercase()?.takeIf { it.isNotBlank() }
     val normalizedWebDomain: String?
-        get() = DomainNameNormalizer.normalize(webDomain)
+        get() = webDomain?.trim()?.lowercase()
+            ?.removePrefix("https://")?.removePrefix("http://")
+            ?.substringBefore('/')?.removePrefix("www.")
+            ?.takeIf(String::isNotBlank)
 
     val allIds: List<AutofillId>
         get() = listOfNotNull(usernameId, passwordId, otpId, submitId)

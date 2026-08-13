@@ -1,29 +1,23 @@
 package com.aozijx.passly.domain.entry.model
 
-enum class EntryType {
-    ACCOUNT,
-    LOGIN,
-    NOTE,
-    CARD,
-    IDENTITY,
-    SSH_KEY,
-    WIFI,
-    PASSKEY,
-    OTP,
-    PASSPORT,
-    LICENSE,
-    DATABASE,
-    SERVER,
-    API_KEY,
-    CRYPTO_WALLET,
-    BANK_CARD,
-    ID_CARD,
-    SEED_PHRASE,
-    RECOVERY_CODE;
+import com.aozijx.passly.domain.entry.model.credential.EntryCredentialKind
 
-    companion object {
-        fun fromName(name: String): EntryType =
-            entries.find { it.name == name }
-                ?: throw IllegalArgumentException("Unknown EntryType: $name")
-    }
+enum class EntryType(val credentialKind: EntryCredentialKind) {
+    ACCOUNT(EntryCredentialKind.NONE),
+    LOGIN(EntryCredentialKind.LOGIN),
+    NOTE(EntryCredentialKind.NONE),
+    BANK_CARD(EntryCredentialKind.CARD),
+    ID_CARD(EntryCredentialKind.IDENTITY),
+    PASSPORT(EntryCredentialKind.IDENTITY),
+    DRIVER_LICENSE(EntryCredentialKind.IDENTITY),
+    SSH_KEY(EntryCredentialKind.SSH),
+    WIFI(EntryCredentialKind.WIFI),
+    PASSKEY(EntryCredentialKind.PASSKEY),
+    OTP(EntryCredentialKind.OTP),
+    DATABASE_CREDENTIAL(EntryCredentialKind.LOGIN),
+    SERVER_CREDENTIAL(EntryCredentialKind.LOGIN),
+    API_KEY(EntryCredentialKind.LOGIN),
+    CRYPTO_WALLET(EntryCredentialKind.LOGIN),
+    SEED_PHRASE(EntryCredentialKind.IDENTITY),
+    RECOVERY_CODE(EntryCredentialKind.IDENTITY),
 }

@@ -17,11 +17,11 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.aozijx.passly.core.media.toLocalIconImageModel
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.domain.entry.model.Entry
 
 @Composable
 fun DetailHeader(
-    item: EntryAggregate,
+    item: Entry,
     onIconClick: () -> Unit,
     onTitleLongClick: () -> Unit,
 ) {

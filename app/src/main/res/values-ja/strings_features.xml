@@ -1,31 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- 保管庫の並び替えとフィルター -->
     <string name="sort_default">標準順</string>
     <string name="sort_name">名前</string>
     <string name="sort_created">作成日時</string>
     <string name="sort_updated">更新日時</string>
     <string name="sort_usage">使用回数</string>
+    <string name="sort_last_used">最近使用した順</string>
+    <string name="sort_entry_type">項目タイプ</string>
     <string name="vault_menu_sort">並び順</string>
-    <string name="msg_copy_success">%1$sをコピーしました</string>
+    <string name="vault_quick_filter_passwords">パスワード</string>
+    <string name="vault_quick_filter_totp">認証コード</string>
+
+    <!-- 項目の追加 -->
+    <string name="vault_add_type_totp">ワンタイムパスワード</string>
     <string name="vault_fab_bank_card">銀行カード</string>
-    <string name="vault_fab_wifi">WiFi</string>
-    <string name="vault_fab_ssh_key">SSH鍵</string>
+    <string name="vault_fab_ssh_key">SSHキー</string>
     <string name="vault_fab_id_card">身分証</string>
-    <string name="vault_fab_seed_phrase">シードフレーズ</string>
-    <string name="vault_fab_passkey">Passkey</string>
-    <string name="vault_fab_recovery_code">復旧コード</string>
     <string name="vault_fab_add_title">項目を追加</string>
     <string name="vault_add_generic_title">%sを追加</string>
+
+    <!-- 項目の履歴 -->
     <string name="vault_detail_history_label">操作履歴</string>
-    <string name="vault_detail_history_all">すべて</string>
     <string name="vault_detail_history_updates">変更</string>
     <string name="vault_detail_history_empty_filtered">記録はありません</string>
     <string name="vault_detail_history_tab_version">バージョン</string>
     <string name="vault_detail_history_tab_activity">操作</string>
-    <string name="vault_detail_history_restore">復元</string>
     <string name="vault_detail_activity_create">作成</string>
     <string name="vault_detail_activity_update">更新</string>
-    <string name="vault_detail_activity_sensitive_change">保護フィールドを変更</string>
+    <string name="vault_detail_activity_sensitive_change">機密フィールドを変更</string>
     <string name="vault_detail_activity_delete">削除</string>
     <string name="vault_detail_activity_restore">復元</string>
     <string name="vault_detail_activity_autofill">自動入力</string>
@@ -34,27 +37,40 @@
     <string name="vault_detail_activity_view">表示</string>
     <string name="vault_detail_activity_export">エクスポート</string>
     <string name="vault_detail_activity_import">インポート</string>
-    <string name="auth_use_recovery_code">アクセスを復旧</string>
-    <string name="auth_recovery_code_label">復旧コード</string>
-    <string name="auth_recovery_code_unlock">復旧コードを確認</string>
-    <string name="wifi_ssid">WiFi名</string>
-    <string name="wifi_password">WiFiパスワード</string>
-    <string name="wifi_encryption">セキュリティ</string>
+
+    <!-- Wi-Fi -->
+    <string name="wifi_ssid">Wi-Fi名</string>
+    <string name="wifi_password">Wi-Fiパスワード</string>
+    <string name="wifi_encryption">セキュリティ方式</string>
     <string name="wifi_hidden">非公開ネットワーク</string>
-    <string name="wifi_settings">WiFi設定</string>
+    <string name="wifi_settings">Wi-Fi設定</string>
+
+    <!-- 銀行カード -->
     <string name="cardholder">名義人</string>
     <string name="card_number">カード番号</string>
-    <string name="card_cvv">セキュリティコード</string>
+    <string name="card_cvv">セキュリティコード（CVV）</string>
     <string name="card_expiration">有効期限</string>
+    <string name="card_expiry_month">月</string>
+    <string name="card_expiry_year">年</string>
+    <string name="card_type">カード種別</string>
+    <string name="card_type_debit">デビットカード</string>
+    <string name="card_type_credit">クレジットカード</string>
     <string name="payment_pin">決済PIN</string>
+    <string name="billing_address">請求先住所</string>
+
+    <!-- シードフレーズ -->
     <string name="seed_phrase">シードフレーズ</string>
-    <string name="seed_phrase_title">暗号資産シードフレーズ</string>
+    <string name="seed_phrase_title">暗号資産ウォレットのシードフレーズ</string>
     <string name="seed_phrase_revealed">シードフレーズを表示しました</string>
     <string name="word_index_hint">タップしてコピー</string>
+
+    <!-- SSHキー -->
     <string name="ssh_private_key">秘密鍵</string>
     <string name="ssh_private_key_full">秘密鍵全体</string>
     <string name="ssh_fingerprint">鍵のフィンガープリント</string>
     <string name="passphrase">パスフレーズ</string>
+
+    <!-- 身元情報とPasskey -->
     <string name="id_number">証明書番号</string>
     <string name="passkey_data">Passkeyデータ</string>
     <string name="hardware_key_info">ハードウェアキー情報</string>

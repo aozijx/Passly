@@ -5,7 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import com.aozijx.passly.app.message.mapping.toUiMessage
-import com.aozijx.passly.core.backup.BackupStorageSupport
+import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
 
 internal fun handleBackupPathPicked(
     context: Context,

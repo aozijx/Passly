@@ -1,40 +1,42 @@
 package com.aozijx.passly.feature.vault.editor.password
 
-import com.aozijx.passly.domain.entry.model.EntryHeader
+import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.EntrySummary
+import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.EntryAggregate
-import com.aozijx.passly.domain.entry.model.WebsiteInfo
-import com.aozijx.passly.domain.entry.model.secret.LoginSecret
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryAssociations
+import com.aozijx.passly.domain.entry.model.credential.LoginCredential
+import com.github.f4b6a3.uuid.UuidCreator
 
 internal object PasswordEntryFactory {
 
     fun create(
         state: AddPasswordFormState,
         now: Long = System.currentTimeMillis()
-    ): EntryAggregate = EntryAggregate(
-        header = EntryHeader(
-            id = EntryId(""),
-            entryType = EntryType.LOGIN,
+    ): Entry = Entry(
+        identity = EntryIdentity(
+            id = EntryId(UuidCreator.getTimeOrderedEpoch().toString()),
+            type = EntryType.LOGIN,
             version = EntryVersion.INITIAL,
-            createdAt = now,
-            updatedAt = now
+            timestamps = EntryTimestamps(now),
         ),
-        summary = EntrySummary(
+        profile = EntryProfile(
             title = state.title.trim(),
             username = state.username.trim(),
-            website = state.website.trim()
+            associations = state.website.trim()
                 .takeIf(String::isNotEmpty)
-                ?.let { WebsiteInfo(primaryUrl = it) },
+                ?.let { EntryAssociations(primaryUrl = it) }
+                ?: EntryAssociations(),
             tags = state.tags.split(",")
                 .map { it.trim() }
-                .filter { it.isNotEmpty() }
+                .filter { it.isNotEmpty() }.toSet()
         ),
         secret = EntrySecret(
-            login = LoginSecret(password = state.password),
+            credential = LoginCredential(password = state.password),
             notes = state.notes.trim().takeIf(String::isNotEmpty)
         )
     )

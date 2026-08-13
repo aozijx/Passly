@@ -3,20 +3,22 @@ package com.aozijx.passly.core.autofill
 import com.aozijx.passly.core.autofill.model.FieldDescriptor
 import com.aozijx.passly.core.autofill.model.InternalFillRequest
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
-import com.aozijx.passly.domain.autofill.repository.CredentialServiceRepository
-import com.aozijx.passly.domain.entry.model.EntryHeader
+import com.aozijx.passly.data.autofill.port.CredentialServiceRepository
+import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.EntrySummary
+import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.EntryAggregate
-import com.aozijx.passly.domain.entry.model.WebsiteInfo
-import com.aozijx.passly.domain.entry.model.lookup.CredentialCandidate
-import com.aozijx.passly.domain.entry.model.lookup.MatchType
-import com.aozijx.passly.domain.entry.model.secret.LoginSecret
-import com.aozijx.passly.domain.settings.model.AutofillSettings
-import com.aozijx.passly.domain.settings.model.AutofillPresentation
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryAssociations
+import com.aozijx.passly.domain.entry.model.query.CredentialCandidate
+import com.aozijx.passly.domain.entry.model.query.MatchType
+import com.aozijx.passly.domain.entry.model.query.CredentialMatch
+import com.aozijx.passly.domain.entry.model.credential.LoginCredential
+import com.aozijx.passly.data.settings.model.AutofillSettings
+import com.aozijx.passly.data.settings.model.AutofillPresentation
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -43,7 +45,7 @@ class CandidateResolverTest {
             AutofillSettings(maxSuggestions = 7),
         )
 
-        assertEquals(entry.id, result.single().candidateId)
+        assertEquals(entry.id.value, result.single().candidateId)
         assertEquals(7, repository.lastLimit)
         assertEquals(false, repository.lastIncludeSecrets)
     }
@@ -119,7 +121,7 @@ class CandidateResolverTest {
         val resolver = CandidateResolver(FakeCredentialRepository(entry))
 
         val result = resolver.resolveSelected(
-            entryId = entry.id,
+            entryId = entry.id.value,
             packageName = "com.example.attacker",
             webDomain = null,
             settings = AutofillSettings(allowUnmatchedSuggestions = false),
@@ -129,7 +131,7 @@ class CandidateResolverTest {
     }
 
     private class FakeCredentialRepository(
-        private val entry: EntryAggregate,
+        private val entry: Entry,
     ) : CredentialServiceRepository {
         var lastLimit: Int = 0
         var lastIncludeSecrets: Boolean? = null
@@ -146,21 +148,22 @@ class CandidateResolverTest {
             return listOf(
                 CredentialCandidate(
                     entry = entry,
-                    score = MatchType.PACKAGE_NAME.score,
-                    matchedBy = MatchType.PACKAGE_NAME,
-                    matchedPackage = packageName,
+                    match = CredentialMatch(
+                        type = MatchType.APPLICATION_ID,
+                        applicationId = packageName,
+                    ),
                 )
             )
         }
 
-        override suspend fun getById(entryId: String): EntryAggregate? =
-            entry.takeIf { it.id == entryId }
+        override suspend fun getById(entryId: String): Entry? =
+            entry.takeIf { it.id.value == entryId }
 
         override suspend fun getByIds(
             entryIds: List<String>,
             includeSecrets: Boolean
-        ): List<EntryAggregate> =
-            listOf(entry).filter { it.id in entryIds }
+        ): List<Entry> =
+            listOf(entry).filter { it.id.value in entryIds }
 
         override suspend fun save(
             packageName: String?,
@@ -174,19 +177,18 @@ class CandidateResolverTest {
     private fun loginEntry(
         id: String,
         packages: Set<String>,
-    ): EntryAggregate = EntryAggregate(
-        header = EntryHeader(
+    ): Entry = Entry(
+        identity = EntryIdentity(
             id = EntryId(id),
-            entryType = EntryType.LOGIN,
+            type = EntryType.LOGIN,
             version = EntryVersion.INITIAL,
-            createdAt = 1L,
-            updatedAt = 2L,
+            timestamps = EntryTimestamps(createdAtMs = 1L, updatedAtMs = 2L),
         ),
-        summary = EntrySummary(
+        profile = EntryProfile(
             title = "Example",
             username = "person@example.com",
-            website = WebsiteInfo(packageNames = packages),
+            associations = EntryAssociations(applicationIds = packages),
         ),
-        secret = EntrySecret(login = LoginSecret(password = "secret")),
+        secret = EntrySecret(credential = LoginCredential(password = "secret")),
     )
 }

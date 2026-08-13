@@ -28,7 +28,7 @@ import com.aozijx.passly.core.ui.components.group.RoundedGroupItem
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.domain.settings.model.LockTimeoutConstraints
+import com.aozijx.passly.data.settings.model.LockTimeoutConstraints
 import kotlin.math.roundToInt
 
 private const val SLIDER_MIN_SECONDS = (LockTimeoutConstraints.SLIDER_MIN_MS / 1000L).toFloat()
@@ -53,7 +53,7 @@ fun LockAuthSettingsSection(
         .coerceIn(SLIDER_MIN_SECONDS, SLIDER_MAX_SECONDS)
     var sliderValue by remember(lockTimeout) { mutableFloatStateOf(currentSeconds) }
 
-    SettingsSectionTitle(text = stringResource(R.string.settings_security_auth_section))
+    SettingsSectionTitle(text = stringResource(R.string.authentication_label))
     RoundedGroup(
         items = listOf(
 
@@ -132,7 +132,7 @@ fun LockAuthSettingsSection(
                 key = "security.app_password",
                 icon = Icons.Default.Lock,
                 title = stringResource(R.string.settings_security_app_password),
-                subtitle = stringResource(R.string.settings_security_app_password_description),
+                subtitle = stringResource(R.string.app_password_unlock_description),
                 value = stringResource(
                     if (isAppPasswordEnabled) R.string.settings_value_configured else R.string.not_set
                 ),
