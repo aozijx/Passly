@@ -4,29 +4,32 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.otp.OtpGenerator
-import com.aozijx.passly.domain.entry.runtime.EntryDataRefreshNotifier
-import com.aozijx.passly.domain.authentication.SessionStateProvider
-import com.aozijx.passly.domain.entry.model.EntryHeader
+import com.aozijx.passly.domain.entry.signal.EntryDataRefreshNotifier
+import com.aozijx.passly.runtime.session.SessionStateProvider
+import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.EntrySummary
+import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.OtpUiState
-import com.aozijx.passly.domain.entry.model.EntryAggregate
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
+import com.aozijx.passly.domain.entry.model.EntryIcon
+import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.model.secret.OtpSecret
-import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
-import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
-import com.aozijx.passly.domain.entry.repository.EntryQueryRepository
-import com.aozijx.passly.domain.entry.repository.FaviconRepository
-import com.aozijx.passly.domain.entry.repository.OtpConfigRepository
-import com.aozijx.passly.domain.entry.service.EntryFieldReader
-import com.aozijx.passly.domain.settings.command.SettingsCommand
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
-import com.aozijx.passly.domain.settings.model.LibrarySortSpec
-import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
+import com.aozijx.passly.domain.entry.model.credential.OtpCredential
+import com.github.f4b6a3.uuid.UuidCreator
+import com.aozijx.passly.domain.entry.port.EntryCommandRepository
+import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
+import com.aozijx.passly.domain.entry.port.EntryQueryRepository
+import com.aozijx.passly.domain.entry.port.FaviconRepository
+import com.aozijx.passly.domain.entry.port.OtpConfigRepository
+import com.aozijx.passly.domain.entry.policy.EntryFieldReader
+import com.aozijx.passly.data.settings.model.SettingsCommand
+import com.aozijx.passly.data.settings.model.LibraryQuickFilter
+import com.aozijx.passly.data.settings.model.LibrarySortSpec
+import com.aozijx.passly.data.settings.port.AppSettingsRepository
 import com.aozijx.passly.feature.vault.contract.VaultEffect
 import com.aozijx.passly.feature.vault.contract.VaultIntent
 import com.aozijx.passly.feature.vault.contract.VaultUiState
@@ -122,20 +125,19 @@ class VaultViewModel @Inject constructor(
                 }
                 if (isEmpty()) append("TOTP")
             }
-            val entry = EntryAggregate(
-                header = EntryHeader(
-                    id = EntryId(""),
-                    entryType = EntryType.OTP,
+            val entry = Entry(
+                identity = EntryIdentity(
+                    id = EntryId(UuidCreator.getTimeOrderedEpoch().toString()),
+                    type = EntryType.OTP,
                     version = EntryVersion.INITIAL,
-                    createdAt = System.currentTimeMillis(),
-                    updatedAt = System.currentTimeMillis()
+                    timestamps = EntryTimestamps(System.currentTimeMillis()),
                 ),
-                summary = EntrySummary(
+                profile = EntryProfile(
                     title = title,
                     username = config.accountName ?: title,
-                    icon = null
+                    icon = EntryIcon(),
                 ),
-                secret = EntrySecret(otp = OtpSecret(config = config))
+                secret = EntrySecret(credential = OtpCredential(config = config))
             )
             entryManager.addItem(entry)
         } catch (error: Exception) {
@@ -170,7 +172,7 @@ class VaultViewModel @Inject constructor(
             VaultIntent.ConfirmDelete -> confirmDelete()
             is VaultIntent.QuickDelete -> quickDelete(intent.item)
             is VaultIntent.AddItem -> addItem(intent.entry)
-            is VaultIntent.UpdateEntryAggregate -> updateEntryAggregate(intent.entry)
+            is VaultIntent.UpdateEntry -> updateEntry(intent.entry)
             is VaultIntent.AddScannedOtp -> addScannedOtp(intent.config)
             is VaultIntent.AutoUnlockTotp -> autoUnlockTotp(intent.entryId)
         }
@@ -200,24 +202,24 @@ class VaultViewModel @Inject constructor(
         }
     }
 
-    suspend fun loadEntryById(entryId: String): EntryAggregate? {
+    suspend fun loadEntryById(entryId: String): Entry? {
         if (!accessPolicy.hasFullAccess()) return null
-        return entryQueryRepository.getByIdWithoutHighSensitivity(entryId)
+        return entryQueryRepository.getById(EntryId(entryId))
     }
 
-    private fun addItem(entry: EntryAggregate) {
+    private fun addItem(entry: Entry) {
         if (!ensureFullSecureSessionAccess("当前会话不能新建条目")) return
         entryManager.addItem(entry, onComplete = { setAddType(null) })
     }
 
-    private fun updateEntryAggregate(entry: EntryAggregate) {
+    private fun updateEntry(entry: Entry) {
         if (!ensureFullSecureSessionAccess("当前会话不能修改条目")) return
         entryManager.updateEntry(entry)
     }
 
     private fun quickDelete(item: EntryListItem) {
         if (!ensureFullSecureSessionAccess("当前会话不能删除条目")) return
-        entryManager.deleteEntryById(item.id)
+        entryManager.deleteEntryById(item.id.value)
     }
 
     private fun confirmDelete() {
@@ -225,7 +227,7 @@ class VaultViewModel @Inject constructor(
         val item = uiState.value.pendingDelete ?: return
         viewModelScope.launch {
             if (!accessPolicy.hasFullAccess()) return@launch
-            val entry = entryQueryRepository.getByIdWithoutHighSensitivity(item.id) ?: return@launch
+            val entry = entryQueryRepository.getById(item.id) ?: return@launch
             entryManager.deleteEntry(entry)
         }
     }
@@ -236,7 +238,7 @@ class VaultViewModel @Inject constructor(
         viewModelScope.launch {
             sessionStateProvider.lockStateFlow.collect { lockState ->
                 totp.onSessionStateChanged(
-                    unlocked = lockState == com.aozijx.passly.domain.authentication.SecureSessionState.UNLOCKED
+                    unlocked = lockState == com.aozijx.passly.runtime.session.SecureSessionState.UNLOCKED
                 )
             }
         }

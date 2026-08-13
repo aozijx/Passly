@@ -11,9 +11,9 @@ import com.aozijx.passly.feature.backup.internal.archive.format.BackupFormatRegi
 import com.aozijx.passly.feature.backup.internal.archive.io.BackupFileStore
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.DatabaseSnapshotReader
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.DatabaseSnapshotRestorer
-import com.aozijx.passly.domain.backup.model.BackupExportRequest
-import com.aozijx.passly.domain.backup.model.BackupImportRequest
-import com.aozijx.passly.domain.backup.service.BackupArchiveService
+import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
+import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
+import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveService
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject

@@ -53,7 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.util.QrCodeUtils
-import com.aozijx.passly.domain.entry.model.OtpUiState
+import com.aozijx.passly.feature.vault.model.OtpUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

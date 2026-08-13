@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.detail.ui.sections
 
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.domain.entry.model.Entry
 
 enum class DetailSectionKey {
     CREDENTIAL,
@@ -31,19 +31,19 @@ object DetailSectionResolver {
         EntryType.LOGIN to setOf(DetailSectionKey.CREDENTIAL),
         EntryType.NOTE to emptySet(),
         EntryType.OTP to setOf(DetailSectionKey.OTP),
-        EntryType.CARD to setOf(DetailSectionKey.BANK_CARD),
         EntryType.BANK_CARD to setOf(DetailSectionKey.BANK_CARD),
-        EntryType.IDENTITY to setOf(DetailSectionKey.IDENTITY),
+        EntryType.BANK_CARD to setOf(DetailSectionKey.BANK_CARD),
+        EntryType.ID_CARD to setOf(DetailSectionKey.IDENTITY),
         EntryType.ID_CARD to setOf(DetailSectionKey.IDENTITY),
         EntryType.PASSPORT to setOf(DetailSectionKey.IDENTITY),
-        EntryType.LICENSE to setOf(DetailSectionKey.IDENTITY),
+        EntryType.DRIVER_LICENSE to setOf(DetailSectionKey.IDENTITY),
         EntryType.SSH_KEY to setOf(DetailSectionKey.SSH),
         EntryType.WIFI to setOf(DetailSectionKey.WIFI),
         EntryType.SEED_PHRASE to setOf(DetailSectionKey.SEED_PHRASE),
         EntryType.PASSKEY to setOf(DetailSectionKey.PASSKEY),
         EntryType.RECOVERY_CODE to setOf(DetailSectionKey.CREDENTIAL),
-        EntryType.DATABASE to setOf(DetailSectionKey.CREDENTIAL),
-        EntryType.SERVER to setOf(DetailSectionKey.CREDENTIAL),
+        EntryType.DATABASE_CREDENTIAL to setOf(DetailSectionKey.CREDENTIAL),
+        EntryType.SERVER_CREDENTIAL to setOf(DetailSectionKey.CREDENTIAL),
         EntryType.API_KEY to setOf(DetailSectionKey.CREDENTIAL),
         EntryType.CRYPTO_WALLET to setOf(DetailSectionKey.CREDENTIAL),
     )
@@ -56,10 +56,10 @@ object DetailSectionResolver {
         DetailSectionKey.ACTIVITY,
     )
 
-    fun resolve(entry: EntryAggregate): List<DetailSectionKey> {
-        val selected = typeSections[entry.entryType].orEmpty().toMutableSet()
+    fun resolve(entry: Entry): List<DetailSectionKey> {
+        val selected = typeSections[entry.type].orEmpty().toMutableSet()
         with(entry.secret) {
-            if (login != null && entry.entryType != EntryType.OTP) {
+            if (login != null && entry.type != EntryType.OTP) {
                 selected += DetailSectionKey.CREDENTIAL
             }
             if (otp != null) selected += DetailSectionKey.OTP

@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.auth.contract
 
-import com.aozijx.passly.domain.authentication.AuthenticationFailure
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 

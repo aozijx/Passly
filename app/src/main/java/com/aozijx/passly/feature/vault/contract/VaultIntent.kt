@@ -1,10 +1,10 @@
 package com.aozijx.passly.feature.vault.contract
 
-import com.aozijx.passly.domain.entry.model.EntryAggregate
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
-import com.aozijx.passly.domain.settings.model.LibrarySortSpec
+import com.aozijx.passly.data.settings.model.LibraryQuickFilter
+import com.aozijx.passly.data.settings.model.LibrarySortSpec
 import com.aozijx.passly.feature.vault.model.AddType
 
 sealed interface VaultIntent {
@@ -19,8 +19,8 @@ sealed interface VaultIntent {
     data class ItemToDeleteSelected(val item: EntryListItem?) : VaultIntent
     data object ConfirmDelete : VaultIntent
     data class QuickDelete(val item: EntryListItem) : VaultIntent
-    data class AddItem(val entry: EntryAggregate) : VaultIntent
-    data class UpdateEntryAggregate(val entry: EntryAggregate) : VaultIntent
+    data class AddItem(val entry: Entry) : VaultIntent
+    data class UpdateEntry(val entry: Entry) : VaultIntent
     data class AddScannedOtp(val config: OtpConfig) : VaultIntent
     data class AutoUnlockTotp(val entryId: String) : VaultIntent
 }

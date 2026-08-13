@@ -11,7 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.domain.backup.model.BackupExportUiFormat
+import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
 import com.aozijx.passly.feature.backup.internal.contract.BackupAction
 import com.aozijx.passly.feature.backup.internal.presentation.BackupViewModel
 import com.aozijx.passly.feature.backup.internal.ui.BackupRestoreDetail

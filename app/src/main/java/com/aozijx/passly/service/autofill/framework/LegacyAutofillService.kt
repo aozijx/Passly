@@ -10,7 +10,7 @@ import com.aozijx.passly.app.di.Heuristic
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.domain.autofill.usecase.AutofillUseCases
+import com.aozijx.passly.feature.autofill.usecase.AutofillUseCases
 import com.aozijx.passly.service.autofill.framework.adapter.LegacyPlatformAdapter
 import com.aozijx.passly.service.autofill.framework.parser.AutofillStructureParser
 import dagger.hilt.android.AndroidEntryPoint

@@ -28,9 +28,9 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.ui.components.dialog.PasslyAlertDialog
 import com.aozijx.passly.core.ui.components.settings.PasswordStrengthIndicator
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.authentication.AppPasswordPolicy
+import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.domain.entry.model.PasswordStrengthLevel
-import com.aozijx.passly.domain.entry.service.PasswordStrengthEvaluator
+import com.aozijx.passly.domain.entry.policy.PasswordStrengthEvaluator
 
 @Composable
 internal fun RecoveryPasswordDialog(
@@ -72,7 +72,7 @@ internal fun RecoveryPasswordDialog(
         onConfirm = onConfirm,
         onDismiss = { if (!isBusy) onDismiss() },
         confirmEnabled = !isBusy &&
-                AppPasswordPolicy.acceptsLength(newPassword.length) &&
+                AppPasswordPolicy.DEFAULT.acceptsLength(newPassword.length) &&
                 newPassword == confirmPassword,
     ) {
         Column {

@@ -1,14 +1,15 @@
 package com.aozijx.passly.security.authentication
 
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.domain.authentication.SecureSessionState
-import com.aozijx.passly.domain.authentication.DatabaseSessionLifecycle
+import com.aozijx.passly.runtime.session.SecureSessionState
+import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
 import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
-import com.aozijx.passly.domain.auth.port.AuthorizationPermitRevoker
-import com.aozijx.passly.domain.authentication.AuthenticationState
-import com.aozijx.passly.domain.authentication.LockReason
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
+import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.port.AuthorizationPermitRevoker
+import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.model.AuthenticationRequestId
+import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.security.crypto.DekManager
 import com.aozijx.passly.security.crypto.SensitiveDataKeyManager
 import com.aozijx.passly.security.crypto.UnlockResult
@@ -35,7 +36,7 @@ class VaultSessionController @Inject constructor(
     private val authorizationPermitRevoker: AuthorizationPermitRevoker,
     private val sessionManager: DatabaseSessionLifecycle,
     private val bootstrapStore: BootstrapStore,
-    idleTimeoutSettings: com.aozijx.passly.domain.settings.repository.IdleTimeoutSettings
+    idleTimeoutSettings: com.aozijx.passly.data.settings.port.IdleTimeoutSettings
 ) : SecureSessionAccessState {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutex = Mutex()
@@ -73,7 +74,7 @@ class VaultSessionController @Inject constructor(
     ): Boolean = mutex.withLock {
         val dek = ownedDek.consume()
         return try {
-            transition(AuthenticationState.Unlocking(correlationId))
+            transition(AuthenticationState.Unlocking(AuthenticationRequestId(correlationId)))
 
             if (dekManager.isUnlocked.value) {
                 // SOFT_LOCKED: DEK 仍在内存中，凭据已验证，只需恢复数据库会话
@@ -124,7 +125,7 @@ class VaultSessionController @Inject constructor(
     ): Boolean = mutex.withLock {
         val dek = ownedDek.consume()
         return try {
-            transition(AuthenticationState.Unlocking(correlationId))
+            transition(AuthenticationState.Unlocking(AuthenticationRequestId(correlationId)))
             if (!dekManager.isUnlocked.value) {
                 if (dekManager.setDek(EnvelopeType.RECOVERY, dek) !is UnlockResult.Success) {
                     transition(AuthenticationState.Locked)

@@ -1,12 +1,12 @@
 package com.aozijx.passly.security.authentication
 
 import com.aozijx.passly.core.security.KeyDerivation
-import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
-import com.aozijx.passly.domain.authentication.AuthenticationFailure
-import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
-import com.aozijx.passly.domain.authentication.AuthenticationRequest
+import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.security.authentication.host.AuthUiHost
 import com.aozijx.passly.security.authentication.host.SecretHostResult
 import com.aozijx.passly.security.envelope.BootstrapStore
@@ -63,7 +63,7 @@ class CredentialMethodExecutor @Inject constructor(
                     }
                     when (request.purpose) {
                         AuthenticationPurpose.UNLOCK_VAULT -> {
-                            if (session.commitUnlock(type, ownedDek, request.correlationId)) {
+                            if (session.commitUnlock(type, ownedDek, request.id.value)) {
                                 attemptLimiter.recordSuccess(method)
                                 MethodExecutionResult.Success(method)
                             } else {
@@ -72,7 +72,7 @@ class CredentialMethodExecutor @Inject constructor(
                         }
 
                         AuthenticationPurpose.RECOVER_AUTH_METHODS -> {
-                            if (session.commitRecoveryUnlock(ownedDek, request.correlationId)) {
+                            if (session.commitRecoveryUnlock(ownedDek, request.id.value)) {
                                 attemptLimiter.recordSuccess(method)
                                 MethodExecutionResult.Success(method)
                             } else {
@@ -115,5 +115,5 @@ class CredentialMethodExecutor @Inject constructor(
     private fun failure(
         code: AuthenticationFailureCode,
         request: AuthenticationRequest
-    ) = MethodExecutionResult.Failure(AuthenticationFailure(code, request.correlationId))
+    ) = MethodExecutionResult.Failure(AuthenticationFailure(code, request.id))
 }

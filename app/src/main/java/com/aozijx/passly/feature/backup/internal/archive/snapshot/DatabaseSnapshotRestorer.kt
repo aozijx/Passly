@@ -11,7 +11,7 @@ import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
-import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
+import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.local.database.maintenance.DatabaseCleaner
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
@@ -20,12 +20,11 @@ import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.local.database.entity.EntrySecretEntity
 import com.aozijx.passly.data.repository.entry.SensitiveFieldStore
-import com.aozijx.passly.domain.backup.model.ImportMode
-import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
+import com.aozijx.passly.feature.backup.internal.model.ImportMode
+import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
+import com.aozijx.passly.data.mapper.entry.toDatabaseFlags
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
-import com.aozijx.passly.domain.entry.model.extractHighSensitivity
-import com.aozijx.passly.domain.entry.model.link.EntryRelationType
-import com.aozijx.passly.domain.entry.model.withoutHighSensitivity
+import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.security.crypto.AttachmentContentCrypto
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -48,7 +47,7 @@ internal class DatabaseSnapshotRestorer @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val databaseSession: AppDatabaseSession,
     private val databaseCleaner: DatabaseCleaner,
-    private val summaryCodec: EntrySummaryCodec,
+    private val summaryCodec: EntryProfileCodec,
     private val secretCodec: EntrySecretCodec,
     private val sensitiveFieldStore: SensitiveFieldStore,
     private val documentMapper: BackupSnapshotMapper,
@@ -96,29 +95,28 @@ internal class DatabaseSnapshotRestorer @Inject constructor(
                         restoredFiles += target.canonicalPath
                         target.absolutePath
                     }
-                    val summary = restoredEntry.summary.copy(iconCustomPath = iconPath)
-                    val secret = restoredEntry.fullSecret
-                    val highSensitivitySecret = restoredEntry.highSensitivitySecret
-                        ?: secret.extractHighSensitivity()
-                    val persistedSecret = secret.withoutHighSensitivity()
-                    val metaBlob = summaryCodec.encrypt(summary, entryId)
-                    val credBlob = secretCodec.encrypt(persistedSecret, entryId)
+                    val profile = restoredEntry.profile.copy(
+                        icon = restoredEntry.profile.icon.copy(customReference = iconPath),
+                    )
+                    val secret = restoredEntry.secret
+                    val metaBlob = summaryCodec.encrypt(profile, entryId)
+                    val credBlob = secretCodec.encrypt(secret, entryId)
 
                     val attachmentResources = entryResources.filter {
                         it.kind == BackupResourceKind.ATTACHMENT
                     }
-                    val capabilityFlags = EntryCapabilityFlags.computeFrom(
+                    val capabilityFlags = EntryCapabilities.from(
                         secret = secret,
                         hasAttachments = attachmentResources.isNotEmpty()
-                    )
-                    val otpType = EntryCapabilityFlags.otpTypeFrom(secret)
+                    ).toDatabaseFlags()
+                    val otpType = secret.otp?.config?.type
 
                     val metaEntity = EntryEntity(
                         entryId = entryId,
                         entryType = com.aozijx.passly.domain.entry.model.EntryType.valueOf(record.type),
                         version = record.version,
                         capabilityFlags = capabilityFlags,
-                        otpType = otpType,
+                        otpType = otpType?.name,
                         summaryBlob = metaBlob,
                         createdAt = record.createdAt,
                         updatedAt = record.updatedAt,
@@ -132,7 +130,7 @@ internal class DatabaseSnapshotRestorer @Inject constructor(
 
                     entryCommandDao().insertStrict(metaEntity)
                     entrySecretCommandDao().insertStrict(credEntity)
-                    sensitiveFieldStore.replaceAll(this, entryId, highSensitivitySecret)
+                    sensitiveFieldStore.replaceAll(this, entryId, secret)
 
                     attachmentResources.forEach { resource ->
                         val content = requireNotNull(bundle.resourceData[resource.id])

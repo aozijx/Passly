@@ -4,8 +4,8 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.settings.model.AppLanguage
-import com.aozijx.passly.domain.settings.model.ThemeMode
+import com.aozijx.passly.data.settings.model.AppLanguage
+import com.aozijx.passly.data.settings.model.ThemeMode
 
 @StringRes
 fun ThemeMode.labelRes(): Int = when (this) {

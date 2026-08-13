@@ -2,11 +2,11 @@ package com.aozijx.passly.app.message.presentation
 
 import android.content.Context
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.notice.model.AppNotice
-import com.aozijx.passly.domain.notice.model.NoticeCode
-import com.aozijx.passly.domain.notice.port.NoticeCodeRegistry
-import com.aozijx.passly.domain.notice.port.NoticeTextResolver
-import com.aozijx.passly.domain.notice.port.ResolvedNotice
+import com.aozijx.passly.data.message.model.AppNotice
+import com.aozijx.passly.data.message.model.NoticeCode
+import com.aozijx.passly.app.message.contract.NoticeCodeRegistry
+import com.aozijx.passly.app.message.contract.NoticeTextResolver
+import com.aozijx.passly.app.message.contract.ResolvedNotice
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton

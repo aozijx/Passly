@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.backup.internal.archive.format
 
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
-import com.aozijx.passly.domain.backup.model.BackupFormatId
+import com.aozijx.passly.feature.backup.internal.model.BackupFormatId
 
 /**
  * Encodes the canonical [BackupBundle] into one external format.

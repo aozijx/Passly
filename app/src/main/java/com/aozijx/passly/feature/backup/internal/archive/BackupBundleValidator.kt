@@ -5,8 +5,8 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpType
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.link.EntryRelationType
-import com.aozijx.passly.domain.entry.service.EntryLinkPolicy
+import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
+import com.aozijx.passly.domain.entry.policy.EntryLinkPolicy
 import java.security.MessageDigest
 
 object BackupBundleValidator {
@@ -181,10 +181,10 @@ object BackupBundleValidator {
         }
         val allowed = when (EntryType.valueOf(entry.type)) {
             EntryType.ACCOUNT, EntryType.NOTE -> null
-            EntryType.CARD, EntryType.BANK_CARD -> "card"
-            EntryType.IDENTITY,
+            EntryType.BANK_CARD, EntryType.BANK_CARD -> "card"
+            EntryType.ID_CARD,
             EntryType.PASSPORT,
-            EntryType.LICENSE,
+            EntryType.DRIVER_LICENSE,
             EntryType.ID_CARD,
             EntryType.SEED_PHRASE,
             EntryType.RECOVERY_CODE -> "identity"
@@ -194,8 +194,8 @@ object BackupBundleValidator {
             EntryType.PASSKEY -> "passkey"
             EntryType.OTP -> "otp"
             EntryType.LOGIN,
-            EntryType.DATABASE,
-            EntryType.SERVER,
+            EntryType.DATABASE_CREDENTIAL,
+            EntryType.SERVER_CREDENTIAL,
             EntryType.API_KEY,
             EntryType.CRYPTO_WALLET -> "login"
         }

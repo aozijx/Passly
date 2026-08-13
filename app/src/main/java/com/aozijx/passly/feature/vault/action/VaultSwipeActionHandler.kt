@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.vault.action
 
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.data.settings.model.SwipeActionType
 
 fun handleSwipeAction(
     actionType: SwipeActionType,

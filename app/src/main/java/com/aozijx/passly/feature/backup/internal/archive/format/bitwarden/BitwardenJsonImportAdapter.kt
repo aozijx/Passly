@@ -7,23 +7,23 @@ import com.aozijx.passly.feature.backup.internal.archive.format.BackupImportAdap
 import com.aozijx.passly.feature.backup.internal.archive.format.containsAscii
 import com.aozijx.passly.feature.backup.internal.archive.io.decodeStrictUtf8
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupCardSecret
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupCardCredential
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupCustomField
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupIdentitySecret
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupIdentityCredential
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupLinkRecord
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupLoginSecret
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupLoginCredential
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpAlgorithm
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpConfig
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpSecret
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpCredential
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpType
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupSecretRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupSummaryRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupWebsiteRecord
-import com.aozijx.passly.domain.backup.model.BackupFormatId
-import com.aozijx.passly.domain.backup.model.BackupFormats
-import com.aozijx.passly.domain.entry.model.link.EntryRelationType
+import com.aozijx.passly.feature.backup.internal.model.BackupFormatId
+import com.aozijx.passly.feature.backup.internal.model.BackupFormats
+import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonObject
@@ -159,7 +159,7 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
                     customFields += BackupCustomField("Bitwarden.$label", value)
                 }
             }
-            BackupIdentitySecret(
+            BackupIdentityCredential(
                 idNumber = it.ssn ?: it.passportNumber ?: it.licenseNumber
             )
         }
@@ -167,7 +167,7 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
             val expiry = listOfNotNull(it.expMonth, it.expYear)
                 .takeIf(List<String>::isNotEmpty)
                 ?.joinToString("/")
-            BackupCardSecret(
+            BackupCardCredential(
                 cardNumber = it.number,
                 cardExpiry = expiry,
                 cardCvv = it.code,
@@ -192,7 +192,7 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
             ),
             secret = BackupSecretRecord(
                 login = login?.let {
-                    BackupLoginSecret(password = it.password)
+                    BackupLoginCredential(password = it.password)
                 },
                 notes = notes,
                 card = cardSecret,
@@ -244,10 +244,10 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
         )
     }
 
-    private fun parseOtp(value: String): BackupOtpSecret {
+    private fun parseOtp(value: String): BackupOtpCredential {
         val trimmed = value.trim()
         if (trimmed.startsWith("steam://", ignoreCase = true)) {
-            return BackupOtpSecret(
+            return BackupOtpCredential(
                 BackupOtpConfig(
                     type = BackupOtpType.STEAM,
                     secret = trimmed.substringAfter("steam://"),
@@ -256,7 +256,7 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
             )
         }
         if (!trimmed.startsWith("otpauth://", ignoreCase = true)) {
-            return BackupOtpSecret(BackupOtpConfig(secret = trimmed.filterNot(Char::isWhitespace)))
+            return BackupOtpCredential(BackupOtpConfig(secret = trimmed.filterNot(Char::isWhitespace)))
         }
 
         val uri = URI(trimmed)
@@ -275,7 +275,7 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
         }
         val secret = query["secret"]?.takeIf(String::isNotBlank)
             ?: throw BackupFailed()
-        return BackupOtpSecret(
+        return BackupOtpCredential(
             BackupOtpConfig(
                 type = type,
                 secret = secret,

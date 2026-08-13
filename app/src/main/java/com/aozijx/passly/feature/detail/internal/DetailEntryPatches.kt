@@ -1,41 +1,34 @@
 package com.aozijx.passly.feature.detail.internal
 
-import com.aozijx.passly.domain.entry.model.EntryAggregate
-import com.aozijx.passly.domain.entry.model.secret.CardSecret
-import com.aozijx.passly.domain.entry.model.secret.LoginSecret
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.credential.CardCredential
+import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 
-internal fun EntryAggregate.withDetailUsername(username: String): EntryAggregate =
-    copy(summary = summary.copy(username = username))
+internal fun Entry.withDetailUsername(username: String): Entry =
+    copy(profile = profile.copy(username = username))
 
-internal fun EntryAggregate.withLoginPassword(password: String): EntryAggregate =
+internal fun Entry.withLoginPassword(password: String): Entry =
+    copy(
+        secret = secret.copy(credential = secret.login?.copy(password = password)
+            ?: LoginCredential(password = password))
+    )
+
+internal fun Entry.withWifiPassword(password: String): Entry =
+    copy(secret = secret.copy(credential = requireNotNull(secret.wifi).copy(password = password)))
+
+internal fun Entry.withSshPassphrase(passphrase: String): Entry =
+    copy(secret = secret.copy(credential = requireNotNull(secret.ssh).copy(passphrase = passphrase)))
+
+internal fun Entry.withCardNumber(cardNumber: String): Entry =
     copy(
         secret = secret.copy(
-            login = secret.login?.copy(password = password) ?: LoginSecret(password = password)
+            credential = (secret.card ?: CardCredential()).copy(cardNumber = cardNumber)
         )
     )
 
-internal fun EntryAggregate.withWifiPassword(password: String): EntryAggregate =
-    copy(secret = secret.copy(wifi = secret.wifi?.copy(password = password)))
-
-internal fun EntryAggregate.withSshPassphrase(passphrase: String): EntryAggregate =
-    copy(secret = secret.copy(ssh = secret.ssh?.copy(passphrase = passphrase)))
-
-internal fun EntryAggregate.withCardNumber(cardNumber: String): EntryAggregate =
+internal fun Entry.withCardCvv(cvv: String): Entry =
     copy(
         secret = secret.copy(
-            card = (secret.card ?: CardSecret()).copy(
-                cardNumber = cardNumber,
-                hasCardNumber = cardNumber.isNotBlank()
-            )
-        )
-    )
-
-internal fun EntryAggregate.withCardCvv(cvv: String): EntryAggregate =
-    copy(
-        secret = secret.copy(
-            card = (secret.card ?: CardSecret()).copy(
-                cardCvv = cvv,
-                hasCardCvv = cvv.isNotBlank()
-            )
+            credential = (secret.card ?: CardCredential()).copy(cardCvv = cvv)
         )
     )

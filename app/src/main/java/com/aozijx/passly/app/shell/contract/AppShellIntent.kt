@@ -1,7 +1,7 @@
 package com.aozijx.passly.app.shell.contract
 
-import com.aozijx.passly.domain.authentication.SensitiveAccessAction
-import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
+import com.aozijx.passly.domain.access.model.SensitiveAccessAction
+import com.aozijx.passly.app.security.SensitiveAccessLevel
 
 sealed interface AppShellIntent {
     data object Lock : AppShellIntent

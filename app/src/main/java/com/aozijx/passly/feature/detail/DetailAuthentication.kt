@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.detail
 
-import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
-import com.aozijx.passly.domain.authentication.SensitiveAccessAction
+import com.aozijx.passly.app.security.SensitiveAccessLevel
+import com.aozijx.passly.domain.access.model.SensitiveAccessAction
 
 fun interface DetailAuthenticate {
     fun authenticate(

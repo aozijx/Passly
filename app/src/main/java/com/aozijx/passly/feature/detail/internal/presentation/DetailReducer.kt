@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.detail.internal.presentation
 
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -10,7 +10,7 @@ internal sealed interface DetailMutation {
     data object StateCleared : DetailMutation
     data class AccessHistoryChanged(val enabled: Boolean) : DetailMutation
     data class EntryPresented(
-        val entry: EntryAggregate,
+        val entry: Entry,
         val entryType: EntryType,
         val strategySummary: String,
         val validationError: String?,
@@ -26,7 +26,7 @@ internal sealed interface DetailMutation {
     data object RevealedFieldsCleared : DetailMutation
     data class SensitiveFieldPresenceChanged(val keys: Set<SensitiveFieldKey>) : DetailMutation
     data class HistoryChanged(val history: List<EntryActivity>) : DetailMutation
-    data class RelatedEntriesChanged(val entries: List<EntryAggregate>) : DetailMutation
+    data class RelatedEntriesChanged(val entries: List<Entry>) : DetailMutation
     data class FaviconDownloadingChanged(val downloading: Boolean) : DetailMutation
 }
 

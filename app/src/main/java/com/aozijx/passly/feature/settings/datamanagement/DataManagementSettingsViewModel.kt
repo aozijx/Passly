@@ -4,11 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.message.mapping.toUiMessage
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
-import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
-import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
-import com.aozijx.passly.domain.settings.command.SettingsCommand
-import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.entry.port.EntryCommandRepository
+import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.data.settings.model.SettingsCommand
+import com.aozijx.passly.data.settings.port.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,15 +67,15 @@ class DataManagementSettingsViewModel @Inject constructor(
 
             is DataManagementSettingsAction.RestoreTrashEntry -> runTrashEntryAction(action.entryId) {
                 entryCommandRepository.restoreEntry(
-                    id = action.entryId,
-                    expectedVersion = action.expectedVersion
+                    id = EntryId(action.entryId),
+                    expectedVersion = EntryVersion(action.expectedVersion)
                 )
             }
 
             is DataManagementSettingsAction.DeleteTrashEntry -> runTrashEntryAction(action.entryId) {
                 entryCommandRepository.deletePermanently(
-                    id = action.entryId,
-                    expectedVersion = action.expectedVersion
+                    id = EntryId(action.entryId),
+                    expectedVersion = EntryVersion(action.expectedVersion)
                 )
             }
 

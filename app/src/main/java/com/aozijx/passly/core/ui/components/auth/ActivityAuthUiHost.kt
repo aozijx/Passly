@@ -8,8 +8,8 @@ import androidx.lifecycle.Lifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.security.authentication.SecretChars
 import com.aozijx.passly.security.authentication.host.AuthHostSnapshot
 import com.aozijx.passly.security.authentication.host.AuthUiHost

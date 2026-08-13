@@ -9,12 +9,10 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupLinkRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
-import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
-import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
-import com.aozijx.passly.data.repository.entry.SensitiveFieldStore
+import com.aozijx.passly.data.codec.entry.EntryProfileCodec
+import com.aozijx.passly.data.mapper.entry.EntryAssembler
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.withHighSensitivity
 import com.aozijx.passly.security.crypto.AttachmentContentCrypto
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -38,9 +36,8 @@ import javax.inject.Singleton
 internal class DatabaseSnapshotReader @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val databaseSession: AppDatabaseSession,
-    private val summaryCodec: EntrySummaryCodec,
+    private val summaryCodec: EntryProfileCodec,
     private val secretCodec: EntrySecretCodec,
-    private val sensitiveFieldStore: SensitiveFieldStore,
     private val attachmentContentCrypto: AttachmentContentCrypto,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
     private val documentMapper: BackupSnapshotMapper
@@ -72,16 +69,11 @@ internal class DatabaseSnapshotReader @Inject constructor(
                 val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
                 val credential = credentialMap[metaEntity.entryId]
                 val secret = credential?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
-                val highSensitivitySecret = sensitiveFieldStore.readAllUnlocked(
-                    this,
-                    metaEntity.entryId
-                )
-                EntryAggregateAssembler.assembleFromDatabase(
+                EntryAssembler.assembleFromDatabase(
                     metaEntity,
                     summary,
                     secret,
-                    highSensitivitySecret
-                ).copy(secret = (secret ?: EntrySecret()).withHighSensitivity(highSensitivitySecret))
+                )
             }
 
             val resourceRecords =
@@ -92,7 +84,7 @@ internal class DatabaseSnapshotReader @Inject constructor(
             if (includeIcons) {
                 val iconRoot = VaultResourcePaths.vaultImagesDir(context).canonicalFile
                 entries.forEach { entry ->
-                    entry.iconCustomPath?.let { iconPath ->
+                    entry.icon.customReference?.let { iconPath ->
                         val iconFile = File(iconPath).canonicalFile
                         require(
                             iconFile.path.startsWith(
@@ -106,11 +98,11 @@ internal class DatabaseSnapshotReader @Inject constructor(
                                 "图标文件过大: ${entry.id}"
                             }
                             val content = iconFile.readBytes()
-                            val recordId = "icon_${entry.id}"
+                            val recordId = "icon_${entry.id.value}"
                             resourceRecords.add(
                                 com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceRecord(
                                     id = recordId,
-                                    entryId = entry.id,
+                                    entryId = entry.id.value,
                                     kind = com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind.ICON,
                                     fileName = iconFile.name,
                                     mimeType = "image/png",
@@ -163,11 +155,11 @@ internal class DatabaseSnapshotReader @Inject constructor(
             }
 
             val now = System.currentTimeMillis()
-            val exportedEntryIds = entries.mapTo(hashSetOf()) { it.id }
+            val exportedEntryIds = entries.mapTo(hashSetOf()) { it.id.value }
             val entryRecords = entries.map { entry ->
                 documentMapper.toRecord(
                     entry = entry,
-                    attachmentIds = attachmentIdsByEntry[entry.id].orEmpty()
+                    attachmentIds = attachmentIdsByEntry[entry.id.value].orEmpty()
                 )
             }
             val linkRecords = entryLinkQueryDao().getAll()

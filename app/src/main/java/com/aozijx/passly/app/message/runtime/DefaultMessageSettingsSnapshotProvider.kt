@@ -1,9 +1,9 @@
 package com.aozijx.passly.app.message.runtime
 
-import com.aozijx.passly.domain.notice.model.AppMessageSettings
-import com.aozijx.passly.domain.notice.port.MessageSettingsSnapshotProvider
-import com.aozijx.passly.domain.notice.port.VersionedMessageSettings
-import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
+import com.aozijx.passly.data.message.model.AppMessageSettings
+import com.aozijx.passly.app.message.contract.MessageSettingsSnapshotProvider
+import com.aozijx.passly.app.message.contract.VersionedMessageSettings
+import com.aozijx.passly.data.settings.port.AppSettingsRepository
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CoroutineScope

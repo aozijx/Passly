@@ -29,6 +29,15 @@ data class EntryListItem(
     val entryType: EntryType get() = identity.type
     val title: String get() = profile.title
     val favorite: Boolean get() = profile.favorite
+    val username: String get() = profile.username
+    val tags: Set<String> get() = profile.tags
+    val associations get() = profile.associations
+    val icon get() = profile.icon
+    val associatedDomain: String?
+        get() = associations.primaryUrl ?: associations.domains.firstOrNull()
+    val associatedAppPackage: String? get() = associations.applicationIds.firstOrNull()
+    val iconCustomPath: String? get() = icon.customReference
+    val deletedAt: Long? get() = identity.timestamps.deletedAtMs
     val createdAt: Long get() = identity.timestamps.createdAtMs
     val updatedAt: Long get() = identity.timestamps.updatedAtMs
     val lastUsedAt: Long? get() = usage.lastUsedAtMs

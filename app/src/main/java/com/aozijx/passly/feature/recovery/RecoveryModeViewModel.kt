@@ -2,10 +2,10 @@ package com.aozijx.passly.feature.recovery
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
-import com.aozijx.passly.domain.authentication.AuthenticationResult
-import com.aozijx.passly.domain.authentication.AuthenticationState
+import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
+import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeEffect
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeIntent
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeUiState

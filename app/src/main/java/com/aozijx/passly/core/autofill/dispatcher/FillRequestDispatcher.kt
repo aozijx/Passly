@@ -9,8 +9,8 @@ import com.aozijx.passly.core.autofill.model.InternalFillResponse
 import com.aozijx.passly.core.autofill.model.ResponseContext
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.core.autofill.pipeline.ResponseFactory
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
-import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.data.settings.port.AppSettingsRepository
 import kotlinx.coroutines.flow.first
 
 /**

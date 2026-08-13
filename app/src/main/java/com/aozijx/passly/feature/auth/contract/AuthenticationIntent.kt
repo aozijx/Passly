@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.auth.contract
 
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
 
 sealed interface AuthenticationIntent {
     data object BiometricClicked : AuthenticationIntent

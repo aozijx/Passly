@@ -4,23 +4,24 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.app.message.mapping.toUiMessage
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
-import com.aozijx.passly.domain.authentication.AuthenticationRequest
-import com.aozijx.passly.domain.authentication.AuthenticationResult
-import com.aozijx.passly.domain.authentication.AuthenticationState
-import com.aozijx.passly.domain.authentication.LockReason
-import com.aozijx.passly.domain.authentication.SensitiveAccessAction
-import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
-import com.aozijx.passly.domain.diagnostics.usecase.DatabaseInitOutcome
-import com.aozijx.passly.domain.diagnostics.usecase.DatabaseLifecycleUseCases
-import com.aozijx.passly.domain.entry.repository.SearchIndexMaintenance
-import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
+import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationRequest
+import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.SensitiveAccessAction
+import com.aozijx.passly.app.security.SensitiveAccessLevel
+import com.aozijx.passly.app.database.DatabaseInitOutcome
+import com.aozijx.passly.app.database.DatabaseLifecycleUseCases
+import com.aozijx.passly.domain.entry.port.SearchIndexMaintenance
+import com.aozijx.passly.data.settings.port.AppSettingsRepository
 import com.aozijx.passly.app.shell.contract.AppShellEffect
 import com.aozijx.passly.app.shell.contract.AppShellIntent
 import com.aozijx.passly.app.shell.contract.AppShellUiState
 import com.aozijx.passly.app.shell.presentation.AppShellMutation
 import com.aozijx.passly.app.shell.presentation.AppShellReducer
+import com.aozijx.passly.security.authentication.VaultSessionController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +37,7 @@ import javax.inject.Inject
 class AppShellViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
     private val authenticationManager: AuthenticationManager,
+    private val sessionController: VaultSessionController,
     private val databaseLifecycleUseCases: DatabaseLifecycleUseCases,
     private val searchIndexMaintenance: SearchIndexMaintenance,
 ) : ViewModel() {
@@ -56,7 +58,7 @@ class AppShellViewModel @Inject constructor(
         when (intent) {
             AppShellIntent.Lock -> lock(LockReason.USER)
             AppShellIntent.ExitRecovery -> lock(LockReason.RECOVERY_EXIT)
-            AppShellIntent.UpdateInteraction -> authenticationManager.onUserInteraction()
+            AppShellIntent.UpdateInteraction -> sessionController.onUserInteraction()
             AppShellIntent.RetryDatabaseInitialization -> initializeDatabase()
             AppShellIntent.RecoverDatabase -> recoverDatabase()
             AppShellIntent.RequestAuth -> requestAuth()
@@ -95,7 +97,8 @@ class AppShellViewModel @Inject constructor(
     }
 
     private fun requestAuthentication(purpose: AuthenticationPurpose) {
-        authenticationManager.authenticate(AuthenticationRequest(purpose)) { result ->
+        viewModelScope.launch {
+            val result = authenticationManager.authenticate(AuthenticationRequest(purpose))
             if (result is AuthenticationResult.Success) {
                 emitEffect(AppShellEffect.AuthSuccess)
             } else if (result is AuthenticationResult.Failure) {
@@ -149,7 +152,7 @@ class AppShellViewModel @Inject constructor(
             val outcome = runDatabaseInitialization {
                 databaseLifecycleUseCases.retryAndReport()
             }
-            if (outcome.success) authenticationManager.clearDatabaseFailure()
+            if (outcome.success) sessionController.clearDatabaseFailure()
         }
     }
 
@@ -171,7 +174,7 @@ class AppShellViewModel @Inject constructor(
 
     private fun observeDatabaseFailures() {
         viewModelScope.launch {
-            authenticationManager.databaseFailure.collect { error ->
+            sessionController.databaseFailure.collect { error ->
                 if (error != null) {
                     mutate(AppShellMutation.DatabaseFailureObserved(error))
                 }

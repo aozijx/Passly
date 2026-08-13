@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.ui.components.DetailItem
@@ -42,7 +42,7 @@ import com.aozijx.passly.feature.detail.internal.withSshPassphrase
 
 @Composable
 fun SshKeySection(
-    entry: EntryAggregate,
+    entry: Entry,
     editState: EntryEditState,
     hasPassphrase: Boolean,
     hasPrivateKey: Boolean,
@@ -50,7 +50,7 @@ fun SshKeySection(
     revealedSshPrivateKey: String?,
     onPasswordRevealed: (String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
-    onEntryUpdated: (EntryAggregate) -> Unit,
+    onEntryUpdated: (Entry) -> Unit,
     onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
@@ -223,6 +223,6 @@ fun SshKeySection(
             }
         }
 
-        // paymentPin is not present in SshSecret; skipped for SSH key type.
+        // paymentPin is not present in SshCredential; skipped for SSH key type.
     }
 }

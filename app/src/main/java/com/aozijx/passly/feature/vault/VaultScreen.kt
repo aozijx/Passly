@@ -31,7 +31,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.feature.vault.action.rememberVaultActionProvider
 import com.aozijx.passly.feature.vault.components.dialog.VaultDialogs
 import com.aozijx.passly.feature.vault.components.fab.VaultFab

@@ -23,15 +23,15 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.core.ui.components.markdown.PasslyMarkdownDocument
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 
 @Composable
 fun NotesSection(
-    entry: EntryAggregate,
+    entry: Entry,
     editState: EntryEditState,
-    onEntryUpdated: (EntryAggregate) -> Unit
+    onEntryUpdated: (Entry) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     val notesLabel = stringResource(R.string.remark)
@@ -92,4 +92,4 @@ fun NotesSection(
     }
 }
 
-private fun EntryAggregate.resolveNotes(): String? = secret.notes
+private fun Entry.resolveNotes(): String? = secret.notes

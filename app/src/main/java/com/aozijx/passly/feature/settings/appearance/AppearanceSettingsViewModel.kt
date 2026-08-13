@@ -2,9 +2,9 @@ package com.aozijx.passly.feature.settings.appearance
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.settings.command.SettingsCommand
-import com.aozijx.passly.domain.settings.model.AppearanceSettings
-import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
+import com.aozijx.passly.data.settings.model.SettingsCommand
+import com.aozijx.passly.data.settings.model.AppearanceSettings
+import com.aozijx.passly.data.settings.port.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

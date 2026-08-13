@@ -22,8 +22,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.core.ui.components.VaultItemIcon
-import com.aozijx.passly.domain.entry.model.OtpUiState
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 
 @Composable

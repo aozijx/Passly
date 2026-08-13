@@ -1,14 +1,14 @@
 package com.aozijx.passly.app.message.runtime
 
-import com.aozijx.passly.domain.notice.model.AppNotice
-import com.aozijx.passly.domain.notice.model.DeliveryPolicy
-import com.aozijx.passly.domain.notice.port.AppVisibility
-import com.aozijx.passly.domain.notice.port.NoticeCodePolicy
-import com.aozijx.passly.domain.notice.port.NoticeRoutePlan
-import com.aozijx.passly.domain.notice.port.NoticeRouter
-import com.aozijx.passly.domain.notice.port.NoticeRoutingContext
-import com.aozijx.passly.domain.notice.port.NoticeTarget
-import com.aozijx.passly.domain.notice.port.RouteReason
+import com.aozijx.passly.data.message.model.AppNotice
+import com.aozijx.passly.data.message.model.DeliveryPolicy
+import com.aozijx.passly.app.message.contract.AppVisibility
+import com.aozijx.passly.app.message.contract.NoticeCodePolicy
+import com.aozijx.passly.app.message.contract.NoticeRoutePlan
+import com.aozijx.passly.app.message.contract.NoticeRouter
+import com.aozijx.passly.app.message.contract.NoticeRoutingContext
+import com.aozijx.passly.app.message.contract.NoticeTarget
+import com.aozijx.passly.app.message.contract.RouteReason
 import javax.inject.Inject
 
 class DefaultNoticeRouter @Inject constructor() : NoticeRouter {

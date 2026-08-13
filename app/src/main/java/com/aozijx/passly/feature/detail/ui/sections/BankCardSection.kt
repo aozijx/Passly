@@ -24,7 +24,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.contract.DetailIntent
@@ -39,7 +39,7 @@ import com.aozijx.passly.feature.detail.ui.components.DetailItem
 
 @Composable
 fun BankCardSection(
-    entry: EntryAggregate,
+    entry: Entry,
     editState: EntryEditState,
     revealedCardholder: String?,
     revealedCardNumber: String?,
@@ -47,7 +47,7 @@ fun BankCardSection(
     revealedPaymentPin: String?,
     onRevealField: (String, String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
-    onEntryUpdated: (EntryAggregate) -> Unit,
+    onEntryUpdated: (Entry) -> Unit,
     onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
@@ -58,15 +58,12 @@ fun BankCardSection(
         onEvent = onEvent
     )
     val cardSecret = entry.secret.card
-    val hasCardNumber = cardSecret?.hasCardNumber == true ||
-        !cardSecret?.cardNumber.isNullOrBlank() ||
+    val hasCardNumber = !cardSecret?.cardNumber.isNullOrBlank() ||
         revealedCardNumber != null
-    val hasCardCvv = cardSecret?.hasCardCvv == true ||
-        !cardSecret?.cardCvv.isNullOrBlank() ||
+    val hasCardCvv = !cardSecret?.cardCvv.isNullOrBlank() ||
         revealedCvv != null ||
         editState.isEditingTotp
-    val hasPaymentPin = cardSecret?.hasPaymentPin == true ||
-        !cardSecret?.paymentPin.isNullOrBlank() ||
+    val hasPaymentPin = !cardSecret?.paymentPin.isNullOrBlank() ||
         revealedPaymentPin != null
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {

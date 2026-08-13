@@ -3,8 +3,8 @@ package com.aozijx.passly.app.message.runtime
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.aozijx.passly.domain.notice.port.AppVisibility
-import com.aozijx.passly.domain.notice.port.AppVisibilityProvider
+import com.aozijx.passly.app.message.contract.AppVisibility
+import com.aozijx.passly.app.message.contract.AppVisibilityProvider
 import javax.inject.Inject
 import javax.inject.Singleton
 

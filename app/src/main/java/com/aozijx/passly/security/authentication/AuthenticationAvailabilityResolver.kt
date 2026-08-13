@@ -1,8 +1,9 @@
 package com.aozijx.passly.security.authentication
 
 import android.hardware.biometrics.BiometricManager
-import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
-import com.aozijx.passly.domain.authentication.AuthMethodAvailability
+import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationMethods
 import com.aozijx.passly.security.envelope.BootstrapStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -20,25 +21,30 @@ class AuthenticationAvailabilityResolver @Inject constructor(
     private val bootstrapStore: BootstrapStore,
     private val biometricManager: BiometricManager
 ) {
-    suspend fun resolve(): AuthMethodAvailability = withContext(Dispatchers.Default) {
+    suspend fun resolve(): AuthenticationMethods = withContext(Dispatchers.Default) {
         val biometricState = bootstrapStore.loadBiometricState()
-        AuthMethodAvailability(
-            biometric = biometricManager.canAuthenticate(
+        AuthenticationMethods(buildSet {
+            if (biometricManager.canAuthenticate(
                 BiometricManager.Authenticators.BIOMETRIC_STRONG
             ) == BiometricManager.BIOMETRIC_SUCCESS &&
                     bootstrapStore.load(EnvelopeType.BIOMETRIC) != null &&
-                    biometricState.binding != null,
-            appPassword = bootstrapStore.load(EnvelopeType.APP_PASSWORD) != null,
-            recoveryCode = bootstrapStore.load(EnvelopeType.RECOVERY) != null
-        )
+                    biometricState.binding != null
+            ) add(AuthenticationMethod.BIOMETRIC)
+            if (bootstrapStore.load(EnvelopeType.APP_PASSWORD) != null) {
+                add(AuthenticationMethod.APP_PASSWORD)
+            }
+            if (bootstrapStore.load(EnvelopeType.RECOVERY) != null) {
+                add(AuthenticationMethod.RECOVERY_CODE)
+            }
+        })
     }
 
     /** 是否存在除 [method] 之外的其他可用 primary factor。 */
     suspend fun hasAlternativePrimaryFactor(excluding: EnvelopeType): Boolean =
         resolve().let { availability ->
             when (excluding) {
-                EnvelopeType.APP_PASSWORD -> availability.biometric
-                EnvelopeType.BIOMETRIC -> availability.appPassword
+                EnvelopeType.APP_PASSWORD -> AuthenticationMethod.BIOMETRIC in availability
+                EnvelopeType.BIOMETRIC -> AuthenticationMethod.APP_PASSWORD in availability
                 else -> false
             }
         }

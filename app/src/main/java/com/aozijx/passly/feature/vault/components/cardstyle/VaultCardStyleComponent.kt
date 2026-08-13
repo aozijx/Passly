@@ -1,11 +1,19 @@
 package com.aozijx.passly.feature.vault.components.cardstyle
 
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
+import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.OtpUiState
-import com.aozijx.passly.domain.entry.model.WebsiteInfo
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.domain.entry.model.EntryAssociations
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.domain.entry.model.EntryIdentity
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
+import com.aozijx.passly.domain.entry.model.EntryIcon
+import com.aozijx.passly.domain.entry.model.query.EntryCapability
+import com.aozijx.passly.domain.entry.model.query.EntryUsage
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 
 /**
  * One selectable appearance for a vault list card.
@@ -37,51 +45,46 @@ internal object CardStylePreviewFixtures {
         id = "-100",
         title = "示例账号",
         username = "demo_user",
-        website = WebsiteInfo(primaryUrl = "example.com"),
+        website = EntryAssociations(primaryUrl = "example.com"),
     )
 
     val passwordEntry = previewEntry(
         id = "-101",
         title = "我的邮箱",
         username = "me@example.com",
-        website = WebsiteInfo(primaryUrl = "example.com"),
-        capabilityFlags = EntryCapabilityFlags.HAS_PASSWORD,
+        website = EntryAssociations(primaryUrl = "example.com"),
+        capabilities = EntryCapabilities(setOf(EntryCapability.PASSWORD)),
     )
 
     val totpEntry = previewEntry(
         id = "-102",
         title = "示例二步验证",
         username = "totp_user",
-        capabilityFlags = EntryCapabilityFlags.HAS_OTP,
-        otpTypeName = "TOTP",
+        capabilities = EntryCapabilities(setOf(EntryCapability.OTP)),
+        otpType = OtpType.TOTP,
     )
 
     private fun previewEntry(
         id: String,
         title: String,
         username: String,
-        website: WebsiteInfo? = null,
-        capabilityFlags: Int = 0,
-        otpTypeName: String = "",
+        website: EntryAssociations = EntryAssociations(),
+        capabilities: EntryCapabilities = EntryCapabilities(),
+        otpType: OtpType? = null,
     ) = EntryListItem(
-        id = id,
-        entryType = EntryType.LOGIN,
-        title = title,
-        username = username,
-        icon = null,
-        iconCustomPath = null,
-        website = website,
-        favorite = false,
-        tags = emptyList(),
-        color = null,
-        createdAt = 0L,
-        updatedAt = 0L,
-        deletedAt = null,
-        expiresAt = null,
-        lastUsedAt = null,
-        usageCount = 0,
-        entryVersion = 0,
-        capabilityFlags = capabilityFlags,
-        otpTypeName = otpTypeName,
+        identity = EntryIdentity(
+            id = EntryId(id),
+            type = EntryType.LOGIN,
+            timestamps = EntryTimestamps(0L),
+        ),
+        profile = EntryProfile(
+            title = title,
+            username = username,
+            associations = website,
+            icon = EntryIcon(),
+        ),
+        usage = EntryUsage(),
+        capabilities = capabilities,
+        otpType = otpType,
     )
 }

@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.backup.internal.contract
 
 import android.net.Uri
-import com.aozijx.passly.domain.backup.model.BackupExportUiFormat
-import com.aozijx.passly.domain.backup.model.ImportMode
+import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
+import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 

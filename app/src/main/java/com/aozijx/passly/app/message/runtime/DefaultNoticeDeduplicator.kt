@@ -1,9 +1,9 @@
 package com.aozijx.passly.app.message.runtime
 
 import android.os.SystemClock
-import com.aozijx.passly.domain.notice.model.NoticeCode
-import com.aozijx.passly.domain.notice.port.DeduplicationClaim
-import com.aozijx.passly.domain.notice.port.NoticeDeduplicator
+import com.aozijx.passly.data.message.model.NoticeCode
+import com.aozijx.passly.app.message.contract.DeduplicationClaim
+import com.aozijx.passly.app.message.contract.NoticeDeduplicator
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton

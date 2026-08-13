@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
-import com.aozijx.passly.domain.entry.model.revision.EntryRevision
+import com.aozijx.passly.domain.entry.model.history.EntryRevision
 import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -83,19 +83,19 @@ private fun VersionTab(historyList: List<EntryRevision>, onRestore: (String) -> 
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "v${history.entry.entryVersion}",
+                        text = "v${history.version.value}",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "${dateFormat.format(Date(history.entry.createdAt))} ${
-                            timeFormat.format(Date(history.entry.createdAt))
+                        text = "${dateFormat.format(Date(history.createdAtMs))} ${
+                            timeFormat.format(Date(history.createdAtMs))
                         }",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                TextButton(onClick = { onRestore(history.revisionId) }) {
+                TextButton(onClick = { onRestore(history.id.value) }) {
                     Text(stringResource(R.string.vault_detail_history_restore))
                 }
             }

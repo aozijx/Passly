@@ -100,10 +100,10 @@ internal fun DataManagementDetail(
             onClearTrashError()
         },
         onRestore = { entry ->
-            onRestoreTrashEntry(entry.id, entry.entryVersion)
+            onRestoreTrashEntry(entry.id.value, entry.identity.version.value)
         },
         onDelete = { entry ->
-            onDeleteTrashEntry(entry.id, entry.entryVersion)
+            onDeleteTrashEntry(entry.id.value, entry.identity.version.value)
         },
         onEmpty = onEmptyTrash,
         onClearError = onClearTrashError

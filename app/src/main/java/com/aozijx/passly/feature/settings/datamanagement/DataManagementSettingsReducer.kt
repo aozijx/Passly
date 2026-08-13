@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.settings.datamanagement
 
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
 
 internal sealed interface DataManagementSettingsMutation {
     data class SettingsChanged(

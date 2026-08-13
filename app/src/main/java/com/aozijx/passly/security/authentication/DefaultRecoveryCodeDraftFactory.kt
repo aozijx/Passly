@@ -1,17 +1,19 @@
 package com.aozijx.passly.security.authentication
 
 import com.aozijx.passly.core.security.KeyDerivation
-import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
-import com.aozijx.passly.domain.auth.model.envelope.KdfAlgorithm
-import com.aozijx.passly.domain.auth.model.envelope.KeyEnvelope
-import com.aozijx.passly.domain.authentication.AuthenticationFailure
-import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
-import com.aozijx.passly.domain.authentication.AuthenticationResult
-import com.aozijx.passly.domain.authentication.RecoveryCodeDraft
-import com.aozijx.passly.domain.authentication.RecoveryCodeDraftCreation
-import com.aozijx.passly.domain.authentication.RecoveryCodeDraftFactory
+import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.model.KdfAlgorithm
+import com.aozijx.passly.domain.access.model.KeyEnvelope
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.AuthenticationRequestId
+import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.model.RecoveryCredentialDraft
+import com.aozijx.passly.domain.access.model.RecoveryCredentialCreation
+import com.aozijx.passly.domain.access.model.RecoveryCredentialFactory
+import com.aozijx.passly.domain.access.model.RecoveryCredentialId
 import com.aozijx.passly.security.crypto.DekManager
 import com.aozijx.passly.security.crypto.EnvelopeCrypto
 import com.aozijx.passly.security.envelope.BootstrapStore
@@ -30,10 +32,10 @@ class DefaultRecoveryCodeDraftFactory @Inject constructor(
     private val dekManager: DekManager,
     private val bootstrapStore: BootstrapStore,
     private val authenticationManager: AuthenticationManager
-) : RecoveryCodeDraftFactory {
+) : RecoveryCredentialFactory {
     private val random = SecureRandom()
 
-    override suspend fun create(): RecoveryCodeDraftCreation {
+    override suspend fun create(): RecoveryCredentialCreation {
         val correlationId = UuidCreator.getTimeOrderedEpoch().toString()
         val code = CharArray(CODE_LENGTH) { CODE_ALPHABET[random.nextInt(CODE_ALPHABET.length)] }
         val salt = KeyDerivation.generateSalt()
@@ -68,14 +70,14 @@ class DefaultRecoveryCodeDraftFactory @Inject constructor(
             )
             ownershipTransferred = true
             envelope = null
-            RecoveryCodeDraftCreation.Ready(draft)
+            RecoveryCredentialCreation.Ready(draft)
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Throwable) {
-            RecoveryCodeDraftCreation.Failed(
+            RecoveryCredentialCreation.Failed(
                 AuthenticationFailure(
                     AuthenticationFailureCode.SESSION_TRANSITION_FAILED,
-                    correlationId
+                    AuthenticationRequestId(correlationId),
                 )
             )
         } finally {
@@ -93,12 +95,13 @@ class DefaultRecoveryCodeDraftFactory @Inject constructor(
 }
 
 private class SecureRecoveryCodeDraft(
-    override val generationId: String,
+    generationId: String,
     sourceCode: CharArray,
     sourceEnvelope: KeyEnvelope,
     private val bootstrapStore: BootstrapStore,
     private val authenticationManager: AuthenticationManager
-) : RecoveryCodeDraft {
+) : RecoveryCredentialDraft {
+    override val id = RecoveryCredentialId(generationId)
     private val mutex = Mutex()
     private var code: CharArray? = sourceCode.copyOf()
     private var envelope: KeyEnvelope? = sourceEnvelope
@@ -108,7 +111,7 @@ private class SecureRecoveryCodeDraft(
 
     override suspend fun commit(): AuthenticationResult = mutex.withLock {
         val current = envelope ?: return@withLock AuthenticationResult.Failure(
-            AuthenticationFailure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, generationId)
+            AuthenticationFailure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, AuthenticationRequestId(id.value))
         )
         val copy = current.copy(
             ciphertext = current.ciphertext.copyOf(),
@@ -117,7 +120,7 @@ private class SecureRecoveryCodeDraft(
         )
         try {
             bootstrapStore.save(copy)
-            clear()
+            close()
             try {
                 authenticationManager.refreshAvailability()
             } catch (cancelled: CancellationException) {
@@ -130,7 +133,10 @@ private class SecureRecoveryCodeDraft(
             throw cancelled
         } catch (_: Throwable) {
             AuthenticationResult.Failure(
-                AuthenticationFailure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED, generationId)
+                AuthenticationFailure(
+                    AuthenticationFailureCode.SESSION_TRANSITION_FAILED,
+                    AuthenticationRequestId(id.value),
+                )
             )
         } finally {
             KeyEnvelope.destroy(copy)
@@ -138,7 +144,7 @@ private class SecureRecoveryCodeDraft(
     }
 
     @Synchronized
-    override fun clear() {
+    override fun close() {
         code?.fill('\u0000')
         code = null
         envelope?.let(KeyEnvelope::destroy)

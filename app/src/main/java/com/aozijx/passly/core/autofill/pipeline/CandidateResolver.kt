@@ -5,11 +5,10 @@ import com.aozijx.passly.core.autofill.model.InternalFillRequest
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.otp.OtpGenerator
 import com.aozijx.passly.core.otp.OtpResult
-import com.aozijx.passly.domain.autofill.policy.CredentialScopeMatcher
-import com.aozijx.passly.domain.autofill.repository.CredentialServiceRepository
-import com.aozijx.passly.domain.entry.model.EntryAggregate
-import com.aozijx.passly.domain.entry.model.lookup.CredentialCandidate
-import com.aozijx.passly.domain.settings.model.AutofillSettings
+import com.aozijx.passly.data.autofill.port.CredentialServiceRepository
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.query.CredentialCandidate
+import com.aozijx.passly.data.settings.model.AutofillSettings
 import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -76,7 +75,7 @@ class CandidateResolver @Inject constructor(
         val selected = repository.getById(entryId) ?: return null
         if (
             !settings.allowUnmatchedSuggestions &&
-            !CredentialScopeMatcher.matches(selected, packageName, webDomain)
+            !selected.matchesScope(packageName, webDomain)
         ) {
             AppTelemetry.w(TAG, "Rejected selected credential outside request scope")
             return null
@@ -87,38 +86,40 @@ class CandidateResolver @Inject constructor(
     private fun CredentialCandidate.toResolved(includeOtp: Boolean): ResolvedCandidate {
         val entry = this.entry
         return ResolvedCandidate(
-            candidateId = entry.id,
-            displayName = entry.title,
-            username = entry.username,
+            candidateId = entry.id.value,
+            displayName = entry.profile.title,
+            username = entry.profile.username,
             password = entry.secret.login?.password ?: "",
             totpCode = if (includeOtp) generateTotpFromEntry(entry) else null,
-            associatedDomain = entry.associatedDomain,
-            associatedAppPackage = entry.associatedAppPackage,
-            iconName = entry.iconName,
-            iconCustomPath = entry.iconCustomPath,
-            entryType = entry.entryType,
-            matchedBy = matchedBy,
-            matchedPackage = matchedPackage,
-            matchedDomain = matchedDomain,
+            associatedDomain = entry.profile.associations.primaryUrl
+                ?: entry.profile.associations.domains.firstOrNull(),
+            associatedAppPackage = entry.profile.associations.applicationIds.firstOrNull(),
+            iconName = entry.profile.icon.name,
+            iconCustomPath = entry.profile.icon.customReference,
+            entryType = entry.type,
+            matchedBy = match.type,
+            matchedPackage = match.applicationId,
+            matchedDomain = match.domain,
         )
     }
 
-    private fun EntryAggregate.toResolvedCandidate(includeOtp: Boolean): ResolvedCandidate {
+    private fun Entry.toResolvedCandidate(includeOtp: Boolean): ResolvedCandidate {
         return ResolvedCandidate(
-            candidateId = id,
-            displayName = title,
-            username = username,
+            candidateId = id.value,
+            displayName = profile.title,
+            username = profile.username,
             password = secret.login?.password ?: "",
             totpCode = if (includeOtp) generateTotpFromEntry(this) else null,
-            associatedDomain = associatedDomain,
-            associatedAppPackage = associatedAppPackage,
-            iconName = iconName,
-            iconCustomPath = iconCustomPath,
-            entryType = entryType,
+            associatedDomain = profile.associations.primaryUrl
+                ?: profile.associations.domains.firstOrNull(),
+            associatedAppPackage = profile.associations.applicationIds.firstOrNull(),
+            iconName = profile.icon.name,
+            iconCustomPath = profile.icon.customReference,
+            entryType = type,
         )
     }
 
-    private fun generateTotpFromEntry(entry: EntryAggregate): String? {
+    private fun generateTotpFromEntry(entry: Entry): String? {
         val otpConfig = entry.secret.otp?.config ?: return null
         if (otpConfig.secret.isBlank()) return null
         return when (val result = OtpGenerator.generate(otpConfig)) {
@@ -126,5 +127,24 @@ class CandidateResolver @Inject constructor(
             is OtpResult.Failure -> null
         }
     }
+
+    private fun Entry.matchesScope(packageName: String?, webDomain: String?): Boolean {
+        val applicationId = packageName?.trim()?.lowercase()
+        if (applicationId != null && profile.associations.applicationIds.any {
+                it.trim().lowercase() == applicationId
+            }) {
+            return true
+        }
+        val domain = normalizeDomain(webDomain) ?: return false
+        return buildSet {
+            addAll(profile.associations.domains)
+            profile.associations.primaryUrl?.let(::add)
+        }.any { normalizeDomain(it) == domain }
+    }
+
+    private fun normalizeDomain(value: String?): String? =
+        value?.trim()?.lowercase()?.removePrefix("https://")?.removePrefix("http://")
+            ?.substringBefore('/')?.substringBefore(':')?.removeSuffix(".")
+            ?.takeIf(String::isNotBlank)
 
 }

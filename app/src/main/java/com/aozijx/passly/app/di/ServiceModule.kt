@@ -6,9 +6,9 @@ import com.aozijx.passly.core.autofill.matcher.HeuristicMatchStrategy
 import com.aozijx.passly.core.autofill.matcher.StrictMatchStrategy
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.core.autofill.pipeline.ResponseFactory
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
-import com.aozijx.passly.domain.auth.model.MonotonicClock
-import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.access.model.MonotonicClock
+import com.aozijx.passly.data.settings.port.AppSettingsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides

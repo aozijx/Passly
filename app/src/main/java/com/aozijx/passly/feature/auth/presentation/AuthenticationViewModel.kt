@@ -2,12 +2,13 @@ package com.aozijx.passly.feature.auth.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
-import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
-import com.aozijx.passly.domain.authentication.AuthenticationRequest
-import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthInput
+import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationRequest
+import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.feature.auth.contract.AuthenticationIntent
 import com.aozijx.passly.feature.auth.contract.AuthenticationUiState
@@ -54,7 +55,7 @@ class AuthenticationViewModel @Inject constructor(
 
     private fun revealRecoveryUnlock() {
         val state = _uiState.value
-        if (!methodAvailability.value.recoveryCode || state.recoveryUnlockVisible) return
+        if (AuthenticationMethod.RECOVERY_CODE !in methodAvailability.value || state.recoveryUnlockVisible) return
         recoveryRevealTapCount += 1
         if (recoveryRevealTapCount >= RECOVERY_REVEAL_TAP_THRESHOLD) {
             recoveryRevealTapCount = 0
@@ -193,7 +194,13 @@ class AuthenticationViewModel @Inject constructor(
                             purpose = purpose,
                             allowedMethods = setOf(method)
                         ),
-                        credential
+                        when (method) {
+                            AuthenticationMethod.BIOMETRIC -> AuthInput.Interactive
+                            AuthenticationMethod.APP_PASSWORD ->
+                                AuthInput.AppPassword.from(requireNotNull(credential))
+                            AuthenticationMethod.RECOVERY_CODE ->
+                                AuthInput.RecoveryCode.from(requireNotNull(credential))
+                        }
                     )
                 ) {
                     is AuthenticationResult.Success -> resetInputState()

@@ -1,79 +1,78 @@
 package com.aozijx.passly.feature.backup.internal.archive.snapshot
 
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupCardSecret
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupCardCredential
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupCustomField
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupIdentitySecret
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupLoginSecret
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupIdentityCredential
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupLoginCredential
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpAlgorithm
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpConfig
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpEncoding
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpSecret
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpCredential
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpType
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupPasskeySecret
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupPasskeyCredential
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupSecretRecord
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupSshSecret
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupSshCredential
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupSummaryRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupWebsiteRecord
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupWifiSecret
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupWifiCredential
 import com.aozijx.passly.data.mapper.entry.EntrySecretMapper
-import com.aozijx.passly.data.mapper.entry.EntrySummaryMapper
-import com.aozijx.passly.data.codec.entry.payload.CardSecretPayload
+import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
+import com.aozijx.passly.data.codec.entry.payload.CardCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.CustomFieldPayload
-import com.aozijx.passly.data.codec.entry.payload.IdentitySecretPayload
-import com.aozijx.passly.data.codec.entry.payload.LoginSecretPayload
+import com.aozijx.passly.data.codec.entry.payload.IdentityCredentialPayload
+import com.aozijx.passly.data.codec.entry.payload.LoginCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.OtpConfigPayload
 import com.aozijx.passly.data.codec.entry.payload.OtpHashAlgorithmPayload
-import com.aozijx.passly.data.codec.entry.payload.OtpSecretEncodingPayload
-import com.aozijx.passly.data.codec.entry.payload.OtpSecretPayload
+import com.aozijx.passly.data.codec.entry.payload.OtpCredentialEncodingPayload
+import com.aozijx.passly.data.codec.entry.payload.OtpCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.OtpTypePayload
-import com.aozijx.passly.data.codec.entry.payload.PasskeySecretPayload
+import com.aozijx.passly.data.codec.entry.payload.PasskeyCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.SecretPayload
-import com.aozijx.passly.data.codec.entry.payload.SshSecretPayload
-import com.aozijx.passly.data.codec.entry.payload.WifiSecretPayload
+import com.aozijx.passly.data.codec.entry.payload.SshCredentialPayload
+import com.aozijx.passly.data.codec.entry.payload.WifiCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.SummaryPayload
-import com.aozijx.passly.data.codec.entry.payload.WebsiteInfoPayload
-import com.aozijx.passly.domain.entry.model.EntryHeader
+import com.aozijx.passly.data.codec.entry.payload.EntryAssociationsPayload
+import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
+import com.aozijx.passly.domain.entry.model.Entry
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * 备份文档映射器。
- * 只负责 EntryAggregate ↔ BackupEntryRecord 的转换，不涉及加密或文件 IO。
+ * 只负责 Entry ↔ BackupEntryRecord 的转换，不涉及加密或文件 IO。
  */
 @Singleton
 internal class BackupSnapshotMapper @Inject constructor() {
 
     fun toRecord(
-        entry: EntryAggregate,
+        entry: Entry,
         attachmentIds: List<String> = emptyList()
     ): BackupEntryRecord = BackupEntryRecord(
-        id = entry.id,
-        type = entry.entryType.name,
-        version = entry.entryVersion,
-        createdAt = entry.createdAt,
-        updatedAt = entry.updatedAt,
-        deletedAt = entry.deletedAt,
+        id = entry.id.value,
+        type = entry.type.name,
+        version = entry.version.value,
+        createdAt = entry.timestamps.createdAtMs,
+        updatedAt = entry.timestamps.updatedAtMs,
+        deletedAt = entry.timestamps.deletedAtMs,
         // 本机绝对路径不能进入可移植备份；图标由 BackupResourceRecord 表达。
-        summary = EntrySummaryMapper.toPayload(entry.summary).toBackupRecord(),
+        summary = EntryProfileMapper.toPayload(entry.profile).toBackupRecord(),
         secret = EntrySecretMapper.toPayload(entry.secret).toBackupRecord(),
         attachmentIds = attachmentIds
     )
 
-    fun toEntry(record: BackupEntryRecord): EntryAggregate = EntryAggregate(
-        header = EntryHeader(
+    fun toEntry(record: BackupEntryRecord): Entry = Entry(
+        identity = EntryIdentity(
             id = EntryId(record.id),
-            entryType = EntryType.valueOf(record.type),
+            type = EntryType.valueOf(record.type),
             version = EntryVersion(record.version),
-            createdAt = record.createdAt,
-            updatedAt = record.updatedAt,
-            deletedAt = record.deletedAt
+            timestamps = EntryTimestamps(record.createdAt, record.updatedAt, record.deletedAt),
         ),
-        summary = EntrySummaryMapper.toDomain(record.summary.toPayload()),
+        profile = EntryProfileMapper.toDomain(record.summary.toPayload()),
         secret = EntrySecretMapper.toDomain(record.secret.toPayload())
     )
 }
@@ -99,7 +98,7 @@ private fun BackupSummaryRecord.toPayload() = SummaryPayload(
     title = title,
     username = username,
     website = website?.let {
-        WebsiteInfoPayload(
+        EntryAssociationsPayload(
             primaryUrl = it.primaryUrl,
             matchDomains = it.matchDomains,
             packageNames = it.packageNames
@@ -115,20 +114,20 @@ private fun BackupSummaryRecord.toPayload() = SummaryPayload(
 )
 
 private fun SecretPayload.toBackupRecord() = BackupSecretRecord(
-    login = login?.let { BackupLoginSecret(it.email, it.password) },
+    login = login?.let { BackupLoginCredential(it.email, it.password) },
     notes = notes,
     card = card?.let {
-        BackupCardSecret(
-            it.cardNumber,
-            it.cardExpiry,
-            it.cardCvv,
-            it.cardHolder,
-            it.paymentPin,
-            it.paymentPlatform
+        BackupCardCredential(
+            cardNumber = it.cardNumber,
+            cardExpiry = it.cardExpiry,
+            cardCvv = it.cardCvv,
+            cardHolder = it.cardHolder,
+            paymentPin = it.paymentPin,
+            paymentPlatform = it.paymentPlatform,
         )
     },
     identity = identity?.let {
-        BackupIdentitySecret(
+        BackupIdentityCredential(
             it.idNumber,
             it.securityQuestion,
             it.securityAnswer,
@@ -136,10 +135,10 @@ private fun SecretPayload.toBackupRecord() = BackupSecretRecord(
             it.recoveryCodes
         )
     },
-    ssh = ssh?.let { BackupSshSecret(it.privateKey, it.publicKey, it.passphrase) },
-    wifi = wifi?.let { BackupWifiSecret(it.password, it.securityType, it.isHidden) },
+    ssh = ssh?.let { BackupSshCredential(it.privateKey, it.publicKey, it.passphrase) },
+    wifi = wifi?.let { BackupWifiCredential(it.ssid, it.password, it.securityType, it.isHidden) },
     passkey = passkey?.let {
-        BackupPasskeySecret(
+        BackupPasskeyCredential(
             it.credentialId,
             it.rpId,
             it.userHandle,
@@ -148,7 +147,7 @@ private fun SecretPayload.toBackupRecord() = BackupSecretRecord(
         )
     },
     otp = otp?.let { otpSecret ->
-        BackupOtpSecret(
+        BackupOtpCredential(
             otpSecret.config?.let {
                 BackupOtpConfig(
                     type = BackupOtpType.valueOf(it.type.name),
@@ -168,20 +167,20 @@ private fun SecretPayload.toBackupRecord() = BackupSecretRecord(
 )
 
 private fun BackupSecretRecord.toPayload() = SecretPayload(
-    login = login?.let { LoginSecretPayload(it.email, it.password) },
+    login = login?.let { LoginCredentialPayload(it.email, it.password) },
     notes = notes,
     card = card?.let {
-        CardSecretPayload(
-            it.cardNumber,
-            it.cardExpiry,
-            it.cardCvv,
-            it.cardHolder,
-            it.paymentPin,
-            it.paymentPlatform
+        CardCredentialPayload(
+            cardNumber = it.cardNumber,
+            cardExpiry = it.cardExpiry,
+            cardCvv = it.cardCvv,
+            cardHolder = it.cardHolder,
+            paymentPin = it.paymentPin,
+            paymentPlatform = it.paymentPlatform,
         )
     },
     identity = identity?.let {
-        IdentitySecretPayload(
+        IdentityCredentialPayload(
             it.idNumber,
             it.securityQuestion,
             it.securityAnswer,
@@ -189,10 +188,17 @@ private fun BackupSecretRecord.toPayload() = SecretPayload(
             it.recoveryCodes
         )
     },
-    ssh = ssh?.let { SshSecretPayload(it.privateKey, it.publicKey, it.passphrase) },
-    wifi = wifi?.let { WifiSecretPayload(it.password, it.securityType, it.hidden) },
+    ssh = ssh?.let { SshCredentialPayload(it.privateKey, it.publicKey, it.passphrase) },
+    wifi = wifi?.let {
+        WifiCredentialPayload(
+            ssid = it.ssid,
+            password = it.password,
+            securityType = it.securityType,
+            isHidden = it.hidden,
+        )
+    },
     passkey = passkey?.let {
-        PasskeySecretPayload(
+        PasskeyCredentialPayload(
             it.credentialId,
             it.rpId,
             it.userHandle,
@@ -201,7 +207,7 @@ private fun BackupSecretRecord.toPayload() = SecretPayload(
         )
     },
     otp = otp?.let { otpSecret ->
-        OtpSecretPayload(
+        OtpCredentialPayload(
             otpSecret.config?.let {
                 OtpConfigPayload(
                     type = OtpTypePayload.valueOf(it.type.name),
@@ -210,7 +216,7 @@ private fun BackupSecretRecord.toPayload() = SecretPayload(
                     digits = it.digits,
                     periodSeconds = it.periodSeconds,
                     counter = it.counter,
-                    encoding = OtpSecretEncodingPayload.valueOf(it.encoding.name),
+                    encoding = OtpCredentialEncodingPayload.valueOf(it.encoding.name),
                     issuer = it.issuer,
                     accountName = it.accountName
                 )

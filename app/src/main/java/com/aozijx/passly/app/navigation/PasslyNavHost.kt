@@ -19,9 +19,9 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.aozijx.passly.domain.authentication.SensitiveAccessAction
-import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.domain.access.model.SensitiveAccessAction
+import com.aozijx.passly.app.security.SensitiveAccessLevel
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.DetailViewModel
 import com.aozijx.passly.feature.detail.contract.DetailEffect
@@ -136,7 +136,7 @@ fun PasslyNavHost(
                     navController.navigate(AppRoute.Settings.route)
                 },
                 onShowDetail = { entry ->
-                    navController.navigate(AppRoute.Detail.createRoute(entry.id))
+                    navController.navigate(AppRoute.Detail.createRoute(entry.id.value))
                 },
                 isDatabaseInitializing = isDatabaseInitializing
             )
@@ -213,7 +213,7 @@ fun PasslyNavHost(
                 detailViewModel.effects.collectLatest { effect ->
                     when (effect) {
                         is DetailEffect.EntryUpdated -> vaultViewModel.onIntent(
-                            VaultIntent.UpdateEntryAggregate(
+                            VaultIntent.UpdateEntry(
                                 effect.entry
                             )
                         )
@@ -221,7 +221,7 @@ fun PasslyNavHost(
                 }
             }
 
-            var initialEntry by remember { mutableStateOf<EntryAggregate?>(null) }
+            var initialEntry by remember { mutableStateOf<Entry?>(null) }
             LaunchedEffect(entryId) {
                 initialEntry = vaultViewModel.loadEntryById(entryId)
             }
@@ -242,9 +242,9 @@ fun PasslyNavHost(
                     onUpdateInteraction = {
                         appShellViewModel.handleIntent(AppShellIntent.UpdateInteraction)
                     },
-                    onAutoUnlockTotp = { vaultViewModel.onIntent(VaultIntent.AutoUnlockTotp(it.id)) },
+                    onAutoUnlockTotp = { vaultViewModel.onIntent(VaultIntent.AutoUnlockTotp(it.id.value)) },
                     onOpenRelatedEntry = {
-                        navController.navigate(AppRoute.Detail.createRoute(it.id))
+                        navController.navigate(AppRoute.Detail.createRoute(it.id.value))
                     },
                     onAuthenticate = DetailAuthenticate { action, accessLevel, success ->
                         pendingAuthCallback = success

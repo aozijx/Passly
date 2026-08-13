@@ -29,7 +29,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 
 @Composable

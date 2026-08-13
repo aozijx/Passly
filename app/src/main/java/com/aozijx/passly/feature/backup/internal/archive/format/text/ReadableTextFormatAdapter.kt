@@ -2,8 +2,8 @@ package com.aozijx.passly.feature.backup.internal.archive.format.text
 
 import com.aozijx.passly.feature.backup.internal.archive.format.BackupExportAdapter
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
-import com.aozijx.passly.domain.backup.model.BackupFormatId
-import com.aozijx.passly.domain.backup.model.BackupFormats
+import com.aozijx.passly.feature.backup.internal.model.BackupFormatId
+import com.aozijx.passly.feature.backup.internal.model.BackupFormats
 import javax.inject.Inject
 import javax.inject.Singleton
 

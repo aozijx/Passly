@@ -1,10 +1,10 @@
 package com.aozijx.passly.app.message.runtime
 
-import com.aozijx.passly.domain.notice.model.AppNotice
-import com.aozijx.passly.domain.notice.port.InAppNoticeStream
-import com.aozijx.passly.domain.notice.port.NoticeSink
-import com.aozijx.passly.domain.notice.port.NoticeTarget
-import com.aozijx.passly.domain.notice.port.SinkResult
+import com.aozijx.passly.data.message.model.AppNotice
+import com.aozijx.passly.app.message.contract.InAppNoticeStream
+import com.aozijx.passly.app.message.contract.NoticeSink
+import com.aozijx.passly.app.message.contract.NoticeTarget
+import com.aozijx.passly.app.message.contract.SinkResult
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow

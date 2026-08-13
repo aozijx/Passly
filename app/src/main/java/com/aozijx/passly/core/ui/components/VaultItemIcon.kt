@@ -19,18 +19,47 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.media.toLocalIconImageModel
-import com.aozijx.passly.domain.entry.model.EntryIconSource
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
 
 @Composable
 fun VaultItemIcon(
     modifier: Modifier = Modifier,
-    iconable: EntryIconSource,
-    tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
+    iconable: EntryListItem,
+    tint: Color = MaterialTheme.colorScheme.onSecondaryContainer,
+) = VaultItemIcon(
+    modifier = modifier,
+    iconName = iconable.profile.icon.name,
+    iconCustomPath = iconable.profile.icon.customReference,
+    associatedAppPackage = iconable.profile.associations.applicationIds.firstOrNull(),
+    tint = tint,
+)
+
+@Composable
+fun VaultItemIcon(
+    modifier: Modifier = Modifier,
+    iconable: ResolvedCandidate,
+    tint: Color = MaterialTheme.colorScheme.onSecondaryContainer,
+) = VaultItemIcon(
+    modifier = modifier,
+    iconName = iconable.iconName,
+    iconCustomPath = iconable.iconCustomPath,
+    associatedAppPackage = iconable.associatedAppPackage,
+    tint = tint,
+)
+
+@Composable
+private fun VaultItemIcon(
+    modifier: Modifier,
+    iconName: String?,
+    iconCustomPath: String?,
+    associatedAppPackage: String?,
+    tint: Color,
 ) {
-    val appIconPainter = rememberAppIcon(iconable.associatedAppPackage)
-    val explicitIconVector = remember(iconable.iconName) {
-        iconable.iconName
+    val appIconPainter = rememberAppIcon(associatedAppPackage)
+    val explicitIconVector = remember(iconName) {
+        iconName
             ?.takeIf { it.isNotBlank() }
             ?.let(VaultIcons::getIconByName)
     }
@@ -38,7 +67,7 @@ fun VaultItemIcon(
     val fallbackPainter = rememberVectorPainter(fallbackIconVector)
     val placeholderPainter = appIconPainter ?: fallbackPainter
 
-    val customModel = remember(iconable.iconCustomPath) { toLocalIconImageModel(iconable.iconCustomPath) }
+    val customModel = remember(iconCustomPath) { toLocalIconImageModel(iconCustomPath) }
     Box(
         modifier = modifier.size(36.dp), contentAlignment = Alignment.Center
     ) {

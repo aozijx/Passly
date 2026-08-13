@@ -1,12 +1,12 @@
 package com.aozijx.passly.app.di.security
 
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.auth.port.AuthorizationGate
-import com.aozijx.passly.domain.auth.port.AuthorizationPermitRevoker
-import com.aozijx.passly.domain.auth.port.AuthorizationPermitVerifier
-import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
-import com.aozijx.passly.domain.authentication.RecoveryCodeDraftFactory
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
+import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.port.AuthorizationGate
+import com.aozijx.passly.domain.access.port.AuthorizationPermitRevoker
+import com.aozijx.passly.domain.access.port.AuthorizationPermitVerifier
+import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
+import com.aozijx.passly.domain.access.model.RecoveryCredentialFactory
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.security.authentication.DefaultAuthenticationManager
 import com.aozijx.passly.security.authentication.DefaultAuthenticationMethodProvisioner
 import com.aozijx.passly.security.authentication.DefaultRecoveryCodeDraftFactory
@@ -31,7 +31,7 @@ abstract class SecurityModule {
     @Singleton
     internal abstract fun bindRecoveryCodeDraftFactory(
         impl: DefaultRecoveryCodeDraftFactory
-    ): RecoveryCodeDraftFactory
+    ): RecoveryCredentialFactory
 
     @Binds
     @Singleton

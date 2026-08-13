@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.settings.apppassword
 import android.content.Context
 import android.widget.Toast
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.authentication.AppPasswordPolicy
+import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.contract.SettingsIntent
 
@@ -23,7 +23,7 @@ internal fun validateAndSendAppPasswordAction(
 ): Boolean {
     when (action) {
         AppPasswordAction.SET -> {
-            if (!AppPasswordPolicy.acceptsLength(newPassword.length)) {
+            if (!AppPasswordPolicy.DEFAULT.acceptsLength(newPassword.length)) {
                 context.showToast(R.string.settings_auth_password_too_short)
                 return false
             }
@@ -41,7 +41,7 @@ internal fun validateAndSendAppPasswordAction(
                 context.showToast(R.string.settings_auth_password_fields_required)
                 return false
             }
-            if (!AppPasswordPolicy.acceptsLength(newPassword.length)) {
+            if (!AppPasswordPolicy.DEFAULT.acceptsLength(newPassword.length)) {
                 context.showToast(R.string.settings_auth_password_too_short)
                 return false
             }

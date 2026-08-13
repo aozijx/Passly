@@ -28,13 +28,13 @@ data class BackupSummaryRecord(
 )
 
 @Serializable
-data class BackupLoginSecret(
+data class BackupLoginCredential(
     val email: String? = null,
     val password: String? = null
 )
 
 @Serializable
-data class BackupCardSecret(
+data class BackupCardCredential(
     val cardNumber: String? = null,
     val cardExpiry: String? = null,
     val cardCvv: String? = null,
@@ -44,7 +44,7 @@ data class BackupCardSecret(
 )
 
 @Serializable
-data class BackupIdentitySecret(
+data class BackupIdentityCredential(
     val idNumber: String? = null,
     val securityQuestion: String? = null,
     val securityAnswer: String? = null,
@@ -53,21 +53,22 @@ data class BackupIdentitySecret(
 )
 
 @Serializable
-data class BackupSshSecret(
+data class BackupSshCredential(
     val privateKey: String? = null,
     val publicKey: String? = null,
     val passphrase: String? = null
 )
 
 @Serializable
-data class BackupWifiSecret(
+data class BackupWifiCredential(
+    val ssid: String = "",
     val password: String? = null,
     val securityType: String? = null,
     val hidden: Boolean = false
 )
 
 @Serializable
-data class BackupPasskeySecret(
+data class BackupPasskeyCredential(
     val credentialId: String? = null,
     val rpId: String? = null,
     val userHandle: String? = null,
@@ -109,7 +110,7 @@ data class BackupOtpConfig(
 )
 
 @Serializable
-data class BackupOtpSecret(
+data class BackupOtpCredential(
     val config: BackupOtpConfig? = null
 )
 
@@ -122,13 +123,13 @@ data class BackupCustomField(
 
 @Serializable
 data class BackupSecretRecord(
-    val login: BackupLoginSecret? = null,
+    val login: BackupLoginCredential? = null,
     val notes: String? = null,
-    val card: BackupCardSecret? = null,
-    val identity: BackupIdentitySecret? = null,
-    val ssh: BackupSshSecret? = null,
-    val wifi: BackupWifiSecret? = null,
-    val passkey: BackupPasskeySecret? = null,
-    val otp: BackupOtpSecret? = null,
+    val card: BackupCardCredential? = null,
+    val identity: BackupIdentityCredential? = null,
+    val ssh: BackupSshCredential? = null,
+    val wifi: BackupWifiCredential? = null,
+    val passkey: BackupPasskeyCredential? = null,
+    val otp: BackupOtpCredential? = null,
     val customFields: List<BackupCustomField> = emptyList()
 )

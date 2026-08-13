@@ -8,9 +8,9 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PersistableBundle
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.domain.notice.model.NoticeCode
-import com.aozijx.passly.domain.notice.model.newAppNotice
-import com.aozijx.passly.domain.notice.port.AppNoticePublisher
+import com.aozijx.passly.data.message.model.NoticeCode
+import com.aozijx.passly.data.message.model.newAppNotice
+import com.aozijx.passly.app.message.contract.AppNoticePublisher
 
 /**
  * 剪贴板工具类，提供安全复制、自动清除以及内容获取功能

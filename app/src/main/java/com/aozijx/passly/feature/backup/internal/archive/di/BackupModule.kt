@@ -11,7 +11,7 @@ import com.aozijx.passly.feature.backup.internal.archive.format.json.PasslyJsonF
 import com.aozijx.passly.feature.backup.internal.archive.format.text.ReadableTextFormatAdapter
 import com.aozijx.passly.feature.backup.internal.archive.io.BackupFileStore
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupExportStorageSupport
-import com.aozijx.passly.domain.backup.service.BackupArchiveService
+import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveService
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

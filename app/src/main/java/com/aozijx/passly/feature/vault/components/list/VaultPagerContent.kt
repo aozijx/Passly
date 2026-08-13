@@ -32,13 +32,18 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionContainer
-import com.aozijx.passly.core.ui.components.widgets.createSwipeActionSpec
-import com.aozijx.passly.domain.entry.model.OtpUiState
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.domain.settings.model.EntryCardPresentation
-import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
-import com.aozijx.passly.domain.settings.model.SwipeActionType
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
+import com.aozijx.passly.core.ui.components.widgets.SwipeActionSpec
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
+import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.data.settings.model.EntryCardPresentation
+import com.aozijx.passly.data.settings.model.EntryHierarchyDisplayMode
+import com.aozijx.passly.data.settings.model.SwipeActionType
+import com.aozijx.passly.data.settings.model.LibraryQuickFilter
 import com.aozijx.passly.feature.vault.components.cardstyle.CardStyleRegistry
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import kotlinx.coroutines.flow.StateFlow
@@ -158,7 +163,7 @@ private fun EntryListItemRow(
     val totpState = if (item.hasOtp) {
         val itemTotpState = remember(item.id, totpStates) {
             totpStates
-                .map { states -> states[item.id] }
+                .map { states -> states[item.id.value] }
                 .distinctUntilChanged()
         }
         val current by itemTotpState.collectAsStateWithLifecycle(initialValue = null)
@@ -166,7 +171,7 @@ private fun EntryListItemRow(
     } else {
         null
     }
-    val cardStyle = remember(item.entryType, item.capabilityFlags, entryCardPresentations) {
+    val cardStyle = remember(item.entryType, item.capabilities, entryCardPresentations) {
         CardStyleRegistry.resolveStyle(item, entryCardPresentations)
     }
     val colorScheme = MaterialTheme.colorScheme
@@ -176,7 +181,7 @@ private fun EntryListItemRow(
     }
     val leftAction =
         remember(item.id, swipeLeftAction, onSwipeTriggered, colorScheme) {
-            createSwipeActionSpec(
+            createAppSwipeActionSpec(
                 actionType = swipeLeftAction,
                 onAction = { onSwipeTriggered(swipeLeftAction, item) },
                 backgroundColor = if (swipeLeftAction == SwipeActionType.DELETE) colorScheme.error else colorScheme.primary,
@@ -185,7 +190,7 @@ private fun EntryListItemRow(
         }
     val rightAction =
         remember(item.id, swipeRightAction, onSwipeTriggered, colorScheme) {
-            createSwipeActionSpec(
+            createAppSwipeActionSpec(
                 actionType = swipeRightAction,
                 onAction = { onSwipeTriggered(swipeRightAction, item) },
                 backgroundColor = if (swipeRightAction == SwipeActionType.DELETE) colorScheme.error else colorScheme.secondary,
@@ -218,3 +223,20 @@ private fun EntryListItemRow(
         }
     }
 }
+
+private fun createAppSwipeActionSpec(
+    actionType: SwipeActionType,
+    onAction: () -> Unit,
+    backgroundColor: Color,
+    iconTint: Color,
+) = SwipeActionSpec(
+    icon = when (actionType) {
+        SwipeActionType.DELETE -> Icons.Default.Delete
+        SwipeActionType.DETAIL -> Icons.Default.Info
+        SwipeActionType.COPY_PASSWORD -> Icons.Default.ContentCopy
+        SwipeActionType.COPY_USERNAME -> Icons.Default.Person
+    },
+    backgroundColor = backgroundColor,
+    iconTint = iconTint,
+    onAction = onAction,
+)

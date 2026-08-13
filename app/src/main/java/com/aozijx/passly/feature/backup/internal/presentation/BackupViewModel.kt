@@ -3,10 +3,10 @@ package com.aozijx.passly.feature.backup.internal.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.model.BackupFailed
-import com.aozijx.passly.domain.backup.model.BackupExportUiFormat
-import com.aozijx.passly.domain.notice.model.NoticeCode
-import com.aozijx.passly.domain.notice.model.newAppNotice
-import com.aozijx.passly.domain.notice.port.AppNoticePublisher
+import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
+import com.aozijx.passly.data.message.model.NoticeCode
+import com.aozijx.passly.data.message.model.newAppNotice
+import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.backup.internal.contract.BackupAction
 import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
