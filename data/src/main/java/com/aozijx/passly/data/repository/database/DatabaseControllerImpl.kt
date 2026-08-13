@@ -9,7 +9,7 @@ import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.report
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.local.database.DatabaseSchema
-import com.aozijx.passly.data.local.database.maintenance.DatabaseRecoveryStore
+import com.aozijx.passly.data.local.database.recovery.DatabaseRecoveryStore
 import com.aozijx.passly.data.database.port.DatabaseController
 import com.aozijx.passly.data.database.port.DatabaseQuarantineResult
 import com.aozijx.passly.domain.entry.signal.EntryDataRefreshNotifier

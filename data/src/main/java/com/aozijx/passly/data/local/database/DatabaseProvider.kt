@@ -30,38 +30,42 @@ class DatabaseProvider @Inject constructor(
      *
      * @param key SQLCipher 加密密钥（由调用方从 DEK 派生，调用完毕后应擦除）
      */
-    suspend fun open(key: ByteArray): AppDatabase = withContext(Dispatchers.IO) {
-        val factory = SupportOpenHelperFactory(key.copyOf())
-        val db = Room.databaseBuilder(
-            context.applicationContext,
-            AppDatabase::class.java,
-            DatabaseSchema.DATABASE_NAME
-        )
-            .openHelperFactory(factory)
-            .addCallback(AttachmentReferenceConstraintCallback)
-            .build()
+    suspend fun open(key: ByteArray): AppDatabase = open(DatabaseSchema.DATABASE_NAME, key)
 
-        runCatching { db.openHelper.writableDatabase }
-            .onFailure { error ->
-                telemetry.emit(
-                    TelemetryEvent(
-                        level = EventLevel.ERROR,
-                        category = EventCategory.DATABASE,
-                        name = "database.open_failed",
-                        throwableType = error.javaClass.simpleName,
-                    )
-                )
-                db.close()
-                throw error
-            }
-
-        telemetry.emit(
-            TelemetryEvent(
-                level = EventLevel.INFO,
-                category = EventCategory.DATABASE,
-                name = "database.opened",
+    internal suspend fun open(databaseName: String, key: ByteArray): AppDatabase =
+        withContext(Dispatchers.IO) {
+            require(databaseName.matches(Regex("[a-zA-Z0-9_.-]+"))) { "Invalid database name" }
+            val factory = SupportOpenHelperFactory(key.copyOf())
+            val db = Room.databaseBuilder(
+                context.applicationContext,
+                AppDatabase::class.java,
+                databaseName
             )
-        )
-        db
-    }
+                .openHelperFactory(factory)
+                .addCallback(AttachmentReferenceConstraintCallback)
+                .build()
+
+            runCatching { db.openHelper.writableDatabase }
+                .onFailure { error ->
+                    telemetry.emit(
+                        TelemetryEvent(
+                            level = EventLevel.ERROR,
+                            category = EventCategory.DATABASE,
+                            name = "database.open_failed",
+                            throwableType = error.javaClass.simpleName,
+                        )
+                    )
+                    db.close()
+                    throw error
+                }
+
+            telemetry.emit(
+                TelemetryEvent(
+                    level = EventLevel.INFO,
+                    category = EventCategory.DATABASE,
+                    name = "database.opened",
+                )
+            )
+            db
+        }
 }
