@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.aozijx.passly.data.model.entity.EntryEntity
+import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.domain.entry.model.EntryType
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking

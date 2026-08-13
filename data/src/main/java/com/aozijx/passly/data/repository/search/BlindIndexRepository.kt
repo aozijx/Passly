@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.search
 
-import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
-import com.aozijx.passly.data.local.dao.buildEntryIdIntersectionQuery
+import com.aozijx.passly.data.local.database.session.AppDatabaseSession
+import com.aozijx.passly.data.local.database.query.buildEntryIdIntersectionQuery
 import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.lookup.LookupField
 import com.aozijx.passly.domain.entry.repository.SearchIndexRepository
@@ -15,7 +15,7 @@ import javax.inject.Singleton
 
 @Singleton
 internal class BlindIndexRepository @Inject constructor(
-    private val sessionManager: UnifiedSessionManager,
+    private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
     private val blindIndexer: BlindIndexer
 ) : SearchIndexRepository {
@@ -24,7 +24,7 @@ internal class BlindIndexRepository @Inject constructor(
     override fun search(query: String, fields: List<LookupField>): Flow<List<String>> =
         sessionState.isAuthorized.flatMapLatest { authorized ->
             if (!authorized || query.isBlank()) flowOf(emptyList())
-            else sessionManager.observeFlow {
+            else databaseSession.observeFlow {
                 val searchTokens = blindIndexer.searchTokens(query)
                 if (searchTokens.isEmpty()) flowOf(emptyList())
                 else {

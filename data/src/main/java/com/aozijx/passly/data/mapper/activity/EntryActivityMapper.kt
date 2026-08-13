@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.mapper.activity
 
-import com.aozijx.passly.data.model.entity.EntryActivityEntity
+import com.aozijx.passly.data.local.database.entity.EntryActivityEntity
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 
 fun EntryActivityEntity.toDomain(): EntryActivity = EntryActivity(

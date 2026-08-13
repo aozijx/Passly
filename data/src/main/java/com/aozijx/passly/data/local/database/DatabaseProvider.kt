@@ -2,6 +2,7 @@ package com.aozijx.passly.data.local.database
 
 import android.content.Context
 import androidx.room.Room
+import com.aozijx.passly.data.local.database.callback.AttachmentReferenceConstraintCallback
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.EventLevel
 import com.aozijx.passly.core.telemetry.TelemetryEvent
@@ -37,7 +38,7 @@ class DatabaseProvider @Inject constructor(
             DatabaseSchema.DATABASE_NAME
         )
             .openHelperFactory(factory)
-            .addCallback(AttachmentRefConstraints)
+            .addCallback(AttachmentReferenceConstraintCallback)
             .build()
 
         runCatching { db.openHelper.writableDatabase }

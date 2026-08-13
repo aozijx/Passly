@@ -4,18 +4,18 @@ import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
 import com.aozijx.passly.data.codec.entry.SensitiveFieldCodec
-import com.aozijx.passly.data.model.entity.EntryEntity
-import com.aozijx.passly.data.model.entity.EntryRevisionEntity
-import com.aozijx.passly.data.model.entity.EntrySensitiveFieldEntity
-import com.aozijx.passly.data.repository.VaultTransactionRunner
+import com.aozijx.passly.data.local.database.entity.EntryEntity
+import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
+import com.aozijx.passly.data.local.database.entity.EntrySensitiveFieldEntity
+import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
-import com.aozijx.passly.data.repository.entry.internal.EntryActivityHelper
-import com.aozijx.passly.data.repository.entry.internal.EntryRevisionHelper
-import com.aozijx.passly.data.util.Clock
+import com.aozijx.passly.data.repository.entry.command.EntryActivityWriter
+import com.aozijx.passly.data.repository.entry.command.EntryRevisionWriter
+import com.aozijx.passly.data.local.database.DatabaseClock
 import com.aozijx.passly.domain.auth.model.AuthorizationPermit
 import com.aozijx.passly.domain.auth.model.AuthorizationScope
 import com.aozijx.passly.domain.auth.model.SensitiveRevisionAccessAction
@@ -38,22 +38,22 @@ import javax.inject.Singleton
 
 @Singleton
 internal class RoomEntryRevisionRepository @Inject constructor(
-    private val sessionManager: UnifiedSessionManager,
+    private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
-    private val transactionRunner: VaultTransactionRunner,
+    private val databaseTransactions: DatabaseTransactionRunner,
     private val contentSnapshotCodec: EntryContentSnapshotCodec,
     private val sensitiveRevisionCodec: SensitiveRevisionSnapshotCodec,
     private val sensitiveFieldCodec: SensitiveFieldCodec,
     private val permitVerifier: AuthorizationPermitVerifier,
-    private val revisionHelper: EntryRevisionHelper,
-    private val activityHelper: EntryActivityHelper,
-    private val clock: Clock,
+    private val revisionHelper: EntryRevisionWriter,
+    private val activityWriter: EntryActivityWriter,
+    private val clock: DatabaseClock,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) : EntryRevisionRepository {
 
     override suspend fun getRevisions(entryId: String): List<EntryRevision> {
         if (!sessionState.hasFullSecureSessionAccess()) return emptyList()
-        return sessionManager.query {
+        return databaseSession.query {
             val metadata = entryQueryDao().getById(entryId) ?: return@query emptyList()
             entryRevisionQueryDao().getByEntryId(entryId).map { entity ->
                 entity.toDomain(
@@ -68,7 +68,7 @@ internal class RoomEntryRevisionRepository @Inject constructor(
 
     override suspend fun getLatestRevision(entryId: String): EntryRevision? {
         if (!sessionState.hasFullSecureSessionAccess()) return null
-        return sessionManager.query {
+        return databaseSession.query {
             val entity = entryRevisionQueryDao().getLatest(entryId) ?: return@query null
             val metadata = entryQueryDao().getById(entryId) ?: return@query null
             entity.toDomain(
@@ -101,7 +101,7 @@ internal class RoomEntryRevisionRepository @Inject constructor(
         ) {
             return emptyList()
         }
-        return sessionManager.query {
+        return databaseSession.query {
             val revision = entryRevisionQueryDao().getById(entryId.value, revisionId)
                 ?: return@query emptyList()
             val snapshots = sensitiveRevisionCodec.decode(revision.sensitiveFieldCipherSet)
@@ -137,7 +137,7 @@ internal class RoomEntryRevisionRepository @Inject constructor(
         fieldKeys: Set<SensitiveFieldKey>,
         permit: AuthorizationPermit,
     ): AppResult<Unit> {
-        val result = transactionRunner.write("entry-revision.restore-sensitive") {
+        val result = databaseTransactions.write("entry-revision.restore-sensitive") {
             val revision = entryRevisionQueryDao().getById(entryId.value, revisionId)
                 ?: throw NotFound()
             entryQueryDao().getById(entryId.value) ?: throw NotFound()
@@ -191,7 +191,7 @@ internal class RoomEntryRevisionRepository @Inject constructor(
                 now = now,
                 changeType = RevisionType.VERSION_RESTORED,
             )
-            activityHelper.recordActivity(
+            activityWriter.recordActivity(
                 db = this,
                 entryId = entryId.value,
                 activityType = ActivityType.SENSITIVE_CHANGE,

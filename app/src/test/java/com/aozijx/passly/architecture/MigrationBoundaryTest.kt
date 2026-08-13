@@ -265,10 +265,10 @@ class MigrationBoundaryTest {
     @Test
     fun associatedPackagesStayEncryptedAndVisibleInEntryDetails() {
         val entryEntity = File(
-            "../data/src/main/java/com/aozijx/passly/data/model/entity/EntryEntity.kt"
+            "../data/src/main/java/com/aozijx/passly/data/local/database/entity/EntryEntity.kt"
         ).readText()
         val summaryPayload = moduleSource(
-            "com/aozijx/passly/data/model/payload/summary/SummaryPayload.kt"
+            "com/aozijx/passly/data/codec/entry/payload/SummaryPayload.kt"
         ).readText()
         val associatedInfoSection = File(
             "src/main/java/com/aozijx/passly/feature/detail/ui/sections/" +
@@ -1084,8 +1084,8 @@ class MigrationBoundaryTest {
         val securityViewModel = File(
             "src/main/java/com/aozijx/passly/feature/settings/security/SecuritySettingsViewModel.kt"
         ).readText()
-        val transactionRunner = moduleSource(
-            "com/aozijx/passly/data/repository/VaultTransactionRunner.kt"
+        val databaseTransactions = moduleSource(
+            "com/aozijx/passly/data/local/database/DatabaseTransactionRunner.kt"
         ).readText()
         val entryQueryRepository = moduleSource(
             "com/aozijx/passly/data/repository/entry/RoomEntryQueryRepository.kt"
@@ -1232,9 +1232,9 @@ class MigrationBoundaryTest {
 
         // 11. Plain Vault repositories must not treat an open recovery database as full access.
         assertTrue(
-            "VaultTransactionRunner must require full Vault access before write/read",
-            "hasFullSecureSessionAccess()" in transactionRunner &&
-                    "SessionModeRestricted" in transactionRunner
+            "DatabaseTransactionRunner must require full Vault access before write/read",
+            "hasFullSecureSessionAccess()" in databaseTransactions &&
+                    "SessionModeRestricted" in databaseTransactions
         )
         assertTrue(
             "Entry query repository must gate normal reads",
@@ -1358,17 +1358,17 @@ class MigrationBoundaryTest {
     @Test
     fun entryRevisionLifecycleHasPerEntryGlobalAndDeletionPolicies() {
         val revisionDao = File(
-            "../data/src/main/java/com/aozijx/passly/data/local/dao/revision/" +
+            "../data/src/main/java/com/aozijx/passly/data/local/database/dao/revision/" +
                     "EntryRevisionCommandDao.kt"
         ).readText()
         val revisionHelper = moduleSource(
-            "com/aozijx/passly/data/repository/entry/internal/EntryRevisionHelper.kt"
+            "com/aozijx/passly/data/repository/entry/command/EntryRevisionWriter.kt"
         ).readText()
         val permanentDelete = moduleSource(
-            "com/aozijx/passly/data/repository/entry/executor/DeleteEntryPermanentlyExecutor.kt"
+            "com/aozijx/passly/data/repository/entry/command/DeleteEntryPermanentlyExecutor.kt"
         ).readText()
         val emptyTrash = moduleSource(
-            "com/aozijx/passly/data/repository/entry/executor/EmptyTrashExecutor.kt"
+            "com/aozijx/passly/data/repository/entry/command/EmptyTrashExecutor.kt"
         ).readText()
 
         assertTrue(
@@ -2280,13 +2280,13 @@ class MigrationBoundaryTest {
     @Test
     fun entryRevisionsStoreCompleteSnapshotsWithoutHighSensitivityPlaintext() {
         val helper = moduleSource(
-            "com/aozijx/passly/data/repository/entry/internal/EntryRevisionHelper.kt"
+            "com/aozijx/passly/data/repository/entry/command/EntryRevisionWriter.kt"
         ).readText()
         val updateExecutor = moduleSource(
-            "com/aozijx/passly/data/repository/entry/executor/UpdateEntryExecutor.kt"
+            "com/aozijx/passly/data/repository/entry/command/UpdateEntryExecutor.kt"
         ).readText()
         val revisionEntity = File(
-            "../data/src/main/java/com/aozijx/passly/data/model/entity/EntryRevisionEntity.kt"
+            "../data/src/main/java/com/aozijx/passly/data/local/database/entity/EntryRevisionEntity.kt"
         ).readText()
 
         assertTrue(

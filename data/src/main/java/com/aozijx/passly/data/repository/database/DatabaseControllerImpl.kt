@@ -7,7 +7,7 @@ import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.EventLevel
 import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.report
-import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.data.local.database.maintenance.DatabaseRecoveryStore
 import com.aozijx.passly.domain.diagnostics.repository.DatabaseController
@@ -29,7 +29,7 @@ import javax.inject.Singleton
 @Singleton
 internal class DatabaseControllerImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val sessionManager: UnifiedSessionManager,
+    private val databaseSession: AppDatabaseSession,
     private val recoveryStore: DatabaseRecoveryStore,
     private val dataRefreshNotifier: EntryDataRefreshNotifier,
     private val telemetry: TelemetryReporter
@@ -59,24 +59,24 @@ internal class DatabaseControllerImpl @Inject constructor(
     }
 
     override suspend fun retry(): Throwable? = withContext(Dispatchers.IO) {
-        sessionManager.seal()
-        sessionManager.unlock()
+        databaseSession.seal()
+        databaseSession.unlock()
     }
 
     override suspend fun quarantineAndReinitialize(): DatabaseQuarantineResult =
         withContext(Dispatchers.IO) {
-            sessionManager.seal()
+            databaseSession.seal()
             val recoveryId = recoveryStore.preserveAndClearActiveVault()
             DatabaseQuarantineResult(
                 recoveryId = recoveryId,
-                error = sessionManager.unlock()
+                error = databaseSession.unlock()
             )
         }
 
     override suspend fun clearAndReinitialize(): Throwable? = withContext(Dispatchers.IO) {
         var recoveryError: Throwable? = null
         try {
-            sessionManager.seal()
+            databaseSession.seal()
             deleteDatabaseFiles()
             VaultResourcePaths.RESOURCE_DIRECTORY_NAMES.forEach { name ->
                 deleteVaultFileDirectory(name)
@@ -86,7 +86,7 @@ internal class DatabaseControllerImpl @Inject constructor(
             report(EventLevel.ERROR, "database.recovery_cleanup_failed", error)
         }
 
-        val reopenError = sessionManager.unlock()
+        val reopenError = databaseSession.unlock()
         if (reopenError == null) {
             dataRefreshNotifier.notifyRefresh()
         }
@@ -94,12 +94,12 @@ internal class DatabaseControllerImpl @Inject constructor(
     }
 
     override suspend fun close() {
-        sessionManager.closeDatabase()
+        databaseSession.closeDatabase()
     }
 
     private suspend fun probe(): Throwable? =
         AppResult.runSuspendCatching {
-            sessionManager.query { openHelper.writableDatabase }
+            databaseSession.query { openHelper.writableDatabase }
         }.fold(
             onSuccess = { null },
             onFailure = { it }

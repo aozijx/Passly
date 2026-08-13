@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.entry
 
-import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.codec.entry.SensitiveFieldCodec
 import com.aozijx.passly.domain.auth.model.AuthorizationPermit
 import com.aozijx.passly.domain.auth.model.AuthorizationScope
@@ -18,14 +18,14 @@ import javax.inject.Singleton
 
 @Singleton
 internal class RoomSensitiveFieldRepository @Inject constructor(
-    private val sessionManager: UnifiedSessionManager,
+    private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
     private val codec: SensitiveFieldCodec,
     private val permitVerifier: AuthorizationPermitVerifier,
 ) : SensitiveFieldRepository {
     override suspend fun getPresence(entryId: EntryId): SensitiveFieldPresence =
         if (!sessionState.hasFullSecureSessionAccess()) SensitiveFieldPresence(entryId, emptySet())
-        else sessionManager.query {
+        else databaseSession.query {
             SensitiveFieldPresence(
                 entryId,
                 sensitiveFieldQueryDao().getKeys(entryId.value)
@@ -54,7 +54,7 @@ internal class RoomSensitiveFieldRepository @Inject constructor(
             ),
         )
     ) emptyList() else {
-        sessionManager.query {
+        databaseSession.query {
             keys.mapNotNull { key ->
                 val entity = sensitiveFieldQueryDao().getField(entryId.value, key.name)
                     ?: return@mapNotNull null

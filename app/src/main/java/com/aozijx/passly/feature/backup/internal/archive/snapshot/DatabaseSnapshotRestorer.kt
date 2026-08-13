@@ -6,20 +6,20 @@ import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.EventLevel
 import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.report
-import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
-import com.aozijx.passly.data.local.database.maintenance.VaultDatabaseCleaner
-import com.aozijx.passly.data.model.entity.AttachmentResourceEntity
-import com.aozijx.passly.data.model.entity.AttachmentResourceState
-import com.aozijx.passly.data.model.entity.AttachmentRefEntity
-import com.aozijx.passly.data.model.entity.EntryEntity
-import com.aozijx.passly.data.model.entity.EntryLinkEntity
-import com.aozijx.passly.data.model.entity.EntrySecretEntity
-import com.aozijx.passly.data.repository.entry.internal.SensitiveFieldPersistence
+import com.aozijx.passly.data.local.database.maintenance.DatabaseCleaner
+import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
+import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
+import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
+import com.aozijx.passly.data.local.database.entity.EntryEntity
+import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
+import com.aozijx.passly.data.local.database.entity.EntrySecretEntity
+import com.aozijx.passly.data.repository.entry.SensitiveFieldStore
 import com.aozijx.passly.domain.backup.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
@@ -46,11 +46,11 @@ import javax.inject.Singleton
 @Singleton
 internal class DatabaseSnapshotRestorer @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val sessionManager: UnifiedSessionManager,
-    private val databaseCleaner: VaultDatabaseCleaner,
+    private val databaseSession: AppDatabaseSession,
+    private val databaseCleaner: DatabaseCleaner,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
-    private val sensitiveFieldPersistence: SensitiveFieldPersistence,
+    private val sensitiveFieldStore: SensitiveFieldStore,
     private val documentMapper: BackupSnapshotMapper,
     private val attachmentContentCrypto: AttachmentContentCrypto,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
@@ -68,9 +68,9 @@ internal class DatabaseSnapshotRestorer @Inject constructor(
         val restoredFiles = mutableSetOf<String>()
 
         try {
-            sessionManager.transaction {
+            databaseSession.transaction {
                 if (mode == ImportMode.OVERWRITE) {
-                    databaseCleaner.clearVaultData()
+                    databaseCleaner.clearAllData()
                 }
 
                 bundle.document.entries.forEach { record ->
@@ -132,7 +132,7 @@ internal class DatabaseSnapshotRestorer @Inject constructor(
 
                     entryCommandDao().insertStrict(metaEntity)
                     entrySecretCommandDao().insertStrict(credEntity)
-                    sensitiveFieldPersistence.replaceAll(this, entryId, highSensitivitySecret)
+                    sensitiveFieldStore.replaceAll(this, entryId, highSensitivitySecret)
 
                     attachmentResources.forEach { resource ->
                         val content = requireNotNull(bundle.resourceData[resource.id])

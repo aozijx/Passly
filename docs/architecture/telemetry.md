@@ -93,7 +93,7 @@ Reporter 属于 telemetry 层，不属 error 层。在 repository / use case 边
 ### 接入示例
 
 ```kotlin
-// VaultTransactionRunner 在数据库操作失败后报告
+// DatabaseTransactionRunner 在数据库操作失败后报告
 private fun report(error: AppError, operation: String) {
     errorReporter.report(
         error = error,

@@ -1,11 +1,11 @@
 package com.aozijx.passly.data.repository.attachment
 
 import com.aozijx.passly.core.error.model.SessionModeRestricted
-import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.mapper.attachment.AttachmentRefMapper
-import com.aozijx.passly.data.model.entity.AttachmentResourceEntity
-import com.aozijx.passly.data.model.entity.AttachmentResourceState
-import com.aozijx.passly.data.repository.entry.internal.EntryRevisionHelper
+import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
+import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
+import com.aozijx.passly.data.repository.entry.command.EntryRevisionWriter
 import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
@@ -19,17 +19,17 @@ import javax.inject.Singleton
 
 @Singleton
 internal class FileBackedAttachmentRepository @Inject constructor(
-    private val sessionManager: UnifiedSessionManager,
+    private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
     private val contentCrypto: AttachmentContentCrypto,
     private val garbageCollector: AttachmentResourceGarbageCollector,
-    private val revisionHelper: EntryRevisionHelper,
+    private val revisionHelper: EntryRevisionWriter,
 ) : AttachmentRepository {
 
     override suspend fun getAttachments(entryId: String): List<EntryAttachment> =
         if (!sessionState.hasFullSecureSessionAccess()) emptyList() else {
             garbageCollector.drain()
-            sessionManager.query {
+            databaseSession.query {
             attachmentRefQueryDao().getCommittedByEntryId(entryId).map { ref ->
                 val resource = requireNotNull(attachmentResourceDao().getById(ref.resourceId))
                 AttachmentRefMapper.toDomain(ref, resource.fileSize)
@@ -40,7 +40,7 @@ internal class FileBackedAttachmentRepository @Inject constructor(
     override suspend fun getPendingAttachments(stagingOwnerId: String): List<EntryAttachment> =
         if (!sessionState.hasFullSecureSessionAccess()) emptyList() else {
             garbageCollector.drain()
-            sessionManager.query {
+            databaseSession.query {
             attachmentRefQueryDao().getPendingByOwner(stagingOwnerId).map { ref ->
                 val resource = requireNotNull(attachmentResourceDao().getById(ref.resourceId))
                 AttachmentRefMapper.toDomain(ref, resource.fileSize)
@@ -62,7 +62,7 @@ internal class FileBackedAttachmentRepository @Inject constructor(
         validateRef(normalized)
         garbageCollector.withMutationLock {
             val resourceId = contentCrypto.contentId(content)
-            val existing = sessionManager.query { attachmentResourceDao().getById(resourceId) }
+            val existing = databaseSession.query { attachmentResourceDao().getById(resourceId) }
             require(existing == null || existing.fileSize == content.size.toLong()) {
                 "Attachment keyed content ID collision"
             }
@@ -76,7 +76,7 @@ internal class FileBackedAttachmentRepository @Inject constructor(
                 }
             }
             try {
-                sessionManager.transaction {
+                databaseSession.transaction {
                     if (existing == null) {
                         attachmentResourceDao().insertStrict(
                             AttachmentResourceEntity(
@@ -107,7 +107,7 @@ internal class FileBackedAttachmentRepository @Inject constructor(
 
     override suspend fun deleteAttachment(attachmentId: String) {
         requireFullSecureSessionAccess()
-        sessionManager.transaction {
+        databaseSession.transaction {
             val ref = attachmentRefQueryDao().getById(attachmentId) ?: return@transaction
             attachmentRefCommandDao().deleteById(attachmentId)
             if (ref.status == AttachmentStatus.COMMITTED.name) {
@@ -125,7 +125,7 @@ internal class FileBackedAttachmentRepository @Inject constructor(
     override suspend fun commitPendingAttachments(stagingOwnerId: String, entryId: String) {
         requireFullSecureSessionAccess()
         require(stagingOwnerId.isNotBlank() && entryId.isNotBlank())
-        sessionManager.transaction {
+        databaseSession.transaction {
             check(entryQueryDao().exists(entryId)) { "Attachment target entry does not exist" }
             val pendingCount = attachmentRefQueryDao().getPendingByOwner(stagingOwnerId).size
             if (pendingCount == 0) return@transaction
@@ -139,7 +139,7 @@ internal class FileBackedAttachmentRepository @Inject constructor(
     override suspend fun discardPendingAttachments(stagingOwnerId: String) {
         requireFullSecureSessionAccess()
         require(stagingOwnerId.isNotBlank())
-        sessionManager.transaction {
+        databaseSession.transaction {
             attachmentRefCommandDao().deletePendingByOwner(stagingOwnerId)
             garbageCollector.scheduleInTransaction(this)
         }

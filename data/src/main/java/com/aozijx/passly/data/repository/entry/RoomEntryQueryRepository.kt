@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.entry
 
-import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
@@ -16,7 +16,7 @@ import javax.inject.Singleton
  */
 @Singleton
 internal class RoomEntryQueryRepository @Inject constructor(
-    private val sessionManager: UnifiedSessionManager,
+    private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec
@@ -24,7 +24,7 @@ internal class RoomEntryQueryRepository @Inject constructor(
 
     override suspend fun getByIdWithoutHighSensitivity(entryId: String): EntryAggregate? {
         if (!sessionState.hasFullSecureSessionAccess()) return null
-        return sessionManager.query {
+        return databaseSession.query {
             val metaEntity = entryQueryDao().getById(entryId) ?: return@query null
             val credEntity = entrySecretQueryDao().getByEntryId(entryId)
             val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
@@ -35,7 +35,7 @@ internal class RoomEntryQueryRepository @Inject constructor(
 
     override suspend fun getEntriesForIconResync(): List<EntryAggregate> {
         if (!sessionState.hasFullSecureSessionAccess()) return emptyList()
-        return sessionManager.query {
+        return databaseSession.query {
             val metaEntities = entryQueryDao().getActive()
             val credEntities = entrySecretQueryDao().getByEntryIds(metaEntities.map { it.entryId })
             val credMap = credEntities.associateBy { it.entryId }
@@ -54,6 +54,6 @@ internal class RoomEntryQueryRepository @Inject constructor(
 
     override suspend fun count(): Int {
         if (!sessionState.hasFullSecureSessionAccess()) return 0
-        return sessionManager.query { entryQueryDao().countActive() }
+        return databaseSession.query { entryQueryDao().countActive() }
     }
 }

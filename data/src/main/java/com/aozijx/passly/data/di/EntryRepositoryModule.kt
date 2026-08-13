@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.di
 
-import com.aozijx.passly.data.local.database.maintenance.VaultDatabaseCleaner
-import com.aozijx.passly.data.local.database.maintenance.VaultDatabaseCleanerImpl
+import com.aozijx.passly.data.local.database.maintenance.DatabaseCleaner
+import com.aozijx.passly.data.local.database.maintenance.DatabaseCleanerImpl
 import com.aozijx.passly.data.repository.activity.RoomActivityQueryRepository
 import com.aozijx.passly.data.repository.activity.RoomActivityRecorder
 import com.aozijx.passly.data.repository.autofill.CredentialServiceRepositoryImpl
@@ -82,7 +82,7 @@ internal abstract class EntryRepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindVaultDatabaseCleaner(
-        impl: VaultDatabaseCleanerImpl
-    ): VaultDatabaseCleaner
+    abstract fun bindDatabaseCleaner(
+        impl: DatabaseCleanerImpl
+    ): DatabaseCleaner
 }

@@ -5,42 +5,42 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.aozijx.passly.data.BuildConfig
 import com.aozijx.passly.core.error.boundary.DatabaseException
-import com.aozijx.passly.data.local.dao.activity.EntryActivityAnalyticsDao
-import com.aozijx.passly.data.local.dao.activity.EntryActivityCommandDao
-import com.aozijx.passly.data.local.dao.activity.EntryActivityQueryDao
-import com.aozijx.passly.data.local.dao.attachment.AttachmentRefCommandDao
-import com.aozijx.passly.data.local.dao.attachment.AttachmentRefQueryDao
-import com.aozijx.passly.data.local.dao.attachment.AttachmentResourceDao
-import com.aozijx.passly.data.local.dao.attachment.AttachmentGcQueueDao
-import com.aozijx.passly.data.local.dao.attachment.RevisionAttachmentRefDao
-import com.aozijx.passly.data.local.dao.entry.EntryCommandDao
-import com.aozijx.passly.data.local.dao.entry.EntryQueryDao
-import com.aozijx.passly.data.local.dao.entry.EntrySecretCommandDao
-import com.aozijx.passly.data.local.dao.entry.EntrySecretQueryDao
-import com.aozijx.passly.data.local.dao.link.EntryLinkCommandDao
-import com.aozijx.passly.data.local.dao.link.EntryLinkQueryDao
-import com.aozijx.passly.data.local.dao.maintenance.VaultMaintenanceDao
-import com.aozijx.passly.data.local.dao.revision.EntryRevisionCommandDao
-import com.aozijx.passly.data.local.dao.revision.EntryRevisionQueryDao
-import com.aozijx.passly.data.local.dao.search.SearchTokenCommandDao
-import com.aozijx.passly.data.local.dao.search.SearchTokenQueryDao
-import com.aozijx.passly.data.local.dao.sensitive.SensitiveFieldCommandDao
-import com.aozijx.passly.data.local.dao.sensitive.SensitiveFieldQueryDao
+import com.aozijx.passly.data.local.database.dao.activity.EntryActivityAnalyticsDao
+import com.aozijx.passly.data.local.database.dao.activity.EntryActivityCommandDao
+import com.aozijx.passly.data.local.database.dao.activity.EntryActivityQueryDao
+import com.aozijx.passly.data.local.database.dao.attachment.AttachmentRefCommandDao
+import com.aozijx.passly.data.local.database.dao.attachment.AttachmentRefQueryDao
+import com.aozijx.passly.data.local.database.dao.attachment.AttachmentResourceDao
+import com.aozijx.passly.data.local.database.dao.attachment.AttachmentGcQueueDao
+import com.aozijx.passly.data.local.database.dao.attachment.RevisionAttachmentRefDao
+import com.aozijx.passly.data.local.database.dao.entry.EntryCommandDao
+import com.aozijx.passly.data.local.database.dao.entry.EntryQueryDao
+import com.aozijx.passly.data.local.database.dao.entry.EntrySecretCommandDao
+import com.aozijx.passly.data.local.database.dao.entry.EntrySecretQueryDao
+import com.aozijx.passly.data.local.database.dao.link.EntryLinkCommandDao
+import com.aozijx.passly.data.local.database.dao.link.EntryLinkQueryDao
+import com.aozijx.passly.data.local.database.dao.maintenance.DatabaseMaintenanceDao
+import com.aozijx.passly.data.local.database.dao.revision.EntryRevisionCommandDao
+import com.aozijx.passly.data.local.database.dao.revision.EntryRevisionQueryDao
+import com.aozijx.passly.data.local.database.dao.search.SearchTokenCommandDao
+import com.aozijx.passly.data.local.database.dao.search.SearchTokenQueryDao
+import com.aozijx.passly.data.local.database.dao.sensitive.SensitiveFieldCommandDao
+import com.aozijx.passly.data.local.database.dao.sensitive.SensitiveFieldQueryDao
 import com.aozijx.passly.data.local.database.converter.ActivityTypeConverter
 import com.aozijx.passly.data.local.database.converter.EntryRelationTypeConverter
 import com.aozijx.passly.data.local.database.converter.EntryTypeConverter
 import com.aozijx.passly.data.local.database.converter.LookupFieldConverter
-import com.aozijx.passly.data.model.entity.EntryActivityEntity
-import com.aozijx.passly.data.model.entity.AttachmentResourceEntity
-import com.aozijx.passly.data.model.entity.AttachmentRefEntity
-import com.aozijx.passly.data.model.entity.AttachmentGcQueueEntity
-import com.aozijx.passly.data.model.entity.EntryLinkEntity
-import com.aozijx.passly.data.model.entity.EntrySensitiveFieldEntity
-import com.aozijx.passly.data.model.entity.EntryEntity
-import com.aozijx.passly.data.model.entity.EntryRevisionEntity
-import com.aozijx.passly.data.model.entity.RevisionAttachmentRefEntity
-import com.aozijx.passly.data.model.entity.EntrySecretEntity
-import com.aozijx.passly.data.model.entity.SearchTokenEntity
+import com.aozijx.passly.data.local.database.entity.EntryActivityEntity
+import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
+import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
+import com.aozijx.passly.data.local.database.entity.AttachmentGcQueueEntity
+import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
+import com.aozijx.passly.data.local.database.entity.EntrySensitiveFieldEntity
+import com.aozijx.passly.data.local.database.entity.EntryEntity
+import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
+import com.aozijx.passly.data.local.database.entity.RevisionAttachmentRefEntity
+import com.aozijx.passly.data.local.database.entity.EntrySecretEntity
+import com.aozijx.passly.data.local.database.entity.SearchTokenEntity
 
 @Database(
     entities = [
@@ -87,7 +87,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun revisionAttachmentRefDao(): RevisionAttachmentRefDao
     abstract fun searchTokenQueryDao(): SearchTokenQueryDao
     abstract fun searchTokenCommandDao(): SearchTokenCommandDao
-    abstract fun vaultMaintenanceDao(): VaultMaintenanceDao
+    abstract fun databaseMaintenanceDao(): DatabaseMaintenanceDao
 
     companion object {
         private const val TAG = "AppDatabase"

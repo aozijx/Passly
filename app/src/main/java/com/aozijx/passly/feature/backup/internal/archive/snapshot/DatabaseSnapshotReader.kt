@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.backup.internal.archive.snapshot
 
 import android.content.Context
 import com.aozijx.passly.core.platform.VaultResourcePaths
-import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
@@ -11,7 +11,7 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKin
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
-import com.aozijx.passly.data.repository.entry.internal.SensitiveFieldPersistence
+import com.aozijx.passly.data.repository.entry.SensitiveFieldStore
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.withHighSensitivity
@@ -37,10 +37,10 @@ import javax.inject.Singleton
 @Singleton
 internal class DatabaseSnapshotReader @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val sessionManager: UnifiedSessionManager,
+    private val databaseSession: AppDatabaseSession,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
-    private val sensitiveFieldPersistence: SensitiveFieldPersistence,
+    private val sensitiveFieldStore: SensitiveFieldStore,
     private val attachmentContentCrypto: AttachmentContentCrypto,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
     private val documentMapper: BackupSnapshotMapper
@@ -55,7 +55,7 @@ internal class DatabaseSnapshotReader @Inject constructor(
         require(includedEntryTypes.isNotEmpty()) {
             "At least one entry type must be selected"
         }
-        return sessionManager.query {
+        return databaseSession.query {
             val eligibleEntities = entryQueryDao().getAll()
                 .asSequence()
                 .filter { includeDeleted || it.deletedAt == null }
@@ -72,7 +72,7 @@ internal class DatabaseSnapshotReader @Inject constructor(
                 val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
                 val credential = credentialMap[metaEntity.entryId]
                 val secret = credential?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
-                val highSensitivitySecret = sensitiveFieldPersistence.readAllUnlocked(
+                val highSensitivitySecret = sensitiveFieldStore.readAllUnlocked(
                     this,
                     metaEntity.entryId
                 )

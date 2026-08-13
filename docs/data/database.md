@@ -6,7 +6,7 @@
 
 ```mermaid
 flowchart TB
-    Repo["Domain Repository 实现"] --> Session["UnifiedSessionManager"]
+    Repo["Domain Repository 实现"] --> Session["AppDatabaseSession"]
     Session --> Provider["DatabaseProvider"]
     Provider --> Room["Room AppDatabase"]
     Room --> SQLCipher["SQLCipher passphrase"]
@@ -18,7 +18,7 @@ flowchart TB
 `:data` 统一拥有 Room Entity、DAO、converter、Schema、`AppDatabase`、SQLCipher provider、数据库强类型
 session adapter，以及 Entry、Settings、Diagnostics 等数据实现。数据库相关代码是该模块内部的一个
 内聚子域。`DatabaseProvider` 使用调用方经 `SessionKeySource` 提供的会话密钥创建
-加密数据库；`UnifiedSessionManager` 延迟打开，并在应用锁定或进入后台时关闭实例。Repository 必须经
+加密数据库；`AppDatabaseSession` 延迟打开，并在应用锁定或进入后台时关闭实例。Repository 必须经
 session adapter 访问数据库，不能长期缓存 DAO 或 Room 实例。
 
 `:data` 只依赖 Core、Domain 与 `:runtime:session`，不依赖 App 或 Feature。备份协议、格式与流程位于 app 的
@@ -122,6 +122,6 @@ stateDiagram-v2
 
 - `data/src/main/java/com/aozijx/passly/data/local/database/AppDatabase.kt`
 - `data/src/main/java/com/aozijx/passly/data/local/database/DatabaseProvider.kt`
-- `data/src/main/java/com/aozijx/passly/data/local/database/session/UnifiedSessionManager.kt`
-- `data/src/main/java/com/aozijx/passly/data/model/entity/`
+- `data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSession.kt`
+- `data/src/main/java/com/aozijx/passly/data/local/database/entity/`
 - [ADR-0018](../decisions/ADR-0018-lookup-metadata-strategy.md)

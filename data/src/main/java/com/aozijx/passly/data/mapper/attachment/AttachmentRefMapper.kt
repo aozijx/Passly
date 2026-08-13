@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.mapper.attachment
 
-import com.aozijx.passly.data.model.entity.AttachmentRefEntity
+import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.attachment.EntryAttachment
 

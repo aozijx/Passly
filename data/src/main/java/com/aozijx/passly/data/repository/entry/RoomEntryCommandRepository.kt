@@ -1,12 +1,13 @@
 package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.data.repository.entry.executor.CreateEntryExecutor
-import com.aozijx.passly.data.repository.entry.executor.DeleteEntryPermanentlyExecutor
-import com.aozijx.passly.data.repository.entry.executor.EmptyTrashExecutor
-import com.aozijx.passly.data.repository.entry.executor.RestoreEntryExecutor
-import com.aozijx.passly.data.repository.entry.executor.TrashEntryExecutor
-import com.aozijx.passly.data.repository.entry.executor.UpdateEntryExecutor
+import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
+import com.aozijx.passly.data.repository.entry.command.CreateEntryExecutor
+import com.aozijx.passly.data.repository.entry.command.DeleteEntryPermanentlyExecutor
+import com.aozijx.passly.data.repository.entry.command.EmptyTrashExecutor
+import com.aozijx.passly.data.repository.entry.command.RestoreEntryExecutor
+import com.aozijx.passly.data.repository.entry.command.TrashEntryExecutor
+import com.aozijx.passly.data.repository.entry.command.UpdateEntryExecutor
 import com.aozijx.passly.domain.entry.model.EntryChanges
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryAggregate
@@ -25,7 +26,7 @@ import javax.inject.Singleton
  * - [DeleteEntryPermanentlyExecutor] — 永久删除
  * - [EmptyTrashExecutor] — 清空回收站
  *
- * 事务入口统一由 [VaultTransactionRunner] 管理，执行器不直接引用 DAO。
+ * 事务入口统一由 [DatabaseTransactionRunner] 管理，执行器不直接引用 DAO。
  */
 @Singleton
 internal class RoomEntryCommandRepository @Inject constructor(

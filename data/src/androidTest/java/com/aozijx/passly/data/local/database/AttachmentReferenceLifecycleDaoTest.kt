@@ -4,11 +4,11 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.aozijx.passly.data.model.entity.AttachmentResourceEntity
-import com.aozijx.passly.data.model.entity.AttachmentRefEntity
-import com.aozijx.passly.data.model.entity.EntryEntity
-import com.aozijx.passly.data.model.entity.EntryRevisionEntity
-import com.aozijx.passly.data.model.entity.RevisionAttachmentRefEntity
+import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
+import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
+import com.aozijx.passly.data.local.database.entity.EntryEntity
+import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
+import com.aozijx.passly.data.local.database.entity.RevisionAttachmentRefEntity
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import kotlinx.coroutines.runBlocking
@@ -28,7 +28,7 @@ class AttachmentReferenceLifecycleDaoTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .allowMainThreadQueries()
-            .addCallback(AttachmentRefConstraints)
+            .addCallback(AttachmentReferenceConstraintCallback)
             .build()
     }
 

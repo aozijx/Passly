@@ -5,8 +5,8 @@ import androidx.room.Room
 import androidx.room.withTransaction
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.aozijx.passly.data.model.entity.EntryEntity
-import com.aozijx.passly.data.model.entity.EntryRevisionEntity
+import com.aozijx.passly.data.local.database.entity.EntryEntity
+import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.domain.entry.model.EntryType
 import kotlinx.coroutines.runBlocking
 import org.junit.After

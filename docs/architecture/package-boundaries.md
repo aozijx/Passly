@@ -47,9 +47,9 @@ Mapper 应显式处理缺失字段、版本和错误，不用强制类型转换�
 ```text
 domain -> com.aozijx.passly.data
 domain -> com.aozijx.passly.feature
-feature -> *.data.model.entity / *.data.local.dao
+feature -> *.data.local.database.entity / *.data.local.database.dao
 security -> *.data.repository / *.data.local
 ```
 
-允许清单必须精确到文件或接口并附理由，不能通过全局排除关闭检查。
+应用内备份的数据库快照适配器是已知例外；允许清单必须精确到文件或接口并附理由，不能通过全局排除关闭检查。
 

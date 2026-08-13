@@ -2,14 +2,14 @@ package com.aozijx.passly.data.repository.attachment
 
 import android.content.Context
 import com.aozijx.passly.core.platform.VaultResourcePaths
-import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.EventLevel
 import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.report
 import com.aozijx.passly.data.local.database.AppDatabase
-import com.aozijx.passly.data.model.entity.AttachmentGcQueueEntity
-import com.aozijx.passly.data.model.entity.AttachmentResourceState
+import com.aozijx.passly.data.local.database.entity.AttachmentGcQueueEntity
+import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -22,7 +22,7 @@ import javax.inject.Singleton
 @Singleton
 class AttachmentResourceGarbageCollector @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val sessionManager: UnifiedSessionManager,
+    private val databaseSession: AppDatabaseSession,
     private val telemetry: TelemetryReporter,
 ) {
     private val mutationMutex = Mutex()
@@ -48,12 +48,12 @@ class AttachmentResourceGarbageCollector @Inject constructor(
 
     /** Phase two: idempotent file deletion followed by database finalization. */
     suspend fun drain(limit: Int = 64) = withMutationLock {
-        val pending = sessionManager.query { attachmentGcQueueDao().getPending(limit) }
+        val pending = databaseSession.query { attachmentGcQueueDao().getPending(limit) }
         pending.forEach { item -> drainOne(item) }
     }
 
     private suspend fun drainOne(item: AttachmentGcQueueEntity) {
-        val stillUnreferenced = sessionManager.transaction {
+        val stillUnreferenced = databaseSession.transaction {
             val hasRefs = attachmentResourceDao().currentRefCount(item.resourceId) > 0 ||
                 attachmentResourceDao().revisionRefCount(item.resourceId) > 0
             if (hasRefs) {
@@ -71,7 +71,7 @@ class AttachmentResourceGarbageCollector @Inject constructor(
             }.getOrDefault(false)
         }
         if (!deleted) {
-            sessionManager.transaction {
+            databaseSession.transaction {
                 attachmentGcQueueDao().recordAttempt(item.resourceId, System.currentTimeMillis())
             }
             telemetry.report(
@@ -82,7 +82,7 @@ class AttachmentResourceGarbageCollector @Inject constructor(
             return
         }
 
-        sessionManager.transaction {
+        databaseSession.transaction {
             val hasRefs = attachmentResourceDao().currentRefCount(item.resourceId) > 0 ||
                 attachmentResourceDao().revisionRefCount(item.resourceId) > 0
             if (hasRefs) {

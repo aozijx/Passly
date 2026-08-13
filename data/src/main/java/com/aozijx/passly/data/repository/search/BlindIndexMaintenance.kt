@@ -5,9 +5,9 @@ import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
 import com.aozijx.passly.data.mapper.search.toLookupFields
-import com.aozijx.passly.data.model.entity.SearchTokenEntity
-import com.aozijx.passly.data.repository.VaultTransactionRunner
-import com.aozijx.passly.data.repository.entry.internal.EntryBlindIndexHelper
+import com.aozijx.passly.data.local.database.entity.SearchTokenEntity
+import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
+import com.aozijx.passly.data.repository.entry.command.EntrySearchIndexWriter
 import com.aozijx.passly.domain.entry.repository.SearchIndexMaintenance
 import com.aozijx.passly.security.search.BlindIndexRecord
 import com.aozijx.passly.security.search.BlindIndexer
@@ -23,11 +23,11 @@ import javax.inject.Singleton
  */
 @Singleton
 internal class BlindIndexMaintenance @Inject constructor(
-    private val transactionRunner: VaultTransactionRunner,
+    private val databaseTransactions: DatabaseTransactionRunner,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
     private val blindIndexer: BlindIndexer,
-    private val blindIndexHelper: EntryBlindIndexHelper
+    private val searchIndexWriter: EntrySearchIndexWriter
 ) : SearchIndexMaintenance {
 
     companion object {
@@ -36,12 +36,12 @@ internal class BlindIndexMaintenance @Inject constructor(
     }
 
     override suspend fun rebuildIndex(force: Boolean): AppResult<Int> =
-        transactionRunner.write("entry.rebuildIndex") {
+        databaseTransactions.write("entry.rebuildIndex") {
             val staleEntryIds = if (force) {
                 entryQueryDao().getActive().map { it.entryId }
             } else {
                 entryQueryDao().getActiveEntryIdsNeedingIndexRebuild(
-                    EntryBlindIndexHelper.CURRENT_SEARCH_INDEX_VERSION
+                    EntrySearchIndexWriter.CURRENT_SEARCH_INDEX_VERSION
                 )
             }
 
@@ -65,7 +65,7 @@ internal class BlindIndexMaintenance @Inject constructor(
                         metaEntity, summary, secret
                     )
                     // rebuildForEntry 内部：删除旧索引 -> 生成新索引 -> 更新 searchIndexVersion
-                    blindIndexHelper.rebuildForEntry(
+                    searchIndexWriter.rebuildForEntry(
                         this,
                         metaEntity.entryId,
                         entry.toLookupFields()

@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.mapper.entry
 
-import com.aozijx.passly.data.model.payload.summary.SummaryPayload
-import com.aozijx.passly.data.model.payload.summary.WebsiteInfoPayload
+import com.aozijx.passly.data.codec.entry.payload.SummaryPayload
+import com.aozijx.passly.data.codec.entry.payload.WebsiteInfoPayload
 import com.aozijx.passly.domain.entry.model.EntrySummary
 import com.aozijx.passly.domain.entry.model.WebsiteInfo
 

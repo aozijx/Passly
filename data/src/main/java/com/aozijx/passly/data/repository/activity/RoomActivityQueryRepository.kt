@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.activity
 
-import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.mapper.activity.toDomain
 import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
@@ -18,7 +18,7 @@ import javax.inject.Singleton
 
 @Singleton
 internal class RoomActivityQueryRepository @Inject constructor(
-    private val sessionManager: UnifiedSessionManager,
+    private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState
 ) : ActivityQueryRepository {
 
@@ -26,7 +26,7 @@ internal class RoomActivityQueryRepository @Inject constructor(
     override fun observeByEntryId(entryId: String): Flow<List<EntryActivity>> =
         sessionState.isAuthorized.flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
-            else sessionManager.observeFlow {
+            else databaseSession.observeFlow {
                 entryActivityQueryDao().observeByEntryId(entryId)
                     .map { entities -> entities.map { it.toDomain() } }
                     .flowOn(Dispatchers.IO)
@@ -37,7 +37,7 @@ internal class RoomActivityQueryRepository @Inject constructor(
     override fun observeAll(): Flow<List<EntryActivity>> =
         sessionState.isAuthorized.flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
-            else sessionManager.observeFlow {
+            else databaseSession.observeFlow {
                 entryActivityQueryDao().observeAll()
                     .map { entities -> entities.map { it.toDomain() } }
                     .flowOn(Dispatchers.IO)
@@ -48,7 +48,7 @@ internal class RoomActivityQueryRepository @Inject constructor(
     override fun observeByType(activityType: ActivityType): Flow<List<EntryActivity>> =
         sessionState.isAuthorized.flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
-            else sessionManager.observeFlow {
+            else databaseSession.observeFlow {
                 entryActivityQueryDao().observeByType(activityType)
                     .map { entities -> entities.map { it.toDomain() } }
                     .flowOn(Dispatchers.IO)

@@ -2,12 +2,12 @@ package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.error.model.ValidationError
-import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
-import com.aozijx.passly.data.model.entity.EntryLinkEntity
-import com.aozijx.passly.data.repository.VaultTransactionRunner
+import com.aozijx.passly.data.local.database.session.AppDatabaseSession
+import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
+import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
-import com.aozijx.passly.data.repository.entry.internal.EntryRevisionHelper
-import com.aozijx.passly.data.util.Clock
+import com.aozijx.passly.data.repository.entry.command.EntryRevisionWriter
+import com.aozijx.passly.data.local.database.DatabaseClock
 import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.link.EntryLink
@@ -24,11 +24,11 @@ import javax.inject.Singleton
 
 @Singleton
 internal class RoomEntryLinkRepository @Inject constructor(
-    private val transactionRunner: VaultTransactionRunner,
-    private val sessionManager: UnifiedSessionManager,
+    private val databaseTransactions: DatabaseTransactionRunner,
+    private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
-    private val revisionHelper: EntryRevisionHelper,
-    private val clock: Clock,
+    private val revisionHelper: EntryRevisionWriter,
+    private val clock: DatabaseClock,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) : EntryLinkRepository {
 
@@ -38,7 +38,7 @@ internal class RoomEntryLinkRepository @Inject constructor(
             if (!authorized) {
                 flowOf(emptyList())
             } else {
-                sessionManager.observeFlow {
+                databaseSession.observeFlow {
                     entryLinkQueryDao().observeAll()
                         .map { links -> links.map { it.toDomain() } }
                 }
@@ -51,7 +51,7 @@ internal class RoomEntryLinkRepository @Inject constructor(
             if (!authorized) {
                 flowOf(emptyList())
             } else {
-                sessionManager.observeFlow {
+                databaseSession.observeFlow {
                     entryLinkQueryDao().observeByEntryId(entryId.value)
                         .map { links -> links.map { it.toDomain() } }
                 }
@@ -62,7 +62,7 @@ internal class RoomEntryLinkRepository @Inject constructor(
         if (!sessionState.hasFullSecureSessionAccess()) {
             emptyList()
         } else {
-            sessionManager.query {
+            databaseSession.query {
                 entryLinkQueryDao().getByEntryId(entryId.value).map { it.toDomain() }
             }
         }
@@ -71,13 +71,13 @@ internal class RoomEntryLinkRepository @Inject constructor(
         if (!sessionState.hasFullSecureSessionAccess()) {
             emptyList()
         } else {
-            sessionManager.query {
+            databaseSession.query {
                 entryLinkQueryDao().getAll().map { it.toDomain() }
             }
         }
 
     override suspend fun upsert(link: EntryLink): AppResult<Unit> {
-        val result = transactionRunner.write("entry-link.upsert") {
+        val result = databaseTransactions.write("entry-link.upsert") {
             val endpoints = entryQueryDao().getByIds(
                 listOf(link.sourceEntryId.value, link.targetEntryId.value)
             ).associateBy { it.entryId }
@@ -114,7 +114,7 @@ internal class RoomEntryLinkRepository @Inject constructor(
     }
 
     override suspend fun delete(linkId: EntryLinkId): AppResult<Unit> {
-        val result = transactionRunner.write("entry-link.delete") {
+        val result = databaseTransactions.write("entry-link.delete") {
             val link = entryLinkQueryDao().getById(linkId.value)
             entryLinkCommandDao().deleteById(linkId.value)
             if (link != null) {

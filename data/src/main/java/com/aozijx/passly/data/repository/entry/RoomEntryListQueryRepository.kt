@@ -1,11 +1,11 @@
 package com.aozijx.passly.data.repository.entry
 
-import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
-import com.aozijx.passly.data.local.dao.buildEntryIdIntersectionQuery
+import com.aozijx.passly.data.local.database.query.buildEntryIdIntersectionQuery
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.mapper.entry.EntryListItemMapper
-import com.aozijx.passly.data.model.entity.EntryEntity
+import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -29,7 +29,7 @@ import javax.inject.Singleton
 
 @Singleton
 internal class RoomEntryListQueryRepository @Inject constructor(
-    private val sessionManager: UnifiedSessionManager,
+    private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
     private val summaryCodec: EntrySummaryCodec,
     private val blindIndexer: BlindIndexer
@@ -39,7 +39,7 @@ internal class RoomEntryListQueryRepository @Inject constructor(
     override val deletedEntries: Flow<List<EntryListItem>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
-            else sessionManager.observeFlow {
+            else databaseSession.observeFlow {
                 entryQueryDao().observeDeleted()
                     .map { entities ->
                         entities.map { entity ->
@@ -60,7 +60,7 @@ internal class RoomEntryListQueryRepository @Inject constructor(
     ): Flow<List<EntryListItem>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
-            else sessionManager.observeFlow {
+            else databaseSession.observeFlow {
                 val entryFlow = when (filter) {
                     EntryFilter.ALL -> entryQueryDao().observeActive()
                     EntryFilter.TOTP_ONLY -> entryQueryDao().observeActiveWithCapability(

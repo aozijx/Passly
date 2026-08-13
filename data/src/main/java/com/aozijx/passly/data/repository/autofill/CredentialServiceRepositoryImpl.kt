@@ -1,10 +1,10 @@
 package com.aozijx.passly.data.repository.autofill
 
 import com.aozijx.passly.core.platform.PackageUtils
-import com.aozijx.passly.data.local.database.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
-import com.aozijx.passly.data.local.dao.buildRecentEntryIdIntersectionQuery
+import com.aozijx.passly.data.local.database.query.buildRecentEntryIdIntersectionQuery
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
 import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.AutofillConfiguration
@@ -36,7 +36,7 @@ import javax.inject.Singleton
  */
 @Singleton
 internal class CredentialServiceRepositoryImpl @Inject constructor(
-    private val sessionManager: UnifiedSessionManager,
+    private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
@@ -58,7 +58,7 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
         val normalizedDomain = CredentialScopeMatcher.normalizeDomain(webDomain)
         val boundedLimit = limit.coerceIn(1, AutofillConfiguration.MAX_CANDIDATES)
 
-        return sessionManager.query {
+        return databaseSession.query {
             val packageMatches = normalizedPackage
                 ?.let {
                     findMatchingIds(
@@ -139,7 +139,7 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
     ): List<EntryAggregate> {
         if (!sessionState.hasFullSecureSessionAccess() || entryIds.isEmpty()) return emptyList()
         val uniqueIds = entryIds.distinct()
-        return sessionManager.query {
+        return databaseSession.query {
             val entries = entryQueryDao().getByIds(uniqueIds)
                 .filter { it.deletedAt == null }
             val secretMap = if (includeSecrets) {

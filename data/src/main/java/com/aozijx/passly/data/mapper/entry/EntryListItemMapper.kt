@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.mapper.entry
 
-import com.aozijx.passly.data.model.entity.EntryEntity
+import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.domain.entry.model.EntrySummary
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 

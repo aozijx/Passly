@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.codec.revision
 
-import com.aozijx.passly.data.model.entity.EntrySensitiveFieldEntity
+import com.aozijx.passly.data.local.database.entity.EntrySensitiveFieldEntity
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream

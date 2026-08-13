@@ -1,11 +1,11 @@
 package com.aozijx.passly.data.codec.revision
 
-import com.aozijx.passly.data.crypto.AadProvider
+import com.aozijx.passly.data.codec.DatabaseRecordAad
 import com.aozijx.passly.data.mapper.entry.EntrySecretMapper
 import com.aozijx.passly.data.mapper.entry.EntrySummaryMapper
-import com.aozijx.passly.data.model.payload.secret.SecretPayload
-import com.aozijx.passly.data.model.payload.summary.SummaryPayload
-import com.aozijx.passly.data.model.serializer.AppJson
+import com.aozijx.passly.data.codec.entry.payload.SecretPayload
+import com.aozijx.passly.data.codec.entry.payload.SummaryPayload
+import com.aozijx.passly.data.codec.json.AppJson
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntrySummary
@@ -107,11 +107,11 @@ class EntryContentSnapshotCodec @Inject constructor(
         ).toByteArray()
         val compressed = gzip(EntryContentSnapshot(summaryJson, secretJson, relationsJson).toBytes())
         val encoded = FORMAT_PREFIX + Base64.getEncoder().encodeToString(compressed)
-        return fieldEncryptor.encrypt(encoded, AadProvider.revision(entryId))
+        return fieldEncryptor.encrypt(encoded, DatabaseRecordAad.revision(entryId))
     }
 
     suspend fun decrypt(cipher: ByteArray, entryId: String): DecodedEntryContentSnapshot {
-        val encoded = fieldEncryptor.decrypt(cipher, AadProvider.revision(entryId))
+        val encoded = fieldEncryptor.decrypt(cipher, DatabaseRecordAad.revision(entryId))
         require(encoded.startsWith(FORMAT_PREFIX)) { "Unsupported entry content snapshot format" }
         val snapshot = EntryContentSnapshot.fromBytes(
             gunzip(Base64.getDecoder().decode(encoded.removePrefix(FORMAT_PREFIX)))
