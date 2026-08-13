@@ -11,6 +11,15 @@ data class OtpConfig(
     val issuer: String? = null,
     val accountName: String? = null
 ) {
+    init {
+        require(secret.isNotBlank()) { "OTP secret cannot be blank" }
+        require(digits in 5..8) { "OTP digits must be between 5 and 8" }
+        require(periodSeconds == null || periodSeconds > 0) { "OTP period must be positive" }
+        require(counter == null || counter >= 0) { "OTP counter cannot be negative" }
+        require(type != OtpType.HOTP || counter != null) { "HOTP requires a counter" }
+        require(type == OtpType.HOTP || periodSeconds != null) { "Time-based OTP requires a period" }
+    }
+
     companion object {
         fun steamDefaults(secret: String, issuer: String? = null): OtpConfig = OtpConfig(
             type = OtpType.STEAM,

@@ -5,7 +5,7 @@ Passly 只按稳定、可复用的技术边界拆分 Gradle 模块。业务 feat
 
 当前模块：
 
-- `:domain`：纯领域模型、契约与用例；
+- `:domain`：纯领域模型、端口与规则；当前只保留 `access`、`entry` 及共享敏感值语义；
 - `:core:common`：纯 Kotlin 错误与通用能力；
 - `:core:telemetry`：遥测模型和报告契约；
 - `:core:android`：Android 平台能力及其实现，包括包信息、文件路径与存储选择支持；
@@ -42,6 +42,10 @@ flowchart LR
 
 Data 自己拥有 Repository、存储与数据策略的 Hilt binding。App 负责业务流程和 Android 入口；Backup 的
 数据库快照代码是一个明确、局部的数据集成点，其他 feature 继续通过 Domain 契约使用 Data。
+
+Domain 不按应用功能镜像目录。`backup`、`autofill`、`settings`、通知和数据库生命周期属于 App/Data/Runtime
+边界，不在 Domain 中建立同名“模块包”。领域内部只使用 `model`、`policy`、`port` 等少量稳定职责目录；只有
+关系、查询、凭据等确有独立不变量的 Entry 子概念才继续分组。
 
 `verifyModuleBoundaries` 校验每个真实 Gradle 模块的直接项目依赖白名单和依赖环，并自动接入各模块的
 `check` 生命周期。新增模块必须先声明允许的依赖方向；未加入依赖的实现类型不会进入编译 classpath，因此

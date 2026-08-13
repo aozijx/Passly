@@ -51,7 +51,7 @@ Rail、全局 Snackbar 和认证遮罩属于 App Shell，不进入共享元素�
 Passly 是产品名；`vault` 是安全领域概念，不应再作为界面品牌文案。
 
 - UI 类优先使用 `EntryListScreen`、`EntryListViewModel`、`PasslyData` 等产品语义；
-- `VaultEntry` 后续可逐步收敛为 `EntryAggregate`；
+- 领域聚合统一命名为 `Entry`；`VaultEntry`、`EntryAggregate` 只作为待迁移的应用/Data 旧名，不再新增引用；
 - `vaultId` 当前表示逻辑数据空间所有权。只有产品正式改成 workspace/space 模型时才应迁移为
   `spaceId`，不能把它改名为 category 或 group；
 - 数据库、备份格式和认证中的 Vault 表示“已加密凭据域”，仍是有效术语。此类持久化名称不能只做源码替换，
