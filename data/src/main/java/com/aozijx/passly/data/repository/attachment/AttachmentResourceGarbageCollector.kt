@@ -20,7 +20,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-internal class AttachmentResourceGarbageCollector @Inject constructor(
+class AttachmentResourceGarbageCollector @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val sessionManager: UnifiedSessionManager,
     private val telemetry: TelemetryReporter,

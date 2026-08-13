@@ -14,7 +14,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.core.backup.BackupStorageSupport
+import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
 import com.aozijx.passly.core.util.PathDisplayFormatter
 import com.aozijx.passly.feature.backup.api.BackupSettingsFeature
 import com.aozijx.passly.feature.settings.SettingsViewModel

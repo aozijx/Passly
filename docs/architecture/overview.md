@@ -1,7 +1,7 @@
 # 架构总览
 
-Passly 已开始按依赖方向拆分 Gradle 模块。稳定的通用契约、运行时能力与数据实现已离开 `app`；尚未完成
-模块化的 feature 实现仍暂时位于 `app`，不能把包目录误认为已经存在的模块边界。
+Passly 只按稳定、可复用的技术边界拆分 Gradle 模块。业务 feature 保留在 `app` 内，以包组织职责；当前规模下
+不再为每个页面或流程建立 `:feature:*` 模块，避免 API/implementation 空壳和过细依赖图。
 
 当前模块：
 
@@ -13,23 +13,20 @@ Passly 已开始按依赖方向拆分 Gradle 模块。稳定的通用契约、�
   Android library，但源码不反向依赖 Data 或 App；
 - `:core:ui`：不依赖业务 feature 和 app 资源的共享 Compose UI；
 - `:runtime:session`：资源无关的安全会话状态机与租约管理；
-- `:data`：Room、Proto DataStore、Repository、Mapper、备份与加密诊断存储实现；
-- `:feature:auth:api`：认证 feature 的稳定 Intent/UI state 集成契约；
-- `:feature:recovery:api`：恢复模式 feature 的稳定 Intent/UI state/effect 契约；
-- `:feature:recovery`：恢复模式 UI、ViewModel 和状态归约实现；
-- `:app`：应用壳、导航、平台入口、Notice 运行时与尚待拆分的 feature 实现。
+- `:data`：Room、Proto DataStore、Repository、Mapper 与加密诊断存储实现；
+- `:app`：应用壳、导航、平台入口、Notice 运行时和全部业务 feature。Backup 的协议、格式、文件 I/O、
+  数据库快照编排也归 `app/feature/backup`，不属于 `:data`。
 
 ## 依赖方向
 
 ```mermaid
 flowchart LR
-    APP[":app · Shell / navigation / DI"] --> FEATURE["已模块化与待拆分 feature 实现"]
+    APP[":app · Shell / feature / navigation / DI"] --> FEATURE["app 内 feature 包"]
     APP --> DATA[":data · 数据与持久化实现"]
     FEATURE --> UI[":core:ui"]
     FEATURE --> ANDROID[":core:android"]
     FEATURE --> SECURITY[":core:security"]
     FEATURE --> D[":domain"]
-    FEATURE --> FEATURE_API["feature API"]
     DATA --> SESSION[":runtime:session"]
     DATA --> ANDROID
     DATA --> SECURITY
@@ -43,13 +40,12 @@ flowchart LR
     D --> COMMON[":core:common"]
 ```
 
-Data 自己拥有 Repository、存储与数据策略的 Hilt binding；App 只提供进程级或 Android 入口级依赖，
-例如会话密钥来源和遥测 reporter。共享模块不得依赖 `:app`；这一规则由 Gradle/编译器边界保证。
+Data 自己拥有 Repository、存储与数据策略的 Hilt binding。App 负责业务流程和 Android 入口；Backup 的
+数据库快照代码是一个明确、局部的数据集成点，其他 feature 继续通过 Domain 契约使用 Data。
 
 `verifyModuleBoundaries` 校验每个真实 Gradle 模块的直接项目依赖白名单和依赖环，并自动接入各模块的
 `check` 生命周期。新增模块必须先声明允许的依赖方向；未加入依赖的实现类型不会进入编译 classpath，因此
-类型可见性继续由 Kotlin/Java 编译器保证。仍位于 `:app` 的包目录不等同于模块边界，其临时包级护栏要在对应
-feature 模块迁出后删除。
+类型可见性继续由 Kotlin/Java 编译器保证。`app/feature/<name>` 是代码组织边界，不伪装成 Gradle 模块。
 
 ## 数据流
 
@@ -70,10 +66,10 @@ flowchart LR
 
 ## Feature 与 UI
 
-`feature/<name>` 是尚在迁移中的业务垂直切片，可包含 `navigation`、`presentation`、`contract`、`ui`。
+`feature/<name>` 是 app 内的业务垂直切片，可包含 `navigation`、`presentation`、`contract`、`ui`。
 Compose 页面和 ViewModel 由 feature 自己拥有；跨 Feature 的纯视觉组件进入 `:core:ui`，但必须通过参数或
-Composable slot 接收文案和内容，不能依赖 app 的 `R` 或具体业务类型。App 级组合位于 `app/shell`，不再使用
-`feature/main` 伪装成业务 feature。
+Composable slot 接收文案和内容，不能依赖 app 的 `R` 或具体业务类型。只有出现真实的独立发布、显著构建隔离
+或多宿主复用需求时，才重新评估 feature Gradle 模块。
 
 推荐布局：
 

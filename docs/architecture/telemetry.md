@@ -104,7 +104,7 @@ private fun report(error: AppError, operation: String) {
     )
 }
 
-// VaultBackupServiceImpl 在导入/导出失败后报告
+// BackupArchiveServiceImpl 在导入/导出失败后报告
 private fun report(error: AppError, operation: String) {
     errorReporter.report(
         error = error,

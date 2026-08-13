@@ -21,8 +21,6 @@ moduleBoundaries {
         ":core:ui",
         ":data",
         ":domain",
-        ":feature:auth:api",
-        ":feature:recovery",
         ":runtime:session",
     )
     module(":core:android", ":core:telemetry")
@@ -40,14 +38,5 @@ moduleBoundaries {
         ":runtime:session",
     )
     module(":domain", ":core:common")
-    module(":feature:auth:api", ":domain")
-    module(
-        ":feature:recovery",
-        ":core:security",
-        ":core:ui",
-        ":domain",
-        ":feature:recovery:api",
-    )
-    module(":feature:recovery:api", ":domain")
     module(":runtime:session", ":domain")
 }

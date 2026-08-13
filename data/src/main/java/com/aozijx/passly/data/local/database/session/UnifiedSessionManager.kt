@@ -22,7 +22,7 @@ import kotlin.time.Duration.Companion.seconds
 
 /** AppDatabase-typed adapter around the resource-agnostic session runtime. */
 @Singleton
-internal class UnifiedSessionManager @Inject constructor(
+class UnifiedSessionManager @Inject internal constructor(
     resource: AppDatabaseSessionResource,
     keySource: SessionKeySource,
     private val telemetry: TelemetryReporter,

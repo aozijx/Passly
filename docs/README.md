@@ -22,7 +22,7 @@
 
 - [数据库](data/database.md)
 - [设置存储](data/settings-storage.md)
-- [备份格式](data/backup-format.md)
+- [Backup 功能与备份协议](features/backup.md)
 
 ## 安全
 

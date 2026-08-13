@@ -18,9 +18,6 @@ class MigrationBoundaryTest {
         File(projectRoot, "core/ui/src/main/kotlin"),
         File(projectRoot, "data/src/main/java"),
         File(projectRoot, "domain/src/main/kotlin"),
-        File(projectRoot, "feature/auth/api/src/main/kotlin"),
-        File(projectRoot, "feature/recovery/src/main/kotlin"),
-        File(projectRoot, "feature/recovery/api/src/main/kotlin"),
         File(projectRoot, "runtime/session/src/main/kotlin"),
     )
 
@@ -64,7 +61,9 @@ class MigrationBoundaryTest {
     @Test
     fun upperLayersDoNotReachIntoDataImplementations() {
         val guardedPackages = listOf("/core/", "/feature/", "/security/")
-        val exemptPaths = emptyList<String>()
+        val exemptPaths = listOf(
+            "/app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/snapshot/"
+        )
         val offenders = productionKotlinFiles
             .filterNot { source ->
                 source.invariantSeparatorsPath.startsWith(
@@ -85,15 +84,18 @@ class MigrationBoundaryTest {
     }
 
     @Test
-    fun appDoesNotImportDataImplementations() {
+    fun appOnlyImportsDataInternalsThroughBackupSnapshotAdapter() {
+        val allowedPath =
+            "/com/aozijx/passly/feature/backup/internal/archive/snapshot/"
         val offenders = appKotlinRoot.walkTopDown()
             .filter { it.isFile && it.extension == "kt" }
             .filter { "import com.aozijx.passly.data." in it.readText() }
+            .filterNot { allowedPath in it.invariantSeparatorsPath }
             .map { it.relativeTo(appKotlinRoot).path }
             .toList()
 
         assertTrue(
-            "App must consume data through Domain/Core contracts: $offenders",
+            "Only Backup's database snapshot adapter may access data implementation: $offenders",
             offenders.isEmpty()
         )
     }
@@ -128,6 +130,42 @@ class MigrationBoundaryTest {
                 reExportedDependencies,
             reExportedDependencies.isEmpty()
         )
+    }
+
+    @Test
+    fun featureImplementationsStayInsideApp() {
+        val settingsFile = File(projectRoot, "settings.gradle.kts").readText()
+        val standaloneFeatureDirectories = File(projectRoot, "feature")
+            .takeIf(File::exists)
+            ?.walkTopDown()
+            ?.filter { file ->
+                file.isFile &&
+                    (file.name == "build.gradle.kts" || "/src/" in file.invariantSeparatorsPath)
+            }
+            ?.map { it.relativeTo(projectRoot).path }
+            ?.toList()
+            .orEmpty()
+
+        assertFalse(
+            "Business features must remain package slices inside :app",
+            Regex("""include\(\s*[\"']:(?:feature:|backup)[^\"']*[\"']\s*\)""")
+                .containsMatchIn(settingsFile),
+        )
+        assertTrue(
+            "Standalone feature module files must be removed: $standaloneFeatureDirectories",
+            standaloneFeatureDirectories.isEmpty(),
+        )
+    }
+
+    @Test
+    fun backupIsOwnedByTheAppFeature() {
+        val dataBackupRoot = File(projectRoot, "data/src/main/java/com/aozijx/passly/data/backup")
+        val appBackupRoot = File(
+            "src/main/java/com/aozijx/passly/feature/backup/internal/archive"
+        )
+
+        assertFalse("Backup must not be implemented by :data", dataBackupRoot.exists())
+        assertTrue("Backup archive implementation must live in app feature.backup", appBackupRoot.isDirectory)
     }
 
     @Test
@@ -284,7 +322,7 @@ class MigrationBoundaryTest {
                     "AuthenticationViewModel.kt"
         ).readText()
         val authenticationUiState = File(
-            "../feature/auth/api/src/main/kotlin/com/aozijx/passly/feature/auth/contract/" +
+            "src/main/java/com/aozijx/passly/feature/auth/contract/" +
                     "AuthenticationUiState.kt"
         ).readText()
 

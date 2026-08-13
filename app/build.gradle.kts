@@ -4,6 +4,7 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
 }
@@ -117,12 +118,12 @@ dependencies {
     implementation(project(":core:telemetry"))
     implementation(project(":data"))
     implementation(project(":domain"))
-    implementation(project(":feature:auth:api"))
-    implementation(project(":feature:recovery"))
     implementation(project(":runtime:session"))
 
     // Android Core
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.core.splashscreen)
 
     // Lifecycle & Navigation

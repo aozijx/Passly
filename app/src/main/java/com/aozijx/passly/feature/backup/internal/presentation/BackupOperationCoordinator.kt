@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.backup.internal.presentation
 
 import android.net.Uri
-import com.aozijx.passly.core.backup.BackupStorageSupport
+import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
 import com.aozijx.passly.core.error.mapping.fromThrowable
 import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.model.BackupFailed
