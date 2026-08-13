@@ -51,7 +51,7 @@ jobs:
     steps:
     # 拉取仓库代码
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     # 安装并配置 JDK 21 环境，供后续 Gradle 构建使用
     - name: Set up JDK 21
