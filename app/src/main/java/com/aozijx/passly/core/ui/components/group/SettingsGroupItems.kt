@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,11 +23,14 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -35,6 +40,7 @@ fun customSettingsItem(
     visible: Boolean = true,
     onClick: (() -> Unit)? = null,
     contentPadding: PaddingValues? = null,
+    containerColor: (@Composable () -> Color)? = null,
     leading: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
     trailing: @Composable RowScope.() -> Unit = {}
@@ -42,6 +48,7 @@ fun customSettingsItem(
     GroupCard(
         itemScope = itemScope,
         contentPadding = contentPadding ?: itemScope.contentPadding,
+        containerColor = containerColor?.invoke() ?: itemScope.containerColor,
         onClick = onClick
     ) {
         SettingsItemRow(leading = leading, content = content, trailing = trailing)
@@ -56,12 +63,18 @@ fun settingsGroupItem(
     title: String,
     subtitle: String? = null,
     isLoading: Boolean = false,
+    selected: Boolean = false,
     onClick: (() -> Unit)? = null,
     trailing: @Composable RowScope.() -> Unit = {}
 ): RoundedGroupItem = customSettingsItem(
     key = key,
     visible = visible,
     onClick = onClick,
+    containerColor = if (selected) {
+        { MaterialTheme.colorScheme.secondaryContainer }
+    } else {
+        null
+    },
     leading = icon.asLeadingContent(iconPlaceholder),
     content = {
         Text(
@@ -108,9 +121,82 @@ fun switchSettingsGroupItem(
     subtitle = subtitle,
     onClick = { onCheckedChange(!checked) },
     trailing = {
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            thumbContent = if (checked) {
+                {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                    )
+                }
+            } else {
+                null
+            },
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                checkedIconColor = MaterialTheme.colorScheme.primary,
+                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                uncheckedBorderColor = MaterialTheme.colorScheme.outlineVariant
+            )
+        )
     }
 )
+
+fun sliderSettingsGroupItem(
+    key: String,
+    icon: ImageVector? = null,
+    title: String,
+    subtitle: String? = null,
+    value: Float,
+    valueLabel: String,
+    valueRange: ClosedFloatingPointRange<Float>,
+    steps: Int,
+    onValueChange: (Float) -> Unit,
+    onValueChangeFinished: () -> Unit
+): RoundedGroupItem = RoundedGroupItem(key = key) { itemScope ->
+    GroupCard(itemScope = itemScope) {
+        SettingsItemRow(
+            leading = icon.asLeadingContent(false),
+            content = {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+                subtitle?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            trailing = {
+                Text(
+                    text = valueLabel,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        )
+        Slider(
+            value = value.coerceIn(valueRange),
+            onValueChange = onValueChange,
+            onValueChangeFinished = onValueChangeFinished,
+            valueRange = valueRange,
+            steps = steps,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+        )
+    }
+}
 
 fun navigationSettingsGroupItem(
     key: String,
@@ -121,6 +207,7 @@ fun navigationSettingsGroupItem(
     subtitle: String? = null,
     value: String? = null,
     isLoading: Boolean = false,
+    selected: Boolean = false,
     onClick: () -> Unit
 ): RoundedGroupItem = settingsGroupItem(
     key = key,
@@ -130,6 +217,7 @@ fun navigationSettingsGroupItem(
     title = title,
     subtitle = subtitle,
     isLoading = isLoading,
+    selected = selected,
     onClick = onClick,
     trailing = {
         value?.takeIf(String::isNotBlank)?.let {
@@ -199,6 +287,17 @@ fun <T> dropdownSettingsGroupItem(
                                         }
                                     )
                                 },
+                                leadingIcon = if (value == selected) {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                } else {
+                                    null
+                                },
                                 onClick = {
                                     onSelect(value)
                                     onExpandedChange(false)
@@ -217,11 +316,16 @@ private fun AnimatedSettingValue(
     value: String,
     modifier: Modifier = Modifier
 ) {
+    val motionScheme = MaterialTheme.motionScheme
     AnimatedContent(
         targetState = value,
         modifier = modifier,
         transitionSpec = {
-            slideInVertically { it } togetherWith slideOutVertically { -it }
+            slideInVertically(
+                animationSpec = motionScheme.defaultSpatialSpec()
+            ) { it } togetherWith slideOutVertically(
+                animationSpec = motionScheme.defaultSpatialSpec()
+            ) { -it }
         },
         label = "setting_value"
     ) { targetValue ->

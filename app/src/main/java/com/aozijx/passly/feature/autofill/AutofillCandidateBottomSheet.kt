@@ -68,7 +68,10 @@ fun AutofillCandidateBottomSheet(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = stringResource(id = R.string.autofill_entry_compact_title),
+                        text = stringResource(
+                            id = R.string.autofill_entry_compact_summary,
+                            candidates.size
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -126,18 +129,7 @@ private fun CandidateItem(
                 Text(
                     text = candidate.username,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = when {
-                        !candidate.associatedDomain.isNullOrBlank() -> candidate.associatedDomain
-                        !candidate.associatedAppPackage.isNullOrBlank() -> candidate.associatedAppPackage
-                        else -> ""
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

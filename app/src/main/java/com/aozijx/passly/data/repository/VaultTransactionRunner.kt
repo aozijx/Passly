@@ -1,9 +1,15 @@
 package com.aozijx.passly.data.repository
 
-import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.error.Conflict
+import com.aozijx.passly.core.error.model.Conflict
+import com.aozijx.passly.core.error.model.SessionModeRestricted
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.telemetry.OperationCode
+import com.aozijx.passly.core.telemetry.reporting.AppErrorReporter
+import com.aozijx.passly.core.telemetry.reporting.ErrorReportContext
 import com.aozijx.passly.data.local.database.AppDatabase
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,7 +28,9 @@ import javax.inject.Singleton
  */
 @Singleton
 class VaultTransactionRunner @Inject constructor(
-    private val sessionManager: UnifiedSessionManager
+    private val sessionManager: UnifiedSessionManager,
+    private val sessionState: SecureSessionAccessState,
+    private val errorReporter: AppErrorReporter
 ) {
 
     /**
@@ -33,11 +41,13 @@ class VaultTransactionRunner @Inject constructor(
         operation: String,
         block: suspend AppDatabase.() -> T
     ): AppResult<T> {
-        return AppResult.runSuspendCatching(operation) {
+        val result = AppResult.runSuspendCatching {
+            requireFullSecureSessionAccess()
             sessionManager.transaction {
                 block()
             }
         }
+        return result.onFailure { report(it, operation) }
     }
 
     /**
@@ -47,32 +57,46 @@ class VaultTransactionRunner @Inject constructor(
         operation: String,
         block: suspend AppDatabase.() -> T
     ): AppResult<T> {
-        return AppResult.runSuspendCatching(operation) {
+        val result = AppResult.runSuspendCatching {
+            requireFullSecureSessionAccess()
             sessionManager.query {
                 block()
             }
         }
+        return result.onFailure { report(it, operation) }
     }
 
     /**
      * 检查乐观锁版本是否匹配，不匹配时抛出 [Conflict]。
      */
-    fun checkVersion(entryId: String, actualVersion: Int, expectedVersion: Int) {
+    fun checkVersion(actualVersion: Int, expectedVersion: Int) {
         if (actualVersion != expectedVersion) {
-            throw Conflict(
-                "entry:$entryId version mismatch: expected=$expectedVersion, actual=$actualVersion"
-            )
+            throw Conflict()
         }
     }
 
     /**
      * 检查乐观锁影响行数，0 行表示版本冲突。
      */
-    fun checkAffectedRows(entryId: String, expectedVersion: Int, affectedRows: Int) {
+    fun checkAffectedRows(affectedRows: Int) {
         if (affectedRows == 0) {
-            throw Conflict(
-                "entry:$entryId optimistic lock failed: expected version=$expectedVersion"
-            )
+            throw Conflict()
         }
+    }
+
+    private fun requireFullSecureSessionAccess() {
+        if (!sessionState.hasFullSecureSessionAccess()) {
+            throw SessionModeRestricted()
+        }
+    }
+
+    private fun report(error: com.aozijx.passly.core.error.model.AppError, operation: String) {
+        errorReporter.report(
+            error = error,
+            context = ErrorReportContext(
+                operation = OperationCode(operation),
+                category = EventCategory.DATABASE
+            )
+        )
     }
 }

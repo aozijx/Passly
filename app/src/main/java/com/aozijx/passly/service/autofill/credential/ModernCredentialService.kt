@@ -6,26 +6,23 @@ import android.os.Build
 import android.os.CancellationSignal
 import android.os.OutcomeReceiver
 import androidx.annotation.RequiresApi
+import androidx.credentials.exceptions.CreateCredentialException
+import androidx.credentials.exceptions.CreateCredentialUnknownException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.GetCredentialUnknownException
-import androidx.credentials.provider.AuthenticationAction
 import androidx.credentials.provider.BeginCreateCredentialRequest
 import androidx.credentials.provider.BeginCreateCredentialResponse
 import androidx.credentials.provider.BeginGetCredentialRequest
 import androidx.credentials.provider.BeginGetCredentialResponse
-import androidx.credentials.provider.BeginGetPasswordOption
-import androidx.credentials.provider.BeginGetPublicKeyCredentialOption
-import androidx.credentials.provider.CredentialEntry
 import androidx.credentials.provider.CredentialProviderService
 import androidx.credentials.provider.ProviderClearCredentialStateRequest
-import com.aozijx.passly.app.di.Strict
-import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.domain.authentication.VaultAccessState
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -33,8 +30,7 @@ import javax.inject.Inject
  * Modern CredentialProviderService 薄适配器（API 34+）。
  *
  * 职责仅限于：
- * BeginGetCredentialRequest → [CredentialPlatformAdapter] → [FillRequestDispatcher]
- * → [CredentialPlatformAdapter] → BeginGetCredentialResponse。
+ * BeginGetCredentialRequest → [CredentialBeginGetHandler] → BeginGetCredentialResponse。
  * 严禁在此类中编写任何业务判断逻辑。
  */
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
@@ -42,29 +38,20 @@ import javax.inject.Inject
 class ModernCredentialService : CredentialProviderService() {
 
     @Inject
-    @Strict
-    lateinit var dispatcher: FillRequestDispatcher
+    lateinit var beginGetHandler: CredentialBeginGetHandler
+
     @Inject
-    lateinit var sessionState: VaultAccessState
-    @Inject
-    lateinit var adapter: CredentialPlatformAdapter
+    lateinit var beginCreateHandler: CredentialBeginCreateHandler
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     companion object {
         private const val TAG = "ModernCred"
         const val ACTION_GET_PASSWORD = "com.aozijx.passly.ACTION_GET_PASSWORD"
-        const val ACTION_GET_PASSKEY = "com.aozijx.passly.ACTION_GET_PASSKEY"
         const val ACTION_UNLOCK = "com.aozijx.passly.ACTION_CREDENTIAL_UNLOCK"
+        const val ACTION_CREATE_PASSWORD = "com.aozijx.passly.ACTION_CREATE_PASSWORD"
 
-        const val EXTRA_CREDENTIAL_DATA = "credential_data"
         const val EXTRA_ENTRY_ID = "entry_id"
-        const val EXTRA_ENTRY_TITLE = "entry_title"
-        const val EXTRA_USERNAME = "username"
-        const val EXTRA_PACKAGE_NAME = "package_name"
-        const val EXTRA_WEB_DOMAIN = "web_domain"
-
-        private const val UNLOCK_TITLE = "Vault is locked — tap to unlock"
     }
 
     override fun onBeginGetCredentialRequest(
@@ -72,37 +59,52 @@ class ModernCredentialService : CredentialProviderService() {
         cancellationSignal: CancellationSignal,
         callback: OutcomeReceiver<BeginGetCredentialResponse, GetCredentialException>
     ) {
-        try {
-            if (sessionState.isLocked()) {
-                callback.onResult(
-                    BeginGetCredentialResponse(
-                        authenticationActions = listOf(
-                            AuthenticationAction(
-                                UNLOCK_TITLE,
-                                CredentialPendingIntentFactory.createUnlockPendingIntent(this)
-                            )
-                        )
-                    )
-                )
-                return
+        val job = scope.launch {
+            try {
+                val response = beginGetHandler.resolve(request, this@ModernCredentialService)
+                if (!cancellationSignal.isCanceled) {
+                    callback.onResult(response)
+                }
+            } catch (e: CancellationException) {
+                // Android cancelled the request; no callback is allowed after cancellation.
+                throw e
+            } catch (e: Exception) {
+                AppTelemetry.e(TAG, "Credential request failed", e)
+                if (!cancellationSignal.isCanceled) {
+                    callback.onError(GetCredentialUnknownException(e.message ?: "Unknown error"))
+                }
             }
-
-            scope.launch {
-                val response = processGetCredentialRequest(request)
-                callback.onResult(response)
-            }
-        } catch (e: Exception) {
-            AppTelemetry.e(TAG, "onBeginGetCredentialRequest failed", e)
-            callback.onError(GetCredentialUnknownException(e.message ?: "Unknown error"))
         }
+        cancellationSignal.setOnCancelListener(job::cancel)
     }
 
     override fun onBeginCreateCredentialRequest(
         request: BeginCreateCredentialRequest,
         cancellationSignal: CancellationSignal,
-        callback: OutcomeReceiver<BeginCreateCredentialResponse, androidx.credentials.exceptions.CreateCredentialException>
+        callback: OutcomeReceiver<BeginCreateCredentialResponse, CreateCredentialException>
     ) {
-        callback.onResult(BeginCreateCredentialResponse(emptyList()))
+        val job = scope.launch {
+            try {
+                val response = beginCreateHandler.resolve(request, this@ModernCredentialService)
+                if (!cancellationSignal.isCanceled) {
+                    callback.onResult(response)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: CreateCredentialException) {
+                if (!cancellationSignal.isCanceled) {
+                    callback.onError(e)
+                }
+            } catch (e: Exception) {
+                AppTelemetry.e(TAG, "Credential create request failed", e)
+                if (!cancellationSignal.isCanceled) {
+                    callback.onError(
+                        CreateCredentialUnknownException(e.message ?: "Unknown error")
+                    )
+                }
+            }
+        }
+        cancellationSignal.setOnCancelListener(job::cancel)
     }
 
     override fun onClearCredentialStateRequest(
@@ -110,29 +112,14 @@ class ModernCredentialService : CredentialProviderService() {
         cancellationSignal: CancellationSignal,
         callback: OutcomeReceiver<Void?, androidx.credentials.exceptions.ClearCredentialException>
     ) {
-        callback.onResult(null)
+        // Passly does not keep a per-calling-app or sticky credential-selection session.
+        if (!cancellationSignal.isCanceled) {
+            callback.onResult(null)
+        }
     }
 
-    private fun processGetCredentialRequest(request: BeginGetCredentialRequest): BeginGetCredentialResponse {
-        val packageName = request.callingAppInfo?.packageName ?: ""
-        val entries = mutableListOf<CredentialEntry>()
-
-        for (option in request.beginGetCredentialOptions) {
-            val internalRequest = adapter.buildRequest(packageName)
-            val response = dispatcher.dispatch(internalRequest)
-
-            when (option) {
-                is BeginGetPasswordOption -> entries.addAll(
-                    adapter.buildPasswordEntries(response, this, packageName, option)
-                )
-
-                is BeginGetPublicKeyCredentialOption -> entries.addAll(
-                    adapter.buildPasskeyEntries(response, this, packageName, option)
-                )
-            }
-        }
-
-        AppTelemetry.i(TAG, "Phase 1: ${entries.size} entries for $packageName")
-        return BeginGetCredentialResponse(entries)
+    override fun onDestroy() {
+        scope.cancel()
+        super.onDestroy()
     }
 }

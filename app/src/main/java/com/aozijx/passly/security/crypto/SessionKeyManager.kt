@@ -67,7 +67,7 @@ class SessionKeyManager @Inject constructor() {
     /**
      * 从 DEK 派生会话密钥并激活会话。
      *
-     * 使用 HMAC-SHA256(dek, "passly-vault-field-key-v1") 作为派生方式。
+     * 使用 HMAC-SHA256(dek, "passly-entry-field-key-v1") 作为派生方式。
      * 每次认证成功后由 [DekManager] 调用。
      */
     fun deriveAndSet(dek: ByteArray) {

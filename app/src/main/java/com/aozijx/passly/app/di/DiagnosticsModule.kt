@@ -1,8 +1,10 @@
 package com.aozijx.passly.app.di
 
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
-import com.aozijx.passly.core.telemetry.TelemetryEmitter
+import com.aozijx.passly.app.diagnostics.TelemetryAppErrorReporter
+import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.TelemetryPolicyController
+import com.aozijx.passly.core.telemetry.reporting.AppErrorReporter
 import com.aozijx.passly.data.local.datastore.diagnostics.ProtoTelemetryPolicyController
 import dagger.Binds
 import dagger.Module
@@ -19,11 +21,17 @@ abstract class DiagnosticsModule {
         impl: ProtoTelemetryPolicyController
     ): TelemetryPolicyController
 
+    @Binds
+    @Singleton
+    internal abstract fun bindAppErrorReporter(
+        impl: TelemetryAppErrorReporter
+    ): AppErrorReporter
+
     companion object {
         @dagger.Provides
         @Singleton
-        fun provideTelemetryEmitter(
+        fun provideTelemetryReporter(
             runtime: DiagnosticsRuntimeController
-        ): TelemetryEmitter = runtime.emitter
+        ): TelemetryReporter = runtime.reporter
     }
 }

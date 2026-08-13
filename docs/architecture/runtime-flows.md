@@ -10,7 +10,7 @@ sequenceDiagram
     participant DEK as DekManager
     participant Boot as BootstrapStore
     participant DB as DatabaseSession
-    User->>UI: 生物识别 / 应用密码 / 恢复码
+    User->>UI: 生物识别 / 应用密码
     UI->>Auth: 验证凭据
     Auth->>Boot: 读取对应 Envelope 与 Verification Tag
     Auth->>DEK: 解封并验证 DEK
@@ -21,6 +21,9 @@ sequenceDiagram
 
 `BootstrapStore` 位于数据库之外，使应用在 SQLCipher 尚未打开时也能取得信封。当前实现由 Proto DataStore
 提供，DEK 解锁后 `DatabaseProvider` 才能创建 Room 实例。
+
+恢复码走独立流程：`RECOVER_AUTH_METHODS` 解封同一个 DEK 后只发布 `RecoveryMode`，不会发布普通
+`Authenticated`。恢复页面不挂载 Vault 导航，只能重建主认证、用新备份密码执行 `RECOVERY_EXPORT`，或退出锁定。
 
 Activity 只通过 `AuthenticationHost` 提供 UI 能力；认证请求本身不携带 Activity、Launcher、Cipher 或
 PendingIntent。锁定由 `VaultSessionController` 拒绝新 lease、等待活跃操作、关闭 Room，再擦除会话密钥与 DEK。

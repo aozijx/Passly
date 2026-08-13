@@ -6,11 +6,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
-import com.aozijx.passly.feature.settings.security.SecurityUiState
+import com.aozijx.passly.feature.settings.security.SecuritySettingsUiState
 
 @Composable
 internal fun SecurityDetail(
-    state: SecurityUiState,
+    state: SecuritySettingsUiState,
     isAppPasswordEnabled: Boolean,
     isBiometricEnabled: Boolean,
     onLockTimeoutChange: (Long) -> Unit,

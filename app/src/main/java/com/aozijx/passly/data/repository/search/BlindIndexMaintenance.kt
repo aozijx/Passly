@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.search
 
-import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler

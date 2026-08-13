@@ -2,43 +2,56 @@ package com.aozijx.passly.feature.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.domain.auth.model.AuthorizationScope
+import com.aozijx.passly.domain.auth.port.AuthorizationGate
+import com.aozijx.passly.domain.authentication.SensitiveAccessAction
 import com.aozijx.passly.domain.entry.model.EntryChanges
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.entry.model.favicon.FaviconResult
 import com.aozijx.passly.domain.entry.repository.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.repository.ActivityRecorder
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
+import com.aozijx.passly.domain.entry.repository.EntryLinkRepository
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.domain.entry.repository.SensitiveFieldRepository
 import com.aozijx.passly.domain.entry.repository.EntryQueryRepository
 import com.aozijx.passly.domain.entry.repository.FaviconRepository
 import com.aozijx.passly.domain.entry.service.EntryTypePolicy
+import com.aozijx.passly.domain.entry.service.EntryAccountGraph
 import com.aozijx.passly.domain.entry.service.EntryValidatorProvider
 import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
+import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.page.internal.DetailEntryAnalyzer
+import com.aozijx.passly.feature.detail.internal.presentation.DetailMutation
+import com.aozijx.passly.feature.detail.internal.presentation.DetailReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class DetailViewModel @Inject constructor(
     private val entryQueryRepository: EntryQueryRepository,
+    private val sensitiveFieldRepository: SensitiveFieldRepository,
     private val activityQueryRepository: ActivityQueryRepository,
     private val entryCommandRepository: EntryCommandRepository,
+    private val entryLinkRepository: EntryLinkRepository,
     private val activityRecorder: ActivityRecorder,
     private val faviconRepository: FaviconRepository,
     private val entryTypePolicy: EntryTypePolicy,
-    private val entryValidatorProvider: EntryValidatorProvider
+    private val entryValidatorProvider: EntryValidatorProvider,
+    private val accessPolicy: DetailAccessPolicy,
+    private val authorizationGate: AuthorizationGate,
 ) : ViewModel() {
     private val entryAnalyzer = DetailEntryAnalyzer(entryTypePolicy, entryValidatorProvider)
 
@@ -50,8 +63,8 @@ class DetailViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(DetailUiState())
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
-    private val _effects = MutableSharedFlow<DetailEffect>(extraBufferCapacity = 1)
-    val effects: SharedFlow<DetailEffect> = _effects.asSharedFlow()
+    private val _effects = Channel<DetailEffect>(Channel.BUFFERED)
+    val effects = _effects.receiveAsFlow()
 
     init {
         viewModelScope.launch {
@@ -59,68 +72,40 @@ class DetailViewModel @Inject constructor(
                 val enabled = extras[ACCESS_HISTORY_TOGGLE_KEY]
                     ?.toBooleanStrictOrNull()
                     ?: false
-                _uiState.update { it.copy(isAccessHistoryEnabled = enabled) }
+                mutate(DetailMutation.AccessHistoryChanged(enabled))
             }
         }
     }
 
     fun handleIntent(event: DetailIntent) {
+        if (!accessPolicy.canHandle(event)) {
+            mutate(DetailMutation.StateCleared)
+            return
+        }
         when (event) {
             is DetailIntent.Initialize -> {
-                refreshFromEntry(event.initialEntry, isEditingTitle = false, editedTitle = event.initialEntry.title)
-
-                viewModelScope.launch {
-                    val latest =
-                        entryQueryRepository.getById(event.initialEntry.id) ?: event.initialEntry
-                    refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
-                    autoDownloadFavicon(latest)
-                }
-
-                viewModelScope.launch {
-                    activityQueryRepository.observeByEntryId(event.initialEntry.id)
-                        .collect { list: List<EntryActivity> ->
-                            _uiState.update { it.copy(history = list) }
-                        }
-                }
+                initialize(event.initialEntry)
             }
 
             is DetailIntent.SyncEntry -> {
-                val editedTitle = if (_uiState.value.isEditingTitle) _uiState.value.editedTitle else event.entry.title
-                refreshFromEntry(event.entry, _uiState.value.isEditingTitle, editedTitle)
+                refreshKeepingTitleEdit(event.entry)
             }
 
             is DetailIntent.CommitEntryUpdate -> {
-                val editedTitle = if (_uiState.value.isEditingTitle) {
-                    _uiState.value.editedTitle
-                } else {
-                    event.entry.title
-                }
-                refreshFromEntry(event.entry, _uiState.value.isEditingTitle, editedTitle)
+                refreshKeepingTitleEdit(event.entry)
                 emitEntryUpdated(event.entry)
             }
 
-            DetailIntent.ShowIconPicker -> {
-                _effects.tryEmit(DetailEffect.IconPickerRequested)
-            }
-
             DetailIntent.StartTitleEdit -> {
-                _uiState.update {
-                    val currentTitle = it.entry?.title.orEmpty()
-                    it.copy(isEditingTitle = true, editedTitle = currentTitle)
-                }
+                mutate(DetailMutation.TitleEditingStarted)
             }
 
             DetailIntent.CancelTitleEdit -> {
-                _uiState.update {
-                    it.copy(
-                        isEditingTitle = false,
-                        editedTitle = it.entry?.title.orEmpty()
-                    )
-                }
+                mutate(DetailMutation.TitleEditingCancelled)
             }
 
             is DetailIntent.UpdateEditedTitle -> {
-                _uiState.update { it.copy(editedTitle = event.value) }
+                mutate(DetailMutation.EditedTitleChanged(event.value))
             }
 
             DetailIntent.SaveTitle -> {
@@ -128,12 +113,7 @@ class DetailViewModel @Inject constructor(
                 val current = state.entry ?: return
                 val newTitle = state.editedTitle.trim()
                 if (newTitle.isBlank() || newTitle == current.title) {
-                    _uiState.update {
-                        it.copy(
-                            isEditingTitle = false,
-                            editedTitle = current.title
-                        )
-                    }
+                    mutate(DetailMutation.TitleEditingCancelled)
                 } else {
                     commitEntryUpdate(
                         current.copy(summary = current.summary.copy(title = newTitle)),
@@ -144,70 +124,192 @@ class DetailViewModel @Inject constructor(
 
             DetailIntent.ToggleFavorite -> {
                 val current = _uiState.value.entry ?: return
-                commitEntryUpdate(current.copy(summary = current.summary.copy(favorite = !current.favorite)))
+                commitEntryUpdate(
+                    current.copy(summary = current.summary.copy(favorite = !current.favorite))
+                )
             }
 
             is DetailIntent.RevealField -> {
-                _uiState.update { state ->
-                    val updated = state.revealedFields.toMutableMap()
-                    if (event.value != null) updated[event.key] = event.value
-                    else updated.remove(event.key)
-                    state.copy(revealedFields = updated)
+                setRevealedField(event.key, event.value)
+            }
+
+            is DetailIntent.DownloadFavicon -> {
+                val current = _uiState.value.entry ?: return
+                viewModelScope.launch {
+                    downloadAndApplyFavicon(current, event.domain, updateDomain = true)
+                }
+            }
+
+            is DetailIntent.RevealHighSensitivityField -> {
+                val current = _uiState.value.entry ?: return
+                val key = event.key
+                if (_uiState.value.revealed(key) != null) {
+                    mutate(DetailMutation.RevealedFieldChanged(key, null))
+                    return
+                }
+                viewModelScope.launch {
+                    revealHighSensitivityFields(current.id, setOf(key))
+                }
+            }
+
+            is DetailIntent.RevealHighSensitivityFields -> {
+                val current = _uiState.value.entry ?: return
+                val hiddenKeys = event.keys.filterTo(linkedSetOf()) {
+                    _uiState.value.revealed(it) == null
+                }
+                if (hiddenKeys.isEmpty()) return
+                viewModelScope.launch {
+                    revealHighSensitivityFields(current.id, hiddenKeys)
                 }
             }
 
             is DetailIntent.RecordAction -> {
                 val current = _uiState.value.entry ?: return
                 if (event.type == ActivityType.VIEW && !_uiState.value.isAccessHistoryEnabled) return
-                if (event.type == ActivityType.COPY_PASSWORD || event.type == ActivityType.COPY_USERNAME) {
-                    _uiState.update { it.copy(revealedFields = emptyMap()) }
+                if (event.type.clearsRevealedFields()) {
+                    mutate(DetailMutation.RevealedFieldsCleared)
                 }
 
                 viewModelScope.launch {
+                    if (!accessPolicy.hasFullAccess()) return@launch
                     activityRecorder.recordUsage(current.id, event.type)
                 }
             }
 
             is DetailIntent.ToggleAccessHistoryRecording -> {
-                _uiState.update { it.copy(isAccessHistoryEnabled = event.enabled) }
+                mutate(DetailMutation.AccessHistoryChanged(event.enabled))
                 userConfigExtras.value =
                     userConfigExtras.value + (ACCESS_HISTORY_TOGGLE_KEY to event.enabled.toString())
             }
 
             DetailIntent.ClearSensitiveState -> {
-                _uiState.update { DetailUiState() }
+                mutate(DetailMutation.StateCleared)
             }
         }
     }
 
-    private fun commitEntryUpdate(entry: VaultEntry, isEditingTitle: Boolean = _uiState.value.isEditingTitle) {
+    private fun initialize(initialEntry: EntryAggregate) {
+        refreshFromEntry(initialEntry, isEditingTitle = false, editedTitle = initialEntry.title)
+        viewModelScope.launch {
+            if (!accessPolicy.hasFullAccess()) return@launch
+            val latest = entryQueryRepository.getByIdWithoutHighSensitivity(initialEntry.id)
+                ?: initialEntry
+            refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
+            val presence = sensitiveFieldRepository.getPresence(EntryId(latest.id))
+            mutate(DetailMutation.SensitiveFieldPresenceChanged(presence.keys))
+            loadRelatedEntries(latest)
+            autoDownloadFavicon(latest)
+        }
+        viewModelScope.launch {
+            if (!accessPolicy.hasFullAccess()) return@launch
+            activityQueryRepository.observeByEntryId(initialEntry.id)
+                .collect { history -> mutate(DetailMutation.HistoryChanged(history)) }
+        }
+    }
+
+    private fun refreshKeepingTitleEdit(entry: EntryAggregate) {
+        val isEditing = _uiState.value.isEditingTitle
+        refreshFromEntry(
+            entry,
+            isEditingTitle = isEditing,
+            editedTitle = if (isEditing) _uiState.value.editedTitle else entry.title
+        )
+    }
+
+    private fun setRevealedField(key: String, value: String?) {
+        mutate(DetailMutation.RevealedFieldChanged(key, value))
+    }
+
+    private suspend fun revealHighSensitivityFields(entryValue: String, uiKeys: Set<String>) {
+        if (!accessPolicy.hasFullAccess()) return
+        val requested = uiKeys.mapNotNull { uiKey ->
+            uiKey.toSensitiveFieldKey()?.let { fieldKey -> uiKey to fieldKey }
+        }.toMap()
+        if (requested.isEmpty()) return
+        val entryId = EntryId(entryValue)
+        authorizationGate.authorize(
+            AuthorizationScope.SensitiveFields(
+                entryId = entryId,
+                fieldKeys = requested.values.toSet(),
+                action = SensitiveAccessAction.REVEAL,
+            ),
+        ) authorize@{ permit ->
+            val revealedFields = sensitiveFieldRepository.revealMany(
+                entryId = entryId,
+                keys = requested.values.toSet(),
+                permit = permit,
+            )
+            revealedFields.forEach { revealed ->
+                val uiKey = requested.entries.firstOrNull { it.value == revealed.key }?.key
+                    ?: return@forEach
+                val chars = revealed.value.toCharArray()
+                try {
+                    val value = String(chars).takeIf { it.isNotBlank() } ?: return@forEach
+                    setRevealedField(uiKey, value)
+                } finally {
+                    chars.fill('\u0000')
+                    revealed.value.wipe()
+                }
+            }
+            if (revealedFields.isNotEmpty()) {
+                activityRecorder.recordUsage(entryValue, ActivityType.VIEW)
+            }
+        }
+    }
+
+    private fun String.toSensitiveFieldKey(): SensitiveFieldKey? = when (this) {
+        RevealedFieldKey.CARD_NUMBER -> SensitiveFieldKey.CARD_NUMBER
+        RevealedFieldKey.CVV -> SensitiveFieldKey.CARD_CVV
+        RevealedFieldKey.PAYMENT_PIN -> SensitiveFieldKey.CARD_PAYMENT_PIN
+        RevealedFieldKey.SSH_PRIVATE_KEY -> SensitiveFieldKey.SSH_PRIVATE_KEY
+        RevealedFieldKey.SSH_PASSPHRASE -> SensitiveFieldKey.SSH_PASSPHRASE
+        RevealedFieldKey.SEED_PHRASE -> SensitiveFieldKey.SEED_PHRASE
+        RevealedFieldKey.PASSKEY_DATA -> SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE
+        RevealedFieldKey.ID_NUMBER -> SensitiveFieldKey.IDENTITY_NUMBER
+        RevealedFieldKey.RECOVERY_CODES -> SensitiveFieldKey.RECOVERY_CODES
+        else -> null
+    }
+
+    private fun ActivityType.clearsRevealedFields(): Boolean =
+        this == ActivityType.COPY_PASSWORD || this == ActivityType.COPY_USERNAME
+
+    private fun commitEntryUpdate(entry: EntryAggregate, isEditingTitle: Boolean = _uiState.value.isEditingTitle) {
         val editedTitle = if (isEditingTitle) _uiState.value.editedTitle else entry.title
         refreshFromEntry(entry, isEditingTitle = isEditingTitle, editedTitle = editedTitle)
         emitEntryUpdated(entry)
     }
 
-    private fun emitEntryUpdated(entry: VaultEntry) {
-        _effects.tryEmit(DetailEffect.EntryUpdated(entry))
+    private fun emitEntryUpdated(entry: EntryAggregate) {
+        _effects.trySend(DetailEffect.EntryUpdated(entry))
     }
 
-    private fun autoDownloadFavicon(entry: VaultEntry) {
+    private fun autoDownloadFavicon(entry: EntryAggregate) {
         if (entry.associatedDomain.isNullOrBlank() || !entry.iconCustomPath.isNullOrBlank()) return
         viewModelScope.launch {
-            val domain = entry.associatedDomain
-            val outcome = downloadFavicon(domain!!)
-            if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
-                val iconSummary = entry.summary.copy(icon = outcome.filePath)
-                entryCommandRepository.updateEntry(
-                    entry.id, entry.entryVersion, EntryChanges(summary = iconSummary)
-                ).onSuccess {
-                        refreshFromEntry(
-                            entry.copy(summary = entry.summary.copy(icon = outcome.filePath)),
-                            _uiState.value.isEditingTitle,
-                            _uiState.value.editedTitle
-                        )
-                    }
-            }
+            downloadAndApplyFavicon(entry, entry.associatedDomain!!, updateDomain = false)
         }
+    }
+
+    private suspend fun loadRelatedEntries(entry: EntryAggregate) {
+        val graph = EntryAccountGraph(entryLinkRepository.getAll())
+        val accountId = if (entry.entryType == EntryType.ACCOUNT) {
+            EntryId(entry.id)
+        } else {
+            graph.accountFor(EntryId(entry.id))
+        }
+        if (accountId == null) {
+            mutate(DetailMutation.RelatedEntriesChanged(emptyList()))
+            return
+        }
+        val relatedIds = buildSet {
+            add(accountId)
+            addAll(graph.membersOf(accountId))
+            remove(EntryId(entry.id))
+        }
+        val related = relatedIds.mapNotNull { relatedId ->
+            entryQueryRepository.getByIdWithoutHighSensitivity(relatedId.value)
+        }
+        mutate(DetailMutation.RelatedEntriesChanged(related))
     }
 
     private suspend fun downloadFavicon(input: String): FaviconOutcome {
@@ -215,24 +317,71 @@ class DetailViewModel @Inject constructor(
         return faviconRepository.download(input)
     }
 
-    private fun refreshFromEntry(entry: VaultEntry, isEditingTitle: Boolean, editedTitle: String) {
+    private suspend fun downloadAndApplyFavicon(
+        entry: EntryAggregate,
+        domain: String,
+        updateDomain: Boolean
+    ) {
+        if (domain.isBlank()) return
+        if (!accessPolicy.hasFullAccess()) return
+        mutate(DetailMutation.FaviconDownloadingChanged(true))
+        try {
+            val outcome = downloadFavicon(domain)
+            if (!accessPolicy.hasFullAccess()) return
+            if (outcome.result != FaviconResult.SUCCESS || outcome.filePath == null) return
+            val website = if (updateDomain) {
+                (entry.summary.website ?: com.aozijx.passly.domain.entry.model.WebsiteInfo())
+                    .copy(primaryUrl = domain.trim())
+            } else {
+                entry.summary.website
+            }
+            val updatedSummary = entry.summary.copy(
+                website = website,
+                icon = null,
+                iconCustomPath = outcome.filePath
+            )
+            val updateResult = entryCommandRepository.updateEntry(
+                entry.id,
+                entry.entryVersion,
+                EntryChanges(summary = updatedSummary)
+            )
+            if (updateResult.isSuccess) {
+                val latest = entryQueryRepository.getByIdWithoutHighSensitivity(entry.id)
+                if (latest != null) {
+                    refreshFromEntry(
+                        latest,
+                        _uiState.value.isEditingTitle,
+                        _uiState.value.editedTitle
+                    )
+                }
+            }
+        } finally {
+            mutate(DetailMutation.FaviconDownloadingChanged(false))
+        }
+    }
+
+    private fun refreshFromEntry(entry: EntryAggregate, isEditingTitle: Boolean, editedTitle: String) {
         val analysis = entryAnalyzer.analyze(entry)
 
-        _uiState.update {
-            it.copy(
+        mutate(
+            DetailMutation.EntryPresented(
                 entry = entry,
-                vaultType = analysis.vaultType,
+                entryType = analysis.entryType,
                 strategySummary = analysis.strategySummary,
                 validationError = analysis.validationError,
                 isEditingTitle = isEditingTitle,
                 editedTitle = editedTitle,
-                strategyReady = analysis.strategyReady
+                strategyReady = analysis.strategyReady,
             )
-        }
+        )
+    }
+
+    private fun mutate(mutation: DetailMutation) {
+        _uiState.value = DetailReducer.reduce(_uiState.value, mutation)
     }
 
     override fun onCleared() {
         super.onCleared()
-        _uiState.update { DetailUiState() }
+        mutate(DetailMutation.StateCleared)
     }
 }

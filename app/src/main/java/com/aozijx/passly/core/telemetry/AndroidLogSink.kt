@@ -11,7 +11,7 @@ import com.aozijx.passly.BuildConfig
 class AndroidLogSink(
     private val minimumLevel: EventLevel = if (BuildConfig.DEBUG) EventLevel.DEBUG else EventLevel.WARN,
     private val enabled: () -> Boolean = { true }
-) : TelemetryEmitter {
+) : TelemetryReporter {
 
     override fun emit(event: TelemetryEvent) {
         if (!enabled()) return

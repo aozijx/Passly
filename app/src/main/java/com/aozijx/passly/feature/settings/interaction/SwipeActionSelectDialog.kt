@@ -27,8 +27,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.R
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 
 private val SWIPE_ACTIONS = listOf(
@@ -37,13 +39,6 @@ private val SWIPE_ACTIONS = listOf(
     SwipeActionType.COPY_PASSWORD,
     SwipeActionType.COPY_USERNAME
 )
-
-private fun SwipeActionType.displayName(): String = when (this) {
-    SwipeActionType.DELETE -> "删除"
-    SwipeActionType.DETAIL -> "详情"
-    SwipeActionType.COPY_PASSWORD -> "复制密码"
-    SwipeActionType.COPY_USERNAME -> "复制账号"
-}
 
 private fun SwipeActionType.icon(): ImageVector? = when (this) {
     SwipeActionType.DELETE -> Icons.Default.Delete
@@ -99,7 +94,7 @@ fun SwipeActionSelectDialog(
                             Spacer(modifier = Modifier.width(12.dp))
                         }
                         Text(
-                            text = action.displayName(),
+                            text = action.localizedLabel(),
                             style = MaterialTheme.typography.bodyLarge,
                             color = if (isSelected) selectedContentColor else MaterialTheme.colorScheme.onSurface,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
@@ -109,7 +104,9 @@ fun SwipeActionSelectDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
         shape = RoundedCornerShape(28.dp)
     )
 }

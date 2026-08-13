@@ -1,13 +1,18 @@
 package com.aozijx.passly.app.di.security
 
 import com.aozijx.passly.domain.authentication.AuthenticationManager
+import com.aozijx.passly.domain.auth.port.AuthorizationGate
+import com.aozijx.passly.domain.auth.port.AuthorizationPermitRevoker
+import com.aozijx.passly.domain.auth.port.AuthorizationPermitVerifier
 import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.authentication.RecoveryCodeDraftFactory
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.security.authentication.DefaultAuthenticationManager
 import com.aozijx.passly.security.authentication.DefaultAuthenticationMethodProvisioner
 import com.aozijx.passly.security.authentication.DefaultRecoveryCodeDraftFactory
 import com.aozijx.passly.security.authentication.VaultSessionController
+import com.aozijx.passly.security.authorization.AuthorizationPermitRegistry
+import com.aozijx.passly.security.authorization.DefaultAuthorizationGate
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -36,9 +41,27 @@ abstract class SecurityModule {
 
     @Binds
     @Singleton
-    internal abstract fun bindVaultAccessState(
+    internal abstract fun bindAuthorizationGate(
+        impl: DefaultAuthorizationGate
+    ): AuthorizationGate
+
+    @Binds
+    @Singleton
+    internal abstract fun bindAuthorizationPermitVerifier(
+        impl: AuthorizationPermitRegistry
+    ): AuthorizationPermitVerifier
+
+    @Binds
+    @Singleton
+    internal abstract fun bindAuthorizationPermitRevoker(
+        impl: AuthorizationPermitRegistry
+    ): AuthorizationPermitRevoker
+
+    @Binds
+    @Singleton
+    internal abstract fun bindSecureSessionAccessState(
         impl: VaultSessionController
-    ): VaultAccessState
+    ): SecureSessionAccessState
 
     @Binds
     @Singleton

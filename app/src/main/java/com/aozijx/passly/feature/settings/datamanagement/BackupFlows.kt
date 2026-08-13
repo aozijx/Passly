@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
-import com.aozijx.passly.core.error.ui.toUiMessage
-import com.aozijx.passly.feature.backup.storage.BackupExportStorageSupport
+import com.aozijx.passly.app.message.mapping.toUiMessage
+import com.aozijx.passly.core.backup.BackupStorageSupport
 
 internal fun handleBackupPathPicked(
     context: Context,
@@ -33,7 +33,7 @@ internal fun handleBackupPathPicked(
         return
     }
 
-    BackupExportStorageSupport.ensureAppDirectoryTreeUri(context, uri)
+    BackupStorageSupport.ensureAppDirectoryTreeUri(context, uri)
         .onSuccess { onResolved(uri.toString()) }
         .onFailure { error ->
             Toast.makeText(context, error.toUiMessage("无法解析目录"), Toast.LENGTH_SHORT).show()

@@ -1,7 +1,5 @@
 package com.aozijx.passly.feature.detail.page
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
@@ -14,14 +12,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import com.aozijx.passly.core.platform.ClipboardUtils
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.OtpUiState
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.feature.detail.DetailAuthenticate
-import com.aozijx.passly.feature.detail.components.DetailScrollableContent
-import com.aozijx.passly.feature.detail.components.DetailTopBar
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.internal.EntryEditState
-import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.feature.detail.ui.DetailScrollableContent
+import com.aozijx.passly.feature.detail.ui.DetailTopBar
 
 /**
  * 详情页 UI 组件 (Stateless)
@@ -31,17 +29,16 @@ import com.aozijx.passly.feature.vault.model.OtpUiState
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
-    initialEntry: VaultEntry,
+    initialEntry: EntryAggregate,
     uiState: DetailUiState,
     otpUiState: OtpUiState?,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
-    onBack: () -> Unit,
     onEvent: (DetailIntent) -> Unit,
+    onBack: () -> Unit,
     onUpdateInteraction: () -> Unit,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
-    onShowIconPicker: () -> Unit,
-    onAutoUnlockTotp: (VaultEntry) -> Unit,
-    onAuthenticate: DetailAuthenticate
+    onAutoUnlockTotp: (EntryAggregate) -> Unit,
+    onAuthenticate: DetailAuthenticate,
+    onOpenRelatedEntry: (EntryAggregate) -> Unit
 ) {
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -76,18 +73,13 @@ fun DetailScreen(
 
     DisposableEffect(Unit) {
         onDispose {
-            ClipboardUtils.clear(context)
+            ClipboardUtils.clearIfOwned(context)
+            onEvent(DetailIntent.ClearSensitiveState)
         }
     }
 
     Scaffold(
-        modifier = Modifier
-            .nestedScroll(scrollBehavior.nestedScrollConnection)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onUpdateInteraction
-            ),
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             DetailTopBar(
                 entry = entry,
@@ -106,9 +98,8 @@ fun DetailScreen(
             otpUiState = otpUiState,
             onEvent = onEvent,
             onInteraction = onUpdateInteraction,
-            onUpdateVaultEntry = onUpdateVaultEntry,
-            onShowIconPicker = onShowIconPicker,
-            onAuthenticate = onAuthenticate
+            onAuthenticate = onAuthenticate,
+            onOpenRelatedEntry = onOpenRelatedEntry
         )
     }
 }

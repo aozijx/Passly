@@ -10,6 +10,8 @@ message BootstrapData {
   BiometricBinding biometric_binding = 4;
   BiometricRotationJournal biometric_rotation = 5;
   repeated string biometric_cleanup_aliases = 6;
+  bytes sensitive_key_envelope = 7;
+  bytes attachment_key_envelope = 8;
 }
 
 message EnvelopeEntry {

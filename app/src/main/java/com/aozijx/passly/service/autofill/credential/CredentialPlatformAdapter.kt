@@ -6,12 +6,12 @@ import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.credentials.provider.BeginGetPasswordOption
-import androidx.credentials.provider.BeginGetPublicKeyCredentialOption
 import androidx.credentials.provider.PasswordCredentialEntry
-import androidx.credentials.provider.PublicKeyCredentialEntry
+import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.autofill.model.FieldDescriptor
+import com.aozijx.passly.core.autofill.model.FillRequestSource
 import com.aozijx.passly.core.autofill.model.InternalFillRequest
 import com.aozijx.passly.core.autofill.model.InternalFillResponse
-import com.aozijx.passly.app.diagnostics.AppTelemetry
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,7 +20,6 @@ import javax.inject.Singleton
  *
  * - [buildRequest]：凭据查询参数 → InternalFillRequest
  * - [buildPasswordEntries]：InternalFillResponse → PasswordCredentialEntry 列表
- * - [buildPasskeyEntries]：InternalFillResponse → PublicKeyCredentialEntry 列表
  *
  * CredentialManager API 版本升级时，只需替换此适配器。
  */
@@ -36,17 +35,29 @@ class CredentialPlatformAdapter @Inject constructor() {
         return InternalFillRequest(
             parentPackage = packageName,
             webDomain = null,
-            fields = emptyList(),
+            fields = listOf(
+                FieldDescriptor(
+                    viewId = "credential_username",
+                    autofillHints = listOf("USERNAME"),
+                ),
+                FieldDescriptor(
+                    viewId = "credential_password",
+                    autofillHints = listOf("PASSWORD"),
+                ),
+            ),
+            source = FillRequestSource.CREDENTIAL_MANAGER,
         )
     }
 
     fun buildPasswordEntries(
         response: InternalFillResponse,
         context: Context,
-        packageName: String,
         option: BeginGetPasswordOption,
     ): List<PasswordCredentialEntry> {
-        val candidates = response.candidates
+        val candidates = response.candidates.filter {
+            it.username.isNotBlank() &&
+                    (option.allowedUserIds.isEmpty() || it.username in option.allowedUserIds)
+        }
         if (candidates.isEmpty()) {
             AppTelemetry.d(TAG, "No candidates for password entries")
             return emptyList()
@@ -56,29 +67,6 @@ class CredentialPlatformAdapter @Inject constructor() {
             CredentialEntryFactory.buildPasswordEntry(
                 context = context,
                 candidate = candidate,
-                packageName = packageName,
-                option = option,
-            )
-        }
-    }
-
-    fun buildPasskeyEntries(
-        response: InternalFillResponse,
-        context: Context,
-        packageName: String,
-        option: BeginGetPublicKeyCredentialOption,
-    ): List<PublicKeyCredentialEntry> {
-        val candidates = response.candidates
-        if (candidates.isEmpty()) {
-            AppTelemetry.d(TAG, "No candidates for passkey entries")
-            return emptyList()
-        }
-
-        return candidates.map { candidate ->
-            CredentialEntryFactory.buildPasskeyEntry(
-                context = context,
-                candidate = candidate,
-                packageName = packageName,
                 option = option,
             )
         }

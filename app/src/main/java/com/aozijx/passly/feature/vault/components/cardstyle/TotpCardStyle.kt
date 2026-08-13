@@ -15,7 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LockClock
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,9 +30,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import com.aozijx.passly.core.ui.components.VaultItemIcon
+import com.aozijx.passly.domain.entry.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.feature.vault.model.OtpUiState
 
 private object TotpBehaviorTokens {
     const val FALLBACK_CODE = "------"
@@ -51,6 +51,7 @@ fun TotpStyleVaultItem(
     previewProgress: Float? = null,
     onClick: () -> Unit
 ) {
+    val cardShape = MaterialTheme.shapes.extraLarge
     val currentState =
         previewCode?.let { OtpUiState(code = it, progress = previewProgress ?: 0f) } ?: totpState
     val isSteam = remember(entry.otpType) {
@@ -80,20 +81,15 @@ fun TotpStyleVaultItem(
 
     Card(
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = CardStyleTokens.Totp.marginHorizontal,
-                vertical = CardStyleTokens.Totp.marginVertical
-            ),
-        shape = RoundedCornerShape(CardStyleTokens.Totp.corner),
+        modifier = Modifier.fillMaxWidth(),
+        shape = cardShape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = CardStyleTokens.Totp.elevation)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(CardStyleTokens.Totp.corner))
+                .clip(cardShape)
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
@@ -131,7 +127,7 @@ fun TotpStyleVaultItem(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = entry.category,
+                        text = entry.categoryOrTemplateLabel(),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -157,10 +153,9 @@ fun TotpStyleVaultItem(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(CardStyleTokens.Totp.progressRowSpacing)
                         ) {
-                            CircularProgressIndicator(
+                            CircularWavyProgressIndicator(
                                 progress = { progress },
                                 modifier = Modifier.size(CardStyleTokens.Totp.progressSize),
-                                strokeWidth = CardStyleTokens.Totp.progressStrokeWidth,
                                 color = progressColor,
                                 trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(
                                     alpha = CardStyleTokens.Totp.PROGRESS_TRACK_ALPHA
@@ -186,5 +181,38 @@ fun TotpStyleVaultItem(
                 }
             }
         }
+    }
+}
+
+internal object TotpVaultCardStyle : VaultCardStyleComponent {
+    override val key: String = "totp"
+
+    override fun supports(entry: EntryListItem): Boolean = entry.hasOtp
+
+    @Composable
+    override fun Render(
+        entry: EntryListItem,
+        totpState: OtpUiState?,
+        showTotpCode: Boolean,
+        onClick: () -> Unit,
+    ) {
+        TotpStyleVaultItem(
+            entry = entry,
+            totpState = totpState,
+            showCode = showTotpCode,
+            onClick = onClick,
+        )
+    }
+
+    @Composable
+    override fun Preview(onClick: () -> Unit) {
+        TotpStyleVaultItem(
+            entry = CardStylePreviewFixtures.totpEntry,
+            totpState = null,
+            showCode = true,
+            previewCode = "123 456",
+            previewProgress = 0.4f,
+            onClick = onClick,
+        )
     }
 }

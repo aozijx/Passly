@@ -3,6 +3,7 @@ package com.aozijx.passly.data.local.database.converter
 import androidx.room.TypeConverter
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.link.EntryRelationType
 import com.aozijx.passly.domain.entry.model.lookup.LookupField
 
 object EntryTypeConverter {
@@ -29,4 +30,13 @@ object LookupFieldConverter {
     @TypeConverter
     fun toLookupField(value: String): LookupField =
         LookupField.entries.find { it.name == value } ?: LookupField.TITLE
+}
+
+object EntryRelationTypeConverter {
+    @TypeConverter
+    fun fromEntryRelationType(value: EntryRelationType): String = value.name
+
+    @TypeConverter
+    fun toEntryRelationType(value: String): EntryRelationType =
+        EntryRelationType.valueOf(value)
 }

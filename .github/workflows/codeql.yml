@@ -77,8 +77,10 @@ jobs:
       run: |
         chmod +x gradlew
         ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --no-daemon \
-          -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" \
-          -Dorg.gradle.parallel=false \
+          -Dorg.gradle.jvmargs="-Xmx4g -Xms512m -XX:MaxMetaspaceSize=768m -XX:+UseParallelGC -Dfile.encoding=UTF-8" \
+          -Dkotlin.daemon.jvmargs="-Xmx2g -Xms256m -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8" \
+          -Dorg.gradle.workers.max=4 \
+          -Dorg.gradle.parallel=true \
           --stacktrace
 
     # 对构建产物执行 CodeQL 静态分析，并按语言分类上传结果

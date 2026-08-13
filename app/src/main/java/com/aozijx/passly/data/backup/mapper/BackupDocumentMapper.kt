@@ -37,19 +37,19 @@ import com.aozijx.passly.domain.entry.model.EntryHeader
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * 备份文档映射器。
- * 只负责 VaultEntry ↔ BackupEntryRecord 的转换，不涉及加密或文件 IO。
+ * 只负责 EntryAggregate ↔ BackupEntryRecord 的转换，不涉及加密或文件 IO。
  */
 @Singleton
 class BackupDocumentMapper @Inject constructor() {
 
     fun toRecord(
-        entry: VaultEntry,
+        entry: EntryAggregate,
         attachmentIds: List<String> = emptyList()
     ): BackupEntryRecord = BackupEntryRecord(
         id = entry.id,
@@ -64,7 +64,7 @@ class BackupDocumentMapper @Inject constructor() {
         attachmentIds = attachmentIds
     )
 
-    fun toEntry(record: BackupEntryRecord): VaultEntry = VaultEntry(
+    fun toEntry(record: BackupEntryRecord): EntryAggregate = EntryAggregate(
         header = EntryHeader(
             id = EntryId(record.id),
             entryType = EntryType.valueOf(record.type),

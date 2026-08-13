@@ -17,4 +17,11 @@ data class InternalFillRequest(
     val fields: List<FieldDescriptor>,
     /** 目标 App 与应用当前进程是否同包（同包时可跳过部分安全检查） */
     val isInlineRequest: Boolean = false,
+    /** Android 系统入口，用于应用统一策略。 */
+    val source: FillRequestSource = FillRequestSource.AUTOFILL_SERVICE,
 )
+
+enum class FillRequestSource {
+    AUTOFILL_SERVICE,
+    CREDENTIAL_MANAGER,
+}

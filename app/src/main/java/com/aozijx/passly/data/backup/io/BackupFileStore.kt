@@ -7,7 +7,7 @@ package com.aozijx.passly.data.backup.io
 interface BackupFileStore {
     fun writeBytes(uri: String, data: ByteArray)
     fun readBytesSafely(uri: String, maxBytes: Long = MAX_READ_BYTES): ByteArray
-    suspend fun checkWritable(uri: String): com.aozijx.passly.core.error.AppResult<Unit>
+    suspend fun checkWritable(uri: String): com.aozijx.passly.core.error.result.AppResult<Unit>
 
     companion object {
         const val MAX_READ_BYTES = 256 * 1024 * 1024L // 256MB

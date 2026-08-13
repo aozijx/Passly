@@ -1,13 +1,14 @@
 package com.aozijx.passly.feature.detail.contract
 
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 
 data class DetailUiState(
-    val entry: VaultEntry? = null,
-    val vaultType: EntryType = EntryType.LOGIN,
+    val entry: EntryAggregate? = null,
+    val entryType: EntryType = EntryType.LOGIN,
     val strategySummary: String = "",
     val validationError: String? = null,
     val isEditingTitle: Boolean = false,
@@ -15,7 +16,10 @@ data class DetailUiState(
     val strategyReady: Boolean = false,
     val isAccessHistoryEnabled: Boolean = false,
     val revealedFields: Map<String, String> = emptyMap(),
-    val history: List<EntryActivity> = emptyList()
+    val sensitiveFieldKeys: Set<SensitiveFieldKey> = emptySet(),
+    val history: List<EntryActivity> = emptyList(),
+    val relatedEntries: List<EntryAggregate> = emptyList(),
+    val isFaviconDownloading: Boolean = false
 ) {
     fun revealed(key: String): String? = revealedFields[key]
 }
@@ -24,6 +28,7 @@ object RevealedFieldKey {
     const val USERNAME = "username"
     const val PASSWORD = "password"
     const val SSH_PRIVATE_KEY = "sshPrivateKey"
+    const val SSH_PASSPHRASE = "sshPassphrase"
     const val CARDHOLDER = "cardholder"
     const val CARD_NUMBER = "cardNumber"
     const val CVV = "cvv"
@@ -35,10 +40,9 @@ object RevealedFieldKey {
 }
 
 sealed interface DetailIntent {
-    data class Initialize(val initialEntry: VaultEntry) : DetailIntent
-    data class SyncEntry(val entry: VaultEntry) : DetailIntent
-    data class CommitEntryUpdate(val entry: VaultEntry) : DetailIntent
-    object ShowIconPicker : DetailIntent
+    data class Initialize(val initialEntry: EntryAggregate) : DetailIntent
+    data class SyncEntry(val entry: EntryAggregate) : DetailIntent
+    data class CommitEntryUpdate(val entry: EntryAggregate) : DetailIntent
 
     object StartTitleEdit : DetailIntent
     object CancelTitleEdit : DetailIntent
@@ -48,6 +52,9 @@ sealed interface DetailIntent {
     object ToggleFavorite : DetailIntent
 
     data class RevealField(val key: String, val value: String?) : DetailIntent
+    data class RevealHighSensitivityField(val key: String) : DetailIntent
+    data class RevealHighSensitivityFields(val keys: Set<String>) : DetailIntent
+    data class DownloadFavicon(val domain: String) : DetailIntent
 
     data class RecordAction(val field: String, val type: ActivityType) : DetailIntent
     data class ToggleAccessHistoryRecording(val enabled: Boolean) : DetailIntent
@@ -55,6 +62,5 @@ sealed interface DetailIntent {
 }
 
 sealed interface DetailEffect {
-    data class EntryUpdated(val entry: VaultEntry) : DetailEffect
-    data object IconPickerRequested : DetailEffect
+    data class EntryUpdated(val entry: EntryAggregate) : DetailEffect
 }

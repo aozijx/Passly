@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.backup
 
-import com.aozijx.passly.core.error.BackupFailed
+import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.security.KeyDerivation
 import com.aozijx.passly.data.backup.format.BackupFormatRegistry
 import com.aozijx.passly.data.backup.format.bitwarden.BitwardenJsonImportAdapter
@@ -16,6 +16,7 @@ import com.aozijx.passly.data.backup.model.BackupCustomField
 import com.aozijx.passly.data.backup.model.BackupDocument
 import com.aozijx.passly.data.backup.model.BackupEntryRecord
 import com.aozijx.passly.data.backup.model.BackupLoginSecret
+import com.aozijx.passly.data.backup.model.BackupLinkRecord
 import com.aozijx.passly.data.backup.model.BackupOtpConfig
 import com.aozijx.passly.data.backup.model.BackupOtpSecret
 import com.aozijx.passly.data.backup.model.BackupResourceKind
@@ -24,6 +25,7 @@ import com.aozijx.passly.data.backup.model.BackupSecretRecord
 import com.aozijx.passly.data.backup.model.BackupSummaryRecord
 import com.aozijx.passly.data.backup.model.BackupWebsiteRecord
 import com.aozijx.passly.domain.backup.model.BackupFormats
+import com.aozijx.passly.domain.entry.model.link.EntryRelationType
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertArrayEquals
@@ -363,16 +365,29 @@ class BackupCodecTest {
 
         val detected = registry.importer(requestedFormat = null, payload = payload)
         val bundle = detected.decode(payload, password = null)
-        val entry = bundle.document.entries.single()
+        val account = bundle.document.entries.single { it.type == "ACCOUNT" }
+        val login = bundle.document.entries.single { it.type == "LOGIN" }
+        val otp = bundle.document.entries.single { it.type == "OTP" }
 
         assertEquals(BackupFormats.BITWARDEN_JSON, detected.formatId)
-        assertEquals("Bank", entry.summary.title)
-        assertEquals("alice", entry.summary.username)
-        assertEquals(listOf("Finance"), entry.summary.tags)
-        assertEquals("secret", entry.secret.login?.password)
-        assertEquals("JBSWY3DPEHPK3PXP", entry.secret.otp?.config?.secret)
-        assertEquals("Bank", entry.secret.otp?.config?.issuer)
-        assertEquals("1234", entry.secret.customFields.single().value)
+        assertEquals("Bank", account.summary.title)
+        assertEquals(BackupSecretRecord(), account.secret)
+        assertTrue(bundle.document.links.any {
+            it.sourceEntryId == login.id &&
+                it.targetEntryId == account.id &&
+                it.relationType == EntryRelationType.MEMBER_OF_ACCOUNT.name
+        })
+        assertTrue(bundle.document.links.any {
+            it.sourceEntryId == otp.id &&
+                it.targetEntryId == login.id &&
+                it.relationType == EntryRelationType.OTP_FOR.name
+        })
+        assertEquals("alice", login.summary.username)
+        assertEquals(listOf("Finance"), login.summary.tags)
+        assertEquals("secret", login.secret.login?.password)
+        assertEquals("1234", login.secret.customFields.single().value)
+        assertEquals("JBSWY3DPEHPK3PXP", otp.secret.otp?.config?.secret)
+        assertEquals("Bank", otp.secret.otp?.config?.issuer)
     }
 
     @Test
@@ -390,7 +405,7 @@ class BackupCodecTest {
             BackupBundle(
                 BackupDocument(
                     format = BackupDocument.FORMAT,
-                    version = 1,
+                    version = BackupDocument.CURRENT_VERSION,
                     exportedAt = 1,
                     entries = listOf(
                         BackupEntryRecord(
@@ -450,10 +465,10 @@ class BackupCodecTest {
     }
 
     @Test
-    fun documentV1_wireFieldNamesAreStableAndIndependentFromDatabasePayloads() {
+    fun documentV2_wireFieldNamesAreStableAndIndependentFromDatabasePayloads() {
         val document = BackupDocument(
             format = BackupDocument.FORMAT,
-            version = 1,
+            version = BackupDocument.CURRENT_VERSION,
             exportedAt = 1,
             entries = listOf(
                 BackupEntryRecord(
@@ -469,7 +484,6 @@ class BackupCodecTest {
                     ),
                     secret = BackupSecretRecord(
                         login = BackupLoginSecret(password = "secret"),
-                        otp = BackupOtpSecret(BackupOtpConfig(secret = "JBSWY3DPEHPK3PXP")),
                         customFields = listOf(BackupCustomField("PIN", "1234"))
                     )
                 )
@@ -484,11 +498,19 @@ class BackupCodecTest {
         val secret = entry.getValue("secret").jsonObject
 
         assertEquals(
-            setOf("id", "type", "version", "createdAt", "updatedAt", "summary", "secret"),
+            setOf(
+                "id",
+                "type",
+                "version",
+                "createdAt",
+                "updatedAt",
+                "summary",
+                "secret"
+            ),
             entry.keys
         )
         assertEquals(setOf("title", "username", "website"), summary.keys)
-        assertEquals(setOf("login", "otp", "customFields"), secret.keys)
+        assertEquals(setOf("login", "customFields"), secret.keys)
         assertFalse(BackupJson.encodeToString(document).contains("schemaVersion"))
         assertFalse(BackupJson.encodeToString(document).contains("iconCustomPath"))
     }
@@ -498,7 +520,7 @@ class BackupCodecTest {
         val bundle = BackupBundle(
             BackupDocument(
                 format = BackupDocument.FORMAT,
-                version = 2,
+                version = BackupDocument.CURRENT_VERSION + 1,
                 exportedAt = 1,
                 entries = emptyList()
             )
@@ -506,6 +528,81 @@ class BackupCodecTest {
 
         assertThrows(IllegalArgumentException::class.java) {
             BackupBundleValidator.validate(bundle, requireResourceData = false)
+        }
+    }
+
+    @Test
+    fun documentValidator_acceptsAccountHierarchy_andRejectsMixedPayload() {
+        val account = BackupEntryRecord(
+            id = "account-1",
+            type = "ACCOUNT",
+            version = 1,
+            createdAt = 1,
+            updatedAt = 1,
+            summary = BackupSummaryRecord("Example", ""),
+            secret = BackupSecretRecord()
+        )
+        val login = BackupEntryRecord(
+            id = "login-1",
+            type = "LOGIN",
+            version = 1,
+            createdAt = 1,
+            updatedAt = 1,
+            summary = BackupSummaryRecord("Example login", "alice"),
+            secret = BackupSecretRecord(
+                login = BackupLoginSecret(password = "secret")
+            )
+        )
+        val valid = BackupBundle(
+            BackupDocument(
+                format = BackupDocument.FORMAT,
+                version = BackupDocument.CURRENT_VERSION,
+                exportedAt = 1,
+                entries = listOf(login, account),
+                links = listOf(
+                    BackupLinkRecord(
+                        id = "login-account-link",
+                        sourceEntryId = login.id,
+                        targetEntryId = account.id,
+                        relationType = EntryRelationType.MEMBER_OF_ACCOUNT.name,
+                        createdAt = 1,
+                        updatedAt = 1
+                    )
+                )
+            )
+        )
+
+        BackupBundleValidator.validate(valid, requireResourceData = false)
+        val json = JsonBackupExporter().export(valid)
+        val restored = JsonBackupImporter().import(json.toByteArray())
+        assertEquals(valid.document.links, restored.document.links)
+
+        val mixed = login.copy(
+            secret = login.secret.copy(
+                otp = BackupOtpSecret(BackupOtpConfig(secret = "JBSWY3DPEHPK3PXP"))
+            )
+        )
+        assertThrows(IllegalArgumentException::class.java) {
+            BackupBundleValidator.validate(
+                valid.copy(document = valid.document.copy(entries = listOf(account, mixed))),
+                requireResourceData = false
+            )
+        }
+
+        val reversedMembership = valid.document.links.single().copy(
+            sourceEntryId = account.id,
+            targetEntryId = login.id,
+        )
+        assertThrows(IllegalArgumentException::class.java) {
+            BackupBundleValidator.validate(
+                valid.copy(document = valid.document.copy(links = listOf(reversedMembership))),
+                requireResourceData = false,
+            )
+        }
+
+        val legacyVaultFormat = json.replace(BackupDocument.FORMAT, "passly-vault")
+        assertThrows(Exception::class.java) {
+            JsonBackupImporter().import(legacyVaultFormat.toByteArray())
         }
     }
 

@@ -7,7 +7,9 @@ import com.aozijx.passly.data.repository.activity.RoomActivityRecorder
 import com.aozijx.passly.data.repository.autofill.CredentialServiceRepositoryImpl
 import com.aozijx.passly.data.repository.entry.RoomEntryCommandRepository
 import com.aozijx.passly.data.repository.entry.RoomEntryListQueryRepository
+import com.aozijx.passly.data.repository.entry.RoomEntryLinkRepository
 import com.aozijx.passly.data.repository.entry.RoomEntryQueryRepository
+import com.aozijx.passly.data.repository.entry.RoomSensitiveFieldRepository
 import com.aozijx.passly.data.repository.favicon.FaviconRepositoryImpl
 import com.aozijx.passly.data.repository.otp.RoomOtpConfigRepository
 import com.aozijx.passly.data.repository.search.BlindIndexMaintenance
@@ -16,10 +18,12 @@ import com.aozijx.passly.domain.entry.repository.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.repository.ActivityRecorder
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
 import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
+import com.aozijx.passly.domain.entry.repository.EntryLinkRepository
 import com.aozijx.passly.domain.entry.repository.EntryQueryRepository
 import com.aozijx.passly.domain.entry.repository.FaviconRepository
 import com.aozijx.passly.domain.entry.repository.OtpConfigRepository
 import com.aozijx.passly.domain.entry.repository.SearchIndexMaintenance
+import com.aozijx.passly.domain.entry.repository.SensitiveFieldRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -37,6 +41,16 @@ abstract class VaultRepositoryModule {
     @Binds
     @Singleton
     abstract fun bindEntryCommandRepository(impl: RoomEntryCommandRepository): EntryCommandRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindEntryLinkRepository(impl: RoomEntryLinkRepository): EntryLinkRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSensitiveFieldRepository(
+        impl: RoomSensitiveFieldRepository
+    ): SensitiveFieldRepository
 
     @Binds
     @Singleton

@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.platform.CacheUtils
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
@@ -27,6 +28,7 @@ internal fun GeneralDetail() {
     val scope = rememberCoroutineScope()
     var cacheSize by remember { mutableStateOf<String?>(null) }
     var isCalculating by remember { mutableStateOf(true) }
+    val diagnosticsViewModel: DiagnosticsSettingsViewModel = hiltViewModel()
     LaunchedEffect(Unit) {
         cacheSize = withContext(Dispatchers.IO) {
             CacheUtils.calculateTotalCacheSize(context)
@@ -53,7 +55,7 @@ internal fun GeneralDetail() {
 
         Spacer(Modifier.height(24.dp))
 
-        LogSettingsSection()
+        LogSettingsSection(viewModel = diagnosticsViewModel)
 
         Spacer(Modifier.height(24.dp))
 

@@ -3,10 +3,10 @@ package com.aozijx.passly.app.diagnostics
 import android.content.Context
 import android.os.Process
 import com.aozijx.passly.core.telemetry.AndroidLogSink
-import com.aozijx.passly.core.telemetry.CompositeTelemetryEmitter
+import com.aozijx.passly.core.telemetry.CompositeTelemetryReporter
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.EventLevel
-import com.aozijx.passly.core.telemetry.TelemetryEmitter
+import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.TelemetryEvent
 import com.aozijx.passly.core.telemetry.TelemetryPolicyController
 import com.aozijx.passly.data.diagnostics.EncryptedLogStore
@@ -30,16 +30,16 @@ class DiagnosticsRuntimeController @Inject constructor(
         context = context.applicationContext,
         loggingEnabledUntil = fileEnabledUntil
     )
-    val emitter: TelemetryEmitter = CompositeTelemetryEmitter(
+    val reporter: TelemetryReporter = CompositeTelemetryReporter(
         AndroidLogSink(enabled = androidEnabled::get),
-        TelemetryEmitter(fileStore::write)
+        TelemetryReporter(fileStore::write)
     )
 
     @Volatile
     private var previousCrashHandler: Thread.UncaughtExceptionHandler? = null
 
     fun start(scope: CoroutineScope) {
-        AppTelemetry.install(emitter)
+        AppTelemetry.install(reporter)
         installCrashHandler()
         scope.launch {
             policyController.policies.collectLatest { policy ->
@@ -76,7 +76,7 @@ class DiagnosticsRuntimeController @Inject constructor(
                 .map { "${it.className}.${it.methodName}" }
                 .toList()
         )
-        emitter.emit(event)
+        reporter.emit(event)
         if (!flush(300L)) fileStore.crashEmergencyWrite(event, 200L)
         previousCrashHandler?.uncaughtException(thread, error)
             ?: Process.killProcess(Process.myPid())

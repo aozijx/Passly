@@ -22,9 +22,7 @@ class DefaultNoticeRouter @Inject constructor() : NoticeRouter {
                 return NoticeRoutePlan.suppressed(RouteReason.MASTER_DISABLED)
             }
             val topic = context.settings.topic(policy.topic)
-            if (!topic.enabled) {
-                return NoticeRoutePlan.suppressed(RouteReason.TOPIC_DISABLED)
-            }
+        if (!topic.enabled) return NoticeRoutePlan.suppressed(RouteReason.TOPIC_DISABLED)
             if (policy.level.ordinal < topic.minimumLevel.ordinal) {
                 return NoticeRoutePlan.suppressed(RouteReason.BELOW_MINIMUM_LEVEL)
             }
@@ -46,9 +44,7 @@ class DefaultNoticeRouter @Inject constructor() : NoticeRouter {
         if (NoticeTarget.IN_APP in initialTargets && !foreground) {
             return NoticeRoutePlan.suppressed(RouteReason.APP_NOT_VISIBLE)
         }
-        if (NoticeTarget.SYSTEM !in initialTargets) {
-            return NoticeRoutePlan.allowed(initialTargets)
-        }
+        if (NoticeTarget.SYSTEM !in initialTargets) return NoticeRoutePlan.allowed(initialTargets)
         if (context.systemNotificationState.available) {
             return NoticeRoutePlan(
                 targets = initialTargets,

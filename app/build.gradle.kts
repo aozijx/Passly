@@ -38,12 +38,12 @@ val hasReleaseSigningConfig = listOf(
 // Android 配置
 android {
     namespace = "com.aozijx.passly"
-    compileSdk = 36
+    compileSdk = libs.versions.androidCompileSdk.get().toInt()
 
     defaultConfig {
         applicationId = "com.aozijx.passly"
-        minSdk = 31
-        targetSdk = 36
+        minSdk = libs.versions.androidMinSdk.get().toInt()
+        targetSdk = libs.versions.androidTargetSdk.get().toInt()
         versionCode = 8
         versionName = "0.3.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -117,7 +117,7 @@ android {
 
 // Kotlin 配置
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(libs.versions.jvmToolchain.get().toInt())
 }
 
 room {
@@ -126,6 +126,13 @@ room {
 }
 
 dependencies {
+    implementation(project(":core:common"))
+    implementation(project(":core:android"))
+    implementation(project(":core:ui"))
+    implementation(project(":core:telemetry"))
+    implementation(project(":domain"))
+    implementation(project(":runtime:session"))
+
     // Android Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
@@ -143,12 +150,18 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.compose.foundation)
 
     // Material Design & Icons
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.material.icons.extended)
+
+    // Material Adaptive
+    implementation(libs.androidx.compose.material3.adaptive)
+    implementation(libs.androidx.compose.material3.adaptive.layout)
+    implementation(libs.androidx.compose.material3.adaptive.navigation)
 
     // Room Database
     implementation(libs.androidx.room.runtime)
@@ -216,7 +229,7 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:4.33.0"
+        artifact = libs.protobuf.protoc.get().toString()
     }
     generateProtoTasks {
         all().configureEach {

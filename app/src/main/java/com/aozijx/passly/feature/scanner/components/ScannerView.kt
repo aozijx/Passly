@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.scanner.components
 
-import android.content.ClipData
 import android.content.Intent
 import android.widget.Toast
 import androidx.annotation.OptIn
@@ -31,28 +30,38 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.ClipEntry
-import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.aozijx.passly.R
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.permission.compose.rememberPermissionRequestHost
 import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
 import com.aozijx.passly.core.permission.model.PermissionStatus
 import com.aozijx.passly.core.permission.model.RuntimePermission
+import com.aozijx.passly.core.platform.ClipboardUtils
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
-import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
+
+private class ScannerCameraSession {
+    var provider: ProcessCameraProvider? = null
+    var imageAnalysis: ImageAnalysis? = null
+
+    fun stop() {
+        imageAnalysis?.clearAnalyzer()
+        imageAnalysis = null
+        provider?.unbindAll()
+    }
+}
 
 @OptIn(ExperimentalGetImage::class)
 @Composable
@@ -60,14 +69,18 @@ fun ScannerView(
     onBarcodeDetected: (String) -> Unit,
     modifier: Modifier = Modifier,
     onPermissionDenied: () -> Unit = {},
+    isScanning: Boolean = true,
     scanResult: String = "",
     showResultCard: Boolean = true,
     autoHandleLinks: Boolean = true
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val scope = rememberCoroutineScope()
-    val clipboard = LocalClipboard.current
+    val waitingForPermissionText = stringResource(R.string.scanner_waiting_for_permission)
+    val openLinkFailedText = stringResource(R.string.scanner_open_link_failed)
+    val copySucceededText = stringResource(R.string.scanner_copy_succeeded)
+    val openLinkActionText = stringResource(R.string.scanner_open_link_action)
+    val copyResultActionText = stringResource(R.string.scanner_copy_result_action)
 
     val previewView = remember {
         PreviewView(context).apply {
@@ -76,6 +89,7 @@ fun ScannerView(
     }
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val barcodeScanner = remember { BarcodeScanning.getClient() }
+    val cameraSession = remember { ScannerCameraSession() }
     val hasPermission = remember { mutableStateOf(false) }
 
     val permissionHost = rememberPermissionRequestHost("scanner.camera") { permission, result ->
@@ -88,72 +102,104 @@ fun ScannerView(
     LaunchedEffect(permissionHost) {
         val cameraPermission = permissionHost.status(RuntimePermission.CAMERA)
         hasPermission.value = cameraPermission == PermissionStatus.GRANTED
-        when {
-            cameraPermission == PermissionStatus.GRANTED -> Unit
-            cameraPermission == PermissionStatus.DENIED ->
+        when (cameraPermission) {
+            PermissionStatus.GRANTED -> Unit
+            PermissionStatus.DENIED ->
                 permissionHost.request(RuntimePermission.CAMERA)
+
             else -> onPermissionDenied()
         }
     }
 
-    DisposableEffect(lifecycleOwner) {
+    DisposableEffect(cameraExecutor, barcodeScanner) {
         onDispose {
-            try {
-                ProcessCameraProvider.getInstance(context).get().unbindAll()
-            } catch (e: Exception) {
-                AppTelemetry.e("ScannerView", "Failed to unbind camera on dispose", e)
-            }
+            cameraSession.stop()
             cameraExecutor.shutdown()
             barcodeScanner.close()
         }
     }
 
-    LaunchedEffect(hasPermission.value) {
-        if (!hasPermission.value) return@LaunchedEffect
+    DisposableEffect(lifecycleOwner, hasPermission.value, isScanning) {
+        var disposed = false
+        cameraSession.stop()
 
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-        cameraProviderFuture.addListener({
-            try {
-                val provider = cameraProviderFuture.get()
-                val preview = Preview.Builder().build().apply {
-                    surfaceProvider = previewView.surfaceProvider
-                }
+        if (hasPermission.value && isScanning) {
+            val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+            cameraProviderFuture.addListener({
+                if (disposed) return@addListener
+                try {
+                    val provider = cameraProviderFuture.get()
 
-                val imageAnalysis = ImageAnalysis.Builder()
-                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                    .build()
-                    .apply {
-                        setAnalyzer(cameraExecutor) { imageProxy ->
-                            val mediaImage = imageProxy.image
-                            if (mediaImage != null) {
-                                val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                    val preview = Preview.Builder().build().apply {
+                        surfaceProvider = previewView.surfaceProvider
+                    }
+                    val imageAnalysis = ImageAnalysis.Builder()
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build()
+                        .apply {
+                            setAnalyzer(cameraExecutor) { imageProxy ->
+                                val mediaImage = imageProxy.image
+                                if (mediaImage == null || disposed) {
+                                    imageProxy.close()
+                                    return@setAnalyzer
+                                }
+
+                                val image = InputImage.fromMediaImage(
+                                    mediaImage,
+                                    imageProxy.imageInfo.rotationDegrees
+                                )
                                 barcodeScanner.process(image)
                                     .addOnSuccessListener { barcodes ->
-                                        barcodes.firstOrNull()?.rawValue?.let {
-                                            AppTelemetry.d("ScannerView", "Detected barcode: $it")
-                                            onBarcodeDetected(it)
+                                        if (disposed) return@addOnSuccessListener
+                                        barcodes.firstOrNull()?.rawValue?.let { value ->
+                                            AppTelemetry.d(
+                                                "ScannerView",
+                                                "Barcode detected"
+                                            )
+                                            onBarcodeDetected(value)
                                         }
                                     }
+                                    .addOnFailureListener { error ->
+                                        AppTelemetry.e(
+                                            "ScannerView",
+                                            "Barcode analysis failed",
+                                            error
+                                        )
+                                    }
                                     .addOnCompleteListener { imageProxy.close() }
-                            } else {
-                                imageProxy.close()
                             }
                         }
-                    }
 
-                provider.unbindAll()
-                provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageAnalysis)
-            } catch (e: Exception) {
-                AppTelemetry.e("ScannerView", "Camera binding failed", e)
-            }
-        }, ContextCompat.getMainExecutor(context))
+                    cameraSession.provider = provider
+                    cameraSession.imageAnalysis = imageAnalysis
+                    provider.unbindAll()
+                    provider.bindToLifecycle(
+                        lifecycleOwner,
+                        CameraSelector.DEFAULT_BACK_CAMERA,
+                        preview,
+                        imageAnalysis
+                    )
+                } catch (e: Exception) {
+                    AppTelemetry.e("ScannerView", "Camera binding failed", e)
+                }
+            }, ContextCompat.getMainExecutor(context))
+        }
+
+        onDispose {
+            disposed = true
+            cameraSession.stop()
+        }
     }
 
     Box(modifier = modifier.fillMaxSize()) {
         if (hasPermission.value) {
             AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
         } else {
-            Text("等待相机权限...", modifier = Modifier.align(Alignment.Center), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                waitingForPermissionText,
+                modifier = Modifier.align(Alignment.Center),
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
 
         AnimatedVisibility(
@@ -183,28 +229,24 @@ fun ScannerView(
                                     val intent = Intent(Intent.ACTION_VIEW, scanResult.toUri())
                                     context.startActivity(intent)
                                 } catch (_: Exception) {
-                                    Toast.makeText(context, "无法打开链接", Toast.LENGTH_SHORT)
+                                    Toast.makeText(context, openLinkFailedText, Toast.LENGTH_SHORT)
                                         .show()
                                 }
                             } else {
-                                scope.launch {
-                                    clipboard.setClipEntry(
-                                        ClipEntry(
-                                            ClipData.newPlainText(
-                                                "scan_result",
-                                                scanResult
-                                            )
-                                        )
-                                    )
-                                }
-                                Toast.makeText(context, "已复制到剪贴板", Toast.LENGTH_SHORT).show()
+                                ClipboardUtils.copy(context, scanResult)
+                                Toast.makeText(context, copySucceededText, Toast.LENGTH_SHORT)
+                                    .show()
                             }
                         }
                         .padding(horizontal = 24.dp, vertical = 14.dp)
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = if (autoHandleLinks && isUrl) "点击跳转链接" else "点击复制结果",
+                            text = if (autoHandleLinks && isUrl) {
+                                openLinkActionText
+                            } else {
+                                copyResultActionText
+                            },
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.labelSmall,
                             modifier = Modifier.padding(bottom = 4.dp)

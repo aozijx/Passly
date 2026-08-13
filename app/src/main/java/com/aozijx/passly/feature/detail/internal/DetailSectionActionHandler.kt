@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.detail.internal
 
 import android.content.Context
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.contract.DetailIntent
@@ -21,21 +22,19 @@ internal inline fun copySensitiveField(
     fieldName: String,
     revealedValue: String?,
     sourceValue: String?,
-    crossinline onReveal: (String) -> Unit = {},
     crossinline afterCopy: (String) -> Unit = {}
 ) {
-    val source = sourceValue?.takeIf { it.isNotBlank() } ?: return
     if (revealedValue != null) {
         ClipboardUtils.copy(context, revealedValue)
         afterCopy(revealedValue)
         handler.record(fieldName, ActivityType.COPY_PASSWORD)
         return
     }
-
-    handler.onAuthenticate {
-        onReveal(source)
-        ClipboardUtils.copy(context, source)
-        afterCopy(source)
+    val source = sourceValue?.takeIf { it.isNotBlank() } ?: return
+    val value = revealedValue ?: source
+    handler.onAuthenticate.copy {
+        ClipboardUtils.copy(context, value)
+        afterCopy(value)
         handler.record(fieldName, ActivityType.COPY_PASSWORD)
     }
 }
@@ -45,6 +44,7 @@ internal inline fun toggleRevealSensitiveField(
     fieldName: String,
     revealedValue: String?,
     sourceValue: String?,
+    accessLevel: SensitiveAccessLevel = SensitiveAccessLevel.STANDARD,
     crossinline onReveal: (String?) -> Unit
 ) {
     val source = sourceValue?.takeIf { it.isNotBlank() } ?: return
@@ -53,7 +53,7 @@ internal inline fun toggleRevealSensitiveField(
         return
     }
 
-    handler.onAuthenticate {
+    handler.onAuthenticate.reveal(accessLevel) {
         onReveal(source)
         handler.record(fieldName, ActivityType.VIEW)
     }

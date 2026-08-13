@@ -6,13 +6,15 @@ import com.aozijx.passly.data.local.dao.buildEntryIdIntersectionQuery
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.mapper.entry.EntryListItemMapper
 import com.aozijx.passly.data.model.entity.EntryEntity
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
+import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.lookup.EntryFilter
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.entry.model.lookup.LookupField
 import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
+import com.aozijx.passly.domain.entry.service.EntryAccountGraph
 import com.aozijx.passly.security.search.BlindIndexer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -28,24 +30,33 @@ import javax.inject.Singleton
 @Singleton
 class RoomEntryListQueryRepository @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
-    private val sessionState: VaultAccessState,
+    private val sessionState: SecureSessionAccessState,
     private val summaryCodec: EntrySummaryCodec,
     private val blindIndexer: BlindIndexer
 ) : EntryListQueryRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override val allCategories: Flow<List<String>> = sessionState.isAuthorized
+    override val deletedEntries: Flow<List<EntryListItem>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
             else sessionManager.observeFlow {
-                entryQueryDao().observeDistinctActiveEntryTypes()
-                    .map { types -> types.map { it.name } }
+                entryQueryDao().observeDeleted()
+                    .map { entities ->
+                        entities.map { entity ->
+                            val summary = summaryCodec.decrypt(
+                                entity.summaryBlob,
+                                entity.entryId
+                            )
+                            EntryListItemMapper.assemble(entity, summary)
+                        }
+                    }
+                    .flowOn(Dispatchers.IO)
             }
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observe(
-        query: String, category: String?, filter: EntryFilter
+        query: String, filter: EntryFilter
     ): Flow<List<EntryListItem>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
@@ -62,8 +73,21 @@ class RoomEntryListQueryRepository @Inject constructor(
                 }
                 val statsFlow =
                     entryActivityAnalyticsDao().observeUsageStats(ActivityType.USAGE_TYPES)
-                combine(entryFlow, statsFlow) { metaEntities, statsList ->
+                val linksFlow = entryLinkQueryDao().observeAll()
+                combine(entryFlow, statsFlow, linksFlow) { metaEntities, statsList, linkEntities ->
                     val statsMap = statsList.associateBy { it.entryId }
+                    val accountGraph = EntryAccountGraph(
+                        linkEntities.map { link ->
+                            com.aozijx.passly.domain.entry.model.link.EntryLink.create(
+                                id = com.aozijx.passly.domain.entry.model.link.EntryLinkId(link.linkId),
+                                sourceEntryId = EntryId(link.sourceEntryId),
+                                targetEntryId = EntryId(link.targetEntryId),
+                                relationType = link.relationType,
+                                createdAt = link.createdAt,
+                                updatedAt = link.updatedAt
+                            )
+                        }
+                    )
                     // 使用盲索引预过滤：仅解密匹配的条目
                     val filteredMetaEntities = if (query.isNotEmpty()) {
                         filterByBlindIndex(this, metaEntities, query)
@@ -77,13 +101,13 @@ class RoomEntryListQueryRepository @Inject constructor(
                     }
                         .map { item ->
                             val stats = statsMap[item.id]
-                            if (stats != null) item.copy(
+                            val groupedItem = item.copy(
+                                accountEntryId = accountGraph.accountFor(EntryId(item.id))?.value
+                            )
+                            if (stats != null) groupedItem.copy(
                                 usageCount = stats.usageCount,
                                 lastUsedAt = stats.lastUsedAt
-                            ) else item
-                        }
-                        .filter { item ->
-                            category == null || item.category == category
+                            ) else groupedItem
                         }
                         .filter { item ->
                             when (filter) {
@@ -101,28 +125,6 @@ class RoomEntryListQueryRepository @Inject constructor(
                     .flowOn(Dispatchers.IO)
             }
         }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    override fun observeCategories(filter: EntryFilter): Flow<List<String>> =
-        sessionState.isAuthorized
-            .flatMapLatest { authorized ->
-                if (!authorized) flowOf(emptyList())
-                else sessionManager.observeFlow {
-                    val entryFlow = when (filter) {
-                        EntryFilter.ALL -> entryQueryDao().observeDistinctActiveEntryTypes()
-                        EntryFilter.TOTP_ONLY -> entryQueryDao()
-                            .observeActiveWithCapability(EntryCapabilityFlags.HAS_OTP)
-                            .map { entries -> entries.map { it.entryType }.distinct() }
-
-                        EntryFilter.PASSWORD_ONLY -> entryQueryDao()
-                            .observeActiveWithCapability(EntryCapabilityFlags.HAS_PASSWORD)
-                            .map { entries -> entries.map { it.entryType }.distinct() }
-                    }
-                    entryFlow
-                        .map { types -> types.map { it.name }.distinct() }
-                        .flowOn(Dispatchers.IO)
-                }
-            }
 
     /**
      * 使用盲索引对 [metaEntities] 进行预过滤，仅返回与 [query] 匹配的条目。

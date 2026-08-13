@@ -2,22 +2,24 @@ package com.aozijx.passly.feature.autofill.framework
 
 import android.content.Intent
 import android.os.Bundle
-import android.service.autofill.FillResponse
 import android.view.autofill.AutofillId
 import android.view.autofill.AutofillManager
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.core.content.IntentCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
+import com.aozijx.passly.core.ui.components.auth.AuthenticationHost
 import com.aozijx.passly.core.ui.theme.AppTheme
-import com.aozijx.passly.domain.settings.model.AutofillUiMode
-import com.aozijx.passly.feature.auth.ui.host.AuthenticationHost
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.AutofillCandidateBottomSheet
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -27,6 +29,7 @@ class AutofillFillActivity : FragmentActivity() {
     lateinit var authenticationHostRegistry: AuthenticationHostRegistry
 
     private val viewModel: AutofillFillViewModel by viewModels()
+    private val resultFinishing = AtomicBoolean(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,20 +47,20 @@ class AutofillFillActivity : FragmentActivity() {
         lifecycleScope.launch {
             viewModel.uiState.collect { state ->
                 when (state) {
-                    is AutofillFillViewModel.UiState.Initial -> Unit
-                    is AutofillFillViewModel.UiState.Loading -> {
+                    is AutofillFillUiState.Initial -> Unit
+                    is AutofillFillUiState.Loading -> {
                         // 可显示加载指示（不阻塞 UI）
                     }
 
-                    is AutofillFillViewModel.UiState.ShowCandidates -> {
+                    is AutofillFillUiState.ShowCandidates -> {
                         showBottomSheet(state.candidates)
                     }
 
-                    is AutofillFillViewModel.UiState.Result -> {
-                        finishWithResult(state.response)
+                    is AutofillFillUiState.Result -> {
+                        finishWithResult(state.payload)
                     }
 
-                    is AutofillFillViewModel.UiState.Error -> {
+                    is AutofillFillUiState.Error -> {
                         // 显示错误 Toast 或直接取消
                         finishWithResult(null)
                     }
@@ -66,16 +69,14 @@ class AutofillFillActivity : FragmentActivity() {
         }
 
         // 启动处理
-        viewModel.initialize(request)
+        viewModel.onIntent(AutofillFillIntent.Initialize(request))
     }
 
-    private fun parseIntent(intent: Intent?): AutofillFillViewModel.FillRequest {
+    private fun parseIntent(intent: Intent?): AutofillFillRequest {
         val raw = intent?.getStringExtra("autofill_ui_mode")
-        val uiMode = when (raw) {
-            "inline" -> AutofillUiMode.SYSTEM_INLINE
-            "bottom_sheet" -> AutofillUiMode.BOTTOM_SHEET
-            else -> AutofillUiMode.SYSTEM_INLINE
-        }
+        val uiMode = AutofillPresentation.entries
+            .firstOrNull { it.name == raw }
+            ?: AutofillPresentation.SYSTEM_INLINE
 
         val isUnlockOnly = intent?.getBooleanExtra("unlock_only", false) ?: false
         val usernameId = intent?.let {
@@ -96,10 +97,11 @@ class AutofillFillActivity : FragmentActivity() {
             intent?.let { IntentCompat.getParcelableExtra(it, "otp_id", AutofillId::class.java) }
         val packageName = intent?.getStringExtra("package_name")
         val webDomain = intent?.getStringExtra("web_domain")
-        val directEntryId = intent?.getIntExtra("vault_item_id", -1)?.takeIf { it > 0 }
-        val candidateEntryIds = intent?.getIntArrayExtra("vault_item_ids")?.toList().orEmpty()
+        val directEntryId = intent?.getStringExtra("vault_item_id")
+        val candidateEntryIds = intent?.getStringArrayExtra("vault_item_ids")?.toList().orEmpty()
+        val returnsDataset = intent?.getBooleanExtra(EXTRA_RETURN_DATASET, false) ?: false
 
-        return AutofillFillViewModel.FillRequest(
+        return AutofillFillRequest(
             uiMode = uiMode,
             isUnlockOnly = isUnlockOnly,
             usernameId = usernameId,
@@ -108,7 +110,8 @@ class AutofillFillActivity : FragmentActivity() {
             packageName = packageName,
             webDomain = webDomain,
             directEntryId = directEntryId,
-            candidateEntryIds = candidateEntryIds
+            candidateEntryIds = candidateEntryIds,
+            returnsDataset = returnsDataset
         )
     }
 
@@ -119,7 +122,7 @@ class AutofillFillActivity : FragmentActivity() {
                     AutofillCandidateBottomSheet(
                         candidates = candidates,
                         onCandidateSelected = { candidate ->
-                            viewModel.selectCandidate(candidate)
+                            viewModel.onIntent(AutofillFillIntent.CandidateSelected(candidate))
                         },
                         onCancel = { finishWithResult(null) }
                     )
@@ -128,14 +131,41 @@ class AutofillFillActivity : FragmentActivity() {
         }
     }
 
-    private fun finishWithResult(response: FillResponse?) {
-        if (response != null) {
-            setResult(RESULT_OK, Intent().apply {
-                putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, response)
-            })
-        } else {
-            setResult(RESULT_CANCELED)
+    private fun finishWithResult(payload: AutofillAuthenticationPayload?) {
+        if (!resultFinishing.compareAndSet(false, true)) return
+        val resultIntent = when (payload) {
+            is AutofillAuthenticationPayload.Response -> Intent().apply {
+                putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, payload.value)
+            }
+
+            is AutofillAuthenticationPayload.DatasetResult -> Intent().apply {
+                putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, payload.value)
+                putExtra(
+                    AutofillManager.EXTRA_AUTHENTICATION_RESULT_EPHEMERAL_DATASET,
+                    true
+                )
+            }
+
+            null -> null
         }
-        finish()
+
+        if (resultIntent == null) setResult(RESULT_CANCELED)
+        else setResult(RESULT_OK, resultIntent)
+
+        // Compose password fields can keep the IME served view attached while
+        // this transparent Activity is being destroyed. Hide it explicitly
+        // before returning control to the client application.
+        currentFocus?.clearFocus()
+        WindowCompat.getInsetsController(window, window.decorView)
+            .hide(WindowInsetsCompat.Type.ime())
+
+        lifecycleScope.launch {
+            viewModel.closeRequestSession()
+            finish()
+        }
+    }
+
+    companion object {
+        internal const val EXTRA_RETURN_DATASET = "autofill_return_dataset"
     }
 }

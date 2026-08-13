@@ -3,6 +3,20 @@
 应用设置使用 Proto DataStore，Schema 位于 `app/src/main/proto/app_settings.proto`。Proto2 presence
 与显式默认值共同保证“未写入”不被误解为 Kotlin/Proto 的零值。
 
+## 加密边界
+
+Proto DataStore 只提供原子文件更新和结构化序列化，**不会自动加密整个文件**。本项目也没有引入
+Google Tink（见 [ADR-0009](../decisions/ADR-0009-no-google-tink.md)）。
+
+- `app_settings.pb`、`diagnostics_settings.pb` 是普通 Proto 文件，只能保存非秘密偏好。
+- `bootstrap.pb` 文件本身同样不是整文件密文，但其中的 DEK 是已经由应用密码派生密钥或
+  Android Keystore 密钥包裹后的 envelope ciphertext；salt、nonce、算法版本等可公开元数据也
+  会随信封保存。
+- 密码、OTP secret、恢复码明文、会话密钥和附件正文不得进入设置 DataStore。
+
+如果未来引入 Tink，目标应是明确的 keyset/跨平台格式或整文件 AEAD，并通过新 ADR 定义迁移与
+密钥生命周期；不能仅“给 DataStore 加 Tink”就假定所有字段自动获得正确的安全边界。
+
 ## 字段原则
 
 - 有非零默认值的 scalar 使用 `optional` 与 `[default = ...]`。

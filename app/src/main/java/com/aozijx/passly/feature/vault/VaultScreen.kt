@@ -1,15 +1,22 @@
 package com.aozijx.passly.feature.vault
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,26 +32,37 @@ import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.feature.main.MainViewModel
-import com.aozijx.passly.feature.vault.components.VaultContentTopBar
-import com.aozijx.passly.feature.vault.components.VaultDialogs
-import com.aozijx.passly.feature.vault.components.VaultPagerContent
+import com.aozijx.passly.feature.vault.action.rememberVaultActionProvider
+import com.aozijx.passly.feature.vault.components.dialog.VaultDialogs
 import com.aozijx.passly.feature.vault.components.fab.VaultFab
-import com.aozijx.passly.feature.vault.internal.rememberVaultActionProvider
+import com.aozijx.passly.feature.vault.components.list.VaultPagerContent
+import com.aozijx.passly.feature.vault.components.topbar.VaultTopBar
+import com.aozijx.passly.feature.vault.contract.VaultEffect
+import com.aozijx.passly.feature.vault.contract.VaultIntent
+import com.aozijx.passly.feature.vault.display.VaultDisplayViewModel
+import com.aozijx.passly.feature.vault.model.AddType
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultContent(
-    mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
+    requestAuthentication: (onSuccess: () -> Unit) -> Unit,
+    requestReauthentication: (onSuccess: () -> Unit) -> Unit,
+    requestSensitiveCopy: (onSuccess: () -> Unit) -> Unit,
+    onUserInteraction: () -> Unit,
+    onAddPassword: () -> Unit,
+    onAddOtp: () -> Unit,
+    onAddBankCard: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onSettingsClick: () -> Unit = {},
     onShowDetail: (EntryListItem) -> Unit = {},
     isDatabaseInitializing: Boolean = false
 ) {
     val context = LocalContext.current
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
-    val totpStates by vaultViewModel.totpStatesFlow.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
@@ -53,68 +71,96 @@ fun VaultContent(
     val entryCardPresentations = vaultDisplayConfig.style.entryCardPresentations
     var isFabVisible by remember { mutableStateOf(true) }
 
+    BackHandler(enabled = uiState.isSearchActive) {
+        vaultViewModel.onIntent(VaultIntent.SearchToggled(false))
+    }
+
     val actionProvider = rememberVaultActionProvider(
-        mainViewModel = mainViewModel,
         vaultViewModel = vaultViewModel,
-        totpStates = totpStates,
+        totpStates = vaultViewModel.totpStatesFlow,
+        requestAuthentication = requestAuthentication,
+        requestReauthentication = requestReauthentication,
+        requestSensitiveCopy = requestSensitiveCopy,
+        onUserInteraction = onUserInteraction,
         onShowDetail = onShowDetail,
         isFabVisible = { isFabVisible = it }
     )
 
-    val initialTabIndex = uiState.visibleTabs.indexOf(uiState.selectedTab).coerceAtLeast(0)
-    val pagerState =
-        rememberPagerState(initialPage = initialTabIndex) { uiState.visibleTabs.size.coerceAtLeast(1) }
+    val initialQuickFilterIndex =
+        uiState.visibleQuickFilters.indexOf(uiState.selectedQuickFilter).coerceAtLeast(0)
+    val pagerState = rememberPagerState(initialPage = initialQuickFilterIndex) {
+        uiState.visibleQuickFilters.size.coerceAtLeast(1)
+    }
 
-    LaunchedEffect(uiState.visibleTabs, uiState.selectedTab) {
-        if (uiState.visibleTabs.isEmpty()) return@LaunchedEffect
-        if (uiState.selectedTab !in uiState.visibleTabs) {
-            vaultViewModel.selectTab(uiState.visibleTabs.first())
+    LaunchedEffect(uiState.visibleQuickFilters, uiState.selectedQuickFilter) {
+        if (uiState.visibleQuickFilters.isEmpty()) return@LaunchedEffect
+        if (uiState.selectedQuickFilter !in uiState.visibleQuickFilters) {
+            vaultViewModel.onIntent(VaultIntent.QuickFilterSelected(uiState.visibleQuickFilters.first()))
             return@LaunchedEffect
         }
-        val targetIndex = uiState.visibleTabs.indexOf(uiState.selectedTab)
+        val targetIndex = uiState.visibleQuickFilters.indexOf(uiState.selectedQuickFilter)
         if (pagerState.settledPage != targetIndex && pagerState.pageCount > targetIndex) {
             pagerState.animateScrollToPage(targetIndex)
         }
     }
 
-    LaunchedEffect(pagerState, uiState.visibleTabs) {
+    LaunchedEffect(pagerState, uiState.visibleQuickFilters) {
         snapshotFlow { pagerState.settledPage }.distinctUntilChanged().collect { page ->
-            val newTab = uiState.visibleTabs.getOrNull(page) ?: return@collect
-            if (newTab != uiState.selectedTab) {
-                vaultViewModel.selectTab(newTab)
-            }
+            val newQuickFilter = uiState.visibleQuickFilters.getOrNull(page) ?: return@collect
+            vaultViewModel.onIntent(VaultIntent.QuickFilterSelected(newQuickFilter))
         }
     }
 
-    LaunchedEffect(
-        scrollBehavior.state.collapsedFraction,
-        vaultDisplayConfig.layout.hideSystemBars
-    ) {
-        val activity = context as? FragmentActivity ?: return@LaunchedEffect
+    val activity = context as? FragmentActivity
+    LaunchedEffect(scrollBehavior, vaultDisplayConfig.layout.hideSystemBars, activity) {
+        activity ?: return@LaunchedEffect
         val window = activity.window
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
         if (!vaultDisplayConfig.layout.hideSystemBars) {
             insetsController.show(WindowInsetsCompat.Type.statusBars())
             return@LaunchedEffect
         }
-        if (scrollBehavior.state.collapsedFraction > 0.6f) {
-            insetsController.hide(WindowInsetsCompat.Type.statusBars())
-        } else if (scrollBehavior.state.collapsedFraction < 0.4f) {
-            insetsController.show(WindowInsetsCompat.Type.statusBars())
+
+        snapshotFlow {
+            when {
+                scrollBehavior.state.collapsedFraction > 0.6f -> true
+                scrollBehavior.state.collapsedFraction < 0.4f -> false
+                else -> null
+            }
+        }.filterNotNull().distinctUntilChanged().collect { shouldHide ->
+            if (shouldHide) {
+                insetsController.hide(WindowInsetsCompat.Type.statusBars())
+            } else {
+                insetsController.show(WindowInsetsCompat.Type.statusBars())
+            }
+        }
+    }
+
+    LaunchedEffect(vaultViewModel, context) {
+        vaultViewModel.effects.collect { effect ->
+            val message = when (effect) {
+                is VaultEffect.ShowError -> effect.message
+                is VaultEffect.ShowToast -> effect.message
+            }
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    DisposableEffect(activity) {
+        onDispose {
+            activity?.let {
+                WindowCompat.getInsetsController(it.window, it.window.decorView)
+                    .show(WindowInsetsCompat.Type.statusBars())
+            }
         }
     }
 
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = actionProvider.onUpdateInteraction
-            )
             .then(
                 if (vaultDisplayConfig.layout.collapseTopBarOnScroll
-                    || vaultDisplayConfig.layout.collapseTabBarOnScroll
+                    || vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll
                     || vaultDisplayConfig.layout.hideSystemBars
                 ) {
                     Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
@@ -122,27 +168,57 @@ fun VaultContent(
             )
             .nestedScroll(actionProvider.fabScrollConnection),
         topBar = {
-            VaultContentTopBar(
-                uiState = uiState,
-                scrollBehavior = scrollBehavior,
-                onSettingsClick = onSettingsClick,
-                isStatusBarAutoHide = vaultDisplayConfig.layout.hideSystemBars,
-                isTopBarCollapsible = vaultDisplayConfig.layout.collapseTopBarOnScroll,
-                isTabBarCollapsible = vaultDisplayConfig.layout.collapseTabBarOnScroll,
-                isDatabaseInitializing = isDatabaseInitializing,
-                onSearchQueryChange = { vaultViewModel.onSearchQueryChange(it) },
-                onToggleSearch = { vaultViewModel.toggleSearch(it) },
-                onClearCategory = { vaultViewModel.clearSelectedCategory() },
-                onExpandMoreMenu = { vaultViewModel.expandMoreMenu(it) },
-                onToggleTotpVisibility = { vaultViewModel.toggleShowTOTPCode() },
-                onCategorySelected = { vaultViewModel.setSelectedCategory(it) },
-                onSortSelected = { vaultViewModel.selectSortOption(it) },
-                onSelectTab = { vaultViewModel.selectTab(it) }
-            )
+            Column {
+                VaultTopBar(
+                    uiState = uiState,
+                    selectedQuickFilterIndex = pagerState.currentPage,
+                    scrollBehavior = scrollBehavior,
+                    onSettingsClick = onSettingsClick,
+                    isStatusBarAutoHide = vaultDisplayConfig.layout.hideSystemBars,
+                    isTopBarCollapsible = vaultDisplayConfig.layout.collapseTopBarOnScroll,
+                    isQuickFilterBarCollapsible = vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll,
+                    onSearchQueryChange = {
+                        vaultViewModel.onIntent(
+                            VaultIntent.SearchQueryChanged(
+                                it
+                            )
+                        )
+                    },
+                    onToggleSearch = { vaultViewModel.onIntent(VaultIntent.SearchToggled(it)) },
+                    onClearCategory = { vaultViewModel.onIntent(VaultIntent.ClearCategory) },
+                    onToggleTotpVisibility = { vaultViewModel.onIntent(VaultIntent.ToggleShowTotpCode) },
+                    onCategorySelected = { vaultViewModel.onIntent(VaultIntent.CategorySelected(it)) },
+                    onSortSelected = { vaultViewModel.onIntent(VaultIntent.SortOptionSelected(it)) },
+                    onSelectQuickFilter = {
+                        vaultViewModel.onIntent(
+                            VaultIntent.QuickFilterSelected(
+                                it
+                            )
+                        )
+                    }
+                )
+
+                if (uiState.isVaultItemsLoading || isDatabaseInitializing) {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                }
+            }
         },
         floatingActionButton = {
             VaultFab(
-                onAddTypeSelected = { vaultViewModel.setAddType(it) },
+                onAddTypeSelected = { type ->
+                    when (type) {
+                        AddType.PASSWORD -> onAddPassword()
+                        AddType.TOTP -> onAddOtp()
+                        AddType.BANK_CARD -> onAddBankCard()
+                        else -> vaultViewModel.onIntent(VaultIntent.AddTypeSelected(type))
+                    }
+                },
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
                 isVisible = isFabVisible
             )
         },
@@ -152,7 +228,8 @@ fun VaultContent(
             pagerState = pagerState,
             uiState = uiState,
             entryCardPresentations = entryCardPresentations,
-            totpStates = totpStates,
+            hierarchyDisplayMode = vaultDisplayConfig.style.entryHierarchyDisplayMode,
+            totpStates = vaultViewModel.totpStatesFlow,
             swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction,
             swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction,
             isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,
@@ -165,8 +242,12 @@ fun VaultContent(
     }
 
     VaultDialogs(
-        mainViewModel = mainViewModel,
-        vaultViewModel = vaultViewModel,
+        uiState = uiState,
+        onAddItem = { vaultViewModel.onIntent(VaultIntent.AddItem(it)) },
+        onDismissAddType = { vaultViewModel.onIntent(VaultIntent.AddTypeSelected(null)) },
+        onConfirmDelete = { vaultViewModel.onIntent(VaultIntent.ConfirmDelete) },
+        onDismissDelete = { vaultViewModel.onIntent(VaultIntent.ItemToDeleteSelected(null)) },
+        requestAuthentication = requestAuthentication,
         onUpdateInteraction = actionProvider.onUpdateInteraction
     )
 }

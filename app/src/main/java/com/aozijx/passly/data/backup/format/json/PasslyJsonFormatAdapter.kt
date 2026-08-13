@@ -1,10 +1,11 @@
 package com.aozijx.passly.data.backup.format.json
 
-import com.aozijx.passly.core.error.BackupFailed
+import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.data.backup.format.BackupExportAdapter
 import com.aozijx.passly.data.backup.format.BackupImportAdapter
 import com.aozijx.passly.data.backup.format.containsAscii
 import com.aozijx.passly.data.backup.model.BackupBundle
+import com.aozijx.passly.data.backup.model.BackupDocument
 import com.aozijx.passly.domain.backup.model.BackupFormatId
 import com.aozijx.passly.domain.backup.model.BackupFormats
 import javax.inject.Inject
@@ -27,7 +28,7 @@ internal class PasslyJsonFormatAdapter @Inject constructor(
         if (
             payload.containsAscii("\"document\"") &&
             payload.containsAscii("\"format\"") &&
-            payload.containsAscii("\"passly-vault\"")
+            payload.containsAscii("\"${BackupDocument.FORMAT}\"")
         ) 90 else 0
 
     override fun decode(payload: ByteArray, password: CharArray?): BackupBundle =
@@ -35,7 +36,7 @@ internal class PasslyJsonFormatAdapter @Inject constructor(
             importer.import(payload)
         } catch (error: BackupFailed) {
             throw error
-        } catch (error: Exception) {
-            throw BackupFailed("Passly JSON 备份损坏或格式不正确", cause = error)
+        } catch (_: Exception) {
+            throw BackupFailed()
         }
 }

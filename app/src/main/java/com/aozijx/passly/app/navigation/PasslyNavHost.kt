@@ -1,9 +1,11 @@
 package com.aozijx.passly.app.navigation
 
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,16 +19,29 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.authentication.SensitiveAccessAction
+import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
+import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.DetailViewModel
 import com.aozijx.passly.feature.detail.contract.DetailEffect
+import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.page.DetailScreen
-import com.aozijx.passly.feature.main.MainViewModel
-import com.aozijx.passly.feature.main.contract.MainIntent
+import com.aozijx.passly.app.shell.AppShellViewModel
+import com.aozijx.passly.app.shell.contract.AppShellEffect
+import com.aozijx.passly.app.shell.contract.AppShellIntent
+import com.aozijx.passly.feature.scanner.VaultScanner
 import com.aozijx.passly.feature.settings.SettingsScreen
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.vault.VaultContent
 import com.aozijx.passly.feature.vault.VaultViewModel
+import com.aozijx.passly.feature.vault.contract.VaultIntent
+import com.aozijx.passly.feature.vault.editor.bankcard.AddBankCardScreen
+import com.aozijx.passly.feature.vault.editor.bankcard.AddBankCardViewModel
+import com.aozijx.passly.feature.vault.editor.otp.AddOtpScreen
+import com.aozijx.passly.feature.vault.editor.otp.AddOtpViewModel
+import com.aozijx.passly.feature.vault.editor.password.AddPasswordScreen
+import com.aozijx.passly.feature.vault.editor.password.AddPasswordViewModel
 import kotlinx.coroutines.flow.collectLatest
 
 /**
@@ -35,27 +50,88 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun PasslyNavHost(
     navController: NavHostController,
-    mainViewModel: MainViewModel,
+    appShellViewModel: AppShellViewModel,
     vaultViewModel: VaultViewModel,
     isDatabaseInitializing: Boolean = false
 ) {
+    var pendingAuthCallback by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    // 认证请求可能来自任意导航目的地。监听器必须位于 NavHost 外层，
+    // 否则离开保险库首页后，对应 composable 被移除，成功回调也会丢失。
+    LaunchedEffect(appShellViewModel) {
+        appShellViewModel.effects.collect { effect ->
+            when (effect) {
+                is AppShellEffect.AuthSuccess -> {
+                    pendingAuthCallback?.invoke()
+                    pendingAuthCallback = null
+                }
+
+                is AppShellEffect.AuthError -> {
+                    pendingAuthCallback = null
+                }
+
+                else -> Unit
+            }
+        }
+    }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        NavHost(
-            modifier = Modifier.fillMaxSize(),
-            navController = navController,
-            startDestination = AppRoute.Vault.route,
-            enterTransition = PasslyNavigationAnim.enterTransition,
-            exitTransition = PasslyNavigationAnim.exitTransition,
-            popEnterTransition = PasslyNavigationAnim.popEnterTransition,
-            popExitTransition = PasslyNavigationAnim.popExitTransition
-        ) {
+        SharedTransitionLayout {
+            val sharedTransitionScope = this
+            NavHost(
+                modifier = Modifier.fillMaxSize(),
+                navController = navController,
+                startDestination = AppRoute.Vault.route,
+                enterTransition = PasslyNavigationAnim.enterTransition,
+                exitTransition = PasslyNavigationAnim.exitTransition,
+                popEnterTransition = PasslyNavigationAnim.popEnterTransition,
+                popExitTransition = PasslyNavigationAnim.popExitTransition
+            ) {
         composable(AppRoute.Vault.route) {
+            val animatedVisibilityScope = this
+
             VaultContent(
-                mainViewModel = mainViewModel,
                 vaultViewModel = vaultViewModel,
+                requestAuthentication = { onSuccess ->
+                    pendingAuthCallback = onSuccess
+                    appShellViewModel.handleIntent(AppShellIntent.RequestAuth)
+                },
+                requestReauthentication = { onSuccess ->
+                    pendingAuthCallback = onSuccess
+                    appShellViewModel.handleIntent(AppShellIntent.RequestReauth)
+                },
+                requestSensitiveCopy = { onSuccess ->
+                    pendingAuthCallback = onSuccess
+                    appShellViewModel.handleIntent(
+                        AppShellIntent.RequestSensitiveAccess(
+                            action = SensitiveAccessAction.COPY,
+                            accessLevel = SensitiveAccessLevel.STANDARD
+                        )
+                    )
+                },
+                onUserInteraction = {
+                    appShellViewModel.handleIntent(AppShellIntent.UpdateInteraction)
+                },
+                onAddPassword = {
+                    navController.navigate(AppRoute.AddPassword.route) {
+                        launchSingleTop = true
+                    }
+                },
+                onAddOtp = {
+                    navController.navigate(AppRoute.AddOtp.route) {
+                        launchSingleTop = true
+                    }
+                },
+                onAddBankCard = {
+                    navController.navigate(AppRoute.AddBankCard.route) {
+                        launchSingleTop = true
+                    }
+                },
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
                 onSettingsClick = {
                     navController.navigate(AppRoute.Settings.route)
                 },
@@ -65,6 +141,57 @@ fun PasslyNavHost(
                 isDatabaseInitializing = isDatabaseInitializing
             )
         }
+
+            composable(AppRoute.AddPassword.route) {
+                val animatedVisibilityScope = this
+                val addPasswordViewModel: AddPasswordViewModel = hiltViewModel()
+                AddPasswordScreen(
+                    viewModel = addPasswordViewModel,
+                    onBack = { navController.popBackStack() },
+                    onSaved = { navController.popBackStack() },
+                    onUserInteraction = {
+                        appShellViewModel.handleIntent(AppShellIntent.UpdateInteraction)
+                    },
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope
+                )
+            }
+
+                composable(AppRoute.AddOtp.route) {
+                    val animatedVisibilityScope = this
+                    val addOtpViewModel: AddOtpViewModel = hiltViewModel()
+                    AddOtpScreen(
+                        viewModel = addOtpViewModel,
+                        onBack = { navController.popBackStack() },
+                        onSaved = { navController.popBackStack() },
+                        onUserInteraction = {
+                            appShellViewModel.handleIntent(AppShellIntent.UpdateInteraction)
+                        },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        scannerContent = { onResult, onDismiss ->
+                            VaultScanner(
+                                onSaveOtp = onResult,
+                                onDismiss = onDismiss
+                            )
+                        }
+                )
+            }
+
+                composable(AppRoute.AddBankCard.route) {
+                    val animatedVisibilityScope = this
+                    val addBankCardViewModel: AddBankCardViewModel = hiltViewModel()
+                    AddBankCardScreen(
+                        viewModel = addBankCardViewModel,
+                        onBack = { navController.popBackStack() },
+                        onSaved = { navController.popBackStack() },
+                        onUserInteraction = {
+                            appShellViewModel.handleIntent(AppShellIntent.UpdateInteraction)
+                        },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope
+                    )
+                }
 
         composable(
             route = AppRoute.Detail.route,
@@ -85,15 +212,24 @@ fun PasslyNavHost(
             LaunchedEffect(detailViewModel) {
                 detailViewModel.effects.collectLatest { effect ->
                     when (effect) {
-                        is DetailEffect.EntryUpdated -> vaultViewModel.updateVaultEntry(effect.entry)
-                        DetailEffect.IconPickerRequested -> vaultViewModel.showDetailIconPicker()
+                        is DetailEffect.EntryUpdated -> vaultViewModel.onIntent(
+                            VaultIntent.UpdateEntryAggregate(
+                                effect.entry
+                            )
+                        )
                     }
                 }
             }
 
-            var initialEntry by remember { mutableStateOf<VaultEntry?>(null) }
+            var initialEntry by remember { mutableStateOf<EntryAggregate?>(null) }
             LaunchedEffect(entryId) {
-                vaultViewModel.loadEntryById(entryId) { initialEntry = it }
+                initialEntry = vaultViewModel.loadEntryById(entryId)
+            }
+            DisposableEffect(entryId) {
+                onDispose {
+                    initialEntry = null
+                    detailViewModel.handleIntent(DetailIntent.ClearSensitiveState)
+                }
             }
 
             initialEntry?.let { entry ->
@@ -101,14 +237,23 @@ fun PasslyNavHost(
                     initialEntry = entry,
                     uiState = detailUiState,
                     otpUiState = currentOtpState,
-                    onBack = { navController.popBackStack() },
                     onEvent = detailViewModel::handleIntent,
-                    onUpdateInteraction = { mainViewModel.handleIntent(MainIntent.UpdateInteraction) },
-                    onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
-                    onShowIconPicker = { vaultViewModel.showDetailIconPicker() },
-                    onAutoUnlockTotp = { vaultViewModel.autoUnlockTotp(it.id) },
-                    onAuthenticate = { success ->
-                        mainViewModel.requestAuth(onSuccess = success)
+                    onBack = { navController.popBackStack() },
+                    onUpdateInteraction = {
+                        appShellViewModel.handleIntent(AppShellIntent.UpdateInteraction)
+                    },
+                    onAutoUnlockTotp = { vaultViewModel.onIntent(VaultIntent.AutoUnlockTotp(it.id)) },
+                    onOpenRelatedEntry = {
+                        navController.navigate(AppRoute.Detail.createRoute(it.id))
+                    },
+                    onAuthenticate = DetailAuthenticate { action, accessLevel, success ->
+                        pendingAuthCallback = success
+                        appShellViewModel.handleIntent(
+                            AppShellIntent.RequestSensitiveAccess(
+                                action = action,
+                                accessLevel = accessLevel
+                            )
+                        )
                     }
                 )
             }
@@ -116,13 +261,11 @@ fun PasslyNavHost(
 
         composable(AppRoute.Settings.route) {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
-            val onUpdateInteraction: () -> Unit =
-                { mainViewModel.handleIntent(MainIntent.UpdateInteraction) }
             SettingsScreen(
                 onBack = { navController.popBackStack() },
-                settingsViewModel = settingsViewModel,
-                onUpdateInteraction = onUpdateInteraction
+                settingsViewModel = settingsViewModel
             )
+        }
         }
         }
     }

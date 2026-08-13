@@ -1,12 +1,15 @@
 package com.aozijx.passly.feature.settings.shell
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -18,7 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -32,22 +35,18 @@ import com.aozijx.passly.feature.settings.navigation.SettingsRoute
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SettingsMainPage(
+    modifier: Modifier = Modifier,
     onBack: () -> Unit,
-    onUpdateInteraction: () -> Unit,
-    onGroupClick: (SettingsRoute) -> Unit
+    onGroupClick: (SettingsRoute) -> Unit,
+    selectedRouteKey: String? = null,
 ) {
     Scaffold(
-        modifier = Modifier
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onUpdateInteraction
-            ),
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        stringResource(com.aozijx.passly.R.string.settings),
+                        stringResource(com.aozijx.passly.R.string.settings_title),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.headlineSmall
                     )
@@ -66,21 +65,22 @@ internal fun SettingsMainPage(
             )
         }
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp)
+        val sections = SettingsGroup.entries.groupBy { it.sectionTitleRes }.toList()
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(1),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                top = innerPadding.calculateTopPadding() + 8.dp,
+                end = 16.dp,
+                bottom = innerPadding.calculateBottomPadding() + 16.dp
+            ),
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-
-            val sections = SettingsGroup.entries.groupBy { it.sectionTitleRes }
-
-            sections.forEach { (sectionTitleRes, groups) ->
-                item {
+            items(sections, key = { it.first }) { (sectionTitleRes, groups) ->
+                Column {
                     SettingsSectionTitle(text = stringResource(sectionTitleRes))
-                }
-                item {
                     RoundedGroup(
                         items = groups.map { group ->
                             navigationSettingsGroupItem(
@@ -88,15 +88,31 @@ internal fun SettingsMainPage(
                                 icon = group.icon,
                                 title = stringResource(group.titleRes),
                                 subtitle = stringResource(group.subtitleRes),
+                                selected = group.route.route == selectedRouteKey,
                                 onClick = { onGroupClick(group.route) }
                             )
                         }
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                 }
-                item { Spacer(modifier = Modifier.height(12.dp)) }
             }
-
-            item { Spacer(modifier = Modifier.height(8.dp)) }
         }
+    }
+}
+
+/**
+ * 双栏模式下右侧详情栏尚未选中任何设置项时的占位提示。
+ */
+@Composable
+internal fun SettingsDetailPlaceholder() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = stringResource(com.aozijx.passly.R.string.settings_select_item_hint),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

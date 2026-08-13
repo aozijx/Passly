@@ -18,6 +18,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,15 +37,20 @@ fun RecoveryCodeDetail(
     verifyResult: Boolean?,
     onCreateRecoveryCode: () -> Unit,
     onRegenerate: () -> Unit,
-    onVerifyCode: (String) -> Unit,
+    onVerifyCode: (CharArray) -> Unit,
     onClearVerifyResult: () -> Unit
 ) {
     var showRegenerateConfirm by remember { mutableStateOf(false) }
     var verifyInput by remember { mutableStateOf(SecureString.EMPTY) }
     var isExpanded by remember { mutableStateOf(false) }
 
-    // 当验证结果返回时，停止进度显示
-    val isVerifying = verifyResult == null && !verifyInput.isEmpty && !isExpanded
+    // 显式追踪验证进度，不依赖 verifyInput/isExpanded 的同步状态推导
+    var isVerifying by remember { mutableStateOf(false) }
+    LaunchedEffect(verifyResult) {
+        if (verifyResult != null) {
+            isVerifying = false
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -61,7 +67,10 @@ fun RecoveryCodeDetail(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = stringResource(R.string.settings_recovery_code_save_hint),
+            text = stringResource(
+                R.string.settings_recovery_code_save_hint,
+                stringResource(R.string.app_name)
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -111,7 +120,6 @@ fun RecoveryCodeDetail(
                     false -> MaterialTheme.colorScheme.errorContainer
                     else -> null
                 },
-                showResultFooter = true,
                 collapsedText = stringResource(R.string.auth_use_recovery_code),
                 expandedText = stringResource(R.string.auth_recovery_code_unlock),
                 inputLabel = stringResource(R.string.auth_recovery_code_label),
@@ -124,9 +132,11 @@ fun RecoveryCodeDetail(
                 onExpandedChange = { isExpanded = it },
                 onAction = {
                     if (!verifyInput.isEmpty) {
-                        onVerifyCode(verifyInput.toPlainString().trim())
+                        isVerifying = true
+                        onVerifyCode(verifyInput.toCharArray())
                     }
-                }
+                },
+                onResultConsumed = onClearVerifyResult
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -161,7 +171,7 @@ fun RecoveryCodeDetail(
                     onRegenerate()
                 }) {
                     Text(
-                        stringResource(R.string.confirm),
+                        stringResource(R.string.settings_confirm),
                         color = MaterialTheme.colorScheme.error
                     )
                 }

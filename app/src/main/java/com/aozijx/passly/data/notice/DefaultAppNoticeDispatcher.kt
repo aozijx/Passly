@@ -116,12 +116,13 @@ class DefaultAppNoticeDispatcher @Inject constructor(
                 results[target] = deliver(target, notice)
             }
             val systemResult = results[NoticeTarget.SYSTEM]
+            val fallbackTarget = plan.fallbackTarget
             if (
-                plan.fallbackTarget != null &&
+                fallbackTarget != null &&
                 systemResult != null &&
                 systemResult !is SinkResult.Delivered
             ) {
-                results[plan.fallbackTarget] = deliver(plan.fallbackTarget, notice)
+                results[fallbackTarget] = deliver(fallbackTarget, notice)
             }
             deduplicator.complete(claim)
             val delivered = results.values.count { it is SinkResult.Delivered }

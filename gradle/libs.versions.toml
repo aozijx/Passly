@@ -7,6 +7,10 @@ kotlin = "2.3.20"
 ksp = "2.3.9"
 # Hilt 版本建议与 hilt-navigation-compose 保持库兼容性
 hilt = "2.59.2"
+androidCompileSdk = "36"
+androidMinSdk = "31"
+androidTargetSdk = "36"
+jvmToolchain = "21"
 
 # Android 核心 (Android Core)
 coreKtx = "1.18.0"
@@ -24,10 +28,12 @@ hilt-navigation-compose = "1.2.0"
 
 # Jetpack Compose & UI
 # Compose BOM 决定了大部分 ui-* 库的版本，手动指定版本时需注意不被 BOM 覆盖
-composeBom = "2026.03.00"
+composeBom = "2026.06.01"
 activityCompose = "1.13.0"
 foundation = "1.10.6"
+material3 = "1.5.0-alpha18"
 materialIcons = "1.7.8"
+compose-adaptive = "1.2.0"
 
 # 数据持久化 (Data Storage)
 # ❗ Room 使用 KSP 时，对 Kotlin 版本非常敏感
@@ -38,6 +44,7 @@ protobuf-plugin = "0.10.0"
 protobuf-javalite = "4.33.0"
 # ❗ 序列化库版本建议与 Kotlin 版本保持兼容性检查
 kotlinxSerializationJson = "1.11.0"
+kotlinxCoroutines = "1.10.2"
 # ❗ SQLCipher 是 SQLite 的加密层，升级其中之一需确保 native 库不冲突
 sqlite = "2.7.0"
 sqlcipher = "4.17.0"
@@ -88,10 +95,16 @@ androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-compose-animation = { group = "androidx.compose.animation", name = "animation" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
-androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core", version.ref = "materialIcons" }
 androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "materialIcons" }
+
+# Material Adaptive
+androidx-compose-material3-adaptive = { group = "androidx.compose.material3.adaptive", name = "adaptive", version.ref = "compose-adaptive" }
+androidx-compose-material3-adaptive-layout = { group = "androidx.compose.material3.adaptive", name = "adaptive-layout", version.ref = "compose-adaptive" }
+androidx-compose-material3-adaptive-navigation = { group = "androidx.compose.material3.adaptive", name = "adaptive-navigation", version.ref = "compose-adaptive" }
 
 # 依赖注入 (Hilt)
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
@@ -106,10 +119,13 @@ androidx-room-paging = { group = "androidx.room", name = "room-paging", version.
 androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging" }
 androidx-datastore = { module = "androidx.datastore:datastore", version.ref = "datastore" }
 protobuf-javalite = { module = "com.google.protobuf:protobuf-javalite", version.ref = "protobuf-javalite" }
+protobuf-protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf-javalite" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
 sqlcipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher" }
 uuid-creator = { module = "com.github.f4b6a3:uuid-creator", version.ref = "uuidCreator" }
+javax-inject = { module = "javax.inject:javax.inject", version = "1" }
 
 # 凭据管理器 / 自动填充 (Credentials & Autofill)
 # Android 14+ 系统凭据框架，支持 Passkey 和统一账号选择器
@@ -146,6 +162,8 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 androidx-room = { id = "androidx.room", version.ref = "room" }

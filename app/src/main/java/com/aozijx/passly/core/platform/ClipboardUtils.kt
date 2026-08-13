@@ -58,9 +58,7 @@ object ClipboardUtils {
 
         val clearRunnable = Runnable {
             try {
-                if (clipboard.hasPrimaryClip() && clipboard.primaryClipDescription?.label == CLIP_LABEL) {
-                    clear(appContext)
-                }
+                clearIfOwned(appContext)
             } catch (e: Exception) {
                 AppTelemetry.e("ClipboardUtils", "Failed to auto-clear clipboard", e)
             }
@@ -85,6 +83,27 @@ object ClipboardUtils {
             }
         } catch (e: Exception) {
             AppTelemetry.e("ClipboardUtils", "Clear clipboard failed", e)
+            noticePublisher?.publish(newAppNotice(NoticeCode.CLIPBOARD_CLEAR_FAILED))
+        }
+    }
+
+    /**
+     * Clears only a clip created by Passly. This is safe to call when a screen
+     * closes or the process moves to the background without deleting content
+     * the user copied from another application in the meantime.
+     */
+    fun clearIfOwned(context: Context) {
+        try {
+            val clipboard = context.applicationContext
+                .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            if (
+                clipboard.hasPrimaryClip() &&
+                clipboard.primaryClipDescription?.label == CLIP_LABEL
+            ) {
+                clear(context)
+            }
+        } catch (e: Exception) {
+            AppTelemetry.e("ClipboardUtils", "Owned clipboard clear failed", e)
             noticePublisher?.publish(newAppNotice(NoticeCode.CLIPBOARD_CLEAR_FAILED))
         }
     }

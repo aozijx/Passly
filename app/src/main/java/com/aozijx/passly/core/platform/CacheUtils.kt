@@ -17,7 +17,7 @@ object CacheUtils {
         val cacheBytes = if (cacheDir.exists()) {
             cacheDir.walkTopDown().filter { it.isFile }.sumOf { it.length() }
         } else 0L
-        val vaultImagesDir = File(context.filesDir, "vault_images")
+        val vaultImagesDir = VaultResourcePaths.vaultImagesDir(context)
         val vaultBytes = if (vaultImagesDir.exists()) {
             vaultImagesDir.walkTopDown().filter { it.isFile }.sumOf { it.length() }
         } else 0L
@@ -35,7 +35,7 @@ object CacheUtils {
 
     fun clearAllCache(context: Context) {
         clearDir(context.cacheDir)
-        clearDir(File(context.filesDir, "vault_images"))
+        clearDir(VaultResourcePaths.vaultImagesDir(context))
     }
 
     fun formatFileSize(bytes: Long): String {

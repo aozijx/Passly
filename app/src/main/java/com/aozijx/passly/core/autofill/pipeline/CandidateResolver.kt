@@ -1,14 +1,16 @@
 package com.aozijx.passly.core.autofill.pipeline
 
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.autofill.model.InternalFillRequest
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
-import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.otp.OtpGenerator
 import com.aozijx.passly.core.otp.OtpResult
+import com.aozijx.passly.domain.autofill.policy.CredentialScopeMatcher
 import com.aozijx.passly.domain.autofill.repository.CredentialServiceRepository
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.lookup.CredentialCandidate
-import com.aozijx.passly.domain.entry.model.lookup.MatchType
+import com.aozijx.passly.domain.settings.model.AutofillSettings
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,70 +22,103 @@ class CandidateResolver @Inject constructor(
         private const val TAG = "CandidateResolver"
     }
 
-    fun resolve(request: InternalFillRequest): List<ResolvedCandidate> {
-        return resolveByPackage(request.parentPackage, request.webDomain)
+    suspend fun resolve(
+        request: InternalFillRequest,
+        settings: AutofillSettings,
+    ): List<ResolvedCandidate> {
+        return resolveByPackage(request.parentPackage, request.webDomain, settings)
     }
 
-    fun resolveByPackage(
+    suspend fun resolveByPackage(
         packageName: String?,
         webDomain: String?,
+        settings: AutofillSettings,
+        includeSecrets: Boolean? = null,
     ): List<ResolvedCandidate> {
         return try {
-            repository.search(packageName, webDomain).map { it.toResolved() }
+            repository.search(
+                packageName = packageName,
+                webDomain = webDomain,
+                allowUnmatched = settings.allowUnmatchedSuggestions,
+                includeSecrets = includeSecrets ?: false,
+                limit = settings.normalizedMaxSuggestions,
+            ).map { it.toResolved(settings.includeOtp) }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            AppTelemetry.e(TAG, "Candidate lookup failed for $packageName", e)
+            AppTelemetry.e(TAG, "Candidate lookup failed", e)
             emptyList()
         }
     }
 
-    fun resolveByIds(ids: List<Int>): List<ResolvedCandidate> {
+    suspend fun resolveByIds(
+        ids: List<String>,
+        settings: AutofillSettings,
+    ): List<ResolvedCandidate> {
         return try {
-            repository.getByIds(ids).map { entry ->
-                entry.toResolvedCandidate()
+            repository.getByIds(ids, includeSecrets = false).map { entry ->
+                entry.toResolvedCandidate(settings.includeOtp)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             AppTelemetry.e(TAG, "resolveByIds failed", e)
             emptyList()
         }
     }
 
-    private fun CredentialCandidate.toResolved(): ResolvedCandidate {
+    suspend fun resolveSelected(
+        entryId: String,
+        packageName: String?,
+        webDomain: String?,
+        settings: AutofillSettings,
+    ): ResolvedCandidate? {
+        val selected = repository.getById(entryId) ?: return null
+        if (
+            !settings.allowUnmatchedSuggestions &&
+            !CredentialScopeMatcher.matches(selected, packageName, webDomain)
+        ) {
+            AppTelemetry.w(TAG, "Rejected selected credential outside request scope")
+            return null
+        }
+        return selected.toResolvedCandidate(settings.includeOtp)
+    }
+
+    private fun CredentialCandidate.toResolved(includeOtp: Boolean): ResolvedCandidate {
         val entry = this.entry
         return ResolvedCandidate(
-            candidateId = entry.id.toIntOrNull() ?: 0,
+            candidateId = entry.id,
             displayName = entry.title,
             username = entry.username,
             password = entry.secret.login?.password ?: "",
-            totpCode = generateTotpFromEntry(entry),
+            totpCode = if (includeOtp) generateTotpFromEntry(entry) else null,
             associatedDomain = entry.associatedDomain,
             associatedAppPackage = entry.associatedAppPackage,
-            subtitle = buildSubtitle(this),
             iconName = entry.iconName,
             iconCustomPath = entry.iconCustomPath,
-            entryType = entry.entryType.name,
+            entryType = entry.entryType,
             matchedBy = matchedBy,
             matchedPackage = matchedPackage,
             matchedDomain = matchedDomain,
         )
     }
 
-    private fun VaultEntry.toResolvedCandidate(): ResolvedCandidate {
+    private fun EntryAggregate.toResolvedCandidate(includeOtp: Boolean): ResolvedCandidate {
         return ResolvedCandidate(
-            candidateId = id.toIntOrNull() ?: 0,
+            candidateId = id,
             displayName = title,
             username = username,
             password = secret.login?.password ?: "",
-            totpCode = generateTotpFromEntry(this),
+            totpCode = if (includeOtp) generateTotpFromEntry(this) else null,
             associatedDomain = associatedDomain,
             associatedAppPackage = associatedAppPackage,
-            subtitle = username,
             iconName = iconName,
             iconCustomPath = iconCustomPath,
-            entryType = entryType.name,
+            entryType = entryType,
         )
     }
 
-    private fun generateTotpFromEntry(entry: VaultEntry): String? {
+    private fun generateTotpFromEntry(entry: EntryAggregate): String? {
         val otpConfig = entry.secret.otp?.config ?: return null
         if (otpConfig.secret.isBlank()) return null
         return when (val result = OtpGenerator.generate(otpConfig)) {
@@ -92,16 +127,4 @@ class CandidateResolver @Inject constructor(
         }
     }
 
-    private fun buildSubtitle(candidate: CredentialCandidate): String {
-        val parts = mutableListOf<String>()
-        when (candidate.matchedBy) {
-            MatchType.PACKAGE_NAME -> candidate.matchedPackage?.let { parts.add(it) }
-            MatchType.WEB_DOMAIN -> candidate.matchedDomain?.let { parts.add(it) }
-            else -> {}
-        }
-        if (candidate.entry.secret.otp?.config?.secret?.isNotBlank() == true) {
-            parts.add("2FA")
-        }
-        return parts.joinToString(" · ")
-    }
 }

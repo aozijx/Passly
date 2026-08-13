@@ -1,10 +1,18 @@
 package com.aozijx.passly.data.repository.entry.internal
 
-import com.aozijx.passly.data.codec.revision.EntryRevisionCodec
+import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
+import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
+import com.aozijx.passly.data.codec.entry.EntrySecretCodec
+import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.model.entity.EntryRevisionEntity
+import com.aozijx.passly.data.model.entity.RevisionAttachmentRefEntity
+import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySummary
+import com.aozijx.passly.domain.entry.model.link.EntryLink
+import com.aozijx.passly.domain.entry.model.link.EntryLinkId
 import com.aozijx.passly.domain.entry.model.revision.RevisionType
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
@@ -17,7 +25,11 @@ import javax.inject.Singleton
  */
 @Singleton
 class EntryRevisionHelper @Inject constructor(
-    private val revisionCodec: EntryRevisionCodec
+    private val contentSnapshotCodec: EntryContentSnapshotCodec,
+    private val sensitiveRevisionCodec: SensitiveRevisionSnapshotCodec,
+    private val summaryCodec: EntrySummaryCodec,
+    private val secretCodec: EntrySecretCodec,
+    private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
 
     /**
@@ -29,20 +41,88 @@ class EntryRevisionHelper @Inject constructor(
         entryVersion: Int,
         summary: EntrySummary,
         secret: EntrySecret,
-        now: Long
-    ) {
-        val entryBlob = revisionCodec.encrypt(summary, secret, entryId)
-        with(db) {
-            entryRevisionCommandDao().insertStrict(
-                EntryRevisionEntity(
-                    revisionId = UuidCreator.getTimeOrderedEpoch().toString(),
-                    version = entryVersion,
-                    entryId = entryId,
-                    entryBlob = entryBlob,
-                    changeType = RevisionType.VALUE_CHANGED.value,
-                    createdAt = now
-                )
+        now: Long,
+        changeType: RevisionType = RevisionType.VALUE_CHANGED,
+    ) = with(db) {
+        val links = entryLinkQueryDao().getByEntryId(entryId).map { link ->
+            EntryLink.create(
+                id = EntryLinkId(link.linkId),
+                sourceEntryId = EntryId(link.sourceEntryId),
+                targetEntryId = EntryId(link.targetEntryId),
+                relationType = link.relationType,
+                createdAt = link.createdAt,
+                updatedAt = link.updatedAt,
             )
         }
+        val attachmentRefs = attachmentRefQueryDao().getCommittedByEntryId(entryId)
+        val sensitiveFields = sensitiveFieldQueryDao().getFields(entryId)
+        val entryContentCipher = contentSnapshotCodec.encrypt(
+            summary = summary,
+            secret = secret,
+            entryId = entryId,
+            links = links,
+        )
+        val revisionId = UuidCreator.getTimeOrderedEpoch().toString()
+        entryRevisionCommandDao().insertStrict(
+            EntryRevisionEntity(
+                revisionId = revisionId,
+                version = entryVersion,
+                entryId = entryId,
+                entryContentCipher = entryContentCipher,
+                sensitiveFieldCipherSet = sensitiveRevisionCodec.encode(sensitiveFields),
+                changeType = changeType.value,
+                createdAt = now
+            )
+        )
+        val revisionAttachmentRefs = attachmentRefs.map { ref ->
+            RevisionAttachmentRefEntity(
+                revisionId = revisionId,
+                attachmentId = ref.attachmentId,
+                resourceId = ref.resourceId,
+                fileName = ref.fileName,
+                mimeType = ref.mimeType,
+                displayOrder = ref.displayOrder,
+                createdAt = ref.createdAt,
+            )
+        }
+        if (revisionAttachmentRefs.isNotEmpty()) {
+            revisionAttachmentRefDao().insertAllStrict(revisionAttachmentRefs)
+        }
+        entryRevisionCommandDao().deleteOldVersions(entryId, REVISION_LIMIT)
+        entryRevisionCommandDao().deleteOldestBeyondGlobalLimit(GLOBAL_REVISION_LIMIT)
+        attachmentGarbageCollector.scheduleInTransaction(this)
+    }
+
+    suspend fun snapshotCurrent(
+        db: AppDatabase,
+        entryId: String,
+        now: Long,
+        changeType: RevisionType = RevisionType.VALUE_CHANGED,
+    ) = with(db) {
+        val metadata = entryQueryDao().getById(entryId) ?: return@with
+        val secretEntity = entrySecretQueryDao().getByEntryId(entryId)
+            ?: return@with
+        val summary = summaryCodec.decrypt(metadata.summaryBlob, entryId)
+        val secret = secretCodec.decrypt(secretEntity.secretBlob, entryId)
+        val affected = entryCommandDao().bumpVersion(
+            entryId = entryId,
+            expectedVersion = metadata.version,
+            updatedAt = now,
+        )
+        check(affected == 1) { "Entry version changed while recording relation revision" }
+        snapshotChanges(
+            db = this,
+            entryId = entryId,
+            entryVersion = metadata.version + 1,
+            summary = summary,
+            secret = secret,
+            now = now,
+            changeType = changeType,
+        )
+    }
+
+    private companion object {
+        const val REVISION_LIMIT = 50
+        const val GLOBAL_REVISION_LIMIT = 1_000
     }
 }

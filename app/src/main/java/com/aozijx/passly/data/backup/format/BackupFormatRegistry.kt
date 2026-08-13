@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.backup.format
 
-import com.aozijx.passly.core.error.BackupFailed
+import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.domain.backup.model.BackupFormatId
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,21 +20,15 @@ internal class BackupFormatRegistry @Inject constructor(
     private val importers = importers.sortedBy { it.formatId.value }
 
     fun exporter(formatId: BackupFormatId): BackupExportAdapter =
-        exportersById[formatId] ?: throw BackupFailed(
-            "不支持的备份导出格式: ${formatId.value}"
-        )
+        exportersById[formatId] ?: throw BackupFailed()
 
     fun importer(
         requestedFormat: BackupFormatId?,
         payload: ByteArray
     ): BackupImportAdapter {
         if (requestedFormat != null) {
-            val adapter = importersById[requestedFormat] ?: throw BackupFailed(
-                "不支持的备份导入格式: ${requestedFormat.value}"
-            )
-            if (adapter.probe(payload) <= 0) {
-                throw BackupFailed("文件内容与所选备份格式不匹配")
-            }
+            val adapter = importersById[requestedFormat] ?: throw BackupFailed()
+            if (adapter.probe(payload) <= 0) throw BackupFailed()
             return adapter
         }
 
@@ -42,12 +36,10 @@ internal class BackupFormatRegistry @Inject constructor(
             .map { it to it.probe(payload) }
             .filter { (_, score) -> score > 0 }
         val bestScore = candidates.maxOfOrNull { it.second }
-            ?: throw BackupFailed("无法识别备份文件格式")
+            ?: throw BackupFailed()
         val best = candidates.filter { it.second == bestScore }
         if (best.size != 1) {
-            throw BackupFailed(
-                "备份格式识别存在歧义: ${best.joinToString { it.first.formatId.value }}"
-            )
+            throw BackupFailed()
         }
         return best.single().first
     }

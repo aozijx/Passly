@@ -3,9 +3,10 @@ package com.aozijx.passly.feature.detail.internal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.WebsiteInfo
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.secret.OtpSecret
@@ -13,14 +14,11 @@ import com.aozijx.passly.domain.entry.model.secret.OtpSecret
 /**
  * 条目详情页统一编辑状态
  */
-class EntryEditState(initialEntry: VaultEntry) {
+class EntryEditState(initialEntry: EntryAggregate) {
     var editedTitle by mutableStateOf(initialEntry.title)
     var editedUsername by mutableStateOf("")
     var editedPassword by mutableStateOf("")
-    var editedCategory by mutableStateOf(initialEntry.category)
-    var editedNotes by mutableStateOf(
-        initialEntry.secret.notes ?: ""
-    )
+    var editedNotes by mutableStateOf(initialEntry.secret.notes.toTextFieldValue())
     var editedDomain by mutableStateOf(initialEntry.associatedDomain ?: "")
     var editedPackage by mutableStateOf(initialEntry.associatedAppPackage ?: "")
     var editedTotpSecret by mutableStateOf(
@@ -40,34 +38,30 @@ class EntryEditState(initialEntry: VaultEntry) {
     var isEditingPassword by mutableStateOf(false)
     var isEditingTotp by mutableStateOf(false)
 
-    fun applyTo(entry: VaultEntry): VaultEntry {
+    fun applyTo(entry: EntryAggregate): EntryAggregate {
         val newSummary = entry.summary.copy(
             title = editedTitle,
             website = buildWebsite(entry.summary.website)
         )
-        val newHeader = entry.header.copy(
-            entryType = runCatching { EntryType.valueOf(editedCategory) }.getOrDefault(entry.header.entryType)
-        )
         val newSecret = updateSecret(entry.secret)
-        return entry.copy(summary = newSummary, header = newHeader, secret = newSecret)
+        return entry.copy(summary = newSummary, secret = newSecret)
     }
 
-    fun applyCategoryOnly(entry: VaultEntry): VaultEntry = entry.copy(
-        header = entry.header.copy(
-            entryType = runCatching { EntryType.valueOf(editedCategory) }.getOrDefault(entry.header.entryType)
-        )
-    )
-
-    fun applyTitleOnly(entry: VaultEntry): VaultEntry = entry.copy(
+    fun applyTitleOnly(entry: EntryAggregate): EntryAggregate = entry.copy(
         summary = entry.summary.copy(title = editedTitle)
     )
 
-    fun applyNotesOnly(entry: VaultEntry): VaultEntry =
+    fun applyNotesOnly(entry: EntryAggregate): EntryAggregate =
         entry.copy(secret = updateSecretNotes(entry.secret))
 
-    fun applyAssociatedOnly(entry: VaultEntry): VaultEntry = entry.copy(
+    fun applyAssociatedOnly(entry: EntryAggregate): EntryAggregate = entry.copy(
         summary = entry.summary.copy(website = buildWebsite(entry.summary.website))
     )
+
+    fun startNotesEditing(notes: String?) {
+        editedNotes = notes.toTextFieldValue()
+        isEditingNotes = true
+    }
 
     private fun buildWebsite(existing: WebsiteInfo?): WebsiteInfo? {
         val domain = editedDomain.ifBlank { null }
@@ -80,7 +74,7 @@ class EntryEditState(initialEntry: VaultEntry) {
     }
 
     private fun updateSecret(secret: EntrySecret): EntrySecret {
-        val notes = editedNotes.ifBlank { null }
+        val notes = editedNotes.text.ifBlank { null }
         val totpSecret = editedTotpSecret.ifBlank { null }
         val currentOtpData = secret.otp
         return if (totpSecret != null || currentOtpData != null) {
@@ -99,7 +93,15 @@ class EntryEditState(initialEntry: VaultEntry) {
     }
 
     private fun updateSecretNotes(secret: EntrySecret): EntrySecret {
-        val notes = editedNotes.ifBlank { null }
+        val notes = editedNotes.text.ifBlank { null }
         return secret.copy(notes = notes)
+    }
+
+    private fun String?.toTextFieldValue(): TextFieldValue {
+        val value = orEmpty()
+        return TextFieldValue(
+            text = value,
+            selection = TextRange(value.length)
+        )
     }
 }

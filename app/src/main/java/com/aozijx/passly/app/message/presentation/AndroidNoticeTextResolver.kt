@@ -37,6 +37,11 @@ class AndroidNoticeTextResolver @Inject constructor(
         NoticeCode.BACKUP_EXPORT_FAILED -> R.string.backup_error_unknown
         NoticeCode.BACKUP_IMPORT_COMPLETED -> R.string.backup_import_success
         NoticeCode.BACKUP_IMPORT_FAILED -> R.string.backup_error_unknown
+        NoticeCode.BACKUP_DIRECTORY_CHECK_COMPLETED ->
+            R.string.backup_directory_permission_ok
+
+        NoticeCode.BACKUP_DIRECTORY_CHECK_FAILED ->
+            R.string.backup_directory_permission_failed
         NoticeCode.SECURITY_KEY_INVALIDATED -> R.string.notice_security_key_invalidated
         NoticeCode.SECURITY_RECOVERY_REQUIRED -> R.string.notice_security_recovery_required
         NoticeCode.SECURITY_ACTION_FAILED -> R.string.notice_security_action_failed

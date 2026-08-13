@@ -10,19 +10,13 @@ import com.aozijx.passly.core.util.PasswordStrengthEngine
 import com.aozijx.passly.domain.entry.model.PasswordStrengthLevel
 import com.aozijx.passly.domain.entry.model.PasswordStrengthResult
 
-/**
- * UI 状态数据类，包装显示所需的所有信息
- */
 data class PasswordStrengthUiState(
-    val progress: Float,        // 0..1，用于进度条
+    val progress: Float,
     val color: Color,
-    val textResId: Int,         // 描述性文字
+    val textResId: Int,
     val level: PasswordStrengthLevel
 )
 
-/**
- * 将算法结果转换为 UI 状态
- */
 fun PasswordStrengthResult.toUiState(
     colorScheme: ColorScheme
 ): PasswordStrengthUiState {
@@ -37,9 +31,6 @@ fun PasswordStrengthResult.toUiState(
     return PasswordStrengthUiState(progress, color, textRes, this.level)
 }
 
-/**
- * 在 Composable 中记忆并获取密码强度状态
- */
 @Composable
 fun rememberPasswordStrength(password: String): PasswordStrengthUiState {
     val colorScheme = MaterialTheme.colorScheme

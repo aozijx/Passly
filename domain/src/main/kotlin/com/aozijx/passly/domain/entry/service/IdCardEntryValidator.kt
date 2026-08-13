@@ -1,0 +1,20 @@
+package com.aozijx.passly.domain.entry.service
+
+import com.aozijx.passly.domain.entry.model.EntryAggregate
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class IdCardEntryValidator @Inject constructor() : EntryValidator {
+    override fun validateRequiredFields(entry: EntryAggregate): String? {
+        if (entry.summary.title.isBlank()) return "证件标题不能为空"
+        if (entry.secret.identity?.idNumber.isNullOrBlank()) return "证件号码不能为空"
+        return null
+    }
+
+    override fun validateFieldContent(entry: EntryAggregate): String? {
+        val idNumber = entry.secret.identity?.idNumber
+        if (idNumber != null && idNumber.length < 6) return "证件号码长度异常"
+        return null
+    }
+}

@@ -9,11 +9,11 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSection
 
 @Composable
 internal fun InteractionDetail(
-    state: InteractionUiState,
+    state: InteractionSettingsUiState,
     onSwipeEnabledChange: (Boolean) -> Unit,
     onLeftSwipeActionClick: () -> Unit,
     onRightSwipeActionClick: () -> Unit,
-    onToggleAutofillUiMode: () -> Unit,
+    onAutofillAction: (InteractionSettingsAction) -> Unit,
     onOpenAutofillSettings: () -> Unit
 ) {
     SettingsSection {
@@ -31,9 +31,10 @@ internal fun InteractionDetail(
         Spacer(modifier = Modifier.height(24.dp))
 
         AutofillSettingsSection(
-            autofillUiMode = state.autofillUiMode,
+            settings = state.autofill,
+            isSystemServiceEnabled = state.isSystemAutofillEnabled,
             onOpenAutofillSettings = onOpenAutofillSettings,
-            onToggleAutofillUiMode = onToggleAutofillUiMode
+            onAction = onAutofillAction,
         )
     }
 }

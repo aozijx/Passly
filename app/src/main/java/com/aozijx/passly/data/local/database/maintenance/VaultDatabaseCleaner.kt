@@ -13,9 +13,8 @@ data class ClearDatabaseResult(
     val revisionsDeleted: Int = 0,
     val activityDeleted: Int = 0,
     val attachmentsDeleted: Int = 0,
+    val attachmentResourcesDeleted: Int = 0,
     val searchTokensDeleted: Int = 0,
-    /** 草稿表删除行数 */
-    val draftsDeleted: Int = 0,
     /** PENDING 状态附件（未提交的暂存附件）删除行数 */
     val stagingDeleted: Int = 0
 )
@@ -43,15 +42,21 @@ class VaultDatabaseCleanerImpl @Inject constructor(
     override suspend fun clearVaultData(): ClearDatabaseResult = sessionManager.transaction {
         val maintenance = vaultMaintenanceDao()
         // 子表→父表顺序：先删依赖表，再删主表
+        val searchTokensDeleted = maintenance.clearSearchTokens()
+        val stagingDeleted = maintenance.clearPending()
+        val attachmentsDeleted = maintenance.clearAttachments()
+        val revisionsDeleted = maintenance.clearRevisions()
+        maintenance.clearAttachmentGcQueue()
+        val attachmentResourcesDeleted = maintenance.clearAttachmentResources()
         ClearDatabaseResult(
-            searchTokensDeleted = maintenance.clearSearchTokens(),
-            draftsDeleted = maintenance.clearDrafts(),
-            stagingDeleted = maintenance.clearPending(),
-            revisionsDeleted = maintenance.clearRevisions(),
+            searchTokensDeleted = searchTokensDeleted,
+            stagingDeleted = stagingDeleted,
+            revisionsDeleted = revisionsDeleted,
             activityDeleted = maintenance.clearActivities(),
-            attachmentsDeleted = maintenance.clearAttachments(),
+            attachmentsDeleted = attachmentsDeleted,
+            attachmentResourcesDeleted = attachmentResourcesDeleted,
             secretsDeleted = maintenance.clearSecrets(),
-            entriesDeleted = maintenance.clearEntries()
+            entriesDeleted = maintenance.clearEntries(),
         )
     }
 }

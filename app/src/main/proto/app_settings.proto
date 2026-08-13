@@ -8,7 +8,7 @@ option java_multiple_files = true;
 // ============================================================
 
 message AppSettings {
-  optional int32 version = 1 [default = 1];
+    optional int32 version = 1 [default = 2];
 
     optional AppearancePreferences appearance = 2;
     optional InterfacePreferences interface_prefs = 3;
@@ -25,7 +25,7 @@ message AppearancePreferences {
     optional ThemeMode theme_mode = 1 [default = THEME_MODE_SYSTEM];
     optional bool dynamic_color_enabled = 2 [default = true];
     optional FallbackPalette fallback_palette = 3 [default = FALLBACK_PALETTE_BLUE];
-    optional fixed64 custom_seed_argb = 4;
+    optional fixed64 manual_theme_color_argb = 4;
     // BCP-47 语言标签: "system", "zh-CN", "en", "ja"
     optional string language = 5 [default = "system"];
     // 字体标识: "app.default", "system"
@@ -53,7 +53,13 @@ enum FallbackPalette {
 message InterfacePreferences {
     optional bool hide_system_bars = 1 [default = false];
     optional bool collapse_top_bar_on_scroll = 2 [default = false];
-    optional bool collapse_tab_bar_on_scroll = 3 [default = false];
+    optional bool collapse_quick_filter_bar_on_scroll = 3 [default = false];
+    // 首项顶部、末项底部以及单项四角；同时作为 Material Shapes 的圆角基准
+    optional float outer_corner_radius_dp = 4 [default = 16];
+    // RoundedGroup 相邻项目接缝处的圆角
+    optional float inner_corner_radius_dp = 5 [default = 6];
+    optional float group_item_spacing_dp = 6 [default = 2];
+    optional float group_content_padding_dp = 7 [default = 16];
 }
 
 // 安全
@@ -65,33 +71,45 @@ message SecurityPreferences {
     optional bool lock_on_background = 4 [default = false];
     optional int64 lock_timeout_ms = 5 [default = 60000];
     optional bool invalidate_biometric_key_on_change = 6 [default = true];
+    optional bool reauthenticate_sensitive_copies = 7 [default = true];
 }
 
 // 交互
 
 message InteractionPreferences {
     optional bool swipe_actions_enabled = 1 [default = false];
-    // 快捷操作标识: "none", "copy_username", "copy_password", "copy_totp",
-    // "open_details", "open_in_browser", "call", "send_sms", "launch_app"
+    // 快捷操作标识: "delete", "detail", "copy_password", "copy_username"
     optional string swipe_left_action = 2 [default = "copy_password"];
-    optional string swipe_right_action = 3 [default = "open_details"];
-    // 自动填充弹出模式: "system_inline", "fullscreen", "dialog"
-    optional string autofill_ui_mode = 4 [default = "system_inline"];
+    optional string swipe_right_action = 3 [default = "detail"];
+    optional AutofillPreferences autofill = 4;
     optional bool auto_download_icons = 5 [default = true];
     repeated string favicon_allowed_domains = 6;
+}
+
+message AutofillPreferences {
+    optional bool enabled = 1 [default = true];
+    // 稳定键: "system_inline", "bottom_sheet"
+    optional string presentation = 2 [default = "system_inline"];
+    optional bool credential_manager_enabled = 3 [default = true];
+    optional bool require_authentication = 4 [default = true];
+    optional bool include_otp = 5 [default = true];
+    optional bool save_prompts_enabled = 6 [default = true];
+    optional bool allow_unmatched_suggestions = 7 [default = false];
+    optional int32 max_suggestions = 8 [default = 5];
 }
 
 // 保险库视图 / 条目卡片
 
 message VaultViewPreferences {
-    optional int32 max_tabs_without_scroll = 1 [default = 4];
-    optional VisibleTabs visible_tabs = 2;
-    optional VaultSortPreference sort = 3;
-    repeated EntryCardPresentation entry_card_presentations = 4;
+    optional VisibleQuickFilters visible_quick_filters = 1;
+    optional VaultSortPreference sort = 2;
+    repeated EntryCardPresentation entry_card_presentations = 3;
+    // "collapsed", "expanded", "separate"
+    optional string entry_hierarchy_display_mode = 4 [default = "collapsed"];
 }
 
-message VisibleTabs {
-    repeated string tab_keys = 1;
+message VisibleQuickFilters {
+    repeated string filter_keys = 1;
     optional bool configured = 2 [default = false];
 }
 

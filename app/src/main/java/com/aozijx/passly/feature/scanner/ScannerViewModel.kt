@@ -5,19 +5,21 @@ import android.net.Uri
 import android.os.VibrationEffect
 import android.os.VibratorManager
 import androidx.lifecycle.ViewModel
-import com.aozijx.passly.core.qr.QrCodeUtils
+import com.aozijx.passly.core.otp.OtpAuthUriCodec
+import com.aozijx.passly.core.util.QrCodeUtils
+import com.aozijx.passly.feature.scanner.contract.ImageRef
 import com.aozijx.passly.feature.scanner.contract.ScannerEffect
 import com.aozijx.passly.feature.scanner.contract.ScannerIntent
 import com.aozijx.passly.feature.scanner.contract.ScannerUiState
+import com.aozijx.passly.feature.scanner.presentation.ScannerMutation
+import com.aozijx.passly.feature.scanner.presentation.ScannerReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.receiveAsFlow
 import javax.inject.Inject
 
 @HiltViewModel
@@ -28,8 +30,8 @@ class ScannerViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ScannerUiState())
     val uiState: StateFlow<ScannerUiState> = _uiState.asStateFlow()
 
-    private val _effects = MutableSharedFlow<ScannerEffect>(extraBufferCapacity = 1)
-    val effects: SharedFlow<ScannerEffect> = _effects.asSharedFlow()
+    private val _effects = Channel<ScannerEffect>(Channel.BUFFERED)
+    val effects = _effects.receiveAsFlow()
 
     // 防抖：缓存上次扫描结果
     private var lastScannedBarcode: String? = null
@@ -37,7 +39,7 @@ class ScannerViewModel @Inject constructor(
     fun handleIntent(intent: ScannerIntent) {
         when (intent) {
             is ScannerIntent.BarcodeDetected -> onBarcodeDetected(intent.barcode)
-            is ScannerIntent.DecodeImage -> decodeImage(intent.uri)
+            is ScannerIntent.DecodeImage -> decodeImage(intent.image)
             is ScannerIntent.StartScanning -> resetAndStart()
             is ScannerIntent.StopScanning -> stopScanning()
         }
@@ -47,17 +49,22 @@ class ScannerViewModel @Inject constructor(
         if (barcode.isBlank() || barcode == lastScannedBarcode) return
         lastScannedBarcode = barcode
         vibrate()
-        _effects.tryEmit(ScannerEffect.ScanSuccess(barcode))
-        _uiState.update { it.copy(isScanning = false) }
+        _effects.trySend(
+            ScannerEffect.ScanSuccess(
+                result = barcode,
+                otpConfig = OtpAuthUriCodec.parse(barcode)
+            )
+        )
+        mutate(ScannerMutation.ScanCompleted)
     }
 
     private fun resetAndStart() {
         lastScannedBarcode = null
-        _uiState.value = ScannerUiState()
+        mutate(ScannerMutation.Started)
     }
 
     private fun stopScanning() {
-        _uiState.update { it.copy(isScanning = false) }
+        mutate(ScannerMutation.Stopped)
     }
 
     private fun vibrate() {
@@ -66,15 +73,20 @@ class ScannerViewModel @Inject constructor(
             .vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
     }
 
-    private fun decodeImage(uri: Uri) {
+    private fun decodeImage(image: ImageRef) {
+        val uri = Uri.parse(image.value)
         QrCodeUtils.decodeFromUri(
             context = appContext,
             uri = uri,
             onSuccess = { onBarcodeDetected(it) },
             onFailure = { message ->
-                _uiState.update { it.copy(error = message) }
-                _effects.tryEmit(ScannerEffect.ShowError(message))
+                mutate(ScannerMutation.DecodeFailed(message))
+                _effects.trySend(ScannerEffect.ShowError(message))
             }
         )
+    }
+
+    private fun mutate(mutation: ScannerMutation) {
+        _uiState.value = ScannerReducer.reduce(_uiState.value, mutation)
     }
 }

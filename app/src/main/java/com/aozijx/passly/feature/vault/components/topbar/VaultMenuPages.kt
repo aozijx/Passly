@@ -31,12 +31,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.settings.model.VaultSortSpec
+import com.aozijx.passly.domain.settings.model.LibrarySortSpec
 
 @Composable
 internal fun MainMenuContent(
     onSortClick: () -> Unit,
-    onFilterClick: () -> Unit,
+    onCategoryFilterClick: () -> Unit,
     showTOTPCode: Boolean,
     onToggleTotpVisibility: () -> Unit,
     onDismissRequest: () -> Unit,
@@ -49,7 +49,7 @@ internal fun MainMenuContent(
     )
     DropdownMenuItem(
         text = { Text(stringResource(R.string.vault_menu_filter)) },
-        onClick = onFilterClick,
+        onClick = onCategoryFilterClick,
         leadingIcon = { Icon(Icons.Default.FilterList, null) }
     )
     DropdownMenuItem(
@@ -74,7 +74,7 @@ internal fun MainMenuContent(
     )
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
     DropdownMenuItem(
-        text = { Text(stringResource(R.string.settings)) },
+        text = { Text(stringResource(R.string.settings_title)) },
         onClick = {
             onDismissRequest()
             onSettingsClick()
@@ -85,16 +85,16 @@ internal fun MainMenuContent(
 
 @Composable
 internal fun SortSubMenu(
-    selectedSort: VaultSortSpec,
-    onSortSelected: (VaultSortSpec) -> Unit,
+    selectedSort: LibrarySortSpec,
+    onSortSelected: (LibrarySortSpec) -> Unit,
     onBack: () -> Unit
 ) {
     BackMenuItem(onBack)
-    val isDefault = selectedSort == VaultSortSpec.DEFAULT
-    VaultSortSpec.presets().forEach { preset ->
+    val isDefault = selectedSort == LibrarySortSpec.DEFAULT
+    LibrarySortSpec.presets().forEach { preset ->
         val selected = preset.field == selectedSort.field
         val direction = when {
-            preset == VaultSortSpec.DEFAULT -> ""
+            preset == LibrarySortSpec.DEFAULT -> ""
             selected && !isDefault -> if (selectedSort.direction.name == "DESC") " \u2193" else " \u2191"
             else -> ""
         }
@@ -110,21 +110,24 @@ internal fun SortSubMenu(
             onClick = {
                 onSortSelected(if (selected && !isDefault) selectedSort.toggled() else preset)
             },
-            modifier = selectedMenuModifier(selected)
+            modifier = Modifier.selectedMenuModifier(selected)
         )
     }
 }
 
 @Composable
 internal fun FilterSubMenu(
-    isCategorySearchVisible: Boolean,
+    searchLabelRes: Int,
+    searchHintRes: Int,
+    isSearchVisible: Boolean,
     onToggleSearch: (Boolean) -> Unit,
-    categorySearchQuery: String,
-    onCategorySearchQueryChange: (String) -> Unit,
-    categoryFocusRequester: FocusRequester,
-    filteredCategories: List<String>,
-    selectedCategory: String?,
-    onCategorySelected: (String?) -> Unit,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    focusRequester: FocusRequester,
+    items: List<String>,
+    selectedItem: String?,
+    itemText: (String) -> String,
+    onItemSelected: (String?) -> Unit,
     onBack: () -> Unit
 ) {
     DropdownMenuItem(
@@ -132,21 +135,26 @@ internal fun FilterSubMenu(
         onClick = onBack,
         leadingIcon = {
             Icon(
-                if (isCategorySearchVisible) Icons.Default.Close
+                if (isSearchVisible) Icons.Default.Close
                 else Icons.AutoMirrored.Filled.ArrowBack,
                 null
             )
         }
     )
-    AnimatedVisibility(isCategorySearchVisible) {
+    AnimatedVisibility(isSearchVisible) {
         OutlinedTextField(
-            value = categorySearchQuery,
-            onValueChange = onCategorySearchQueryChange,
+            value = searchQuery,
+            onValueChange = onSearchQueryChange,
             modifier = Modifier
                 .padding(horizontal = 12.dp, vertical = 4.dp)
                 .fillMaxWidth()
-                .focusRequester(categoryFocusRequester),
-            placeholder = { Text("搜索分类...", style = MaterialTheme.typography.bodySmall) },
+                .focusRequester(focusRequester),
+            placeholder = {
+                Text(
+                    stringResource(searchHintRes),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            },
             leadingIcon = {
                 Icon(Icons.Default.Search, null, modifier = Modifier.size(16.dp))
             },
@@ -157,24 +165,24 @@ internal fun FilterSubMenu(
             )
         )
     }
-    if (!isCategorySearchVisible) {
+    if (!isSearchVisible) {
         DropdownMenuItem(
-            text = { Text("搜索分类") },
+            text = { Text(stringResource(searchLabelRes)) },
             onClick = { onToggleSearch(true) },
             leadingIcon = { Icon(Icons.Default.Search, null) }
         )
     }
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-    CategoryMenuItem(
+    EntryTypeMenuItem(
         text = stringResource(R.string.tab_all),
-        selected = selectedCategory == null,
-        onClick = { onCategorySelected(null) }
+        selected = selectedItem == null,
+        onClick = { onItemSelected(null) }
     )
-    filteredCategories.forEach { category ->
-        CategoryMenuItem(
-            text = category,
-            selected = selectedCategory == category,
-            onClick = { onCategorySelected(category) }
+    items.forEach { item ->
+        EntryTypeMenuItem(
+            text = itemText(item),
+            selected = selectedItem == item,
+            onClick = { onItemSelected(item) }
         )
     }
 }
@@ -190,7 +198,7 @@ private fun BackMenuItem(onBack: () -> Unit) {
 }
 
 @Composable
-private fun CategoryMenuItem(text: String, selected: Boolean, onClick: () -> Unit) {
+private fun EntryTypeMenuItem(text: String, selected: Boolean, onClick: () -> Unit) {
     DropdownMenuItem(
         text = {
             Text(
@@ -201,13 +209,13 @@ private fun CategoryMenuItem(text: String, selected: Boolean, onClick: () -> Uni
             )
         },
         onClick = onClick,
-        modifier = selectedMenuModifier(selected)
+        modifier = Modifier.selectedMenuModifier(selected)
     )
 }
 
 @Composable
-private fun selectedMenuModifier(selected: Boolean): Modifier =
-    Modifier
+private fun Modifier.selectedMenuModifier(selected: Boolean): Modifier =
+    this
         .padding(horizontal = 8.dp, vertical = 2.dp)
         .clip(MaterialTheme.shapes.small)
         .background(

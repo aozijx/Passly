@@ -1,15 +1,19 @@
 package com.aozijx.passly.data.backup
 
 import com.aozijx.passly.app.di.IoDispatcher
-import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.error.BackupFailed
+import com.aozijx.passly.core.error.model.BackupFailed
+import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.telemetry.OperationCode
+import com.aozijx.passly.core.telemetry.reporting.AppErrorReporter
+import com.aozijx.passly.core.telemetry.reporting.ErrorReportContext
 import com.aozijx.passly.data.backup.format.BackupFormatRegistry
 import com.aozijx.passly.data.backup.io.BackupFileStore
 import com.aozijx.passly.data.backup.source.VaultBackupReader
 import com.aozijx.passly.data.backup.source.VaultBackupRestorer
 import com.aozijx.passly.domain.backup.model.BackupExportRequest
 import com.aozijx.passly.domain.backup.model.BackupImportRequest
-import com.aozijx.passly.domain.backup.service.VaultBackupService
+import com.aozijx.passly.domain.backup.service.BackupArchiveService
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -23,18 +27,19 @@ import javax.inject.Singleton
  * - 导入：FileStore → Format Importer → VaultBackupRestorer
  */
 @Singleton
-internal class VaultBackupServiceImpl @Inject constructor(
+internal class BackupArchiveServiceImpl @Inject constructor(
     private val backupReader: VaultBackupReader,
     private val backupRestorer: VaultBackupRestorer,
     private val formatRegistry: BackupFormatRegistry,
     private val fileStore: BackupFileStore,
+    private val errorReporter: AppErrorReporter,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
-) : VaultBackupService {
+) : BackupArchiveService {
 
     override suspend fun export(
         request: BackupExportRequest
     ): AppResult<Unit> = withContext(ioDispatcher) {
-        AppResult.runSuspendCatching("backup.export.${request.format.value}") {
+        AppResult.runSuspendCatching {
             val adapter = formatRegistry.exporter(request.format)
             validatePassword(adapter.requiresPassword, request.password)
             val bundle = backupReader.readBundle(
@@ -54,13 +59,13 @@ internal class VaultBackupServiceImpl @Inject constructor(
             } finally {
                 bundle.clearResourceData()
             }
-        }
+        }.onFailure { report(it, "backup.export") }
     }
 
     override suspend fun import(
         request: BackupImportRequest
     ): AppResult<Unit> = withContext(ioDispatcher) {
-        AppResult.runSuspendCatching("backup.import") {
+        AppResult.runSuspendCatching {
             val payload = fileStore.readBytesSafely(request.sourceUri)
             try {
                 val adapter = formatRegistry.importer(request.format, payload)
@@ -74,16 +79,24 @@ internal class VaultBackupServiceImpl @Inject constructor(
             } finally {
                 payload.fill(0)
             }
-        }
+        }.onFailure { report(it, "backup.import") }
     }
 
     override suspend fun checkDirectoryWritable(uri: String): AppResult<Unit> =
-        fileStore.checkWritable(uri)
+        fileStore.checkWritable(uri).onFailure { report(it, "backup.checkWritable") }
 
     private fun validatePassword(required: Boolean, password: CharArray?) {
-        if (required && (password == null || password.isEmpty())) {
-            throw BackupFailed("该备份格式需要密码")
-        }
+        if (required && (password == null || password.isEmpty())) throw BackupFailed()
+    }
+
+    private fun report(error: com.aozijx.passly.core.error.model.AppError, operation: String) {
+        errorReporter.report(
+            error = error,
+            context = ErrorReportContext(
+                operation = OperationCode(operation),
+                category = EventCategory.BACKUP
+            )
+        )
     }
 }
 

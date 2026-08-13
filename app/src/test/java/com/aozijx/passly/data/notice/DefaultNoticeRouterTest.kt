@@ -101,6 +101,19 @@ class DefaultNoticeRouterTest {
         assertTrue(NoticeTarget.SYSTEM in plan.targets)
     }
 
+    @Test
+    fun backupDirectoryCheckStaysInApp() {
+        val notice = newAppNotice(NoticeCode.BACKUP_DIRECTORY_CHECK_COMPLETED)
+        val plan = router.route(
+            notice,
+            defaultNoticeCodePolicy(notice.code),
+            context(systemAvailable = true)
+        )
+
+        assertEquals(setOf(NoticeTarget.IN_APP), plan.targets)
+        assertEquals(NoticeTopic.BACKUP, defaultNoticeCodePolicy(notice.code).topic)
+    }
+
     private fun context(
         settings: AppMessageSettings = AppMessageSettings(),
         visibility: AppVisibility = AppVisibility.FOREGROUND,

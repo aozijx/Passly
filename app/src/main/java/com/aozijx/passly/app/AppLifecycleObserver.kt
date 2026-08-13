@@ -1,12 +1,16 @@
 package com.aozijx.passly.app
 
+import android.content.Context
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
+import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.authentication.AuthenticationManager
+import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
 import com.aozijx.passly.domain.settings.repository.IdleTimeoutSettings
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -18,7 +22,7 @@ import javax.inject.Singleton
 /**
  * 监听 ProcessLifecycleOwner 的前后台切换，管理会话生命周期。
  *
- * - onStop：应用进入后台 → 根据 [isLockOnBackground] 设置决定是否锁定
+ * - onStop：应用进入后台 → 恢复模式强制锁定，普通会话按 [isLockOnBackground] 设置决定
  * - onDestroy：应用销毁 → 封存会话
  *
  * 前台到后台的切换将触发完整的 [LockReason.BACKGROUND] 锁流程，
@@ -29,7 +33,8 @@ import javax.inject.Singleton
 class AppLifecycleObserver @Inject constructor(
     private val authenticationManager: AuthenticationManager,
     private val diagnosticsRuntime: DiagnosticsRuntimeController,
-    private val idleTimeoutSettings: IdleTimeoutSettings
+    private val idleTimeoutSettings: IdleTimeoutSettings,
+    @param:ApplicationContext private val context: Context,
 ) : DefaultLifecycleObserver {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -40,9 +45,11 @@ class AppLifecycleObserver @Inject constructor(
     }
 
     override fun onStop(owner: LifecycleOwner) {
+        ClipboardUtils.clearIfOwned(context)
         scope.launch {
             val lockOnBackground = idleTimeoutSettings.isLockOnBackground.first()
-            if (!lockOnBackground) {
+            val recoveryMode = authenticationManager.state.value is AuthenticationState.RecoveryMode
+            if (!lockOnBackground && !recoveryMode) {
                 AppTelemetry.i(tag, "Lock on background disabled by settings, skipping")
                 return@launch
             }

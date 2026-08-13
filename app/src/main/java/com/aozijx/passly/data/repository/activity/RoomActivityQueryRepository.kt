@@ -2,7 +2,7 @@ package com.aozijx.passly.data.repository.activity
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.mapper.activity.toDomain
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.repository.ActivityQueryRepository
@@ -19,7 +19,7 @@ import javax.inject.Singleton
 @Singleton
 class RoomActivityQueryRepository @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
-    private val sessionState: VaultAccessState
+    private val sessionState: SecureSessionAccessState
 ) : ActivityQueryRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)

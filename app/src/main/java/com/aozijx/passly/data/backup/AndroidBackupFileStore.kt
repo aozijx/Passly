@@ -1,9 +1,9 @@
 package com.aozijx.passly.data.backup
 
 import android.content.Context
-import android.net.Uri
-import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.error.BackupFailed
+import androidx.core.net.toUri
+import com.aozijx.passly.core.error.model.BackupFailed
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.backup.io.BackupFileStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.FileNotFoundException
@@ -18,26 +18,26 @@ class AndroidBackupFileStore @Inject constructor(
 ) : BackupFileStore {
 
     private fun openInputStream(uri: String): InputStream {
-        val parsed = Uri.parse(uri)
+        val parsed = uri.toUri()
         return try {
             context.contentResolver.openInputStream(parsed)
-                ?: throw BackupFailed("无法打开备份输入流")
+                ?: throw BackupFailed()
         } catch (_: SecurityException) {
-            throw BackupFailed("没有文件读取权限，请重新授权")
+            throw BackupFailed()
         } catch (_: FileNotFoundException) {
-            throw BackupFailed("备份文件未找到")
+            throw BackupFailed()
         }
     }
 
     private fun openOutputStream(uri: String): OutputStream {
-        val parsed = Uri.parse(uri)
+        val parsed = uri.toUri()
         return try {
             context.contentResolver.openOutputStream(parsed, "rwt")
-                ?: throw BackupFailed("没有文件写入权限，请重新授权")
+                ?: throw BackupFailed()
         } catch (_: SecurityException) {
-            throw BackupFailed("没有文件写入权限，请重新授权")
+            throw BackupFailed()
         } catch (_: FileNotFoundException) {
-            throw BackupFailed("无法创建备份文件")
+            throw BackupFailed()
         }
     }
 
@@ -54,15 +54,15 @@ class AndroidBackupFileStore @Inject constructor(
     }
 
     override suspend fun checkWritable(uri: String): AppResult<Unit> =
-        AppResult.runSuspendCatching("backup.checkWritable") {
-            val parsed = Uri.parse(uri)
+        AppResult.runSuspendCatching {
+            val parsed = uri.toUri()
             val persistedWritable = context.contentResolver.persistedUriPermissions.any {
                 it.uri == parsed && it.isWritePermission
             }
             if (!persistedWritable) {
                 context.contentResolver.openFileDescriptor(parsed, "rw")
                     ?.use { /* 打开但不写入，避免截断现有文件。 */ }
-                    ?: throw BackupFailed("没有文件写入权限，请重新授权")
+                    ?: throw BackupFailed()
             }
         }
 }

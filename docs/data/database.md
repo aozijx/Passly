@@ -20,24 +20,70 @@ flowchart TB
 
 ## 当前表
 
-| 表                   | 用途                                 |
-|---------------------|------------------------------------|
-| `vault_metadata`    | 列表所需的低敏元数据                         |
-| `vault_credentials` | 加密业务负载                             |
-| `vault_historys`    | 条目快照历史；表名存在历史拼写问题                  |
-| `vault_activities`  | 操作活动记录                             |
-| `vault_attachments` | 附件元数据和内容引用                         |
-| `lookup_index`      | Blind Index 检索数据                   |
-| `key_envelopes`     | 遗留表，当前信封真相源已迁至 Bootstrap Proto，待移除 |
+| 表 | 用途 |
+|---|---|
+| `vault_entries` | 条目身份、结构类型、自关联父账户、能力位、时间戳和加密 `summaryBlob` |
+| `entry_secrets` | 一条条目对应的普通加密 `secretBlob`，以及按需读取的高敏 `highSensitivityBlob` |
+| `entry_revisions` | 完整的加密历史快照 |
+| `entry_activities` | 查看、复制、使用等审计/统计事件，不用于恢复 |
+| `entry_attachments` | 可查询附件元数据及加密内容元数据；文件正文单独加密落盘 |
+| `search_tokens` | keyed blind-index token |
+| `entry_drafts` | 添加/编辑流程的暂存状态 |
 
 Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `app/schemas`，本文不复制完整字段声明。
 
-## 热冷分离与聚合
+## `entryType`、`vaultId` 与分类边界
 
-列表优先读取 metadata，详情再读取 credential 并解密；Repository 将两者聚合成领域模型。搜索使用基于会话密钥的
-Blind Index，不能对明文敏感字段使用 SQLite `LIKE`。
+- `entryType` 是条目的**结构类型**，决定可用字段、详情组件和能力，例如 `LOGIN`、
+  `BANK_CARD`、`SSH_KEY`。数据库根记录不应全部写成 `LOGIN`；只有确实采用登录结构的条目才是
+  `LOGIN`。
+- `vaultId` 当前默认值为 `default`，预留给多保险库/工作区隔离。它既不是用户分类，也不是
+  “同一账户的多种密码集合”。当前数据库仍是单保险库实现。
+- `ACCOUNT` 是没有敏感 payload 的账户容器 Entry；`LOGIN`、`OTP`、`PASSKEY` 等凭据仍是
+  独立 Entry，通过 `parentEntryId` 外键指向同一保险库内的 `ACCOUNT`。一个凭据最多属于一个
+  账户，一个账户可包含任意多个凭据；`parentEntryId = null` 表示独立凭据。
+- `parentEntryId` 使用 `ON DELETE SET NULL`。删除账户容器只会将子凭据转为独立条目，不会级联
+  删除密码、OTP 或 Passkey；`ACCOUNT` 本身禁止再成为其他账户的子项。
+- 当前 UI 的筛选项来自 `entryType.name`，并以“条目类型”展示；详情页不再把它当作可编辑分类。
+  **自定义分类尚未实现**。后续自定义分类应使用独立 `categoryId`/关联表；`tags` 继续用于多值标签，
+  不能复用 `entryType`。
+- `capabilityFlags` 表示一个原子条目实际具有的能力（密码、OTP、附件等），用于列表和详情快速
+  判断，不表示跨条目的账户组合，也不能替代 `entryType` 或 `parentEntryId`。
+
+## Blob 与 `color`
+
+`summaryBlob` 是字段级 AES-GCM 密文，解密后为 `SummaryPayload`。`color` 位于该 payload 中，
+是条目卡片/主题的可选展示元数据，不是加密参数、分类或类型判别字段。当前代码只透传该值，
+尚未形成完整的颜色编辑功能；若 UI 不再使用，应通过 payload schema 演进移除，不能直接把
+数据库 Blob 当 JSON 修改。
+
+## Secret Blob 分层与读取边界
+
+`entry_secrets` 分成两块字段级 AES-GCM blob：
+
+- `secretBlob`：普通详情需要的敏感字段。
+- `highSensitivityBlob`：需要更严格 reveal 语义的高敏字段。当前实际迁出的字段是银行卡卡号、CVV
+  和支付 PIN；Domain/Payload 已预留 identity、SSH、Passkey、OTP 的高敏承载结构，后续按 UI
+  reveal 链路逐类迁入。
+
+应用层普通读取必须通过 `EntryQueryRepository.getByIdWithoutHighSensitivity()`。这个命名是刻意的：
+调用者不能误以为拿到完整 secret。高敏读取单独走 `EntryHighSensitivityRepository
+.getHighSensitivitySecretForReveal()`，只应在完成 reveal 认证后由明确的高敏流程调用。
+
+列表优先读取 metadata，详情读取普通 credential；Repository 将两者聚合成不含高敏字段的领域模型。
+搜索使用基于会话密钥的 Blind Index，不能对明文敏感字段使用 SQLite `LIKE`。
 
 历史、备份和导出共享 Vault Snapshot 语义，但数据库 Entity、备份 DTO 与 Domain model 仍应由 Mapper 隔离。
+
+## 历史与附件体积策略
+
+- 历史采用完整快照而非 diff。唯一格式为 `rev1:` + Base64(GZIP(snapshot))，再执行
+  AES-GCM；不保留原始未版本化快照的转换兼容。解压设置 8 MiB 上限，组件长度也会校验，避免损坏数据
+  导致超大分配。
+- 附件正文不进入 Room Blob，而是保存为 `filesDir/attachments/<entryId>/<attachmentId>.enc`；
+  表内 Blob 只包含加密路径、哈希等元数据。
+- 附件不做通用压缩。图片、PDF、视频、ZIP 等通常已经压缩，再压缩收益小且增加内存和解压炸弹
+  风险。若未来为纯文本附件启用压缩，必须记录算法、原始长度、压缩长度和硬性解压上限。
 
 ## 生命周期约束
 
@@ -52,6 +98,8 @@ stateDiagram-v2
 - 错误密钥或 Schema 不匹配必须返回明确错误，禁止自动删库。
 - 锁定顺序为：拒绝新操作 → 关闭数据库 → 擦除 DEK 与会话密钥。
 - 导入的覆盖/合并操作必须在事务中完成，失败整体回滚。
+- 当前开发期 Room Schema、Secret Payload、Revision 和 Backup Document 均从版本 `1` 重新开始；
+  不提供旧字段转换或旧开发库迁移。安装已有开发版本时必须清除应用数据后再启动。
 - 数据库关闭超时不能制造“已关闭”的假象；详见[代码审查](../reviews/2026-07-code-review.md)。
 
 ## 初始化失败恢复

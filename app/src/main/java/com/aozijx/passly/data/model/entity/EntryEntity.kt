@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 import com.aozijx.passly.domain.entry.model.EntryType
 
 @Entity(
-    tableName = "vault_entries",
+    tableName = "entries",
     indices = [
         Index(value = ["deletedAt", "updatedAt"]),
         Index(value = ["entryType", "deletedAt", "updatedAt"]),
@@ -17,7 +17,6 @@ import com.aozijx.passly.domain.entry.model.EntryType
 data class EntryEntity(
     @PrimaryKey
     val entryId: String,
-    val vaultId: String = "default",
     val entryType: EntryType = EntryType.LOGIN,
     val version: Int = 1,
     val capabilityFlags: Int = 0,

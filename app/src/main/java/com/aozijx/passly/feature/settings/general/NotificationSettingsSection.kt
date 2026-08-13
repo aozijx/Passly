@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
+import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.domain.notice.model.NoticeTopic
 
@@ -16,6 +17,7 @@ import com.aozijx.passly.domain.notice.model.NoticeTopic
 internal fun NotificationSettingsSection(
     state: NotificationSettingsUiState,
     onSystemNotificationsEnabledChange: (Boolean) -> Unit,
+    onOpenSystemNotificationSettings: () -> Unit,
     onOptionalMessagesEnabledChange: (Boolean) -> Unit = {},
     onTopicEnabledChange: (NoticeTopic, Boolean) -> Unit = { _, _ -> }
 ) {
@@ -29,6 +31,13 @@ internal fun NotificationSettingsSection(
                 subtitle = stringResource(R.string.settings_system_notifications_summary),
                 checked = state.systemNotificationsEnabled,
                 onCheckedChange = onSystemNotificationsEnabledChange
+            ),
+            navigationSettingsGroupItem(
+                key = "notifications.system_settings",
+                iconPlaceholder = true,
+                title = stringResource(R.string.settings_system_notification_settings),
+                subtitle = stringResource(R.string.settings_system_notification_settings_summary),
+                onClick = onOpenSystemNotificationSettings
             )
         )
     )

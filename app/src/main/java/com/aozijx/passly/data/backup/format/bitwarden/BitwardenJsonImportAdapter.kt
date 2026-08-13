@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.backup.format.bitwarden
 
-import com.aozijx.passly.core.error.BackupFailed
+import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.data.backup.BackupBundleValidator
 import com.aozijx.passly.data.backup.BackupJson
 import com.aozijx.passly.data.backup.format.BackupImportAdapter
@@ -12,6 +12,7 @@ import com.aozijx.passly.data.backup.model.BackupCustomField
 import com.aozijx.passly.data.backup.model.BackupDocument
 import com.aozijx.passly.data.backup.model.BackupEntryRecord
 import com.aozijx.passly.data.backup.model.BackupIdentitySecret
+import com.aozijx.passly.data.backup.model.BackupLinkRecord
 import com.aozijx.passly.data.backup.model.BackupLoginSecret
 import com.aozijx.passly.data.backup.model.BackupOtpAlgorithm
 import com.aozijx.passly.data.backup.model.BackupOtpConfig
@@ -22,6 +23,7 @@ import com.aozijx.passly.data.backup.model.BackupSummaryRecord
 import com.aozijx.passly.data.backup.model.BackupWebsiteRecord
 import com.aozijx.passly.domain.backup.model.BackupFormatId
 import com.aozijx.passly.domain.backup.model.BackupFormats
+import com.aozijx.passly.domain.entry.model.link.EntryRelationType
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonObject
@@ -61,36 +63,32 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
         } catch (error: BackupFailed) {
             throw error
         } catch (error: Exception) {
-            throw BackupFailed("Bitwarden JSON 损坏或包含不支持的数据", cause = error)
+            throw BackupFailed()
         }
 
     private fun decodeValidated(payload: ByteArray): BackupBundle {
         val rawRoot =
             BackupJson.parseToJsonElement(payload.decodeStrictUtf8("Bitwarden JSON")).jsonObject
         if (rawRoot["encrypted"]?.jsonPrimitive?.booleanOrNull == true) {
-            throw BackupFailed("暂不支持 Bitwarden 加密或账户绑定导出，请导出明文 JSON")
+            throw BackupFailed()
         }
         val export = BackupJson.decodeFromString<BitwardenExport>(rawRoot.toString())
         val folderNames = export.folders.associate { it.id to it.name }
         val now = System.currentTimeMillis()
-        val entries = export.items.mapIndexed { index, item ->
+        val importedRecords = export.items.mapIndexed { index, item ->
             if (item.type !in 1..4) {
-                throw BackupFailed(
-                    "Bitwarden 条目类型 ${item.type} 暂不支持，已中止以避免数据丢失"
-                )
+                throw BackupFailed()
             }
             if (!item.login?.fido2Credentials.isNullOrEmpty()) {
-                throw BackupFailed(
-                    "Bitwarden 条目包含 Passkey/FIDO2 数据，已中止以避免数据丢失"
-                )
+                throw BackupFailed()
             }
             if (item.attachments.isNotEmpty()) {
-                throw BackupFailed("Bitwarden 导出包含附件，当前 JSON Adapter 不支持附件 ZIP")
+                throw BackupFailed()
             }
             if (item.passwordHistory.isNotEmpty()) {
-                throw BackupFailed("Bitwarden 条目包含密码历史，已中止以避免数据丢失")
+                throw BackupFailed()
             }
-            item.toBackupRecord(index, folderNames, now)
+            item.toBackupRecords(index, folderNames, now)
         }
         val bundle = BackupBundle(
             document = BackupDocument(
@@ -98,18 +96,19 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
                 version = BackupDocument.CURRENT_VERSION,
                 exportedAt = now,
                 appVersion = "Bitwarden plaintext JSON",
-                entries = entries
+                entries = importedRecords.flatMap(BitwardenRecords::entries),
+                links = importedRecords.flatMap(BitwardenRecords::links)
             )
         )
         BackupBundleValidator.validate(bundle, requireResourceData = false)
         return bundle
     }
 
-    private fun BitwardenItem.toBackupRecord(
+    private fun BitwardenItem.toBackupRecords(
         index: Int,
         folderNames: Map<String, String>,
         fallbackTime: Long
-    ): BackupEntryRecord {
+    ): BitwardenRecords {
         val updatedAt = parseTime(revisionDate) ?: fallbackTime
         val createdAt = (parseTime(creationDate) ?: updatedAt).coerceAtMost(updatedAt)
         val tags = folderId?.let(folderNames::get)?.let(::listOf).orEmpty()
@@ -177,7 +176,7 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
             )
         }
 
-        return BackupEntryRecord(
+        val record = BackupEntryRecord(
             id = safeId(id, index),
             type = entryType,
             version = 1,
@@ -200,6 +199,47 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
                 identity = identitySecret,
                 otp = login?.totp?.takeIf(String::isNotBlank)?.let(::parseOtp),
                 customFields = customFields
+            )
+        )
+        val otp = record.secret.otp ?: return BitwardenRecords(entries = listOf(record))
+        val accountId = relatedId(record.id, "account")
+        val otpId = relatedId(record.id, "otp")
+        val account = record.copy(
+            id = accountId,
+            type = "ACCOUNT",
+            secret = BackupSecretRecord()
+        )
+        val login = record.copy(
+            secret = record.secret.copy(otp = null)
+        )
+        val otpEntry = record.copy(
+            id = otpId,
+            type = "OTP",
+            summary = record.summary.copy(
+                title = "${record.summary.title} OTP",
+                tags = emptyList()
+            ),
+            secret = BackupSecretRecord(otp = otp)
+        )
+        return BitwardenRecords(
+            entries = listOf(account, login, otpEntry),
+            links = listOf(
+                BackupLinkRecord(
+                    id = relatedId(record.id, "member-link"),
+                    sourceEntryId = login.id,
+                    targetEntryId = account.id,
+                    relationType = EntryRelationType.MEMBER_OF_ACCOUNT.name,
+                    createdAt = createdAt,
+                    updatedAt = updatedAt
+                ),
+                BackupLinkRecord(
+                    id = relatedId(record.id, "otp-link"),
+                    sourceEntryId = otpEntry.id,
+                    targetEntryId = login.id,
+                    relationType = EntryRelationType.OTP_FOR.name,
+                    createdAt = createdAt,
+                    updatedAt = updatedAt
+                )
             )
         )
     }
@@ -231,17 +271,17 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
         val type = when (uri.host?.lowercase()) {
             "hotp" -> BackupOtpType.HOTP
             "totp" -> BackupOtpType.TOTP
-            else -> throw BackupFailed("Bitwarden OTP 类型不受支持: ${uri.host}")
+            else -> throw BackupFailed()
         }
         val secret = query["secret"]?.takeIf(String::isNotBlank)
-            ?: throw BackupFailed("Bitwarden OTP 缺少 secret")
+            ?: throw BackupFailed()
         return BackupOtpSecret(
             BackupOtpConfig(
                 type = type,
                 secret = secret,
                 algorithm = runCatching {
                     BackupOtpAlgorithm.valueOf(query["algorithm"]?.uppercase() ?: "SHA1")
-                }.getOrElse { throw BackupFailed("Bitwarden OTP 算法不受支持") },
+                }.getOrElse { throw BackupFailed() },
                 digits = query["digits"]?.toIntOrNull() ?: 6,
                 periodSeconds = if (type == BackupOtpType.HOTP) null
                 else query["period"]?.toIntOrNull() ?: 30,
@@ -264,15 +304,23 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
 
     private fun safeId(value: String?, index: Int): String {
         val candidate = value?.trim()
-        if (candidate != null && candidate.matches(Regex("[A-Za-z0-9_-]{1,160}"))) {
-            return candidate
-        }
+        if (candidate != null && candidate.matches(Regex("[A-Za-z0-9_-]{1,160}"))) return candidate
         return UUID.nameUUIDFromBytes(
             "bitwarden:${candidate.orEmpty()}:$index".toByteArray(Charsets.UTF_8)
         ).toString()
     }
 
+    private fun relatedId(entryId: String, role: String): String =
+        UUID.nameUUIDFromBytes(
+            "bitwarden:$entryId:$role".toByteArray(Charsets.UTF_8)
+        ).toString()
+
 }
+
+private data class BitwardenRecords(
+    val entries: List<BackupEntryRecord>,
+    val links: List<BackupLinkRecord> = emptyList()
+)
 
 @Serializable
 private data class BitwardenExport(

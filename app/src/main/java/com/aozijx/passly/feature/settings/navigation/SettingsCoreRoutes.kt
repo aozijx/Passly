@@ -1,177 +1,188 @@
 package com.aozijx.passly.feature.settings.navigation
 
-import android.content.Context
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.composable
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.appearance.AppearanceDetail
-import com.aozijx.passly.feature.settings.appearance.AppearanceUiAction
-import com.aozijx.passly.feature.settings.appearance.AppearanceViewModel
+import com.aozijx.passly.feature.settings.appearance.AppearanceSettingsAction
+import com.aozijx.passly.feature.settings.appearance.AppearanceSettingsViewModel
 import com.aozijx.passly.feature.settings.appearance.InterfaceDetail
-import com.aozijx.passly.feature.settings.appearance.InterfaceUiAction
-import com.aozijx.passly.feature.settings.appearance.InterfaceViewModel
-import com.aozijx.passly.feature.settings.apppassword.handleAppPasswordEntryClick
-import com.aozijx.passly.feature.settings.security.PrivacyUiAction
-import com.aozijx.passly.feature.settings.security.PrivacyViewModel
-import com.aozijx.passly.feature.settings.security.SecurityUiAction
-import com.aozijx.passly.feature.settings.security.SecurityViewModel
-import com.aozijx.passly.feature.settings.security.handleBiometricToggle
-import com.aozijx.passly.feature.settings.security.handleInvalidateKeyToggle
+import com.aozijx.passly.feature.settings.appearance.InterfaceSettingsAction
+import com.aozijx.passly.feature.settings.appearance.InterfaceSettingsViewModel
+import com.aozijx.passly.feature.settings.contract.SettingsIntent
+import com.aozijx.passly.feature.settings.internal.SettingsGroup
+import com.aozijx.passly.feature.settings.security.PrivacySettingsAction
+import com.aozijx.passly.feature.settings.security.PrivacySettingsViewModel
+import com.aozijx.passly.feature.settings.security.SecuritySettingsAction
+import com.aozijx.passly.feature.settings.security.SecuritySettingsViewModel
 import com.aozijx.passly.feature.settings.security.ui.PrivacyDetail
 import com.aozijx.passly.feature.settings.security.ui.SecurityDetail
-import com.aozijx.passly.feature.settings.shell.SettingsMainPage
 import com.aozijx.passly.feature.settings.shell.SettingsScreenLocalState
 import com.aozijx.passly.feature.settings.shell.SettingsSecondaryPage
 
-internal fun NavGraphBuilder.registerCoreSettingsRoutes(
-    navController: NavHostController,
-    context: Context,
+@Composable
+internal fun CoreSettingsRouteContent(
+    route: SettingsRoute,
     localState: SettingsScreenLocalState,
     settingsViewModel: SettingsViewModel,
-    onUpdateInteraction: () -> Unit,
-    onOuterBack: () -> Unit,
-    authDecryptTitle: String,
-    setAppPasswordSubtitle: String
+    onBack: (() -> Unit)?
 ) {
-    composable(
-        route = SettingsRoute.Main.route,
-        enterTransition = { null },
-        exitTransition = { null },
-        popEnterTransition = { null },
-        popExitTransition = { null }
-    ) {
-        SettingsMainPage(
-            onBack = onOuterBack,
-            onUpdateInteraction = onUpdateInteraction,
-            onGroupClick = { navController.navigate(it.route) }
-        )
-    }
+    when (route) {
+        SettingsRoute.Security -> {
+            val viewModel: SecuritySettingsViewModel = hiltViewModel()
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
+            val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
-    composable(SettingsRoute.Security.route) {
-        val viewModel: SecurityViewModel = hiltViewModel()
-        val state by viewModel.config.collectAsStateWithLifecycle()
-        val appPasswordEnabled by viewModel.isAppPasswordEnabled.collectAsStateWithLifecycle()
-        val biometricEnabled by viewModel.isBiometricEnabled.collectAsStateWithLifecycle()
-
-        SettingsSecondaryPage(
-            title = "安全设置",
-            onBack = { navController.popBackStack() }
-        ) {
-            item {
-                SecurityDetail(
-                    state = state,
-                    isAppPasswordEnabled = appPasswordEnabled,
-                    isBiometricEnabled = biometricEnabled,
-                    onLockTimeoutChange = {
-                        viewModel.onAction(SecurityUiAction.SetLockTimeout(it))
-                    },
-                    onAppPasswordClick = {
-                        handleAppPasswordEntryClick(
-                            context = context,
-                            isAppPasswordEnabled = appPasswordEnabled,
-                            settingsViewModel = settingsViewModel,
-                            title = authDecryptTitle,
-                            subtitle = setAppPasswordSubtitle,
-                            onAlreadyEnabled = localState::openAppPasswordActionDialog,
-                            onVerified = localState::openSetAppPasswordDialog
-                        )
-                    },
-                    onBiometricEnabledChange = { enabled ->
-                        handleBiometricToggle(enabled, viewModel::setBiometricEnabled)
-                    },
-                    onInvalidateKeyOnBioChangeToggle = { enabled ->
-                        handleInvalidateKeyToggle(
-                            enabled = enabled,
-                            switchPolicy = viewModel::switchKeyInvalidationPolicy
-                        )
-                    },
-                    onLockOnBackgroundChange = {
-                        viewModel.onAction(SecurityUiAction.ToggleLockOnBackground(it))
-                    }
-                )
+            SettingsSecondaryPage(
+                title = stringResource(SettingsGroup.SECURITY.titleRes),
+                onBack = onBack
+            ) {
+                item {
+                    SecurityDetail(
+                        state = state,
+                        isAppPasswordEnabled = settingsState.isAppPasswordEnabled,
+                        isBiometricEnabled = state.isBiometricEnabled,
+                        onLockTimeoutChange = {
+                            viewModel.onAction(SecuritySettingsAction.SetLockTimeout(it))
+                        },
+                        onAppPasswordClick = {
+                            settingsViewModel.handleIntent(SettingsIntent.RequestAppPasswordEntry)
+                        },
+                        onBiometricEnabledChange = { enabled ->
+                            viewModel.onAction(
+                                SecuritySettingsAction.SetBiometricEnabled(enabled)
+                            )
+                        },
+                        onInvalidateKeyOnBioChangeToggle = { enabled ->
+                            viewModel.onAction(
+                                SecuritySettingsAction.SetInvalidateKeyOnBiometricChange(enabled)
+                            )
+                        },
+                        onLockOnBackgroundChange = {
+                            viewModel.onAction(SecuritySettingsAction.ToggleLockOnBackground(it))
+                        }
+                    )
+                }
             }
         }
-    }
 
-    composable(SettingsRoute.Privacy.route) {
-        val viewModel: PrivacyViewModel = hiltViewModel()
-        val state by viewModel.config.collectAsStateWithLifecycle()
-        SettingsSecondaryPage(title = "隐私设置", onBack = { navController.popBackStack() }) {
-            item {
-                PrivacyDetail(
-                    state = state,
-                    onSecureContentEnabledChange = {
-                        viewModel.onAction(PrivacyUiAction.SetSecureContentEnabled(it))
-                    },
-                    onFlipToLockEnabledChange = {
-                        viewModel.onAction(PrivacyUiAction.SetFlipToLockEnabled(it))
-                    },
-                    onFlipExitAndClearStackEnabledChange = {
-                        viewModel.onAction(PrivacyUiAction.SetFlipExitAndClearStackEnabled(it))
-                    }
-                )
+        SettingsRoute.Privacy -> {
+            val viewModel: PrivacySettingsViewModel = hiltViewModel()
+            val state by viewModel.config.collectAsStateWithLifecycle()
+            SettingsSecondaryPage(
+                title = stringResource(SettingsGroup.PRIVACY.titleRes),
+                onBack = onBack
+            ) {
+                item {
+                    PrivacyDetail(
+                        state = state,
+                        onSecureContentEnabledChange = {
+                            viewModel.onAction(PrivacySettingsAction.SetSecureContentEnabled(it))
+                        },
+                        onFlipToLockEnabledChange = {
+                            viewModel.onAction(PrivacySettingsAction.SetFlipToLockEnabled(it))
+                        },
+                        onFlipExitAndClearStackEnabledChange = {
+                            viewModel.onAction(
+                                PrivacySettingsAction.SetFlipExitAndClearStackEnabled(it)
+                            )
+                        },
+                        onSensitiveCopyReauthenticationChange = {
+                            viewModel.onAction(
+                                PrivacySettingsAction.SetSensitiveCopyReauthentication(it)
+                            )
+                        }
+                    )
+                }
             }
         }
-    }
 
-    composable(SettingsRoute.Appearance.route) {
-        val viewModel: AppearanceViewModel = hiltViewModel()
-        val state by viewModel.config.collectAsStateWithLifecycle()
-        SettingsSecondaryPage(title = "外观设置", onBack = { navController.popBackStack() }) {
-            item {
-                AppearanceDetail(
-                    state = state,
-                    onThemeModeChange = {
-                        viewModel.onAction(AppearanceUiAction.SetThemeMode(it))
-                    },
-                    onDynamicColorChange = {
-                        viewModel.onAction(AppearanceUiAction.SetDynamicColor(it))
-                    },
-                    onCustomSeedArgbChange = {
-                        viewModel.onAction(AppearanceUiAction.SetCustomSeedArgb(it))
-                    },
-                    onLanguageChange = {
-                        viewModel.onAction(AppearanceUiAction.SetLanguage(it))
-                    },
-                    onFontFamilyChange = {
-                        viewModel.onAction(AppearanceUiAction.SetFontFamily(it))
-                    }
-                )
+        SettingsRoute.Appearance -> {
+            val viewModel: AppearanceSettingsViewModel = hiltViewModel()
+            val state by viewModel.config.collectAsStateWithLifecycle()
+            SettingsSecondaryPage(
+                title = stringResource(SettingsGroup.APPEARANCE.titleRes),
+                onBack = onBack
+            ) {
+                item {
+                    AppearanceDetail(
+                        state = state,
+                        onThemeModeChange = {
+                            viewModel.onAction(AppearanceSettingsAction.SetThemeMode(it))
+                        },
+                        onDynamicColorChange = {
+                            viewModel.onAction(AppearanceSettingsAction.SetDynamicColor(it))
+                        },
+                        onManualThemeColorSelect = {
+                            viewModel.onAction(AppearanceSettingsAction.SelectManualThemeColor(it))
+                        },
+                        onLanguageChange = {
+                            viewModel.onAction(AppearanceSettingsAction.SetLanguage(it))
+                        },
+                        onFontFamilyChange = {
+                            viewModel.onAction(AppearanceSettingsAction.SetFontFamily(it))
+                        }
+                    )
+                }
             }
         }
-    }
 
-    composable(SettingsRoute.Interface.route) {
-        val viewModel: InterfaceViewModel = hiltViewModel()
-        val state by viewModel.config.collectAsStateWithLifecycle()
+        SettingsRoute.Interface -> {
+            val viewModel: InterfaceSettingsViewModel = hiltViewModel()
+            val state by viewModel.config.collectAsStateWithLifecycle()
 
-        SettingsSecondaryPage(title = "界面设置", onBack = { navController.popBackStack() }) {
-            item {
-                InterfaceDetail(
-                    state = state,
-                    onStatusBarAutoHideChange = {
-                        viewModel.onAction(InterfaceUiAction.SetHideSystemBars(it))
-                    },
-                    onTopBarCollapsibleChange = {
-                        viewModel.onAction(InterfaceUiAction.SetTopBarCollapsible(it))
-                    },
-                    onTabBarCollapsibleChange = {
-                        viewModel.onAction(InterfaceUiAction.SetTabBarCollapsible(it))
-                    },
-                    onVisibleVaultTabsChange = {
-                        viewModel.onAction(InterfaceUiAction.SetVisibleVaultTabs(it))
-                    },
-                    onTabBarMaxTabsWithoutScrollChange = {
-                        viewModel.onAction(
-                            InterfaceUiAction.SetMaxTabsWithoutScroll(it)
-                        )
-                    }
-                )
+            SettingsSecondaryPage(
+                title = stringResource(SettingsGroup.INTERFACE.titleRes),
+                onBack = onBack
+            ) {
+                item {
+                    InterfaceDetail(
+                        state = state,
+                        onStatusBarAutoHideChange = {
+                            viewModel.onAction(InterfaceSettingsAction.SetHideSystemBars(it))
+                        },
+                        onTopBarCollapsibleChange = {
+                            viewModel.onAction(InterfaceSettingsAction.SetTopBarCollapsible(it))
+                        },
+                        onQuickFilterBarCollapsibleChange = {
+                            viewModel.onAction(
+                                InterfaceSettingsAction.SetQuickFilterBarCollapsible(
+                                    it
+                                )
+                            )
+                        },
+                        onOuterCornerRadiusChange = {
+                            viewModel.onAction(InterfaceSettingsAction.SetOuterCornerRadius(it))
+                        },
+                        onInnerCornerRadiusChange = {
+                            viewModel.onAction(InterfaceSettingsAction.SetInnerCornerRadius(it))
+                        },
+                        onGroupItemSpacingChange = {
+                            viewModel.onAction(InterfaceSettingsAction.SetGroupItemSpacing(it))
+                        },
+                        onGroupContentPaddingChange = {
+                            viewModel.onAction(InterfaceSettingsAction.SetGroupContentPadding(it))
+                        },
+                        onVisibleLibraryQuickFilterToggle = {
+                            viewModel.onAction(
+                                InterfaceSettingsAction.ToggleVisibleLibraryQuickFilter(
+                                    it
+                                )
+                            )
+                        },
+                        onEntryHierarchyDisplayModeChange = {
+                            viewModel.onAction(
+                                InterfaceSettingsAction.SetEntryHierarchyDisplayMode(it)
+                            )
+                        }
+                    )
+                }
             }
         }
+
+        else -> error("Unsupported core settings route: ${route.route}")
     }
 }

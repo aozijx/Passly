@@ -6,7 +6,9 @@ import com.aozijx.passly.core.autofill.matcher.HeuristicMatchStrategy
 import com.aozijx.passly.core.autofill.matcher.StrictMatchStrategy
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.core.autofill.pipeline.ResponseFactory
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
+import com.aozijx.passly.domain.auth.model.MonotonicClock
+import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -48,32 +50,41 @@ abstract class ServiceModule {
 
         @Provides
         @Singleton
+        fun provideMonotonicClock(): MonotonicClock =
+            MonotonicClock { System.nanoTime() / 1_000_000L }
+
+        @Provides
+        @Singleton
         @Heuristic
         fun provideHeuristicDispatcher(
-            sessionState: VaultAccessState,
+            sessionState: SecureSessionAccessState,
             candidateResolver: CandidateResolver,
             @Heuristic fieldMatchStrategy: FieldMatchStrategy,
             responseFactory: ResponseFactory,
+            settingsRepository: AppSettingsRepository,
         ): FillRequestDispatcher = FillRequestDispatcher(
             sessionState,
             candidateResolver,
             fieldMatchStrategy,
             responseFactory,
+            settingsRepository,
         )
 
         @Provides
         @Singleton
         @Strict
         fun provideStrictDispatcher(
-            sessionState: VaultAccessState,
+            sessionState: SecureSessionAccessState,
             candidateResolver: CandidateResolver,
             @Strict fieldMatchStrategy: FieldMatchStrategy,
             responseFactory: ResponseFactory,
+            settingsRepository: AppSettingsRepository,
         ): FillRequestDispatcher = FillRequestDispatcher(
             sessionState,
             candidateResolver,
             fieldMatchStrategy,
             responseFactory,
+            settingsRepository,
         )
     }
 }

@@ -3,6 +3,7 @@ package com.aozijx.passly.security.authentication
 import com.aozijx.passly.core.security.KeyDerivation
 import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.auth.model.envelope.KdfAlgorithm
+import com.aozijx.passly.domain.authentication.AppPasswordPolicy
 import com.aozijx.passly.domain.authentication.AuthenticationFailure
 import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
 import com.aozijx.passly.domain.authentication.AuthenticationManager
@@ -11,6 +12,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.authentication.LockReason
 import com.aozijx.passly.security.crypto.DekManager
 import com.aozijx.passly.security.envelope.BootstrapStore
 import com.github.f4b6a3.uuid.UuidCreator
@@ -30,14 +32,19 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     private val bootstrapStore: BootstrapStore,
     private val hostRegistry: com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry,
     private val biometricRotationCoordinator: BiometricRotationCoordinator,
-    private val cryptoFactory: BiometricCryptoFactory
+    private val cryptoFactory: BiometricCryptoFactory,
+    private val availabilityResolver: AuthenticationAvailabilityResolver
 ) : AuthenticationMethodProvisioner {
     override suspend fun setAppPassword(password: CharArray): AuthenticationResult {
         val correlationId = UuidCreator.getTimeOrderedEpoch().toString()
-        if (password.isEmpty()) {
+        val wasRecoveryMode = session.isRecoveryMode()
+        if (!AppPasswordPolicy.acceptsLength(password.size)) {
             password.fill('\u0000')
             return AuthenticationResult.Failure(
-                AuthenticationFailure(AuthenticationFailureCode.CREDENTIAL_INCORRECT, correlationId)
+                AuthenticationFailure(
+                    AuthenticationFailureCode.PASSWORD_POLICY_VIOLATION,
+                    correlationId
+                )
             )
         }
         val secret = SecretChars.take(password)
@@ -64,8 +71,15 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
                         KdfAlgorithm.ARGON2ID
                     )
                 }
-                authenticationManager.refreshAvailability()
-                session.markAuthenticated()
+                if (wasRecoveryMode) {
+                    finishRecoveryPasswordProvisioning(
+                        seal = { session.lock(LockReason.RECOVERY_EXIT) },
+                        refreshAvailability = authenticationManager::refreshAvailability
+                    )
+                } else {
+                    authenticationManager.refreshAvailability()
+                    session.markAuthenticated()
+                }
                 AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
             } finally {
                 rawKey.fill(0)
@@ -82,7 +96,30 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
         }
     }
 
-    override suspend fun changeAppPassword(newPassword: CharArray): AuthenticationResult {
+    override suspend fun changeAppPassword(
+        currentPassword: CharArray,
+        newPassword: CharArray
+    ): AuthenticationResult {
+        val authentication = try {
+            try {
+                authenticationManager.authenticate(
+                    AuthenticationRequest(
+                        purpose = AuthenticationPurpose.MANAGE_APP_PASSWORD,
+                        allowedMethods = setOf(AuthenticationMethod.APP_PASSWORD)
+                    ),
+                    currentPassword
+                )
+            } catch (error: Throwable) {
+                newPassword.fill('\u0000')
+                throw error
+            }
+        } finally {
+            currentPassword.fill('\u0000')
+        }
+        if (authentication !is AuthenticationResult.Success) {
+            newPassword.fill('\u0000')
+            return authentication
+        }
         return setAppPassword(newPassword)
     }
 
@@ -95,10 +132,8 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
             )
         )
         if (authentication !is AuthenticationResult.Success) return authentication
-        val alternatives = bootstrapStore.loadAll().any {
-            it.type == EnvelopeType.BIOMETRIC || it.type == EnvelopeType.RECOVERY
-        }
-        if (!alternatives) {
+        // Rely on the resolver for a consistent primary-factor availability check.
+        if (!availabilityResolver.hasAlternativePrimaryFactor(EnvelopeType.APP_PASSWORD)) {
             return AuthenticationResult.Failure(
                 AuthenticationFailure(AuthenticationFailureCode.LAST_METHOD_REQUIRED, correlationId)
             )
@@ -114,10 +149,8 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
             AuthenticationRequest(AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY)
         )
         if (authentication !is AuthenticationResult.Success) return authentication
-        val alternatives = bootstrapStore.loadAll().any {
-            it.type == EnvelopeType.APP_PASSWORD || it.type == EnvelopeType.RECOVERY
-        }
-        if (!alternatives) {
+        // Rely on the resolver for a consistent primary-factor availability check.
+        if (!availabilityResolver.hasAlternativePrimaryFactor(EnvelopeType.BIOMETRIC)) {
             return AuthenticationResult.Failure(
                 AuthenticationFailure(AuthenticationFailureCode.LAST_METHOD_REQUIRED, correlationId)
             )
@@ -138,10 +171,12 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
         invalidateOnEnrollment: Boolean
     ): AuthenticationResult {
         val correlationId = UuidCreator.getTimeOrderedEpoch().toString()
-        val authentication = authenticationManager.authenticate(
-            AuthenticationRequest(AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY)
-        )
-        if (authentication !is AuthenticationResult.Success) return authentication
+        if (!session.isRecoveryMode()) {
+            val authentication = authenticationManager.authenticate(
+                AuthenticationRequest(AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY)
+            )
+            if (authentication !is AuthenticationResult.Success) return authentication
+        }
         val host = hostRegistry.awaitLease()?.hostOrNull()
             ?: return AuthenticationResult.Failure(
                 AuthenticationFailure(AuthenticationFailureCode.HOST_UNAVAILABLE, correlationId)
@@ -158,7 +193,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     override suspend fun hasRecoveryCode(): Boolean =
         bootstrapStore.load(EnvelopeType.RECOVERY) != null
 
-    override suspend fun verifyRecoveryCode(code: CharArray): Boolean {
+    override suspend fun checkRecoveryCode(code: CharArray): Boolean {
         val envelope = bootstrapStore.load(EnvelopeType.RECOVERY) ?: run {
             code.fill('\u0000')
             return false

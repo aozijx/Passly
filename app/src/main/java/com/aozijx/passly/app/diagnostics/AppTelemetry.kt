@@ -5,7 +5,7 @@ import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.EventLevel
 import com.aozijx.passly.core.telemetry.OperationCode
 import com.aozijx.passly.core.telemetry.SafeLogValue
-import com.aozijx.passly.core.telemetry.TelemetryEmitter
+import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.TelemetryEvent
 
 /**
@@ -17,10 +17,10 @@ import com.aozijx.passly.core.telemetry.TelemetryEvent
  */
 object AppTelemetry {
     @Volatile
-    private var emitter: TelemetryEmitter = TelemetryEmitter { }
+    private var reporter: TelemetryReporter = TelemetryReporter { }
 
-    fun install(value: TelemetryEmitter) {
-        emitter = value
+    fun install(value: TelemetryReporter) {
+        reporter = value
     }
 
     fun v(tag: String, message: String) =
@@ -122,7 +122,7 @@ object AppTelemetry {
             ?.map { "${it.className}.${it.methodName}" }
             ?.toList()
             .orEmpty()
-        emitter.emit(
+        reporter.emit(
             TelemetryEvent(
                 level = level,
                 category = category,

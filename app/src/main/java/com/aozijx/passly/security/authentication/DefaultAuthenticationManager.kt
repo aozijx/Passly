@@ -1,18 +1,16 @@
 package com.aozijx.passly.security.authentication
 
-import android.content.Context
-import androidx.biometric.BiometricManager
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.ErrorCode
+import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.SafeLogValue
-import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.authentication.AuthMethodAvailability
 import com.aozijx.passly.domain.authentication.AuthenticationCallback
 import com.aozijx.passly.domain.authentication.AuthenticationFailure
 import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationMethod
+import com.aozijx.passly.domain.authentication.AuthenticationMethodPolicy
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationRequestHandle
@@ -20,14 +18,15 @@ import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.authentication.AuthenticationSnapshot
 import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
+import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
-import com.aozijx.passly.security.envelope.BootstrapStore
-import dagger.hilt.android.qualifiers.ApplicationContext
+import com.aozijx.passly.security.crypto.SensitiveDataKeyManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
@@ -37,15 +36,15 @@ import javax.inject.Singleton
 
 @Singleton
 class DefaultAuthenticationManager @Inject constructor(
-    @ApplicationContext context: Context,
     private val scope: CoroutineScope,
     private val hostRegistry: AuthenticationHostRegistry,
-    private val bootstrapStore: BootstrapStore,
     private val biometricExecutor: BiometricMethodExecutor,
     private val credentialExecutor: CredentialMethodExecutor,
-    private val session: VaultSessionController
+    private val session: VaultSessionController,
+    private val settingsRepository: AppSettingsRepository,
+    private val availabilityResolver: AuthenticationAvailabilityResolver,
+    private val sensitiveDataKeyManager: SensitiveDataKeyManager
 ) : AuthenticationManager {
-    private val biometricManager = BiometricManager.from(context)
     private val requestMutex = Mutex()
     private val activeCorrelationId = AtomicReference<String?>(null)
     private val _methods = MutableStateFlow(AuthMethodAvailability())
@@ -74,27 +73,19 @@ class DefaultAuthenticationManager @Inject constructor(
     /**
      * 指定目的是否需要新鲜认证。
      *
-     * 安全不变量：只有 UNLOCK_VAULT 可以在会话已解锁时复用。
-     * 所有其他目的（REVEAL_SECRET、BACKUP_EXPORT、EXPORT_DIAGNOSTICS 等）
-     * 必须始终触发重新认证。
+     * 高敏感字段的显示、备份和安全管理操作始终要求新鲜认证。
+     * 复制请求是否重新认证只由全局复制验证开关控制。
      */
-    private fun requiresFreshAuthentication(purpose: AuthenticationPurpose): Boolean =
-        purpose != AuthenticationPurpose.UNLOCK_VAULT
-
-    /**
-     * 指定目的允许的认证方式。
-     *
-     * - RECOVERY_CODE 仅限 UNLOCK_VAULT
-     * - RECOVER_DATABASE / CLEAR_DATABASE 允许恢复码，确保数据库不可用时仍有恢复路径
-     * - 其他非解锁目的仅限 BIOMETRIC 和 APP_PASSWORD
-     */
-    private fun allowedMethods(purpose: AuthenticationPurpose): Set<AuthenticationMethod> =
-        when (purpose) {
-            AuthenticationPurpose.UNLOCK_VAULT,
-            AuthenticationPurpose.RECOVER_DATABASE,
-            AuthenticationPurpose.CLEAR_DATABASE -> AuthenticationMethod.entries.toSet()
-            else -> setOf(AuthenticationMethod.BIOMETRIC, AuthenticationMethod.APP_PASSWORD)
-        }
+    private suspend fun requiresFreshAuthentication(purpose: AuthenticationPurpose): Boolean =
+        AuthenticationMethodPolicy.requiresFreshAuthentication(
+            purpose = purpose,
+            reauthenticateSensitiveCopies = if (purpose == AuthenticationPurpose.COPY_SECRET) {
+                settingsRepository.settings.first()
+                    .security.reauthenticateSensitiveCopies
+            } else {
+                true
+            }
+        )
 
     // ============================== 认证 ==============================
 
@@ -111,11 +102,36 @@ class DefaultAuthenticationManager @Inject constructor(
             )
         }
         activeCorrelationId.set(request.correlationId)
+        val previousState = session.authenticationState.value
         val wasUnlocked = session.isUnlocked()
-        val isFullUnlock = request.purpose == AuthenticationPurpose.UNLOCK_VAULT
+        val wasRecoveryMode = session.isRecoveryMode()
+        val opensSession = request.purpose == AuthenticationPurpose.UNLOCK_VAULT ||
+            request.purpose == AuthenticationPurpose.RECOVER_AUTH_METHODS
         try {
+            if (wasRecoveryMode && request.purpose !in AuthenticationMethodPolicy.RECOVERY_MODE_PURPOSES) {
+                return finish(
+                    request,
+                    AuthenticationResult.Failure(
+                        AuthenticationFailure(
+                            AuthenticationFailureCode.SESSION_MODE_RESTRICTED,
+                            request.correlationId
+                        )
+                    )
+                )
+            }
+            // A recovery-code verification has already established this restricted session.
+            // Allow only its narrowly scoped actions to reuse it.
+            if (wasRecoveryMode && request.purpose in AuthenticationMethodPolicy.RECOVERY_MODE_REUSABLE_PURPOSES) {
+                session.onUserInteraction()
+                return AuthenticationResult.Success(
+                    method = AuthenticationMethod.RECOVERY_CODE,
+                    reusedSession = true
+                )
+            }
             // 策略决策：是否可复用会话
-            if (wasUnlocked && !requiresFreshAuthentication(request.purpose)) {
+            if (wasUnlocked && !wasRecoveryMode &&
+                !requiresFreshAuthentication(request.purpose)
+            ) {
                 session.onUserInteraction()
                 // 返回上一次认证方式，而非硬编码 BIOMETRIC
                 return AuthenticationResult.Success(
@@ -124,7 +140,7 @@ class DefaultAuthenticationManager @Inject constructor(
                 )
             }
             refreshAvailability()
-            if (isFullUnlock) {
+            if (opensSession) {
                 session.transition(AuthenticationState.AwaitingHost(request.correlationId))
             }
             val lease = hostRegistry.awaitLease() ?: return finish(
@@ -135,15 +151,15 @@ class DefaultAuthenticationManager @Inject constructor(
                         request.correlationId
                     )
                 )
-            ).also { if (isFullUnlock) restoreState(wasUnlocked) }
+            ).also { if (opensSession) restoreState(previousState) }
             // 策略决策：根据目的确定可用的认证方式。
             // 调用者的 allowedMethods 只能缩小范围，不能扩权。
-            val authorizedByPurpose = allowedMethods(request.purpose)
+            val authorizedByPurpose = AuthenticationMethodPolicy.allowedAuthenticationMethods(request.purpose)
             val available = request.allowedMethods
                 .intersect(authorizedByPurpose)
                 .filter(_methods.value::available)
             if (available.isEmpty()) {
-                if (isFullUnlock) restoreState(wasUnlocked)
+                if (opensSession) restoreState(previousState)
                 return finish(
                     request,
                     AuthenticationResult.Failure(
@@ -155,7 +171,7 @@ class DefaultAuthenticationManager @Inject constructor(
                 )
             }
             val host = lease.hostOrNull() ?: run {
-                if (isFullUnlock) restoreState(wasUnlocked)
+                if (opensSession) restoreState(previousState)
                 return finish(
                     request,
                     AuthenticationResult.Failure(
@@ -171,12 +187,12 @@ class DefaultAuthenticationManager @Inject constructor(
                 AuthenticationMethod.BIOMETRIC in available -> AuthenticationMethod.BIOMETRIC
                 else -> host.chooseMethod(request.purpose, available)
                     ?: run {
-                        if (isFullUnlock) restoreState(wasUnlocked)
+                        if (opensSession) restoreState(previousState)
                         return finish(request, AuthenticationResult.Cancelled(byUser = true))
                     }
             }
             if (!hostRegistry.isCurrent(lease)) {
-                if (isFullUnlock) restoreState(wasUnlocked)
+                if (opensSession) restoreState(previousState)
                 return finish(
                     request,
                     AuthenticationResult.Failure(
@@ -187,7 +203,7 @@ class DefaultAuthenticationManager @Inject constructor(
                     )
                 )
             }
-            if (isFullUnlock) {
+            if (opensSession) {
                 session.transition(
                     AuthenticationState.Authenticating(
                         request.correlationId,
@@ -207,25 +223,32 @@ class DefaultAuthenticationManager @Inject constructor(
             }
             val result = when (execution) {
                 is MethodExecutionResult.Success -> {
-                    if (!isFullUnlock) session.onUserInteraction()
+                    if (execution.method == AuthenticationMethod.RECOVERY_CODE) {
+                        // Successful recovery authentication durably consumes its envelope.
+                        _methods.value = _methods.value.copy(recoveryCode = false)
+                    }
+                    if (request.purpose.unlocksSensitiveDataKey()) {
+                        sensitiveDataKeyManager.unlockAfterFreshAuthentication()
+                    }
+                    if (!opensSession) session.onUserInteraction()
                     lastAuthMethod = execution.method
                     AuthenticationResult.Success(execution.method)
                 }
                 is MethodExecutionResult.Cancelled -> {
-                    if (isFullUnlock) restoreState(wasUnlocked)
+                    if (opensSession) restoreState(previousState)
                     AuthenticationResult.Cancelled(execution.byUser)
                 }
                 is MethodExecutionResult.Failure -> {
-                    if (isFullUnlock) restoreState(wasUnlocked)
+                    if (opensSession) restoreState(previousState)
                     AuthenticationResult.Failure(execution.failure)
                 }
             }
             return finish(request, result)
         } catch (cancelled: CancellationException) {
-            if (isFullUnlock) restoreState(wasUnlocked)
+            if (opensSession) restoreState(previousState)
             throw cancelled
         } catch (failure: Throwable) {
-            if (isFullUnlock) restoreState(wasUnlocked)
+            if (opensSession) restoreState(previousState)
             return finish(
                 request,
                 AuthenticationResult.Failure(
@@ -258,18 +281,7 @@ class DefaultAuthenticationManager @Inject constructor(
     override suspend fun lock(reason: LockReason) = session.lock(reason)
 
     override suspend fun refreshAvailability() {
-        _methods.value = withContext(Dispatchers.Default) {
-            val biometricState = bootstrapStore.loadBiometricState()
-            AuthMethodAvailability(
-                biometric = biometricManager.canAuthenticate(
-                    BiometricManager.Authenticators.BIOMETRIC_STRONG
-                ) == BiometricManager.BIOMETRIC_SUCCESS &&
-                    bootstrapStore.load(EnvelopeType.BIOMETRIC) != null &&
-                    biometricState.binding != null,
-                appPassword = bootstrapStore.load(EnvelopeType.APP_PASSWORD) != null,
-                recoveryCode = bootstrapStore.load(EnvelopeType.RECOVERY) != null
-            )
-        }
+        _methods.value = availabilityResolver.resolve()
     }
 
     override fun snapshot(): AuthenticationSnapshot {
@@ -277,15 +289,22 @@ class DefaultAuthenticationManager @Inject constructor(
         return AuthenticationSnapshot(
             state = current,
             activeCorrelationId = activeCorrelationId.get(),
-            authenticatedAtMs = (current as? AuthenticationState.Authenticated)?.authenticatedAtMs
+            authenticatedAtMs = when (current) {
+                is AuthenticationState.Authenticated -> current.authenticatedAtMs
+                is AuthenticationState.RecoveryMode -> current.authenticatedAtMs
+                else -> null
+            }
         )
     }
 
     override fun onUserInteraction() = session.onUserInteraction()
 
-    private suspend fun restoreState(wasUnlocked: Boolean) {
-        if (wasUnlocked) session.markAuthenticated()
-        else session.transition(AuthenticationState.Locked)
+    private suspend fun restoreState(previousState: AuthenticationState) {
+        when (previousState) {
+            is AuthenticationState.Authenticated -> session.markAuthenticated()
+            is AuthenticationState.RecoveryMode -> session.markRecoveryMode()
+            else -> session.transition(AuthenticationState.Locked)
+        }
     }
 
     private fun finish(
@@ -303,4 +322,8 @@ class DefaultAuthenticationManager @Inject constructor(
         }
         return result
     }
+
+    private fun AuthenticationPurpose.unlocksSensitiveDataKey(): Boolean =
+        this == AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET ||
+            this == AuthenticationPurpose.BACKUP_EXPORT
 }

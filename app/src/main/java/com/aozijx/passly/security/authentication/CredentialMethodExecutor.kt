@@ -22,7 +22,8 @@ import javax.inject.Singleton
 class CredentialMethodExecutor @Inject constructor(
     private val bootstrapStore: BootstrapStore,
     private val kdfRunner: KdfRunner,
-    private val session: VaultSessionController
+    private val session: VaultSessionController,
+    private val attemptLimiter: CredentialAttemptLimiter
 ) {
     internal suspend fun execute(
         request: AuthenticationRequest,
@@ -35,6 +36,9 @@ class CredentialMethodExecutor @Inject constructor(
             AuthenticationFailureCode.METHOD_UNAVAILABLE,
             request
         )
+        attemptLimiter.beforeAttempt(method, request)?.let { limited ->
+            return MethodExecutionResult.Failure(limited)
+        }
         val input = credential
             ?.let { SecretHostResult.Submitted(SecretChars.copyOf(it)) }
             ?: host.requestSecret(request.purpose, method)
@@ -60,6 +64,16 @@ class CredentialMethodExecutor @Inject constructor(
                     when (request.purpose) {
                         AuthenticationPurpose.UNLOCK_VAULT -> {
                             if (session.commitUnlock(type, ownedDek, request.correlationId)) {
+                                attemptLimiter.recordSuccess(method)
+                                MethodExecutionResult.Success(method)
+                            } else {
+                                failure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, request)
+                            }
+                        }
+
+                        AuthenticationPurpose.RECOVER_AUTH_METHODS -> {
+                            if (session.commitRecoveryUnlock(ownedDek, request.correlationId)) {
+                                attemptLimiter.recordSuccess(method)
                                 MethodExecutionResult.Success(method)
                             } else {
                                 failure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, request)
@@ -68,6 +82,7 @@ class CredentialMethodExecutor @Inject constructor(
 
                         AuthenticationPurpose.RECOVER_DATABASE -> {
                             if (session.stageDatabaseRecovery(type, ownedDek)) {
+                                attemptLimiter.recordSuccess(method)
                                 MethodExecutionResult.Success(method)
                             } else {
                                 failure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, request)
@@ -76,11 +91,12 @@ class CredentialMethodExecutor @Inject constructor(
 
                         else -> {
                             ownedDek.discard()
+                            attemptLimiter.recordSuccess(method)
                             MethodExecutionResult.Success(method)
                         }
                     }
                 } catch (_: AEADBadTagException) {
-                    failure(AuthenticationFailureCode.CREDENTIAL_INCORRECT, request)
+                    MethodExecutionResult.Failure(attemptLimiter.recordIncorrect(method, request))
                 } catch (_: GeneralSecurityException) {
                     failure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, request)
                 } catch (_: IllegalArgumentException) {

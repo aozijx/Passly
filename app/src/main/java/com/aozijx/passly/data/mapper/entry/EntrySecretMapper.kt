@@ -44,7 +44,10 @@ object EntrySecretMapper {
                 cardCvv = card.cardCvv,
                 cardHolder = card.cardHolder,
                 paymentPin = card.paymentPin,
-                paymentPlatform = card.paymentPlatform
+                paymentPlatform = card.paymentPlatform,
+                hasCardNumber = card.hasCardNumber,
+                hasCardCvv = card.hasCardCvv,
+                hasPaymentPin = card.hasPaymentPin
             )
         },
         identity = secret.identity?.let { identity ->
@@ -120,7 +123,10 @@ object EntrySecretMapper {
                 cardCvv = card.cardCvv,
                 cardHolder = card.cardHolder,
                 paymentPin = card.paymentPin,
-                paymentPlatform = card.paymentPlatform
+                paymentPlatform = card.paymentPlatform,
+                hasCardNumber = card.hasCardNumber,
+                hasCardCvv = card.hasCardCvv,
+                hasPaymentPin = card.hasPaymentPin
             )
         },
         identity = payload.identity?.let { identity ->

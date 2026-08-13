@@ -5,7 +5,7 @@ import android.service.autofill.FillResponse
 import com.aozijx.passly.core.autofill.model.FieldDescriptor
 import com.aozijx.passly.core.autofill.model.InternalFillRequest
 import com.aozijx.passly.core.autofill.model.InternalFillResponse
-import com.aozijx.passly.domain.settings.model.AutofillUiMode
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.service.autofill.framework.builder.LegacyResponseFactory
 import com.aozijx.passly.service.autofill.framework.parser.ParsedStructure
 import javax.inject.Inject
@@ -64,7 +64,7 @@ class LegacyPlatformAdapter @Inject constructor() {
     fun buildResponse(
         response: InternalFillResponse,
         parsed: ParsedStructure,
-        uiMode: AutofillUiMode,
+        uiMode: AutofillPresentation,
         context: Context,
     ): FillResponse {
         return LegacyResponseFactory.buildFillResponse(context, response, parsed, uiMode)

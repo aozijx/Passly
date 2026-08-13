@@ -1,178 +1,80 @@
 package com.aozijx.passly.feature.vault.components.cardstyle
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
-import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
-import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.WebsiteInfo
+import com.aozijx.passly.domain.entry.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.domain.settings.model.VaultCardStyle
-import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 
 object CardStyleRegistry {
-    private val previewBaseEntry = EntryListItem(
-        id = "-100",
-        entryType = EntryType.LOGIN,
-        title = "示例账号",
-        username = "demo_user",
-        icon = null,
-        iconCustomPath = null,
-        website = WebsiteInfo(primaryUrl = "example.com"),
-        favorite = false,
-        tags = emptyList(),
-        color = null,
-        createdAt = 0L,
-        updatedAt = 0L,
-        deletedAt = null,
-        expiresAt = null,
-        lastUsedAt = null,
-        usageCount = 0,
-        entryVersion = 0,
-        capabilityFlags = 0,
-        otpTypeName = ""
+    /*
+     * Extension point: a new card appearance only needs one registration here.
+     * The component owns its key, capability check, real content and preview.
+     */
+    private val registrations = listOf(
+        DefaultVaultCardStyle,
+        PasswordVaultCardStyle,
+        TotpVaultCardStyle,
     )
 
-    private val previewPasswordEntry = EntryListItem(
-        id = "-101",
-        entryType = EntryType.LOGIN,
-        title = "我的邮箱",
-        username = "me@example.com",
-        icon = null,
-        iconCustomPath = null,
-        website = WebsiteInfo(primaryUrl = "example.com"),
-        favorite = false,
-        tags = emptyList(),
-        color = null,
-        createdAt = 0L,
-        updatedAt = 0L,
-        deletedAt = null,
-        expiresAt = null,
-        lastUsedAt = null,
-        usageCount = 0,
-        entryVersion = 0,
-        capabilityFlags = 0,
-        otpTypeName = ""
-    )
+    private val defaultStyle = registrations.first()
+    private val registrationsByKey = registrations.associateBy { it.key.normalizedStyleKey() }
 
-    private val previewTotpEntry = EntryListItem(
-        id = "-102",
-        entryType = EntryType.LOGIN,
-        title = "示例二步验证",
-        username = "totp_user",
-        icon = null,
-        iconCustomPath = null,
-        website = null,
-        favorite = false,
-        tags = emptyList(),
-        color = null,
-        createdAt = 0L,
-        updatedAt = 0L,
-        deletedAt = null,
-        expiresAt = null,
-        lastUsedAt = null,
-        usageCount = 0,
-        entryVersion = 0,
-        capabilityFlags = EntryCapabilityFlags.HAS_OTP,
-        otpTypeName = "TOTP"
-    )
+    init {
+        require(registrations.isNotEmpty()) { "At least one vault card style must be registered" }
+        require(registrationsByKey.size == registrations.size) {
+            "Vault card style keys must be unique (case-insensitive)"
+        }
+        require(defaultStyle === DefaultVaultCardStyle) {
+            "The default vault card style must be the first registration"
+        }
+    }
+
+    /** Registered appearances in the same order used by a future style picker. */
+    val styles: List<VaultCardStyleComponent>
+        get() = registrations
+
+    /**
+     * Resolves one primary list-card style for an entry.
+     *
+     * Detail-page capability composition is intentionally handled elsewhere.
+     * A mixed login + OTP entry still occupies one list row and uses its
+     * primary entry type's presentation.
+     */
+    fun resolveStyle(
+        entry: EntryListItem,
+        presentations: List<EntryCardPresentation>,
+    ): VaultCardStyleComponent {
+        val presentation = presentations.firstOrNull {
+            it.entryTypeKey.equals(entry.entryType.name, ignoreCase = true)
+        }
+        val requested = registrationsByKey[presentation?.variantKey.normalizedStyleKey()]
+            ?: defaultStyle
+        return requested.takeIf { it.supports(entry) } ?: defaultStyle
+    }
 
     @Composable
     fun RenderVaultItem(
-        style: VaultCardStyle,
+        style: VaultCardStyleComponent,
         entry: EntryListItem,
-        totpStates: Map<String, OtpUiState>,
+        totpState: OtpUiState?,
         showTotpCode: Boolean,
-        onClick: () -> Unit
+        onClick: () -> Unit,
     ) {
-        val isTotp = entry.hasOtp
-        val isAutofill = entry.category == stringResource(R.string.category_autofill)
-        val totpState = totpStates[entry.id]
-
-        when (style) {
-            VaultCardStyle.DEFAULT -> {
-                when {
-                    isTotp -> {
-                        TwoFAItem(
-                            entry = entry,
-                            totpState = totpState,
-                            showCode = showTotpCode,
-                            onClick = onClick
-                        )
-                    }
-
-                    isAutofill -> {
-                        AutoFillItem(
-                            entry = entry,
-                            onClick = onClick
-                        )
-                    }
-
-                    else -> {
-                        VaultItem(entry = entry, onClick = onClick)
-                    }
-                }
-            }
-
-            VaultCardStyle.PASSWORD -> {
-                PasswordStyleVaultItem(
-                    entry = entry, onClick = onClick
-                )
-            }
-
-            VaultCardStyle.TOTP -> {
-                if (isTotp) {
-                    TotpStyleVaultItem(
-                        entry = entry,
-                        totpState = totpState,
-                        showCode = showTotpCode,
-                        onClick = onClick
-                    )
-                } else {
-                    VaultItem(entry = entry, onClick = onClick)
-                }
-            }
-        }
+        style.Render(
+            entry = entry,
+            totpState = totpState,
+            showTotpCode = showTotpCode,
+            onClick = onClick,
+        )
     }
 
     @Composable
     fun RenderPreviewVaultItem(
-        style: VaultCardStyle, onClick: () -> Unit
+        style: VaultCardStyleComponent,
+        onClick: () -> Unit,
     ) {
-        val isTotp = false
-
-        when (style) {
-            VaultCardStyle.DEFAULT -> {
-                if (isTotp) {
-                    TwoFAItem(
-                        entry = previewTotpEntry,
-                        totpState = null,
-                        showCode = true,
-                        previewCode = "123 456",
-                        previewProgress = 0.4f,
-                        onClick = onClick
-                    )
-                } else {
-                    VaultItem(entry = previewBaseEntry, onClick = onClick)
-                }
-            }
-
-            VaultCardStyle.PASSWORD -> {
-                PasswordStyleVaultItem(
-                    entry = previewPasswordEntry, onClick = onClick
-                )
-            }
-
-            VaultCardStyle.TOTP -> {
-                TotpStyleVaultItem(
-                    entry = previewTotpEntry,
-                    totpState = null,
-                    showCode = true,
-                    previewCode = "123 456",
-                    previewProgress = 0.4f,
-                    onClick = onClick
-                )
-            }
-        }
+        style.Preview(onClick)
     }
+
+    private fun String?.normalizedStyleKey(): String = this?.trim()?.lowercase().orEmpty()
 }

@@ -21,13 +21,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.domain.settings.model.VaultSortSpec
+import com.aozijx.passly.R
+import com.aozijx.passly.domain.settings.model.LibrarySortSpec
 
-private enum class MenuPage { MAIN, SORT, FILTER }
+private enum class MenuPage { MAIN, SORT, CATEGORY_FILTER }
 
 @Composable
 fun VaultDropdownMenu(
-    expanded: Boolean,
     onDismissRequest: () -> Unit,
     showTOTPCode: Boolean,
     onToggleTotpVisibility: () -> Unit,
@@ -35,21 +35,14 @@ fun VaultDropdownMenu(
     availableCategories: List<String>,
     selectedCategory: String?,
     onCategorySelected: (String?) -> Unit,
-    selectedSort: VaultSortSpec,
-    onSortSelected: (VaultSortSpec) -> Unit
+    selectedSort: LibrarySortSpec,
+    onSortSelected: (LibrarySortSpec) -> Unit
 ) {
     var currentPage by remember { mutableStateOf(MenuPage.MAIN) }
     var categorySearchQuery by remember { mutableStateOf("") }
     var categorySearchVisible by remember { mutableStateOf(false) }
     val categoryFocusRequester = remember { FocusRequester() }
 
-    LaunchedEffect(expanded) {
-        if (!expanded) {
-            currentPage = MenuPage.MAIN
-            categorySearchQuery = ""
-            categorySearchVisible = false
-        }
-    }
     LaunchedEffect(categorySearchVisible) {
         if (categorySearchVisible) categoryFocusRequester.requestFocus()
     }
@@ -62,7 +55,7 @@ fun VaultDropdownMenu(
     }
 
     DropdownMenu(
-        expanded = expanded,
+        expanded = true,
         onDismissRequest = onDismissRequest,
         modifier = Modifier
             .widthIn(min = 150.dp)
@@ -86,7 +79,7 @@ fun VaultDropdownMenu(
                 when (page) {
                     MenuPage.MAIN -> MainMenuContent(
                         onSortClick = { currentPage = MenuPage.SORT },
-                        onFilterClick = { currentPage = MenuPage.FILTER },
+                        onCategoryFilterClick = { currentPage = MenuPage.CATEGORY_FILTER },
                         showTOTPCode = showTOTPCode,
                         onToggleTotpVisibility = onToggleTotpVisibility,
                         onDismissRequest = onDismissRequest,
@@ -97,15 +90,18 @@ fun VaultDropdownMenu(
                         onSortSelected = onSortSelected,
                         onBack = { currentPage = MenuPage.MAIN }
                     )
-                    MenuPage.FILTER -> FilterSubMenu(
-                        isCategorySearchVisible = categorySearchVisible,
+                    MenuPage.CATEGORY_FILTER -> FilterSubMenu(
+                        searchLabelRes = R.string.vault_search_category,
+                        searchHintRes = R.string.vault_search_category_hint,
+                        isSearchVisible = categorySearchVisible,
                         onToggleSearch = { categorySearchVisible = it },
-                        categorySearchQuery = categorySearchQuery,
-                        onCategorySearchQueryChange = { categorySearchQuery = it },
-                        categoryFocusRequester = categoryFocusRequester,
-                        filteredCategories = filteredCategories,
-                        selectedCategory = selectedCategory,
-                        onCategorySelected = {
+                        searchQuery = categorySearchQuery,
+                        onSearchQueryChange = { categorySearchQuery = it },
+                        focusRequester = categoryFocusRequester,
+                        items = filteredCategories,
+                        selectedItem = selectedCategory,
+                        itemText = { it },
+                        onItemSelected = {
                             onCategorySelected(it)
                             onDismissRequest()
                         },

@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.local.database.maintenance
 
 import android.content.Context
+import com.aozijx.passly.core.platform.VaultResourcePaths
 import com.aozijx.passly.data.local.database.DatabaseSchema
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -21,7 +22,7 @@ internal class DatabaseRecoveryStore @Inject constructor(
     private companion object {
         const val RECOVERY_FORMAT_VERSION = 1
         const val RECOVERY_ROOT = "database_recovery"
-        val RESOURCE_DIRECTORIES = listOf("attachments", "vault_images")
+        val RESOURCE_DIRECTORIES = VaultResourcePaths.RESOURCE_DIRECTORY_NAMES
     }
 
     fun preserveAndClearActiveVault(): String? {
@@ -30,9 +31,7 @@ internal class DatabaseRecoveryStore @Inject constructor(
         val resourceDirectories = RESOURCE_DIRECTORIES
             .map { File(context.filesDir, it) }
             .filter(File::exists)
-        if (databaseFiles.isEmpty() && resourceDirectories.isEmpty()) {
-            return null
-        }
+        if (databaseFiles.isEmpty() && resourceDirectories.isEmpty()) return null
 
         val recoveryId = "${System.currentTimeMillis()}-${UUID.randomUUID()}"
         val recoveryRoot = File(context.noBackupFilesDir, RECOVERY_ROOT)

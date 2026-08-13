@@ -5,12 +5,20 @@ package com.aozijx.passly.app.navigation
  *
  * 结构：
  *  Vault    — 主保险箱列表（授权后的起始目的地）
+ *  AddPassword — 新建密码条目的独立页面
+ *  AddOtp — 新建 OTP 条目的独立页面
  *  Detail   — 条目详情全屏页，携带 entryId 参数
  *  Settings — 设置页
  */
 sealed class AppRoute(val route: String) {
 
     data object Vault : AppRoute("vault")
+
+    data object AddPassword : AppRoute("vault/add/password")
+
+    data object AddOtp : AppRoute("vault/add/otp")
+
+    data object AddBankCard : AppRoute("vault/add/bankcard")
 
     data object Settings : AppRoute("settings")
 

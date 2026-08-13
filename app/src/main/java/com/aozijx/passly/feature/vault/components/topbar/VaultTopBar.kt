@@ -24,7 +24,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -34,40 +37,50 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.settings.model.VaultSortSpec
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
+import com.aozijx.passly.domain.settings.model.LibrarySortSpec
 import com.aozijx.passly.feature.vault.contract.VaultUiState
-import com.aozijx.passly.feature.vault.model.VaultTab
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultTopBar(
     uiState: VaultUiState,
+    selectedQuickFilterIndex: Int,
     scrollBehavior: TopAppBarScrollBehavior,
     onSettingsClick: () -> Unit = {},
     isStatusBarAutoHide: Boolean = false,
     isTopBarCollapsible: Boolean = true,
-    isTabBarCollapsible: Boolean = true,
+    isQuickFilterBarCollapsible: Boolean = true,
     onSearchQueryChange: (String) -> Unit,
     onToggleSearch: (Boolean) -> Unit,
     onClearCategory: () -> Unit,
-    onExpandMoreMenu: (Boolean) -> Unit,
     onToggleTotpVisibility: () -> Unit,
     onCategorySelected: (String?) -> Unit,
-    onSortSelected: (VaultSortSpec) -> Unit,
-    onSelectTab: (VaultTab) -> Unit
+    onSortSelected: (LibrarySortSpec) -> Unit,
+    onSelectQuickFilter: (LibraryQuickFilter) -> Unit
 ) {
     val density = LocalDensity.current
+    var isMoreMenuExpanded by remember { mutableStateOf(false) }
+    var navigateToSettingsAfterDismiss by remember { mutableStateOf(false) }
 
     LifecycleResumeEffect(Unit) {
         onPauseOrDispose {
-            onExpandMoreMenu(false)
+            isMoreMenuExpanded = false
+            navigateToSettingsAfterDismiss = false
         }
     }
 
     val focusRequester = remember { FocusRequester() }
 
-    LaunchedEffect(isTopBarCollapsible, isTabBarCollapsible, isStatusBarAutoHide) {
-        if (!isTopBarCollapsible && (isTabBarCollapsible || isStatusBarAutoHide)) {
+    LaunchedEffect(navigateToSettingsAfterDismiss, isMoreMenuExpanded) {
+        if (navigateToSettingsAfterDismiss && !isMoreMenuExpanded) {
+            navigateToSettingsAfterDismiss = false
+            onSettingsClick()
+        }
+    }
+
+    LaunchedEffect(isTopBarCollapsible, isQuickFilterBarCollapsible, isStatusBarAutoHide) {
+        if (!isTopBarCollapsible && (isQuickFilterBarCollapsible || isStatusBarAutoHide)) {
             scrollBehavior.state.heightOffsetLimit = with(density) { -64.dp.toPx() }
         }
     }
@@ -91,14 +104,18 @@ fun VaultTopBar(
                     )
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        val hasCategoryFilter = !uiState.selectedCategory.isNullOrBlank()
                         Text(
-                            text = if (uiState.selectedCategory != null) stringResource(
-                                R.string.vault_title_category, uiState.selectedCategory
-                            )
-                            else stringResource(R.string.vault_title_default),
+                            text = when {
+                                hasCategoryFilter -> stringResource(
+                                    R.string.vault_title_category,
+                                    uiState.selectedCategory
+                                )
+                                else -> stringResource(R.string.app_name)
+                            },
                             fontWeight = FontWeight.Bold
                         )
-                        if (uiState.selectedCategory != null) {
+                        if (hasCategoryFilter) {
                             IconButton(onClick = onClearCategory) {
                                 Icon(
                                     Icons.Default.Clear,
@@ -121,39 +138,44 @@ fun VaultTopBar(
             actions = {
                 if (!uiState.isSearchActive) {
                     Box {
-                        IconButton(onClick = { onExpandMoreMenu(true) }) {
+                        IconButton(onClick = { isMoreMenuExpanded = true }) {
                             Icon(
                                 Icons.Default.MoreVert,
                                 contentDescription = stringResource(R.string.more)
                             )
                         }
-                        VaultDropdownMenu(
-                            expanded = uiState.isMoreMenuExpanded,
-                            onDismissRequest = { onExpandMoreMenu(false) },
-                            showTOTPCode = uiState.showTOTPCode,
-                            onToggleTotpVisibility = onToggleTotpVisibility,
-                            onSettingsClick = onSettingsClick,
-                            availableCategories = uiState.availableCategories,
-                            selectedCategory = uiState.selectedCategory,
-                            onCategorySelected = onCategorySelected,
-                            selectedSort = uiState.selectedSort,
-                            onSortSelected = onSortSelected
-                        )
+                        if (isMoreMenuExpanded) {
+                            VaultDropdownMenu(
+                                onDismissRequest = { isMoreMenuExpanded = false },
+                                showTOTPCode = uiState.showTOTPCode,
+                                onToggleTotpVisibility = onToggleTotpVisibility,
+                                onSettingsClick = {
+                                    navigateToSettingsAfterDismiss = true
+                                },
+                                availableCategories = uiState.availableCategories,
+                                selectedCategory = uiState.selectedCategory,
+                                onCategorySelected = onCategorySelected,
+                                selectedSort = uiState.selectedSort,
+                                onSortSelected = onSortSelected
+                            )
+                        }
                     }
                 }
             })
 
         AnimatedVisibility(
-            visible = uiState.visibleTabs.size > 1 && !uiState.isSearchActive && uiState.selectedCategory == null && (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
+            visible = uiState.visibleQuickFilters.size > 1 &&
+                !uiState.isSearchActive &&
+                uiState.selectedCategory == null &&
+                    (!isQuickFilterBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
-            VaultTabRow(
-                tabs = uiState.visibleTabs,
-                selectedTabIndex = uiState.visibleTabs.indexOf(uiState.selectedTab)
-                    .coerceAtLeast(0),
-                onTabSelected = { index ->
-                    uiState.visibleTabs.getOrNull(index)?.let { onSelectTab(it) }
+            LibraryQuickFilterBar(
+                quickFilters = uiState.visibleQuickFilters,
+                selectedQuickFilterIndex = selectedQuickFilterIndex,
+                onQuickFilterSelected = { index ->
+                    uiState.visibleQuickFilters.getOrNull(index)?.let { onSelectQuickFilter(it) }
                 }
             )
         }

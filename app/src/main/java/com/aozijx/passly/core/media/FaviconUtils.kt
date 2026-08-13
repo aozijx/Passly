@@ -4,10 +4,10 @@ import android.content.Context
 import android.graphics.Bitmap
 import androidx.core.graphics.drawable.toBitmap
 import coil.ImageLoader
-import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.platform.VaultResourcePaths
 import com.github.f4b6a3.uuid.UuidCreator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -122,9 +122,7 @@ object FaviconUtils {
         if (href.contains(':') && !href.startsWith("/")) return null
 
         val uri = java.net.URI(baseUrl)
-        if (href.startsWith("/")) {
-            return "${uri.scheme}://${uri.host}$href"
-        }
+        if (href.startsWith("/")) return "${uri.scheme}://${uri.host}$href"
 
         val path = uri.path
         val base = if (path.isEmpty() || path == "/") {
@@ -295,13 +293,11 @@ object FaviconUtils {
     private suspend fun downloadFaviconWithCoil(urlString: String, context: Context): Bitmap? {
         return try {
             val imageLoader = ImageLoader.Builder(context)
-                .components {
-                    add(SvgDecoder.Factory())
-                }
                 .build()
 
             val request = ImageRequest.Builder(context)
                 .data(urlString)
+                .size(512, 512)
                 .addHeader("User-Agent", "Mozilla/5.0")
                 .build()
 
@@ -317,7 +313,7 @@ object FaviconUtils {
 
     private fun saveBitmapToInternalStorage(context: Context, bitmap: Bitmap): String? {
         return try {
-            val directory = File(context.filesDir, "vault_images").apply {
+            val directory = VaultResourcePaths.vaultImagesDir(context).apply {
                 if (!exists()) mkdirs()
             }
 

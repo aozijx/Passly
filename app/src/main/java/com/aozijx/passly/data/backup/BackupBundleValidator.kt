@@ -5,6 +5,8 @@ import com.aozijx.passly.data.backup.model.BackupDocument
 import com.aozijx.passly.data.backup.model.BackupOtpType
 import com.aozijx.passly.data.backup.model.BackupResourceKind
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.link.EntryRelationType
+import com.aozijx.passly.domain.entry.service.EntryLinkPolicy
 import java.security.MessageDigest
 
 internal object BackupBundleValidator {
@@ -34,8 +36,12 @@ internal object BackupBundleValidator {
         }
 
         val entryIds = document.entries.mapTo(hashSetOf()) { it.id }
+        val entryTypesById = document.entries.associate { it.id to EntryType.valueOf(it.type) }
         val resourceIds = document.resources.mapTo(hashSetOf()) { it.id }
-        require(entryIds.all(SAFE_ID::matches) && resourceIds.all(SAFE_ID::matches)) {
+        require(
+            entryIds.all(SAFE_ID::matches) &&
+                resourceIds.all(SAFE_ID::matches)
+        ) {
             "备份包含不安全的条目或资源 ID"
         }
         require(document.resources.all { it.entryId in entryIds }) {
@@ -44,6 +50,12 @@ internal object BackupBundleValidator {
         val validTypes = EntryType.entries.mapTo(hashSetOf()) { it.name }
         document.entries.forEach { entry ->
             require(entry.type in validTypes) { "未知条目类型: ${entry.type}" }
+            if (entry.type == EntryType.ACCOUNT.name) {
+                require(entry.secret == com.aozijx.passly.data.backup.model.BackupSecretRecord()) {
+                    "ACCOUNT 不能包含敏感 payload: ${entry.id}"
+                }
+            }
+            requireAtomicSecret(entry)
             require(entry.version >= 1) { "条目版本无效: ${entry.id}" }
             require(entry.createdAt >= 0 && entry.updatedAt >= entry.createdAt) {
                 "条目时间无效: ${entry.id}"
@@ -67,6 +79,34 @@ internal object BackupBundleValidator {
                             "OTP 周期无效: ${entry.id}"
                         }
                 }
+            }
+        }
+        val relationTypes = EntryRelationType.entries.mapTo(hashSetOf()) { it.name }
+        require(document.links.map { it.id }.toSet().size == document.links.size) {
+            "备份包含重复关系 ID"
+        }
+        require(
+            document.links.map { Triple(it.sourceEntryId, it.targetEntryId, it.relationType) }
+                .toSet().size == document.links.size
+        ) {
+            "备份包含重复关系"
+        }
+        document.links.forEach { link ->
+            require(SAFE_ID.matches(link.id)) { "关系 ID 无效: ${link.id}" }
+            require(link.sourceEntryId in entryIds && link.targetEntryId in entryIds) {
+                "关系引用了不存在的条目: ${link.id}"
+            }
+            require(link.sourceEntryId != link.targetEntryId) { "条目不能关联自身: ${link.id}" }
+            require(link.relationType in relationTypes) { "未知关系类型: ${link.relationType}" }
+            require(
+                EntryLinkPolicy.isAllowed(
+                    relationType = EntryRelationType.valueOf(link.relationType),
+                    sourceType = requireNotNull(entryTypesById[link.sourceEntryId]),
+                    targetType = requireNotNull(entryTypesById[link.targetEntryId]),
+                )
+            ) { "关系方向或条目类型无效: ${link.id}" }
+            require(link.createdAt >= 0 && link.updatedAt >= link.createdAt) {
+                "关系时间无效: ${link.id}"
             }
         }
         document.resources.groupBy { it.entryId }.forEach { (entryId, resources) ->
@@ -125,4 +165,45 @@ internal object BackupBundleValidator {
         MessageDigest.getInstance("SHA-256")
             .digest(data)
             .joinToString("") { "%02x".format(it) }
+
+    private fun requireAtomicSecret(
+        entry: com.aozijx.passly.data.backup.model.BackupEntryRecord
+    ) {
+        val secret = entry.secret
+        val populated = buildSet {
+            if (secret.login != null) add("login")
+            if (secret.card != null) add("card")
+            if (secret.identity != null) add("identity")
+            if (secret.ssh != null) add("ssh")
+            if (secret.wifi != null) add("wifi")
+            if (secret.passkey != null) add("passkey")
+            if (secret.otp != null) add("otp")
+        }
+        val allowed = when (EntryType.valueOf(entry.type)) {
+            EntryType.ACCOUNT, EntryType.NOTE -> null
+            EntryType.CARD, EntryType.BANK_CARD -> "card"
+            EntryType.IDENTITY,
+            EntryType.PASSPORT,
+            EntryType.LICENSE,
+            EntryType.ID_CARD,
+            EntryType.SEED_PHRASE,
+            EntryType.RECOVERY_CODE -> "identity"
+
+            EntryType.SSH_KEY -> "ssh"
+            EntryType.WIFI -> "wifi"
+            EntryType.PASSKEY -> "passkey"
+            EntryType.OTP -> "otp"
+            EntryType.LOGIN,
+            EntryType.DATABASE,
+            EntryType.SERVER,
+            EntryType.API_KEY,
+            EntryType.CRYPTO_WALLET -> "login"
+        }
+        require(populated.size <= 1) {
+            "条目包含多个凭据 payload: ${entry.id}"
+        }
+        require(populated.isEmpty() || populated.single() == allowed) {
+            "条目类型与凭据 payload 不匹配: ${entry.id}"
+        }
+    }
 }

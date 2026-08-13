@@ -1,127 +1,226 @@
 package com.aozijx.passly.data.repository.autofill
 
+import com.aozijx.passly.core.platform.PackageUtils
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
+import com.aozijx.passly.data.local.dao.buildRecentEntryIdIntersectionQuery
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
-import com.aozijx.passly.data.model.entity.EntryEntity
-import com.aozijx.passly.data.model.entity.EntrySecretEntity
-import com.aozijx.passly.data.util.Clock
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
+import com.aozijx.passly.domain.autofill.AutofillConfiguration
+import com.aozijx.passly.domain.autofill.policy.AutofillTitlePolicy
+import com.aozijx.passly.domain.autofill.policy.CredentialScopeMatcher
 import com.aozijx.passly.domain.autofill.repository.CredentialServiceRepository
-import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
+import com.aozijx.passly.domain.entry.model.EntryHeader
+import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntrySummary
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.WebsiteInfo
 import com.aozijx.passly.domain.entry.model.lookup.CredentialCandidate
+import com.aozijx.passly.domain.entry.model.lookup.LookupField
 import com.aozijx.passly.domain.entry.model.lookup.MatchType
 import com.aozijx.passly.domain.entry.model.secret.LoginSecret
-import com.github.f4b6a3.uuid.UuidCreator
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
+import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
+import com.aozijx.passly.security.search.BlindIndexer
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Autofill/Credential Manager read model.
+ *
+ * Candidate lookup first uses the encrypted blind index, then decrypts only the
+ * small matched set and verifies the association against the plaintext request.
+ */
 @Singleton
 class CredentialServiceRepositoryImpl @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
-    private val sessionState: VaultAccessState,
+    private val sessionState: SecureSessionAccessState,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
-    private val clock: Clock
+    private val blindIndexer: BlindIndexer,
+    private val entryCommandRepository: EntryCommandRepository,
+    private val packageUtils: PackageUtils,
 ) : CredentialServiceRepository {
 
-    override fun search(
+    override suspend fun search(
         packageName: String?,
-        webDomain: String?
-    ): List<CredentialCandidate> = runBlocking(Dispatchers.IO) {
-        sessionManager.query {
-            val metadataEntities = entryQueryDao().getActive()
-            val credentialEntities =
-                entrySecretQueryDao().getByEntryIds(metadataEntities.map { it.entryId })
-            val credentialMap = credentialEntities.associateBy { it.entryId }
+        webDomain: String?,
+        allowUnmatched: Boolean,
+        includeSecrets: Boolean,
+        limit: Int,
+    ): List<CredentialCandidate> {
+        if (!sessionState.hasFullSecureSessionAccess()) return emptyList()
 
-            metadataEntities.filter { it.entryType == EntryType.LOGIN }
-                .map { metaEntity ->
-                    val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
-                    val secret = credentialMap[metaEntity.entryId]
-                        ?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
-                    EntryAggregateAssembler.assembleFromDatabase(metaEntity, summary, secret)
-                }
-                .map { entry ->
-                    CredentialCandidate(
-                        entry = entry,
-                        score = MatchType.UNKNOWN.score,
-                        matchedBy = MatchType.UNKNOWN,
-                        matchedDomain = entry.associatedDomain,
-                        matchedPackage = entry.associatedAppPackage
+        val normalizedPackage = CredentialScopeMatcher.normalizePackage(packageName)
+        val normalizedDomain = CredentialScopeMatcher.normalizeDomain(webDomain)
+        val boundedLimit = limit.coerceIn(1, AutofillConfiguration.MAX_CANDIDATES)
+
+        return sessionManager.query {
+            val packageMatches = normalizedPackage
+                ?.let {
+                    findMatchingIds(
+                        it,
+                        listOf(LookupField.PACKAGE),
+                        boundedLimit * INDEX_PREFETCH_FACTOR,
                     )
                 }
+                .orEmpty()
+            val domainMatches = normalizedDomain
+                ?.let {
+                    findMatchingIds(
+                        it,
+                        listOf(LookupField.DOMAIN, LookupField.URL),
+                        boundedLimit * INDEX_PREFETCH_FACTOR,
+                    )
+                }
+                .orEmpty()
+
+            val indexedIds = (packageMatches + domainMatches).distinct()
+            val entities = when {
+                indexedIds.isNotEmpty() -> entryQueryDao().getByIds(indexedIds)
+                allowUnmatched -> entryQueryDao()
+                    .getActiveByType(EntryType.LOGIN)
+                    .take(boundedLimit)
+
+                else -> emptyList()
+            }
+            if (entities.isEmpty()) return@query emptyList()
+
+            val secretMap = if (includeSecrets) {
+                entrySecretQueryDao()
+                    .getByEntryIds(entities.map { it.entryId })
+                    .associateBy { it.entryId }
+            } else {
+                emptyMap()
+            }
+
+            entities
+                .filter { it.deletedAt == null && AutofillConfiguration.isAutofillSupported(it.entryType) }
+                .map { entity ->
+                    val summary = summaryCodec.decrypt(entity.summaryBlob, entity.entryId)
+                    val secret = secretMap[entity.entryId]
+                        ?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
+                    EntryAggregateAssembler.assembleFromDatabase(entity, summary, secret)
+                }
+                .mapNotNull { entry ->
+                    val matchType = CredentialScopeMatcher.matchType(
+                        entry,
+                        normalizedPackage,
+                        normalizedDomain,
+                    )
+                    if (matchType == MatchType.UNKNOWN && !allowUnmatched) return@mapNotNull null
+                    CredentialCandidate(
+                        entry = entry,
+                        score = matchType.score,
+                        matchedBy = matchType,
+                        matchedPackage = normalizedPackage.takeIf {
+                            matchType == MatchType.PACKAGE_NAME
+                        },
+                        matchedDomain = normalizedDomain.takeIf {
+                            matchType == MatchType.WEB_DOMAIN
+                        },
+                    )
+                }
+                .sortedWith(AutofillConfiguration::compareCandidates)
+                .take(boundedLimit)
+                .toList()
         }
     }
 
-    override fun getById(entryId: Int): VaultEntry? = runBlocking(Dispatchers.IO) {
-        null
+    override suspend fun getById(entryId: String): EntryAggregate? =
+        getByIds(listOf(entryId), includeSecrets = true).firstOrNull()
+
+    override suspend fun getByIds(
+        entryIds: List<String>,
+        includeSecrets: Boolean
+    ): List<EntryAggregate> {
+        if (!sessionState.hasFullSecureSessionAccess() || entryIds.isEmpty()) return emptyList()
+        val uniqueIds = entryIds.distinct()
+        return sessionManager.query {
+            val entries = entryQueryDao().getByIds(uniqueIds)
+                .filter { it.deletedAt == null }
+            val secretMap = if (includeSecrets) {
+                entrySecretQueryDao()
+                    .getByEntryIds(entries.map { it.entryId })
+                    .associateBy { it.entryId }
+            } else {
+                emptyMap()
+            }
+            val assembled = entries.associate { entity ->
+                val summary = summaryCodec.decrypt(entity.summaryBlob, entity.entryId)
+                val secret = secretMap[entity.entryId]
+                    ?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
+                entity.entryId to EntryAggregateAssembler.assembleFromDatabase(
+                    entity,
+                    summary,
+                    secret,
+                )
+            }
+            uniqueIds.mapNotNull(assembled::get)
+        }
     }
 
-    override fun getByIds(entryIds: List<Int>): List<VaultEntry> =
-        runBlocking(Dispatchers.IO) {
-            emptyList()
-        }
-
-    override fun updateLastUsed(entryId: Int) {
-        runBlocking(Dispatchers.IO) {
-        }
-    }
-
-    override fun save(
+    override suspend fun save(
         packageName: String?,
         webDomain: String?,
         pageTitle: String?,
         usernameValue: String,
-        passwordValue: String
-    ): Boolean = runBlocking(Dispatchers.IO) {
-        if (sessionState.isLocked()) return@runBlocking false
-        sessionManager.query {
-            val entryId = UuidCreator.getTimeOrderedEpoch().toString()
-            val summary = EntrySummary(
-                title = pageTitle ?: usernameValue,
-                username = usernameValue,
-                icon = null,
-                website = if (webDomain != null) WebsiteInfo(primaryUrl = webDomain) else null
-            )
-            val secret = EntrySecret(
-                login = LoginSecret(
-                    email = null,
-                    password = passwordValue
-                )
-            )
-            val metaBlob = summaryCodec.encrypt(summary, entryId)
-            val credBlob = secretCodec.encrypt(secret, entryId)
+        passwordValue: String,
+    ): Boolean {
+        if (!sessionState.hasFullSecureSessionAccess()) return false
+        if (usernameValue.isBlank() && passwordValue.isBlank()) return false
 
-            val now = clock.now()
-            val capabilityFlags = EntryCapabilityFlags.computeFrom(secret)
-            val otpType = EntryCapabilityFlags.otpTypeFrom(secret)
-            val metaEntity = EntryEntity(
-                entryId = entryId,
-                vaultId = "default",
+        val normalizedPackage = CredentialScopeMatcher.normalizePackage(packageName)
+        val normalizedDomain = CredentialScopeMatcher.normalizeDomain(webDomain)
+        val appLabel = normalizedPackage
+            ?.let(packageUtils::getAppMetadata)
+            ?.appName
+        val entry = EntryAggregate(
+            header = EntryHeader(
+                id = EntryId(""),
                 entryType = EntryType.LOGIN,
-                capabilityFlags = capabilityFlags,
-                otpType = otpType,
-                summaryBlob = metaBlob,
-                createdAt = now,
-                updatedAt = now
-            )
-            val credEntity = EntrySecretEntity(
-                entryId = entryId,
-                secretBlob = credBlob
-            )
-            entryCommandDao().insertStrict(metaEntity)
-            entrySecretCommandDao().insertStrict(credEntity)
-        }
-        true
+                version = EntryVersion.INITIAL,
+                createdAt = 0L,
+                updatedAt = 0L,
+            ),
+            summary = EntrySummary(
+                title = AutofillTitlePolicy.resolveSavedCredentialTitle(
+                    pageTitle = pageTitle,
+                    domain = normalizedDomain,
+                    appLabel = appLabel,
+                    packageName = normalizedPackage,
+                    fallback = usernameValue.ifBlank { "Login" }
+                ),
+                username = usernameValue,
+                website = WebsiteInfo(
+                    primaryUrl = webDomain?.trim()?.takeIf { it.isNotBlank() },
+                    matchDomains = setOfNotNull(normalizedDomain),
+                    packageNames = setOfNotNull(normalizedPackage),
+                ),
+            ),
+            secret = EntrySecret(
+                login = LoginSecret(password = passwordValue),
+            ),
+        )
+        return entryCommandRepository.createEntry(entry).isSuccess
     }
 
+    private suspend fun com.aozijx.passly.data.local.database.AppDatabase.findMatchingIds(
+        value: String,
+        fields: List<LookupField>,
+        limit: Int,
+    ): List<String> {
+        val tokens = blindIndexer.searchTokens(value)
+        if (tokens.isEmpty()) return emptyList()
+        return searchTokenQueryDao().searchByTokenIntersection(
+            buildRecentEntryIdIntersectionQuery(tokens, fields, limit)
+        )
+    }
+
+    private companion object {
+        const val INDEX_PREFETCH_FACTOR = 4
+    }
 }
