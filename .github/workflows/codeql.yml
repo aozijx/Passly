@@ -55,6 +55,7 @@ jobs:
 
     # 安装并配置 JDK 21 环境，供后续 Gradle 构建使用
     - name: Set up JDK 21
+      if: matrix.build-mode == 'manual'
       uses: actions/setup-java@v5
       with:
         java-version: '21'
