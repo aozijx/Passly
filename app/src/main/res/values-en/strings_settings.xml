@@ -18,7 +18,6 @@
     <string name="settings_page_notifications_summary">System notifications, app messages and topics</string>
     <string name="settings_page_privacy">Privacy</string>
     <string name="settings_page_privacy_summary">Screen protection, flip lock</string>
-    <string name="settings_page_recovery_code">Recovery code</string>
     <string name="settings_page_recovery_code_summary">Emergency Passly unlock</string>
     <string name="settings_page_security">Unlock &amp; lock</string>
     <string name="settings_page_security_summary">Password, biometrics, auto-lock</string>
@@ -40,6 +39,7 @@
     <string name="settings_language">Language</string>
     <string name="settings_language_choose">Choose language</string>
     <string name="settings_theme_color">Theme palette</string>
+    <string name="settings_theme_color_default">Default</string>
     <string name="settings_theme_color_blue">Blue</string>
     <string name="settings_theme_color_green">Green</string>
     <string name="settings_theme_color_orange">Orange</string>
@@ -83,7 +83,6 @@
     <string name="settings_app_password_manage_description">Change the password or disable this feature.</string>
     <string name="settings_app_password_manage_title">Manage app unlock password</string>
     <string name="settings_auth_app_password_confirm_label">Confirm Password</string>
-    <string name="settings_auth_before_set_app_password">Verify to continue setting app password</string>
     <string name="settings_auth_change_app_password">Change App Password</string>
     <string name="settings_auth_current_password">Current Password</string>
     <string name="settings_auth_password_change_success">Password changed successfully</string>
@@ -93,7 +92,6 @@
     <string name="settings_auth_password_mismatch">Passwords do not match</string>
     <string name="settings_auth_password_set_success">App password set successfully</string>
     <string name="settings_auth_current_password_incorrect">Incorrect current app password</string>
-    <string name="settings_auth_password_too_short">Use at least 6 characters</string>
     <string name="settings_auth_last_method_required">Keep at least one unlock method</string>
     <string name="settings_auth_operation_failed">Password operation failed. Try again.</string>
     <string name="settings_duration_minutes">%1$d minutes</string>
@@ -107,14 +105,10 @@
     <string name="settings_recovery_code_regenerate_confirm_message">The old code will stop working immediately. Regenerate it?</string>
     <string name="settings_recovery_code_save_hint">%1$s does not store the plain recovery code. Keep it somewhere safe.</string>
     <string name="settings_recovery_code_saved">Saved on this device</string>
-    <string name="settings_recovery_code_title">Recovery code</string>
     <string name="settings_recovery_code_verify_invalid">Invalid recovery code</string>
-    <string name="settings_recovery_code_verify_title">Verify recovery code</string>
     <string name="settings_recovery_code_verify_valid">Recovery code is valid</string>
     <string name="settings_recovery_code_warning">This code is shown once. Save it now.</string>
     <string name="settings_security_app_password">Set password</string>
-    <string name="settings_security_app_password_description">Unlock the app with a separate password</string>
-    <string name="settings_security_auth_section">Authentication</string>
     <string name="settings_security_reauthenticate_sensitive_copies">Verify sensitive copies</string>
     <string name="settings_security_reauthenticate_sensitive_copies_description">Verify before directly copying a hidden password, CVV, or private key. Copying a field already verified and revealed on this detail page does not verify again.</string>
     <string name="settings_privacy_sensitive_access_section">Sensitive data access</string>
@@ -194,7 +188,6 @@
     <string name="settings_trash_emptying">Emptying…</string>
     <string name="settings_trash_error_dismiss">Got it</string>
     <string name="settings_trash_loading">Loading…</string>
-    <string name="settings_trash_restore">Restore</string>
     <string name="settings_trash_title">Trash</string>
     <string name="settings_database_recovery_clear_action">Permanently clear Passly database</string>
     <string name="settings_database_recovery_clear_confirm">Verify and clear</string>

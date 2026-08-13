@@ -47,7 +47,7 @@ fun SeedPhraseSection(
     onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
-    val msgCopySuccess = stringResource(R.string.msg_copy_success)
+    val msgCopySuccess = stringResource(R.string.field_copy_success_message)
     val seedPhraseLabel = stringResource(R.string.seed_phrase)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,

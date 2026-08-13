@@ -51,6 +51,6 @@ class AndroidNoticeTextResolver @Inject constructor(
             R.string.notice_database_index_rebuild_failed
         NoticeCode.DATABASE_OPERATION_FAILED -> R.string.notice_database_operation_failed
         NoticeCode.NOTIFICATION_PERMISSION_DENIED ->
-            R.string.main_notification_permission_denied
+            R.string.notification_permission_denied_message
     }
 }

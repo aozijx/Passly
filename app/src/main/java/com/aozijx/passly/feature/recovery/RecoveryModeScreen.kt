@@ -94,11 +94,11 @@ fun RecoveryModeScreen(
         Spacer(Modifier.height(32.dp))
 
         SettingsSection(modifier = Modifier.fillMaxWidth()) {
-            SettingsSectionTitle(text = stringResource(R.string.recovery_mode_auth_section))
+            SettingsSectionTitle(text = stringResource(R.string.authentication_label))
             RecoveryActionCard(
                 icon = Icons.Default.LockReset,
                 title = stringResource(R.string.recovery_mode_set_password),
-                subtitle = stringResource(R.string.recovery_mode_password_description),
+                subtitle = stringResource(R.string.app_password_unlock_description),
                 isLoading = state.isSettingPassword,
                 onClick = { viewModel.onIntent(RecoveryModeIntent.SetPasswordClicked) },
             )

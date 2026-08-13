@@ -42,7 +42,7 @@ fun rememberVaultActionProvider(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val totpLabel = stringResource(R.string.vault_detail_totp_label)
-    val fieldCopiedFormat = stringResource(R.string.msg_copy_success)
+    val fieldCopiedFormat = stringResource(R.string.field_copy_success_message)
 
     val latestAuthentication by rememberUpdatedState(requestAuthentication)
     val latestReauthentication by rememberUpdatedState(requestReauthentication)

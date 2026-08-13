@@ -35,7 +35,7 @@ private fun AuthenticationFailure.toMessage(context: Context): String = when (co
         (((retryAfterMs ?: 0L) + 999L) / 1000L).coerceAtLeast(1L),
     )
     AuthenticationFailureCode.PASSWORD_POLICY_VIOLATION ->
-        context.getString(R.string.settings_auth_password_too_short)
+        context.getString(R.string.auth_error_password_too_short)
     AuthenticationFailureCode.LAST_METHOD_REQUIRED ->
         context.getString(R.string.settings_auth_last_method_required)
     else -> context.getString(R.string.settings_auth_operation_failed)

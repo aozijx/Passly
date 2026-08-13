@@ -67,8 +67,8 @@ internal fun RecoveryPasswordDialog(
 
     PasslyAlertDialog(
         title = stringResource(R.string.recovery_mode_password_dialog_title),
-        confirmText = stringResource(R.string.recovery_mode_save),
-        dismissText = stringResource(R.string.recovery_mode_cancel),
+        confirmText = stringResource(R.string.save),
+        dismissText = stringResource(R.string.cancel),
         onConfirm = onConfirm,
         onDismiss = { if (!isBusy) onDismiss() },
         confirmEnabled = !isBusy &&

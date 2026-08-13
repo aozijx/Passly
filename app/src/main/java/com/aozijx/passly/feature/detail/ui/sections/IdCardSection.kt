@@ -31,7 +31,7 @@ fun IdCardSection(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val msgCopySuccess = stringResource(R.string.msg_copy_success)
+    val msgCopySuccess = stringResource(R.string.field_copy_success_message)
     val idNumberLabel = stringResource(R.string.id_number)
     val usernameLabel = stringResource(R.string.vault_detail_username)
     val notSet = stringResource(R.string.not_set)

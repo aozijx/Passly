@@ -96,7 +96,7 @@ private fun VersionTab(historyList: List<EntryRevision>, onRestore: (String) -> 
                     )
                 }
                 TextButton(onClick = { onRestore(history.id.value) }) {
-                    Text(stringResource(R.string.vault_detail_history_restore))
+                    Text(stringResource(R.string.restore))
                 }
             }
         }

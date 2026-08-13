@@ -54,7 +54,7 @@ fun SshKeySection(
     onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
-    val msgCopySuccess = stringResource(R.string.msg_copy_success)
+    val msgCopySuccess = stringResource(R.string.field_copy_success_message)
     val sshPrivateKeyLabel = stringResource(R.string.ssh_private_key)
     val passphraseLabel = stringResource(R.string.passphrase)
     val actionHandler = DetailSectionActionHandler(
@@ -78,7 +78,7 @@ fun SshKeySection(
             EditTextField(
                 value = editState.editedPassword,
                 onValueChange = { editState.editedPassword = it },
-                label = stringResource(R.string.edit_field, passphraseLabel),
+                label = stringResource(R.string.field_edit_action, passphraseLabel),
                 onSave = {
                     if (editState.editedPassword != revealedPassword) {
                         onEntryUpdated(entry.withSshPassphrase(editState.editedPassword))

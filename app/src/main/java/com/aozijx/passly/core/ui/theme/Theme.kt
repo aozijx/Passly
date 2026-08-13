@@ -121,7 +121,7 @@ private val TealThemePalette = ThemePalette(AquaAccent, SlateAccent, OliveAccent
 private val PinkThemePalette = ThemePalette(PinkAccent, RoseAccent, OrangeAccent)
 
 val themePresets = listOf(
-    ThemePreset(0, R.string.default_label),
+    ThemePreset(0, R.string.settings_theme_color_default),
     ThemePreset(
         color = 0xFF4285F4,
         nameKey = R.string.settings_theme_color_blue,

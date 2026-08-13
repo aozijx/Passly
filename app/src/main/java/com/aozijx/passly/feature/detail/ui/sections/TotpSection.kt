@@ -24,7 +24,7 @@ fun TotpSection(
     onEvent: (DetailIntent) -> Unit,
 ) {
     val context = LocalContext.current
-    val msgCopySuccess = stringResource(R.string.msg_copy_success)
+    val msgCopySuccess = stringResource(R.string.field_copy_success_message)
     val totpLabel = stringResource(R.string.vault_detail_totp_label)
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {

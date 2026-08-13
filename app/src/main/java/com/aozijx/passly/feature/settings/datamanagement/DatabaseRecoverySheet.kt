@@ -118,7 +118,7 @@ internal fun DatabaseRecoverySheet(
                     onDismiss()
                 },
                 modifier = Modifier.align(Alignment.End),
-            ) { Text(stringResource(R.string.database_recovery_close)) }
+            ) { Text(stringResource(R.string.close)) }
         }
     }
 

@@ -18,7 +18,6 @@
     <string name="settings_page_notifications_summary">システム通知、アプリ内メッセージ、分類</string>
     <string name="settings_page_privacy">プライバシー</string>
     <string name="settings_page_privacy_summary">画面保護、反転ロック</string>
-    <string name="settings_page_recovery_code">復旧コード</string>
     <string name="settings_page_recovery_code_summary">緊急時のPasslyロック解除</string>
     <string name="settings_page_security">ロック解除とロック</string>
     <string name="settings_page_security_summary">パスワード、生体認証、自動ロック</string>
@@ -40,6 +39,7 @@
     <string name="settings_language">言語</string>
     <string name="settings_language_choose">言語を選択</string>
     <string name="settings_theme_color">テーマ配色</string>
+    <string name="settings_theme_color_default">既定</string>
     <string name="settings_theme_color_blue">青</string>
     <string name="settings_theme_color_green">緑</string>
     <string name="settings_theme_color_orange">オレンジ</string>
@@ -83,7 +83,6 @@
     <string name="settings_app_password_manage_description">パスワードを変更するか、この機能を無効にできます。</string>
     <string name="settings_app_password_manage_title">アプリのロック解除パスワードを管理</string>
     <string name="settings_auth_app_password_confirm_label">パスワード確認</string>
-    <string name="settings_auth_before_set_app_password">認証後にアプリパスワードの設定を続行します</string>
     <string name="settings_auth_change_app_password">アプリパスワードを変更</string>
     <string name="settings_auth_current_password">現在のパスワード</string>
     <string name="settings_auth_password_change_success">パスワードを変更しました</string>
@@ -93,7 +92,6 @@
     <string name="settings_auth_password_mismatch">パスワードが一致しません</string>
     <string name="settings_auth_password_set_success">アプリパスワードを設定しました</string>
     <string name="settings_auth_current_password_incorrect">現在のアプリパスワードが正しくありません</string>
-    <string name="settings_auth_password_too_short">6文字以上で入力してください</string>
     <string name="settings_auth_last_method_required">ロック解除方法を1つ以上残してください</string>
     <string name="settings_auth_operation_failed">パスワード操作に失敗しました。もう一度お試しください。</string>
     <string name="settings_duration_minutes">%1$d 分</string>
@@ -107,14 +105,10 @@
     <string name="settings_recovery_code_regenerate_confirm_message">古いコードは直ちに無効になります。再生成しますか？</string>
     <string name="settings_recovery_code_save_hint">%1$s は復旧コードの平文を保存しません。安全な場所に保管してください。</string>
     <string name="settings_recovery_code_saved">端末に保存済み</string>
-    <string name="settings_recovery_code_title">復旧コード</string>
     <string name="settings_recovery_code_verify_invalid">無効な復旧コードです</string>
-    <string name="settings_recovery_code_verify_title">復旧コードを確認</string>
     <string name="settings_recovery_code_verify_valid">有効な復旧コードです</string>
     <string name="settings_recovery_code_warning">このコードは一度だけ表示されます。今すぐ保存してください。</string>
     <string name="settings_security_app_password">パスワードを設定</string>
-    <string name="settings_security_app_password_description">専用パスワードでアプリをロック解除</string>
-    <string name="settings_security_auth_section">認証</string>
     <string name="settings_security_reauthenticate_sensitive_copies">機密データのコピーを認証</string>
     <string name="settings_security_reauthenticate_sensitive_copies_description">非表示のパスワード、CVV、秘密鍵を直接コピーする前に再認証します。この詳細画面ですでに認証して表示した項目は、コピー時に再認証しません。</string>
     <string name="settings_privacy_sensitive_access_section">機密データへのアクセス</string>
@@ -194,7 +188,6 @@
     <string name="settings_trash_emptying">削除中…</string>
     <string name="settings_trash_error_dismiss">確認</string>
     <string name="settings_trash_loading">読み込み中…</string>
-    <string name="settings_trash_restore">復元</string>
     <string name="settings_trash_title">ゴミ箱</string>
     <string name="settings_database_recovery_clear_action">Passlyデータベースを完全に消去</string>
     <string name="settings_database_recovery_clear_confirm">確認して消去</string>

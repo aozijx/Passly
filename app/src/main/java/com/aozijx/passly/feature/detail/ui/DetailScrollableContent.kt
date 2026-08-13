@@ -209,7 +209,7 @@ fun DetailScrollableContent(
 
         entry.tags.firstOrNull { it.isNotBlank() }?.trim()?.let { category ->
             item {
-                InfoGroupCard(title = stringResource(R.string.entry_category)) {
+                InfoGroupCard(title = stringResource(R.string.field_category)) {
                     EntryCategoryItem(category)
                 }
             }

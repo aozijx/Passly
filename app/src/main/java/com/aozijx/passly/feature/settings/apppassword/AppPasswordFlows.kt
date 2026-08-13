@@ -24,7 +24,7 @@ internal fun validateAndSendAppPasswordAction(
     when (action) {
         AppPasswordAction.SET -> {
             if (!AppPasswordPolicy.DEFAULT.acceptsLength(newPassword.length)) {
-                context.showToast(R.string.settings_auth_password_too_short)
+                context.showToast(R.string.auth_error_password_too_short)
                 return false
             }
             if (newPassword != confirmPassword) {
@@ -42,7 +42,7 @@ internal fun validateAndSendAppPasswordAction(
                 return false
             }
             if (!AppPasswordPolicy.DEFAULT.acceptsLength(newPassword.length)) {
-                context.showToast(R.string.settings_auth_password_too_short)
+                context.showToast(R.string.auth_error_password_too_short)
                 return false
             }
             if (newPassword != confirmPassword) {

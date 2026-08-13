@@ -52,7 +52,7 @@ fun BankCardSection(
 ) {
     val context = LocalContext.current
     val label = stringResource(R.string.vault_fab_bank_card)
-    val cardCopiedMsg = stringResource(R.string.msg_copy_success, label)
+    val cardCopiedMsg = stringResource(R.string.field_copy_success_message, label)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
         onEvent = onEvent
@@ -72,7 +72,7 @@ fun BankCardSection(
                 value = editState.editedUsername,
                 onValueChange = { editState.editedUsername = it },
                 label = stringResource(
-                    R.string.edit_field,
+                    R.string.field_edit_action,
                     stringResource(R.string.cardholder)
                 ),
                 modifier = Modifier.fillMaxWidth(),
@@ -117,7 +117,7 @@ fun BankCardSection(
                 value = editState.editedPassword,
                 onValueChange = { editState.editedPassword = it },
                 label = stringResource(
-                    R.string.edit_field,
+                    R.string.field_edit_action,
                     stringResource(R.string.card_number)
                 ),
                 modifier = Modifier.fillMaxWidth(),
@@ -169,7 +169,7 @@ fun BankCardSection(
                 value = editState.editedTotp,
                 onValueChange = { editState.editedTotp = it },
                 label = stringResource(
-                    R.string.edit_field,
+                    R.string.field_edit_action,
                     stringResource(R.string.card_cvv)
                 ),
                 modifier = Modifier.fillMaxWidth(),

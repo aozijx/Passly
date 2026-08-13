@@ -51,7 +51,7 @@ fun WifiSection(
     onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
-    val msgCopySuccess = stringResource(R.string.msg_copy_success)
+    val msgCopySuccess = stringResource(R.string.field_copy_success_message)
     val wifiSsidLabel = stringResource(R.string.wifi_ssid)
     val wifiPasswordLabel = stringResource(R.string.wifi_password)
     val wifiEncryptionLabel = stringResource(R.string.wifi_encryption)
@@ -77,7 +77,7 @@ fun WifiSection(
             PasslyOutlinedTextField(
                 value = editState.editedPassword,
                 onValueChange = { editState.editedPassword = it },
-                label = stringResource(R.string.edit_field, wifiPasswordLabel),
+                label = stringResource(R.string.field_edit_action, wifiPasswordLabel),
                 modifier = Modifier.fillMaxWidth(),
                 trailingIcon = {
                     IconButton(onClick = {

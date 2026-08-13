@@ -1,51 +1,48 @@
 <resources>
 
-    <!-- 共通 -->
-    <string name="auth_title">セキュリティ確認</string>
+    <!-- 共通操作 -->
     <string name="verify">確認</string>
     <string name="save">保存</string>
     <string name="copy">コピー</string>
-    <string name="edit">編集</string>
     <string name="cancel">キャンセル</string>
     <string name="close">閉じる</string>
     <string name="back">戻る</string>
     <string name="search">検索</string>
     <string name="more">もっと見る</string>
     <string name="add">追加</string>
-    <string name="paste">貼り付け</string>
-    <string name="username">ユーザー名</string>
-    <string name="password">パスワード</string>
-    <string name="title">タイトル</string>
-    <string name="remark">メモ</string>
-    <string name="default_label">既定</string>
-    <string name="edit_field">%sを編集</string>
+
+    <!-- 共通フィールド -->
+    <string name="field_username">ユーザー名</string>
+    <string name="password_label">パスワード</string>
+    <string name="field_title">タイトル</string>
+    <string name="field_notes">メモ</string>
+    <string name="field_edit_action">%sを編集</string>
+    <string name="field_copy_success_message">%1$sをコピーしました</string>
     <string name="show_password">パスワード表示</string>
     <string name="hide_password">パスワード非表示</string>
-    <string name="username_hint">ユーザー名／メールアドレス</string>
-    <string name="entry_category">カテゴリ</string>
+    <string name="field_username_hint">ユーザー名またはメールアドレス</string>
+    <string name="field_category">カテゴリ</string>
+    <string name="authentication_label">認証</string>
+    <string name="app_password_unlock_description">専用パスワードでアプリをロック解除</string>
+    <string name="recovery_code_label">復旧コード</string>
+    <string name="restore_access">アクセスを復旧</string>
+    <string name="recovery_code_verify">復旧コードを確認</string>
+    <string name="restore">復元</string>
 
     <!-- エントリ種別名称 -->
     <string name="entry_type_account">アカウント</string>
     <string name="entry_type_login">ログイン</string>
     <string name="entry_type_note">ノート</string>
-    <string name="entry_type_card">カード</string>
-    <string name="entry_type_identity">ID情報</string>
     <string name="entry_type_ssh_key">SSHキー</string>
-    <string name="entry_type_wifi" translatable="false">Wi-Fi</string>
-    <string name="entry_type_passkey" translatable="false">Passkey</string>
-    <string name="entry_type_otp" translatable="false">OTP</string>
     <string name="entry_type_passport">パスポート</string>
-    <string name="entry_type_license">免許証</string>
-    <string name="entry_type_database">データベース</string>
-    <string name="entry_type_server">サーバー</string>
-    <string name="entry_type_api_key" translatable="false">API Key</string>
+    <string name="entry_type_driver_license">運転免許証</string>
+    <string name="entry_type_database_credential">データベース認証情報</string>
+    <string name="entry_type_server_credential">サーバー認証情報</string>
     <string name="entry_type_crypto_wallet">暗号資産ウォレット</string>
     <string name="entry_type_bank_card">銀行カード</string>
     <string name="entry_type_id_card">身分証</string>
     <string name="entry_type_seed_phrase">リカバリーフレーズ</string>
     <string name="entry_type_recovery_code">復旧コード</string>
-
-    <!-- アプリ情報 -->
 
     <!-- 自動入力サービス -->
     <string name="autofill_entry_compact_title">アカウントを選択</string>
@@ -58,28 +55,28 @@
         <item quantity="other">%d 件のアカウント · タップして選択</item>
     </plurals>
 
-    <!-- 自動入力タイトル生成 -->
-
-    <!-- 金庫関連 -->
+    <!-- 保管庫の状態 -->
     <string name="vault_auth_subtitle">本人確認してPasslyにアクセス</string>
-    <string name="main_notification_permission_denied">通知権限が無効のため、バックグラウンド同期の進捗は表示されません。</string>
+    <string name="notification_permission_denied_message">通知権限が無効なため、バックグラウンド同期の進捗は表示されません。</string>
     <string name="vault_locked_title">Passlyがロックされています</string>
     <string name="credential_create_password_description">パスワードを Passly に安全に保存します</string>
     <string name="vault_auth_decrypt_subtitle_generic">操作を続けるため確認</string>
 
-    <!-- 金庫 - その他 -->
+    <!-- 保管庫の閲覧 -->
     <string name="vault_search_placeholder">項目を検索…</string>
+    <string name="vault_title_category">カテゴリ：%s</string>
+    <string name="vault_search_category">カテゴリを検索</string>
+    <string name="vault_search_category_hint">カテゴリを検索…</string>
     <string name="vault_clear_filter">フィルター解除</string>
     <string name="vault_menu_filter">分類フィルター</string>
     <string name="vault_menu_hide_totp">コードを隠す</string>
     <string name="vault_menu_show_totp">コードを表示</string>
     <string name="tab_all">すべて</string>
-    <string name="otp">otp</string>
 
     <string name="vault_scan">スキャン</string>
     <string name="vault_add_entry_save_failed">項目を保存できませんでした</string>
     <string name="vault_empty_placeholder">アイテムがありません。+ をタップして追加</string>
-    <string name="vault_scanner_error_not_otp">スキャン成功しましたが、有効な QRコードではありません</string>
+    <string name="vault_scanner_error_not_otp">このQRコードに有効なOTP情報は含まれていません</string>
     <string name="vault_scanner_action_album">アルバムから選択</string>
     <string name="vault_scanner_result_title">秘密鍵を検出</string>
     <string name="scanner_waiting_for_permission">カメラ権限を待っています…</string>
@@ -96,6 +93,12 @@
     <string name="backup_directory_permission_ok">保存先ディレクトリへの書き込み権限は正常です</string>
     <string name="backup_directory_permission_failed">保存先ディレクトリの書き込みテストに失敗しました。再選択してください。</string>
 
+    <!-- データベース復旧 -->
+    <string name="database_open_error_title">データベースを開けません</string>
+    <string name="database_open_error_message">データベースキーまたは構造が一致しません。まず再試行してください。解決しない場合は、本人確認後に障害データベース、添付ファイル、画像を保持してから、空のデータベースを作成できます。既存データが自動的に上書きされることはありません。</string>
+    <string name="database_open_retry_action">データベースを再度開く</string>
+    <string name="database_open_close_app_action">アプリを閉じる</string>
+
     <!-- 詳細と編集 -->
     <string name="vault_editor_section_basic_info">基本情報</string>
     <string name="vault_editor_section_credentials">認証情報</string>
@@ -104,12 +107,14 @@
     <string name="vault_add_password_title">パスワードを追加</string>
     <string name="vault_add_password_website">ウェブサイトまたはアプリのアドレス</string>
     <string name="vault_add_password_save_failed">パスワードを保存できませんでした</string>
+    <string name="vault_add_bank_card_title">銀行カードを追加</string>
+    <string name="vault_add_bank_card_save_failed">銀行カードを保存できませんでした</string>
     <string name="vault_reveal_info">本人確認して詳細を表示</string>
     <string name="vault_edit_modified_hint">変更されました。保存をお忘れなく</string>
     <string name="vault_detail_associated_domain">関連ドメイン</string>
     <string name="vault_detail_associated_package">関連アプリ</string>
 
-    <string name="vault_export_qr_title">otp秘密鍵をエクスポート</string>
+    <string name="vault_export_qr_title">OTPシークレットをエクスポート</string>
     <string name="vault_export_qr_message">他のデバイスの認証アプリでこのQRコードをスキャンしてください</string>
 
     <string name="vault_add_otp_title">OTPを追加</string>
@@ -117,17 +122,11 @@
     <string name="vault_otp_uri_parsed">URIを解析しました</string>
     <string name="vault_otp_uri_parse_failed">URIの解析に失敗しました</string>
 
-    <!-- アイコン選択 -->
-    <string name="icon_picker_title">アイコンを選択</string>
-    <string name="icon_picker_subtitle">アカウント項目に適したアイコンを選択してください</string>
-    <string name="icon_picker_action_add_photo">カスタム画像を追加</string>
-
     <!-- TOTP 設定 -->
     <string name="totp_secret">秘密鍵 (Base32)</string>
     <string name="totp_period">更新周期 (秒)</string>
     <string name="totp_digits">桁数</string>
     <string name="totp_algorithm">暗号化アルゴリズム</string>
-    <string name="twofa_uri_hint">URI</string>
 
     <!-- 詳細ページの新しい文字列 -->
     <string name="vault_detail_totp_label">二要素認証コード</string>
@@ -158,17 +157,8 @@
     <string name="password_strength_good">良</string>
     <string name="password_strength_strong">強</string>
 
-    <!-- 設定: 外観 -->
     <string name="notification_channel_app_messages">アプリ情報</string>
     <string name="notification_channel_app_messages_summary">取得結果などのステータスバー情報</string>
-    <!-- カテゴリ -->
-
-    <!-- ウィジェット・ショートカット -->
-
-    <!-- 変更履歴 -->
-
-    <!-- 設定: インターフェース動作 -->
-
     <string name="notice_clipboard_cleared">クリップボードの機密データを消去しました</string>
     <string name="notice_clipboard_clear_failed">クリップボードの機密データを消去できませんでした</string>
     <string name="notice_app_locked">Passlyをロックしました</string>
@@ -180,13 +170,7 @@
     <string name="notice_database_index_rebuild_failed">検索インデックスの再構築に失敗しました</string>
     <string name="notice_database_operation_failed">データベース操作に失敗しました</string>
 
-    <string name="sort_last_used">最近使用した順</string>
-    <string name="sort_entry_type">項目タイプ</string>
     <string name="not_set">未設定</string>
-    <string name="vault_plain_export_db_error_title">データベースを開けません</string>
-    <string name="vault_plain_export_db_error_message">データベースキーまたは構造が一致しません。まず再試行してください。解決しない場合は、本人確認後に障害データベース、添付ファイル、画像を保持したまま、新しい空のデータベースを作成できます。既存データが自動的に上書きされることはありません。</string>
-    <string name="vault_database_retry">データベースを再度開く</string>
-    <string name="vault_plain_export_db_error_dismiss">アプリを閉じる</string>
     <string name="database_recovery_create_new_action">障害データベースを保持して新規作成</string>
     <string name="auth_purpose_restore_database">障害データベースを復元するため本人確認</string>
     <string name="settings_database_recovery_title">データベース復元</string>
@@ -202,7 +186,6 @@
     <string name="database_recovery_scan_summary">復元可能 %1$d、競合 %2$d、破損 %3$d、添付 %4$d</string>
     <string name="database_recovery_report_summary">%1$d件、添付%2$d件、履歴%3$d件を復元、競合%4$d件をスキップ</string>
     <string name="database_recovery_select_types">項目タイプを選択</string>
-    <string name="database_recovery_close">閉じる</string>
     <string name="database_recovery_status_pending">未検査</string>
     <string name="database_recovery_status_recoverable">復元可能</string>
     <string name="database_recovery_status_partial">一部復元可能</string>
@@ -217,7 +200,6 @@
     <string name="continue_action">続行</string>
     <string name="auth_verify_identity">本人確認</string>
     <string name="auth_method_biometric">生体認証</string>
-    <string name="auth_method_recovery_code">アクセスを復旧</string>
     <string name="auth_biometric_subtitle">続行するには本人確認を行ってください</string>
     <string name="auth_purpose_unlock_vault">Passlyをロック解除</string>
     <string name="auth_purpose_autofill">認証して自動入力</string>
@@ -230,6 +212,4 @@
     <string name="related_entries">関連エントリ</string>
     <string name="app_package_picker_title">関連アプリを選択</string>
     <string name="app_package_picker_search">アプリまたはパッケージ名を検索</string>
-    <string name="app_package_picker_action">アプリを選択</string>
-    <string name="entry_type">エントリ種別</string>
 </resources>

@@ -113,7 +113,7 @@ private fun BankCardForm(
         EntryTitleField(
             value = state.title,
             onValueChange = { callbacks.onAction(AddBankCardAction.TitleChanged(it)) },
-            label = stringResource(R.string.title)
+            label = stringResource(R.string.field_title)
         )
         CardTypeDropdown(
             selected = state.cardType,
@@ -198,7 +198,7 @@ private fun BankCardForm(
         EntryTagsField(
             value = state.tags,
             onValueChange = { callbacks.onAction(AddBankCardAction.TagsChanged(it)) },
-            label = stringResource(R.string.entry_category)
+            label = stringResource(R.string.field_category)
         )
         EntryUsernameField(
             value = state.billingAddress,
@@ -210,7 +210,7 @@ private fun BankCardForm(
         EntryNotesField(
             value = state.notes,
             onValueChange = { callbacks.onAction(AddBankCardAction.NotesChanged(it)) },
-            label = stringResource(R.string.remark),
+            label = stringResource(R.string.field_notes),
             keyboardActions = KeyboardActions(
                 onDone = {
                     if (state.isValid) callbacks.onSave()

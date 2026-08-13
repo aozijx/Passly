@@ -31,7 +31,7 @@ fun PasskeySection(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val msgCopySuccess = stringResource(R.string.msg_copy_success)
+    val msgCopySuccess = stringResource(R.string.field_copy_success_message)
     val passkeyDataLabel = stringResource(R.string.passkey_data)
     val hardwareKeyInfoLabel = stringResource(R.string.hardware_key_info)
     val notSet = stringResource(R.string.not_set)

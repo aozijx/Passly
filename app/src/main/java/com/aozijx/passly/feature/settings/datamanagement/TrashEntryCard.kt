@@ -135,7 +135,7 @@ internal fun TrashEntryCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.settings_trash_restore))
+                    Text(stringResource(R.string.restore))
                 }
                 TextButton(
                     enabled = !busy,

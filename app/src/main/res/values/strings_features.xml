@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 保险库排序与筛选 -->
+    <string name="sort_default">默认排序</string>
+    <string name="sort_name">名称</string>
+    <string name="sort_created">创建时间</string>
+    <string name="sort_updated">修改时间</string>
+    <string name="sort_usage">使用次数</string>
+    <string name="sort_last_used">最近使用</string>
+    <string name="sort_entry_type">条目类型</string>
+    <string name="vault_menu_sort">排序方式</string>
+    <string name="vault_quick_filter_passwords">密码</string>
+    <string name="vault_quick_filter_totp">验证码</string>
+
+    <!-- 添加条目 -->
+    <string name="vault_add_type_totp">动态口令</string>
+    <string name="vault_fab_bank_card">银行卡</string>
+    <string name="vault_fab_wifi" translatable="false">Wi-Fi</string>
+    <string name="vault_fab_ssh_key">SSH 密钥</string>
+    <string name="vault_fab_id_card">身份证</string>
+    <string name="vault_fab_passkey" translatable="false">Passkey</string>
+    <string name="vault_fab_add_title">添加条目</string>
+    <string name="vault_add_generic_title">添加 %s</string>
+
+    <!-- 条目历史 -->
+    <string name="vault_detail_history_label">活动日志</string>
+    <string name="vault_detail_history_updates">变更</string>
+    <string name="vault_detail_history_empty_filtered">暂无记录</string>
+    <string name="vault_detail_history_tab_version">版本</string>
+    <string name="vault_detail_history_tab_activity">活动</string>
+    <string name="vault_detail_activity_create">创建</string>
+    <string name="vault_detail_activity_update">更新</string>
+    <string name="vault_detail_activity_sensitive_change">敏感字段已更改</string>
+    <string name="vault_detail_activity_delete">删除</string>
+    <string name="vault_detail_activity_restore">恢复</string>
+    <string name="vault_detail_activity_autofill">自动填充</string>
+    <string name="vault_detail_activity_copy_password">复制密码</string>
+    <string name="vault_detail_activity_copy_username">复制用户名</string>
+    <string name="vault_detail_activity_view">查看</string>
+    <string name="vault_detail_activity_export">导出</string>
+    <string name="vault_detail_activity_import">导入</string>
+
+    <!-- Wi-Fi -->
+    <string name="wifi_ssid">Wi-Fi 名称</string>
+    <string name="wifi_password">Wi-Fi 密码</string>
+    <string name="wifi_encryption">安全类型</string>
+    <string name="wifi_hidden">隐藏网络</string>
+    <string name="wifi_settings">Wi-Fi 设置</string>
+
+    <!-- 银行卡 -->
+    <string name="cardholder">持卡人</string>
+    <string name="card_number">卡号</string>
+    <string name="card_cvv">安全码（CVV）</string>
+    <string name="card_expiration">有效期</string>
+    <string name="card_expiry_month">月</string>
+    <string name="card_expiry_year">年</string>
+    <string name="card_type">卡片类型</string>
+    <string name="card_type_debit">借记卡</string>
+    <string name="card_type_credit">信用卡</string>
+    <string name="payment_pin">支付密码</string>
+    <string name="billing_address">账单地址</string>
+
+    <!-- 助记词 -->
+    <string name="seed_phrase">助记词</string>
+    <string name="seed_phrase_title">加密钱包助记词</string>
+    <string name="seed_phrase_revealed">助记词已显示</string>
+    <string name="word_index_hint">点击任意位置复制</string>
+
+    <!-- SSH 密钥 -->
+    <string name="ssh_private_key">私钥</string>
+    <string name="ssh_private_key_full">完整私钥</string>
+    <string name="ssh_fingerprint">密钥指纹</string>
+    <string name="passphrase">密钥口令</string>
+
+    <!-- 身份与 Passkey -->
+    <string name="id_number">证件号码</string>
+    <string name="passkey_data">Passkey 数据</string>
+    <string name="hardware_key_info">硬件密钥信息</string>
+</resources>

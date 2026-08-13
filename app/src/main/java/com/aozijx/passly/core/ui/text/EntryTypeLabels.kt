@@ -16,9 +16,9 @@ fun EntryType.labelRes(): Int = when (this) {
     EntryType.PASSKEY -> R.string.entry_type_passkey
     EntryType.OTP -> R.string.entry_type_otp
     EntryType.PASSPORT -> R.string.entry_type_passport
-    EntryType.DRIVER_LICENSE -> R.string.entry_type_license
-    EntryType.DATABASE_CREDENTIAL -> R.string.entry_type_database
-    EntryType.SERVER_CREDENTIAL -> R.string.entry_type_server
+    EntryType.DRIVER_LICENSE -> R.string.entry_type_driver_license
+    EntryType.DATABASE_CREDENTIAL -> R.string.entry_type_database_credential
+    EntryType.SERVER_CREDENTIAL -> R.string.entry_type_server_credential
     EntryType.API_KEY -> R.string.entry_type_api_key
     EntryType.CRYPTO_WALLET -> R.string.entry_type_crypto_wallet
     EntryType.BANK_CARD -> R.string.entry_type_bank_card

@@ -1,31 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Vault sorting and filters -->
     <string name="sort_default">Default order</string>
     <string name="sort_name">Name</string>
     <string name="sort_created">Created</string>
     <string name="sort_updated">Updated</string>
     <string name="sort_usage">Usage count</string>
+    <string name="sort_last_used">Last used</string>
+    <string name="sort_entry_type">Entry type</string>
     <string name="vault_menu_sort">Sort by</string>
-    <string name="msg_copy_success">%1$s copied</string>
+    <string name="vault_quick_filter_passwords">Passwords</string>
+    <string name="vault_quick_filter_totp">Codes</string>
+
+    <!-- Add entry -->
+    <string name="vault_add_type_totp">Authenticator code</string>
     <string name="vault_fab_bank_card">Bank card</string>
-    <string name="vault_fab_wifi">WiFi</string>
     <string name="vault_fab_ssh_key">SSH key</string>
     <string name="vault_fab_id_card">ID card</string>
-    <string name="vault_fab_seed_phrase">Seed phrase</string>
-    <string name="vault_fab_passkey">Passkey</string>
-    <string name="vault_fab_recovery_code">Recovery code</string>
     <string name="vault_fab_add_title">Add item</string>
     <string name="vault_add_generic_title">Add %s</string>
+
+    <!-- Entry history -->
     <string name="vault_detail_history_label">Activity log</string>
-    <string name="vault_detail_history_all">All</string>
     <string name="vault_detail_history_updates">Changes</string>
     <string name="vault_detail_history_empty_filtered">No records</string>
     <string name="vault_detail_history_tab_version">Versions</string>
     <string name="vault_detail_history_tab_activity">Activity</string>
-    <string name="vault_detail_history_restore">Restore</string>
     <string name="vault_detail_activity_create">Created</string>
     <string name="vault_detail_activity_update">Updated</string>
-    <string name="vault_detail_activity_sensitive_change">Protected fields changed</string>
+    <string name="vault_detail_activity_sensitive_change">Sensitive fields changed</string>
     <string name="vault_detail_activity_delete">Deleted</string>
     <string name="vault_detail_activity_restore">Restored</string>
     <string name="vault_detail_activity_autofill">Autofilled</string>
@@ -34,33 +37,40 @@
     <string name="vault_detail_activity_view">Viewed</string>
     <string name="vault_detail_activity_export">Exported</string>
     <string name="vault_detail_activity_import">Imported</string>
-    <string name="auth_use_recovery_code">Restore access</string>
-    <string name="auth_recovery_code_label">Recovery code</string>
-    <string name="auth_recovery_code_unlock">Verify recovery code</string>
-    <string name="wifi_ssid">WiFi name</string>
-    <string name="wifi_password">WiFi password</string>
-    <string name="wifi_encryption">Security</string>
+
+    <!-- Wi-Fi -->
+    <string name="wifi_ssid">Wi-Fi name</string>
+    <string name="wifi_password">Wi-Fi password</string>
+    <string name="wifi_encryption">Security type</string>
     <string name="wifi_hidden">Hidden network</string>
-    <string name="wifi_settings">WiFi settings</string>
+    <string name="wifi_settings">Wi-Fi settings</string>
+
+    <!-- Bank card -->
     <string name="cardholder">Cardholder</string>
     <string name="card_number">Card number</string>
-    <string name="card_cvv">CVV</string>
-    <string name="card_expiration">Expiry date</string>
+    <string name="card_cvv">Security code (CVV)</string>
+    <string name="card_expiration">Expiration date</string>
     <string name="card_expiry_month">MM</string>
     <string name="card_expiry_year">YY</string>
-    <string name="card_type">Card Type</string>
-    <string name="card_type_debit">Debit</string>
-    <string name="card_type_credit">Credit</string>
+    <string name="card_type">Card type</string>
+    <string name="card_type_debit">Debit card</string>
+    <string name="card_type_credit">Credit card</string>
     <string name="payment_pin">Payment PIN</string>
-    <string name="billing_address">Billing Address</string>
+    <string name="billing_address">Billing address</string>
+
+    <!-- Seed phrase -->
     <string name="seed_phrase">Seed phrase</string>
-    <string name="seed_phrase_title">Crypto seed phrase</string>
+    <string name="seed_phrase_title">Crypto wallet seed phrase</string>
     <string name="seed_phrase_revealed">Seed phrase revealed</string>
     <string name="word_index_hint">Tap anywhere to copy</string>
+
+    <!-- SSH key -->
     <string name="ssh_private_key">Private key</string>
     <string name="ssh_private_key_full">Full private key</string>
     <string name="ssh_fingerprint">Key fingerprint</string>
     <string name="passphrase">Passphrase</string>
+
+    <!-- Identity and Passkey -->
     <string name="id_number">ID number</string>
     <string name="passkey_data">Passkey data</string>
     <string name="hardware_key_info">Hardware key details</string>

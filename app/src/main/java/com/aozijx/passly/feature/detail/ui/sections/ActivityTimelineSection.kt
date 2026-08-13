@@ -76,7 +76,7 @@ fun ActivityTimelineSection(activityList: List<EntryActivity>) {
                 ActivityFilterChip(
                     selected = currentFilter == ActivityFilter.ALL,
                     onClick = { currentFilter = ActivityFilter.ALL },
-                    label = stringResource(R.string.vault_detail_history_all)
+                    label = stringResource(R.string.tab_all)
                 )
                 ActivityFilterChip(
                     selected = currentFilter == ActivityFilter.ACTIONS,

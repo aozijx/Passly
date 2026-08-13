@@ -53,7 +53,7 @@ fun LockAuthSettingsSection(
         .coerceIn(SLIDER_MIN_SECONDS, SLIDER_MAX_SECONDS)
     var sliderValue by remember(lockTimeout) { mutableFloatStateOf(currentSeconds) }
 
-    SettingsSectionTitle(text = stringResource(R.string.settings_security_auth_section))
+    SettingsSectionTitle(text = stringResource(R.string.authentication_label))
     RoundedGroup(
         items = listOf(
 
@@ -132,7 +132,7 @@ fun LockAuthSettingsSection(
                 key = "security.app_password",
                 icon = Icons.Default.Lock,
                 title = stringResource(R.string.settings_security_app_password),
-                subtitle = stringResource(R.string.settings_security_app_password_description),
+                subtitle = stringResource(R.string.app_password_unlock_description),
                 value = stringResource(
                     if (isAppPasswordEnabled) R.string.settings_value_configured else R.string.not_set
                 ),

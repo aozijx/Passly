@@ -50,7 +50,7 @@ fun AuthenticationScreen(
     val subtitle = stringResource(R.string.vault_auth_subtitle)
     val activeMethod = uiState.activeMethod
     val appPasswordLabel = stringResource(R.string.auth_app_password_label)
-    val recoveryCodeLabel = stringResource(R.string.auth_recovery_code_label)
+    val recoveryCodeLabel = stringResource(R.string.recovery_code_label)
     val verificationFailure = uiState.verificationFailure
     val appPasswordFailure = verificationFailure?.takeIf {
         it.method == AuthenticationMethod.APP_PASSWORD
@@ -191,8 +191,8 @@ fun AuthenticationScreen(
                     expanded = uiState.expandedMethod == AuthenticationMethod.RECOVERY_CODE,
                     progress = activeMethod == AuthenticationMethod.RECOVERY_CODE,
                     icon = Icons.Default.Restore,
-                    collapsedText = stringResource(R.string.auth_use_recovery_code),
-                    expandedText = stringResource(R.string.auth_recovery_code_unlock),
+                    collapsedText = stringResource(R.string.restore_access),
+                    expandedText = stringResource(R.string.recovery_code_verify),
                     inputLabel = recoveryCodeLabel,
                     result = recoveryCodeFailure?.let { false },
                     errorText = recoveryCodeFailure?.message(recoveryCodeLabel)

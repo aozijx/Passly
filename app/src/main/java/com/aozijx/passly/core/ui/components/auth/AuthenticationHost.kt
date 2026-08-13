@@ -139,7 +139,7 @@ private fun SecretDialog(
                     Text(
                         stringResource(
                             if (method == AuthenticationMethod.RECOVERY_CODE) {
-                                R.string.auth_recovery_code_label
+                                R.string.recovery_code_label
                             } else {
                                 R.string.auth_app_password_label
                             }
@@ -175,6 +175,6 @@ private fun AuthenticationMethod.label(): String = stringResource(
     when (this) {
         AuthenticationMethod.BIOMETRIC -> R.string.auth_method_biometric
         AuthenticationMethod.APP_PASSWORD -> R.string.auth_app_password_label
-        AuthenticationMethod.RECOVERY_CODE -> R.string.auth_method_recovery_code
+        AuthenticationMethod.RECOVERY_CODE -> R.string.restore_access
     }
 )
