@@ -34,7 +34,7 @@ import com.aozijx.passly.domain.entry.model.sensitive.RevealedRevisionSensitiveF
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import com.aozijx.passly.domain.entry.policy.SensitiveRevisionRestorePolicy
-import com.aozijx.passly.security.crypto.SecureString
+import com.aozijx.passly.domain.sensitive.SecureString
 import javax.inject.Inject
 import javax.inject.Singleton
 

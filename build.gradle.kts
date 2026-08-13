@@ -16,7 +16,7 @@ moduleBoundaries {
         ":app",
         ":core:android",
         ":core:common",
-        ":core:security",
+        ":core:crypto",
         ":core:telemetry",
         ":core:ui",
         ":data",
@@ -25,14 +25,14 @@ moduleBoundaries {
     )
     module(":core:android", ":core:telemetry")
     module(":core:common")
-    module(":core:security", ":core:common", ":core:telemetry", ":domain")
+    module(":core:crypto", ":core:common", ":core:telemetry", ":domain")
     module(":core:telemetry", ":core:common")
     module(":core:ui", ":domain")
     module(
         ":data",
         ":core:android",
         ":core:common",
-        ":core:security",
+        ":core:crypto",
         ":core:telemetry",
         ":domain",
         ":runtime:session",

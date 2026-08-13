@@ -45,7 +45,7 @@ room {
 dependencies {
     implementation(project(":core:android"))
     implementation(project(":core:common"))
-    implementation(project(":core:security"))
+    implementation(project(":core:crypto"))
     implementation(project(":core:telemetry"))
     implementation(project(":domain"))
     implementation(project(":runtime:session"))

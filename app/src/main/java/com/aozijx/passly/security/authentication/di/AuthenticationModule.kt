@@ -8,7 +8,6 @@ import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.runtime.session.SessionKeySource
-import com.aozijx.passly.security.SecurityCoroutineScope
 import com.aozijx.passly.security.authentication.DefaultAuthenticationManager
 import com.aozijx.passly.security.authentication.DefaultAuthenticationMethodProvisioner
 import com.aozijx.passly.security.authentication.DefaultRecoveryCodeDraftFactory
@@ -21,9 +20,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import javax.inject.Singleton
 
 /** Composition for authentication, its secure session, and method execution dependencies. */
@@ -61,12 +57,6 @@ internal abstract class AuthenticationModule {
     ): SessionKeySource
 
     companion object {
-        @Provides
-        @Singleton
-        @SecurityCoroutineScope
-        fun provideSecurityCoroutineScope(): CoroutineScope =
-            CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-
         @Provides
         @Singleton
         fun provideKdfRunner(): KdfRunner = SingleThreadKdfRunner()

@@ -5,7 +5,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.feature.auth.contract.AuthenticationUiState
-import com.aozijx.passly.security.crypto.SecureString
+import com.aozijx.passly.domain.sensitive.SecureString
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

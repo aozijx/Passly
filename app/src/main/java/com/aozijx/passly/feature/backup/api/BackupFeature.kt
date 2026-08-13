@@ -17,7 +17,7 @@ import com.aozijx.passly.feature.backup.internal.presentation.BackupViewModel
 import com.aozijx.passly.feature.backup.internal.ui.BackupRestoreDetail
 import com.aozijx.passly.feature.backup.internal.ui.BackupRestoreSheetHost
 import com.aozijx.passly.feature.backup.internal.ui.BackupSheet
-import com.aozijx.passly.security.crypto.SecureString
+import com.aozijx.passly.domain.sensitive.SecureString
 
 /**
  * Public settings entry point for the Backup feature.

@@ -10,16 +10,16 @@ import com.aozijx.passly.security.authentication.host.AuthUiHost
 import com.aozijx.passly.security.authentication.host.BiometricHostFailure
 import com.aozijx.passly.security.authentication.host.BiometricHostResult
 import com.aozijx.passly.security.authentication.host.BiometricPromptSpec
-import com.aozijx.passly.security.crypto.DekManager
-import com.aozijx.passly.security.crypto.UnlockError
-import com.aozijx.passly.security.crypto.UnlockResult
-import com.aozijx.passly.security.envelope.BootstrapStore
+import com.aozijx.passly.security.dek.DekManager
+import com.aozijx.passly.security.dek.DekUnlockError
+import com.aozijx.passly.security.dek.DekUnlockResult
+import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class BiometricMethodExecutor @Inject constructor(
-    private val bootstrapStore: BootstrapStore,
+    private val vaultBootstrapStore: VaultBootstrapStore,
     private val cryptoFactory: BiometricCryptoFactory,
     private val dekManager: DekManager,
     private val session: VaultSessionController
@@ -31,9 +31,9 @@ class BiometricMethodExecutor @Inject constructor(
         val requiresDek = request.purpose == AuthenticationPurpose.UNLOCK_VAULT ||
             request.purpose == AuthenticationPurpose.RECOVER_DATABASE
         if (!requiresDek) return hostResult(request, host)
-        val envelope = bootstrapStore.load(EnvelopeType.BIOMETRIC)
+        val envelope = vaultBootstrapStore.load(EnvelopeType.BIOMETRIC)
             ?: return failure(AuthenticationFailureCode.METHOD_UNAVAILABLE, request)
-        val alias = bootstrapStore.loadBiometricState().binding?.activeAlias
+        val alias = vaultBootstrapStore.loadBiometricState().binding?.activeAlias
             ?: return failure(AuthenticationFailureCode.KEY_MISSING, request)
         val preparation = cryptoFactory.createDecrypt(alias, envelope.iv)
         val cipher = when (preparation) {
@@ -50,12 +50,12 @@ class BiometricMethodExecutor @Inject constructor(
             is BiometricHostResult.Success -> {
                 val unlockResult = if (dekManager.isUnlocked.value) {
                     // SOFT_LOCKED: DEK 已在内存中，无需重新解密
-                    UnlockResult.Success
+                    DekUnlockResult.Success
                 } else {
                     dekManager.unlock(EnvelopeType.BIOMETRIC, cipher)
                 }
                 when (unlockResult) {
-                    UnlockResult.Success -> {
+                    DekUnlockResult.Success -> {
                         if (request.purpose == AuthenticationPurpose.RECOVER_DATABASE) {
                             MethodExecutionResult.Success(AuthenticationMethod.BIOMETRIC)
                         } else if (session.markAuthenticated()) {
@@ -65,7 +65,7 @@ class BiometricMethodExecutor @Inject constructor(
                         }
                     }
 
-                    is UnlockResult.Failed -> failure(unlockResult.reason.failureCode(), request)
+                    is DekUnlockResult.Failed -> failure(unlockResult.reason.failureCode(), request)
                 }
             }
             is BiometricHostResult.Cancelled -> MethodExecutionResult.Cancelled(hostResult.byUser)
@@ -93,9 +93,9 @@ class BiometricMethodExecutor @Inject constructor(
         BiometricHostFailure.AUTHENTICATION_FAILED -> AuthenticationFailureCode.CREDENTIAL_INCORRECT
     }
 
-    private fun UnlockError.failureCode(): AuthenticationFailureCode = when (this) {
-        UnlockError.AUTH_FAILED -> AuthenticationFailureCode.CREDENTIAL_INCORRECT
-        UnlockError.DEK_VERIFY_FAILED, UnlockError.ENVELOPE_CORRUPTED -> AuthenticationFailureCode.ENVELOPE_CORRUPTED
+    private fun DekUnlockError.failureCode(): AuthenticationFailureCode = when (this) {
+        DekUnlockError.AUTH_FAILED -> AuthenticationFailureCode.CREDENTIAL_INCORRECT
+        DekUnlockError.DEK_VERIFY_FAILED, DekUnlockError.ENVELOPE_CORRUPTED -> AuthenticationFailureCode.ENVELOPE_CORRUPTED
         else -> AuthenticationFailureCode.SESSION_TRANSITION_FAILED
     }
 

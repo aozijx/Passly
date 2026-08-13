@@ -11,8 +11,8 @@ import com.aozijx.passly.feature.recovery.contract.RecoveryModeIntent
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeUiState
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeMutation
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeReducer
-import com.aozijx.passly.security.MemoryCleaner
-import com.aozijx.passly.security.crypto.SecureString
+import com.aozijx.passly.core.crypto.MemoryCleaner
+import com.aozijx.passly.domain.sensitive.SecureString
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow

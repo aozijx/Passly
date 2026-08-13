@@ -2,7 +2,7 @@ package com.aozijx.passly.data.codec.entry
 
 import com.aozijx.passly.data.codec.DatabaseRecordAad
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.security.crypto.SensitiveFieldEncryptor
+import com.aozijx.passly.security.dek.SensitiveFieldEncryptor
 import javax.inject.Inject
 
 class SensitiveFieldCodec @Inject constructor(

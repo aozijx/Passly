@@ -16,7 +16,7 @@ import com.aozijx.passly.data.local.database.DatabaseProvider
 import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.domain.entry.signal.EntryDataRefreshNotifier
 import com.aozijx.passly.runtime.session.SessionKeySource
-import com.aozijx.passly.security.crypto.FieldEncryptor
+import com.aozijx.passly.core.crypto.FieldEncryptor
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

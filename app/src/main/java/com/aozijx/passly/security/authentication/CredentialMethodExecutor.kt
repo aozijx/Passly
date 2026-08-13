@@ -1,6 +1,6 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.core.security.KeyDerivation
+import com.aozijx.passly.core.crypto.KeyDerivation
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
@@ -9,7 +9,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.security.authentication.host.AuthUiHost
 import com.aozijx.passly.security.authentication.host.SecretHostResult
-import com.aozijx.passly.security.envelope.BootstrapStore
+import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import java.security.GeneralSecurityException
 import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
@@ -20,7 +20,7 @@ import javax.inject.Singleton
 
 @Singleton
 class CredentialMethodExecutor @Inject constructor(
-    private val bootstrapStore: BootstrapStore,
+    private val vaultBootstrapStore: VaultBootstrapStore,
     private val kdfRunner: KdfRunner,
     private val session: VaultSessionController,
     private val attemptLimiter: CredentialAttemptLimiter
@@ -32,7 +32,7 @@ class CredentialMethodExecutor @Inject constructor(
         credential: CharArray? = null
     ): MethodExecutionResult {
         val type = method.envelopeType()
-        val envelope = bootstrapStore.load(type) ?: return failure(
+        val envelope = vaultBootstrapStore.load(type) ?: return failure(
             AuthenticationFailureCode.METHOD_UNAVAILABLE,
             request
         )

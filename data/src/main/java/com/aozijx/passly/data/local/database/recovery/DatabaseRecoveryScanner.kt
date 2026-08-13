@@ -20,7 +20,7 @@ import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.security.crypto.AttachmentContentCrypto
+import com.aozijx.passly.security.dek.AttachmentContentCrypto
 import java.io.File
 import java.security.MessageDigest
 import javax.inject.Inject

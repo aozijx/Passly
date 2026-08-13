@@ -13,7 +13,7 @@ class MigrationBoundaryTest {
         appKotlinRoot,
         File(projectRoot, "core/android/src/main/kotlin"),
         File(projectRoot, "core/common/src/main/kotlin"),
-        File(projectRoot, "core/security/src/main/kotlin"),
+        File(projectRoot, "core/crypto/src/main/kotlin"),
         File(projectRoot, "core/telemetry/src/main/kotlin"),
         File(projectRoot, "core/ui/src/main/kotlin"),
         File(projectRoot, "data/src/main/java"),
@@ -904,7 +904,7 @@ class MigrationBoundaryTest {
 
         assertTrue(
             "Sealed biometric sessions must open the database",
-            "if (lockLevel == SecureSessionState.SEALED)" in sessionController &&
+            "if (lockStateManager.state == SecureSessionState.SEALED)" in sessionController &&
                 "val err = sessionManager.unlock()" in sessionController
         )
         assertTrue(
@@ -1375,7 +1375,7 @@ class MigrationBoundaryTest {
 
         assertTrue(
             "Recovery success must durably consume the recovery envelope first",
-            "bootstrapStore.delete(EnvelopeType.RECOVERY)" in sessionController &&
+            "vaultBootstrapStore.delete(EnvelopeType.RECOVERY)" in sessionController &&
                     "consumeRecoveryEnvelope()" in sessionController &&
                     sessionController.indexOf("consumeRecoveryEnvelope()") <
                     sessionController.indexOf("markRecoveryModeInternal()"),

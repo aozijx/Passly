@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.backup.internal.archive
 
 import com.aozijx.passly.core.error.model.BackupFailed
-import com.aozijx.passly.core.security.KeyDerivation
+import com.aozijx.passly.core.crypto.KeyDerivation
 import com.aozijx.passly.feature.backup.internal.archive.format.BackupFormatRegistry
 import com.aozijx.passly.feature.backup.internal.archive.format.bitwarden.BitwardenJsonImportAdapter
 import com.aozijx.passly.feature.backup.internal.archive.format.encrypted.BackupArchiveCodec

@@ -12,7 +12,7 @@ import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
-import com.aozijx.passly.security.crypto.FieldEncryptor
+import com.aozijx.passly.core.crypto.FieldEncryptor
 import kotlinx.serialization.Serializable
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream

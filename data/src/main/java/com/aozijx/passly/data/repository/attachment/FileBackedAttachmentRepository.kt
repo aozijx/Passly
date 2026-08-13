@@ -12,7 +12,7 @@ import com.aozijx.passly.domain.entry.model.query.EntryCapability
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.attachment.EntryAttachment
 import com.aozijx.passly.domain.entry.port.AttachmentRepository
-import com.aozijx.passly.security.crypto.AttachmentContentCrypto
+import com.aozijx.passly.security.dek.AttachmentContentCrypto
 import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject

@@ -12,8 +12,8 @@ import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.feature.auth.contract.AuthenticationIntent
 import com.aozijx.passly.feature.auth.contract.AuthenticationUiState
-import com.aozijx.passly.security.MemoryCleaner
-import com.aozijx.passly.security.crypto.SecureString
+import com.aozijx.passly.core.crypto.MemoryCleaner
+import com.aozijx.passly.domain.sensitive.SecureString
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

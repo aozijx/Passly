@@ -1,6 +1,6 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.core.security.KeyDerivation
+import com.aozijx.passly.core.crypto.KeyDerivation
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.KdfAlgorithm
 import com.aozijx.passly.domain.access.model.KeyEnvelope
@@ -14,9 +14,9 @@ import com.aozijx.passly.domain.access.model.RecoveryCredentialDraft
 import com.aozijx.passly.domain.access.model.RecoveryCredentialCreation
 import com.aozijx.passly.domain.access.model.RecoveryCredentialFactory
 import com.aozijx.passly.domain.access.model.RecoveryCredentialId
-import com.aozijx.passly.security.crypto.DekManager
-import com.aozijx.passly.security.crypto.EnvelopeCrypto
-import com.aozijx.passly.security.envelope.BootstrapStore
+import com.aozijx.passly.security.dek.DekManager
+import com.aozijx.passly.security.envelope.EnvelopeManager
+import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.github.f4b6a3.uuid.UuidCreator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
@@ -30,7 +30,7 @@ import javax.inject.Singleton
 class DefaultRecoveryCodeDraftFactory @Inject constructor(
     private val kdfRunner: KdfRunner,
     private val dekManager: DekManager,
-    private val bootstrapStore: BootstrapStore,
+    private val vaultBootstrapStore: VaultBootstrapStore,
     private val authenticationManager: AuthenticationManager
 ) : RecoveryCredentialFactory {
     private val random = SecureRandom()
@@ -49,7 +49,7 @@ class DefaultRecoveryCodeDraftFactory @Inject constructor(
             val rawKey = ownedKey.consume()
             try {
                 envelope = dekManager.withDek { dek ->
-                    EnvelopeCrypto.wrapWithKey(
+                    EnvelopeManager.wrapWithKey(
                         type = EnvelopeType.RECOVERY,
                         dek = dek,
                         wrappingKey = SecretKeySpec(rawKey, "AES"),
@@ -65,7 +65,7 @@ class DefaultRecoveryCodeDraftFactory @Inject constructor(
                 generationId = correlationId,
                 sourceCode = code,
                 sourceEnvelope = requireNotNull(envelope),
-                bootstrapStore = bootstrapStore,
+                vaultBootstrapStore = vaultBootstrapStore,
                 authenticationManager = authenticationManager
             )
             ownershipTransferred = true
@@ -98,7 +98,7 @@ private class SecureRecoveryCodeDraft(
     generationId: String,
     sourceCode: CharArray,
     sourceEnvelope: KeyEnvelope,
-    private val bootstrapStore: BootstrapStore,
+    private val vaultBootstrapStore: VaultBootstrapStore,
     private val authenticationManager: AuthenticationManager
 ) : RecoveryCredentialDraft {
     override val id = RecoveryCredentialId(generationId)
@@ -119,7 +119,7 @@ private class SecureRecoveryCodeDraft(
             salt = current.salt.copyOf()
         )
         try {
-            bootstrapStore.save(copy)
+            vaultBootstrapStore.save(copy)
             close()
             try {
                 authenticationManager.refreshAvailability()

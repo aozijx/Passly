@@ -12,7 +12,7 @@ import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
-import com.aozijx.passly.security.crypto.SecureString
+import com.aozijx.passly.domain.sensitive.SecureString
 import javax.inject.Inject
 import javax.inject.Singleton
 

@@ -1,6 +1,6 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.core.security.KeyDerivation
+import com.aozijx.passly.core.crypto.KeyDerivation
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.KdfAlgorithm
 import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
@@ -15,8 +15,8 @@ import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationRequestId
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.LockReason
-import com.aozijx.passly.security.crypto.DekManager
-import com.aozijx.passly.security.envelope.BootstrapStore
+import com.aozijx.passly.security.dek.DekManager
+import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.github.f4b6a3.uuid.UuidCreator
 import kotlinx.coroutines.CancellationException
 import javax.crypto.Cipher
@@ -31,7 +31,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     private val dekManager: DekManager,
     private val session: VaultSessionController,
     private val authenticationManager: AuthenticationManager,
-    private val bootstrapStore: BootstrapStore,
+    private val vaultBootstrapStore: VaultBootstrapStore,
     private val hostRegistry: com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry,
     private val biometricRotationCoordinator: BiometricRotationCoordinator,
     private val cryptoFactory: BiometricCryptoFactory,
@@ -146,7 +146,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
                 )
             )
         }
-        bootstrapStore.delete(EnvelopeType.APP_PASSWORD)
+        vaultBootstrapStore.delete(EnvelopeType.APP_PASSWORD)
         authenticationManager.refreshAvailability()
         return AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
     }
@@ -166,13 +166,13 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
                 )
             )
         }
-        val activeAlias = bootstrapStore.loadBiometricState().binding?.activeAlias
+        val activeAlias = vaultBootstrapStore.loadBiometricState().binding?.activeAlias
             ?: return AuthenticationResult.Failure(
                 AuthenticationFailure(AuthenticationFailureCode.KEY_MISSING, AuthenticationRequestId(correlationId))
             )
-        bootstrapStore.disableBiometric(activeAlias)
+        vaultBootstrapStore.disableBiometric(activeAlias)
         if (cryptoFactory.deleteAlias(activeAlias)) {
-            bootstrapStore.clearBiometricCleanupAlias(activeAlias)
+            vaultBootstrapStore.clearBiometricCleanupAlias(activeAlias)
         }
         authenticationManager.refreshAvailability()
         return AuthenticationResult.Success(AuthenticationMethod.BIOMETRIC)
@@ -205,10 +205,10 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     }
 
     override suspend fun hasRecoveryCode(): Boolean =
-        bootstrapStore.load(EnvelopeType.RECOVERY) != null
+        vaultBootstrapStore.load(EnvelopeType.RECOVERY) != null
 
     override suspend fun checkRecoveryCode(code: CharArray): Boolean {
-        val envelope = bootstrapStore.load(EnvelopeType.RECOVERY) ?: run {
+        val envelope = vaultBootstrapStore.load(EnvelopeType.RECOVERY) ?: run {
             code.fill('\u0000')
             return false
         }

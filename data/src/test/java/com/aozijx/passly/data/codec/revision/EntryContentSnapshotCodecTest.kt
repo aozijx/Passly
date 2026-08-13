@@ -7,8 +7,9 @@ import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
-import com.aozijx.passly.security.crypto.FieldEncryptor
-import com.aozijx.passly.security.crypto.SessionKeyManager
+import com.aozijx.passly.core.crypto.FieldEncryptor
+import com.aozijx.passly.core.crypto.AesGcmCryptoEngine
+import com.aozijx.passly.security.dek.FieldKeyManager
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -39,13 +40,13 @@ class EntryContentSnapshotCodecTest {
     }
 
     private suspend fun withCodec(block: suspend (EntryContentSnapshotCodec) -> Unit) {
-        val keyManager = SessionKeyManager().apply {
+        val keyManager = FieldKeyManager().apply {
             deriveAndSet(ByteArray(32) { (it + 3).toByte() })
         }
         try {
-            block(EntryContentSnapshotCodec(FieldEncryptor(keyManager)))
+            block(EntryContentSnapshotCodec(FieldEncryptor(keyManager, AesGcmCryptoEngine())))
         } finally {
-            keyManager.clearSessionKey()
+            keyManager.clear()
         }
     }
 

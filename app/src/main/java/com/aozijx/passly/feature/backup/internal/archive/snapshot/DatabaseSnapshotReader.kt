@@ -13,7 +13,7 @@ import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.mapper.entry.EntryAssembler
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.security.crypto.AttachmentContentCrypto
+import com.aozijx.passly.security.dek.AttachmentContentCrypto
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File

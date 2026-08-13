@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.backup.internal.archive.format.encrypted
 
-import com.aozijx.passly.core.security.KeyDerivation
+import com.aozijx.passly.core.crypto.KeyDerivation
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream

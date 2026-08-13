@@ -25,7 +25,7 @@ import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.data.mapper.entry.toDatabaseFlags
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
-import com.aozijx.passly.security.crypto.AttachmentContentCrypto
+import com.aozijx.passly.security.dek.AttachmentContentCrypto
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File

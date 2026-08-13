@@ -4,7 +4,7 @@ import android.hardware.biometrics.BiometricManager
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
-import com.aozijx.passly.security.envelope.BootstrapStore
+import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -18,22 +18,22 @@ import javax.inject.Singleton
  */
 @Singleton
 class AuthenticationAvailabilityResolver @Inject constructor(
-    private val bootstrapStore: BootstrapStore,
+    private val vaultBootstrapStore: VaultBootstrapStore,
     private val biometricManager: BiometricManager
 ) {
     suspend fun resolve(): AuthenticationMethods = withContext(Dispatchers.Default) {
-        val biometricState = bootstrapStore.loadBiometricState()
+        val biometricState = vaultBootstrapStore.loadBiometricState()
         AuthenticationMethods(buildSet {
             if (biometricManager.canAuthenticate(
                 BiometricManager.Authenticators.BIOMETRIC_STRONG
             ) == BiometricManager.BIOMETRIC_SUCCESS &&
-                    bootstrapStore.load(EnvelopeType.BIOMETRIC) != null &&
+                    vaultBootstrapStore.load(EnvelopeType.BIOMETRIC) != null &&
                     biometricState.binding != null
             ) add(AuthenticationMethod.BIOMETRIC)
-            if (bootstrapStore.load(EnvelopeType.APP_PASSWORD) != null) {
+            if (vaultBootstrapStore.load(EnvelopeType.APP_PASSWORD) != null) {
                 add(AuthenticationMethod.APP_PASSWORD)
             }
-            if (bootstrapStore.load(EnvelopeType.RECOVERY) != null) {
+            if (vaultBootstrapStore.load(EnvelopeType.RECOVERY) != null) {
                 add(AuthenticationMethod.RECOVERY_CODE)
             }
         })
