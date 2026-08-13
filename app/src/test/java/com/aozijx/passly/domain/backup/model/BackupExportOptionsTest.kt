@@ -21,7 +21,7 @@ class BackupExportOptionsTest {
 
     @Test
     fun optionsAllowResourcesDeletedEntriesAndTypesToBeExcluded() {
-        val selectedTypes = setOf(EntryType.LOGIN, EntryType.TOTP)
+        val selectedTypes = setOf(EntryType.LOGIN, EntryType.OTP)
         val options = BackupExportOptions(
             includeIcons = false,
             includeAttachments = false,
