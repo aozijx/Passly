@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.di
+package com.aozijx.passly.data.diagnostics.di
 
 import com.aozijx.passly.core.telemetry.TelemetryPolicyController
 import com.aozijx.passly.core.telemetry.TelemetryFileStoreFactory
@@ -12,7 +12,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-internal abstract class TelemetryPolicyModule {
+internal abstract class TelemetryPersistenceModule {
     @Binds
     @Singleton
     abstract fun bindTelemetryFileStoreFactory(

@@ -1,10 +1,7 @@
-package com.aozijx.passly.data.di
+package com.aozijx.passly.data.entry.di
 
-import com.aozijx.passly.data.local.database.maintenance.DatabaseCleaner
-import com.aozijx.passly.data.local.database.maintenance.DatabaseCleanerImpl
 import com.aozijx.passly.data.repository.activity.RoomActivityQueryRepository
 import com.aozijx.passly.data.repository.activity.RoomActivityRecorder
-import com.aozijx.passly.data.repository.autofill.CredentialServiceRepositoryImpl
 import com.aozijx.passly.data.repository.entry.RoomEntryCommandRepository
 import com.aozijx.passly.data.repository.entry.RoomEntryListQueryRepository
 import com.aozijx.passly.data.repository.entry.RoomEntryLinkRepository
@@ -13,7 +10,6 @@ import com.aozijx.passly.data.repository.entry.RoomSensitiveFieldRepository
 import com.aozijx.passly.data.repository.favicon.FaviconRepositoryImpl
 import com.aozijx.passly.data.repository.otp.RoomOtpConfigRepository
 import com.aozijx.passly.data.repository.search.BlindIndexMaintenance
-import com.aozijx.passly.data.autofill.port.CredentialServiceRepository
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
@@ -32,7 +28,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-internal abstract class EntryRepositoryModule {
+internal abstract class EntryPersistenceModule {
 
     @Binds
     @Singleton
@@ -76,13 +72,4 @@ internal abstract class EntryRepositoryModule {
     @Singleton
     abstract fun bindFaviconRepository(impl: FaviconRepositoryImpl): FaviconRepository
 
-    @Binds
-    @Singleton
-    abstract fun bindCredentialServiceRepository(impl: CredentialServiceRepositoryImpl): CredentialServiceRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindDatabaseCleaner(
-        impl: DatabaseCleanerImpl
-    ): DatabaseCleaner
 }

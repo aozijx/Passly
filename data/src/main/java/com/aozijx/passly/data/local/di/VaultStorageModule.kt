@@ -1,7 +1,11 @@
-package com.aozijx.passly.data.di
+package com.aozijx.passly.data.local.di
 
+import com.aozijx.passly.data.local.database.maintenance.DatabaseCleaner
+import com.aozijx.passly.data.local.database.maintenance.DatabaseCleanerImpl
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
+import com.aozijx.passly.data.local.datastore.ProtoDataStoreBootstrapStore
 import com.aozijx.passly.data.repository.database.DatabaseControllerImpl
+import com.aozijx.passly.security.envelope.BootstrapStore
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
 import com.aozijx.passly.runtime.session.SessionStateProvider
 import com.aozijx.passly.data.database.port.DatabaseController
@@ -13,7 +17,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-internal abstract class DatabaseBindingsModule {
+internal abstract class VaultStorageModule {
     @Binds
     @Singleton
     abstract fun bindDatabaseController(
@@ -31,4 +35,16 @@ internal abstract class DatabaseBindingsModule {
     abstract fun bindDatabaseSessionLifecycle(
         impl: AppDatabaseSession
     ): DatabaseSessionLifecycle
+
+    @Binds
+    @Singleton
+    abstract fun bindDatabaseCleaner(
+        impl: DatabaseCleanerImpl,
+    ): DatabaseCleaner
+
+    @Binds
+    @Singleton
+    abstract fun bindBootstrapStore(
+        impl: ProtoDataStoreBootstrapStore,
+    ): BootstrapStore
 }
