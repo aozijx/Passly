@@ -14,9 +14,9 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.OtpUiState
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.data.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.feature.vault.contract.VaultIntent
 import kotlinx.coroutines.flow.StateFlow
@@ -42,7 +42,7 @@ fun rememberVaultActionProvider(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val totpLabel = stringResource(R.string.vault_detail_totp_label)
-    val fieldCopiedFormat = stringResource(R.string.msg_copy_success)
+    val fieldCopiedFormat = stringResource(R.string.field_copy_success_message)
 
     val latestAuthentication by rememberUpdatedState(requestAuthentication)
     val latestReauthentication by rememberUpdatedState(requestReauthentication)
@@ -56,7 +56,7 @@ fun rememberVaultActionProvider(
             val label = CopyFieldLabelProvider.getCopyLabel(fieldKey)
 
             if (fieldKey == FieldKey.PASSWORD && item.hasOtp) {
-                totpStates.value[item.id]?.let { state ->
+                totpStates.value[item.id.value]?.let { state ->
                     val code = state.code
                     if (!code.isNullOrEmpty() && !code.contains("-")) {
                         ClipboardUtils.copy(context, code)
@@ -68,7 +68,7 @@ fun rememberVaultActionProvider(
             } else {
                 latestAuthentication {
                     scope.launch {
-                        val fullEntry = vaultViewModel.loadEntryById(item.id)
+                        val fullEntry = vaultViewModel.loadEntryById(item.id.value)
                             ?: return@launch
                         val rawValue =
                             vaultViewModel.entryFieldReader.getFieldValue(fullEntry, fieldKey)

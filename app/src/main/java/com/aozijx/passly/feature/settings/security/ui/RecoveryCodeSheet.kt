@@ -37,8 +37,8 @@ fun RecoveryCodeSheet(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val recoveryCodeLabel = stringResource(R.string.vault_fab_recovery_code)
-    val msgCopySuccess = stringResource(R.string.msg_copy_success)
+    val recoveryCodeLabel = stringResource(R.string.recovery_code_label)
+    val msgCopySuccess = stringResource(R.string.field_copy_success_message)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -51,7 +51,7 @@ fun RecoveryCodeSheet(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = stringResource(R.string.settings_recovery_code_title),
+                text = stringResource(R.string.recovery_code_label),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )

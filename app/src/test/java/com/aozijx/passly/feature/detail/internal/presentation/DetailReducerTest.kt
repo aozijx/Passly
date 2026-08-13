@@ -1,12 +1,14 @@
 package com.aozijx.passly.feature.detail.internal.presentation
 
-import com.aozijx.passly.domain.entry.model.EntryAggregate
-import com.aozijx.passly.domain.entry.model.EntryHeader
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.EntrySummary
+import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
+import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -88,15 +90,14 @@ class DetailReducerTest {
         assertEquals(DetailUiState(), cleared)
     }
 
-    private fun entry(title: String) = EntryAggregate(
-        header = EntryHeader(
+    private fun entry(title: String) = Entry(
+        identity = EntryIdentity(
             id = EntryId("entry-1"),
-            entryType = EntryType.LOGIN,
+            type = EntryType.LOGIN,
             version = EntryVersion.INITIAL,
-            createdAt = 1L,
-            updatedAt = 1L,
+            timestamps = EntryTimestamps(1L),
         ),
-        summary = EntrySummary(title = title, username = ""),
-        secret = EntrySecret(),
+        profile = EntryProfile(title = title),
+        secret = EntrySecret(credential = LoginCredential()),
     )
 }

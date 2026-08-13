@@ -4,39 +4,37 @@ import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.telemetry.ErrorCode
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.SafeLogValue
-import com.aozijx.passly.domain.authentication.AuthMethodAvailability
-import com.aozijx.passly.domain.authentication.AuthenticationCallback
-import com.aozijx.passly.domain.authentication.AuthenticationFailure
-import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
-import com.aozijx.passly.domain.authentication.AuthenticationMethodPolicy
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
-import com.aozijx.passly.domain.authentication.AuthenticationRequest
-import com.aozijx.passly.domain.authentication.AuthenticationRequestHandle
-import com.aozijx.passly.domain.authentication.AuthenticationResult
-import com.aozijx.passly.domain.authentication.AuthenticationSnapshot
-import com.aozijx.passly.domain.authentication.AuthenticationState
-import com.aozijx.passly.domain.authentication.LockReason
-import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
+import com.aozijx.passly.domain.access.model.AuthInput
+import com.aozijx.passly.domain.access.model.AuthenticationMethods
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.policy.AuthenticationMethodPolicy
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationRequest
+import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.model.AuthenticationSnapshot
+import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.CancellationReason
+import com.aozijx.passly.data.settings.port.AppSettingsRepository
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
-import com.aozijx.passly.security.crypto.SensitiveDataKeyManager
+import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.withContext
-import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class DefaultAuthenticationManager @Inject constructor(
-    private val scope: CoroutineScope,
     private val hostRegistry: AuthenticationHostRegistry,
     private val biometricExecutor: BiometricMethodExecutor,
     private val credentialExecutor: CredentialMethodExecutor,
@@ -45,24 +43,19 @@ class DefaultAuthenticationManager @Inject constructor(
     private val availabilityResolver: AuthenticationAvailabilityResolver,
     private val sensitiveDataKeyManager: SensitiveDataKeyManager
 ) : AuthenticationManager {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val requestMutex = Mutex()
-    private val activeCorrelationId = AtomicReference<String?>(null)
-    private val _methods = MutableStateFlow(AuthMethodAvailability())
+    private val _methods = MutableStateFlow(AuthenticationMethods())
 
     /** 记录最近一次成功的认证方式，用于会话复用场景。 */
     @Volatile
     private var lastAuthMethod: AuthenticationMethod = AuthenticationMethod.BIOMETRIC
 
     override val state: StateFlow<AuthenticationState> = session.authenticationState
-    override val methods: StateFlow<AuthMethodAvailability> = _methods
-    override val databaseFailure: StateFlow<Throwable?> = session.databaseFailure
+    override val methods: StateFlow<AuthenticationMethods> = _methods
 
     override suspend fun completeDatabaseRecovery(): Boolean =
         session.completeDatabaseRecovery()
-
-    override fun clearDatabaseFailure() {
-        session.clearDatabaseFailure()
-    }
 
     init {
         scope.launch { refreshAvailability() }
@@ -91,17 +84,16 @@ class DefaultAuthenticationManager @Inject constructor(
 
     override suspend fun authenticate(
         request: AuthenticationRequest,
-        credential: CharArray?
+        input: AuthInput,
     ): AuthenticationResult {
         if (!requestMutex.tryLock()) {
             return finish(
                 request,
                 AuthenticationResult.Failure(
-                    AuthenticationFailure(AuthenticationFailureCode.BUSY, request.correlationId)
+                    AuthenticationFailure(AuthenticationFailureCode.BUSY, request.id)
                 )
             )
         }
-        activeCorrelationId.set(request.correlationId)
         val previousState = session.authenticationState.value
         val wasUnlocked = session.isUnlocked()
         val wasRecoveryMode = session.isRecoveryMode()
@@ -114,7 +106,7 @@ class DefaultAuthenticationManager @Inject constructor(
                     AuthenticationResult.Failure(
                         AuthenticationFailure(
                             AuthenticationFailureCode.SESSION_MODE_RESTRICTED,
-                            request.correlationId
+                            request.id
                         )
                     )
                 )
@@ -141,14 +133,14 @@ class DefaultAuthenticationManager @Inject constructor(
             }
             refreshAvailability()
             if (opensSession) {
-                session.transition(AuthenticationState.AwaitingHost(request.correlationId))
+                session.transition(AuthenticationState.AwaitingHost(request.id))
             }
             val lease = hostRegistry.awaitLease() ?: return finish(
                 request,
                 AuthenticationResult.Failure(
                     AuthenticationFailure(
                         AuthenticationFailureCode.HOST_UNAVAILABLE,
-                        request.correlationId
+                        request.id
                     )
                 )
             ).also { if (opensSession) restoreState(previousState) }
@@ -157,7 +149,7 @@ class DefaultAuthenticationManager @Inject constructor(
             val authorizedByPurpose = AuthenticationMethodPolicy.allowedAuthenticationMethods(request.purpose)
             val available = request.allowedMethods
                 .intersect(authorizedByPurpose)
-                .filter(_methods.value::available)
+                .filter { it in _methods.value }
             if (available.isEmpty()) {
                 if (opensSession) restoreState(previousState)
                 return finish(
@@ -165,7 +157,7 @@ class DefaultAuthenticationManager @Inject constructor(
                     AuthenticationResult.Failure(
                         AuthenticationFailure(
                             AuthenticationFailureCode.METHOD_UNAVAILABLE,
-                            request.correlationId
+                            request.id
                         )
                     )
                 )
@@ -177,7 +169,7 @@ class DefaultAuthenticationManager @Inject constructor(
                     AuthenticationResult.Failure(
                         AuthenticationFailure(
                             AuthenticationFailureCode.HOST_UNAVAILABLE,
-                            request.correlationId
+                            request.id
                         )
                     )
                 )
@@ -188,7 +180,7 @@ class DefaultAuthenticationManager @Inject constructor(
                 else -> host.chooseMethod(request.purpose, available)
                     ?: run {
                         if (opensSession) restoreState(previousState)
-                        return finish(request, AuthenticationResult.Cancelled(byUser = true))
+                        return finish(request, AuthenticationResult.Cancelled(CancellationReason.USER))
                     }
             }
             if (!hostRegistry.isCurrent(lease)) {
@@ -198,7 +190,7 @@ class DefaultAuthenticationManager @Inject constructor(
                     AuthenticationResult.Failure(
                         AuthenticationFailure(
                             AuthenticationFailureCode.HOST_UNAVAILABLE,
-                            request.correlationId
+                            request.id
                         )
                     )
                 )
@@ -206,26 +198,33 @@ class DefaultAuthenticationManager @Inject constructor(
             if (opensSession) {
                 session.transition(
                     AuthenticationState.Authenticating(
-                        request.correlationId,
+                        request.id,
                         method
                     )
                 )
             }
-            val execution = when (method) {
-                AuthenticationMethod.BIOMETRIC -> biometricExecutor.execute(request, host)
-                AuthenticationMethod.APP_PASSWORD,
-                AuthenticationMethod.RECOVERY_CODE -> credentialExecutor.execute(
-                    request,
-                    method,
-                    host,
-                    credential
-                )
+            val credential = input.consumeCredential()
+            val execution = try {
+                when (method) {
+                    AuthenticationMethod.BIOMETRIC -> biometricExecutor.execute(request, host)
+                    AuthenticationMethod.APP_PASSWORD,
+                    AuthenticationMethod.RECOVERY_CODE -> credentialExecutor.execute(
+                        request,
+                        method,
+                        host,
+                        credential,
+                    )
+                }
+            } finally {
+                credential?.fill('\u0000')
             }
             val result = when (execution) {
                 is MethodExecutionResult.Success -> {
                     if (execution.method == AuthenticationMethod.RECOVERY_CODE) {
                         // Successful recovery authentication durably consumes its envelope.
-                        _methods.value = _methods.value.copy(recoveryCode = false)
+                        _methods.value = AuthenticationMethods(
+                            _methods.value.available - AuthenticationMethod.RECOVERY_CODE
+                        )
                     }
                     if (request.purpose.unlocksSensitiveDataKey()) {
                         sensitiveDataKeyManager.unlockAfterFreshAuthentication()
@@ -236,7 +235,9 @@ class DefaultAuthenticationManager @Inject constructor(
                 }
                 is MethodExecutionResult.Cancelled -> {
                     if (opensSession) restoreState(previousState)
-                    AuthenticationResult.Cancelled(execution.byUser)
+                    AuthenticationResult.Cancelled(
+                        if (execution.byUser) CancellationReason.USER else CancellationReason.CALLER
+                    )
                 }
                 is MethodExecutionResult.Failure -> {
                     if (opensSession) restoreState(previousState)
@@ -254,27 +255,12 @@ class DefaultAuthenticationManager @Inject constructor(
                 AuthenticationResult.Failure(
                     AuthenticationFailure(
                         AuthenticationFailureCode.SESSION_TRANSITION_FAILED,
-                        request.correlationId
+                        request.id
                     )
                 )
             )
         } finally {
-            activeCorrelationId.compareAndSet(request.correlationId, null)
             requestMutex.unlock()
-        }
-    }
-
-    override fun authenticate(
-        request: AuthenticationRequest,
-        callback: AuthenticationCallback
-    ): AuthenticationRequestHandle {
-        val job = scope.launch {
-            val result = authenticate(request, credential = null)
-            withContext(Dispatchers.Main.immediate) { callback.onResult(result) }
-        }
-        return object : AuthenticationRequestHandle {
-            override val correlationId: String = request.correlationId
-            override fun cancel() = job.cancel()
         }
     }
 
@@ -288,16 +274,9 @@ class DefaultAuthenticationManager @Inject constructor(
         val current = state.value
         return AuthenticationSnapshot(
             state = current,
-            activeCorrelationId = activeCorrelationId.get(),
-            authenticatedAtMs = when (current) {
-                is AuthenticationState.Authenticated -> current.authenticatedAtMs
-                is AuthenticationState.RecoveryMode -> current.authenticatedAtMs
-                else -> null
-            }
+            methods = methods.value,
         )
     }
-
-    override fun onUserInteraction() = session.onUserInteraction()
 
     private suspend fun restoreState(previousState: AuthenticationState) {
         when (previousState) {
@@ -316,7 +295,7 @@ class DefaultAuthenticationManager @Inject constructor(
                 EventCategory.AUTHENTICATION,
                 "authentication_failed",
                 fields = mapOf(
-                    "code" to SafeLogValue.ErrorCodeValue(ErrorCode(result.failure.code))
+                    "code" to SafeLogValue.ErrorCodeValue(ErrorCode(result.failure.code.name))
                 )
             )
         }

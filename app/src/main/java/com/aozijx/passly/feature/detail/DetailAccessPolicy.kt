@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.detail
 
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import javax.inject.Inject
 

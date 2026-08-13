@@ -2,8 +2,8 @@ package com.aozijx.passly.feature.vault.components.topbar
 
 import androidx.annotation.StringRes
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.settings.model.LibrarySortField
-import com.aozijx.passly.domain.settings.model.LibrarySortSpec
+import com.aozijx.passly.data.settings.model.LibrarySortField
+import com.aozijx.passly.data.settings.model.LibrarySortSpec
 
 @StringRes
 fun LibrarySortSpec.labelResId(): Int = when (field) {

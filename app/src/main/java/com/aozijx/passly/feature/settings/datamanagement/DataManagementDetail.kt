@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -33,10 +34,12 @@ internal fun DataManagementDetail(
     onDeleteTrashEntry: (entryId: String, expectedVersion: Int) -> Unit,
     onEmptyTrash: () -> Unit,
     onClearTrashError: () -> Unit,
+    onRecoveryAction: (DataManagementSettingsAction) -> Unit,
     onClearDatabase: () -> Unit
 ) {
     var showClearConfirmation by remember { mutableStateOf(false) }
     var showTrash by remember { mutableStateOf(false) }
+    var showDatabaseRecovery by remember { mutableStateOf(false) }
 
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
@@ -62,6 +65,16 @@ internal fun DataManagementDetail(
                             )
                     },
                     onClick = { showTrash = true }
+                ),
+                navigationSettingsGroupItem(
+                    key = "data.database_recovery",
+                    icon = Icons.Default.Restore,
+                    title = stringResource(R.string.settings_database_recovery_title),
+                    subtitle = stringResource(R.string.settings_database_recovery_summary),
+                    onClick = {
+                        showDatabaseRecovery = true
+                        onRecoveryAction(DataManagementSettingsAction.RefreshRecoveryPackages)
+                    },
                 )
             )
         )
@@ -100,13 +113,20 @@ internal fun DataManagementDetail(
             onClearTrashError()
         },
         onRestore = { entry ->
-            onRestoreTrashEntry(entry.id, entry.entryVersion)
+            onRestoreTrashEntry(entry.id.value, entry.identity.version.value)
         },
         onDelete = { entry ->
-            onDeleteTrashEntry(entry.id, entry.entryVersion)
+            onDeleteTrashEntry(entry.id.value, entry.identity.version.value)
         },
         onEmpty = onEmptyTrash,
         onClearError = onClearTrashError
+    )
+
+    DatabaseRecoverySheet(
+        visible = showDatabaseRecovery,
+        state = state,
+        onDismiss = { showDatabaseRecovery = false },
+        onAction = onRecoveryAction,
     )
 
     if (showClearConfirmation) {

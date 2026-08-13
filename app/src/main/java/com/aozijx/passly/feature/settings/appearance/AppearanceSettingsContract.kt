@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.settings.appearance
 
-import com.aozijx.passly.domain.settings.model.AppLanguage
-import com.aozijx.passly.domain.settings.model.FontFamilyMode
-import com.aozijx.passly.domain.settings.model.ThemeMode
+import com.aozijx.passly.data.settings.model.AppLanguage
+import com.aozijx.passly.data.settings.model.FontFamilyMode
+import com.aozijx.passly.data.settings.model.ThemeMode
 
 data class AppearanceSettingsUiState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,

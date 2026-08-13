@@ -6,11 +6,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.androidx.room)
     alias(libs.plugins.hilt.android)
-    alias(libs.plugins.protobuf)
 }
-
 // Release 签名优先读取环境变量，其次读取本地未跟踪 keystore.properties
 val keystoreProperties = Properties().apply {
     val keystoreFile = rootProject.file("keystore.properties")
@@ -74,7 +71,6 @@ android {
             } else {
                 null
             }
-            buildConfigField("boolean", "EXPORT_ROOM_SCHEMA", "true")
         }
 
         getByName("debug") {
@@ -82,7 +78,6 @@ android {
             isDebuggable = true
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            buildConfigField("boolean", "EXPORT_ROOM_SCHEMA", "false")
         }
     }
 
@@ -100,11 +95,6 @@ android {
         }
     }
 
-    // 让 androidTest 能读到 schemas/ 目录下的版本 JSON（用于 MigrationTestHelper）
-    sourceSets.getByName("androidTest") {
-        assets.directories.add("$projectDir/schemas")
-    }
-
     lint {
         disable += setOf(
             "AndroidGradlePluginVersion",
@@ -120,21 +110,20 @@ kotlin {
     jvmToolchain(libs.versions.jvmToolchain.get().toInt())
 }
 
-room {
-    // 指定 schema 导出目录，$projectDir 指向 app 模块目录
-    schemaDirectory("$projectDir/schemas")
-}
-
 dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:android"))
+    implementation(project(":core:crypto"))
     implementation(project(":core:ui"))
     implementation(project(":core:telemetry"))
+    implementation(project(":data"))
     implementation(project(":domain"))
     implementation(project(":runtime:session"))
 
     // Android Core
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.core.splashscreen)
 
     // Lifecycle & Navigation
@@ -163,34 +152,19 @@ dependencies {
     implementation(libs.androidx.compose.material3.adaptive.layout)
     implementation(libs.androidx.compose.material3.adaptive.navigation)
 
-    // Room Database
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    implementation(libs.androidx.room.paging)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.palette)
-    ksp(libs.androidx.room.compiler)
 
     // Security & Biometric
     implementation(libs.androidx.biometric)
-
-    // Security KDF
-    implementation(libs.argon2kt)
 
     // Credentials & Autofill
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.androidx.autofill)
 
-    // SQLCipher & SQLite
-    implementation(libs.sqlcipher)
-    implementation(libs.androidx.sqlite)
-
-    // Data Persistence
-    implementation(libs.androidx.datastore)
-    implementation(libs.protobuf.javalite)
+    // Data-facing UI adapters
     implementation(libs.androidx.paging.compose)
-    implementation(libs.kotlinx.serialization.json)
     implementation(libs.uuid.creator)
 
     // CameraX
@@ -222,26 +196,6 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
-    androidTestImplementation(libs.androidx.room.testing)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-}
-
-protobuf {
-    protoc {
-        artifact = libs.protobuf.protoc.get().toString()
-    }
-    generateProtoTasks {
-        all().configureEach {
-            builtins {
-                create("java") {
-                    option("lite")
-                    // AGP 9 registers outputBaseDir as the generated Java source root.
-                    // Avoid an extra /java layer that Gradle can compile but the IDE
-                    // indexes as a mismatched package hierarchy.
-                    outputSubDir = ""
-                }
-            }
-        }
-    }
 }

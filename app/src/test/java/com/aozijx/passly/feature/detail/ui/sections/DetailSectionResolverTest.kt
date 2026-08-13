@@ -1,15 +1,17 @@
 package com.aozijx.passly.feature.detail.ui.sections
 
-import com.aozijx.passly.domain.entry.model.EntryHeader
+import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.EntrySummary
+import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.EntryAggregate
-import com.aozijx.passly.domain.entry.model.secret.IdentitySecret
-import com.aozijx.passly.domain.entry.model.secret.OtpSecret
-import com.aozijx.passly.domain.entry.model.secret.PasskeySecret
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.credential.IdentityCredential
+import com.aozijx.passly.domain.entry.model.credential.OtpCredential
+import com.aozijx.passly.domain.entry.model.credential.PasskeyCredential
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -21,7 +23,7 @@ class DetailSectionResolverTest {
         val sections = DetailSectionResolver.resolve(
             entry(
                 type = EntryType.SEED_PHRASE,
-                secret = EntrySecret(identity = IdentitySecret(seedPhrase = "one two three")),
+                secret = EntrySecret(credential = IdentityCredential(seedPhrase = "one two three")),
             )
         )
 
@@ -34,7 +36,7 @@ class DetailSectionResolverTest {
         val sections = DetailSectionResolver.resolve(
             entry(
                 type = EntryType.PASSKEY,
-                secret = EntrySecret(passkey = PasskeySecret(privateKeyReference = "key-ref")),
+                secret = EntrySecret(credential = PasskeyCredential(privateKeyReference = "key-ref")),
             )
         )
 
@@ -47,7 +49,7 @@ class DetailSectionResolverTest {
         val sections = DetailSectionResolver.resolve(
             entry(
                 type = EntryType.OTP,
-                secret = EntrySecret(otp = OtpSecret()),
+                secret = EntrySecret(credential = OtpCredential(OtpConfig(secret = "secret"))),
             )
         )
 
@@ -68,15 +70,14 @@ class DetailSectionResolverTest {
         assertTrue(DetailSectionKey.NOTES in sections)
     }
 
-    private fun entry(type: EntryType, secret: EntrySecret) = EntryAggregate(
-        header = EntryHeader(
+    private fun entry(type: EntryType, secret: EntrySecret) = Entry(
+        identity = EntryIdentity(
             id = EntryId("018f9dd6-66c5-7cc0-85b5-39a337956681"),
-            entryType = type,
+            type = type,
             version = EntryVersion.INITIAL,
-            createdAt = 1L,
-            updatedAt = 1L,
+            timestamps = EntryTimestamps(1L),
         ),
-        summary = EntrySummary(title = "Example", username = ""),
+        profile = EntryProfile(title = "Example"),
         secret = secret,
     )
 }

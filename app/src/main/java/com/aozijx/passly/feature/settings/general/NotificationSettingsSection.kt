@@ -11,7 +11,7 @@ import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.domain.notice.model.NoticeTopic
+import com.aozijx.passly.data.message.model.NoticeTopic
 
 @Composable
 internal fun NotificationSettingsSection(

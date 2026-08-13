@@ -1,6 +1,5 @@
 package com.aozijx.passly.app.diagnostics
 
-import android.content.Context
 import android.os.Process
 import com.aozijx.passly.core.telemetry.AndroidLogSink
 import com.aozijx.passly.core.telemetry.CompositeTelemetryReporter
@@ -8,9 +7,8 @@ import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.EventLevel
 import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.TelemetryEvent
+import com.aozijx.passly.core.telemetry.TelemetryFileStoreFactory
 import com.aozijx.passly.core.telemetry.TelemetryPolicyController
-import com.aozijx.passly.data.diagnostics.EncryptedLogStore
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -21,15 +19,12 @@ import javax.inject.Singleton
 
 @Singleton
 class DiagnosticsRuntimeController @Inject constructor(
-    @ApplicationContext context: Context,
+    fileStoreFactory: TelemetryFileStoreFactory,
     private val policyController: TelemetryPolicyController
 ) {
     private val androidEnabled = AtomicBoolean(true)
     private val fileEnabledUntil = AtomicLong(0L)
-    private val fileStore = EncryptedLogStore(
-        context = context.applicationContext,
-        loggingEnabledUntil = fileEnabledUntil
-    )
+    private val fileStore = fileStoreFactory.create(fileEnabledUntil)
     val reporter: TelemetryReporter = CompositeTelemetryReporter(
         AndroidLogSink(enabled = androidEnabled::get),
         TelemetryReporter(fileStore::write)
@@ -52,7 +47,7 @@ class DiagnosticsRuntimeController @Inject constructor(
     fun flush(timeoutMs: Long = 300L): Boolean = fileStore.flush(timeoutMs)
 
     fun readLines(limit: Int = 500): List<String> =
-        fileStore.readPage(cursor = null, limit = limit).events.map(::formatEvent)
+        fileStore.readEvents(limit).map(::formatEvent)
 
     fun clear() = fileStore.clear()
 

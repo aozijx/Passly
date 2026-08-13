@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.ui.components.DetailItem
@@ -22,7 +22,7 @@ import com.aozijx.passly.feature.detail.internal.copySensitiveField
 
 @Composable
 fun PasskeySection(
-    entry: EntryAggregate,
+    entry: Entry,
     hasPasskeyData: Boolean,
     revealedPasskeyData: String?,
     onRevealField: (String, String?) -> Unit,
@@ -31,7 +31,7 @@ fun PasskeySection(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val msgCopySuccess = stringResource(R.string.msg_copy_success)
+    val msgCopySuccess = stringResource(R.string.field_copy_success_message)
     val passkeyDataLabel = stringResource(R.string.passkey_data)
     val hardwareKeyInfoLabel = stringResource(R.string.hardware_key_info)
     val notSet = stringResource(R.string.not_set)

@@ -13,8 +13,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.otp.OtpAuthUriCodec
-import com.aozijx.passly.domain.entry.model.OtpUiState
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
@@ -48,7 +48,7 @@ fun DetailScrollableContent(
     onEvent: (DetailIntent) -> Unit,
     onInteraction: () -> Unit,
     onAuthenticate: DetailAuthenticate,
-    onOpenRelatedEntry: (EntryAggregate) -> Unit
+    onOpenRelatedEntry: (Entry) -> Unit
 ) {
     val entry = uiState.entry ?: return
     val registeredSections = DetailSectionResolver.resolve(entry)
@@ -209,7 +209,7 @@ fun DetailScrollableContent(
 
         entry.tags.firstOrNull { it.isNotBlank() }?.trim()?.let { category ->
             item {
-                InfoGroupCard(title = stringResource(R.string.entry_category)) {
+                InfoGroupCard(title = stringResource(R.string.field_category)) {
                     EntryCategoryItem(category)
                 }
             }

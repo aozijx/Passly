@@ -1,11 +1,11 @@
 package com.aozijx.passly.feature.autofill
 
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
-import com.aozijx.passly.domain.authentication.AuthenticationRequest
-import com.aozijx.passly.domain.authentication.AuthenticationResult
-import com.aozijx.passly.domain.authentication.LockReason
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
+import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationRequest
+import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject

@@ -28,7 +28,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.contract.DetailIntent
@@ -42,16 +42,16 @@ import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 
 @Composable
 fun WifiSection(
-    entry: EntryAggregate,
+    entry: Entry,
     editState: EntryEditState,
     revealedPassword: String?,
     onPasswordRevealed: (String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
-    onEntryUpdated: (EntryAggregate) -> Unit,
+    onEntryUpdated: (Entry) -> Unit,
     onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
-    val msgCopySuccess = stringResource(R.string.msg_copy_success)
+    val msgCopySuccess = stringResource(R.string.field_copy_success_message)
     val wifiSsidLabel = stringResource(R.string.wifi_ssid)
     val wifiPasswordLabel = stringResource(R.string.wifi_password)
     val wifiEncryptionLabel = stringResource(R.string.wifi_encryption)
@@ -77,7 +77,7 @@ fun WifiSection(
             PasslyOutlinedTextField(
                 value = editState.editedPassword,
                 onValueChange = { editState.editedPassword = it },
-                label = stringResource(R.string.edit_field, wifiPasswordLabel),
+                label = stringResource(R.string.field_edit_action, wifiPasswordLabel),
                 modifier = Modifier.fillMaxWidth(),
                 trailingIcon = {
                     IconButton(onClick = {

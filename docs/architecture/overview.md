@@ -1,37 +1,71 @@
 # 架构总览
 
-Passly 已开始按依赖方向拆分 Gradle 模块。稳定的通用契约与运行时能力已离开 `app`；尚未完成模块化的
-`data / security / feature` 实现仍暂时位于 `app`，不能把包目录误认为已经存在的模块边界。
+Passly 只按稳定、可复用的技术边界拆分 Gradle 模块。业务 feature 保留在 `app` 内，以包组织职责；当前规模下
+不再为每个页面或流程建立 `:feature:*` 模块，避免 API/implementation 空壳和过细依赖图。
 
 当前模块：
 
-- `:domain`：纯领域模型、契约与用例；
+- `:domain`：纯领域模型、端口与规则；当前只保留 `access`、`entry` 及共享敏感值语义；
 - `:core:common`：纯 Kotlin 错误与通用能力；
 - `:core:telemetry`：遥测模型和报告契约；
-- `:core:android`：Android 平台能力及其实现；
+- `:core:android`：Android 平台能力及其实现，包括包信息、文件路径与存储选择支持；
+- `:core:crypto`：密码学原语及其安全编排；因 Argon2 为 AAR，模块是 Android library，但源码不反向依赖
+  Data 或 App。包内用 `core.crypto` 承载无状态 AES/KDF/字段加密，用 `security.dek`、
+  `security.envelope`、`security.search` 承载密钥生命周期与加密搜索；
 - `:core:ui`：不依赖业务 feature 和 app 资源的共享 Compose UI；
 - `:runtime:session`：资源无关的安全会话状态机与租约管理；
-- `:app`：应用壳、导航和 DI 组装，以及尚待拆分的 data/security/feature 实现。
+- `:data`：Room、Proto DataStore、Repository、Mapper 与加密诊断存储实现；
+- `:app`：应用壳、导航、平台入口、Notice 运行时和全部业务 feature。Backup 的协议、格式、文件 I/O、
+  数据库快照编排也归 `app/feature/backup`，不属于 `:data`。
 
 ## 依赖方向
 
 ```mermaid
 flowchart LR
-    APP[":app · Shell / navigation / DI"] --> FEATURE["待拆分 feature 实现"]
-    APP --> DATA["待拆分 data / security 实现"]
+    APP[":app · Shell / feature / navigation / DI"] --> FEATURE["app 内 feature 包"]
+    APP --> DATA[":data · 数据与持久化实现"]
     FEATURE --> UI[":core:ui"]
     FEATURE --> ANDROID[":core:android"]
+    FEATURE --> SECURITY[":core:crypto"]
     FEATURE --> D[":domain"]
     DATA --> SESSION[":runtime:session"]
+    DATA --> ANDROID
+    DATA --> SECURITY
+    DATA --> TELEMETRY[":core:telemetry"]
     DATA --> D
+    SECURITY --> TELEMETRY
+    SECURITY --> D
     UI --> D
-    ANDROID --> D
+    ANDROID --> TELEMETRY
     SESSION --> D
     D --> COMMON[":core:common"]
 ```
 
-依赖注入只负责在应用边界把 Domain 契约与 Data/Security 实现连接起来，不改变源码依赖方向。共享模块不得
-依赖 `:app`；这一规则由 Gradle/编译器边界保证。
+Data 自己拥有 Repository、存储与数据策略的 Hilt binding。App 负责业务流程和 Android 入口；Backup 的
+数据库快照代码是一个明确、局部的数据集成点，其他 feature 继续通过 Domain 契约使用 Data。
+
+Domain 不按应用功能镜像目录。`backup`、`autofill`、`settings`、通知和数据库生命周期属于 App/Data/Runtime
+边界，不在 Domain 中建立同名“模块包”。领域内部只使用 `model`、`policy`、`port` 等少量稳定职责目录；只有
+关系、查询、凭据等确有独立不变量的 Entry 子概念才继续分组。
+
+`verifyModuleBoundaries` 校验每个真实 Gradle 模块的直接项目依赖白名单和依赖环，并自动接入各模块的
+`check` 生命周期。新增模块必须先声明允许的依赖方向；未加入依赖的实现类型不会进入编译 classpath，因此
+类型可见性继续由 Kotlin/Java 编译器保证。`app/feature/<name>` 是代码组织边界，不伪装成 Gradle 模块。
+
+## 安全职责
+
+```text
+core.crypto/       无状态密码学原语、AES-GCM 实现、字段加密、KDF
+security.dek/      DEK 与派生密钥的生命周期
+security.envelope/ 密钥信封的创建、解封和验证
+security.search/   Blind Index 与分词
+security.keystore/ Android Keystore 适配
+security.lock/     应用锁强度状态
+security.authentication/ 认证方式和流程编排
+```
+
+认证回答“谁可以解锁、使用哪种凭据”；加密回答“数据和密钥如何保密”。认证可以调用加密与信封能力，但密码学
+原语不依赖认证流程。
 
 ## 数据流
 
@@ -52,10 +86,10 @@ flowchart LR
 
 ## Feature 与 UI
 
-`feature/<name>` 是尚在迁移中的业务垂直切片，可包含 `navigation`、`presentation`、`contract`、`ui`。
+`feature/<name>` 是 app 内的业务垂直切片，可包含 `navigation`、`presentation`、`contract`、`ui`。
 Compose 页面和 ViewModel 由 feature 自己拥有；跨 Feature 的纯视觉组件进入 `:core:ui`，但必须通过参数或
-Composable slot 接收文案和内容，不能依赖 app 的 `R` 或具体业务类型。App 级组合位于 `app/shell`，不再使用
-`feature/main` 伪装成业务 feature。
+Composable slot 接收文案和内容，不能依赖 app 的 `R` 或具体业务类型。只有出现真实的独立发布、显著构建隔离
+或多宿主复用需求时，才重新评估 feature Gradle 模块。
 
 推荐布局：
 

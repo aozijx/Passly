@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.settings.general
 
-import com.aozijx.passly.domain.notice.model.NoticeTopic
-import com.aozijx.passly.domain.notice.model.TopicMessageSettings
+import com.aozijx.passly.data.message.model.NoticeTopic
+import com.aozijx.passly.data.message.model.TopicMessageSettings
 
 data class NotificationSettingsUiState(
     val optionalMessagesEnabled: Boolean = true,

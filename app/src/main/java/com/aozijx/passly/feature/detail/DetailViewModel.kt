@@ -2,27 +2,26 @@ package com.aozijx.passly.feature.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.auth.model.AuthorizationScope
-import com.aozijx.passly.domain.auth.port.AuthorizationGate
-import com.aozijx.passly.domain.authentication.SensitiveAccessAction
-import com.aozijx.passly.domain.entry.model.EntryChanges
+import com.aozijx.passly.domain.access.model.AuthorizationScope
+import com.aozijx.passly.domain.access.port.AuthorizationGate
+import com.aozijx.passly.domain.access.model.SensitiveAccessAction
+import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.entry.model.favicon.FaviconResult
-import com.aozijx.passly.domain.entry.repository.ActivityQueryRepository
-import com.aozijx.passly.domain.entry.repository.ActivityRecorder
-import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
-import com.aozijx.passly.domain.entry.repository.EntryLinkRepository
+import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
+import com.aozijx.passly.domain.entry.port.ActivityRecorder
+import com.aozijx.passly.domain.entry.port.EntryCommandRepository
+import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.domain.entry.repository.SensitiveFieldRepository
-import com.aozijx.passly.domain.entry.repository.EntryQueryRepository
-import com.aozijx.passly.domain.entry.repository.FaviconRepository
-import com.aozijx.passly.domain.entry.service.EntryTypePolicy
-import com.aozijx.passly.domain.entry.service.EntryAccountGraph
-import com.aozijx.passly.domain.entry.service.EntryValidatorProvider
+import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
+import com.aozijx.passly.domain.entry.port.EntryQueryRepository
+import com.aozijx.passly.domain.entry.port.FaviconRepository
+import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
+import com.aozijx.passly.domain.entry.policy.EntryAccountGraph
 import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
@@ -49,11 +48,10 @@ class DetailViewModel @Inject constructor(
     private val activityRecorder: ActivityRecorder,
     private val faviconRepository: FaviconRepository,
     private val entryTypePolicy: EntryTypePolicy,
-    private val entryValidatorProvider: EntryValidatorProvider,
     private val accessPolicy: DetailAccessPolicy,
     private val authorizationGate: AuthorizationGate,
 ) : ViewModel() {
-    private val entryAnalyzer = DetailEntryAnalyzer(entryTypePolicy, entryValidatorProvider)
+    private val entryAnalyzer = DetailEntryAnalyzer(entryTypePolicy)
 
     companion object {
         private const val ACCESS_HISTORY_TOGGLE_KEY = "detail.access_history_enabled"
@@ -116,7 +114,7 @@ class DetailViewModel @Inject constructor(
                     mutate(DetailMutation.TitleEditingCancelled)
                 } else {
                     commitEntryUpdate(
-                        current.copy(summary = current.summary.copy(title = newTitle)),
+                        current.copy(profile = current.profile.copy(title = newTitle)),
                         isEditingTitle = false
                     )
                 }
@@ -125,7 +123,7 @@ class DetailViewModel @Inject constructor(
             DetailIntent.ToggleFavorite -> {
                 val current = _uiState.value.entry ?: return
                 commitEntryUpdate(
-                    current.copy(summary = current.summary.copy(favorite = !current.favorite))
+                    current.copy(profile = current.profile.copy(favorite = !current.favorite))
                 )
             }
 
@@ -172,7 +170,7 @@ class DetailViewModel @Inject constructor(
 
                 viewModelScope.launch {
                     if (!accessPolicy.hasFullAccess()) return@launch
-                    activityRecorder.recordUsage(current.id, event.type)
+                    activityRecorder.recordUsage(current.id.value, event.type)
                 }
             }
 
@@ -188,26 +186,26 @@ class DetailViewModel @Inject constructor(
         }
     }
 
-    private fun initialize(initialEntry: EntryAggregate) {
+    private fun initialize(initialEntry: Entry) {
         refreshFromEntry(initialEntry, isEditingTitle = false, editedTitle = initialEntry.title)
         viewModelScope.launch {
             if (!accessPolicy.hasFullAccess()) return@launch
-            val latest = entryQueryRepository.getByIdWithoutHighSensitivity(initialEntry.id)
+            val latest = entryQueryRepository.getById(initialEntry.id)
                 ?: initialEntry
             refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
-            val presence = sensitiveFieldRepository.getPresence(EntryId(latest.id))
+            val presence = sensitiveFieldRepository.getPresence(latest.id)
             mutate(DetailMutation.SensitiveFieldPresenceChanged(presence.keys))
             loadRelatedEntries(latest)
             autoDownloadFavicon(latest)
         }
         viewModelScope.launch {
             if (!accessPolicy.hasFullAccess()) return@launch
-            activityQueryRepository.observeByEntryId(initialEntry.id)
+            activityQueryRepository.observeByEntryId(initialEntry.id.value)
                 .collect { history -> mutate(DetailMutation.HistoryChanged(history)) }
         }
     }
 
-    private fun refreshKeepingTitleEdit(entry: EntryAggregate) {
+    private fun refreshKeepingTitleEdit(entry: Entry) {
         val isEditing = _uiState.value.isEditingTitle
         refreshFromEntry(
             entry,
@@ -220,13 +218,13 @@ class DetailViewModel @Inject constructor(
         mutate(DetailMutation.RevealedFieldChanged(key, value))
     }
 
-    private suspend fun revealHighSensitivityFields(entryValue: String, uiKeys: Set<String>) {
+    private suspend fun revealHighSensitivityFields(entryValue: EntryId, uiKeys: Set<String>) {
         if (!accessPolicy.hasFullAccess()) return
         val requested = uiKeys.mapNotNull { uiKey ->
             uiKey.toSensitiveFieldKey()?.let { fieldKey -> uiKey to fieldKey }
         }.toMap()
         if (requested.isEmpty()) return
-        val entryId = EntryId(entryValue)
+        val entryId = entryValue
         authorizationGate.authorize(
             AuthorizationScope.SensitiveFields(
                 entryId = entryId,
@@ -252,7 +250,7 @@ class DetailViewModel @Inject constructor(
                 }
             }
             if (revealedFields.isNotEmpty()) {
-                activityRecorder.recordUsage(entryValue, ActivityType.VIEW)
+                activityRecorder.recordUsage(entryValue.value, ActivityType.VIEW)
             }
         }
     }
@@ -273,29 +271,30 @@ class DetailViewModel @Inject constructor(
     private fun ActivityType.clearsRevealedFields(): Boolean =
         this == ActivityType.COPY_PASSWORD || this == ActivityType.COPY_USERNAME
 
-    private fun commitEntryUpdate(entry: EntryAggregate, isEditingTitle: Boolean = _uiState.value.isEditingTitle) {
+    private fun commitEntryUpdate(entry: Entry, isEditingTitle: Boolean = _uiState.value.isEditingTitle) {
         val editedTitle = if (isEditingTitle) _uiState.value.editedTitle else entry.title
         refreshFromEntry(entry, isEditingTitle = isEditingTitle, editedTitle = editedTitle)
         emitEntryUpdated(entry)
     }
 
-    private fun emitEntryUpdated(entry: EntryAggregate) {
+    private fun emitEntryUpdated(entry: Entry) {
         _effects.trySend(DetailEffect.EntryUpdated(entry))
     }
 
-    private fun autoDownloadFavicon(entry: EntryAggregate) {
-        if (entry.associatedDomain.isNullOrBlank() || !entry.iconCustomPath.isNullOrBlank()) return
+    private fun autoDownloadFavicon(entry: Entry) {
+        val domain = entry.associations.primaryUrl ?: entry.associations.domains.firstOrNull()
+        if (domain.isNullOrBlank() || !entry.icon.customReference.isNullOrBlank()) return
         viewModelScope.launch {
-            downloadAndApplyFavicon(entry, entry.associatedDomain!!, updateDomain = false)
+            downloadAndApplyFavicon(entry, domain, updateDomain = false)
         }
     }
 
-    private suspend fun loadRelatedEntries(entry: EntryAggregate) {
+    private suspend fun loadRelatedEntries(entry: Entry) {
         val graph = EntryAccountGraph(entryLinkRepository.getAll())
-        val accountId = if (entry.entryType == EntryType.ACCOUNT) {
-            EntryId(entry.id)
+        val accountId = if (entry.type == EntryType.ACCOUNT) {
+            entry.id
         } else {
-            graph.accountFor(EntryId(entry.id))
+            graph.accountFor(entry.id)
         }
         if (accountId == null) {
             mutate(DetailMutation.RelatedEntriesChanged(emptyList()))
@@ -304,10 +303,10 @@ class DetailViewModel @Inject constructor(
         val relatedIds = buildSet {
             add(accountId)
             addAll(graph.membersOf(accountId))
-            remove(EntryId(entry.id))
+            remove(entry.id)
         }
         val related = relatedIds.mapNotNull { relatedId ->
-            entryQueryRepository.getByIdWithoutHighSensitivity(relatedId.value)
+            entryQueryRepository.getById(relatedId)
         }
         mutate(DetailMutation.RelatedEntriesChanged(related))
     }
@@ -318,7 +317,7 @@ class DetailViewModel @Inject constructor(
     }
 
     private suspend fun downloadAndApplyFavicon(
-        entry: EntryAggregate,
+        entry: Entry,
         domain: String,
         updateDomain: Boolean
     ) {
@@ -329,24 +328,25 @@ class DetailViewModel @Inject constructor(
             val outcome = downloadFavicon(domain)
             if (!accessPolicy.hasFullAccess()) return
             if (outcome.result != FaviconResult.SUCCESS || outcome.filePath == null) return
-            val website = if (updateDomain) {
-                (entry.summary.website ?: com.aozijx.passly.domain.entry.model.WebsiteInfo())
-                    .copy(primaryUrl = domain.trim())
+            val associations = if (updateDomain) {
+                entry.profile.associations.copy(primaryUrl = domain.trim())
             } else {
-                entry.summary.website
+                entry.profile.associations
             }
-            val updatedSummary = entry.summary.copy(
-                website = website,
-                icon = null,
-                iconCustomPath = outcome.filePath
+            val updatedProfile = entry.profile.copy(
+                associations = associations,
+                icon = entry.profile.icon.copy(
+                    name = null,
+                    customReference = outcome.filePath,
+                ),
             )
             val updateResult = entryCommandRepository.updateEntry(
                 entry.id,
-                entry.entryVersion,
-                EntryChanges(summary = updatedSummary)
+                entry.version,
+                EntryUpdate(profile = updatedProfile)
             )
             if (updateResult.isSuccess) {
-                val latest = entryQueryRepository.getByIdWithoutHighSensitivity(entry.id)
+                val latest = entryQueryRepository.getById(entry.id)
                 if (latest != null) {
                     refreshFromEntry(
                         latest,
@@ -360,7 +360,7 @@ class DetailViewModel @Inject constructor(
         }
     }
 
-    private fun refreshFromEntry(entry: EntryAggregate, isEditingTitle: Boolean, editedTitle: String) {
+    private fun refreshFromEntry(entry: Entry, isEditingTitle: Boolean, editedTitle: String) {
         val analysis = entryAnalyzer.analyze(entry)
 
         mutate(

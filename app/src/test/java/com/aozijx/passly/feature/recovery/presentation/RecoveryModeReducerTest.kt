@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.recovery.presentation
 
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeUiState
-import com.aozijx.passly.security.crypto.SecureString
+import com.aozijx.passly.domain.sensitive.SecureString
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame

@@ -1,8 +1,8 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.domain.authentication.AuthenticationMethodPolicy
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
+import com.aozijx.passly.domain.access.policy.AuthenticationMethodPolicy
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -63,6 +63,10 @@ class AuthenticationFreshnessPolicyTest {
         )
         assertEquals(
             primaryMethods,
+            AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.RESTORE_DATABASE)
+        )
+        assertEquals(
+            primaryMethods,
             AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.REVEAL_SECRET)
         )
         assertEquals(
@@ -85,6 +89,22 @@ class AuthenticationFreshnessPolicyTest {
         assertEquals(
             AuthenticationMethod.entries.toSet(),
             AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.RECOVER_DATABASE)
+        )
+    }
+
+    @Test
+    fun savedDatabaseRestoreRequiresFreshPrimaryAuthentication() {
+        assertEquals(
+            AuthenticationMethodPolicy.PRIMARY_METHODS,
+            AuthenticationMethodPolicy.allowedAuthenticationMethods(
+                AuthenticationPurpose.RESTORE_DATABASE,
+            ),
+        )
+        assertTrue(
+            AuthenticationMethodPolicy.requiresFreshAuthentication(
+                AuthenticationPurpose.RESTORE_DATABASE,
+                reauthenticateSensitiveCopies = false,
+            ),
         )
     }
 

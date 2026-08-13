@@ -1,8 +1,12 @@
 package com.aozijx.passly.feature.vault.list
 
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.domain.entry.service.EntryListSorter
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.domain.entry.policy.EntryListSorter
+import com.aozijx.passly.data.settings.model.LibraryQuickFilter
+import com.aozijx.passly.data.settings.model.LibrarySortSpec
+import com.aozijx.passly.domain.entry.model.query.EntrySort
+import com.aozijx.passly.domain.entry.model.query.EntrySortField
+import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
@@ -84,7 +88,7 @@ internal class VaultListCoordinator(
                 item.tags.any { tag -> tag.equals(category, ignoreCase = true) }
             }
         } ?: items
-        EntryListSorter.sort(filteredItems, sort)
+        EntryListSorter.sort(filteredItems, sort.toDomain())
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val state: StateFlow<VaultListState> = combine(
@@ -105,3 +109,10 @@ internal class VaultListCoordinator(
         )
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), VaultListState())
 }
+
+private fun LibrarySortSpec.toDomain() = EntrySort(
+    field = EntrySortField.valueOf(field.name),
+    direction = SortDirection.valueOf(direction.name),
+    pinFavorites = pinFavorites,
+    tieBreaker = EntrySortField.valueOf(tieBreaker.name),
+)

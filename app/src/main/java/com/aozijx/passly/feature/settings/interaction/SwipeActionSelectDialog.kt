@@ -31,7 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.data.settings.model.SwipeActionType
 
 private val SWIPE_ACTIONS = listOf(
     SwipeActionType.DELETE,

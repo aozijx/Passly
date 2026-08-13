@@ -18,7 +18,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.apppassword.PasswordFields
-import com.aozijx.passly.domain.authentication.AppPasswordPolicy
+import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 
 @Composable
 fun AppPasswordChangeDialog(
@@ -61,7 +61,7 @@ fun AppPasswordChangeDialog(
             TextButton(
                 onClick = onConfirm,
                 enabled = currentPassword.isNotEmpty() &&
-                        AppPasswordPolicy.acceptsLength(newPassword.length) &&
+                        AppPasswordPolicy.DEFAULT.acceptsLength(newPassword.length) &&
                         newPassword == confirmPassword
             ) {
                 Text(stringResource(R.string.save))

@@ -1,7 +1,5 @@
 package com.aozijx.passly.runtime.session
 
-import com.aozijx.passly.domain.authentication.SecureSessionState
-import com.aozijx.passly.domain.authentication.SessionStateProvider
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow

@@ -7,21 +7,21 @@ import com.aozijx.passly.core.autofill.model.FillAvailability
 import com.aozijx.passly.core.autofill.model.InternalFillRequest
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.core.autofill.pipeline.ResponseFactory
-import com.aozijx.passly.domain.authentication.AuthenticationState
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
-import com.aozijx.passly.domain.autofill.repository.CredentialServiceRepository
-import com.aozijx.passly.domain.entry.model.EntryAggregate
-import com.aozijx.passly.domain.entry.model.lookup.CredentialCandidate
-import com.aozijx.passly.domain.notice.model.AppMessageSettings
-import com.aozijx.passly.domain.settings.command.SettingsCommand
-import com.aozijx.passly.domain.settings.model.AppSettingsSnapshot
-import com.aozijx.passly.domain.settings.model.AppearanceSettings
-import com.aozijx.passly.domain.settings.model.BackupSettings
-import com.aozijx.passly.domain.settings.model.InteractionSettings
-import com.aozijx.passly.domain.settings.model.InterfaceSettings
-import com.aozijx.passly.domain.settings.model.SecuritySettings
-import com.aozijx.passly.domain.settings.model.LibraryViewSettings
-import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
+import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.data.autofill.port.CredentialServiceRepository
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.query.CredentialCandidate
+import com.aozijx.passly.data.message.model.AppMessageSettings
+import com.aozijx.passly.data.settings.model.SettingsCommand
+import com.aozijx.passly.data.settings.model.AppSettingsSnapshot
+import com.aozijx.passly.data.settings.model.AppearanceSettings
+import com.aozijx.passly.data.settings.model.BackupSettings
+import com.aozijx.passly.data.settings.model.InteractionSettings
+import com.aozijx.passly.data.settings.model.InterfaceSettings
+import com.aozijx.passly.data.settings.model.SecuritySettings
+import com.aozijx.passly.data.settings.model.LibraryViewSettings
+import com.aozijx.passly.data.settings.port.AppSettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -84,11 +84,11 @@ class FillRequestDispatcherTest {
             limit: Int,
         ): List<CredentialCandidate> = emptyList()
 
-        override suspend fun getById(entryId: String): EntryAggregate? = null
+        override suspend fun getById(entryId: String): Entry? = null
         override suspend fun getByIds(
             entryIds: List<String>,
             includeSecrets: Boolean
-        ): List<EntryAggregate> = emptyList()
+        ): List<Entry> = emptyList()
         override suspend fun save(
             packageName: String?,
             webDomain: String?,

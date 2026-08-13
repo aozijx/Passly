@@ -1,9 +1,9 @@
 package com.aozijx.passly.app.shell.contract
 
-import com.aozijx.passly.domain.settings.model.AppLanguage
-import com.aozijx.passly.domain.settings.model.FontFamilyMode
-import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
-import com.aozijx.passly.domain.settings.model.ThemeMode
+import com.aozijx.passly.data.settings.model.AppLanguage
+import com.aozijx.passly.data.settings.model.FontFamilyMode
+import com.aozijx.passly.data.settings.model.InterfaceStyleConstraints
+import com.aozijx.passly.data.settings.model.ThemeMode
 
 data class AppShellUiState(
     val isAuthorized: Boolean = false,

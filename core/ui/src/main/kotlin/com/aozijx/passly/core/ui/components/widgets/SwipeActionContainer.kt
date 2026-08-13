@@ -12,10 +12,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -41,7 +37,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.domain.settings.model.SwipeActionType
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -295,22 +290,3 @@ internal fun calculateSwipeProgress(
     return (abs(offset) / triggerThreshold).coerceIn(0f, 1f)
 }
 
-fun createSwipeActionSpec(
-    actionType: SwipeActionType,
-    onAction: () -> Unit,
-    backgroundColor: Color,
-    iconTint: Color
-): SwipeActionSpec {
-    val icon = when (actionType) {
-        SwipeActionType.DELETE -> Icons.Default.Delete
-        SwipeActionType.DETAIL -> Icons.Default.Info
-        SwipeActionType.COPY_PASSWORD -> Icons.Default.ContentCopy
-        SwipeActionType.COPY_USERNAME -> Icons.Default.Person
-    }
-    return SwipeActionSpec(
-        icon = icon,
-        backgroundColor = backgroundColor,
-        iconTint = iconTint,
-        onAction = onAction
-    )
-}

@@ -1,34 +1,39 @@
 package com.aozijx.passly.feature.vault.components.editor
 
-import com.aozijx.passly.domain.entry.model.EntryHeader
+import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.EntrySummary
+import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.EntryAggregate
-import com.aozijx.passly.domain.entry.model.secret.CardSecret
-import com.aozijx.passly.domain.entry.model.secret.IdentitySecret
-import com.aozijx.passly.domain.entry.model.secret.LoginSecret
-import com.aozijx.passly.domain.entry.model.secret.PasskeySecret
-import com.aozijx.passly.domain.entry.model.secret.SshSecret
-import com.aozijx.passly.domain.entry.model.secret.WifiSecret
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
+import com.aozijx.passly.domain.entry.model.EntryIcon
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.credential.CardCredential
+import com.aozijx.passly.domain.entry.model.credential.IdentityCredential
+import com.aozijx.passly.domain.entry.model.credential.LoginCredential
+import com.aozijx.passly.domain.entry.model.credential.PasskeyCredential
+import com.aozijx.passly.domain.entry.model.credential.SshCredential
+import com.aozijx.passly.domain.entry.model.credential.WifiCredential
+import com.aozijx.passly.domain.entry.model.credential.OtpCredential
+import com.aozijx.passly.domain.entry.model.credential.EntryCredential
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.github.f4b6a3.uuid.UuidCreator
 
-fun EntryEditorSchema.toEntryAggregate(state: EntryEditorFormState): EntryAggregate {
+fun EntryEditorSchema.toEntry(state: EntryEditorFormState): Entry {
     val now = System.currentTimeMillis()
-    return EntryAggregate(
-        header = EntryHeader(
-            id = EntryId(""),
-            entryType = entryType,
+    return Entry(
+        identity = EntryIdentity(
+            id = EntryId(UuidCreator.getTimeOrderedEpoch().toString()),
+            type = entryType,
             version = EntryVersion.INITIAL,
-            createdAt = now,
-            updatedAt = now
+            timestamps = EntryTimestamps(now),
         ),
-        summary = EntrySummary(
+        profile = EntryProfile(
             title = state.value(EntryEditorFieldKey.TITLE),
             username = state.value(EntryEditorFieldKey.SUMMARY),
             tags = state.value(EntryEditorFieldKey.TAGS).toSummaryTags(),
-            icon = null
+            icon = EntryIcon(),
         ),
         secret = secretFor(
             type = entryType,
@@ -39,37 +44,43 @@ fun EntryEditorSchema.toEntryAggregate(state: EntryEditorFormState): EntryAggreg
 }
 
 private fun secretFor(type: EntryType, value: String, notes: String?): EntrySecret = when (type) {
-    EntryType.BANK_CARD, EntryType.CARD ->
-        EntrySecret(card = CardSecret(cardNumber = value), notes = notes)
+    EntryType.BANK_CARD ->
+        EntrySecret(credential = CardCredential(cardNumber = value), notes = notes)
 
     EntryType.WIFI ->
-        EntrySecret(wifi = WifiSecret(password = value), notes = notes)
+        EntrySecret(credential = WifiCredential(ssid = value, password = value), notes = notes)
 
     EntryType.SSH_KEY ->
-        EntrySecret(ssh = SshSecret(privateKey = value), notes = notes)
+        EntrySecret(credential = SshCredential(privateKey = value), notes = notes)
 
-    EntryType.ID_CARD, EntryType.IDENTITY, EntryType.PASSPORT, EntryType.LICENSE ->
-        EntrySecret(identity = IdentitySecret(idNumber = value), notes = notes)
+    EntryType.ID_CARD, EntryType.PASSPORT, EntryType.DRIVER_LICENSE ->
+        EntrySecret(credential = IdentityCredential(idNumber = value), notes = notes)
 
     EntryType.SEED_PHRASE ->
-        EntrySecret(identity = IdentitySecret(seedPhrase = value), notes = notes)
+        EntrySecret(credential = IdentityCredential(seedPhrase = value), notes = notes)
 
     EntryType.RECOVERY_CODE ->
         EntrySecret(
-            identity = IdentitySecret(
+            credential = IdentityCredential(
                 recoveryCodes = value.lines().map(String::trim).filter(String::isNotEmpty)
             ),
             notes = notes
         )
 
     EntryType.PASSKEY ->
-        EntrySecret(passkey = PasskeySecret(privateKeyReference = value), notes = notes)
+        EntrySecret(credential = PasskeyCredential(privateKeyReference = value), notes = notes)
 
-    else -> EntrySecret(login = LoginSecret(password = value), notes = notes)
+    EntryType.OTP ->
+        EntrySecret(credential = OtpCredential(OtpConfig(secret = value)), notes = notes)
+
+    EntryType.ACCOUNT, EntryType.NOTE ->
+        EntrySecret(credential = EntryCredential.None, notes = notes)
+
+    else -> EntrySecret(credential = LoginCredential(password = value), notes = notes)
 }
 
-private fun String.toSummaryTags(): List<String> =
+private fun String.toSummaryTags(): Set<String> =
     split(',', '，', ';', '；', '\n')
         .map { it.trim() }
         .filter { it.isNotEmpty() }
-        .distinctBy { it.lowercase() }
+        .distinctBy { it.lowercase() }.toSet()

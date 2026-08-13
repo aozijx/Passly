@@ -1,8 +1,8 @@
 package com.aozijx.passly.security.authentication.host
 
 import androidx.biometric.BiometricPrompt
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull

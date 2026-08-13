@@ -31,8 +31,8 @@ fun DatabaseRecoveryDialog(
     AlertDialog(
         onDismissRequest = onDismissRequest,
         modifier = modifier.padding(24.dp),
-        title = { Text(stringResource(R.string.vault_plain_export_db_error_title)) },
-        text = { Text(stringResource(R.string.vault_plain_export_db_error_message)) },
+        title = { Text(stringResource(R.string.database_open_error_title)) },
+        text = { Text(stringResource(R.string.database_open_error_message)) },
         confirmButton = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -43,10 +43,10 @@ fun DatabaseRecoveryDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onCloseApp, enabled = !isBusy) {
-                        Text(stringResource(R.string.vault_plain_export_db_error_dismiss))
+                        Text(stringResource(R.string.database_open_close_app_action))
                     }
                     TextButton(onClick = onRetry, enabled = !isBusy) {
-                        Text(stringResource(R.string.vault_database_retry))
+                        Text(stringResource(R.string.database_open_retry_action))
                     }
                 }
                 HorizontalDivider()

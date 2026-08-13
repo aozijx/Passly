@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.VaultItemIcon
 import com.aozijx.passly.core.ui.text.localizedName
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
 
 @Composable
 internal fun TrashEntryCard(
@@ -135,7 +135,7 @@ internal fun TrashEntryCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.settings_trash_restore))
+                    Text(stringResource(R.string.restore))
                 }
                 TextButton(
                     enabled = !busy,

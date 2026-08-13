@@ -1,14 +1,13 @@
 package com.aozijx.passly.security.authorization
 
-import com.aozijx.passly.domain.auth.failure.AuthFailure
-import com.aozijx.passly.domain.auth.model.AuthInput
-import com.aozijx.passly.domain.auth.model.AuthorizationPermit
-import com.aozijx.passly.domain.auth.model.AuthorizationResult
-import com.aozijx.passly.domain.auth.model.AuthorizationScope
-import com.aozijx.passly.domain.auth.port.AuthorizationGate
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.authentication.AuthenticationRequest
-import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.access.model.AuthInput
+import com.aozijx.passly.domain.access.model.AuthorizationPermit
+import com.aozijx.passly.domain.access.model.AuthorizationResult
+import com.aozijx.passly.domain.access.model.AuthorizationScope
+import com.aozijx.passly.domain.access.port.AuthorizationGate
+import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.model.AuthenticationRequest
+import com.aozijx.passly.domain.access.model.AuthenticationResult
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,25 +21,14 @@ class DefaultAuthorizationGate @Inject constructor(
         input: AuthInput,
         block: suspend (AuthorizationPermit) -> T,
     ): AuthorizationResult<T> {
-        val credential = input.consumeCredential()
-        val authentication = try {
-            authenticationManager.authenticate(
-                request = AuthenticationRequest(scope.purpose),
-                credential = credential,
-            )
-        } finally {
-            credential?.fill('\u0000')
-        }
+        val authentication = authenticationManager.authenticate(
+            request = AuthenticationRequest(scope.purpose),
+            input = input,
+        )
         return when (authentication) {
             is AuthenticationResult.Success -> executeAuthorized(scope, block)
             is AuthenticationResult.Cancelled -> AuthorizationResult.Cancelled
-            is AuthenticationResult.Failure -> AuthorizationResult.Denied(
-                if (authentication.failure.authCode.name.contains("CREDENTIAL")) {
-                    AuthFailure.CredentialIncorrect
-                } else {
-                    AuthFailure.SessionExpired
-                }
-            )
+            is AuthenticationResult.Failure -> AuthorizationResult.Denied(authentication.failure)
         }
     }
 

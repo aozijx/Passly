@@ -1,10 +1,10 @@
 package com.aozijx.passly.security.authorization
 
-import com.aozijx.passly.domain.auth.model.AuthorizationPermit
-import com.aozijx.passly.domain.auth.model.AuthorizationScope
-import com.aozijx.passly.domain.auth.model.MonotonicClock
-import com.aozijx.passly.domain.auth.port.AuthorizationPermitRevoker
-import com.aozijx.passly.domain.auth.port.AuthorizationPermitVerifier
+import com.aozijx.passly.domain.access.model.AuthorizationPermit
+import com.aozijx.passly.domain.access.model.AuthorizationScope
+import com.aozijx.passly.domain.access.model.MonotonicClock
+import com.aozijx.passly.domain.access.port.AuthorizationPermitRevoker
+import com.aozijx.passly.domain.access.port.AuthorizationPermitVerifier
 import java.util.IdentityHashMap
 import javax.inject.Inject
 import javax.inject.Singleton

@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
-import com.aozijx.passly.domain.entry.model.EntryAggregate
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.ui.components.DetailItem
@@ -42,7 +42,7 @@ import com.aozijx.passly.feature.detail.internal.withSshPassphrase
 
 @Composable
 fun SshKeySection(
-    entry: EntryAggregate,
+    entry: Entry,
     editState: EntryEditState,
     hasPassphrase: Boolean,
     hasPrivateKey: Boolean,
@@ -50,11 +50,11 @@ fun SshKeySection(
     revealedSshPrivateKey: String?,
     onPasswordRevealed: (String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
-    onEntryUpdated: (EntryAggregate) -> Unit,
+    onEntryUpdated: (Entry) -> Unit,
     onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
-    val msgCopySuccess = stringResource(R.string.msg_copy_success)
+    val msgCopySuccess = stringResource(R.string.field_copy_success_message)
     val sshPrivateKeyLabel = stringResource(R.string.ssh_private_key)
     val passphraseLabel = stringResource(R.string.passphrase)
     val actionHandler = DetailSectionActionHandler(
@@ -78,7 +78,7 @@ fun SshKeySection(
             EditTextField(
                 value = editState.editedPassword,
                 onValueChange = { editState.editedPassword = it },
-                label = stringResource(R.string.edit_field, passphraseLabel),
+                label = stringResource(R.string.field_edit_action, passphraseLabel),
                 onSave = {
                     if (editState.editedPassword != revealedPassword) {
                         onEntryUpdated(entry.withSshPassphrase(editState.editedPassword))
@@ -223,6 +223,6 @@ fun SshKeySection(
             }
         }
 
-        // paymentPin is not present in SshSecret; skipped for SSH key type.
+        // paymentPin is not present in SshCredential; skipped for SSH key type.
     }
 }

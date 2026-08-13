@@ -121,7 +121,7 @@ fun PasswordInput(
     isVisible: Boolean,
     onVisibilityChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    label: String = stringResource(R.string.password),
+    label: String = stringResource(R.string.password_label),
     enabled: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
     keyboardActions: KeyboardActions = KeyboardActions.Default,

@@ -1,20 +1,22 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.core.security.KeyDerivation
-import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
-import com.aozijx.passly.domain.auth.model.envelope.KdfAlgorithm
-import com.aozijx.passly.domain.authentication.AppPasswordPolicy
-import com.aozijx.passly.domain.authentication.AuthenticationFailure
-import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
-import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
-import com.aozijx.passly.domain.authentication.AuthenticationRequest
-import com.aozijx.passly.domain.authentication.AuthenticationResult
-import com.aozijx.passly.domain.authentication.LockReason
-import com.aozijx.passly.security.crypto.DekManager
-import com.aozijx.passly.security.envelope.BootstrapStore
+import com.aozijx.passly.core.crypto.KeyDerivation
+import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.model.KdfAlgorithm
+import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationRequest
+import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.model.AuthenticationRequestId
+import com.aozijx.passly.domain.access.model.AuthInput
+import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.security.dek.DekManager
+import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.github.f4b6a3.uuid.UuidCreator
 import kotlinx.coroutines.CancellationException
 import javax.crypto.Cipher
@@ -29,7 +31,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     private val dekManager: DekManager,
     private val session: VaultSessionController,
     private val authenticationManager: AuthenticationManager,
-    private val bootstrapStore: BootstrapStore,
+    private val vaultBootstrapStore: VaultBootstrapStore,
     private val hostRegistry: com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry,
     private val biometricRotationCoordinator: BiometricRotationCoordinator,
     private val cryptoFactory: BiometricCryptoFactory,
@@ -38,12 +40,12 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     override suspend fun setAppPassword(password: CharArray): AuthenticationResult {
         val correlationId = UuidCreator.getTimeOrderedEpoch().toString()
         val wasRecoveryMode = session.isRecoveryMode()
-        if (!AppPasswordPolicy.acceptsLength(password.size)) {
+        if (!AppPasswordPolicy.DEFAULT.acceptsLength(password.size)) {
             password.fill('\u0000')
             return AuthenticationResult.Failure(
                 AuthenticationFailure(
                     AuthenticationFailureCode.PASSWORD_POLICY_VIOLATION,
-                    correlationId
+                    AuthenticationRequestId(correlationId)
                 )
             )
         }
@@ -89,7 +91,10 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
             throw cancelled
         } catch (_: Throwable) {
             AuthenticationResult.Failure(
-                AuthenticationFailure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED, correlationId)
+                AuthenticationFailure(
+                    AuthenticationFailureCode.SESSION_TRANSITION_FAILED,
+                    AuthenticationRequestId(correlationId),
+                )
             )
         } finally {
             secret.close()
@@ -107,7 +112,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
                         purpose = AuthenticationPurpose.MANAGE_APP_PASSWORD,
                         allowedMethods = setOf(AuthenticationMethod.APP_PASSWORD)
                     ),
-                    currentPassword
+                    AuthInput.AppPassword.from(currentPassword)
                 )
             } catch (error: Throwable) {
                 newPassword.fill('\u0000')
@@ -135,10 +140,13 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
         // Rely on the resolver for a consistent primary-factor availability check.
         if (!availabilityResolver.hasAlternativePrimaryFactor(EnvelopeType.APP_PASSWORD)) {
             return AuthenticationResult.Failure(
-                AuthenticationFailure(AuthenticationFailureCode.LAST_METHOD_REQUIRED, correlationId)
+                AuthenticationFailure(
+                    AuthenticationFailureCode.LAST_METHOD_REQUIRED,
+                    AuthenticationRequestId(correlationId),
+                )
             )
         }
-        bootstrapStore.delete(EnvelopeType.APP_PASSWORD)
+        vaultBootstrapStore.delete(EnvelopeType.APP_PASSWORD)
         authenticationManager.refreshAvailability()
         return AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
     }
@@ -152,16 +160,19 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
         // Rely on the resolver for a consistent primary-factor availability check.
         if (!availabilityResolver.hasAlternativePrimaryFactor(EnvelopeType.BIOMETRIC)) {
             return AuthenticationResult.Failure(
-                AuthenticationFailure(AuthenticationFailureCode.LAST_METHOD_REQUIRED, correlationId)
+                AuthenticationFailure(
+                    AuthenticationFailureCode.LAST_METHOD_REQUIRED,
+                    AuthenticationRequestId(correlationId),
+                )
             )
         }
-        val activeAlias = bootstrapStore.loadBiometricState().binding?.activeAlias
+        val activeAlias = vaultBootstrapStore.loadBiometricState().binding?.activeAlias
             ?: return AuthenticationResult.Failure(
-                AuthenticationFailure(AuthenticationFailureCode.KEY_MISSING, correlationId)
+                AuthenticationFailure(AuthenticationFailureCode.KEY_MISSING, AuthenticationRequestId(correlationId))
             )
-        bootstrapStore.disableBiometric(activeAlias)
+        vaultBootstrapStore.disableBiometric(activeAlias)
         if (cryptoFactory.deleteAlias(activeAlias)) {
-            bootstrapStore.clearBiometricCleanupAlias(activeAlias)
+            vaultBootstrapStore.clearBiometricCleanupAlias(activeAlias)
         }
         authenticationManager.refreshAvailability()
         return AuthenticationResult.Success(AuthenticationMethod.BIOMETRIC)
@@ -179,7 +190,10 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
         }
         val host = hostRegistry.awaitLease()?.hostOrNull()
             ?: return AuthenticationResult.Failure(
-                AuthenticationFailure(AuthenticationFailureCode.HOST_UNAVAILABLE, correlationId)
+                AuthenticationFailure(
+                    AuthenticationFailureCode.HOST_UNAVAILABLE,
+                    AuthenticationRequestId(correlationId),
+                )
             )
         val result = biometricRotationCoordinator.rotate(
             host = host,
@@ -191,10 +205,10 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     }
 
     override suspend fun hasRecoveryCode(): Boolean =
-        bootstrapStore.load(EnvelopeType.RECOVERY) != null
+        vaultBootstrapStore.load(EnvelopeType.RECOVERY) != null
 
     override suspend fun checkRecoveryCode(code: CharArray): Boolean {
-        val envelope = bootstrapStore.load(EnvelopeType.RECOVERY) ?: run {
+        val envelope = vaultBootstrapStore.load(EnvelopeType.RECOVERY) ?: run {
             code.fill('\u0000')
             return false
         }

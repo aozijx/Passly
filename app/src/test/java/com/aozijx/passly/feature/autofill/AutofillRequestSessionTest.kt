@@ -1,16 +1,15 @@
 package com.aozijx.passly.feature.autofill
 
-import com.aozijx.passly.domain.authentication.AuthMethodAvailability
-import com.aozijx.passly.domain.authentication.AuthenticationCallback
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.authentication.AuthenticationMethod
-import com.aozijx.passly.domain.authentication.AuthenticationRequest
-import com.aozijx.passly.domain.authentication.AuthenticationRequestHandle
-import com.aozijx.passly.domain.authentication.AuthenticationResult
-import com.aozijx.passly.domain.authentication.AuthenticationSnapshot
-import com.aozijx.passly.domain.authentication.AuthenticationState
-import com.aozijx.passly.domain.authentication.LockReason
-import com.aozijx.passly.domain.authentication.SecureSessionAccessState
+import com.aozijx.passly.domain.access.model.AuthInput
+import com.aozijx.passly.domain.access.model.AuthenticationMethods
+import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationRequest
+import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.model.AuthenticationSnapshot
+import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
@@ -60,22 +59,18 @@ class AutofillRequestSessionTest {
         private val vault: FakeSecureSessionAccessState,
     ) : AuthenticationManager {
         override val state = MutableStateFlow<AuthenticationState>(AuthenticationState.Locked)
-        override val methods = MutableStateFlow(AuthMethodAvailability(appPassword = true))
-        override val databaseFailure = MutableStateFlow<Throwable?>(null)
+        override val methods = MutableStateFlow(
+            AuthenticationMethods(setOf(AuthenticationMethod.APP_PASSWORD))
+        )
         var lastLockReason: LockReason? = null
 
         override suspend fun authenticate(
             request: AuthenticationRequest,
-            credential: CharArray?,
+            input: AuthInput,
         ): AuthenticationResult {
             vault.unlocked = true
             return AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
         }
-
-        override fun authenticate(
-            request: AuthenticationRequest,
-            callback: AuthenticationCallback,
-        ): AuthenticationRequestHandle = error("Not used")
 
         override suspend fun lock(reason: LockReason) {
             lastLockReason = reason
@@ -83,9 +78,7 @@ class AutofillRequestSessionTest {
         }
 
         override suspend fun completeDatabaseRecovery(): Boolean = false
-        override fun clearDatabaseFailure() = Unit
         override suspend fun refreshAvailability() = Unit
-        override fun snapshot() = AuthenticationSnapshot(state.value, null, null)
-        override fun onUserInteraction() = Unit
+        override fun snapshot() = AuthenticationSnapshot(state.value, methods.value)
     }
 }

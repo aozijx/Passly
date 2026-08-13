@@ -17,9 +17,10 @@ import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.notice.port.AppNoticePublisher
+import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.security.authentication.BiometricRotationReconciler
+import com.aozijx.passly.security.authentication.VaultSessionController
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -44,6 +45,9 @@ class PasslyApplication : Application() {
 
     @Inject
     lateinit var authenticationManager: AuthenticationManager
+
+    @Inject
+    lateinit var sessionController: VaultSessionController
 
     @Inject
     lateinit var diagnosticsRuntimeController: DiagnosticsRuntimeController
@@ -166,7 +170,7 @@ class PasslyApplication : Application() {
             ?.setOnTouchListener { v, event ->
                 if (event.action == MotionEvent.ACTION_DOWN) {
                     v.performClick()
-                    authenticationManager.onUserInteraction()
+                    sessionController.onUserInteraction()
                 }
                 false
             }

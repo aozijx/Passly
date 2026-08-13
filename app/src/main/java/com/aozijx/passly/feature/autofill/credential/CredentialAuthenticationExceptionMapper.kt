@@ -6,7 +6,7 @@ import androidx.credentials.exceptions.CreateCredentialUnknownException
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.GetCredentialUnknownException
-import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.access.model.AuthenticationResult
 
 internal object CredentialAuthenticationExceptionMapper {
     fun toGetException(authentication: AuthenticationResult): GetCredentialException =

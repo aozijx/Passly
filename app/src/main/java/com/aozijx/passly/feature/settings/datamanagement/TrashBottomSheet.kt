@@ -38,7 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,11 +107,11 @@ internal fun TrashBottomSheet(
                     ),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(entries, key = EntryListItem::id) { entry ->
+                    items(entries, key = { entry -> entry.id.value }) { entry ->
                         TrashEntryCard(
                             entry = entry,
                             busy = isBusy,
-                            isOperating = activeEntryId == entry.id,
+                            isOperating = activeEntryId == entry.id.value,
                             onRestore = { onRestore(entry) },
                             onDelete = { pendingDelete = entry }
                         )

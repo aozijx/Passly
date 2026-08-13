@@ -104,7 +104,7 @@ fun AddOtpScreen(
                         AddOtpAction.FormChanged(uiState.form.copy(title = it))
                     )
                 },
-                label = stringResource(R.string.title)
+                label = stringResource(R.string.field_title)
             )
         }
 

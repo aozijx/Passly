@@ -11,7 +11,7 @@ import androidx.credentials.provider.BeginGetCredentialResponse
 import androidx.credentials.provider.BeginGetPasswordOption
 import androidx.credentials.provider.CredentialEntry
 import com.aozijx.passly.R
-import com.aozijx.passly.app.di.Strict
+import com.aozijx.passly.core.autofill.di.Strict
 import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
 import com.aozijx.passly.core.autofill.model.FillAvailability
 import javax.inject.Inject

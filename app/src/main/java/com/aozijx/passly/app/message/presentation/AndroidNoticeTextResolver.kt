@@ -2,11 +2,11 @@ package com.aozijx.passly.app.message.presentation
 
 import android.content.Context
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.notice.model.AppNotice
-import com.aozijx.passly.domain.notice.model.NoticeCode
-import com.aozijx.passly.domain.notice.port.NoticeCodeRegistry
-import com.aozijx.passly.domain.notice.port.NoticeTextResolver
-import com.aozijx.passly.domain.notice.port.ResolvedNotice
+import com.aozijx.passly.data.message.model.AppNotice
+import com.aozijx.passly.data.message.model.NoticeCode
+import com.aozijx.passly.app.message.contract.NoticeCodeRegistry
+import com.aozijx.passly.app.message.contract.NoticeTextResolver
+import com.aozijx.passly.app.message.contract.ResolvedNotice
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -51,6 +51,6 @@ class AndroidNoticeTextResolver @Inject constructor(
             R.string.notice_database_index_rebuild_failed
         NoticeCode.DATABASE_OPERATION_FAILED -> R.string.notice_database_operation_failed
         NoticeCode.NOTIFICATION_PERMISSION_DENIED ->
-            R.string.main_notification_permission_denied
+            R.string.notification_permission_denied_message
     }
 }

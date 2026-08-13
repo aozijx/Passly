@@ -2,12 +2,13 @@ package com.aozijx.passly.feature.settings.security
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.authentication.AuthenticationState
-import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
-import com.aozijx.passly.domain.authentication.AuthenticationResult
-import com.aozijx.passly.domain.settings.command.SettingsCommand
-import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
+import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.data.settings.model.SettingsCommand
+import com.aozijx.passly.data.settings.port.AppSettingsRepository
 import com.aozijx.passly.feature.settings.security.presentation.SecuritySettingsMutation
 import com.aozijx.passly.feature.settings.security.presentation.SecuritySettingsReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -86,7 +87,7 @@ class SecuritySettingsViewModel @Inject constructor(
         viewModelScope.launch {
             authenticationManager.methods.collect { methods ->
                 mutate(
-                    SecuritySettingsMutation.BiometricAvailabilityChanged(methods.biometric)
+                    SecuritySettingsMutation.BiometricAvailabilityChanged(AuthenticationMethod.BIOMETRIC in methods)
                 )
             }
         }

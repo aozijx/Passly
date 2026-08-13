@@ -4,7 +4,7 @@ import android.content.Context
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
-import com.aozijx.passly.security.crypto.CryptoConfig
+import com.aozijx.passly.core.crypto.CryptoConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.security.KeyStore
 import javax.crypto.Cipher

@@ -37,7 +37,7 @@ Argon2id 参数后，旧备份可能无法恢复；头部也未作为明确 AAD 
 `PSLYBKP1`，写入 KDF/cipher ID、Argon2 参数和所有长度，并把完整头作为 AAD。旧
 `PASSLYBK` 文件明确不兼容，不保留实验 reader。
 
-证据：`EncryptedBackupContainerCodec.kt`、`docs/data/backup-format.md`。
+证据：`EncryptedBackupContainerCodec.kt`、`docs/features/backup.md`。
 
 ### P1：消息生产者同时“发布错误”和“返回错误”
 
@@ -54,7 +54,7 @@ Domain/认证编排不依赖全局 UI 消息中心。
 
 ### P2：Room 仍保留失效 KeyEnvelope 实现
 
-当前 Envelope 真相源是 Proto `BootstrapStore`，但 `AppDatabase` 仍注册 `KeyEnvelopeEntity/Dao`
+当前 Envelope 真相源是 Proto `VaultBootstrapStore`，但 `AppDatabase` 仍注册 `KeyEnvelopeEntity/Dao`
 。仓库中没有业务调用；Entity 缺少当前 Proto Envelope 的 `iv`，且 `type` 为 `String`，DAO 的
 `getByType/deleteByType` 却接收 `Int`。这既扩大 Schema，也容易让后续代码误用两个真相源。
 
