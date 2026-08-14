@@ -2,6 +2,7 @@ package com.aozijx.passly.domain.entry.policy
 
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.FieldKey
 
 /**
  * 条目类型策略。
@@ -15,6 +16,6 @@ import com.aozijx.passly.domain.entry.model.Entry
 interface EntryTypePolicy {
     fun supportsAutofill(type: EntryType): Boolean
     fun suggestedCategory(type: EntryType): String
-    fun sensitiveFields(type: EntryType): Set<String>
+    fun sensitiveFields(type: EntryType): Set<FieldKey>
     fun extractSummary(type: EntryType, entry: Entry): String
 }

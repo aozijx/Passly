@@ -6,33 +6,52 @@ package com.aozijx.passly.domain.entry.model
 enum class FieldKey {
     TITLE,
     USERNAME,
-    PASSWORD,
     EMAIL,
+    PASSWORD,
     NOTES,
+    TAGS,
+    PRIMARY_URL,
+    DOMAINS,
+    APPLICATION_IDS,
+    EXPIRES_AT,
+    FAVORITE,
+    CUSTOM_FIELDS,
+
+    /** Legacy aggregate key. New editor definitions use PRIMARY_URL and DOMAINS. */
     URIS,
 
+    TOTP_TYPE,
     TOTP_SECRET,
     TOTP_ISSUER,
     TOTP_PERIOD,
     TOTP_DIGITS,
     TOTP_ALGORITHM,
 
+    PASSKEY_CREDENTIAL_ID,
+    PASSKEY_RELYING_PARTY_ID,
+    PASSKEY_USER_HANDLE,
     PASSKEY_DATA,
     RECOVERY_CODES,
     HARDWARE_INFO,
     SSH_KEY,
+    SSH_PUBLIC_KEY,
+    SSH_PASSPHRASE,
     SEED_PHRASE,
 
+    CARD_TYPE,
     CARD_NUMBER,
     CARD_EXPIRATION,
     CARD_CVV,
+    CARD_HOLDER,
     PAYMENT_PIN,
     PAYMENT_PLATFORM,
+    BILLING_ADDRESS,
     SECURITY_QUESTION,
     SECURITY_ANSWER,
 
     ID_NUMBER,
 
+    WIFI_SSID,
     WIFI_SECURITY,
     WIFI_HIDDEN
 }
