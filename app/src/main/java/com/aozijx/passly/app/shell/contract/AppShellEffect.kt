@@ -5,6 +5,9 @@ sealed interface AppShellEffect {
     data class ShowError(val error: String) : AppShellEffect
     data object LockedByTimeout : AppShellEffect
     data object NavigateToVault : AppShellEffect
-    data object AuthSuccess : AppShellEffect
-    data class AuthError(val message: String) : AppShellEffect
+}
+
+sealed interface AppShellAuthResult {
+    data object Success : AppShellAuthResult
+    data object NotAuthorized : AppShellAuthResult
 }

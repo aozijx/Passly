@@ -28,7 +28,7 @@ import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.page.DetailScreen
 import com.aozijx.passly.app.shell.AppShellViewModel
-import com.aozijx.passly.app.shell.contract.AppShellEffect
+import com.aozijx.passly.app.shell.contract.AppShellAuthResult
 import com.aozijx.passly.app.shell.contract.AppShellIntent
 import com.aozijx.passly.feature.scanner.VaultScanner
 import com.aozijx.passly.feature.settings.SettingsScreen
@@ -59,18 +59,16 @@ fun PasslyNavHost(
     // 认证请求可能来自任意导航目的地。监听器必须位于 NavHost 外层，
     // 否则离开保险库首页后，对应 composable 被移除，成功回调也会丢失。
     LaunchedEffect(appShellViewModel) {
-        appShellViewModel.effects.collect { effect ->
-            when (effect) {
-                is AppShellEffect.AuthSuccess -> {
+        appShellViewModel.authResults.collect { result ->
+            when (result) {
+                AppShellAuthResult.Success -> {
                     pendingAuthCallback?.invoke()
                     pendingAuthCallback = null
                 }
 
-                is AppShellEffect.AuthError -> {
+                AppShellAuthResult.NotAuthorized -> {
                     pendingAuthCallback = null
                 }
-
-                else -> Unit
             }
         }
     }

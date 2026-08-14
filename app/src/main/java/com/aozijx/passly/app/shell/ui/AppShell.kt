@@ -74,7 +74,6 @@ internal fun AppShell(
                     showLocalMessage(effect.error, longDuration = true)
 
                 AppShellEffect.LockedByTimeout, AppShellEffect.NavigateToVault -> Unit
-                is AppShellEffect.AuthSuccess, is AppShellEffect.AuthError -> Unit
             }
         }
     }
