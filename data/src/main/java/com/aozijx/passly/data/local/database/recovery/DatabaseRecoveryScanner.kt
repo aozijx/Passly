@@ -6,8 +6,7 @@ import com.aozijx.passly.core.telemetry.EventLevel
 import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.report
 import com.aozijx.passly.data.codec.entry.EntryProfileCodec
-import com.aozijx.passly.data.codec.entry.EntrySecretCodec
-import com.aozijx.passly.data.codec.entry.SensitiveFieldCodec
+import com.aozijx.passly.data.codec.entry.SecretFieldCodec
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
 import com.aozijx.passly.data.database.model.DatabaseRecoveryIssue
@@ -17,6 +16,7 @@ import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
+import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -28,10 +28,10 @@ import javax.inject.Inject
 internal class DatabaseRecoveryScanner @Inject constructor(
     private val databaseSession: AppDatabaseSession,
     private val profileCodec: EntryProfileCodec,
-    private val secretCodec: EntrySecretCodec,
+    private val secretFieldStore: SecretFieldStore,
     private val revisionCodec: EntryContentSnapshotCodec,
     private val sensitiveRevisionCodec: SensitiveRevisionSnapshotCodec,
-    private val sensitiveFieldCodec: SensitiveFieldCodec,
+    private val sensitiveFieldCodec: SecretFieldCodec,
     private val attachmentCrypto: AttachmentContentCrypto,
     private val telemetry: TelemetryReporter,
 ) {
@@ -117,8 +117,7 @@ internal class DatabaseRecoveryScanner @Inject constructor(
             .onFailure { issues += issue("entry", anonymousId, "PROFILE_DAMAGED") }
             .getOrNull()
         val secret = runCatching {
-            val secretEntity = requireNotNull(source.entrySecretQueryDao().getByEntryId(entity.entryId))
-            secretCodec.decrypt(secretEntity.secretBlob, entity.entryId)
+            secretFieldStore.readAll(source, entity.entryId)
         }.onFailure { issues += issue("entry", anonymousId, "SECRET_DAMAGED") }.getOrNull()
         if (profile == null && secret == null) return null
 

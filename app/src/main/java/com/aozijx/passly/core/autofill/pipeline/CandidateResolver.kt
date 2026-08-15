@@ -121,7 +121,7 @@ class CandidateResolver @Inject constructor(
 
     private fun generateTotpFromEntry(entry: Entry): String? {
         val otpConfig = entry.secret.otp?.config ?: return null
-        if (otpConfig.secret.isBlank()) return null
+        if (otpConfig.secret.isNullOrBlank()) return null
         return when (val result = OtpGenerator.generate(otpConfig)) {
             is OtpResult.Success -> result.code
             is OtpResult.Failure -> null

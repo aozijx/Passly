@@ -1,13 +1,14 @@
 package com.aozijx.passly.data.repository.entry.command
 
+import com.aozijx.passly.data.codec.entry.SecretBundleCodec
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
-import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.data.local.database.entity.RevisionAttachmentRefEntity
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
+import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryProfile
@@ -28,7 +29,7 @@ internal class EntryRevisionWriter @Inject constructor(
     private val contentSnapshotCodec: EntryContentSnapshotCodec,
     private val sensitiveRevisionCodec: SensitiveRevisionSnapshotCodec,
     private val summaryCodec: EntryProfileCodec,
-    private val secretCodec: EntrySecretCodec,
+    private val secretFieldStore: SecretFieldStore,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
 
@@ -55,7 +56,9 @@ internal class EntryRevisionWriter @Inject constructor(
             )
         }
         val attachmentRefs = attachmentRefQueryDao().getCommittedByEntryId(entryId)
-        val sensitiveFields = sensitiveFieldQueryDao().getFields(entryId)
+        val sensitiveFields = secretFieldQueryDao().getAll(entryId).filter { row ->
+            row.fieldKey != SecretBundleCodec.FIELD_KEY
+        }
         val entryContentCipher = contentSnapshotCodec.encrypt(
             summary = summary,
             secret = secret,
@@ -100,10 +103,8 @@ internal class EntryRevisionWriter @Inject constructor(
         change: RevisionChange = RevisionChange.VALUE_CHANGED,
     ) = with(db) {
         val metadata = entryQueryDao().getById(entryId) ?: return@with
-        val secretEntity = entrySecretQueryDao().getByEntryId(entryId)
-            ?: return@with
         val summary = summaryCodec.decrypt(metadata.summaryBlob, entryId)
-        val secret = secretCodec.decrypt(secretEntity.secretBlob, entryId)
+        val secret = secretFieldStore.readAll(this, entryId)
         val affected = entryCommandDao().bumpVersion(
             entryId = entryId,
             expectedVersion = metadata.version,

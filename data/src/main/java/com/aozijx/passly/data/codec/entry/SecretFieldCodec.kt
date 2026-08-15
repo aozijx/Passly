@@ -5,14 +5,18 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.security.dek.SensitiveFieldEncryptor
 import javax.inject.Inject
 
-class SensitiveFieldCodec @Inject constructor(
+/**
+ * Encrypts and decrypts one field-level secret payload. Each field gets its own AES-GCM
+ * ciphertext bound to `entryId + fieldKey`, so revealing one field never decrypts the others.
+ */
+class SecretFieldCodec @Inject constructor(
     private val fieldEncryptor: SensitiveFieldEncryptor
 ) {
     suspend fun encrypt(entryId: String, key: SensitiveFieldKey, value: String): ByteArray =
-        fieldEncryptor.encrypt(value, DatabaseRecordAad.sensitiveField(entryId, key.name))
+        fieldEncryptor.encrypt(value, DatabaseRecordAad.secretField(entryId, key.name))
 
     suspend fun decrypt(entryId: String, key: SensitiveFieldKey, cipher: ByteArray): String =
-        fieldEncryptor.decrypt(cipher, DatabaseRecordAad.sensitiveField(entryId, key.name))
+        fieldEncryptor.decrypt(cipher, DatabaseRecordAad.secretField(entryId, key.name))
 
     suspend fun decryptProvisioned(
         entryId: String,
@@ -20,6 +24,6 @@ class SensitiveFieldCodec @Inject constructor(
         cipher: ByteArray
     ): String = fieldEncryptor.decryptProvisioned(
         cipher,
-        DatabaseRecordAad.sensitiveField(entryId, key.name)
+        DatabaseRecordAad.secretField(entryId, key.name)
     )
 }

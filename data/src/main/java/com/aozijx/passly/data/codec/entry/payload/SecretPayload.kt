@@ -29,7 +29,8 @@ enum class OtpCredentialEncodingPayload {
 @Serializable
 data class OtpConfigPayload(
     val type: OtpTypePayload = OtpTypePayload.TOTP,
-    val secret: String,
+    /** `null` when the secret is stored as a separate field-level ciphertext. */
+    val secret: String? = null,
     val algorithm: OtpHashAlgorithmPayload = OtpHashAlgorithmPayload.SHA1,
     val digits: Int = 6,
     val periodSeconds: Int? = 30,

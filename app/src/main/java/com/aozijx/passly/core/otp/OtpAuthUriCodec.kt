@@ -102,8 +102,9 @@ object OtpAuthUriCodec {
         }
         val label = Uri.encode(title, "UTF-8")
         val encodedSecret = when (config.encoding) {
-            OtpSecretEncoding.BASE32 -> config.secret.replace(" ", "").uppercase()
-            OtpSecretEncoding.BASE64 -> config.secret.trim()
+            OtpSecretEncoding.BASE32 -> config.secret
+                ?.replace(" ", "")?.uppercase() ?: error("OTP secret is not decrypted")
+            OtpSecretEncoding.BASE64 -> config.secret?.trim() ?: error("OTP secret is not decrypted")
         }
         val params = mutableMapOf(
             "secret" to encodedSecret,

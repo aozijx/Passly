@@ -78,7 +78,7 @@ internal class TotpCoordinator(
                     handleSessionLocked()
                     return
                 }
-                if (config == null || config.secret.isBlank()) {
+                if (config == null || config.secret.isNullOrBlank()) {
                     refreshed[entryId] = OtpUiState(error = OtpGenerationError.InvalidSecret)
                     continue
                 }
@@ -159,7 +159,7 @@ internal class TotpCoordinator(
             handleSessionLocked()
             return
         }
-        if (config == null || config.secret.isBlank()) {
+        if (config == null || config.secret.isNullOrBlank()) {
             AppTelemetry.w("TotpCoordinator", "OTP activation failed: missing config for $entryId")
             _states.update { it + (entryId to OtpUiState(error = OtpGenerationError.InvalidSecret)) }
             return

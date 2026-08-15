@@ -26,6 +26,7 @@ import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.ui.components.DetailItem
 import com.aozijx.passly.feature.detail.ui.components.EditTextField
 import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
@@ -35,6 +36,7 @@ import com.aozijx.passly.feature.detail.internal.withLoginPassword
 @Composable
 fun CredentialSection(
     item: Entry,
+    hasPasswordField: Boolean,
     onAuthenticate: DetailAuthenticate,
     editState: EntryEditState,
     revealedUsername: String?,
@@ -50,7 +52,7 @@ fun CredentialSection(
         onEvent = onEvent
     )
     val hasUsername = item.username.isNotBlank()
-    val hasPassword = !item.secret.login?.password.isNullOrBlank()
+    val hasPassword = hasPasswordField
     val showUsername = hasUsername || !hasPassword
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -81,7 +83,7 @@ fun CredentialSection(
         }
 
         val showPassword =
-            (item.secret.login?.password?.isNotEmpty() == true) || item.type != EntryType.LOGIN
+            hasPasswordField || item.type != EntryType.LOGIN
         if (showPassword) {
             CredentialRow(
                 label = stringResource(R.string.password_label),
@@ -124,14 +126,10 @@ fun CredentialSection(
                                 )
                             )
                         }
-                        val password = item.secret.login?.password
-                        if (revealedPassword == null && password?.isNotEmpty() == true) {
-                            onPasswordRevealed(password)
+                        // 密码为字段级密文：走认证后按需解密，不在 UI 层直接读取。
+                        if (revealedPassword == null && hasPasswordField) {
                             onEvent(
-                                DetailIntent.RecordAction(
-                                    "password",
-                                    ActivityType.VIEW
-                                )
+                                DetailIntent.RevealHighSensitivityField(RevealedFieldKey.PASSWORD)
                             )
                         }
                     }

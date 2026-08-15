@@ -151,7 +151,7 @@ private fun SecretPayload.toBackupRecord() = BackupSecretRecord(
             otpSecret.config?.let {
                 BackupOtpConfig(
                     type = BackupOtpType.valueOf(it.type.name),
-                    secret = it.secret,
+                    secret = requireNotNull(it.secret) { "OTP secret is missing" },
                     algorithm = BackupOtpAlgorithm.valueOf(it.algorithm.name),
                     digits = it.digits,
                     periodSeconds = it.periodSeconds,

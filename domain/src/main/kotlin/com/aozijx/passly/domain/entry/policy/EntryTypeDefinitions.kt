@@ -58,7 +58,7 @@ object EntryTypeDefinitions {
         title(),
         secret(FieldKey.USERNAME, required = true),
         secret(FieldKey.EMAIL),
-        secret(FieldKey.PASSWORD, required = true),
+        high(FieldKey.PASSWORD, SensitiveFieldKey.PASSWORD, required = true),
         field(FieldKey.PRIMARY_URL),
         field(FieldKey.DOMAINS, EntryFieldValueType.TEXT_LIST),
         field(FieldKey.APPLICATION_IDS, EntryFieldValueType.TEXT_LIST),

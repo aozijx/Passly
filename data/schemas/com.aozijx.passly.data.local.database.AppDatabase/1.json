@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "4ce47a32165e8af44e9218eeb1f36097",
+    "identityHash": "392794d51d56fc97dded162ede80142c",
     "entities": [
       {
         "tableName": "entries",
@@ -108,44 +108,7 @@
         ]
       },
       {
-        "tableName": "entry_secrets",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `secretBlob` BLOB NOT NULL, PRIMARY KEY(`entryId`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
-        "fields": [
-          {
-            "fieldPath": "entryId",
-            "columnName": "entryId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "secretBlob",
-            "columnName": "secretBlob",
-            "affinity": "BLOB",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "entryId"
-          ]
-        },
-        "foreignKeys": [
-          {
-            "table": "entries",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "entryId"
-            ],
-            "referencedColumns": [
-              "entryId"
-            ]
-          }
-        ]
-      },
-      {
-        "tableName": "entry_sensitive_fields",
+        "tableName": "entry_secret_fields",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `fieldKey` TEXT NOT NULL, `valueCipher` BLOB NOT NULL, `keyVersion` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`entryId`, `fieldKey`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
@@ -188,13 +151,13 @@
         },
         "indices": [
           {
-            "name": "index_entry_sensitive_fields_entryId",
+            "name": "index_entry_secret_fields_entryId",
             "unique": false,
             "columnNames": [
               "entryId"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_entry_sensitive_fields_entryId` ON `${TABLE_NAME}` (`entryId`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_entry_secret_fields_entryId` ON `${TABLE_NAME}` (`entryId`)"
           }
         ],
         "foreignKeys": [
@@ -879,7 +842,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4ce47a32165e8af44e9218eeb1f36097')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '392794d51d56fc97dded162ede80142c')"
     ]
   }
 }

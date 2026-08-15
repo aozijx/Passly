@@ -10,7 +10,6 @@ import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
-import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.local.database.maintenance.DatabaseCleaner
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
@@ -18,8 +17,7 @@ import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
 import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
-import com.aozijx.passly.data.local.database.entity.EntrySecretEntity
-import com.aozijx.passly.data.repository.entry.SensitiveFieldStore
+import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.data.mapper.entry.toDatabaseFlags
@@ -48,8 +46,7 @@ internal class DatabaseSnapshotRestorer @Inject constructor(
     private val databaseSession: AppDatabaseSession,
     private val databaseCleaner: DatabaseCleaner,
     private val summaryCodec: EntryProfileCodec,
-    private val secretCodec: EntrySecretCodec,
-    private val sensitiveFieldStore: SensitiveFieldStore,
+    private val secretFieldStore: SecretFieldStore,
     private val documentMapper: BackupSnapshotMapper,
     private val attachmentContentCrypto: AttachmentContentCrypto,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
@@ -100,7 +97,6 @@ internal class DatabaseSnapshotRestorer @Inject constructor(
                     )
                     val secret = restoredEntry.secret
                     val metaBlob = summaryCodec.encrypt(profile, entryId)
-                    val credBlob = secretCodec.encrypt(secret, entryId)
 
                     val attachmentResources = entryResources.filter {
                         it.kind == BackupResourceKind.ATTACHMENT
@@ -123,14 +119,8 @@ internal class DatabaseSnapshotRestorer @Inject constructor(
                         deletedAt = record.deletedAt
                     )
 
-                    val credEntity = EntrySecretEntity(
-                        entryId = entryId,
-                        secretBlob = credBlob
-                    )
-
                     entryCommandDao().insertStrict(metaEntity)
-                    entrySecretCommandDao().insertStrict(credEntity)
-                    sensitiveFieldStore.replaceAll(this, entryId, secret)
+                    secretFieldStore.replaceAll(this, entryId, secret)
 
                     attachmentResources.forEach { resource ->
                         val content = requireNotNull(bundle.resourceData[resource.id])

@@ -7,8 +7,7 @@ object DatabaseSchema {
 
     // 核心数据表
     const val TABLE_ENTRIES = "entries"
-    const val TABLE_SECRETS = "entry_secrets"
-    const val TABLE_SENSITIVE_FIELDS = "entry_sensitive_fields"
+    const val TABLE_SECRET_FIELDS = "entry_secret_fields"
     const val TABLE_ENTRY_LINKS = "entry_links"
 
     // 功能表

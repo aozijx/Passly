@@ -2,7 +2,12 @@ package com.aozijx.passly.domain.entry.model.otp
 
 data class OtpConfig(
     val type: OtpType = OtpType.TOTP,
-    val secret: String,
+    /**
+     * `null` means the secret is stored as a separate field-level ciphertext and has not been
+     * decrypted yet. Callers that generate codes must obtain the value first (field reveal or
+     * complete read).
+     */
+    val secret: String? = null,
     val algorithm: OtpHashAlgorithm = OtpHashAlgorithm.SHA1,
     val digits: Int = 6,
     val periodSeconds: Int? = 30,
@@ -12,7 +17,7 @@ data class OtpConfig(
     val accountName: String? = null
 ) {
     init {
-        require(secret.isNotBlank()) { "OTP secret cannot be blank" }
+        require(secret == null || secret.isNotBlank()) { "OTP secret cannot be blank" }
         require(digits in 5..8) { "OTP digits must be between 5 and 8" }
         require(periodSeconds == null || periodSeconds > 0) { "OTP period must be positive" }
         require(counter == null || counter >= 0) { "OTP counter cannot be negative" }
