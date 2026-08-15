@@ -8,7 +8,7 @@ import com.aozijx.passly.core.telemetry.EventLevel
 import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.report
 import com.aozijx.passly.data.local.database.AppDatabase
-import com.aozijx.passly.data.local.database.entity.AttachmentGcQueueEntity
+import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -29,36 +29,44 @@ class AttachmentResourceGarbageCollector @Inject constructor(
 
     suspend fun <T> withMutationLock(block: suspend () -> T): T = mutationMutex.withLock { block() }
 
-    /** Phase one: tombstone resources and persist work in the same database transaction. */
+    /** Phase one: tombstone unreferenced resources in the same database transaction. */
     suspend fun scheduleInTransaction(db: AppDatabase) = with(db) {
         val resources = attachmentResourceDao().getUnreferenced()
             .filter { it.lifecycleState == AttachmentResourceState.ACTIVE }
         if (resources.isEmpty()) return@with
         val ids = resources.map { it.resourceId }
-        check(attachmentResourceDao().updateState(ids, AttachmentResourceState.PENDING_GC) == ids.size)
-        attachmentGcQueueDao().enqueue(
-            ids.map { AttachmentGcQueueEntity(it, System.currentTimeMillis()) }
+        check(
+            attachmentResourceDao().markPendingGc(
+                ids,
+                AttachmentResourceState.PENDING_GC,
+                System.currentTimeMillis(),
+            ) == ids.size
         )
     }
 
     suspend fun reactivateInTransaction(db: AppDatabase, resourceId: String) = with(db) {
-        attachmentGcQueueDao().delete(resourceId)
-        check(attachmentResourceDao().updateState(resourceId, AttachmentResourceState.ACTIVE) == 1)
+        check(
+            attachmentResourceDao().reactivate(resourceId, AttachmentResourceState.ACTIVE) == 1
+        )
     }
 
     /** Phase two: idempotent file deletion followed by database finalization. */
     suspend fun drain(limit: Int = 64) = withMutationLock {
-        val pending = databaseSession.query { attachmentGcQueueDao().getPending(limit) }
+        val pending = databaseSession.query {
+            attachmentResourceDao().getPendingGc(limit)
+        }
         pending.forEach { item -> drainOne(item) }
     }
 
-    private suspend fun drainOne(item: AttachmentGcQueueEntity) {
+    private suspend fun drainOne(item: AttachmentResourceEntity) {
         val stillUnreferenced = databaseSession.transaction {
             val hasRefs = attachmentResourceDao().currentRefCount(item.resourceId) > 0 ||
                 attachmentResourceDao().revisionRefCount(item.resourceId) > 0
             if (hasRefs) {
-                attachmentResourceDao().updateState(item.resourceId, AttachmentResourceState.ACTIVE)
-                attachmentGcQueueDao().delete(item.resourceId)
+                attachmentResourceDao().reactivate(
+                    item.resourceId,
+                    AttachmentResourceState.ACTIVE,
+                )
             }
             !hasRefs
         }
@@ -72,7 +80,7 @@ class AttachmentResourceGarbageCollector @Inject constructor(
         }
         if (!deleted) {
             databaseSession.transaction {
-                attachmentGcQueueDao().recordAttempt(item.resourceId, System.currentTimeMillis())
+                attachmentResourceDao().recordAttempt(item.resourceId, System.currentTimeMillis())
             }
             telemetry.report(
                 EventLevel.WARN,
@@ -86,10 +94,11 @@ class AttachmentResourceGarbageCollector @Inject constructor(
             val hasRefs = attachmentResourceDao().currentRefCount(item.resourceId) > 0 ||
                 attachmentResourceDao().revisionRefCount(item.resourceId) > 0
             if (hasRefs) {
-                attachmentResourceDao().updateState(item.resourceId, AttachmentResourceState.ACTIVE)
-                attachmentGcQueueDao().delete(item.resourceId)
+                attachmentResourceDao().reactivate(
+                    item.resourceId,
+                    AttachmentResourceState.ACTIVE,
+                )
             } else {
-                attachmentGcQueueDao().delete(item.resourceId)
                 attachmentResourceDao().deletePending(item.resourceId)
             }
         }

@@ -11,7 +11,6 @@ import com.aozijx.passly.data.local.database.converter.LookupFieldConverter
 import com.aozijx.passly.data.local.database.dao.activity.EntryActivityAnalyticsDao
 import com.aozijx.passly.data.local.database.dao.activity.EntryActivityCommandDao
 import com.aozijx.passly.data.local.database.dao.activity.EntryActivityQueryDao
-import com.aozijx.passly.data.local.database.dao.attachment.AttachmentGcQueueDao
 import com.aozijx.passly.data.local.database.dao.attachment.AttachmentRefCommandDao
 import com.aozijx.passly.data.local.database.dao.attachment.AttachmentRefQueryDao
 import com.aozijx.passly.data.local.database.dao.attachment.AttachmentResourceDao
@@ -27,7 +26,6 @@ import com.aozijx.passly.data.local.database.dao.search.SearchTokenCommandDao
 import com.aozijx.passly.data.local.database.dao.search.SearchTokenQueryDao
 import com.aozijx.passly.data.local.database.dao.secret.SecretFieldCommandDao
 import com.aozijx.passly.data.local.database.dao.secret.SecretFieldQueryDao
-import com.aozijx.passly.data.local.database.entity.AttachmentGcQueueEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
 import com.aozijx.passly.data.local.database.entity.EntryActivityEntity
@@ -48,7 +46,6 @@ import com.aozijx.passly.data.local.database.entity.SearchTokenEntity
         AttachmentResourceEntity::class,
         AttachmentRefEntity::class,
         RevisionAttachmentRefEntity::class,
-        AttachmentGcQueueEntity::class,
         SearchTokenEntity::class
     ],
     version = DatabaseSchema.VERSION,
@@ -76,7 +73,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun attachmentRefQueryDao(): AttachmentRefQueryDao
     abstract fun attachmentRefCommandDao(): AttachmentRefCommandDao
     abstract fun attachmentResourceDao(): AttachmentResourceDao
-    abstract fun attachmentGcQueueDao(): AttachmentGcQueueDao
     abstract fun revisionAttachmentRefDao(): RevisionAttachmentRefDao
     abstract fun searchTokenQueryDao(): SearchTokenQueryDao
     abstract fun searchTokenCommandDao(): SearchTokenCommandDao
