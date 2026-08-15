@@ -5,6 +5,7 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpType
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.policy.EntryLinkPolicy
 import java.security.MessageDigest
@@ -56,6 +57,7 @@ object BackupBundleValidator {
                 }
             }
             requireAtomicSecret(entry)
+            requireSensitiveFieldSplit(entry)
             require(entry.version >= 1) { "条目版本无效: ${entry.id}" }
             require(entry.createdAt >= 0 && entry.updatedAt >= entry.createdAt) {
                 "条目时间无效: ${entry.id}"
@@ -166,10 +168,77 @@ object BackupBundleValidator {
             .digest(data)
             .joinToString("") { "%02x".format(it) }
 
-    private fun requireAtomicSecret(
+    private fun requireSensitiveFieldSplit(
         entry: com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
     ) {
+        val keys = entry.sensitiveFields.map { it.key }
+        require(keys.toSet().size == keys.size) {
+            "条目包含重复敏感字段: ${entry.id}"
+        }
+        keys.forEach { key ->
+            require(SensitiveFieldKey.entries.any { it.name == key }) {
+                "未知敏感字段键: $key (${entry.id})"
+            }
+            require(entry.sensitiveFields.first { it.key == key }.value.isNotBlank()) {
+                "敏感字段为空: $key (${entry.id})"
+            }
+        }
         val secret = entry.secret
+        fun conflict(duplicated: Boolean, field: String) {
+            require(!duplicated) { "敏感字段与聚合 secret 重复: $field (${entry.id})" }
+        }
+        conflict(
+            SensitiveFieldKey.PASSWORD.name in keys && !secret.login?.password.isNullOrBlank(),
+            "PASSWORD",
+        )
+        conflict(
+            SensitiveFieldKey.CARD_NUMBER.name in keys && !secret.card?.cardNumber.isNullOrBlank(),
+            "CARD_NUMBER",
+        )
+        conflict(
+            SensitiveFieldKey.CARD_CVV.name in keys && !secret.card?.cardCvv.isNullOrBlank(),
+            "CARD_CVV",
+        )
+        conflict(
+            SensitiveFieldKey.CARD_PAYMENT_PIN.name in keys && !secret.card?.paymentPin.isNullOrBlank(),
+            "CARD_PAYMENT_PIN",
+        )
+        conflict(
+            SensitiveFieldKey.IDENTITY_NUMBER.name in keys && !secret.identity?.idNumber.isNullOrBlank(),
+            "IDENTITY_NUMBER",
+        )
+        conflict(
+            SensitiveFieldKey.SEED_PHRASE.name in keys && !secret.identity?.seedPhrase.isNullOrBlank(),
+            "SEED_PHRASE",
+        )
+        conflict(
+            SensitiveFieldKey.RECOVERY_CODES.name in keys &&
+                secret.identity?.recoveryCodes?.isNotEmpty() == true,
+            "RECOVERY_CODES",
+        )
+        conflict(
+            SensitiveFieldKey.SSH_PRIVATE_KEY.name in keys && !secret.ssh?.privateKey.isNullOrBlank(),
+            "SSH_PRIVATE_KEY",
+        )
+        conflict(
+            SensitiveFieldKey.SSH_PASSPHRASE.name in keys && !secret.ssh?.passphrase.isNullOrBlank(),
+            "SSH_PASSPHRASE",
+        )
+        conflict(
+            SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE.name in keys &&
+                !secret.passkey?.privateKeyReference.isNullOrBlank(),
+            "PASSKEY_PRIVATE_REFERENCE",
+        )
+        conflict(
+            SensitiveFieldKey.OTP_SECRET.name in keys &&
+                secret.otp?.config?.secret?.isNotBlank() == true,
+            "OTP_SECRET",
+        )
+    }
+
+    private fun requireAtomicSecret(
+        entry: com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
+    ) {        val secret = entry.secret
         val populated = buildSet {
             if (secret.login != null) add("login")
             if (secret.card != null) add("card")

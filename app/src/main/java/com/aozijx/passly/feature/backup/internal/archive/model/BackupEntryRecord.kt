@@ -12,5 +12,7 @@ data class BackupEntryRecord(
     val deletedAt: Long? = null,
     val summary: BackupSummaryRecord,
     val secret: BackupSecretRecord,
-    val attachmentIds: List<String> = emptyList()
+    val attachmentIds: List<String> = emptyList(),
+    /** Field-level secret values kept out of the aggregated [secret] record. */
+    val sensitiveFields: List<BackupSensitiveField> = emptyList()
 )

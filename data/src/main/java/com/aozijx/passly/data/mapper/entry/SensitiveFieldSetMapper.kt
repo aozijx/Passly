@@ -12,8 +12,11 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 /**
  * Splits an [EntrySecret] into field-level values (stored as per-key ciphertext rows) and the
  * low-sensitivity aggregate (stored as the `STRUCT_BUNDLE` row), and merges them back.
+ *
+ * These are public because `app/feature/backup` (the documented data-integration exception)
+ * needs the same split/merge for the portable backup format.
  */
-internal fun EntrySecret.toSensitiveFieldValues(): Map<SensitiveFieldKey, String> = buildMap {
+fun EntrySecret.toSensitiveFieldValues(): Map<SensitiveFieldKey, String> = buildMap {
     fun putText(key: SensitiveFieldKey, value: String?) {
         value?.takeIf(String::isNotBlank)?.let { put(key, it) }
     }
@@ -33,7 +36,7 @@ internal fun EntrySecret.toSensitiveFieldValues(): Map<SensitiveFieldKey, String
 }
 
 /** The aggregate payload without any field-level value. Sensitive fields become `null`. */
-internal fun EntrySecret.toBundleSecret(): EntrySecret {
+fun EntrySecret.toBundleSecret(): EntrySecret {
     val credential = when (val value = credential) {
         is LoginCredential -> value.copy(password = null)
         is CardCredential -> value.copy(cardNumber = null, cardCvv = null, paymentPin = null)
@@ -47,7 +50,7 @@ internal fun EntrySecret.toBundleSecret(): EntrySecret {
 }
 
 /** Reassembles a complete secret from the bundle and decrypted field-level values. */
-internal fun EntrySecret.mergeSensitiveFields(fields: Map<SensitiveFieldKey, String>): EntrySecret {
+fun EntrySecret.mergeSensitiveFields(fields: Map<SensitiveFieldKey, String>): EntrySecret {
     val credential = when (val value = credential) {
         is LoginCredential -> fields[SensitiveFieldKey.PASSWORD]?.let { value.copy(password = it) } ?: value
         is CardCredential -> value.copy(
