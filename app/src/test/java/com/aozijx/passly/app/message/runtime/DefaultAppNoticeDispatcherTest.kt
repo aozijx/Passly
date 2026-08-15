@@ -1,8 +1,8 @@
 package com.aozijx.passly.app.message.runtime
 
-import com.aozijx.passly.data.message.model.AppMessageSettings
-import com.aozijx.passly.data.message.model.NoticeCode
-import com.aozijx.passly.data.message.model.newAppNotice
+import com.aozijx.passly.domain.settings.model.MessageSettings
+import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.message.contract.AppVisibility
 import com.aozijx.passly.app.message.contract.AppVisibilityProvider
 import com.aozijx.passly.app.message.contract.MessageSettingsSnapshotProvider
@@ -31,7 +31,7 @@ class DefaultAppNoticeDispatcherTest {
             codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
             settingsProvider = MessageSettingsSnapshotProvider {
                 settingsReads++
-                VersionedMessageSettings(9, AppMessageSettings())
+                VersionedMessageSettings(9, MessageSettings())
             },
             visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
             systemStateProvider = availableSystemState(),
@@ -64,7 +64,7 @@ class DefaultAppNoticeDispatcherTest {
             deduplicator = DefaultNoticeDeduplicator { 1_000L },
             codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
             settingsProvider = MessageSettingsSnapshotProvider {
-                VersionedMessageSettings(1, AppMessageSettings())
+                VersionedMessageSettings(1, MessageSettings())
             },
             visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
             systemStateProvider = availableSystemState(),
@@ -98,7 +98,7 @@ class DefaultAppNoticeDispatcherTest {
             settingsProvider = MessageSettingsSnapshotProvider {
                 VersionedMessageSettings(
                     3,
-                    AppMessageSettings(systemNotificationsEnabled = false)
+                    MessageSettings(systemNotificationsEnabled = false)
                 )
             },
             visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
@@ -138,7 +138,7 @@ class DefaultAppNoticeDispatcherTest {
     ) = object : NoticeSink {
         override val target: NoticeTarget = sinkTarget
         override suspend fun deliver(
-            notice: com.aozijx.passly.data.message.model.AppNotice
+            notice: com.aozijx.passly.app.message.model.AppNotice
         ): SinkResult = delivery()
     }
 }

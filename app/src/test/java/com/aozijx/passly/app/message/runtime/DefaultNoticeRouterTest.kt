@@ -1,11 +1,12 @@
 package com.aozijx.passly.app.message.runtime
 
-import com.aozijx.passly.data.message.model.AppMessageSettings
-import com.aozijx.passly.data.message.model.NoticeCode
-import com.aozijx.passly.data.message.model.NoticeLevel
-import com.aozijx.passly.data.message.model.NoticeTopic
-import com.aozijx.passly.data.message.model.TopicMessageSettings
-import com.aozijx.passly.data.message.model.newAppNotice
+import com.aozijx.passly.domain.settings.model.MessageSettings
+import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.domain.settings.model.MessageLevel
+import com.aozijx.passly.domain.settings.model.MessageTopic
+import com.aozijx.passly.domain.settings.model.TopicMessageSettings
+import com.aozijx.passly.app.message.model.NoticeTopic
+import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.message.contract.AppVisibility
 import com.aozijx.passly.app.message.contract.NoticeRoutingContext
 import com.aozijx.passly.app.message.contract.NoticeTarget
@@ -23,7 +24,7 @@ class DefaultNoticeRouterTest {
     fun optionalMessageHonorsMasterTopicAndMinimumLevel() {
         val notice = newAppNotice(NoticeCode.CLIPBOARD_CLEARED)
         val masterOff = context(
-            settings = AppMessageSettings(optionalMessagesEnabled = false)
+            settings = MessageSettings(optionalMessagesEnabled = false)
         )
         assertEquals(
             RouteReason.MASTER_DISABLED,
@@ -31,9 +32,9 @@ class DefaultNoticeRouterTest {
         )
 
         val topicOff = context(
-            settings = AppMessageSettings(
+            settings = MessageSettings(
                 topicSettings = mapOf(
-                    NoticeTopic.CLIPBOARD to TopicMessageSettings(enabled = false)
+                    MessageTopic.CLIPBOARD to TopicMessageSettings(enabled = false)
                 )
             )
         )
@@ -43,10 +44,10 @@ class DefaultNoticeRouterTest {
         )
 
         val levelFiltered = context(
-            settings = AppMessageSettings(
+            settings = MessageSettings(
                 topicSettings = mapOf(
-                    NoticeTopic.CLIPBOARD to TopicMessageSettings(
-                        minimumLevel = NoticeLevel.ERROR
+                    MessageTopic.CLIPBOARD to TopicMessageSettings(
+                        minimumLevel = MessageLevel.ERROR
                     )
                 )
             )
@@ -64,7 +65,7 @@ class DefaultNoticeRouterTest {
             notice,
             defaultNoticeCodePolicy(notice.code),
             context(
-                settings = AppMessageSettings(optionalMessagesEnabled = false),
+                settings = MessageSettings(optionalMessagesEnabled = false),
                 systemAvailable = false
             )
         )
@@ -115,7 +116,7 @@ class DefaultNoticeRouterTest {
     }
 
     private fun context(
-        settings: AppMessageSettings = AppMessageSettings(),
+        settings: MessageSettings = MessageSettings(),
         visibility: AppVisibility = AppVisibility.FOREGROUND,
         systemAvailable: Boolean = true
     ) = NoticeRoutingContext(

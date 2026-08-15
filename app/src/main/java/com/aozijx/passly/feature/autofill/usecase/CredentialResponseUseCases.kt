@@ -6,8 +6,8 @@ import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.data.autofill.port.CredentialServiceRepository
-import com.aozijx.passly.data.settings.port.AppSettingsRepository
+import com.aozijx.passly.data.repository.autofill.CredentialServiceRepository
+import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 

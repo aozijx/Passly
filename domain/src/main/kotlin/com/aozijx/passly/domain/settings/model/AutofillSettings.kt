@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.settings.model
+package com.aozijx.passly.domain.settings.model
 
 /**
  * Traditional AutofillService and Credential Manager share this policy.

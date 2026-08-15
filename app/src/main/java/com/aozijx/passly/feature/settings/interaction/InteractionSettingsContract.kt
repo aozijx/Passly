@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.settings.interaction
 
-import com.aozijx.passly.data.settings.model.AutofillPresentation
-import com.aozijx.passly.data.settings.model.AutofillSettings
-import com.aozijx.passly.data.settings.model.SwipeActionType
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
+import com.aozijx.passly.domain.settings.model.AutofillSettings
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 
 data class InteractionSettingsUiState(
     val isSwipeEnabled: Boolean = false,

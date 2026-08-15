@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.settings.internal
 
 import android.content.Context
-import com.aozijx.passly.data.settings.model.SwipeActionType
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 
 internal sealed interface AppPasswordDialogState {
     data object None : AppPasswordDialogState

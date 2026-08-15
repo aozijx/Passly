@@ -1,6 +1,5 @@
-package com.aozijx.passly.data.settings.model
+package com.aozijx.passly.domain.settings.model
 
-import com.aozijx.passly.data.message.model.AppMessageSettings
 import java.util.Locale
 
 data class AppSettingsSnapshot(
@@ -8,7 +7,7 @@ data class AppSettingsSnapshot(
     val interfacePrefs: InterfaceSettings,
     val security: SecuritySettings,
     val interaction: InteractionSettings,
-    val messages: AppMessageSettings,
+    val messages: MessageSettings,
     val vault: LibraryViewSettings,
     val backup: BackupSettings
 )

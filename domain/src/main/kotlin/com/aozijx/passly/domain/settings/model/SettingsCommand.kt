@@ -1,18 +1,18 @@
-package com.aozijx.passly.data.settings.model
+package com.aozijx.passly.domain.settings.model
 
-import com.aozijx.passly.data.message.model.NoticeLevel
-import com.aozijx.passly.data.message.model.NoticeTopic
-import com.aozijx.passly.data.settings.model.AppLanguage
-import com.aozijx.passly.data.settings.model.AutofillPresentation
-import com.aozijx.passly.data.settings.model.EntryCardPresentation
-import com.aozijx.passly.data.settings.model.EntryHierarchyDisplayMode
-import com.aozijx.passly.data.settings.model.ExportFormat
-import com.aozijx.passly.data.settings.model.FallbackPalette
-import com.aozijx.passly.data.settings.model.FontFamilyMode
-import com.aozijx.passly.data.settings.model.ImportMode
-import com.aozijx.passly.data.settings.model.SwipeActionType
-import com.aozijx.passly.data.settings.model.ThemeMode
-import com.aozijx.passly.data.settings.model.LibrarySortSpec
+import com.aozijx.passly.domain.settings.model.MessageLevel
+import com.aozijx.passly.domain.settings.model.MessageTopic
+import com.aozijx.passly.domain.settings.model.AppLanguage
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
+import com.aozijx.passly.domain.settings.model.EntryCardPresentation
+import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.settings.model.ExportFormat
+import com.aozijx.passly.domain.settings.model.FallbackPalette
+import com.aozijx.passly.domain.settings.model.FontFamilyMode
+import com.aozijx.passly.domain.settings.model.ImportMode
+import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.domain.settings.model.ThemeMode
+import com.aozijx.passly.domain.settings.model.LibrarySortSpec
 
 sealed interface SettingsCommand {
     // Appearance
@@ -74,8 +74,8 @@ sealed interface SettingsCommand {
     // Messages
     data class SetOptionalMessagesEnabled(val enabled: Boolean) : SettingsCommand
     data class SetSystemNotificationsEnabled(val enabled: Boolean) : SettingsCommand
-    data class SetMessageTopicEnabled(val topic: NoticeTopic, val enabled: Boolean) : SettingsCommand
-    data class SetMessageTopicMinimumLevel(val topic: NoticeTopic, val level: NoticeLevel) : SettingsCommand
+    data class SetMessageTopicEnabled(val topic: MessageTopic, val enabled: Boolean) : SettingsCommand
+    data class SetMessageTopicMinimumLevel(val topic: MessageTopic, val level: MessageLevel) : SettingsCommand
 
     // Backup
     data class SetBackupDirectoryUri(val uri: String) : SettingsCommand

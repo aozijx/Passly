@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.autofill.port
+package com.aozijx.passly.data.repository.autofill
 
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.query.CredentialCandidate

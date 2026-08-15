@@ -11,7 +11,7 @@ import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.data.message.model.NoticeTopic
+import com.aozijx.passly.domain.settings.model.MessageTopic
 
 @Composable
 internal fun NotificationSettingsSection(
@@ -19,7 +19,7 @@ internal fun NotificationSettingsSection(
     onSystemNotificationsEnabledChange: (Boolean) -> Unit,
     onOpenSystemNotificationSettings: () -> Unit,
     onOptionalMessagesEnabledChange: (Boolean) -> Unit = {},
-    onTopicEnabledChange: (NoticeTopic, Boolean) -> Unit = { _, _ -> }
+    onTopicEnabledChange: (MessageTopic, Boolean) -> Unit = { _, _ -> }
 ) {
     // ---- 系统通知总开关 ----
     SettingsSectionTitle(text = stringResource(R.string.settings_system_notifications))
@@ -63,23 +63,23 @@ internal fun NotificationSettingsSection(
         Spacer(modifier = Modifier.height(8.dp))
 
         val topicLabels = mapOf(
-            NoticeTopic.CLIPBOARD to R.string.settings_topic_clipboard,
-            NoticeTopic.APP_LIFECYCLE to R.string.settings_topic_app_lifecycle,
-            NoticeTopic.ICON_DOWNLOAD to R.string.settings_topic_icon_download,
-            NoticeTopic.BACKUP to R.string.settings_topic_backup,
-            NoticeTopic.SECURITY to R.string.settings_topic_security,
-            NoticeTopic.DATABASE to R.string.settings_topic_database
+            MessageTopic.CLIPBOARD to R.string.settings_topic_clipboard,
+            MessageTopic.APP_LIFECYCLE to R.string.settings_topic_app_lifecycle,
+            MessageTopic.ICON_DOWNLOAD to R.string.settings_topic_icon_download,
+            MessageTopic.BACKUP to R.string.settings_topic_backup,
+            MessageTopic.SECURITY to R.string.settings_topic_security,
+            MessageTopic.DATABASE to R.string.settings_topic_database
         )
         val topicSummaries = mapOf(
-            NoticeTopic.CLIPBOARD to R.string.settings_topic_clipboard_summary,
-            NoticeTopic.APP_LIFECYCLE to R.string.settings_topic_app_lifecycle_summary,
-            NoticeTopic.ICON_DOWNLOAD to R.string.settings_topic_icon_download_summary,
-            NoticeTopic.BACKUP to R.string.settings_topic_backup_summary,
-            NoticeTopic.SECURITY to R.string.settings_topic_security_summary,
-            NoticeTopic.DATABASE to R.string.settings_topic_database_summary
+            MessageTopic.CLIPBOARD to R.string.settings_topic_clipboard_summary,
+            MessageTopic.APP_LIFECYCLE to R.string.settings_topic_app_lifecycle_summary,
+            MessageTopic.ICON_DOWNLOAD to R.string.settings_topic_icon_download_summary,
+            MessageTopic.BACKUP to R.string.settings_topic_backup_summary,
+            MessageTopic.SECURITY to R.string.settings_topic_security_summary,
+            MessageTopic.DATABASE to R.string.settings_topic_database_summary
         )
 
-        NoticeTopic.entries.forEach { topic ->
+        MessageTopic.entries.forEach { topic ->
             val setting = state.topicSetting(topic)
             RoundedGroup(
                 items = listOf(

@@ -3,7 +3,7 @@ package com.aozijx.passly.core.autofill
 import com.aozijx.passly.core.autofill.model.FieldDescriptor
 import com.aozijx.passly.core.autofill.model.InternalFillRequest
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
-import com.aozijx.passly.data.autofill.port.CredentialServiceRepository
+import com.aozijx.passly.data.repository.autofill.CredentialServiceRepository
 import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
@@ -17,8 +17,8 @@ import com.aozijx.passly.domain.entry.model.query.CredentialCandidate
 import com.aozijx.passly.domain.entry.model.query.MatchType
 import com.aozijx.passly.domain.entry.model.query.CredentialMatch
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
-import com.aozijx.passly.data.settings.model.AutofillSettings
-import com.aozijx.passly.data.settings.model.AutofillPresentation
+import com.aozijx.passly.domain.settings.model.AutofillSettings
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

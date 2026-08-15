@@ -15,7 +15,7 @@ import com.aozijx.passly.app.security.SensitiveAccessLevel
 import com.aozijx.passly.app.database.DatabaseInitOutcome
 import com.aozijx.passly.app.database.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.entry.port.SearchIndexMaintenance
-import com.aozijx.passly.data.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.app.shell.contract.AppShellAuthResult
 import com.aozijx.passly.app.shell.contract.AppShellEffect
 import com.aozijx.passly.app.shell.contract.AppShellIntent

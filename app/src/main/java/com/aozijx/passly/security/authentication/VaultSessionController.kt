@@ -38,7 +38,7 @@ class VaultSessionController @Inject constructor(
     private val sessionManager: DatabaseSessionLifecycle,
     private val vaultBootstrapStore: VaultBootstrapStore,
     private val lockStateManager: LockStateManager,
-    idleTimeoutSettings: com.aozijx.passly.data.settings.port.IdleTimeoutSettings
+    idleTimeoutSettings: com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
 ) : SecureSessionAccessState {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutex = Mutex()

@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.autofill
 
 import com.aozijx.passly.core.platform.PackageUtils
-import com.aozijx.passly.data.autofill.port.CredentialServiceRepository
+import com.aozijx.passly.data.repository.autofill.CredentialServiceRepository
 import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.query.buildRecentEntryIdIntersectionQuery

@@ -10,9 +10,9 @@ import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.feature.autofill.usecase.AutofillUseCases
-import com.aozijx.passly.data.settings.model.AutofillPresentation
-import com.aozijx.passly.data.settings.model.AutofillSettings
-import com.aozijx.passly.data.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
+import com.aozijx.passly.domain.settings.model.AutofillSettings
+import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.feature.autofill.AutofillRequestSession
 import com.aozijx.passly.service.autofill.framework.builder.LegacyDatasetFactory
 import com.aozijx.passly.service.autofill.framework.builder.LegacyResponseFactory

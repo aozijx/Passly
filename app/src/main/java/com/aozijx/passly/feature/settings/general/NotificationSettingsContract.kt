@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.settings.general
 
-import com.aozijx.passly.data.message.model.NoticeTopic
-import com.aozijx.passly.data.message.model.TopicMessageSettings
+import com.aozijx.passly.domain.settings.model.MessageTopic
+import com.aozijx.passly.domain.settings.model.TopicMessageSettings
 
 data class NotificationSettingsUiState(
     val optionalMessagesEnabled: Boolean = true,
@@ -9,13 +9,13 @@ data class NotificationSettingsUiState(
     val runtimeNotificationPermissionGranted: Boolean = true,
     val notificationsEnabledBySystem: Boolean = true,
     val notificationChannelEnabled: Boolean = true,
-    val topicSettings: Map<NoticeTopic, TopicMessageSettings> = emptyMap()
+    val topicSettings: Map<MessageTopic, TopicMessageSettings> = emptyMap()
 ) {
     val systemNotificationAvailable: Boolean
         get() = runtimeNotificationPermissionGranted &&
             notificationsEnabledBySystem &&
             notificationChannelEnabled
 
-    fun topicSetting(topic: NoticeTopic): TopicMessageSettings =
+    fun topicSetting(topic: MessageTopic): TopicMessageSettings =
         topicSettings[topic] ?: TopicMessageSettings()
 }

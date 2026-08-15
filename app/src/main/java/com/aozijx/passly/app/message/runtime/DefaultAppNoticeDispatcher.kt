@@ -1,6 +1,6 @@
 package com.aozijx.passly.app.message.runtime
 
-import com.aozijx.passly.data.message.model.AppNotice
+import com.aozijx.passly.app.message.model.AppNotice
 import com.aozijx.passly.app.message.contract.AppNoticeDispatcher
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.app.message.contract.AppVisibilityProvider

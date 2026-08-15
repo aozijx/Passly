@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.message.model
+package com.aozijx.passly.app.message.model
 
 import java.util.UUID
 

@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.settings.port
+package com.aozijx.passly.domain.settings.port
 
 import kotlinx.coroutines.flow.Flow
 

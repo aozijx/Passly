@@ -11,33 +11,34 @@ import com.aozijx.passly.data.local.datastore.settings.SecurityPreferences
 import com.aozijx.passly.data.local.datastore.settings.TopicMessagePreference
 import com.aozijx.passly.data.local.datastore.settings.VaultSortPreference
 import com.aozijx.passly.data.local.datastore.settings.VaultViewPreferences
-import com.aozijx.passly.data.message.model.AppMessageSettings
-import com.aozijx.passly.data.message.model.NoticeLevel
-import com.aozijx.passly.data.message.model.NoticeTopic
-import com.aozijx.passly.data.message.model.TopicMessageSettings
-import com.aozijx.passly.data.settings.model.AppLanguage
-import com.aozijx.passly.data.settings.model.AppearanceSettings
-import com.aozijx.passly.data.settings.model.AutofillPresentation
-import com.aozijx.passly.data.settings.model.AutofillSettings
-import com.aozijx.passly.data.settings.model.BackupSettings
-import com.aozijx.passly.data.settings.model.CardDensity
-import com.aozijx.passly.data.settings.model.EntryCardPresentation
-import com.aozijx.passly.data.settings.model.EntryHierarchyDisplayMode
-import com.aozijx.passly.data.settings.model.ExportFormat
-import com.aozijx.passly.data.settings.model.FallbackPalette
-import com.aozijx.passly.data.settings.model.FontFamilyMode
-import com.aozijx.passly.data.settings.model.ImportMode
-import com.aozijx.passly.data.settings.model.InteractionSettings
-import com.aozijx.passly.data.settings.model.InterfaceSettings
-import com.aozijx.passly.data.settings.model.InterfaceStyleConstraints
-import com.aozijx.passly.data.settings.model.SecuritySettings
-import com.aozijx.passly.data.settings.model.SortDirection
-import com.aozijx.passly.data.settings.model.SwipeActionType
-import com.aozijx.passly.data.settings.model.ThemeMode
-import com.aozijx.passly.data.settings.model.LibrarySortField
-import com.aozijx.passly.data.settings.model.LibrarySortSpec
-import com.aozijx.passly.data.settings.model.LibraryViewSettings
-import com.aozijx.passly.data.settings.model.VisibleQuickFiltersConfig
+import com.aozijx.passly.domain.settings.model.AppLanguage
+import com.aozijx.passly.domain.settings.model.AppearanceSettings
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
+import com.aozijx.passly.domain.settings.model.AutofillSettings
+import com.aozijx.passly.domain.settings.model.BackupSettings
+import com.aozijx.passly.domain.settings.model.CardDensity
+import com.aozijx.passly.domain.settings.model.EntryCardPresentation
+import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.settings.model.ExportFormat
+import com.aozijx.passly.domain.settings.model.FallbackPalette
+import com.aozijx.passly.domain.settings.model.FontFamilyMode
+import com.aozijx.passly.domain.settings.model.ImportMode
+import com.aozijx.passly.domain.settings.model.InteractionSettings
+import com.aozijx.passly.domain.settings.model.InterfaceSettings
+import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
+import com.aozijx.passly.domain.settings.model.LibrarySortField
+import com.aozijx.passly.domain.settings.model.LibrarySortSpec
+import com.aozijx.passly.domain.settings.model.LibraryViewSettings
+import com.aozijx.passly.domain.settings.model.MessageLevel
+import com.aozijx.passly.domain.settings.model.MessageSettings
+import com.aozijx.passly.domain.settings.model.MessageTopic
+import com.aozijx.passly.domain.settings.model.SecuritySettings
+import com.aozijx.passly.domain.settings.model.SortDirection
+import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.domain.settings.model.ThemeMode
+import com.aozijx.passly.domain.settings.model.TopicMessageSettings
+import com.aozijx.passly.domain.settings.model.VisibleQuickFiltersConfig
+import com.aozijx.passly.domain.settings.model.defaultMessageTopicSettings
 import com.aozijx.passly.data.local.datastore.settings.CardDensity as ProtoCardDensity
 import com.aozijx.passly.data.local.datastore.settings.EntryCardPresentation as ProtoEntryCardPresentation
 import com.aozijx.passly.data.local.datastore.settings.FallbackPalette as ProtoFallbackPalette
@@ -169,41 +170,41 @@ internal fun ImportMode.toImportModeString(): String = when (this) {
     ImportMode.MERGE -> "merge"
 }
 
-// -- NoticeTopic --
-internal fun String.toNoticeTopicDomain(): NoticeTopic = when (this) {
-    "clipboard" -> NoticeTopic.CLIPBOARD
-    "app_lifecycle" -> NoticeTopic.APP_LIFECYCLE
-    "icon_download" -> NoticeTopic.ICON_DOWNLOAD
-    "backup" -> NoticeTopic.BACKUP
-    "security" -> NoticeTopic.SECURITY
-    "database" -> NoticeTopic.DATABASE
-    else -> NoticeTopic.CLIPBOARD
+// -- MessageTopic --
+internal fun String.toMessageTopicDomain(): MessageTopic = when (this) {
+    "clipboard" -> MessageTopic.CLIPBOARD
+    "app_lifecycle" -> MessageTopic.APP_LIFECYCLE
+    "icon_download" -> MessageTopic.ICON_DOWNLOAD
+    "backup" -> MessageTopic.BACKUP
+    "security" -> MessageTopic.SECURITY
+    "database" -> MessageTopic.DATABASE
+    else -> MessageTopic.CLIPBOARD
 }
 
-internal fun NoticeTopic.toNoticeTopicString(): String = when (this) {
-    NoticeTopic.CLIPBOARD -> "clipboard"
-    NoticeTopic.APP_LIFECYCLE -> "app_lifecycle"
-    NoticeTopic.ICON_DOWNLOAD -> "icon_download"
-    NoticeTopic.BACKUP -> "backup"
-    NoticeTopic.SECURITY -> "security"
-    NoticeTopic.DATABASE -> "database"
+internal fun MessageTopic.toMessageTopicString(): String = when (this) {
+    MessageTopic.CLIPBOARD -> "clipboard"
+    MessageTopic.APP_LIFECYCLE -> "app_lifecycle"
+    MessageTopic.ICON_DOWNLOAD -> "icon_download"
+    MessageTopic.BACKUP -> "backup"
+    MessageTopic.SECURITY -> "security"
+    MessageTopic.DATABASE -> "database"
 }
 
-// -- NoticeLevel --
-internal fun NoticeLevel.toProto(): NoticeLevelProto = when (this) {
-    NoticeLevel.INFO -> NoticeLevelProto.NOTICE_LEVEL_INFO
-    NoticeLevel.SUCCESS -> NoticeLevelProto.NOTICE_LEVEL_SUCCESS
-    NoticeLevel.WARNING -> NoticeLevelProto.NOTICE_LEVEL_WARNING
-    NoticeLevel.ERROR -> NoticeLevelProto.NOTICE_LEVEL_ERROR
-    NoticeLevel.CRITICAL -> NoticeLevelProto.NOTICE_LEVEL_CRITICAL
+// -- MessageLevel --
+internal fun MessageLevel.toProto(): NoticeLevelProto = when (this) {
+    MessageLevel.INFO -> NoticeLevelProto.NOTICE_LEVEL_INFO
+    MessageLevel.SUCCESS -> NoticeLevelProto.NOTICE_LEVEL_SUCCESS
+    MessageLevel.WARNING -> NoticeLevelProto.NOTICE_LEVEL_WARNING
+    MessageLevel.ERROR -> NoticeLevelProto.NOTICE_LEVEL_ERROR
+    MessageLevel.CRITICAL -> NoticeLevelProto.NOTICE_LEVEL_CRITICAL
 }
 
-internal fun NoticeLevelProto.toDomain(): NoticeLevel = when (this) {
-    NoticeLevelProto.NOTICE_LEVEL_INFO -> NoticeLevel.INFO
-    NoticeLevelProto.NOTICE_LEVEL_SUCCESS -> NoticeLevel.SUCCESS
-    NoticeLevelProto.NOTICE_LEVEL_WARNING -> NoticeLevel.WARNING
-    NoticeLevelProto.NOTICE_LEVEL_ERROR -> NoticeLevel.ERROR
-    NoticeLevelProto.NOTICE_LEVEL_CRITICAL -> NoticeLevel.CRITICAL
+internal fun NoticeLevelProto.toDomain(): MessageLevel = when (this) {
+    NoticeLevelProto.NOTICE_LEVEL_INFO -> MessageLevel.INFO
+    NoticeLevelProto.NOTICE_LEVEL_SUCCESS -> MessageLevel.SUCCESS
+    NoticeLevelProto.NOTICE_LEVEL_WARNING -> MessageLevel.WARNING
+    NoticeLevelProto.NOTICE_LEVEL_ERROR -> MessageLevel.ERROR
+    NoticeLevelProto.NOTICE_LEVEL_CRITICAL -> MessageLevel.CRITICAL
 }
 
 // ============================================================
@@ -257,31 +258,30 @@ internal fun EntryCardPresentation.toProto(): ProtoEntryCardPresentation =
 // MessagePreferences encode / decode
 // ============================================================
 
-internal fun decodeMessageSettings(proto: MessagePreferences?): AppMessageSettings {
-    if (proto == null) return AppMessageSettings()
+internal fun decodeMessageSettings(proto: MessagePreferences?): MessageSettings {
+    if (proto == null) return MessageSettings()
     val configured = proto.topicsList.associate { item ->
-        item.topicKey.toNoticeTopicDomain() to TopicMessageSettings(
+        item.topicKey.toMessageTopicDomain() to TopicMessageSettings(
             enabled = item.enabled,
             minimumLevel = item.minimumLevel.toDomain()
         )
     }
-    return AppMessageSettings(
+    return MessageSettings(
         optionalMessagesEnabled = proto.optionalMessagesEnabled,
         systemNotificationsEnabled = proto.systemNotificationsEnabled,
-        topicSettings = com.aozijx.passly.data.message.model.defaultTopicSettings() +
-                configured
+        topicSettings = defaultMessageTopicSettings() + configured
     )
 }
 
-internal fun encodeMessageSettings(settings: AppMessageSettings): MessagePreferences =
+internal fun encodeMessageSettings(settings: MessageSettings): MessagePreferences =
     MessagePreferences.newBuilder()
         .setOptionalMessagesEnabled(settings.optionalMessagesEnabled)
         .setSystemNotificationsEnabled(settings.systemNotificationsEnabled)
         .addAllTopics(
-            NoticeTopic.entries.map { topic ->
+            MessageTopic.entries.map { topic ->
                 val value = settings.topic(topic)
                 TopicMessagePreference.newBuilder()
-                    .setTopicKey(topic.toNoticeTopicString())
+                    .setTopicKey(topic.toMessageTopicString())
                     .setEnabled(value.enabled)
                     .setMinimumLevel(value.minimumLevel.toProto())
                     .build()

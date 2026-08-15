@@ -25,8 +25,8 @@ import com.aozijx.passly.app.shell.AppShellViewModel
 import com.aozijx.passly.app.shell.FlipToLockSensorController
 import com.aozijx.passly.app.shell.contract.AppShellIntent
 import com.aozijx.passly.app.shell.ui.AppShell
-import com.aozijx.passly.data.message.model.NoticeCode
-import com.aozijx.passly.data.message.model.newAppNotice
+import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint

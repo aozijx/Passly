@@ -1,11 +1,11 @@
 package com.aozijx.passly.feature.autofill.usecase
 
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.data.autofill.port.AutofillStatusRepository
-import com.aozijx.passly.data.autofill.port.CredentialServiceRepository
+import com.aozijx.passly.data.repository.autofill.AutofillStatusRepository
+import com.aozijx.passly.data.repository.autofill.CredentialServiceRepository
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
-import com.aozijx.passly.data.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject

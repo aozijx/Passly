@@ -2,8 +2,8 @@ package com.aozijx.passly.feature.vault.list
 
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.policy.EntryListSorter
-import com.aozijx.passly.data.settings.model.LibraryQuickFilter
-import com.aozijx.passly.data.settings.model.LibrarySortSpec
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
+import com.aozijx.passly.domain.settings.model.LibrarySortSpec
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection

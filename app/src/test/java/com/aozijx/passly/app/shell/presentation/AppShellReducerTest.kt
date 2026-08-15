@@ -1,10 +1,10 @@
 package com.aozijx.passly.app.shell.presentation
 
-import com.aozijx.passly.data.settings.model.AppLanguage
-import com.aozijx.passly.data.settings.model.AppearanceSettings
-import com.aozijx.passly.data.settings.model.FontFamilyMode
-import com.aozijx.passly.data.settings.model.InterfaceSettings
-import com.aozijx.passly.data.settings.model.ThemeMode
+import com.aozijx.passly.domain.settings.model.AppLanguage
+import com.aozijx.passly.domain.settings.model.AppearanceSettings
+import com.aozijx.passly.domain.settings.model.FontFamilyMode
+import com.aozijx.passly.domain.settings.model.InterfaceSettings
+import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.app.shell.contract.AppShellUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

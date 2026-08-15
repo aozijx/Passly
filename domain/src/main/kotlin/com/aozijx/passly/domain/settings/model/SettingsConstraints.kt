@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.settings.model
+package com.aozijx.passly.domain.settings.model
 
 object LockTimeoutConstraints {
     const val MIN_MS = 10_000L

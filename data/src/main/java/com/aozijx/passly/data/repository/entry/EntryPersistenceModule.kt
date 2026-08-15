@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.entry.di
+package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.data.repository.activity.RoomActivityQueryRepository
 import com.aozijx.passly.data.repository.activity.RoomActivityRecorder

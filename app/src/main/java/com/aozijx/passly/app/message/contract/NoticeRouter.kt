@@ -1,6 +1,6 @@
 package com.aozijx.passly.app.message.contract
 
-import com.aozijx.passly.data.message.model.AppNotice
+import com.aozijx.passly.app.message.model.AppNotice
 
 enum class NoticeTarget { IN_APP, SYSTEM }
 

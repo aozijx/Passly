@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.vault.components.list
 
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.data.settings.model.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
 
 internal fun arrangeEntryHierarchy(
     entries: List<EntryListItem>,

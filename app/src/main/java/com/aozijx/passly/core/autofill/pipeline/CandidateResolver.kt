@@ -5,10 +5,10 @@ import com.aozijx.passly.core.autofill.model.InternalFillRequest
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.otp.OtpGenerator
 import com.aozijx.passly.core.otp.OtpResult
-import com.aozijx.passly.data.autofill.port.CredentialServiceRepository
+import com.aozijx.passly.data.repository.autofill.CredentialServiceRepository
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.query.CredentialCandidate
-import com.aozijx.passly.data.settings.model.AutofillSettings
+import com.aozijx.passly.domain.settings.model.AutofillSettings
 import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton

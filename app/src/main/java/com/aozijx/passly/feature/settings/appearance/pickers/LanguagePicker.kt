@@ -22,7 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.data.settings.model.AppLanguage
+import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.feature.settings.appearance.localizedDisplayName
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.settings.model
+package com.aozijx.passly.domain.settings.model
 
 import com.aozijx.passly.domain.entry.model.query.EntryFilter
 

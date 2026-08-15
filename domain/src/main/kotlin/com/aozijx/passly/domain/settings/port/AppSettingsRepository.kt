@@ -1,7 +1,7 @@
-package com.aozijx.passly.data.settings.port
+package com.aozijx.passly.domain.settings.port
 
-import com.aozijx.passly.data.settings.model.SettingsCommand
-import com.aozijx.passly.data.settings.model.AppSettingsSnapshot
+import com.aozijx.passly.domain.settings.model.AppSettingsSnapshot
+import com.aozijx.passly.domain.settings.model.SettingsCommand
 import kotlinx.coroutines.flow.Flow
 
 /**

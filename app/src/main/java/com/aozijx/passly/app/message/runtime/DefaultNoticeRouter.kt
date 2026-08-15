@@ -1,7 +1,9 @@
 package com.aozijx.passly.app.message.runtime
 
-import com.aozijx.passly.data.message.model.AppNotice
-import com.aozijx.passly.data.message.model.DeliveryPolicy
+import com.aozijx.passly.app.message.model.AppNotice
+import com.aozijx.passly.app.message.model.DeliveryPolicy
+import com.aozijx.passly.app.message.model.toMessageLevel
+import com.aozijx.passly.app.message.model.toMessageTopic
 import com.aozijx.passly.app.message.contract.AppVisibility
 import com.aozijx.passly.app.message.contract.NoticeCodePolicy
 import com.aozijx.passly.app.message.contract.NoticeRoutePlan
@@ -21,11 +23,11 @@ class DefaultNoticeRouter @Inject constructor() : NoticeRouter {
             if (!context.settings.optionalMessagesEnabled) {
                 return NoticeRoutePlan.suppressed(RouteReason.MASTER_DISABLED)
             }
-            val topic = context.settings.topic(policy.topic)
+            val topic = context.settings.topic(policy.topic.toMessageTopic())
             if (!topic.enabled) {
                 return NoticeRoutePlan.suppressed(RouteReason.TOPIC_DISABLED)
             }
-            if (policy.level.ordinal < topic.minimumLevel.ordinal) {
+            if (policy.level.toMessageLevel().ordinal < topic.minimumLevel.ordinal) {
                 return NoticeRoutePlan.suppressed(RouteReason.BELOW_MINIMUM_LEVEL)
             }
         }

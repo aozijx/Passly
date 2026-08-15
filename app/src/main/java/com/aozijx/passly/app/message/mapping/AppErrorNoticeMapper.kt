@@ -10,7 +10,7 @@ import com.aozijx.passly.core.error.model.DATABASE_LOCKED
 import com.aozijx.passly.core.error.model.NOT_FOUND
 import com.aozijx.passly.core.error.model.UNEXPECTED
 import com.aozijx.passly.core.telemetry.OperationCode
-import com.aozijx.passly.data.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.NoticeCode
 
 /**
  * 将 [AppError] 映射为 [NoticeCode]，供消息中心发布 [AppNotice]。

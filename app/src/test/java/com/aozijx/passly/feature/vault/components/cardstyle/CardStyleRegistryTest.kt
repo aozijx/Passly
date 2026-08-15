@@ -8,7 +8,7 @@ import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.data.settings.model.EntryCardPresentation
+import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test

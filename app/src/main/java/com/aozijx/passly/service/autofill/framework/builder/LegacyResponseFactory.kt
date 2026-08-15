@@ -12,7 +12,7 @@ import com.aozijx.passly.core.autofill.model.FillAvailability
 import com.aozijx.passly.core.autofill.model.InternalFillResponse
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.domain.entry.model.query.MatchType
-import com.aozijx.passly.data.settings.model.AutofillPresentation
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.framework.AutofillFillActivity
 import com.aozijx.passly.feature.autofill.framework.AutofillRemoteViewFactory
 import com.aozijx.passly.service.autofill.framework.parser.ParsedStructure
