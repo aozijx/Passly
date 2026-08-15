@@ -33,14 +33,14 @@ import com.aozijx.passly.app.shell.contract.AppShellIntent
 import com.aozijx.passly.feature.scanner.VaultScanner
 import com.aozijx.passly.feature.settings.SettingsScreen
 import com.aozijx.passly.feature.settings.SettingsViewModel
-import com.aozijx.passly.feature.vault.VaultContent
+import com.aozijx.passly.presentation.vault.VaultContent
 import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.feature.vault.contract.VaultIntent
-import com.aozijx.passly.feature.vault.editor.bankcard.AddBankCardScreen
+import com.aozijx.passly.presentation.vault.editor.bankcard.AddBankCardScreen
 import com.aozijx.passly.feature.vault.editor.bankcard.AddBankCardViewModel
-import com.aozijx.passly.feature.vault.editor.otp.AddOtpScreen
+import com.aozijx.passly.presentation.vault.editor.otp.AddOtpScreen
 import com.aozijx.passly.feature.vault.editor.otp.AddOtpViewModel
-import com.aozijx.passly.feature.vault.editor.password.AddPasswordScreen
+import com.aozijx.passly.presentation.vault.editor.password.AddPasswordScreen
 import com.aozijx.passly.feature.vault.editor.password.AddPasswordViewModel
 import kotlinx.coroutines.flow.collectLatest
 

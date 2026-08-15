@@ -13,8 +13,8 @@ import androidx.credentials.exceptions.GetCredentialUnknownException
 import androidx.credentials.exceptions.GetCredentialUnsupportedException
 import androidx.credentials.provider.BeginGetCredentialRequest
 import androidx.credentials.provider.PendingIntentHandler
-import com.aozijx.passly.service.autofill.credential.CredentialCallingAppResolver
-import com.aozijx.passly.service.autofill.credential.ModernCredentialService
+import com.aozijx.passly.feature.autofill.credential.service.CredentialCallingAppResolver
+import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService
 
 internal sealed interface PasswordGetParseResult {
     data class Ready(

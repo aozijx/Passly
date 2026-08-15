@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.components.editor
+package com.aozijx.passly.presentation.vault.components.editor
 
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.model.AddType
