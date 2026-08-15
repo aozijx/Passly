@@ -274,6 +274,7 @@
     <string name="settings_general_cache_section">キャッシュ</string>
     <string name="settings_general_clear_cache">キャッシュを消去</string>
     <string name="settings_general_cache_cleared">キャッシュをクリアしました</string>
+    <string name="settings_general_feature_pending">近日公開予定です</string>
     <string name="settings_general_open_source_licenses">オープンソースライセンス</string>
     <string name="settings_general_privacy_policy">プライバシーポリシー</string>
     <string name="settings_general_terms">利用規約</string>

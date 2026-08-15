@@ -18,11 +18,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** 一次性导航副作用（MVI）。 */
-sealed interface NotificationSettingsEffect {
-    data object OpenSystemNotificationSettings : NotificationSettingsEffect
-}
-
 @HiltViewModel
 class NotificationSettingsViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository,

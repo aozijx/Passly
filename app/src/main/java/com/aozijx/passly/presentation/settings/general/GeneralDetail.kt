@@ -30,9 +30,10 @@ internal fun GeneralDetail() {
     val generalState by generalViewModel.uiState.collectAsStateWithLifecycle()
     val diagnosticsViewModel: DiagnosticsSettingsViewModel = hiltViewModel()
     val cacheClearedMessage = stringResource(R.string.settings_general_cache_cleared)
+    val featurePendingMessage = stringResource(R.string.settings_general_feature_pending)
 
     // 一次性效果（MVI）：缓存清理提示与页面级跳转均由页面 VM 发出，UI 只负责执行。
-    LaunchedEffect(generalViewModel, cacheClearedMessage) {
+    LaunchedEffect(generalViewModel, cacheClearedMessage, featurePendingMessage) {
         generalViewModel.effects.collect { effect ->
             when (effect) {
                 GeneralSettingsEffect.CacheCleared ->
@@ -48,7 +49,8 @@ internal fun GeneralDetail() {
 
                 GeneralSettingsEffect.OpenTerms,
                 GeneralSettingsEffect.OpenPrivacyPolicy,
-                GeneralSettingsEffect.OpenOpenSourceLicenses -> Unit
+                GeneralSettingsEffect.OpenOpenSourceLicenses ->
+                    Toast.makeText(context, featurePendingMessage, Toast.LENGTH_SHORT).show()
             }
         }
     }

@@ -123,9 +123,11 @@ internal fun NotificationDetail(
                     }
                 }
             },
-            onOpenSystemNotificationSettings = viewModel::openSystemNotificationSettings,
-            onOptionalMessagesEnabledChange = viewModel::setOptionalMessagesEnabled,
-            onTopicEnabledChange = viewModel::setMessageTopicEnabled
+            onOpenSystemNotificationSettings = { viewModel.openSystemNotificationSettings() },
+            onOptionalMessagesEnabledChange = { viewModel.setOptionalMessagesEnabled(it) },
+            onTopicEnabledChange = { topic, enabled ->
+                viewModel.setMessageTopicEnabled(topic, enabled)
+            }
         )
     }
 }

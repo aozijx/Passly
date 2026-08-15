@@ -274,6 +274,7 @@
     <string name="settings_general_cache_section">Cache</string>
     <string name="settings_general_clear_cache">Clear cache</string>
     <string name="settings_general_cache_cleared">Cache cleared</string>
+    <string name="settings_general_feature_pending">Coming soon</string>
     <string name="settings_general_open_source_licenses">Open-source licenses</string>
     <string name="settings_general_privacy_policy">Privacy policy</string>
     <string name="settings_general_terms">Terms of service</string>

@@ -7,6 +7,7 @@ import com.aozijx.passly.core.platform.CacheUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +32,9 @@ class GeneralSettingsViewModel @Inject constructor(
 
     private val _effects = Channel<GeneralSettingsEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
+
+    /** 缓存操作互斥：新操作会取消仍在进行的旧操作，避免并发读写缓存目录。 */
+    private var cacheOperationJob: Job? = null
 
     init {
         onAction(GeneralSettingsAction.RefreshCache)
@@ -60,7 +64,8 @@ class GeneralSettingsViewModel @Inject constructor(
     }
 
     private fun refreshCacheSize() {
-        viewModelScope.launch {
+        cacheOperationJob?.cancel()
+        cacheOperationJob = viewModelScope.launch {
             _uiState.update { it.copy(isCalculating = true) }
             val size = withContext(Dispatchers.IO) {
                 CacheUtils.calculateTotalCacheSize(context)
@@ -70,7 +75,8 @@ class GeneralSettingsViewModel @Inject constructor(
     }
 
     private fun clearCache() {
-        viewModelScope.launch {
+        cacheOperationJob?.cancel()
+        cacheOperationJob = viewModelScope.launch {
             _uiState.update { it.copy(isCalculating = true) }
             val size = withContext(Dispatchers.IO) {
                 CacheUtils.clearAllCache(context)

@@ -19,3 +19,8 @@ data class NotificationSettingsUiState(
     fun topicSetting(topic: MessageTopic): TopicMessageSettings =
         topicSettings[topic] ?: TopicMessageSettings()
 }
+
+/** 通知设置页的一次性导航副作用（MVI）。 */
+sealed interface NotificationSettingsEffect {
+    data object OpenSystemNotificationSettings : NotificationSettingsEffect
+}
