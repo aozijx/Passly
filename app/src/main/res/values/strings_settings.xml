@@ -273,6 +273,7 @@
     <string name="settings_general_about_section">关于</string>
     <string name="settings_general_cache_section">缓存</string>
     <string name="settings_general_clear_cache">清除缓存</string>
+    <string name="settings_general_cache_cleared">缓存已清理</string>
     <string name="settings_general_open_source_licenses">开源许可</string>
     <string name="settings_general_privacy_policy">隐私政策</string>
     <string name="settings_general_terms">用户协议</string>

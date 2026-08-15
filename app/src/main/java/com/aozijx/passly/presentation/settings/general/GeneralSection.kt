@@ -35,7 +35,9 @@ fun CacheSettingsSection(
 fun AboutSettingsSection(
     appVersion: String,
     onAppDetailsClick: () -> Unit,
-    onAboutClick: () -> Unit
+    onTermsClick: () -> Unit,
+    onPrivacyPolicyClick: () -> Unit,
+    onOpenSourceLicensesClick: () -> Unit
 ) {
     SettingsSectionTitle(text = stringResource(R.string.settings_general_about_section))
     RoundedGroup(
@@ -54,19 +56,19 @@ fun AboutSettingsSection(
                 key = "general.terms",
                 iconPlaceholder = true,
                 title = stringResource(R.string.settings_general_terms),
-                onClick = onAboutClick
+                onClick = onTermsClick
             ),
             navigationSettingsGroupItem(
                 key = "general.privacy_policy",
                 iconPlaceholder = true,
                 title = stringResource(R.string.settings_general_privacy_policy),
-                onClick = onAboutClick
+                onClick = onPrivacyPolicyClick
             ),
             navigationSettingsGroupItem(
                 key = "general.open_source",
                 iconPlaceholder = true,
                 title = stringResource(R.string.settings_general_open_source_licenses),
-                onClick = onAboutClick
+                onClick = onOpenSourceLicensesClick
             )
         )
     )
