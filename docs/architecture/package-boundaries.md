@@ -39,7 +39,9 @@ Entry Domain 端口，不直接构造 Entity 或具体 Repository。Autofill/Cre
 - Entity：数据库结构，只在 Data 层。
 - Domain model：业务语义与跨层契约。
 - UI model/state：展示派生状态，只在 Feature presentation/UI。
-- 应用偏好：主题、布局、手势、平台开关和存储 URI 留在 App/Data，不包装成 Domain settings。
+- 应用偏好：设置契约模型与端口（`domain/settings`）在 Domain 统一表达；Proto 存储 DTO 与
+  Repository 实现在 Data（`data/local/datastore`、`data/repository/settings`）。通知事件模型
+  （`AppNotice`）属于 App 层，通知设置值属于 Domain 设置模型。
 - 外部格式 model：备份模型归 `app/feature/backup/internal/archive`；Proto 或系统 API 模型放在各自适配边界。
 
 Mapper 应显式处理缺失字段、版本和错误，不用强制类型转换掩盖边界问题。
