@@ -33,6 +33,10 @@ internal fun AutofillSettingsSection(
         candidateLimit = settings.normalizedMaxSuggestions.toFloat()
     }
 
+    val enabled = settings.enabled
+    val supportsCredentialManager =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+
     SettingsSectionTitle(text = stringResource(R.string.settings_autofill_section))
     RoundedGroup(
         items = buildList {
@@ -62,123 +66,127 @@ internal fun AutofillSettingsSection(
                     },
                 )
             )
-            if (settings.enabled) {
-                add(
-                    navigationSettingsGroupItem(
-                        key = "autofill.presentation",
-                        title = stringResource(R.string.settings_autofill_presentation),
-                        value = stringResource(
-                            when (settings.presentation) {
-                                AutofillPresentation.SYSTEM_INLINE ->
-                                    R.string.settings_autofill_mode_inline
+            add(
+                navigationSettingsGroupItem(
+                    key = "autofill.presentation",
+                    enabled = enabled,
+                    title = stringResource(R.string.settings_autofill_presentation),
+                    value = stringResource(
+                        when (settings.presentation) {
+                            AutofillPresentation.SYSTEM_INLINE ->
+                                R.string.settings_autofill_mode_inline
 
-                                AutofillPresentation.BOTTOM_SHEET ->
-                                    R.string.settings_autofill_mode_bottom_sheet
-                            }
-                        ),
-                        onClick = {
-                            val next = when (settings.presentation) {
-                                AutofillPresentation.SYSTEM_INLINE ->
-                                    AutofillPresentation.BOTTOM_SHEET
+                            AutofillPresentation.BOTTOM_SHEET ->
+                                R.string.settings_autofill_mode_bottom_sheet
+                        }
+                    ),
+                    onClick = {
+                        val next = when (settings.presentation) {
+                            AutofillPresentation.SYSTEM_INLINE ->
+                                AutofillPresentation.BOTTOM_SHEET
 
-                                AutofillPresentation.BOTTOM_SHEET ->
-                                    AutofillPresentation.SYSTEM_INLINE
-                            }
-                            onAction(AutofillSettingsAction.SetPresentation(next))
-                        },
-                    )
+                            AutofillPresentation.BOTTOM_SHEET ->
+                                AutofillPresentation.SYSTEM_INLINE
+                        }
+                        onAction(AutofillSettingsAction.SetPresentation(next))
+                    },
                 )
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    add(
-                        switchSettingsGroupItem(
-                            key = "autofill.credential_manager_enabled",
-                            title = stringResource(R.string.settings_autofill_credential_manager),
-                            subtitle = stringResource(
-                                R.string.settings_autofill_credential_manager_summary
-                            ),
-                            checked = settings.credentialManagerEnabled,
-                            onCheckedChange = {
-                                onAction(AutofillSettingsAction.SetCredentialManagerEnabled(it))
-                            },
+            )
+            add(
+                switchSettingsGroupItem(
+                    key = "autofill.credential_manager_enabled",
+                    visible = supportsCredentialManager,
+                    enabled = enabled,
+                    title = stringResource(R.string.settings_autofill_credential_manager),
+                    subtitle = stringResource(
+                        R.string.settings_autofill_credential_manager_summary
+                    ),
+                    checked = settings.credentialManagerEnabled,
+                    onCheckedChange = {
+                        onAction(AutofillSettingsAction.SetCredentialManagerEnabled(it))
+                    },
+                )
+            )
+            add(
+                switchSettingsGroupItem(
+                    key = "autofill.authentication",
+                    enabled = enabled,
+                    title = stringResource(R.string.settings_autofill_require_authentication),
+                    subtitle = stringResource(
+                        R.string.settings_autofill_require_authentication_summary
+                    ),
+                    checked = settings.requireAuthentication,
+                    onCheckedChange = {
+                        onAction(
+                            AutofillSettingsAction.SetAuthenticationRequired(it)
                         )
-                    )
-                }
-                add(
-                    switchSettingsGroupItem(
-                        key = "autofill.authentication",
-                        title = stringResource(R.string.settings_autofill_require_authentication),
-                        subtitle = stringResource(
-                            R.string.settings_autofill_require_authentication_summary
-                        ),
-                        checked = settings.requireAuthentication,
-                        onCheckedChange = {
-                            onAction(
-                                AutofillSettingsAction.SetAuthenticationRequired(it)
+                    },
+                )
+            )
+            add(
+                switchSettingsGroupItem(
+                    key = "autofill.otp",
+                    enabled = enabled,
+                    title = stringResource(R.string.settings_autofill_include_otp),
+                    subtitle = stringResource(R.string.settings_autofill_include_otp_summary),
+                    checked = settings.includeOtp,
+                    onCheckedChange = {
+                        onAction(AutofillSettingsAction.SetOtpEnabled(it))
+                    },
+                )
+            )
+            add(
+                switchSettingsGroupItem(
+                    key = "autofill.save",
+                    enabled = enabled,
+                    title = stringResource(R.string.settings_autofill_save_prompts),
+                    subtitle = stringResource(R.string.settings_autofill_save_prompts_summary),
+                    checked = settings.savePromptsEnabled,
+                    onCheckedChange = {
+                        onAction(
+                            AutofillSettingsAction.SetSavePromptsEnabled(it)
+                        )
+                    },
+                )
+            )
+            add(
+                switchSettingsGroupItem(
+                    key = "autofill.unmatched",
+                    enabled = enabled,
+                    title = stringResource(R.string.settings_autofill_unmatched),
+                    subtitle = stringResource(R.string.settings_autofill_unmatched_summary),
+                    checked = settings.allowUnmatchedSuggestions,
+                    onCheckedChange = {
+                        onAction(
+                            AutofillSettingsAction.SetUnmatchedSuggestionsEnabled(it)
+                        )
+                    },
+                )
+            )
+            add(
+                sliderSettingsGroupItem(
+                    key = "autofill.candidate_limit",
+                    enabled = enabled,
+                    title = stringResource(R.string.settings_autofill_candidate_limit),
+                    subtitle = stringResource(
+                        R.string.settings_autofill_candidate_limit_summary
+                    ),
+                    value = candidateLimit,
+                    valueLabel = candidateLimit.roundToInt().toString(),
+                    valueRange = AutofillSettings.MIN_SUGGESTIONS.toFloat()..
+                            AutofillSettings.MAX_SUGGESTIONS.toFloat(),
+                    steps = AutofillSettings.MAX_SUGGESTIONS -
+                            AutofillSettings.MIN_SUGGESTIONS - 1,
+                    onValueChange = { candidateLimit = it },
+                    onValueChangeFinished = {
+                        onAction(
+                            AutofillSettingsAction.SetMaxSuggestions(
+                                candidateLimit.roundToInt()
                             )
-                        },
-                    )
+                        )
+                    },
                 )
-                add(
-                    switchSettingsGroupItem(
-                        key = "autofill.otp",
-                        title = stringResource(R.string.settings_autofill_include_otp),
-                        subtitle = stringResource(R.string.settings_autofill_include_otp_summary),
-                        checked = settings.includeOtp,
-                        onCheckedChange = {
-                            onAction(AutofillSettingsAction.SetOtpEnabled(it))
-                        },
-                    )
-                )
-                add(
-                    switchSettingsGroupItem(
-                        key = "autofill.save",
-                        title = stringResource(R.string.settings_autofill_save_prompts),
-                        subtitle = stringResource(R.string.settings_autofill_save_prompts_summary),
-                        checked = settings.savePromptsEnabled,
-                        onCheckedChange = {
-                            onAction(
-                                AutofillSettingsAction.SetSavePromptsEnabled(it)
-                            )
-                        },
-                    )
-                )
-                add(
-                    switchSettingsGroupItem(
-                        key = "autofill.unmatched",
-                        title = stringResource(R.string.settings_autofill_unmatched),
-                        subtitle = stringResource(R.string.settings_autofill_unmatched_summary),
-                        checked = settings.allowUnmatchedSuggestions,
-                        onCheckedChange = {
-                            onAction(
-                                AutofillSettingsAction.SetUnmatchedSuggestionsEnabled(it)
-                            )
-                        },
-                    )
-                )
-                add(
-                    sliderSettingsGroupItem(
-                        key = "autofill.candidate_limit",
-                        title = stringResource(R.string.settings_autofill_candidate_limit),
-                        subtitle = stringResource(
-                            R.string.settings_autofill_candidate_limit_summary
-                        ),
-                        value = candidateLimit,
-                        valueLabel = candidateLimit.roundToInt().toString(),
-                        valueRange = AutofillSettings.MIN_SUGGESTIONS.toFloat()..
-                                AutofillSettings.MAX_SUGGESTIONS.toFloat(),
-                        steps = AutofillSettings.MAX_SUGGESTIONS -
-                                AutofillSettings.MIN_SUGGESTIONS - 1,
-                        onValueChange = { candidateLimit = it },
-                        onValueChangeFinished = {
-                            onAction(
-                                AutofillSettingsAction.SetMaxSuggestions(
-                                    candidateLimit.roundToInt()
-                                )
-                            )
-                        },
-                    )
-                )
-            }
+            )
         }
     )
 }

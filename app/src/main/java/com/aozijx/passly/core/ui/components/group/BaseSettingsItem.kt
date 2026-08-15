@@ -40,6 +40,7 @@ fun customSettingsItem(
 fun settingsGroupItem(
     key: String,
     visible: Boolean = true,
+    enabled: Boolean = true,
     icon: ImageVector? = null,
     iconPlaceholder: Boolean = false,
     title: String,
@@ -51,7 +52,7 @@ fun settingsGroupItem(
 ): RoundedGroupItem = customSettingsItem(
     key = key,
     visible = visible,
-    onClick = onClick,
+    onClick = if (enabled) onClick else null,
     containerColor = if (selected) {
         { MaterialTheme.colorScheme.secondaryContainer }
     } else {
@@ -62,7 +63,12 @@ fun settingsGroupItem(
         Text(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            color = if (enabled) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
         )
         subtitle?.let {
             Text(

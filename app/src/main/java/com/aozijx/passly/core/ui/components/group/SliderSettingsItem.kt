@@ -15,7 +15,9 @@ import com.aozijx.passly.core.ui.components.group.model.RoundedGroupItem
 /** 滑条设置项：标题行 + 下方 Slider。 */
 fun sliderSettingsGroupItem(
     key: String,
+    enabled: Boolean = true,
     icon: ImageVector? = null,
+    iconPlaceholder: Boolean = false,
     title: String,
     subtitle: String? = null,
     value: Float,
@@ -27,12 +29,17 @@ fun sliderSettingsGroupItem(
 ): RoundedGroupItem = RoundedGroupItem(key = key) { itemScope ->
     GroupCard(itemScope = itemScope) {
         SettingsItemRow(
-            leading = icon.asLeadingContent(false),
+            leading = icon.asLeadingContent(iconPlaceholder),
             content = {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = if (enabled) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
                 )
                 subtitle?.let {
                     Text(
@@ -46,7 +53,11 @@ fun sliderSettingsGroupItem(
                 Text(
                     text = valueLabel,
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = if (enabled) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -57,6 +68,7 @@ fun sliderSettingsGroupItem(
             onValueChangeFinished = onValueChangeFinished,
             valueRange = valueRange,
             steps = steps,
+            enabled = enabled,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp)

@@ -17,6 +17,7 @@ import com.aozijx.passly.core.ui.components.group.model.RoundedGroupItem
 fun switchSettingsGroupItem(
     key: String,
     visible: Boolean = true,
+    enabled: Boolean = true,
     icon: ImageVector? = null,
     iconPlaceholder: Boolean = false,
     title: String,
@@ -26,6 +27,7 @@ fun switchSettingsGroupItem(
 ): RoundedGroupItem = settingsGroupItem(
     key = key,
     visible = visible,
+    enabled = enabled,
     icon = icon,
     iconPlaceholder = iconPlaceholder,
     title = title,
@@ -35,6 +37,7 @@ fun switchSettingsGroupItem(
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
+            enabled = enabled,
             thumbContent = if (checked) {
                 {
                     Icon(

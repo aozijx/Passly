@@ -8,6 +8,7 @@ import com.aozijx.passly.core.ui.components.group.model.RoundedGroupItem
 fun navigationSettingsGroupItem(
     key: String,
     visible: Boolean = true,
+    enabled: Boolean = true,
     icon: ImageVector? = null,
     iconPlaceholder: Boolean = false,
     title: String,
@@ -19,6 +20,7 @@ fun navigationSettingsGroupItem(
 ): RoundedGroupItem = settingsGroupItem(
     key = key,
     visible = visible,
+    enabled = enabled,
     icon = icon,
     iconPlaceholder = iconPlaceholder,
     title = title,
