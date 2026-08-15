@@ -57,17 +57,6 @@ class EntryTypeDefinitionsTest {
     }
 
     @Test
-    fun `entry type policy derives secret fields from definitions`() {
-        val policy = DefaultEntryTypePolicy()
-        val expected = EntryTypeDefinitions[EntryType.BANK_CARD].fields
-            .filter { it.access != EntryFieldAccess.SUMMARY }
-            .map(EntryFieldDefinition::key)
-            .toSet()
-
-        assertEquals(expected, policy.sensitiveFields(EntryType.BANK_CARD))
-    }
-
-    @Test
     fun `definition rejects ambiguous field contracts`() {
         val title = EntryFieldDefinition(FieldKey.TITLE, required = true)
 

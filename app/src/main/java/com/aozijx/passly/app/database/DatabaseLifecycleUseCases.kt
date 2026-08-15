@@ -1,6 +1,6 @@
 package com.aozijx.passly.app.database
 
-import com.aozijx.passly.data.database.port.DatabaseController
+import com.aozijx.passly.data.local.database.port.DatabaseController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject

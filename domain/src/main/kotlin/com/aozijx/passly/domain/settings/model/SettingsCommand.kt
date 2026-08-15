@@ -1,19 +1,5 @@
 package com.aozijx.passly.domain.settings.model
 
-import com.aozijx.passly.domain.settings.model.MessageLevel
-import com.aozijx.passly.domain.settings.model.MessageTopic
-import com.aozijx.passly.domain.settings.model.AppLanguage
-import com.aozijx.passly.domain.settings.model.AutofillPresentation
-import com.aozijx.passly.domain.settings.model.EntryCardPresentation
-import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
-import com.aozijx.passly.domain.settings.model.ExportFormat
-import com.aozijx.passly.domain.settings.model.FallbackPalette
-import com.aozijx.passly.domain.settings.model.FontFamilyMode
-import com.aozijx.passly.domain.settings.model.ImportMode
-import com.aozijx.passly.domain.settings.model.SwipeActionType
-import com.aozijx.passly.domain.settings.model.ThemeMode
-import com.aozijx.passly.domain.settings.model.LibrarySortSpec
-
 sealed interface SettingsCommand {
     // Appearance
     data class SetThemeMode(val mode: ThemeMode) : SettingsCommand

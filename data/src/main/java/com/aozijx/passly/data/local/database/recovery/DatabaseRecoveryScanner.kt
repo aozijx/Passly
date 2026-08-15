@@ -9,8 +9,8 @@ import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.codec.entry.SecretFieldCodec
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
-import com.aozijx.passly.data.database.model.DatabaseRecoveryIssue
-import com.aozijx.passly.data.database.model.DatabaseRecoveryScan
+import com.aozijx.passly.data.local.database.model.DatabaseRecoveryIssue
+import com.aozijx.passly.data.local.database.model.DatabaseRecoveryScan
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
 import com.aozijx.passly.data.local.database.entity.EntryEntity

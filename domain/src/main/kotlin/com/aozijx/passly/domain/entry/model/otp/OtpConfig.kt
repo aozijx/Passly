@@ -1,5 +1,22 @@
 package com.aozijx.passly.domain.entry.model.otp
 
+enum class OtpType {
+    TOTP,
+    HOTP,
+    STEAM,
+}
+
+enum class OtpHashAlgorithm {
+    SHA1,
+    SHA256,
+    SHA512,
+}
+
+enum class OtpSecretEncoding {
+    BASE32,
+    BASE64,
+}
+
 data class OtpConfig(
     val type: OtpType = OtpType.TOTP,
     /**
@@ -33,7 +50,7 @@ data class OtpConfig(
             digits = 5,
             periodSeconds = 30,
             encoding = OtpSecretEncoding.BASE32,
-            issuer = issuer
+            issuer = issuer,
         )
     }
 }

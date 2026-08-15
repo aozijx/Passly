@@ -2,8 +2,8 @@ package com.aozijx.passly.data.local.database.recovery
 
 import android.content.Context
 import com.aozijx.passly.core.platform.VaultResourcePaths
-import com.aozijx.passly.data.database.model.DatabaseRecoveryPackage
-import com.aozijx.passly.data.database.model.DatabaseRecoveryStatus
+import com.aozijx.passly.data.local.database.model.DatabaseRecoveryPackage
+import com.aozijx.passly.data.local.database.model.DatabaseRecoveryStatus
 import com.aozijx.passly.data.local.database.DatabaseSchema
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.FileInputStream

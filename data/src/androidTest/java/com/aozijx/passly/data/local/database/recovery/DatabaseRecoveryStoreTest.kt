@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.core.platform.VaultResourcePaths
-import com.aozijx.passly.data.database.model.DatabaseRecoveryStatus
+import com.aozijx.passly.data.local.database.model.DatabaseRecoveryStatus
 import com.aozijx.passly.data.local.database.DatabaseSchema
 import org.junit.After
 import org.junit.Assert.assertEquals

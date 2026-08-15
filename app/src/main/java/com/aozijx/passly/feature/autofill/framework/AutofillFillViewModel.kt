@@ -14,8 +14,8 @@ import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.feature.autofill.AutofillRequestSession
-import com.aozijx.passly.service.autofill.framework.builder.LegacyDatasetFactory
-import com.aozijx.passly.service.autofill.framework.builder.LegacyResponseFactory
+import com.aozijx.passly.feature.autofill.framework.service.builder.LegacyDatasetFactory
+import com.aozijx.passly.feature.autofill.framework.service.builder.LegacyResponseFactory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow

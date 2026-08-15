@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.local.database.recovery
 
-import com.aozijx.passly.data.database.model.DatabaseRecoveryIssue
+import com.aozijx.passly.data.local.database.model.DatabaseRecoveryIssue
 import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
 import com.aozijx.passly.data.local.database.entity.EntryEntity

@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.components.cardstyle
+package com.aozijx.passly.presentation.vault.components.cardstyle
 
 import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.domain.entry.model.query.EntryCapability

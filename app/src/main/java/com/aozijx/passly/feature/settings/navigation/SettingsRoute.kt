@@ -30,6 +30,10 @@ sealed class SettingsRoute(val route: String) : Serializable {
         private fun readResolve(): Any = Interaction
     }
 
+    data object Autofill : SettingsRoute("settings/autofill") {
+        private fun readResolve(): Any = Autofill
+    }
+
     data object DataManagement : SettingsRoute("settings/data") {
         private fun readResolve(): Any = DataManagement
     }

@@ -10,8 +10,10 @@
     <string name="settings_page_data_summary">アイコンとローカルデータ</string>
     <string name="settings_page_general">一般</string>
     <string name="settings_page_general_summary">キャッシュ、ログ、情報</string>
-    <string name="settings_page_interaction">操作と自動入力</string>
-    <string name="settings_page_interaction_summary">スワイプ操作、自動入力</string>
+    <string name="settings_page_interaction">操作とジェスチャー</string>
+    <string name="settings_page_interaction_summary">スワイプ操作</string>
+    <string name="settings_page_autofill">自動入力</string>
+    <string name="settings_page_autofill_summary">入力サービス、候補とセキュリティ</string>
     <string name="settings_page_interface">インターフェース</string>
     <string name="settings_page_interface_summary">バー、スクロール、カード</string>
     <string name="settings_page_notifications">メッセージと通知</string>
@@ -273,6 +275,8 @@
     <string name="settings_general_about_section">このアプリについて</string>
     <string name="settings_general_cache_section">キャッシュ</string>
     <string name="settings_general_clear_cache">キャッシュを消去</string>
+    <string name="settings_general_cache_cleared">キャッシュをクリアしました</string>
+    <string name="settings_general_feature_pending">近日公開予定です</string>
     <string name="settings_general_open_source_licenses">オープンソースライセンス</string>
     <string name="settings_general_privacy_policy">プライバシーポリシー</string>
     <string name="settings_general_terms">利用規約</string>

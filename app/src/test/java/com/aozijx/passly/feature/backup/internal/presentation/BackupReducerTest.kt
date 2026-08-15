@@ -6,7 +6,7 @@ import com.aozijx.passly.feature.backup.internal.model.BackupOperationStatus
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
-import com.aozijx.passly.domain.sensitive.SecureString
+import com.aozijx.passly.domain.sensitive.OwnedChars
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -20,7 +20,7 @@ class BackupReducerTest {
         val initial = BackupUiState(
             status = BackupOperationStatus.Failure,
             error = BackupFailed(),
-            backupPassword = SecureString.fromString("stale password"),
+            backupPassword = OwnedChars.fromString("stale password"),
             importMode = ImportMode.OVERWRITE,
             includeIcons = true,
             includeAttachments = true,
@@ -52,7 +52,7 @@ class BackupReducerTest {
         val failed = BackupReducer.reduce(
             BackupUiState(
                 isExporting = true,
-                backupPassword = SecureString.fromString("temporary"),
+                backupPassword = OwnedChars.fromString("temporary"),
                 pendingExportFileName = "recovery.passly",
                 deleteTargetOnFailure = true,
             ),
@@ -74,7 +74,7 @@ class BackupReducerTest {
             BackupUiState(
                 status = BackupOperationStatus.Failure,
                 error = BackupFailed(),
-                backupPassword = SecureString.fromString("temporary"),
+                backupPassword = OwnedChars.fromString("temporary"),
                 pendingExportFileName = "backup.passly",
             ),
             BackupMutation.PendingOperationCleared,

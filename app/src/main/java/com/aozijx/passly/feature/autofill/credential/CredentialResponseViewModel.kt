@@ -17,8 +17,8 @@ import com.aozijx.passly.feature.autofill.usecase.CreatePasswordCredentialResult
 import com.aozijx.passly.feature.autofill.usecase.CredentialResponseUseCases
 import com.aozijx.passly.feature.autofill.usecase.PasswordCredentialResult
 import com.aozijx.passly.feature.autofill.AutofillRequestSession
-import com.aozijx.passly.service.autofill.credential.CredentialBeginGetHandler
-import com.aozijx.passly.service.autofill.credential.CredentialResponseFactory
+import com.aozijx.passly.feature.autofill.credential.service.CredentialBeginGetHandler
+import com.aozijx.passly.feature.autofill.credential.service.CredentialResponseFactory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException

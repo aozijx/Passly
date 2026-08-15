@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.recovery.presentation
 
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeUiState
-import com.aozijx.passly.domain.sensitive.SecureString
+import com.aozijx.passly.domain.sensitive.OwnedChars
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -13,8 +13,8 @@ class RecoveryModeReducerTest {
 
     @Test
     fun `successful password setup clears sensitive references`() {
-        val password = SecureString.fromString("temporary")
-        val confirm = SecureString.fromString("temporary")
+        val password = OwnedChars.fromString("temporary")
+        val confirm = OwnedChars.fromString("temporary")
         try {
             val result = RecoveryModeReducer.reduce(
                 RecoveryModeUiState(

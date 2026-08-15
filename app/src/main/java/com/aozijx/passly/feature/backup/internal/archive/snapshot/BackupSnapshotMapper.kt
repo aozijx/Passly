@@ -27,10 +27,7 @@ import com.aozijx.passly.data.codec.entry.payload.CustomFieldPayload
 import com.aozijx.passly.data.codec.entry.payload.IdentityCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.LoginCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.OtpConfigPayload
-import com.aozijx.passly.data.codec.entry.payload.OtpHashAlgorithmPayload
-import com.aozijx.passly.data.codec.entry.payload.OtpCredentialEncodingPayload
 import com.aozijx.passly.data.codec.entry.payload.OtpCredentialPayload
-import com.aozijx.passly.data.codec.entry.payload.OtpTypePayload
 import com.aozijx.passly.data.codec.entry.payload.PasskeyCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.SecretPayload
 import com.aozijx.passly.data.codec.entry.payload.SshCredentialPayload
@@ -41,6 +38,9 @@ import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -222,13 +222,13 @@ private fun BackupSecretRecord.toPayload() = SecretPayload(
         OtpCredentialPayload(
             otpSecret.config?.let {
                 OtpConfigPayload(
-                    type = OtpTypePayload.valueOf(it.type.name),
+                    type = OtpType.valueOf(it.type.name),
                     secret = it.secret,
-                    algorithm = OtpHashAlgorithmPayload.valueOf(it.algorithm.name),
+                    algorithm = OtpHashAlgorithm.valueOf(it.algorithm.name),
                     digits = it.digits,
                     periodSeconds = it.periodSeconds,
                     counter = it.counter,
-                    encoding = OtpCredentialEncodingPayload.valueOf(it.encoding.name),
+                    encoding = OtpSecretEncoding.valueOf(it.encoding.name),
                     issuer = it.issuer,
                     accountName = it.accountName
                 )

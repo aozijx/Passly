@@ -35,7 +35,7 @@ import com.aozijx.passly.domain.entry.model.sensitive.RevealedRevisionSensitiveF
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import com.aozijx.passly.domain.entry.policy.SensitiveRevisionRestorePolicy
-import com.aozijx.passly.domain.sensitive.SecureString
+import com.aozijx.passly.domain.sensitive.OwnedChars
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -117,7 +117,7 @@ internal class RoomEntryRevisionRepository @Inject constructor(
                         revisionId = revisionId,
                         entryId = entryId,
                         key = key,
-                        value = SecureString.fromString(
+                        value = OwnedChars.fromString(
                             fieldCodec.decrypt(
                                 entryId = entryId.value,
                                 key = key,
