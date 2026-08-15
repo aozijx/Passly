@@ -124,8 +124,8 @@ entry ID、
 - 响应级认证返回 `FillResponse`，数据集级认证返回可立即填充的临时 `Dataset`；两者不得混用。
 - 认证 PendingIntent 必须显式可变，允许系统注入 AssistStructure、client state 等认证参数。
 - 候选查询使用包名/域名 Blind Index，不做敏感字段明文扫描。
-- 需要认证或使用 Passly 候选底部表时，候选阶段只解密 summary，不查询 `entry_secrets`；认证并点选后才按
-  entry ID 解密单条凭据。
+- 需要认证或使用 Passly 候选底部表时，候选阶段只解密 summary，不查询 `entry_secret_fields` 字段密文；认证并点选后才按
+  entry ID 组装单条凭据。
 - 数据库条目 ID 全链路使用字符串 UUID，不允许转成 `Int` 或使用 `0` 作为降级值。
 - Credential Manager 二阶段必须按用户点选的 entry ID 查询，并再次校验发起包名/域名。
 - 新凭据保存必须走 `EntryCommandRepository` 的正式事务，同时写入盲索引、修订与活动记录。
