@@ -1,6 +1,6 @@
 package com.aozijx.passly.core.crypto
 
-import com.aozijx.passly.domain.sensitive.SecureString
+import com.aozijx.passly.domain.sensitive.OwnedChars
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -21,7 +21,7 @@ class MemoryCleanerTest {
 
     @Test
     fun `secure string returns copies and wipes its owned value`() {
-        val value = SecureString.fromString("secret")
+        val value = OwnedChars.fromString("secret")
         val exported = value.toCharArray()
 
         exported.fill('x')

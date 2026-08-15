@@ -1,4 +1,4 @@
-package com.aozijx.passly.domain.entry.signal
+package com.aozijx.passly.data.repository.database
 
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow

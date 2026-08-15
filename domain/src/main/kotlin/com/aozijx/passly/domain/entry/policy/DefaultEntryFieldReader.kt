@@ -2,8 +2,6 @@ package com.aozijx.passly.domain.entry.policy
 
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.Entry
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * 默认字段读取器。
@@ -11,8 +9,7 @@ import javax.inject.Singleton
  * 根据 [FieldKey] 从 [Entry] 中提取原始数据值，处理逻辑对所有条目类型通用。
  * 提取逻辑继承自原有的 [com.aozijx.passly.domain.strategy.EntryTypeStrategy] 中的 getFieldValue 实现。
  */
-@Singleton
-class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
+class DefaultEntryFieldReader : EntryFieldReader {
 
     override fun getFieldValue(entry: Entry, key: FieldKey): String? {
         return when {

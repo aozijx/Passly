@@ -5,8 +5,6 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryFieldAccess
 import com.aozijx.passly.domain.entry.model.EntryFieldDefinition
 import com.aozijx.passly.domain.entry.model.FieldKey
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * 默认条目类型策略实现。
@@ -14,8 +12,7 @@ import javax.inject.Singleton
  * 通过内部策略配置映射 [EntryType] → 策略属性。
  * 任何未显式配置的类型都会获得保守的默认值（不支持 Autofill、空分类、空敏感字段、空摘要）。
  */
-@Singleton
-class DefaultEntryTypePolicy @Inject constructor() : EntryTypePolicy {
+class DefaultEntryTypePolicy : EntryTypePolicy {
 
     private data class PolicyConfig(
         val supportsAutofill: Boolean = false,

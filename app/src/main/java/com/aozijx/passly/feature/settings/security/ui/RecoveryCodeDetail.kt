@@ -29,7 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.common.InputActionButton
-import com.aozijx.passly.domain.sensitive.SecureString
+import com.aozijx.passly.domain.sensitive.OwnedChars
 
 @Composable
 fun RecoveryCodeDetail(
@@ -41,7 +41,7 @@ fun RecoveryCodeDetail(
     onClearVerifyResult: () -> Unit
 ) {
     var showRegenerateConfirm by remember { mutableStateOf(false) }
-    var verifyInput by remember { mutableStateOf(SecureString.EMPTY) }
+    var verifyInput by remember { mutableStateOf(OwnedChars.EMPTY) }
     var isExpanded by remember { mutableStateOf(false) }
 
     // 显式追踪验证进度，不依赖 verifyInput/isExpanded 的同步状态推导
@@ -126,7 +126,7 @@ fun RecoveryCodeDetail(
                 successText = stringResource(R.string.settings_recovery_code_verify_valid),
                 errorText = stringResource(R.string.settings_recovery_code_verify_invalid),
                 onValueChange = {
-                    verifyInput = SecureString.fromString(it)
+                    verifyInput = OwnedChars.fromString(it)
                     onClearVerifyResult()
                 },
                 onExpandedChange = { isExpanded = it },

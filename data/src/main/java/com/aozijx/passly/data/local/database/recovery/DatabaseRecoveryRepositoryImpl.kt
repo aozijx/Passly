@@ -14,7 +14,7 @@ import com.aozijx.passly.data.database.port.DatabaseRecoveryRepository
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.DatabaseProvider
 import com.aozijx.passly.data.local.database.DatabaseSchema
-import com.aozijx.passly.domain.entry.signal.EntryDataRefreshNotifier
+import com.aozijx.passly.data.repository.database.EntryDataRefreshNotifier
 import com.aozijx.passly.runtime.session.SessionKeySource
 import com.aozijx.passly.core.crypto.FieldEncryptor
 import dagger.hilt.android.qualifiers.ApplicationContext

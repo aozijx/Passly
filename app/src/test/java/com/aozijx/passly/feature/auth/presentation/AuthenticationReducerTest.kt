@@ -5,7 +5,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.feature.auth.contract.AuthenticationUiState
-import com.aozijx.passly.domain.sensitive.SecureString
+import com.aozijx.passly.domain.sensitive.OwnedChars
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -63,8 +63,8 @@ class AuthenticationReducerTest {
 
     @Test
     fun `dismissing setup dialog removes both password references`() {
-        val password = SecureString.fromString("temporary")
-        val confirm = SecureString.fromString("temporary")
+        val password = OwnedChars.fromString("temporary")
+        val confirm = OwnedChars.fromString("temporary")
         try {
             val result = AuthenticationReducer.reduce(
                 AuthenticationUiState(

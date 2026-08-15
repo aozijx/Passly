@@ -13,7 +13,7 @@ import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
-import com.aozijx.passly.domain.sensitive.SecureString
+import com.aozijx.passly.domain.sensitive.OwnedChars
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -66,7 +66,7 @@ internal class RoomSensitiveFieldRepository @Inject constructor(
                 RevealedSensitiveField(
                     entryId = entryId,
                     key = key,
-                    value = SecureString.fromString(
+                    value = OwnedChars.fromString(
                         codec.decrypt(entryId.value, key, entity.valueCipher)
                     ),
                 )

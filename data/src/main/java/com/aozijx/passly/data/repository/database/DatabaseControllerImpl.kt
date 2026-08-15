@@ -12,7 +12,7 @@ import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.data.local.database.recovery.DatabaseRecoveryStore
 import com.aozijx.passly.data.database.port.DatabaseController
 import com.aozijx.passly.data.database.port.DatabaseQuarantineResult
-import com.aozijx.passly.domain.entry.signal.EntryDataRefreshNotifier
+import com.aozijx.passly.data.repository.database.EntryDataRefreshNotifier
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay

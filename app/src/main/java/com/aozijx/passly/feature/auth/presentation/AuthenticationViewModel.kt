@@ -13,7 +13,7 @@ import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.feature.auth.contract.AuthenticationIntent
 import com.aozijx.passly.feature.auth.contract.AuthenticationUiState
 import com.aozijx.passly.core.crypto.MemoryCleaner
-import com.aozijx.passly.domain.sensitive.SecureString
+import com.aozijx.passly.domain.sensitive.OwnedChars
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -83,22 +83,22 @@ class AuthenticationViewModel @Inject constructor(
 
     private fun onAppPasswordChange(value: String) {
         _uiState.value.appPassword.wipe()
-        mutate(AuthenticationMutation.AppPasswordChanged(SecureString.fromString(value)))
+        mutate(AuthenticationMutation.AppPasswordChanged(OwnedChars.fromString(value)))
     }
 
     private fun onRecoveryCodeChange(value: String) {
         _uiState.value.recoveryCode.wipe()
-        mutate(AuthenticationMutation.RecoveryCodeChanged(SecureString.fromString(value)))
+        mutate(AuthenticationMutation.RecoveryCodeChanged(OwnedChars.fromString(value)))
     }
 
     private fun onNewAppPasswordChange(value: String) {
         _uiState.value.newAppPassword.wipe()
-        mutate(AuthenticationMutation.NewAppPasswordChanged(SecureString.fromString(value)))
+        mutate(AuthenticationMutation.NewAppPasswordChanged(OwnedChars.fromString(value)))
     }
 
     private fun onConfirmAppPasswordChange(value: String) {
         _uiState.value.confirmAppPassword.wipe()
-        mutate(AuthenticationMutation.ConfirmAppPasswordChanged(SecureString.fromString(value)))
+        mutate(AuthenticationMutation.ConfirmAppPasswordChanged(OwnedChars.fromString(value)))
     }
 
     private fun onInputExpanded(method: AuthenticationMethod, expanded: Boolean) {

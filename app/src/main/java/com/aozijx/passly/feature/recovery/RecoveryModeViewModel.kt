@@ -12,7 +12,7 @@ import com.aozijx.passly.feature.recovery.contract.RecoveryModeUiState
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeMutation
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeReducer
 import com.aozijx.passly.core.crypto.MemoryCleaner
-import com.aozijx.passly.domain.sensitive.SecureString
+import com.aozijx.passly.domain.sensitive.OwnedChars
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,12 +52,12 @@ class RecoveryModeViewModel @Inject constructor(
 
     private fun updateNewPassword(value: String) {
         _uiState.value.newPassword.wipe()
-        mutate(RecoveryModeMutation.NewPasswordChanged(SecureString.fromString(value)))
+        mutate(RecoveryModeMutation.NewPasswordChanged(OwnedChars.fromString(value)))
     }
 
     private fun updateConfirmPassword(value: String) {
         _uiState.value.confirmPassword.wipe()
-        mutate(RecoveryModeMutation.ConfirmPasswordChanged(SecureString.fromString(value)))
+        mutate(RecoveryModeMutation.ConfirmPasswordChanged(OwnedChars.fromString(value)))
     }
 
     private fun submitNewPassword() {
