@@ -6,7 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
-import com.aozijx.passly.feature.settings.interaction.InteractionSettingsAction
 import com.aozijx.passly.feature.settings.interaction.InteractionSettingsUiState
 
 @Composable
@@ -15,8 +14,6 @@ internal fun InteractionDetail(
     onSwipeEnabledChange: (Boolean) -> Unit,
     onLeftSwipeActionClick: () -> Unit,
     onRightSwipeActionClick: () -> Unit,
-    onAutofillAction: (InteractionSettingsAction) -> Unit,
-    onOpenAutofillSettings: () -> Unit
 ) {
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
@@ -28,15 +25,6 @@ internal fun InteractionDetail(
             onSwipeEnabledChange = onSwipeEnabledChange,
             onLeftSwipeActionClick = onLeftSwipeActionClick,
             onRightSwipeActionClick = onRightSwipeActionClick
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        AutofillSettingsSection(
-            settings = state.autofill,
-            isSystemServiceEnabled = state.isSystemAutofillEnabled,
-            onOpenAutofillSettings = onOpenAutofillSettings,
-            onAction = onAutofillAction,
         )
     }
 }

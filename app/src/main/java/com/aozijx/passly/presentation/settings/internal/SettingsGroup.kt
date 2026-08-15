@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.SpaceDashboard
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.settings.navigation.SettingsRoute
@@ -57,6 +58,13 @@ internal enum class SettingsGroup(
         titleRes = R.string.settings_page_interaction,
         subtitleRes = R.string.settings_page_interaction_summary,
         route = SettingsRoute.Interaction
+    ),
+    AUTOFILL(
+        sectionTitleRes = R.string.settings_section_features,
+        icon = Icons.Default.VpnKey,
+        titleRes = R.string.settings_page_autofill,
+        subtitleRes = R.string.settings_page_autofill_summary,
+        route = SettingsRoute.Autofill
     ),
     DATA_MANAGEMENT(
         sectionTitleRes = R.string.settings_section_data,

@@ -10,8 +10,10 @@
     <string name="settings_page_data_summary">Icon downloads and local data</string>
     <string name="settings_page_general">General</string>
     <string name="settings_page_general_summary">Cache, logs, about</string>
-    <string name="settings_page_interaction">Actions &amp; autofill</string>
-    <string name="settings_page_interaction_summary">Swipe actions, autofill</string>
+    <string name="settings_page_interaction">Actions &amp; gestures</string>
+    <string name="settings_page_interaction_summary">Swipe actions</string>
+    <string name="settings_page_autofill">Autofill</string>
+    <string name="settings_page_autofill_summary">Service, suggestions and security</string>
     <string name="settings_page_interface">Interface</string>
     <string name="settings_page_interface_summary">Bars, scrolling, cards</string>
     <string name="settings_page_notifications">Messages &amp; notifications</string>

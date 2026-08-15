@@ -10,8 +10,10 @@
     <string name="settings_page_data_summary">图标下载与本地数据</string>
     <string name="settings_page_general">通用</string>
     <string name="settings_page_general_summary">缓存、日志、关于</string>
-    <string name="settings_page_interaction">操作与填充</string>
-    <string name="settings_page_interaction_summary">滑动操作、自动填充</string>
+    <string name="settings_page_interaction">操作与手势</string>
+    <string name="settings_page_interaction_summary">滑动操作</string>
+    <string name="settings_page_autofill">自动填充</string>
+    <string name="settings_page_autofill_summary">填充服务、候选与安全</string>
     <string name="settings_page_interface">界面</string>
     <string name="settings_page_interface_summary">状态栏、滚动、卡片</string>
     <string name="settings_page_notifications">消息与通知</string>

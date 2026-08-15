@@ -26,6 +26,9 @@ import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsV
 import com.aozijx.passly.feature.settings.datamanagement.handleBackupPathPicked
 import com.aozijx.passly.presentation.settings.general.GeneralDetail
 import com.aozijx.passly.presentation.settings.general.NotificationDetail
+import com.aozijx.passly.presentation.settings.autofill.AutofillDetail
+import com.aozijx.passly.feature.settings.autofill.AutofillSettingsAction
+import com.aozijx.passly.feature.settings.autofill.AutofillSettingsViewModel
 import com.aozijx.passly.presentation.settings.interaction.InteractionDetail
 import com.aozijx.passly.feature.settings.interaction.InteractionSettingsAction
 import com.aozijx.passly.feature.settings.interaction.InteractionSettingsViewModel
@@ -70,12 +73,27 @@ internal fun DataSettingsRouteContent(
                         },
                         onLeftSwipeActionClick = localState::openLeftActionDialog,
                         onRightSwipeActionClick = localState::openRightActionDialog,
-                        onAutofillAction = interactionViewModel::onAction,
+                    )
+                }
+            }
+        }
+
+        SettingsRoute.Autofill -> {
+            val viewModel: AutofillSettingsViewModel = hiltViewModel()
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
+            SettingsSecondaryPage(
+                title = stringResource(SettingsGroup.AUTOFILL.titleRes),
+                onBack = onBack
+            ) {
+                item {
+                    AutofillDetail(
+                        state = state,
                         onOpenAutofillSettings = {
-                            interactionViewModel.onAction(
-                                InteractionSettingsAction.OpenSystemAutofillSettings
+                            viewModel.onAction(
+                                AutofillSettingsAction.OpenSystemAutofillSettings
                             )
-                        }
+                        },
+                        onAction = viewModel::onAction,
                     )
                 }
             }

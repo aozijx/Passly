@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.settings.interaction
+package com.aozijx.passly.presentation.settings.autofill
 
 import android.os.Build
 import androidx.compose.runtime.Composable
@@ -9,7 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.settings.interaction.InteractionSettingsAction
+import com.aozijx.passly.feature.settings.autofill.AutofillSettingsAction
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.sliderSettingsGroupItem
@@ -24,7 +24,7 @@ internal fun AutofillSettingsSection(
     settings: AutofillSettings,
     isSystemServiceEnabled: Boolean,
     onOpenAutofillSettings: () -> Unit,
-    onAction: (InteractionSettingsAction) -> Unit,
+    onAction: (AutofillSettingsAction) -> Unit,
 ) {
     var candidateLimit by remember {
         mutableFloatStateOf(settings.normalizedMaxSuggestions.toFloat())
@@ -38,7 +38,7 @@ internal fun AutofillSettingsSection(
         items = buildList {
             add(
                 navigationSettingsGroupItem(
-                    key = "interaction.autofill_system_settings",
+                    key = "autofill.system_settings",
                     title = stringResource(R.string.settings_autofill_system_service),
                     subtitle = stringResource(R.string.settings_autofill_system_service_summary),
                     value = stringResource(
@@ -53,19 +53,19 @@ internal fun AutofillSettingsSection(
             )
             add(
                 switchSettingsGroupItem(
-                    key = "interaction.autofill_enabled",
+                    key = "autofill.enabled",
                     title = stringResource(R.string.settings_autofill_enabled),
                     subtitle = stringResource(R.string.settings_autofill_enabled_summary),
                     checked = settings.enabled,
                     onCheckedChange = {
-                        onAction(InteractionSettingsAction.SetAutofillEnabled(it))
+                        onAction(AutofillSettingsAction.SetEnabled(it))
                     },
                 )
             )
             if (settings.enabled) {
                 add(
                     navigationSettingsGroupItem(
-                        key = "interaction.autofill_presentation",
+                        key = "autofill.presentation",
                         title = stringResource(R.string.settings_autofill_presentation),
                         value = stringResource(
                             when (settings.presentation) {
@@ -84,28 +84,28 @@ internal fun AutofillSettingsSection(
                                 AutofillPresentation.BOTTOM_SHEET ->
                                     AutofillPresentation.SYSTEM_INLINE
                             }
-                            onAction(InteractionSettingsAction.SetAutofillPresentation(next))
+                            onAction(AutofillSettingsAction.SetPresentation(next))
                         },
                     )
                 )
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     add(
                         switchSettingsGroupItem(
-                            key = "interaction.credential_manager_enabled",
+                            key = "autofill.credential_manager_enabled",
                             title = stringResource(R.string.settings_autofill_credential_manager),
                             subtitle = stringResource(
                                 R.string.settings_autofill_credential_manager_summary
                             ),
                             checked = settings.credentialManagerEnabled,
                             onCheckedChange = {
-                                onAction(InteractionSettingsAction.SetCredentialManagerEnabled(it))
+                                onAction(AutofillSettingsAction.SetCredentialManagerEnabled(it))
                             },
                         )
                     )
                 }
                 add(
                     switchSettingsGroupItem(
-                        key = "interaction.autofill_authentication",
+                        key = "autofill.authentication",
                         title = stringResource(R.string.settings_autofill_require_authentication),
                         subtitle = stringResource(
                             R.string.settings_autofill_require_authentication_summary
@@ -113,51 +113,51 @@ internal fun AutofillSettingsSection(
                         checked = settings.requireAuthentication,
                         onCheckedChange = {
                             onAction(
-                                InteractionSettingsAction.SetAutofillAuthenticationRequired(it)
+                                AutofillSettingsAction.SetAuthenticationRequired(it)
                             )
                         },
                     )
                 )
                 add(
                     switchSettingsGroupItem(
-                        key = "interaction.autofill_otp",
+                        key = "autofill.otp",
                         title = stringResource(R.string.settings_autofill_include_otp),
                         subtitle = stringResource(R.string.settings_autofill_include_otp_summary),
                         checked = settings.includeOtp,
                         onCheckedChange = {
-                            onAction(InteractionSettingsAction.SetAutofillOtpEnabled(it))
+                            onAction(AutofillSettingsAction.SetOtpEnabled(it))
                         },
                     )
                 )
                 add(
                     switchSettingsGroupItem(
-                        key = "interaction.autofill_save",
+                        key = "autofill.save",
                         title = stringResource(R.string.settings_autofill_save_prompts),
                         subtitle = stringResource(R.string.settings_autofill_save_prompts_summary),
                         checked = settings.savePromptsEnabled,
                         onCheckedChange = {
                             onAction(
-                                InteractionSettingsAction.SetAutofillSavePromptsEnabled(it)
+                                AutofillSettingsAction.SetSavePromptsEnabled(it)
                             )
                         },
                     )
                 )
                 add(
                     switchSettingsGroupItem(
-                        key = "interaction.autofill_unmatched",
+                        key = "autofill.unmatched",
                         title = stringResource(R.string.settings_autofill_unmatched),
                         subtitle = stringResource(R.string.settings_autofill_unmatched_summary),
                         checked = settings.allowUnmatchedSuggestions,
                         onCheckedChange = {
                             onAction(
-                                InteractionSettingsAction.SetUnmatchedAutofillSuggestionsEnabled(it)
+                                AutofillSettingsAction.SetUnmatchedSuggestionsEnabled(it)
                             )
                         },
                     )
                 )
                 add(
                     sliderSettingsGroupItem(
-                        key = "interaction.autofill_candidate_limit",
+                        key = "autofill.candidate_limit",
                         title = stringResource(R.string.settings_autofill_candidate_limit),
                         subtitle = stringResource(
                             R.string.settings_autofill_candidate_limit_summary
@@ -171,7 +171,7 @@ internal fun AutofillSettingsSection(
                         onValueChange = { candidateLimit = it },
                         onValueChangeFinished = {
                             onAction(
-                                InteractionSettingsAction.SetAutofillMaxSuggestions(
+                                AutofillSettingsAction.SetMaxSuggestions(
                                     candidateLimit.roundToInt()
                                 )
                             )

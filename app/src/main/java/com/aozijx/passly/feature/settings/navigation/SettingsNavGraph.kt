@@ -251,6 +251,7 @@ private fun SettingsDetailContent(
         }
 
         SettingsRoute.Interaction,
+        SettingsRoute.Autofill,
         SettingsRoute.DataManagement,
         SettingsRoute.BackupRestore,
         SettingsRoute.RecoveryCode,
