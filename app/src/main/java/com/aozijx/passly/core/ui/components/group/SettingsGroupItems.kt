@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,10 +18,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -34,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.core.ui.components.menu.selectedMenuModifier
 
 fun customSettingsItem(
     key: String,
@@ -226,7 +226,7 @@ fun navigationSettingsGroupItem(
     }
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun <T> dropdownSettingsGroupItem(
     key: String,
     icon: ImageVector? = null,
@@ -238,76 +238,59 @@ fun <T> dropdownSettingsGroupItem(
     onExpandedChange: (Boolean) -> Unit,
     onSelect: (T) -> Unit
 ): RoundedGroupItem = RoundedGroupItem(key = key) { itemScope ->
-    GroupCard(
-        itemScope = itemScope,
-        onClick = { onExpandedChange(!expanded) }
-    ) {
-        SettingsItemRow(
-            leading = icon.asLeadingContent(false),
-            content = {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
-                )
-            },
-            trailing = {
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = onExpandedChange
-                ) {
+    Box {
+        GroupCard(
+            itemScope = itemScope,
+            onClick = { onExpandedChange(!expanded) }
+        ) {
+            SettingsItemRow(
+                leading = icon.asLeadingContent(false),
+                content = {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                },
+                trailing = {
                     AnimatedSettingValue(
                         value = selectedLabel,
-                        modifier = Modifier
-                            .menuAnchor(
-                                ExposedDropdownMenuAnchorType.PrimaryNotEditable,
-                                true
-                            )
+                        modifier = Modifier.padding(horizontal = 8.dp)
                     )
-
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { onExpandedChange(false) },
-                        matchAnchorWidth = false
-                    ) {
-                        options.forEach { (value, label) ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = label,
-                                        color = if (value == selected) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurface
-                                        },
-                                        fontWeight = if (value == selected) {
-                                            FontWeight.SemiBold
-                                        } else {
-                                            FontWeight.Normal
-                                        }
-                                    )
-                                },
-                                leadingIcon = if (value == selected) {
-                                    {
-                                        Icon(
-                                            imageVector = Icons.Default.Check,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                } else {
-                                    null
-                                },
-                                onClick = {
-                                    onSelect(value)
-                                    onExpandedChange(false)
-                                }
-                            )
-                        }
-                    }
                 }
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { onExpandedChange(false) }
+        ) {
+            options.forEach { (value, label) ->
+                val isSelected = value == selected
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = label,
+                            color = if (isSelected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                            fontWeight = if (isSelected) {
+                                FontWeight.Bold
+                            } else {
+                                FontWeight.Normal
+                            }
+                        )
+                    },
+                    onClick = {
+                        onSelect(value)
+                        onExpandedChange(false)
+                    },
+                    modifier = Modifier.selectedMenuModifier(isSelected)
+                )
             }
-        )
+        }
     }
 }
 

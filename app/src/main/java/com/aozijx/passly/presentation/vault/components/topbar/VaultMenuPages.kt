@@ -1,7 +1,6 @@
 package com.aozijx.passly.presentation.vault.components.topbar
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -23,14 +22,13 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.menu.selectedMenuModifier
 import com.aozijx.passly.domain.settings.model.LibrarySortSpec
 
 @Composable
@@ -212,12 +210,3 @@ private fun EntryTypeMenuItem(text: String, selected: Boolean, onClick: () -> Un
         modifier = Modifier.selectedMenuModifier(selected)
     )
 }
-
-@Composable
-private fun Modifier.selectedMenuModifier(selected: Boolean): Modifier =
-    this
-        .padding(horizontal = 8.dp, vertical = 2.dp)
-        .clip(MaterialTheme.shapes.small)
-        .background(
-            if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
-        )
