@@ -20,26 +20,26 @@ import com.aozijx.passly.feature.backup.api.BackupSettingsFeature
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.contract.SettingsIntent
 import com.aozijx.passly.feature.settings.contract.SettingsUiState
-import com.aozijx.passly.feature.settings.datamanagement.DataManagementDetail
+import com.aozijx.passly.presentation.settings.datamanagement.DataManagementDetail
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsAction
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsViewModel
 import com.aozijx.passly.feature.settings.datamanagement.handleBackupPathPicked
-import com.aozijx.passly.feature.settings.general.GeneralDetail
-import com.aozijx.passly.feature.settings.general.NotificationDetail
-import com.aozijx.passly.feature.settings.interaction.InteractionDetail
+import com.aozijx.passly.presentation.settings.general.GeneralDetail
+import com.aozijx.passly.presentation.settings.general.NotificationDetail
+import com.aozijx.passly.presentation.settings.interaction.InteractionDetail
 import com.aozijx.passly.feature.settings.interaction.InteractionSettingsAction
 import com.aozijx.passly.feature.settings.interaction.InteractionSettingsViewModel
-import com.aozijx.passly.feature.settings.internal.SettingsGroup
+import com.aozijx.passly.presentation.settings.internal.SettingsGroup
 import com.aozijx.passly.feature.settings.security.RecoveryDraftState
 import com.aozijx.passly.feature.settings.security.RecoveryDraftAction
 import com.aozijx.passly.feature.settings.security.RecoveryDraftViewModel
 import com.aozijx.passly.feature.settings.security.SecuritySettingsAction
 import com.aozijx.passly.feature.settings.security.SecuritySettingsViewModel
 import com.aozijx.passly.feature.settings.security.messageOrNull
-import com.aozijx.passly.feature.settings.security.ui.RecoveryCodeDetail
-import com.aozijx.passly.feature.settings.security.ui.RecoveryCodeSheet
-import com.aozijx.passly.feature.settings.shell.SettingsScreenLocalState
-import com.aozijx.passly.feature.settings.shell.SettingsSecondaryPage
+import com.aozijx.passly.presentation.settings.security.ui.RecoveryCodeDetail
+import com.aozijx.passly.presentation.settings.security.ui.RecoveryCodeSheet
+import com.aozijx.passly.presentation.settings.shell.SettingsScreenLocalState
+import com.aozijx.passly.presentation.settings.shell.SettingsSecondaryPage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

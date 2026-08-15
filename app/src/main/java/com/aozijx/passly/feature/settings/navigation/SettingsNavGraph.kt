@@ -34,13 +34,13 @@ import com.aozijx.passly.feature.settings.contract.SettingsUiState
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsAction
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsViewModel
 import com.aozijx.passly.feature.settings.interaction.InteractionSettingsViewModel
-import com.aozijx.passly.feature.settings.shell.SettingsDetailPlaceholder
-import com.aozijx.passly.feature.settings.shell.SettingsMainPage
-import com.aozijx.passly.feature.settings.shell.SettingsScreenDialogsHost
-import com.aozijx.passly.feature.settings.shell.SettingsScreenLocalState
-import com.aozijx.passly.feature.settings.shell.buildSettingsDialogsActions
-import com.aozijx.passly.feature.settings.shell.buildSettingsDialogsState
-import com.aozijx.passly.feature.settings.shell.rememberSettingsScreenLocalState
+import com.aozijx.passly.presentation.settings.shell.SettingsDetailPlaceholder
+import com.aozijx.passly.presentation.settings.shell.SettingsMainPage
+import com.aozijx.passly.presentation.settings.shell.SettingsScreenDialogsHost
+import com.aozijx.passly.presentation.settings.shell.SettingsScreenLocalState
+import com.aozijx.passly.presentation.settings.shell.buildSettingsDialogsActions
+import com.aozijx.passly.presentation.settings.shell.buildSettingsDialogsState
+import com.aozijx.passly.presentation.settings.shell.rememberSettingsScreenLocalState
 import kotlinx.coroutines.launch
 
 /**
