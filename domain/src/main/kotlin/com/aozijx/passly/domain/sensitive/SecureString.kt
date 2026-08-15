@@ -1,7 +1,5 @@
 package com.aozijx.passly.domain.sensitive
 
-import com.aozijx.passly.domain.sensitive.SensitiveValue
-
 @JvmInline
 value class SecureString(private val value: CharArray) : SensitiveValue {
 

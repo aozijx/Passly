@@ -17,8 +17,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.core.ui.components.DatabaseRecoveryDialog
-import com.aozijx.passly.data.message.model.NoticeCode
-import com.aozijx.passly.data.message.model.newAppNotice
+import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
 import com.aozijx.passly.feature.auth.ui.AuthenticationScreen
 import com.aozijx.passly.app.shell.AppShellSettingsViewModel
@@ -74,7 +74,6 @@ internal fun AppShell(
                     showLocalMessage(effect.error, longDuration = true)
 
                 AppShellEffect.LockedByTimeout, AppShellEffect.NavigateToVault -> Unit
-                is AppShellEffect.AuthSuccess, is AppShellEffect.AuthError -> Unit
             }
         }
     }

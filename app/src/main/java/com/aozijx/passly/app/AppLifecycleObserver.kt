@@ -9,7 +9,7 @@ import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.LockReason
-import com.aozijx.passly.data.settings.port.IdleTimeoutSettings
+import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

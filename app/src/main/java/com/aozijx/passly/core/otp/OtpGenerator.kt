@@ -175,11 +175,12 @@ object OtpGenerator {
      * 编码识别只能发生在 URI/文件导入边界，进入领域模型后必须是确定值。
      */
     private fun decodeSecret(config: OtpConfig): ByteArray {
+        val secret = config.secret ?: throw OtpGenerationError.InvalidSecret
         return when (config.encoding) {
-            OtpSecretEncoding.BASE32 -> base32DecodeStrict(config.secret)
+            OtpSecretEncoding.BASE32 -> base32DecodeStrict(secret)
             OtpSecretEncoding.BASE64 -> {
                 try {
-                    Base64.getDecoder().decode(config.secret.trim())
+                    Base64.getDecoder().decode(secret.trim())
                 } catch (e: Exception) {
                     throw OtpGenerationError.InvalidSecret
                 }

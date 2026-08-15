@@ -3,8 +3,8 @@ package com.aozijx.passly.feature.vault.contract
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.data.settings.model.LibraryQuickFilter
-import com.aozijx.passly.data.settings.model.LibrarySortSpec
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
+import com.aozijx.passly.domain.settings.model.LibrarySortSpec
 import com.aozijx.passly.feature.vault.model.AddType
 
 sealed interface VaultIntent {

@@ -18,7 +18,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationSnapshot
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.model.CancellationReason
-import com.aozijx.passly.data.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import kotlinx.coroutines.CancellationException

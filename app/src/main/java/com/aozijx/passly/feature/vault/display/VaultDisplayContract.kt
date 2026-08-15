@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.vault.display
 
-import com.aozijx.passly.data.settings.model.EntryCardPresentation
-import com.aozijx.passly.data.settings.model.EntryHierarchyDisplayMode
-import com.aozijx.passly.data.settings.model.SwipeActionType
+import com.aozijx.passly.domain.settings.model.EntryCardPresentation
+import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 
 data class VaultLayoutConfig(
     val hideSystemBars: Boolean = false,

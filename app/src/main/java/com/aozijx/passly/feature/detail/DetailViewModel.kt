@@ -22,6 +22,7 @@ import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.FaviconRepository
 import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.policy.EntryAccountGraph
+import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
@@ -181,6 +182,7 @@ class DetailViewModel @Inject constructor(
             }
 
             DetailIntent.ClearSensitiveState -> {
+                wipeRevealBuffers()
                 mutate(DetailMutation.StateCleared)
             }
         }
@@ -243,10 +245,10 @@ class DetailViewModel @Inject constructor(
                 val chars = revealed.value.toCharArray()
                 try {
                     val value = String(chars).takeIf { it.isNotBlank() } ?: return@forEach
+                    revealBuffers[uiKey] = revealed.value
                     setRevealedField(uiKey, value)
                 } finally {
                     chars.fill('\u0000')
-                    revealed.value.wipe()
                 }
             }
             if (revealedFields.isNotEmpty()) {
@@ -255,7 +257,16 @@ class DetailViewModel @Inject constructor(
         }
     }
 
+    /** 可擦除的敏感值中转缓冲；离开页面、锁定或清理状态时统一擦除。 */
+    private val revealBuffers = mutableMapOf<String, SensitiveValue>()
+
+    private fun wipeRevealBuffers() {
+        revealBuffers.values.forEach(SensitiveValue::wipe)
+        revealBuffers.clear()
+    }
+
     private fun String.toSensitiveFieldKey(): SensitiveFieldKey? = when (this) {
+        RevealedFieldKey.PASSWORD -> SensitiveFieldKey.PASSWORD
         RevealedFieldKey.CARD_NUMBER -> SensitiveFieldKey.CARD_NUMBER
         RevealedFieldKey.CVV -> SensitiveFieldKey.CARD_CVV
         RevealedFieldKey.PAYMENT_PIN -> SensitiveFieldKey.CARD_PAYMENT_PIN
@@ -381,6 +392,7 @@ class DetailViewModel @Inject constructor(
     }
 
     override fun onCleared() {
+        wipeRevealBuffers()
         super.onCleared()
         mutate(DetailMutation.StateCleared)
     }

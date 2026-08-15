@@ -7,7 +7,7 @@ import com.aozijx.passly.core.autofill.matcher.StrictMatchStrategy
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.core.autofill.pipeline.ResponseFactory
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.data.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides

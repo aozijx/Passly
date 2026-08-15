@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.settings.appearance
 
-import com.aozijx.passly.data.settings.model.EntryHierarchyDisplayMode
-import com.aozijx.passly.data.settings.model.InterfaceStyleConstraints
-import com.aozijx.passly.data.settings.model.LibraryQuickFilter
+import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 
 data class InterfaceSettingsUiState(
     val hideSystemBars: Boolean = false,

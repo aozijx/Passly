@@ -2,6 +2,9 @@ package com.aozijx.passly.domain.entry.policy
 
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryFieldAccess
+import com.aozijx.passly.domain.entry.model.EntryFieldDefinition
+import com.aozijx.passly.domain.entry.model.FieldKey
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,7 +20,6 @@ class DefaultEntryTypePolicy @Inject constructor() : EntryTypePolicy {
     private data class PolicyConfig(
         val supportsAutofill: Boolean = false,
         val suggestedCategory: String = "",
-        val sensitiveFields: Set<String> = emptySet(),
         val summaryExtractor: (Entry) -> String = { "" }
     )
 
@@ -29,12 +31,10 @@ class DefaultEntryTypePolicy @Inject constructor() : EntryTypePolicy {
         EntryType.LOGIN to PolicyConfig(
             supportsAutofill = true,
             suggestedCategory = "账户",
-            sensitiveFields = setOf("password", "username", "totpSecret"),
             summaryExtractor = { entry -> entry.profile.associations.domains.firstOrNull() ?: "无网址" }
         ),
         EntryType.OTP to PolicyConfig(
             suggestedCategory = "认证",
-            sensitiveFields = setOf("otpSecret"),
             summaryExtractor = { entry ->
                 val config = entry.secret.otp?.config
                 "${config?.digits ?: 6} 位 / ${config?.periodSeconds ?: 30}s"
@@ -42,42 +42,29 @@ class DefaultEntryTypePolicy @Inject constructor() : EntryTypePolicy {
         ),
         EntryType.SEED_PHRASE to PolicyConfig(
             suggestedCategory = "加密",
-            sensitiveFields = setOf("seedPhrase", "password"),
             summaryExtractor = { "12/24 词" }
         ),
         EntryType.RECOVERY_CODE to PolicyConfig(
             suggestedCategory = "认证",
-            sensitiveFields = setOf("recoveryCodes"),
             summaryExtractor = { "恢复码" }
         ),
         EntryType.PASSKEY to PolicyConfig(
             suggestedCategory = "认证",
-            sensitiveFields = setOf("passkeyPrivateKeyReference", "recoveryCodes"),
             summaryExtractor = { "Passkey" }
         ),
         EntryType.SSH_KEY to PolicyConfig(
             suggestedCategory = "技术",
-            sensitiveFields = setOf("sshPrivateKey", "password"),
             summaryExtractor = { entry -> entry.profile.associations.domains.firstOrNull() ?: "无主机" }
         ),
         EntryType.WIFI to PolicyConfig(
             supportsAutofill = true,
             suggestedCategory = "网络",
-            sensitiveFields = setOf("password"),
             summaryExtractor = { entry ->
                 "加密类型 ${entry.secret.wifi?.securityType ?: "WPA/WPA2"}"
             }
         ),
         EntryType.BANK_CARD to PolicyConfig(
             suggestedCategory = "金融",
-            sensitiveFields = setOf(
-                "password",
-                "username",
-                "cardCvv",
-                "cardExpiration",
-                "paymentPin",
-                "securityAnswer"
-            ),
             summaryExtractor = { entry ->
                 val lastFour =
                     entry.secret.card?.cardNumber.orEmpty().takeLast(4)
@@ -86,7 +73,6 @@ class DefaultEntryTypePolicy @Inject constructor() : EntryTypePolicy {
         ),
         EntryType.ID_CARD to PolicyConfig(
             suggestedCategory = "身份",
-            sensitiveFields = setOf("idNumber"),
             summaryExtractor = { "证件信息" }
         )
     )
@@ -97,8 +83,10 @@ class DefaultEntryTypePolicy @Inject constructor() : EntryTypePolicy {
     override fun suggestedCategory(type: EntryType): String =
         configs[type]?.suggestedCategory ?: ""
 
-    override fun sensitiveFields(type: EntryType): Set<String> =
-        configs[type]?.sensitiveFields ?: emptySet()
+    override fun sensitiveFields(type: EntryType): Set<FieldKey> =
+        EntryTypeDefinitions[type].fields
+            .filter { it.access != EntryFieldAccess.SUMMARY }
+            .mapTo(linkedSetOf(), EntryFieldDefinition::key)
 
     override fun extractSummary(type: EntryType, entry: Entry): String =
         configs[type]?.summaryExtractor?.invoke(entry) ?: ""

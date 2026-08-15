@@ -4,7 +4,7 @@ import android.service.autofill.Dataset
 import android.service.autofill.FillResponse
 import android.view.autofill.AutofillId
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
-import com.aozijx.passly.data.settings.model.AutofillPresentation
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 
 sealed interface AutofillAuthenticationPayload {
     data class Response(val value: FillResponse) : AutofillAuthenticationPayload

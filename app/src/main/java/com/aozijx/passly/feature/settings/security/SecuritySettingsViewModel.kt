@@ -7,8 +7,8 @@ import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationResult
-import com.aozijx.passly.data.settings.model.SettingsCommand
-import com.aozijx.passly.data.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.model.SettingsCommand
+import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.feature.settings.security.presentation.SecuritySettingsMutation
 import com.aozijx.passly.feature.settings.security.presentation.SecuritySettingsReducer
 import dagger.hilt.android.lifecycle.HiltViewModel

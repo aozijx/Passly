@@ -1,13 +1,13 @@
 package com.aozijx.passly.data.repository.autofill
 
 import com.aozijx.passly.core.platform.PackageUtils
-import com.aozijx.passly.data.autofill.port.CredentialServiceRepository
+import com.aozijx.passly.data.repository.autofill.CredentialServiceRepository
 import com.aozijx.passly.data.codec.entry.EntryProfileCodec
-import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.query.buildRecentEntryIdIntersectionQuery
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.mapper.entry.EntryAssembler
+import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryAssociations
@@ -34,7 +34,7 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
     private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
     private val profileCodec: EntryProfileCodec,
-    private val secretCodec: EntrySecretCodec,
+    private val secretFieldStore: SecretFieldStore,
     private val blindIndexer: BlindIndexer,
     private val entryCommands: EntryCommandRepository,
     private val packageUtils: PackageUtils,
@@ -65,14 +65,12 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
                 allowUnmatched -> entryQueryDao().getActiveByType(EntryType.LOGIN).take(boundedLimit)
                 else -> emptyList()
             }
-            val secrets = entrySecretQueryDao().getByEntryIds(entities.map { it.entryId })
-                .associateBy { it.entryId }
+            val secrets = entities.associate { it.entryId to secretFieldStore.readAll(this, it.entryId) }
 
             entities
                 .filter { it.deletedAt == null && it.entryType == EntryType.LOGIN }
                 .mapNotNull { entity ->
-                    val encrypted = secrets[entity.entryId] ?: return@mapNotNull null
-                    val fullSecret = secretCodec.decrypt(encrypted.secretBlob, entity.entryId)
+                    val fullSecret = secrets[entity.entryId] ?: return@mapNotNull null
                     val secret = if (includeSecrets) fullSecret else fullSecret.redacted()
                     EntryAssembler.assembleFromDatabase(
                         entity,
@@ -102,11 +100,8 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
         val uniqueIds = entryIds.distinct()
         return databaseSession.query {
             val entities = entryQueryDao().getByIds(uniqueIds).filter { it.deletedAt == null }
-            val secrets = entrySecretQueryDao().getByEntryIds(entities.map { it.entryId })
-                .associateBy { it.entryId }
             val entries = entities.mapNotNull { entity ->
-                val encrypted = secrets[entity.entryId] ?: return@mapNotNull null
-                val fullSecret = secretCodec.decrypt(encrypted.secretBlob, entity.entryId)
+                val fullSecret = secretFieldStore.readAll(this, entity.entryId)
                 entity.entryId to EntryAssembler.assembleFromDatabase(
                     entity,
                     profileCodec.decrypt(entity.summaryBlob, entity.entryId),

@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.settings.contract
 
-import com.aozijx.passly.data.settings.model.SwipeActionType
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 
 sealed interface SettingsIntent {
     data class SetSwipeLeftAction(val action: SwipeActionType) : SettingsIntent

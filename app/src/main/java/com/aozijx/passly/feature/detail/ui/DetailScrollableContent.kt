@@ -84,6 +84,7 @@ fun DetailScrollableContent(
             item {
                 CredentialSection(
                     item = entry,
+                    hasPasswordField = SensitiveFieldKey.PASSWORD in uiState.sensitiveFieldKeys,
                     onAuthenticate = onAuthenticate,
                     editState = editState,
                     revealedUsername = uiState.revealed(RevealedFieldKey.USERNAME),
@@ -100,7 +101,8 @@ fun DetailScrollableContent(
             item {
                 val otpConfig = entry.secret.otp?.config
                 val totpUri =
-                    otpConfig?.let { OtpAuthUriCodec.format(it, entry.title) }
+                    otpConfig?.takeIf { !it.secret.isNullOrBlank() }
+                        ?.let { OtpAuthUriCodec.format(it, entry.title) }
                 TotpSection(
                     currentState = otpUiState,
                     totpUri = totpUri,

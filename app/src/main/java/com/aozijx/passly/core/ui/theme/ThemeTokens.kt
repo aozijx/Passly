@@ -9,7 +9,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.data.settings.model.InterfaceStyleConstraints
+import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
 
 /**
  * RoundedGroup 的完整视觉参数。外圈圆角用于首项顶部、末项底部和单项四角；

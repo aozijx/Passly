@@ -21,7 +21,7 @@ import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.RoundedGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.core.ui.components.vaultfilter.titleRes
-import com.aozijx.passly.data.settings.model.LibraryQuickFilter
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 
 @Composable
 fun LibraryQuickFiltersSettingsSection(

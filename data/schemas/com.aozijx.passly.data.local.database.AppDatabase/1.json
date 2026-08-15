@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "4ce47a32165e8af44e9218eeb1f36097",
+    "identityHash": "e5c678bf29e92dcf1a38c4d9d4e8e5f7",
     "entities": [
       {
         "tableName": "entries",
@@ -108,44 +108,7 @@
         ]
       },
       {
-        "tableName": "entry_secrets",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `secretBlob` BLOB NOT NULL, PRIMARY KEY(`entryId`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
-        "fields": [
-          {
-            "fieldPath": "entryId",
-            "columnName": "entryId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "secretBlob",
-            "columnName": "secretBlob",
-            "affinity": "BLOB",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "entryId"
-          ]
-        },
-        "foreignKeys": [
-          {
-            "table": "entries",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "entryId"
-            ],
-            "referencedColumns": [
-              "entryId"
-            ]
-          }
-        ]
-      },
-      {
-        "tableName": "entry_sensitive_fields",
+        "tableName": "entry_secret_fields",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `fieldKey` TEXT NOT NULL, `valueCipher` BLOB NOT NULL, `keyVersion` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`entryId`, `fieldKey`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
@@ -188,13 +151,13 @@
         },
         "indices": [
           {
-            "name": "index_entry_sensitive_fields_entryId",
+            "name": "index_entry_secret_fields_entryId",
             "unique": false,
             "columnNames": [
               "entryId"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_entry_sensitive_fields_entryId` ON `${TABLE_NAME}` (`entryId`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_entry_secret_fields_entryId` ON `${TABLE_NAME}` (`entryId`)"
           }
         ],
         "foreignKeys": [
@@ -490,7 +453,7 @@
       },
       {
         "tableName": "attachment_resources",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`resourceId` TEXT NOT NULL, `fileSize` INTEGER NOT NULL, `lifecycleState` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`resourceId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`resourceId` TEXT NOT NULL, `fileSize` INTEGER NOT NULL, `lifecycleState` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `enqueuedAt` INTEGER, `attemptCount` INTEGER NOT NULL, `lastAttemptAt` INTEGER, PRIMARY KEY(`resourceId`))",
         "fields": [
           {
             "fieldPath": "resourceId",
@@ -515,6 +478,22 @@
             "columnName": "createdAt",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "enqueuedAt",
+            "columnName": "enqueuedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "attemptCount",
+            "columnName": "attemptCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastAttemptAt",
+            "columnName": "lastAttemptAt",
+            "affinity": "INTEGER"
           }
         ],
         "primaryKey": {
@@ -739,65 +718,6 @@
         ]
       },
       {
-        "tableName": "attachment_gc_queue",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`resourceId` TEXT NOT NULL, `enqueuedAt` INTEGER NOT NULL, `attemptCount` INTEGER NOT NULL, `lastAttemptAt` INTEGER, PRIMARY KEY(`resourceId`), FOREIGN KEY(`resourceId`) REFERENCES `attachment_resources`(`resourceId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
-        "fields": [
-          {
-            "fieldPath": "resourceId",
-            "columnName": "resourceId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "enqueuedAt",
-            "columnName": "enqueuedAt",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "attemptCount",
-            "columnName": "attemptCount",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "lastAttemptAt",
-            "columnName": "lastAttemptAt",
-            "affinity": "INTEGER"
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "resourceId"
-          ]
-        },
-        "indices": [
-          {
-            "name": "index_attachment_gc_queue_enqueuedAt",
-            "unique": false,
-            "columnNames": [
-              "enqueuedAt"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_attachment_gc_queue_enqueuedAt` ON `${TABLE_NAME}` (`enqueuedAt`)"
-          }
-        ],
-        "foreignKeys": [
-          {
-            "table": "attachment_resources",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "resourceId"
-            ],
-            "referencedColumns": [
-              "resourceId"
-            ]
-          }
-        ]
-      },
-      {
         "tableName": "entry_search_tokens",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `field` TEXT NOT NULL, `keywordHash` BLOB NOT NULL, `gramLength` INTEGER NOT NULL, `weight` INTEGER NOT NULL, PRIMARY KEY(`entryId`, `field`, `keywordHash`, `gramLength`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
@@ -879,7 +799,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4ce47a32165e8af44e9218eeb1f36097')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e5c678bf29e92dcf1a38c4d9d4e8e5f7')"
     ]
   }
 }

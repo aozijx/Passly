@@ -8,7 +8,7 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.query.EntryFilter
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
-import com.aozijx.passly.data.settings.model.LibraryQuickFilter
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob

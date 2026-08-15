@@ -4,7 +4,6 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.data.settings.model.FallbackPalette
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -40,15 +39,6 @@ class ThemeTokensTest {
         assertEquals(0.dp, style.innerRadius)
         assertEquals(12.dp, style.itemSpacing)
         assertEquals(8.dp, style.contentPadding)
-    }
-
-    @Test
-    fun fallbackPalettes_resolveToDistinctNonDefaultPresets() {
-        val presets = FallbackPalette.entries.map(::themePresetByFallbackPalette)
-
-        assertEquals(FallbackPalette.entries.size, presets.map { it.color }.distinct().size)
-        assertTrue(presets.all { it.color != 0L })
-        assertTrue(presets.all { it.palette != null })
     }
 
     @Test

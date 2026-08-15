@@ -1,7 +1,7 @@
 package com.aozijx.passly.app.message.contract
 
-import com.aozijx.passly.data.message.model.AppNotice
-import com.aozijx.passly.data.message.model.NoticeLevel
+import com.aozijx.passly.app.message.model.AppNotice
+import com.aozijx.passly.app.message.model.NoticeLevel
 
 data class ResolvedNotice(
     val eventId: String,

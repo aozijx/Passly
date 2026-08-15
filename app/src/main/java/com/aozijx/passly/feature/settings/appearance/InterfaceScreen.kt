@@ -26,9 +26,9 @@ import com.aozijx.passly.core.ui.components.group.sliderSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.data.settings.model.EntryHierarchyDisplayMode
-import com.aozijx.passly.data.settings.model.InterfaceStyleConstraints
-import com.aozijx.passly.data.settings.model.LibraryQuickFilter
+import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import kotlin.math.roundToInt
 
 @Composable

@@ -8,9 +8,9 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupLinkRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
-import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.mapper.entry.EntryAssembler
+import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.security.dek.AttachmentContentCrypto
@@ -37,7 +37,7 @@ internal class DatabaseSnapshotReader @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val databaseSession: AppDatabaseSession,
     private val summaryCodec: EntryProfileCodec,
-    private val secretCodec: EntrySecretCodec,
+    private val secretFieldStore: SecretFieldStore,
     private val attachmentContentCrypto: AttachmentContentCrypto,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
     private val documentMapper: BackupSnapshotMapper
@@ -62,13 +62,10 @@ internal class DatabaseSnapshotReader @Inject constructor(
             }
             val metadataEntities = selectedEntities
             val entryIds = metadataEntities.map { it.entryId }
-            val credentialEntities = entrySecretQueryDao().getByEntryIds(entryIds)
-            val credentialMap = credentialEntities.associateBy { it.entryId }
 
             val entries = metadataEntities.map { metaEntity ->
                 val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
-                val credential = credentialMap[metaEntity.entryId]
-                val secret = credential?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
+                val secret = secretFieldStore.readAll(this, metaEntity.entryId)
                 EntryAssembler.assembleFromDatabase(
                     metaEntity,
                     summary,

@@ -1,7 +1,7 @@
 package com.aozijx.passly.app.message.runtime
 
 import android.os.SystemClock
-import com.aozijx.passly.data.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.contract.DeduplicationClaim
 import com.aozijx.passly.app.message.contract.NoticeDeduplicator
 import java.util.concurrent.atomic.AtomicLong

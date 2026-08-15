@@ -66,7 +66,9 @@ fun DetailScreen(
 
         if (entry.username.isNotEmpty()) {
             editState.isEditingUsername = true
-        } else if (entry.secret.login?.password?.isNotEmpty() == true) {
+        } else if (com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.PASSWORD in
+            uiState.sensitiveFieldKeys
+        ) {
             editState.isEditingPassword = true
         }
     }

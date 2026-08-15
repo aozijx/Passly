@@ -22,8 +22,8 @@ import com.aozijx.passly.core.permission.model.PermissionRequestStart
 import com.aozijx.passly.core.permission.model.PermissionStatus
 import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
-import com.aozijx.passly.data.message.model.NoticeCode
-import com.aozijx.passly.data.message.model.newAppNotice
+import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.newAppNotice
 
 @Composable
 internal fun NotificationDetail(

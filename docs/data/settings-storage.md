@@ -3,6 +3,14 @@
 应用设置使用 Proto DataStore，Schema 位于 `data/src/main/proto/app_settings.proto`。Proto2 presence
 与显式默认值共同保证“未写入”不被误解为 Kotlin/Proto 的零值。
 
+## 模型归属
+
+设置契约（`AppSettingsSnapshot`、`SettingsCommand`、`MessageSettings` 及 `AppSettingsRepository`
+端口）位于 `:domain` 的 `domain/settings`。`:data` 只保留 Proto 生成 DTO
+（`data/local/datastore/settings`）、Serializer 与实现（`data/repository/settings`），在
+`ProtoSettingsMappings` 中把 Proto 映射为 Domain 设置模型；App 消费 Domain 模型，通知事件
+（`AppNotice`）在 App 层。
+
 ## 加密边界
 
 Proto DataStore 只提供原子文件更新和结构化序列化，**不会自动加密整个文件**。本项目也没有引入

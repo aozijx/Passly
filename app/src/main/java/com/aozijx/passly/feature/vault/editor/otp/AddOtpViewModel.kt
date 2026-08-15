@@ -86,7 +86,7 @@ class AddOtpViewModel @Inject constructor(
         return copy(
             title = parsedTitle.ifBlank { title },
             username = accountName,
-            secret = config.secret,
+            secret = config.secret.orEmpty(),
             issuer = config.issuer.orEmpty(),
             domain = config.issuer.orEmpty(),
             digits = config.digits.toString(),

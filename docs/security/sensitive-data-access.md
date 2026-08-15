@@ -15,27 +15,21 @@
 
 ## 当前读取边界
 
-`entry_secrets` 已拆成普通 `secretBlob` 与高敏 `highSensitivityBlob` 两个 AES-GCM blob。普通详情读取通过
-`EntryQueryRepository.getByIdWithoutHighSensitivity()`，不会解密高敏 blob。高敏字段必须走
-`EntryHighSensitivityRepository.getHighSensitivitySecretForReveal()`，并且只能由完成 reveal 认证的流程调用。
+secret 数据位于 `entry_secret_fields`：敏感字段（`PASSWORD`、银行卡号、CVV、支付 PIN 等）按
+`entryId + fieldKey` 每字段一个独立 AES-GCM 密文行，低敏结构聚合为 `STRUCT_BUNDLE` 行。
+普通详情读取通过 `EntryQueryRepository.getById()` 只解密 `STRUCT_BUNDLE`，字段级值在领域模型中为
+`null`。显示字段必须走 `SensitiveFieldRepository.revealMany()` 按需读取对应密文行，并且只能由
+完成 reveal 认证的流程调用。
 
-当前实际迁出的高敏字段是银行卡卡号、CVV 和支付 PIN。它们不会在普通详情读取时进入 `VaultEntry.secret`；
-详情页 reveal 后只把本次获授权的字段值放入 `DetailUiState.revealedFields`。Domain/Payload 已预留更多高敏
-字段结构，但 SSH、助记词、Passkey、OTP 等 UI reveal 链路仍需逐类迁入。
+字段级密文行的 AAD 绑定 `entryId + fieldKey`，因此解密 `PASSWORD` 不会加载同条目其他字段的密文；
+`readField`/`reveal` 只解密请求的字段，不存在"解一个字段带出整条 secret"的捆绑暴露。完整凭据
+只在确实需要全部字段的批量流程（Revision 快照、Backup 快照、恢复扫描、自动填充点选后）通过
+`readAll` 组装，组装结果在 Repository 内立即交付，不进入 UI 状态。
 
-两 blob 方案提供的是“普通敏感 / 高敏感”分层，不是字段级独立 blob。解密 CVV 时会解开同一条目的
-`highSensitivityBlob`，因此同 blob 内的其他高敏字段会短暂存在于 Repository 层内存中。若未来需要
-“只解密单个字段”，再演进到字段级密文记录。
-
-后续更理想的方向是增加 `EntryDetailMetadata` 与 `readSecretField(entryId, fieldKey)`：
-
-1. 初次进入只加载 header、summary 和 capability flags；
-2. 认证成功后按 entry ID 和字段 key 读取对应密文；
-3. 在 Repository 内提取请求字段，立即丢弃聚合对象；
-4. UI 只保存已获授权的单字段值，并在隐藏/离开/锁定时清除。
-
-自动填充已经使用更窄的两阶段路径：候选阶段不读取 `entry_secrets`；用户选择并完成所需认证后，才按 ID
-解密所选的单条凭据。未关联候选可能暴露标题、用户名、域名或包名，但不会在候选阶段提前解密多条密码。
+当前字段级迁移的键是 `PASSWORD` 以及银行卡号、CVV、支付 PIN、身份证号、助记词、恢复码、
+SSH 私钥/口令、Passkey 私钥引用、OTP Secret。它们不会在普通详情读取时进入 `VaultEntry.secret`；
+详情页 reveal 后只把本次获授权的字段值放入 `DetailUiState.revealedFields`。Domain/Payload 已预留
+更多字段结构，但 SSH、助记词、Passkey、OTP 等 UI reveal 链路仍需逐类迁入（当前 UI 已支持上述键）。
 
 ## 剪贴板
 

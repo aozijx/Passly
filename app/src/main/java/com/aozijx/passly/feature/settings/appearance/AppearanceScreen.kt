@@ -28,9 +28,9 @@ import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.core.ui.theme.themePresetByColor
-import com.aozijx.passly.data.settings.model.AppLanguage
-import com.aozijx.passly.data.settings.model.FontFamilyMode
-import com.aozijx.passly.data.settings.model.ThemeMode
+import com.aozijx.passly.domain.settings.model.AppLanguage
+import com.aozijx.passly.domain.settings.model.FontFamilyMode
+import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.feature.settings.appearance.pickers.LanguagePicker
 import com.aozijx.passly.feature.settings.appearance.pickers.ThemePicker
 import kotlinx.coroutines.launch

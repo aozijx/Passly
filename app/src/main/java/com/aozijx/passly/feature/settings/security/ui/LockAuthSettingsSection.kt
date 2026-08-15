@@ -28,7 +28,7 @@ import com.aozijx.passly.core.ui.components.group.RoundedGroupItem
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.data.settings.model.LockTimeoutConstraints
+import com.aozijx.passly.domain.settings.model.LockTimeoutConstraints
 import kotlin.math.roundToInt
 
 private const val SLIDER_MIN_SECONDS = (LockTimeoutConstraints.SLIDER_MIN_MS / 1000L).toFloat()

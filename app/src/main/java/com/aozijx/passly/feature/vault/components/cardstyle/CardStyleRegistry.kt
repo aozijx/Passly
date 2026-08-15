@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.vault.components.cardstyle
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.data.settings.model.EntryCardPresentation
+import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 
 object CardStyleRegistry {
     /*

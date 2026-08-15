@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation
 
-import com.aozijx.passly.data.settings.model.LibraryQuickFilter
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.model.AddType
 import org.junit.Assert.assertEquals

@@ -8,8 +8,8 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PersistableBundle
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.data.message.model.NoticeCode
-import com.aozijx.passly.data.message.model.newAppNotice
+import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
 
 /**

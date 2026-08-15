@@ -7,11 +7,11 @@ internal object DatabaseRecordAad {
     fun entrySummary(entryId: String): ByteArray =
         "${DatabaseSchema.TABLE_ENTRIES}:${entryId}:summaryBlob".toByteArray(Charsets.UTF_8)
 
-    fun entrySecret(entryId: String): ByteArray =
-        "${DatabaseSchema.TABLE_SECRETS}:${entryId}:secretBlob".toByteArray(Charsets.UTF_8)
+    fun secretBundle(entryId: String): ByteArray =
+        "${DatabaseSchema.TABLE_SECRET_FIELDS}:${entryId}:STRUCT_BUNDLE".toByteArray(Charsets.UTF_8)
 
-    fun sensitiveField(entryId: String, fieldKey: String): ByteArray =
-        "${DatabaseSchema.TABLE_SENSITIVE_FIELDS}:${entryId}:${fieldKey}:valueCipher"
+    fun secretField(entryId: String, fieldKey: String): ByteArray =
+        "${DatabaseSchema.TABLE_SECRET_FIELDS}:${entryId}:${fieldKey}:valueCipher"
             .toByteArray(Charsets.UTF_8)
 
     fun revision(entryId: String): ByteArray =

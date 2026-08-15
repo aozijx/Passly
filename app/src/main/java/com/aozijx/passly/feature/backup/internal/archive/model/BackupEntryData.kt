@@ -133,3 +133,14 @@ data class BackupSecretRecord(
     val otp: BackupOtpCredential? = null,
     val customFields: List<BackupCustomField> = emptyList()
 )
+
+/**
+ * One field-level secret value of an entry. The key is the stable
+ * `SensitiveFieldKey` name; the value is the plaintext of that single field.
+ * Field-level values are stored separately from the aggregated [BackupSecretRecord].
+ */
+@Serializable
+data class BackupSensitiveField(
+    val key: String,
+    val value: String
+)

@@ -10,7 +10,7 @@ import javax.inject.Singleton
 
 @Singleton
 class SharedPreferencesPermissionRequestHistory @Inject constructor(
-    @param:ApplicationContext context: Context
+    @ApplicationContext context: Context
 ) : PermissionRequestHistory {
     private val preferences = context.getSharedPreferences(
         "runtime_permission_history",

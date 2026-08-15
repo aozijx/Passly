@@ -1,13 +1,13 @@
 package com.aozijx.passly.app.message.contract
 
-import com.aozijx.passly.data.message.model.AppMessageSettings
+import com.aozijx.passly.domain.settings.model.MessageSettings
 
 /**
  * 路由时一次性读取的设置快照。
  * 保证同一条 [AppNotice] 在整个路由判断中使用一致的上下文。
  */
 data class NoticeRoutingContext(
-    val settings: AppMessageSettings,
+    val settings: MessageSettings,
     val settingsVersion: Long,
     val appVisibility: AppVisibility,
     val systemNotificationState: SystemNotificationState
@@ -30,7 +30,7 @@ data class SystemNotificationState(
 
 data class VersionedMessageSettings(
     val version: Long,
-    val value: AppMessageSettings
+    val value: MessageSettings
 )
 
 fun interface MessageSettingsSnapshotProvider {

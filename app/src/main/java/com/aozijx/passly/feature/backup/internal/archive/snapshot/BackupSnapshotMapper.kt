@@ -12,12 +12,16 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpCredenti
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpType
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupPasskeyCredential
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupSecretRecord
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupSensitiveField
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupSshCredential
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupSummaryRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupWebsiteRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupWifiCredential
 import com.aozijx.passly.data.mapper.entry.EntrySecretMapper
 import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
+import com.aozijx.passly.data.mapper.entry.mergeSensitiveFields
+import com.aozijx.passly.data.mapper.entry.toBundleSecret
+import com.aozijx.passly.data.mapper.entry.toSensitiveFieldValues
 import com.aozijx.passly.data.codec.entry.payload.CardCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.CustomFieldPayload
 import com.aozijx.passly.data.codec.entry.payload.IdentityCredentialPayload
@@ -39,6 +43,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -61,8 +66,11 @@ internal class BackupSnapshotMapper @Inject constructor() {
         deletedAt = entry.timestamps.deletedAtMs,
         // 本机绝对路径不能进入可移植备份；图标由 BackupResourceRecord 表达。
         summary = EntryProfileMapper.toPayload(entry.profile).toBackupRecord(),
-        secret = EntrySecretMapper.toPayload(entry.secret).toBackupRecord(),
-        attachmentIds = attachmentIds
+        secret = EntrySecretMapper.toPayload(entry.secret.toBundleSecret()).toBackupRecord(),
+        attachmentIds = attachmentIds,
+        sensitiveFields = entry.secret.toSensitiveFieldValues().map { (key, value) ->
+            BackupSensitiveField(key = key.name, value = value)
+        },
     )
 
     fun toEntry(record: BackupEntryRecord): Entry = Entry(
@@ -73,7 +81,11 @@ internal class BackupSnapshotMapper @Inject constructor() {
             timestamps = EntryTimestamps(record.createdAt, record.updatedAt, record.deletedAt),
         ),
         profile = EntryProfileMapper.toDomain(record.summary.toPayload()),
-        secret = EntrySecretMapper.toDomain(record.secret.toPayload())
+        secret = EntrySecretMapper.toDomain(record.secret.toPayload()).mergeSensitiveFields(
+            record.sensitiveFields.associate { field ->
+                SensitiveFieldKey.valueOf(field.key) to field.value
+            },
+        ),
     )
 }
 
@@ -151,7 +163,7 @@ private fun SecretPayload.toBackupRecord() = BackupSecretRecord(
             otpSecret.config?.let {
                 BackupOtpConfig(
                     type = BackupOtpType.valueOf(it.type.name),
-                    secret = it.secret,
+                    secret = requireNotNull(it.secret) { "OTP secret is missing" },
                     algorithm = BackupOtpAlgorithm.valueOf(it.algorithm.name),
                     digits = it.digits,
                     periodSeconds = it.periodSeconds,

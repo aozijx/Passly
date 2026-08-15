@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.codec.revision
 
-import com.aozijx.passly.data.local.database.entity.EntrySensitiveFieldEntity
+import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -12,14 +12,14 @@ class SensitiveRevisionSnapshotCodecTest {
     @Test
     fun `cipher snapshots round trip without plaintext decryption`() {
         val fields = listOf(
-            EntrySensitiveFieldEntity(
+            EntrySecretFieldEntity(
                 entryId = "entry-1",
                 fieldKey = SensitiveFieldKey.CARD_CVV.name,
                 valueCipher = byteArrayOf(3, 1, 4, 1, 5),
                 keyVersion = 2,
                 updatedAt = 10L,
             ),
-            EntrySensitiveFieldEntity(
+            EntrySecretFieldEntity(
                 entryId = "entry-1",
                 fieldKey = SensitiveFieldKey.CARD_NUMBER.name,
                 valueCipher = byteArrayOf(9, 2, 6, 5),
