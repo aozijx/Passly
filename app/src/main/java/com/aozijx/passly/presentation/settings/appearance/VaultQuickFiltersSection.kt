@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.group.GroupCard
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
-import com.aozijx.passly.core.ui.components.group.RoundedGroupItem
+import com.aozijx.passly.core.ui.components.group.model.RoundedGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.core.ui.components.vaultfilter.titleRes
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter

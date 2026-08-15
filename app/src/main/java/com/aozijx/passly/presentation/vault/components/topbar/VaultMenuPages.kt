@@ -25,9 +25,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.menu.MenuOptionText
 import com.aozijx.passly.core.ui.components.menu.selectedMenuModifier
 import com.aozijx.passly.domain.settings.model.LibrarySortSpec
 
@@ -98,11 +98,9 @@ internal fun SortSubMenu(
         }
         DropdownMenuItem(
             text = {
-                Text(
+                MenuOptionText(
                     text = stringResource(preset.labelResId()) + direction,
-                    color = if (selected) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface,
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                    selected = selected
                 )
             },
             onClick = {
@@ -199,11 +197,9 @@ private fun BackMenuItem(onBack: () -> Unit) {
 private fun EntryTypeMenuItem(text: String, selected: Boolean, onClick: () -> Unit) {
     DropdownMenuItem(
         text = {
-            Text(
+            MenuOptionText(
                 text = text,
-                color = if (selected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurface,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                selected = selected
             )
         },
         onClick = onClick,

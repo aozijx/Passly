@@ -28,9 +28,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.menu.MenuOptionText
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 
 private val SWIPE_ACTIONS = listOf(
@@ -93,11 +93,12 @@ fun SwipeActionSelectDialog(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                         }
-                        Text(
+                        MenuOptionText(
                             text = action.localizedLabel(),
+                            selected = isSelected,
                             style = MaterialTheme.typography.bodyLarge,
-                            color = if (isSelected) selectedContentColor else MaterialTheme.colorScheme.onSurface,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            selectedColor = selectedContentColor,
+                            unselectedColor = MaterialTheme.colorScheme.onSurface
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
