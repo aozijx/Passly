@@ -28,8 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.data.database.model.DatabaseRecoveryPackage
-import com.aozijx.passly.data.database.model.DatabaseRecoveryStatus
+import com.aozijx.passly.data.local.database.model.DatabaseRecoveryPackage
+import com.aozijx.passly.data.local.database.model.DatabaseRecoveryStatus
 import com.aozijx.passly.domain.entry.model.EntryType
 import java.text.DateFormat
 import java.util.Date

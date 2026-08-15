@@ -1,9 +1,9 @@
 package com.aozijx.passly.feature.settings.datamanagement
 
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.data.database.model.DatabaseRecoveryPackage
-import com.aozijx.passly.data.database.model.DatabaseRecoveryReport
-import com.aozijx.passly.data.database.model.DatabaseRecoveryScan
+import com.aozijx.passly.data.local.database.model.DatabaseRecoveryPackage
+import com.aozijx.passly.data.local.database.model.DatabaseRecoveryReport
+import com.aozijx.passly.data.local.database.model.DatabaseRecoveryScan
 import com.aozijx.passly.domain.entry.model.EntryType
 
 internal sealed interface DataManagementSettingsMutation {

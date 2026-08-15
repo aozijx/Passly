@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.repository.database
+package com.aozijx.passly.data.local.database.port
 
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow

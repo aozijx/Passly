@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.message.mapping.toUiMessage
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.data.database.model.DatabaseRecoverySelection
-import com.aozijx.passly.data.database.port.DatabaseRecoveryRepository
+import com.aozijx.passly.data.local.database.model.DatabaseRecoverySelection
+import com.aozijx.passly.data.local.database.port.DatabaseRecoveryRepository
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult

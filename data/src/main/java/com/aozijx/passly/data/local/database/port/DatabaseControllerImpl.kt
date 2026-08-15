@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.repository.database
+package com.aozijx.passly.data.local.database.port
 
 import android.content.Context
 import com.aozijx.passly.core.error.result.AppResult
@@ -10,9 +10,9 @@ import com.aozijx.passly.core.telemetry.report
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.data.local.database.recovery.DatabaseRecoveryStore
-import com.aozijx.passly.data.database.port.DatabaseController
-import com.aozijx.passly.data.database.port.DatabaseQuarantineResult
-import com.aozijx.passly.data.repository.database.EntryDataRefreshNotifier
+import com.aozijx.passly.data.local.database.port.DatabaseController
+import com.aozijx.passly.data.local.database.port.DatabaseQuarantineResult
+import com.aozijx.passly.data.local.database.port.EntryDataRefreshNotifier
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay

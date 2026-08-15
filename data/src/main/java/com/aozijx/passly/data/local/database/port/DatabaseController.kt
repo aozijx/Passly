@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.database.port
+package com.aozijx.passly.data.local.database.port
 
 data class DatabaseQuarantineResult(
     val recoveryId: String? = null,
