@@ -1,41 +1,22 @@
 package com.aozijx.passly.data.codec.entry.payload
 
+import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 import kotlinx.serialization.Serializable
 
-// --- Enum mirrors for domain OtpType, OtpHashAlgorithm, OtpCredentialEncoding ---
-
-@Serializable
-enum class OtpTypePayload {
-    TOTP,
-    HOTP,
-    STEAM
-}
-
-@Serializable
-enum class OtpHashAlgorithmPayload {
-    SHA1,
-    SHA256,
-    SHA512
-}
-
-@Serializable
-enum class OtpCredentialEncodingPayload {
-    BASE32,
-    BASE64
-}
-
-// --- OtpConfig DTO ---
+// --- OtpConfig DTO (enums are the domain OtpType/OtpHashAlgorithm/OtpSecretEncoding) ---
 
 @Serializable
 data class OtpConfigPayload(
-    val type: OtpTypePayload = OtpTypePayload.TOTP,
+    val type: OtpType = OtpType.TOTP,
     /** `null` when the secret is stored as a separate field-level ciphertext. */
     val secret: String? = null,
-    val algorithm: OtpHashAlgorithmPayload = OtpHashAlgorithmPayload.SHA1,
+    val algorithm: OtpHashAlgorithm = OtpHashAlgorithm.SHA1,
     val digits: Int = 6,
     val periodSeconds: Int? = 30,
     val counter: Long? = null,
-    val encoding: OtpCredentialEncodingPayload = OtpCredentialEncodingPayload.BASE32,
+    val encoding: OtpSecretEncoding = OtpSecretEncoding.BASE32,
     val issuer: String? = null,
     val accountName: String? = null
 )
@@ -57,10 +38,7 @@ data class CardCredentialPayload(
     val cardHolder: String? = null,
     val paymentPin: String? = null,
     val paymentPlatform: String? = null,
-    val billingAddress: String? = null,
-    val hasCardNumber: Boolean = false,
-    val hasCardCvv: Boolean = false,
-    val hasPaymentPin: Boolean = false
+    val billingAddress: String? = null
 )
 
 @Serializable
