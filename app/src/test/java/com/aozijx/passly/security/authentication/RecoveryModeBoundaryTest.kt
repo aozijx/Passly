@@ -45,14 +45,22 @@ class RecoveryModeBoundaryTest {
             candidateResolver = CandidateResolver(EmptyCredentialRepository),
             fieldMatchStrategy = object : FieldMatchStrategy {
                 override fun match(request: InternalFillRequest) =
-                    MatchResult(hasCredentials = true)
+                    MatchResult(hasCredentials = true, hasEditableFields = true)
             },
             responseFactory = ResponseFactory(),
             settingsRepository = DefaultSettingsRepository,
         )
 
         val response = dispatcher.dispatch(
-            InternalFillRequest(parentPackage = "com.example", fields = emptyList())
+            InternalFillRequest(
+                parentPackage = "com.example",
+                fields = listOf(
+                    com.aozijx.passly.core.autofill.model.FieldDescriptor(
+                        viewId = "id/field",
+                        autofillHints = listOf("USERNAME"),
+                    )
+                ),
+            )
         )
 
         // Recovery mode has isDatabaseOpen() == true but hasFullSecureSessionAccess() == false,

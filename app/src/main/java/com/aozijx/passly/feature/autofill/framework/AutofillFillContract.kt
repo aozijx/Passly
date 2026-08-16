@@ -36,4 +36,12 @@ data class AutofillFillRequest(
     val directEntryId: String?,
     val candidateEntryIds: List<String>,
     val returnsDataset: Boolean,
-)
+    /** 页面全部可编辑字段（样式化控件识别不出角色时的填充兜底顺序）。 */
+    val editableIds: List<AutofillId> = emptyList(),
+) {
+    /** 有效填充目标字段：优先角色识别结果，否则回退到全部可编辑字段。 */
+    val resolvedUsernameId: AutofillId?
+        get() = usernameId ?: editableIds.getOrNull(0)
+    val resolvedPasswordId: AutofillId?
+        get() = passwordId ?: editableIds.getOrNull(1)
+}

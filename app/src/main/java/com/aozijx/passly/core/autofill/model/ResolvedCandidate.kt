@@ -39,4 +39,16 @@ data class ResolvedCandidate(
     val matchedBy: MatchType? = null,
     val matchedPackage: String? = null,
     val matchedDomain: String? = null,
+) {
+    /** 可填充的基本凭据；用户名与密码均为空时返回 null。 */
+    fun fillableCredentials(): FillableCredentials? {
+        if (username.isBlank() && password.isBlank()) return null
+        return FillableCredentials(username = username, password = password)
+    }
+}
+
+/** 可填充的基本凭据（用户名 + 密码），供两套自动填充平台消费。 */
+data class FillableCredentials(
+    val username: String,
+    val password: String,
 )

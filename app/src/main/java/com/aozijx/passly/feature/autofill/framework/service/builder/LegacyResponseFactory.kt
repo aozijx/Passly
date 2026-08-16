@@ -1,8 +1,6 @@
 package com.aozijx.passly.feature.autofill.framework.service.builder
 
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.service.autofill.Dataset
 import android.service.autofill.FillResponse
 import android.service.autofill.SaveInfo
@@ -13,9 +11,8 @@ import com.aozijx.passly.core.autofill.model.InternalFillResponse
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.domain.entry.model.query.MatchType
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
-import com.aozijx.passly.feature.autofill.framework.AutofillFillActivity
-import com.aozijx.passly.feature.autofill.framework.AutofillRemoteViewFactory
 import com.aozijx.passly.feature.autofill.framework.service.parser.ParsedStructure
+import com.aozijx.passly.feature.autofill.shared.AutofillPendingIntentFactory
 
 /**
  * Legacy 自动填充响应工厂：负责将 InternalFillResponse 转换为 Android FillResponse。
@@ -24,13 +21,10 @@ import com.aozijx.passly.feature.autofill.framework.service.parser.ParsedStructu
  * - 未解锁：构建解锁触发器
  * - 已解锁：构建候选项认证入口列表
  * - 选中候选后：由 AutofillFillActivity 二阶段读取并构建单条直填 Dataset
+ *
+ * PendingIntent 构建收敛到 [AutofillPendingIntentFactory]，本类只组装响应结构。
  */
 internal object LegacyResponseFactory {
-
-    data class BasicCredentials(
-        val username: String,
-        val password: String
-    )
 
     // ── Phase 1: 构建 FillResponse（未解锁/已解锁候选入口） ──
 
@@ -95,11 +89,6 @@ internal object LegacyResponseFactory {
         return builder.build()
     }
 
-    fun getBasicCredentials(candidate: ResolvedCandidate): BasicCredentials? {
-        if (candidate.username.isBlank() && candidate.password.isBlank()) return null
-        return BasicCredentials(candidate.username, candidate.password)
-    }
-
     private fun addCandidateAuthenticationDataset(
         builder: FillResponse.Builder,
         context: Context,
@@ -112,12 +101,13 @@ internal object LegacyResponseFactory {
             candidate = candidate,
             badge = buildBadge(context, candidate),
         )
-        val intent = createFillIntent(context, candidate, parsed, uiMode)
-        val pi = PendingIntent.getActivity(
+        val intent = AutofillPendingIntentFactory.createFillIntent(
+            context, candidate, parsed, uiMode
+        )
+        val pi = AutofillPendingIntentFactory.getActivityPendingIntent(
             context,
             candidate.candidateId.hashCode(),
             intent,
-            authenticationPendingIntentFlags(),
         )
         val dsBuilder = Dataset.Builder().setAuthentication(pi.intentSender)
         LegacyDatasetFactory.setMenuPresentationCompat(
@@ -136,22 +126,6 @@ internal object LegacyResponseFactory {
         }
     }
 
-    private fun createFillIntent(
-        context: Context,
-        candidate: ResolvedCandidate,
-        parsed: ParsedStructure,
-        uiMode: AutofillPresentation
-    ): Intent = Intent(context, AutofillFillActivity::class.java).apply {
-        putExtra("vault_item_id", candidate.candidateId)
-        putExtra("username_id", parsed.usernameId)
-        putExtra("password_id", parsed.passwordId)
-        putExtra("otp_id", parsed.otpId)
-        putExtra("autofill_ui_mode", uiMode.name)
-        putExtra("package_name", parsed.packageName)
-        putExtra("web_domain", parsed.webDomain)
-        putExtra(AutofillFillActivity.EXTRA_RETURN_DATASET, true)
-    }
-
     private fun addUnlockAuthentication(
         builder: FillResponse.Builder,
         context: Context,
@@ -159,14 +133,13 @@ internal object LegacyResponseFactory {
         uiMode: AutofillPresentation,
     ) {
         if (parsed.allIds.isEmpty()) return
-        val intent = createBaseIntent(context, parsed, uiMode).apply {
+        val intent = AutofillPendingIntentFactory.createBaseIntent(context, parsed, uiMode).apply {
             putExtra("unlock_only", true)
         }
-        val pendingIntent = PendingIntent.getActivity(
+        val pendingIntent = AutofillPendingIntentFactory.getActivityPendingIntent(
             context,
             parsed.packageName.hashCode(),
             intent,
-            authenticationPendingIntentFlags(),
         )
         LegacyDatasetFactory.setAuthenticationCompat(
             builder,
@@ -184,14 +157,13 @@ internal object LegacyResponseFactory {
         uiMode: AutofillPresentation,
     ) {
         if (parsed.allIds.isEmpty()) return
-        val intent = createBaseIntent(context, parsed, uiMode).apply {
+        val intent = AutofillPendingIntentFactory.createBaseIntent(context, parsed, uiMode).apply {
             putExtra("vault_item_ids", candidates.map { it.candidateId }.toTypedArray())
         }
-        val pendingIntent = PendingIntent.getActivity(
+        val pendingIntent = AutofillPendingIntentFactory.getActivityPendingIntent(
             context,
             candidates.map { it.candidateId }.hashCode(),
             intent,
-            authenticationPendingIntentFlags(),
         )
         LegacyDatasetFactory.setAuthenticationCompat(
             builder,
@@ -201,32 +173,19 @@ internal object LegacyResponseFactory {
         )
     }
 
-    private fun createBaseIntent(
-        context: Context,
-        parsed: ParsedStructure,
-        uiMode: AutofillPresentation,
-    ): Intent = Intent(context, AutofillFillActivity::class.java).apply {
-        putExtra("username_id", parsed.usernameId)
-        putExtra("password_id", parsed.passwordId)
-        putExtra("otp_id", parsed.otpId)
-        putExtra("autofill_ui_mode", uiMode.name)
-        putExtra("package_name", parsed.packageName)
-        putExtra("web_domain", parsed.webDomain)
-    }
-
     private fun addSaveInfo(
         builder: FillResponse.Builder,
         parsed: ParsedStructure,
     ) {
+        // 优先用识别的角色字段；样式化页面识别不出时回退到全部可编辑字段，
+        // 保证保存提示在自定义控件上也能触发。
         val requiredIds = listOfNotNull(parsed.usernameId, parsed.passwordId)
+            .ifEmpty { parsed.allIds }
         if (requiredIds.isEmpty()) return
         var dataType = 0
         if (parsed.usernameId != null) dataType = dataType or SaveInfo.SAVE_DATA_TYPE_USERNAME
         if (parsed.passwordId != null) dataType = dataType or SaveInfo.SAVE_DATA_TYPE_PASSWORD
+        if (dataType == 0) dataType = SaveInfo.SAVE_DATA_TYPE_PASSWORD
         builder.setSaveInfo(SaveInfo.Builder(dataType, requiredIds.toTypedArray()).build())
     }
-
-    private fun authenticationPendingIntentFlags(): Int =
-        PendingIntent.FLAG_UPDATE_CURRENT or
-                PendingIntent.FLAG_MUTABLE
 }

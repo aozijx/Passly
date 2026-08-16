@@ -17,40 +17,26 @@ import javax.inject.Singleton
  * - [buildRequest]：ParsedStructure → InternalFillRequest（Android Id → 纯数据）
  * - [buildResponse]：InternalFillResponse → FillResponse（纯数据 → Android Dataset/FillResponse）
  *
- * Android API 版本升级时，只需替换此适配器，Dispatcher 和领域层不受影响。
+ * 字段描述透传 Parser 收集到的真实属性（inputType/hint/className/resourceId），
+ * 保证启发式匹配能识别样式化/自定义控件，而不是只依赖硬编码 hint。
  */
 @Singleton
 class LegacyPlatformAdapter @Inject constructor() {
 
     fun buildRequest(parsed: ParsedStructure): InternalFillRequest {
-        val fields = mutableListOf<FieldDescriptor>()
-
-        if (parsed.usernameId != null) {
-            fields.add(
-                FieldDescriptor(
-                    viewId = parsed.usernameId.toString(),
-                    autofillHints = listOf("USERNAME"),
-                    resourceId = parsed.usernameResourceId,
-                )
+        // 优先使用解析出的全部可编辑字段；解析失败时回退到识别出的角色字段。
+        val fields = parsed.editableFields.map { field ->
+            FieldDescriptor(
+                viewId = field.autofillId.toString(),
+                autofillHints = field.autofillHints,
+                resourceId = field.resourceId,
+                inputType = field.inputType,
+                hint = field.hint,
+                contentDescription = field.contentDescription,
+                className = field.className,
             )
-        }
-        if (parsed.passwordId != null) {
-            fields.add(
-                FieldDescriptor(
-                    viewId = parsed.passwordId.toString(),
-                    autofillHints = listOf("PASSWORD"),
-                    resourceId = parsed.passwordResourceId,
-                )
-            )
-        }
-        if (parsed.otpId != null) {
-            fields.add(
-                FieldDescriptor(
-                    viewId = parsed.otpId.toString(),
-                    autofillHints = listOf("ONE_TIME_CODE"),
-                    resourceId = parsed.otpResourceId,
-                )
-            )
+        }.ifEmpty {
+            buildRoleFallbackFields(parsed)
         }
 
         return InternalFillRequest(
@@ -69,4 +55,35 @@ class LegacyPlatformAdapter @Inject constructor() {
     ): FillResponse {
         return LegacyResponseFactory.buildFillResponse(context, response, parsed, uiMode)
     }
+
+    private fun buildRoleFallbackFields(parsed: ParsedStructure): List<FieldDescriptor> =
+        buildList {
+            if (parsed.usernameId != null) {
+                add(
+                    FieldDescriptor(
+                        viewId = parsed.usernameId.toString(),
+                        autofillHints = listOf("USERNAME"),
+                        resourceId = parsed.usernameResourceId,
+                    )
+                )
+            }
+            if (parsed.passwordId != null) {
+                add(
+                    FieldDescriptor(
+                        viewId = parsed.passwordId.toString(),
+                        autofillHints = listOf("PASSWORD"),
+                        resourceId = parsed.passwordResourceId,
+                    )
+                )
+            }
+            if (parsed.otpId != null) {
+                add(
+                    FieldDescriptor(
+                        viewId = parsed.otpId.toString(),
+                        autofillHints = listOf("ONE_TIME_CODE"),
+                        resourceId = parsed.otpResourceId,
+                    )
+                )
+            }
+        }
 }

@@ -62,7 +62,11 @@ class StrictMatchStrategy @Inject constructor() : FieldMatchStrategy {
 
         val hasCredentials =
             roleMap.values.any { it == FieldRole.USERNAME || it == FieldRole.PASSWORD }
-        return MatchResult(roleMap = roleMap, hasCredentials = hasCredentials)
+        return MatchResult(
+            roleMap = roleMap,
+            hasCredentials = hasCredentials,
+            hasEditableFields = request.fields.isNotEmpty(),
+        )
     }
 
     private fun matchField(field: FieldDescriptor): FieldRole {

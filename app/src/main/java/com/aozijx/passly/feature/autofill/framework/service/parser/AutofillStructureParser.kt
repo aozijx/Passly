@@ -5,6 +5,17 @@ import android.service.autofill.FillContext
 import android.text.InputType
 import android.view.autofill.AutofillId
 
+/** 可编辑输入框的完整静态属性（供启发式匹配使用）。 */
+data class EditableFieldInfo(
+    val autofillId: AutofillId,
+    val resourceId: String? = null,
+    val inputType: String? = null,
+    val hint: String? = null,
+    val contentDescription: String? = null,
+    val className: String? = null,
+    val autofillHints: List<String> = emptyList(),
+)
+
 data class ParsedStructure(
     val usernameId: AutofillId? = null,
     val passwordId: AutofillId? = null,
@@ -18,6 +29,8 @@ data class ParsedStructure(
     val pageTitle: String? = null,
     val usernameValue: String? = null,
     val passwordValue: String? = null,
+    /** 页面上所有可编辑输入框（含未识别角色的样式化控件），用于触发放大。 */
+    val editableFields: List<EditableFieldInfo> = emptyList(),
 ) {
     val normalizedPackageName: String?
         get() = packageName?.trim()?.lowercase()?.takeIf { it.isNotBlank() }
@@ -28,7 +41,9 @@ data class ParsedStructure(
             ?.takeIf(String::isNotBlank)
 
     val allIds: List<AutofillId>
-        get() = listOfNotNull(usernameId, passwordId, otpId, submitId)
+        get() = editableFields.map { it.autofillId }.ifEmpty {
+            listOfNotNull(usernameId, passwordId, otpId, submitId)
+        }
 }
 
 object AutofillStructureParser {
@@ -49,6 +64,7 @@ object AutofillStructureParser {
             pageTitle = parser.pageTitle,
             usernameValue = parser.usernameValue,
             passwordValue = parser.passwordValue,
+            editableFields = parser.editableFields,
         )
     }
 
@@ -67,6 +83,9 @@ object AutofillStructureParser {
 
         var usernameValue: String? = null
         var passwordValue: String? = null
+
+        /** 所有可编辑输入框，按视图树顺序收集。 */
+        val editableFields = mutableListOf<EditableFieldInfo>()
 
         init {
             packageName = structure.activityComponent?.packageName
@@ -89,6 +108,22 @@ object AutofillStructureParser {
             val contentDesc = node.contentDescription?.toString()?.lowercase() ?: ""
             val className = node.className?.lowercase() ?: ""
             val isPwdType = isPasswordField(node)
+            val isEditableText = isEditableTextField(node, className, isPwdType)
+            val editableId = node.autofillId
+
+            if (isEditableText && editableId != null) {
+                editableFields.add(
+                    EditableFieldInfo(
+                        autofillId = editableId,
+                        resourceId = node.idEntry,
+                        inputType = inputTypeNames(node.inputType),
+                        hint = node.hint,
+                        contentDescription = node.contentDescription?.toString(),
+                        className = node.className,
+                        autofillHints = hints.orEmpty().toList(),
+                    )
+                )
+            }
 
             if (!hints.isNullOrEmpty()) {
                 if (hints.any {
@@ -166,6 +201,57 @@ object AutofillStructureParser {
                     variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
                     variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD ||
                     variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD
+        }
+
+        /** 将 inputType 位掩码转换为可读常量名（供启发式匹配的 inputType 分支使用）。 */
+        private fun inputTypeNames(inputType: Int): String {
+            if (inputType == InputType.TYPE_NULL) return "TYPE_NULL"
+            val names = mutableListOf<String>()
+            val cls = inputType and InputType.TYPE_MASK_CLASS
+            when (cls) {
+                InputType.TYPE_CLASS_TEXT -> names += "TYPE_CLASS_TEXT"
+                InputType.TYPE_CLASS_NUMBER -> names += "TYPE_CLASS_NUMBER"
+                InputType.TYPE_CLASS_PHONE -> names += "TYPE_CLASS_PHONE"
+                InputType.TYPE_CLASS_DATETIME -> names += "TYPE_CLASS_DATETIME"
+            }
+            val variation = inputType and InputType.TYPE_MASK_VARIATION
+            when (variation) {
+                InputType.TYPE_TEXT_VARIATION_PASSWORD -> names += "TEXT_VARIATION_PASSWORD"
+                InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ->
+                    names += "TEXT_VARIATION_VISIBLE_PASSWORD"
+                InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD ->
+                    names += "TEXT_VARIATION_WEB_PASSWORD"
+                InputType.TYPE_NUMBER_VARIATION_PASSWORD ->
+                    names += "NUMBER_VARIATION_PASSWORD"
+                InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS ->
+                    names += "TEXT_VARIATION_EMAIL_ADDRESS"
+                InputType.TYPE_TEXT_VARIATION_PERSON_NAME ->
+                    names += "TEXT_VARIATION_PERSON_NAME"
+                InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS ->
+                    names += "TEXT_VARIATION_WEB_EMAIL_ADDRESS"
+            }
+            return names.joinToString(" ")
+        }
+
+        private fun isEditableTextField(
+            node: AssistStructure.ViewNode,
+            className: String,
+            isPwdType: Boolean,
+        ): Boolean {
+            if (isPwdType) return true
+            // 显式 autofill hint 的输入框
+            if (!node.autofillHints.isNullOrEmpty()) return true
+            // inputType 属于文本/数字/邮箱/电话等可编辑类
+            val cls = node.inputType and InputType.TYPE_MASK_CLASS
+            if (cls == InputType.TYPE_CLASS_TEXT ||
+                cls == InputType.TYPE_CLASS_NUMBER ||
+                cls == InputType.TYPE_CLASS_PHONE ||
+                cls == InputType.TYPE_CLASS_DATETIME
+            ) {
+                return true
+            }
+            // EditText 家族（含样式化自定义输入框）
+            return className.contains("edittext") || className.contains("textinput")
         }
     }
 }

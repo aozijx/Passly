@@ -8,8 +8,10 @@ import javax.inject.Inject
 /**
  * 启发式匹配策略：供 AutofillService 使用。
  *
- * 保留旧版"猜字段"的能力，对标原 AutofillStructureParser 的匹配逻辑。
- * 匹配优先级：autofillHints → inputType → resourceId → hint/contentDescription → className
+ * 触发判定与角色识别分离（根因修复）：
+ * - [hasEditableFields]：页面有可编辑文本输入框即触发填充入口，
+ *   不依赖能否猜出 username/password —— 样式化/自定义控件不再被漏掉。
+ * - [roleMap]：尽力识别字段角色，供填充阶段映射（hints → inputType → id → hint 文本）。
  */
 class HeuristicMatchStrategy @Inject constructor() : FieldMatchStrategy {
 
@@ -77,7 +79,7 @@ class HeuristicMatchStrategy @Inject constructor() : FieldMatchStrategy {
     override fun match(request: InternalFillRequest): MatchResult {
         val roleMap = mutableMapOf<String, FieldRole>()
 
-        // 两轮匹配：第一轮找凭据字段，第二轮找提交按钮
+        // 第一轮：识别凭据字段角色
         for (field in request.fields) {
             val role = matchFieldHeuristic(field)
             if (role != FieldRole.UNKNOWN) {
@@ -85,9 +87,16 @@ class HeuristicMatchStrategy @Inject constructor() : FieldMatchStrategy {
             }
         }
 
+        // 触发判定独立于角色识别：任何可编辑文本输入框都构成可填充表单。
+        val hasEditableFields = request.fields.any { it.isEditableTextInput() }
         val hasCredentials =
             roleMap.values.any { it == FieldRole.USERNAME || it == FieldRole.PASSWORD }
-        return MatchResult(roleMap = roleMap, hasCredentials = hasCredentials)
+
+        return MatchResult(
+            roleMap = roleMap,
+            hasCredentials = hasCredentials,
+            hasEditableFields = hasEditableFields,
+        )
     }
 
     private fun matchFieldHeuristic(field: FieldDescriptor): FieldRole {
@@ -144,5 +153,17 @@ class HeuristicMatchStrategy @Inject constructor() : FieldMatchStrategy {
         }
 
         return FieldRole.UNKNOWN
+    }
+
+    /** 判断字段是否为可编辑文本输入框（含样式化自定义控件）。 */
+    private fun FieldDescriptor.isEditableTextInput(): Boolean {
+        if (className?.contains("edittext", ignoreCase = true) == true) return true
+        if (className?.contains("textinput", ignoreCase = true) == true) return true
+        if (autofillHints.isNotEmpty()) return true
+        // inputType 字符串包含文本/数字/邮箱/电话类
+        return inputType?.let { raw ->
+            raw.contains("TYPE_CLASS_TEXT") || raw.contains("TYPE_CLASS_NUMBER") ||
+                raw.contains("TYPE_CLASS_PHONE") || raw.contains("TYPE_CLASS_DATETIME")
+        } ?: false
     }
 }

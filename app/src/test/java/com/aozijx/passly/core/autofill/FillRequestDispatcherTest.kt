@@ -38,7 +38,7 @@ class FillRequestDispatcherTest {
             candidateResolver = CandidateResolver(EmptyCredentialRepository),
             fieldMatchStrategy = object : FieldMatchStrategy {
                 override fun match(request: InternalFillRequest) =
-                    MatchResult(hasCredentials = false)
+                    MatchResult(hasEditableFields = false)
             },
             responseFactory = ResponseFactory(),
             settingsRepository = DefaultSettingsRepository,
@@ -50,6 +50,41 @@ class FillRequestDispatcherTest {
 
         assertEquals(FillAvailability.UNSUPPORTED_FIELDS, response.availability)
     }
+
+    @Test
+    fun `stylized page with editable fields triggers candidate lookup even without role hints`() =
+        runBlocking {
+            val dispatcher = FillRequestDispatcher(
+                sessionState = LockedSecureSessionAccessState(),
+                candidateResolver = CandidateResolver(EmptyCredentialRepository),
+                fieldMatchStrategy = object : FieldMatchStrategy {
+                    override fun match(request: InternalFillRequest) =
+                        MatchResult(
+                            roleMap = emptyMap(),
+                            hasCredentials = false,
+                            hasEditableFields = true,
+                        )
+                },
+                responseFactory = ResponseFactory(),
+                settingsRepository = DefaultSettingsRepository,
+            )
+
+            // 有可编辑输入框但 vault 锁定 → 走 LOCKED（而非 UNSUPPORTED_FIELDS），
+            // 样式化页面获得解锁入口，不再被"识别不出角色"掐断。
+            val response = dispatcher.dispatch(
+                InternalFillRequest(
+                    parentPackage = "com.example",
+                    fields = listOf(
+                        com.aozijx.passly.core.autofill.model.FieldDescriptor(
+                            viewId = "id/et_1",
+                            inputType = "TYPE_CLASS_TEXT",
+                        )
+                    ),
+                )
+            )
+
+            assertEquals(FillAvailability.LOCKED, response.availability)
+        }
 
     private class LockedSecureSessionAccessState : SecureSessionAccessState {
         override val authenticationState =

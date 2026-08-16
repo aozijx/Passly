@@ -100,6 +100,17 @@ class AutofillFillActivity : FragmentActivity() {
         val directEntryId = intent?.getStringExtra("vault_item_id")
         val candidateEntryIds = intent?.getStringArrayExtra("vault_item_ids")?.toList().orEmpty()
         val returnsDataset = intent?.getBooleanExtra(EXTRA_RETURN_DATASET, false) ?: false
+        val editableIds = intent?.let {
+            @Suppress("DEPRECATION")
+            IntentCompat.getParcelableArrayExtra(
+                it,
+                "editable_ids",
+                AutofillId::class.java,
+            )?.map { parcelable ->
+                @Suppress("UNCHECKED_CAST")
+                parcelable as AutofillId
+            }.orEmpty()
+        }.orEmpty()
 
         return AutofillFillRequest(
             uiMode = uiMode,
@@ -111,7 +122,8 @@ class AutofillFillActivity : FragmentActivity() {
             webDomain = webDomain,
             directEntryId = directEntryId,
             candidateEntryIds = candidateEntryIds,
-            returnsDataset = returnsDataset
+            returnsDataset = returnsDataset,
+            editableIds = editableIds,
         )
     }
 

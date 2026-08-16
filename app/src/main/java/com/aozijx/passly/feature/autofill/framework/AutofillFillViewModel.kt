@@ -141,7 +141,7 @@ class AutofillFillViewModel @Inject constructor(
         candidate: ResolvedCandidate,
         request: AutofillFillRequest,
     ) {
-        val basicCred = LegacyResponseFactory.getBasicCredentials(candidate)
+        val basicCred = candidate.fillableCredentials()
         if (basicCred == null) {
             mutate(AutofillFillMutation.Failed("Failed to decrypt credentials"))
             return
@@ -150,7 +150,7 @@ class AutofillFillViewModel @Inject constructor(
         val totpCode = if (request.otpId != null) candidate.totpCode else null
 
         val dataset = LegacyDatasetFactory.createFillDataset(
-            request.usernameId, request.passwordId, request.otpId,
+            request.resolvedUsernameId, request.resolvedPasswordId, request.otpId,
             basicCred.username, basicCred.password, totpCode
         )
 

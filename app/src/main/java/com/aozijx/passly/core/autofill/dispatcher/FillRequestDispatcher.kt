@@ -44,6 +44,10 @@ class FillRequestDispatcher(
      *
      * @param request 已转换为内部模型的填充请求
      * @return InternalFillResponse。若 vault 锁定或管道任一阶段无结果，返回空 entries。
+     *
+     * 触发判定（是否有可编辑输入框）与角色识别（能否猜出 username/password）分离：
+     * 样式化页面识别不出角色，但只要存在可编辑输入框就进入候选解析，
+     * 由包名/域名过滤决定最终是否弹出填充入口。
      */
     suspend fun dispatch(request: InternalFillRequest): InternalFillResponse {
         val policy = settingsRepository.settings.first().interaction.autofill
@@ -55,14 +59,13 @@ class FillRequestDispatcher(
         }
 
         val matchResult = fieldMatchStrategy.match(request)
-        if (!matchResult.hasCredentials) {
-            AppTelemetry.i(TAG, "No credential fields matched")
+        // 页面没有任何可编辑输入框才判定为不支持（不打扰无关页面）。
+        if (!matchResult.hasEditableFields) {
+            AppTelemetry.i(TAG, "No editable fields on page")
             return InternalFillResponse(availability = FillAvailability.UNSUPPORTED_FIELDS)
         }
 
-        // Field recognition must happen before the lock check. Otherwise every
-        // focused form receives an unlock affordance while the vault is locked,
-        // including pages that do not contain a credential field.
+        // 有输入框但 vault 锁定 → 给出解锁入口（未登录的无关页面已在上面被过滤）。
         if (!sessionState.hasFullSecureSessionAccess()) {
             AppTelemetry.i(TAG, "Vault locked; fill request requires unlock")
             return InternalFillResponse(
