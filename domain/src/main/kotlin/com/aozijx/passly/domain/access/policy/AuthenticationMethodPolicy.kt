@@ -66,11 +66,11 @@ object AuthenticationMethodPolicy {
         reauthenticateSensitiveCopies: Boolean
     ): Boolean = when (purpose) {
         AuthenticationPurpose.UNLOCK_VAULT,
-        AuthenticationPurpose.REVEAL_SECRET,
-        // 自动填充在 vault 已解锁时复用会话，不重复弹验证；
-        // "填充前验证"由 autofill 策略 requireAuthentication 在业务层控制。
-        AuthenticationPurpose.AUTOFILL -> false
+        AuthenticationPurpose.REVEAL_SECRET -> false
 
+        // 自动填充二阶段（填充/保存）需要新鲜认证：业务层 requireAuthentication
+        // 开关要求"填充前验证"时，即使 vault 已解锁也必须重新验证。
+        // 候选展示（BeginGet）不调用 authenticate，不受此策略影响。
         AuthenticationPurpose.COPY_SECRET -> reauthenticateSensitiveCopies
         AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET -> true
         else -> true

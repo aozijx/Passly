@@ -18,6 +18,8 @@ import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService
+import com.aozijx.passly.feature.autofill.legacy.service.LegacyAutofillService
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.security.authentication.BiometricRotationReconciler
 import com.aozijx.passly.security.authentication.VaultSessionController
@@ -102,16 +104,19 @@ class PasslyApplication : Application() {
      *
      * 使用 PackageManager.setComponentEnabledSetting 而非硬编码 enabled="true"，
      * 避免在低版本设备上触发 NoClassDefFoundError。
+     *
+     * 组件名通过类引用解析，避免手写包名在包结构调整后失配
+     * （曾因 framework→legacy 迁移漏改导致服务静默未启用）。
      */
     private fun configureAutofillServices() {
         val pm = packageManager
         val legacyComponent = ComponentName(
             this,
-            "${packageName}.service.autofill.framework.LegacyAutofillService"
+            LegacyAutofillService::class.java
         )
         val modernComponent = ComponentName(
             this,
-            "${packageName}.service.autofill.credential.ModernCredentialService"
+            ModernCredentialService::class.java
         )
 
         try {

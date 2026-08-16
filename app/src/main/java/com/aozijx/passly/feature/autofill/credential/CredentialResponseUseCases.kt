@@ -100,7 +100,10 @@ class CredentialResponseUseCases @Inject constructor(
             return CreatePasswordCredentialResult.NotSaved
         }
 
-        if (policy.requireAuthentication || !vaultAccessState.hasFullSecureSessionAccess()) {
+        // 保存是用户在系统确认后的动作，本身不需要"填充前验证"策略；
+        // 只需确保会话可写。vault 锁定（未解锁）时仍然认证以解锁会话，
+        // 已解锁则直接写入，避免保存流程被多余的认证弹窗打断。
+        if (!vaultAccessState.hasFullSecureSessionAccess()) {
             val authentication = authenticationManager.authenticate(
                 AuthenticationRequest(AuthenticationPurpose.AUTOFILL)
             )

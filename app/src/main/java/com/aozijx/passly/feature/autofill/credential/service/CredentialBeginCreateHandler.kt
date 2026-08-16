@@ -39,7 +39,14 @@ class CredentialBeginCreateHandler @Inject constructor(
         }
 
         val policy = settingsRepository.settings.first().interaction.autofill
-        if (!policy.enabled || !policy.credentialManagerEnabled) return BeginCreateCredentialResponse()
+        if (
+            !policy.enabled ||
+            !policy.credentialManagerEnabled ||
+            // 与 Legacy 保存一致：关闭"保存登录信息"后不再弹出保存提示。
+            !policy.savePromptsEnabled
+        ) {
+            return BeginCreateCredentialResponse()
+        }
 
         if (CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo) == null) {
             return BeginCreateCredentialResponse()
