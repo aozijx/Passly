@@ -65,7 +65,6 @@ class StrictMatchStrategy @Inject constructor() : FieldMatchStrategy {
         return MatchResult(
             roleMap = roleMap,
             hasCredentials = hasCredentials,
-            hasEditableFields = request.fields.isNotEmpty(),
         )
     }
 

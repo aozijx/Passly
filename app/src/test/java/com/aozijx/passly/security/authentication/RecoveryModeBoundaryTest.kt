@@ -45,7 +45,7 @@ class RecoveryModeBoundaryTest {
             candidateResolver = CandidateResolver(EmptyCredentialRepository),
             fieldMatchStrategy = object : FieldMatchStrategy {
                 override fun match(request: InternalFillRequest) =
-                    MatchResult(hasCredentials = true, hasEditableFields = true)
+                    MatchResult(hasCredentials = true)
             },
             responseFactory = ResponseFactory(),
             settingsRepository = DefaultSettingsRepository,

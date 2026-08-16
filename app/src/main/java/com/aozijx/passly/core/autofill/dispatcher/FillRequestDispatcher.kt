@@ -1,6 +1,5 @@
 package com.aozijx.passly.core.autofill.dispatcher
 
-import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.autofill.matcher.FieldMatchStrategy
 import com.aozijx.passly.core.autofill.model.FillAvailability
 import com.aozijx.passly.core.autofill.model.FillRequestSource
@@ -35,19 +34,15 @@ class FillRequestDispatcher(
     private val settingsRepository: AppSettingsRepository,
 ) {
 
-    companion object {
-        private const val TAG = "FillDispatcher"
-    }
-
     /**
      * 根据请求执行填充 Pipeline。
      *
      * @param request 已转换为内部模型的填充请求
      * @return InternalFillResponse。若 vault 锁定或管道任一阶段无结果，返回空 entries。
      *
-     * 触发判定（是否有可编辑输入框）与角色识别（能否猜出 username/password）分离：
-     * 样式化页面识别不出角色，但只要存在可编辑输入框就进入候选解析，
-     * 由包名/域名过滤决定最终是否弹出填充入口。
+     * 触发条件为"识别出凭据字段"（username/password/otp）而非"存在任意输入框"：
+     * 搜索框、普通单输入表单不会触发自动填充。样式化页面的密码框通过
+     * inputType 可靠识别，不会因 id/hint 非标准而漏掉。
      */
     suspend fun dispatch(request: InternalFillRequest): InternalFillResponse {
         val policy = settingsRepository.settings.first().interaction.autofill
@@ -59,16 +54,13 @@ class FillRequestDispatcher(
         }
 
         val matchResult = fieldMatchStrategy.match(request)
-        // 页面没有任何可编辑输入框才判定为不支持（不打扰无关页面）。
-        if (!matchResult.hasEditableFields) {
-            AppTelemetry.d(TAG, "No editable fields on page")
+        // 未识别出任何凭据字段（非登录/注册表单）→ 不触发。
+        if (!matchResult.hasCredentials) {
             return InternalFillResponse(availability = FillAvailability.UNSUPPORTED_FIELDS)
         }
 
-        // 有输入框但 vault 锁定 → 给出解锁入口（未登录的无关页面已在上面被过滤）。
-        // debug 级别：每次聚焦输入框都会触发，避免在已解锁场景刷屏。
+        // 有凭据字段但 vault 锁定 → 给出解锁入口。
         if (!sessionState.hasFullSecureSessionAccess()) {
-            AppTelemetry.d(TAG, "Vault locked; fill request requires unlock")
             return InternalFillResponse(
                 availability = FillAvailability.LOCKED,
                 requireAuthentication = policy.requireAuthentication,
@@ -78,7 +70,6 @@ class FillRequestDispatcher(
 
         val candidates = candidateResolver.resolve(request, policy)
         if (candidates.isEmpty()) {
-            AppTelemetry.d(TAG, "No autofill candidates")
             return InternalFillResponse(
                 availability = FillAvailability.NO_MATCH,
                 requireAuthentication = policy.requireAuthentication,
@@ -94,7 +85,6 @@ class FillRequestDispatcher(
                 parentPackage = request.parentPackage,
             ),
         )
-        AppTelemetry.i(TAG, "Dispatched ${response.candidates.size} candidates")
         return response.copy(
             requireAuthentication = policy.requireAuthentication,
             savePromptsEnabled = policy.savePromptsEnabled,

@@ -2,6 +2,7 @@ package com.aozijx.passly.core.autofill
 
 import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
 import com.aozijx.passly.core.autofill.matcher.FieldMatchStrategy
+import com.aozijx.passly.core.autofill.matcher.HeuristicMatchStrategy
 import com.aozijx.passly.core.autofill.matcher.MatchResult
 import com.aozijx.passly.core.autofill.model.FillAvailability
 import com.aozijx.passly.core.autofill.model.InternalFillRequest
@@ -38,7 +39,7 @@ class FillRequestDispatcherTest {
             candidateResolver = CandidateResolver(EmptyCredentialRepository),
             fieldMatchStrategy = object : FieldMatchStrategy {
                 override fun match(request: InternalFillRequest) =
-                    MatchResult(hasEditableFields = false)
+                    MatchResult(hasCredentials = false)
             },
             responseFactory = ResponseFactory(),
             settingsRepository = DefaultSettingsRepository,
@@ -52,39 +53,56 @@ class FillRequestDispatcherTest {
     }
 
     @Test
-    fun `stylized page with editable fields triggers candidate lookup even without role hints`() =
-        runBlocking {
-            val dispatcher = FillRequestDispatcher(
-                sessionState = LockedSecureSessionAccessState(),
-                candidateResolver = CandidateResolver(EmptyCredentialRepository),
-                fieldMatchStrategy = object : FieldMatchStrategy {
-                    override fun match(request: InternalFillRequest) =
-                        MatchResult(
-                            roleMap = emptyMap(),
-                            hasCredentials = false,
-                            hasEditableFields = true,
-                        )
-                },
-                responseFactory = ResponseFactory(),
-                settingsRepository = DefaultSettingsRepository,
-            )
+    fun `plain text field without credential hints does not trigger autofill`() = runBlocking {
+        val dispatcher = FillRequestDispatcher(
+            sessionState = LockedSecureSessionAccessState(),
+            candidateResolver = CandidateResolver(EmptyCredentialRepository),
+            fieldMatchStrategy = HeuristicMatchStrategy(),
+            responseFactory = ResponseFactory(),
+            settingsRepository = DefaultSettingsRepository,
+        )
 
-            // 有可编辑输入框但 vault 锁定 → 走 LOCKED（而非 UNSUPPORTED_FIELDS），
-            // 样式化页面获得解锁入口，不再被"识别不出角色"掐断。
-            val response = dispatcher.dispatch(
-                InternalFillRequest(
-                    parentPackage = "com.example",
-                    fields = listOf(
-                        com.aozijx.passly.core.autofill.model.FieldDescriptor(
-                            viewId = "id/et_1",
-                            inputType = "TYPE_CLASS_TEXT",
-                        )
-                    ),
-                )
+        // 普通文本输入框（无 hint、无密码 inputType）→ 识别不出凭据角色 → 不触发。
+        val response = dispatcher.dispatch(
+            InternalFillRequest(
+                parentPackage = "com.example",
+                fields = listOf(
+                    com.aozijx.passly.core.autofill.model.FieldDescriptor(
+                        viewId = "id/et_1",
+                        inputType = "TYPE_CLASS_TEXT",
+                    )
+                ),
             )
+        )
 
-            assertEquals(FillAvailability.LOCKED, response.availability)
-        }
+        assertEquals(FillAvailability.UNSUPPORTED_FIELDS, response.availability)
+    }
+
+    @Test
+    fun `stylized password field triggers unlock by inputType`() = runBlocking {
+        val dispatcher = FillRequestDispatcher(
+            sessionState = LockedSecureSessionAccessState(),
+            candidateResolver = CandidateResolver(EmptyCredentialRepository),
+            fieldMatchStrategy = HeuristicMatchStrategy(),
+            responseFactory = ResponseFactory(),
+            settingsRepository = DefaultSettingsRepository,
+        )
+
+        // 样式化页面的密码框：id 无关键字，但 inputType 是密码类型 → 应触发解锁入口。
+        val response = dispatcher.dispatch(
+            InternalFillRequest(
+                parentPackage = "com.example",
+                fields = listOf(
+                    com.aozijx.passly.core.autofill.model.FieldDescriptor(
+                        viewId = "id/et_1",
+                        inputType = "TYPE_CLASS_TEXT TEXT_VARIATION_PASSWORD",
+                    )
+                ),
+            )
+        )
+
+        assertEquals(FillAvailability.LOCKED, response.availability)
+    }
 
     private class LockedSecureSessionAccessState : SecureSessionAccessState {
         override val authenticationState =
