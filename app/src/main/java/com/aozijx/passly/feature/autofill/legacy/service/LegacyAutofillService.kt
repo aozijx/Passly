@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.autofill.framework.service
+package com.aozijx.passly.feature.autofill.legacy.service
 
 import android.os.CancellationSignal
 import android.service.autofill.AutofillService
@@ -10,9 +10,9 @@ import com.aozijx.passly.core.autofill.di.Heuristic
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.feature.autofill.usecase.AutofillUseCases
-import com.aozijx.passly.feature.autofill.framework.service.adapter.LegacyPlatformAdapter
-import com.aozijx.passly.feature.autofill.framework.service.parser.AutofillStructureParser
+import com.aozijx.passly.feature.autofill.shared.AutofillUseCases
+import com.aozijx.passly.feature.autofill.legacy.service.adapter.LegacyPlatformAdapter
+import com.aozijx.passly.feature.autofill.legacy.service.parser.AutofillStructureParser
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope

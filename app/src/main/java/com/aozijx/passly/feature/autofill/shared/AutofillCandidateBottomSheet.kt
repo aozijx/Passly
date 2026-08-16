@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.autofill
+package com.aozijx.passly.feature.autofill.shared
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke

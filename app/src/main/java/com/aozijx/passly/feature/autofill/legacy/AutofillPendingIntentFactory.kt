@@ -1,12 +1,12 @@
-package com.aozijx.passly.feature.autofill.shared
+package com.aozijx.passly.feature.autofill.legacy
 
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
-import com.aozijx.passly.feature.autofill.framework.AutofillFillActivity
-import com.aozijx.passly.feature.autofill.framework.service.parser.ParsedStructure
+import com.aozijx.passly.feature.autofill.legacy.AutofillFillActivity
+import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 
 /**
  * 自动填充统一 PendingIntent 工厂。

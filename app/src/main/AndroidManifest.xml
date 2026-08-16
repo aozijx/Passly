@@ -43,7 +43,7 @@
         </activity>
 
         <activity
-            android:name=".feature.autofill.framework.AutofillFillActivity"
+            android:name=".feature.autofill.legacy.AutofillFillActivity"
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="standard"
@@ -61,7 +61,7 @@
             tools:targetApi="34" />
 
         <service
-            android:name=".feature.autofill.framework.service.LegacyAutofillService"
+            android:name=".feature.autofill.legacy.service.LegacyAutofillService"
             android:enabled="true"
             android:exported="true"
             android:label="@string/app_name"

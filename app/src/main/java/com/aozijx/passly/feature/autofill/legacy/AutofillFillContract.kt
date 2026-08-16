@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.autofill.framework
+package com.aozijx.passly.feature.autofill.legacy
 
 import android.service.autofill.Dataset
 import android.service.autofill.FillResponse

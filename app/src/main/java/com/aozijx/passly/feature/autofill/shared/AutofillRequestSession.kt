@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.autofill
+package com.aozijx.passly.feature.autofill.shared
 
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose

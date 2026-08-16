@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.autofill.framework.service.parser
+package com.aozijx.passly.feature.autofill.legacy.service.parser
 
 import android.app.assist.AssistStructure
 import android.service.autofill.FillContext

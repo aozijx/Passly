@@ -13,10 +13,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.domain.access.model.AuthenticationResult
-import com.aozijx.passly.feature.autofill.usecase.CreatePasswordCredentialResult
-import com.aozijx.passly.feature.autofill.usecase.CredentialResponseUseCases
-import com.aozijx.passly.feature.autofill.usecase.PasswordCredentialResult
-import com.aozijx.passly.feature.autofill.AutofillRequestSession
+import com.aozijx.passly.feature.autofill.shared.AutofillRequestSession
 import com.aozijx.passly.feature.autofill.credential.service.CredentialBeginGetHandler
 import com.aozijx.passly.feature.autofill.credential.service.CredentialResponseFactory
 import dagger.hilt.android.lifecycle.HiltViewModel

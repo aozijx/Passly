@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.autofill.framework
+package com.aozijx.passly.feature.autofill.legacy
 
 import android.content.Intent
 import android.os.Bundle
@@ -15,7 +15,7 @@ import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.ui.components.auth.AuthenticationHost
 import com.aozijx.passly.core.ui.theme.AppTheme
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
-import com.aozijx.passly.feature.autofill.AutofillCandidateBottomSheet
+import com.aozijx.passly.feature.autofill.shared.AutofillCandidateBottomSheet
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch

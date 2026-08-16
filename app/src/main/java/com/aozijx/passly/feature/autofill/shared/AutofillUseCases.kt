@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.autofill.usecase
+package com.aozijx.passly.feature.autofill.shared
 
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.repository.autofill.AutofillStatusRepository

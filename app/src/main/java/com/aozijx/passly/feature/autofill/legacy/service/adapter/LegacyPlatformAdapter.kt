@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.autofill.framework.service.adapter
+package com.aozijx.passly.feature.autofill.legacy.service.adapter
 
 import android.content.Context
 import android.service.autofill.FillResponse
@@ -6,8 +6,8 @@ import com.aozijx.passly.core.autofill.model.FieldDescriptor
 import com.aozijx.passly.core.autofill.model.InternalFillRequest
 import com.aozijx.passly.core.autofill.model.InternalFillResponse
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
-import com.aozijx.passly.feature.autofill.framework.service.builder.LegacyResponseFactory
-import com.aozijx.passly.feature.autofill.framework.service.parser.ParsedStructure
+import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseFactory
+import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 import javax.inject.Inject
 import javax.inject.Singleton
 

@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.autofill.framework
+package com.aozijx.passly.feature.autofill.legacy
 
 import android.content.Context
 import android.service.autofill.FillResponse
@@ -9,13 +9,13 @@ import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.feature.autofill.usecase.AutofillUseCases
+import com.aozijx.passly.feature.autofill.shared.AutofillUseCases
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
-import com.aozijx.passly.feature.autofill.AutofillRequestSession
-import com.aozijx.passly.feature.autofill.framework.service.builder.LegacyDatasetFactory
-import com.aozijx.passly.feature.autofill.framework.service.builder.LegacyResponseFactory
+import com.aozijx.passly.feature.autofill.shared.AutofillRequestSession
+import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyDatasetFactory
+import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseFactory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow

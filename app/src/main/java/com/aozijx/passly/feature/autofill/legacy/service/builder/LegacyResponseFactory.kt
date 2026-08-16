@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.autofill.framework.service.builder
+package com.aozijx.passly.feature.autofill.legacy.service.builder
 
 import android.content.Context
 import android.service.autofill.Dataset
@@ -11,8 +11,8 @@ import com.aozijx.passly.core.autofill.model.InternalFillResponse
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.domain.entry.model.query.MatchType
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
-import com.aozijx.passly.feature.autofill.framework.service.parser.ParsedStructure
-import com.aozijx.passly.feature.autofill.shared.AutofillPendingIntentFactory
+import com.aozijx.passly.feature.autofill.legacy.AutofillPendingIntentFactory
+import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 
 /**
  * Legacy 自动填充响应工厂：负责将 InternalFillResponse 转换为 Android FillResponse。

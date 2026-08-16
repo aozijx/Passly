@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.autofill.framework
+package com.aozijx.passly.feature.autofill.legacy
 
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 

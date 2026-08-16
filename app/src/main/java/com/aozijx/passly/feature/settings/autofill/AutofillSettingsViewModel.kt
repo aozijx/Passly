@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.settings.autofill
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.feature.autofill.usecase.AutofillUseCases
+import com.aozijx.passly.feature.autofill.shared.AutofillUseCases
 import com.aozijx.passly.domain.settings.model.SettingsCommand
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel

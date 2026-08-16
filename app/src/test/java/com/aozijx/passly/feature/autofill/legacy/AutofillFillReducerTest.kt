@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.autofill.framework
+package com.aozijx.passly.feature.autofill.legacy
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
