@@ -29,7 +29,9 @@ class BiometricMethodExecutor @Inject constructor(
         host: AuthUiHost
     ): MethodExecutionResult {
         val requiresDek = request.purpose == AuthenticationPurpose.UNLOCK_VAULT ||
-            request.purpose == AuthenticationPurpose.RECOVER_DATABASE
+            request.purpose == AuthenticationPurpose.RECOVER_DATABASE ||
+            // 自动填充认证后需要读取并解密候选凭据，必须解锁 DEK。
+            request.purpose == AuthenticationPurpose.AUTOFILL
         if (!requiresDek) return hostResult(request, host)
         val envelope = vaultBootstrapStore.load(EnvelopeType.BIOMETRIC)
             ?: return failure(AuthenticationFailureCode.METHOD_UNAVAILABLE, request)

@@ -299,9 +299,9 @@ class VaultSessionController @Inject constructor(
      * 根据 [LockReason] 决定锁定强度。
      * 使用 [SecureSessionState] 强度比较，仅当目标强度高于当前状态时才执行。
      *
-     * - SOFT_LOCKED（USER / IDLE_TIMEOUT / AUTOFILL_REQUEST_FINISHED）：
-     *   阻止新租约，数据库保持打开
-     * - SEALED（BACKGROUND / INTEGRITY_FAILURE / APP_EXIT）：排干 + 关库 + 擦 DEK
+     * - SOFT_LOCKED（USER / IDLE_TIMEOUT）：阻止新租约，数据库保持打开
+     * - SEALED（AUTOFILL_REQUEST_FINISHED / BACKGROUND / INTEGRITY_FAILURE / APP_EXIT）：
+     *   排干 + 关库 + 擦 DEK
      */
     suspend fun lock(reason: LockReason) {
         mutex.withLock {
@@ -366,9 +366,11 @@ class VaultSessionController @Inject constructor(
 
     private fun LockReason.toLockLevel(): SecureSessionState = when (this) {
         LockReason.USER,
-        LockReason.IDLE_TIMEOUT,
-        LockReason.AUTOFILL_REQUEST_FINISHED -> SecureSessionState.SOFT_LOCKED
+        LockReason.IDLE_TIMEOUT -> SecureSessionState.SOFT_LOCKED
 
+        // autofill 场景临时解锁的会话必须在填充结束后彻底回收
+        // （关库 + 擦 DEK），避免解锁泄漏到下一个请求。
+        LockReason.AUTOFILL_REQUEST_FINISHED,
         LockReason.BACKGROUND,
         LockReason.RECOVERY_EXIT,
         LockReason.INTEGRITY_FAILURE,

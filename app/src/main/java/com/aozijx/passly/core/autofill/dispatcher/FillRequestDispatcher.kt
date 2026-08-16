@@ -61,13 +61,14 @@ class FillRequestDispatcher(
         val matchResult = fieldMatchStrategy.match(request)
         // 页面没有任何可编辑输入框才判定为不支持（不打扰无关页面）。
         if (!matchResult.hasEditableFields) {
-            AppTelemetry.i(TAG, "No editable fields on page")
+            AppTelemetry.d(TAG, "No editable fields on page")
             return InternalFillResponse(availability = FillAvailability.UNSUPPORTED_FIELDS)
         }
 
         // 有输入框但 vault 锁定 → 给出解锁入口（未登录的无关页面已在上面被过滤）。
+        // debug 级别：每次聚焦输入框都会触发，避免在已解锁场景刷屏。
         if (!sessionState.hasFullSecureSessionAccess()) {
-            AppTelemetry.i(TAG, "Vault locked; fill request requires unlock")
+            AppTelemetry.d(TAG, "Vault locked; fill request requires unlock")
             return InternalFillResponse(
                 availability = FillAvailability.LOCKED,
                 requireAuthentication = policy.requireAuthentication,
@@ -77,7 +78,7 @@ class FillRequestDispatcher(
 
         val candidates = candidateResolver.resolve(request, policy)
         if (candidates.isEmpty()) {
-            AppTelemetry.i(TAG, "No autofill candidates")
+            AppTelemetry.d(TAG, "No autofill candidates")
             return InternalFillResponse(
                 availability = FillAvailability.NO_MATCH,
                 requireAuthentication = policy.requireAuthentication,

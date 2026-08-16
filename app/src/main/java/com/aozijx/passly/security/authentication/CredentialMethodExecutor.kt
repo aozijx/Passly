@@ -62,7 +62,10 @@ class CredentialMethodExecutor @Inject constructor(
                         }
                     }
                     when (request.purpose) {
-                        AuthenticationPurpose.UNLOCK_VAULT -> {
+                        AuthenticationPurpose.UNLOCK_VAULT,
+                        AuthenticationPurpose.AUTOFILL -> {
+                            // 自动填充与完整解锁一样：验证密码并临时解锁 vault 会话，
+                            // 供候选检索与凭据解密使用（AutofillRequestSession 负责回收）。
                             if (session.commitUnlock(type, ownedDek, request.id.value)) {
                                 attemptLimiter.recordSuccess(method)
                                 MethodExecutionResult.Success(method)
