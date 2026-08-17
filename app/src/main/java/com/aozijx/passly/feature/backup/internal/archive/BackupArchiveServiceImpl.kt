@@ -1,19 +1,18 @@
 package com.aozijx.passly.feature.backup.internal.archive
 
-import com.aozijx.passly.feature.backup.internal.archive.di.BackupIoDispatcher
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.OperationCode
 import com.aozijx.passly.core.telemetry.reporting.AppErrorReporter
 import com.aozijx.passly.core.telemetry.reporting.ErrorReportContext
+import com.aozijx.passly.feature.backup.internal.archive.di.BackupIoDispatcher
 import com.aozijx.passly.feature.backup.internal.archive.format.BackupFormatRegistry
 import com.aozijx.passly.feature.backup.internal.archive.io.BackupFileStore
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.DatabaseSnapshotReader
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.DatabaseSnapshotRestorer
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
-import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveService
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -59,7 +58,7 @@ internal class BackupArchiveServiceImpl @Inject constructor(
             } finally {
                 bundle.clearResourceData()
             }
-        }.onFailure { report(it, "backup.export") }
+        }.onFailure { report(it, "backup_export") }
     }
 
     override suspend fun import(
@@ -79,11 +78,11 @@ internal class BackupArchiveServiceImpl @Inject constructor(
             } finally {
                 payload.fill(0)
             }
-        }.onFailure { report(it, "backup.import") }
+        }.onFailure { report(it, "backup_import") }
     }
 
     override suspend fun checkDirectoryWritable(uri: String): AppResult<Unit> =
-        fileStore.checkWritable(uri).onFailure { report(it, "backup.checkWritable") }
+        fileStore.checkWritable(uri).onFailure { report(it, "backup_check_writable") }
 
     private fun validatePassword(required: Boolean, password: CharArray?) {
         if (required && (password == null || password.isEmpty())) throw BackupFailed()

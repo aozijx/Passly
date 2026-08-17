@@ -29,7 +29,7 @@ internal class UpdateEntryExecutor @Inject constructor(
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
     suspend fun execute(id: String, expectedVersion: Int, changes: EntryUpdate): AppResult<Unit> {
-        val result = databaseTransactions.write("entry.update") {
+        val result = databaseTransactions.write("entry_update") {
             val entity = entryQueryDao().getById(id) ?: throw NotFound()
             val oldProfile = summaryCodec.decrypt(entity.summaryBlob, id)
             val oldSecret = secretFieldStore.readAll(this, id)

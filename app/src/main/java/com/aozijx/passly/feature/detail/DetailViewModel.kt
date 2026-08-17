@@ -93,8 +93,9 @@ class DetailViewModel @Inject constructor(
             }
 
             is DetailIntent.CommitEntryUpdate -> {
-                refreshKeepingTitleEdit(event.entry)
-                emitEntryUpdated(event.entry)
+                viewModelScope.launch {
+                    persistEntryUpdate(event.entry)
+                }
             }
 
             DetailIntent.StartTitleEdit -> {
@@ -116,18 +117,22 @@ class DetailViewModel @Inject constructor(
                 if (newTitle.isBlank() || newTitle == current.title) {
                     mutate(DetailMutation.TitleEditingCancelled)
                 } else {
-                    commitEntryUpdate(
-                        current.copy(profile = current.profile.copy(title = newTitle)),
-                        isEditingTitle = false
-                    )
+                    viewModelScope.launch {
+                        persistEntryUpdate(
+                            current.copy(profile = current.profile.copy(title = newTitle)),
+                            isEditingTitle = false
+                        )
+                    }
                 }
             }
 
             DetailIntent.ToggleFavorite -> {
                 val current = _uiState.value.entry ?: return
-                commitEntryUpdate(
-                    current.copy(profile = current.profile.copy(favorite = !current.favorite))
-                )
+                viewModelScope.launch {
+                    persistEntryUpdate(
+                        current.copy(profile = current.profile.copy(favorite = !current.favorite))
+                    )
+                }
             }
 
             is DetailIntent.RevealField -> {
@@ -151,7 +156,7 @@ class DetailViewModel @Inject constructor(
                         RevealedFieldKey.PASSWORD -> current.withLoginPassword(event.newValue)
                         else -> current
                     }
-                    handleIntent(DetailIntent.CommitEntryUpdate(updated))
+                    persistEntryUpdate(updated)
                     setRevealedField(event.key, event.newValue)
                 }
             }
@@ -318,10 +323,25 @@ class DetailViewModel @Inject constructor(
     private fun ActivityType.clearsRevealedFields(): Boolean =
         this == ActivityType.COPY_PASSWORD || this == ActivityType.COPY_USERNAME
 
-    private fun commitEntryUpdate(entry: Entry, isEditingTitle: Boolean = _uiState.value.isEditingTitle) {
-        val editedTitle = if (isEditingTitle) _uiState.value.editedTitle else entry.title
-        refreshFromEntry(entry, isEditingTitle = isEditingTitle, editedTitle = editedTitle)
-        emitEntryUpdated(entry)
+    private suspend fun persistEntryUpdate(
+        entry: Entry,
+        isEditingTitle: Boolean = _uiState.value.isEditingTitle
+    ) {
+        if (!accessPolicy.hasFullAccess()) return
+        val result = entryCommandRepository.updateEntry(
+            entry.id,
+            entry.version,
+            EntryUpdate(profile = entry.profile, secret = entry.secret)
+        )
+        if (result.isSuccess) {
+            val latest = entryQueryRepository.getById(entry.id) ?: entry
+            refreshFromEntry(
+                latest,
+                isEditingTitle = isEditingTitle,
+                editedTitle = if (isEditingTitle) _uiState.value.editedTitle else latest.title
+            )
+            emitEntryUpdated(latest)
+        }
     }
 
     private fun emitEntryUpdated(entry: Entry) {

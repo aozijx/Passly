@@ -32,7 +32,7 @@ internal class BlindIndexMaintenance @Inject constructor(
     }
 
     override suspend fun rebuildIndex(force: Boolean): AppResult<Int> =
-        databaseTransactions.write("entry.rebuildIndex") {
+        databaseTransactions.write("entry_rebuild_index") {
             val staleEntryIds = if (force) {
                 entryQueryDao().getActive().map { it.entryId }
             } else {

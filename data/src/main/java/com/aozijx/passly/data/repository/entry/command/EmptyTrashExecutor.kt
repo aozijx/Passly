@@ -17,7 +17,7 @@ internal class EmptyTrashExecutor @Inject constructor(
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
     suspend fun execute(): AppResult<Int> {
-        val result = databaseTransactions.write("entry.emptyTrash") {
+        val result = databaseTransactions.write("entry_empty_trash") {
             val deletedEntries = entryQueryDao().getDeleted()
             val resources = deletedEntries.map { entity ->
                 val summary = summaryCodec.decrypt(entity.summaryBlob, entity.entryId)

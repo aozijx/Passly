@@ -140,7 +140,7 @@ internal class RoomEntryRevisionRepository @Inject constructor(
         fieldKeys: Set<SensitiveFieldKey>,
         permit: AuthorizationPermit,
     ): AppResult<Unit> {
-        val result = databaseTransactions.write("entry-revision.restore-sensitive") {
+        val result = databaseTransactions.write("entry_revision_restore_sensitive") {
             val revision = entryRevisionQueryDao().getById(entryId.value, revisionId)
                 ?: throw NotFound()
             entryQueryDao().getById(entryId.value) ?: throw NotFound()

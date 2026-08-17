@@ -22,7 +22,7 @@ internal class DeleteEntryPermanentlyExecutor @Inject constructor(
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
     suspend fun execute(id: String, expectedVersion: Int): AppResult<Unit> {
-        val result = databaseTransactions.write("entry.deletePermanently") {
+        val result = databaseTransactions.write("entry_delete_permanently") {
             val entity = entryQueryDao().getById(id)
                 ?: throw NotFound()
             if (entity.deletedAt == null) throw ValidationError()

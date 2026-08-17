@@ -27,7 +27,7 @@ internal class CreateEntryExecutor @Inject constructor(
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
     suspend fun execute(entry: Entry): AppResult<EntryId> {
-        val result = databaseTransactions.write("entry.create") {
+        val result = databaseTransactions.write("entry_create") {
             val now = clock.now()
             val entryId = entry.id.value
             val entity = EntryEntity(

@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -56,9 +54,11 @@ fun SensitiveFieldCard(
                     if (isEditing) Modifier
                     else Modifier.combinedClickable(
                         onLongClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onValueChange(revealedValue ?: "")
-                            onEditToggle(true)
+                            if (revealedValue != null) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onValueChange(revealedValue)
+                                onEditToggle(true)
+                            }
                         },
                         onClick = onReveal
                     )
@@ -113,15 +113,6 @@ fun SensitiveFieldCard(
                         Icon(
                             imageVector = Icons.Default.ContentCopy,
                             contentDescription = stringResource(R.string.copy),
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.outline
-                        )
-                    }
-
-                    IconButton(onClick = onReveal, modifier = Modifier.size(36.dp)) {
-                        Icon(
-                            imageVector = if (revealedValue != null) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = null,
                             modifier = Modifier.size(18.dp),
                             tint = MaterialTheme.colorScheme.outline
                         )
