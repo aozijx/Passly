@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.repository.autofill
 
 import com.aozijx.passly.core.platform.PackageUtils
-import com.aozijx.passly.data.repository.autofill.CredentialServiceRepository
 import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.query.buildRecentEntryIdIntersectionQuery
@@ -58,6 +57,11 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
                 }
                 domain?.let {
                     addAll(findMatchingIds(it, listOf(LookupField.DOMAIN, LookupField.URL), boundedLimit * 4))
+                    // 基域兜底：请求是子域（accounts.google.com → google.com）或条目是
+                    // 子域时，仅精确域名的盲索引查询会漏掉同基域的候选。
+                    extractBaseDomain(it)?.takeIf { base -> base != it }?.let { base ->
+                        addAll(findMatchingIds(base, listOf(LookupField.DOMAIN, LookupField.URL), boundedLimit * 4))
+                    }
                 }
             }.distinct()
             val entities = when {
@@ -65,10 +69,10 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
                 allowUnmatched -> entryQueryDao().getActiveByType(EntryType.LOGIN).take(boundedLimit)
                 else -> emptyList()
             }
-            val secrets = entities.associate { it.entryId to secretFieldStore.readAll(this, it.entryId) }
+            val secrets = entities.associateBy({ it.entryId }, { secretFieldStore.readAll(this, it.entryId) })
 
             entities
-                .filter { it.deletedAt == null && it.entryType == EntryType.LOGIN }
+                .filter { (it.deletedAt == null) && (it.entryType == EntryType.LOGIN) }
                 .mapNotNull { entity ->
                     val fullSecret = secrets[entity.entryId] ?: return@mapNotNull null
                     val secret = if (includeSecrets) fullSecret else fullSecret.redacted()
@@ -78,6 +82,7 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
                         secret,
                     )
                 }
+                .asSequence()
                 .mapNotNull { entry ->
                     val match = entry.match(applicationId, domain)
                     if (match.type == MatchType.UNKNOWN && !allowUnmatched) null
@@ -89,6 +94,7 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
                         .thenByDescending { it.entry.timestamps.updatedAtMs }
                 )
                 .take(boundedLimit)
+                .toList()
         }
     }
 
@@ -100,14 +106,14 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
         val uniqueIds = entryIds.distinct()
         return databaseSession.query {
             val entities = entryQueryDao().getByIds(uniqueIds).filter { it.deletedAt == null }
-            val entries = entities.mapNotNull { entity ->
+            val entries = entities.associate { entity ->
                 val fullSecret = secretFieldStore.readAll(this, entity.entryId)
                 entity.entryId to EntryAssembler.assembleFromDatabase(
                     entity,
                     profileCodec.decrypt(entity.summaryBlob, entity.entryId),
                     if (includeSecrets) fullSecret else fullSecret.redacted(),
                 )
-            }.toMap()
+            }
             uniqueIds.mapNotNull(entries::get)
         }
     }
@@ -123,7 +129,7 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
         if (usernameValue.isBlank() && passwordValue.isBlank()) return false
         val applicationId = normalizeApplicationId(packageName)
         val domain = normalizeDomain(webDomain)
-        val appLabel = applicationId?.let(packageUtils::getAppMetadata)?.appName
+        val appLabel = applicationId?.let(packageUtils::getAppMetadata)?.label
         val title = resolveAutofillCredentialTitle(
             applicationId = applicationId,
             appLabel = appLabel,
@@ -170,11 +176,24 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
             }) {
             return CredentialMatch(MatchType.APPLICATION_ID, applicationId = applicationId)
         }
-        if (domain != null && buildSet {
+        if (domain != null) {
+            val entryDomains = buildSet {
                 addAll(profile.associations.domains)
                 profile.associations.primaryUrl?.let(::add)
-            }.any { normalizeDomain(it) == domain }) {
-            return CredentialMatch(MatchType.WEB_DOMAIN, domain = domain)
+            }
+            if (entryDomains.any { normalizeDomain(it) == domain }) {
+                return CredentialMatch(MatchType.WEB_DOMAIN, domain = domain)
+            }
+            // 基域/子域匹配：accounts.google.com 与 myaccount.google.com 同基域，
+            // 允许互相匹配（对齐 Bitwarden 的 SUBDOMAIN/BASE_DOMAIN 策略）。
+            val targetBase = extractBaseDomain(domain)
+            if (targetBase != null &&
+                entryDomains.any { entry ->
+                    normalizeDomain(entry)?.let { extractBaseDomain(it) } == targetBase
+                }
+            ) {
+                return CredentialMatch(MatchType.WEB_DOMAIN, domain = domain)
+            }
         }
         return CredentialMatch(MatchType.UNKNOWN)
     }
@@ -196,6 +215,23 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
                 val uri = if ("://" in normalized) normalized else "https://$normalized"
                 URI(uri).host?.lowercase()?.removeSuffix(".")
             }.getOrNull() ?: normalized.substringBefore('/').substringBefore(':')
+        }
+
+        /** 提取基域（含双段 TLD 表，如 co.uk / com.cn / com.au）。 */
+        fun extractBaseDomain(host: String?): String? {
+            val normalized = normalizeDomain(host) ?: return null
+            val parts = normalized.split(".").filter { it.isNotBlank() }
+            if (parts.size < 2) return normalized
+            val twoPartTlds = setOf(
+                "co.uk", "com.cn", "net.cn", "org.cn", "gov.cn", "ac.uk",
+                "co.jp", "ne.jp", "or.jp", "com.au", "net.au", "org.au",
+            )
+            val lastTwo = parts.takeLast(2).joinToString(".")
+            return if (parts.size >= 3 && lastTwo in twoPartTlds) {
+                parts.takeLast(3).joinToString(".")
+            } else {
+                lastTwo
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.aozijx.passly.core.platform
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -8,7 +9,6 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.LruCache
 import androidx.core.graphics.drawable.toBitmap
-import androidx.core.graphics.scale
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.EventLevel
 import com.aozijx.passly.core.telemetry.TelemetryReporter
@@ -28,8 +28,11 @@ class PackageUtils @Inject constructor(
     private val packageManager: PackageManager = context.packageManager
 
     private val iconCache = LruCache<String, Bitmap>(MAX_ICON_CACHE_SIZE)
-    private val metadataCache =
-        LruCache<String, AppMetadata>(MAX_METADATA_CACHE_SIZE)
+    private val metadataCache = LruCache<String, AppMetadata>(MAX_METADATA_CACHE_SIZE)
+
+    private val targetIconSize: Int by lazy {
+        (DEFAULT_ICON_SIZE_DP * context.resources.displayMetrics.density).toInt()
+    }
 
     companion object {
         private const val MAX_ICON_CACHE_SIZE = 60
@@ -38,46 +41,80 @@ class PackageUtils @Inject constructor(
     }
 
     data class AppMetadata(
-        val appName: String,
+        val label: String,
         val packageName: String
     )
 
     fun getAppMetadata(packageName: String): AppMetadata? {
-        val cached = metadataCache.get(packageName)
+        val cached = metadataCache[packageName]
         if (cached != null) return cached
 
-        return try {
-            val appInfo = packageManager.getApplicationInfo(packageName, 0)
-            val appName = packageManager.getApplicationLabel(appInfo).toString()
-            val metadata = AppMetadata(appName = appName, packageName = packageName)
-            metadataCache.put(packageName, metadata)
-            metadata
-        } catch (e: PackageManager.NameNotFoundException) {
-            report(EventLevel.WARN, "platform.package_not_found", e)
-            null
-        }
+        val label = resolveAppLabel(packageName) ?: return null
+        val metadata = AppMetadata(label = label, packageName = packageName)
+        metadataCache.put(packageName, metadata)
+        return metadata
     }
 
     /**
-     * 只列出带 Launcher 入口的应用，不申请 QUERY_ALL_PACKAGES。
+     * Resolves the display label for a package with fallbacks and Android 11+ visibility awareness.
      *
-     * 这既满足用户选择自动填充关联包名的需求，也避免枚举设备上与此功能无关的软件。
+     * 1. Check metadata cache.
+     * 2. Use ApplicationInfo.
+     * 3. Use Launcher Intent query.
+     * 4. Return null if no descriptive label is found.
      */
-    fun getLaunchableApps(): List<AppMetadata> {
+    @SuppressLint("QueryPermissionsNeeded")
+    private fun resolveAppLabel(packageName: String): String? {
+        // 1. Check cache (usually warmed up by getLaunchableApps)
+        metadataCache.get(packageName)?.label?.let { return it }
+
+        // 2. ApplicationInfo check (handles non-launcher system components)
+        runCatching {
+            packageManager.getApplicationInfo(packageName, 0)
+        }.getOrNull()?.let { appInfo ->
+            packageManager.getApplicationLabel(appInfo).toString()
+                .trim()
+                .takeIf { it.isNotBlank() && !it.equals(packageName, ignoreCase = true) }
+                ?.let { return it }
+        }
+
+        // 3. Launcher query fallback (most reliable for third-party apps)
         val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         return packageManager.queryIntentActivities(launcherIntent, 0)
+            .asSequence()
+            .filter { it.activityInfo?.packageName == packageName }
+            .firstNotNullOfOrNull { resolveInfo ->
+                resolveInfo.loadLabel(packageManager).toString()
+                    .trim()
+                    .takeIf { it.isNotBlank() }
+            }
+            ?.takeUnless { it.equals(packageName, ignoreCase = true) }
+    }
+
+    /**
+     * Returns a list of apps with launcher activities.
+     */
+    @SuppressLint("QueryPermissionsNeeded")
+    fun getLaunchableApps(): List<AppMetadata> {
+        val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        val result = packageManager.queryIntentActivities(launcherIntent, 0)
+            .asSequence()
             .mapNotNull { resolveInfo ->
                 val packageName = resolveInfo.activityInfo?.packageName ?: return@mapNotNull null
-                val appName = resolveInfo.loadLabel(packageManager).toString()
-                    .takeIf(String::isNotBlank)
-                    ?: packageName
-                AppMetadata(appName = appName, packageName = packageName)
+                val label = resolveInfo.loadLabel(packageManager).toString()
+                    .takeIf { it.isNotBlank() } ?: packageName
+                AppMetadata(label = label, packageName = packageName)
             }
-            .distinctBy(AppMetadata::packageName)
+            .distinctBy { it.packageName }
             .sortedWith(
-                compareBy<AppMetadata> { it.appName.lowercase() }
-                    .thenBy(AppMetadata::packageName)
+                compareBy<AppMetadata> { it.label.lowercase() }
+                    .thenBy { it.packageName }
             )
+            .toList()
+
+        // Warm up cache
+        result.forEach { metadataCache.put(it.packageName, it) }
+        return result
     }
 
     fun loadIcon(packageName: String): Bitmap? {
@@ -100,28 +137,18 @@ class PackageUtils @Inject constructor(
     }
 
     private fun convertDrawableToBitmap(drawable: Drawable): Bitmap? {
-        return when (drawable) {
-            is BitmapDrawable -> {
-                val bitmap = drawable.bitmap
-                val density = context.resources.displayMetrics.density
-                val targetSize = (DEFAULT_ICON_SIZE_DP * density).toInt()
-                if (bitmap.width == targetSize && bitmap.height == targetSize) {
-                    bitmap
-                } else {
-                    bitmap.scale(targetSize, targetSize)
-                }
+        return try {
+            if (drawable is BitmapDrawable &&
+                (drawable.bitmap.width == targetIconSize) &&
+                (drawable.bitmap.height == targetIconSize)
+            ) {
+                drawable.bitmap
+            } else {
+                drawable.toBitmap(targetIconSize, targetIconSize)
             }
-
-            else -> {
-                val density = context.resources.displayMetrics.density
-                val targetSize = (DEFAULT_ICON_SIZE_DP * density).toInt()
-                try {
-                    drawable.toBitmap(targetSize, targetSize)
-                } catch (e: Exception) {
-                    report(EventLevel.ERROR, "platform.package_icon_decode_failed", e)
-                    null
-                }
-            }
+        } catch (e: Exception) {
+            report(EventLevel.ERROR, "platform.package_icon_decode_failed", e)
+            null
         }
     }
 
