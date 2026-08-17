@@ -28,18 +28,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.HiddenMask
-import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
-import com.aozijx.passly.feature.detail.ui.components.DetailItem
 import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
-import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
+import com.aozijx.passly.feature.detail.ui.components.DetailItem
 
 @Composable
 fun SeedPhraseSection(
-    entry: Entry,
     hasSeedPhrase: Boolean,
     revealedSeedPhrase: String?,
     onSeedPhraseRevealed: (String?) -> Unit,
@@ -61,11 +58,7 @@ fun SeedPhraseSection(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
             label = stringResource(R.string.seed_phrase_title),
-            value = if (revealedSeedPhrase != null) {
-                stringResource(R.string.seed_phrase_revealed)
-            } else {
-                HiddenMask.DEFAULT
-            },
+            value = revealedSeedPhrase?.let { stringResource(R.string.seed_phrase_revealed) },
             isRevealed = revealedSeedPhrase != null,
             onCopy = {
                 copySensitiveField(

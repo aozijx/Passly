@@ -24,10 +24,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
-import com.aozijx.passly.core.ui.components.HiddenMask
+import com.aozijx.passly.core.ui.components.MaskedText
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -90,7 +92,7 @@ fun SshKeySection(
         } else {
             DetailItem(
                 label = passphraseLabel,
-                value = revealedPassword ?: HiddenMask.DEFAULT,
+                value = revealedPassword,
                 isRevealed = revealedPassword != null,
                 onCopy = {
                     copySensitiveField(
@@ -154,14 +156,12 @@ fun SshKeySection(
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
-                Text(
-                    text = if (revealedSshPrivateKey != null) {
-                        revealedSshPrivateKey.take(60) + "..."
-                    } else {
-                        HiddenMask.DEFAULT
-                    },
+                MaskedText(
+                    text = revealedSshPrivateKey?.take(60)?.plus("..."),
+                    isRevealed = revealedSshPrivateKey != null,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontFamily = if (revealedSshPrivateKey != null) FontFamily.Monospace else FontFamily.Default,
+                    textAlign = TextAlign.Start,
+                    fontWeight = FontWeight.Normal,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp)

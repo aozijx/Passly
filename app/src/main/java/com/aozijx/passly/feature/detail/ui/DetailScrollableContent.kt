@@ -9,18 +9,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.otp.OtpAuthUriCodec
-import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
-import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
+import com.aozijx.passly.feature.detail.internal.copySensitiveField
 import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 import com.aozijx.passly.feature.detail.ui.components.MetadataSection
 import com.aozijx.passly.feature.detail.ui.sections.ActivityTimelineSection
@@ -38,6 +41,7 @@ import com.aozijx.passly.feature.detail.ui.sections.SeedPhraseSection
 import com.aozijx.passly.feature.detail.ui.sections.SshKeySection
 import com.aozijx.passly.feature.detail.ui.sections.TotpSection
 import com.aozijx.passly.feature.detail.ui.sections.WifiSection
+import com.aozijx.passly.feature.vault.model.OtpUiState
 
 @Composable
 fun DetailScrollableContent(
@@ -82,17 +86,41 @@ fun DetailScrollableContent(
 
         if (DetailSectionKey.CREDENTIAL in registeredSections) {
             item {
+                val context = LocalContext.current
+                val actionHandler = DetailSectionActionHandler(onAuthenticate, onEvent)
+                val revealedUsername = uiState.revealed(RevealedFieldKey.USERNAME)
+                val revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD)
+
                 CredentialSection(
-                    item = entry,
-                    hasPasswordField = SensitiveFieldKey.PASSWORD in uiState.sensitiveFieldKeys,
-                    onAuthenticate = onAuthenticate,
+                    showUsername = entry.username.isNotBlank() || (SensitiveFieldKey.PASSWORD !in uiState.sensitiveFieldKeys),
+                    showPassword = (SensitiveFieldKey.PASSWORD in uiState.sensitiveFieldKeys) || entry.type != EntryType.LOGIN,
+                    usernameLabel = stringResource(R.string.field_username),
+                    passwordLabel = stringResource(R.string.password_label),
+                    revealedUsername = revealedUsername,
+                    revealedPassword = revealedPassword,
                     editState = editState,
-                    revealedUsername = uiState.revealed(RevealedFieldKey.USERNAME),
-                    revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
-                    onUsernameRevealed = { revealField(RevealedFieldKey.USERNAME, it) },
-                    onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, it) },
-                    onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
-                    onEvent = onEvent
+                    onUsernameClick = { onEvent(DetailIntent.ToggleVisibility(RevealedFieldKey.USERNAME)) },
+                    onPasswordClick = { onEvent(DetailIntent.ToggleVisibility(RevealedFieldKey.PASSWORD)) },
+                    onUsernameCopy = {
+                        copySensitiveField(
+                            context = context,
+                            handler = actionHandler,
+                            fieldName = "username",
+                            revealedValue = revealedUsername,
+                            sourceValue = entry.username
+                        )
+                    },
+                    onPasswordCopy = {
+                        copySensitiveField(
+                            context = context,
+                            handler = actionHandler,
+                            fieldName = "password",
+                            revealedValue = revealedPassword,
+                            sourceValue = entry.secret.login?.password
+                        )
+                    },
+                    onUsernameSave = { onEvent(DetailIntent.SaveField(RevealedFieldKey.USERNAME, it)) },
+                    onPasswordSave = { onEvent(DetailIntent.SaveField(RevealedFieldKey.PASSWORD, it)) }
                 )
             }
         }
@@ -175,7 +203,6 @@ fun DetailScrollableContent(
         if (DetailSectionKey.SEED_PHRASE in registeredSections) {
             item {
                 SeedPhraseSection(
-                    entry = entry,
                     hasSeedPhrase = SensitiveFieldKey.SEED_PHRASE in uiState.sensitiveFieldKeys,
                     revealedSeedPhrase = uiState.revealed(RevealedFieldKey.SEED_PHRASE),
                     onSeedPhraseRevealed = {

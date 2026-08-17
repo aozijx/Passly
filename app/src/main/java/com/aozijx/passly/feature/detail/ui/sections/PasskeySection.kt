@@ -10,7 +10,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
-import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -43,12 +42,8 @@ fun PasskeySection(
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
             label = passkeyDataLabel,
-            value = when {
-                !hasPasskeyData -> notSet
-                revealedPasskeyData != null -> revealedPasskeyData
-                else -> HiddenMask.DEFAULT
-            },
-            isRevealed = revealedPasskeyData != null,
+            value = if (hasPasskeyData) revealedPasskeyData else notSet,
+            isRevealed = revealedPasskeyData != null || !hasPasskeyData,
             onCopy = {
                 copySensitiveField(
                     context = context,

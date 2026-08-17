@@ -10,7 +10,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
-import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -43,12 +42,8 @@ fun IdCardSection(
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
             label = idNumberLabel,
-            value = when {
-                !hasIdNumber -> notSet
-                revealedIdNumber != null -> revealedIdNumber
-                else -> HiddenMask.DEFAULT
-            },
-            isRevealed = revealedIdNumber != null,
+            value = if (hasIdNumber) revealedIdNumber else notSet,
+            isRevealed = revealedIdNumber != null || !hasIdNumber,
             onCopy = {
                 copySensitiveField(
                     context = context,

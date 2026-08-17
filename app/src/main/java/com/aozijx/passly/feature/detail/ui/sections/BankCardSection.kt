@@ -22,7 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
-import com.aozijx.passly.core.ui.components.HiddenMask
+import com.aozijx.passly.core.ui.components.MaskStyle
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
@@ -136,7 +136,7 @@ fun BankCardSection(
         } else {
             BankCardNumberItem(
                 label = stringResource(R.string.card_number),
-                value = revealedCardNumber ?: HiddenMask.DEFAULT,
+                value = revealedCardNumber,
                 isRevealed = revealedCardNumber != null,
                 onCopy = {
                     copySensitiveField(
@@ -188,8 +188,9 @@ fun BankCardSection(
         } else if (hasCardCvv) {
             DetailItem(
                 label = stringResource(R.string.card_cvv),
-                value = revealedCvv ?: HiddenMask.SHORT,
+                value = revealedCvv,
                 isRevealed = revealedCvv != null,
+                maskStyle = MaskStyle.SHORT,
                 onCopy = {
                     copySensitiveField(
                         context = context,
@@ -232,7 +233,7 @@ fun BankCardSection(
         if (hasPaymentPin) {
             DetailItem(
                 label = stringResource(R.string.payment_pin),
-                value = revealedPaymentPin ?: HiddenMask.DEFAULT,
+                value = revealedPaymentPin,
                 isRevealed = revealedPaymentPin != null,
                 onCopy = {
                     copySensitiveField(
@@ -300,7 +301,7 @@ fun BankCardSection(
 @Composable
 private fun BankCardNumberItem(
     label: String,
-    value: String,
+    value: String?,
     isRevealed: Boolean,
     onCopy: () -> Unit,
     onEdit: () -> Unit,
@@ -309,6 +310,7 @@ private fun BankCardNumberItem(
     label = label,
     value = value,
     isRevealed = isRevealed,
+    maskStyle = MaskStyle.DEFAULT,
     onCopy = onCopy,
     onEdit = onEdit,
     onReveal = onReveal

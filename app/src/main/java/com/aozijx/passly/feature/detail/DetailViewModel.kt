@@ -30,6 +30,8 @@ import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.page.internal.DetailEntryAnalyzer
 import com.aozijx.passly.feature.detail.internal.presentation.DetailMutation
 import com.aozijx.passly.feature.detail.internal.presentation.DetailReducer
+import com.aozijx.passly.feature.detail.internal.withDetailUsername
+import com.aozijx.passly.feature.detail.internal.withLoginPassword
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -132,6 +134,28 @@ class DetailViewModel @Inject constructor(
                 setRevealedField(event.key, event.value)
             }
 
+            is DetailIntent.ToggleVisibility -> {
+                val current = _uiState.value.revealed(event.key)
+                if (current != null) {
+                    setRevealedField(event.key, null)
+                } else {
+                    handleRevealLogic(event.key)
+                }
+            }
+
+            is DetailIntent.SaveField -> {
+                val current = _uiState.value.entry ?: return
+                viewModelScope.launch {
+                    val updated = when (event.key) {
+                        RevealedFieldKey.USERNAME -> current.withDetailUsername(event.newValue)
+                        RevealedFieldKey.PASSWORD -> current.withLoginPassword(event.newValue)
+                        else -> current
+                    }
+                    handleIntent(DetailIntent.CommitEntryUpdate(updated))
+                    setRevealedField(event.key, event.newValue)
+                }
+            }
+
             is DetailIntent.DownloadFavicon -> {
                 val current = _uiState.value.entry ?: return
                 viewModelScope.launch {
@@ -177,13 +201,26 @@ class DetailViewModel @Inject constructor(
 
             is DetailIntent.ToggleAccessHistoryRecording -> {
                 mutate(DetailMutation.AccessHistoryChanged(event.enabled))
-                userConfigExtras.value =
-                    userConfigExtras.value + (ACCESS_HISTORY_TOGGLE_KEY to event.enabled.toString())
+                userConfigExtras.value += (ACCESS_HISTORY_TOGGLE_KEY to event.enabled.toString())
             }
 
             DetailIntent.ClearSensitiveState -> {
                 wipeRevealBuffers()
                 mutate(DetailMutation.StateCleared)
+            }
+        }
+    }
+
+    private fun handleRevealLogic(key: String) {
+        val entry = _uiState.value.entry ?: return
+        when (key) {
+            RevealedFieldKey.USERNAME -> {
+                setRevealedField(key, entry.username)
+                handleIntent(DetailIntent.RecordAction("username", ActivityType.VIEW))
+            }
+
+            RevealedFieldKey.PASSWORD -> {
+                handleIntent(DetailIntent.RevealHighSensitivityField(key))
             }
         }
     }
@@ -226,16 +263,15 @@ class DetailViewModel @Inject constructor(
             uiKey.toSensitiveFieldKey()?.let { fieldKey -> uiKey to fieldKey }
         }.toMap()
         if (requested.isEmpty()) return
-        val entryId = entryValue
         authorizationGate.authorize(
             AuthorizationScope.SensitiveFields(
-                entryId = entryId,
+                entryId = entryValue,
                 fieldKeys = requested.values.toSet(),
                 action = SensitiveAccessAction.REVEAL,
             ),
         ) authorize@{ permit ->
             val revealedFields = sensitiveFieldRepository.revealMany(
-                entryId = entryId,
+                entryId = entryValue,
                 keys = requested.values.toSet(),
                 permit = permit,
             )
