@@ -18,8 +18,8 @@ import com.aozijx.passly.feature.settings.security.PrivacySettingsAction
 import com.aozijx.passly.feature.settings.security.PrivacySettingsViewModel
 import com.aozijx.passly.feature.settings.security.SecuritySettingsAction
 import com.aozijx.passly.feature.settings.security.SecuritySettingsViewModel
-import com.aozijx.passly.presentation.settings.security.ui.PrivacyDetail
-import com.aozijx.passly.presentation.settings.security.ui.SecurityDetail
+import com.aozijx.passly.presentation.settings.security.PrivacyDetail
+import com.aozijx.passly.presentation.settings.security.SecurityDetail
 import com.aozijx.passly.presentation.settings.shell.SettingsScreenLocalState
 import com.aozijx.passly.presentation.settings.shell.SettingsSecondaryPage
 

@@ -39,8 +39,8 @@ import com.aozijx.passly.feature.settings.security.RecoveryDraftViewModel
 import com.aozijx.passly.feature.settings.security.SecuritySettingsAction
 import com.aozijx.passly.feature.settings.security.SecuritySettingsViewModel
 import com.aozijx.passly.feature.settings.security.messageOrNull
-import com.aozijx.passly.presentation.settings.security.ui.RecoveryCodeDetail
-import com.aozijx.passly.presentation.settings.security.ui.RecoveryCodeSheet
+import com.aozijx.passly.presentation.settings.security.RecoveryCodeDetail
+import com.aozijx.passly.presentation.settings.security.RecoveryCodeSheet
 import com.aozijx.passly.presentation.settings.shell.SettingsScreenLocalState
 import com.aozijx.passly.presentation.settings.shell.SettingsSecondaryPage
 

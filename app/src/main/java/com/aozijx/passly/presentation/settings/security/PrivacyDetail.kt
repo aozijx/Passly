@@ -1,20 +1,20 @@
-package com.aozijx.passly.presentation.settings.security.ui
+package com.aozijx.passly.presentation.settings.security
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentPasteOff
+import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.VerifiedUser
-import androidx.compose.material.icons.filled.ContentPasteOff
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
-import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.settingsGroupItem
-import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
+import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
+import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.feature.settings.security.PrivacySettingsUiState
 
 @Composable

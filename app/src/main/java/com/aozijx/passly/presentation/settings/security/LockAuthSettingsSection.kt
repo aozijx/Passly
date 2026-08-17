@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.settings.security.ui
+package com.aozijx.passly.presentation.settings.security
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues

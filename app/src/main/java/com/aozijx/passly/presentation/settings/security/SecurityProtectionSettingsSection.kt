@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.settings.security.ui
+package com.aozijx.passly.presentation.settings.security
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Flip

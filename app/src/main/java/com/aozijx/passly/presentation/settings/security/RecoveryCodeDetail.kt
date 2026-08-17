@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.settings.security.ui
+package com.aozijx.passly.presentation.settings.security
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer

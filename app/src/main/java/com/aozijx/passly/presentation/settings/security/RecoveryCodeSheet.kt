@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.settings.security.ui
+package com.aozijx.passly.presentation.settings.security
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
