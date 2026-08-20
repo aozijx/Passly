@@ -29,6 +29,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 
 @Singleton
 class VaultSessionController @Inject constructor(
@@ -359,7 +360,7 @@ class VaultSessionController @Inject constructor(
     private fun resetIdleTimer() {
         idleJob?.cancel()
         idleJob = scope.launch {
-            delay(timeoutMs)
+            delay(timeoutMs.milliseconds)
             lock(LockReason.IDLE_TIMEOUT)
         }
     }
