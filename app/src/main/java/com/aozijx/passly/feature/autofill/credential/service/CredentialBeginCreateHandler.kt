@@ -1,5 +1,3 @@
-@file:Suppress("NewApi")
-
 package com.aozijx.passly.feature.autofill.credential.service
 
 import android.content.Context

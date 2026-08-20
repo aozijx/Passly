@@ -6,28 +6,27 @@ import android.service.autofill.FillCallback
 import android.service.autofill.FillRequest
 import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
-import com.aozijx.passly.core.autofill.di.Heuristic
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
-import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.feature.autofill.shared.AutofillUseCases
+import com.aozijx.passly.domain.autofill.port.FieldMatchStrategy
+import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.feature.autofill.internal.FillRequestDispatcher
+import com.aozijx.passly.feature.autofill.internal.di.Heuristic
+import com.aozijx.passly.feature.autofill.internal.save.SaveRequestAnalyzer
 import com.aozijx.passly.feature.autofill.legacy.service.adapter.LegacyPlatformAdapter
 import com.aozijx.passly.feature.autofill.legacy.service.parser.AutofillStructureParser
+import com.aozijx.passly.feature.autofill.shared.SaveAutofillCredentialUseCase
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * 传统 AutofillService 薄适配器（API 31-33 兜底）。
- *
- * 职责仅限于：
- * AssessStructure → [LegacyPlatformAdapter] → [FillRequestDispatcher] → [LegacyPlatformAdapter] → FillResponse。
- * 严禁在此类中编写任何业务判断逻辑。
+ * Legacy AutofillService Thin Adapter (API 31-33 fallback).
  */
 @AndroidEntryPoint
 class LegacyAutofillService : AutofillService() {
@@ -35,10 +34,22 @@ class LegacyAutofillService : AutofillService() {
     @Inject
     @Heuristic
     lateinit var dispatcher: FillRequestDispatcher
+
+    @Inject
+    @Heuristic
+    lateinit var strategy: FieldMatchStrategy
+
     @Inject
     lateinit var adapter: LegacyPlatformAdapter
+
     @Inject
-    lateinit var useCases: AutofillUseCases
+    lateinit var saveCredential: SaveAutofillCredentialUseCase
+
+    @Inject
+    lateinit var saveAnalyzer: SaveRequestAnalyzer
+
+    @Inject
+    lateinit var settingsRepository: AppSettingsRepository
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -69,7 +80,7 @@ class LegacyAutofillService : AutofillService() {
                 throw e
             } catch (e: Exception) {
                 AppTelemetry.e("LegacyAutofill", "Fill request failed", e)
-                callback.onFailure(e.message)
+                callback.onFailure(e.message ?: "Fill request failed")
             }
         }
         cancellationSignal.setOnCancelListener { job.cancel() }
@@ -80,25 +91,37 @@ class LegacyAutofillService : AutofillService() {
         callback: SaveCallback,
     ) {
         val parsed = AutofillStructureParser.parse(request.fillContexts)
+        val internalRequest = adapter.buildRequest(parsed)
 
         serviceScope.launch {
-            val result = useCases.saveCredential(
-                packageName = parsed.packageName,
-                webDomain = parsed.webDomain,
-                pageTitle = parsed.pageTitle,
-                usernameValue = parsed.usernameValue ?: "",
-                passwordValue = parsed.passwordValue ?: "",
-            )
-            when (result) {
-                is AppResult.Success -> {
-                    AppTelemetry.i("LegacyAutofill", "Credential saved successfully")
+            try {
+                val settings = settingsRepository.settings.first().interaction.autofill
+                val pending = saveAnalyzer.buildCandidate(
+                    parsed = parsed,
+                    request = internalRequest,
+                    strategy = strategy,
+                    settings = settings,
+                )
+                if (pending == null) {
                     callback.onSuccess()
+                    return@launch
                 }
 
-                is AppResult.Failure -> {
-                    AppTelemetry.e("LegacyAutofill", "Save failed: ${result.error.code}")
-                    callback.onFailure(result.error.code)
-                }
+                saveCredential(
+                    packageName = pending.packageName,
+                    webDomain = pending.webDomain,
+                    pageTitle = pending.pageTitle,
+                    usernameValue = pending.username,
+                    passwordValue = pending.password,
+                )
+
+                AppTelemetry.i("LegacyAutofill", "Credential saved successfully")
+                callback.onSuccess()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                AppTelemetry.e("LegacyAutofill", "Save request failed", e)
+                callback.onFailure(e.message ?: "Save request failed")
             }
         }
     }

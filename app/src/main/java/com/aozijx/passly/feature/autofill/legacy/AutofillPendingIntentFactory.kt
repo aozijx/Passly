@@ -3,17 +3,14 @@ package com.aozijx.passly.feature.autofill.legacy
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import com.aozijx.passly.core.autofill.model.ResolvedCandidate
+import android.view.autofill.AutofillId
+import com.aozijx.passly.domain.autofill.model.FieldRole
+import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
-import com.aozijx.passly.feature.autofill.legacy.AutofillFillActivity
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 
 /**
- * 自动填充统一 PendingIntent 工厂。
- *
- * Legacy（AutofillService）与 Modern（CredentialProvider）两套平台都通过
- * PendingIntent 唤起二阶段交互 Activity，此工厂收敛构建参数与 flag，
- * 避免各模块各自拼装 intent extra / flag。
+ * Unified PendingIntent Factory for Autofill.
  */
 internal object AutofillPendingIntentFactory {
 
@@ -22,16 +19,15 @@ internal object AutofillPendingIntentFactory {
         candidate: ResolvedCandidate,
         parsed: ParsedStructure,
         uiMode: AutofillPresentation,
+        roleIds: Map<FieldRole, List<AutofillId>> = emptyMap(),
     ): Intent = Intent(context, AutofillFillActivity::class.java).apply {
-        putExtra("vault_item_id", candidate.candidateId)
-        putExtra("username_id", parsed.usernameId)
-        putExtra("password_id", parsed.passwordId)
-        putExtra("otp_id", parsed.otpId)
+        setIdentifier("autofill-fill:${candidate.entry.id.value}")
+        putExtra("vault_item_id", candidate.entry.id.value)
         putExtra("autofill_ui_mode", uiMode.name)
         putExtra("package_name", parsed.packageName)
         putExtra("web_domain", parsed.webDomain)
-        // 样式化页面识别不出角色时，携带全部可编辑字段供填充阶段按顺序兜底。
         putExtra("editable_ids", parsed.allIds.toTypedArray())
+        putRoleIds(this, roleIds)
         putExtra(AutofillFillActivity.EXTRA_RETURN_DATASET, true)
     }
 
@@ -39,13 +35,24 @@ internal object AutofillPendingIntentFactory {
         context: Context,
         parsed: ParsedStructure,
         uiMode: AutofillPresentation,
+        roleIds: Map<FieldRole, List<AutofillId>> = emptyMap(),
     ): Intent = Intent(context, AutofillFillActivity::class.java).apply {
-        putExtra("username_id", parsed.usernameId)
-        putExtra("password_id", parsed.passwordId)
-        putExtra("otp_id", parsed.otpId)
+        setIdentifier("autofill-base:${parsed.packageName ?: "unknown"}")
         putExtra("autofill_ui_mode", uiMode.name)
         putExtra("package_name", parsed.packageName)
         putExtra("web_domain", parsed.webDomain)
+        putExtra("editable_ids", parsed.allIds.toTypedArray())
+        putRoleIds(this, roleIds)
+    }
+
+    private fun putRoleIds(intent: Intent, roleIds: Map<FieldRole, List<AutofillId>>) {
+        if (roleIds.isEmpty()) return
+        roleIds[FieldRole.USERNAME]?.takeIf(List<AutofillId>::isNotEmpty)
+            ?.let { intent.putExtra("username_ids", ArrayList(it)) }
+        roleIds[FieldRole.PASSWORD]?.takeIf(List<AutofillId>::isNotEmpty)
+            ?.let { intent.putExtra("password_ids", ArrayList(it)) }
+        roleIds[FieldRole.OTP]?.takeIf(List<AutofillId>::isNotEmpty)
+            ?.let { intent.putExtra("otp_ids", ArrayList(it)) }
     }
 
     fun getActivityPendingIntent(

@@ -1,9 +1,7 @@
 package com.aozijx.passly.data.repository.autofill
 
-import com.aozijx.passly.data.repository.autofill.CredentialServiceRepository
-import com.aozijx.passly.data.repository.autofill.AutofillStatusRepositoryImpl
-import com.aozijx.passly.data.repository.autofill.CredentialServiceRepositoryImpl
-import com.aozijx.passly.data.repository.autofill.AutofillStatusRepository
+import com.aozijx.passly.domain.autofill.port.AutofillStatusRepository
+import com.aozijx.passly.domain.autofill.port.CredentialServiceRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

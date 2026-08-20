@@ -11,24 +11,25 @@ import android.view.autofill.AutofillValue
 import android.widget.RemoteViews
 
 /**
- * Legacy Dataset 工厂：负责构建单个 Autofill Dataset 及版本兼容辅助方法。
+ * Legacy Dataset Factory for building individual Autofill datasets.
  */
 internal object LegacyDatasetFactory {
 
-    fun createFillDataset(
-        usernameId: AutofillId?,
-        passwordId: AutofillId?,
-        otpId: AutofillId?,
+    fun createFillDatasetForRoles(
+        usernameIds: List<AutofillId>,
+        passwordIds: List<AutofillId>,
+        otpIds: List<AutofillId>,
         username: String,
         password: String,
         totpCode: String?,
-        presentation: RemoteViews? = null
+        presentation: RemoteViews? = null,
+        existingBuilder: Dataset.Builder? = null
     ): Dataset? {
-        val builder = Dataset.Builder()
+        val builder = existingBuilder ?: Dataset.Builder()
         var added = false
 
-        fun addField(id: AutofillId?, text: String?) {
-            if (id == null || text.isNullOrBlank()) return
+        fun addField(id: AutofillId, text: String?) {
+            if (text.isNullOrBlank()) return
             val value = AutofillValue.forText(text)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -50,9 +51,9 @@ internal object LegacyDatasetFactory {
             added = true
         }
 
-        addField(usernameId, username)
-        addField(passwordId, password)
-        addField(otpId, totpCode)
+        usernameIds.distinct().forEach { addField(it, username) }
+        passwordIds.distinct().forEach { addField(it, password) }
+        otpIds.distinct().forEach { addField(it, totpCode) }
 
         return if (added) builder.build() else null
     }

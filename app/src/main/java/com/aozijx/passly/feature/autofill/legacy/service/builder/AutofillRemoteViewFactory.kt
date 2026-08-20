@@ -4,7 +4,7 @@ import android.content.Context
 import android.view.View
 import android.widget.RemoteViews
 import com.aozijx.passly.R
-import com.aozijx.passly.core.autofill.model.ResolvedCandidate
+import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
 
 object AutofillRemoteViewFactory {
 
@@ -13,9 +13,9 @@ object AutofillRemoteViewFactory {
         candidate: ResolvedCandidate,
         badge: String
     ): RemoteViews {
-        val subtitle = candidate.username.trim()
+        val subtitle = candidate.entry.username.trim()
         return RemoteViews(context.packageName, R.layout.autofill_dataset_item).apply {
-            setTextViewText(R.id.item_title, candidate.displayName)
+            setTextViewText(R.id.item_title, candidate.entry.title)
             setTextViewText(R.id.item_subtitle, subtitle)
             setViewVisibility(
                 R.id.item_subtitle,

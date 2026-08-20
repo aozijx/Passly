@@ -11,11 +11,11 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
-import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.ui.components.auth.AuthenticationHost
 import com.aozijx.passly.core.ui.theme.AppTheme
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
-import com.aozijx.passly.feature.autofill.shared.AutofillCandidateBottomSheet
+import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
+import com.aozijx.passly.presentation.feature.autofill.AutofillCandidateBottomSheet
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -43,32 +43,24 @@ class AutofillFillActivity : FragmentActivity() {
 
         val request = parseIntent(intent)
 
-        // 观察 ViewModel 状态
         lifecycleScope.launch {
             viewModel.uiState.collect { state ->
                 when (state) {
                     is AutofillFillUiState.Initial -> Unit
-                    is AutofillFillUiState.Loading -> {
-                        // 可显示加载指示（不阻塞 UI）
-                    }
-
+                    is AutofillFillUiState.Loading -> { }
                     is AutofillFillUiState.ShowCandidates -> {
                         showBottomSheet(state.candidates)
                     }
-
                     is AutofillFillUiState.Result -> {
                         finishWithResult(state.payload)
                     }
-
                     is AutofillFillUiState.Error -> {
-                        // 显示错误 Toast 或直接取消
                         finishWithResult(null)
                     }
                 }
             }
         }
 
-        // 启动处理
         viewModel.onIntent(AutofillFillIntent.Initialize(request))
     }
 
@@ -79,51 +71,37 @@ class AutofillFillActivity : FragmentActivity() {
             ?: AutofillPresentation.SYSTEM_INLINE
 
         val isUnlockOnly = intent?.getBooleanExtra("unlock_only", false) ?: false
-        val usernameId = intent?.let {
-            IntentCompat.getParcelableExtra(
-                it,
-                "username_id",
-                AutofillId::class.java
-            )
-        }
-        val passwordId = intent?.let {
-            IntentCompat.getParcelableExtra(
-                it,
-                "password_id",
-                AutofillId::class.java
-            )
-        }
-        val otpId =
-            intent?.let { IntentCompat.getParcelableExtra(it, "otp_id", AutofillId::class.java) }
         val packageName = intent?.getStringExtra("package_name")
         val webDomain = intent?.getStringExtra("web_domain")
         val directEntryId = intent?.getStringExtra("vault_item_id")
         val candidateEntryIds = intent?.getStringArrayExtra("vault_item_ids")?.toList().orEmpty()
         val returnsDataset = intent?.getBooleanExtra(EXTRA_RETURN_DATASET, false) ?: false
+
         val editableIds = intent?.let {
-            @Suppress("DEPRECATION")
-            IntentCompat.getParcelableArrayExtra(
-                it,
-                "editable_ids",
-                AutofillId::class.java,
-            )?.map { parcelable ->
-                @Suppress("UNCHECKED_CAST")
-                parcelable as AutofillId
-            }.orEmpty()
+            IntentCompat.getParcelableArrayExtra(it, "editable_ids", AutofillId::class.java)?.filterIsInstance<AutofillId>().orEmpty()
+        }.orEmpty()
+        val usernameIds = intent?.let {
+            IntentCompat.getParcelableArrayListExtra(it, "username_ids", AutofillId::class.java).orEmpty()
+        }.orEmpty()
+        val passwordIds = intent?.let {
+            IntentCompat.getParcelableArrayListExtra(it, "password_ids", AutofillId::class.java).orEmpty()
+        }.orEmpty()
+        val otpIds = intent?.let {
+            IntentCompat.getParcelableArrayListExtra(it, "otp_ids", AutofillId::class.java).orEmpty()
         }.orEmpty()
 
         return AutofillFillRequest(
             uiMode = uiMode,
             isUnlockOnly = isUnlockOnly,
-            usernameId = usernameId,
-            passwordId = passwordId,
-            otpId = otpId,
             packageName = packageName,
             webDomain = webDomain,
             directEntryId = directEntryId,
             candidateEntryIds = candidateEntryIds,
             returnsDataset = returnsDataset,
             editableIds = editableIds,
+            usernameIds = usernameIds,
+            passwordIds = passwordIds,
+            otpIds = otpIds,
         )
     }
 
@@ -149,32 +127,37 @@ class AutofillFillActivity : FragmentActivity() {
             is AutofillAuthenticationPayload.Response -> Intent().apply {
                 putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, payload.value)
             }
-
             is AutofillAuthenticationPayload.DatasetResult -> Intent().apply {
                 putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, payload.value)
-                putExtra(
-                    AutofillManager.EXTRA_AUTHENTICATION_RESULT_EPHEMERAL_DATASET,
-                    true
-                )
+                putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT_EPHEMERAL_DATASET, true)
             }
-
             null -> null
         }
 
-        if (resultIntent == null) setResult(RESULT_CANCELED)
-        else setResult(RESULT_OK, resultIntent)
+        if (resultIntent == null) {
+            // No result but we finished normally (e.g. unlock with no matches).
+            // Return OK with no data to keep the session alive for SaveInfo.
+            setResult(RESULT_OK)
+        } else {
+            setResult(RESULT_OK, resultIntent)
+        }
 
-        // Compose password fields can keep the IME served view attached while
-        // this transparent Activity is being destroyed. Hide it explicitly
-        // before returning control to the client application.
         currentFocus?.clearFocus()
         WindowCompat.getInsetsController(window, window.decorView)
             .hide(WindowInsetsCompat.Type.ime())
 
+        val shouldCloseSession = payload == null || payload is AutofillAuthenticationPayload.DatasetResult
         lifecycleScope.launch {
-            viewModel.closeRequestSession()
+            if (shouldCloseSession) viewModel.closeRequestSession()
             finish()
         }
+    }
+
+    override fun onDestroy() {
+        if (!resultFinishing.get() && isFinishing) {
+            lifecycleScope.launch { viewModel.closeRequestSession() }
+        }
+        super.onDestroy()
     }
 
     companion object {

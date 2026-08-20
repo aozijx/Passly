@@ -13,9 +13,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.domain.access.model.AuthenticationResult
-import com.aozijx.passly.feature.autofill.shared.AutofillRequestSession
+import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
+import com.aozijx.passly.domain.autofill.port.AutofillGrantStore
 import com.aozijx.passly.feature.autofill.credential.service.CredentialBeginGetHandler
+import com.aozijx.passly.feature.autofill.credential.service.CredentialCallingAppResolver
 import com.aozijx.passly.feature.autofill.credential.service.CredentialResponseFactory
+import com.aozijx.passly.feature.autofill.shared.AutofillRequestSession
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -29,9 +32,10 @@ import javax.inject.Inject
 @HiltViewModel
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 class CredentialResponseViewModel @Inject constructor(
-    private val useCase: CredentialResponseUseCases,
+    private val interactor: CredentialResponseInteractor,
     private val beginGetHandler: CredentialBeginGetHandler,
     private val requestSession: AutofillRequestSession,
+    private val grantStore: AutofillGrantStore,
     @param:ApplicationContext private val appContext: android.content.Context,
 ) : ViewModel() {
 
@@ -67,7 +71,7 @@ class CredentialResponseViewModel @Inject constructor(
                 }
 
                 when (val result = requestSession.trackUnlock {
-                    useCase.resolvePasswordCredential(
+                    interactor.resolvePasswordCredential(
                         request.entryId,
                         request.packageName,
                         null,
@@ -123,6 +127,14 @@ class CredentialResponseViewModel @Inject constructor(
                     )
                     return@launch
                 }
+                // 解锁动作成功后授予短期会话授权，用户随即选择条目进入
+                // ACTION_GET_PASSWORD 时不再重复弹认证。
+                CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo)
+                    ?.let { packageName ->
+                        grantStore.grant(
+                            AutofillGrantContext(packageName = packageName, webDomain = null)
+                        )
+                    }
                 val response = beginGetHandler.resolve(
                     request = request,
                     context = appContext,
@@ -155,7 +167,7 @@ class CredentialResponseViewModel @Inject constructor(
                 }
 
                 when (val result = requestSession.trackUnlock {
-                    useCase.createPasswordCredential(
+                    interactor.createPasswordCredential(
                         packageName = request.packageName,
                         username = request.username,
                         password = request.password,
@@ -203,6 +215,13 @@ class CredentialResponseViewModel @Inject constructor(
 
     suspend fun closeRequestSession() {
         requestSession.close()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.launch {
+            requestSession.close()
+        }
     }
 
     private fun completeGetError(exception: GetCredentialException) {

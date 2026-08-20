@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.vault
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.core.otp.OtpGenerator
+import com.aozijx.passly.domain.entry.otp.OtpGenerator
 import com.aozijx.passly.data.local.database.port.EntryDataRefreshNotifier
 import com.aozijx.passly.runtime.session.SessionStateProvider
 import com.aozijx.passly.domain.entry.model.EntryIdentity

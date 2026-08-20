@@ -2,22 +2,27 @@ package com.aozijx.passly.feature.autofill.legacy
 
 import android.content.Context
 import android.service.autofill.FillResponse
+import android.view.autofill.AutofillId
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.core.autofill.model.ResolvedCandidate
-import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.feature.autofill.shared.AutofillUseCases
+import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
+import com.aozijx.passly.domain.autofill.model.FieldRole
+import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
+import com.aozijx.passly.domain.autofill.port.AutofillGrantStore
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
-import com.aozijx.passly.feature.autofill.shared.AutofillRequestSession
+import com.aozijx.passly.feature.autofill.internal.CandidateRetriever
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyDatasetFactory
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseFactory
+import com.aozijx.passly.feature.autofill.shared.AutofillRequestSession
+import com.aozijx.passly.feature.autofill.shared.RecordAutofillUsageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,11 +32,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AutofillFillViewModel @Inject constructor(
-    private val autofillUseCases: AutofillUseCases,
-    private val candidateResolver: CandidateResolver,
+    private val recordAutofillUsage: RecordAutofillUsageUseCase,
+    private val candidateRetriever: CandidateRetriever,
     private val vaultAccessState: SecureSessionAccessState,
     private val settingsRepository: AppSettingsRepository,
     private val requestSession: AutofillRequestSession,
+    private val grantStore: AutofillGrantStore,
     @param:ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
@@ -71,7 +77,7 @@ class AutofillFillViewModel @Inject constructor(
                     request.candidateEntryIds.isNotEmpty() &&
                     request.directEntryId == null
                 ) {
-                    val candidates = candidateResolver.resolveByIds(
+                    val candidates = candidateRetriever.resolveByIds(
                         request.candidateEntryIds,
                         settings,
                     )
@@ -93,6 +99,8 @@ class AutofillFillViewModel @Inject constructor(
                         handleSingleEntry(candidate, request)
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 AppTelemetry.e("AutofillVM", "Error", e)
                 mutate(AutofillFillMutation.Failed(e.message ?: "Unknown error"))
@@ -110,25 +118,26 @@ class AutofillFillViewModel @Inject constructor(
             return
         }
         authenticatedForCurrentRequest = true
-        val candidates = candidateResolver.resolveByPackage(
+        val candidates = candidateRetriever.resolveByPackage(
             request.packageName,
             request.webDomain,
             settings,
             includeSecrets = false,
         )
-        if (candidates.isEmpty()) {
-            mutate(AutofillFillMutation.Completed(null))
-            return
-        }
+        val roleIds = mutableMapOf<FieldRole, List<AutofillId>>()
+        if (request.usernameIds.isNotEmpty()) roleIds[FieldRole.USERNAME] = request.usernameIds
+        if (request.passwordIds.isNotEmpty()) roleIds[FieldRole.PASSWORD] = request.passwordIds
+        if (request.otpIds.isNotEmpty()) roleIds[FieldRole.OTP] = request.otpIds
+
         val response = LegacyResponseFactory.buildCandidateAuthenticationResponse(
             appContext,
             candidates = candidates,
-            usernameId = request.usernameId,
-            passwordId = request.passwordId,
-            otpId = request.otpId,
+            editableIds = request.editableIds,
+            roleIds = roleIds,
             packageName = request.packageName,
             webDomain = request.webDomain,
             uiMode = request.uiMode,
+            savePromptsEnabled = settings.savePromptsEnabled,
         )
         mutate(
             AutofillFillMutation.Completed(
@@ -147,15 +156,19 @@ class AutofillFillViewModel @Inject constructor(
             return
         }
 
-        val totpCode = if (request.otpId != null) candidate.totpCode else null
+        val totpCode = if (request.otpIds.isNotEmpty()) candidate.entry.otpPreview else null
 
-        val dataset = LegacyDatasetFactory.createFillDataset(
-            request.resolvedUsernameId, request.resolvedPasswordId, request.otpId,
-            basicCred.username, basicCred.password, totpCode
+        val dataset = LegacyDatasetFactory.createFillDatasetForRoles(
+            usernameIds = request.usernameIds,
+            passwordIds = request.passwordIds,
+            otpIds = request.otpIds,
+            username = basicCred.username,
+            password = basicCred.password,
+            totpCode = totpCode,
         )
 
         if (dataset != null) {
-            autofillUseCases.recordUsage(candidate.candidateId)
+            recordAutofillUsage(candidate.entry.id.value)
             val payload = if (request.returnsDataset) {
                 AutofillAuthenticationPayload.DatasetResult(dataset)
             } else {
@@ -176,7 +189,7 @@ class AutofillFillViewModel @Inject constructor(
             val settings = settingsRepository.settings.first().interaction.autofill
             if (!ensureAuthenticatedForSecretAccess(settings)) return@launch
             val resolved = loadSelectedCandidate(
-                candidate.candidateId,
+                candidate.entry.id.value,
                 request,
                 settings,
             )
@@ -188,15 +201,12 @@ class AutofillFillViewModel @Inject constructor(
         }
     }
 
-    /**
-     * 候选列表只持有展示字段。认证完成后才按 ID 读取并解密被选中的单条凭据。
-     */
     private suspend fun loadSelectedCandidate(
         entryId: String?,
         request: AutofillFillRequest,
         settings: AutofillSettings,
     ): ResolvedCandidate? = entryId?.let {
-        candidateResolver.resolveSelected(
+        candidateRetriever.resolveSelected(
             entryId = it,
             packageName = request.packageName,
             webDomain = request.webDomain,
@@ -208,7 +218,8 @@ class AutofillFillViewModel @Inject constructor(
         settings: AutofillSettings,
     ): Boolean {
         val needsAuthentication = !vaultAccessState.hasFullSecureSessionAccess() ||
-            (settings.requireAuthentication && !authenticatedForCurrentRequest)
+                (settings.requireAuthentication && !authenticatedForCurrentRequest &&
+                        !grantActiveForCurrentRequest())
         if (!needsAuthentication) return true
         val authResult = authenticateForAutofill()
         if (authResult !is AuthenticationResult.Success) {
@@ -216,11 +227,30 @@ class AutofillFillViewModel @Inject constructor(
             return false
         }
         authenticatedForCurrentRequest = true
+        grantForCurrentRequest()
         return true
     }
 
     private suspend fun authenticateForAutofill(): AuthenticationResult =
-        requestSession.authenticate()
+        requestSession.authenticate().also { result ->
+            if (result is AuthenticationResult.Success) grantForCurrentRequest()
+        }
+
+    private fun grantActiveForCurrentRequest(): Boolean {
+        val request = currentRequest ?: return false
+        val packageName = request.packageName?.takeIf(String::isNotBlank) ?: return false
+        return grantStore.isGranted(
+            AutofillGrantContext(packageName = packageName, webDomain = request.webDomain)
+        )
+    }
+
+    private fun grantForCurrentRequest() {
+        val request = currentRequest ?: return
+        val packageName = request.packageName?.takeIf(String::isNotBlank) ?: return
+        grantStore.grant(
+            AutofillGrantContext(packageName = packageName, webDomain = request.webDomain)
+        )
+    }
 
     private fun mutate(mutation: AutofillFillMutation) {
         _uiState.value = AutofillFillReducer.reduce(_uiState.value, mutation)
@@ -228,5 +258,12 @@ class AutofillFillViewModel @Inject constructor(
 
     suspend fun closeRequestSession() {
         requestSession.close()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.launch {
+            requestSession.close()
+        }
     }
 }

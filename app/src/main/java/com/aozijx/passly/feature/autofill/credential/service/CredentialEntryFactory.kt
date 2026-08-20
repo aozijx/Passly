@@ -6,13 +6,10 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.credentials.provider.BeginGetPasswordOption
 import androidx.credentials.provider.PasswordCredentialEntry
-import com.aozijx.passly.core.autofill.model.ResolvedCandidate
+import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
 
 /**
- * Credential 条目工厂：负责构建 Credential Manager 所需的条目对象。
- *
- * 输入为 Core 层的 [ResolvedCandidate]，由 [CredentialPlatformAdapter] 传入。
- * 不直接依赖 domain 层的 [com.aozijx.passly.domain.model.credential.CredentialCandidate]。
+ * Credential Entry Factory: Builds entry objects for Credential Manager.
  */
 internal object CredentialEntryFactory {
 
@@ -23,18 +20,17 @@ internal object CredentialEntryFactory {
         option: BeginGetPasswordOption,
     ): PasswordCredentialEntry = PasswordCredentialEntry.Builder(
         context = context,
-        username = candidate.username,
+        username = candidate.entry.username,
         pendingIntent = CredentialPendingIntentFactory.createPasswordGetPendingIntent(
             context = context,
-            entryId = candidate.candidateId,
+            entryId = candidate.entry.id.value,
         ),
         beginGetPasswordOption = option,
     )
-        .setDisplayName(candidate.displayName)
+        .setDisplayName(candidate.entry.title)
         .setIcon(Icon.createWithResource(context, android.R.drawable.ic_lock_lock))
         .setLastUsedTime(null)
         .setAutoSelectAllowed(false)
         .setDefaultIconPreferredAsSingleProvider(false)
         .build()
-
 }

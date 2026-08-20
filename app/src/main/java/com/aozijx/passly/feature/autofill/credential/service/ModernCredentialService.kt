@@ -1,5 +1,3 @@
-@file:Suppress("NewApi")
-
 package com.aozijx.passly.feature.autofill.credential.service
 
 import android.os.Build
@@ -66,7 +64,7 @@ class ModernCredentialService : CredentialProviderService() {
                     callback.onResult(response)
                 }
             } catch (e: CancellationException) {
-                // Android cancelled the request; no callback is allowed after cancellation.
+                // Android canceled the request; no callback is allowed after cancellation.
                 throw e
             } catch (e: Exception) {
                 AppTelemetry.e(TAG, "Credential request failed", e)

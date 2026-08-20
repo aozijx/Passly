@@ -106,7 +106,7 @@ sequenceDiagram
     participant Query as CredentialBeginGetHandler
     participant Activity as CredentialResponseActivity
     participant VM as CredentialResponseViewModel
-    participant Domain as CredentialResponseUseCases
+    participant Domain as CredentialResponseInteractor
     participant Vault as CredentialServiceRepository
 
     Client->>System: getCredential(GetPasswordOption)
@@ -196,7 +196,7 @@ sequenceDiagram
     participant Query as CredentialBeginCreateHandler
     participant Activity as CredentialResponseActivity
     participant VM as CredentialResponseViewModel
-    participant Domain as CredentialResponseUseCases
+    participant Domain as CredentialResponseInteractor
     participant Vault as CredentialServiceRepository
 
     Client->>System: createCredential(CreatePasswordRequest)
@@ -328,7 +328,7 @@ allowlist。只有调用包和签名
 | `CredentialPendingIntentFactory` | 显式 mutable PendingIntent 与最小 extras       | 调用方身份授权                        |
 | `CredentialResponseActivity`     | 安装 AuthenticationHost、返回 Activity result  | 决定凭据是否正确                       |
 | `CredentialResponseViewModel`    | 提取系统最终请求、调用用例、映射平台结果                      | 实现密码/生物识别验证                    |
-| `CredentialResponseUseCases`     | 当前设置、认证、重新查询、作用域校验、保存编排                   | Android Activity、PendingIntent |
+| `CredentialResponseInteractor`   | 当前设置、认证、重新查询、作用域校验、保存编排                   | Android Activity、PendingIntent |
 | `CredentialServiceRepository`    | 候选读取、按 ID 读取、正式保存契约                       | AndroidX Credential 类型         |
 | `AuthenticationManager`          | 认证方式、正确性、失败原因、新鲜认证策略                      | 构建 Credential Manager 响应       |
 
@@ -468,7 +468,7 @@ Passly 数据模型已经存在：
 - [CredentialResponseFactory](../../app/src/main/java/com/aozijx/passly/service/autofill/credential/CredentialResponseFactory.kt)
 - [CredentialResponseActivity](../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialResponseActivity.kt)
 - [CredentialResponseViewModel](../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialResponseViewModel.kt)
-- [CredentialResponseUseCases](../../app/src/main/java/com/aozijx/passly/domain/autofill/usecase/CredentialResponseUseCases.kt)
+- [CredentialResponseInteractor](../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialResponseInteractor.kt)
 - [CredentialServiceRepository](../../app/src/main/java/com/aozijx/passly/domain/autofill/repository/CredentialServiceRepository.kt)
 - [Provider capability](../../app/src/main/res/xml/credential_service_config.xml)
 - [Provider Manifest](../../app/src/main/AndroidManifest.xml)

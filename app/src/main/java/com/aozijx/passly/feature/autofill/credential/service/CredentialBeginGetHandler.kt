@@ -1,5 +1,3 @@
-@file:Suppress("NewApi")
-
 package com.aozijx.passly.feature.autofill.credential.service
 
 import android.content.Context
@@ -11,17 +9,14 @@ import androidx.credentials.provider.BeginGetCredentialResponse
 import androidx.credentials.provider.BeginGetPasswordOption
 import androidx.credentials.provider.CredentialEntry
 import com.aozijx.passly.R
-import com.aozijx.passly.core.autofill.di.Strict
-import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
-import com.aozijx.passly.core.autofill.model.FillAvailability
+import com.aozijx.passly.domain.autofill.model.AutofillStatus
+import com.aozijx.passly.feature.autofill.internal.FillRequestDispatcher
+import com.aozijx.passly.feature.autofill.internal.di.Strict
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Shared Credential Manager phase-one handler.
- *
- * It is reused by the provider service and by the authentication action after
- * unlocking, so both paths apply exactly the same query and settings policy.
  */
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @Singleton
@@ -42,7 +37,7 @@ class CredentialBeginGetHandler @Inject constructor(
             CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo)
                 ?: return BeginGetCredentialResponse()
         val response = dispatcher.dispatch(adapter.buildRequest(packageName))
-        if (response.availability == FillAvailability.LOCKED) {
+        if (response.status == AutofillStatus.LOCKED) {
             return if (includeUnlockAction) {
                 BeginGetCredentialResponse(
                     authenticationActions = listOf(

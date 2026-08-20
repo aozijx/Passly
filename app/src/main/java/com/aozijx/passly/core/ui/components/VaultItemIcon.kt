@@ -17,7 +17,6 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.media.toLocalIconImageModel
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 
@@ -43,32 +42,6 @@ fun VaultItemIcon(
                 iconable.profile.associations.applicationIds.isNotEmpty() &&
                     iconable.profile.associations.primaryUrl == null &&
                     iconable.profile.associations.domains.isEmpty()
-            },
-        ),
-    ),
-    tint = tint,
-)
-
-@Composable
-fun VaultItemIcon(
-    modifier: Modifier = Modifier,
-    iconable: ResolvedCandidate,
-    tint: Color = MaterialTheme.colorScheme.onSecondaryContainer,
-) = VaultItemIcon(
-    modifier = modifier,
-    iconName = iconable.iconName,
-    iconCustomPath = iconable.iconCustomPath,
-    associatedAppPackage = iconable.associatedAppPackage,
-    classificationInput = EntryClassificationInput(
-        entryType = iconable.entryType,
-        title = iconable.displayName,
-        username = iconable.username,
-        urls = setOfNotNull(iconable.associatedDomain),
-        domains = setOfNotNull(iconable.associatedDomain),
-        packageNames = setOfNotNull(iconable.associatedAppPackage),
-        appNames = setOfNotNull(
-            iconable.displayName.takeIf {
-                iconable.associatedAppPackage != null && iconable.associatedDomain == null
             },
         ),
     ),

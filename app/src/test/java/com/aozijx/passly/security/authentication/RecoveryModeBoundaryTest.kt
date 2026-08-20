@@ -1,15 +1,18 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
-import com.aozijx.passly.core.autofill.matcher.FieldMatchStrategy
-import com.aozijx.passly.core.autofill.matcher.MatchResult
-import com.aozijx.passly.core.autofill.model.FillAvailability
-import com.aozijx.passly.core.autofill.model.InternalFillRequest
-import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
-import com.aozijx.passly.core.autofill.pipeline.ResponseFactory
+import com.aozijx.passly.domain.autofill.model.AutofillField
+import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
+import com.aozijx.passly.domain.autofill.model.AutofillRequest
+import com.aozijx.passly.domain.autofill.model.AutofillSource
+import com.aozijx.passly.domain.autofill.model.AutofillStatus
+import com.aozijx.passly.domain.autofill.port.AutofillGrantStore
+import com.aozijx.passly.domain.autofill.port.FieldMatchStrategy
+import com.aozijx.passly.domain.autofill.port.MatchResult
+import com.aozijx.passly.feature.autofill.internal.CandidateRetriever
+import com.aozijx.passly.feature.autofill.internal.FillRequestDispatcher
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.data.repository.autofill.CredentialServiceRepository
+import com.aozijx.passly.domain.autofill.port.CredentialServiceRepository
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.query.CredentialCandidate
 import com.aozijx.passly.domain.settings.model.MessageSettings
@@ -40,32 +43,41 @@ class RecoveryModeBoundaryTest {
 
     @Test
     fun `recovery mode rejects autofill`() = runBlocking {
+        val sessionState = RecoverySecureSessionAccessState()
         val dispatcher = FillRequestDispatcher(
-            sessionState = RecoverySecureSessionAccessState(),
-            candidateResolver = CandidateResolver(EmptyCredentialRepository),
+            sessionState = sessionState,
+            candidateRetriever = CandidateRetriever(EmptyCredentialRepository),
+            settingsRepository = DefaultSettingsRepository,
+            grantStore = object : AutofillGrantStore {
+                override fun grant(context: AutofillGrantContext) = Unit
+                override fun isGranted(context: AutofillGrantContext) = false
+                override fun clear() = Unit
+            },
             fieldMatchStrategy = object : FieldMatchStrategy {
-                override fun match(request: InternalFillRequest) =
+                override fun match(request: AutofillRequest) =
                     MatchResult(hasCredentials = true)
             },
-            responseFactory = ResponseFactory(),
-            settingsRepository = DefaultSettingsRepository,
         )
 
         val response = dispatcher.dispatch(
-            InternalFillRequest(
-                parentPackage = "com.example",
+            AutofillRequest(
+                packageName = "com.example",
+                domain = null,
                 fields = listOf(
-                    com.aozijx.passly.core.autofill.model.FieldDescriptor(
-                        viewId = "id/field",
-                        autofillHints = listOf("USERNAME"),
+                    AutofillField(
+                        id = "id/field",
+                        hints = setOf("USERNAME"),
+                        inputType = null,
+                        isFocused = true,
                     )
                 ),
+                source = AutofillSource.AUTOFILL_SERVICE,
             )
         )
 
         // Recovery mode has isDatabaseOpen() == true but hasFullSecureSessionAccess() == false,
         // so autofill must be rejected.
-        assertEquals(FillAvailability.LOCKED, response.availability)
+        assertEquals(AutofillStatus.LOCKED, response.status)
     }
 
     @Test

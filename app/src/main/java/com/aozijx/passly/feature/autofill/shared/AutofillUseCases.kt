@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.autofill.shared
 
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.data.repository.autofill.AutofillStatusRepository
-import com.aozijx.passly.data.repository.autofill.CredentialServiceRepository
+import com.aozijx.passly.domain.autofill.port.AutofillStatusRepository
+import com.aozijx.passly.domain.autofill.port.CredentialServiceRepository
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
@@ -58,29 +58,19 @@ class SaveAutofillCredentialUseCase @Inject constructor(
         pageTitle: String?,
         usernameValue: String,
         passwordValue: String
-    ): AppResult<Unit> {
-        return AppResult.runSuspendCatching {
-            val policy = settingsRepository.settings.first().interaction.autofill
-            if (!policy.enabled || !policy.savePromptsEnabled) {
-                throw IllegalStateException("Autofill save prompts are disabled")
-            }
-            val success = repository.save(
+    ) {
+        val policy = settingsRepository.settings.first().interaction.autofill
+        check(policy.enabled && policy.savePromptsEnabled) {
+            "Autofill save prompts are disabled"
+        }
+        check(
+            repository.save(
                 packageName = packageName,
                 webDomain = webDomain,
                 pageTitle = pageTitle,
                 usernameValue = usernameValue,
-                passwordValue = passwordValue
+                passwordValue = passwordValue,
             )
-            if (!success) throw IllegalStateException("Failed to save credential")
-        }
+        ) { "Failed to save credential" }
     }
 }
-
-data class AutofillUseCases @Inject constructor(
-    val checkStatus: CheckAutofillStatusUseCase,
-    val observeStatus: ObserveAutofillStatusUseCase,
-    val isSupported: IsAutofillSupportedUseCase,
-    val openSettings: OpenAutofillSettingsUseCase,
-    val recordUsage: RecordAutofillUsageUseCase,
-    val saveCredential: SaveAutofillCredentialUseCase
-)

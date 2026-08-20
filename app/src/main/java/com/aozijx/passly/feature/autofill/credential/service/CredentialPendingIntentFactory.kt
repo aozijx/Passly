@@ -1,12 +1,13 @@
-@file:Suppress("NewApi")
-
 package com.aozijx.passly.feature.autofill.credential.service
 
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.aozijx.passly.feature.autofill.credential.CredentialResponseActivity
 
+@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 internal object CredentialPendingIntentFactory {
 
     fun createPasswordGetPendingIntent(

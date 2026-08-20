@@ -1,27 +1,21 @@
 package com.aozijx.passly.feature.autofill.legacy
 
-import com.aozijx.passly.core.autofill.model.ResolvedCandidate
+import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
 
-internal sealed interface AutofillFillMutation {
+sealed interface AutofillFillMutation {
     data object Loading : AutofillFillMutation
-    data class CandidatesAvailable(
-        val candidates: List<ResolvedCandidate>,
-    ) : AutofillFillMutation
-    data class Completed(
-        val payload: AutofillAuthenticationPayload?,
-    ) : AutofillFillMutation
+    data class CandidatesAvailable(val candidates: List<ResolvedCandidate>) : AutofillFillMutation
+    data class Completed(val payload: AutofillAuthenticationPayload?) : AutofillFillMutation
     data class Failed(val message: String) : AutofillFillMutation
 }
 
-internal object AutofillFillReducer {
-    fun reduce(
-        state: AutofillFillUiState,
-        mutation: AutofillFillMutation,
-    ): AutofillFillUiState = when (mutation) {
-        AutofillFillMutation.Loading -> AutofillFillUiState.Loading
-        is AutofillFillMutation.CandidatesAvailable ->
-            AutofillFillUiState.ShowCandidates(mutation.candidates)
-        is AutofillFillMutation.Completed -> AutofillFillUiState.Result(mutation.payload)
-        is AutofillFillMutation.Failed -> AutofillFillUiState.Error(mutation.message)
+object AutofillFillReducer {
+    fun reduce(state: AutofillFillUiState, mutation: AutofillFillMutation): AutofillFillUiState {
+        return when (mutation) {
+            is AutofillFillMutation.Loading -> AutofillFillUiState.Loading
+            is AutofillFillMutation.CandidatesAvailable -> AutofillFillUiState.ShowCandidates(mutation.candidates)
+            is AutofillFillMutation.Completed -> AutofillFillUiState.Result(mutation.payload)
+            is AutofillFillMutation.Failed -> AutofillFillUiState.Error(mutation.message)
+        }
     }
 }
