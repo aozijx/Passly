@@ -6,13 +6,11 @@ Passly 只按稳定、可复用的技术边界拆分 Gradle 模块。业务 feat
 当前模块：
 
 - `:domain`：纯领域模型、端口与规则；当前只保留 `access`、`entry` 及共享敏感值语义；
-- `:core:common`：纯 Kotlin 错误与通用能力；
-- `:core:telemetry`：遥测模型和报告契约；
-- `:core:android`：Android 平台能力及其实现，包括包信息、文件路径与存储选择支持；
-- `:core:crypto`：密码学原语及其安全编排；因 Argon2 为 AAR，模块是 Android library，但源码不反向依赖
-  Data 或 App。包内用 `core.crypto` 承载无状态 AES/KDF/字段加密，用 `security.dek`、
-  `security.envelope`、`security.search` 承载密钥生命周期与加密搜索；
-- `:core:ui`：不依赖业务 feature 和 app 资源的共享 Compose UI；
+- `:core:common`：Domain 可依赖的纯 Kotlin 错误与通用能力；
+- `:core`：统一的 Android Core library，包含遥测、平台能力、共享 Compose UI 及密码学安全编排；因
+  Argon2 为 AAR，此模块是 Android library，但源码不反向依赖 Data 或 App。包内用 `core.crypto` 承载
+  无状态 AES/KDF/字段加密，用 `security.dek`、`security.envelope`、`security.search` 承载密钥生命周期与
+  加密搜索；
 - `:runtime:session`：资源无关的安全会话状态机与租约管理；
 - `:data`：Room、Proto DataStore、Repository、Mapper 与加密诊断存储实现；
 - `:app`：应用壳、导航、平台入口、Notice 运行时和全部业务 feature。Backup 的协议、格式、文件 I/O、
@@ -24,19 +22,13 @@ Passly 只按稳定、可复用的技术边界拆分 Gradle 模块。业务 feat
 flowchart LR
     APP[":app · Shell / feature / navigation / DI"] --> FEATURE["app 内 feature 包"]
     APP --> DATA[":data · 数据与持久化实现"]
-    FEATURE --> UI[":core:ui"]
-    FEATURE --> ANDROID[":core:android"]
-    FEATURE --> SECURITY[":core:crypto"]
+    FEATURE --> CORE[":core"]
     FEATURE --> D[":domain"]
     DATA --> SESSION[":runtime:session"]
-    DATA --> ANDROID
-    DATA --> SECURITY
-    DATA --> TELEMETRY[":core:telemetry"]
+    DATA --> CORE
     DATA --> D
-    SECURITY --> TELEMETRY
-    SECURITY --> D
-    UI --> D
-    ANDROID --> TELEMETRY
+    CORE --> D
+    CORE --> COMMON
     SESSION --> D
     D --> COMMON[":core:common"]
 ```
@@ -59,9 +51,9 @@ Domain 不按应用功能镜像目录。`backup`、`autofill`、通知和数据�
 
 ```text
 core.crypto/       无状态密码学原语、AES-GCM 实现、字段加密、KDF
-security.dek/      DEK 与派生密钥的生命周期
-security.envelope/ 密钥信封的创建、解封和验证
-security.search/   Blind Index 与分词
+security.dek/      DEK 与派生密钥的生命周期（位于 :core）
+security.envelope/ 密钥信封的创建、解封和验证（位于 :core）
+security.search/   Blind Index 与分词（位于 :core）
 security.keystore/ Android Keystore 适配
 security.lock/     应用锁强度状态
 security.authentication/ 认证方式和流程编排
@@ -90,7 +82,7 @@ flowchart LR
 ## Feature 与 UI
 
 `feature/<name>` 是 app 内的业务垂直切片，可包含 `navigation`、`presentation`、`contract`、`ui`。
-Compose 页面和 ViewModel 由 feature 自己拥有；跨 Feature 的纯视觉组件进入 `:core:ui`，但必须通过参数或
+Compose 页面和 ViewModel 由 feature 自己拥有；跨 Feature 的纯视觉组件进入 `:core`，但必须通过参数或
 Composable slot 接收文案和内容，不能依赖 app 的 `R` 或具体业务类型。只有出现真实的独立发布、显著构建隔离
 或多宿主复用需求时，才重新评估 feature Gradle 模块。
 

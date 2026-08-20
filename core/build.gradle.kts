@@ -1,10 +1,12 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt.android)
 }
 
 android {
-    namespace = "com.aozijx.passly.core.ui"
+    namespace = "com.aozijx.passly.core"
     compileSdk = libs.versions.androidCompileSdk.get().toInt()
 
     defaultConfig {
@@ -22,6 +24,13 @@ kotlin {
 
 dependencies {
     api(project(":domain"))
+    api(project(":core:common"))
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.argon2kt)
+    implementation(libs.javax.inject)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
@@ -33,7 +42,6 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.compose.material3.adaptive)
     implementation(libs.markdown.renderer)
-    implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.junit)
 }

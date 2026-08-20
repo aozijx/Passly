@@ -24,11 +24,8 @@ dependencyResolutionManagement {
 
 rootProject.name = "Passly"
 include(":app")
+include(":core")
 include(":core:common")
-include(":core:android")
-include(":core:crypto")
-include(":core:ui")
-include(":core:telemetry")
 include(":data")
 include(":domain")
 include(":runtime:session")

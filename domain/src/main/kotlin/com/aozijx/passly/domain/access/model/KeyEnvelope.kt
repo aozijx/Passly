@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.access.model
 
-import com.aozijx.passly.core.common.crypto.ConstantTime
+import java.security.MessageDigest
 
 @JvmInline
 value class EnvelopeType(val value: String) {
@@ -36,9 +36,9 @@ data class KeyEnvelope(
         if (this === other) return true
         if (other !is KeyEnvelope) return false
         return type == other.type &&
-                ConstantTime.isEqual(ciphertext, other.ciphertext) &&
-                ConstantTime.isEqual(iv, other.iv) &&
-                ConstantTime.isEqual(salt, other.salt) &&
+                MessageDigest.isEqual(ciphertext, other.ciphertext) &&
+                MessageDigest.isEqual(iv, other.iv) &&
+                MessageDigest.isEqual(salt, other.salt) &&
                 algorithm == other.algorithm &&
                 version == other.version
     }

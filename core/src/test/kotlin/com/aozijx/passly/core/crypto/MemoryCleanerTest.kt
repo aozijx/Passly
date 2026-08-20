@@ -29,6 +29,6 @@ class MemoryCleanerTest {
 
         value.wipe()
         assertTrue(value.isWiped)
-        assertArrayEquals(CharArray(6), value.toCharArray())
+        assertTrue(value.toCharArray().isEmpty())
     }
 }
