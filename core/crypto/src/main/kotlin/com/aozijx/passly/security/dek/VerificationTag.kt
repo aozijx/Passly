@@ -1,5 +1,6 @@
 package com.aozijx.passly.security.dek
 
+import com.aozijx.passly.core.common.crypto.ConstantTime
 import java.nio.ByteBuffer
 import java.security.SecureRandom
 import javax.crypto.Cipher
@@ -8,8 +9,6 @@ import javax.crypto.spec.SecretKeySpec
 
 /**
  * Creates and verifies an authenticated marker for the vault DEK.
- *
- * Persistence belongs to VaultBootstrapStore; this object only performs crypto.
  */
 object VerificationTag {
     private const val IV_LENGTH = 12
@@ -45,7 +44,7 @@ object VerificationTag {
             SecretKeySpec(dek, "AES"),
             GCMParameterSpec(GCM_TAG_BITS, iv)
         )
-        require(cipher.doFinal(ciphertext).contentEquals(VERIFY_PLAINTEXT)) {
+        require(ConstantTime.isEqual(cipher.doFinal(ciphertext), VERIFY_PLAINTEXT)) {
             "DEK verification failed for envelope '$envelopeId'"
         }
     }
