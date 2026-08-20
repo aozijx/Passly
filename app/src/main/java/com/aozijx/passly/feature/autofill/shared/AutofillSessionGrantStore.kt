@@ -1,7 +1,6 @@
 package com.aozijx.passly.feature.autofill.shared
 
 import android.os.SystemClock
-import com.aozijx.passly.core.crypto.ConstantTime
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.port.AutofillGrantStore
 
@@ -39,8 +38,8 @@ class AutofillSessionGrantStore(
             return false
         }
         val normalized = context.normalized()
-        return ConstantTime.isEqual(grant.context.packageName, normalized.packageName) &&
-            ConstantTime.isEqual(grant.context.webDomain, normalized.webDomain)
+        return grant.context.packageName == normalized.packageName &&
+            grant.context.webDomain == normalized.webDomain
     }
 
     @Synchronized

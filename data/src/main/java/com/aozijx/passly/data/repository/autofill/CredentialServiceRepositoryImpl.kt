@@ -25,7 +25,6 @@ import com.aozijx.passly.domain.entry.model.query.LookupField
 import com.aozijx.passly.domain.entry.model.query.MatchType
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.security.search.BlindIndexer
-import com.aozijx.passly.core.crypto.ConstantTime
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -179,7 +178,7 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
 
     private fun Entry.match(applicationId: String?, domain: String?): CredentialMatch {
         if (applicationId != null && profile.associations.applicationIds.any {
-                ConstantTime.isEqual(AutofillScope.normalizeApplicationId(it), applicationId)
+                AutofillScope.normalizeApplicationId(it) == applicationId
             }) {
             return CredentialMatch(MatchType.APPLICATION_ID, applicationId = applicationId)
         }
@@ -188,7 +187,7 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
                 addAll(profile.associations.domains)
                 profile.associations.primaryUrl?.let(::add)
             }
-            if (entryDomains.any { ConstantTime.isEqual(AutofillScope.normalizeDomain(it), domain) }) {
+            if (entryDomains.any { AutofillScope.normalizeDomain(it) == domain }) {
                 return CredentialMatch(MatchType.WEB_DOMAIN, domain = domain)
             }
         }

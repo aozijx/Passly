@@ -4,6 +4,9 @@ import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 
 class AutofillSessionGrantStoreTest {
 
@@ -78,5 +81,54 @@ class AutofillSessionGrantStoreTest {
         store.grant(AutofillGrantContext("   ", "example.com"))
 
         assertFalse(store.isGranted(AutofillGrantContext("   ", "example.com")))
+    }
+
+    @Test
+    fun `expired check cannot revoke a concurrent replacement grant`() {
+        val expiredCheckEntered = CountDownLatch(1)
+        val releaseExpiredCheck = CountDownLatch(1)
+        var clockRead = 0
+        val store = AutofillSessionGrantStore(ttlMillis = 10L) {
+            when (++clockRead) {
+                1 -> 0L
+                2 -> {
+                    expiredCheckEntered.countDown()
+                    releaseExpiredCheck.await(5, TimeUnit.SECONDS)
+                    10L
+                }
+                else -> 10L
+            }
+        }
+        val oldContext = AutofillGrantContext("com.example.old", null)
+        val newContext = AutofillGrantContext("com.example.new", null)
+        store.grant(oldContext)
+
+        var expiredResult = true
+        val expiredThread = thread(start = true, name = "expired-grant-check") {
+            expiredResult = store.isGranted(oldContext)
+        }
+        assertTrue(expiredCheckEntered.await(5, TimeUnit.SECONDS))
+
+        val replacementAttempted = CountDownLatch(1)
+        val replacementCompleted = CountDownLatch(1)
+        val replacementThread = thread(start = true, name = "replacement-grant") {
+            replacementAttempted.countDown()
+            store.grant(newContext)
+            replacementCompleted.countDown()
+        }
+
+        try {
+            assertTrue(replacementAttempted.await(5, TimeUnit.SECONDS))
+            assertFalse(replacementCompleted.await(100, TimeUnit.MILLISECONDS))
+        } finally {
+            releaseExpiredCheck.countDown()
+        }
+
+        expiredThread.join(5_000L)
+        replacementThread.join(5_000L)
+        assertFalse(expiredThread.isAlive)
+        assertFalse(replacementThread.isAlive)
+        assertFalse(expiredResult)
+        assertTrue(store.isGranted(newContext))
     }
 }
