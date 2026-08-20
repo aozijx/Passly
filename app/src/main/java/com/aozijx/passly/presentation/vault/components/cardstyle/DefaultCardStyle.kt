@@ -27,7 +27,7 @@ import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 
 @Composable
-fun VaultItem(
+fun DefaultItem(
     entry: EntryListItem,
     onClick: () -> Unit
 ) {
@@ -69,7 +69,7 @@ fun VaultItem(
 }
 
 @Composable
-fun TwoFAItem(
+fun DefaultOtpItem(
     entry: EntryListItem,
     totpState: OtpUiState?,
     showCode: Boolean = true,
@@ -164,20 +164,20 @@ internal object DefaultVaultCardStyle : VaultCardStyleComponent {
         onClick: () -> Unit,
     ) {
         when {
-            entry.hasOtp -> TwoFAItem(
+            entry.hasOtp -> DefaultOtpItem(
                 entry = entry,
                 totpState = totpState,
                 showCode = showTotpCode,
                 onClick = onClick,
             )
 
-            else -> VaultItem(entry = entry, onClick = onClick)
+            else -> DefaultItem(entry = entry, onClick = onClick)
         }
     }
 
     @Composable
     override fun Preview(onClick: () -> Unit) {
-        VaultItem(
+        DefaultItem(
             entry = CardStylePreviewFixtures.defaultEntry,
             onClick = onClick,
         )

@@ -32,6 +32,6 @@ fun DeleteConfirmDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        }
+        },
     )
 }
