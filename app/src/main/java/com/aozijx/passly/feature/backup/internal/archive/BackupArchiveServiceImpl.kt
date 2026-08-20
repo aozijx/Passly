@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.backup.internal.archive
 
+import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.telemetry.EventCategory
@@ -9,6 +10,7 @@ import com.aozijx.passly.core.telemetry.reporting.ErrorReportContext
 import com.aozijx.passly.feature.backup.internal.archive.di.BackupIoDispatcher
 import com.aozijx.passly.feature.backup.internal.archive.format.BackupFormatRegistry
 import com.aozijx.passly.feature.backup.internal.archive.io.BackupFileStore
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.DatabaseSnapshotReader
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.DatabaseSnapshotRestorer
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
@@ -88,7 +90,7 @@ internal class BackupArchiveServiceImpl @Inject constructor(
         if (required && (password == null || password.isEmpty())) throw BackupFailed()
     }
 
-    private fun report(error: com.aozijx.passly.core.error.model.AppError, operation: String) {
+    private fun report(error: AppError, operation: String) {
         errorReporter.report(
             error = error,
             context = ErrorReportContext(
@@ -99,6 +101,6 @@ internal class BackupArchiveServiceImpl @Inject constructor(
     }
 }
 
-private fun com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle.clearResourceData() {
+private fun BackupBundle.clearResourceData() {
     resourceData.values.forEach { it.fill(0) }
 }
