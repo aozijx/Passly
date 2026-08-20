@@ -173,7 +173,7 @@ fun SettingsNavGraph(
         },
         detailPane = {
             AnimatedPane(
-                // 推入和返回期间详情始终覆盖列表，避免 Scaffold 提前切换目标层级后
+                // 推入和返回期间，详情始终覆盖列表，避免 Scaffold 提前切换目标层级后
                 // 从退出页面边缘露出底层的分栏间隙。
                 modifier = Modifier.zIndex(1f),
                 enterTransition = if (isSinglePane) {

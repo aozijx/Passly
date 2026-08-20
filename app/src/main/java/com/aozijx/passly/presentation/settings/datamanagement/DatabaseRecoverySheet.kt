@@ -114,13 +114,6 @@ internal fun DatabaseRecoverySheet(
                     HorizontalDivider()
                 }
             }
-            TextButton(
-                onClick = {
-                    onAction(DataManagementSettingsAction.ClearRecoveryResult)
-                    onDismiss()
-                },
-                modifier = Modifier.align(Alignment.End),
-            ) { Text(stringResource(R.string.close)) }
         }
     }
 
