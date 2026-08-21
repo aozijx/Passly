@@ -99,7 +99,9 @@ class PasslyApplication : Application() {
 
         // Autofill 服务配置
         configureAutofillServices()
-        enableModernCredentialService()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            enableModernCredentialService()
+        }
     }
 
     /**
