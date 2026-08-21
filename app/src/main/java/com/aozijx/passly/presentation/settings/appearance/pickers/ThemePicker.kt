@@ -34,15 +34,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.theme.accentSeeds
-import com.aozijx.passly.domain.settings.model.FallbackPalette
+import com.aozijx.passly.core.ui.theme.AppThemeSchemes
+import com.aozijx.passly.core.ui.theme.resolveSeedColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ThemePicker(
-    selectedPalette: FallbackPalette,
+    selectedThemeKey: String,
     sheetState: SheetState,
-    onSelect: (FallbackPalette) -> Unit,
+    onSelect: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
     ModalBottomSheet(
@@ -55,23 +55,46 @@ fun ThemePicker(
         ) {
             item {
                 Text(
-                    text = stringResource(R.string.settings_theme_color_select_title),
+                    text = stringResource(R.string.settings_theme_scheme_select_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
             }
 
-            itemsIndexed(FallbackPalette.entries) { index, preset ->
-                val isSelected = selectedPalette == preset
-                val seeds = preset.accentSeeds()
-                val previewColors = listOf(Color(seeds.primary), Color(seeds.secondary), Color(seeds.tertiary))
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onSelect("") }
+                        .padding(vertical = 10.dp, horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    ThemeColorPreviewCard(colors = listOf(MaterialTheme.colorScheme.primary))
+                    Text(
+                        text = stringResource(R.string.settings_theme_scheme_default),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f)
+                    )
+                    RadioButton(selected = selectedThemeKey.isBlank(), onClick = { onSelect("") })
+                }
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                )
+            }
+
+            itemsIndexed(AppThemeSchemes.all) { index, scheme ->
+                val isSelected = selectedThemeKey == scheme.key
+                val previewColors = scheme.resolveSeedColors()
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .clickable { onSelect(preset) }
+                        .clickable { onSelect(scheme.key) }
                         .padding(vertical = 10.dp, horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -80,18 +103,18 @@ fun ThemePicker(
                     Spacer(modifier = Modifier.width(16.dp))
 
                     Text(
-                        text = stringResource(preset.labelRes()),
+                        text = stringResource(scheme.nameRes),
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.weight(1f)
                     )
 
                     RadioButton(
                         selected = isSelected,
-                        onClick = { onSelect(preset) }
+                        onClick = { onSelect(scheme.key) }
                     )
                 }
 
-                if (index < FallbackPalette.entries.lastIndex) {
+                if (index < AppThemeSchemes.all.lastIndex) {
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 4.dp),
                         thickness = 0.5.dp,
@@ -105,16 +128,6 @@ fun ThemePicker(
             }
         }
     }
-}
-
-fun FallbackPalette.labelRes(): Int = when (this) {
-    FallbackPalette.BLUE -> R.string.settings_theme_color_blue
-    FallbackPalette.GREEN -> R.string.settings_theme_color_green
-    FallbackPalette.RED -> R.string.settings_theme_color_red
-    FallbackPalette.PURPLE -> R.string.settings_theme_color_purple
-    FallbackPalette.ORANGE -> R.string.settings_theme_color_orange
-    FallbackPalette.TEAL -> R.string.settings_theme_color_teal
-    FallbackPalette.PINK -> R.string.settings_theme_color_pink
 }
 
 @Composable

@@ -40,16 +40,11 @@
     <string name="settings_group_theme">主题</string>
     <string name="settings_language">语言</string>
     <string name="settings_language_choose">选择语言</string>
-    <string name="settings_theme_color">主题配色</string>
-    <string name="settings_theme_color_default">默认</string>
-    <string name="settings_theme_color_blue">蓝色</string>
-    <string name="settings_theme_color_green">绿色</string>
-    <string name="settings_theme_color_orange">橙色</string>
-    <string name="settings_theme_color_pink">粉色</string>
-    <string name="settings_theme_color_purple">紫色</string>
-    <string name="settings_theme_color_red">红色</string>
-    <string name="settings_theme_color_select_title">选择主题配色</string>
-    <string name="settings_theme_color_teal">青色</string>
+    <string name="settings_theme_scheme">主题方案</string>
+    <string name="settings_theme_scheme_default">默认</string>
+    <string name="settings_theme_scheme_select_title">选择主题方案</string>
+    <string name="settings_theme_canvas_tint">背景染色强度</string>
+    <string name="settings_theme_canvas_tint_description">混合三个主题色到背景和容器</string>
     <string name="settings_theme_mode">外观</string>
     <string name="settings_theme_mode_dark">深色</string>
     <string name="settings_theme_mode_light">浅色</string>
@@ -301,6 +296,7 @@
     <string name="settings_download_icons_subtitle">保存网站图标</string>
     <string name="settings_follow_system">跟随系统</string>
     <string name="settings_value_dp">%1$d dp</string>
+    <string name="settings_value_percent">%1$d%%</string>
     <string name="settings_saved">设置已保存</string>
     <string name="database_cleared">保险库数据库已永久清除</string>
 </resources>

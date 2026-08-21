@@ -36,8 +36,12 @@ class AppearanceSettingsViewModel @Inject constructor(
                 settingsRepository.update(SettingsCommand.SetDynamicColor(action.enabled))
             }
 
-            is AppearanceSettingsAction.SetFallbackPalette -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetFallbackPalette(action.palette))
+            is AppearanceSettingsAction.SetThemeKey -> viewModelScope.launch {
+                settingsRepository.update(SettingsCommand.SetThemeKey(action.key))
+            }
+
+            is AppearanceSettingsAction.SetCanvasTintPercent -> viewModelScope.launch {
+                settingsRepository.update(SettingsCommand.SetCanvasTintPercent(action.percent))
             }
 
             is AppearanceSettingsAction.SetLanguage -> viewModelScope.launch {
@@ -54,7 +58,8 @@ class AppearanceSettingsViewModel @Inject constructor(
 private fun AppearanceSettings.toUiState(): AppearanceSettingsUiState = AppearanceSettingsUiState(
     themeMode = themeMode,
     isDynamicColor = isDynamicColor,
-    fallbackPalette = fallbackPalette,
+    themeKey = themeKey,
+    canvasTintPercent = canvasTintPercent,
     language = language,
     fontFamily = fontFamily
 )

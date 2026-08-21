@@ -1,0 +1,9 @@
+<resources>
+    <string name="theme_scheme_horizon">Horizon</string>
+    <string name="theme_scheme_grove">Grove</string>
+    <string name="theme_scheme_ember">Ember</string>
+    <string name="theme_scheme_orchid">Orchid</string>
+    <string name="theme_scheme_solstice">Solstice</string>
+    <string name="theme_scheme_tideline">Tideline</string>
+    <string name="theme_scheme_rosewood">Rosewood</string>
+</resources>

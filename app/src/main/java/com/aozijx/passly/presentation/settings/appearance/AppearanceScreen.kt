@@ -13,6 +13,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -27,17 +28,19 @@ import com.aozijx.passly.feature.settings.appearance.AppearanceSettingsUiState
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.dropdownSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
+import com.aozijx.passly.core.ui.components.group.sliderSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.domain.settings.model.FallbackPalette
+import com.aozijx.passly.core.ui.theme.AppThemeSchemes
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ThemeMode
+import com.aozijx.passly.domain.settings.model.ThemeCanvasTint
 import com.aozijx.passly.presentation.settings.appearance.pickers.LanguagePicker
 import com.aozijx.passly.presentation.settings.appearance.pickers.ThemePicker
-import com.aozijx.passly.presentation.settings.appearance.pickers.labelRes
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,7 +48,8 @@ internal fun AppearanceDetail(
     state: AppearanceSettingsUiState,
     onThemeModeChange: (ThemeMode) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
-    onFallbackPaletteSelect: (FallbackPalette) -> Unit,
+    onThemeKeySelect: (String) -> Unit,
+    onCanvasTintPercentChange: (Int) -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
     onFontFamilyChange: (FontFamilyMode) -> Unit
 ) {
@@ -55,6 +59,9 @@ internal fun AppearanceDetail(
     val languageSheetState = rememberModalBottomSheetState()
     val themeColorSheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
+    var canvasTintPercent by remember(state.canvasTintPercent) {
+        mutableFloatStateOf(state.canvasTintPercent.toFloat())
+    }
 
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
@@ -89,16 +96,40 @@ internal fun AppearanceDetail(
                     onCheckedChange = onDynamicColorChange
                 ),
                 navigationSettingsGroupItem(
-                    key = "appearance.theme_color",
+                    key = "appearance.theme_scheme",
                     enabled = !state.isDynamicColor,
                     icon = Icons.Default.Palette,
-                    title = stringResource(R.string.settings_theme_color),
+                    title = stringResource(R.string.settings_theme_scheme),
                     value = if (state.isDynamicColor) {
                         stringResource(R.string.settings_dynamic_color)
                     } else {
-                        stringResource(state.fallbackPalette.labelRes())
+                        AppThemeSchemes.find(state.themeKey)?.let { scheme ->
+                            stringResource(scheme.nameRes)
+                        } ?: stringResource(R.string.settings_theme_scheme_default)
                     },
                     onClick = { showThemeColorSheet = true }
+                ),
+                sliderSettingsGroupItem(
+                    key = "appearance.canvas_tint",
+                    enabled = !state.isDynamicColor && state.themeKey.isNotBlank(),
+                    icon = Icons.Default.Palette,
+                    title = stringResource(R.string.settings_theme_canvas_tint),
+                    subtitle = stringResource(R.string.settings_theme_canvas_tint_description),
+                    value = canvasTintPercent,
+                    valueLabel = stringResource(
+                        R.string.settings_value_percent,
+                        canvasTintPercent.roundToInt(),
+                    ),
+                    valueRange = ThemeCanvasTint.MIN_PERCENT.toFloat()..
+                            ThemeCanvasTint.MAX_PERCENT.toFloat(),
+                    steps = ThemeCanvasTint.MAX_PERCENT - ThemeCanvasTint.MIN_PERCENT - 1,
+                    onValueChange = { canvasTintPercent = it },
+                    onValueChangeFinished = {
+                        val selectedPercent = canvasTintPercent.roundToInt()
+                        if (selectedPercent != state.canvasTintPercent) {
+                            onCanvasTintPercentChange(selectedPercent)
+                        }
+                    },
                 )
             )
         )
@@ -154,10 +185,10 @@ internal fun AppearanceDetail(
 
     if (showThemeColorSheet && !state.isDynamicColor) {
         ThemePicker(
-            selectedPalette = state.fallbackPalette,
+            selectedThemeKey = state.themeKey,
             sheetState = themeColorSheetState,
-            onSelect = { palette ->
-                onFallbackPaletteSelect(palette)
+            onSelect = { key ->
+                onThemeKeySelect(key)
                 scope.launch { themeColorSheetState.hide() }.invokeOnCompletion {
                     showThemeColorSheet = false
                 }

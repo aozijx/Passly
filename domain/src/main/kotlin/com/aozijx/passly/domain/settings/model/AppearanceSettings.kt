@@ -5,13 +5,20 @@ import java.util.Locale
 data class AppearanceSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val isDynamicColor: Boolean = true,
-    val fallbackPalette: FallbackPalette = FallbackPalette.BLUE,
+    val themeKey: String = "",
+    val canvasTintPercent: Int = ThemeCanvasTint.DEFAULT_PERCENT,
     val language: AppLanguage = AppLanguage.SYSTEM,
     val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED
 )
 
+/** User-controlled strength for blending a manual scheme's three seeds into the canvas. */
+object ThemeCanvasTint {
+    const val MIN_PERCENT = 1
+    const val MAX_PERCENT = 100
+    const val DEFAULT_PERCENT = 8
+}
+
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
-enum class FallbackPalette { BLUE, GREEN, RED, PURPLE, ORANGE, TEAL, PINK }
 enum class AppLanguage(val locale: Locale?) {
     SYSTEM(null),
     ZH(Locale.SIMPLIFIED_CHINESE),

@@ -19,10 +19,14 @@ data class AccentSeeds(
 
 /**
  * Generates Material accents and component containers from HCT tonal palettes while preserving
- * a subtle, three-seed canvas tint for the app's full-screen background and surface.
+ * a three-seed canvas tint for the app's background and surface hierarchy.
  */
 @SuppressLint("RestrictedApi")
-fun ColorScheme.withGeneratedAccents(seeds: AccentSeeds, isDark: Boolean): ColorScheme {
+fun ColorScheme.withGeneratedAccents(
+    seeds: AccentSeeds,
+    isDark: Boolean,
+    canvasTintFraction: Float = DEFAULT_CANVAS_TINT_FRACTION,
+): ColorScheme {
     val primaryArgb = seeds.primary.toInt()
     val scheme = DynamicScheme(
         Hct.fromInt(primaryArgb),
@@ -37,8 +41,8 @@ fun ColorScheme.withGeneratedAccents(seeds: AccentSeeds, isDark: Boolean): Color
     )
     val roles = MaterialDynamicColors()
     fun role(color: Int): Color = Color(color)
-    val canvasBackground = seeds.canvasTint(base = background, isDark = isDark)
-    val canvasSurface = seeds.canvasTint(base = surface, isDark = isDark)
+    fun canvas(base: Color, multiplier: Float = 1f): Color =
+        seeds.canvasTint(base, canvasTintFraction * multiplier)
 
     return copy(
         primary = role(roles.primary().getArgb(scheme)),
@@ -67,17 +71,17 @@ fun ColorScheme.withGeneratedAccents(seeds: AccentSeeds, isDark: Boolean): Color
         tertiaryFixedDim = role(roles.tertiaryFixedDim().getArgb(scheme)),
         onTertiaryFixed = role(roles.onTertiaryFixed().getArgb(scheme)),
         onTertiaryFixedVariant = role(roles.onTertiaryFixedVariant().getArgb(scheme)),
-        background = canvasBackground,
-        surface = canvasSurface,
-        surfaceVariant = role(roles.surfaceVariant().getArgb(scheme)),
+        background = canvas(background),
+        surface = canvas(surface),
+        surfaceVariant = canvas(surfaceVariant, 0.9f),
         onSurfaceVariant = role(roles.onSurfaceVariant().getArgb(scheme)),
-        surfaceDim = role(roles.surfaceDim().getArgb(scheme)),
-        surfaceBright = role(roles.surfaceBright().getArgb(scheme)),
-        surfaceContainerLowest = role(roles.surfaceContainerLowest().getArgb(scheme)),
-        surfaceContainerLow = role(roles.surfaceContainerLow().getArgb(scheme)),
-        surfaceContainer = role(roles.surfaceContainer().getArgb(scheme)),
-        surfaceContainerHigh = role(roles.surfaceContainerHigh().getArgb(scheme)),
-        surfaceContainerHighest = role(roles.surfaceContainerHighest().getArgb(scheme)),
+        surfaceDim = canvas(surfaceDim, 1.1f),
+        surfaceBright = canvas(surfaceBright, 0.8f),
+        surfaceContainerLowest = canvas(surfaceContainerLowest, 0.7f),
+        surfaceContainerLow = canvas(surfaceContainerLow, 0.8f),
+        surfaceContainer = canvas(surfaceContainer, 0.9f),
+        surfaceContainerHigh = canvas(surfaceContainerHigh),
+        surfaceContainerHighest = canvas(surfaceContainerHighest, 1.1f),
         inverseSurface = role(roles.inverseSurface().getArgb(scheme)),
         inverseOnSurface = role(roles.inverseOnSurface().getArgb(scheme)),
         outline = role(roles.outline().getArgb(scheme)),
@@ -86,11 +90,13 @@ fun ColorScheme.withGeneratedAccents(seeds: AccentSeeds, isDark: Boolean): Color
     )
 }
 
-private fun AccentSeeds.canvasTint(base: Color, isDark: Boolean): Color {
+private fun AccentSeeds.canvasTint(base: Color, fraction: Float): Color {
     val blendedSeed = lerp(
         lerp(Color(primary), Color(secondary), 0.5f),
         Color(tertiary),
         1f / 3f,
     )
-    return lerp(base, blendedSeed, if (isDark) 0.08f else 0.06f)
+    return lerp(base, blendedSeed, fraction.coerceIn(0f, 1f))
 }
+
+private const val DEFAULT_CANVAS_TINT_FRACTION = 0.08f

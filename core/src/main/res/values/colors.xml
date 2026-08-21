@@ -24,4 +24,27 @@
     <color name="background_dark">#1A1C1E</color>
     <color name="surface_variant_dark">#42474E</color>
     <color name="outline_dark">#8C9199</color>
+
+    <!-- Muted manual-theme seeds. Each scheme combines these three into Material accents. -->
+    <color name="theme_seed_horizon_primary">#5B789E</color>
+    <color name="theme_seed_horizon_secondary">#6C7E71</color>
+    <color name="theme_seed_horizon_tertiary">#85789B</color>
+    <color name="theme_seed_grove_primary">#647B63</color>
+    <color name="theme_seed_grove_secondary">#687C70</color>
+    <color name="theme_seed_grove_tertiary">#8A765B</color>
+    <color name="theme_seed_ember_primary">#9A6C62</color>
+    <color name="theme_seed_ember_secondary">#8C6E75</color>
+    <color name="theme_seed_ember_tertiary">#876F5E</color>
+    <color name="theme_seed_orchid_primary">#846F9B</color>
+    <color name="theme_seed_orchid_secondary">#93717F</color>
+    <color name="theme_seed_orchid_tertiary">#637D91</color>
+    <color name="theme_seed_solstice_primary">#927852</color>
+    <color name="theme_seed_solstice_secondary">#8D6D60</color>
+    <color name="theme_seed_solstice_tertiary">#776E92</color>
+    <color name="theme_seed_tideline_primary">#517C91</color>
+    <color name="theme_seed_tideline_secondary">#5D7D78</color>
+    <color name="theme_seed_tideline_tertiary">#777297</color>
+    <color name="theme_seed_rosewood_primary">#906B73</color>
+    <color name="theme_seed_rosewood_secondary">#8A705C</color>
+    <color name="theme_seed_rosewood_tertiary">#806F88</color>
 </resources>

@@ -5,6 +5,7 @@ import com.aozijx.passly.data.local.datastore.settings.VisibleQuickFilters
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
 import com.aozijx.passly.domain.settings.model.SettingsCommand
+import com.aozijx.passly.domain.settings.model.ThemeCanvasTint
 import com.aozijx.passly.domain.settings.model.TopicMessageSettings
 
 /**
@@ -27,9 +28,18 @@ internal fun AppSettings.applyCommand(command: SettingsCommand): AppSettings {
             b.setAppearance(ab)
         }
 
-        is SettingsCommand.SetFallbackPalette -> {
+        is SettingsCommand.SetThemeKey -> {
             val ab = appearance.toBuilder()
-            ab.fallbackPalette = command.palette.toProto()
+            ab.themeKey = command.key
+            b.setAppearance(ab)
+        }
+
+        is SettingsCommand.SetCanvasTintPercent -> {
+            val ab = appearance.toBuilder()
+            ab.canvasTintPercent = command.percent.coerceIn(
+                ThemeCanvasTint.MIN_PERCENT,
+                ThemeCanvasTint.MAX_PERCENT,
+            )
             b.setAppearance(ab)
         }
 

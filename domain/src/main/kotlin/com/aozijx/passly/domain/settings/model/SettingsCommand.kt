@@ -4,7 +4,8 @@ sealed interface SettingsCommand {
     // Appearance
     data class SetThemeMode(val mode: ThemeMode) : SettingsCommand
     data class SetDynamicColor(val enabled: Boolean) : SettingsCommand
-    data class SetFallbackPalette(val palette: FallbackPalette) : SettingsCommand
+    data class SetThemeKey(val key: String) : SettingsCommand
+    data class SetCanvasTintPercent(val percent: Int) : SettingsCommand
 
     data class SetLanguage(val language: AppLanguage) : SettingsCommand
     data class SetFontFamily(val mode: FontFamilyMode) : SettingsCommand
