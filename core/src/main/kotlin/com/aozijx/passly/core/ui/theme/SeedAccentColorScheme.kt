@@ -3,6 +3,7 @@ package com.aozijx.passly.core.ui.theme
 import android.annotation.SuppressLint
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import com.google.android.material.color.utilities.DynamicScheme
 import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.MaterialDynamicColors
@@ -16,7 +17,10 @@ data class AccentSeeds(
     val tertiary: Long,
 )
 
-/** Generates a complete Material scheme from HCT tonal palettes, preserving only error roles. */
+/**
+ * Generates Material accents and component containers from HCT tonal palettes while preserving
+ * a subtle, three-seed canvas tint for the app's full-screen background and surface.
+ */
 @SuppressLint("RestrictedApi")
 fun ColorScheme.withGeneratedAccents(seeds: AccentSeeds, isDark: Boolean): ColorScheme {
     val primaryArgb = seeds.primary.toInt()
@@ -33,6 +37,8 @@ fun ColorScheme.withGeneratedAccents(seeds: AccentSeeds, isDark: Boolean): Color
     )
     val roles = MaterialDynamicColors()
     fun role(color: Int): Color = Color(color)
+    val canvasBackground = seeds.canvasTint(base = background, isDark = isDark)
+    val canvasSurface = seeds.canvasTint(base = surface, isDark = isDark)
 
     return copy(
         primary = role(roles.primary().getArgb(scheme)),
@@ -61,10 +67,8 @@ fun ColorScheme.withGeneratedAccents(seeds: AccentSeeds, isDark: Boolean): Color
         tertiaryFixedDim = role(roles.tertiaryFixedDim().getArgb(scheme)),
         onTertiaryFixed = role(roles.onTertiaryFixed().getArgb(scheme)),
         onTertiaryFixedVariant = role(roles.onTertiaryFixedVariant().getArgb(scheme)),
-        background = role(roles.background().getArgb(scheme)),
-        onBackground = role(roles.onBackground().getArgb(scheme)),
-        surface = role(roles.surface().getArgb(scheme)),
-        onSurface = role(roles.onSurface().getArgb(scheme)),
+        background = canvasBackground,
+        surface = canvasSurface,
         surfaceVariant = role(roles.surfaceVariant().getArgb(scheme)),
         onSurfaceVariant = role(roles.onSurfaceVariant().getArgb(scheme)),
         surfaceDim = role(roles.surfaceDim().getArgb(scheme)),
@@ -80,4 +84,13 @@ fun ColorScheme.withGeneratedAccents(seeds: AccentSeeds, isDark: Boolean): Color
         outlineVariant = role(roles.outlineVariant().getArgb(scheme)),
         scrim = role(roles.scrim().getArgb(scheme)),
     )
+}
+
+private fun AccentSeeds.canvasTint(base: Color, isDark: Boolean): Color {
+    val blendedSeed = lerp(
+        lerp(Color(primary), Color(secondary), 0.5f),
+        Color(tertiary),
+        1f / 3f,
+    )
+    return lerp(base, blendedSeed, if (isDark) 0.08f else 0.06f)
 }

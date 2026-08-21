@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.domain.settings.model.FallbackPalette
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -52,7 +53,7 @@ class ThemeTokensTest {
     }
 
     @Test
-    fun manualPalettes_tintApplicationSurfacesAsWellAsAccentFamilies() {
+    fun manualPalettes_applyASubtleThreeSeedTintToTheFullScreenCanvas() {
         val neutralScheme = lightColorScheme()
 
         FallbackPalette.entries.map { it.accentSeeds() }.forEach { seeds ->
@@ -63,11 +64,32 @@ class ThemeTokensTest {
                     scheme.secondary != neutralScheme.secondary ||
                     scheme.tertiary != neutralScheme.tertiary
             )
-            assertTrue(scheme.background != neutralScheme.background)
-            assertTrue(scheme.surface != neutralScheme.surface)
+            assertNotEquals(neutralScheme.background, scheme.background)
+            assertEquals(neutralScheme.onBackground, scheme.onBackground)
+            assertNotEquals(neutralScheme.surface, scheme.surface)
+            assertEquals(neutralScheme.onSurface, scheme.onSurface)
             assertTrue(scheme.surfaceContainer != neutralScheme.surfaceContainer)
             assertTrue(scheme.surfaceVariant != neutralScheme.surfaceVariant)
         }
+    }
+
+    @Test
+    fun canvasTint_blendsAllThreeSeeds() {
+        val base = lightColorScheme()
+        val seeds = AccentSeeds(0xFF4285F4, 0xFF4285F4, 0xFF4285F4)
+
+        val secondaryChanged = base.withGeneratedAccents(
+            seeds.copy(secondary = 0xFF34A853),
+            isDark = false,
+        )
+        val tertiaryChanged = base.withGeneratedAccents(
+            seeds.copy(tertiary = 0xFFEA4335),
+            isDark = false,
+        )
+        val baseline = base.withGeneratedAccents(seeds, isDark = false)
+
+        assertNotEquals(baseline.background, secondaryChanged.background)
+        assertNotEquals(baseline.background, tertiaryChanged.background)
     }
 
     @Test
