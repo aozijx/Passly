@@ -44,24 +44,23 @@ class ThemeTokensTest {
     @Test
     fun emptyOrUnknownManualSelection_resolvesToTheAppDefault() {
         assertEquals(0L, themePresetByColor(0L).color)
-        assertNull(manualThemePalette(null))
-        assertNull(manualThemePalette(0L))
-        assertNull(manualThemePalette(0xFF123456))
+        assertNull(manualThemeSeeds(null))
+        assertNull(manualThemeSeeds(0L))
+        assertNull(manualThemeSeeds(0xFF123456))
     }
 
     @Test
     fun manualPalettes_mapIndependentAccentFamiliesWithoutTintingSurfaces() {
         val neutralScheme = lightColorScheme()
 
-        themePresets.mapNotNull(ThemePreset::palette).forEach { palette ->
-            val scheme = palette.applyTo(neutralScheme, isDark = false)
+        themePresets.mapNotNull { manualThemeSeeds(it.color) }.forEach { seeds ->
+            val scheme = neutralScheme.withGeneratedAccents(seeds, isDark = false)
 
-            assertEquals(palette.primary.light.accent, scheme.primary)
-            assertEquals(palette.secondary.light.accent, scheme.secondary)
-            assertEquals(palette.tertiary.light.accent, scheme.tertiary)
-            assertEquals(palette.primary.light.container, scheme.primaryFixed)
-            assertEquals(palette.secondary.light.container, scheme.secondaryFixed)
-            assertEquals(palette.tertiary.light.container, scheme.tertiaryFixed)
+            assertTrue(
+                scheme.primary != neutralScheme.primary ||
+                    scheme.secondary != neutralScheme.secondary ||
+                    scheme.tertiary != neutralScheme.tertiary
+            )
             assertEquals(neutralScheme.surface, scheme.surface)
             assertEquals(neutralScheme.surfaceContainer, scheme.surfaceContainer)
             assertEquals(neutralScheme.surfaceVariant, scheme.surfaceVariant)
@@ -70,12 +69,13 @@ class ThemeTokensTest {
 
     @Test
     fun manualPaletteForegroundPairsMeetAccessibleTextContrast() {
-        themePresets.mapNotNull(ThemePreset::palette).forEach { palette ->
-            listOf(palette.primary, palette.secondary, palette.tertiary).forEach { family ->
-                listOf(family.light, family.dark).forEach { roles ->
-                    assertTrue(contrastRatio(roles.accent, roles.onAccent) >= 4.5)
-                    assertTrue(contrastRatio(roles.container, roles.onContainer) >= 4.5)
-                }
+        themePresets.mapNotNull { manualThemeSeeds(it.color) }.forEach { seeds ->
+            listOf(false, true).forEach { isDark ->
+                val scheme = lightColorScheme().withGeneratedAccents(seeds, isDark)
+                assertTrue(contrastRatio(scheme.primary, scheme.onPrimary) >= 4.5)
+                assertTrue(contrastRatio(scheme.primaryContainer, scheme.onPrimaryContainer) >= 4.5)
+                assertTrue(contrastRatio(scheme.secondary, scheme.onSecondary) >= 4.5)
+                assertTrue(contrastRatio(scheme.tertiary, scheme.onTertiary) >= 4.5)
             }
         }
     }

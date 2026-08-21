@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.theme.themePresets
+import com.aozijx.passly.core.ui.theme.manualThemeSeeds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,7 +64,9 @@ fun ThemePicker(
 
             itemsIndexed(themePresets) { index, preset ->
                 val isSelected = selectedColor == preset.color
-                val previewColors = preset.palette?.previewColors ?: listOf(
+                val previewColors = manualThemeSeeds(preset.color)?.let { seeds ->
+                    listOf(Color(seeds.primary), Color(seeds.secondary), Color(seeds.tertiary))
+                } ?: listOf(
                     MaterialTheme.colorScheme.primary,
                     MaterialTheme.colorScheme.secondary,
                     MaterialTheme.colorScheme.tertiary
