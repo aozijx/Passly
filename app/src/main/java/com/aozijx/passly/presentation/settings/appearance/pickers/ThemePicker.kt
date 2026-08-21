@@ -34,15 +34,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.theme.themePresets
-import com.aozijx.passly.core.ui.theme.manualThemeSeeds
+import com.aozijx.passly.core.ui.theme.accentSeeds
+import com.aozijx.passly.domain.settings.model.FallbackPalette
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ThemePicker(
-    selectedColor: Long,
+    selectedPalette: FallbackPalette,
     sheetState: SheetState,
-    onSelect: (Long) -> Unit,
+    onSelect: (FallbackPalette) -> Unit,
     onDismiss: () -> Unit
 ) {
     ModalBottomSheet(
@@ -62,21 +62,16 @@ fun ThemePicker(
                 )
             }
 
-            itemsIndexed(themePresets) { index, preset ->
-                val isSelected = selectedColor == preset.color
-                val previewColors = manualThemeSeeds(preset.color)?.let { seeds ->
-                    listOf(Color(seeds.primary), Color(seeds.secondary), Color(seeds.tertiary))
-                } ?: listOf(
-                    MaterialTheme.colorScheme.primary,
-                    MaterialTheme.colorScheme.secondary,
-                    MaterialTheme.colorScheme.tertiary
-                )
+            itemsIndexed(FallbackPalette.entries) { index, preset ->
+                val isSelected = selectedPalette == preset
+                val seeds = preset.accentSeeds()
+                val previewColors = listOf(Color(seeds.primary), Color(seeds.secondary), Color(seeds.tertiary))
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .clickable { onSelect(preset.color) }
+                        .clickable { onSelect(preset) }
                         .padding(vertical = 10.dp, horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -85,18 +80,18 @@ fun ThemePicker(
                     Spacer(modifier = Modifier.width(16.dp))
 
                     Text(
-                        text = stringResource(preset.nameKey),
+                        text = stringResource(preset.labelRes()),
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.weight(1f)
                     )
 
                     RadioButton(
                         selected = isSelected,
-                        onClick = { onSelect(preset.color) }
+                        onClick = { onSelect(preset) }
                     )
                 }
 
-                if (index < themePresets.lastIndex) {
+                if (index < FallbackPalette.entries.lastIndex) {
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 4.dp),
                         thickness = 0.5.dp,
@@ -110,6 +105,16 @@ fun ThemePicker(
             }
         }
     }
+}
+
+fun FallbackPalette.labelRes(): Int = when (this) {
+    FallbackPalette.BLUE -> R.string.settings_theme_color_blue
+    FallbackPalette.GREEN -> R.string.settings_theme_color_green
+    FallbackPalette.RED -> R.string.settings_theme_color_red
+    FallbackPalette.PURPLE -> R.string.settings_theme_color_purple
+    FallbackPalette.ORANGE -> R.string.settings_theme_color_orange
+    FallbackPalette.TEAL -> R.string.settings_theme_color_teal
+    FallbackPalette.PINK -> R.string.settings_theme_color_pink
 }
 
 @Composable

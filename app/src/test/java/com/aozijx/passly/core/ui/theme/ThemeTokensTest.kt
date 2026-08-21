@@ -4,8 +4,8 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.domain.settings.model.FallbackPalette
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -42,18 +42,20 @@ class ThemeTokensTest {
     }
 
     @Test
-    fun emptyOrUnknownManualSelection_resolvesToTheAppDefault() {
-        assertEquals(0L, themePresetByColor(0L).color)
-        assertNull(manualThemeSeeds(null))
-        assertNull(manualThemeSeeds(0L))
-        assertNull(manualThemeSeeds(0xFF123456))
+    fun everyPersistedPalette_resolvesToThreeSeeds() {
+        FallbackPalette.entries.forEach { palette ->
+            val seeds = palette.accentSeeds()
+            assertTrue(seeds.primary != 0L)
+            assertTrue(seeds.secondary != 0L)
+            assertTrue(seeds.tertiary != 0L)
+        }
     }
 
     @Test
     fun manualPalettes_mapIndependentAccentFamiliesWithoutTintingSurfaces() {
         val neutralScheme = lightColorScheme()
 
-        themePresets.mapNotNull { manualThemeSeeds(it.color) }.forEach { seeds ->
+        FallbackPalette.entries.map { it.accentSeeds() }.forEach { seeds ->
             val scheme = neutralScheme.withGeneratedAccents(seeds, isDark = false)
 
             assertTrue(
@@ -69,7 +71,7 @@ class ThemeTokensTest {
 
     @Test
     fun manualPaletteForegroundPairsMeetAccessibleTextContrast() {
-        themePresets.mapNotNull { manualThemeSeeds(it.color) }.forEach { seeds ->
+        FallbackPalette.entries.map { it.accentSeeds() }.forEach { seeds ->
             listOf(false, true).forEach { isDark ->
                 val scheme = lightColorScheme().withGeneratedAccents(seeds, isDark)
                 assertTrue(contrastRatio(scheme.primary, scheme.onPrimary) >= 4.5)

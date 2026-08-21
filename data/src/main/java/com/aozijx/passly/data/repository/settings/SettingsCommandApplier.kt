@@ -33,15 +33,6 @@ internal fun AppSettings.applyCommand(command: SettingsCommand): AppSettings {
             b.setAppearance(ab)
         }
 
-        is SettingsCommand.SelectManualThemeColor -> {
-            val ab = appearance.toBuilder()
-            val argb = command.argb
-            if (argb != null) ab.manualThemeColorArgb = argb
-            else ab.clearManualThemeColorArgb()
-            ab.dynamicColorEnabled = false
-            b.setAppearance(ab)
-        }
-
         is SettingsCommand.SetLanguage -> {
             val ab = appearance.toBuilder()
             ab.language = command.language.storageTag

@@ -30,12 +30,13 @@ import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.core.ui.theme.themePresetByColor
+import com.aozijx.passly.domain.settings.model.FallbackPalette
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.presentation.settings.appearance.pickers.LanguagePicker
 import com.aozijx.passly.presentation.settings.appearance.pickers.ThemePicker
+import com.aozijx.passly.presentation.settings.appearance.pickers.labelRes
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,7 +45,7 @@ internal fun AppearanceDetail(
     state: AppearanceSettingsUiState,
     onThemeModeChange: (ThemeMode) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
-    onManualThemeColorSelect: (Long?) -> Unit,
+    onFallbackPaletteSelect: (FallbackPalette) -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
     onFontFamilyChange: (FontFamilyMode) -> Unit
 ) {
@@ -94,9 +95,7 @@ internal fun AppearanceDetail(
                     value = if (state.isDynamicColor) {
                         stringResource(R.string.settings_dynamic_color)
                     } else {
-                        stringResource(
-                            themePresetByColor(state.manualThemeColorArgb ?: 0L).nameKey
-                        )
+                        stringResource(state.fallbackPalette.labelRes())
                     },
                     onClick = { showThemeColorSheet = !showThemeColorSheet }
                 )
@@ -154,10 +153,10 @@ internal fun AppearanceDetail(
 
     if (showThemeColorSheet) {
         ThemePicker(
-            selectedColor = state.manualThemeColorArgb ?: 0L,
+            selectedPalette = state.fallbackPalette,
             sheetState = themeColorSheetState,
-            onSelect = { color ->
-                onManualThemeColorSelect(if (color == 0L) null else color)
+            onSelect = { palette ->
+                onFallbackPaletteSelect(palette)
                 scope.launch { themeColorSheetState.hide() }.invokeOnCompletion {
                     showThemeColorSheet = false
                 }

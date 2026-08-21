@@ -101,7 +101,7 @@ class MainActivity : AppCompatActivity() {
                     AppTheme(
                         themeMode = mainUiState.themeMode,
                         dynamicColor = mainUiState.isDynamicColor,
-                        manualThemeColorArgb = mainUiState.manualThemeColorArgb,
+                        fallbackPalette = mainUiState.fallbackPalette,
                         fontFamily = mainUiState.fontFamily,
                         outerCornerRadiusDp = mainUiState.outerCornerRadiusDp,
                         innerCornerRadiusDp = mainUiState.innerCornerRadiusDp,

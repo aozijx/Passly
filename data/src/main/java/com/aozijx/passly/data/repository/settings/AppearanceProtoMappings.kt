@@ -63,8 +63,6 @@ internal fun readAppearance(p: AppearancePreferences): AppearanceSettings =
         themeMode = p.themeMode.toDomain(),
         isDynamicColor = p.dynamicColorEnabled,
         fallbackPalette = p.fallbackPalette.toDomain(),
-        manualThemeColorArgb =
-            if (p.hasManualThemeColorArgb()) p.manualThemeColorArgb else null,
         language = p.language.toAppLanguageDomain(),
         fontFamily = p.fontFamily.toFontFamilyDomain()
     )
