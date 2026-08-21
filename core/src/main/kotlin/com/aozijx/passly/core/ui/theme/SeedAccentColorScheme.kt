@@ -16,10 +16,7 @@ data class AccentSeeds(
     val tertiary: Long,
 )
 
-/**
- * Generates Material emphasis roles from HCT tonal palettes while preserving [base]'s neutral,
- * surface, outline and error roles.
- */
+/** Generates a complete Material scheme from HCT tonal palettes, preserving only error roles. */
 @SuppressLint("RestrictedApi")
 fun ColorScheme.withGeneratedAccents(seeds: AccentSeeds, isDark: Boolean): ColorScheme {
     val primaryArgb = seeds.primary.toInt()
@@ -64,5 +61,23 @@ fun ColorScheme.withGeneratedAccents(seeds: AccentSeeds, isDark: Boolean): Color
         tertiaryFixedDim = role(roles.tertiaryFixedDim().getArgb(scheme)),
         onTertiaryFixed = role(roles.onTertiaryFixed().getArgb(scheme)),
         onTertiaryFixedVariant = role(roles.onTertiaryFixedVariant().getArgb(scheme)),
+        background = role(roles.background().getArgb(scheme)),
+        onBackground = role(roles.onBackground().getArgb(scheme)),
+        surface = role(roles.surface().getArgb(scheme)),
+        onSurface = role(roles.onSurface().getArgb(scheme)),
+        surfaceVariant = role(roles.surfaceVariant().getArgb(scheme)),
+        onSurfaceVariant = role(roles.onSurfaceVariant().getArgb(scheme)),
+        surfaceDim = role(roles.surfaceDim().getArgb(scheme)),
+        surfaceBright = role(roles.surfaceBright().getArgb(scheme)),
+        surfaceContainerLowest = role(roles.surfaceContainerLowest().getArgb(scheme)),
+        surfaceContainerLow = role(roles.surfaceContainerLow().getArgb(scheme)),
+        surfaceContainer = role(roles.surfaceContainer().getArgb(scheme)),
+        surfaceContainerHigh = role(roles.surfaceContainerHigh().getArgb(scheme)),
+        surfaceContainerHighest = role(roles.surfaceContainerHighest().getArgb(scheme)),
+        inverseSurface = role(roles.inverseSurface().getArgb(scheme)),
+        inverseOnSurface = role(roles.inverseOnSurface().getArgb(scheme)),
+        outline = role(roles.outline().getArgb(scheme)),
+        outlineVariant = role(roles.outlineVariant().getArgb(scheme)),
+        scrim = role(roles.scrim().getArgb(scheme)),
     )
 }

@@ -52,7 +52,7 @@ class ThemeTokensTest {
     }
 
     @Test
-    fun manualPalettes_mapIndependentAccentFamiliesWithoutTintingSurfaces() {
+    fun manualPalettes_tintApplicationSurfacesAsWellAsAccentFamilies() {
         val neutralScheme = lightColorScheme()
 
         FallbackPalette.entries.map { it.accentSeeds() }.forEach { seeds ->
@@ -63,9 +63,10 @@ class ThemeTokensTest {
                     scheme.secondary != neutralScheme.secondary ||
                     scheme.tertiary != neutralScheme.tertiary
             )
-            assertEquals(neutralScheme.surface, scheme.surface)
-            assertEquals(neutralScheme.surfaceContainer, scheme.surfaceContainer)
-            assertEquals(neutralScheme.surfaceVariant, scheme.surfaceVariant)
+            assertTrue(scheme.background != neutralScheme.background)
+            assertTrue(scheme.surface != neutralScheme.surface)
+            assertTrue(scheme.surfaceContainer != neutralScheme.surfaceContainer)
+            assertTrue(scheme.surfaceVariant != neutralScheme.surfaceVariant)
         }
     }
 
