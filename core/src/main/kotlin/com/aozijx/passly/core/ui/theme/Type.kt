@@ -22,7 +22,7 @@ private fun Typography.withFontFamily(fontFamily: FontFamily): Typography = copy
     bodySmall = bodySmall.copy(fontFamily = fontFamily),
     labelLarge = labelLarge.copy(fontFamily = fontFamily),
     labelMedium = labelMedium.copy(fontFamily = fontFamily),
-    labelSmall = labelSmall.copy(fontFamily = fontFamily)
+    labelSmall = labelSmall.copy(fontFamily = fontFamily),
 )
 
 /** 使用系统默认字体（FontFamily.Default）的 Typography。 */
@@ -32,7 +32,7 @@ val SystemTypography: Typography = Typography().withFontFamily(FontFamily.Defaul
 @Composable
 fun themeTypography(base: Typography = Typography()): Typography {
     val fontFamily = FontFamily(
-        Font(R.font.theme_font)
+        Font(R.font.theme_font),
     )
     return base.withFontFamily(fontFamily)
 }

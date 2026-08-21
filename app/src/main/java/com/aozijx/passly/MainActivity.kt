@@ -13,6 +13,13 @@ import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.app.message.contract.AppNoticePublisher
+import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.newAppNotice
+import com.aozijx.passly.app.shell.AppShellViewModel
+import com.aozijx.passly.app.shell.FlipToLockSensorController
+import com.aozijx.passly.app.shell.contract.AppShellIntent
+import com.aozijx.passly.app.shell.ui.AppShell
 import com.aozijx.passly.core.message.compose.ProvideAppNoticePublisher
 import com.aozijx.passly.core.permission.compose.PermissionServices
 import com.aozijx.passly.core.permission.compose.ProvidePermissionServices
@@ -21,13 +28,6 @@ import com.aozijx.passly.core.permission.contract.PermissionStatusReader
 import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
 import com.aozijx.passly.core.ui.components.auth.AuthenticationHost
 import com.aozijx.passly.core.ui.theme.AppTheme
-import com.aozijx.passly.app.shell.AppShellViewModel
-import com.aozijx.passly.app.shell.FlipToLockSensorController
-import com.aozijx.passly.app.shell.contract.AppShellIntent
-import com.aozijx.passly.app.shell.ui.AppShell
-import com.aozijx.passly.app.message.model.NoticeCode
-import com.aozijx.passly.app.message.model.newAppNotice
-import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -58,10 +58,13 @@ class MainActivity : AppCompatActivity() {
                 viewModel.handleIntent(AppShellIntent.Lock)
                 if (sensorController.isFlipExitAndClearStackEnabled) {
                     noticePublisher.publish(newAppNotice(NoticeCode.APP_CLOSE_REMINDER))
-                    window.decorView.postDelayed({
-                        finishAndRemoveTask()
-                        exitProcess(0)
-                    }, APP_CLOSE_MESSAGE_DELAY_MS)
+                    window.decorView.postDelayed(
+                        {
+                            finishAndRemoveTask()
+                            exitProcess(0)
+                        },
+                        APP_CLOSE_MESSAGE_DELAY_MS,
+                    )
                 }
             }
         }

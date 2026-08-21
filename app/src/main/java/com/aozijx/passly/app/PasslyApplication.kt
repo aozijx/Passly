@@ -72,7 +72,7 @@ class PasslyApplication : Application() {
                     .detectCustomSlowCalls()  // 检测自定义慢调用
                     .penaltyLog()             // 违规时只打印日志（Logcat），不闪退
                     // .penaltyDeath()        // 发现违规直接闪退（更严格，一般调试时才开）
-                    .build()
+                    .build(),
             )
         }
 
@@ -116,7 +116,7 @@ class PasslyApplication : Application() {
             pm.setComponentEnabledSetting(
                 legacyComponent,
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                PackageManager.DONT_KILL_APP
+                PackageManager.DONT_KILL_APP,
             )
             AppTelemetry.i(EventCategory.AUTOFILL, "autofill.legacy_enabled")
         } catch (e: Exception) {
@@ -132,7 +132,7 @@ class PasslyApplication : Application() {
             pm.setComponentEnabledSetting(
                 modernComponent,
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                PackageManager.DONT_KILL_APP
+                PackageManager.DONT_KILL_APP,
             )
             AppTelemetry.i(EventCategory.AUTOFILL, "autofill.modern_enabled")
         } catch (e: Exception) {
@@ -142,18 +142,22 @@ class PasslyApplication : Application() {
 
     /** 监听所有 Activity 创建，注入全局触摸监听，用于重置空闲计时器 */
     private fun registerGlobalTouchListener() {
-        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
-            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-                setupIdleTouchListener(activity)
-            }
+        registerActivityLifecycleCallbacks(
+            object : ActivityLifecycleCallbacks {
+                override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+                    setupIdleTouchListener(activity)
+                }
 
-            override fun onActivityStarted(activity: Activity) = Unit
-            override fun onActivityResumed(activity: Activity) = Unit
-            override fun onActivityPaused(activity: Activity) = Unit
-            override fun onActivityStopped(activity: Activity) = Unit
-            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
-            override fun onActivityDestroyed(activity: Activity) = Unit
-        })
+                override fun onActivityStarted(activity: Activity) = Unit
+                override fun onActivityResumed(activity: Activity) = Unit
+                override fun onActivityPaused(activity: Activity) = Unit
+                override fun onActivityStopped(activity: Activity) = Unit
+                override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) =
+                    Unit
+
+                override fun onActivityDestroyed(activity: Activity) = Unit
+            },
+        )
     }
 
     /** 为 Activity 注入触摸监听，仅重置空闲计时器（不触发 click） */

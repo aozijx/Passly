@@ -4,7 +4,6 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import com.aozijx.passly.core.R
@@ -85,7 +84,7 @@ object AppColor {
         tertiaryFixed = Color(0xFF9CF1F1),
         tertiaryFixedDim = md_theme_dark_tertiary,
         onTertiaryFixed = Color(0xFF002020),
-        onTertiaryFixedVariant = Color(0xFF004F4F)
+        onTertiaryFixedVariant = Color(0xFF004F4F),
     )
 
     @Composable
@@ -137,79 +136,7 @@ object AppColor {
         tertiaryFixed = Color(0xFF9CF1F1),
         tertiaryFixedDim = md_theme_dark_tertiary,
         onTertiaryFixed = Color(0xFF002020),
-        onTertiaryFixedVariant = Color(0xFF004F4F)
+        onTertiaryFixedVariant = Color(0xFF004F4F),
     )
 }
 
-/**
- * Material 3 的一组强调色角色。这里保存设计阶段确定的颜色，不在运行时混色。
- */
-@Immutable
-data class AccentColorRoles(
-    val accent: Color,
-    val onAccent: Color,
-    val container: Color,
-    val onContainer: Color,
-)
-
-@Immutable
-data class AccentColorFamily(
-    val light: AccentColorRoles,
-    val dark: AccentColorRoles,
-) {
-    val preview: Color
-        get() = light.accent
-}
-
-/**
- * 一套静态品牌配色由 primary、secondary、tertiary 三个独立强调色族组成。
- *
- * Surface、outline 与 error 使用应用的中性色角色，不再掺入强调色。
- */
-@Immutable
-data class ThemePalette(
-    val primary: AccentColorFamily,
-    val secondary: AccentColorFamily,
-    val tertiary: AccentColorFamily,
-) {
-    val previewColors: List<Color>
-        get() = listOf(primary.preview, secondary.preview, tertiary.preview)
-
-    fun applyTo(base: ColorScheme, isDark: Boolean): ColorScheme {
-        val primaryRoles = primary.roles(isDark)
-        val secondaryRoles = secondary.roles(isDark)
-        val tertiaryRoles = tertiary.roles(isDark)
-
-        return base.copy(
-            primary = primaryRoles.accent,
-            onPrimary = primaryRoles.onAccent,
-            primaryContainer = primaryRoles.container,
-            onPrimaryContainer = primaryRoles.onContainer,
-            inversePrimary = primary.roles(!isDark).accent,
-            secondary = secondaryRoles.accent,
-            onSecondary = secondaryRoles.onAccent,
-            secondaryContainer = secondaryRoles.container,
-            onSecondaryContainer = secondaryRoles.onContainer,
-            tertiary = tertiaryRoles.accent,
-            onTertiary = tertiaryRoles.onAccent,
-            tertiaryContainer = tertiaryRoles.container,
-            onTertiaryContainer = tertiaryRoles.onContainer,
-            surfaceTint = primaryRoles.accent,
-            primaryFixed = primary.light.container,
-            primaryFixedDim = primary.dark.accent,
-            onPrimaryFixed = primary.light.onContainer,
-            onPrimaryFixedVariant = primary.dark.container,
-            secondaryFixed = secondary.light.container,
-            secondaryFixedDim = secondary.dark.accent,
-            onSecondaryFixed = secondary.light.onContainer,
-            onSecondaryFixedVariant = secondary.dark.container,
-            tertiaryFixed = tertiary.light.container,
-            tertiaryFixedDim = tertiary.dark.accent,
-            onTertiaryFixed = tertiary.light.onContainer,
-            onTertiaryFixedVariant = tertiary.dark.container,
-        )
-    }
-}
-
-private fun AccentColorFamily.roles(isDark: Boolean): AccentColorRoles =
-    if (isDark) dark else light

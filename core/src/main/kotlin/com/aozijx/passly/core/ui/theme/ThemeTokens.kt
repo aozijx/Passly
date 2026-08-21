@@ -20,7 +20,7 @@ data class RoundedGroupStyle(
     val outerRadius: Dp,
     val innerRadius: Dp,
     val itemSpacing: Dp,
-    val contentPadding: Dp
+    val contentPadding: Dp,
 ) {
     val paddingValues: PaddingValues
         get() = PaddingValues(contentPadding)
@@ -28,7 +28,7 @@ data class RoundedGroupStyle(
 
 @Immutable
 data class PasslyThemeTokens(
-    val roundedGroup: RoundedGroupStyle
+    val roundedGroup: RoundedGroupStyle,
 )
 
 private val DefaultThemeTokens = PasslyThemeTokens(
@@ -36,8 +36,8 @@ private val DefaultThemeTokens = PasslyThemeTokens(
         outerRadius = InterfaceStyleConstraints.DEFAULT_OUTER_RADIUS_DP.dp,
         innerRadius = InterfaceStyleConstraints.DEFAULT_INNER_RADIUS_DP.dp,
         itemSpacing = InterfaceStyleConstraints.DEFAULT_ITEM_SPACING_DP.dp,
-        contentPadding = InterfaceStyleConstraints.DEFAULT_CONTENT_PADDING_DP.dp
-    )
+        contentPadding = InterfaceStyleConstraints.DEFAULT_CONTENT_PADDING_DP.dp,
+    ),
 )
 
 val LocalPasslyThemeTokens = staticCompositionLocalOf { DefaultThemeTokens }
@@ -57,30 +57,30 @@ object PasslyTheme {
 
 data class PasslyThemeDefinition(
     val shapes: Shapes,
-    val tokens: PasslyThemeTokens
+    val tokens: PasslyThemeTokens,
 )
 
 fun passlyThemeDefinition(
     outerCornerRadiusDp: Float,
     innerCornerRadiusDp: Float,
     groupItemSpacingDp: Float,
-    groupContentPaddingDp: Float
+    groupContentPaddingDp: Float,
 ): PasslyThemeDefinition {
     val outerRadius = outerCornerRadiusDp.coerceIn(
         InterfaceStyleConstraints.MIN_OUTER_RADIUS_DP,
-        InterfaceStyleConstraints.MAX_OUTER_RADIUS_DP
+        InterfaceStyleConstraints.MAX_OUTER_RADIUS_DP,
     )
     val innerRadius = innerCornerRadiusDp.coerceIn(
         InterfaceStyleConstraints.MIN_INNER_RADIUS_DP,
-        InterfaceStyleConstraints.MAX_INNER_RADIUS_DP
+        InterfaceStyleConstraints.MAX_INNER_RADIUS_DP,
     )
     val itemSpacing = groupItemSpacingDp.coerceIn(
         InterfaceStyleConstraints.MIN_ITEM_SPACING_DP,
-        InterfaceStyleConstraints.MAX_ITEM_SPACING_DP
+        InterfaceStyleConstraints.MAX_ITEM_SPACING_DP,
     )
     val contentPadding = groupContentPaddingDp.coerceIn(
         InterfaceStyleConstraints.MIN_CONTENT_PADDING_DP,
-        InterfaceStyleConstraints.MAX_CONTENT_PADDING_DP
+        InterfaceStyleConstraints.MAX_CONTENT_PADDING_DP,
     )
 
     return PasslyThemeDefinition(
@@ -93,16 +93,16 @@ fun passlyThemeDefinition(
             largeIncreased = RoundedCornerShape(
                 (outerRadius * 1.25f)
                     .coerceAtMost(InterfaceStyleConstraints.MAX_OUTER_RADIUS_DP)
-                    .dp
-            )
+                    .dp,
+            ),
         ),
         tokens = PasslyThemeTokens(
             roundedGroup = RoundedGroupStyle(
                 outerRadius = outerRadius.dp,
                 innerRadius = innerRadius.dp,
                 itemSpacing = itemSpacing.dp,
-                contentPadding = contentPadding.dp
-            )
-        )
+                contentPadding = contentPadding.dp,
+            ),
+        ),
     )
 }

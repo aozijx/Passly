@@ -43,7 +43,7 @@ import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
 
 @Composable
 fun AuthenticationScreen(
-    viewModel: AuthenticationViewModel
+    viewModel: AuthenticationViewModel,
 ) {
     val methods by viewModel.methodAvailability.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -71,14 +71,14 @@ fun AuthenticationScreen(
         modifier = Modifier
             .fillMaxSize()
             .imePadding()
-            .background(MaterialTheme.colorScheme.surface)
+            .background(MaterialTheme.colorScheme.surface),
     ) {
         Column(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
                 imageVector = Icons.Default.Lock,
@@ -87,7 +87,7 @@ fun AuthenticationScreen(
                     .size(64.dp)
                     .clickable(
                         interactionSource = lockIconInteractionSource,
-                        indication = null
+                        indication = null,
                     ) {
                         viewModel.onIntent(AuthenticationIntent.LockIconClicked)
                     },
@@ -131,9 +131,10 @@ fun AuthenticationScreen(
                     icon = Icons.Default.Fingerprint,
                     text = stringResource(R.string.auth_biometric_unlock),
                     progress = activeMethod == AuthenticationMethod.BIOMETRIC,
-                    enabled = activeMethod == null || activeMethod == AuthenticationMethod.BIOMETRIC,
-                    onClick = { viewModel.onIntent(AuthenticationIntent.BiometricClicked) }
-                )
+                    enabled = ((activeMethod == null) || (activeMethod == AuthenticationMethod.BIOMETRIC)),
+                ) {
+                    viewModel.onIntent(AuthenticationIntent.BiometricClicked)
+                }
             }
 
             if (AuthenticationMethod.APP_PASSWORD in methods) {
@@ -148,7 +149,7 @@ fun AuthenticationScreen(
                     result = appPasswordFailure?.let { false },
                     errorText = appPasswordFailure?.message(appPasswordLabel)
                         ?: stringResource(R.string.auth_error_failed),
-                    enabled = activeMethod == null || activeMethod == AuthenticationMethod.APP_PASSWORD,
+                    enabled = (activeMethod == null || activeMethod == AuthenticationMethod.APP_PASSWORD),
                     onValueChange = {
                         viewModel.onIntent(AuthenticationIntent.AppPasswordChanged(it))
                     },
@@ -173,9 +174,10 @@ fun AuthenticationScreen(
                     icon = Icons.Default.Password,
                     text = stringResource(R.string.auth_set_app_password),
                     progress = uiState.isSettingAppPassword,
-                    enabled = activeMethod == null && !uiState.isSettingAppPassword,
-                    onClick = { viewModel.onIntent(AuthenticationIntent.SetPasswordClicked) }
-                )
+                    enabled = (activeMethod == null && !uiState.isSettingAppPassword),
+                ) {
+                    viewModel.onIntent(AuthenticationIntent.SetPasswordClicked)
+                }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = stringResource(R.string.auth_biometric_unavailable_password_required),
@@ -242,8 +244,8 @@ private fun AuthenticationFailure.message(
     forSetup: Boolean = false
 ): String {
     if (
-        code == AuthenticationFailureCode.CREDENTIAL_INCORRECT &&
-        methodLabel != null
+        (code == AuthenticationFailureCode.CREDENTIAL_INCORRECT) &&
+        (methodLabel != null)
     ) {
         if ((attempts.remaining ?: 0) > 0) {
             return stringResource(
