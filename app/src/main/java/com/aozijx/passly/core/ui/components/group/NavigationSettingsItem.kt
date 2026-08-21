@@ -30,7 +30,7 @@ fun navigationSettingsGroupItem(
     onClick = onClick,
     trailing = {
         value?.takeIf(String::isNotBlank)?.let {
-            AnimatedSettingValue(value = it)
+            AnimatedSettingValue(value = it, enabled = enabled)
         }
     }
 )

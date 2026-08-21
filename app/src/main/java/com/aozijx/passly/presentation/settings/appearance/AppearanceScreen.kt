@@ -90,6 +90,7 @@ internal fun AppearanceDetail(
                 ),
                 navigationSettingsGroupItem(
                     key = "appearance.theme_color",
+                    enabled = !state.isDynamicColor,
                     icon = Icons.Default.Palette,
                     title = stringResource(R.string.settings_theme_color),
                     value = if (state.isDynamicColor) {
@@ -97,7 +98,7 @@ internal fun AppearanceDetail(
                     } else {
                         stringResource(state.fallbackPalette.labelRes())
                     },
-                    onClick = { showThemeColorSheet = !showThemeColorSheet }
+                    onClick = { showThemeColorSheet = true }
                 )
             )
         )
@@ -151,7 +152,7 @@ internal fun AppearanceDetail(
         )
     }
 
-    if (showThemeColorSheet) {
+    if (showThemeColorSheet && !state.isDynamicColor) {
         ThemePicker(
             selectedPalette = state.fallbackPalette,
             sheetState = themeColorSheetState,
