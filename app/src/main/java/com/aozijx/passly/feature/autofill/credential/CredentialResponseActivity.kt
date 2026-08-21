@@ -12,8 +12,8 @@ import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.ui.components.auth.AuthenticationHost
 import com.aozijx.passly.core.ui.theme.AppTheme
-import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService
+import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
