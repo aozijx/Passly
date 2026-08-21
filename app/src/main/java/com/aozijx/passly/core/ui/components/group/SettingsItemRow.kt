@@ -44,6 +44,7 @@ internal fun SettingsItemRow(
 @Composable
 internal fun AnimatedSettingValue(
     value: String,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val motionScheme = MaterialTheme.motionScheme
@@ -62,7 +63,11 @@ internal fun AnimatedSettingValue(
         Text(
             text = targetValue,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary,
+            color = if (enabled) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            },
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(horizontal = 8.dp)
         )

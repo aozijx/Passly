@@ -36,8 +36,8 @@ class AppearanceSettingsViewModel @Inject constructor(
                 settingsRepository.update(SettingsCommand.SetDynamicColor(action.enabled))
             }
 
-            is AppearanceSettingsAction.SelectManualThemeColor -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SelectManualThemeColor(action.argb))
+            is AppearanceSettingsAction.SetFallbackPalette -> viewModelScope.launch {
+                settingsRepository.update(SettingsCommand.SetFallbackPalette(action.palette))
             }
 
             is AppearanceSettingsAction.SetLanguage -> viewModelScope.launch {
@@ -54,7 +54,7 @@ class AppearanceSettingsViewModel @Inject constructor(
 private fun AppearanceSettings.toUiState(): AppearanceSettingsUiState = AppearanceSettingsUiState(
     themeMode = themeMode,
     isDynamicColor = isDynamicColor,
-    manualThemeColorArgb = manualThemeColorArgb,
+    fallbackPalette = fallbackPalette,
     language = language,
     fontFamily = fontFamily
 )

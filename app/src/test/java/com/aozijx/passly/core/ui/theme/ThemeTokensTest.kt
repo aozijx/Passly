@@ -4,8 +4,8 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.domain.settings.model.FallbackPalette
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -42,40 +42,43 @@ class ThemeTokensTest {
     }
 
     @Test
-    fun emptyOrUnknownManualSelection_resolvesToTheAppDefault() {
-        assertEquals(0L, themePresetByColor(0L).color)
-        assertNull(manualThemePalette(null))
-        assertNull(manualThemePalette(0L))
-        assertNull(manualThemePalette(0xFF123456))
+    fun everyPersistedPalette_resolvesToThreeSeeds() {
+        FallbackPalette.entries.forEach { palette ->
+            val seeds = palette.accentSeeds()
+            assertTrue(seeds.primary != 0L)
+            assertTrue(seeds.secondary != 0L)
+            assertTrue(seeds.tertiary != 0L)
+        }
     }
 
     @Test
-    fun manualPalettes_mapIndependentAccentFamiliesWithoutTintingSurfaces() {
+    fun manualPalettes_tintApplicationSurfacesAsWellAsAccentFamilies() {
         val neutralScheme = lightColorScheme()
 
-        themePresets.mapNotNull(ThemePreset::palette).forEach { palette ->
-            val scheme = palette.applyTo(neutralScheme, isDark = false)
+        FallbackPalette.entries.map { it.accentSeeds() }.forEach { seeds ->
+            val scheme = neutralScheme.withGeneratedAccents(seeds, isDark = false)
 
-            assertEquals(palette.primary.light.accent, scheme.primary)
-            assertEquals(palette.secondary.light.accent, scheme.secondary)
-            assertEquals(palette.tertiary.light.accent, scheme.tertiary)
-            assertEquals(palette.primary.light.container, scheme.primaryFixed)
-            assertEquals(palette.secondary.light.container, scheme.secondaryFixed)
-            assertEquals(palette.tertiary.light.container, scheme.tertiaryFixed)
-            assertEquals(neutralScheme.surface, scheme.surface)
-            assertEquals(neutralScheme.surfaceContainer, scheme.surfaceContainer)
-            assertEquals(neutralScheme.surfaceVariant, scheme.surfaceVariant)
+            assertTrue(
+                scheme.primary != neutralScheme.primary ||
+                    scheme.secondary != neutralScheme.secondary ||
+                    scheme.tertiary != neutralScheme.tertiary
+            )
+            assertTrue(scheme.background != neutralScheme.background)
+            assertTrue(scheme.surface != neutralScheme.surface)
+            assertTrue(scheme.surfaceContainer != neutralScheme.surfaceContainer)
+            assertTrue(scheme.surfaceVariant != neutralScheme.surfaceVariant)
         }
     }
 
     @Test
     fun manualPaletteForegroundPairsMeetAccessibleTextContrast() {
-        themePresets.mapNotNull(ThemePreset::palette).forEach { palette ->
-            listOf(palette.primary, palette.secondary, palette.tertiary).forEach { family ->
-                listOf(family.light, family.dark).forEach { roles ->
-                    assertTrue(contrastRatio(roles.accent, roles.onAccent) >= 4.5)
-                    assertTrue(contrastRatio(roles.container, roles.onContainer) >= 4.5)
-                }
+        FallbackPalette.entries.map { it.accentSeeds() }.forEach { seeds ->
+            listOf(false, true).forEach { isDark ->
+                val scheme = lightColorScheme().withGeneratedAccents(seeds, isDark)
+                assertTrue(contrastRatio(scheme.primary, scheme.onPrimary) >= 4.5)
+                assertTrue(contrastRatio(scheme.primaryContainer, scheme.onPrimaryContainer) >= 4.5)
+                assertTrue(contrastRatio(scheme.secondary, scheme.onSecondary) >= 4.5)
+                assertTrue(contrastRatio(scheme.tertiary, scheme.onTertiary) >= 4.5)
             }
         }
     }

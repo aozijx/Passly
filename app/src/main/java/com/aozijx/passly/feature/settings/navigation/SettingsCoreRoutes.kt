@@ -116,8 +116,8 @@ internal fun CoreSettingsRouteContent(
                         onDynamicColorChange = {
                             viewModel.onAction(AppearanceSettingsAction.SetDynamicColor(it))
                         },
-                        onManualThemeColorSelect = {
-                            viewModel.onAction(AppearanceSettingsAction.SelectManualThemeColor(it))
+                        onFallbackPaletteSelect = {
+                            viewModel.onAction(AppearanceSettingsAction.SetFallbackPalette(it))
                         },
                         onLanguageChange = {
                             viewModel.onAction(AppearanceSettingsAction.SetLanguage(it))
