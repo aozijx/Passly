@@ -46,22 +46,44 @@ internal fun AnimatedSettingValue(
     value: String,
     enabled: Boolean = true,
     modifier: Modifier = Modifier
+) = AnimatedSettingValue(
+    targetState = value,
+    valueLabel = { it },
+    enabled = enabled,
+    modifier = modifier
+)
+
+/**
+ * Animates a setting value between ordered states. [transitionDirection] is evaluated for every
+ * interrupted transition, so a rapid target reversal changes direction from the current target.
+ */
+@Composable
+internal fun <T> AnimatedSettingValue(
+    targetState: T,
+    valueLabel: (T) -> String,
+    transitionDirection: (initial: T, target: T) -> Int = { _, _ -> 1 },
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier
 ) {
     val motionScheme = MaterialTheme.motionScheme
     AnimatedContent(
-        targetState = value,
+        targetState = targetState,
         modifier = modifier,
         transitionSpec = {
+            val verticalDirection = transitionDirection(initialState, targetState)
+                .coerceIn(-1, 1)
+                .takeIf { it != 0 }
+                ?: 1
             slideInVertically(
                 animationSpec = motionScheme.defaultSpatialSpec()
-            ) { it } togetherWith slideOutVertically(
+            ) { it * verticalDirection } togetherWith slideOutVertically(
                 animationSpec = motionScheme.defaultSpatialSpec()
-            ) { -it }
+            ) { -it * verticalDirection }
         },
         label = "setting_value"
     ) { targetValue ->
         Text(
-            text = targetValue,
+            text = valueLabel(targetValue),
             style = MaterialTheme.typography.bodyMedium,
             color = if (enabled) {
                 MaterialTheme.colorScheme.primary

@@ -46,7 +46,15 @@ fun <T> dropdownSettingsGroupItem(
                 },
                 trailing = {
                     AnimatedSettingValue(
-                        value = selectedLabel,
+                        targetState = selected,
+                        valueLabel = { target ->
+                            options.firstOrNull { (value, _) -> value == target }?.second
+                                ?: selectedLabel
+                        },
+                        transitionDirection = { initial, target ->
+                            options.indexOfFirst { (value, _) -> value == target } -
+                                options.indexOfFirst { (value, _) -> value == initial }
+                        },
                         modifier = Modifier.padding(horizontal = 8.dp)
                     )
                 }
