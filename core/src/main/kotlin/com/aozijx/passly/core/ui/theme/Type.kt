@@ -4,7 +4,7 @@ import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import com.aozijx.passly.R
+import com.aozijx.passly.core.R
 
 /** 将所有文本样式设为指定 [fontFamily] 的 Typography。 */
 private fun Typography.withFontFamily(fontFamily: FontFamily): Typography = copy(

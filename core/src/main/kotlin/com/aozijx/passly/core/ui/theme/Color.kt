@@ -7,7 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
-import com.aozijx.passly.R
+import com.aozijx.passly.core.R
 
 val md_theme_light_primary @Composable get() = colorResource(R.color.primary_light)
 val md_theme_light_onPrimary @Composable get() = colorResource(R.color.on_primary_light)
@@ -175,7 +175,7 @@ data class ThemePalette(
     val previewColors: List<Color>
         get() = listOf(primary.preview, secondary.preview, tertiary.preview)
 
-    internal fun applyTo(base: ColorScheme, isDark: Boolean): ColorScheme {
+    fun applyTo(base: ColorScheme, isDark: Boolean): ColorScheme {
         val primaryRoles = primary.roles(isDark)
         val secondaryRoles = secondary.roles(isDark)
         val tertiaryRoles = tertiary.roles(isDark)

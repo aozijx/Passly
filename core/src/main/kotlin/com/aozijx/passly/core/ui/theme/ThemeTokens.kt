@@ -40,7 +40,7 @@ private val DefaultThemeTokens = PasslyThemeTokens(
     )
 )
 
-internal val LocalPasslyThemeTokens = staticCompositionLocalOf { DefaultThemeTokens }
+val LocalPasslyThemeTokens = staticCompositionLocalOf { DefaultThemeTokens }
 
 /** Passly 自有设计令牌的统一读取入口。 */
 object PasslyTheme {
@@ -55,12 +55,12 @@ object PasslyTheme {
         get() = tokens.roundedGroup
 }
 
-internal data class PasslyThemeDefinition(
+data class PasslyThemeDefinition(
     val shapes: Shapes,
     val tokens: PasslyThemeTokens
 )
 
-internal fun passlyThemeDefinition(
+fun passlyThemeDefinition(
     outerCornerRadiusDp: Float,
     innerCornerRadiusDp: Float,
     groupItemSpacingDp: Float,
