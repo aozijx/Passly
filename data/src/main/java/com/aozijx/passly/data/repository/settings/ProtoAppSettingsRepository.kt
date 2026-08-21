@@ -13,7 +13,7 @@ import javax.inject.Singleton
 
 @Singleton
 internal class ProtoAppSettingsRepository @Inject constructor(
-    @ApplicationContext context: Context
+    @ApplicationContext context: Context,
 ) : AppSettingsRepository {
 
     private val dataStore = context.applicationContext.appSettingsDataStore

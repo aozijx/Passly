@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
@@ -42,7 +41,7 @@ fun ActionButton(
             .height(46.dp),
         onClick = onClick,
         enabled = enabled && !progress && result == null,
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.extraLarge,
         colors = if (containerColor != null) {
             ButtonDefaults.filledTonalButtonColors(containerColor = containerColor)
         } else {

@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -142,7 +142,7 @@ fun VaultScanner(
                 },
                 modifier = Modifier
                     .size(56.dp)
-                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
+                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
             ) {
                 Icon(
                     Icons.Default.PhotoLibrary,
@@ -155,7 +155,7 @@ fun VaultScanner(
                 onClick = onDismiss,
                 modifier = Modifier
                     .size(56.dp)
-                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
+                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
             ) {
                 Icon(
                     Icons.Default.Close,
@@ -180,7 +180,7 @@ fun VaultScanner(
                     modifier = Modifier
                         .fillMaxWidth()
                         .widthIn(max = 560.dp),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
                     )
@@ -223,7 +223,7 @@ fun VaultScanner(
                                     scannerViewModel.handleIntent(ScannerIntent.StartScanning)
                                 },
                                 modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp),
+                                shape = MaterialTheme.shapes.medium,
                                 colors = ButtonDefaults.filledTonalButtonColors()
                             ) {
                                 Text(stringResource(R.string.vault_scan))
@@ -234,7 +234,7 @@ fun VaultScanner(
                                     val parsedConfig = scannedTotp ?: return@Button
                                     onSaveOtp(parsedConfig)
                                     onDismiss()
-                                }, modifier = Modifier.weight(2f), shape = RoundedCornerShape(8.dp)
+                                }, modifier = Modifier.weight(2f), shape = MaterialTheme.shapes.medium
                             ) {
                                 Icon(
                                     Icons.Default.Save,

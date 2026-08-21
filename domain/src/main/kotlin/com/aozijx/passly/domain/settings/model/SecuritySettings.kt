@@ -7,5 +7,5 @@ data class SecuritySettings(
     val isLockOnBackground: Boolean = false,
     val lockTimeout: Long = 60000L,
     val isInvalidateBiometricKeyOnChange: Boolean = true,
-    val reauthenticateSensitiveCopies: Boolean = true
+    val reauthenticateSensitiveCopies: Boolean = true,
 )

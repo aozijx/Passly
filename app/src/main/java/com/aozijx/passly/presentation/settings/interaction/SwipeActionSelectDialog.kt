@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
@@ -77,7 +76,7 @@ fun SwipeActionSelectDialog(
                             .fillMaxWidth()
                             .background(
                                 color = if (isSelected) selectedBackground else Color.Transparent,
-                                shape = RoundedCornerShape(16.dp)
+                                shape = MaterialTheme.shapes.extraLarge
                             )
                             .clickable { onActionSelected(action) }
                             .padding(vertical = 8.dp, horizontal = 16.dp),
@@ -108,6 +107,6 @@ fun SwipeActionSelectDialog(
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
-        shape = RoundedCornerShape(28.dp)
+        shape = MaterialTheme.shapes.extraLarge
     )
 }

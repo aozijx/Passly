@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCode
@@ -103,7 +102,7 @@ fun TotpCard(
                     alpha = 0.2f
                 )
             ),
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.large,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
         ) {
             val code = currentState?.code
@@ -223,7 +222,7 @@ private fun QRcodeRender(
                     .widthIn(max = 360.dp)
                     .fillMaxWidth()
                     .aspectRatio(1f),
-                shape = RoundedCornerShape(24.dp),
+                shape = MaterialTheme.shapes.largeIncreased,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                 ),
