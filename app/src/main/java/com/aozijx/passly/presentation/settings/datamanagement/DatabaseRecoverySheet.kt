@@ -28,8 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsUiState
-import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsAction
+import com.aozijx.passly.feature.settings.datamanagement.DatabaseRecoveryUiState
+import com.aozijx.passly.feature.settings.datamanagement.DatabaseRecoveryUiAction
 import com.aozijx.passly.data.local.database.model.DatabaseRecoveryPackage
 import com.aozijx.passly.data.local.database.model.DatabaseRecoveryStatus
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -40,15 +40,15 @@ import java.util.Date
 @Composable
 internal fun DatabaseRecoverySheet(
     visible: Boolean,
-    state: DataManagementSettingsUiState,
+    state: DatabaseRecoveryUiState,
     onDismiss: () -> Unit,
-    onAction: (DataManagementSettingsAction) -> Unit,
+    onAction: (DatabaseRecoveryUiAction) -> Unit,
 ) {
     if (!visible) return
     var deletePackageId by remember { mutableStateOf<String?>(null) }
     ModalBottomSheet(
         onDismissRequest = {
-            onAction(DataManagementSettingsAction.ClearRecoveryResult)
+            onAction(DatabaseRecoveryUiAction.ClearRecoveryResult)
             onDismiss()
         },
     ) {
@@ -94,20 +94,20 @@ internal fun DatabaseRecoverySheet(
                         state = state,
                         onScan = {
                             onAction(
-                                DataManagementSettingsAction.ScanRecoveryPackage(
+                                DatabaseRecoveryUiAction.ScanRecoveryPackage(
                                     recoveryPackage.id,
                                 ),
                             )
                         },
                         onRestore = {
                             onAction(
-                                DataManagementSettingsAction.RestoreRecoveryPackage(
+                                DatabaseRecoveryUiAction.RestoreRecoveryPackage(
                                     recoveryPackage.id,
                                 ),
                             )
                         },
                         onToggleType = {
-                            onAction(DataManagementSettingsAction.ToggleRecoveryType(it))
+                            onAction(DatabaseRecoveryUiAction.ToggleRecoveryType(it))
                         },
                         onDelete = { deletePackageId = recoveryPackage.id },
                     )
@@ -126,7 +126,7 @@ internal fun DatabaseRecoverySheet(
                 TextButton(
                     onClick = {
                         deletePackageId = null
-                        onAction(DataManagementSettingsAction.DeleteRecoveryPackage(packageId))
+                        onAction(DatabaseRecoveryUiAction.DeleteRecoveryPackage(packageId))
                     },
                 ) {
                     Text(
@@ -147,7 +147,7 @@ internal fun DatabaseRecoverySheet(
 @Composable
 private fun RecoveryPackageCard(
     recoveryPackage: DatabaseRecoveryPackage,
-    state: DataManagementSettingsUiState,
+    state: DatabaseRecoveryUiState,
     onScan: () -> Unit,
     onRestore: () -> Unit,
     onToggleType: (EntryType) -> Unit,

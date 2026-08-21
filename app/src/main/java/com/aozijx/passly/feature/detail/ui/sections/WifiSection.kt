@@ -29,7 +29,7 @@ import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
-import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.DetailUiAction
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
@@ -37,6 +37,7 @@ import com.aozijx.passly.feature.detail.internal.toggleRevealSensitiveField
 import com.aozijx.passly.feature.detail.internal.withWifiPassword
 import com.aozijx.passly.feature.detail.ui.components.DetailItem
 import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
+import com.aozijx.passly.domain.sensitive.OwnedChars
 
 @Composable
 fun WifiSection(
@@ -46,7 +47,7 @@ fun WifiSection(
     onPasswordRevealed: (String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
     onEntryUpdated: (Entry) -> Unit,
-    onEvent: (DetailIntent) -> Unit
+    onAction: (DetailUiAction) -> Unit
 ) {
     val context = LocalContext.current
     val msgCopySuccess = stringResource(R.string.field_copy_success_message)
@@ -56,7 +57,7 @@ fun WifiSection(
     val wifiHiddenLabel = stringResource(R.string.wifi_hidden)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
-        onEvent = onEvent
+        onAction = onAction
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -66,7 +67,7 @@ fun WifiSection(
             isRevealed = true,
             onCopy = {
                 ClipboardUtils.copy(context, entry.username)
-                onEvent(DetailIntent.RecordAction("SSID", ActivityType.COPY_PASSWORD))
+                onAction(DetailUiAction.RecordAction("SSID", ActivityType.COPY_PASSWORD))
             },
             onEdit = {}
         )
@@ -100,7 +101,7 @@ fun WifiSection(
                         context = context,
                         handler = actionHandler,
                         fieldName = "wifi password",
-                        revealedValue = revealedPassword,
+                        revealedValue = revealedPassword?.let { OwnedChars.fromString(it) },
                         sourceValue = entry.secret.wifi?.password,
                         afterCopy = {
                             Toast.makeText(
@@ -124,7 +125,7 @@ fun WifiSection(
                     toggleRevealSensitiveField(
                         handler = actionHandler,
                         fieldName = "wifi password",
-                        revealedValue = revealedPassword,
+                        revealedValue = revealedPassword?.let { OwnedChars.fromString(it) },
                         sourceValue = entry.secret.wifi?.password,
                         onReveal = onPasswordRevealed
                     )

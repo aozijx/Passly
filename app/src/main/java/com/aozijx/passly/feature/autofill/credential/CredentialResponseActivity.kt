@@ -72,20 +72,20 @@ class CredentialResponseActivity : AppCompatActivity() {
         when (val action = intent.action) {
             ModernCredentialService.ACTION_GET_PASSWORD -> {
                 isFinalStepAction = true
-                viewModel.onIntent(CredentialResponseIntent.PasswordGet(intent))
+                viewModel.onAction(CredentialResponseUiAction.PasswordGet(intent))
             }
 
             ModernCredentialService.ACTION_UNLOCK ->
-                viewModel.onIntent(CredentialResponseIntent.Unlock(intent))
+                viewModel.onAction(CredentialResponseUiAction.Unlock(intent))
 
             ModernCredentialService.ACTION_CREATE_PASSWORD -> {
                 isFinalStepAction = true
-                viewModel.onIntent(CredentialResponseIntent.PasswordCreate(intent))
+                viewModel.onAction(CredentialResponseUiAction.PasswordCreate(intent))
             }
 
             else -> {
                 AppTelemetry.w(TAG, "Unknown action: $action")
-                viewModel.onIntent(CredentialResponseIntent.UnknownAction)
+                viewModel.onAction(CredentialResponseUiAction.UnknownAction)
             }
         }
     }

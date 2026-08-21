@@ -59,7 +59,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.feature.scanner.components.ScannerView
 import com.aozijx.passly.feature.scanner.contract.ImageRef
 import com.aozijx.passly.feature.scanner.contract.ScannerEffect
-import com.aozijx.passly.feature.scanner.contract.ScannerIntent
+import com.aozijx.passly.feature.scanner.contract.ScannerUiAction
 
 /**
  * Vault 专用的扫码特化组件
@@ -82,7 +82,7 @@ fun VaultScanner(
     var scannedTotp by remember { mutableStateOf<OtpConfig?>(null) }
 
     LaunchedEffect(scannerViewModel) {
-        scannerViewModel.handleIntent(ScannerIntent.StartScanning)
+        scannerViewModel.onAction(ScannerUiAction.StartScanning)
         scannerViewModel.effects.collect { effect ->
             when (effect) {
                 is ScannerEffect.ScanSuccess -> {
@@ -101,12 +101,12 @@ fun VaultScanner(
     }
 
     val pickPhoto = rememberImagePicker { uri, _ ->
-        scannerViewModel.handleIntent(ScannerIntent.DecodeImage(ImageRef(uri.toString())))
+        scannerViewModel.onAction(ScannerUiAction.DecodeImage(ImageRef(uri.toString())))
     }
 
     DisposableEffect(scannerViewModel) {
         onDispose {
-            scannerViewModel.handleIntent(ScannerIntent.StopScanning)
+            scannerViewModel.onAction(ScannerUiAction.StopScanning)
         }
     }
 
@@ -121,7 +121,7 @@ fun VaultScanner(
             showResultCard = scannedTotp == null,
             onBarcodeDetected = { barcode ->
                 if (scannedTotp != null) return@ScannerView
-                scannerViewModel.handleIntent(ScannerIntent.BarcodeDetected(barcode))
+                scannerViewModel.onAction(ScannerUiAction.BarcodeDetected(barcode))
             },
             onPermissionDenied = { onDismiss() })
 
@@ -137,7 +137,7 @@ fun VaultScanner(
                 onClick = {
                     scanResult = ""
                     scannedTotp = null
-                    scannerViewModel.handleIntent(ScannerIntent.StartScanning)
+                    scannerViewModel.onAction(ScannerUiAction.StartScanning)
                     pickPhoto(ImageType.SCREEN)
                 },
                 modifier = Modifier
@@ -220,7 +220,7 @@ fun VaultScanner(
                                 onClick = {
                                     scanResult = ""
                                     scannedTotp = null
-                                    scannerViewModel.handleIntent(ScannerIntent.StartScanning)
+                                    scannerViewModel.onAction(ScannerUiAction.StartScanning)
                                 },
                                 modifier = Modifier.weight(1f),
                                 shape = MaterialTheme.shapes.medium,

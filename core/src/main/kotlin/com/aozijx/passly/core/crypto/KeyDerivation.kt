@@ -17,11 +17,11 @@ object KeyDerivation {
         val iterations: Int = 3,
         val memoryKiB: Int = 65_536,
         val parallelism: Int = 4,
-        val keyLengthBits: Int = 256
+        val keyLengthBits: Int = 256,
     ) {
         init {
             require(version == ARGON2_VERSION_13) { "Unsupported Argon2 version: $version" }
-            require(iterations in 1..20) { "Invalid Argon2 iteration count" }
+            require((iterations in 1..20)) { "Invalid Argon2 iteration count" }
             require(memoryKiB in 8 * 1024..1024 * 1024) { "Invalid Argon2 memory cost" }
             require(parallelism in 1..16) { "Invalid Argon2 parallelism" }
             require(keyLengthBits == 256) { "Only AES-256 backup keys are supported" }
@@ -38,7 +38,7 @@ object KeyDerivation {
     fun deriveKeyBytesArgon2id(
         password: CharArray,
         salt: ByteArray,
-        parameters: Argon2idParameters = DEFAULT_ARGON2ID_PARAMETERS
+        parameters: Argon2idParameters = DEFAULT_ARGON2ID_PARAMETERS,
     ): ByteArray {
         val encodedPassword = StandardCharsets.UTF_8.encode(CharBuffer.wrap(password))
         val passBytes = ByteArray(encodedPassword.remaining()).also(encodedPassword::get)

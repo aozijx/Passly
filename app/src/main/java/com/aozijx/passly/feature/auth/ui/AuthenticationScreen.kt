@@ -38,20 +38,25 @@ import com.aozijx.passly.core.ui.components.common.InputActionButton
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
-import com.aozijx.passly.feature.auth.contract.AuthenticationIntent
-import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
+import com.aozijx.passly.feature.auth.contract.BootstrapUiAction
+import com.aozijx.passly.feature.auth.contract.UnlockUiAction
+import com.aozijx.passly.feature.auth.presentation.BootstrapViewModel
+import com.aozijx.passly.feature.auth.presentation.UnlockViewModel
 
 @Composable
 fun AuthenticationScreen(
-    viewModel: AuthenticationViewModel,
+    unlockViewModel: UnlockViewModel,
+    bootstrapViewModel: BootstrapViewModel,
 ) {
-    val methods by viewModel.methodAvailability.collectAsStateWithLifecycle()
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val methods by unlockViewModel.methodAvailability.collectAsStateWithLifecycle()
+    val unlockState by unlockViewModel.uiState.collectAsStateWithLifecycle()
+    val bootstrapState by bootstrapViewModel.uiState.collectAsStateWithLifecycle()
+
     val subtitle = stringResource(R.string.vault_auth_subtitle)
-    val activeMethod = uiState.activeMethod
+    val activeMethod = unlockState.activeMethod
     val appPasswordLabel = stringResource(R.string.auth_app_password_label)
     val recoveryCodeLabel = stringResource(R.string.recovery_code_label)
-    val verificationFailure = uiState.verificationFailure
+    val verificationFailure = unlockState.verificationFailure
     val appPasswordFailure = verificationFailure?.takeIf {
         it.method == AuthenticationMethod.APP_PASSWORD
     }?.failure
@@ -63,8 +68,8 @@ fun AuthenticationScreen(
     }?.failure
     val lockIconInteractionSource = remember { MutableInteractionSource() }
 
-    BackHandler(enabled = !uiState.showSetPasswordDialog) {
-        viewModel.onIntent(AuthenticationIntent.BackPressed)
+    BackHandler(enabled = !bootstrapState.showSetPasswordDialog) {
+        unlockViewModel.onAction(UnlockUiAction.BackPressed)
     }
 
     Column(
@@ -89,7 +94,7 @@ fun AuthenticationScreen(
                         interactionSource = lockIconInteractionSource,
                         indication = null,
                     ) {
-                        viewModel.onIntent(AuthenticationIntent.LockIconClicked)
+                        unlockViewModel.onAction(UnlockUiAction.LockIconClicked)
                     },
                 tint = MaterialTheme.colorScheme.primary
             )
@@ -133,15 +138,15 @@ fun AuthenticationScreen(
                     progress = activeMethod == AuthenticationMethod.BIOMETRIC,
                     enabled = ((activeMethod == null) || (activeMethod == AuthenticationMethod.BIOMETRIC)),
                 ) {
-                    viewModel.onIntent(AuthenticationIntent.BiometricClicked)
+                    unlockViewModel.onAction(UnlockUiAction.BiometricClicked)
                 }
             }
 
             if (AuthenticationMethod.APP_PASSWORD in methods) {
                 Spacer(modifier = Modifier.height(8.dp))
                 InputActionButton(
-                    value = uiState.appPassword,
-                    expanded = uiState.expandedMethod == AuthenticationMethod.APP_PASSWORD,
+                    value = unlockState.appPassword,
+                    expanded = unlockState.expandedMethod == AuthenticationMethod.APP_PASSWORD,
                     progress = activeMethod == AuthenticationMethod.APP_PASSWORD,
                     collapsedText = stringResource(R.string.auth_password_unlock),
                     expandedText = stringResource(R.string.auth_password_verify),
@@ -151,19 +156,19 @@ fun AuthenticationScreen(
                         ?: stringResource(R.string.auth_error_failed),
                     enabled = (activeMethod == null || activeMethod == AuthenticationMethod.APP_PASSWORD),
                     onValueChange = {
-                        viewModel.onIntent(AuthenticationIntent.AppPasswordChanged(it))
+                        unlockViewModel.onAction(UnlockUiAction.AppPasswordChanged(it))
                     },
                     onExpandedChange = {
-                        viewModel.onIntent(
-                            AuthenticationIntent.InputExpanded(
+                        unlockViewModel.onAction(
+                            UnlockUiAction.InputExpanded(
                                 AuthenticationMethod.APP_PASSWORD,
                                 it
                             )
                         )
                     },
-                    onAction = { viewModel.onIntent(AuthenticationIntent.AppPasswordSubmitted) },
+                    onAction = { unlockViewModel.onAction(UnlockUiAction.AppPasswordSubmitted) },
                     onResultConsumed = {
-                        viewModel.onIntent(AuthenticationIntent.ClearVerificationFailure)
+                        unlockViewModel.onAction(UnlockUiAction.ClearVerificationFailure)
                     }
                 )
             }
@@ -173,10 +178,10 @@ fun AuthenticationScreen(
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.Password,
                     text = stringResource(R.string.auth_set_app_password),
-                    progress = uiState.isSettingAppPassword,
-                    enabled = (activeMethod == null && !uiState.isSettingAppPassword),
+                    progress = bootstrapState.isSettingAppPassword,
+                    enabled = (activeMethod == null && !bootstrapState.isSettingAppPassword),
                 ) {
-                    viewModel.onIntent(AuthenticationIntent.SetPasswordClicked)
+                    bootstrapViewModel.onAction(BootstrapUiAction.SetPasswordClicked)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -186,11 +191,11 @@ fun AuthenticationScreen(
                 )
             }
 
-            if (AuthenticationMethod.RECOVERY_CODE in methods && uiState.recoveryUnlockVisible) {
+            if (AuthenticationMethod.RECOVERY_CODE in methods && unlockState.recoveryUnlockVisible) {
                 Spacer(modifier = Modifier.height(8.dp))
                 InputActionButton(
-                    value = uiState.recoveryCode,
-                    expanded = uiState.expandedMethod == AuthenticationMethod.RECOVERY_CODE,
+                    value = unlockState.recoveryCode,
+                    expanded = unlockState.expandedMethod == AuthenticationMethod.RECOVERY_CODE,
                     progress = activeMethod == AuthenticationMethod.RECOVERY_CODE,
                     icon = Icons.Default.Restore,
                     collapsedText = stringResource(R.string.restore_access),
@@ -201,18 +206,18 @@ fun AuthenticationScreen(
                         ?: stringResource(R.string.auth_error_failed),
                     enabled = activeMethod == null || activeMethod == AuthenticationMethod.RECOVERY_CODE,
                     onValueChange = {
-                        viewModel.onIntent(AuthenticationIntent.RecoveryCodeChanged(it))
+                        unlockViewModel.onAction(UnlockUiAction.RecoveryCodeChanged(it))
                     },
                     onExpandedChange = {
-                        viewModel.onIntent(
-                            AuthenticationIntent.InputExpanded(
+                        unlockViewModel.onAction(
+                            UnlockUiAction.InputExpanded(
                                 AuthenticationMethod.RECOVERY_CODE, it
                             )
                         )
                     },
-                    onAction = { viewModel.onIntent(AuthenticationIntent.RecoveryCodeSubmitted) },
+                    onAction = { unlockViewModel.onAction(UnlockUiAction.RecoveryCodeSubmitted) },
                     onResultConsumed = {
-                        viewModel.onIntent(AuthenticationIntent.ClearVerificationFailure)
+                        unlockViewModel.onAction(UnlockUiAction.ClearVerificationFailure)
                     }
                 )
             }
@@ -220,20 +225,20 @@ fun AuthenticationScreen(
         }
     }
 
-    if (uiState.showSetPasswordDialog) {
+    if (bootstrapState.showSetPasswordDialog) {
         AppPasswordSetDialog(
-            newPassword = String(uiState.newAppPassword.toCharArray()),
-            confirmPassword = String(uiState.confirmAppPassword.toCharArray()),
+            newPassword = String(bootstrapState.newAppPassword.toCharArray()),
+            confirmPassword = String(bootstrapState.confirmAppPassword.toCharArray()),
             onNewPasswordChange = {
-                viewModel.onIntent(AuthenticationIntent.NewAppPasswordChanged(it))
+                bootstrapViewModel.onAction(BootstrapUiAction.NewAppPasswordChanged(it))
             },
             onConfirmPasswordChange = {
-                viewModel.onIntent(AuthenticationIntent.ConfirmAppPasswordChanged(it))
+                bootstrapViewModel.onAction(BootstrapUiAction.ConfirmAppPasswordChanged(it))
             },
-            onConfirm = { viewModel.onIntent(AuthenticationIntent.SetPasswordConfirmed) },
-            onDismiss = { viewModel.onIntent(AuthenticationIntent.DismissSetPasswordDialog) },
-            isBusy = uiState.isSettingAppPassword,
-            errorMessage = uiState.setupFailure?.message(forSetup = true)
+            onConfirm = { bootstrapViewModel.onAction(BootstrapUiAction.SetPasswordConfirmed) },
+            onDismiss = { bootstrapViewModel.onAction(BootstrapUiAction.DismissSetPasswordDialog) },
+            isBusy = bootstrapState.isSettingAppPassword,
+            errorMessage = bootstrapState.setupFailure?.message(forSetup = true)
         )
     }
 }

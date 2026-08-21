@@ -12,7 +12,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.DetailUiAction
 import com.aozijx.passly.feature.detail.ui.components.TotpCard
 
 @Composable
@@ -21,7 +21,7 @@ fun TotpSection(
     currentState: OtpUiState?,
     totpUri: String? = null,
     showProgress: Boolean = true,
-    onEvent: (DetailIntent) -> Unit,
+    onAction: (DetailUiAction) -> Unit,
 ) {
     val context = LocalContext.current
     val msgCopySuccess = stringResource(R.string.field_copy_success_message)
@@ -42,7 +42,7 @@ fun TotpSection(
                             msgCopySuccess.format(totpLabel),
                             Toast.LENGTH_SHORT
                         ).show()
-                        onEvent(DetailIntent.RecordAction("totp", ActivityType.COPY_PASSWORD))
+                        onAction(DetailUiAction.RecordAction("totp", ActivityType.COPY_PASSWORD))
                     }
                 }
             }

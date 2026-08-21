@@ -26,7 +26,7 @@ import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
-import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.DetailUiAction
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
@@ -35,6 +35,7 @@ import com.aozijx.passly.feature.detail.internal.withCardCvv
 import com.aozijx.passly.feature.detail.internal.withCardNumber
 import com.aozijx.passly.feature.detail.internal.withDetailUsername
 import com.aozijx.passly.feature.detail.ui.components.DetailItem
+import com.aozijx.passly.domain.sensitive.SensitiveValue
 
 @Composable
 fun BankCardSection(
@@ -44,17 +45,17 @@ fun BankCardSection(
     revealedCardNumber: String?,
     revealedCvv: String?,
     revealedPaymentPin: String?,
-    onRevealField: (String, String?) -> Unit,
+    onRevealField: (String, SensitiveValue?) -> Unit,
     onAuthenticate: DetailAuthenticate,
     onEntryUpdated: (Entry) -> Unit,
-    onEvent: (DetailIntent) -> Unit
+    onAction: (DetailUiAction) -> Unit
 ) {
     val context = LocalContext.current
     val label = stringResource(R.string.vault_fab_bank_card)
     val cardCopiedMsg = stringResource(R.string.field_copy_success_message, label)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
-        onEvent = onEvent
+        onAction = onAction
     )
     val cardSecret = entry.secret.card
     val hasCardNumber = !cardSecret?.cardNumber.isNullOrBlank() ||
@@ -79,7 +80,8 @@ fun BankCardSection(
                     IconButton(onClick = {
                         savePlaintext(editState.editedUsername, revealedCardholder, { editState.isEditingUsername = false }) {
                             onEntryUpdated(entry.withDetailUsername(it))
-                            onRevealField(RevealedFieldKey.CARDHOLDER, editState.editedUsername)
+                            // Wrap in SensitiveValue for consistency
+                            onRevealField(RevealedFieldKey.CARDHOLDER, com.aozijx.passly.domain.sensitive.OwnedChars.fromString(editState.editedUsername))
                         }
                     }) {
                         Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
@@ -97,7 +99,7 @@ fun BankCardSection(
                         context = context,
                         handler = actionHandler,
                         fieldName = "cardholder",
-                        revealedValue = revealedCardholder,
+                        revealedValue = revealedCardholder?.let { com.aozijx.passly.domain.sensitive.OwnedChars.fromString(it) },
                         sourceValue = entry.username,
                         afterCopy = {
                             Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
@@ -124,7 +126,7 @@ fun BankCardSection(
                     IconButton(onClick = {
                         savePlaintext(editState.editedPassword, revealedCardNumber, { editState.isEditingPassword = false }) {
                             onEntryUpdated(entry.withCardNumber(it))
-                            onRevealField(RevealedFieldKey.CARD_NUMBER, editState.editedPassword)
+                            onRevealField(RevealedFieldKey.CARD_NUMBER, com.aozijx.passly.domain.sensitive.OwnedChars.fromString(editState.editedPassword))
                         }
                     }) {
                         Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
@@ -142,7 +144,7 @@ fun BankCardSection(
                         context = context,
                         handler = actionHandler,
                         fieldName = "card number",
-                        revealedValue = revealedCardNumber,
+                        revealedValue = revealedCardNumber?.let { com.aozijx.passly.domain.sensitive.OwnedChars.fromString(it) },
                         sourceValue = null,
                         afterCopy = {
                             Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
@@ -157,7 +159,7 @@ fun BankCardSection(
                     if (revealedCardNumber != null) {
                         onRevealField(RevealedFieldKey.CARD_NUMBER, null)
                     } else {
-                        onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.CARD_NUMBER))
+                        onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.CARD_NUMBER))
                     }
                 }
             )
@@ -176,7 +178,7 @@ fun BankCardSection(
                     IconButton(onClick = {
                         savePlaintext(editState.editedTotp, revealedCvv, { editState.isEditingTotp = false }) {
                             onEntryUpdated(entry.withCardCvv(it))
-                            onRevealField(RevealedFieldKey.CVV, editState.editedTotp)
+                            onRevealField(RevealedFieldKey.CVV, com.aozijx.passly.domain.sensitive.OwnedChars.fromString(editState.editedTotp))
                         }
                     }) {
                         Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
@@ -195,7 +197,7 @@ fun BankCardSection(
                         context = context,
                         handler = actionHandler,
                         fieldName = "CVV",
-                        revealedValue = revealedCvv,
+                        revealedValue = revealedCvv?.let { com.aozijx.passly.domain.sensitive.OwnedChars.fromString(it) },
                         sourceValue = null,
                         afterCopy = {
                             Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
@@ -209,7 +211,7 @@ fun BankCardSection(
                     if (revealedCvv != null) {
                         onRevealField(RevealedFieldKey.CVV, null)
                     } else {
-                        onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.CVV))
+                        onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.CVV))
                     }
                 }
             )
@@ -223,7 +225,7 @@ fun BankCardSection(
                 onCopy = {
                     ClipboardUtils.copy(context, expiration)
                     Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
-                    onEvent(DetailIntent.RecordAction("expiration", ActivityType.COPY_PASSWORD))
+                    onAction(DetailUiAction.RecordAction("expiration", ActivityType.COPY_PASSWORD))
                 },
                 onEdit = null
             )
@@ -239,7 +241,7 @@ fun BankCardSection(
                         context = context,
                         handler = actionHandler,
                         fieldName = "payment PIN",
-                        revealedValue = revealedPaymentPin,
+                        revealedValue = revealedPaymentPin?.let { com.aozijx.passly.domain.sensitive.OwnedChars.fromString(it) },
                         sourceValue = null,
                         afterCopy = {
                             Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
@@ -251,7 +253,7 @@ fun BankCardSection(
                     if (revealedPaymentPin != null) {
                         onRevealField(RevealedFieldKey.PAYMENT_PIN, null)
                     } else {
-                        onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.PAYMENT_PIN))
+                        onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.PAYMENT_PIN))
                     }
                 }
             )
@@ -274,12 +276,12 @@ fun BankCardSection(
                         }
                     }
                     if (sensitiveKeys.isNotEmpty()) {
-                        onEvent(DetailIntent.RevealHighSensitivityFields(sensitiveKeys))
+                        onAction(DetailUiAction.RevealHighSensitivityFields(sensitiveKeys))
                     }
                     if (revealedCardholder == null) {
-                        onRevealField(RevealedFieldKey.CARDHOLDER, entry.username)
-                        onEvent(
-                            DetailIntent.RecordAction(
+                        onRevealField(RevealedFieldKey.CARDHOLDER, com.aozijx.passly.domain.sensitive.OwnedChars.fromNullableString(entry.username))
+                        onAction(
+                            DetailUiAction.RecordAction(
                                 "cardholder",
                                 ActivityType.VIEW
                             )

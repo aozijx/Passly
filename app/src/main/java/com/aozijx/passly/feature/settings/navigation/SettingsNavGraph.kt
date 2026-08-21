@@ -37,10 +37,11 @@ import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.apppassword.AppPasswordAction
 import com.aozijx.passly.feature.settings.apppassword.validateAndSendAppPasswordAction
 import com.aozijx.passly.feature.settings.contract.SettingsEffect
-import com.aozijx.passly.feature.settings.contract.SettingsIntent
+import com.aozijx.passly.feature.settings.contract.SettingsUiAction
 import com.aozijx.passly.feature.settings.contract.SettingsUiState
-import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsAction
+import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsUiAction
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsViewModel
+import com.aozijx.passly.feature.settings.datamanagement.DatabaseRecoveryViewModel
 import com.aozijx.passly.feature.settings.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.settings.shell.SettingsDetailPlaceholder
 import com.aozijx.passly.presentation.settings.shell.SettingsMainPage
@@ -72,6 +73,7 @@ fun SettingsNavGraph(
     val interactionState by interactionViewModel.uiState.collectAsStateWithLifecycle()
     val dataViewModel: DataManagementSettingsViewModel = hiltViewModel()
     val dataState by dataViewModel.uiState.collectAsStateWithLifecycle()
+    val recoveryViewModel: DatabaseRecoveryViewModel = hiltViewModel()
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
     val backBehavior = BackNavigationBehavior.PopUntilScaffoldValueChange
@@ -231,6 +233,7 @@ fun SettingsNavGraph(
                         settingsViewModel = settingsViewModel,
                         interactionViewModel = interactionViewModel,
                         dataViewModel = dataViewModel,
+                        recoveryViewModel = recoveryViewModel,
                         settingsState = settingsState,
                         onBack = if (isSinglePane) navigateBack else null
                     )
@@ -250,14 +253,14 @@ fun SettingsNavGraph(
         actions = buildSettingsDialogsActions(
             localState = localState,
             onSetSwipeRightAction = {
-                settingsViewModel.handleIntent(SettingsIntent.SetSwipeRightAction(it))
+                settingsViewModel.onAction(SettingsUiAction.SetSwipeRightAction(it))
             },
             onSetSwipeLeftAction = {
-                settingsViewModel.handleIntent(SettingsIntent.SetSwipeLeftAction(it))
+                settingsViewModel.onAction(SettingsUiAction.SetSwipeLeftAction(it))
             },
             submitAppPasswordAction = ::submitAppPasswordAction,
             onClearBackupDirectory = {
-                dataViewModel.onAction(DataManagementSettingsAction.ClearBackupDirectory)
+                dataViewModel.onAction(DataManagementSettingsUiAction.ClearBackupDirectory)
             }
         )
     )
@@ -271,6 +274,7 @@ private fun SettingsDetailContent(
     settingsViewModel: SettingsViewModel,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
+    recoveryViewModel: DatabaseRecoveryViewModel,
     settingsState: SettingsUiState,
     onBack: (() -> Unit)?
 ) {
@@ -303,6 +307,7 @@ private fun SettingsDetailContent(
                 localState = localState,
                 interactionViewModel = interactionViewModel,
                 dataViewModel = dataViewModel,
+                recoveryViewModel = recoveryViewModel,
                 settingsViewModel = settingsViewModel,
                 settingsState = settingsState,
                 onBack = onBack

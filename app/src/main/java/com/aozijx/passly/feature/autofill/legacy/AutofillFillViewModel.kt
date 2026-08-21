@@ -47,10 +47,10 @@ class AutofillFillViewModel @Inject constructor(
     private var currentRequest: AutofillFillRequest? = null
     private var authenticatedForCurrentRequest = false
 
-    fun onIntent(intent: AutofillFillIntent) {
-        when (intent) {
-            is AutofillFillIntent.Initialize -> initialize(intent.request)
-            is AutofillFillIntent.CandidateSelected -> selectCandidate(intent.candidate)
+    fun onAction(action: AutofillFillUiAction) {
+        when (action) {
+            is AutofillFillUiAction.Initialize -> initialize(action.request)
+            is AutofillFillUiAction.CandidateSelected -> selectCandidate(action.candidate)
         }
     }
 

@@ -34,12 +34,13 @@ import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.ui.components.DetailItem
 import com.aozijx.passly.feature.detail.ui.components.EditTextField
-import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.DetailUiAction
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.withSshPassphrase
+import com.aozijx.passly.domain.sensitive.OwnedChars
 
 @Composable
 fun SshKeySection(
@@ -52,7 +53,7 @@ fun SshKeySection(
     onPasswordRevealed: (String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
     onEntryUpdated: (Entry) -> Unit,
-    onEvent: (DetailIntent) -> Unit
+    onAction: (DetailUiAction) -> Unit
 ) {
     val context = LocalContext.current
     val msgCopySuccess = stringResource(R.string.field_copy_success_message)
@@ -60,7 +61,7 @@ fun SshKeySection(
     val passphraseLabel = stringResource(R.string.passphrase)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
-        onEvent = onEvent
+        onAction = onAction
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -98,7 +99,7 @@ fun SshKeySection(
                         context = context,
                         handler = actionHandler,
                         fieldName = "passphrase",
-                        revealedValue = revealedPassword,
+                        revealedValue = revealedPassword?.let { OwnedChars.fromString(it) },
                         sourceValue = null,
                         afterCopy = {
                             Toast.makeText(
@@ -115,8 +116,8 @@ fun SshKeySection(
                 },
                 onReveal = {
                     if (revealedPassword != null) onPasswordRevealed(null)
-                    else onEvent(
-                        DetailIntent.RevealHighSensitivityField(RevealedFieldKey.SSH_PASSPHRASE)
+                    else onAction(
+                        DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SSH_PASSPHRASE)
                     )
                 }
             )
@@ -125,15 +126,15 @@ fun SshKeySection(
         Surface(
             onClick = {
                 if (revealedSshPrivateKey == null) {
-                    onEvent(
-                        DetailIntent.RevealHighSensitivityField(RevealedFieldKey.SSH_PRIVATE_KEY)
+                    onAction(
+                        DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SSH_PRIVATE_KEY)
                     )
                 } else {
                     copySensitiveField(
                         context = context,
                         handler = actionHandler,
                         fieldName = "private key",
-                        revealedValue = revealedSshPrivateKey,
+                        revealedValue = revealedSshPrivateKey.let { OwnedChars.fromString(it) },
                         sourceValue = null,
                         afterCopy = {
                             Toast.makeText(
@@ -210,7 +211,7 @@ fun SshKeySection(
                         }
                     }
                     if (keys.isNotEmpty()) {
-                        onEvent(DetailIntent.RevealHighSensitivityFields(keys))
+                        onAction(DetailUiAction.RevealHighSensitivityFields(keys))
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),

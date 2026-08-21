@@ -28,11 +28,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.detail.DetailAuthenticate
-import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.DetailUiAction
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
 import com.aozijx.passly.feature.detail.ui.components.DetailItem
+import com.aozijx.passly.domain.sensitive.OwnedChars
 
 @Composable
 fun SeedPhraseSection(
@@ -40,14 +41,14 @@ fun SeedPhraseSection(
     revealedSeedPhrase: String?,
     onSeedPhraseRevealed: (String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
-    onEvent: (DetailIntent) -> Unit
+    onAction: (DetailUiAction) -> Unit
 ) {
     val context = LocalContext.current
     val msgCopySuccess = stringResource(R.string.field_copy_success_message)
     val seedPhraseLabel = stringResource(R.string.seed_phrase)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
-        onEvent = onEvent
+        onAction = onAction
     )
 
     val wordList = remember(revealedSeedPhrase) {
@@ -64,7 +65,7 @@ fun SeedPhraseSection(
                     context = context,
                     handler = actionHandler,
                     fieldName = "seed phrase",
-                    revealedValue = revealedSeedPhrase,
+                    revealedValue = revealedSeedPhrase?.let { OwnedChars.fromString(it) },
                     sourceValue = null,
                     afterCopy = {
                         Toast.makeText(
@@ -78,7 +79,7 @@ fun SeedPhraseSection(
             onEdit = null,
             onReveal = {
                 if (revealedSeedPhrase != null) onSeedPhraseRevealed(null)
-                else onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.SEED_PHRASE))
+                else onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SEED_PHRASE))
             }
         )
 
@@ -110,7 +111,7 @@ fun SeedPhraseSection(
         if (hasSeedPhrase && revealedSeedPhrase == null) {
             Button(
                 onClick = {
-                    onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.SEED_PHRASE))
+                    onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SEED_PHRASE))
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.medium

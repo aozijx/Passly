@@ -25,17 +25,17 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.DetailViewModel
 import com.aozijx.passly.feature.detail.contract.DetailEffect
-import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.DetailUiAction
 import com.aozijx.passly.feature.detail.page.DetailScreen
 import com.aozijx.passly.app.shell.AppShellViewModel
 import com.aozijx.passly.app.shell.contract.AppShellAuthResult
-import com.aozijx.passly.app.shell.contract.AppShellIntent
+import com.aozijx.passly.app.shell.contract.AppShellUiAction
 import com.aozijx.passly.feature.scanner.VaultScanner
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.navigation.SettingsNavGraph
 import com.aozijx.passly.presentation.vault.VaultContent
 import com.aozijx.passly.feature.vault.VaultViewModel
-import com.aozijx.passly.feature.vault.contract.VaultIntent
+import com.aozijx.passly.feature.vault.contract.VaultUiAction
 import com.aozijx.passly.presentation.vault.editor.bankcard.AddBankCardScreen
 import com.aozijx.passly.feature.vault.editor.bankcard.AddBankCardViewModel
 import com.aozijx.passly.presentation.vault.editor.otp.AddOtpScreen
@@ -95,23 +95,23 @@ fun PasslyNavHost(
                         vaultViewModel = vaultViewModel,
                         requestAuthentication = { onSuccess ->
                             pendingAuthCallback = onSuccess
-                            appShellViewModel.handleIntent(AppShellIntent.RequestAuth)
+                            appShellViewModel.onAction(AppShellUiAction.RequestAuth)
                         },
                         requestReauthentication = { onSuccess ->
                             pendingAuthCallback = onSuccess
-                            appShellViewModel.handleIntent(AppShellIntent.RequestReauth)
+                            appShellViewModel.onAction(AppShellUiAction.RequestReauth)
                         },
                         requestSensitiveCopy = { onSuccess ->
                             pendingAuthCallback = onSuccess
-                            appShellViewModel.handleIntent(
-                                AppShellIntent.RequestSensitiveAccess(
+                            appShellViewModel.onAction(
+                                AppShellUiAction.RequestSensitiveAccess(
                                     action = SensitiveAccessAction.COPY,
                                     accessLevel = SensitiveAccessLevel.STANDARD
                                 )
                             )
                         },
                         onUserInteraction = {
-                            appShellViewModel.handleIntent(AppShellIntent.UpdateInteraction)
+                            appShellViewModel.onAction(AppShellUiAction.UpdateInteraction)
                         },
                         onAddPassword = {
                             navController.navigate(AppRoute.AddPassword.route) {
@@ -148,7 +148,7 @@ fun PasslyNavHost(
                         onBack = { navController.popBackStack() },
                         onSaved = { navController.popBackStack() },
                         onUserInteraction = {
-                            appShellViewModel.handleIntent(AppShellIntent.UpdateInteraction)
+                            appShellViewModel.onAction(AppShellUiAction.UpdateInteraction)
                         },
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope
@@ -163,7 +163,7 @@ fun PasslyNavHost(
                         onBack = { navController.popBackStack() },
                         onSaved = { navController.popBackStack() },
                         onUserInteraction = {
-                            appShellViewModel.handleIntent(AppShellIntent.UpdateInteraction)
+                            appShellViewModel.onAction(AppShellUiAction.UpdateInteraction)
                         },
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope,
@@ -184,7 +184,7 @@ fun PasslyNavHost(
                         onBack = { navController.popBackStack() },
                         onSaved = { navController.popBackStack() },
                         onUserInteraction = {
-                            appShellViewModel.handleIntent(AppShellIntent.UpdateInteraction)
+                            appShellViewModel.onAction(AppShellUiAction.UpdateInteraction)
                         },
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope
@@ -210,8 +210,8 @@ fun PasslyNavHost(
                     LaunchedEffect(detailViewModel) {
                         detailViewModel.effects.collectLatest { effect ->
                             when (effect) {
-                                is DetailEffect.EntryUpdated -> vaultViewModel.onIntent(
-                                    VaultIntent.UpdateEntry(
+                                is DetailEffect.EntryUpdated -> vaultViewModel.onAction(
+                                    VaultUiAction.UpdateEntry(
                                         effect.entry
                                     )
                                 )
@@ -226,7 +226,7 @@ fun PasslyNavHost(
                     DisposableEffect(entryId) {
                         onDispose {
                             initialEntry = null
-                            detailViewModel.handleIntent(DetailIntent.ClearSensitiveState)
+                            detailViewModel.onAction(DetailUiAction.ClearSensitiveState)
                         }
                     }
 
@@ -235,14 +235,14 @@ fun PasslyNavHost(
                             initialEntry = entry,
                             uiState = detailUiState,
                             otpUiState = currentOtpState,
-                            onEvent = detailViewModel::handleIntent,
+                            onEvent = detailViewModel::onAction,
                             onBack = { navController.popBackStack() },
                             onUpdateInteraction = {
-                                appShellViewModel.handleIntent(AppShellIntent.UpdateInteraction)
+                                appShellViewModel.onAction(AppShellUiAction.UpdateInteraction)
                             },
                             onAutoUnlockTotp = {
-                                vaultViewModel.onIntent(
-                                    VaultIntent.AutoUnlockTotp(
+                                vaultViewModel.onAction(
+                                    VaultUiAction.AutoUnlockTotp(
                                         it.id.value
                                     )
                                 )
@@ -252,8 +252,8 @@ fun PasslyNavHost(
                             },
                             onAuthenticate = DetailAuthenticate { action, accessLevel, success ->
                                 pendingAuthCallback = success
-                                appShellViewModel.handleIntent(
-                                    AppShellIntent.RequestSensitiveAccess(
+                                appShellViewModel.onAction(
+                                    AppShellUiAction.RequestSensitiveAccess(
                                         action = action,
                                         accessLevel = accessLevel
                                     )

@@ -10,8 +10,6 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.favicon.FaviconOutcome
-import com.aozijx.passly.domain.entry.model.favicon.FaviconResult
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
@@ -19,12 +17,13 @@ import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
-import com.aozijx.passly.domain.entry.port.FaviconRepository
+import com.aozijx.passly.domain.entry.service.FaviconService
 import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.policy.EntryAccountGraph
+import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.detail.contract.DetailEffect
-import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.DetailUiAction
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.page.internal.DetailEntryAnalyzer
@@ -49,7 +48,7 @@ class DetailViewModel @Inject constructor(
     private val entryCommandRepository: EntryCommandRepository,
     private val entryLinkRepository: EntryLinkRepository,
     private val activityRecorder: ActivityRecorder,
-    private val faviconRepository: FaviconRepository,
+    private val faviconService: FaviconService,
     private val entryTypePolicy: EntryTypePolicy,
     private val accessPolicy: DetailAccessPolicy,
     private val authorizationGate: AuthorizationGate,
@@ -78,39 +77,39 @@ class DetailViewModel @Inject constructor(
         }
     }
 
-    fun handleIntent(event: DetailIntent) {
+    fun onAction(event: DetailUiAction) {
         if (!accessPolicy.canHandle(event)) {
             mutate(DetailMutation.StateCleared)
             return
         }
         when (event) {
-            is DetailIntent.Initialize -> {
+            is DetailUiAction.Initialize -> {
                 initialize(event.initialEntry)
             }
 
-            is DetailIntent.SyncEntry -> {
+            is DetailUiAction.SyncEntry -> {
                 refreshKeepingTitleEdit(event.entry)
             }
 
-            is DetailIntent.CommitEntryUpdate -> {
+            is DetailUiAction.CommitEntryUpdate -> {
                 viewModelScope.launch {
                     persistEntryUpdate(event.entry)
                 }
             }
 
-            DetailIntent.StartTitleEdit -> {
+            DetailUiAction.StartTitleEdit -> {
                 mutate(DetailMutation.TitleEditingStarted)
             }
 
-            DetailIntent.CancelTitleEdit -> {
+            DetailUiAction.CancelTitleEdit -> {
                 mutate(DetailMutation.TitleEditingCancelled)
             }
 
-            is DetailIntent.UpdateEditedTitle -> {
+            is DetailUiAction.UpdateEditedTitle -> {
                 mutate(DetailMutation.EditedTitleChanged(event.value))
             }
 
-            DetailIntent.SaveTitle -> {
+            DetailUiAction.SaveTitle -> {
                 val state = _uiState.value
                 val current = state.entry ?: return
                 val newTitle = state.editedTitle.trim()
@@ -126,7 +125,7 @@ class DetailViewModel @Inject constructor(
                 }
             }
 
-            DetailIntent.ToggleFavorite -> {
+            DetailUiAction.ToggleFavorite -> {
                 val current = _uiState.value.entry ?: return
                 viewModelScope.launch {
                     persistEntryUpdate(
@@ -135,11 +134,11 @@ class DetailViewModel @Inject constructor(
                 }
             }
 
-            is DetailIntent.RevealField -> {
+            is DetailUiAction.RevealField -> {
                 setRevealedField(event.key, event.value)
             }
 
-            is DetailIntent.ToggleVisibility -> {
+            is DetailUiAction.ToggleVisibility -> {
                 val current = _uiState.value.revealed(event.key)
                 if (current != null) {
                     setRevealedField(event.key, null)
@@ -148,7 +147,7 @@ class DetailViewModel @Inject constructor(
                 }
             }
 
-            is DetailIntent.SaveField -> {
+            is DetailUiAction.SaveField -> {
                 val current = _uiState.value.entry ?: return
                 viewModelScope.launch {
                     val updated = when (event.key) {
@@ -157,18 +156,18 @@ class DetailViewModel @Inject constructor(
                         else -> current
                     }
                     persistEntryUpdate(updated)
-                    setRevealedField(event.key, event.newValue)
+                    setRevealedField(event.key, OwnedChars.fromString(event.newValue))
                 }
             }
 
-            is DetailIntent.DownloadFavicon -> {
+            is DetailUiAction.DownloadFavicon -> {
                 val current = _uiState.value.entry ?: return
                 viewModelScope.launch {
                     downloadAndApplyFavicon(current, event.domain, updateDomain = true)
                 }
             }
 
-            is DetailIntent.RevealHighSensitivityField -> {
+            is DetailUiAction.RevealHighSensitivityField -> {
                 val current = _uiState.value.entry ?: return
                 val key = event.key
                 if (_uiState.value.revealed(key) != null) {
@@ -180,7 +179,7 @@ class DetailViewModel @Inject constructor(
                 }
             }
 
-            is DetailIntent.RevealHighSensitivityFields -> {
+            is DetailUiAction.RevealHighSensitivityFields -> {
                 val current = _uiState.value.entry ?: return
                 val hiddenKeys = event.keys.filterTo(linkedSetOf()) {
                     _uiState.value.revealed(it) == null
@@ -191,7 +190,7 @@ class DetailViewModel @Inject constructor(
                 }
             }
 
-            is DetailIntent.RecordAction -> {
+            is DetailUiAction.RecordAction -> {
                 val current = _uiState.value.entry ?: return
                 if (event.type == ActivityType.VIEW && !_uiState.value.isAccessHistoryEnabled) return
                 if (event.type.clearsRevealedFields()) {
@@ -204,12 +203,12 @@ class DetailViewModel @Inject constructor(
                 }
             }
 
-            is DetailIntent.ToggleAccessHistoryRecording -> {
+            is DetailUiAction.ToggleAccessHistoryRecording -> {
                 mutate(DetailMutation.AccessHistoryChanged(event.enabled))
                 userConfigExtras.value += (ACCESS_HISTORY_TOGGLE_KEY to event.enabled.toString())
             }
 
-            DetailIntent.ClearSensitiveState -> {
+            DetailUiAction.ClearSensitiveState -> {
                 wipeRevealBuffers()
                 mutate(DetailMutation.StateCleared)
             }
@@ -220,12 +219,12 @@ class DetailViewModel @Inject constructor(
         val entry = _uiState.value.entry ?: return
         when (key) {
             RevealedFieldKey.USERNAME -> {
-                setRevealedField(key, entry.username)
-                handleIntent(DetailIntent.RecordAction("username", ActivityType.VIEW))
+                setRevealedField(key, OwnedChars.fromNullableString(entry.username))
+                onAction(DetailUiAction.RecordAction("username", ActivityType.VIEW))
             }
 
             RevealedFieldKey.PASSWORD -> {
-                handleIntent(DetailIntent.RevealHighSensitivityField(key))
+                onAction(DetailUiAction.RevealHighSensitivityField(key))
             }
         }
     }
@@ -258,7 +257,7 @@ class DetailViewModel @Inject constructor(
         )
     }
 
-    private fun setRevealedField(key: String, value: String?) {
+    private fun setRevealedField(key: String, value: SensitiveValue?) {
         mutate(DetailMutation.RevealedFieldChanged(key, value))
     }
 
@@ -283,14 +282,8 @@ class DetailViewModel @Inject constructor(
             revealedFields.forEach { revealed ->
                 val uiKey = requested.entries.firstOrNull { it.value == revealed.key }?.key
                     ?: return@forEach
-                val chars = revealed.value.toCharArray()
-                try {
-                    val value = String(chars).takeIf { it.isNotBlank() } ?: return@forEach
-                    revealBuffers[uiKey] = revealed.value
-                    setRevealedField(uiKey, value)
-                } finally {
-                    chars.fill('\u0000')
-                }
+                revealBuffers[uiKey] = revealed.value
+                setRevealedField(uiKey, revealed.value)
             }
             if (revealedFields.isNotEmpty()) {
                 activityRecorder.recordUsage(entryValue.value, ActivityType.VIEW)
@@ -378,11 +371,6 @@ class DetailViewModel @Inject constructor(
         mutate(DetailMutation.RelatedEntriesChanged(related))
     }
 
-    private suspend fun downloadFavicon(input: String): FaviconOutcome {
-        if (input.isBlank()) return FaviconOutcome(FaviconResult.EMPTY_INPUT)
-        return faviconRepository.download(input)
-    }
-
     private suspend fun downloadAndApplyFavicon(
         entry: Entry,
         domain: String,
@@ -392,25 +380,17 @@ class DetailViewModel @Inject constructor(
         if (!accessPolicy.hasFullAccess()) return
         mutate(DetailMutation.FaviconDownloadingChanged(true))
         try {
-            val outcome = downloadFavicon(domain)
-            if (!accessPolicy.hasFullAccess()) return
-            if (outcome.result != FaviconResult.SUCCESS || outcome.filePath == null) return
-            val associations = if (updateDomain) {
-                entry.profile.associations.copy(primaryUrl = domain.trim())
-            } else {
-                entry.profile.associations
-            }
-            val updatedProfile = entry.profile.copy(
-                associations = associations,
-                icon = entry.profile.icon.copy(
-                    name = null,
-                    customReference = outcome.filePath,
-                ),
+            val update = faviconService.downloadAndPrepareUpdate(
+                entry = entry,
+                domain = domain,
+                updatePrimaryUrl = updateDomain
             )
+            if (update == null || !accessPolicy.hasFullAccess()) return
+
             val updateResult = entryCommandRepository.updateEntry(
                 entry.id,
                 entry.version,
-                EntryUpdate(profile = updatedProfile)
+                update
             )
             if (updateResult.isSuccess) {
                 val latest = entryQueryRepository.getById(entry.id)

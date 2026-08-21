@@ -23,7 +23,7 @@ import javax.inject.Singleton
 @Singleton
 class PackageUtils @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val telemetry: TelemetryReporter
+    private val telemetry: TelemetryReporter,
 ) {
     private val packageManager: PackageManager = context.packageManager
 
@@ -42,7 +42,7 @@ class PackageUtils @Inject constructor(
 
     data class AppMetadata(
         val label: String,
-        val packageName: String
+        val packageName: String,
     )
 
     fun getAppMetadata(packageName: String): AppMetadata? {
@@ -66,7 +66,7 @@ class PackageUtils @Inject constructor(
     @SuppressLint("QueryPermissionsNeeded")
     private fun resolveAppLabel(packageName: String): String? {
         // 1. Check cache (usually warmed up by getLaunchableApps)
-        metadataCache.get(packageName)?.label?.let { return it }
+        metadataCache[packageName]?.label?.let { return it }
 
         // 2. ApplicationInfo check (handles non-launcher system components)
         runCatching {
@@ -118,7 +118,7 @@ class PackageUtils @Inject constructor(
     }
 
     fun loadIcon(packageName: String): Bitmap? {
-        val cachedBitmap = iconCache.get(packageName)
+        val cachedBitmap = iconCache[packageName]
         if (cachedBitmap != null) return cachedBitmap
 
         return try {
@@ -138,7 +138,8 @@ class PackageUtils @Inject constructor(
 
     private fun convertDrawableToBitmap(drawable: Drawable): Bitmap? {
         return try {
-            if (drawable is BitmapDrawable &&
+            if (
+                (drawable is BitmapDrawable) &&
                 (drawable.bitmap.width == targetIconSize) &&
                 (drawable.bitmap.height == targetIconSize)
             ) {

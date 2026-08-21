@@ -5,14 +5,15 @@ import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.app.security.SensitiveAccessLevel
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
-import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.DetailUiAction
+import com.aozijx.passly.domain.sensitive.SensitiveValue
 
 internal data class DetailSectionActionHandler(
     val onAuthenticate: DetailAuthenticate,
-    val onEvent: (DetailIntent) -> Unit
+    val onAction: (DetailUiAction) -> Unit
 ) {
     fun record(field: String, type: ActivityType) {
-        onEvent(DetailIntent.RecordAction(field, type))
+        onAction(DetailUiAction.RecordAction(field, type))
     }
 }
 
@@ -20,21 +21,23 @@ internal inline fun copySensitiveField(
     context: Context,
     handler: DetailSectionActionHandler,
     fieldName: String,
-    revealedValue: String?,
+    revealedValue: SensitiveValue?,
     sourceValue: String?,
     crossinline afterCopy: (String) -> Unit = {}
 ) {
     if (revealedValue != null) {
-        ClipboardUtils.copy(context, revealedValue)
-        afterCopy(revealedValue)
+        val chars = revealedValue.toCharArray()
+        val plain = String(chars)
+        chars.fill('\u0000')
+        ClipboardUtils.copy(context, plain)
+        afterCopy(plain)
         handler.record(fieldName, ActivityType.COPY_PASSWORD)
         return
     }
     val source = sourceValue?.takeIf { it.isNotBlank() } ?: return
-    val value = revealedValue ?: source
     handler.onAuthenticate.copy {
-        ClipboardUtils.copy(context, value)
-        afterCopy(value)
+        ClipboardUtils.copy(context, source)
+        afterCopy(source)
         handler.record(fieldName, ActivityType.COPY_PASSWORD)
     }
 }
@@ -42,7 +45,7 @@ internal inline fun copySensitiveField(
 internal inline fun toggleRevealSensitiveField(
     handler: DetailSectionActionHandler,
     fieldName: String,
-    revealedValue: String?,
+    revealedValue: SensitiveValue?,
     sourceValue: String?,
     accessLevel: SensitiveAccessLevel = SensitiveAccessLevel.STANDARD,
     crossinline onReveal: (String?) -> Unit

@@ -14,10 +14,11 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.ui.components.DetailItem
-import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.DetailUiAction
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
+import com.aozijx.passly.domain.sensitive.OwnedChars
 
 @Composable
 fun IdCardSection(
@@ -26,7 +27,7 @@ fun IdCardSection(
     revealedIdNumber: String?,
     onIdNumberRevealed: (String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
-    onEvent: (DetailIntent) -> Unit,
+    onAction: (DetailUiAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -36,7 +37,7 @@ fun IdCardSection(
     val notSet = stringResource(R.string.not_set)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
-        onEvent = onEvent
+        onAction = onAction
     )
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -49,7 +50,7 @@ fun IdCardSection(
                     context = context,
                     handler = actionHandler,
                     fieldName = "ID number",
-                    revealedValue = revealedIdNumber,
+                    revealedValue = revealedIdNumber?.let { OwnedChars.fromString(it) },
                     sourceValue = null,
                     afterCopy = {
                         Toast.makeText(
@@ -63,7 +64,7 @@ fun IdCardSection(
             onEdit = null,
             onReveal = {
                 if (revealedIdNumber != null) onIdNumberRevealed(null)
-                else onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.ID_NUMBER))
+                else onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.ID_NUMBER))
             }
         )
 

@@ -15,7 +15,7 @@ import com.aozijx.passly.domain.settings.model.SettingsCommand
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.feature.settings.contract.SettingsEffect
-import com.aozijx.passly.feature.settings.contract.SettingsIntent
+import com.aozijx.passly.feature.settings.contract.SettingsUiAction
 import com.aozijx.passly.feature.settings.contract.SettingsUiState
 import com.aozijx.passly.feature.settings.presentation.SettingsMutation
 import com.aozijx.passly.feature.settings.presentation.SettingsReducer
@@ -48,20 +48,20 @@ class SettingsViewModel @Inject constructor(
         loadSettings()
     }
 
-    fun handleIntent(intent: SettingsIntent) {
-        when (intent) {
-            is SettingsIntent.SetSwipeLeftAction -> setSwipeLeftAction(intent.action)
-            is SettingsIntent.SetSwipeRightAction -> setSwipeRightAction(intent.action)
-            is SettingsIntent.LoadSettings -> loadSettings()
-            SettingsIntent.ClearDatabase -> clearDatabase()
-            SettingsIntent.RequestAppPasswordEntry -> requestAppPasswordEntry()
-            is SettingsIntent.SetAppPassword -> setAppPassword(intent.password)
-            is SettingsIntent.ChangeAppPassword -> changeAppPassword(
-                intent.currentPassword,
-                intent.newPassword
+    fun onAction(action: SettingsUiAction) {
+        when (action) {
+            is SettingsUiAction.SetSwipeLeftAction -> setSwipeLeftAction(action.action)
+            is SettingsUiAction.SetSwipeRightAction -> setSwipeRightAction(action.action)
+            is SettingsUiAction.LoadSettings -> loadSettings()
+            SettingsUiAction.ClearDatabase -> clearDatabase()
+            SettingsUiAction.RequestAppPasswordEntry -> requestAppPasswordEntry()
+            is SettingsUiAction.SetAppPassword -> setAppPassword(action.password)
+            is SettingsUiAction.ChangeAppPassword -> changeAppPassword(
+                action.currentPassword,
+                action.newPassword
             )
 
-            SettingsIntent.DisableAppPassword -> disableAppPassword()
+            SettingsUiAction.DisableAppPassword -> disableAppPassword()
         }
     }
 

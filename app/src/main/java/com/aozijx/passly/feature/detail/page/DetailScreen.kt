@@ -15,7 +15,7 @@ import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
-import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.DetailUiAction
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.ui.DetailScrollableContent
@@ -33,7 +33,7 @@ fun DetailScreen(
     uiState: DetailUiState,
     otpUiState: OtpUiState?,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
-    onEvent: (DetailIntent) -> Unit,
+    onAction: (DetailUiAction) -> Unit,
     onBack: () -> Unit,
     onUpdateInteraction: () -> Unit,
     onAutoUnlockTotp: (Entry) -> Unit,
@@ -50,7 +50,7 @@ fun DetailScreen(
 
     // 页面数据初始化（同 key 内串联首次 TOTP 自动解锁，避免重复 effect 触发）
     LaunchedEffect(initialEntry.id) {
-        onEvent(DetailIntent.Initialize(initialEntry))
+        onAction(DetailUiAction.Initialize(initialEntry))
         val initialOtpCredential = initialEntry.secret.otp?.config?.secret
         if (!initialOtpCredential.isNullOrBlank()) {
             onAutoUnlockTotp(initialEntry)
@@ -76,7 +76,7 @@ fun DetailScreen(
     DisposableEffect(Unit) {
         onDispose {
             ClipboardUtils.clearIfOwned(context)
-            onEvent(DetailIntent.ClearSensitiveState)
+            onAction(DetailUiAction.ClearSensitiveState)
         }
     }
 
@@ -87,7 +87,7 @@ fun DetailScreen(
                 entry = entry,
                 uiState = uiState,
                 scrollBehavior = scrollBehavior,
-                onEvent = onEvent,
+                onAction = onAction,
                 onBack = onBack,
                 onInteraction = onUpdateInteraction
             )
@@ -98,7 +98,7 @@ fun DetailScreen(
             uiState = uiState,
             editState = editState,
             otpUiState = otpUiState,
-            onEvent = onEvent,
+            onAction = onAction,
             onInteraction = onUpdateInteraction,
             onAuthenticate = onAuthenticate,
             onOpenRelatedEntry = onOpenRelatedEntry

@@ -18,7 +18,7 @@ import com.aozijx.passly.domain.entry.port.SearchIndexMaintenance
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.app.shell.contract.AppShellAuthResult
 import com.aozijx.passly.app.shell.contract.AppShellEffect
-import com.aozijx.passly.app.shell.contract.AppShellIntent
+import com.aozijx.passly.app.shell.contract.AppShellUiAction
 import com.aozijx.passly.app.shell.contract.AppShellUiState
 import com.aozijx.passly.app.shell.presentation.AppShellMutation
 import com.aozijx.passly.app.shell.presentation.AppShellReducer
@@ -59,18 +59,18 @@ class AppShellViewModel @Inject constructor(
         observeDatabaseFailures()
     }
 
-    fun handleIntent(intent: AppShellIntent) {
-        when (intent) {
-            AppShellIntent.Lock -> lock(LockReason.USER)
-            AppShellIntent.ExitRecovery -> lock(LockReason.RECOVERY_EXIT)
-            AppShellIntent.UpdateInteraction -> sessionController.onUserInteraction()
-            AppShellIntent.RetryDatabaseInitialization -> initializeDatabase()
-            AppShellIntent.RecoverDatabase -> recoverDatabase()
-            AppShellIntent.RequestAuth -> requestAuth()
-            AppShellIntent.RequestReauth -> requestReauth()
-            is AppShellIntent.RequestSensitiveAccess -> requestSensitiveAccess(
-                intent.action,
-                intent.accessLevel
+    fun onAction(action: AppShellUiAction) {
+        when (action) {
+            AppShellUiAction.Lock -> lock(LockReason.USER)
+            AppShellUiAction.ExitRecovery -> lock(LockReason.RECOVERY_EXIT)
+            AppShellUiAction.UpdateInteraction -> sessionController.onUserInteraction()
+            AppShellUiAction.RetryDatabaseInitialization -> initializeDatabase()
+            AppShellUiAction.RecoverDatabase -> recoverDatabase()
+            AppShellUiAction.RequestAuth -> requestAuth()
+            AppShellUiAction.RequestReauth -> requestReauth()
+            is AppShellUiAction.RequestSensitiveAccess -> requestSensitiveAccess(
+                action.action,
+                action.accessLevel
             )
         }
     }

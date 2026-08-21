@@ -14,10 +14,11 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.ui.components.DetailItem
-import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.DetailUiAction
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
+import com.aozijx.passly.domain.sensitive.OwnedChars
 
 @Composable
 fun PasskeySection(
@@ -26,7 +27,7 @@ fun PasskeySection(
     revealedPasskeyData: String?,
     onRevealField: (String, String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
-    onEvent: (DetailIntent) -> Unit,
+    onAction: (DetailUiAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -36,7 +37,7 @@ fun PasskeySection(
     val notSet = stringResource(R.string.not_set)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
-        onEvent = onEvent
+        onAction = onAction
     )
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -49,7 +50,7 @@ fun PasskeySection(
                     context = context,
                     handler = actionHandler,
                     fieldName = "passkey data",
-                    revealedValue = revealedPasskeyData,
+                    revealedValue = revealedPasskeyData?.let { OwnedChars.fromString(it) },
                     sourceValue = null,
                     afterCopy = {
                         Toast.makeText(
@@ -65,8 +66,8 @@ fun PasskeySection(
                 if (revealedPasskeyData != null) {
                     onRevealField(RevealedFieldKey.PASSKEY_DATA, null)
                 } else {
-                    onEvent(
-                        DetailIntent.RevealHighSensitivityField(RevealedFieldKey.PASSKEY_DATA)
+                    onAction(
+                        DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.PASSKEY_DATA)
                     )
                 }
             }

@@ -61,7 +61,7 @@ class AutofillFillActivity : FragmentActivity() {
             }
         }
 
-        viewModel.onIntent(AutofillFillIntent.Initialize(request))
+        viewModel.onAction(AutofillFillUiAction.Initialize(request))
     }
 
     private fun parseIntent(intent: Intent?): AutofillFillRequest {
@@ -112,7 +112,7 @@ class AutofillFillActivity : FragmentActivity() {
                     AutofillCandidateBottomSheet(
                         candidates = candidates,
                         onCandidateSelected = { candidate ->
-                            viewModel.onIntent(AutofillFillIntent.CandidateSelected(candidate))
+                            viewModel.onAction(AutofillFillUiAction.CandidateSelected(candidate))
                         },
                         onCancel = { finishWithResult(null) }
                     )

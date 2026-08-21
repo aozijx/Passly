@@ -12,7 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
-import com.aozijx.passly.feature.backup.internal.contract.BackupAction
+import com.aozijx.passly.feature.backup.internal.contract.BackupUiAction
 import com.aozijx.passly.feature.backup.internal.presentation.BackupViewModel
 import com.aozijx.passly.feature.backup.internal.ui.BackupRestoreDetail
 import com.aozijx.passly.feature.backup.internal.ui.BackupRestoreSheetHost
@@ -39,15 +39,15 @@ fun BackupSettingsFeature(
 
     fun startManualExport(uri: Uri?) {
         if (uri == null) {
-            viewModel.onAction(BackupAction.CancelPendingOperation)
+            viewModel.onAction(BackupUiAction.CancelPendingOperation)
             return
         }
         viewModel.onAction(
-            BackupAction.StartExport(
+            BackupUiAction.StartExport(
                 uri = uri,
             )
         )
-        viewModel.onAction(BackupAction.ProcessBackupAction)
+        viewModel.onAction(BackupUiAction.ProcessBackupAction)
     }
 
     val encryptedExportPicker = rememberLauncherForActivityResult(
@@ -66,14 +66,14 @@ fun BackupSettingsFeature(
         ActivityResultContracts.OpenDocument(),
     ) { uri ->
         if (uri != null) {
-            viewModel.onAction(BackupAction.StartImport(uri))
+            viewModel.onAction(BackupUiAction.StartImport(uri))
             activeSheet = BackupSheet.IMPORT_OPTIONS
         }
     }
 
     DisposableEffect(viewModel) {
         onDispose {
-            viewModel.onAction(BackupAction.CancelPendingOperation)
+            viewModel.onAction(BackupUiAction.CancelPendingOperation)
         }
     }
 
@@ -93,7 +93,7 @@ fun BackupSettingsFeature(
         },
         onPickBackupPath = onPickBackupPath,
         onTestBackupWrite = {
-            viewModel.onAction(BackupAction.CheckDirectoryPermission(directoryUri))
+            viewModel.onAction(BackupUiAction.CheckDirectoryPermission(directoryUri))
         },
         onClearBackupPath = onClearBackupPath,
     )
@@ -104,28 +104,28 @@ fun BackupSettingsFeature(
         configuredDirectoryLabel = directoryLabel.takeIf { !directoryUri.isNullOrBlank() },
         onDismiss = {
             activeSheet = null
-            viewModel.onAction(BackupAction.CancelPendingOperation)
+            viewModel.onAction(BackupUiAction.CancelPendingOperation)
         },
         onFormatSelected = { format ->
-            viewModel.onAction(BackupAction.PrepareExport(format))
+            viewModel.onAction(BackupUiAction.PrepareExport(format))
             activeSheet = BackupSheet.EXPORT_OPTIONS
         },
         onPasswordChange = {
-            viewModel.onAction(BackupAction.UpdatePassword(OwnedChars.fromString(it)))
+            viewModel.onAction(BackupUiAction.UpdatePassword(OwnedChars.fromString(it)))
         },
-        onIncludeIconsChange = { viewModel.onAction(BackupAction.UpdateIncludeIcons(it)) },
+        onIncludeIconsChange = { viewModel.onAction(BackupUiAction.UpdateIncludeIcons(it)) },
         onIncludeAttachmentsChange = {
-            viewModel.onAction(BackupAction.UpdateIncludeAttachments(it))
+            viewModel.onAction(BackupUiAction.UpdateIncludeAttachments(it))
         },
-        onIncludeDeletedChange = { viewModel.onAction(BackupAction.UpdateIncludeDeleted(it)) },
+        onIncludeDeletedChange = { viewModel.onAction(BackupUiAction.UpdateIncludeDeleted(it)) },
         onIncludedEntryTypesChange = {
-            viewModel.onAction(BackupAction.UpdateIncludedEntryTypes(it))
+            viewModel.onAction(BackupUiAction.UpdateIncludedEntryTypes(it))
         },
-        onImportModeChange = { viewModel.onAction(BackupAction.UpdateImportMode(it)) },
+        onImportModeChange = { viewModel.onAction(BackupUiAction.UpdateImportMode(it)) },
         onExport = onExport@{
             activeSheet = null
             if (!directoryUri.isNullOrBlank()) {
-                viewModel.onAction(BackupAction.StartExportInConfiguredDirectory)
+                viewModel.onAction(BackupUiAction.StartExportInConfiguredDirectory)
             } else {
                 val fileName = state.pendingExportFileName ?: return@onExport
                 when (state.selectedExportFormat) {
@@ -137,7 +137,7 @@ fun BackupSettingsFeature(
         },
         onImport = {
             activeSheet = null
-            viewModel.onAction(BackupAction.ProcessBackupAction)
+            viewModel.onAction(BackupUiAction.ProcessBackupAction)
         },
     )
 }

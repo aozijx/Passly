@@ -45,12 +45,12 @@ class CredentialResponseViewModel @Inject constructor(
     val state: StateFlow<CredentialResponseUiState> = _state.asStateFlow()
     private val requestStarted = AtomicBoolean(false)
 
-    fun onIntent(intent: CredentialResponseIntent) {
-        when (intent) {
-            is CredentialResponseIntent.PasswordGet -> handlePasswordGet(intent.sourceIntent)
-            is CredentialResponseIntent.Unlock -> handleUnlock(intent.sourceIntent)
-            is CredentialResponseIntent.PasswordCreate -> handlePasswordCreate(intent.sourceIntent)
-            CredentialResponseIntent.UnknownAction -> rejectUnknownAction()
+    fun onAction(action: CredentialResponseUiAction) {
+        when (action) {
+            is CredentialResponseUiAction.PasswordGet -> handlePasswordGet(action.sourceIntent)
+            is CredentialResponseUiAction.Unlock -> handleUnlock(action.sourceIntent)
+            is CredentialResponseUiAction.PasswordCreate -> handlePasswordCreate(action.sourceIntent)
+            CredentialResponseUiAction.UnknownAction -> rejectUnknownAction()
         }
     }
 

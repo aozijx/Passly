@@ -18,7 +18,7 @@ import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.shell.AppShellViewModel
 import com.aozijx.passly.app.shell.FlipToLockSensorController
-import com.aozijx.passly.app.shell.contract.AppShellIntent
+import com.aozijx.passly.app.shell.contract.AppShellUiAction
 import com.aozijx.passly.app.shell.ui.AppShell
 import com.aozijx.passly.core.message.compose.ProvideAppNoticePublisher
 import com.aozijx.passly.core.permission.compose.PermissionServices
@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity() {
     private val sensorController: FlipToLockSensorController by lazy {
         FlipToLockSensorController(this) {
             if (viewModel.isAuthorizedNow) {
-                viewModel.handleIntent(AppShellIntent.Lock)
+                viewModel.onAction(AppShellUiAction.Lock)
                 if (sensorController.isFlipExitAndClearStackEnabled) {
                     noticePublisher.publish(newAppNotice(NoticeCode.APP_CLOSE_REMINDER))
                     window.decorView.postDelayed(
@@ -126,7 +126,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onUserInteraction() {
         super.onUserInteraction()
-        viewModel.handleIntent(AppShellIntent.UpdateInteraction)
+        viewModel.onAction(AppShellUiAction.UpdateInteraction)
     }
 
     override fun onResume() {

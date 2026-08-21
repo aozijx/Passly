@@ -19,8 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsAction
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsUiState
+import com.aozijx.passly.feature.settings.datamanagement.DatabaseRecoveryUiAction
+import com.aozijx.passly.feature.settings.datamanagement.DatabaseRecoveryUiState
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.settingsGroupItem
@@ -30,13 +31,14 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 @Composable
 internal fun DataManagementDetail(
     state: DataManagementSettingsUiState,
+    recoveryState: DatabaseRecoveryUiState,
     isClearingDatabase: Boolean,
     onAutoDownloadIconsChange: (Boolean) -> Unit,
     onRestoreTrashEntry: (entryId: String, expectedVersion: Int) -> Unit,
     onDeleteTrashEntry: (entryId: String, expectedVersion: Int) -> Unit,
     onEmptyTrash: () -> Unit,
     onClearTrashError: () -> Unit,
-    onRecoveryAction: (DataManagementSettingsAction) -> Unit,
+    onRecoveryAction: (DatabaseRecoveryUiAction) -> Unit,
     onClearDatabase: () -> Unit
 ) {
     var showClearConfirmation by remember { mutableStateOf(false) }
@@ -75,7 +77,7 @@ internal fun DataManagementDetail(
                     subtitle = stringResource(R.string.settings_database_recovery_summary),
                     onClick = {
                         showDatabaseRecovery = true
-                        onRecoveryAction(DataManagementSettingsAction.RefreshRecoveryPackages)
+                        onRecoveryAction(DatabaseRecoveryUiAction.RefreshRecoveryPackages)
                     },
                 )
             )
@@ -126,7 +128,7 @@ internal fun DataManagementDetail(
 
     DatabaseRecoverySheet(
         visible = showDatabaseRecovery,
-        state = state,
+        state = recoveryState,
         onDismiss = { showDatabaseRecovery = false },
         onAction = onRecoveryAction,
     )

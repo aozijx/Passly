@@ -12,7 +12,7 @@ import com.aozijx.passly.feature.settings.appearance.AppearanceSettingsViewModel
 import com.aozijx.passly.presentation.settings.appearance.InterfaceDetail
 import com.aozijx.passly.feature.settings.appearance.InterfaceSettingsAction
 import com.aozijx.passly.feature.settings.appearance.InterfaceSettingsViewModel
-import com.aozijx.passly.feature.settings.contract.SettingsIntent
+import com.aozijx.passly.feature.settings.contract.SettingsUiAction
 import com.aozijx.passly.presentation.settings.internal.SettingsGroup
 import com.aozijx.passly.feature.settings.security.PrivacySettingsAction
 import com.aozijx.passly.feature.settings.security.PrivacySettingsViewModel
@@ -49,7 +49,7 @@ internal fun CoreSettingsRouteContent(
                             viewModel.onAction(SecuritySettingsAction.SetLockTimeout(it))
                         },
                         onAppPasswordClick = {
-                            settingsViewModel.handleIntent(SettingsIntent.RequestAppPasswordEntry)
+                            settingsViewModel.onAction(SettingsUiAction.RequestAppPasswordEntry)
                         },
                         onBiometricEnabledChange = { enabled ->
                             viewModel.onAction(

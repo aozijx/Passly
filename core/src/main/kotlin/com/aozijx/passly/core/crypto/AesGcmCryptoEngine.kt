@@ -24,7 +24,7 @@ class AesGcmCryptoEngine @Inject constructor() : CryptoEngine {
     }
 
     override fun decrypt(payload: ByteArray, key: ByteArray, aad: ByteArray?): ByteArray {
-        require(payload.size >= CryptoConfig.IV_LENGTH + CryptoConfig.GCM_TAG_BITS / Byte.SIZE_BITS) {
+        require((payload.size >= (CryptoConfig.IV_LENGTH + (CryptoConfig.GCM_TAG_BITS / Byte.SIZE_BITS)))) {
             "Invalid AES-GCM payload length"
         }
         val nonce = payload.copyOfRange(0, CryptoConfig.IV_LENGTH)

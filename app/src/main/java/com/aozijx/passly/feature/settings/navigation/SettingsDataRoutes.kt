@@ -18,11 +18,12 @@ import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageS
 import com.aozijx.passly.core.util.PathDisplayFormatter
 import com.aozijx.passly.feature.backup.api.BackupSettingsFeature
 import com.aozijx.passly.feature.settings.SettingsViewModel
-import com.aozijx.passly.feature.settings.contract.SettingsIntent
+import com.aozijx.passly.feature.settings.contract.SettingsUiAction
 import com.aozijx.passly.feature.settings.contract.SettingsUiState
 import com.aozijx.passly.presentation.settings.datamanagement.DataManagementDetail
-import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsAction
+import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsUiAction
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsViewModel
+import com.aozijx.passly.feature.settings.datamanagement.DatabaseRecoveryViewModel
 import com.aozijx.passly.feature.settings.datamanagement.handleBackupPathPicked
 import com.aozijx.passly.presentation.settings.general.GeneralDetail
 import com.aozijx.passly.presentation.settings.general.NotificationDetail
@@ -52,6 +53,7 @@ internal fun DataSettingsRouteContent(
     localState: SettingsScreenLocalState,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
+    recoveryViewModel: DatabaseRecoveryViewModel,
     settingsViewModel: SettingsViewModel,
     settingsState: SettingsUiState,
     onBack: (() -> Unit)?
@@ -101,6 +103,7 @@ internal fun DataSettingsRouteContent(
 
         SettingsRoute.DataManagement -> {
             val state by dataViewModel.uiState.collectAsStateWithLifecycle()
+            val recoveryState by recoveryViewModel.uiState.collectAsStateWithLifecycle()
             SettingsSecondaryPage(
                 title = stringResource(SettingsGroup.DATA_MANAGEMENT.titleRes),
                 onBack = onBack
@@ -108,15 +111,16 @@ internal fun DataSettingsRouteContent(
                 item {
                     DataManagementDetail(
                         state = state,
+                        recoveryState = recoveryState,
                         isClearingDatabase = settingsState.isClearingDatabase,
                         onAutoDownloadIconsChange = {
                             dataViewModel.onAction(
-                                DataManagementSettingsAction.SetAutoDownloadIcons(it)
+                                DataManagementSettingsUiAction.SetAutoDownloadIcons(it)
                             )
                         },
                         onRestoreTrashEntry = { entryId, expectedVersion ->
                             dataViewModel.onAction(
-                                DataManagementSettingsAction.RestoreTrashEntry(
+                                DataManagementSettingsUiAction.RestoreTrashEntry(
                                     entryId,
                                     expectedVersion
                                 )
@@ -124,21 +128,21 @@ internal fun DataSettingsRouteContent(
                         },
                         onDeleteTrashEntry = { entryId, expectedVersion ->
                             dataViewModel.onAction(
-                                DataManagementSettingsAction.DeleteTrashEntry(
+                                DataManagementSettingsUiAction.DeleteTrashEntry(
                                     entryId,
                                     expectedVersion
                                 )
                             )
                         },
                         onEmptyTrash = {
-                            dataViewModel.onAction(DataManagementSettingsAction.EmptyTrash)
+                            dataViewModel.onAction(DataManagementSettingsUiAction.EmptyTrash)
                         },
                         onClearTrashError = {
-                            dataViewModel.onAction(DataManagementSettingsAction.ClearTrashError)
+                            dataViewModel.onAction(DataManagementSettingsUiAction.ClearTrashError)
                         },
-                        onRecoveryAction = dataViewModel::onAction,
+                        onRecoveryAction = recoveryViewModel::onAction,
                         onClearDatabase = {
-                            settingsViewModel.handleIntent(SettingsIntent.ClearDatabase)
+                            settingsViewModel.onAction(SettingsUiAction.ClearDatabase)
                         }
                     )
                 }
@@ -156,7 +160,7 @@ internal fun DataSettingsRouteContent(
             ) { uri ->
                 handleBackupPathPicked(context, uri) { resolvedUri ->
                     dataViewModel.onAction(
-                        DataManagementSettingsAction.SetBackupDirectoryUri(resolvedUri)
+                        DataManagementSettingsUiAction.SetBackupDirectoryUri(resolvedUri)
                     )
                 }
             }

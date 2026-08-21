@@ -1,10 +1,6 @@
 package com.aozijx.passly.feature.settings.datamanagement
 
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.data.local.database.model.DatabaseRecoveryPackage
-import com.aozijx.passly.data.local.database.model.DatabaseRecoveryReport
-import com.aozijx.passly.data.local.database.model.DatabaseRecoveryScan
-import com.aozijx.passly.domain.entry.model.EntryType
 
 internal sealed interface DataManagementSettingsMutation {
     data class SettingsChanged(
@@ -19,15 +15,6 @@ internal sealed interface DataManagementSettingsMutation {
     data object EmptyTrashStarted : DataManagementSettingsMutation
     data object EmptyTrashFinished : DataManagementSettingsMutation
     data class TrashActionFailed(val message: String) : DataManagementSettingsMutation
-    data class RecoveryPackagesLoaded(
-        val packages: List<DatabaseRecoveryPackage>,
-    ) : DataManagementSettingsMutation
-    data class RecoveryOperationStarted(val packageId: String) : DataManagementSettingsMutation
-    data class RecoveryScanCompleted(val scan: DatabaseRecoveryScan) : DataManagementSettingsMutation
-    data class RecoveryTypeToggled(val entryType: EntryType) : DataManagementSettingsMutation
-    data class RecoveryRestoreCompleted(val report: DatabaseRecoveryReport) : DataManagementSettingsMutation
-    data class RecoveryOperationFailed(val message: String) : DataManagementSettingsMutation
-    data object RecoveryResultCleared : DataManagementSettingsMutation
 }
 
 internal object DataManagementSettingsReducer {
@@ -62,42 +49,5 @@ internal object DataManagementSettingsReducer {
             state.copy(isEmptyingTrash = false)
         is DataManagementSettingsMutation.TrashActionFailed ->
             state.copy(trashError = mutation.message)
-        is DataManagementSettingsMutation.RecoveryPackagesLoaded -> state.copy(
-            recoveryPackages = mutation.packages,
-            isRecoveryLoading = false,
-            activeRecoveryPackageId = null,
-        )
-        is DataManagementSettingsMutation.RecoveryOperationStarted -> state.copy(
-            activeRecoveryPackageId = mutation.packageId,
-            recoveryError = null,
-            recoveryReport = null,
-        )
-        is DataManagementSettingsMutation.RecoveryScanCompleted -> state.copy(
-            activeRecoveryPackageId = null,
-            recoveryScan = mutation.scan,
-            selectedRecoveryTypes = mutation.scan.recoverableByType.keys,
-        )
-        is DataManagementSettingsMutation.RecoveryTypeToggled -> state.copy(
-            selectedRecoveryTypes = state.selectedRecoveryTypes.toMutableSet().apply {
-                if (!add(mutation.entryType)) remove(mutation.entryType)
-            },
-        )
-        is DataManagementSettingsMutation.RecoveryRestoreCompleted -> state.copy(
-            activeRecoveryPackageId = null,
-            recoveryReport = mutation.report,
-            recoveryScan = null,
-            selectedRecoveryTypes = emptySet(),
-        )
-        is DataManagementSettingsMutation.RecoveryOperationFailed -> state.copy(
-            isRecoveryLoading = false,
-            activeRecoveryPackageId = null,
-            recoveryError = mutation.message,
-        )
-        DataManagementSettingsMutation.RecoveryResultCleared -> state.copy(
-            recoveryScan = null,
-            selectedRecoveryTypes = emptySet(),
-            recoveryReport = null,
-            recoveryError = null,
-        )
     }
 }

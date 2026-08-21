@@ -7,7 +7,7 @@ import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeEffect
-import com.aozijx.passly.feature.recovery.contract.RecoveryModeIntent
+import com.aozijx.passly.feature.recovery.contract.RecoveryModeUiAction
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeUiState
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeMutation
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeReducer
@@ -34,14 +34,14 @@ class RecoveryModeViewModel @Inject constructor(
     private val _effect = Channel<RecoveryModeEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
-    fun onIntent(intent: RecoveryModeIntent) {
-        when (intent) {
-            RecoveryModeIntent.SetPasswordClicked -> showSetPasswordDialog()
-            is RecoveryModeIntent.NewPasswordChanged -> updateNewPassword(intent.value)
-            is RecoveryModeIntent.ConfirmPasswordChanged -> updateConfirmPassword(intent.value)
-            RecoveryModeIntent.SubmitNewPassword -> submitNewPassword()
-            RecoveryModeIntent.ExitClicked -> exitRecovery()
-            RecoveryModeIntent.DismissPasswordDialog -> dismissPasswordDialog()
+    fun onAction(action: RecoveryModeUiAction) {
+        when (action) {
+            RecoveryModeUiAction.SetPasswordClicked -> showSetPasswordDialog()
+            is RecoveryModeUiAction.NewPasswordChanged -> updateNewPassword(action.value)
+            is RecoveryModeUiAction.ConfirmPasswordChanged -> updateConfirmPassword(action.value)
+            RecoveryModeUiAction.SubmitNewPassword -> submitNewPassword()
+            RecoveryModeUiAction.ExitClicked -> exitRecovery()
+            RecoveryModeUiAction.DismissPasswordDialog -> dismissPasswordDialog()
         }
     }
 

@@ -35,7 +35,7 @@ import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.feature.vault.action.rememberVaultActionProvider
 import com.aozijx.passly.feature.vault.contract.VaultEffect
-import com.aozijx.passly.feature.vault.contract.VaultIntent
+import com.aozijx.passly.feature.vault.contract.VaultUiAction
 import com.aozijx.passly.feature.vault.display.VaultDisplayViewModel
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.presentation.vault.components.dialog.VaultDialogs
@@ -73,7 +73,7 @@ fun VaultContent(
     var isFabVisible by remember { mutableStateOf(true) }
 
     BackHandler(enabled = uiState.isSearchActive) {
-        vaultViewModel.onIntent(VaultIntent.SearchToggled(false))
+        vaultViewModel.onAction(VaultUiAction.SearchToggled(false))
     }
 
     val actionProvider = rememberVaultActionProvider(
@@ -96,7 +96,7 @@ fun VaultContent(
     LaunchedEffect(uiState.visibleQuickFilters, uiState.selectedQuickFilter) {
         if (uiState.visibleQuickFilters.isEmpty()) return@LaunchedEffect
         if (uiState.selectedQuickFilter !in uiState.visibleQuickFilters) {
-            vaultViewModel.onIntent(VaultIntent.QuickFilterSelected(uiState.visibleQuickFilters.first()))
+            vaultViewModel.onAction(VaultUiAction.QuickFilterSelected(uiState.visibleQuickFilters.first()))
             return@LaunchedEffect
         }
         val targetIndex = uiState.visibleQuickFilters.indexOf(uiState.selectedQuickFilter)
@@ -108,7 +108,7 @@ fun VaultContent(
     LaunchedEffect(pagerState, uiState.visibleQuickFilters) {
         snapshotFlow { pagerState.settledPage }.distinctUntilChanged().collect { page ->
             val newQuickFilter = uiState.visibleQuickFilters.getOrNull(page) ?: return@collect
-            vaultViewModel.onIntent(VaultIntent.QuickFilterSelected(newQuickFilter))
+            vaultViewModel.onAction(VaultUiAction.QuickFilterSelected(newQuickFilter))
         }
     }
 
@@ -179,20 +179,20 @@ fun VaultContent(
                     isTopBarCollapsible = vaultDisplayConfig.layout.collapseTopBarOnScroll,
                     isQuickFilterBarCollapsible = vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll,
                     onSearchQueryChange = {
-                        vaultViewModel.onIntent(
-                            VaultIntent.SearchQueryChanged(
+                        vaultViewModel.onAction(
+                            VaultUiAction.SearchQueryChanged(
                                 it
                             )
                         )
                     },
-                    onToggleSearch = { vaultViewModel.onIntent(VaultIntent.SearchToggled(it)) },
-                    onClearCategory = { vaultViewModel.onIntent(VaultIntent.ClearCategory) },
-                    onToggleTotpVisibility = { vaultViewModel.onIntent(VaultIntent.ToggleShowTotpCode) },
-                    onCategorySelected = { vaultViewModel.onIntent(VaultIntent.CategorySelected(it)) },
-                    onSortSelected = { vaultViewModel.onIntent(VaultIntent.SortOptionSelected(it)) },
+                    onToggleSearch = { vaultViewModel.onAction(VaultUiAction.SearchToggled(it)) },
+                    onClearCategory = { vaultViewModel.onAction(VaultUiAction.ClearCategory) },
+                    onToggleTotpVisibility = { vaultViewModel.onAction(VaultUiAction.ToggleShowTotpCode) },
+                    onCategorySelected = { vaultViewModel.onAction(VaultUiAction.CategorySelected(it)) },
+                    onSortSelected = { vaultViewModel.onAction(VaultUiAction.SortOptionSelected(it)) },
                     onSelectQuickFilter = {
-                        vaultViewModel.onIntent(
-                            VaultIntent.QuickFilterSelected(
+                        vaultViewModel.onAction(
+                            VaultUiAction.QuickFilterSelected(
                                 it
                             )
                         )
@@ -215,7 +215,7 @@ fun VaultContent(
                         AddType.PASSWORD -> onAddPassword()
                         AddType.TOTP -> onAddOtp()
                         AddType.BANK_CARD -> onAddBankCard()
-                        else -> vaultViewModel.onIntent(VaultIntent.AddTypeSelected(type))
+                        else -> vaultViewModel.onAction(VaultUiAction.AddTypeSelected(type))
                     }
                 },
                 sharedTransitionScope = sharedTransitionScope,
@@ -244,9 +244,9 @@ fun VaultContent(
 
     VaultDialogs(
         uiState = uiState,
-        onDismissAddType = { vaultViewModel.onIntent(VaultIntent.AddTypeSelected(null)) },
-        onConfirmDelete = { vaultViewModel.onIntent(VaultIntent.ConfirmDelete) },
-        onDismissDelete = { vaultViewModel.onIntent(VaultIntent.ItemToDeleteSelected(null)) },
+        onDismissAddType = { vaultViewModel.onAction(VaultUiAction.AddTypeSelected(null)) },
+        onConfirmDelete = { vaultViewModel.onAction(VaultUiAction.ConfirmDelete) },
+        onDismissDelete = { vaultViewModel.onAction(VaultUiAction.ItemToDeleteSelected(null)) },
         requestAuthentication = requestAuthentication,
     )
 }
