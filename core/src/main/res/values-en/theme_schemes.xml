@@ -1,4 +1,5 @@
 <resources>
+    <string name="theme_scheme_default">Default</string>
     <string name="theme_scheme_horizon">Horizon</string>
     <string name="theme_scheme_grove">Grove</string>
     <string name="theme_scheme_ember">Ember</string>

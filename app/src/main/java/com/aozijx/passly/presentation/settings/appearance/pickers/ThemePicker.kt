@@ -46,8 +46,7 @@ fun ThemePicker(
     onDismiss: () -> Unit
 ) {
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState
+        onDismissRequest = onDismiss, sheetState = sheetState
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
@@ -62,30 +61,6 @@ fun ThemePicker(
                 )
             }
 
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onSelect("") }
-                        .padding(vertical = 10.dp, horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    ThemeColorPreviewCard(colors = listOf(MaterialTheme.colorScheme.primary))
-                    Text(
-                        text = stringResource(R.string.settings_theme_scheme_default),
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.weight(1f)
-                    )
-                    RadioButton(selected = selectedThemeKey.isBlank(), onClick = { onSelect("") })
-                }
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                    thickness = 0.5.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                )
-            }
-
             itemsIndexed(AppThemeSchemes.all) { index, scheme ->
                 val isSelected = selectedThemeKey == scheme.key
                 val previewColors = scheme.resolveSeedColors()
@@ -96,12 +71,9 @@ fun ThemePicker(
                         .clip(RoundedCornerShape(12.dp))
                         .clickable { onSelect(scheme.key) }
                         .padding(vertical = 10.dp, horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                    verticalAlignment = Alignment.CenterVertically) {
                     ThemeColorPreviewCard(colors = previewColors)
-
                     Spacer(modifier = Modifier.width(16.dp))
-
                     Text(
                         text = stringResource(scheme.nameRes),
                         style = MaterialTheme.typography.bodyLarge,
@@ -109,9 +81,7 @@ fun ThemePicker(
                     )
 
                     RadioButton(
-                        selected = isSelected,
-                        onClick = { onSelect(scheme.key) }
-                    )
+                        selected = isSelected, onClick = { onSelect(scheme.key) })
                 }
 
                 if (index < AppThemeSchemes.all.lastIndex) {

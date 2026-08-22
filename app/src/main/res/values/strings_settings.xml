@@ -41,7 +41,6 @@
     <string name="settings_language">语言</string>
     <string name="settings_language_choose">选择语言</string>
     <string name="settings_theme_scheme">主题方案</string>
-    <string name="settings_theme_scheme_default">默认</string>
     <string name="settings_theme_scheme_select_title">选择主题方案</string>
     <string name="settings_theme_canvas_tint">背景染色强度</string>
     <string name="settings_theme_canvas_tint_description">混合三个主题色到背景和容器</string>

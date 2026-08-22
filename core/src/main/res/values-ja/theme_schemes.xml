@@ -1,4 +1,5 @@
 <resources>
+    <string name="theme_scheme_default">デフォルト</string>
     <string name="theme_scheme_horizon">ホライズン</string>
     <string name="theme_scheme_grove">グローブ</string>
     <string name="theme_scheme_ember">エンバー</string>
