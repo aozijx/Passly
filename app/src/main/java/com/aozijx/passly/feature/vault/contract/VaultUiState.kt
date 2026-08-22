@@ -16,7 +16,7 @@ data class VaultUiState(
     val visibleQuickFilters: List<LibraryQuickFilter> = LibraryQuickFilter.resolveVisible(
         LibraryQuickFilter.defaultVisibleKeys
     ),
-    val vaultItemsByQuickFilter: Map<LibraryQuickFilter, List<EntryListItem>> = emptyMap(),
+    val vaultItems: List<EntryListItem> = emptyList(),
     val showTOTPCode: Boolean = true,
     val addType: AddType? = null,
     val pendingDelete: EntryListItem? = null

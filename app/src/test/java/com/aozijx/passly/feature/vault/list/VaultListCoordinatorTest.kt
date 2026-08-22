@@ -45,18 +45,18 @@ class VaultListCoordinatorTest {
         try {
             val initial = coordinator.state.filter {
                 it.categories == listOf("Finance", "Personal", "Work") &&
-                        it.itemsByQuickFilter.getValue(LibraryQuickFilter.ALL).size == 2
+                        it.items.size == 2
             }.first()
-            assertEquals(2, initial.itemsByQuickFilter.getValue(LibraryQuickFilter.ALL).size)
+            assertEquals(2, initial.items.size)
 
             uiState.value = uiState.value.copy(selectedCategory = "work")
 
             val filtered = coordinator.state
-                .filter { it.itemsByQuickFilter.getValue(LibraryQuickFilter.ALL).size == 1 }
+                .filter { it.items.size == 1 }
                 .first()
             assertEquals(
                 "Mail",
-                filtered.itemsByQuickFilter.getValue(LibraryQuickFilter.ALL).single().title
+                filtered.items.single().title
             )
         } finally {
             scope.cancel()

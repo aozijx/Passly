@@ -264,7 +264,7 @@ class VaultViewModel @Inject constructor(
                     VaultMutation.ListChanged(
                         isLoading = state.isLoading,
                         categories = state.categories,
-                        itemsByQuickFilter = state.itemsByQuickFilter,
+                        items = state.items,
                     )
                 )
             }

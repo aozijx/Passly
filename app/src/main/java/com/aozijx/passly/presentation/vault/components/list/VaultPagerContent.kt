@@ -68,9 +68,9 @@ fun VaultPagerContent(
     val motionScheme = MaterialTheme.motionScheme
     var playInitialEntryAnimation by rememberSaveable { mutableStateOf(true) }
 
-    LaunchedEffect(uiState.isVaultItemsLoading, uiState.vaultItemsByQuickFilter) {
+    LaunchedEffect(uiState.isVaultItemsLoading, uiState.vaultItems) {
         if (!uiState.isVaultItemsLoading &&
-            uiState.vaultItemsByQuickFilter.values.any { it.isNotEmpty() }
+            uiState.vaultItems.isNotEmpty()
         ) {
             playInitialEntryAnimation = false
         }
@@ -88,8 +88,13 @@ fun VaultPagerContent(
     ) { pageIndex ->
         val currentQuickFilter =
             uiState.visibleQuickFilters.getOrNull(pageIndex) ?: LibraryQuickFilter.ALL
+        val filteredItems = when (currentQuickFilter) {
+            LibraryQuickFilter.ALL -> uiState.vaultItems
+            LibraryQuickFilter.PASSWORDS -> uiState.vaultItems.filter(EntryListItem::hasPassword)
+            LibraryQuickFilter.TOTP -> uiState.vaultItems.filter(EntryListItem::hasOtp)
+        }
         val displayItems = arrangeEntryHierarchy(
-            entries = uiState.vaultItemsByQuickFilter[currentQuickFilter].orEmpty(),
+            entries = filteredItems,
             mode = hierarchyDisplayMode
         )
 

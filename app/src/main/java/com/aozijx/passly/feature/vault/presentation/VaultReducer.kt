@@ -23,7 +23,7 @@ internal sealed interface VaultMutation {
     data class ListChanged(
         val isLoading: Boolean,
         val categories: List<String>,
-        val itemsByQuickFilter: Map<LibraryQuickFilter, List<EntryListItem>>,
+        val items: List<EntryListItem>,
     ) : VaultMutation
 
     data object DialogsCleared : VaultMutation
@@ -53,7 +53,7 @@ internal object VaultReducer {
             is VaultMutation.ListChanged -> state.copy(
                 isVaultItemsLoading = mutation.isLoading,
                 availableCategories = mutation.categories,
-                vaultItemsByQuickFilter = mutation.itemsByQuickFilter,
+                vaultItems = mutation.items,
             )
             VaultMutation.DialogsCleared -> state.copy(
                 addType = null,

@@ -37,7 +37,7 @@ class VaultReducerTest {
             VaultMutation.ListChanged(
                 isLoading = false,
                 categories = listOf("Work"),
-                itemsByQuickFilter = emptyMap(),
+                items = emptyList(),
             ),
         )
 

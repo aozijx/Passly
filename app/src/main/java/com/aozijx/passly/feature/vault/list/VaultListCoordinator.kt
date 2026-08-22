@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
 data class VaultListState(
     val isLoading: Boolean = true,
     val categories: List<String> = emptyList(),
-    val itemsByQuickFilter: Map<LibraryQuickFilter, List<EntryListItem>> = emptyMap()
+    val items: List<EntryListItem> = emptyList()
 )
 
 internal class VaultListCoordinator(
@@ -118,13 +118,7 @@ internal class VaultListCoordinator(
         VaultListState(
             isLoading = loading,
             categories = cats,
-            itemsByQuickFilter = LibraryQuickFilter.entries.associateWith { quickFilter ->
-                when (quickFilter) {
-                    LibraryQuickFilter.ALL -> items
-                    LibraryQuickFilter.PASSWORDS -> items.filter(EntryListItem::hasPassword)
-                    LibraryQuickFilter.TOTP -> items.filter(EntryListItem::hasOtp)
-                }
-            }
+            items = items,
         )
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), VaultListState())
 }
