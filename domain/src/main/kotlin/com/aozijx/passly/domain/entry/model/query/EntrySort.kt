@@ -7,7 +7,14 @@ enum class EntrySortField {
     LAST_USED_AT,
     USAGE_FREQUENCY,
     ENTRY_TYPE,
-    ID
+    ID;
+
+    /** Canonical tie-breaker direction shared by in-memory and database sorting. */
+    val stableDirection: SortDirection
+        get() = when (this) {
+            TITLE, ENTRY_TYPE, ID -> SortDirection.ASC
+            CREATED_AT, UPDATED_AT, LAST_USED_AT, USAGE_FREQUENCY -> SortDirection.DESC
+        }
 }
 
 enum class SortDirection { ASC, DESC }

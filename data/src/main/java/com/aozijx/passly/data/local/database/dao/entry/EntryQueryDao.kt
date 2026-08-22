@@ -3,7 +3,12 @@ package com.aozijx.passly.data.local.database.dao.entry
 import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.RawQuery
+import androidx.sqlite.db.SupportSQLiteQuery
+import com.aozijx.passly.data.local.database.entity.EntryActivityEntity
+import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.local.database.entity.EntryEntity
+import com.aozijx.passly.data.local.database.model.EntryPagingRow
 import com.aozijx.passly.domain.entry.model.EntryType
 import kotlinx.coroutines.flow.Flow
 
@@ -31,6 +36,11 @@ interface EntryQueryDao {
 
     @Query("SELECT * FROM entries WHERE deletedAt IS NULL ORDER BY createdAt DESC")
     fun pagingActiveRecentlyCreated(): PagingSource<Int, EntryEntity>
+
+    @RawQuery(
+        observedEntities = [EntryEntity::class, EntryActivityEntity::class, EntryLinkEntity::class]
+    )
+    fun paging(query: SupportSQLiteQuery): PagingSource<Int, EntryPagingRow>
 
     // ---- get (suspend) ----
 

@@ -9,44 +9,50 @@ import com.aozijx.passly.domain.entry.model.query.SortDirection
 object EntryListSorter {
 
     fun sort(items: List<EntryListItem>, spec: EntrySort): List<EntryListItem> {
-        val primaryComparator: Comparator<EntryListItem> = when (spec.field) {
-            EntrySortField.TITLE -> if (spec.direction == SortDirection.ASC)
-                compareBy { it.title.lowercase() } else compareByDescending { it.title.lowercase() }
-
-            EntrySortField.CREATED_AT -> if (spec.direction == SortDirection.ASC)
-                compareBy { it.createdAt } else compareByDescending { it.createdAt }
-
-            EntrySortField.UPDATED_AT -> if (spec.direction == SortDirection.ASC)
-                compareBy { it.updatedAt } else compareByDescending { it.updatedAt }
-
-            EntrySortField.LAST_USED_AT -> if (spec.direction == SortDirection.ASC)
-                compareBy(nullsLast()) { it.lastUsedAt }
-            else compareByDescending(nullsLast()) { it.lastUsedAt }
-
-            EntrySortField.USAGE_FREQUENCY -> if (spec.direction == SortDirection.ASC)
-                compareBy { it.usageCount } else compareByDescending { it.usageCount }
-
-            EntrySortField.ENTRY_TYPE -> if (spec.direction == SortDirection.ASC)
-                compareBy { it.entryType } else compareByDescending { it.entryType }
-
-            EntrySortField.ID -> if (spec.direction == SortDirection.ASC)
-                compareBy { it.id } else compareByDescending { it.id }
-        }
-
-        val tieBreakerComparator: Comparator<EntryListItem> = when (spec.tieBreaker) {
-            EntrySortField.ID -> compareBy { it.id }
-            EntrySortField.CREATED_AT -> compareByDescending { it.createdAt }
-            else -> compareByDescending { it.createdAt }
-        }
-
+        val primary = comparator(spec.field, spec.direction)
+        val tieBreaker = comparator(spec.tieBreaker, spec.tieBreaker.stableDirection)
+        val stableId = comparator(EntrySortField.ID, SortDirection.ASC)
+        val ordered = primary.then(tieBreaker).then(stableId)
         return items.sortedWith(
             if (spec.pinFavorites) {
-                compareByDescending<EntryListItem> { it.favorite }
-                    .then(primaryComparator)
-                    .then(tieBreakerComparator)
-            } else {
-                primaryComparator.then(tieBreakerComparator)
-            }
+                compareByDescending<EntryListItem> { it.favorite }.then(ordered)
+            } else ordered
         )
+    }
+
+    private fun comparator(
+        field: EntrySortField,
+        direction: SortDirection,
+    ): Comparator<EntryListItem> = Comparator { left, right ->
+        when (field) {
+            EntrySortField.TITLE -> compareValues(
+                left.title.lowercase(),
+                right.title.lowercase(),
+                direction,
+            )
+            EntrySortField.CREATED_AT -> compareValues(left.createdAt, right.createdAt, direction)
+            EntrySortField.UPDATED_AT -> compareValues(left.updatedAt, right.updatedAt, direction)
+            EntrySortField.LAST_USED_AT -> compareValues(left.lastUsedAt, right.lastUsedAt, direction)
+            EntrySortField.USAGE_FREQUENCY -> compareValues(
+                left.usageCount,
+                right.usageCount,
+                direction,
+            )
+            EntrySortField.ENTRY_TYPE -> compareValues(left.entryType, right.entryType, direction)
+            EntrySortField.ID -> compareValues(left.id.value, right.id.value, direction)
+        }
+    }
+
+    /** Null is kept last regardless of direction. */
+    private fun <T : Comparable<T>> compareValues(
+        left: T?,
+        right: T?,
+        direction: SortDirection,
+    ): Int = when {
+        left == null && right == null -> 0
+        left == null -> 1
+        right == null -> -1
+        direction == SortDirection.ASC -> left.compareTo(right)
+        else -> right.compareTo(left)
     }
 }
