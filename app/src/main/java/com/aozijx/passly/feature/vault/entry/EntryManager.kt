@@ -8,7 +8,7 @@ import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.service.FaviconService
-import com.aozijx.passly.feature.vault.otp.TotpCoordinator
+import com.aozijx.passly.feature.vault.otp.OtpCodeRefreshUseCase
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +21,7 @@ internal class EntryManager(
     private val entryCommandRepository: EntryCommandRepository,
     private val entryQueryRepository: EntryQueryRepository,
     private val faviconService: FaviconService,
-    private val totp: TotpCoordinator,
+    private val totp: OtpCodeRefreshUseCase,
     private val onError: (String) -> Unit = {},
     private val onEntryDeleted: (String) -> Unit = {}
 ) {

@@ -33,7 +33,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     private val authenticationManager: AuthenticationManager,
     private val vaultBootstrapStore: VaultBootstrapStore,
     private val hostRegistry: com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry,
-    private val biometricRotationCoordinator: BiometricRotationCoordinator,
+    private val rotateBiometricKey: RotateBiometricKeyUseCase,
     private val cryptoFactory: BiometricCryptoFactory,
     private val availabilityResolver: AuthenticationAvailabilityResolver
 ) : AuthenticationMethodProvisioner {
@@ -195,7 +195,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
                     AuthenticationRequestId(correlationId),
                 )
             )
-        val result = biometricRotationCoordinator.rotate(
+        val result = rotateBiometricKey.rotate(
             host = host,
             invalidateOnEnrollment = invalidateOnEnrollment,
             correlationId = correlationId

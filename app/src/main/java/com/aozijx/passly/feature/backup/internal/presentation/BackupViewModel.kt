@@ -20,7 +20,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 internal class BackupViewModel @Inject constructor(
-    private val operationCoordinator: BackupOperationCoordinator,
+    private val backupOperationUseCase: BackupOperationUseCase,
     private val sessionPolicy: BackupSessionPolicy,
     private val noticePublisher: AppNoticePublisher,
 ) : ViewModel() {
@@ -68,7 +68,7 @@ internal class BackupViewModel @Inject constructor(
         viewModelScope.launch {
             mutate(BackupMutation.OperationStarted)
             applyResult(
-                result = operationCoordinator.checkDirectoryWritable(uri),
+                result = backupOperationUseCase.checkDirectoryWritable(uri),
                 operation = BackupOperation.DIRECTORY_CHECK,
                 clearPendingFields = false,
             )
@@ -80,7 +80,7 @@ internal class BackupViewModel @Inject constructor(
         clearPasswordAndMutate(
             BackupMutation.ExportPrepared(
                 format = format,
-                fileName = operationCoordinator.buildExportFileName(format),
+                fileName = backupOperationUseCase.buildExportFileName(format),
             ),
         )
     }
@@ -105,7 +105,7 @@ internal class BackupViewModel @Inject constructor(
         viewModelScope.launch {
             mutate(BackupMutation.OperationStarted)
             applyResult(
-                result = operationCoordinator.exportToConfiguredDirectory(snapshot),
+                result = backupOperationUseCase.exportToConfiguredDirectory(snapshot),
                 operation = BackupOperation.EXPORT,
                 clearPendingFields = true,
             )
@@ -121,7 +121,7 @@ internal class BackupViewModel @Inject constructor(
         viewModelScope.launch {
             mutate(BackupMutation.OperationStarted)
             applyResult(
-                result = operationCoordinator.executePending(snapshot),
+                result = backupOperationUseCase.executePending(snapshot),
                 operation = operation,
                 clearPendingFields = true,
             )

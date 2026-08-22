@@ -21,7 +21,8 @@ import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 /** Executes Backup side effects while the ViewModel remains a state-machine boundary. */
-internal class BackupOperationCoordinator @Inject constructor(
+/** Application use case boundary for backup flows; the ViewModel only dispatches state. */
+internal class BackupOperationUseCase @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
     private val backupService: BackupArchiveService,
     private val storageSupport: BackupStorageSupport,

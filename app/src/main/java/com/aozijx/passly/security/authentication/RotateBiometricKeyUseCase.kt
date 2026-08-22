@@ -22,7 +22,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class BiometricRotationCoordinator @Inject constructor(
+class RotateBiometricKeyUseCase @Inject constructor(
     private val vaultBootstrapStore: VaultBootstrapStore,
     private val cryptoFactory: BiometricCryptoFactory,
     private val dekManager: DekManager

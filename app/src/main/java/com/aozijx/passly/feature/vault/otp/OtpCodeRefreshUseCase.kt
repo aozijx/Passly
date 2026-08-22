@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
  * - 每秒只更新进度，仅在 moving factor 变化时查询数据库并重新生成验证码
  * - 进度由 Compose 层独立动画，StateFlow 仅保存刷新时刻的快照值
  */
-internal class TotpCoordinator(
+internal class OtpCodeRefreshUseCase(
     private val scope: CoroutineScope,
     private val codeGenerator: suspend (OtpConfig) -> OtpResult,
     private val loadOtpConfig: suspend (String) -> OtpConfig?,
@@ -160,7 +160,7 @@ internal class TotpCoordinator(
             return
         }
         if (config == null || config.secret.isNullOrBlank()) {
-            AppTelemetry.w("TotpCoordinator", "OTP activation failed: missing config for $entryId")
+            AppTelemetry.w("OtpCodeRefreshUseCase", "OTP activation failed: missing config for $entryId")
             _states.update { it + (entryId to OtpUiState(error = OtpGenerationError.InvalidSecret)) }
             return
         }

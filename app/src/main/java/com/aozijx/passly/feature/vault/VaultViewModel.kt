@@ -41,7 +41,7 @@ import com.aozijx.passly.feature.vault.contract.VaultUiAction
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.entry.EntryManager
 import com.aozijx.passly.feature.vault.model.AddType
-import com.aozijx.passly.feature.vault.otp.TotpCoordinator
+import com.aozijx.passly.feature.vault.otp.OtpCodeRefreshUseCase
 import com.aozijx.passly.feature.vault.presentation.VaultMutation
 import com.aozijx.passly.feature.vault.presentation.VaultReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -98,7 +98,7 @@ class VaultViewModel @Inject constructor(
         _refreshTrigger.value++
     }
 
-    private val totp = TotpCoordinator(
+    private val totp = OtpCodeRefreshUseCase(
         scope = viewModelScope,
         codeGenerator = { config -> OtpGenerator.generate(config) },
         loadOtpConfig = { otpConfigRepository.getConfig(it) },
