@@ -1,7 +1,5 @@
 package com.aozijx.passly.core.ui.components.dialog
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -32,14 +30,7 @@ fun PasslyAlertDialog(
         onDismissRequest = onDismiss,
         modifier = modifier.padding(horizontal = 16.dp),
         title = { Text(title, style = MaterialTheme.typography.titleLarge) },
-        text = {
-            Column(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                content()
-            }
-        },
+        text = { content() },
         confirmButton = {
             TextButton(onClick = onConfirm, enabled = confirmEnabled) {
                 Text(confirmText)
