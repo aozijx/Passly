@@ -8,8 +8,8 @@ import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.feature.backup.internal.contract.BackupUiAction
-import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
+import com.aozijx.passly.feature.backup.presentation.contract.BackupUiAction
+import com.aozijx.passly.feature.backup.presentation.contract.BackupUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

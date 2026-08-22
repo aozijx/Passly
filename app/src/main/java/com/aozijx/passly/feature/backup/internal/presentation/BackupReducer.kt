@@ -8,7 +8,7 @@ import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
+import com.aozijx.passly.feature.backup.presentation.contract.BackupUiState
 
 internal sealed interface BackupMutation {
     data object OperationStarted : BackupMutation

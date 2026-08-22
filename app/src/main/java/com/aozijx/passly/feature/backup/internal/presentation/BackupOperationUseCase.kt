@@ -16,7 +16,7 @@ import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
 import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveService
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
-import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
+import com.aozijx.passly.feature.backup.presentation.contract.BackupUiState
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 

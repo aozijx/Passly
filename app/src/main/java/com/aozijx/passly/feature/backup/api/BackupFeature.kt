@@ -12,7 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
-import com.aozijx.passly.feature.backup.internal.contract.BackupUiAction
+import com.aozijx.passly.feature.backup.presentation.contract.BackupUiAction
 import com.aozijx.passly.feature.backup.internal.presentation.BackupViewModel
 import com.aozijx.passly.feature.backup.internal.ui.BackupRestoreDetail
 import com.aozijx.passly.feature.backup.internal.ui.BackupRestoreSheetHost
