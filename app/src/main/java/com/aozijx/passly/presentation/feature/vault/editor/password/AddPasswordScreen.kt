@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.vault.editor.password
+package com.aozijx.passly.presentation.feature.vault.editor.password
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
@@ -13,19 +13,19 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.editor.common.CreateEntryEffect
-import com.aozijx.passly.feature.vault.editor.password.AddPasswordViewModel
+import com.aozijx.passly.presentation.feature.vault.editor.common.CreateEntryEffect
+import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordViewModel
 
-import com.aozijx.passly.feature.vault.editor.password.AddPasswordAction
-import com.aozijx.passly.feature.vault.editor.password.AddPasswordFormState
-import com.aozijx.passly.presentation.vault.editor.common.AddEntryScaffold
-import com.aozijx.passly.presentation.vault.editor.common.EntryEditorSection
-import com.aozijx.passly.presentation.vault.editor.common.EntryNotesField
-import com.aozijx.passly.presentation.vault.editor.common.EntryPasswordField
-import com.aozijx.passly.presentation.vault.editor.common.EntryTagsField
-import com.aozijx.passly.presentation.vault.editor.common.EntryTitleField
-import com.aozijx.passly.presentation.vault.editor.common.EntryUsernameField
-import com.aozijx.passly.presentation.vault.editor.common.EntryWebsiteField
+import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordAction
+import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordFormState
+import com.aozijx.passly.presentation.feature.vault.editor.common.AddEntryScaffold
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryEditorSection
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryNotesField
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryPasswordField
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryTagsField
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryTitleField
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryUsernameField
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryWebsiteField
 
 @Composable
 fun AddPasswordScreen(

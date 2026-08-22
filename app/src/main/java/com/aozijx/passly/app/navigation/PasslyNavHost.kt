@@ -35,13 +35,13 @@ import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.navigation.SettingsNavGraph
 import com.aozijx.passly.presentation.feature.vault.list.VaultViewModel
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
-import com.aozijx.passly.feature.vault.editor.bankcard.AddBankCardViewModel
-import com.aozijx.passly.feature.vault.editor.otp.AddOtpViewModel
-import com.aozijx.passly.feature.vault.editor.password.AddPasswordViewModel
+import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardViewModel
+import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpViewModel
+import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordViewModel
 import com.aozijx.passly.presentation.feature.vault.list.VaultContent
-import com.aozijx.passly.presentation.vault.editor.bankcard.AddBankCardScreen
-import com.aozijx.passly.presentation.vault.editor.otp.AddOtpScreen
-import com.aozijx.passly.presentation.vault.editor.password.AddPasswordScreen
+import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardScreen
+import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpScreen
+import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordScreen
 import kotlinx.coroutines.flow.collectLatest
 
 /**

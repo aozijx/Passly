@@ -18,6 +18,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EntryTypeDefinitionsTest {
+
+    @Test
+    fun otpDefinition_usesOtpScopedIdentityFields() {
+        val otp = EntryTypeDefinitions[EntryType.OTP]
+
+        assertTrue(FieldKey.OTP_ISSUER in otp.fields.map { it.key })
+        assertTrue(FieldKey.OTP_ACCOUNT_NAME in otp.fields.map { it.key })
+        assertFalse(FieldKey.USERNAME in otp.fields.map { it.key })
+        assertFalse(FieldKey.PRIMARY_URL in otp.fields.map { it.key })
+        assertFalse(FieldKey.DOMAINS in otp.fields.map { it.key })
+    }
     @Test
     fun `catalog defines every entry type with one required title`() {
         assertEquals(EntryType.entries.toSet(), EntryTypeDefinitions.all.map { it.type }.toSet())

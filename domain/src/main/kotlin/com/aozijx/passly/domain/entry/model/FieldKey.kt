@@ -20,12 +20,14 @@ enum class FieldKey {
     /** Legacy aggregate key. New editor definitions use PRIMARY_URL and DOMAINS. */
     URIS,
 
-    TOTP_TYPE,
-    TOTP_SECRET,
-    TOTP_ISSUER,
-    TOTP_PERIOD,
-    TOTP_DIGITS,
-    TOTP_ALGORITHM,
+    OTP_TYPE,
+    OTP_SECRET,
+    OTP_ISSUER,
+    OTP_ACCOUNT_NAME,
+    OTP_PERIOD,
+    OTP_COUNTER,
+    OTP_DIGITS,
+    OTP_ALGORITHM,
 
     PASSKEY_CREDENTIAL_ID,
     PASSKEY_RELYING_PARTY_ID,

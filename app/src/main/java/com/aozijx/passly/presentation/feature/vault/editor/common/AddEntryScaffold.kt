@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.vault.editor.common
+package com.aozijx.passly.presentation.feature.vault.editor.common
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope

@@ -49,11 +49,13 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
     private fun getTotpFieldValue(entry: Entry, key: FieldKey): String? {
         val otp = entry.secret.otp
         return when (key) {
-            FieldKey.TOTP_SECRET -> otp?.config?.secret
-            FieldKey.TOTP_ISSUER -> otp?.config?.issuer
-            FieldKey.TOTP_PERIOD -> (otp?.config?.periodSeconds ?: 30).toString()
-            FieldKey.TOTP_DIGITS -> (otp?.config?.digits ?: 6).toString()
-            FieldKey.TOTP_ALGORITHM -> otp?.config?.algorithm?.name ?: "SHA1"
+            FieldKey.OTP_SECRET -> otp?.config?.secret
+            FieldKey.OTP_ISSUER -> otp?.config?.issuer
+            FieldKey.OTP_ACCOUNT_NAME -> otp?.config?.accountName
+            FieldKey.OTP_PERIOD -> (otp?.config?.periodSeconds ?: 30).toString()
+            FieldKey.OTP_COUNTER -> otp?.config?.counter?.toString()
+            FieldKey.OTP_DIGITS -> (otp?.config?.digits ?: 6).toString()
+            FieldKey.OTP_ALGORITHM -> otp?.config?.algorithm?.name ?: "SHA1"
             else -> null
         }
     }

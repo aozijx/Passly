@@ -123,12 +123,14 @@ object EntryTypeDefinitions {
 
     private fun otpFields() = listOf(
         title(),
-        high(FieldKey.TOTP_SECRET, SensitiveFieldKey.OTP_SECRET, required = true),
-        field(FieldKey.TOTP_ISSUER),
-        field(FieldKey.TOTP_TYPE),
-        field(FieldKey.TOTP_PERIOD, EntryFieldValueType.INTEGER),
-        field(FieldKey.TOTP_DIGITS, EntryFieldValueType.INTEGER),
-        field(FieldKey.TOTP_ALGORITHM),
+        high(FieldKey.OTP_SECRET, SensitiveFieldKey.OTP_SECRET, required = true),
+        field(FieldKey.OTP_ISSUER),
+        field(FieldKey.OTP_ACCOUNT_NAME),
+        field(FieldKey.OTP_TYPE),
+        field(FieldKey.OTP_PERIOD, EntryFieldValueType.INTEGER),
+        field(FieldKey.OTP_COUNTER, EntryFieldValueType.INTEGER),
+        field(FieldKey.OTP_DIGITS, EntryFieldValueType.INTEGER),
+        field(FieldKey.OTP_ALGORITHM),
         secret(FieldKey.NOTES),
         field(FieldKey.TAGS, EntryFieldValueType.TEXT_LIST),
     )

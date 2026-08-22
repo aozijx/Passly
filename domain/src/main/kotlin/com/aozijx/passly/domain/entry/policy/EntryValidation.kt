@@ -33,7 +33,7 @@ object EntryValidation {
             EntryType.SSH_KEY -> validateSsh(entry)
             EntryType.WIFI -> validateWifi(entry)
             EntryType.PASSKEY -> requireValue(entry.secret.passkey?.privateKeyReference, FieldKey.PASSKEY_DATA)
-            EntryType.OTP -> requireValue(entry.secret.otp?.config?.secret, FieldKey.TOTP_SECRET)
+            EntryType.OTP -> requireValue(entry.secret.otp?.config?.secret, FieldKey.OTP_SECRET)
             EntryType.SEED_PHRASE -> validateSeedPhrase(entry)
             EntryType.RECOVERY_CODE -> validateRecoveryCodes(entry)
             EntryType.ACCOUNT,

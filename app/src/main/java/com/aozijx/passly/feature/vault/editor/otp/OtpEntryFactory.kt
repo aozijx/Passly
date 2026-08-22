@@ -30,11 +30,8 @@ internal object OtpEntryFactory {
         ),
         profile = EntryProfile(
             title = state.title.trim(),
-            username = state.username.trim(),
-            associations = state.domain.trim()
-                .takeIf(String::isNotEmpty)
-                ?.let { EntryAssociations(primaryUrl = it) }
-                ?: EntryAssociations(),
+            username = "",
+            associations = EntryAssociations(),
         ),
         secret = EntrySecret(
             credential = OtpCredential(config = createConfig(state))
@@ -64,6 +61,6 @@ internal object OtpEntryFactory {
         } ?: OtpHashAlgorithm.SHA1,
         encoding = state.encoding,
         issuer = state.issuer.trim().takeIf(String::isNotEmpty),
-        accountName = state.username.trim().takeIf(String::isNotEmpty)
+        accountName = state.accountName.trim().takeIf(String::isNotEmpty)
     )
 }

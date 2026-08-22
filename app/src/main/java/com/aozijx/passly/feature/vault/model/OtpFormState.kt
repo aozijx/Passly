@@ -8,9 +8,8 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
  */
 data class OtpFormState(
     val title: String = "",
-    val username: String = "",
-    val domain: String = "",
     val issuer: String = "",
+    val accountName: String = "",
     val secret: String = "",
     val period: String = "30",
     val digits: String = "6",

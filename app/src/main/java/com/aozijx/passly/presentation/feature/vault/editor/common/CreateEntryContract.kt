@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.editor.common
+package com.aozijx.passly.presentation.feature.vault.editor.common
 
 data class CreateEntryUiState<Form>(
     val form: Form,

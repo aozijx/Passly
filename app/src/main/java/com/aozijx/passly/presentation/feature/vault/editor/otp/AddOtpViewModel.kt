@@ -1,12 +1,13 @@
-package com.aozijx.passly.feature.vault.editor.otp
+package com.aozijx.passly.presentation.feature.vault.editor.otp
 
 import com.aozijx.passly.core.otp.OtpAuthUriCodec
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
-import com.aozijx.passly.feature.vault.editor.common.CreateEntryViewModel
+import com.aozijx.passly.presentation.feature.vault.editor.common.CreateEntryViewModel
 import com.aozijx.passly.feature.vault.model.OtpFormState
+import com.aozijx.passly.feature.vault.editor.otp.OtpEntryFactory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -85,10 +86,9 @@ class AddOtpViewModel @Inject constructor(
 
         return copy(
             title = parsedTitle.ifBlank { title },
-            username = accountName,
+            accountName = accountName,
             secret = config.secret.orEmpty(),
             issuer = config.issuer.orEmpty(),
-            domain = config.issuer.orEmpty(),
             digits = config.digits.toString(),
             period = (config.periodSeconds ?: 30).toString(),
             counter = (config.counter ?: 0L).toString(),

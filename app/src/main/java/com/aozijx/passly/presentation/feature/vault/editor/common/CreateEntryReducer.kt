@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.editor.common
+package com.aozijx.passly.presentation.feature.vault.editor.common
 
 internal sealed interface CreateEntryMutation<out Form> {
     data class FormChanged<Form>(

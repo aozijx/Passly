@@ -1,8 +1,11 @@
-package com.aozijx.passly.feature.vault.editor.bankcard
+package com.aozijx.passly.presentation.feature.vault.editor.bankcard
 
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
-import com.aozijx.passly.feature.vault.editor.common.CreateEntryViewModel
+import com.aozijx.passly.presentation.feature.vault.editor.common.CreateEntryViewModel
+import com.aozijx.passly.feature.vault.editor.bankcard.BankCardEntryFactory
+import com.aozijx.passly.feature.vault.editor.bankcard.CardNumberValidator
+import com.aozijx.passly.feature.vault.editor.bankcard.ValidationResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 

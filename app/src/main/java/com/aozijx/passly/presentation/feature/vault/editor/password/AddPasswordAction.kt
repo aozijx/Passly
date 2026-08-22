@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.editor.password
+package com.aozijx.passly.presentation.feature.vault.editor.password
 
 sealed interface AddPasswordAction {
     data class TitleChanged(val value: String) : AddPasswordAction

@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.vault.editor.otp
+package com.aozijx.passly.presentation.feature.vault.editor.otp
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -27,15 +27,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.feature.vault.editor.common.CreateEntryEffect
-import com.aozijx.passly.feature.vault.editor.otp.AddOtpAction
-import com.aozijx.passly.feature.vault.editor.otp.AddOtpEvent
-import com.aozijx.passly.feature.vault.editor.otp.AddOtpViewModel
-import com.aozijx.passly.presentation.vault.components.editor.OtpConfigForm
-import com.aozijx.passly.presentation.vault.editor.common.AddEntryScaffold
-import com.aozijx.passly.presentation.vault.editor.common.EntryEditorSection
-import com.aozijx.passly.presentation.vault.editor.common.EntryEditorTextField
-import com.aozijx.passly.presentation.vault.editor.common.EntryTitleField
+import com.aozijx.passly.presentation.feature.vault.editor.common.CreateEntryEffect
+import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpAction
+import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpViewModel
+import com.aozijx.passly.presentation.feature.vault.editor.otp.component.OtpConfigForm
+import com.aozijx.passly.presentation.feature.vault.editor.common.AddEntryScaffold
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryEditorSection
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryEditorTextField
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryTitleField
 
 @Composable
 fun AddOtpScreen(

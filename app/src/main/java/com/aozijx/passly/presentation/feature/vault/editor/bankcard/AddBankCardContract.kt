@@ -1,7 +1,8 @@
-package com.aozijx.passly.feature.vault.editor.bankcard
+package com.aozijx.passly.presentation.feature.vault.editor.bankcard
 
 import androidx.annotation.StringRes
 import com.aozijx.passly.R
+import com.aozijx.passly.feature.vault.editor.bankcard.CardNetwork
 
 enum class CardType(@param:StringRes val labelRes: Int) {
     DEBIT(R.string.card_type_debit),

@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.vault.components.editor
+package com.aozijx.passly.presentation.feature.vault.editor.otp.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,7 +21,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.feature.vault.model.OtpFormState
-import com.aozijx.passly.presentation.vault.editor.common.EntryEditorTextField
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryEditorTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

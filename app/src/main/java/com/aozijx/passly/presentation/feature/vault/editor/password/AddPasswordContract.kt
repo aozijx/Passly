@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.editor.password
+package com.aozijx.passly.presentation.feature.vault.editor.password
 
 data class AddPasswordFormState(
     val title: String = "",

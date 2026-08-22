@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.editor.bankcard
 
+import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardFormState
 import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret

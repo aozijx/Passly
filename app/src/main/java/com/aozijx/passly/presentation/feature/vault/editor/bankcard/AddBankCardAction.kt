@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.editor.bankcard
+package com.aozijx.passly.presentation.feature.vault.editor.bankcard
 
 sealed interface AddBankCardAction {
     data class TitleChanged(val value: String) : AddBankCardAction

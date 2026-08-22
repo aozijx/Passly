@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.vault.editor.bankcard
+package com.aozijx.passly.presentation.feature.vault.editor.bankcard
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
@@ -30,19 +30,19 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.editor.bankcard.AddBankCardAction
-import com.aozijx.passly.feature.vault.editor.bankcard.AddBankCardFormState
-import com.aozijx.passly.feature.vault.editor.bankcard.AddBankCardViewModel
-import com.aozijx.passly.feature.vault.editor.bankcard.CardType
-import com.aozijx.passly.feature.vault.editor.common.CreateEntryEffect
-import com.aozijx.passly.presentation.vault.editor.common.AddEntryScaffold
-import com.aozijx.passly.presentation.vault.editor.common.EntryEditorSection
-import com.aozijx.passly.presentation.vault.editor.common.EntryEditorTextField
-import com.aozijx.passly.presentation.vault.editor.common.EntryNotesField
-import com.aozijx.passly.presentation.vault.editor.common.EntryPasswordField
-import com.aozijx.passly.presentation.vault.editor.common.EntryTagsField
-import com.aozijx.passly.presentation.vault.editor.common.EntryTitleField
-import com.aozijx.passly.presentation.vault.editor.common.EntryUsernameField
+import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardAction
+import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardFormState
+import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardViewModel
+import com.aozijx.passly.presentation.feature.vault.editor.bankcard.CardType
+import com.aozijx.passly.presentation.feature.vault.editor.common.CreateEntryEffect
+import com.aozijx.passly.presentation.feature.vault.editor.common.AddEntryScaffold
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryEditorSection
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryEditorTextField
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryNotesField
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryPasswordField
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryTagsField
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryTitleField
+import com.aozijx.passly.presentation.feature.vault.editor.common.EntryUsernameField
 
 @Composable
 fun AddBankCardScreen(

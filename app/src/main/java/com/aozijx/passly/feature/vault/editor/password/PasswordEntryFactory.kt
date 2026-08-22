@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.editor.password
 
+import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordFormState
 import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
