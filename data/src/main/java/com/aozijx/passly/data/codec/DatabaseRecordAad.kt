@@ -4,9 +4,6 @@ import com.aozijx.passly.data.local.database.DatabaseSchema
 
 internal object DatabaseRecordAad {
 
-    fun entrySummary(entryId: String): ByteArray =
-        "${DatabaseSchema.TABLE_ENTRIES}:${entryId}:summaryBlob".toByteArray(Charsets.UTF_8)
-
     fun secretBundle(entryId: String): ByteArray =
         "${DatabaseSchema.TABLE_SECRET_FIELDS}:${entryId}:STRUCT_BUNDLE".toByteArray(Charsets.UTF_8)
 

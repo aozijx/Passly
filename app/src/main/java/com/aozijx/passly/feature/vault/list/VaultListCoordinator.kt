@@ -4,7 +4,6 @@ import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.policy.EntryListSorter
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.domain.settings.model.LibrarySortSpec
-import com.aozijx.passly.domain.entry.model.query.EntryFilter
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
@@ -19,13 +18,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.launch
 
 data class VaultListState(
     val isLoading: Boolean = true,
@@ -51,41 +48,18 @@ internal class VaultListCoordinator(
         .map { it.selectedCategory }
         .distinctUntilChanged()
 
-    private val loadingTrigger = searchQuery
-        .map(String::trim)
-        .distinctUntilChanged()
-
-    init {
-        scope.launch {
-            loadingTrigger.drop(1).collect { _isLoading.value = true }
-        }
-    }
-
     @OptIn(FlowPreview::class)
-    private val rawItems: StateFlow<List<EntryListItem>> = observeItems(
-        debouncedSearchQuery = searchQuery
-            .map(String::trim)
-            .debounce(250)
-            .distinctUntilChanged(),
-        refreshTrigger = refreshTrigger
-    ).onEach { _ ->
-        _isLoading.value = false
-    }.stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val debouncedSearchQuery: StateFlow<String> = searchQuery
+        .map(String::trim)
+        .debounce(250)
+        .distinctUntilChanged()
+        .stateIn(scope, SharingStarted.WhileSubscribed(5000), "")
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private fun observeItems(
-        debouncedSearchQuery: Flow<String>,
-        refreshTrigger: Flow<Long>,
-    ): Flow<List<EntryListItem>> = combine(
-        debouncedSearchQuery,
-        refreshTrigger,
-    ) { query, refreshId -> QueryParams(query, refreshId) }
-        .distinctUntilChanged()
-        .flatMapLatest { params ->
-            entryListQueryRepository.observeSummaries(query = params.query, filter = EntryFilter.ALL)
-        }
-
-    private data class QueryParams(val query: String, val refreshId: Long)
+    private val rawItems: StateFlow<List<EntryListItem>> = refreshTrigger
+        .flatMapLatest { entryListQueryRepository.activeSummaries }
+        .onEach { _isLoading.value = false }
+        .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val categories: StateFlow<List<String>> = rawItems
         .map { items ->
@@ -99,14 +73,16 @@ internal class VaultListCoordinator(
 
     private val sortedItems: StateFlow<List<EntryListItem>> = combine(
         rawItems,
+        debouncedSearchQuery,
         selectedSort,
         selectedCategory.map { category -> category?.trim()?.takeIf(String::isNotEmpty) }
-    ) { items, sort, category ->
+    ) { items, query, sort, category ->
+        val searchedItems = if (query.isEmpty()) items else items.filter { it.matches(query) }
         val filteredItems = category?.let {
-            items.filter { item ->
+            searchedItems.filter { item ->
                 item.tags.any { tag -> tag.equals(category, ignoreCase = true) }
             }
-        } ?: items
+        } ?: searchedItems
         EntryListSorter.sort(filteredItems, sort.toDomain())
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -121,6 +97,15 @@ internal class VaultListCoordinator(
             items = items,
         )
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), VaultListState())
+}
+
+private fun EntryListItem.matches(query: String): Boolean {
+    val normalized = query.lowercase()
+    return sequenceOf(title, username, associations.primaryUrl.orEmpty())
+        .plus(tags.asSequence())
+        .plus(associations.domains.asSequence())
+        .plus(associations.applicationIds.asSequence())
+        .any { candidate -> normalized in candidate.lowercase() }
 }
 
 private fun LibrarySortSpec.toDomain() = EntrySort(

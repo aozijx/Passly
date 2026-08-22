@@ -85,6 +85,6 @@ class TrashDaoTest {
     private fun entry(id: String) = EntryEntity(
         entryId = id,
         entryType = EntryType.LOGIN,
-        summaryBlob = byteArrayOf(1, 2, 3)
+        title = id,
     )
 }

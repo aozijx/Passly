@@ -51,7 +51,7 @@ class EntryLinkConstraintDaoTest {
     private fun entry(id: String, type: EntryType) = EntryEntity(
         entryId = id,
         entryType = type,
-        summaryBlob = byteArrayOf(),
+        title = id,
         createdAt = 1L,
         updatedAt = 1L,
     )

@@ -2,7 +2,7 @@ package com.aozijx.passly.data.local.database.recovery
 
 import android.content.Context
 import com.aozijx.passly.core.platform.VaultResourcePaths
-import com.aozijx.passly.data.codec.entry.EntryProfileCodec
+import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.data.local.database.model.DatabaseRecoveryReport
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
@@ -19,7 +19,6 @@ import javax.inject.Inject
 internal class DatabaseRecoveryImporter @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val databaseSession: AppDatabaseSession,
-    private val profileCodec: EntryProfileCodec,
     private val secretFieldStore: SecretFieldStore,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
@@ -79,12 +78,11 @@ internal class DatabaseRecoveryImporter @Inject constructor(
                 hasAttachments = recovered.attachments.isNotEmpty(),
             ).toDatabaseFlags()
             entryCommandDao().insertStrict(
-                recovered.entity.copy(
+                EntryProfileMapper.applyToEntity(profile, recovered.entity.copy(
                     capabilityFlags = capabilityFlags,
                     otpType = recovered.secret.otp?.config?.type?.name,
                     searchIndexVersion = 0,
-                    summaryBlob = profileCodec.encrypt(profile, id),
-                ),
+                )),
             )
             secretFieldStore.replaceAll(this, id, recovered.secret)
             recovered.attachments.forEach { attachment ->

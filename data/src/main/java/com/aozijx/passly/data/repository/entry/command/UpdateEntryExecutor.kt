@@ -2,13 +2,13 @@ package com.aozijx.passly.data.repository.entry.command
 
 import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.local.database.DatabaseClock
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.mapper.entry.EntryAssembler
 import com.aozijx.passly.data.mapper.entry.hasEntryCapability
 import com.aozijx.passly.data.mapper.entry.mergePreservedFields
 import com.aozijx.passly.data.mapper.entry.toDatabaseFlags
+import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.data.mapper.search.toLookupFields
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
@@ -20,7 +20,6 @@ import javax.inject.Inject
 
 internal class UpdateEntryExecutor @Inject constructor(
     private val databaseTransactions: DatabaseTransactionRunner,
-    private val summaryCodec: EntryProfileCodec,
     private val secretFieldStore: SecretFieldStore,
     private val searchIndexWriter: EntrySearchIndexWriter,
     private val revisionWriter: EntryRevisionWriter,
@@ -31,7 +30,7 @@ internal class UpdateEntryExecutor @Inject constructor(
     suspend fun execute(id: String, expectedVersion: Int, changes: EntryUpdate): AppResult<Unit> {
         val result = databaseTransactions.write("entry_update") {
             val entity = entryQueryDao().getById(id) ?: throw NotFound()
-            val oldProfile = summaryCodec.decrypt(entity.summaryBlob, id)
+            val oldProfile = EntryProfileMapper.fromEntity(entity)
             val oldSecret = secretFieldStore.readAll(this, id)
             val newProfile = changes.profile ?: oldProfile
             val newSecret = changes.secret?.mergePreservedFields(oldSecret) ?: oldSecret
@@ -45,7 +44,17 @@ internal class UpdateEntryExecutor @Inject constructor(
             val affected = entryCommandDao().optimisticUpdate(
                 id,
                 expectedVersion,
-                summaryCodec.encrypt(newProfile, id),
+                newProfile.title,
+                newProfile.username,
+                newProfile.associations.primaryUrl,
+                newProfile.associations.domains,
+                newProfile.associations.applicationIds,
+                newProfile.icon.name,
+                newProfile.icon.customReference,
+                newProfile.favorite,
+                newProfile.tags,
+                newProfile.icon.color,
+                newProfile.expiresAtMs,
                 flags,
                 newSecret.otp?.config?.type?.name,
                 now,

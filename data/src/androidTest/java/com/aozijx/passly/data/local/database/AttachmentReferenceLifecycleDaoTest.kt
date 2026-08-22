@@ -132,7 +132,7 @@ class AttachmentReferenceLifecycleDaoTest {
             EntryEntity(
                 entryId = id,
                 entryType = EntryType.LOGIN,
-                summaryBlob = byteArrayOf(),
+                title = "entry",
                 createdAt = 1L,
                 updatedAt = 1L,
             )

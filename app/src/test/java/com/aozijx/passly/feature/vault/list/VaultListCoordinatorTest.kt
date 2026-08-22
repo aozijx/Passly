@@ -5,7 +5,6 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
-import com.aozijx.passly.domain.entry.model.query.EntryFilter
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
@@ -24,6 +23,34 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class VaultListCoordinatorTest {
+
+    @Test
+    fun `search filters the decrypted summary snapshot without querying again`() = runBlocking {
+        val scope = CoroutineScope(coroutineContext + SupervisorJob())
+        val repository = StaticRepository(
+            items = listOf(
+                item(id = "1", title = "Mail", tags = listOf("Work")),
+                item(id = "2", title = "Game", tags = listOf("Personal")),
+            )
+        )
+        val uiState = MutableStateFlow(VaultUiState())
+        val coordinator = VaultListCoordinator(
+            scope = scope,
+            entryListQueryRepository = repository,
+            uiState = uiState,
+            refreshTrigger = flowOf(0L),
+        )
+
+        try {
+            coordinator.state.filter { it.items.size == 2 }.first()
+            uiState.value = uiState.value.copy(searchQuery = "work")
+
+            val result = coordinator.state.filter { it.items.size == 1 }.first()
+            assertEquals("Mail", result.items.single().title)
+        } finally {
+            scope.cancel()
+        }
+    }
 
     @Test
     fun `category filter is applied after decrypted list items are loaded`() = runBlocking {
@@ -65,14 +92,8 @@ class VaultListCoordinatorTest {
 
     private class StaticRepository(items: List<EntryListItem>) : EntryListQueryRepository {
         private val itemsFlow = MutableStateFlow(items)
+        override val activeSummaries: Flow<List<EntryListItem>> = itemsFlow
         override val deletedEntries: Flow<List<EntryListItem>> = emptyFlow()
-
-        override fun observeSummaries(
-            query: String,
-            filter: EntryFilter
-        ): Flow<List<EntryListItem>> {
-            return itemsFlow
-        }
     }
 
     private fun item(

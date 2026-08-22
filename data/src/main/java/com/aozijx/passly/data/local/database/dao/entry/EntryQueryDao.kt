@@ -15,18 +15,6 @@ interface EntryQueryDao {
     @Query("SELECT * FROM entries WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
     fun observeActive(): Flow<List<EntryEntity>>
 
-    @Query("SELECT * FROM entries WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
-    fun observeActiveByType(entryType: EntryType): Flow<List<EntryEntity>>
-
-    @Query("SELECT * FROM entries WHERE deletedAt IS NULL AND (capabilityFlags & :capability) != 0 ORDER BY updatedAt DESC")
-    fun observeActiveWithCapability(capability: Int): Flow<List<EntryEntity>>
-
-    @Query("SELECT * FROM entries WHERE entryId IN (:entryIds) AND deletedAt IS NULL ORDER BY updatedAt DESC")
-    fun observeActiveByIds(entryIds: List<String>): Flow<List<EntryEntity>>
-
-    @Query("SELECT DISTINCT entryType FROM entries WHERE deletedAt IS NULL ORDER BY entryType")
-    fun observeDistinctActiveEntryTypes(): Flow<List<EntryType>>
-
     @Query("SELECT * FROM entries WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
     fun observeDeleted(): Flow<List<EntryEntity>>
 

@@ -5,8 +5,41 @@ import com.aozijx.passly.data.codec.entry.payload.EntryAssociationsPayload
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.EntryIcon
+import com.aozijx.passly.data.local.database.entity.EntryEntity
 
 object EntryProfileMapper {
+
+    fun fromEntity(entity: EntryEntity): EntryProfile = EntryProfile(
+        title = entity.title,
+        username = entity.username,
+        associations = EntryAssociations(
+            primaryUrl = entity.primaryUrl,
+            domains = entity.domains,
+            applicationIds = entity.applicationIds,
+        ),
+        icon = EntryIcon(
+            name = entity.iconName,
+            customReference = entity.iconCustomReference,
+            color = entity.iconColor,
+        ),
+        favorite = entity.favorite,
+        tags = entity.tags,
+        expiresAtMs = entity.expiresAt,
+    )
+
+    fun applyToEntity(profile: EntryProfile, entity: EntryEntity): EntryEntity = entity.copy(
+        title = profile.title,
+        username = profile.username,
+        primaryUrl = profile.associations.primaryUrl,
+        domains = profile.associations.domains,
+        applicationIds = profile.associations.applicationIds,
+        iconName = profile.icon.name,
+        iconCustomReference = profile.icon.customReference,
+        favorite = profile.favorite,
+        tags = profile.tags,
+        iconColor = profile.icon.color,
+        expiresAt = profile.expiresAtMs,
+    )
 
     fun toPayload(summary: EntryProfile): SummaryPayload = SummaryPayload(
         title = summary.title,

@@ -1,9 +1,9 @@
 package com.aozijx.passly.data.repository.search
 
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.mapper.entry.EntryAssembler
+import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.data.mapper.search.toLookupFields
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.data.repository.entry.command.EntrySearchIndexWriter
@@ -21,7 +21,6 @@ import javax.inject.Singleton
 @Singleton
 internal class BlindIndexMaintenance @Inject constructor(
     private val databaseTransactions: DatabaseTransactionRunner,
-    private val summaryCodec: EntryProfileCodec,
     private val secretFieldStore: SecretFieldStore,
     private val searchIndexWriter: EntrySearchIndexWriter
 ) : SearchIndexMaintenance {
@@ -48,9 +47,7 @@ internal class BlindIndexMaintenance @Inject constructor(
             var rebuiltCount = 0
             metaEntities.chunked(BATCH_SIZE).forEach { batch ->
                 for (metaEntity in batch) {
-                    val summary = summaryCodec.decrypt(
-                        metaEntity.summaryBlob, metaEntity.entryId
-                    )
+                    val summary = EntryProfileMapper.fromEntity(metaEntity)
                     val secret = secretFieldStore.readBundle(this, metaEntity.entryId)
                     val entry = EntryAssembler.assembleFromDatabase(
                         metaEntity, summary, secret

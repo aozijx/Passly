@@ -3,11 +3,11 @@ package com.aozijx.passly.data.repository.autofill
 import com.aozijx.passly.domain.autofill.AutofillScope
 import com.aozijx.passly.domain.autofill.port.CredentialServiceRepository
 import com.aozijx.passly.core.platform.PackageUtils
-import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.query.buildRecentEntryIdIntersectionQuery
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.mapper.entry.EntryAssembler
+import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
@@ -33,7 +33,6 @@ import javax.inject.Singleton
 internal class CredentialServiceRepositoryImpl @Inject constructor(
     private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
-    private val profileCodec: EntryProfileCodec,
     private val secretFieldStore: SecretFieldStore,
     private val blindIndexer: BlindIndexer,
     private val entryCommands: EntryCommandRepository,
@@ -84,7 +83,7 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
                     }
                     EntryAssembler.assembleFromDatabase(
                         entity,
-                        profileCodec.decrypt(entity.summaryBlob, entity.entryId),
+                        EntryProfileMapper.fromEntity(entity),
                         secret,
                     )
                 }
@@ -116,7 +115,7 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
                 val fullSecret = secretFieldStore.readAll(this, entity.entryId)
                 entity.entryId to EntryAssembler.assembleFromDatabase(
                     entity,
-                    profileCodec.decrypt(entity.summaryBlob, entity.entryId),
+                    EntryProfileMapper.fromEntity(entity),
                     if (includeSecrets) fullSecret else fullSecret.redacted(),
                 )
             }

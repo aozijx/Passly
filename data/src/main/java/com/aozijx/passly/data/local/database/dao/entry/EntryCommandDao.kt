@@ -16,11 +16,39 @@ interface EntryCommandDao {
 
     // === Optimistic Lock Update ===
 
-    @Query("UPDATE entries SET summaryBlob = :summaryBlob, capabilityFlags = :capabilityFlags, otpType = :otpType, version = version + 1, updatedAt = :updatedAt WHERE entryId = :entryId AND version = :expectedVersion")
+    @Query("""
+        UPDATE entries SET
+            title = :title,
+            username = :username,
+            primaryUrl = :primaryUrl,
+            domains = :domains,
+            applicationIds = :applicationIds,
+            iconName = :iconName,
+            iconCustomReference = :iconCustomReference,
+            favorite = :favorite,
+            tags = :tags,
+            iconColor = :iconColor,
+            expiresAt = :expiresAt,
+            capabilityFlags = :capabilityFlags,
+            otpType = :otpType,
+            version = version + 1,
+            updatedAt = :updatedAt
+        WHERE entryId = :entryId AND version = :expectedVersion
+    """)
     suspend fun optimisticUpdate(
         entryId: String,
         expectedVersion: Int,
-        summaryBlob: ByteArray,
+        title: String,
+        username: String,
+        primaryUrl: String?,
+        domains: Set<String>,
+        applicationIds: Set<String>,
+        iconName: String?,
+        iconCustomReference: String?,
+        favorite: Boolean,
+        tags: Set<String>,
+        iconColor: String?,
+        expiresAt: Long?,
         capabilityFlags: Int,
         otpType: String?,
         updatedAt: Long

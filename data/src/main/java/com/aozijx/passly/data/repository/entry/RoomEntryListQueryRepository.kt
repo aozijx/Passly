@@ -1,31 +1,21 @@
 package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
-import com.aozijx.passly.data.codec.entry.EntryProfileCodec
-import com.aozijx.passly.data.local.database.query.buildEntryIdIntersectionQuery
-import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.mapper.entry.EntryListItemMapper
-import com.aozijx.passly.data.local.database.entity.EntryEntity
+import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.data.mapper.entry.databaseFlag
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.query.EntryFilter
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.domain.entry.model.query.EntryCapability
 import com.aozijx.passly.domain.entry.model.query.EntryUsage
-import com.aozijx.passly.domain.entry.model.query.LookupField
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.policy.EntryAccountGraph
-import com.aozijx.passly.security.search.BlindIndexer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -35,8 +25,6 @@ import javax.inject.Singleton
 internal class RoomEntryListQueryRepository @Inject constructor(
     private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
-    private val summaryCodec: EntryProfileCodec,
-    private val blindIndexer: BlindIndexer
 ) : EntryListQueryRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -47,10 +35,7 @@ internal class RoomEntryListQueryRepository @Inject constructor(
                 entryQueryDao().observeDeleted()
                     .map { entities ->
                         entities.map { entity ->
-                            val summary = summaryCodec.decrypt(
-                                entity.summaryBlob,
-                                entity.entryId
-                            )
+                            val summary = EntryProfileMapper.fromEntity(entity)
                             EntryListItemMapper.assemble(entity, summary)
                         }
                     }
@@ -59,38 +44,11 @@ internal class RoomEntryListQueryRepository @Inject constructor(
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun observeSummaries(
-        query: String, filter: EntryFilter
-    ): Flow<List<EntryListItem>> = sessionState.isAuthorized
+    override val activeSummaries: Flow<List<EntryListItem>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
             else databaseSession.observeFlow {
-                val baseEntryFlow = when (filter) {
-                    EntryFilter.ALL -> entryQueryDao().observeActive()
-                    EntryFilter.TOTP_ONLY -> entryQueryDao().observeActiveWithCapability(
-                        databaseFlag(EntryCapability.OTP)
-                    )
-
-                    EntryFilter.PASSWORD_ONLY -> entryQueryDao().observeActiveWithCapability(
-                        databaseFlag(EntryCapability.PASSWORD)
-                    )
-                }
-                val database = this
-                val entryFlow = if (query.isBlank()) {
-                    baseEntryFlow
-                } else {
-                    flow {
-                        val searchTokens = blindIndexer.searchTokens(query)
-                        if (searchTokens.isEmpty()) {
-                            emitAll(flowOf(emptyList()))
-                        } else {
-                            val sqlQuery = buildEntryIdIntersectionQuery(searchTokens, SEARCH_FIELDS)
-                            val matchingIds = database.searchTokenQueryDao()
-                                .searchByTokenIntersection(sqlQuery)
-                            emitAll(entryQueryDao().observeActiveByIds(matchingIds))
-                        }
-                    }
-                }
+                val entryFlow = entryQueryDao().observeActive()
                 val statsFlow =
                     entryActivityAnalyticsDao().observeUsageStats(ActivityType.USAGE_TYPES)
                 val linksFlow = entryLinkQueryDao().observeAll()
@@ -109,7 +67,7 @@ internal class RoomEntryListQueryRepository @Inject constructor(
                         }
                     )
                     metaEntities.map {
-                        val summary = summaryCodec.decrypt(it.summaryBlob, it.entryId)
+                        val summary = EntryProfileMapper.fromEntity(it)
                         EntryListItemMapper.assemble(it, summary)
                     }
                         .map { item ->
@@ -124,13 +82,6 @@ internal class RoomEntryListQueryRepository @Inject constructor(
                                 )
                             ) else groupedItem
                         }
-                        .filter { item ->
-                            when (filter) {
-                                EntryFilter.ALL -> true
-                                EntryFilter.PASSWORD_ONLY -> item.hasPassword
-                                EntryFilter.TOTP_ONLY -> item.hasOtp
-                            }
-                        }
                         .sortedWith(
                             compareByDescending<EntryListItem> { it.favorite }
                                 .thenByDescending { it.usageCount }
@@ -141,7 +92,4 @@ internal class RoomEntryListQueryRepository @Inject constructor(
             }
         }
 
-    private companion object {
-        private val SEARCH_FIELDS = LookupField.entries
-    }
 }

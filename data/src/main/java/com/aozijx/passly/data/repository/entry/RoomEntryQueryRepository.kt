@@ -1,8 +1,8 @@
 package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
-import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.mapper.entry.EntryAssembler
+import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
@@ -19,7 +19,6 @@ import javax.inject.Singleton
 internal class RoomEntryQueryRepository @Inject constructor(
     private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
-    private val summaryCodec: EntryProfileCodec,
     private val secretFieldStore: SecretFieldStore,
 ) : EntryQueryRepository {
 
@@ -27,7 +26,7 @@ internal class RoomEntryQueryRepository @Inject constructor(
         if (!sessionState.hasFullSecureSessionAccess()) return null
         return databaseSession.query {
             val metaEntity = entryQueryDao().getById(entryId.value) ?: return@query null
-            val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
+            val summary = EntryProfileMapper.fromEntity(metaEntity)
             val secret = secretFieldStore.readBundle(this, entryId.value)
             EntryAssembler.assembleFromDatabase(metaEntity, summary, secret)
         }
@@ -38,7 +37,7 @@ internal class RoomEntryQueryRepository @Inject constructor(
         return databaseSession.query {
             val metaEntities = entryQueryDao().getActive()
             metaEntities.map { metaEntity ->
-                val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
+                val summary = EntryProfileMapper.fromEntity(metaEntity)
                 val secret = secretFieldStore.readBundle(this, metaEntity.entryId)
                 EntryAssembler.assembleFromDatabase(metaEntity, summary, secret)
             }

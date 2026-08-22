@@ -3,7 +3,7 @@ package com.aozijx.passly.data.repository.entry.command
 import com.aozijx.passly.data.codec.entry.SecretBundleCodec
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
-import com.aozijx.passly.data.codec.entry.EntryProfileCodec
+import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.data.local.database.entity.RevisionAttachmentRefEntity
@@ -28,7 +28,6 @@ import javax.inject.Singleton
 internal class EntryRevisionWriter @Inject constructor(
     private val contentSnapshotCodec: EntryContentSnapshotCodec,
     private val sensitiveRevisionCodec: SensitiveRevisionSnapshotCodec,
-    private val summaryCodec: EntryProfileCodec,
     private val secretFieldStore: SecretFieldStore,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
@@ -103,7 +102,7 @@ internal class EntryRevisionWriter @Inject constructor(
         change: RevisionChange = RevisionChange.VALUE_CHANGED,
     ) = with(db) {
         val metadata = entryQueryDao().getById(entryId) ?: return@with
-        val summary = summaryCodec.decrypt(metadata.summaryBlob, entryId)
+        val summary = EntryProfileMapper.fromEntity(metadata)
         val secret = secretFieldStore.readAll(this, entryId)
         val affected = entryCommandDao().bumpVersion(
             entryId = entryId,

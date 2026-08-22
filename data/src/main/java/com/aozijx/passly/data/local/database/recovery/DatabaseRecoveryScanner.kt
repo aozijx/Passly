@@ -5,7 +5,7 @@ import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.EventLevel
 import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.report
-import com.aozijx.passly.data.codec.entry.EntryProfileCodec
+import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.data.codec.entry.SecretFieldCodec
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
@@ -27,7 +27,6 @@ import javax.inject.Inject
 
 internal class DatabaseRecoveryScanner @Inject constructor(
     private val databaseSession: AppDatabaseSession,
-    private val profileCodec: EntryProfileCodec,
     private val secretFieldStore: SecretFieldStore,
     private val revisionCodec: EntryContentSnapshotCodec,
     private val sensitiveRevisionCodec: SensitiveRevisionSnapshotCodec,
@@ -113,7 +112,7 @@ internal class DatabaseRecoveryScanner @Inject constructor(
     ): RecoverableEntry? {
         val anonymousId = anonymousId(verified.info.id, entity.entryId)
         val resourceIssuesBefore = issues.count(::isResourceIssue)
-        val profile = runCatching { profileCodec.decrypt(entity.summaryBlob, entity.entryId) }
+        val profile = runCatching { EntryProfileMapper.fromEntity(entity) }
             .onFailure { issues += issue("entry", anonymousId, "PROFILE_DAMAGED") }
             .getOrNull()
         val secret = runCatching {

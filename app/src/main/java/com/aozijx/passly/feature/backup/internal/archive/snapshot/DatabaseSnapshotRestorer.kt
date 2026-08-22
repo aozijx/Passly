@@ -10,7 +10,6 @@ import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
-import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.local.database.maintenance.DatabaseCleaner
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
@@ -45,7 +44,6 @@ internal class DatabaseSnapshotRestorer @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val databaseSession: AppDatabaseSession,
     private val databaseCleaner: DatabaseCleaner,
-    private val summaryCodec: EntryProfileCodec,
     private val secretFieldStore: SecretFieldStore,
     private val documentMapper: BackupSnapshotMapper,
     private val attachmentContentCrypto: AttachmentContentCrypto,
@@ -96,8 +94,6 @@ internal class DatabaseSnapshotRestorer @Inject constructor(
                         icon = restoredEntry.profile.icon.copy(customReference = iconPath),
                     )
                     val secret = restoredEntry.secret
-                    val metaBlob = summaryCodec.encrypt(profile, entryId)
-
                     val attachmentResources = entryResources.filter {
                         it.kind == BackupResourceKind.ATTACHMENT
                     }
@@ -113,7 +109,17 @@ internal class DatabaseSnapshotRestorer @Inject constructor(
                         version = record.version,
                         capabilityFlags = capabilityFlags,
                         otpType = otpType?.name,
-                        summaryBlob = metaBlob,
+                        title = profile.title,
+                        username = profile.username,
+                        primaryUrl = profile.associations.primaryUrl,
+                        domains = profile.associations.domains,
+                        applicationIds = profile.associations.applicationIds,
+                        iconName = profile.icon.name,
+                        iconCustomReference = profile.icon.customReference,
+                        favorite = profile.favorite,
+                        tags = profile.tags,
+                        iconColor = profile.icon.color,
+                        expiresAt = profile.expiresAtMs,
                         createdAt = record.createdAt,
                         updatedAt = record.updatedAt,
                         deletedAt = record.deletedAt

@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.local.database.converter
 
 import androidx.room.TypeConverter
+import com.aozijx.passly.data.codec.json.AppJson
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
@@ -30,6 +31,15 @@ object LookupFieldConverter {
     @TypeConverter
     fun toLookupField(value: String): LookupField =
         LookupField.entries.find { it.name == value } ?: LookupField.TITLE
+}
+
+object StringSetConverter {
+    @TypeConverter
+    fun fromStringSet(value: Set<String>): String = AppJson.encodeToString(value.sorted())
+
+    @TypeConverter
+    fun toStringSet(value: String): Set<String> =
+        AppJson.decodeFromString<List<String>>(value).toSet()
 }
 
 object EntryRelationTypeConverter {

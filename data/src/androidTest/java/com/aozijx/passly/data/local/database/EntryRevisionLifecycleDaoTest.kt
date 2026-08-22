@@ -139,7 +139,7 @@ class EntryRevisionLifecycleDaoTest {
             EntryEntity(
                 entryId = id,
                 entryType = EntryType.LOGIN,
-                summaryBlob = byteArrayOf(1),
+                title = "entry",
             )
         )
     }

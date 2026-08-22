@@ -3,7 +3,7 @@ package com.aozijx.passly.data.repository.entry.command
 import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.data.codec.entry.EntryProfileCodec
+import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.repository.entry.command.EntryResourceCleaner
@@ -17,7 +17,6 @@ import javax.inject.Inject
  */
 internal class DeleteEntryPermanentlyExecutor @Inject constructor(
     private val databaseTransactions: DatabaseTransactionRunner,
-    private val summaryCodec: EntryProfileCodec,
     private val resourceCleaner: EntryResourceCleaner,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
@@ -28,7 +27,7 @@ internal class DeleteEntryPermanentlyExecutor @Inject constructor(
             if (entity.deletedAt == null) throw ValidationError()
             databaseTransactions.checkVersion(entity.version, expectedVersion)
 
-            val summary = summaryCodec.decrypt(entity.summaryBlob, entity.entryId)
+            val summary = EntryProfileMapper.fromEntity(entity)
             // 显式清理历史，使生命周期语义不只依赖 Room 外键的隐式级联。
             // 若随后的乐观删除失败，DatabaseTransactionRunner 会回滚本次历史删除。
             entryRevisionCommandDao().deleteByEntryId(id)

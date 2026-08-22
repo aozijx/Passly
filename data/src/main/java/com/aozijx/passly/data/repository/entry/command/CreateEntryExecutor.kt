@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.repository.entry.command
 
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.data.codec.entry.EntryProfileCodec
 import com.aozijx.passly.data.local.database.DatabaseClock
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.local.database.entity.EntryEntity
@@ -18,7 +17,6 @@ import javax.inject.Inject
 
 internal class CreateEntryExecutor @Inject constructor(
     private val databaseTransactions: DatabaseTransactionRunner,
-    private val summaryCodec: EntryProfileCodec,
     private val secretFieldStore: SecretFieldStore,
     private val searchIndexWriter: EntrySearchIndexWriter,
     private val revisionWriter: EntryRevisionWriter,
@@ -35,7 +33,17 @@ internal class CreateEntryExecutor @Inject constructor(
                 entryType = entry.type,
                 capabilityFlags = EntryCapabilities.from(entry.secret).toDatabaseFlags(),
                 otpType = entry.secret.otp?.config?.type?.name,
-                summaryBlob = summaryCodec.encrypt(entry.profile, entryId),
+                title = entry.profile.title,
+                username = entry.profile.username,
+                primaryUrl = entry.profile.associations.primaryUrl,
+                domains = entry.profile.associations.domains,
+                applicationIds = entry.profile.associations.applicationIds,
+                iconName = entry.profile.icon.name,
+                iconCustomReference = entry.profile.icon.customReference,
+                favorite = entry.profile.favorite,
+                tags = entry.profile.tags,
+                iconColor = entry.profile.icon.color,
+                expiresAt = entry.profile.expiresAtMs,
                 createdAt = now,
                 updatedAt = now,
             )

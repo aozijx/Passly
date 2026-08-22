@@ -8,6 +8,7 @@ import com.aozijx.passly.data.local.database.converter.ActivityTypeConverter
 import com.aozijx.passly.data.local.database.converter.EntryRelationTypeConverter
 import com.aozijx.passly.data.local.database.converter.EntryTypeConverter
 import com.aozijx.passly.data.local.database.converter.LookupFieldConverter
+import com.aozijx.passly.data.local.database.converter.StringSetConverter
 import com.aozijx.passly.data.local.database.dao.activity.EntryActivityAnalyticsDao
 import com.aozijx.passly.data.local.database.dao.activity.EntryActivityCommandDao
 import com.aozijx.passly.data.local.database.dao.activity.EntryActivityQueryDao
@@ -55,7 +56,8 @@ import com.aozijx.passly.data.local.database.entity.SearchTokenEntity
     EntryTypeConverter::class,
     EntryRelationTypeConverter::class,
     ActivityTypeConverter::class,
-    LookupFieldConverter::class
+    LookupFieldConverter::class,
+    StringSetConverter::class,
 )
 abstract class AppDatabase : RoomDatabase() {
 
