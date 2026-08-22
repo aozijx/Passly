@@ -7,6 +7,7 @@ enum class EntryFieldValueType {
     TEXT,
     BOOLEAN,
     INTEGER,
+    LONG,
     TEXT_LIST,
 }
 

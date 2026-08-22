@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryFieldAccess
 import com.aozijx.passly.domain.entry.model.EntryFieldDefinition
+import com.aozijx.passly.domain.entry.model.EntryFieldValueType
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryTypeDefinition
@@ -28,6 +29,20 @@ class EntryTypeDefinitionsTest {
         assertFalse(FieldKey.USERNAME in otp.fields.map { it.key })
         assertFalse(FieldKey.PRIMARY_URL in otp.fields.map { it.key })
         assertFalse(FieldKey.DOMAINS in otp.fields.map { it.key })
+    }
+
+    @Test
+    fun otpDefinition_preservesHotpCounterAsLong() {
+        val definition = EntryTypeDefinitions[EntryType.OTP]
+        val counter = requireNotNull(definition[FieldKey.OTP_COUNTER])
+
+        assertEquals(EntryFieldValueType.LONG, counter.valueType)
+        val draft = EntryDraft(EntryDraftTarget.New(EntryType.OTP)).withValue(
+            definition,
+            FieldKey.OTP_COUNTER,
+            EntryDraftValue.LongNumber(Long.MAX_VALUE),
+        )
+        assertEquals(EntryDraftValue.LongNumber(Long.MAX_VALUE), draft[FieldKey.OTP_COUNTER])
     }
     @Test
     fun `catalog defines every entry type with one required title`() {

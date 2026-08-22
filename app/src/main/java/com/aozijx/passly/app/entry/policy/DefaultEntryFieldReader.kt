@@ -18,7 +18,7 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
     override fun getFieldValue(entry: Entry, key: FieldKey): String? {
         return when {
             key.isCommon() -> getCommonFieldValue(entry, key)
-            key.isTotp() -> getTotpFieldValue(entry, key)
+            key.isOtp() -> getOtpFieldValue(entry, key)
             key.isCrypto() -> getCryptoFieldValue(entry, key)
             key.isFinance() -> getFinanceFieldValue(entry, key)
             key.isIdentity() -> getIdentityFieldValue(entry, key)
@@ -46,7 +46,7 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
         }
     }
 
-    private fun getTotpFieldValue(entry: Entry, key: FieldKey): String? {
+    private fun getOtpFieldValue(entry: Entry, key: FieldKey): String? {
         val otp = entry.secret.otp
         return when (key) {
             FieldKey.OTP_SECRET -> otp?.config?.secret
@@ -113,7 +113,7 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
         FieldKey.URIS
     )
 
-    private fun FieldKey.isTotp() = this.name.startsWith("TOTP")
+    private fun FieldKey.isOtp() = this.name.startsWith("OTP")
     private fun FieldKey.isCrypto() = this in listOf(
         FieldKey.PASSKEY_DATA,
         FieldKey.RECOVERY_CODES,

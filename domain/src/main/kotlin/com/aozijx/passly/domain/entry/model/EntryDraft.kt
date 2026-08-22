@@ -39,6 +39,11 @@ sealed interface EntryDraftValue {
         override val valueType: EntryFieldValueType = EntryFieldValueType.INTEGER
         override val isEmpty: Boolean get() = value == null
     }
+
+    data class LongNumber(val value: Long?) : EntryDraftValue {
+        override val valueType: EntryFieldValueType = EntryFieldValueType.LONG
+        override val isEmpty: Boolean get() = value == null
+    }
 }
 
 /** Immutable domain draft shared by create and edit application flows. */

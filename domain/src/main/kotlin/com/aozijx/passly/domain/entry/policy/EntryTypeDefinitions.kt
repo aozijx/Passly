@@ -128,7 +128,7 @@ object EntryTypeDefinitions {
         field(FieldKey.OTP_ACCOUNT_NAME),
         field(FieldKey.OTP_TYPE),
         field(FieldKey.OTP_PERIOD, EntryFieldValueType.INTEGER),
-        field(FieldKey.OTP_COUNTER, EntryFieldValueType.INTEGER),
+        field(FieldKey.OTP_COUNTER, EntryFieldValueType.LONG),
         field(FieldKey.OTP_DIGITS, EntryFieldValueType.INTEGER),
         field(FieldKey.OTP_ALGORITHM),
         secret(FieldKey.NOTES),
