@@ -41,6 +41,7 @@
     <string name="settings_language">言語</string>
     <string name="settings_language_choose">言語を選択</string>
     <string name="settings_theme_scheme">テーマスキーム</string>
+    <string name="settings_theme_scheme_default">既定</string>
     <string name="settings_theme_scheme_select_title">テーマスキームを選択</string>
     <string name="settings_theme_canvas_tint">キャンバスの色付け強度</string>
     <string name="settings_theme_canvas_tint_description">3つのテーマカラーを背景とコンテナに混ぜます</string>

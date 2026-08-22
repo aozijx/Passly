@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="SplashScreenTheme" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/launcher_logo_foreground</item>
-        <item name="windowSplashScreenIconBackgroundColor">@color/launcher_logo_background</item>
-        <item name="windowSplashScreenAnimationDuration">1000</item>
-        <item name="windowSplashScreenBackground">?android:attr/colorBackground</item>
-<!--        <item name="android:windowSplashScreenBrandingImage">@mipmap/image</item>-->
-        <item name="postSplashScreenTheme">@style/AppContentTheme</item>
+    <style name="SplashScreenTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/launcher_logo_foreground</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/launcher_logo_background</item>
+        <item name="android:windowSplashScreenAnimationDuration">1000</item>
+        <item name="android:windowSplashScreenBackground">?android:attr/colorBackground</item>
     </style>
 
     <style name="AppContentTheme" parent="Theme.AppCompat.DayNight.NoActionBar">

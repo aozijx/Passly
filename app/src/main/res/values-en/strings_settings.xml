@@ -41,6 +41,7 @@
     <string name="settings_language">Language</string>
     <string name="settings_language_choose">Choose language</string>
     <string name="settings_theme_scheme">Theme scheme</string>
+    <string name="settings_theme_scheme_default">Default</string>
     <string name="settings_theme_scheme_select_title">Choose a theme scheme</string>
     <string name="settings_theme_canvas_tint">Canvas tint strength</string>
     <string name="settings_theme_canvas_tint_description">Blend the three theme colors into backgrounds and containers</string>

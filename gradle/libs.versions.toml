@@ -15,7 +15,6 @@ jvmToolchain = "21"
 # Android 核心 (Android Core)
 coreKtx = "1.19.0"
 appcompat = "1.8.0"
-coreSplashscreen = "1.2.0"
 palette = "1.0.0"
 
 # 生命周期与架构 (Lifecycle & Architecture)
@@ -78,7 +77,6 @@ espressoCore = "3.7.0"
 # Android 核心
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
-androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-palette = { group = "androidx.palette", name = "palette", version.ref = "palette" }
 
 # 生命周期与架构
