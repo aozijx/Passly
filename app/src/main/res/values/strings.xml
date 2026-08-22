@@ -76,8 +76,8 @@
     <string name="vault_search_category_hint">搜索分类…</string>
     <string name="vault_clear_filter">清除筛选</string>
     <string name="vault_menu_filter">分类筛选</string>
-    <string name="vault_menu_hide_totp">隐藏验证码</string>
-    <string name="vault_menu_show_totp">显示验证码</string>
+    <string name="vault_menu_hide_totp">隐藏动态口令</string>
+    <string name="vault_menu_show_totp">显示动态口令</string>
     <string name="tab_all">全部</string>
 
     <string name="vault_scan">扫码</string>
@@ -140,7 +140,7 @@
     <string name="vault_detail_associated_package">关联应用</string>
 
     <!-- 详情页补充 -->
-    <string name="vault_export_qr_title">导出 OTP 密钥</string>
+    <string name="vault_export_qr_title">导出动态口令密钥</string>
     <string name="vault_export_qr_message">用其他设备扫描此二维码</string>
 
     <string name="vault_add_otp_title">添加动态口令</string>
@@ -159,7 +159,7 @@
     <string name="twofa_uri_hint" translatable="false">URI</string>
 
     <!-- 详情页新字符串 -->
-    <string name="vault_detail_totp_label">两步验证码</string>
+    <string name="vault_detail_totp_label">动态口令</string>
     <string name="vault_detail_domain_label">域名或图标链接</string>
     <string name="vault_detail_domain_placeholder">如 google.com 或图标链接</string>
     <string name="vault_detail_download_icon">下载图标</string>

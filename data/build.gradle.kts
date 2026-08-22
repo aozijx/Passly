@@ -29,8 +29,10 @@ android {
         buildConfig = true
     }
 
-    sourceSets.getByName("androidTest") {
-        assets.directories.add("$projectDir/schemas")
+    sourceSets {
+        named("androidTest") {
+            assets.directories.add("$projectDir/schemas")
+        }
     }
 }
 
@@ -43,10 +45,7 @@ room {
 }
 
 dependencies {
-    implementation(project(":core:android"))
-    implementation(project(":core:common"))
-    implementation(project(":core:crypto"))
-    implementation(project(":core:telemetry"))
+    implementation(project(":core"))
     implementation(project(":domain"))
     implementation(project(":runtime:session"))
 

@@ -5,7 +5,7 @@ import android.widget.Toast
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.feature.settings.SettingsViewModel
-import com.aozijx.passly.feature.settings.contract.SettingsIntent
+import com.aozijx.passly.feature.settings.contract.SettingsUiAction
 
 enum class AppPasswordAction {
     SET,
@@ -31,8 +31,8 @@ internal fun validateAndSendAppPasswordAction(
                 context.showToast(R.string.settings_auth_password_mismatch)
                 return false
             }
-            settingsViewModel.handleIntent(
-                SettingsIntent.SetAppPassword(newPassword.toCharArray())
+            settingsViewModel.onAction(
+                SettingsUiAction.SetAppPassword(newPassword.toCharArray())
             )
         }
 
@@ -49,8 +49,8 @@ internal fun validateAndSendAppPasswordAction(
                 context.showToast(R.string.settings_auth_password_mismatch)
                 return false
             }
-            settingsViewModel.handleIntent(
-                SettingsIntent.ChangeAppPassword(
+            settingsViewModel.onAction(
+                SettingsUiAction.ChangeAppPassword(
                     currentPassword.toCharArray(),
                     newPassword.toCharArray(),
                 )
@@ -58,7 +58,7 @@ internal fun validateAndSendAppPasswordAction(
         }
 
         AppPasswordAction.DISABLE -> {
-            settingsViewModel.handleIntent(SettingsIntent.DisableAppPassword)
+            settingsViewModel.onAction(SettingsUiAction.DisableAppPassword)
         }
     }
     return true

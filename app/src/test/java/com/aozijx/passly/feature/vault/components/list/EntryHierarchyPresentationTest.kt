@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.components.list
+package com.aozijx.passly.presentation.vault.components.list
 
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -6,7 +6,7 @@ import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.data.settings.model.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

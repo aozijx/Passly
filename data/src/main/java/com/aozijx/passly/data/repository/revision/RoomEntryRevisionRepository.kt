@@ -7,10 +7,11 @@ import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
-import com.aozijx.passly.data.codec.entry.SensitiveFieldCodec
+import com.aozijx.passly.data.codec.entry.SecretBundleCodec
+import com.aozijx.passly.data.codec.entry.SecretFieldCodec
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
-import com.aozijx.passly.data.local.database.entity.EntrySensitiveFieldEntity
+import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.repository.entry.command.EntryActivityWriter
@@ -34,7 +35,7 @@ import com.aozijx.passly.domain.entry.model.sensitive.RevealedRevisionSensitiveF
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import com.aozijx.passly.domain.entry.policy.SensitiveRevisionRestorePolicy
-import com.aozijx.passly.domain.sensitive.SecureString
+import com.aozijx.passly.domain.sensitive.OwnedChars
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -45,7 +46,7 @@ internal class RoomEntryRevisionRepository @Inject constructor(
     private val databaseTransactions: DatabaseTransactionRunner,
     private val contentSnapshotCodec: EntryContentSnapshotCodec,
     private val sensitiveRevisionCodec: SensitiveRevisionSnapshotCodec,
-    private val sensitiveFieldCodec: SensitiveFieldCodec,
+    private val fieldCodec: SecretFieldCodec,
     private val permitVerifier: AuthorizationPermitVerifier,
     private val revisionHelper: EntryRevisionWriter,
     private val activityWriter: EntryActivityWriter,
@@ -116,8 +117,8 @@ internal class RoomEntryRevisionRepository @Inject constructor(
                         revisionId = revisionId,
                         entryId = entryId,
                         key = key,
-                        value = SecureString.fromString(
-                            sensitiveFieldCodec.decrypt(
+                        value = OwnedChars.fromString(
+                            fieldCodec.decrypt(
                                 entryId = entryId.value,
                                 key = key,
                                 cipher = snapshot.valueCipher,
@@ -139,13 +140,17 @@ internal class RoomEntryRevisionRepository @Inject constructor(
         fieldKeys: Set<SensitiveFieldKey>,
         permit: AuthorizationPermit,
     ): AppResult<Unit> {
-        val result = databaseTransactions.write("entry-revision.restore-sensitive") {
+        val result = databaseTransactions.write("entry_revision_restore_sensitive") {
             val revision = entryRevisionQueryDao().getById(entryId.value, revisionId)
                 ?: throw NotFound()
             entryQueryDao().getById(entryId.value) ?: throw NotFound()
             val snapshots = sensitiveRevisionCodec.decode(revision.sensitiveFieldCipherSet)
-            val currentKeys = sensitiveFieldQueryDao().getKeys(entryId.value)
-                .mapTo(linkedSetOf(), SensitiveFieldKey::valueOf)
+            val currentKeys = secretFieldQueryDao().getKeys(entryId.value)
+                .mapNotNull { keyName ->
+                    if (keyName == SecretBundleCodec.FIELD_KEY) null
+                    else SensitiveFieldKey.entries.firstOrNull { it.name == keyName }
+                }
+                .toCollection(linkedSetOf())
             val historicalKeys = snapshots.mapTo(linkedSetOf()) { it.key }
             val affectedKeys = SensitiveRevisionRestorePolicy.affectedFields(
                 currentFields = currentKeys,
@@ -175,10 +180,10 @@ internal class RoomEntryRevisionRepository @Inject constructor(
             }
 
             val now = clock.now()
-            sensitiveFieldCommandDao().deleteAll(entryId.value)
+            secretFieldCommandDao().deleteAll(entryId.value)
             snapshots.forEach { snapshot ->
-                sensitiveFieldCommandDao().upsert(
-                    EntrySensitiveFieldEntity(
+                secretFieldCommandDao().upsert(
+                    EntrySecretFieldEntity(
                         entryId = entryId.value,
                         fieldKey = snapshot.key.name,
                         valueCipher = snapshot.valueCipher,

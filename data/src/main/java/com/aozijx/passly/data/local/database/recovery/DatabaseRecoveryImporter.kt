@@ -3,15 +3,13 @@ package com.aozijx.passly.data.local.database.recovery
 import android.content.Context
 import com.aozijx.passly.core.platform.VaultResourcePaths
 import com.aozijx.passly.data.codec.entry.EntryProfileCodec
-import com.aozijx.passly.data.codec.entry.EntrySecretCodec
-import com.aozijx.passly.data.database.model.DatabaseRecoveryReport
+import com.aozijx.passly.data.local.database.model.DatabaseRecoveryReport
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
-import com.aozijx.passly.data.local.database.entity.EntrySecretEntity
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.mapper.entry.toDatabaseFlags
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
-import com.aozijx.passly.data.repository.entry.SensitiveFieldStore
+import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -22,8 +20,7 @@ internal class DatabaseRecoveryImporter @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val databaseSession: AppDatabaseSession,
     private val profileCodec: EntryProfileCodec,
-    private val secretCodec: EntrySecretCodec,
-    private val sensitiveFieldStore: SensitiveFieldStore,
+    private val secretFieldStore: SecretFieldStore,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
     suspend fun restore(plan: RecoveryPlan): DatabaseRecoveryReport {
@@ -89,10 +86,7 @@ internal class DatabaseRecoveryImporter @Inject constructor(
                     summaryBlob = profileCodec.encrypt(profile, id),
                 ),
             )
-            entrySecretCommandDao().insertStrict(
-                EntrySecretEntity(id, secretCodec.encrypt(recovered.secret, id)),
-            )
-            sensitiveFieldStore.replaceAll(this, id, recovered.secret)
+            secretFieldStore.replaceAll(this, id, recovered.secret)
             recovered.attachments.forEach { attachment ->
                 ensureResource(attachment.resource)
                 if (attachmentRefQueryDao().getById(attachment.ref.attachmentId) == null) {

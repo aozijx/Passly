@@ -77,7 +77,7 @@ internal class RoomEntryLinkRepository @Inject constructor(
         }
 
     override suspend fun upsert(link: EntryLink): AppResult<Unit> {
-        val result = databaseTransactions.write("entry-link.upsert") {
+        val result = databaseTransactions.write("entry_link_upsert") {
             val endpoints = entryQueryDao().getByIds(
                 listOf(link.sourceEntryId.value, link.targetEntryId.value)
             ).associateBy { it.entryId }
@@ -114,7 +114,7 @@ internal class RoomEntryLinkRepository @Inject constructor(
     }
 
     override suspend fun delete(linkId: EntryLinkId): AppResult<Unit> {
-        val result = databaseTransactions.write("entry-link.delete") {
+        val result = databaseTransactions.write("entry_link_delete") {
             val link = entryLinkQueryDao().getById(linkId.value)
             entryLinkCommandDao().deleteById(linkId.value)
             if (link != null) {

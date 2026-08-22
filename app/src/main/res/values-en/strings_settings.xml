@@ -10,8 +10,10 @@
     <string name="settings_page_data_summary">Icon downloads and local data</string>
     <string name="settings_page_general">General</string>
     <string name="settings_page_general_summary">Cache, logs, about</string>
-    <string name="settings_page_interaction">Actions &amp; autofill</string>
-    <string name="settings_page_interaction_summary">Swipe actions, autofill</string>
+    <string name="settings_page_interaction">Actions &amp; gestures</string>
+    <string name="settings_page_interaction_summary">Swipe actions</string>
+    <string name="settings_page_autofill">Autofill</string>
+    <string name="settings_page_autofill_summary">Service, suggestions and security</string>
     <string name="settings_page_interface">Interface</string>
     <string name="settings_page_interface_summary">Bars, scrolling, cards</string>
     <string name="settings_page_notifications">Messages &amp; notifications</string>
@@ -38,16 +40,11 @@
     <string name="settings_group_theme">Theme</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_choose">Choose language</string>
-    <string name="settings_theme_color">Theme palette</string>
-    <string name="settings_theme_color_default">Default</string>
-    <string name="settings_theme_color_blue">Blue</string>
-    <string name="settings_theme_color_green">Green</string>
-    <string name="settings_theme_color_orange">Orange</string>
-    <string name="settings_theme_color_pink">Pink</string>
-    <string name="settings_theme_color_purple">Purple</string>
-    <string name="settings_theme_color_red">Red</string>
-    <string name="settings_theme_color_select_title">Choose a theme palette</string>
-    <string name="settings_theme_color_teal">Teal</string>
+    <string name="settings_theme_scheme">Theme scheme</string>
+    <string name="settings_theme_scheme_default">Default</string>
+    <string name="settings_theme_scheme_select_title">Choose a theme scheme</string>
+    <string name="settings_theme_canvas_tint">Canvas tint strength</string>
+    <string name="settings_theme_canvas_tint_description">Blend the three theme colors into backgrounds and containers</string>
     <string name="settings_theme_mode">Appearance</string>
     <string name="settings_theme_mode_dark">Dark</string>
     <string name="settings_theme_mode_light">Light</string>
@@ -273,6 +270,8 @@
     <string name="settings_general_about_section">About</string>
     <string name="settings_general_cache_section">Cache</string>
     <string name="settings_general_clear_cache">Clear cache</string>
+    <string name="settings_general_cache_cleared">Cache cleared</string>
+    <string name="settings_general_feature_pending">Coming soon</string>
     <string name="settings_general_open_source_licenses">Open-source licenses</string>
     <string name="settings_general_privacy_policy">Privacy policy</string>
     <string name="settings_general_terms">Terms of service</string>
@@ -297,6 +296,7 @@
     <string name="settings_download_icons_subtitle">Save website icons</string>
     <string name="settings_follow_system">Follow system</string>
     <string name="settings_value_dp">%1$d dp</string>
+    <string name="settings_value_percent">%1$d%%</string>
     <string name="settings_saved">Settings saved</string>
     <string name="database_cleared">Vault database permanently cleared</string>
 </resources>

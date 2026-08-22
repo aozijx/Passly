@@ -2,8 +2,8 @@ package com.aozijx.passly.app.message.presentation
 
 import android.content.Context
 import com.aozijx.passly.R
-import com.aozijx.passly.data.message.model.AppNotice
-import com.aozijx.passly.data.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.AppNotice
+import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.contract.NoticeCodeRegistry
 import com.aozijx.passly.app.message.contract.NoticeTextResolver
 import com.aozijx.passly.app.message.contract.ResolvedNotice

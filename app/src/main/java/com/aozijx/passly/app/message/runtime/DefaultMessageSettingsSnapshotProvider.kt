@@ -1,9 +1,9 @@
 package com.aozijx.passly.app.message.runtime
 
-import com.aozijx.passly.data.message.model.AppMessageSettings
 import com.aozijx.passly.app.message.contract.MessageSettingsSnapshotProvider
 import com.aozijx.passly.app.message.contract.VersionedMessageSettings
-import com.aozijx.passly.data.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.model.MessageSettings
+import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CoroutineScope
@@ -20,7 +20,7 @@ class DefaultMessageSettingsSnapshotProvider @Inject constructor(
 ) : MessageSettingsSnapshotProvider {
     private val version = AtomicLong(0)
     private val current = AtomicReference(
-        VersionedMessageSettings(0, AppMessageSettings())
+        VersionedMessageSettings(0, MessageSettings())
     )
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 

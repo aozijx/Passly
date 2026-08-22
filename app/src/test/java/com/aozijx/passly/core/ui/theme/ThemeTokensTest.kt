@@ -5,7 +5,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -42,41 +42,92 @@ class ThemeTokensTest {
     }
 
     @Test
-    fun emptyOrUnknownManualSelection_resolvesToTheAppDefault() {
-        assertEquals(0L, themePresetByColor(0L).color)
-        assertNull(manualThemePalette(null))
-        assertNull(manualThemePalette(0L))
-        assertNull(manualThemePalette(0xFF123456))
-    }
-
-    @Test
-    fun manualPalettes_mapIndependentAccentFamiliesWithoutTintingSurfaces() {
-        val neutralScheme = lightColorScheme()
-
-        themePresets.mapNotNull(ThemePreset::palette).forEach { palette ->
-            val scheme = palette.applyTo(neutralScheme, isDark = false)
-
-            assertEquals(palette.primary.light.accent, scheme.primary)
-            assertEquals(palette.secondary.light.accent, scheme.secondary)
-            assertEquals(palette.tertiary.light.accent, scheme.tertiary)
-            assertEquals(palette.primary.light.container, scheme.primaryFixed)
-            assertEquals(palette.secondary.light.container, scheme.secondaryFixed)
-            assertEquals(palette.tertiary.light.container, scheme.tertiaryFixed)
-            assertEquals(neutralScheme.surface, scheme.surface)
-            assertEquals(neutralScheme.surfaceContainer, scheme.surfaceContainer)
-            assertEquals(neutralScheme.surfaceVariant, scheme.surfaceVariant)
+    fun everyConfiguredTheme_resolvesToThreeSeeds() {
+        AppThemeSchemes.all.forEach { scheme ->
+            val seeds = scheme.seedResources
+            assertTrue(seeds.primary != 0)
+            assertTrue(seeds.secondary != 0)
+            assertTrue(seeds.tertiary != 0)
         }
     }
 
     @Test
+    fun manualPalettes_applyASubtleThreeSeedTintToTheFullScreenCanvas() {
+        val neutralScheme = lightColorScheme()
+        val scheme = neutralScheme.withGeneratedAccents(TEST_SEEDS, isDark = false)
+
+        assertTrue(
+            scheme.primary != neutralScheme.primary ||
+                scheme.secondary != neutralScheme.secondary ||
+                scheme.tertiary != neutralScheme.tertiary
+        )
+        assertNotEquals(neutralScheme.background, scheme.background)
+        assertEquals(neutralScheme.onBackground, scheme.onBackground)
+        assertNotEquals(neutralScheme.surface, scheme.surface)
+        assertEquals(neutralScheme.onSurface, scheme.onSurface)
+        assertTrue(scheme.surfaceContainer != neutralScheme.surfaceContainer)
+        assertTrue(scheme.surfaceVariant != neutralScheme.surfaceVariant)
+    }
+
+    @Test
+    fun themeSchemeCatalog_hasUniqueKeysAndTreatsUnknownKeysAsUnselected() {
+        val keys = AppThemeSchemes.all.map { it.key }
+
+        assertEquals(keys.size, keys.toSet().size)
+        assertTrue(keys.all(String::isNotBlank))
+        assertEquals(null, AppThemeSchemes.find("unknown"))
+    }
+
+    @Test
+    fun canvasTint_blendsAllThreeSeeds() {
+        val base = lightColorScheme()
+        val seeds = TEST_SEEDS.copy(
+            secondary = TEST_SEEDS.primary,
+            tertiary = TEST_SEEDS.primary,
+        )
+
+        val secondaryChanged = base.withGeneratedAccents(
+            seeds.copy(secondary = TEST_SEEDS.secondary),
+            isDark = false,
+        )
+        val tertiaryChanged = base.withGeneratedAccents(
+            seeds.copy(tertiary = TEST_SEEDS.tertiary),
+            isDark = false,
+        )
+        val baseline = base.withGeneratedAccents(seeds, isDark = false)
+
+        assertNotEquals(baseline.background, secondaryChanged.background)
+        assertNotEquals(baseline.background, tertiaryChanged.background)
+    }
+
+    @Test
+    fun canvasTintStrength_controlsTheCanvasBlend() {
+        val base = lightColorScheme()
+        val seeds = TEST_SEEDS
+
+        val subtle = base.withGeneratedAccents(
+            seeds = seeds,
+            isDark = false,
+            canvasTintFraction = 0.01f,
+        )
+        val strong = base.withGeneratedAccents(
+            seeds = seeds,
+            isDark = false,
+            canvasTintFraction = 1f,
+        )
+
+        assertNotEquals(subtle.background, strong.background)
+        assertNotEquals(subtle.surfaceContainer, strong.surfaceContainer)
+    }
+
+    @Test
     fun manualPaletteForegroundPairsMeetAccessibleTextContrast() {
-        themePresets.mapNotNull(ThemePreset::palette).forEach { palette ->
-            listOf(palette.primary, palette.secondary, palette.tertiary).forEach { family ->
-                listOf(family.light, family.dark).forEach { roles ->
-                    assertTrue(contrastRatio(roles.accent, roles.onAccent) >= 4.5)
-                    assertTrue(contrastRatio(roles.container, roles.onContainer) >= 4.5)
-                }
-            }
+        listOf(false, true).forEach { isDark ->
+            val scheme = lightColorScheme().withGeneratedAccents(TEST_SEEDS, isDark)
+            assertTrue(contrastRatio(scheme.primary, scheme.onPrimary) >= 4.5)
+            assertTrue(contrastRatio(scheme.primaryContainer, scheme.onPrimaryContainer) >= 4.5)
+            assertTrue(contrastRatio(scheme.secondary, scheme.onSecondary) >= 4.5)
+            assertTrue(contrastRatio(scheme.tertiary, scheme.onTertiary) >= 4.5)
         }
     }
 
@@ -84,5 +135,9 @@ class ThemeTokensTest {
         val lighter = maxOf(first.luminance(), second.luminance())
         val darker = minOf(first.luminance(), second.luminance())
         return (lighter + 0.05f) / (darker + 0.05f)
+    }
+
+    private companion object {
+        val TEST_SEEDS = AccentSeeds(0xFF5B789E, 0xFF6C7E71, 0xFF85789B)
     }
 }

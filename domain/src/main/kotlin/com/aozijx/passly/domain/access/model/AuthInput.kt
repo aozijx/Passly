@@ -1,5 +1,7 @@
 package com.aozijx.passly.domain.access.model
 
+import com.aozijx.passly.domain.sensitive.OwnedChars
+
 /**
  * 认证输入凭据。
  *

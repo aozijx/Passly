@@ -136,6 +136,11 @@ Registry 按内容评分选择唯一适配器；无法识别或同分歧义时�
 
 `customFields[]` 包含 `name`、`value`、`type`。
 
+字段级敏感值不进入 `secret` 对象，而是放在 Entry 的 `sensitiveFields` 数组：每项为
+`{ "key": <SensitiveFieldKey 名称>, "value": <明文字符串> }`（如 `PASSWORD`、`CARD_NUMBER`、
+`CARD_CVV`），`secret` 中对应的凭据字段保持 `null`。导入时按 `key` 重组回对应字段。
+`key` 必须可识别且不重复，同一值不得同时出现在 `sensitiveFields` 与 `secret` 中。
+
 同一账户的 Login、OTP、Passkey 等能力必须导出为独立 Entry。它们通过
 `parentEntryId` 指向一个 `type = "ACCOUNT"`、`secret = {}` 的账户容器。父账户必须位于
 同一 `vaultId`，不能再拥有父账户。导入按 `ACCOUNT` 优先顺序恢复；无效引用、混合 payload

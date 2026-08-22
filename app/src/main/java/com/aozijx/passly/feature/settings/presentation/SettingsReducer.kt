@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.settings.presentation
 
-import com.aozijx.passly.data.settings.model.SwipeActionType
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.settings.contract.SettingsUiState
 
 internal sealed interface SettingsMutation {

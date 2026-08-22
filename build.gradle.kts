@@ -14,26 +14,18 @@ plugins {
 moduleBoundaries {
     module(
         ":app",
-        ":core:android",
+        ":core",
         ":core:common",
-        ":core:crypto",
-        ":core:telemetry",
-        ":core:ui",
         ":data",
         ":domain",
         ":runtime:session",
     )
-    module(":core:android", ":core:telemetry")
     module(":core:common")
-    module(":core:crypto", ":core:common", ":core:telemetry", ":domain")
-    module(":core:telemetry", ":core:common")
-    module(":core:ui", ":domain")
+    module(":core", ":core:common", ":domain")
     module(
         ":data",
-        ":core:android",
+        ":core",
         ":core:common",
-        ":core:crypto",
-        ":core:telemetry",
         ":domain",
         ":runtime:session",
     )

@@ -24,6 +24,8 @@ data class EntryListItem(
     val capabilities: EntryCapabilities = EntryCapabilities(),
     val otpType: OtpType? = null,
     val accountId: EntryId? = null,
+    /** Real-time dynamic code preview (e.g. for list items or autofill). */
+    val otpPreview: String? = null,
 ) {
     val id: EntryId get() = identity.id
     val entryType: EntryType get() = identity.type

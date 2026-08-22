@@ -1,0 +1,9 @@
+<resources>
+    <string name="theme_scheme_horizon">ホライズン</string>
+    <string name="theme_scheme_grove">グローブ</string>
+    <string name="theme_scheme_ember">エンバー</string>
+    <string name="theme_scheme_orchid">オーキッド</string>
+    <string name="theme_scheme_solstice">ソルスティス</string>
+    <string name="theme_scheme_tideline">タイドライン</string>
+    <string name="theme_scheme_rosewood">ローズウッド</string>
+</resources>

@@ -3,8 +3,8 @@ package com.aozijx.passly.feature.vault
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.core.otp.OtpGenerator
-import com.aozijx.passly.domain.entry.signal.EntryDataRefreshNotifier
+import com.aozijx.passly.domain.entry.otp.OtpGenerator
+import com.aozijx.passly.data.local.database.port.EntryDataRefreshNotifier
 import com.aozijx.passly.runtime.session.SessionStateProvider
 import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -23,15 +23,15 @@ import com.github.f4b6a3.uuid.UuidCreator
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
-import com.aozijx.passly.domain.entry.port.FaviconRepository
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
+import com.aozijx.passly.domain.entry.service.FaviconService
 import com.aozijx.passly.domain.entry.policy.EntryFieldReader
-import com.aozijx.passly.data.settings.model.SettingsCommand
-import com.aozijx.passly.data.settings.model.LibraryQuickFilter
-import com.aozijx.passly.data.settings.model.LibrarySortSpec
-import com.aozijx.passly.data.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.model.SettingsCommand
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
+import com.aozijx.passly.domain.settings.model.LibrarySortSpec
+import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.feature.vault.contract.VaultEffect
-import com.aozijx.passly.feature.vault.contract.VaultIntent
+import com.aozijx.passly.feature.vault.contract.VaultUiAction
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.entry.EntryManager
 import com.aozijx.passly.feature.vault.list.VaultListCoordinator
@@ -60,7 +60,7 @@ class VaultViewModel @Inject constructor(
     private val otpConfigRepository: OtpConfigRepository,
     private val settingsRepository: AppSettingsRepository,
     private val entryCommandRepository: EntryCommandRepository,
-    private val faviconRepository: FaviconRepository,
+    private val faviconService: FaviconService,
     val entryFieldReader: EntryFieldReader,
     private val dataRefreshNotifier: EntryDataRefreshNotifier,
     private val sessionStateProvider: SessionStateProvider,
@@ -97,7 +97,7 @@ class VaultViewModel @Inject constructor(
         scope = viewModelScope,
         entryCommandRepository = entryCommandRepository,
         entryQueryRepository = entryQueryRepository,
-        faviconRepository = faviconRepository,
+        faviconService = faviconService,
         totp = totp,
         onError = { emitError(it) },
         onEntryDeleted = { deletedId ->
@@ -153,28 +153,28 @@ class VaultViewModel @Inject constructor(
     val totpStatesFlow: StateFlow<Map<String, OtpUiState>> = totp.states
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
-    // --- onIntent 统一入口 ---
-    fun onIntent(intent: VaultIntent) {
-        when (intent) {
-            is VaultIntent.SearchQueryChanged ->
-                mutate(VaultMutation.SearchQueryChanged(intent.query))
-            is VaultIntent.CategorySelected ->
-                mutate(VaultMutation.CategoryChanged(intent.category))
-            VaultIntent.ClearCategory -> mutate(VaultMutation.CategoryChanged(null))
-            is VaultIntent.SortOptionSelected -> selectSortOption(intent.sort)
-            is VaultIntent.QuickFilterSelected ->
-                mutate(VaultMutation.QuickFilterChanged(intent.filter))
-            is VaultIntent.SearchToggled ->
-                mutate(VaultMutation.SearchVisibilityChanged(intent.active))
-            VaultIntent.ToggleShowTotpCode -> toggleShowTOTPCode()
-            is VaultIntent.AddTypeSelected -> setAddType(intent.type)
-            is VaultIntent.ItemToDeleteSelected -> setItemToDelete(intent.item)
-            VaultIntent.ConfirmDelete -> confirmDelete()
-            is VaultIntent.QuickDelete -> quickDelete(intent.item)
-            is VaultIntent.AddItem -> addItem(intent.entry)
-            is VaultIntent.UpdateEntry -> updateEntry(intent.entry)
-            is VaultIntent.AddScannedOtp -> addScannedOtp(intent.config)
-            is VaultIntent.AutoUnlockTotp -> autoUnlockTotp(intent.entryId)
+    // --- onAction 统一入口 ---
+    fun onAction(action: VaultUiAction) {
+        when (action) {
+            is VaultUiAction.SearchQueryChanged ->
+                mutate(VaultMutation.SearchQueryChanged(action.query))
+            is VaultUiAction.CategorySelected ->
+                mutate(VaultMutation.CategoryChanged(action.category))
+            VaultUiAction.ClearCategory -> mutate(VaultMutation.CategoryChanged(null))
+            is VaultUiAction.SortOptionSelected -> selectSortOption(action.sort)
+            is VaultUiAction.QuickFilterSelected ->
+                mutate(VaultMutation.QuickFilterChanged(action.filter))
+            is VaultUiAction.SearchToggled ->
+                mutate(VaultMutation.SearchVisibilityChanged(action.active))
+            VaultUiAction.ToggleShowTotpCode -> toggleShowTOTPCode()
+            is VaultUiAction.AddTypeSelected -> setAddType(action.type)
+            is VaultUiAction.ItemToDeleteSelected -> setItemToDelete(action.item)
+            VaultUiAction.ConfirmDelete -> confirmDelete()
+            is VaultUiAction.QuickDelete -> quickDelete(action.item)
+            is VaultUiAction.AddItem -> addItem(action.entry)
+            is VaultUiAction.UpdateEntry -> updateEntry(action.entry)
+            is VaultUiAction.AddScannedOtp -> addScannedOtp(action.config)
+            is VaultUiAction.AutoUnlockTotp -> autoUnlockTotp(action.entryId)
         }
     }
 

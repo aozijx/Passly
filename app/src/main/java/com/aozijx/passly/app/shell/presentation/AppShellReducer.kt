@@ -1,7 +1,7 @@
 package com.aozijx.passly.app.shell.presentation
 
-import com.aozijx.passly.data.settings.model.AppearanceSettings
-import com.aozijx.passly.data.settings.model.InterfaceSettings
+import com.aozijx.passly.domain.settings.model.AppearanceSettings
+import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.app.shell.contract.AppShellUiState
 
 internal sealed interface AppShellMutation {
@@ -38,7 +38,8 @@ internal object AppShellReducer {
             is AppShellMutation.SettingsChanged -> state.copy(
                 themeMode = mutation.appearance.themeMode,
                 isDynamicColor = mutation.appearance.isDynamicColor,
-                manualThemeColorArgb = mutation.appearance.manualThemeColorArgb,
+                themeKey = mutation.appearance.themeKey,
+                canvasTintPercent = mutation.appearance.canvasTintPercent,
                 fontFamily = mutation.appearance.fontFamily,
                 language = mutation.appearance.language,
                 outerCornerRadiusDp = mutation.interfaceSettings.outerCornerRadiusDp,

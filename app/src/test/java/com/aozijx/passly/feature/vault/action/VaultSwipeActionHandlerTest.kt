@@ -6,7 +6,7 @@ import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.data.settings.model.SwipeActionType
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

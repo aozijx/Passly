@@ -6,7 +6,7 @@ import android.content.Intent
 import android.provider.Settings
 import android.view.autofill.AutofillManager
 import androidx.core.net.toUri
-import com.aozijx.passly.data.autofill.port.AutofillStatusRepository
+import com.aozijx.passly.domain.autofill.port.AutofillStatusRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -25,7 +25,7 @@ internal class AutofillStatusRepositoryImpl @Inject constructor(
         val selected = currentService?.let { ComponentName.unflattenFromString(it) } ?: return false
 
         // 校验包名是否匹配。
-        // 注意：根据具体的 Service 类名可能需要更精确的校验。
+        // 注意：根据具体的 Service 类名可能需要更精确地校验。
         return selected.packageName == context.packageName
     }
 

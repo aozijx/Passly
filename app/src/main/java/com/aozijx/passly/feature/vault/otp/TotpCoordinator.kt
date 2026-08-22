@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.vault.otp
 
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
-import com.aozijx.passly.core.otp.OtpResult
+import com.aozijx.passly.domain.entry.otp.OtpResult
 import com.aozijx.passly.runtime.session.SessionLockedException
 import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
@@ -78,7 +78,7 @@ internal class TotpCoordinator(
                     handleSessionLocked()
                     return
                 }
-                if (config == null || config.secret.isBlank()) {
+                if (config == null || config.secret.isNullOrBlank()) {
                     refreshed[entryId] = OtpUiState(error = OtpGenerationError.InvalidSecret)
                     continue
                 }
@@ -159,7 +159,7 @@ internal class TotpCoordinator(
             handleSessionLocked()
             return
         }
-        if (config == null || config.secret.isBlank()) {
+        if (config == null || config.secret.isNullOrBlank()) {
             AppTelemetry.w("TotpCoordinator", "OTP activation failed: missing config for $entryId")
             _states.update { it + (entryId to OtpUiState(error = OtpGenerationError.InvalidSecret)) }
             return

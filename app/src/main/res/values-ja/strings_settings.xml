@@ -10,8 +10,10 @@
     <string name="settings_page_data_summary">アイコンとローカルデータ</string>
     <string name="settings_page_general">一般</string>
     <string name="settings_page_general_summary">キャッシュ、ログ、情報</string>
-    <string name="settings_page_interaction">操作と自動入力</string>
-    <string name="settings_page_interaction_summary">スワイプ操作、自動入力</string>
+    <string name="settings_page_interaction">操作とジェスチャー</string>
+    <string name="settings_page_interaction_summary">スワイプ操作</string>
+    <string name="settings_page_autofill">自動入力</string>
+    <string name="settings_page_autofill_summary">入力サービス、候補とセキュリティ</string>
     <string name="settings_page_interface">インターフェース</string>
     <string name="settings_page_interface_summary">バー、スクロール、カード</string>
     <string name="settings_page_notifications">メッセージと通知</string>
@@ -38,16 +40,11 @@
     <string name="settings_group_theme">テーマ</string>
     <string name="settings_language">言語</string>
     <string name="settings_language_choose">言語を選択</string>
-    <string name="settings_theme_color">テーマ配色</string>
-    <string name="settings_theme_color_default">既定</string>
-    <string name="settings_theme_color_blue">青</string>
-    <string name="settings_theme_color_green">緑</string>
-    <string name="settings_theme_color_orange">オレンジ</string>
-    <string name="settings_theme_color_pink">ピンク</string>
-    <string name="settings_theme_color_purple">紫</string>
-    <string name="settings_theme_color_red">赤</string>
-    <string name="settings_theme_color_select_title">テーマ配色を選択</string>
-    <string name="settings_theme_color_teal">青緑</string>
+    <string name="settings_theme_scheme">テーマスキーム</string>
+    <string name="settings_theme_scheme_default">既定</string>
+    <string name="settings_theme_scheme_select_title">テーマスキームを選択</string>
+    <string name="settings_theme_canvas_tint">キャンバスの色付け強度</string>
+    <string name="settings_theme_canvas_tint_description">3つのテーマカラーを背景とコンテナに混ぜます</string>
     <string name="settings_theme_mode">外観モード</string>
     <string name="settings_theme_mode_dark">ダーク</string>
     <string name="settings_theme_mode_light">ライト</string>
@@ -273,6 +270,8 @@
     <string name="settings_general_about_section">このアプリについて</string>
     <string name="settings_general_cache_section">キャッシュ</string>
     <string name="settings_general_clear_cache">キャッシュを消去</string>
+    <string name="settings_general_cache_cleared">キャッシュをクリアしました</string>
+    <string name="settings_general_feature_pending">近日公開予定です</string>
     <string name="settings_general_open_source_licenses">オープンソースライセンス</string>
     <string name="settings_general_privacy_policy">プライバシーポリシー</string>
     <string name="settings_general_terms">利用規約</string>
@@ -297,6 +296,7 @@
     <string name="settings_download_icons_subtitle">サイトアイコンを保存</string>
     <string name="settings_follow_system">システムに従う</string>
     <string name="settings_value_dp">%1$d dp</string>
+    <string name="settings_value_percent">%1$d%%</string>
     <string name="settings_saved">設定を保存しました</string>
     <string name="database_cleared">Vaultデータベースを完全に消去しました</string>
 </resources>

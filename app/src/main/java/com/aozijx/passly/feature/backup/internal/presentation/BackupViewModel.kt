@@ -4,11 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
-import com.aozijx.passly.data.message.model.NoticeCode
-import com.aozijx.passly.data.message.model.newAppNotice
+import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.feature.backup.internal.contract.BackupAction
+import com.aozijx.passly.feature.backup.internal.contract.BackupUiAction
 import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,39 +28,39 @@ internal class BackupViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(BackupUiState())
     val uiState: StateFlow<BackupUiState> = _uiState.asStateFlow()
 
-    fun onAction(action: BackupAction) {
+    fun onAction(action: BackupUiAction) {
         when (action) {
-            is BackupAction.CheckDirectoryPermission -> checkDirectoryPermission(action.uri)
-            is BackupAction.PrepareExport -> prepareExport(action.format)
-            is BackupAction.StartExport -> selectExportTarget(
+            is BackupUiAction.CheckDirectoryPermission -> checkDirectoryPermission(action.uri)
+            is BackupUiAction.PrepareExport -> prepareExport(action.format)
+            is BackupUiAction.StartExport -> selectExportTarget(
                 uri = action.uri,
                 deleteOnFailure = action.deleteOnFailure,
             )
 
-            BackupAction.StartExportInConfiguredDirectory -> exportToConfiguredDirectory()
-            is BackupAction.StartImport -> prepareImport(action.uri)
-            is BackupAction.UpdatePassword -> replacePassword(action.password)
+            BackupUiAction.StartExportInConfiguredDirectory -> exportToConfiguredDirectory()
+            is BackupUiAction.StartImport -> prepareImport(action.uri)
+            is BackupUiAction.UpdatePassword -> replacePassword(action.password)
 
-            is BackupAction.UpdateImportMode ->
+            is BackupUiAction.UpdateImportMode ->
                 mutate(BackupMutation.ImportModeUpdated(action.mode))
 
-            is BackupAction.UpdateIncludeIcons ->
+            is BackupUiAction.UpdateIncludeIcons ->
                 mutate(BackupMutation.IncludeIconsUpdated(action.include))
 
-            is BackupAction.UpdateIncludeAttachments ->
+            is BackupUiAction.UpdateIncludeAttachments ->
                 mutate(BackupMutation.IncludeAttachmentsUpdated(action.include))
 
-            is BackupAction.UpdateIncludeDeleted ->
+            is BackupUiAction.UpdateIncludeDeleted ->
                 mutate(BackupMutation.IncludeDeletedUpdated(action.include))
 
-            is BackupAction.UpdateIncludedEntryTypes ->
+            is BackupUiAction.UpdateIncludedEntryTypes ->
                 mutate(BackupMutation.IncludedEntryTypesUpdated(action.types))
 
-            BackupAction.CancelPendingOperation -> clearPasswordAndMutate(
+            BackupUiAction.CancelPendingOperation -> clearPasswordAndMutate(
                 BackupMutation.PendingOperationCleared
             )
 
-            BackupAction.ProcessBackupAction -> processPendingOperation()
+            BackupUiAction.ProcessBackupAction -> processPendingOperation()
         }
     }
 

@@ -3,13 +3,11 @@ package com.aozijx.passly.feature.vault.entry
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.domain.entry.model.favicon.FaviconOutcome
-import com.aozijx.passly.domain.entry.model.favicon.FaviconResult
+import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
-import com.aozijx.passly.domain.entry.port.FaviconRepository
+import com.aozijx.passly.domain.entry.service.FaviconService
 import com.aozijx.passly.feature.vault.otp.TotpCoordinator
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -22,7 +20,7 @@ internal class EntryManager(
     private val scope: CoroutineScope,
     private val entryCommandRepository: EntryCommandRepository,
     private val entryQueryRepository: EntryQueryRepository,
-    private val faviconRepository: FaviconRepository,
+    private val faviconService: FaviconService,
     private val totp: TotpCoordinator,
     private val onError: (String) -> Unit = {},
     private val onEntryDeleted: (String) -> Unit = {}
@@ -40,20 +38,14 @@ internal class EntryManager(
                 is AppResult.Success -> {
                     val entryId = insertResult.data
                     if (!domain.isNullOrBlank()) {
-                        val outcome = downloadFavicon(domain)
-                        if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
+                        val update = faviconService.downloadAndPrepareUpdate(entry, domain)
+                        if (update != null) {
                             val savedEntry = entryQueryRepository.getById(entryId)
                             if (savedEntry != null) {
-                                val iconProfile = savedEntry.profile.copy(
-                                    icon = savedEntry.profile.icon.copy(
-                                        name = null,
-                                        customReference = outcome.filePath,
-                                    ),
-                                )
                                 entryCommandRepository.updateEntry(
                                     savedEntry.id,
                                     savedEntry.version,
-                                    EntryUpdate(profile = iconProfile)
+                                    update
                                 )
                             }
                         }
@@ -140,10 +132,5 @@ internal class EntryManager(
         } finally {
             deletingIdsMutex.withLock { deletingIds.remove(entryId) }
         }
-    }
-
-    private suspend fun downloadFavicon(input: String): FaviconOutcome {
-        if (input.isBlank()) return FaviconOutcome(FaviconResult.EMPTY_INPUT)
-        return faviconRepository.download(input)
     }
 }

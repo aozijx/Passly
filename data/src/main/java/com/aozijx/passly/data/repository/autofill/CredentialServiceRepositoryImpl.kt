@@ -1,13 +1,14 @@
 package com.aozijx.passly.data.repository.autofill
 
+import com.aozijx.passly.domain.autofill.AutofillScope
+import com.aozijx.passly.domain.autofill.port.CredentialServiceRepository
 import com.aozijx.passly.core.platform.PackageUtils
-import com.aozijx.passly.data.autofill.port.CredentialServiceRepository
 import com.aozijx.passly.data.codec.entry.EntryProfileCodec
-import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.query.buildRecentEntryIdIntersectionQuery
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.mapper.entry.EntryAssembler
+import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryAssociations
@@ -25,7 +26,6 @@ import com.aozijx.passly.domain.entry.model.query.MatchType
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.security.search.BlindIndexer
 import com.github.f4b6a3.uuid.UuidCreator
-import java.net.URI
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -34,7 +34,7 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
     private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
     private val profileCodec: EntryProfileCodec,
-    private val secretCodec: EntrySecretCodec,
+    private val secretFieldStore: SecretFieldStore,
     private val blindIndexer: BlindIndexer,
     private val entryCommands: EntryCommandRepository,
     private val packageUtils: PackageUtils,
@@ -47,8 +47,8 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
         limit: Int,
     ): List<CredentialCandidate> {
         if (!sessionState.hasFullSecureSessionAccess()) return emptyList()
-        val applicationId = normalizeApplicationId(packageName)
-        val domain = normalizeDomain(webDomain)
+        val applicationId = AutofillScope.normalizeApplicationId(packageName)
+        val domain = AutofillScope.normalizeDomain(webDomain)
         val boundedLimit = limit.coerceIn(1, MAX_CANDIDATES)
 
         return databaseSession.query {
@@ -65,21 +65,30 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
                 allowUnmatched -> entryQueryDao().getActiveByType(EntryType.LOGIN).take(boundedLimit)
                 else -> emptyList()
             }
-            val secrets = entrySecretQueryDao().getByEntryIds(entities.map { it.entryId })
-                .associateBy { it.entryId }
+            val secrets = if (includeSecrets) {
+                entities.associateBy(
+                    keySelector = { it.entryId },
+                    valueTransform = { secretFieldStore.readAll(this, it.entryId) },
+                )
+            } else {
+                emptyMap()
+            }
 
             entities
-                .filter { it.deletedAt == null && it.entryType == EntryType.LOGIN }
+                .filter { (it.deletedAt == null) && (it.entryType == EntryType.LOGIN) }
                 .mapNotNull { entity ->
-                    val encrypted = secrets[entity.entryId] ?: return@mapNotNull null
-                    val fullSecret = secretCodec.decrypt(encrypted.secretBlob, entity.entryId)
-                    val secret = if (includeSecrets) fullSecret else fullSecret.redacted()
+                    val secret = if (includeSecrets) {
+                        secrets[entity.entryId] ?: return@mapNotNull null
+                    } else {
+                        EntrySecret()
+                    }
                     EntryAssembler.assembleFromDatabase(
                         entity,
                         profileCodec.decrypt(entity.summaryBlob, entity.entryId),
                         secret,
                     )
                 }
+                .asSequence()
                 .mapNotNull { entry ->
                     val match = entry.match(applicationId, domain)
                     if (match.type == MatchType.UNKNOWN && !allowUnmatched) null
@@ -91,6 +100,7 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
                         .thenByDescending { it.entry.timestamps.updatedAtMs }
                 )
                 .take(boundedLimit)
+                .toList()
         }
     }
 
@@ -102,17 +112,14 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
         val uniqueIds = entryIds.distinct()
         return databaseSession.query {
             val entities = entryQueryDao().getByIds(uniqueIds).filter { it.deletedAt == null }
-            val secrets = entrySecretQueryDao().getByEntryIds(entities.map { it.entryId })
-                .associateBy { it.entryId }
-            val entries = entities.mapNotNull { entity ->
-                val encrypted = secrets[entity.entryId] ?: return@mapNotNull null
-                val fullSecret = secretCodec.decrypt(encrypted.secretBlob, entity.entryId)
+            val entries = entities.associate { entity ->
+                val fullSecret = secretFieldStore.readAll(this, entity.entryId)
                 entity.entryId to EntryAssembler.assembleFromDatabase(
                     entity,
                     profileCodec.decrypt(entity.summaryBlob, entity.entryId),
                     if (includeSecrets) fullSecret else fullSecret.redacted(),
                 )
-            }.toMap()
+            }
             uniqueIds.mapNotNull(entries::get)
         }
     }
@@ -126,9 +133,9 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
     ): Boolean {
         if (!sessionState.hasFullSecureSessionAccess()) return false
         if (usernameValue.isBlank() && passwordValue.isBlank()) return false
-        val applicationId = normalizeApplicationId(packageName)
-        val domain = normalizeDomain(webDomain)
-        val appLabel = applicationId?.let(packageUtils::getAppMetadata)?.appName
+        val applicationId = AutofillScope.normalizeApplicationId(packageName)
+        val domain = AutofillScope.normalizeDomain(webDomain)
+        val appLabel = applicationId?.let(packageUtils::getAppMetadata)?.label
         val title = resolveAutofillCredentialTitle(
             applicationId = applicationId,
             appLabel = appLabel,
@@ -171,37 +178,29 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
 
     private fun Entry.match(applicationId: String?, domain: String?): CredentialMatch {
         if (applicationId != null && profile.associations.applicationIds.any {
-                normalizeApplicationId(it) == applicationId
+                AutofillScope.normalizeApplicationId(it) == applicationId
             }) {
             return CredentialMatch(MatchType.APPLICATION_ID, applicationId = applicationId)
         }
-        if (domain != null && buildSet {
+        if (domain != null) {
+            val entryDomains = buildSet {
                 addAll(profile.associations.domains)
                 profile.associations.primaryUrl?.let(::add)
-            }.any { normalizeDomain(it) == domain }) {
-            return CredentialMatch(MatchType.WEB_DOMAIN, domain = domain)
+            }
+            if (entryDomains.any { AutofillScope.normalizeDomain(it) == domain }) {
+                return CredentialMatch(MatchType.WEB_DOMAIN, domain = domain)
+            }
         }
         return CredentialMatch(MatchType.UNKNOWN)
     }
 
     private fun EntrySecret.redacted(): EntrySecret = copy(
-        credential = login?.copy(password = null) ?: credential
+        credential = login?.copy(password = null) ?: credential,
     )
 
     private companion object {
         const val MAX_CANDIDATES = 10
 
-        fun normalizeApplicationId(value: String?): String? =
-            value?.trim()?.lowercase()?.takeIf(String::isNotBlank)
-
-        fun normalizeDomain(value: String?): String? {
-            val normalized = value?.trim()?.lowercase()?.removeSuffix(".")
-                ?.takeIf(String::isNotBlank) ?: return null
-            return runCatching {
-                val uri = if ("://" in normalized) normalized else "https://$normalized"
-                URI(uri).host?.lowercase()?.removeSuffix(".")
-            }.getOrNull() ?: normalized.substringBefore('/').substringBefore(':')
-        }
     }
 }
 

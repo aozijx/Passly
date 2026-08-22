@@ -4,8 +4,9 @@ import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
-import com.aozijx.passly.feature.auth.contract.AuthenticationUiState
-import com.aozijx.passly.domain.sensitive.SecureString
+import com.aozijx.passly.domain.sensitive.OwnedChars
+import com.aozijx.passly.feature.auth.contract.BootstrapUiState
+import com.aozijx.passly.feature.auth.contract.UnlockUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -20,20 +21,20 @@ class AuthenticationReducerTest {
         val failure = AuthenticationFailure(
             code = AuthenticationFailureCode.CREDENTIAL_INCORRECT,
         )
-        val started = AuthenticationReducer.reduce(
-            AuthenticationUiState(),
-            AuthenticationMutation.AuthenticationStarted(AuthenticationMethod.APP_PASSWORD),
+        val started = UnlockReducer.reduce(
+            UnlockUiState(),
+            UnlockMutation.AuthenticationStarted(AuthenticationMethod.APP_PASSWORD),
         )
-        val failed = AuthenticationReducer.reduce(
+        val failed = UnlockReducer.reduce(
             started,
-            AuthenticationMutation.AuthenticationFailed(
+            UnlockMutation.AuthenticationFailed(
                 method = AuthenticationMethod.APP_PASSWORD,
                 failure = failure,
             ),
         )
-        val finished = AuthenticationReducer.reduce(
+        val finished = UnlockReducer.reduce(
             failed,
-            AuthenticationMutation.AuthenticationFinished,
+            UnlockMutation.AuthenticationFinished,
         )
 
         assertEquals(AuthenticationMethod.APP_PASSWORD, started.activeMethod)
@@ -42,19 +43,17 @@ class AuthenticationReducerTest {
     }
 
     @Test
-    fun `resetting unlock inputs keeps setup dialog state`() {
-        val initial = AuthenticationUiState(
-            showSetPasswordDialog = true,
+    fun `resetting unlock inputs clears only unlock state`() {
+        val initial = UnlockUiState(
             recoveryUnlockVisible = true,
             expandedMethod = AuthenticationMethod.RECOVERY_CODE,
         )
 
-        val result = AuthenticationReducer.reduce(
+        val result = UnlockReducer.reduce(
             initial,
-            AuthenticationMutation.UnlockInputsReset,
+            UnlockMutation.UnlockInputsReset,
         )
 
-        assertTrue(result.showSetPasswordDialog)
         assertFalse(result.recoveryUnlockVisible)
         assertNull(result.expandedMethod)
         assertSame(EmptySensitiveValue, result.appPassword)
@@ -63,16 +62,16 @@ class AuthenticationReducerTest {
 
     @Test
     fun `dismissing setup dialog removes both password references`() {
-        val password = SecureString.fromString("temporary")
-        val confirm = SecureString.fromString("temporary")
+        val password = OwnedChars.fromString("temporary")
+        val confirm = OwnedChars.fromString("temporary")
         try {
-            val result = AuthenticationReducer.reduce(
-                AuthenticationUiState(
+            val result = BootstrapReducer.reduce(
+                BootstrapUiState(
                     showSetPasswordDialog = true,
                     newAppPassword = password,
                     confirmAppPassword = confirm,
                 ),
-                AuthenticationMutation.SetPasswordDialogVisibilityChanged(false),
+                BootstrapMutation.SetPasswordDialogVisibilityChanged(false),
             )
 
             assertFalse(result.showSetPasswordDialog)

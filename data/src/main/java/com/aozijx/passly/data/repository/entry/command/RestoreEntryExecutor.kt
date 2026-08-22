@@ -25,7 +25,7 @@ internal class RestoreEntryExecutor @Inject constructor(
     private val clock: DatabaseClock
 ) {
     suspend fun execute(id: String, expectedVersion: Int): AppResult<Unit> =
-        databaseTransactions.write("entry.restore") {
+        databaseTransactions.write("entry_restore") {
             val now = clock.now()
             val affected = entryCommandDao().restoreOptimistic(id, expectedVersion, now)
             databaseTransactions.checkAffectedRows(affected)

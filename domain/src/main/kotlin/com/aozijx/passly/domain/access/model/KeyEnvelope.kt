@@ -1,5 +1,7 @@
 package com.aozijx.passly.domain.access.model
 
+import java.security.MessageDigest
+
 @JvmInline
 value class EnvelopeType(val value: String) {
     companion object {
@@ -34,9 +36,9 @@ data class KeyEnvelope(
         if (this === other) return true
         if (other !is KeyEnvelope) return false
         return type == other.type &&
-                ciphertext.contentEquals(other.ciphertext) &&
-                iv.contentEquals(other.iv) &&
-                salt.contentEquals(other.salt) &&
+                MessageDigest.isEqual(ciphertext, other.ciphertext) &&
+                MessageDigest.isEqual(iv, other.iv) &&
+                MessageDigest.isEqual(salt, other.salt) &&
                 algorithm == other.algorithm &&
                 version == other.version
     }

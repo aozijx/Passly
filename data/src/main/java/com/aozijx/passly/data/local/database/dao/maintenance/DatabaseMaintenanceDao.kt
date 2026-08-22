@@ -25,10 +25,10 @@ interface DatabaseMaintenanceDao {
     @Query("DELETE FROM attachment_resources")
     suspend fun clearAttachmentResources(): Int
 
-    @Query("DELETE FROM attachment_gc_queue")
+    @Query("DELETE FROM attachment_resources WHERE lifecycleState = 'PENDING_GC'")
     suspend fun clearAttachmentGcQueue(): Int
 
-    @Query("DELETE FROM entry_secrets")
+    @Query("DELETE FROM entry_secret_fields")
     suspend fun clearSecrets(): Int
 
     @Query("DELETE FROM entries")

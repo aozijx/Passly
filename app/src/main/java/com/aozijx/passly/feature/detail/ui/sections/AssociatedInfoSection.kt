@@ -40,7 +40,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.AppPackagePickerDialog
+import com.aozijx.passly.core.ui.components.AppPackagePickerBottomSheet
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.core.ui.components.rememberAppIcon
 import com.aozijx.passly.core.ui.components.rememberAppMetadata
@@ -101,7 +101,7 @@ fun AssociatedInfoSection(
     }
 
     if (showPackagePicker) {
-        AppPackagePickerDialog(
+        AppPackagePickerBottomSheet(
             onSelect = {
                 editState.editedPackage = it.packageName
                 saveAssociated(entry, editState, onEntryUpdated)
@@ -186,7 +186,7 @@ private fun AssociatedAppsCard(
 private fun AssociatedAppRow(packageName: String) {
     val icon = rememberAppIcon(packageName)
     val metadata = rememberAppMetadata(packageName)
-    val appName = metadata?.appName?.takeIf { it.isNotBlank() } ?: packageName
+    val appName = metadata?.label?.takeIf { it.isNotBlank() } ?: packageName
 
     Row(
         modifier = Modifier.fillMaxWidth(),

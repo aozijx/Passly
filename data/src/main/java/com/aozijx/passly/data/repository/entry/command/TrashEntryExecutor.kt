@@ -20,7 +20,7 @@ internal class TrashEntryExecutor @Inject constructor(
     private val clock: DatabaseClock
 ) {
     suspend fun execute(id: String, expectedVersion: Int): AppResult<Unit> =
-        databaseTransactions.write("entry.moveToTrash") {
+        databaseTransactions.write("entry_move_to_trash") {
             val now = clock.now()
             val affected = entryCommandDao().optimisticSoftDelete(id, expectedVersion, now, now)
             databaseTransactions.checkAffectedRows(affected)

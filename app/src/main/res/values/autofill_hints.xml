@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Username keywords (for textual hints and resource IDs) -->
+    <string-array name="autofill_username_keywords">
+        <item>username</item>
+        <item>email</item>
+        <item>phone</item>
+        <item>mobile</item>
+        <item>account</item>
+        <item>login</item>
+        <item>user[_\\-]?name</item>
+        <item>user[_\\-]?id</item>
+        <item>手机号</item>
+        <item>邮箱</item>
+        <item>账号</item>
+        <item>用户名</item>
+        <item>号码</item>
+        <item>用户</item>
+    </string-array>
+
+    <!-- Password keywords (for textual hints and resource IDs) -->
+    <string-array name="autofill_password_keywords">
+        <item>password</item>
+        <item>passcode</item>
+        <item>passphrase</item>
+        <item>passwd</item>
+        <item>pwd</item>
+        <item>pass$</item>
+        <item>密钥</item>
+        <item>密码</item>
+        <item>口令</item>
+    </string-array>
+
+    <!-- OTP keywords (for textual hints and resource IDs) -->
+    <string-array name="autofill_otp_keywords">
+        <item>otp</item>
+        <item>sms</item>
+        <item>token</item>
+        <item>verify</item>
+        <item>verification</item>
+        <item>captcha</item>
+        <item>authcode</item>
+        <item>securitycode</item>
+        <item>验证码</item>
+        <item>校验码</item>
+        <item>一次性</item>
+        <item>动态</item>
+    </string-array>
+
+    <!-- Submit keywords (for buttons) -->
+    <string-array name="autofill_submit_keywords">
+        <item>submit</item>
+        <item>login</item>
+        <item>signin</item>
+        <item>next</item>
+        <item>continue</item>
+        <item>go</item>
+        <item>done</item>
+        <item>ok</item>
+        <item>登录</item>
+        <item>提交</item>
+        <item>确认</item>
+        <item>下一步</item>
+        <item>继续</item>
+    </string-array>
+
+    <!-- Search keywords (to exclude search fields) -->
+    <string-array name="autofill_search_keywords">
+        <item>search</item>
+        <item>query</item>
+        <item>查询</item>
+        <item>查找</item>
+        <item>搜索</item>
+        <item>searchbox</item>
+    </string-array>
+
+    <!-- Confirmation keywords (to exclude confirmed password/email fields from primary roles) -->
+    <string-array name="autofill_confirmation_keywords">
+        <item>confirm</item>
+        <item>retype</item>
+        <item>repeat</item>
+        <item>again</item>
+        <item>确认</item>
+        <item>再次</item>
+        <item>重复</item>
+    </string-array>
+
+    <!-- Standard platform autofillHint mappings (key:hint, value:role) -->
+    <!-- Format: "hint_name:role_name" -->
+    <string-array name="autofill_hint_role_mappings">
+        <item>username:USERNAME</item>
+        <item>emailaddress:USERNAME</item>
+        <item>email:USERNAME</item>
+        <item>phone:USERNAME</item>
+        <item>phoneno:USERNAME</item>
+        <item>password:PASSWORD</item>
+        <item>newpassword:PASSWORD</item>
+        <item>confirmpassword:PASSWORD</item>
+        <item>currentpassword:PASSWORD</item>
+        <item>smsotp:OTP</item>
+        <item>smsotpcode:OTP</item>
+        <item>onetimecode:OTP</item>
+        <item>otp:OTP</item>
+    </string-array>
+</resources>

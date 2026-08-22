@@ -22,7 +22,7 @@ internal class RoomActivityRecorder @Inject constructor(
     override suspend fun recordUsage(
         entryId: String,
         type: ActivityType
-    ): AppResult<Unit> = databaseTransactions.write("activity.recordUsage") {
+    ): AppResult<Unit> = databaseTransactions.write("activity_record_usage") {
         val now = System.currentTimeMillis()
         entryActivityCommandDao().insertIdempotent(
             EntryActivity(entryId = entryId, activityType = type).toEntity(now)

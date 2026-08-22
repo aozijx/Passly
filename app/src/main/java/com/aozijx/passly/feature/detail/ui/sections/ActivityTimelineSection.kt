@@ -184,17 +184,18 @@ private fun formatActivityDescription(activity: EntryActivity): String {
     }
 }
 
+@Composable
 private fun getActivityColor(type: ActivityType): Color {
     return when (type) {
         ActivityType.CREATE -> Color(0xFF4CAF50)
-        ActivityType.UPDATE -> Color(0xFF6750A4)
-        ActivityType.SENSITIVE_CHANGE -> Color(0xFF6750A4)
-        ActivityType.DELETE -> Color(0xFFF44336)
-        ActivityType.RESTORE -> Color(0xFF2196F3)
-        ActivityType.AUTOFILL -> Color(0xFFFF9800)
-        ActivityType.COPY_PASSWORD, ActivityType.COPY_USERNAME -> Color(0xFF9C27B0)
-        ActivityType.VIEW -> Color(0xFF9E9E9E)
-        ActivityType.EXPORT -> Color(0xFF00BCD4)
+        ActivityType.UPDATE -> MaterialTheme.colorScheme.primary
+        ActivityType.SENSITIVE_CHANGE -> MaterialTheme.colorScheme.tertiary
+        ActivityType.DELETE -> MaterialTheme.colorScheme.error
+        ActivityType.RESTORE -> MaterialTheme.colorScheme.secondary
+        ActivityType.AUTOFILL -> MaterialTheme.colorScheme.primary
+        ActivityType.COPY_PASSWORD, ActivityType.COPY_USERNAME -> MaterialTheme.colorScheme.secondary
+        ActivityType.VIEW -> MaterialTheme.colorScheme.outline
+        ActivityType.EXPORT -> MaterialTheme.colorScheme.tertiary
         ActivityType.IMPORT -> Color(0xFF8BC34A)
     }
 }

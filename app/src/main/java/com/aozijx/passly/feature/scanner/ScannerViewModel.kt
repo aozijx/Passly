@@ -9,7 +9,7 @@ import com.aozijx.passly.core.otp.OtpAuthUriCodec
 import com.aozijx.passly.core.util.QrCodeUtils
 import com.aozijx.passly.feature.scanner.contract.ImageRef
 import com.aozijx.passly.feature.scanner.contract.ScannerEffect
-import com.aozijx.passly.feature.scanner.contract.ScannerIntent
+import com.aozijx.passly.feature.scanner.contract.ScannerUiAction
 import com.aozijx.passly.feature.scanner.contract.ScannerUiState
 import com.aozijx.passly.feature.scanner.presentation.ScannerMutation
 import com.aozijx.passly.feature.scanner.presentation.ScannerReducer
@@ -36,12 +36,12 @@ class ScannerViewModel @Inject constructor(
     // 防抖：缓存上次扫描结果
     private var lastScannedBarcode: String? = null
 
-    fun handleIntent(intent: ScannerIntent) {
-        when (intent) {
-            is ScannerIntent.BarcodeDetected -> onBarcodeDetected(intent.barcode)
-            is ScannerIntent.DecodeImage -> decodeImage(intent.image)
-            is ScannerIntent.StartScanning -> resetAndStart()
-            is ScannerIntent.StopScanning -> stopScanning()
+    fun onAction(action: ScannerUiAction) {
+        when (action) {
+            is ScannerUiAction.BarcodeDetected -> onBarcodeDetected(action.barcode)
+            is ScannerUiAction.DecodeImage -> decodeImage(action.image)
+            is ScannerUiAction.StartScanning -> resetAndStart()
+            is ScannerUiAction.StopScanning -> stopScanning()
         }
     }
 

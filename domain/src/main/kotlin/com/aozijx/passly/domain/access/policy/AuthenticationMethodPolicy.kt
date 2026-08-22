@@ -68,6 +68,9 @@ object AuthenticationMethodPolicy {
         AuthenticationPurpose.UNLOCK_VAULT,
         AuthenticationPurpose.REVEAL_SECRET -> false
 
+        // 自动填充二阶段（填充/保存）需要新鲜认证：业务层 requireAuthentication
+        // 开关要求"填充前验证"时，即使 vault 已解锁也必须重新验证。
+        // 候选展示（BeginGet）不调用 authenticate，不受此策略影响。
         AuthenticationPurpose.COPY_SECRET -> reauthenticateSensitiveCopies
         AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET -> true
         else -> true

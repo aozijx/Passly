@@ -6,22 +6,22 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.feature.settings.SettingsViewModel
-import com.aozijx.passly.feature.settings.appearance.AppearanceDetail
+import com.aozijx.passly.presentation.settings.appearance.AppearanceDetail
 import com.aozijx.passly.feature.settings.appearance.AppearanceSettingsAction
 import com.aozijx.passly.feature.settings.appearance.AppearanceSettingsViewModel
-import com.aozijx.passly.feature.settings.appearance.InterfaceDetail
+import com.aozijx.passly.presentation.settings.appearance.InterfaceDetail
 import com.aozijx.passly.feature.settings.appearance.InterfaceSettingsAction
 import com.aozijx.passly.feature.settings.appearance.InterfaceSettingsViewModel
-import com.aozijx.passly.feature.settings.contract.SettingsIntent
-import com.aozijx.passly.feature.settings.internal.SettingsGroup
+import com.aozijx.passly.feature.settings.contract.SettingsUiAction
+import com.aozijx.passly.presentation.settings.internal.SettingsGroup
 import com.aozijx.passly.feature.settings.security.PrivacySettingsAction
 import com.aozijx.passly.feature.settings.security.PrivacySettingsViewModel
 import com.aozijx.passly.feature.settings.security.SecuritySettingsAction
 import com.aozijx.passly.feature.settings.security.SecuritySettingsViewModel
-import com.aozijx.passly.feature.settings.security.ui.PrivacyDetail
-import com.aozijx.passly.feature.settings.security.ui.SecurityDetail
-import com.aozijx.passly.feature.settings.shell.SettingsScreenLocalState
-import com.aozijx.passly.feature.settings.shell.SettingsSecondaryPage
+import com.aozijx.passly.presentation.settings.security.PrivacyDetail
+import com.aozijx.passly.presentation.settings.security.SecurityDetail
+import com.aozijx.passly.presentation.settings.shell.SettingsScreenLocalState
+import com.aozijx.passly.presentation.settings.shell.SettingsSecondaryPage
 
 @Composable
 internal fun CoreSettingsRouteContent(
@@ -49,7 +49,7 @@ internal fun CoreSettingsRouteContent(
                             viewModel.onAction(SecuritySettingsAction.SetLockTimeout(it))
                         },
                         onAppPasswordClick = {
-                            settingsViewModel.handleIntent(SettingsIntent.RequestAppPasswordEntry)
+                            settingsViewModel.onAction(SettingsUiAction.RequestAppPasswordEntry)
                         },
                         onBiometricEnabledChange = { enabled ->
                             viewModel.onAction(
@@ -116,8 +116,11 @@ internal fun CoreSettingsRouteContent(
                         onDynamicColorChange = {
                             viewModel.onAction(AppearanceSettingsAction.SetDynamicColor(it))
                         },
-                        onManualThemeColorSelect = {
-                            viewModel.onAction(AppearanceSettingsAction.SelectManualThemeColor(it))
+                        onThemeKeySelect = {
+                            viewModel.onAction(AppearanceSettingsAction.SetThemeKey(it))
+                        },
+                        onCanvasTintPercentChange = {
+                            viewModel.onAction(AppearanceSettingsAction.SetCanvasTintPercent(it))
                         },
                         onLanguageChange = {
                             viewModel.onAction(AppearanceSettingsAction.SetLanguage(it))

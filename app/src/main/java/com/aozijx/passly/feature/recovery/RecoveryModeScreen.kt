@@ -40,7 +40,7 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeEffect
-import com.aozijx.passly.feature.recovery.contract.RecoveryModeIntent
+import com.aozijx.passly.feature.recovery.contract.RecoveryModeUiAction
 
 /** Restricted UI shown after recovery-code verification. No Vault content is mounted here. */
 @Composable
@@ -100,7 +100,7 @@ fun RecoveryModeScreen(
                 title = stringResource(R.string.recovery_mode_set_password),
                 subtitle = stringResource(R.string.app_password_unlock_description),
                 isLoading = state.isSettingPassword,
-                onClick = { viewModel.onIntent(RecoveryModeIntent.SetPasswordClicked) },
+                onClick = { viewModel.onAction(RecoveryModeUiAction.SetPasswordClicked) },
             )
         }
 
@@ -111,7 +111,7 @@ fun RecoveryModeScreen(
                 title = stringResource(R.string.recovery_mode_exit),
                 subtitle = stringResource(R.string.recovery_mode_locked_description),
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                onClick = { viewModel.onIntent(RecoveryModeIntent.ExitClicked) },
+                onClick = { viewModel.onAction(RecoveryModeUiAction.ExitClicked) },
             )
         }
     }
@@ -121,13 +121,13 @@ fun RecoveryModeScreen(
             newPassword = state.newPassword.toUiString(),
             confirmPassword = state.confirmPassword.toUiString(),
             onNewPasswordChange = {
-                viewModel.onIntent(RecoveryModeIntent.NewPasswordChanged(it))
+                viewModel.onAction(RecoveryModeUiAction.NewPasswordChanged(it))
             },
             onConfirmPasswordChange = {
-                viewModel.onIntent(RecoveryModeIntent.ConfirmPasswordChanged(it))
+                viewModel.onAction(RecoveryModeUiAction.ConfirmPasswordChanged(it))
             },
-            onConfirm = { viewModel.onIntent(RecoveryModeIntent.SubmitNewPassword) },
-            onDismiss = { viewModel.onIntent(RecoveryModeIntent.DismissPasswordDialog) },
+            onConfirm = { viewModel.onAction(RecoveryModeUiAction.SubmitNewPassword) },
+            onDismiss = { viewModel.onAction(RecoveryModeUiAction.DismissPasswordDialog) },
             isBusy = state.isSettingPassword,
             errorMessage = state.passwordSetupError
         )

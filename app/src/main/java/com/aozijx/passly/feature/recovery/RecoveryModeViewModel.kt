@@ -7,12 +7,12 @@ import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeEffect
-import com.aozijx.passly.feature.recovery.contract.RecoveryModeIntent
+import com.aozijx.passly.feature.recovery.contract.RecoveryModeUiAction
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeUiState
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeMutation
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeReducer
 import com.aozijx.passly.core.crypto.MemoryCleaner
-import com.aozijx.passly.domain.sensitive.SecureString
+import com.aozijx.passly.domain.sensitive.OwnedChars
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,14 +34,14 @@ class RecoveryModeViewModel @Inject constructor(
     private val _effect = Channel<RecoveryModeEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
-    fun onIntent(intent: RecoveryModeIntent) {
-        when (intent) {
-            RecoveryModeIntent.SetPasswordClicked -> showSetPasswordDialog()
-            is RecoveryModeIntent.NewPasswordChanged -> updateNewPassword(intent.value)
-            is RecoveryModeIntent.ConfirmPasswordChanged -> updateConfirmPassword(intent.value)
-            RecoveryModeIntent.SubmitNewPassword -> submitNewPassword()
-            RecoveryModeIntent.ExitClicked -> exitRecovery()
-            RecoveryModeIntent.DismissPasswordDialog -> dismissPasswordDialog()
+    fun onAction(action: RecoveryModeUiAction) {
+        when (action) {
+            RecoveryModeUiAction.SetPasswordClicked -> showSetPasswordDialog()
+            is RecoveryModeUiAction.NewPasswordChanged -> updateNewPassword(action.value)
+            is RecoveryModeUiAction.ConfirmPasswordChanged -> updateConfirmPassword(action.value)
+            RecoveryModeUiAction.SubmitNewPassword -> submitNewPassword()
+            RecoveryModeUiAction.ExitClicked -> exitRecovery()
+            RecoveryModeUiAction.DismissPasswordDialog -> dismissPasswordDialog()
         }
     }
 
@@ -52,12 +52,12 @@ class RecoveryModeViewModel @Inject constructor(
 
     private fun updateNewPassword(value: String) {
         _uiState.value.newPassword.wipe()
-        mutate(RecoveryModeMutation.NewPasswordChanged(SecureString.fromString(value)))
+        mutate(RecoveryModeMutation.NewPasswordChanged(OwnedChars.fromString(value)))
     }
 
     private fun updateConfirmPassword(value: String) {
         _uiState.value.confirmPassword.wipe()
-        mutate(RecoveryModeMutation.ConfirmPasswordChanged(SecureString.fromString(value)))
+        mutate(RecoveryModeMutation.ConfirmPasswordChanged(OwnedChars.fromString(value)))
     }
 
     private fun submitNewPassword() {

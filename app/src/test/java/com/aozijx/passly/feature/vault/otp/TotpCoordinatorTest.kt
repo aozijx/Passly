@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault.otp
 
-import com.aozijx.passly.core.otp.OtpResult
+import com.aozijx.passly.domain.entry.otp.OtpResult
 import com.aozijx.passly.runtime.session.SessionLockedException
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding

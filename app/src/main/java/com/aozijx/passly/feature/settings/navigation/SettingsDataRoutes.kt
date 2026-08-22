@@ -18,28 +18,32 @@ import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageS
 import com.aozijx.passly.core.util.PathDisplayFormatter
 import com.aozijx.passly.feature.backup.api.BackupSettingsFeature
 import com.aozijx.passly.feature.settings.SettingsViewModel
-import com.aozijx.passly.feature.settings.contract.SettingsIntent
+import com.aozijx.passly.feature.settings.contract.SettingsUiAction
 import com.aozijx.passly.feature.settings.contract.SettingsUiState
-import com.aozijx.passly.feature.settings.datamanagement.DataManagementDetail
-import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsAction
+import com.aozijx.passly.presentation.settings.datamanagement.DataManagementDetail
+import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsUiAction
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsViewModel
+import com.aozijx.passly.feature.settings.datamanagement.DatabaseRecoveryViewModel
 import com.aozijx.passly.feature.settings.datamanagement.handleBackupPathPicked
-import com.aozijx.passly.feature.settings.general.GeneralDetail
-import com.aozijx.passly.feature.settings.general.NotificationDetail
-import com.aozijx.passly.feature.settings.interaction.InteractionDetail
+import com.aozijx.passly.presentation.settings.general.GeneralDetail
+import com.aozijx.passly.presentation.settings.general.NotificationDetail
+import com.aozijx.passly.presentation.settings.autofill.AutofillDetail
+import com.aozijx.passly.feature.settings.autofill.AutofillSettingsAction
+import com.aozijx.passly.feature.settings.autofill.AutofillSettingsViewModel
+import com.aozijx.passly.presentation.settings.interaction.InteractionDetail
 import com.aozijx.passly.feature.settings.interaction.InteractionSettingsAction
 import com.aozijx.passly.feature.settings.interaction.InteractionSettingsViewModel
-import com.aozijx.passly.feature.settings.internal.SettingsGroup
+import com.aozijx.passly.presentation.settings.internal.SettingsGroup
 import com.aozijx.passly.feature.settings.security.RecoveryDraftState
 import com.aozijx.passly.feature.settings.security.RecoveryDraftAction
 import com.aozijx.passly.feature.settings.security.RecoveryDraftViewModel
 import com.aozijx.passly.feature.settings.security.SecuritySettingsAction
 import com.aozijx.passly.feature.settings.security.SecuritySettingsViewModel
 import com.aozijx.passly.feature.settings.security.messageOrNull
-import com.aozijx.passly.feature.settings.security.ui.RecoveryCodeDetail
-import com.aozijx.passly.feature.settings.security.ui.RecoveryCodeSheet
-import com.aozijx.passly.feature.settings.shell.SettingsScreenLocalState
-import com.aozijx.passly.feature.settings.shell.SettingsSecondaryPage
+import com.aozijx.passly.presentation.settings.security.RecoveryCodeDetail
+import com.aozijx.passly.presentation.settings.security.RecoveryCodeSheet
+import com.aozijx.passly.presentation.settings.shell.SettingsScreenLocalState
+import com.aozijx.passly.presentation.settings.shell.SettingsSecondaryPage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +53,7 @@ internal fun DataSettingsRouteContent(
     localState: SettingsScreenLocalState,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
+    recoveryViewModel: DatabaseRecoveryViewModel,
     settingsViewModel: SettingsViewModel,
     settingsState: SettingsUiState,
     onBack: (() -> Unit)?
@@ -70,12 +75,27 @@ internal fun DataSettingsRouteContent(
                         },
                         onLeftSwipeActionClick = localState::openLeftActionDialog,
                         onRightSwipeActionClick = localState::openRightActionDialog,
-                        onAutofillAction = interactionViewModel::onAction,
+                    )
+                }
+            }
+        }
+
+        SettingsRoute.Autofill -> {
+            val viewModel: AutofillSettingsViewModel = hiltViewModel()
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
+            SettingsSecondaryPage(
+                title = stringResource(SettingsGroup.AUTOFILL.titleRes),
+                onBack = onBack
+            ) {
+                item {
+                    AutofillDetail(
+                        state = state,
                         onOpenAutofillSettings = {
-                            interactionViewModel.onAction(
-                                InteractionSettingsAction.OpenSystemAutofillSettings
+                            viewModel.onAction(
+                                AutofillSettingsAction.OpenSystemAutofillSettings
                             )
-                        }
+                        },
+                        onAction = viewModel::onAction,
                     )
                 }
             }
@@ -83,6 +103,7 @@ internal fun DataSettingsRouteContent(
 
         SettingsRoute.DataManagement -> {
             val state by dataViewModel.uiState.collectAsStateWithLifecycle()
+            val recoveryState by recoveryViewModel.uiState.collectAsStateWithLifecycle()
             SettingsSecondaryPage(
                 title = stringResource(SettingsGroup.DATA_MANAGEMENT.titleRes),
                 onBack = onBack
@@ -90,15 +111,16 @@ internal fun DataSettingsRouteContent(
                 item {
                     DataManagementDetail(
                         state = state,
+                        recoveryState = recoveryState,
                         isClearingDatabase = settingsState.isClearingDatabase,
                         onAutoDownloadIconsChange = {
                             dataViewModel.onAction(
-                                DataManagementSettingsAction.SetAutoDownloadIcons(it)
+                                DataManagementSettingsUiAction.SetAutoDownloadIcons(it)
                             )
                         },
                         onRestoreTrashEntry = { entryId, expectedVersion ->
                             dataViewModel.onAction(
-                                DataManagementSettingsAction.RestoreTrashEntry(
+                                DataManagementSettingsUiAction.RestoreTrashEntry(
                                     entryId,
                                     expectedVersion
                                 )
@@ -106,21 +128,21 @@ internal fun DataSettingsRouteContent(
                         },
                         onDeleteTrashEntry = { entryId, expectedVersion ->
                             dataViewModel.onAction(
-                                DataManagementSettingsAction.DeleteTrashEntry(
+                                DataManagementSettingsUiAction.DeleteTrashEntry(
                                     entryId,
                                     expectedVersion
                                 )
                             )
                         },
                         onEmptyTrash = {
-                            dataViewModel.onAction(DataManagementSettingsAction.EmptyTrash)
+                            dataViewModel.onAction(DataManagementSettingsUiAction.EmptyTrash)
                         },
                         onClearTrashError = {
-                            dataViewModel.onAction(DataManagementSettingsAction.ClearTrashError)
+                            dataViewModel.onAction(DataManagementSettingsUiAction.ClearTrashError)
                         },
-                        onRecoveryAction = dataViewModel::onAction,
+                        onRecoveryAction = recoveryViewModel::onAction,
                         onClearDatabase = {
-                            settingsViewModel.handleIntent(SettingsIntent.ClearDatabase)
+                            settingsViewModel.onAction(SettingsUiAction.ClearDatabase)
                         }
                     )
                 }
@@ -138,7 +160,7 @@ internal fun DataSettingsRouteContent(
             ) { uri ->
                 handleBackupPathPicked(context, uri) { resolvedUri ->
                     dataViewModel.onAction(
-                        DataManagementSettingsAction.SetBackupDirectoryUri(resolvedUri)
+                        DataManagementSettingsUiAction.SetBackupDirectoryUri(resolvedUri)
                     )
                 }
             }

@@ -30,8 +30,7 @@ Hilt binding 由 `:data` 自己拥有；App 只提供会话密钥来源、遥测
 | 表 | 用途 |
 |---|---|
 | `entries` | 原子条目的身份、结构类型、能力位、OTP 类型、索引版本、时间戳和加密 `summaryBlob` |
-| `entry_secrets` | 一条条目对应的普通加密 `secretBlob` |
-| `entry_sensitive_fields` | 按 `entryId + fieldKey` 隔离的高敏字段密文、密钥版本和更新时间 |
+| `entry_secret_fields` | 按 `entryId + fieldKey` 隔离的字段级密文行：敏感字段（`PASSWORD`、卡号/CVV 等）各自独立 AES-GCM 加密，低敏结构（notes、customFields 等）聚合为 `STRUCT_BUNDLE` 行；读取用字段变量定位密文 |
 | `entry_links` | 原子 Entry 之间的类型化关系；任一端点删除时级联删除 link |
 | `entry_revisions` | `entryContentCipher` 与 `sensitiveFieldCipherSet` 组成的完整 Entry 历史快照 |
 | `entry_activities` | 查看、复制、使用等审计/统计事件，不用于恢复 |
@@ -59,15 +58,19 @@ Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `data/schemas`�
 
 ## Blob 与读取边界
 
-`summaryBlob` 是字段级 AES-GCM 密文，解密后为 `SummaryPayload`。其中的 `color` 是可选展示元数据，
+`summaryBlob` 是 AES-GCM 密文，解密后为 `SummaryPayload`。其中的 `color` 是可选展示元数据，
 不是加密参数、分类或类型判别字段。
 
-普通敏感数据位于 `entry_secrets.secretBlob`。高敏值不进入普通 secret，而是在
-`entry_sensitive_fields` 中按字段独立保存；当前已迁入银行卡号、CVV 和支付 PIN。普通详情查询不得
-加载高敏行；高敏 reveal 必须消费与当前会话绑定且 scope 精确匹配的授权许可。
+secret 数据全部位于 `entry_secret_fields`。敏感字段（`PASSWORD`、银行卡号、CVV、支付 PIN、
+助记词、恢复码、SSH 私钥/口令、Passkey 私钥引用、OTP Secret）每字段一个独立密文行，
+AAD 绑定 `entryId + fieldKey`；低敏结构（credential 的非敏感字段、notes、customFields）
+聚合在 `STRUCT_BUNDLE` 行。普通详情查询只解密 `STRUCT_BUNDLE`（字段级值保持 `null`），
+reveal 单字段只读取并解密对应字段行，不触碰同条目其他字段密文。字段级 reveal 必须消费
+与当前会话绑定且 scope 精确匹配的授权许可。
 
-列表优先读取 metadata，详情读取普通 credential；Repository 将两者聚合成不含高敏字段的领域模型。
-搜索使用基于会话密钥的 Blind Index，不能对明文敏感字段使用 SQLite `LIKE`。
+列表优先读取 metadata，详情读取低敏 bundle；Repository 将两者聚合成不含字段级值的领域模型，
+需要完整凭据的批量流程（备份、恢复、自动填充点选后）才组装全部字段。搜索使用基于会话密钥的
+Blind Index，不能对明文敏感字段使用 SQLite `LIKE`。
 
 数据库历史与用户备份是不同边界：Revision 是库内 Entry 快照，用户备份是独立全量 Snapshot。
 数据库 Entity、备份 DTO 与 Domain model 必须由 Mapper 隔离。

@@ -10,7 +10,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.permission.contract.PermissionStatusReader
 import com.aozijx.passly.core.permission.model.PermissionStatus
 import com.aozijx.passly.core.permission.model.RuntimePermission
-import com.aozijx.passly.data.message.model.AppNotice
+import com.aozijx.passly.app.message.model.AppNotice
 import com.aozijx.passly.app.message.contract.NoticeTextResolver
 import com.aozijx.passly.app.message.contract.SinkResult
 import com.aozijx.passly.app.message.contract.SystemNotificationGateway

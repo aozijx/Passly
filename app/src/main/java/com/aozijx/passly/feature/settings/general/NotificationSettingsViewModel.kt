@@ -2,16 +2,18 @@ package com.aozijx.passly.feature.settings.general
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.data.message.model.NoticeLevel
-import com.aozijx.passly.data.message.model.NoticeTopic
 import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
-import com.aozijx.passly.data.settings.model.SettingsCommand
-import com.aozijx.passly.data.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.model.MessageLevel
+import com.aozijx.passly.domain.settings.model.MessageTopic
+import com.aozijx.passly.domain.settings.model.SettingsCommand
+import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,6 +24,9 @@ class NotificationSettingsViewModel @Inject constructor(
     private val systemNotificationStateProvider: SystemNotificationStateProvider
 ) : ViewModel() {
     private val systemNotificationState = MutableStateFlow(systemNotificationStateProvider.current())
+
+    private val _effects = Channel<NotificationSettingsEffect>(Channel.BUFFERED)
+    val effects = _effects.receiveAsFlow()
 
     val uiState: StateFlow<NotificationSettingsUiState> = settingsRepository.settings
         .combine(systemNotificationState) { s, system ->
@@ -44,6 +49,10 @@ class NotificationSettingsViewModel @Inject constructor(
         readSystemNotificationState()
     }
 
+    fun openSystemNotificationSettings() {
+        _effects.trySend(NotificationSettingsEffect.OpenSystemNotificationSettings)
+    }
+
     fun systemNotificationsAvailableNow(): Boolean {
         val system = readSystemNotificationState()
         return system.runtimePermissionGranted &&
@@ -59,11 +68,11 @@ class NotificationSettingsViewModel @Inject constructor(
         settingsRepository.update(SettingsCommand.SetSystemNotificationsEnabled(enabled))
     }
 
-    fun setMessageTopicEnabled(topic: NoticeTopic, enabled: Boolean) = viewModelScope.launch {
+    fun setMessageTopicEnabled(topic: MessageTopic, enabled: Boolean) = viewModelScope.launch {
         settingsRepository.update(SettingsCommand.SetMessageTopicEnabled(topic, enabled))
     }
 
-    fun setMessageTopicMinimumLevel(topic: NoticeTopic, level: NoticeLevel) =
+    fun setMessageTopicMinimumLevel(topic: MessageTopic, level: MessageLevel) =
         viewModelScope.launch {
             settingsRepository.update(SettingsCommand.SetMessageTopicMinimumLevel(topic, level))
         }

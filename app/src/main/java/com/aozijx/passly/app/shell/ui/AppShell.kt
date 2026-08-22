@@ -17,15 +17,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.core.ui.components.DatabaseRecoveryDialog
-import com.aozijx.passly.data.message.model.NoticeCode
-import com.aozijx.passly.data.message.model.newAppNotice
-import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
+import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.newAppNotice
+import com.aozijx.passly.feature.auth.presentation.UnlockViewModel
+import com.aozijx.passly.feature.auth.presentation.BootstrapViewModel
 import com.aozijx.passly.feature.auth.ui.AuthenticationScreen
 import com.aozijx.passly.app.shell.AppShellSettingsViewModel
 import com.aozijx.passly.app.shell.AppShellViewModel
 import com.aozijx.passly.app.shell.FlipToLockSensorController
 import com.aozijx.passly.app.shell.contract.AppShellEffect
-import com.aozijx.passly.app.shell.contract.AppShellIntent
+import com.aozijx.passly.app.shell.contract.AppShellUiAction
 import com.aozijx.passly.app.message.presentation.AppNoticeHostViewModel
 import com.aozijx.passly.feature.recovery.RecoveryModeScreen
 import com.aozijx.passly.feature.recovery.RecoveryModeViewModel
@@ -51,7 +52,8 @@ internal fun AppShell(
     val mainConfigViewModel: AppShellSettingsViewModel = hiltViewModel()
     val mainConfig by mainConfigViewModel.config.collectAsStateWithLifecycle()
 
-    val authenticationViewModel: AuthenticationViewModel = hiltViewModel()
+    val unlockViewModel: UnlockViewModel = hiltViewModel()
+    val bootstrapViewModel: BootstrapViewModel = hiltViewModel()
     val recoveryViewModel: RecoveryModeViewModel = hiltViewModel()
     val messageHostViewModel: AppNoticeHostViewModel = hiltViewModel()
 
@@ -74,7 +76,6 @@ internal fun AppShell(
                     showLocalMessage(effect.error, longDuration = true)
 
                 AppShellEffect.LockedByTimeout, AppShellEffect.NavigateToVault -> Unit
-                is AppShellEffect.AuthSuccess, is AppShellEffect.AuthError -> Unit
             }
         }
     }
@@ -94,10 +95,10 @@ internal fun AppShell(
                 DatabaseRecoveryDialog(
                     isBusy = mainUiState.isDatabaseInitializing,
                     onRetry = {
-                        viewModel.handleIntent(AppShellIntent.RetryDatabaseInitialization)
+                        viewModel.onAction(AppShellUiAction.RetryDatabaseInitialization)
                     },
                     onRecoverDatabase = {
-                        viewModel.handleIntent(AppShellIntent.RecoverDatabase)
+                        viewModel.onAction(AppShellUiAction.RecoverDatabase)
                     },
                     onCloseApp = {
                         noticePublisher.publish(
@@ -120,12 +121,15 @@ internal fun AppShell(
             "recovery" -> {
                 RecoveryModeScreen(
                     viewModel = recoveryViewModel,
-                    onExit = { viewModel.handleIntent(AppShellIntent.ExitRecovery) }
+                    onExit = { viewModel.onAction(AppShellUiAction.ExitRecovery) }
                 )
             }
 
             else -> {
-                AuthenticationScreen(viewModel = authenticationViewModel)
+                AuthenticationScreen(
+                    unlockViewModel = unlockViewModel,
+                    bootstrapViewModel = bootstrapViewModel
+                )
             }
         }
     }

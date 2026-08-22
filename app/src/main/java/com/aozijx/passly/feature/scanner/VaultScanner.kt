@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -59,7 +59,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.feature.scanner.components.ScannerView
 import com.aozijx.passly.feature.scanner.contract.ImageRef
 import com.aozijx.passly.feature.scanner.contract.ScannerEffect
-import com.aozijx.passly.feature.scanner.contract.ScannerIntent
+import com.aozijx.passly.feature.scanner.contract.ScannerUiAction
 
 /**
  * Vault 专用的扫码特化组件
@@ -82,7 +82,7 @@ fun VaultScanner(
     var scannedTotp by remember { mutableStateOf<OtpConfig?>(null) }
 
     LaunchedEffect(scannerViewModel) {
-        scannerViewModel.handleIntent(ScannerIntent.StartScanning)
+        scannerViewModel.onAction(ScannerUiAction.StartScanning)
         scannerViewModel.effects.collect { effect ->
             when (effect) {
                 is ScannerEffect.ScanSuccess -> {
@@ -101,12 +101,12 @@ fun VaultScanner(
     }
 
     val pickPhoto = rememberImagePicker { uri, _ ->
-        scannerViewModel.handleIntent(ScannerIntent.DecodeImage(ImageRef(uri.toString())))
+        scannerViewModel.onAction(ScannerUiAction.DecodeImage(ImageRef(uri.toString())))
     }
 
     DisposableEffect(scannerViewModel) {
         onDispose {
-            scannerViewModel.handleIntent(ScannerIntent.StopScanning)
+            scannerViewModel.onAction(ScannerUiAction.StopScanning)
         }
     }
 
@@ -121,7 +121,7 @@ fun VaultScanner(
             showResultCard = scannedTotp == null,
             onBarcodeDetected = { barcode ->
                 if (scannedTotp != null) return@ScannerView
-                scannerViewModel.handleIntent(ScannerIntent.BarcodeDetected(barcode))
+                scannerViewModel.onAction(ScannerUiAction.BarcodeDetected(barcode))
             },
             onPermissionDenied = { onDismiss() })
 
@@ -137,12 +137,12 @@ fun VaultScanner(
                 onClick = {
                     scanResult = ""
                     scannedTotp = null
-                    scannerViewModel.handleIntent(ScannerIntent.StartScanning)
+                    scannerViewModel.onAction(ScannerUiAction.StartScanning)
                     pickPhoto(ImageType.SCREEN)
                 },
                 modifier = Modifier
                     .size(56.dp)
-                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
+                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
             ) {
                 Icon(
                     Icons.Default.PhotoLibrary,
@@ -155,7 +155,7 @@ fun VaultScanner(
                 onClick = onDismiss,
                 modifier = Modifier
                     .size(56.dp)
-                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
+                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
             ) {
                 Icon(
                     Icons.Default.Close,
@@ -180,7 +180,7 @@ fun VaultScanner(
                     modifier = Modifier
                         .fillMaxWidth()
                         .widthIn(max = 560.dp),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
                     )
@@ -220,10 +220,10 @@ fun VaultScanner(
                                 onClick = {
                                     scanResult = ""
                                     scannedTotp = null
-                                    scannerViewModel.handleIntent(ScannerIntent.StartScanning)
+                                    scannerViewModel.onAction(ScannerUiAction.StartScanning)
                                 },
                                 modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp),
+                                shape = MaterialTheme.shapes.medium,
                                 colors = ButtonDefaults.filledTonalButtonColors()
                             ) {
                                 Text(stringResource(R.string.vault_scan))
@@ -234,7 +234,7 @@ fun VaultScanner(
                                     val parsedConfig = scannedTotp ?: return@Button
                                     onSaveOtp(parsedConfig)
                                     onDismiss()
-                                }, modifier = Modifier.weight(2f), shape = RoundedCornerShape(8.dp)
+                                }, modifier = Modifier.weight(2f), shape = MaterialTheme.shapes.medium
                             ) {
                                 Icon(
                                     Icons.Default.Save,

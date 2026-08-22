@@ -1,10 +1,6 @@
 package com.aozijx.passly.feature.settings.datamanagement
 
-import com.aozijx.passly.data.database.model.DatabaseRecoveryPackage
-import com.aozijx.passly.data.database.model.DatabaseRecoveryReport
-import com.aozijx.passly.data.database.model.DatabaseRecoveryScan
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.domain.entry.model.EntryType
 
 data class DataManagementSettingsUiState(
     val isAutoDownloadIcons: Boolean = true,
@@ -14,40 +10,25 @@ data class DataManagementSettingsUiState(
     val activeTrashEntryId: String? = null,
     val isEmptyingTrash: Boolean = false,
     val trashError: String? = null,
-    val recoveryPackages: List<DatabaseRecoveryPackage> = emptyList(),
-    val isRecoveryLoading: Boolean = true,
-    val activeRecoveryPackageId: String? = null,
-    val recoveryScan: DatabaseRecoveryScan? = null,
-    val selectedRecoveryTypes: Set<EntryType> = emptySet(),
-    val recoveryReport: DatabaseRecoveryReport? = null,
-    val recoveryError: String? = null,
 ) {
     val isTrashBusy: Boolean
         get() = activeTrashEntryId != null || isEmptyingTrash
-
-    val isRecoveryBusy: Boolean get() = activeRecoveryPackageId != null
 }
 
-sealed interface DataManagementSettingsAction {
-    data class SetAutoDownloadIcons(val enabled: Boolean) : DataManagementSettingsAction
-    data class SetBackupDirectoryUri(val uri: String) : DataManagementSettingsAction
-    data object ClearBackupDirectory : DataManagementSettingsAction
+sealed interface DataManagementSettingsUiAction {
+    data class SetAutoDownloadIcons(val enabled: Boolean) : DataManagementSettingsUiAction
+    data class SetBackupDirectoryUri(val uri: String) : DataManagementSettingsUiAction
+    data object ClearBackupDirectory : DataManagementSettingsUiAction
     data class RestoreTrashEntry(
         val entryId: String,
         val expectedVersion: Int
-    ) : DataManagementSettingsAction
+    ) : DataManagementSettingsUiAction
 
     data class DeleteTrashEntry(
         val entryId: String,
         val expectedVersion: Int
-    ) : DataManagementSettingsAction
+    ) : DataManagementSettingsUiAction
 
-    data object EmptyTrash : DataManagementSettingsAction
-    data object ClearTrashError : DataManagementSettingsAction
-    data object RefreshRecoveryPackages : DataManagementSettingsAction
-    data class ScanRecoveryPackage(val packageId: String) : DataManagementSettingsAction
-    data class ToggleRecoveryType(val entryType: EntryType) : DataManagementSettingsAction
-    data class RestoreRecoveryPackage(val packageId: String) : DataManagementSettingsAction
-    data class DeleteRecoveryPackage(val packageId: String) : DataManagementSettingsAction
-    data object ClearRecoveryResult : DataManagementSettingsAction
+    data object EmptyTrash : DataManagementSettingsUiAction
+    data object ClearTrashError : DataManagementSettingsUiAction
 }

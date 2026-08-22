@@ -1,9 +1,9 @@
 package com.aozijx.passly.app.message.contract
 
-import com.aozijx.passly.data.message.model.DeliveryPolicy
-import com.aozijx.passly.data.message.model.NoticeCode
-import com.aozijx.passly.data.message.model.NoticeLevel
-import com.aozijx.passly.data.message.model.NoticeTopic
+import com.aozijx.passly.app.message.model.DeliveryPolicy
+import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.NoticeLevel
+import com.aozijx.passly.app.message.model.NoticeTopic
 
 /**
  * NoticeCode 的可信策略注册表。

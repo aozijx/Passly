@@ -5,10 +5,7 @@ import com.aozijx.passly.data.codec.entry.payload.CustomFieldPayload
 import com.aozijx.passly.data.codec.entry.payload.IdentityCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.LoginCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.OtpConfigPayload
-import com.aozijx.passly.data.codec.entry.payload.OtpCredentialEncodingPayload
 import com.aozijx.passly.data.codec.entry.payload.OtpCredentialPayload
-import com.aozijx.passly.data.codec.entry.payload.OtpHashAlgorithmPayload
-import com.aozijx.passly.data.codec.entry.payload.OtpTypePayload
 import com.aozijx.passly.data.codec.entry.payload.PasskeyCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.SecretPayload
 import com.aozijx.passly.data.codec.entry.payload.SshCredentialPayload
@@ -25,9 +22,6 @@ import com.aozijx.passly.domain.entry.model.credential.PasskeyCredential
 import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
-import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
-import com.aozijx.passly.domain.entry.model.otp.OtpType
 
 object EntrySecretMapper {
     fun toPayload(secret: EntrySecret): SecretPayload {
@@ -46,9 +40,6 @@ object EntrySecretMapper {
                     paymentPin = it.paymentPin,
                     paymentPlatform = it.paymentPlatform,
                     billingAddress = it.billingAddress,
-                    hasCardNumber = !it.cardNumber.isNullOrBlank(),
-                    hasCardCvv = !it.cardCvv.isNullOrBlank(),
-                    hasPaymentPin = !it.paymentPin.isNullOrBlank(),
                 )
             },
             identity = (credential as? IdentityCredential)?.let {
@@ -139,25 +130,25 @@ object EntrySecretMapper {
     }
 
     private fun OtpConfig.toPayload() = OtpConfigPayload(
-        type = OtpTypePayload.valueOf(type.name),
+        type = type,
         secret = secret,
-        algorithm = OtpHashAlgorithmPayload.valueOf(algorithm.name),
+        algorithm = algorithm,
         digits = digits,
         periodSeconds = periodSeconds,
         counter = counter,
-        encoding = OtpCredentialEncodingPayload.valueOf(encoding.name),
+        encoding = encoding,
         issuer = issuer,
         accountName = accountName,
     )
 
     private fun OtpConfigPayload.toDomain() = OtpConfig(
-        type = OtpType.valueOf(type.name),
+        type = type,
         secret = secret,
-        algorithm = OtpHashAlgorithm.valueOf(algorithm.name),
+        algorithm = algorithm,
         digits = digits,
         periodSeconds = periodSeconds,
         counter = counter,
-        encoding = OtpSecretEncoding.valueOf(encoding.name),
+        encoding = encoding,
         issuer = issuer,
         accountName = accountName,
     )

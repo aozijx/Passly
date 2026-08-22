@@ -9,18 +9,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.otp.OtpAuthUriCodec
-import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.feature.detail.DetailAuthenticate
-import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.DetailUiAction
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
-import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
+import com.aozijx.passly.feature.detail.internal.copySensitiveField
 import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 import com.aozijx.passly.feature.detail.ui.components.MetadataSection
 import com.aozijx.passly.feature.detail.ui.sections.ActivityTimelineSection
@@ -38,6 +41,9 @@ import com.aozijx.passly.feature.detail.ui.sections.SeedPhraseSection
 import com.aozijx.passly.feature.detail.ui.sections.SshKeySection
 import com.aozijx.passly.feature.detail.ui.sections.TotpSection
 import com.aozijx.passly.feature.detail.ui.sections.WifiSection
+import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.domain.sensitive.OwnedChars
 
 @Composable
 fun DetailScrollableContent(
@@ -45,7 +51,7 @@ fun DetailScrollableContent(
     uiState: DetailUiState,
     editState: EntryEditState,
     otpUiState: OtpUiState?,
-    onEvent: (DetailIntent) -> Unit,
+    onAction: (DetailUiAction) -> Unit,
     onInteraction: () -> Unit,
     onAuthenticate: DetailAuthenticate,
     onOpenRelatedEntry: (Entry) -> Unit
@@ -53,8 +59,8 @@ fun DetailScrollableContent(
     val entry = uiState.entry ?: return
     val registeredSections = DetailSectionResolver.resolve(entry)
 
-    val revealField: (String, String?) -> Unit = { key, value ->
-        onEvent(DetailIntent.RevealField(key, value))
+    val revealField: (String, SensitiveValue?) -> Unit = { key, value ->
+        onAction(DetailUiAction.RevealField(key, value))
     }
 
     LazyColumn(
@@ -74,24 +80,49 @@ fun DetailScrollableContent(
                 onIconClick = {
                     entry.associatedDomain
                         ?.takeIf { it.isNotBlank() }
-                        ?.let { onEvent(DetailIntent.DownloadFavicon(it)) }
+                        ?.let { onAction(DetailUiAction.DownloadFavicon(it)) }
                 },
-                onTitleLongClick = { onEvent(DetailIntent.StartTitleEdit) }
+                onTitleLongClick = { onAction(DetailUiAction.StartTitleEdit) }
             )
         }
 
         if (DetailSectionKey.CREDENTIAL in registeredSections) {
             item {
+                val context = LocalContext.current
+                val actionHandler = DetailSectionActionHandler(onAuthenticate, onAction)
+                val revealedUsername = uiState.revealed(RevealedFieldKey.USERNAME)
+                val revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD)
+
                 CredentialSection(
-                    item = entry,
-                    onAuthenticate = onAuthenticate,
+                    showUsername = entry.username.isNotBlank() || (SensitiveFieldKey.PASSWORD !in uiState.sensitiveFieldKeys),
+                    showPassword = (SensitiveFieldKey.PASSWORD in uiState.sensitiveFieldKeys) || entry.type != EntryType.LOGIN,
+                    usernameLabel = stringResource(R.string.field_username),
+                    passwordLabel = stringResource(R.string.password_label),
+                    revealedUsername = revealedUsername?.let { String(it.toCharArray()) },
+                    revealedPassword = revealedPassword?.let { String(it.toCharArray()) },
                     editState = editState,
-                    revealedUsername = uiState.revealed(RevealedFieldKey.USERNAME),
-                    revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
-                    onUsernameRevealed = { revealField(RevealedFieldKey.USERNAME, it) },
-                    onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, it) },
-                    onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
-                    onEvent = onEvent
+                    onUsernameClick = { onAction(DetailUiAction.ToggleVisibility(RevealedFieldKey.USERNAME)) },
+                    onPasswordClick = { onAction(DetailUiAction.ToggleVisibility(RevealedFieldKey.PASSWORD)) },
+                    onUsernameCopy = {
+                        copySensitiveField(
+                            context = context,
+                            handler = actionHandler,
+                            fieldName = "username",
+                            revealedValue = revealedUsername,
+                            sourceValue = entry.username
+                        )
+                    },
+                    onPasswordCopy = {
+                        copySensitiveField(
+                            context = context,
+                            handler = actionHandler,
+                            fieldName = "password",
+                            revealedValue = revealedPassword,
+                            sourceValue = entry.secret.login?.password
+                        )
+                    },
+                    onUsernameSave = { onAction(DetailUiAction.SaveField(RevealedFieldKey.USERNAME, it)) },
+                    onPasswordSave = { onAction(DetailUiAction.SaveField(RevealedFieldKey.PASSWORD, it)) }
                 )
             }
         }
@@ -100,11 +131,12 @@ fun DetailScrollableContent(
             item {
                 val otpConfig = entry.secret.otp?.config
                 val totpUri =
-                    otpConfig?.let { OtpAuthUriCodec.format(it, entry.title) }
+                    otpConfig?.takeIf { !it.secret.isNullOrBlank() }
+                        ?.let { OtpAuthUriCodec.format(it, entry.title) }
                 TotpSection(
                     currentState = otpUiState,
                     totpUri = totpUri,
-                    onEvent = onEvent
+                    onAction = onAction
                 )
             }
         }
@@ -114,14 +146,14 @@ fun DetailScrollableContent(
                 BankCardSection(
                     entry = entry,
                     editState = editState,
-                    revealedCardholder = uiState.revealed(RevealedFieldKey.CARDHOLDER),
-                    revealedCardNumber = uiState.revealed(RevealedFieldKey.CARD_NUMBER),
-                    revealedCvv = uiState.revealed(RevealedFieldKey.CVV),
-                    revealedPaymentPin = uiState.revealed(RevealedFieldKey.PAYMENT_PIN),
+                    revealedCardholder = uiState.revealed(RevealedFieldKey.CARDHOLDER)?.let { String(it.toCharArray()) },
+                    revealedCardNumber = uiState.revealed(RevealedFieldKey.CARD_NUMBER)?.let { String(it.toCharArray()) },
+                    revealedCvv = uiState.revealed(RevealedFieldKey.CVV)?.let { String(it.toCharArray()) },
+                    revealedPaymentPin = uiState.revealed(RevealedFieldKey.PAYMENT_PIN)?.let { String(it.toCharArray()) },
                     onRevealField = revealField,
                     onAuthenticate = onAuthenticate,
-                    onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
-                    onEvent = onEvent
+                    onEntryUpdated = { onAction(DetailUiAction.CommitEntryUpdate(it)) },
+                    onAction = onAction
                 )
             }
         }
@@ -131,10 +163,10 @@ fun DetailScrollableContent(
                 IdCardSection(
                     entry = entry,
                     hasIdNumber = SensitiveFieldKey.IDENTITY_NUMBER in uiState.sensitiveFieldKeys,
-                    revealedIdNumber = uiState.revealed(RevealedFieldKey.ID_NUMBER),
-                    onIdNumberRevealed = { revealField(RevealedFieldKey.ID_NUMBER, it) },
+                    revealedIdNumber = uiState.revealed(RevealedFieldKey.ID_NUMBER)?.let { String(it.toCharArray()) },
+                    onIdNumberRevealed = { revealField(RevealedFieldKey.ID_NUMBER, OwnedChars.fromNullableString(it)) },
                     onAuthenticate = onAuthenticate,
-                    onEvent = onEvent
+                    onAction = onAction
                 )
             }
         }
@@ -144,11 +176,11 @@ fun DetailScrollableContent(
                 WifiSection(
                     entry = entry,
                     editState = editState,
-                    revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
-                    onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, it) },
+                    revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD)?.let { String(it.toCharArray()) },
+                    onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, OwnedChars.fromNullableString(it)) },
                     onAuthenticate = onAuthenticate,
-                    onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
-                    onEvent = onEvent
+                    onEntryUpdated = { onAction(DetailUiAction.CommitEntryUpdate(it)) },
+                    onAction = onAction
                 )
             }
         }
@@ -160,12 +192,12 @@ fun DetailScrollableContent(
                     editState = editState,
                     hasPassphrase = SensitiveFieldKey.SSH_PASSPHRASE in uiState.sensitiveFieldKeys,
                     hasPrivateKey = SensitiveFieldKey.SSH_PRIVATE_KEY in uiState.sensitiveFieldKeys,
-                    revealedPassword = uiState.revealed(RevealedFieldKey.SSH_PASSPHRASE),
-                    revealedSshPrivateKey = uiState.revealed(RevealedFieldKey.SSH_PRIVATE_KEY),
-                    onPasswordRevealed = { revealField(RevealedFieldKey.SSH_PASSPHRASE, it) },
+                    revealedPassword = uiState.revealed(RevealedFieldKey.SSH_PASSPHRASE)?.let { String(it.toCharArray()) },
+                    revealedSshPrivateKey = uiState.revealed(RevealedFieldKey.SSH_PRIVATE_KEY)?.let { String(it.toCharArray()) },
+                    onPasswordRevealed = { revealField(RevealedFieldKey.SSH_PASSPHRASE, OwnedChars.fromNullableString(it)) },
                     onAuthenticate = onAuthenticate,
-                    onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
-                    onEvent = onEvent
+                    onEntryUpdated = { onAction(DetailUiAction.CommitEntryUpdate(it)) },
+                    onAction = onAction
                 )
             }
         }
@@ -173,14 +205,13 @@ fun DetailScrollableContent(
         if (DetailSectionKey.SEED_PHRASE in registeredSections) {
             item {
                 SeedPhraseSection(
-                    entry = entry,
                     hasSeedPhrase = SensitiveFieldKey.SEED_PHRASE in uiState.sensitiveFieldKeys,
-                    revealedSeedPhrase = uiState.revealed(RevealedFieldKey.SEED_PHRASE),
+                    revealedSeedPhrase = uiState.revealed(RevealedFieldKey.SEED_PHRASE)?.let { String(it.toCharArray()) },
                     onSeedPhraseRevealed = {
-                        revealField(RevealedFieldKey.SEED_PHRASE, it)
+                        revealField(RevealedFieldKey.SEED_PHRASE, OwnedChars.fromNullableString(it))
                     },
                     onAuthenticate = onAuthenticate,
-                    onEvent = onEvent,
+                    onAction = onAction,
                 )
             }
         }
@@ -190,10 +221,10 @@ fun DetailScrollableContent(
                 PasskeySection(
                     entry = entry,
                     hasPasskeyData = SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE in uiState.sensitiveFieldKeys,
-                    revealedPasskeyData = uiState.revealed(RevealedFieldKey.PASSKEY_DATA),
-                    onRevealField = revealField,
+                    revealedPasskeyData = uiState.revealed(RevealedFieldKey.PASSKEY_DATA)?.let { String(it.toCharArray()) },
+                    onRevealField = { key, value -> revealField(key, value?.let { OwnedChars.fromString(it) }) },
                     onAuthenticate = onAuthenticate,
-                    onEvent = onEvent,
+                    onAction = onAction,
                 )
             }
         }
@@ -220,8 +251,8 @@ fun DetailScrollableContent(
                 entry = entry,
                 editState = editState,
                 isFaviconDownloading = uiState.isFaviconDownloading,
-                onDownloadFavicon = { onEvent(DetailIntent.DownloadFavicon(it)) },
-                onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) }
+                onDownloadFavicon = { onAction(DetailUiAction.DownloadFavicon(it)) },
+                onEntryUpdated = { onAction(DetailUiAction.CommitEntryUpdate(it)) }
             )
         }
 
@@ -229,7 +260,7 @@ fun DetailScrollableContent(
             NotesSection(
                 entry = entry,
                 editState = editState,
-                onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) }
+                onEntryUpdated = { onAction(DetailUiAction.CommitEntryUpdate(it)) }
             )
         }
 

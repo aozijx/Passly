@@ -2,10 +2,17 @@ package com.aozijx.passly.feature.settings.navigation
 
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.layout.AnimatedPane
@@ -22,6 +29,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -29,18 +37,19 @@ import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.apppassword.AppPasswordAction
 import com.aozijx.passly.feature.settings.apppassword.validateAndSendAppPasswordAction
 import com.aozijx.passly.feature.settings.contract.SettingsEffect
-import com.aozijx.passly.feature.settings.contract.SettingsIntent
+import com.aozijx.passly.feature.settings.contract.SettingsUiAction
 import com.aozijx.passly.feature.settings.contract.SettingsUiState
-import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsAction
+import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsUiAction
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsViewModel
+import com.aozijx.passly.feature.settings.datamanagement.DatabaseRecoveryViewModel
 import com.aozijx.passly.feature.settings.interaction.InteractionSettingsViewModel
-import com.aozijx.passly.feature.settings.shell.SettingsDetailPlaceholder
-import com.aozijx.passly.feature.settings.shell.SettingsMainPage
-import com.aozijx.passly.feature.settings.shell.SettingsScreenDialogsHost
-import com.aozijx.passly.feature.settings.shell.SettingsScreenLocalState
-import com.aozijx.passly.feature.settings.shell.buildSettingsDialogsActions
-import com.aozijx.passly.feature.settings.shell.buildSettingsDialogsState
-import com.aozijx.passly.feature.settings.shell.rememberSettingsScreenLocalState
+import com.aozijx.passly.presentation.settings.shell.SettingsDetailPlaceholder
+import com.aozijx.passly.presentation.settings.shell.SettingsMainPage
+import com.aozijx.passly.presentation.settings.shell.SettingsScreenDialogsHost
+import com.aozijx.passly.presentation.settings.shell.SettingsScreenLocalState
+import com.aozijx.passly.presentation.settings.shell.buildSettingsDialogsActions
+import com.aozijx.passly.presentation.settings.shell.buildSettingsDialogsState
+import com.aozijx.passly.presentation.settings.shell.rememberSettingsScreenLocalState
 import kotlinx.coroutines.launch
 
 /**
@@ -64,6 +73,7 @@ fun SettingsNavGraph(
     val interactionState by interactionViewModel.uiState.collectAsStateWithLifecycle()
     val dataViewModel: DataManagementSettingsViewModel = hiltViewModel()
     val dataState by dataViewModel.uiState.collectAsStateWithLifecycle()
+    val recoveryViewModel: DatabaseRecoveryViewModel = hiltViewModel()
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
     val backBehavior = BackNavigationBehavior.PopUntilScaffoldValueChange
@@ -165,7 +175,7 @@ fun SettingsNavGraph(
         },
         detailPane = {
             AnimatedPane(
-                // 推入和返回期间详情始终覆盖列表，避免 Scaffold 提前切换目标层级后
+                // 推入和返回期间，详情始终覆盖列表，避免 Scaffold 提前切换目标层级后
                 // 从退出页面边缘露出底层的分栏间隙。
                 modifier = Modifier.zIndex(1f),
                 enterTransition = if (isSinglePane) {
@@ -185,16 +195,49 @@ fun SettingsNavGraph(
                     ExitTransition.None
                 }
             ) {
-                SettingsDetailContent(
-                    route = selectedRoute,
-                    context = context,
-                    localState = localState,
-                    settingsViewModel = settingsViewModel,
-                    interactionViewModel = interactionViewModel,
-                    dataViewModel = dataViewModel,
-                    settingsState = settingsState,
-                    onBack = if (isSinglePane) navigateBack else null
-                )
+                // 详情内容路由切换：利用 AnimatedContent 的可中断/重定向机制——
+                // 动画播放中若目标路由再次变化，动画立即重定向到新目标，配合 spring
+                // 弹簧动画平滑衔接，快速连续点击多个设置项也不会跳变或卡顿。
+                AnimatedContent(
+                    targetState = selectedRoute,
+                    transitionSpec = {
+                        // 单栏模式：pane 切换动画（AnimatedPane）已覆盖列表↔详情过渡，
+                        // 内容层不再叠加动画，避免双重滑动。
+                        if (isSinglePane) {
+                            EnterTransition.None togetherWith ExitTransition.None
+                        } else {
+                            // 双栏模式：列表常驻、详情内容直接切换，此处承担路由过渡。
+                            // spring 动画可中断重定向——动画播放中目标路由再次变化时
+                            // 立即追向新目标，快速连续切换也不会跳变或卡顿。
+                            val enter = fadeIn(
+                                animationSpec = routeFadeIn
+                            ) + slideInHorizontally(
+                                initialOffsetX = { it / 5 },
+                                animationSpec = routeSlide
+                            )
+                            val exit = fadeOut(
+                                animationSpec = routeFadeOut
+                            ) + slideOutHorizontally(
+                                targetOffsetX = { -it / 5 },
+                                animationSpec = routeSlide
+                            )
+                            enter togetherWith exit using SizeTransform(clip = false)
+                        }
+                    },
+                    label = "settingsDetail"
+                ) { route ->
+                    SettingsDetailContent(
+                        route = route,
+                        context = context,
+                        localState = localState,
+                        settingsViewModel = settingsViewModel,
+                        interactionViewModel = interactionViewModel,
+                        dataViewModel = dataViewModel,
+                        recoveryViewModel = recoveryViewModel,
+                        settingsState = settingsState,
+                        onBack = if (isSinglePane) navigateBack else null
+                    )
+                }
             }
         }
     )
@@ -210,14 +253,14 @@ fun SettingsNavGraph(
         actions = buildSettingsDialogsActions(
             localState = localState,
             onSetSwipeRightAction = {
-                settingsViewModel.handleIntent(SettingsIntent.SetSwipeRightAction(it))
+                settingsViewModel.onAction(SettingsUiAction.SetSwipeRightAction(it))
             },
             onSetSwipeLeftAction = {
-                settingsViewModel.handleIntent(SettingsIntent.SetSwipeLeftAction(it))
+                settingsViewModel.onAction(SettingsUiAction.SetSwipeLeftAction(it))
             },
             submitAppPasswordAction = ::submitAppPasswordAction,
             onClearBackupDirectory = {
-                dataViewModel.onAction(DataManagementSettingsAction.ClearBackupDirectory)
+                dataViewModel.onAction(DataManagementSettingsUiAction.ClearBackupDirectory)
             }
         )
     )
@@ -231,6 +274,7 @@ private fun SettingsDetailContent(
     settingsViewModel: SettingsViewModel,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
+    recoveryViewModel: DatabaseRecoveryViewModel,
     settingsState: SettingsUiState,
     onBack: (() -> Unit)?
 ) {
@@ -251,6 +295,7 @@ private fun SettingsDetailContent(
         }
 
         SettingsRoute.Interaction,
+        SettingsRoute.Autofill,
         SettingsRoute.DataManagement,
         SettingsRoute.BackupRestore,
         SettingsRoute.RecoveryCode,
@@ -262,6 +307,7 @@ private fun SettingsDetailContent(
                 localState = localState,
                 interactionViewModel = interactionViewModel,
                 dataViewModel = dataViewModel,
+                recoveryViewModel = recoveryViewModel,
                 settingsViewModel = settingsViewModel,
                 settingsState = settingsState,
                 onBack = onBack
@@ -269,3 +315,25 @@ private fun SettingsDetailContent(
         }
     }
 }
+
+/**
+ * 详情内容路由切换动画（spring 弹簧）。
+ *
+ * spring 动画天然可中断：动画播放中若目标路由再次变化，会立即从当前状态
+ * 重定向到新目标，而不是重启整段动画。快速连续切换多个设置项时，
+ * 内容平滑追向最新目标，避免跳变与掉帧。
+ */
+private val routeSlide = spring<IntOffset>(
+    dampingRatio = Spring.DampingRatioNoBouncy,
+    stiffness = Spring.StiffnessMediumLow
+)
+
+private val routeFadeIn = spring<Float>(
+    dampingRatio = Spring.DampingRatioNoBouncy,
+    stiffness = Spring.StiffnessMediumLow
+)
+
+private val routeFadeOut = spring<Float>(
+    dampingRatio = Spring.DampingRatioNoBouncy,
+    stiffness = Spring.StiffnessMediumLow
+)

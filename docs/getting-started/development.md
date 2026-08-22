@@ -17,7 +17,7 @@
 .\gradlew.bat :app:compileDebugKotlin
 .\gradlew.bat :app:testDebugUnitTest
 .\gradlew.bat :domain:test :runtime:session:test
-.\gradlew.bat :core:android:testDebugUnitTest :core:ui:testDebugUnitTest
+.\gradlew.bat :core:testDebugUnitTest :core:common:test
 .\gradlew.bat verifyModuleBoundaries
 .\gradlew.bat :app:lintDebug
 .\gradlew.bat :app:assembleDebug

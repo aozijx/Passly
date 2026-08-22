@@ -15,9 +15,10 @@ import com.aozijx.passly.app.security.SensitiveAccessLevel
 import com.aozijx.passly.app.database.DatabaseInitOutcome
 import com.aozijx.passly.app.database.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.entry.port.SearchIndexMaintenance
-import com.aozijx.passly.data.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.app.shell.contract.AppShellAuthResult
 import com.aozijx.passly.app.shell.contract.AppShellEffect
-import com.aozijx.passly.app.shell.contract.AppShellIntent
+import com.aozijx.passly.app.shell.contract.AppShellUiAction
 import com.aozijx.passly.app.shell.contract.AppShellUiState
 import com.aozijx.passly.app.shell.presentation.AppShellMutation
 import com.aozijx.passly.app.shell.presentation.AppShellReducer
@@ -48,24 +49,28 @@ class AppShellViewModel @Inject constructor(
     private val _effects = Channel<AppShellEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
+    // 认证回调只属于导航层，不能与 AppShell 的通知事件竞争消费。
+    private val _authResults = Channel<AppShellAuthResult>(Channel.BUFFERED)
+    val authResults = _authResults.receiveAsFlow()
+
     init {
         observeSettings()
         observeAuthStates()
         observeDatabaseFailures()
     }
 
-    fun handleIntent(intent: AppShellIntent) {
-        when (intent) {
-            AppShellIntent.Lock -> lock(LockReason.USER)
-            AppShellIntent.ExitRecovery -> lock(LockReason.RECOVERY_EXIT)
-            AppShellIntent.UpdateInteraction -> sessionController.onUserInteraction()
-            AppShellIntent.RetryDatabaseInitialization -> initializeDatabase()
-            AppShellIntent.RecoverDatabase -> recoverDatabase()
-            AppShellIntent.RequestAuth -> requestAuth()
-            AppShellIntent.RequestReauth -> requestReauth()
-            is AppShellIntent.RequestSensitiveAccess -> requestSensitiveAccess(
-                intent.action,
-                intent.accessLevel
+    fun onAction(action: AppShellUiAction) {
+        when (action) {
+            AppShellUiAction.Lock -> lock(LockReason.USER)
+            AppShellUiAction.ExitRecovery -> lock(LockReason.RECOVERY_EXIT)
+            AppShellUiAction.UpdateInteraction -> sessionController.onUserInteraction()
+            AppShellUiAction.RetryDatabaseInitialization -> initializeDatabase()
+            AppShellUiAction.RecoverDatabase -> recoverDatabase()
+            AppShellUiAction.RequestAuth -> requestAuth()
+            AppShellUiAction.RequestReauth -> requestReauth()
+            is AppShellUiAction.RequestSensitiveAccess -> requestSensitiveAccess(
+                action.action,
+                action.accessLevel
             )
         }
     }
@@ -98,11 +103,13 @@ class AppShellViewModel @Inject constructor(
 
     private fun requestAuthentication(purpose: AuthenticationPurpose) {
         viewModelScope.launch {
-            val result = authenticationManager.authenticate(AuthenticationRequest(purpose))
-            if (result is AuthenticationResult.Success) {
-                emitEffect(AppShellEffect.AuthSuccess)
-            } else if (result is AuthenticationResult.Failure) {
-                emitEffect(AppShellEffect.AuthError("认证失败"))
+            when (authenticationManager.authenticate(AuthenticationRequest(purpose))) {
+                is AuthenticationResult.Success ->
+                    _authResults.send(AppShellAuthResult.Success)
+
+                is AuthenticationResult.Cancelled,
+                is AuthenticationResult.Failure ->
+                    _authResults.send(AppShellAuthResult.NotAuthorized)
             }
         }
     }

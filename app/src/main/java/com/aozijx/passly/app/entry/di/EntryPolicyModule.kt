@@ -1,9 +1,7 @@
 package com.aozijx.passly.app.entry.di
 
-import com.aozijx.passly.domain.entry.policy.DefaultEntryDefaultsProvider
-import com.aozijx.passly.domain.entry.policy.DefaultEntryFieldReader
-import com.aozijx.passly.domain.entry.policy.DefaultEntryTypePolicy
-import com.aozijx.passly.domain.entry.policy.EntryDefaultsProvider
+import com.aozijx.passly.app.entry.policy.DefaultEntryFieldReader
+import com.aozijx.passly.app.entry.policy.DefaultEntryTypePolicy
 import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import dagger.Binds
@@ -12,6 +10,9 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+/**
+ * 领域策略接口的默认实现由 app 层提供（实现位于 app/entry/policy）。
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class EntryPolicyModule {
@@ -22,10 +23,5 @@ abstract class EntryPolicyModule {
 
     @Binds
     @Singleton
-    abstract fun bindEntryDefaultsProvider(impl: DefaultEntryDefaultsProvider): EntryDefaultsProvider
-
-    @Binds
-    @Singleton
     abstract fun bindEntryFieldReader(impl: DefaultEntryFieldReader): EntryFieldReader
-
 }

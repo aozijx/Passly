@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
@@ -28,30 +27,28 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.HiddenMask
-import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
-import com.aozijx.passly.feature.detail.ui.components.DetailItem
-import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.DetailUiAction
+import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
-import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
+import com.aozijx.passly.feature.detail.ui.components.DetailItem
+import com.aozijx.passly.domain.sensitive.OwnedChars
 
 @Composable
 fun SeedPhraseSection(
-    entry: Entry,
     hasSeedPhrase: Boolean,
     revealedSeedPhrase: String?,
     onSeedPhraseRevealed: (String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
-    onEvent: (DetailIntent) -> Unit
+    onAction: (DetailUiAction) -> Unit
 ) {
     val context = LocalContext.current
     val msgCopySuccess = stringResource(R.string.field_copy_success_message)
     val seedPhraseLabel = stringResource(R.string.seed_phrase)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
-        onEvent = onEvent
+        onAction = onAction
     )
 
     val wordList = remember(revealedSeedPhrase) {
@@ -61,18 +58,14 @@ fun SeedPhraseSection(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
             label = stringResource(R.string.seed_phrase_title),
-            value = if (revealedSeedPhrase != null) {
-                stringResource(R.string.seed_phrase_revealed)
-            } else {
-                HiddenMask.DEFAULT
-            },
+            value = revealedSeedPhrase?.let { stringResource(R.string.seed_phrase_revealed) },
             isRevealed = revealedSeedPhrase != null,
             onCopy = {
                 copySensitiveField(
                     context = context,
                     handler = actionHandler,
                     fieldName = "seed phrase",
-                    revealedValue = revealedSeedPhrase,
+                    revealedValue = revealedSeedPhrase?.let { OwnedChars.fromString(it) },
                     sourceValue = null,
                     afterCopy = {
                         Toast.makeText(
@@ -86,7 +79,7 @@ fun SeedPhraseSection(
             onEdit = null,
             onReveal = {
                 if (revealedSeedPhrase != null) onSeedPhraseRevealed(null)
-                else onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.SEED_PHRASE))
+                else onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SEED_PHRASE))
             }
         )
 
@@ -118,10 +111,10 @@ fun SeedPhraseSection(
         if (hasSeedPhrase && revealedSeedPhrase == null) {
             Button(
                 onClick = {
-                    onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.SEED_PHRASE))
+                    onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SEED_PHRASE))
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp)
+                shape = MaterialTheme.shapes.medium
             ) {
                 Icon(Icons.Default.Visibility, null)
                 Spacer(Modifier.width(8.dp))
@@ -135,7 +128,7 @@ fun SeedPhraseSection(
 private fun SeedWordChip(index: Int, word: String) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-        shape = RoundedCornerShape(8.dp)
+        shape = MaterialTheme.shapes.medium
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),

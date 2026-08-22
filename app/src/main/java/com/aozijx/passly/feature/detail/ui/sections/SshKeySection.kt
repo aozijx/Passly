@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
@@ -24,21 +23,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
-import com.aozijx.passly.core.ui.components.HiddenMask
+import com.aozijx.passly.core.ui.components.MaskedText
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.ui.components.DetailItem
 import com.aozijx.passly.feature.detail.ui.components.EditTextField
-import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.DetailUiAction
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.withSshPassphrase
+import com.aozijx.passly.domain.sensitive.OwnedChars
 
 @Composable
 fun SshKeySection(
@@ -51,7 +53,7 @@ fun SshKeySection(
     onPasswordRevealed: (String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
     onEntryUpdated: (Entry) -> Unit,
-    onEvent: (DetailIntent) -> Unit
+    onAction: (DetailUiAction) -> Unit
 ) {
     val context = LocalContext.current
     val msgCopySuccess = stringResource(R.string.field_copy_success_message)
@@ -59,7 +61,7 @@ fun SshKeySection(
     val passphraseLabel = stringResource(R.string.passphrase)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
-        onEvent = onEvent
+        onAction = onAction
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -90,14 +92,14 @@ fun SshKeySection(
         } else {
             DetailItem(
                 label = passphraseLabel,
-                value = revealedPassword ?: HiddenMask.DEFAULT,
+                value = revealedPassword,
                 isRevealed = revealedPassword != null,
                 onCopy = {
                     copySensitiveField(
                         context = context,
                         handler = actionHandler,
                         fieldName = "passphrase",
-                        revealedValue = revealedPassword,
+                        revealedValue = revealedPassword?.let { OwnedChars.fromString(it) },
                         sourceValue = null,
                         afterCopy = {
                             Toast.makeText(
@@ -114,8 +116,8 @@ fun SshKeySection(
                 },
                 onReveal = {
                     if (revealedPassword != null) onPasswordRevealed(null)
-                    else onEvent(
-                        DetailIntent.RevealHighSensitivityField(RevealedFieldKey.SSH_PASSPHRASE)
+                    else onAction(
+                        DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SSH_PASSPHRASE)
                     )
                 }
             )
@@ -124,15 +126,15 @@ fun SshKeySection(
         Surface(
             onClick = {
                 if (revealedSshPrivateKey == null) {
-                    onEvent(
-                        DetailIntent.RevealHighSensitivityField(RevealedFieldKey.SSH_PRIVATE_KEY)
+                    onAction(
+                        DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SSH_PRIVATE_KEY)
                     )
                 } else {
                     copySensitiveField(
                         context = context,
                         handler = actionHandler,
                         fieldName = "private key",
-                        revealedValue = revealedSshPrivateKey,
+                        revealedValue = revealedSshPrivateKey.let { OwnedChars.fromString(it) },
                         sourceValue = null,
                         afterCopy = {
                             Toast.makeText(
@@ -144,7 +146,7 @@ fun SshKeySection(
                     )
                 }
             },
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.large,
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
             modifier = Modifier.padding(vertical = 4.dp)
         ) {
@@ -154,14 +156,12 @@ fun SshKeySection(
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
-                Text(
-                    text = if (revealedSshPrivateKey != null) {
-                        revealedSshPrivateKey.take(60) + "..."
-                    } else {
-                        HiddenMask.DEFAULT
-                    },
+                MaskedText(
+                    text = revealedSshPrivateKey?.take(60)?.plus("..."),
+                    isRevealed = revealedSshPrivateKey != null,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontFamily = if (revealedSshPrivateKey != null) FontFamily.Monospace else FontFamily.Default,
+                    textAlign = TextAlign.Start,
+                    fontWeight = FontWeight.Normal,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp)
@@ -211,11 +211,11 @@ fun SshKeySection(
                         }
                     }
                     if (keys.isNotEmpty()) {
-                        onEvent(DetailIntent.RevealHighSensitivityFields(keys))
+                        onAction(DetailUiAction.RevealHighSensitivityFields(keys))
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp)
+                shape = MaterialTheme.shapes.medium
             ) {
                 Icon(Icons.Default.Visibility, null)
                 Spacer(Modifier.width(8.dp))

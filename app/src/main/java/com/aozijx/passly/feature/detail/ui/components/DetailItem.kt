@@ -29,14 +29,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.MaskStyle
+import com.aozijx.passly.core.ui.components.MaskedText
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 
 @Composable
 fun DetailItem(
     modifier: Modifier = Modifier,
     label: String,
-    value: String,
+    value: String?,
     isRevealed: Boolean,
+    maskStyle: MaskStyle = MaskStyle.DEFAULT,
     onCopy: () -> Unit,
     onEdit: (() -> Unit)?,
     onReveal: (() -> Unit)? = null
@@ -79,17 +82,15 @@ fun DetailItem(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Text(
+            MaskedText(
                 text = value,
-                fontWeight = FontWeight.Bold,
+                isRevealed = isRevealed,
+                maskStyle = maskStyle,
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 8.dp),
-                letterSpacing = if (isRevealed) 0.sp else 3.sp,
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.End,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
             )
             IconButton(
                 onClick = onCopy,

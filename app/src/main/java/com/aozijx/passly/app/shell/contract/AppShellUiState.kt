@@ -1,16 +1,18 @@
 package com.aozijx.passly.app.shell.contract
 
-import com.aozijx.passly.data.settings.model.AppLanguage
-import com.aozijx.passly.data.settings.model.FontFamilyMode
-import com.aozijx.passly.data.settings.model.InterfaceStyleConstraints
-import com.aozijx.passly.data.settings.model.ThemeMode
+import com.aozijx.passly.domain.settings.model.AppLanguage
+import com.aozijx.passly.domain.settings.model.FontFamilyMode
+import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
+import com.aozijx.passly.domain.settings.model.ThemeCanvasTint
+import com.aozijx.passly.domain.settings.model.ThemeMode
 
 data class AppShellUiState(
     val isAuthorized: Boolean = false,
     val isRecoveryMode: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val isDynamicColor: Boolean = true,
-    val manualThemeColorArgb: Long? = null,
+    val themeKey: String = "",
+    val canvasTintPercent: Int = ThemeCanvasTint.DEFAULT_PERCENT,
     val language: AppLanguage = AppLanguage.SYSTEM,
     val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
     val outerCornerRadiusDp: Float = InterfaceStyleConstraints.DEFAULT_OUTER_RADIUS_DP,

@@ -80,7 +80,8 @@ class EntryEditState(initialEntry: Entry) {
             val newConfig = if (totpSecret != null) {
                 (currentOtpData?.config ?: OtpConfig(secret = totpSecret)).copy(secret = totpSecret)
             } else {
-                currentOtpData?.config?.copy(secret = "") ?: OtpConfig(secret = "")
+                // 未编辑 OTP secret 时置 null，保存路径会保留旧字段级值。
+                currentOtpData?.config?.copy(secret = null) ?: OtpConfig(secret = null)
             }
             secret.copy(
                 notes = notes,

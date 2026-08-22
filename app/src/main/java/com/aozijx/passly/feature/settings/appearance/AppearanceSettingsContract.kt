@@ -1,13 +1,15 @@
 package com.aozijx.passly.feature.settings.appearance
 
-import com.aozijx.passly.data.settings.model.AppLanguage
-import com.aozijx.passly.data.settings.model.FontFamilyMode
-import com.aozijx.passly.data.settings.model.ThemeMode
+import com.aozijx.passly.domain.settings.model.AppLanguage
+import com.aozijx.passly.domain.settings.model.FontFamilyMode
+import com.aozijx.passly.domain.settings.model.ThemeMode
+import com.aozijx.passly.domain.settings.model.ThemeCanvasTint
 
 data class AppearanceSettingsUiState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val isDynamicColor: Boolean = true,
-    val manualThemeColorArgb: Long? = null,
+    val themeKey: String = "",
+    val canvasTintPercent: Int = ThemeCanvasTint.DEFAULT_PERCENT,
     val language: AppLanguage = AppLanguage.SYSTEM,
     val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED
 )
@@ -15,7 +17,8 @@ data class AppearanceSettingsUiState(
 sealed interface AppearanceSettingsAction {
     data class SetThemeMode(val mode: ThemeMode) : AppearanceSettingsAction
     data class SetDynamicColor(val enabled: Boolean) : AppearanceSettingsAction
-    data class SelectManualThemeColor(val argb: Long?) : AppearanceSettingsAction
+    data class SetThemeKey(val key: String) : AppearanceSettingsAction
+    data class SetCanvasTintPercent(val percent: Int) : AppearanceSettingsAction
     data class SetLanguage(val language: AppLanguage) : AppearanceSettingsAction
     data class SetFontFamily(val mode: FontFamilyMode) : AppearanceSettingsAction
 }

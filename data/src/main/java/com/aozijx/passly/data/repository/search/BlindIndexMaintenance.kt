@@ -1,16 +1,13 @@
 package com.aozijx.passly.data.repository.search
 
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntryProfileCodec
+import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.mapper.entry.EntryAssembler
 import com.aozijx.passly.data.mapper.search.toLookupFields
-import com.aozijx.passly.data.local.database.entity.SearchTokenEntity
-import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
+import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.data.repository.entry.command.EntrySearchIndexWriter
 import com.aozijx.passly.domain.entry.port.SearchIndexMaintenance
-import com.aozijx.passly.security.search.BlindIndexRecord
-import com.aozijx.passly.security.search.BlindIndexer
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,8 +22,7 @@ import javax.inject.Singleton
 internal class BlindIndexMaintenance @Inject constructor(
     private val databaseTransactions: DatabaseTransactionRunner,
     private val summaryCodec: EntryProfileCodec,
-    private val secretCodec: EntrySecretCodec,
-    private val blindIndexer: BlindIndexer,
+    private val secretFieldStore: SecretFieldStore,
     private val searchIndexWriter: EntrySearchIndexWriter
 ) : SearchIndexMaintenance {
 
@@ -36,7 +32,7 @@ internal class BlindIndexMaintenance @Inject constructor(
     }
 
     override suspend fun rebuildIndex(force: Boolean): AppResult<Int> =
-        databaseTransactions.write("entry.rebuildIndex") {
+        databaseTransactions.write("entry_rebuild_index") {
             val staleEntryIds = if (force) {
                 entryQueryDao().getActive().map { it.entryId }
             } else {
@@ -48,19 +44,14 @@ internal class BlindIndexMaintenance @Inject constructor(
             if (staleEntryIds.isEmpty()) return@write 0
 
             val metaEntities = entryQueryDao().getByIdsForMaintenance(staleEntryIds)
-            val credEntities = entrySecretQueryDao().getByEntryIds(staleEntryIds)
-            val credMap = credEntities.associateBy { it.entryId }
 
             var rebuiltCount = 0
             metaEntities.chunked(BATCH_SIZE).forEach { batch ->
                 for (metaEntity in batch) {
-                    val credEntity = credMap[metaEntity.entryId]
                     val summary = summaryCodec.decrypt(
                         metaEntity.summaryBlob, metaEntity.entryId
                     )
-                    val secret = credEntity?.let {
-                        secretCodec.decrypt(it.secretBlob, it.entryId)
-                    }
+                    val secret = secretFieldStore.readBundle(this, metaEntity.entryId)
                     val entry = EntryAssembler.assembleFromDatabase(
                         metaEntity, summary, secret
                     )
@@ -75,16 +66,5 @@ internal class BlindIndexMaintenance @Inject constructor(
             }
 
             rebuiltCount
-        }
-
-    private fun List<BlindIndexRecord>.toEntityList(): List<SearchTokenEntity> =
-        map { record ->
-            SearchTokenEntity(
-                entryId = record.entryId,
-                field = record.field,
-                keywordHash = record.keywordHash,
-                gramLength = record.gramLength,
-                weight = record.weight
-            )
         }
 }

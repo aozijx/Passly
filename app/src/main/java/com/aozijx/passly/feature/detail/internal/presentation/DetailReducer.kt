@@ -4,6 +4,7 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 
 internal sealed interface DetailMutation {
@@ -22,7 +23,7 @@ internal sealed interface DetailMutation {
     data object TitleEditingStarted : DetailMutation
     data object TitleEditingCancelled : DetailMutation
     data class EditedTitleChanged(val value: String) : DetailMutation
-    data class RevealedFieldChanged(val key: String, val value: String?) : DetailMutation
+    data class RevealedFieldChanged(val key: String, val value: SensitiveValue?) : DetailMutation
     data object RevealedFieldsCleared : DetailMutation
     data class SensitiveFieldPresenceChanged(val keys: Set<SensitiveFieldKey>) : DetailMutation
     data class HistoryChanged(val history: List<EntryActivity>) : DetailMutation

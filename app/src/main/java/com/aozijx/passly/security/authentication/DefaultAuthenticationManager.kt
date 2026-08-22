@@ -18,7 +18,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationSnapshot
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.model.CancellationReason
-import com.aozijx.passly.data.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import kotlinx.coroutines.CancellationException
@@ -98,7 +98,10 @@ class DefaultAuthenticationManager @Inject constructor(
         val wasUnlocked = session.isUnlocked()
         val wasRecoveryMode = session.isRecoveryMode()
         val opensSession = request.purpose == AuthenticationPurpose.UNLOCK_VAULT ||
-            request.purpose == AuthenticationPurpose.RECOVER_AUTH_METHODS
+            request.purpose == AuthenticationPurpose.RECOVER_AUTH_METHODS ||
+            // 自动填充需要临时解锁 vault 才能检索并解密候选凭据；
+            // AutofillRequestSession 会在请求结束后以 SOFT_LOCKED 收回解锁。
+            request.purpose == AuthenticationPurpose.AUTOFILL
         try {
             if (wasRecoveryMode && request.purpose !in AuthenticationMethodPolicy.RECOVERY_MODE_PURPOSES) {
                 return finish(

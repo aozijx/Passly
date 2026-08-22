@@ -24,8 +24,10 @@ message AppSettings {
 message AppearancePreferences {
     optional ThemeMode theme_mode = 1 [default = THEME_MODE_SYSTEM];
     optional bool dynamic_color_enabled = 2 [default = true];
-    optional FallbackPalette fallback_palette = 3 [default = FALLBACK_PALETTE_BLUE];
-    optional fixed64 manual_theme_color_argb = 4;
+    // Stable application-owned key. The wire format intentionally does not expose theme enums.
+    optional string theme_key = 3 [default = ""];
+    // Strength (1-100) for tinting manual-theme canvas colors with the three accent seeds.
+    optional int32 canvas_tint_percent = 4 [default = 8];
     // BCP-47 语言标签: "system", "zh-CN", "en", "ja"
     optional string language = 5 [default = "system"];
     // 字体标识: "app.default", "system"
@@ -36,16 +38,6 @@ enum ThemeMode {
     THEME_MODE_SYSTEM = 0;
     THEME_MODE_LIGHT = 1;
     THEME_MODE_DARK = 2;
-}
-
-enum FallbackPalette {
-    FALLBACK_PALETTE_BLUE = 0;
-    FALLBACK_PALETTE_GREEN = 1;
-    FALLBACK_PALETTE_RED = 2;
-    FALLBACK_PALETTE_PURPLE = 3;
-    FALLBACK_PALETTE_ORANGE = 4;
-    FALLBACK_PALETTE_TEAL = 5;
-    FALLBACK_PALETTE_PINK = 6;
 }
 
 // 界面交互行为

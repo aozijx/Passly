@@ -15,39 +15,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
+import com.aozijx.passly.core.ui.components.group.model.RoundedGroupItem
+import com.aozijx.passly.core.ui.components.group.model.RoundedGroupItemPosition
+import com.aozijx.passly.core.ui.components.group.model.RoundedGroupItemScope
 import com.aozijx.passly.core.ui.theme.PasslyTheme
 import com.aozijx.passly.core.ui.theme.RoundedGroupStyle
-
-enum class RoundedGroupItemPosition {
-    Single,
-    First,
-    Middle,
-    Last
-}
-
-@Immutable
-data class RoundedGroupItemScope(
-    val position: RoundedGroupItemPosition,
-    val shape: Shape,
-    val containerColor: Color,
-    val contentPadding: PaddingValues
-)
-
-/**
- * [key] 必须在同一分组内唯一，并在插入、删除和重新排序时保持不变。
- */
-class RoundedGroupItem(
-    val key: String,
-    val visible: Boolean = true,
-    val content: @Composable (RoundedGroupItemScope) -> Unit
-)
 
 /**
  * 通用圆角分组。

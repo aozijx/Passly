@@ -2,9 +2,9 @@ package com.aozijx.passly.feature.settings.appearance
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.data.settings.model.SettingsCommand
-import com.aozijx.passly.data.settings.model.AppearanceSettings
-import com.aozijx.passly.data.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.model.SettingsCommand
+import com.aozijx.passly.domain.settings.model.AppearanceSettings
+import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -36,8 +36,12 @@ class AppearanceSettingsViewModel @Inject constructor(
                 settingsRepository.update(SettingsCommand.SetDynamicColor(action.enabled))
             }
 
-            is AppearanceSettingsAction.SelectManualThemeColor -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SelectManualThemeColor(action.argb))
+            is AppearanceSettingsAction.SetThemeKey -> viewModelScope.launch {
+                settingsRepository.update(SettingsCommand.SetThemeKey(action.key))
+            }
+
+            is AppearanceSettingsAction.SetCanvasTintPercent -> viewModelScope.launch {
+                settingsRepository.update(SettingsCommand.SetCanvasTintPercent(action.percent))
             }
 
             is AppearanceSettingsAction.SetLanguage -> viewModelScope.launch {
@@ -54,7 +58,8 @@ class AppearanceSettingsViewModel @Inject constructor(
 private fun AppearanceSettings.toUiState(): AppearanceSettingsUiState = AppearanceSettingsUiState(
     themeMode = themeMode,
     isDynamicColor = isDynamicColor,
-    manualThemeColorArgb = manualThemeColorArgb,
+    themeKey = themeKey,
+    canvasTintPercent = canvasTintPercent,
     language = language,
     fontFamily = fontFamily
 )

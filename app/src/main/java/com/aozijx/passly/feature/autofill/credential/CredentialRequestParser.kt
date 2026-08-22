@@ -13,8 +13,8 @@ import androidx.credentials.exceptions.GetCredentialUnknownException
 import androidx.credentials.exceptions.GetCredentialUnsupportedException
 import androidx.credentials.provider.BeginGetCredentialRequest
 import androidx.credentials.provider.PendingIntentHandler
-import com.aozijx.passly.service.autofill.credential.CredentialCallingAppResolver
-import com.aozijx.passly.service.autofill.credential.ModernCredentialService
+import com.aozijx.passly.feature.autofill.credential.service.CredentialCallingAppResolver
+import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService
 
 internal sealed interface PasswordGetParseResult {
     data class Ready(
@@ -47,7 +47,12 @@ internal object CredentialRequestParser {
                 ?: return PasswordGetParseResult.Failed(
                     GetCredentialUnknownException("Missing system get request")
                 )
-        val option = providerRequest.credentialOptions.singleOrNull() as? GetPasswordOption
+        // 系统可能在同一请求携带多个选项（password + passkey）。
+        // singleOrNull() 在多元素时返回 null 会让密码条目点击即失败，
+        // 应取第一个密码选项（passkey 条目有独立的 begin-get 路径）。
+        val option = providerRequest.credentialOptions
+            .filterIsInstance<GetPasswordOption>()
+            .firstOrNull()
             ?: return PasswordGetParseResult.Failed(
                 GetCredentialUnsupportedException("Selected entry is not a password request")
             )

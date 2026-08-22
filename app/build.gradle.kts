@@ -111,11 +111,7 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":core:common"))
-    implementation(project(":core:android"))
-    implementation(project(":core:crypto"))
-    implementation(project(":core:ui"))
-    implementation(project(":core:telemetry"))
+    implementation(project(":core"))
     implementation(project(":data"))
     implementation(project(":domain"))
     implementation(project(":runtime:session"))

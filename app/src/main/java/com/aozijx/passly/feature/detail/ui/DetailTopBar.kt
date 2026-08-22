@@ -27,7 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.DetailUiAction
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -36,7 +36,7 @@ fun DetailTopBar(
     entry: Entry,
     uiState: DetailUiState,
     scrollBehavior: TopAppBarScrollBehavior,
-    onEvent: (DetailIntent) -> Unit,
+    onAction: (DetailUiAction) -> Unit,
     onBack: () -> Unit,
     onInteraction: () -> Unit = {}
 ) {
@@ -49,7 +49,7 @@ fun DetailTopBar(
                 PasslyOutlinedTextField(
                     value = uiState.editedTitle,
                     onValueChange = {
-                        onEvent(DetailIntent.UpdateEditedTitle(it))
+                        onAction(DetailUiAction.UpdateEditedTitle(it))
                     },
                     label = "",
                     modifier = Modifier.fillMaxWidth(),
@@ -58,7 +58,7 @@ fun DetailTopBar(
                     trailingIcon = {
                         IconButton(onClick = {
                             onInteraction()
-                            onEvent(DetailIntent.SaveTitle)
+                            onAction(DetailUiAction.SaveTitle)
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Check,
@@ -77,7 +77,7 @@ fun DetailTopBar(
                         indication = null,
                         onLongClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onEvent(DetailIntent.StartTitleEdit)
+                            onAction(DetailUiAction.StartTitleEdit)
                         },
                         onClick = { onInteraction() }
                     )
@@ -95,7 +95,7 @@ fun DetailTopBar(
         actions = {
             IconButton(onClick = {
                 onInteraction()
-                onEvent(DetailIntent.ToggleFavorite)
+                onAction(DetailUiAction.ToggleFavorite)
             }) {
                 Icon(
                     imageVector = if (entry.favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,

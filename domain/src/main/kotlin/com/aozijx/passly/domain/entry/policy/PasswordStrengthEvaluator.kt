@@ -10,7 +10,7 @@ object PasswordStrengthEvaluator {
     private val WEAK_PATTERNS = setOf(
         "123456", "password", "123456789", "12345", "12345678",
         "qwerty", "abc123", "111111", "123123", "admin",
-        "letmein", "welcome", "monkey", "dragon", "master"
+        "letmein", "welcome", "monkey", "dragon", "master",
     )
 
     fun evaluate(password: String): PasswordStrengthResult {
@@ -61,7 +61,7 @@ object PasswordStrengthEvaluator {
         return penalty
     }
 
-    private fun hasSequential(password: String, length: Int): Boolean {
+    private fun hasSequential(password: String, length: Int = 4): Boolean {
         val lower = password.lowercase()
         if (lower.length < length) return false
         for (i in 0..lower.length - length) {

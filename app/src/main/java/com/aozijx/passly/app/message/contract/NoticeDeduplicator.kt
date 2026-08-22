@@ -1,6 +1,6 @@
 package com.aozijx.passly.app.message.contract
 
-import com.aozijx.passly.data.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.NoticeCode
 
 /**
  * 消息去重。
