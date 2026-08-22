@@ -1,40 +1,40 @@
 [versions]
 # 构建与工具 (Build & Tooling)
 # Kotlin 版本决定了 KSP 和 Compose Compiler 的兼容范围
-agp = "9.0.1"
+agp = "9.3.1"
 kotlin = "2.3.20"
 # ❗ KSP 版本 2.3.x 系列不再使用 xxx-1.0.x 后缀，直接写三段数字
 ksp = "2.3.9"
 # Hilt 版本建议与 hilt-navigation-compose 保持库兼容性
-hilt = "2.59.2"
-androidCompileSdk = "36"
+hilt = "2.60.1"
+androidCompileSdk = "37"
 androidMinSdk = "31"
-androidTargetSdk = "36"
+androidTargetSdk = "37"
 jvmToolchain = "21"
 
 # Android 核心 (Android Core)
-coreKtx = "1.18.0"
-appcompat = "1.7.1"
+coreKtx = "1.19.0"
+appcompat = "1.8.0"
 coreSplashscreen = "1.2.0"
 palette = "1.0.0"
 
 # 生命周期与架构 (Lifecycle & Architecture)
-lifecycleRuntimeKtx = "2.10.0"
-lifecycleProcess = "2.10.0"
+lifecycleRuntimeKtx = "2.11.0"
+lifecycleProcess = "2.11.0"
 # Navigation 通常随 Compose 或 Lifecycle 更新，建议保持较新以修复兼容性问题
-navigationCompose = "2.9.7"
+navigationCompose = "2.9.8"
 # ❗ Hilt 导航适配器，版本通常落后于 Hilt 主库，升级 Hilt 后需检查此库是否报错
-hilt-navigation-compose = "1.2.0"
+hilt-navigation-compose = "1.4.0"
 
 # Jetpack Compose & UI
 # Compose BOM 决定了大部分 ui-* 库的版本，手动指定版本时需注意不被 BOM 覆盖
-composeBom = "2026.06.01"
+composeBom = "2026.08.00"
 activityCompose = "1.13.0"
-foundation = "1.10.6"
-material3 = "1.5.0-alpha18"
+foundation = "1.12.0"
+material3 = "1.5.0-alpha26"
 googleMaterial = "1.14.0"
 materialIcons = "1.7.8"
-compose-adaptive = "1.2.0"
+compose-adaptive = "1.3.0"
 
 # 数据持久化 (Data Storage)
 # ❗ Room 使用 KSP 时，对 Kotlin 版本非常敏感
@@ -42,7 +42,7 @@ room = "2.8.4"
 paging = "3.5.0"
 datastore = "1.2.1"
 protobuf-plugin = "0.10.0"
-protobuf-javalite = "4.33.0"
+protobuf-javalite = "4.35.1"
 # ❗ 序列化库版本建议与 Kotlin 版本保持兼容性检查
 kotlinxSerializationJson = "1.11.0"
 kotlinxCoroutines = "1.10.2"
@@ -61,7 +61,7 @@ argon2kt = "1.6.0"
 
 # 媒体与多媒体 (Media & Utilities)
 coil = "2.7.0"
-markdown-renderer = "0.41.0"
+markdown-renderer = "0.43.0"
 
 # 相机与扫码 (Camera & Barcode)
 barcodeScanningBundled = "17.3.0"
