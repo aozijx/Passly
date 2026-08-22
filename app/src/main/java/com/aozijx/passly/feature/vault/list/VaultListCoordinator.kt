@@ -82,7 +82,7 @@ internal class VaultListCoordinator(
     ) { query, refreshId -> QueryParams(query, refreshId) }
         .distinctUntilChanged()
         .flatMapLatest { params ->
-            entryListQueryRepository.observe(query = params.query, filter = EntryFilter.ALL)
+            entryListQueryRepository.observeSummaries(query = params.query, filter = EntryFilter.ALL)
         }
 
     private data class QueryParams(val query: String, val refreshId: Long)

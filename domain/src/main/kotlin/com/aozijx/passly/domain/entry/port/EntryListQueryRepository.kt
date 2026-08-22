@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface EntryListQueryRepository {
     val deletedEntries: Flow<List<EntryListItem>>
-    fun observe(
+    fun observeSummaries(
         query: String,
         filter: EntryFilter
     ): Flow<List<EntryListItem>>

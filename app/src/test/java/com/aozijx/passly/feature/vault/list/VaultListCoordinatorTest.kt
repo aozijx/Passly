@@ -67,7 +67,7 @@ class VaultListCoordinatorTest {
         private val itemsFlow = MutableStateFlow(items)
         override val deletedEntries: Flow<List<EntryListItem>> = emptyFlow()
 
-        override fun observe(
+        override fun observeSummaries(
             query: String,
             filter: EntryFilter
         ): Flow<List<EntryListItem>> {

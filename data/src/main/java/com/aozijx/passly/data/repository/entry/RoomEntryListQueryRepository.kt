@@ -57,7 +57,7 @@ internal class RoomEntryListQueryRepository @Inject constructor(
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun observe(
+    override fun observeSummaries(
         query: String, filter: EntryFilter
     ): Flow<List<EntryListItem>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
