@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="autofill_item_background">#2C2C2E</color>
-    <color name="autofill_item_outline">#48484A</color>
+    <color name="splash_background">#1A1C1E</color>
 </resources>

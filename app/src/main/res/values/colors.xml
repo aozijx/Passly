@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="launcher_logo_background">#FFFFFF</color>
+    <color name="splash_background">#F8F9FF</color>
 
     <color name="autofill_item_background">#F2F2F7</color> <!-- 浅灰蓝色，与纯白区分 -->
     <color name="autofill_item_outline">#E5E5EA</color>
