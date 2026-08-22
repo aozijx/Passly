@@ -1,19 +1,18 @@
 package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
+import com.aozijx.passly.data.local.database.query.buildEntryCategoryQuery
 import com.aozijx.passly.data.mapper.entry.EntryListItemMapper
 import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.domain.entry.model.query.EntryUsage
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
-import com.aozijx.passly.domain.entry.policy.EntryAccountGraph
+import com.aozijx.passly.runtime.session.SecureSessionState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
@@ -27,10 +26,17 @@ internal class RoomEntryListQueryRepository @Inject constructor(
     private val sessionState: SecureSessionAccessState,
 ) : EntryListQueryRepository {
 
+    private val canRead = combine(
+        sessionState.isAuthorized,
+        databaseSession.lockStateFlow,
+    ) { authorized, databaseState ->
+        authorized && databaseState == SecureSessionState.UNLOCKED
+    }.distinctUntilChanged()
+
     @OptIn(ExperimentalCoroutinesApi::class)
-    override val deletedEntries: Flow<List<EntryListItem>> = sessionState.isAuthorized
-        .flatMapLatest { authorized ->
-            if (!authorized) flowOf(emptyList())
+    override val deletedEntries: Flow<List<EntryListItem>> = canRead
+        .flatMapLatest { readable ->
+            if (!readable) flowOf(emptyList())
             else databaseSession.observeFlow {
                 entryQueryDao().observeDeleted()
                     .map { entities ->
@@ -44,50 +50,11 @@ internal class RoomEntryListQueryRepository @Inject constructor(
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override val activeSummaries: Flow<List<EntryListItem>> = sessionState.isAuthorized
-        .flatMapLatest { authorized ->
-            if (!authorized) flowOf(emptyList())
+    override val availableCategories: Flow<List<String>> = canRead
+        .flatMapLatest { readable ->
+            if (!readable) flowOf(emptyList())
             else databaseSession.observeFlow {
-                val entryFlow = entryQueryDao().observeActive()
-                val statsFlow =
-                    entryActivityAnalyticsDao().observeUsageStats(ActivityType.USAGE_TYPES)
-                val linksFlow = entryLinkQueryDao().observeAll()
-                combine(entryFlow, statsFlow, linksFlow) { metaEntities, statsList, linkEntities ->
-                    val statsMap = statsList.associateBy { it.entryId }
-                    val accountGraph = EntryAccountGraph(
-                        linkEntities.map { link ->
-                            com.aozijx.passly.domain.entry.model.relation.EntryLink.create(
-                                id = com.aozijx.passly.domain.entry.model.relation.EntryLinkId(link.linkId),
-                                sourceEntryId = EntryId(link.sourceEntryId),
-                                targetEntryId = EntryId(link.targetEntryId),
-                                relationType = link.relationType,
-                                createdAt = link.createdAt,
-                                updatedAt = link.updatedAt
-                            )
-                        }
-                    )
-                    metaEntities.map {
-                        val summary = EntryProfileMapper.fromEntity(it)
-                        EntryListItemMapper.assemble(it, summary)
-                    }
-                        .map { item ->
-                            val stats = statsMap[item.id.value]
-                            val groupedItem = item.copy(
-                                accountId = accountGraph.accountFor(item.id)
-                            )
-                            if (stats != null) groupedItem.copy(
-                                usage = EntryUsage(
-                                    count = stats.usageCount,
-                                    lastUsedAtMs = stats.lastUsedAt,
-                                )
-                            ) else groupedItem
-                        }
-                        .sortedWith(
-                            compareByDescending<EntryListItem> { it.favorite }
-                                .thenByDescending { it.usageCount }
-                                .thenByDescending { it.createdAt }
-                        )
-                }
+                entryQueryDao().observeCategories(buildEntryCategoryQuery())
                     .flowOn(Dispatchers.IO)
             }
         }

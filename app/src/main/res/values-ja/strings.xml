@@ -76,6 +76,8 @@
     <string name="vault_scan">スキャン</string>
     <string name="vault_add_entry_save_failed">項目を保存できませんでした</string>
     <string name="vault_empty_placeholder">アイテムがありません。+ をタップして追加</string>
+    <string name="vault_load_failed">保管庫の項目を読み込めませんでした</string>
+    <string name="retry">再試行</string>
     <string name="vault_scanner_error_not_otp">このQRコードに有効なOTP情報は含まれていません</string>
     <string name="vault_scanner_action_album">アルバムから選択</string>
     <string name="vault_scanner_result_title">秘密鍵を検出</string>

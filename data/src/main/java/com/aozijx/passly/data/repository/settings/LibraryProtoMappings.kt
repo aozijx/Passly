@@ -6,7 +6,7 @@ import com.aozijx.passly.data.local.datastore.settings.VaultSortPreference
 import com.aozijx.passly.data.local.datastore.settings.VaultViewPreferences
 import com.aozijx.passly.domain.settings.model.CardDensity
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
-import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection

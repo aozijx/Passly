@@ -199,7 +199,7 @@ fun VaultContent(
                     }
                 )
 
-                if (uiState.isVaultItemsLoading || isDatabaseInitializing) {
+                if (isDatabaseInitializing) {
                     LinearProgressIndicator(
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.primary,
@@ -228,8 +228,8 @@ fun VaultContent(
         VaultPagerContent(
             pagerState = pagerState,
             uiState = uiState,
+            entryPages = vaultViewModel::entries,
             entryCardPresentations = entryCardPresentations,
-            hierarchyDisplayMode = vaultDisplayConfig.style.entryHierarchyDisplayMode,
             totpStates = vaultViewModel.totpStatesFlow,
             swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction,
             swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction,

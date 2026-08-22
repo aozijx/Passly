@@ -20,11 +20,7 @@ internal sealed interface VaultMutation {
         val filters: List<LibraryQuickFilter>,
     ) : VaultMutation
 
-    data class ListChanged(
-        val isLoading: Boolean,
-        val categories: List<String>,
-        val items: List<EntryListItem>,
-    ) : VaultMutation
+    data class CategoriesChanged(val categories: List<String>) : VaultMutation
 
     data object DialogsCleared : VaultMutation
 }
@@ -50,11 +46,8 @@ internal object VaultReducer {
             )
             is VaultMutation.VisibleQuickFiltersChanged ->
                 state.copy(visibleQuickFilters = mutation.filters)
-            is VaultMutation.ListChanged -> state.copy(
-                isVaultItemsLoading = mutation.isLoading,
-                availableCategories = mutation.categories,
-                vaultItems = mutation.items,
-            )
+            is VaultMutation.CategoriesChanged ->
+                state.copy(availableCategories = mutation.categories)
             VaultMutation.DialogsCleared -> state.copy(
                 addType = null,
                 pendingDelete = null,

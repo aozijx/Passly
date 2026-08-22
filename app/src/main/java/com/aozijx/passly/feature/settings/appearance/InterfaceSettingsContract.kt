@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.settings.appearance
 
-import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 

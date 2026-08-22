@@ -25,7 +25,7 @@ class VaultReducerTest {
     }
 
     @Test
-    fun `list results do not overwrite interaction state`() {
+    fun `category results do not overwrite interaction state`() {
         val initial = VaultUiState(
             searchQuery = "work",
             isSearchActive = true,
@@ -34,17 +34,12 @@ class VaultReducerTest {
 
         val result = VaultReducer.reduce(
             initial,
-            VaultMutation.ListChanged(
-                isLoading = false,
-                categories = listOf("Work"),
-                items = emptyList(),
-            ),
+            VaultMutation.CategoriesChanged(listOf("Work")),
         )
 
         assertEquals("work", result.searchQuery)
         assertTrue(result.isSearchActive)
         assertEquals(AddType.PASSWORD, result.addType)
-        assertFalse(result.isVaultItemsLoading)
         assertEquals(listOf("Work"), result.availableCategories)
     }
 

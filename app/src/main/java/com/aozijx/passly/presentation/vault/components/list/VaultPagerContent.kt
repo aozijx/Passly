@@ -5,6 +5,8 @@ import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,7 +19,15 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,27 +35,30 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.PagingData
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemContentType
+import androidx.paging.compose.itemKey
+import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionContainer
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionSpec
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Person
-import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
-import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
-import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
-import com.aozijx.passly.presentation.vault.components.cardstyle.CardStyleRegistry
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.contract.VaultUiState
+import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.presentation.vault.components.cardstyle.CardStyleRegistry
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -54,8 +67,8 @@ import kotlinx.coroutines.flow.map
 fun VaultPagerContent(
     pagerState: PagerState,
     uiState: VaultUiState,
+    entryPages: (LibraryQuickFilter) -> Flow<PagingData<EntryListItem>>,
     entryCardPresentations: List<EntryCardPresentation>,
-    hierarchyDisplayMode: EntryHierarchyDisplayMode,
     totpStates: StateFlow<Map<String, OtpUiState>>,
     swipeLeftAction: SwipeActionType,
     swipeRightAction: SwipeActionType,
@@ -67,14 +80,6 @@ fun VaultPagerContent(
     val adaptiveLayout = LocalPasslyAdaptiveLayout.current
     val motionScheme = MaterialTheme.motionScheme
     var playInitialEntryAnimation by rememberSaveable { mutableStateOf(true) }
-
-    LaunchedEffect(uiState.isVaultItemsLoading, uiState.vaultItems) {
-        if (!uiState.isVaultItemsLoading &&
-            uiState.vaultItems.isNotEmpty()
-        ) {
-            playInitialEntryAnimation = false
-        }
-    }
 
     HorizontalPager(
         modifier = modifier,
@@ -88,20 +93,25 @@ fun VaultPagerContent(
     ) { pageIndex ->
         val currentQuickFilter =
             uiState.visibleQuickFilters.getOrNull(pageIndex) ?: LibraryQuickFilter.ALL
-        val filteredItems = when (currentQuickFilter) {
-            LibraryQuickFilter.ALL -> uiState.vaultItems
-            LibraryQuickFilter.PASSWORDS -> uiState.vaultItems.filter(EntryListItem::hasPassword)
-            LibraryQuickFilter.TOTP -> uiState.vaultItems.filter(EntryListItem::hasOtp)
-        }
-        val displayItems = arrangeEntryHierarchy(
-            entries = filteredItems,
-            mode = hierarchyDisplayMode
-        )
+        val pagingItems = entryPages(currentQuickFilter).collectAsLazyPagingItems()
+        val refreshState = pagingItems.loadState.refresh
 
-        if (displayItems.isEmpty()) {
-            if (!uiState.isVaultItemsLoading) EmptyVaultPlaceholder()
-        } else {
-            LazyVerticalGrid(
+        LaunchedEffect(refreshState, pagingItems.itemCount) {
+            if (refreshState !is LoadState.Loading && pagingItems.itemCount > 0) {
+                playInitialEntryAnimation = false
+            }
+        }
+
+        when {
+            refreshState is LoadState.Loading && pagingItems.itemCount == 0 ->
+                VaultPagingProgress()
+
+            refreshState is LoadState.Error && pagingItems.itemCount == 0 ->
+                VaultPagingError(onRetry = pagingItems::retry)
+
+            pagingItems.itemCount == 0 -> EmptyVaultPlaceholder()
+
+            else -> LazyVerticalGrid(
                 columns = GridCells.Adaptive(
                     minSize = if (adaptiveLayout.isExpanded) 360.dp else 440.dp
                 ),
@@ -114,10 +124,11 @@ fun VaultPagerContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(
-                    items = displayItems,
-                    key = { item -> item.id.value },
-                    contentType = EntryListItem::entryType
-                ) { item ->
+                    count = pagingItems.itemCount,
+                    key = pagingItems.itemKey { item -> item.id.value },
+                    contentType = pagingItems.itemContentType(EntryListItem::entryType),
+                ) { index ->
+                    val item = pagingItems[index] ?: return@items
                     EntryListItemRow(
                         item = item,
                         entryCardPresentations = entryCardPresentations,
@@ -139,6 +150,19 @@ fun VaultPagerContent(
                     )
                 }
 
+                when (pagingItems.loadState.append) {
+                    is LoadState.Loading -> item(span = { GridItemSpan(maxLineSpan) }) {
+                        VaultPagingProgress(modifier = Modifier.fillMaxWidth().height(64.dp))
+                    }
+                    is LoadState.Error -> item(span = { GridItemSpan(maxLineSpan) }) {
+                        VaultPagingError(
+                            onRetry = pagingItems::retry,
+                            modifier = Modifier.fillMaxWidth().height(96.dp),
+                        )
+                    }
+                    is LoadState.NotLoading -> Unit
+                }
+
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Spacer(
                         modifier = Modifier
@@ -147,6 +171,30 @@ fun VaultPagerContent(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun VaultPagingProgress(modifier: Modifier = Modifier.fillMaxSize()) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+private fun VaultPagingError(
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier.fillMaxSize(),
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(stringResource(R.string.vault_load_failed))
+        TextButton(onClick = onRetry) {
+            Text(stringResource(R.string.retry))
         }
     }
 }

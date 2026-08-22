@@ -17,30 +17,16 @@ interface EntryQueryDao {
 
     // ---- observe (Flow) ----
 
-    @Query("SELECT * FROM entries WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
-    fun observeActive(): Flow<List<EntryEntity>>
-
     @Query("SELECT * FROM entries WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
     fun observeDeleted(): Flow<List<EntryEntity>>
-
-    // ---- paging (Paging 3) ----
-
-    @Query("SELECT * FROM entries WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
-    fun pagingActive(): PagingSource<Int, EntryEntity>
-
-    @Query("SELECT * FROM entries WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
-    fun pagingActiveByType(entryType: EntryType): PagingSource<Int, EntryEntity>
-
-    @Query("SELECT * FROM entries WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
-    fun pagingDeleted(): PagingSource<Int, EntryEntity>
-
-    @Query("SELECT * FROM entries WHERE deletedAt IS NULL ORDER BY createdAt DESC")
-    fun pagingActiveRecentlyCreated(): PagingSource<Int, EntryEntity>
 
     @RawQuery(
         observedEntities = [EntryEntity::class, EntryActivityEntity::class, EntryLinkEntity::class]
     )
     fun paging(query: SupportSQLiteQuery): PagingSource<Int, EntryPagingRow>
+
+    @RawQuery(observedEntities = [EntryEntity::class])
+    fun observeCategories(query: SupportSQLiteQuery): Flow<List<String>>
 
     // ---- get (suspend) ----
 

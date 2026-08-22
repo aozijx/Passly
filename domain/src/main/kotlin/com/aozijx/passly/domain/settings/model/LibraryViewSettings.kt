@@ -1,6 +1,7 @@
 package com.aozijx.passly.domain.settings.model
 
 import com.aozijx.passly.domain.entry.model.query.EntrySort
+import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 
 data class LibraryViewSettings(
     val visibleQuickFilters: VisibleQuickFiltersConfig? = null,
@@ -9,17 +10,6 @@ data class LibraryViewSettings(
     val entryHierarchyDisplayMode: EntryHierarchyDisplayMode =
         EntryHierarchyDisplayMode.COLLAPSED
 )
-
-enum class EntryHierarchyDisplayMode(val key: String) {
-    COLLAPSED("collapsed"),
-    EXPANDED("expanded"),
-    SEPARATE("separate");
-
-    companion object {
-        fun fromKey(key: String?): EntryHierarchyDisplayMode =
-            entries.firstOrNull { it.key == key } ?: COLLAPSED
-    }
-}
 
 data class VisibleQuickFiltersConfig(
     val filterKeys: Set<String>,

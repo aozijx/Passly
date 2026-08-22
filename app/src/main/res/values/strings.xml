@@ -83,6 +83,8 @@
     <string name="vault_scan">扫码</string>
     <string name="vault_add_entry_save_failed">保存条目失败</string>
     <string name="vault_empty_placeholder">你的保险箱空空如也</string>
+    <string name="vault_load_failed">无法加载保险箱内容</string>
+    <string name="retry">重试</string>
     <string name="vault_scanner_error_not_otp">二维码中没有有效的 OTP 信息</string>
     <string name="vault_scanner_action_album">相册导入</string>
     <string name="vault_scanner_result_title">发现密钥</string>

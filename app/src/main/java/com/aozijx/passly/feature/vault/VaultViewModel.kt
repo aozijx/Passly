@@ -2,9 +2,13 @@ package com.aozijx.passly.feature.vault
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.domain.entry.otp.OtpGenerator
 import com.aozijx.passly.data.local.database.port.EntryDataRefreshNotifier
+import com.aozijx.passly.data.repository.entry.paging.EntryPagingStore
 import com.aozijx.passly.runtime.session.SessionStateProvider
 import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -17,6 +21,8 @@ import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.domain.entry.model.query.EntryListQuery
+import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.github.f4b6a3.uuid.UuidCreator
@@ -28,24 +34,29 @@ import com.aozijx.passly.domain.entry.service.FaviconService
 import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.settings.model.SettingsCommand
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
-import com.aozijx.passly.domain.entry.model.query.EntrySort
+import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.feature.vault.contract.VaultEffect
 import com.aozijx.passly.feature.vault.contract.VaultUiAction
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.entry.EntryManager
-import com.aozijx.passly.feature.vault.list.VaultListCoordinator
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.otp.TotpCoordinator
 import com.aozijx.passly.feature.vault.presentation.VaultMutation
 import com.aozijx.passly.feature.vault.presentation.VaultReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -56,6 +67,7 @@ import javax.inject.Inject
 class VaultViewModel @Inject constructor(
     private val entryQueryRepository: EntryQueryRepository,
     private val entryListQueryRepository: EntryListQueryRepository,
+    private val entryPagingStore: EntryPagingStore,
     private val otpConfigRepository: OtpConfigRepository,
     private val settingsRepository: AppSettingsRepository,
     private val entryCommandRepository: EntryCommandRepository,
@@ -104,12 +116,51 @@ class VaultViewModel @Inject constructor(
         }
     )
 
-    private val listCoordinator = VaultListCoordinator(
-        scope = viewModelScope,
-        entryListQueryRepository = entryListQueryRepository,
-        uiState = uiState,
-        refreshTrigger = _refreshTrigger
-    )
+    @OptIn(FlowPreview::class)
+    private val debouncedSearchQuery: Flow<String> = uiState
+        .map { it.searchQuery.trim() }
+        .debounce(250)
+        .distinctUntilChanged()
+
+    private val selectedCategory: Flow<String?> = uiState
+        .map { state -> state.selectedCategory?.trim()?.takeIf(String::isNotEmpty) }
+        .distinctUntilChanged()
+
+    private val selectedSortFlow: Flow<EntrySort> = uiState
+        .map { state -> state.selectedSort }
+        .distinctUntilChanged()
+
+    private val hierarchyMode: Flow<EntryHierarchyDisplayMode> = settingsRepository.settings
+        .map { settings -> settings.vault.entryHierarchyDisplayMode }
+        .distinctUntilChanged()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val entryPages: Map<LibraryQuickFilter, Flow<PagingData<EntryListItem>>> =
+        LibraryQuickFilter.entries.associateWith { quickFilter ->
+            combine(
+                debouncedSearchQuery,
+                selectedCategory,
+                selectedSortFlow,
+                hierarchyMode,
+                _refreshTrigger,
+            ) { search, category, sort, hierarchy, _ ->
+                EntryListQuery(
+                    searchText = search,
+                    filter = quickFilter.entryFilter,
+                    category = category,
+                    sort = sort,
+                    hierarchyMode = hierarchy.takeIf {
+                        quickFilter == LibraryQuickFilter.ALL
+                    },
+                )
+            }
+                .distinctUntilChanged()
+                .flatMapLatest { query -> entryPagingStore.pages(query, ENTRY_PAGING_CONFIG) }
+                .cachedIn(viewModelScope)
+        }
+
+    fun entries(quickFilter: LibraryQuickFilter): Flow<PagingData<EntryListItem>> =
+        requireNotNull(entryPages[quickFilter])
 
     private fun addScannedOtp(config: OtpConfig) {
         if (!ensureFullSecureSessionAccess("恢复模式不能保存 OTP")) return
@@ -259,14 +310,8 @@ class VaultViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            listCoordinator.state.collect { state ->
-                mutate(
-                    VaultMutation.ListChanged(
-                        isLoading = state.isLoading,
-                        categories = state.categories,
-                        items = state.items,
-                    )
-                )
+            entryListQueryRepository.availableCategories.collect { categories ->
+                mutate(VaultMutation.CategoriesChanged(categories))
             }
         }
 
@@ -291,5 +336,15 @@ class VaultViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         totp.clearAllSensitiveState()
+    }
+
+    private companion object {
+        val ENTRY_PAGING_CONFIG = PagingConfig(
+            pageSize = 30,
+            initialLoadSize = 60,
+            prefetchDistance = 10,
+            enablePlaceholders = false,
+            maxSize = 180,
+        )
     }
 }

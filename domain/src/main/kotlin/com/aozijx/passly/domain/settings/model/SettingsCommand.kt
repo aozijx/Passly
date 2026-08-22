@@ -1,6 +1,7 @@
 package com.aozijx.passly.domain.settings.model
 
 import com.aozijx.passly.domain.entry.model.query.EntrySort
+import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 
 sealed interface SettingsCommand {
     // Appearance

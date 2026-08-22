@@ -11,12 +11,10 @@ data class VaultUiState(
     val selectedQuickFilter: LibraryQuickFilter = LibraryQuickFilter.ALL,
     val selectedSort: EntrySort = EntrySort.DEFAULT,
     val isSearchActive: Boolean = false,
-    val isVaultItemsLoading: Boolean = true,
     val availableCategories: List<String> = emptyList(),
     val visibleQuickFilters: List<LibraryQuickFilter> = LibraryQuickFilter.resolveVisible(
         LibraryQuickFilter.defaultVisibleKeys
     ),
-    val vaultItems: List<EntryListItem> = emptyList(),
     val showTOTPCode: Boolean = true,
     val addType: AddType? = null,
     val pendingDelete: EntryListItem? = null

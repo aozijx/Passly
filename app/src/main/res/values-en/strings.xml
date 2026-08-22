@@ -77,6 +77,8 @@
     <string name="vault_scan">Scan</string>
     <string name="vault_add_entry_save_failed">Couldn\'t save entry</string>
     <string name="vault_empty_placeholder">No items yet, tap + to add one</string>
+    <string name="vault_load_failed">Could not load vault items</string>
+    <string name="retry">Retry</string>
     <string name="vault_scanner_error_not_otp">This QR code doesn’t contain valid OTP information</string>
     <string name="vault_scanner_action_album">Import from album</string>
     <string name="vault_scanner_result_title">Secret Found</string>
