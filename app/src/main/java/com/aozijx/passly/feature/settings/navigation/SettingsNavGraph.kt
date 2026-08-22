@@ -288,7 +288,6 @@ private fun SettingsDetailContent(
         SettingsRoute.Interface -> {
             CoreSettingsRouteContent(
                 route = route,
-                localState = localState,
                 settingsViewModel = settingsViewModel,
                 onBack = onBack
             )

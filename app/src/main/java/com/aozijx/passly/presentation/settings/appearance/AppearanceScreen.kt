@@ -10,7 +10,8 @@ import androidx.compose.material.icons.filled.SettingsBrightness
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -56,8 +57,8 @@ internal fun AppearanceDetail(
     var showThemeColorSheet by remember { mutableStateOf(false) }
     var showThemeModeMenu by remember { mutableStateOf(false) }
     var showLanguageSheet by remember { mutableStateOf(false) }
-    val languageSheetState = rememberModalBottomSheetState()
-    val themeColorSheetState = rememberModalBottomSheetState()
+    val languageSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
+    val themeColorSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
     val scope = rememberCoroutineScope()
     var canvasTintPercent by remember(state.canvasTintPercent) {
         mutableFloatStateOf(state.canvasTintPercent.toFloat())

@@ -2,7 +2,8 @@ package com.aozijx.passly.presentation.settings.shell
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetState
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -97,6 +98,6 @@ internal class SettingsScreenLocalState {
 @Composable
 internal fun rememberSettingsScreenLocalState(): SettingsScreenLocalState {
     val state = remember { SettingsScreenLocalState() }
-    state.recoveryCodeSheetState = rememberModalBottomSheetState()
+    state.recoveryCodeSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
     return state
 }
