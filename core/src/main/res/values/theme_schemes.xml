@@ -1,4 +1,5 @@
 <resources>
+    <string name="theme_scheme_default">默认</string>
     <string name="theme_scheme_horizon">天际</string>
     <string name="theme_scheme_grove">林地</string>
     <string name="theme_scheme_ember">余烬</string>

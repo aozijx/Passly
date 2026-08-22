@@ -22,6 +22,15 @@ data class ThemeSchemeDefinition(
 object AppThemeSchemes {
     val all = listOf(
         ThemeSchemeDefinition(
+            key = "Default",
+            R.string.theme_scheme_default,
+            ThemeSeedResources(
+                R.color.on_primary_light,
+                R.color.on_primary_light,
+                R.color.on_primary_light,
+            )
+        ),
+        ThemeSchemeDefinition(
             "horizon",
             R.string.theme_scheme_horizon,
             ThemeSeedResources(

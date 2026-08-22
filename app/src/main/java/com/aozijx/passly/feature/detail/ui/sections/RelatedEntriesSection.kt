@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -29,15 +30,19 @@ fun RelatedEntriesSection(
         Column(modifier = Modifier.fillMaxWidth()) {
             entries.forEachIndexed { index, entry ->
                 ListItem(
-                    headlineContent = { Text(entry.title) },
-                    supportingContent = { Text(entry.type.localizedName()) },
-                    trailingContent = {
-                        Icon(Icons.Default.ChevronRight, contentDescription = null)
-                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onOpenEntry(entry) }
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = 4.dp),
+                    leadingContent = null,
+                    trailingContent = {
+                        Icon(Icons.Default.ChevronRight, contentDescription = null)
+                    },
+                    overlineContent = null,
+                    supportingContent = { Text(entry.type.localizedName()) },
+                    colors = ListItemDefaults.colors(),
+                    elevation = ListItemDefaults.elevation(ListItemDefaults.Elevation),
+                    content = { Text(entry.title) },
                 )
                 if (index < entries.lastIndex) HorizontalDivider()
             }

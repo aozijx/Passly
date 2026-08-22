@@ -120,7 +120,6 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.room.runtime)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.androidx.core.splashscreen)
 
     // Lifecycle & Navigation
     implementation(libs.androidx.lifecycle.runtime.ktx)

@@ -37,7 +37,7 @@ class VaultListCoordinatorTest {
         val uiState = MutableStateFlow(VaultUiState())
         val coordinator = VaultListCoordinator(
             scope = scope,
-            queryCoordinator = VaultQueryCoordinator(repository),
+            entryListQueryRepository = repository,
             uiState = uiState,
             refreshTrigger = flowOf(0L)
         )

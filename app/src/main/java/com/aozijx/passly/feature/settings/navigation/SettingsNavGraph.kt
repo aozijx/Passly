@@ -31,7 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.apppassword.AppPasswordAction
@@ -288,7 +288,6 @@ private fun SettingsDetailContent(
         SettingsRoute.Interface -> {
             CoreSettingsRouteContent(
                 route = route,
-                localState = localState,
                 settingsViewModel = settingsViewModel,
                 onBack = onBack
             )

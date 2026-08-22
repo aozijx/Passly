@@ -12,36 +12,36 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.aozijx.passly.domain.access.model.SensitiveAccessAction
 import com.aozijx.passly.app.security.SensitiveAccessLevel
+import com.aozijx.passly.app.shell.AppShellViewModel
+import com.aozijx.passly.app.shell.contract.AppShellAuthResult
+import com.aozijx.passly.app.shell.contract.AppShellUiAction
+import com.aozijx.passly.domain.access.model.SensitiveAccessAction
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.DetailViewModel
 import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.contract.DetailUiAction
 import com.aozijx.passly.feature.detail.page.DetailScreen
-import com.aozijx.passly.app.shell.AppShellViewModel
-import com.aozijx.passly.app.shell.contract.AppShellAuthResult
-import com.aozijx.passly.app.shell.contract.AppShellUiAction
 import com.aozijx.passly.feature.scanner.VaultScanner
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.navigation.SettingsNavGraph
-import com.aozijx.passly.presentation.vault.VaultContent
 import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.feature.vault.contract.VaultUiAction
-import com.aozijx.passly.presentation.vault.editor.bankcard.AddBankCardScreen
 import com.aozijx.passly.feature.vault.editor.bankcard.AddBankCardViewModel
-import com.aozijx.passly.presentation.vault.editor.otp.AddOtpScreen
 import com.aozijx.passly.feature.vault.editor.otp.AddOtpViewModel
-import com.aozijx.passly.presentation.vault.editor.password.AddPasswordScreen
 import com.aozijx.passly.feature.vault.editor.password.AddPasswordViewModel
+import com.aozijx.passly.presentation.vault.VaultContent
+import com.aozijx.passly.presentation.vault.editor.bankcard.AddBankCardScreen
+import com.aozijx.passly.presentation.vault.editor.otp.AddOtpScreen
+import com.aozijx.passly.presentation.vault.editor.password.AddPasswordScreen
 import kotlinx.coroutines.flow.collectLatest
 
 /**
@@ -235,7 +235,7 @@ fun PasslyNavHost(
                             initialEntry = entry,
                             uiState = detailUiState,
                             otpUiState = currentOtpState,
-                            onEvent = detailViewModel::onAction,
+                            onAction = detailViewModel::onAction,
                             onBack = { navController.popBackStack() },
                             onUpdateInteraction = {
                                 appShellViewModel.onAction(AppShellUiAction.UpdateInteraction)

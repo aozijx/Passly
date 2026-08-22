@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -33,8 +34,8 @@ import com.aozijx.passly.feature.vault.editor.bankcard.AddBankCardAction
 import com.aozijx.passly.feature.vault.editor.bankcard.AddBankCardFormState
 import com.aozijx.passly.feature.vault.editor.bankcard.AddBankCardViewModel
 import com.aozijx.passly.feature.vault.editor.bankcard.CardType
-import com.aozijx.passly.presentation.vault.editor.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.editor.common.CreateEntryEffect
+import com.aozijx.passly.presentation.vault.editor.common.AddEntryScaffold
 import com.aozijx.passly.presentation.vault.editor.common.EntryEditorSection
 import com.aozijx.passly.presentation.vault.editor.common.EntryEditorTextField
 import com.aozijx.passly.presentation.vault.editor.common.EntryNotesField

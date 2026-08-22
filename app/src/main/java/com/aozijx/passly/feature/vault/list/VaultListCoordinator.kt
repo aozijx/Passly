@@ -4,6 +4,8 @@ import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.policy.EntryListSorter
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.domain.settings.model.LibrarySortSpec
+import com.aozijx.passly.domain.entry.model.query.EntryFilter
+import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
@@ -21,6 +23,8 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 
 data class VaultListState(
@@ -31,7 +35,7 @@ data class VaultListState(
 
 internal class VaultListCoordinator(
     private val scope: CoroutineScope,
-    private val queryCoordinator: VaultQueryCoordinator,
+    private val entryListQueryRepository: EntryListQueryRepository,
     private val uiState: StateFlow<VaultUiState>,
     private val refreshTrigger: Flow<Long>
 ) {
@@ -58,7 +62,7 @@ internal class VaultListCoordinator(
     }
 
     @OptIn(FlowPreview::class)
-    private val rawItems: StateFlow<List<EntryListItem>> = queryCoordinator.observeItems(
+    private val rawItems: StateFlow<List<EntryListItem>> = observeItems(
         debouncedSearchQuery = searchQuery
             .map(String::trim)
             .debounce(250)
@@ -67,6 +71,21 @@ internal class VaultListCoordinator(
     ).onEach { _ ->
         _isLoading.value = false
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun observeItems(
+        debouncedSearchQuery: Flow<String>,
+        refreshTrigger: Flow<Long>,
+    ): Flow<List<EntryListItem>> = combine(
+        debouncedSearchQuery,
+        refreshTrigger,
+    ) { query, refreshId -> QueryParams(query, refreshId) }
+        .distinctUntilChanged()
+        .flatMapLatest { params ->
+            entryListQueryRepository.observe(query = params.query, filter = EntryFilter.ALL)
+        }
+
+    private data class QueryParams(val query: String, val refreshId: Long)
 
     private val categories: StateFlow<List<String>> = rawItems
         .map { items ->
