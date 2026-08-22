@@ -8,7 +8,7 @@ import androidx.navigation.compose.rememberNavController
 import com.aozijx.passly.app.navigation.PasslyNavHost
 import com.aozijx.passly.app.shell.AppShellViewModel
 import com.aozijx.passly.core.ui.adaptive.ProvidePasslyAdaptiveLayout
-import com.aozijx.passly.feature.vault.VaultViewModel
+import com.aozijx.passly.presentation.feature.vault.list.VaultViewModel
 
 @Composable
 internal fun AppShellContent(
