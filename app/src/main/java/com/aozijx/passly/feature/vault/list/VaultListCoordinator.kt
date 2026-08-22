@@ -1,12 +1,14 @@
 package com.aozijx.passly.feature.vault.list
 
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.domain.entry.policy.EntryListSorter
+import com.aozijx.passly.domain.entry.policy.EntryListProjector
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.domain.settings.model.LibrarySortSpec
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
+import com.aozijx.passly.domain.entry.model.query.EntryListQuery
+import com.aozijx.passly.domain.entry.model.query.EntryFilter
 import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import kotlinx.coroutines.CoroutineScope
@@ -62,13 +64,7 @@ internal class VaultListCoordinator(
         .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val categories: StateFlow<List<String>> = rawItems
-        .map { items ->
-            items.flatMap { item -> item.tags }
-                .map { it.trim() }
-                .filter { it.isNotEmpty() }
-                .distinctBy { it.lowercase() }
-                .sortedWith(String.CASE_INSENSITIVE_ORDER)
-        }
+        .map(EntryListProjector::categories)
         .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val sortedItems: StateFlow<List<EntryListItem>> = combine(
@@ -77,13 +73,15 @@ internal class VaultListCoordinator(
         selectedSort,
         selectedCategory.map { category -> category?.trim()?.takeIf(String::isNotEmpty) }
     ) { items, query, sort, category ->
-        val searchedItems = if (query.isEmpty()) items else items.filter { it.matches(query) }
-        val filteredItems = category?.let {
-            searchedItems.filter { item ->
-                item.tags.any { tag -> tag.equals(category, ignoreCase = true) }
-            }
-        } ?: searchedItems
-        EntryListSorter.sort(filteredItems, sort.toDomain())
+        EntryListProjector.project(
+            items,
+            EntryListQuery(
+                searchText = query,
+                filter = EntryFilter.ALL,
+                category = category,
+                sort = sort.toDomain(),
+            ),
+        )
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val state: StateFlow<VaultListState> = combine(
@@ -97,15 +95,6 @@ internal class VaultListCoordinator(
             items = items,
         )
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), VaultListState())
-}
-
-private fun EntryListItem.matches(query: String): Boolean {
-    val normalized = query.lowercase()
-    return sequenceOf(title, username, associations.primaryUrl.orEmpty())
-        .plus(tags.asSequence())
-        .plus(associations.domains.asSequence())
-        .plus(associations.applicationIds.asSequence())
-        .any { candidate -> normalized in candidate.lowercase() }
 }
 
 private fun LibrarySortSpec.toDomain() = EntrySort(
