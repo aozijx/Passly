@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "e5c678bf29e92dcf1a38c4d9d4e8e5f7",
+    "identityHash": "fd73b74cb80a79873be39bb303472bc1",
     "entities": [
       {
         "tableName": "entries",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `entryType` TEXT NOT NULL, `version` INTEGER NOT NULL, `capabilityFlags` INTEGER NOT NULL, `otpType` TEXT, `searchIndexVersion` INTEGER NOT NULL, `summaryBlob` BLOB NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, PRIMARY KEY(`entryId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `entryType` TEXT NOT NULL, `version` INTEGER NOT NULL, `capabilityFlags` INTEGER NOT NULL, `otpType` TEXT, `searchIndexVersion` INTEGER NOT NULL, `title` TEXT NOT NULL, `username` TEXT NOT NULL, `primaryUrl` TEXT, `domains` TEXT NOT NULL, `applicationIds` TEXT NOT NULL, `iconName` TEXT, `iconCustomReference` TEXT, `favorite` INTEGER NOT NULL, `tags` TEXT NOT NULL, `iconColor` TEXT, `expiresAt` INTEGER, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, PRIMARY KEY(`entryId`))",
         "fields": [
           {
             "fieldPath": "entryId",
@@ -44,10 +44,65 @@
             "notNull": true
           },
           {
-            "fieldPath": "summaryBlob",
-            "columnName": "summaryBlob",
-            "affinity": "BLOB",
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
             "notNull": true
+          },
+          {
+            "fieldPath": "username",
+            "columnName": "username",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "primaryUrl",
+            "columnName": "primaryUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "domains",
+            "columnName": "domains",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "applicationIds",
+            "columnName": "applicationIds",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "iconName",
+            "columnName": "iconName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "iconCustomReference",
+            "columnName": "iconCustomReference",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "favorite",
+            "columnName": "favorite",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tags",
+            "columnName": "tags",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "iconColor",
+            "columnName": "iconColor",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "expiresAt",
+            "columnName": "expiresAt",
+            "affinity": "INTEGER"
           },
           {
             "fieldPath": "createdAt",
@@ -104,6 +159,36 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_entries_deletedAt_createdAt` ON `${TABLE_NAME}` (`deletedAt`, `createdAt`)"
+          },
+          {
+            "name": "index_entries_deletedAt_favorite_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "deletedAt",
+              "favorite",
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_entries_deletedAt_favorite_updatedAt` ON `${TABLE_NAME}` (`deletedAt`, `favorite`, `updatedAt`)"
+          },
+          {
+            "name": "index_entries_deletedAt_title",
+            "unique": false,
+            "columnNames": [
+              "deletedAt",
+              "title"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_entries_deletedAt_title` ON `${TABLE_NAME}` (`deletedAt`, `title`)"
+          },
+          {
+            "name": "index_entries_primaryUrl",
+            "unique": false,
+            "columnNames": [
+              "primaryUrl"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_entries_primaryUrl` ON `${TABLE_NAME}` (`primaryUrl`)"
           }
         ]
       },
@@ -799,7 +884,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e5c678bf29e92dcf1a38c4d9d4e8e5f7')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'fd73b74cb80a79873be39bb303472bc1')"
     ]
   }
 }
