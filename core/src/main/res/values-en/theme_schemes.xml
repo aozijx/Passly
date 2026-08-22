@@ -1,10 +1,10 @@
 <resources>
     <string name="theme_scheme_default">Default</string>
-    <string name="theme_scheme_horizon">Horizon</string>
-    <string name="theme_scheme_grove">Grove</string>
-    <string name="theme_scheme_ember">Ember</string>
-    <string name="theme_scheme_orchid">Orchid</string>
-    <string name="theme_scheme_solstice">Solstice</string>
-    <string name="theme_scheme_tideline">Tideline</string>
-    <string name="theme_scheme_rosewood">Rosewood</string>
+    <string name="theme_scheme_aurora">Aurora</string>
+    <string name="theme_scheme_sakura">Sakura</string>
+    <string name="theme_scheme_ocean">Ocean</string>
+    <string name="theme_scheme_forest">Forest</string>
+    <string name="theme_scheme_sunset">Sunset</string>
+    <string name="theme_scheme_lavender">Lavender</string>
+    <string name="theme_scheme_mint">Mint</string>
 </resources>

@@ -22,75 +22,75 @@ data class ThemeSchemeDefinition(
 object AppThemeSchemes {
     val all = listOf(
         ThemeSchemeDefinition(
-            key = "Default",
+            "default",
             R.string.theme_scheme_default,
             ThemeSeedResources(
-                R.color.on_primary_light,
-                R.color.on_primary_light,
-                R.color.on_primary_light,
-            )
-        ),
-        ThemeSchemeDefinition(
-            "horizon",
-            R.string.theme_scheme_horizon,
-            ThemeSeedResources(
-                R.color.theme_seed_horizon_primary,
-                R.color.theme_seed_horizon_secondary,
-                R.color.theme_seed_horizon_tertiary,
+                R.color.theme_seed_default_primary,
+                R.color.theme_seed_default_secondary,
+                R.color.theme_seed_default_tertiary,
             ),
         ),
         ThemeSchemeDefinition(
-            "grove",
-            R.string.theme_scheme_grove,
+            "aurora",
+            R.string.theme_scheme_aurora,
             ThemeSeedResources(
-                R.color.theme_seed_grove_primary,
-                R.color.theme_seed_grove_secondary,
-                R.color.theme_seed_grove_tertiary,
+                R.color.theme_seed_aurora_primary,
+                R.color.theme_seed_aurora_secondary,
+                R.color.theme_seed_aurora_tertiary,
             ),
         ),
         ThemeSchemeDefinition(
-            "ember",
-            R.string.theme_scheme_ember,
+            "sakura",
+            R.string.theme_scheme_sakura,
             ThemeSeedResources(
-                R.color.theme_seed_ember_primary,
-                R.color.theme_seed_ember_secondary,
-                R.color.theme_seed_ember_tertiary,
+                R.color.theme_seed_sakura_primary,
+                R.color.theme_seed_sakura_secondary,
+                R.color.theme_seed_sakura_tertiary,
             ),
         ),
         ThemeSchemeDefinition(
-            "orchid",
-            R.string.theme_scheme_orchid,
+            "ocean",
+            R.string.theme_scheme_ocean,
             ThemeSeedResources(
-                R.color.theme_seed_orchid_primary,
-                R.color.theme_seed_orchid_secondary,
-                R.color.theme_seed_orchid_tertiary,
+                R.color.theme_seed_ocean_primary,
+                R.color.theme_seed_ocean_secondary,
+                R.color.theme_seed_ocean_tertiary,
             ),
         ),
         ThemeSchemeDefinition(
-            "solstice",
-            R.string.theme_scheme_solstice,
+            "forest",
+            R.string.theme_scheme_forest,
             ThemeSeedResources(
-                R.color.theme_seed_solstice_primary,
-                R.color.theme_seed_solstice_secondary,
-                R.color.theme_seed_solstice_tertiary,
+                R.color.theme_seed_forest_primary,
+                R.color.theme_seed_forest_secondary,
+                R.color.theme_seed_forest_tertiary,
             ),
         ),
         ThemeSchemeDefinition(
-            "tideline",
-            R.string.theme_scheme_tideline,
+            "sunset",
+            R.string.theme_scheme_sunset,
             ThemeSeedResources(
-                R.color.theme_seed_tideline_primary,
-                R.color.theme_seed_tideline_secondary,
-                R.color.theme_seed_tideline_tertiary,
+                R.color.theme_seed_sunset_primary,
+                R.color.theme_seed_sunset_secondary,
+                R.color.theme_seed_sunset_tertiary,
             ),
         ),
         ThemeSchemeDefinition(
-            "rosewood",
-            R.string.theme_scheme_rosewood,
+            "lavender",
+            R.string.theme_scheme_lavender,
             ThemeSeedResources(
-                R.color.theme_seed_rosewood_primary,
-                R.color.theme_seed_rosewood_secondary,
-                R.color.theme_seed_rosewood_tertiary,
+                R.color.theme_seed_lavender_primary,
+                R.color.theme_seed_lavender_secondary,
+                R.color.theme_seed_lavender_tertiary,
+            ),
+        ),
+        ThemeSchemeDefinition(
+            "mint",
+            R.string.theme_scheme_mint,
+            ThemeSeedResources(
+                R.color.theme_seed_mint_primary,
+                R.color.theme_seed_mint_secondary,
+                R.color.theme_seed_mint_tertiary,
             ),
         ),
     )

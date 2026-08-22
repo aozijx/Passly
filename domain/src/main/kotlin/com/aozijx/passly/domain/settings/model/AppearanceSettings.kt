@@ -5,7 +5,7 @@ import java.util.Locale
 data class AppearanceSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val isDynamicColor: Boolean = true,
-    val themeKey: String = "",
+    val themeKey: String = "default",
     val canvasTintPercent: Int = ThemeCanvasTint.DEFAULT_PERCENT,
     val language: AppLanguage = AppLanguage.SYSTEM,
     val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED

@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="theme_seed_default_primary">#006495</color>
+    <color name="theme_seed_default_secondary">#50606E</color>
+    <color name="theme_seed_default_tertiary">#006A6A</color>
     <color name="primary_light">#006495</color>
     <color name="on_primary_light">#FFFFFF</color>
     <color name="primary_container_light">#CBE6FF</color>
@@ -26,25 +29,38 @@
     <color name="outline_dark">#8C9199</color>
 
     <!-- Muted manual-theme seeds. Each scheme combines these three into Material accents. -->
-    <color name="theme_seed_horizon_primary">#5B789E</color>
-    <color name="theme_seed_horizon_secondary">#6C7E71</color>
-    <color name="theme_seed_horizon_tertiary">#85789B</color>
-    <color name="theme_seed_grove_primary">#647B63</color>
-    <color name="theme_seed_grove_secondary">#687C70</color>
-    <color name="theme_seed_grove_tertiary">#8A765B</color>
-    <color name="theme_seed_ember_primary">#9A6C62</color>
-    <color name="theme_seed_ember_secondary">#8C6E75</color>
-    <color name="theme_seed_ember_tertiary">#876F5E</color>
-    <color name="theme_seed_orchid_primary">#846F9B</color>
-    <color name="theme_seed_orchid_secondary">#93717F</color>
-    <color name="theme_seed_orchid_tertiary">#637D91</color>
-    <color name="theme_seed_solstice_primary">#927852</color>
-    <color name="theme_seed_solstice_secondary">#8D6D60</color>
-    <color name="theme_seed_solstice_tertiary">#776E92</color>
-    <color name="theme_seed_tideline_primary">#517C91</color>
-    <color name="theme_seed_tideline_secondary">#5D7D78</color>
-    <color name="theme_seed_tideline_tertiary">#777297</color>
-    <color name="theme_seed_rosewood_primary">#906B73</color>
-    <color name="theme_seed_rosewood_secondary">#8A705C</color>
-    <color name="theme_seed_rosewood_tertiary">#806F88</color>
+    <!-- Aurora（极光）: 蓝紫渐变 -->
+    <color name="theme_seed_aurora_primary">#5B7FFF</color>
+    <color name="theme_seed_aurora_secondary">#8B9EFF</color>
+    <color name="theme_seed_aurora_tertiary">#C5D0FF</color>
+
+    <!-- Sakura（樱花）: 粉红温柔 -->
+    <color name="theme_seed_sakura_primary">#FF8A9B</color>
+    <color name="theme_seed_sakura_secondary">#FFB3C1</color>
+    <color name="theme_seed_sakura_tertiary">#FFD9E0</color>
+
+    <!-- Ocean（海洋）: 深蓝至浅蓝 -->
+    <color name="theme_seed_ocean_primary">#2B6B9E</color>
+    <color name="theme_seed_ocean_secondary">#4A8FC7</color>
+    <color name="theme_seed_ocean_tertiary">#A6C8E8</color>
+
+    <!-- Forest（森林）: 翠绿与嫩绿 -->
+    <color name="theme_seed_forest_primary">#3A7D5A</color>
+    <color name="theme_seed_forest_secondary">#6BAF8D</color>
+    <color name="theme_seed_forest_tertiary">#B5D9C4</color>
+
+    <!-- Sunset（日落）: 暖橙红 -->
+    <color name="theme_seed_sunset_primary">#E87A4F</color>
+    <color name="theme_seed_sunset_secondary">#F2A87A</color>
+    <color name="theme_seed_sunset_tertiary">#FCD5B5</color>
+
+    <!-- Lavender（薰衣草）: 淡紫与灰紫 -->
+    <color name="theme_seed_lavender_primary">#9B7FD4</color>
+    <color name="theme_seed_lavender_secondary">#BBA7E0</color>
+    <color name="theme_seed_lavender_tertiary">#DDD0F0</color>
+
+    <!-- Mint（薄荷）: 清新冰蓝绿 -->
+    <color name="theme_seed_mint_primary">#4DB6A0</color>
+    <color name="theme_seed_mint_secondary">#80D0C0</color>
+    <color name="theme_seed_mint_tertiary">#C0E8DF</color>
 </resources>

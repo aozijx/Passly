@@ -1,10 +1,10 @@
 <resources>
     <string name="theme_scheme_default">デフォルト</string>
-    <string name="theme_scheme_horizon">ホライズン</string>
-    <string name="theme_scheme_grove">グローブ</string>
-    <string name="theme_scheme_ember">エンバー</string>
-    <string name="theme_scheme_orchid">オーキッド</string>
-    <string name="theme_scheme_solstice">ソルスティス</string>
-    <string name="theme_scheme_tideline">タイドライン</string>
-    <string name="theme_scheme_rosewood">ローズウッド</string>
+    <string name="theme_scheme_aurora">オーロラ</string>
+    <string name="theme_scheme_sakura">サクラ</string>
+    <string name="theme_scheme_ocean">オーシャン</string>
+    <string name="theme_scheme_forest">フォレスト</string>
+    <string name="theme_scheme_sunset">サンセット</string>
+    <string name="theme_scheme_lavender">ラベンダー</string>
+    <string name="theme_scheme_mint">ミント</string>
 </resources>

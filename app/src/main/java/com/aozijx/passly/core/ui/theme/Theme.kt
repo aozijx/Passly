@@ -16,7 +16,7 @@ import com.aozijx.passly.domain.settings.model.ThemeMode
 fun AppTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
     dynamicColor: Boolean = true,
-    themeKey: String = "",
+    themeKey: String = "default",
     canvasTintPercent: Int = 8,
     fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
     outerCornerRadiusDp: Float = InterfaceStyleConstraints.DEFAULT_OUTER_RADIUS_DP,

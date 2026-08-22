@@ -25,7 +25,7 @@ message AppearancePreferences {
     optional ThemeMode theme_mode = 1 [default = THEME_MODE_SYSTEM];
     optional bool dynamic_color_enabled = 2 [default = true];
     // Stable application-owned key. The wire format intentionally does not expose theme enums.
-    optional string theme_key = 3 [default = ""];
+    optional string theme_key = 3 [default = "default"];
     // Strength (1-100) for tinting manual-theme canvas colors with the three accent seeds.
     optional int32 canvas_tint_percent = 4 [default = 8];
     // BCP-47 语言标签: "system", "zh-CN", "en", "ja"

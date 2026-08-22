@@ -1,10 +1,10 @@
 <resources>
     <string name="theme_scheme_default">默认</string>
-    <string name="theme_scheme_horizon">天际</string>
-    <string name="theme_scheme_grove">林地</string>
-    <string name="theme_scheme_ember">余烬</string>
-    <string name="theme_scheme_orchid">兰花</string>
-    <string name="theme_scheme_solstice">至日</string>
-    <string name="theme_scheme_tideline">潮线</string>
-    <string name="theme_scheme_rosewood">红木</string>
+    <string name="theme_scheme_aurora">极光</string>
+    <string name="theme_scheme_sakura">樱花</string>
+    <string name="theme_scheme_ocean">海洋</string>
+    <string name="theme_scheme_forest">森林</string>
+    <string name="theme_scheme_sunset">日落</string>
+    <string name="theme_scheme_lavender">薰衣草</string>
+    <string name="theme_scheme_mint">薄荷</string>
 </resources>

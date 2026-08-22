@@ -15,7 +15,7 @@ AES-256-GCM 共同保护，认证凭据通过信封解密同一份 Vault DEK。
 
 - Android API 31–36、JDK 21
 - Kotlin、Coroutines、Flow、Hilt
-- Jetpack Compose、Material 3、Navigation
+- Jetpack Compose、Material 3、Navigation、Paging 3
 - Room、SQLCipher、Proto DataStore
 - AES-256-GCM、Android Keystore、Argon2id
 
