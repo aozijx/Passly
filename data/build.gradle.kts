@@ -29,8 +29,10 @@ android {
         buildConfig = true
     }
 
-    sourceSets.getByName("androidTest") {
-        assets.directories.add("$projectDir/schemas")
+    sourceSets {
+        named("androidTest") {
+            assets.directories.add("$projectDir/schemas")
+        }
     }
 }
 
