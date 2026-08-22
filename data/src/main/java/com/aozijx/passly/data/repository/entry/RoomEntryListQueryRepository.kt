@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -63,7 +65,7 @@ internal class RoomEntryListQueryRepository @Inject constructor(
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
             else databaseSession.observeFlow {
-                val entryFlow = when (filter) {
+                val baseEntryFlow = when (filter) {
                     EntryFilter.ALL -> entryQueryDao().observeActive()
                     EntryFilter.TOTP_ONLY -> entryQueryDao().observeActiveWithCapability(
                         databaseFlag(EntryCapability.OTP)
@@ -72,6 +74,22 @@ internal class RoomEntryListQueryRepository @Inject constructor(
                     EntryFilter.PASSWORD_ONLY -> entryQueryDao().observeActiveWithCapability(
                         databaseFlag(EntryCapability.PASSWORD)
                     )
+                }
+                val database = this
+                val entryFlow = if (query.isBlank()) {
+                    baseEntryFlow
+                } else {
+                    flow {
+                        val searchTokens = blindIndexer.searchTokens(query)
+                        if (searchTokens.isEmpty()) {
+                            emitAll(flowOf(emptyList()))
+                        } else {
+                            val sqlQuery = buildEntryIdIntersectionQuery(searchTokens, SEARCH_FIELDS)
+                            val matchingIds = database.searchTokenQueryDao()
+                                .searchByTokenIntersection(sqlQuery)
+                            emitAll(entryQueryDao().observeActiveByIds(matchingIds))
+                        }
+                    }
                 }
                 val statsFlow =
                     entryActivityAnalyticsDao().observeUsageStats(ActivityType.USAGE_TYPES)
@@ -90,14 +108,7 @@ internal class RoomEntryListQueryRepository @Inject constructor(
                             )
                         }
                     )
-                    // 使用盲索引预过滤：仅解密匹配的条目
-                    val filteredMetaEntities = if (query.isNotEmpty()) {
-                        filterByBlindIndex(this, metaEntities, query)
-                    } else {
-                        metaEntities
-                    }
-
-                    filteredMetaEntities.map {
+                    metaEntities.map {
                         val summary = summaryCodec.decrypt(it.summaryBlob, it.entryId)
                         EntryListItemMapper.assemble(it, summary)
                     }
@@ -129,27 +140,6 @@ internal class RoomEntryListQueryRepository @Inject constructor(
                     .flowOn(Dispatchers.IO)
             }
         }
-
-    /**
-     * 使用盲索引对 [metaEntities] 进行预过滤，仅返回与 [query] 匹配的条目。
-     */
-    private suspend fun filterByBlindIndex(
-        db: AppDatabase,
-        metaEntities: List<EntryEntity>,
-        query: String
-    ): List<EntryEntity> {
-        val searchTokens = blindIndexer.searchTokens(query)
-        if (searchTokens.isEmpty()) return emptyList()
-
-        val sqlQuery = buildEntryIdIntersectionQuery(searchTokens, SEARCH_FIELDS)
-        val matchingIds = db.searchTokenQueryDao()
-            .searchByTokenIntersection(sqlQuery)
-            .toSet()
-
-        if (matchingIds.isEmpty()) return emptyList()
-
-        return metaEntities.filter { it.entryId in matchingIds }
-    }
 
     private companion object {
         private val SEARCH_FIELDS = LookupField.entries
