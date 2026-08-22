@@ -35,7 +35,6 @@ import com.aozijx.passly.feature.vault.contract.VaultUiAction
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.entry.EntryManager
 import com.aozijx.passly.feature.vault.list.VaultListCoordinator
-import com.aozijx.passly.feature.vault.list.VaultQueryCoordinator
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.otp.TotpCoordinator
 import com.aozijx.passly.feature.vault.presentation.VaultMutation
@@ -105,11 +104,9 @@ class VaultViewModel @Inject constructor(
         }
     )
 
-    private val queryCoordinator = VaultQueryCoordinator(entryListQueryRepository)
-
     private val listCoordinator = VaultListCoordinator(
         scope = viewModelScope,
-        queryCoordinator = queryCoordinator,
+        entryListQueryRepository = entryListQueryRepository,
         uiState = uiState,
         refreshTrigger = _refreshTrigger
     )

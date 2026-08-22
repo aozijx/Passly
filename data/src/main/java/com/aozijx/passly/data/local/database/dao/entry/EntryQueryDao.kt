@@ -64,15 +64,6 @@ interface EntryQueryDao {
     @Query("SELECT * FROM entries WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
     suspend fun getActiveByType(entryType: EntryType): List<EntryEntity>
 
-    @Query("SELECT * FROM entries WHERE deletedAt IS NULL ORDER BY updatedAt DESC LIMIT :limit OFFSET :offset")
-    suspend fun getActivePage(limit: Int, offset: Int): List<EntryEntity>
-
-    @Query("SELECT * FROM entries WHERE deletedAt IS NULL ORDER BY updatedAt DESC LIMIT :limit")
-    suspend fun getActiveRecentlyUpdated(limit: Int): List<EntryEntity>
-
-    @Query("SELECT * FROM entries WHERE deletedAt IS NULL ORDER BY createdAt DESC LIMIT :limit")
-    suspend fun getActiveRecentlyCreated(limit: Int): List<EntryEntity>
-
     // ---- exists ----
 
     @Query("SELECT EXISTS(SELECT 1 FROM entries WHERE entryId = :entryId)")
