@@ -3,13 +3,9 @@ package com.aozijx.passly.feature.vault.list
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.policy.EntryListProjector
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
-import com.aozijx.passly.domain.settings.model.LibrarySortSpec
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
-import com.aozijx.passly.domain.entry.model.query.EntrySort
-import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntryFilter
-import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
@@ -79,7 +75,7 @@ internal class VaultListCoordinator(
                 searchText = query,
                 filter = EntryFilter.ALL,
                 category = category,
-                sort = sort.toDomain(),
+                sort = sort,
             ),
         )
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -96,10 +92,3 @@ internal class VaultListCoordinator(
         )
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), VaultListState())
 }
-
-private fun LibrarySortSpec.toDomain() = EntrySort(
-    field = EntrySortField.valueOf(field.name),
-    direction = SortDirection.valueOf(direction.name),
-    pinFavorites = pinFavorites,
-    tieBreaker = EntrySortField.valueOf(tieBreaker.name),
-)

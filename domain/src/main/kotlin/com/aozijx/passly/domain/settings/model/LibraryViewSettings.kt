@@ -1,8 +1,10 @@
 package com.aozijx.passly.domain.settings.model
 
+import com.aozijx.passly.domain.entry.model.query.EntrySort
+
 data class LibraryViewSettings(
     val visibleQuickFilters: VisibleQuickFiltersConfig? = null,
-    val sort: LibrarySortSpec = LibrarySortSpec.DEFAULT,
+    val sort: EntrySort = EntrySort.DEFAULT,
     val entryCardPresentations: List<EntryCardPresentation> = emptyList(),
     val entryHierarchyDisplayMode: EntryHierarchyDisplayMode =
         EntryHierarchyDisplayMode.COLLAPSED

@@ -28,7 +28,7 @@ import com.aozijx.passly.domain.entry.service.FaviconService
 import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.settings.model.SettingsCommand
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
-import com.aozijx.passly.domain.settings.model.LibrarySortSpec
+import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.feature.vault.contract.VaultEffect
 import com.aozijx.passly.feature.vault.contract.VaultUiAction
@@ -175,7 +175,7 @@ class VaultViewModel @Inject constructor(
         }
     }
 
-    private fun selectSortOption(sort: LibrarySortSpec) {
+    private fun selectSortOption(sort: EntrySort) {
         mutate(VaultMutation.SortChanged(sort))
         viewModelScope.launch { settingsRepository.update(SettingsCommand.SetVaultSortOption(sort)) }
     }

@@ -4,14 +4,14 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
-import com.aozijx.passly.domain.settings.model.LibrarySortSpec
+import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.feature.vault.model.AddType
 
 sealed interface VaultUiAction {
     data class SearchQueryChanged(val query: String) : VaultUiAction
     data class CategorySelected(val category: String?) : VaultUiAction
     data object ClearCategory : VaultUiAction
-    data class SortOptionSelected(val sort: LibrarySortSpec) : VaultUiAction
+    data class SortOptionSelected(val sort: EntrySort) : VaultUiAction
     data class QuickFilterSelected(val filter: LibraryQuickFilter) : VaultUiAction
     data class SearchToggled(val active: Boolean) : VaultUiAction
     data object ToggleShowTotpCode : VaultUiAction

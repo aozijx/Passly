@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.vault.presentation
 
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
-import com.aozijx.passly.domain.settings.model.LibrarySortSpec
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.model.AddType
 
@@ -10,7 +10,7 @@ internal sealed interface VaultMutation {
     data class SearchQueryChanged(val query: String) : VaultMutation
     data class CategoryChanged(val category: String?) : VaultMutation
     data class QuickFilterChanged(val filter: LibraryQuickFilter) : VaultMutation
-    data class SortChanged(val sort: LibrarySortSpec) : VaultMutation
+    data class SortChanged(val sort: EntrySort) : VaultMutation
     data class SearchVisibilityChanged(val active: Boolean) : VaultMutation
     data object TotpVisibilityToggled : VaultMutation
     data class AddTypeChanged(val type: AddType?) : VaultMutation

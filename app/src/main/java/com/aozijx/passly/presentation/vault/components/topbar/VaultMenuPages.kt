@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.menu.MenuOptionText
 import com.aozijx.passly.core.ui.components.menu.selectedMenuModifier
-import com.aozijx.passly.domain.settings.model.LibrarySortSpec
+import com.aozijx.passly.domain.entry.model.query.EntrySort
 
 @Composable
 internal fun MainMenuContent(
@@ -83,16 +83,16 @@ internal fun MainMenuContent(
 
 @Composable
 internal fun SortSubMenu(
-    selectedSort: LibrarySortSpec,
-    onSortSelected: (LibrarySortSpec) -> Unit,
+    selectedSort: EntrySort,
+    onSortSelected: (EntrySort) -> Unit,
     onBack: () -> Unit
 ) {
     BackMenuItem(onBack)
-    val isDefault = selectedSort == LibrarySortSpec.DEFAULT
-    LibrarySortSpec.presets().forEach { preset ->
+    val isDefault = selectedSort == EntrySort.DEFAULT
+    EntrySort.presets().forEach { preset ->
         val selected = preset.field == selectedSort.field
         val direction = when {
-            preset == LibrarySortSpec.DEFAULT -> ""
+            preset == EntrySort.DEFAULT -> ""
             selected && !isDefault -> if (selectedSort.direction.name == "DESC") " \u2193" else " \u2191"
             else -> ""
         }

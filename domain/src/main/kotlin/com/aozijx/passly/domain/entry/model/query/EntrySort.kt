@@ -32,12 +32,24 @@ data class EntrySort(
         require(field != tieBreaker) { "Primary sort field and tie-breaker must differ" }
     }
 
+    fun toggled(): EntrySort = copy(
+        direction = if (direction == SortDirection.ASC) SortDirection.DESC else SortDirection.ASC,
+    )
+
     companion object {
         val DEFAULT = EntrySort(
             field = EntrySortField.LAST_USED_AT,
             direction = SortDirection.DESC,
             pinFavorites = true,
             tieBreaker = EntrySortField.ID
+        )
+
+        fun presets(): List<EntrySort> = listOf(
+            DEFAULT,
+            EntrySort(EntrySortField.TITLE, SortDirection.ASC),
+            EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC),
+            EntrySort(EntrySortField.UPDATED_AT, SortDirection.DESC),
+            EntrySort(EntrySortField.USAGE_FREQUENCY, SortDirection.DESC),
         )
     }
 }

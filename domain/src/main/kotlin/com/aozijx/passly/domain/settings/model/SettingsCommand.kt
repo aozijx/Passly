@@ -1,5 +1,7 @@
 package com.aozijx.passly.domain.settings.model
 
+import com.aozijx.passly.domain.entry.model.query.EntrySort
+
 sealed interface SettingsCommand {
     // Appearance
     data class SetThemeMode(val mode: ThemeMode) : SettingsCommand
@@ -46,7 +48,7 @@ sealed interface SettingsCommand {
     // Library
     data class SetVisibleLibraryQuickFilters(val keys: Set<String>) : SettingsCommand
     data object ClearVisibleLibraryQuickFilters : SettingsCommand
-    data class SetVaultSortOption(val sort: LibrarySortSpec) : SettingsCommand
+    data class SetVaultSortOption(val sort: EntrySort) : SettingsCommand
     data class SetEntryCardPresentation(val presentation: EntryCardPresentation) : SettingsCommand
     data class RemoveEntryCardPresentation(val entryTypeKey: String) : SettingsCommand
     data class SetEntryHierarchyDisplayMode(

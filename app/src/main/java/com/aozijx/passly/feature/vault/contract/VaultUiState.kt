@@ -1,15 +1,15 @@
 package com.aozijx.passly.feature.vault.contract
 
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
-import com.aozijx.passly.domain.settings.model.LibrarySortSpec
 import com.aozijx.passly.feature.vault.model.AddType
 
 data class VaultUiState(
     val searchQuery: String = "",
     val selectedCategory: String? = null,
     val selectedQuickFilter: LibraryQuickFilter = LibraryQuickFilter.ALL,
-    val selectedSort: LibrarySortSpec = LibrarySortSpec.DEFAULT,
+    val selectedSort: EntrySort = EntrySort.DEFAULT,
     val isSearchActive: Boolean = false,
     val isVaultItemsLoading: Boolean = true,
     val availableCategories: List<String> = emptyList(),
