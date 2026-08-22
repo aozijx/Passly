@@ -3,30 +3,28 @@ package com.aozijx.passly.feature.settings.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.feature.settings.SettingsViewModel
-import com.aozijx.passly.presentation.settings.appearance.AppearanceDetail
 import com.aozijx.passly.feature.settings.appearance.AppearanceSettingsAction
 import com.aozijx.passly.feature.settings.appearance.AppearanceSettingsViewModel
-import com.aozijx.passly.presentation.settings.appearance.InterfaceDetail
 import com.aozijx.passly.feature.settings.appearance.InterfaceSettingsAction
 import com.aozijx.passly.feature.settings.appearance.InterfaceSettingsViewModel
 import com.aozijx.passly.feature.settings.contract.SettingsUiAction
-import com.aozijx.passly.presentation.settings.internal.SettingsGroup
 import com.aozijx.passly.feature.settings.security.PrivacySettingsAction
 import com.aozijx.passly.feature.settings.security.PrivacySettingsViewModel
 import com.aozijx.passly.feature.settings.security.SecuritySettingsAction
 import com.aozijx.passly.feature.settings.security.SecuritySettingsViewModel
+import com.aozijx.passly.presentation.settings.appearance.AppearanceDetail
+import com.aozijx.passly.presentation.settings.appearance.InterfaceDetail
+import com.aozijx.passly.presentation.settings.internal.SettingsGroup
 import com.aozijx.passly.presentation.settings.security.PrivacyDetail
 import com.aozijx.passly.presentation.settings.security.SecurityDetail
-import com.aozijx.passly.presentation.settings.shell.SettingsScreenLocalState
 import com.aozijx.passly.presentation.settings.shell.SettingsSecondaryPage
 
 @Composable
 internal fun CoreSettingsRouteContent(
     route: SettingsRoute,
-    localState: SettingsScreenLocalState,
     settingsViewModel: SettingsViewModel,
     onBack: (() -> Unit)?
 ) {
