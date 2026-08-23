@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.presentation.feature.vault.editor.common.CreateEntryEffect
 import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpAction
 import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpViewModel
 import com.aozijx.passly.presentation.feature.vault.editor.otp.component.OtpConfigForm
@@ -62,8 +61,8 @@ fun AddOtpScreen(
     LaunchedEffect(viewModel, snackbarHostState, saveFailedMessage) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                CreateEntryEffect.Saved -> latestOnSaved()
-                is CreateEntryEffect.SaveFailed -> {
+                AddOtpEffect.Saved -> latestOnSaved()
+                is AddOtpEffect.SaveFailed -> {
                     snackbarHostState.showSnackbar(effect.message ?: saveFailedMessage)
                 }
             }

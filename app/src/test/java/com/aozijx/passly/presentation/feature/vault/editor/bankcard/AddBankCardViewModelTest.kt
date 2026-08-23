@@ -11,22 +11,27 @@ import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.feature.vault.editor.bankcard.CardNetwork
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryDraftMaterializer
+import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.Rule
 
 class AddBankCardViewModelTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
     @Test
     fun validCardNumberEnablesSaveAndKeepsValidationOutsideMapper() {
-        val viewModel = AddBankCardViewModel(createEntryUseCase())
+        val viewModel = AddBankCardViewModel(createEntryUseCase(), AuthenticatedSession)
 
         viewModel.onAction(AddBankCardAction.TitleChanged("Visa"))
         viewModel.onAction(AddBankCardAction.CardNumberChanged("4111 1111 1111 1111"))
 
-        val state = viewModel.uiState.value
+        val state: AddBankCardUiState = viewModel.uiState.value
         assertTrue(state.canSave)
         assertNull(state.form.cardNumberError)
         assertEquals(CardNetwork.VISA, state.form.inferredNetwork)

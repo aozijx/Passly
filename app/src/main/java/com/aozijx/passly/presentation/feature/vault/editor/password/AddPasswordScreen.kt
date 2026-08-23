@@ -13,7 +13,6 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.vault.editor.common.CreateEntryEffect
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordViewModel
 
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordAction
@@ -45,8 +44,8 @@ fun AddPasswordScreen(
     LaunchedEffect(viewModel, snackbarHostState, saveFailedMessage) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                CreateEntryEffect.Saved -> latestOnSaved()
-                is CreateEntryEffect.SaveFailed -> {
+                AddPasswordEffect.Saved -> latestOnSaved()
+                is AddPasswordEffect.SaveFailed -> {
                     snackbarHostState.showSnackbar(effect.message ?: saveFailedMessage)
                 }
             }

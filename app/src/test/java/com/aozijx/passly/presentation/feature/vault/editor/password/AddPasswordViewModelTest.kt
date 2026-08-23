@@ -10,32 +10,39 @@ import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryDraftMaterializer
+import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.Rule
 
 class AddPasswordViewModelTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
     @Test
     fun formAllowsPasswordOnlyLoginAndPreservesPasswordWhitespace() {
-        val viewModel = AddPasswordViewModel(createEntryUseCase())
+        val viewModel = AddPasswordViewModel(createEntryUseCase(AuthenticatedSession), AuthenticatedSession)
 
         viewModel.onAction(AddPasswordAction.TitleChanged("Mail"))
         viewModel.onAction(AddPasswordAction.PasswordChanged(" secret "))
 
-        assertTrue(viewModel.uiState.value.canSave)
-        assertEquals("", viewModel.uiState.value.form.username)
-        assertEquals(" secret ", viewModel.uiState.value.form.password)
+        val state: AddPasswordUiState = viewModel.uiState.value
+        assertTrue(state.canSave)
+        assertEquals("", state.form.username)
+        assertEquals(" secret ", state.form.password)
     }
 
     @Test
     fun onClearedWipesPasswordContent() {
-        val viewModel = AddPasswordViewModel(createEntryUseCase())
+        val viewModel = AddPasswordViewModel(createEntryUseCase(AuthenticatedSession), AuthenticatedSession)
         viewModel.onAction(AddPasswordAction.TitleChanged("Mail"))
         viewModel.onAction(AddPasswordAction.PasswordChanged("secret"))
 
-        val onCleared = requireNotNull(viewModel.javaClass.superclass).getDeclaredMethod("onCleared")
+        val onCleared = viewModel.javaClass.getDeclaredMethod("onCleared")
         onCleared.isAccessible = true
         onCleared.invoke(viewModel)
 
@@ -44,9 +51,22 @@ class AddPasswordViewModelTest {
         assertTrue(!viewModel.uiState.value.canSave)
     }
 
-    private fun createEntryUseCase() = CreateEntryUseCase(
+    @Test
+    fun sessionLockWipesPasswordContent() = runTest {
+        val session = MutableSession()
+        val viewModel = AddPasswordViewModel(createEntryUseCase(session), session)
+        viewModel.onAction(AddPasswordAction.TitleChanged("Mail"))
+        viewModel.onAction(AddPasswordAction.PasswordChanged("secret"))
+
+        session.lock()
+
+        assertEquals("", viewModel.uiState.value.form.password)
+        assertTrue(!viewModel.uiState.value.canSave)
+    }
+
+    private fun createEntryUseCase(session: SecureSessionAccessState) = CreateEntryUseCase(
         entryCommandRepository = NoOpEntryCommandRepository,
-        secureSessionAccessState = AuthenticatedSession,
+        secureSessionAccessState = session,
         materializer = EntryDraftMaterializer(),
     )
 
@@ -54,6 +74,15 @@ class AddPasswordViewModelTest {
         override val authenticationState: StateFlow<AuthenticationState> =
             MutableStateFlow(AuthenticationState.Authenticated(1L))
         override fun isUnlocked() = true
+    }
+
+    private class MutableSession : SecureSessionAccessState {
+        private val state = MutableStateFlow<AuthenticationState>(AuthenticationState.Authenticated(1L))
+        override val authenticationState: StateFlow<AuthenticationState> = state
+        override fun isUnlocked() = state.value is AuthenticationState.Authenticated
+        fun lock() {
+            state.value = AuthenticationState.Locked
+        }
     }
 
     private object NoOpEntryCommandRepository : EntryCommandRepository {

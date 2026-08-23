@@ -30,3 +30,14 @@ data class AddBankCardFormState(
     val isValid: Boolean
         get() = title.isNotBlank() && cardNumber.isNotBlank() && cardNumberError == null
 }
+
+data class AddBankCardUiState(
+    val form: AddBankCardFormState = AddBankCardFormState(),
+    val canSave: Boolean = false,
+    val isSaving: Boolean = false,
+)
+
+sealed interface AddBankCardEffect {
+    data object Saved : AddBankCardEffect
+    data class SaveFailed(val message: String?) : AddBankCardEffect
+}

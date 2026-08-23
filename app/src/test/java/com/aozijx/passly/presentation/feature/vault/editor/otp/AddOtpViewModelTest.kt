@@ -17,16 +17,21 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryDraftMaterializer
+import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import org.junit.Rule
 
 class AddOtpViewModelTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
     @Test
     fun scannedHotp_roundTripsThroughFormDraftAndMaterializer() {
-        val viewModel = AddOtpViewModel(createEntryUseCase())
+        val viewModel = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
         val config = OtpConfig(
             type = OtpType.HOTP,
             secret = "ABC 123",
@@ -40,8 +45,9 @@ class AddOtpViewModelTest {
         )
 
         viewModel.onAction(AddOtpAction.ScannedConfigApplied(config))
+        val state: AddOtpUiState = viewModel.uiState.value
         val entry = EntryDraftMaterializer().materialize(
-            viewModel.uiState.value.form.toEntryDraft(),
+            state.form.toEntryDraft(),
             EntryIdentity(
                 id = EntryId("otp-1"),
                 type = EntryType.OTP,

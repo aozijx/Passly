@@ -34,7 +34,6 @@ import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardA
 import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardFormState
 import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardViewModel
 import com.aozijx.passly.presentation.feature.vault.editor.bankcard.CardType
-import com.aozijx.passly.presentation.feature.vault.editor.common.CreateEntryEffect
 import com.aozijx.passly.presentation.feature.vault.editor.common.AddEntryScaffold
 import com.aozijx.passly.presentation.feature.vault.editor.common.EntryEditorSection
 import com.aozijx.passly.presentation.feature.vault.editor.common.EntryEditorTextField
@@ -62,8 +61,8 @@ fun AddBankCardScreen(
     LaunchedEffect(viewModel, snackbarHostState, saveFailedMessage) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                CreateEntryEffect.Saved -> latestOnSaved()
-                is CreateEntryEffect.SaveFailed -> {
+                AddBankCardEffect.Saved -> latestOnSaved()
+                is AddBankCardEffect.SaveFailed -> {
                     snackbarHostState.showSnackbar(effect.message ?: saveFailedMessage)
                 }
             }
