@@ -26,9 +26,19 @@ class EntryTypeDefinitionsTest {
 
         assertTrue(FieldKey.OTP_ISSUER in otp.fields.map { it.key })
         assertTrue(FieldKey.OTP_ACCOUNT_NAME in otp.fields.map { it.key })
+        assertTrue(FieldKey.OTP_ENCODING in otp.fields.map { it.key })
         assertFalse(FieldKey.USERNAME in otp.fields.map { it.key })
+        assertFalse(FieldKey.PASSWORD in otp.fields.map { it.key })
         assertFalse(FieldKey.PRIMARY_URL in otp.fields.map { it.key })
         assertFalse(FieldKey.DOMAINS in otp.fields.map { it.key })
+    }
+
+    @Test
+    fun loginDefinition_allowsPasswordOnlyCredentials() {
+        val login = EntryTypeDefinitions[EntryType.LOGIN]
+
+        assertFalse(FieldKey.USERNAME in login.requiredFields)
+        assertTrue(FieldKey.PASSWORD in login.requiredFields)
     }
 
     @Test
@@ -139,7 +149,7 @@ class EntryTypeDefinitionsTest {
             .withValue(definition, FieldKey.USERNAME, EntryDraftValue.Text(""))
 
         assertEquals(
-            setOf(FieldKey.USERNAME, FieldKey.PASSWORD),
+            setOf(FieldKey.PASSWORD),
             draft.missingRequiredFields(definition),
         )
     }

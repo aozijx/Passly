@@ -56,7 +56,7 @@ object EntryTypeDefinitions {
 
     private fun loginFields() = listOf(
         title(),
-        secret(FieldKey.USERNAME, required = true),
+        secret(FieldKey.USERNAME),
         secret(FieldKey.EMAIL),
         high(FieldKey.PASSWORD, SensitiveFieldKey.PASSWORD, required = true),
         field(FieldKey.PRIMARY_URL),
@@ -131,6 +131,7 @@ object EntryTypeDefinitions {
         field(FieldKey.OTP_COUNTER, EntryFieldValueType.LONG),
         field(FieldKey.OTP_DIGITS, EntryFieldValueType.INTEGER),
         field(FieldKey.OTP_ALGORITHM),
+        field(FieldKey.OTP_ENCODING),
         secret(FieldKey.NOTES),
         field(FieldKey.TAGS, EntryFieldValueType.TEXT_LIST),
     )
