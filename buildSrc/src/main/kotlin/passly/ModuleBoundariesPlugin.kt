@@ -22,6 +22,16 @@ class ModuleBoundariesPlugin : Plugin<Project> {
             description = "Verifies the allowed direct Gradle project dependency graph."
             policyModules.set(extension.policyModules)
             allowedEdges.set(extension.allowedEdges)
+            sourceFiles.from(
+                target.fileTree(target.rootDir) {
+                    include("app/src/**/*.kt")
+                    include("core/src/**/*.kt")
+                    include("core/common/src/**/*.kt")
+                    include("data/src/**/*.kt")
+                    include("domain/src/**/*.kt")
+                },
+            )
+            sourceRoot.set(target.layout.projectDirectory)
         }
 
         target.subprojects {

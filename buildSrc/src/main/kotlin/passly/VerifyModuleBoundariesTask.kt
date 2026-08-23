@@ -2,8 +2,14 @@ package passly
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.SetProperty
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 
 abstract class VerifyModuleBoundariesTask : DefaultTask() {
@@ -18,6 +24,13 @@ abstract class VerifyModuleBoundariesTask : DefaultTask() {
 
     @get:Input
     abstract val allowedEdges: SetProperty<String>
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val sourceFiles: ConfigurableFileCollection
+
+    @get:Internal
+    abstract val sourceRoot: DirectoryProperty
 
     @TaskAction
     fun verify() {
@@ -56,6 +69,21 @@ abstract class VerifyModuleBoundariesTask : DefaultTask() {
         val cycle = findCycle(actualEdges.get())
         if (cycle != null) {
             throw GradleException("Cyclic project dependency: ${cycle.joinToString(" -> ")}")
+        }
+
+        val root = sourceRoot.get().asFile.toPath()
+        val sourceViolations = EditorSourceBoundaryVerifier.verify(
+            sourceFiles.files.map { file ->
+                EditorSource(
+                    path = root.relativize(file.toPath()).toString(),
+                    content = file.readText(),
+                )
+            },
+        )
+        if (sourceViolations.isNotEmpty()) {
+            throw GradleException(
+                "Forbidden editor source dependencies:\n${sourceViolations.sorted().joinToString("\n")}",
+            )
         }
     }
 
