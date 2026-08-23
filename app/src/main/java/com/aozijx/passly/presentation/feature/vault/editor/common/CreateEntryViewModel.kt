@@ -3,9 +3,7 @@ package com.aozijx.passly.presentation.feature.vault.editor.common
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.domain.entry.port.EntryCommandRepository
+import com.aozijx.passly.domain.entry.model.EntryId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,10 +19,9 @@ import kotlinx.coroutines.launch
  */
 abstract class CreateEntryViewModel<Form>(
     initialForm: Form,
-    private val entryCommandRepository: EntryCommandRepository,
-    private val secureSessionAccessState: SecureSessionAccessState,
     private val isFormValid: (Form) -> Boolean,
-    private val createEntry: (Form) -> Entry
+    private val saveForm: suspend (Form) -> AppResult<EntryId>,
+    private val clearSensitiveForm: (Form) -> Form,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -48,24 +45,17 @@ abstract class CreateEntryViewModel<Form>(
     protected fun saveEntry() {
         val current = _uiState.value
         if (!current.canSave || current.isSaving) return
-        if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
-            _effects.trySend(CreateEntryEffect.SaveFailed("当前会话不能新建条目"))
-            return
-        }
-
         mutate(CreateEntryMutation.SaveStarted)
         viewModelScope.launch {
-            if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
-                restoreAfterFailure("当前会话不能新建条目")
-                return@launch
-            }
             try {
-                when (
-                    val result = entryCommandRepository.createEntry(
-                        createEntry(current.form)
-                    )
-                ) {
-                    is AppResult.Success -> _effects.send(CreateEntryEffect.Saved)
+                when (val result = saveForm(current.form)) {
+                    is AppResult.Success -> {
+                        _uiState.value = CreateEntryUiState(
+                            form = clearSensitiveForm(_uiState.value.form),
+                            canSave = false,
+                        )
+                        _effects.send(CreateEntryEffect.Saved)
+                    }
                     is AppResult.Failure -> restoreAfterFailure(result.error.code)
                 }
             } catch (error: CancellationException) {
@@ -83,5 +73,13 @@ abstract class CreateEntryViewModel<Form>(
 
     private fun mutate(mutation: CreateEntryMutation<Form>) {
         _uiState.value = CreateEntryReducer.reduce(_uiState.value, mutation)
+    }
+
+    override fun onCleared() {
+        _uiState.value = CreateEntryUiState(
+            form = clearSensitiveForm(_uiState.value.form),
+            canSave = false,
+        )
+        super.onCleared()
     }
 }

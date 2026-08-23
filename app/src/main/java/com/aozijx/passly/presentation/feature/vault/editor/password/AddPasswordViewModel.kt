@@ -1,22 +1,18 @@
 package com.aozijx.passly.presentation.feature.vault.editor.password
 
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.entry.port.EntryCommandRepository
+import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.presentation.feature.vault.editor.common.CreateEntryViewModel
-import com.aozijx.passly.feature.vault.editor.password.PasswordEntryFactory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
 class AddPasswordViewModel @Inject constructor(
-    entryCommandRepository: EntryCommandRepository,
-    secureSessionAccessState: SecureSessionAccessState
+    createEntryUseCase: CreateEntryUseCase,
 ) : CreateEntryViewModel<AddPasswordFormState>(
     initialForm = AddPasswordFormState(),
-    entryCommandRepository = entryCommandRepository,
-    secureSessionAccessState = secureSessionAccessState,
     isFormValid = AddPasswordFormState::isValid,
-    createEntry = { PasswordEntryFactory.create(it) }
+    saveForm = { createEntryUseCase(it.toEntryDraft()) },
+    clearSensitiveForm = { AddPasswordFormState() },
 ) {
 
     fun onAction(action: AddPasswordAction) {

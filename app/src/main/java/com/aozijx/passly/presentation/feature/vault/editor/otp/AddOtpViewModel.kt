@@ -1,6 +1,8 @@
 package com.aozijx.passly.presentation.feature.vault.editor.otp
 
 import com.aozijx.passly.core.otp.OtpAuthUriCodec
+import com.aozijx.passly.core.error.model.SessionModeRestricted
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpType
@@ -18,10 +20,15 @@ class AddOtpViewModel @Inject constructor(
     secureSessionAccessState: SecureSessionAccessState
 ) : CreateEntryViewModel<OtpFormState>(
     initialForm = OtpFormState(),
-    entryCommandRepository = entryCommandRepository,
-    secureSessionAccessState = secureSessionAccessState,
     isFormValid = OtpFormState::isValid,
-    createEntry = { OtpEntryFactory.create(it) }
+    saveForm = {
+        if (secureSessionAccessState.hasFullSecureSessionAccess()) {
+            entryCommandRepository.createEntry(OtpEntryFactory.create(it))
+        } else {
+            AppResult.Failure(SessionModeRestricted())
+        }
+    },
+    clearSensitiveForm = { OtpFormState() },
 ) {
 
     private val _events = Channel<AddOtpEvent>(Channel.BUFFERED)

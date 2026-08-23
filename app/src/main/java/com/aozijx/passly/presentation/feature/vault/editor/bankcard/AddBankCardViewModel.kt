@@ -1,5 +1,7 @@
 package com.aozijx.passly.presentation.feature.vault.editor.bankcard
 
+import com.aozijx.passly.core.error.model.SessionModeRestricted
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.presentation.feature.vault.editor.common.CreateEntryViewModel
@@ -15,10 +17,15 @@ class AddBankCardViewModel @Inject constructor(
     secureSessionAccessState: SecureSessionAccessState
 ) : CreateEntryViewModel<AddBankCardFormState>(
     initialForm = AddBankCardFormState(),
-    entryCommandRepository = entryCommandRepository,
-    secureSessionAccessState = secureSessionAccessState,
     isFormValid = AddBankCardFormState::isValid,
-    createEntry = { BankCardEntryFactory.create(it) }
+    saveForm = {
+        if (secureSessionAccessState.hasFullSecureSessionAccess()) {
+            entryCommandRepository.createEntry(BankCardEntryFactory.create(it))
+        } else {
+            AppResult.Failure(SessionModeRestricted())
+        }
+    },
+    clearSensitiveForm = { AddBankCardFormState() },
 ) {
 
     fun onAction(action: AddBankCardAction) {
