@@ -5,7 +5,7 @@ import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupOperationStatus
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
+import com.aozijx.passly.feature.backup.presentation.contract.BackupUiState
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

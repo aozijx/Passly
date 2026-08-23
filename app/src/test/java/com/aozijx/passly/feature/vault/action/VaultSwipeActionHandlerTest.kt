@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.action
+package com.aozijx.passly.presentation.feature.vault.list.action
 
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryId

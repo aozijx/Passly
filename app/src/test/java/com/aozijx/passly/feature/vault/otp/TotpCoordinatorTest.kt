@@ -14,7 +14,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 
-class TotpCoordinatorTest {
+class OtpCodeRefreshUseCaseTest {
 
     @Test
     fun `activate loads complete Steam config by entry id`() = runBlocking {
@@ -29,7 +29,7 @@ class TotpCoordinatorTest {
         )
         var loadedEntryId: String? = null
         var generatedConfig: OtpConfig? = null
-        val coordinator = TotpCoordinator(
+        val coordinator = OtpCodeRefreshUseCase(
             scope = scope,
             loadOtpConfig = { entryId ->
                 loadedEntryId = entryId
@@ -55,7 +55,7 @@ class TotpCoordinatorTest {
     @Test
     fun `session lock during activation clears state without throwing`() = runBlocking {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-        val coordinator = TotpCoordinator(
+        val coordinator = OtpCodeRefreshUseCase(
             scope = scope,
             loadOtpConfig = {
                 throw SessionLockedException("Session is SOFT_LOCKED")
@@ -80,7 +80,7 @@ class TotpCoordinatorTest {
             periodSeconds = 30,
             encoding = OtpSecretEncoding.BASE32
         )
-        val coordinator = TotpCoordinator(
+        val coordinator = OtpCodeRefreshUseCase(
             scope = scope,
             initiallyUnlocked = false,
             loadOtpConfig = {
