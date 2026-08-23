@@ -1,14 +1,10 @@
 package com.aozijx.passly.presentation.feature.vault.editor.otp
 
 import com.aozijx.passly.core.otp.OtpAuthUriCodec
-import com.aozijx.passly.core.error.model.SessionModeRestricted
-import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.domain.entry.port.EntryCommandRepository
+import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.presentation.feature.vault.editor.common.CreateEntryViewModel
-import com.aozijx.passly.feature.vault.editor.otp.OtpEntryFactory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -16,18 +12,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AddOtpViewModel @Inject constructor(
-    entryCommandRepository: EntryCommandRepository,
-    secureSessionAccessState: SecureSessionAccessState
+    createEntryUseCase: CreateEntryUseCase,
 ) : CreateEntryViewModel<OtpFormState>(
     initialForm = OtpFormState(),
     isFormValid = OtpFormState::isValid,
-    saveForm = {
-        if (secureSessionAccessState.hasFullSecureSessionAccess()) {
-            entryCommandRepository.createEntry(OtpEntryFactory.create(it))
-        } else {
-            AppResult.Failure(SessionModeRestricted())
-        }
-    },
+    saveForm = { createEntryUseCase(it.toEntryDraft()) },
     clearSensitiveForm = { OtpFormState() },
 ) {
 

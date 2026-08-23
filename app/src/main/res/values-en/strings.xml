@@ -197,6 +197,8 @@
     <string name="otp_type">OTP type</string>
     <string name="otp_secret_encoding">Secret encoding</string>
     <string name="otp_counter">Counter</string>
+    <string name="otp_issuer">Issuer</string>
+    <string name="otp_account_name">Account name</string>
     <string name="password_strength_very_weak">Very weak</string>
     <string name="metadata_created_at">Created: %1$s</string>
     <string name="metadata_last_modified">Last modified: %1$s</string>

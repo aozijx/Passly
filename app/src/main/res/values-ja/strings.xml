@@ -196,6 +196,8 @@
     <string name="otp_type">OTPタイプ</string>
     <string name="otp_secret_encoding">シークレットのエンコード</string>
     <string name="otp_counter">カウンター</string>
+    <string name="otp_issuer">発行者</string>
+    <string name="otp_account_name">アカウント名</string>
     <string name="password_strength_very_weak">非常に弱い</string>
     <string name="metadata_created_at">作成日時：%1$s</string>
     <string name="metadata_last_modified">最終更新：%1$s</string>

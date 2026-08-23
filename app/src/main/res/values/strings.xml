@@ -155,6 +155,8 @@
     <string name="otp_type">OTP 类型</string>
     <string name="otp_secret_encoding">密钥编码</string>
     <string name="otp_counter">计数器</string>
+    <string name="otp_issuer">发行方</string>
+    <string name="otp_account_name">账户名称</string>
     <string name="totp_period">更新周期 (秒)</string>
     <string name="totp_digits">验证码位数</string>
     <string name="totp_algorithm">加密算法</string>

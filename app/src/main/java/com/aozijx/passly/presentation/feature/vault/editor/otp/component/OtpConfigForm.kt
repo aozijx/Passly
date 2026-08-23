@@ -51,6 +51,20 @@ fun OtpConfigForm(
             modifier = Modifier.fillMaxWidth()
         )
 
+        EntryEditorTextField(
+            value = state.issuer,
+            onValueChange = { onFieldUpdate(state.copy(issuer = it)) },
+            label = stringResource(R.string.otp_issuer),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        EntryEditorTextField(
+            value = state.accountName,
+            onValueChange = { onFieldUpdate(state.copy(accountName = it)) },
+            label = stringResource(R.string.otp_account_name),
+            modifier = Modifier.fillMaxWidth()
+        )
+
         DropdownSelector(
             value = OtpHashAlgorithm.entries.find { it.name == state.algorithm }
                 ?: OtpHashAlgorithm.SHA1,
