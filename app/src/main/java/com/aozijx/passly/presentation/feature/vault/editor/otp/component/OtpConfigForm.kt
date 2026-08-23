@@ -20,7 +20,7 @@ import com.aozijx.passly.core.ui.components.common.DropdownSelector
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.feature.vault.model.OtpFormState
+import com.aozijx.passly.presentation.feature.vault.editor.otp.OtpFormState
 import com.aozijx.passly.presentation.feature.vault.editor.common.EntryEditorTextField
 
 @OptIn(ExperimentalMaterial3Api::class)

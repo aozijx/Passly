@@ -6,7 +6,6 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.presentation.feature.vault.editor.common.CreateEntryViewModel
-import com.aozijx.passly.feature.vault.model.OtpFormState
 import com.aozijx.passly.feature.vault.editor.otp.OtpEntryFactory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel

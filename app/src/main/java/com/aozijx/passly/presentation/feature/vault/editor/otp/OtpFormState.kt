@@ -1,11 +1,9 @@
-package com.aozijx.passly.feature.vault.model
+package com.aozijx.passly.presentation.feature.vault.editor.otp
 
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 
-/**
- * OTP 字段状态。保存中、错误等页面生命周期状态由对应编辑器 ViewModel 持有。
- */
+/** OTP form values. Save progress and errors belong to the page ViewModel state. */
 data class OtpFormState(
     val title: String = "",
     val issuer: String = "",
@@ -17,7 +15,9 @@ data class OtpFormState(
     val algorithm: String = "SHA1",
     val encoding: OtpSecretEncoding = OtpSecretEncoding.BASE32,
     val counter: String = "0",
-    val uriText: String = ""
+    val uriText: String = "",
+    val notes: String = "",
+    val tags: String = "",
 ) {
     val isValid: Boolean get() = title.isNotBlank() && secret.isNotBlank()
 }

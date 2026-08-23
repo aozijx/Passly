@@ -13,7 +13,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
-import com.aozijx.passly.feature.vault.model.OtpFormState
+import com.aozijx.passly.presentation.feature.vault.editor.otp.OtpFormState
 import com.github.f4b6a3.uuid.UuidCreator
 
 internal object OtpEntryFactory {
