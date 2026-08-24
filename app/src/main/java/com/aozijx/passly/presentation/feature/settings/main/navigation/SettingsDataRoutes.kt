@@ -1,6 +1,7 @@
 package com.aozijx.passly.presentation.feature.settings.main.navigation
 
 import android.content.Context
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -20,6 +21,8 @@ import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageS
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.autofill.AutofillSettingsAction
 import com.aozijx.passly.presentation.feature.settings.autofill.AutofillSettingsViewModel
+import com.aozijx.passly.presentation.feature.settings.autofill.toAutofillSettingsUiModel
+import com.aozijx.passly.presentation.feature.settings.autofill.toDomainModel
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsUiAction
@@ -34,7 +37,7 @@ import com.aozijx.passly.presentation.feature.settings.security.RecoveryDraftVie
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.messageOrNull
-import com.aozijx.passly.presentation.feature.settings.autofill.component.AutofillDetail
+import com.aozijx.passly.presentation.ui.settings.autofill.AutofillDetail
 import com.aozijx.passly.presentation.feature.settings.backup.component.DataManagementDetail
 import com.aozijx.passly.presentation.feature.settings.main.general.GeneralDetail
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationDetail
@@ -89,13 +92,49 @@ internal fun DataSettingsRouteContent(
             ) {
                 item {
                     AutofillDetail(
-                        state = state,
+                        state = state.toAutofillSettingsUiModel(
+                            supportsCredentialManager =
+                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
+                        ),
                         onOpenAutofillSettings = {
                             viewModel.onAction(
                                 AutofillSettingsAction.OpenSystemAutofillSettings
                             )
                         },
-                        onAction = viewModel::onAction,
+                        onEnabledChange = {
+                            viewModel.onAction(AutofillSettingsAction.SetEnabled(it))
+                        },
+                        onPresentationChange = {
+                            viewModel.onAction(
+                                AutofillSettingsAction.SetPresentation(it.toDomainModel())
+                            )
+                        },
+                        onCredentialManagerEnabledChange = {
+                            viewModel.onAction(
+                                AutofillSettingsAction.SetCredentialManagerEnabled(it)
+                            )
+                        },
+                        onAuthenticationRequiredChange = {
+                            viewModel.onAction(
+                                AutofillSettingsAction.SetAuthenticationRequired(it)
+                            )
+                        },
+                        onOtpEnabledChange = {
+                            viewModel.onAction(AutofillSettingsAction.SetOtpEnabled(it))
+                        },
+                        onSavePromptsEnabledChange = {
+                            viewModel.onAction(
+                                AutofillSettingsAction.SetSavePromptsEnabled(it)
+                            )
+                        },
+                        onUnmatchedSuggestionsEnabledChange = {
+                            viewModel.onAction(
+                                AutofillSettingsAction.SetUnmatchedSuggestionsEnabled(it)
+                            )
+                        },
+                        onMaxSuggestionsChange = {
+                            viewModel.onAction(AutofillSettingsAction.SetMaxSuggestions(it))
+                        },
                     )
                 }
             }
