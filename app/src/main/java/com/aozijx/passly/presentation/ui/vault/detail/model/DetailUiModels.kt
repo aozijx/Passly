@@ -1,0 +1,87 @@
+package com.aozijx.passly.presentation.ui.vault.detail.model
+
+data class DetailScreenUiModel(
+    val entryId: String,
+    val title: String,
+    val username: String,
+    val entryType: DetailEntryTypeUiModel,
+    val favorite: Boolean,
+    val iconName: String?,
+    val iconCustomPath: String?,
+    val associatedDomain: String?,
+    val associatedAppPackage: String?,
+    val editedTitle: String,
+    val isEditingTitle: Boolean,
+    val validationError: String?,
+    val isAccessHistoryEnabled: Boolean,
+    val isFaviconDownloading: Boolean,
+    val sections: List<DetailSectionUiModel>,
+    val relatedEntries: List<RelatedEntryUiModel>,
+    val activityCount: Int,
+    val otp: DetailOtpUiModel?,
+)
+
+enum class DetailEntryTypeUiModel {
+    ACCOUNT, LOGIN, NOTE, BANK_CARD, ID_CARD, PASSPORT, DRIVER_LICENSE,
+    SSH_KEY, WIFI, PASSKEY, OTP, DATABASE_CREDENTIAL, SERVER_CREDENTIAL,
+    API_KEY, CRYPTO_WALLET, SEED_PHRASE, RECOVERY_CODE,
+}
+
+data class DetailSectionUiModel(
+    val kind: DetailSectionKindUiModel,
+    val fields: List<DetailFieldUiModel> = emptyList(),
+)
+
+enum class DetailSectionKindUiModel {
+    CREDENTIAL, OTP, BANK_CARD, IDENTITY, WIFI, SSH, SEED_PHRASE, PASSKEY,
+    ENTRY_TYPE, ASSOCIATED_INFO, NOTES, METADATA, ACTIVITY,
+}
+
+data class DetailFieldUiModel(
+    val key: String,
+    val text: String? = null,
+    val sensitiveText: ScopedSensitiveText = ScopedSensitiveText.Empty,
+    val isRevealed: Boolean = false,
+    val isEditing: Boolean = false,
+)
+
+data class RelatedEntryUiModel(
+    val id: String,
+    val title: String,
+    val entryType: DetailEntryTypeUiModel,
+)
+
+data class DetailOtpUiModel(
+    val code: String?,
+    val progress: Float,
+    val isLoading: Boolean,
+    val hasError: Boolean,
+)
+
+interface DetailUiEventHandler {
+    fun onBack()
+    fun onInteraction()
+    fun onTitleEditStarted()
+    fun onTitleChanged(value: String)
+    fun onTitleEditCancelled()
+    fun onTitleSaved()
+    fun onFavoriteToggled()
+    fun onRevealRequested(fieldKey: String)
+    fun onCopyRequested(fieldKey: String)
+    fun onFieldSaved(fieldKey: String, value: String)
+    fun onRelatedEntryOpened(entryId: String)
+
+    data object None : DetailUiEventHandler {
+        override fun onBack() = Unit
+        override fun onInteraction() = Unit
+        override fun onTitleEditStarted() = Unit
+        override fun onTitleChanged(value: String) = Unit
+        override fun onTitleEditCancelled() = Unit
+        override fun onTitleSaved() = Unit
+        override fun onFavoriteToggled() = Unit
+        override fun onRevealRequested(fieldKey: String) = Unit
+        override fun onCopyRequested(fieldKey: String) = Unit
+        override fun onFieldSaved(fieldKey: String, value: String) = Unit
+        override fun onRelatedEntryOpened(entryId: String) = Unit
+    }
+}
