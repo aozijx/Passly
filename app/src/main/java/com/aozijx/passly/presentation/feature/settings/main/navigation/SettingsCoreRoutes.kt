@@ -22,12 +22,13 @@ import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsV
 import com.aozijx.passly.presentation.feature.settings.security.toPrivacySettingsUiModel
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsViewModel
+import com.aozijx.passly.presentation.feature.settings.security.toSecuritySettingsUiModel
 import com.aozijx.passly.presentation.feature.settings.appearance.appLanguageFromKey
 import com.aozijx.passly.presentation.feature.settings.appearance.toAppearanceUiModel
 import com.aozijx.passly.presentation.feature.settings.appearance.toDomainModel
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 import com.aozijx.passly.presentation.ui.settings.security.PrivacyDetail
-import com.aozijx.passly.presentation.feature.settings.security.component.SecurityDetail
+import com.aozijx.passly.presentation.ui.settings.security.SecurityDetail
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 import com.aozijx.passly.presentation.ui.settings.appearance.AppearanceDetail
 import com.aozijx.passly.presentation.ui.settings.appearance.InterfaceDetail
@@ -51,9 +52,9 @@ internal fun CoreSettingsRouteContent(
             ) {
                 item {
                     SecurityDetail(
-                        state = state,
-                        isAppPasswordEnabled = settingsState.isAppPasswordEnabled,
-                        isBiometricEnabled = state.isBiometricEnabled,
+                        state = state.toSecuritySettingsUiModel(
+                            isAppPasswordEnabled = settingsState.isAppPasswordEnabled,
+                        ),
                         onLockTimeoutChange = {
                             viewModel.onAction(SecuritySettingsAction.SetLockTimeout(it))
                         },

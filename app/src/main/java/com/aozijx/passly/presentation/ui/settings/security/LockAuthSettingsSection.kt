@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.security.component
+package com.aozijx.passly.presentation.ui.settings.security
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,20 +28,12 @@ import com.aozijx.passly.core.ui.components.group.model.RoundedGroupItem
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.domain.settings.model.LockTimeoutConstraints
+import com.aozijx.passly.presentation.ui.settings.security.model.SecuritySettingsUiModel
 import kotlin.math.roundToInt
-
-private const val SLIDER_MIN_SECONDS = (LockTimeoutConstraints.SLIDER_MIN_MS / 1000L).toFloat()
-private const val SLIDER_MAX_SECONDS = (LockTimeoutConstraints.MAX_MS / 1000L).toFloat()
-private const val SLIDER_STEP_SECONDS = (LockTimeoutConstraints.SLIDER_STEP_MS / 1000L).toFloat()
 
 @Composable
 fun LockAuthSettingsSection(
-    lockTimeout: Long,
-    isAppPasswordEnabled: Boolean,
-    isBiometricEnabled: Boolean,
-    isInvalidateKeyOnBioChange: Boolean,
-    isLockOnBackground: Boolean,
+    state: SecuritySettingsUiModel,
     onLockTimeoutChange: (Long) -> Unit,
     onAppPasswordClick: () -> Unit,
     onBiometricEnabledChange: (Boolean) -> Unit,
@@ -49,9 +41,9 @@ fun LockAuthSettingsSection(
     onLockOnBackgroundChange: (Boolean) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val currentSeconds = (lockTimeout / 1000L).toFloat()
-        .coerceIn(SLIDER_MIN_SECONDS, SLIDER_MAX_SECONDS)
-    var sliderValue by remember(lockTimeout) { mutableFloatStateOf(currentSeconds) }
+    val currentSeconds = (state.lockTimeoutMs / 1000L).toFloat()
+        .coerceIn(state.sliderMinSeconds, state.sliderMaxSeconds)
+    var sliderValue by remember(state.lockTimeoutMs) { mutableFloatStateOf(currentSeconds) }
 
     SettingsSectionTitle(text = stringResource(R.string.authentication_label))
     RoundedGroup(
@@ -62,14 +54,14 @@ fun LockAuthSettingsSection(
                 icon = Icons.Default.Lock,
                 title = stringResource(R.string.settings_security_lock_on_background),
                 subtitle = stringResource(R.string.settings_security_lock_on_background_description),
-                checked = isLockOnBackground,
+                checked = state.isLockOnBackground,
                 onCheckedChange = onLockOnBackgroundChange
             ),
             navigationSettingsGroupItem(
                 key = "security.lock_timeout",
                 icon = Icons.Default.Timer,
                 title = stringResource(R.string.settings_security_auto_lock),
-                value = formatLockTimeoutText(lockTimeout),
+                value = formatLockTimeoutText(state.lockTimeoutMs),
                 onClick = { expanded = !expanded }
             ),
             RoundedGroupItem(
@@ -97,12 +89,13 @@ fun LockAuthSettingsSection(
                         onValueChange = { sliderValue = it },
                         onValueChangeFinished = {
                             val rounded =
-                                ((sliderValue / SLIDER_STEP_SECONDS).roundToInt() * SLIDER_STEP_SECONDS)
-                                    .coerceIn(SLIDER_MIN_SECONDS, SLIDER_MAX_SECONDS)
+                                ((sliderValue / state.sliderStepSeconds).roundToInt() *
+                                    state.sliderStepSeconds)
+                                    .coerceIn(state.sliderMinSeconds, state.sliderMaxSeconds)
                             sliderValue = rounded
                             onLockTimeoutChange(rounded.toLong() * 1000L)
                         },
-                        valueRange = SLIDER_MIN_SECONDS..SLIDER_MAX_SECONDS,
+                        valueRange = state.sliderMinSeconds..state.sliderMaxSeconds,
                         modifier = Modifier.fillMaxWidth()
                     )
                     Row(
@@ -112,7 +105,7 @@ fun LockAuthSettingsSection(
                         Text(
                             text = stringResource(
                                 R.string.settings_duration_seconds,
-                                SLIDER_MIN_SECONDS.roundToInt()
+                                state.sliderMinSeconds.roundToInt()
                             ),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline
@@ -120,7 +113,7 @@ fun LockAuthSettingsSection(
                         Text(
                             text = stringResource(
                                 R.string.settings_duration_minutes,
-                                (SLIDER_MAX_SECONDS / 60f).roundToInt()
+                                (state.sliderMaxSeconds / 60f).roundToInt()
                             ),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline
@@ -134,7 +127,7 @@ fun LockAuthSettingsSection(
                 title = stringResource(R.string.settings_security_app_password),
                 subtitle = stringResource(R.string.app_password_unlock_description),
                 value = stringResource(
-                    if (isAppPasswordEnabled) R.string.settings_value_configured else R.string.not_set
+                    if (state.isAppPasswordEnabled) R.string.settings_value_configured else R.string.not_set
                 ),
                 onClick = onAppPasswordClick
             ),
@@ -143,28 +136,28 @@ fun LockAuthSettingsSection(
                 icon = Icons.Default.Fingerprint,
                 title = stringResource(R.string.settings_security_biometric_unlock),
                 subtitle = stringResource(
-                    if (isBiometricEnabled) {
+                    if (state.isBiometricEnabled) {
                         R.string.settings_security_biometric_enabled_description
                     } else {
                         R.string.settings_security_biometric_disabled_description
                     }
                 ),
-                checked = isBiometricEnabled,
+                checked = state.isBiometricEnabled,
                 onCheckedChange = onBiometricEnabledChange
             ),
             switchSettingsGroupItem(
                 key = "security.invalidate_biometric",
-                visible = isBiometricEnabled,
+                visible = state.isBiometricEnabled,
                 icon = Icons.Default.Fingerprint,
                 title = stringResource(R.string.settings_security_invalidate_biometric_key),
                 subtitle = stringResource(
-                    if (isInvalidateKeyOnBioChange) {
+                    if (state.isInvalidateKeyOnBioChange) {
                         R.string.settings_security_invalidate_biometric_key_enabled
                     } else {
                         R.string.settings_security_invalidate_biometric_key_disabled
                     }
                 ),
-                checked = isInvalidateKeyOnBioChange,
+                checked = state.isInvalidateKeyOnBioChange,
                 onCheckedChange = onInvalidateKeyOnBioChangeToggle
             )
         )
