@@ -101,6 +101,20 @@ data class DetailIdentityUiModel(
     val username: String,
 )
 
+data class DetailWifiUiModel(
+    val ssid: String, val password: String?, val passwordRevealed: Boolean,
+    val isEditingPassword: Boolean, val editedPassword: String,
+    val securityType: String, val isHidden: Boolean,
+)
+
+data class DetailSshUiModel(
+    val fingerprint: String,
+    val passphrase: String?, val passphraseRevealed: Boolean,
+    val privateKey: String?, val privateKeyRevealed: Boolean,
+    val isEditingPassphrase: Boolean, val editedPassphrase: String,
+    val canRevealMore: Boolean,
+)
+
 data class DetailOtpUiModel(
     val code: String?,
     val progress: Float,

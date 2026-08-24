@@ -43,9 +43,9 @@ import com.aozijx.passly.presentation.ui.vault.detail.component.NotesSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.PasskeySection
 import com.aozijx.passly.presentation.ui.vault.detail.component.RelatedEntriesSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.SeedPhraseSection
-import com.aozijx.passly.presentation.feature.vault.detail.section.SshKeySection
+import com.aozijx.passly.presentation.ui.vault.detail.component.SshKeySection
 import com.aozijx.passly.presentation.ui.vault.detail.component.TotpSection
-import com.aozijx.passly.presentation.feature.vault.detail.section.WifiSection
+import com.aozijx.passly.presentation.ui.vault.detail.component.WifiSection
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
@@ -56,6 +56,10 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.DetailIdentityUiMode
 import com.aozijx.passly.presentation.feature.vault.detail.withCardCvv
 import com.aozijx.passly.presentation.feature.vault.detail.withCardNumber
 import com.aozijx.passly.presentation.feature.vault.detail.withDetailUsername
+import com.aozijx.passly.presentation.feature.vault.detail.withWifiPassword
+import com.aozijx.passly.presentation.feature.vault.detail.withSshPassphrase
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailWifiUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailSshUiModel
 import androidx.compose.ui.text.input.TextFieldValue
 
 @Composable
@@ -261,31 +265,43 @@ fun DetailScrollableContent(
 
         if (DetailSectionKey.WIFI in registeredSections) {
             item {
+                val context = LocalContext.current
+                val handler = DetailSectionActionHandler(onAuthenticate, onAction)
+                val password = uiState.revealed(RevealedFieldKey.PASSWORD)?.let { String(it.toCharArray()) }
                 WifiSection(
-                    entry = entry,
-                    editState = editState,
-                    revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD)?.let { String(it.toCharArray()) },
-                    onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, OwnedChars.fromNullableString(it)) },
-                    onAuthenticate = onAuthenticate,
-                    onEntryUpdated = { onAction(DetailUiAction.CommitEntryUpdate(it)) },
-                    onAction = onAction
+                    model = DetailWifiUiModel(entry.username, password, password != null,
+                        editState.isEditingPassword, editState.editedPassword,
+                        entry.secret.wifi?.securityType ?: "WPA", entry.secret.wifi?.isHidden ?: false),
+                    onSsidCopy = { ClipboardUtils.copy(context, entry.username); handler.record("SSID", ActivityType.COPY_PASSWORD) },
+                    onPasswordCopy = { copySensitiveField(context, handler, "wifi password", password?.let(OwnedChars::fromString), entry.secret.wifi?.password) },
+                    onPasswordReveal = { onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.PASSWORD)) },
+                    onPasswordEditStarted = { editState.editedPassword = password.orEmpty(); editState.isEditingPassword = true },
+                    onPasswordChanged = { editState.editedPassword = it },
+                    onPasswordSaved = { if (it != password) { onAction(DetailUiAction.CommitEntryUpdate(entry.withWifiPassword(it))); revealField(RevealedFieldKey.PASSWORD, OwnedChars.fromString(it)) }; editState.isEditingPassword = false },
                 )
             }
         }
 
         if (DetailSectionKey.SSH in registeredSections) {
             item {
+                val context = LocalContext.current
+                val handler = DetailSectionActionHandler(onAuthenticate, onAction)
+                val passphrase = uiState.revealed(RevealedFieldKey.SSH_PASSPHRASE)?.let { String(it.toCharArray()) }
+                val privateKey = uiState.revealed(RevealedFieldKey.SSH_PRIVATE_KEY)?.let { String(it.toCharArray()) }
+                val hasPassphrase = SensitiveFieldKey.SSH_PASSPHRASE in uiState.sensitiveFieldKeys
+                val hasPrivateKey = SensitiveFieldKey.SSH_PRIVATE_KEY in uiState.sensitiveFieldKeys
                 SshKeySection(
-                    entry = entry,
-                    editState = editState,
-                    hasPassphrase = SensitiveFieldKey.SSH_PASSPHRASE in uiState.sensitiveFieldKeys,
-                    hasPrivateKey = SensitiveFieldKey.SSH_PRIVATE_KEY in uiState.sensitiveFieldKeys,
-                    revealedPassword = uiState.revealed(RevealedFieldKey.SSH_PASSPHRASE)?.let { String(it.toCharArray()) },
-                    revealedSshPrivateKey = uiState.revealed(RevealedFieldKey.SSH_PRIVATE_KEY)?.let { String(it.toCharArray()) },
-                    onPasswordRevealed = { revealField(RevealedFieldKey.SSH_PASSPHRASE, OwnedChars.fromNullableString(it)) },
-                    onAuthenticate = onAuthenticate,
-                    onEntryUpdated = { onAction(DetailUiAction.CommitEntryUpdate(it)) },
-                    onAction = onAction
+                    model = DetailSshUiModel(entry.username, passphrase, passphrase != null,
+                        privateKey, privateKey != null, editState.isEditingPassword,
+                        editState.editedPassword, (hasPrivateKey && privateKey == null) || (hasPassphrase && passphrase == null)),
+                    onFingerprintCopy = { ClipboardUtils.copy(context, entry.username); handler.record("fingerprint", ActivityType.COPY_PASSWORD) },
+                    onPassphraseCopy = { copySensitiveField(context, handler, "passphrase", passphrase?.let(OwnedChars::fromString), null) },
+                    onPassphraseReveal = { if (passphrase != null) revealField(RevealedFieldKey.SSH_PASSPHRASE, null) else onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SSH_PASSPHRASE)) },
+                    onPassphraseEditStarted = { editState.editedPassword = passphrase.orEmpty(); editState.isEditingPassword = true },
+                    onPassphraseChanged = { editState.editedPassword = it },
+                    onPassphraseSaved = { if (it != passphrase) { onAction(DetailUiAction.CommitEntryUpdate(entry.withSshPassphrase(it))); revealField(RevealedFieldKey.SSH_PASSPHRASE, OwnedChars.fromString(it)) }; editState.isEditingPassword = false },
+                    onPrivateKeyClick = { if (privateKey == null) onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SSH_PRIVATE_KEY)) else copySensitiveField(context, handler, "private key", OwnedChars.fromString(privateKey), null) },
+                    onRevealAll = { val keys = buildSet { if (hasPrivateKey && privateKey == null) add(RevealedFieldKey.SSH_PRIVATE_KEY); if (hasPassphrase && passphrase == null) add(RevealedFieldKey.SSH_PASSPHRASE) }; if (keys.isNotEmpty()) onAction(DetailUiAction.RevealHighSensitivityFields(keys)) },
                 )
             }
         }
