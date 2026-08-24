@@ -1,6 +1,5 @@
-package com.aozijx.passly.presentation.feature.vault.detail.section
+package com.aozijx.passly.presentation.ui.vault.detail.component
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,35 +21,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.vault.detail.DetailAuthenticate
-import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
-import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
-import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
-import com.aozijx.passly.presentation.feature.vault.detail.copySensitiveField
-import com.aozijx.passly.presentation.ui.vault.detail.component.DetailItem
-import com.aozijx.passly.domain.sensitive.OwnedChars
 
 @Composable
 fun SeedPhraseSection(
     hasSeedPhrase: Boolean,
     revealedSeedPhrase: String?,
-    onSeedPhraseRevealed: (String?) -> Unit,
-    onAuthenticate: DetailAuthenticate,
-    onAction: (DetailUiAction) -> Unit
+    onCopy: () -> Unit,
+    onReveal: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val msgCopySuccess = stringResource(R.string.field_copy_success_message)
-    val seedPhraseLabel = stringResource(R.string.seed_phrase)
-    val actionHandler = DetailSectionActionHandler(
-        onAuthenticate = onAuthenticate,
-        onAction = onAction
-    )
-
     val wordList = remember(revealedSeedPhrase) {
         revealedSeedPhrase?.split(" ")?.filter { it.isNotBlank() } ?: emptyList()
     }
@@ -60,27 +42,9 @@ fun SeedPhraseSection(
             label = stringResource(R.string.seed_phrase_title),
             value = revealedSeedPhrase?.let { stringResource(R.string.seed_phrase_revealed) },
             isRevealed = revealedSeedPhrase != null,
-            onCopy = {
-                copySensitiveField(
-                    context = context,
-                    handler = actionHandler,
-                    fieldName = "seed phrase",
-                    revealedValue = revealedSeedPhrase?.let { OwnedChars.fromString(it) },
-                    sourceValue = null,
-                    afterCopy = {
-                        Toast.makeText(
-                            context,
-                            msgCopySuccess.format(seedPhraseLabel),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                )
-            },
+            onCopy = onCopy,
             onEdit = null,
-            onReveal = {
-                if (revealedSeedPhrase != null) onSeedPhraseRevealed(null)
-                else onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SEED_PHRASE))
-            }
+            onReveal = onReveal,
         )
 
         if (wordList.isNotEmpty()) {
@@ -110,9 +74,7 @@ fun SeedPhraseSection(
 
         if (hasSeedPhrase && revealedSeedPhrase == null) {
             Button(
-                onClick = {
-                    onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SEED_PHRASE))
-                },
+                onClick = onReveal,
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.medium
             ) {

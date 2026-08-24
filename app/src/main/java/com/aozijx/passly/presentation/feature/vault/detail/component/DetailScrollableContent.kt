@@ -40,9 +40,9 @@ import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.EntryCategoryItem
 import com.aozijx.passly.presentation.ui.vault.detail.component.IdCardSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.NotesSection
-import com.aozijx.passly.presentation.feature.vault.detail.section.PasskeySection
+import com.aozijx.passly.presentation.ui.vault.detail.component.PasskeySection
 import com.aozijx.passly.presentation.ui.vault.detail.component.RelatedEntriesSection
-import com.aozijx.passly.presentation.feature.vault.detail.section.SeedPhraseSection
+import com.aozijx.passly.presentation.ui.vault.detail.component.SeedPhraseSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.SshKeySection
 import com.aozijx.passly.presentation.ui.vault.detail.component.TotpSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.WifiSection
@@ -308,27 +308,31 @@ fun DetailScrollableContent(
 
         if (DetailSectionKey.SEED_PHRASE in registeredSections) {
             item {
+                val context = LocalContext.current
+                val handler = DetailSectionActionHandler(onAuthenticate, onAction)
+                val seed = uiState.revealed(RevealedFieldKey.SEED_PHRASE)?.let { String(it.toCharArray()) }
                 SeedPhraseSection(
                     hasSeedPhrase = SensitiveFieldKey.SEED_PHRASE in uiState.sensitiveFieldKeys,
-                    revealedSeedPhrase = uiState.revealed(RevealedFieldKey.SEED_PHRASE)?.let { String(it.toCharArray()) },
-                    onSeedPhraseRevealed = {
-                        revealField(RevealedFieldKey.SEED_PHRASE, OwnedChars.fromNullableString(it))
-                    },
-                    onAuthenticate = onAuthenticate,
-                    onAction = onAction,
+                    revealedSeedPhrase = seed,
+                    onCopy = { copySensitiveField(context, handler, "seed phrase", seed?.let(OwnedChars::fromString), null) },
+                    onReveal = { if (seed != null) revealField(RevealedFieldKey.SEED_PHRASE, null) else onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SEED_PHRASE)) },
                 )
             }
         }
 
         if (DetailSectionKey.PASSKEY in registeredSections) {
             item {
+                val context = LocalContext.current
+                val handler = DetailSectionActionHandler(onAuthenticate, onAction)
+                val passkeyData = uiState.revealed(RevealedFieldKey.PASSKEY_DATA)?.let { String(it.toCharArray()) }
+                val hardwareInfo = entry.secret.passkey?.hardwareKeyInfo
                 PasskeySection(
-                    entry = entry,
                     hasPasskeyData = SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE in uiState.sensitiveFieldKeys,
-                    revealedPasskeyData = uiState.revealed(RevealedFieldKey.PASSKEY_DATA)?.let { String(it.toCharArray()) },
-                    onRevealField = { key, value -> revealField(key, value?.let { OwnedChars.fromString(it) }) },
-                    onAuthenticate = onAuthenticate,
-                    onAction = onAction,
+                    revealedPasskeyData = passkeyData,
+                    hardwareKeyInfo = hardwareInfo,
+                    onPasskeyCopy = { copySensitiveField(context, handler, "passkey data", passkeyData?.let(OwnedChars::fromString), null) },
+                    onPasskeyReveal = { if (passkeyData != null) revealField(RevealedFieldKey.PASSKEY_DATA, null) else onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.PASSKEY_DATA)) },
+                    onHardwareKeyCopy = { hardwareInfo?.let { ClipboardUtils.copy(context, it); handler.record("hardware key info", ActivityType.COPY_PASSWORD) } },
                 )
             }
         }
