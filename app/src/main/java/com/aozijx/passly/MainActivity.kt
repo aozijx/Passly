@@ -16,10 +16,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
-import com.aozijx.passly.app.shell.AppShellViewModel
+import com.aozijx.passly.presentation.feature.shell.AppShellViewModel
 import com.aozijx.passly.app.shell.FlipToLockSensorController
-import com.aozijx.passly.app.shell.contract.AppShellUiAction
-import com.aozijx.passly.app.shell.ui.AppShell
+import com.aozijx.passly.presentation.feature.shell.AppShellUiAction
+import com.aozijx.passly.presentation.feature.shell.AppShell
 import com.aozijx.passly.core.message.compose.ProvideAppNoticePublisher
 import com.aozijx.passly.core.permission.compose.PermissionServices
 import com.aozijx.passly.core.permission.compose.ProvidePermissionServices

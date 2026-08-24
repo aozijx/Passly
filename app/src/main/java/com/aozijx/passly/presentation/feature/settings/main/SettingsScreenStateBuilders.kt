@@ -1,0 +1,76 @@
+package com.aozijx.passly.presentation.feature.settings.main
+
+import android.content.Context
+import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.presentation.feature.settings.security.AppPasswordAction
+import com.aozijx.passly.presentation.feature.settings.main.component.AppPasswordDialogEvent
+import com.aozijx.passly.presentation.feature.settings.main.component.SettingsDialogEvent
+import com.aozijx.passly.presentation.feature.settings.main.component.SettingsDialogsActions
+import com.aozijx.passly.presentation.feature.settings.main.component.SettingsDialogsState
+
+internal fun buildSettingsDialogsState(
+    localState: SettingsScreenLocalState,
+    swipeLeftAction: SwipeActionType,
+    swipeRightAction: SwipeActionType,
+    backupDirectoryUri: String?,
+    context: Context
+): SettingsDialogsState = SettingsDialogsState(
+    showRightActionDialog = localState.showRightActionDialog,
+    showLeftActionDialog = localState.showLeftActionDialog,
+    showClearBackupDirConfirmDialog = localState.showClearBackupDirConfirmDialog,
+    activeAppPasswordDialog = localState.activeAppPasswordDialog,
+    swipeLeftAction = swipeLeftAction,
+    swipeRightAction = swipeRightAction,
+    backupDirectoryUri = backupDirectoryUri,
+    context = context,
+    appPasswordCurrent = localState.appPasswordCurrent,
+    appPasswordNew = localState.appPasswordNew,
+    appPasswordConfirm = localState.appPasswordConfirm
+)
+
+internal fun buildSettingsDialogsActions(
+    localState: SettingsScreenLocalState,
+    onSetSwipeRightAction: (SwipeActionType) -> Unit,
+    onSetSwipeLeftAction: (SwipeActionType) -> Unit,
+    submitAppPasswordAction: (AppPasswordAction) -> Unit,
+    onClearBackupDirectory: () -> Unit
+): SettingsDialogsActions = SettingsDialogsActions(
+    onDialogEvent = { event ->
+        when (event) {
+            is SettingsDialogEvent.SetSwipeRightAction -> onSetSwipeRightAction(event.action)
+            is SettingsDialogEvent.SetSwipeLeftAction -> onSetSwipeLeftAction(event.action)
+            SettingsDialogEvent.ClearBackupDirectory -> onClearBackupDirectory()
+            SettingsDialogEvent.DismissRightActionDialog -> localState.dismissRightActionDialog()
+            SettingsDialogEvent.DismissLeftActionDialog -> localState.dismissLeftActionDialog()
+            SettingsDialogEvent.DismissClearBackupDirConfirmDialog ->
+                localState.dismissClearBackupDirConfirmDialog()
+
+            is SettingsDialogEvent.AppPassword -> {
+                when (event.event) {
+                    AppPasswordDialogEvent.DismissAction -> localState.dismissAppPasswordActionDialog()
+                    AppPasswordDialogEvent.ShowChange -> localState.openChangeAppPasswordDialog()
+                    AppPasswordDialogEvent.ShowDisable ->
+                        submitAppPasswordAction(AppPasswordAction.DISABLE)
+                    AppPasswordDialogEvent.DismissSet -> localState.dismissSetAppPasswordDialog()
+                    AppPasswordDialogEvent.DismissChange -> localState.dismissChangeAppPasswordDialog()
+                    is AppPasswordDialogEvent.CurrentChanged ->
+                        localState.appPasswordCurrent = event.event.value
+
+                    is AppPasswordDialogEvent.NewChanged -> localState.appPasswordNew =
+                        event.event.value
+
+                    is AppPasswordDialogEvent.ConfirmChanged ->
+                        localState.appPasswordConfirm = event.event.value
+
+                    AppPasswordDialogEvent.ConfirmSet ->
+                        submitAppPasswordAction(AppPasswordAction.SET)
+
+                    AppPasswordDialogEvent.ConfirmChange ->
+                        submitAppPasswordAction(AppPasswordAction.CHANGE)
+
+
+                }
+            }
+        }
+    }
+)

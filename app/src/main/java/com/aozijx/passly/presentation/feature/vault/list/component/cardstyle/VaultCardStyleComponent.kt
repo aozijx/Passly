@@ -3,7 +3,7 @@ package com.aozijx.passly.presentation.feature.vault.list.component.cardstyle
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.EntryIdentity
@@ -31,7 +31,7 @@ interface VaultCardStyleComponent {
     @Composable
     fun Render(
         entry: EntryListItem,
-        totpState: OtpUiState?,
+        totpState: OtpCodeState?,
         showTotpCode: Boolean,
         onClick: () -> Unit,
     )

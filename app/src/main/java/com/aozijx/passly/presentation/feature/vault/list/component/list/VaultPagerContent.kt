@@ -56,7 +56,7 @@ import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiState
-import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.presentation.feature.vault.list.component.cardstyle.CardStyleRegistry
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -69,7 +69,7 @@ fun VaultPagerContent(
     uiState: VaultUiState,
     entryPages: (LibraryQuickFilter) -> Flow<PagingData<EntryListItem>>,
     entryCardPresentations: List<EntryCardPresentation>,
-    totpStates: StateFlow<Map<String, OtpUiState>>,
+    totpStates: StateFlow<Map<String, OtpCodeState>>,
     swipeLeftAction: SwipeActionType,
     swipeRightAction: SwipeActionType,
     isSwipeEnabled: Boolean,
@@ -208,7 +208,7 @@ private fun EntryListItemRow(
     isSwipeEnabled: Boolean,
     onSwipeTriggered: (SwipeActionType, EntryListItem) -> Unit,
     onItemClick: () -> Unit,
-    totpStates: StateFlow<Map<String, OtpUiState>>,
+    totpStates: StateFlow<Map<String, OtpCodeState>>,
     showTotpCode: Boolean,
     animateInitialAppearance: Boolean,
     modifier: Modifier = Modifier

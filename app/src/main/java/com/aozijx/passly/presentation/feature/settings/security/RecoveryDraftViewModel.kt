@@ -1,0 +1,141 @@
+package com.aozijx.passly.presentation.feature.settings.security
+
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationRequest
+import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.model.RecoveryCredentialDraft
+import com.aozijx.passly.domain.access.model.RecoveryCredentialCreation
+import com.aozijx.passly.domain.access.model.RecoveryCredentialFactory
+import com.aozijx.passly.presentation.feature.settings.security.RecoveryDraftMutation
+import com.aozijx.passly.presentation.feature.settings.security.RecoveryDraftReducer
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import javax.inject.Inject
+
+@HiltViewModel
+class RecoveryDraftViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
+    private val authenticationManager: AuthenticationManager,
+    private val draftFactory: RecoveryCredentialFactory
+) : ViewModel() {
+    private var draft: RecoveryCredentialDraft? = null
+    private val _state = MutableStateFlow<RecoveryDraftState>(
+        if (savedStateHandle.get<Boolean>(WAS_DISCLOSURE_OPEN) == true) RecoveryDraftState.DraftExpired
+        else RecoveryDraftState.Empty
+    )
+    val state: StateFlow<RecoveryDraftState> = _state.asStateFlow()
+
+    fun onAction(action: RecoveryDraftAction) {
+        when (action) {
+            RecoveryDraftAction.Generate -> generateDraft()
+            RecoveryDraftAction.ConfirmAndEnable -> confirmAndEnable()
+            RecoveryDraftAction.Dismiss -> dismissDraft()
+        }
+    }
+
+    private fun generateDraft() {
+        if (authenticationManager.state.value !is AuthenticationState.Authenticated) {
+            mutate(RecoveryDraftMutation.Failed)
+            return
+        }
+        if (_state.value is RecoveryDraftState.Authenticating ||
+            _state.value is RecoveryDraftState.Generating
+        ) return
+        viewModelScope.launch {
+            mutate(RecoveryDraftMutation.AuthenticationStarted)
+            when (
+                authenticationManager.authenticate(
+                    AuthenticationRequest(AuthenticationPurpose.MANAGE_RECOVERY_CODE)
+                )
+            ) {
+                is AuthenticationResult.Success -> createDraft()
+                is AuthenticationResult.Cancelled ->
+                    mutate(RecoveryDraftMutation.AuthenticationCancelled)
+                is AuthenticationResult.Failure -> mutate(RecoveryDraftMutation.Failed)
+            }
+        }
+    }
+
+    fun revealCode(): CharArray? =
+        if (authenticationManager.state.value is AuthenticationState.Authenticated) {
+            draft?.reveal()
+        } else {
+            null
+        }
+
+    private fun confirmAndEnable() {
+        viewModelScope.launch {
+            if (authenticationManager.state.value !is AuthenticationState.Authenticated) {
+                clearDraft()
+                mutate(RecoveryDraftMutation.Failed)
+                return@launch
+            }
+            val activeDraft = draft ?: return@launch
+            when (activeDraft.commit()) {
+                is AuthenticationResult.Success -> {
+                    draft = null
+                    savedStateHandle[WAS_DISCLOSURE_OPEN] = false
+                    savedStateHandle[DRAFT_GENERATION_ID] = null as String?
+                    mutate(RecoveryDraftMutation.Committed)
+                }
+                is AuthenticationResult.Cancelled,
+                is AuthenticationResult.Failure -> mutate(RecoveryDraftMutation.Failed)
+            }
+        }
+    }
+
+    private fun dismissDraft() {
+        clearDraft()
+        mutate(RecoveryDraftMutation.Dismissed)
+    }
+
+    private fun clearDraft() {
+        draft?.close()
+        draft = null
+        savedStateHandle[WAS_DISCLOSURE_OPEN] = false
+        savedStateHandle[DRAFT_GENERATION_ID] = null as String?
+    }
+
+    private suspend fun createDraft() {
+        mutate(RecoveryDraftMutation.GenerationStarted)
+        try {
+            when (val creation = draftFactory.create()) {
+                is RecoveryCredentialCreation.Ready -> {
+                    draft?.close()
+                    draft = creation.draft
+                    savedStateHandle[WAS_DISCLOSURE_OPEN] = true
+                    savedStateHandle[DRAFT_GENERATION_ID] = creation.draft.id.value
+                    mutate(RecoveryDraftMutation.DraftReady(creation.draft.id.value))
+                }
+                is RecoveryCredentialCreation.Failed -> mutate(RecoveryDraftMutation.Failed)
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Throwable) {
+            mutate(RecoveryDraftMutation.Failed)
+        }
+    }
+
+    private fun mutate(mutation: RecoveryDraftMutation) {
+        _state.value = RecoveryDraftReducer.reduce(_state.value, mutation)
+    }
+
+    override fun onCleared() {
+        draft?.close()
+        draft = null
+    }
+
+    private companion object {
+        const val WAS_DISCLOSURE_OPEN = "wasRecoveryDisclosureOpen"
+        const val DRAFT_GENERATION_ID = "recoveryDraftGenerationId"
+    }
+}

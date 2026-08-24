@@ -4,7 +4,7 @@ import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.otp.OtpResult
 import com.aozijx.passly.runtime.session.SessionLockedException
-import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import kotlinx.coroutines.CoroutineScope
@@ -35,8 +35,8 @@ internal class OtpCodeRefreshUseCase(
     private val loadOtpConfig: suspend (String) -> OtpConfig?,
     initiallyUnlocked: Boolean = true
 ) {
-    private val _states = MutableStateFlow<Map<String, OtpUiState>>(emptyMap())
-    val states: StateFlow<Map<String, OtpUiState>> = _states
+    private val _states = MutableStateFlow<Map<String, OtpCodeState>>(emptyMap())
+    val states: StateFlow<Map<String, OtpCodeState>> = _states
 
     /** 仅缓存非敏感调度信息，不缓存 Secret。 */
     private data class OtpSchedule(
@@ -79,7 +79,7 @@ internal class OtpCodeRefreshUseCase(
                     return
                 }
                 if (config == null || config.secret.isNullOrBlank()) {
-                    refreshed[entryId] = OtpUiState(error = OtpGenerationError.InvalidSecret)
+                    refreshed[entryId] = OtpCodeState(error = OtpGenerationError.InvalidSecret)
                     continue
                 }
                 applyConfig(entryId, config, nowSeconds, refreshed)
@@ -99,13 +99,13 @@ internal class OtpCodeRefreshUseCase(
         config: OtpConfig,
         nowSeconds: Long,
         period: Int
-    ): OtpUiState = when (val genResult = codeGenerator(config)) {
-        is OtpResult.Success -> OtpUiState(
+    ): OtpCodeState = when (val genResult = codeGenerator(config)) {
+        is OtpResult.Success -> OtpCodeState(
             code = genResult.code,
             progress = computeProgress(nowSeconds, period)
         )
 
-        is OtpResult.Failure -> OtpUiState(
+        is OtpResult.Failure -> OtpCodeState(
             code = null,
             progress = computeProgress(nowSeconds, period),
             error = genResult.error
@@ -130,9 +130,9 @@ internal class OtpCodeRefreshUseCase(
         val result = codeGenerator(config)
 
         if (result is OtpResult.Success) {
-            _states.update { it + (entryId to OtpUiState(code = result.code)) }
+            _states.update { it + (entryId to OtpCodeState(code = result.code)) }
         } else {
-            _states.update { it + (entryId to OtpUiState(error = (result as OtpResult.Failure).error)) }
+            _states.update { it + (entryId to OtpCodeState(error = (result as OtpResult.Failure).error)) }
         }
         return result
     }
@@ -161,7 +161,7 @@ internal class OtpCodeRefreshUseCase(
         }
         if (config == null || config.secret.isNullOrBlank()) {
             AppTelemetry.w("OtpCodeRefreshUseCase", "OTP activation failed: missing config for $entryId")
-            _states.update { it + (entryId to OtpUiState(error = OtpGenerationError.InvalidSecret)) }
+            _states.update { it + (entryId to OtpCodeState(error = OtpGenerationError.InvalidSecret)) }
             return
         }
         val nowSeconds = System.currentTimeMillis() / 1000
@@ -174,11 +174,11 @@ internal class OtpCodeRefreshUseCase(
         entryId: String,
         config: OtpConfig,
         nowSeconds: Long,
-        target: MutableMap<String, OtpUiState>
+        target: MutableMap<String, OtpCodeState>
     ) {
         if (config.type == OtpType.HOTP) {
             schedules[entryId] = OtpSchedule(OtpType.HOTP, 1, 0)
-            target[entryId] = OtpUiState()
+            target[entryId] = OtpCodeState()
             return
         }
 

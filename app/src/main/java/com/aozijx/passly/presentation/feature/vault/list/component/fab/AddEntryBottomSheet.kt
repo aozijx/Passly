@@ -27,7 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.model.AddType
-import com.aozijx.passly.feature.vault.presentation.labelRes
+import com.aozijx.passly.presentation.feature.vault.list.labelRes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -14,7 +14,7 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.presentation.feature.vault.list.VaultViewModel
@@ -31,7 +31,7 @@ class VaultActionProvider(
 @Composable
 fun rememberVaultActionProvider(
     vaultViewModel: VaultViewModel,
-    totpStates: StateFlow<Map<String, OtpUiState>>,
+    totpStates: StateFlow<Map<String, OtpCodeState>>,
     requestAuthentication: (onSuccess: () -> Unit) -> Unit,
     requestReauthentication: (onSuccess: () -> Unit) -> Unit,
     requestSensitiveCopy: (onSuccess: () -> Unit) -> Unit,

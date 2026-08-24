@@ -19,7 +19,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryIcon
-import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
@@ -197,7 +197,7 @@ class VaultViewModel @Inject constructor(
      * OTP 状态（高频率变化，每秒更新）。
      * 独立 Flow 避免 OTP 更新触发整个 UI 状态重组。
      */
-    val totpStatesFlow: StateFlow<Map<String, OtpUiState>> = totp.states
+    val totpStatesFlow: StateFlow<Map<String, OtpCodeState>> = totp.states
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     // --- onAction 统一入口 ---

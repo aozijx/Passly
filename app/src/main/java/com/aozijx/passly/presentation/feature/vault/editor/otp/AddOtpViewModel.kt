@@ -23,7 +23,7 @@ class AddOtpViewModel @Inject constructor(
     private val createEntryUseCase: CreateEntryUseCase,
     private val secureSessionAccessState: SecureSessionAccessState,
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(AddOtpUiState())
+    private val _uiState = MutableStateFlow(AddOtpCodeState())
     val uiState = _uiState.asStateFlow()
     private val _effects = Channel<AddOtpEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
@@ -135,7 +135,7 @@ class AddOtpViewModel @Inject constructor(
     }
 
     private fun clearSensitiveContent() {
-        _uiState.value = AddOtpUiState()
+        _uiState.value = AddOtpCodeState()
     }
 
     override fun onCleared() {

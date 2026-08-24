@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.aozijx.passly.feature.autofill.credential.CredentialResponseActivity
+import com.aozijx.passly.presentation.feature.autofill.credential.CredentialResponseActivity
 
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 internal object CredentialPendingIntentFactory {

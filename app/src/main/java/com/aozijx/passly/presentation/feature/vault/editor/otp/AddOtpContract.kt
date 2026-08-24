@@ -1,6 +1,6 @@
 package com.aozijx.passly.presentation.feature.vault.editor.otp
 
-data class AddOtpUiState(
+data class AddOtpCodeState(
     val form: OtpFormState = OtpFormState(),
     val canSave: Boolean = false,
     val isSaving: Boolean = false,

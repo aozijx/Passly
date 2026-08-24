@@ -45,7 +45,7 @@ class AddOtpViewModelTest {
         )
 
         viewModel.onAction(AddOtpAction.ScannedConfigApplied(config))
-        val state: AddOtpUiState = viewModel.uiState.value
+        val state: AddOtpCodeState = viewModel.uiState.value
         val entry = EntryDraftMaterializer().materialize(
             state.form.toEntryDraft(),
             EntryIdentity(

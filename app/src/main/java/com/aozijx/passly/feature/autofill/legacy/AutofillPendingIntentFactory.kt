@@ -8,6 +8,7 @@ import com.aozijx.passly.domain.autofill.model.FieldRole
 import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
+import com.aozijx.passly.presentation.feature.autofill.legacy.AutofillFillActivity
 
 /**
  * Unified PendingIntent Factory for Autofill.

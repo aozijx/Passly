@@ -30,7 +30,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import com.aozijx.passly.core.ui.components.VaultItemIcon
-import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 
@@ -45,7 +45,7 @@ private object TotpBehaviorTokens {
 @Composable
 fun TotpStyleVaultItem(
     entry: EntryListItem,
-    totpState: OtpUiState?,
+    totpState: OtpCodeState?,
     showCode: Boolean = true,
     previewCode: String? = null,
     previewProgress: Float? = null,
@@ -53,7 +53,7 @@ fun TotpStyleVaultItem(
 ) {
     val cardShape = MaterialTheme.shapes.extraLarge
     val currentState =
-        previewCode?.let { OtpUiState(code = it, progress = previewProgress ?: 0f) } ?: totpState
+        previewCode?.let { OtpCodeState(code = it, progress = previewProgress ?: 0f) } ?: totpState
     val isSteam = remember(entry.otpType) {
         entry.otpType == OtpType.STEAM
     }
@@ -192,7 +192,7 @@ internal object TotpVaultCardStyle : VaultCardStyleComponent {
     @Composable
     override fun Render(
         entry: EntryListItem,
-        totpState: OtpUiState?,
+        totpState: OtpCodeState?,
         showTotpCode: Boolean,
         onClick: () -> Unit,
     ) {

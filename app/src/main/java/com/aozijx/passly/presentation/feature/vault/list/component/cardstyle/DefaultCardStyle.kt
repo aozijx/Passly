@@ -22,7 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.core.ui.components.VaultItemIcon
-import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 
@@ -71,14 +71,14 @@ fun DefaultItem(
 @Composable
 fun DefaultOtpItem(
     entry: EntryListItem,
-    totpState: OtpUiState?,
+    totpState: OtpCodeState?,
     showCode: Boolean = true,
     previewCode: String? = null,
     previewProgress: Float? = null,
     onClick: () -> Unit
 ) {
     val currentState =
-        previewCode?.let { OtpUiState(code = it, progress = previewProgress ?: 0f) } ?: totpState
+        previewCode?.let { OtpCodeState(code = it, progress = previewProgress ?: 0f) } ?: totpState
 
     val isSteam = remember(entry.otpType) {
         entry.otpType == OtpType.STEAM
@@ -159,7 +159,7 @@ internal object DefaultVaultCardStyle : VaultCardStyleComponent {
     @Composable
     override fun Render(
         entry: EntryListItem,
-        totpState: OtpUiState?,
+        totpState: OtpCodeState?,
         showTotpCode: Boolean,
         onClick: () -> Unit,
     ) {

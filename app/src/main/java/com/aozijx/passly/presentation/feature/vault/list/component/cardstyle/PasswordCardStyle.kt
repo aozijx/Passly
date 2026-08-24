@@ -35,7 +35,7 @@ import coil.compose.AsyncImage
 import com.aozijx.passly.core.media.rememberImagePaletteColors
 import com.aozijx.passly.core.media.toLocalIconImageModel
 import com.aozijx.passly.core.ui.components.VaultItemIcon
-import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 
 @Composable
@@ -188,7 +188,7 @@ internal object PasswordVaultCardStyle : VaultCardStyleComponent {
     @Composable
     override fun Render(
         entry: EntryListItem,
-        totpState: OtpUiState?,
+        totpState: OtpCodeState?,
         showTotpCode: Boolean,
         onClick: () -> Unit,
     ) {
