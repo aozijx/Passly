@@ -19,13 +19,14 @@ import com.aozijx.passly.presentation.feature.settings.appearance.libraryQuickFi
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsViewModel
+import com.aozijx.passly.presentation.feature.settings.security.toPrivacySettingsUiModel
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.appearance.appLanguageFromKey
 import com.aozijx.passly.presentation.feature.settings.appearance.toAppearanceUiModel
 import com.aozijx.passly.presentation.feature.settings.appearance.toDomainModel
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
-import com.aozijx.passly.presentation.feature.settings.security.component.PrivacyDetail
+import com.aozijx.passly.presentation.ui.settings.security.PrivacyDetail
 import com.aozijx.passly.presentation.feature.settings.security.component.SecurityDetail
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 import com.aozijx.passly.presentation.ui.settings.appearance.AppearanceDetail
@@ -86,7 +87,7 @@ internal fun CoreSettingsRouteContent(
             ) {
                 item {
                     PrivacyDetail(
-                        state = state,
+                        state = state.toPrivacySettingsUiModel(),
                         onSecureContentEnabledChange = {
                             viewModel.onAction(PrivacySettingsAction.SetSecureContentEnabled(it))
                         },

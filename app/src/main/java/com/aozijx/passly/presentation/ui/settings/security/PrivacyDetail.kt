@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.security.component
+package com.aozijx.passly.presentation.ui.settings.security
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -15,11 +15,11 @@ import com.aozijx.passly.core.ui.components.group.settingsGroupItem
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsUiState
+import com.aozijx.passly.presentation.ui.settings.security.model.PrivacySettingsUiModel
 
 @Composable
 internal fun PrivacyDetail(
-    state: PrivacySettingsUiState,
+    state: PrivacySettingsUiModel,
     onSecureContentEnabledChange: (Boolean) -> Unit,
     onFlipToLockEnabledChange: (Boolean) -> Unit,
     onFlipExitAndClearStackEnabledChange: (Boolean) -> Unit,

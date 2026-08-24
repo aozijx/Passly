@@ -25,11 +25,9 @@ internal object EditorSourceBoundaryVerifier {
         "/presentation/feature/settings/security/component/apppasswordactiondialog.kt",
         "/presentation/feature/settings/security/component/apppasswordchangedialog.kt",
         "/presentation/feature/settings/security/component/lockauthsettingssection.kt",
-        "/presentation/feature/settings/security/component/privacydetail.kt",
         "/presentation/feature/settings/security/component/recoverycodedetail.kt",
         "/presentation/feature/settings/security/component/recoverycodesheet.kt",
         "/presentation/feature/settings/security/component/securitydetail.kt",
-        "/presentation/feature/settings/security/component/securityprotectionsettingssection.kt",
     )
     private val mapperForbiddenMarkers = linkedMapOf(
         "repository" to listOf(".repository.", ".port.EntryCommandRepository"),
