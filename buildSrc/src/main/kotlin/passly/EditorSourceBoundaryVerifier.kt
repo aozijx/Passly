@@ -6,6 +6,40 @@ internal data class EditorSource(
 )
 
 internal object EditorSourceBoundaryVerifier {
+    private val temporarySettingsUiAllowlist = setOf(
+        "/presentation/feature/settings/appearance/component/appearancescreen.kt",
+        "/presentation/feature/settings/appearance/component/interfacescreen.kt",
+        "/presentation/feature/settings/appearance/component/languagepicker.kt",
+        "/presentation/feature/settings/appearance/component/themepicker.kt",
+        "/presentation/feature/settings/appearance/component/vaultquickfilterssection.kt",
+        "/presentation/feature/settings/autofill/component/autofilldetail.kt",
+        "/presentation/feature/settings/autofill/component/autofillsettingssection.kt",
+        "/presentation/feature/settings/backup/component/backuprestoredetail.kt",
+        "/presentation/feature/settings/backup/component/backuprestoresettingssection.kt",
+        "/presentation/feature/settings/backup/component/backuprestoresheets.kt",
+        "/presentation/feature/settings/backup/component/databaserecoverysheet.kt",
+        "/presentation/feature/settings/backup/component/datamanagementdetail.kt",
+        "/presentation/feature/settings/backup/component/datasettingssection.kt",
+        "/presentation/feature/settings/main/settingsscreencontent.kt",
+        "/presentation/feature/settings/main/settingsscreendialogs.kt",
+        "/presentation/feature/settings/main/settingsscreenlocalstate.kt",
+        "/presentation/feature/settings/main/settingsscreenstatebuilders.kt",
+        "/presentation/feature/settings/main/component/settingsdialogmodels.kt",
+        "/presentation/feature/settings/main/component/settingsgroup.kt",
+        "/presentation/feature/settings/main/general/generalsection.kt",
+        "/presentation/feature/settings/main/general/logsettingssection.kt",
+        "/presentation/feature/settings/main/general/notificationsettingssection.kt",
+        "/presentation/feature/settings/main/interaction/swipeactionselectdialog.kt",
+        "/presentation/feature/settings/main/interaction/swipegesturesettingssection.kt",
+        "/presentation/feature/settings/security/component/apppasswordactiondialog.kt",
+        "/presentation/feature/settings/security/component/apppasswordchangedialog.kt",
+        "/presentation/feature/settings/security/component/lockauthsettingssection.kt",
+        "/presentation/feature/settings/security/component/privacydetail.kt",
+        "/presentation/feature/settings/security/component/recoverycodedetail.kt",
+        "/presentation/feature/settings/security/component/recoverycodesheet.kt",
+        "/presentation/feature/settings/security/component/securitydetail.kt",
+        "/presentation/feature/settings/security/component/securityprotectionsettingssection.kt",
+    )
     private val mapperForbiddenMarkers = linkedMapOf(
         "repository" to listOf(".repository.", ".port.EntryCommandRepository"),
         "UUID" to listOf("UuidCreator", "java.util.UUID"),
@@ -67,6 +101,17 @@ internal object EditorSourceBoundaryVerifier {
                 ) {
                     add("$path: passive vault-$page UI must live below presentation/ui/vault/$page")
                 }
+            }
+            val isSettingsFeature = "/presentation/feature/settings/" in lowerPath
+            val isSettingsHost = fileName.endsWith("host.kt")
+            val isSettingsUiSection = fileName.endsWith("section.kt")
+            val isTemporarilyAllowedSettingsUi = temporarySettingsUiAllowlist.any(lowerPath::endsWith)
+            if (isSettingsFeature && !isSettingsHost && !isTemporarilyAllowedSettingsUi && (
+                passiveUiNames.any(fileName::contains) || isSettingsUiSection ||
+                    listOf("/component/", "/dialog/", "/sheet/").any(lowerPath::contains)
+                )
+            ) {
+                add("$path: passive settings UI must live below presentation/ui/settings")
             }
             val isPresentationUi = "/presentation/ui/" in lowerPath
             if (isPresentationUi) {

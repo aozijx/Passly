@@ -174,5 +174,25 @@ class EditorSourceBoundaryVerifierTest {
         assertTrue(violations.all { it.contains("passive vault-detail UI") })
     }
 
+    @Test
+    fun settingsPassiveUiCannotRemainInFeaturePackage() {
+        val violations = EditorSourceBoundaryVerifier.verify(
+            listOf(
+                source("app/src/main/java/com/example/presentation/feature/settings/main/SettingsScreen.kt", "@Composable fun SettingsScreen() = Unit"),
+                source("app/src/main/java/com/example/presentation/feature/settings/main/SettingsContent.kt", "@Composable fun SettingsContent() = Unit"),
+                source("app/src/main/java/com/example/presentation/feature/settings/security/SecuritySection.kt", "@Composable fun SecuritySection() = Unit"),
+                source("app/src/main/java/com/example/presentation/feature/settings/security/PasswordDialog.kt", "@Composable fun PasswordDialog() = Unit"),
+                source("app/src/main/java/com/example/presentation/feature/settings/backup/RecoverySheet.kt", "@Composable fun RecoverySheet() = Unit"),
+                source("app/src/main/java/com/example/presentation/feature/settings/main/SettingsHost.kt", "@Composable fun SettingsHost() = Unit"),
+                source("app/src/main/java/com/example/presentation/feature/settings/main/SettingsRoute.kt", "data object SettingsRoute"),
+                source("app/src/main/java/com/example/presentation/feature/settings/main/SettingsViewModel.kt", "class SettingsViewModel"),
+                source("app/src/main/java/com/example/presentation/feature/settings/main/SettingsReducer.kt", "object SettingsReducer"),
+            ),
+        )
+
+        assertEquals(5, violations.size)
+        assertTrue(violations.all { it.contains("passive settings UI") })
+    }
+
     private fun source(path: String, content: String) = EditorSource(path, content)
 }
