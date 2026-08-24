@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.list.component.topbar
+package com.aozijx.passly.presentation.ui.vault.list.component.topbar
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,13 +19,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.core.ui.components.vaultfilter.titleRes
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
+import com.aozijx.passly.R
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
 
 @Composable
 fun LibraryQuickFilterBar(
     modifier: Modifier = Modifier,
-    quickFilters: List<LibraryQuickFilter>,
+    quickFilters: List<VaultQuickFilterUiModel>,
     selectedQuickFilterIndex: Int,
     onQuickFilterSelected: (Int) -> Unit
 ) {
@@ -39,7 +39,7 @@ fun LibraryQuickFilterBar(
     ) {
         itemsIndexed(
             items = quickFilters,
-            key = { _, quickFilter -> quickFilter.settingsKey }
+            key = { _, quickFilter -> quickFilter.name }
         ) { index, quickFilter ->
             val selected = safeIndex == index
             FilterChip(
@@ -64,8 +64,15 @@ fun LibraryQuickFilterBar(
     }
 }
 
-private fun LibraryQuickFilter.icon(): ImageVector = when (this) {
-    LibraryQuickFilter.ALL -> Icons.Default.Apps
-    LibraryQuickFilter.PASSWORDS -> Icons.Default.Key
-    LibraryQuickFilter.TOTP -> Icons.Default.Pin
+private fun VaultQuickFilterUiModel.icon(): ImageVector = when (this) {
+    VaultQuickFilterUiModel.ALL -> Icons.Default.Apps
+    VaultQuickFilterUiModel.PASSWORDS -> Icons.Default.Key
+    VaultQuickFilterUiModel.TOTP -> Icons.Default.Pin
 }
+
+private val VaultQuickFilterUiModel.titleRes: Int
+    get() = when (this) {
+        VaultQuickFilterUiModel.ALL -> R.string.tab_all
+        VaultQuickFilterUiModel.PASSWORDS -> R.string.vault_quick_filter_passwords
+        VaultQuickFilterUiModel.TOTP -> R.string.vault_quick_filter_totp
+    }

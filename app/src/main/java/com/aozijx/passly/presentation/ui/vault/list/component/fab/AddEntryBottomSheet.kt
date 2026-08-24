@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.list.component.fab
+package com.aozijx.passly.presentation.ui.vault.list.component.fab
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -26,14 +26,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.model.AddType
-import com.aozijx.passly.presentation.feature.vault.list.labelRes
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultAddTypeUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.labelRes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEntryBottomSheet(
     onDismiss: () -> Unit,
-    onSelectType: (AddType) -> Unit
+    onSelectType: (VaultAddTypeUiModel) -> Unit
 ) {
     ModalBottomSheet(
         modifier = Modifier.fillMaxSize(),
@@ -55,7 +55,7 @@ fun AddEntryBottomSheet(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            AddType.allOptions.forEachIndexed { index, type ->
+            VaultAddTypeUiModel.allOptions.forEachIndexed { index, type ->
                 if (index > 0) {
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
                 }
@@ -73,7 +73,7 @@ fun AddEntryBottomSheet(
 
 @Composable
 private fun AddTypeRow(
-    type: AddType,
+    type: VaultAddTypeUiModel,
     onClick: () -> Unit
 ) {
     Row(

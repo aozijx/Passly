@@ -16,10 +16,12 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardDensityUiMode
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardPresentationUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultEntryTypeUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpKindUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortOptionUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel
 
 internal fun EntryListItem.toUiModel() = VaultListItemUiModel(
@@ -43,20 +45,27 @@ internal fun OtpCodeState.toUiModel() = VaultOtpUiState(code, progress, isLoadin
 internal fun LibraryQuickFilter.toUiModel() = VaultQuickFilterUiModel.valueOf(name)
 internal fun VaultQuickFilterUiModel.toFeatureModel() = LibraryQuickFilter.valueOf(name)
 
-internal fun EntrySort.toUiModel() = when (field) {
-    EntrySortField.TITLE -> VaultSortUiModel.TITLE
-    EntrySortField.CREATED_AT -> VaultSortUiModel.CREATED_AT
-    EntrySortField.UPDATED_AT -> VaultSortUiModel.UPDATED_AT
-    EntrySortField.USAGE_FREQUENCY -> VaultSortUiModel.USAGE_FREQUENCY
-    else -> VaultSortUiModel.DEFAULT
-}
+internal fun EntrySort.toUiModel() = VaultSortUiModel(
+    option = when (field) {
+        EntrySortField.TITLE -> VaultSortOptionUiModel.TITLE
+        EntrySortField.CREATED_AT -> VaultSortOptionUiModel.CREATED_AT
+        EntrySortField.UPDATED_AT -> VaultSortOptionUiModel.UPDATED_AT
+        EntrySortField.USAGE_FREQUENCY -> VaultSortOptionUiModel.USAGE_FREQUENCY
+        else -> VaultSortOptionUiModel.DEFAULT
+    },
+    descending = direction.name == "DESC",
+)
 
-internal fun VaultSortUiModel.toFeatureModel() = when (this) {
-    VaultSortUiModel.DEFAULT -> EntrySort.DEFAULT
-    VaultSortUiModel.TITLE -> EntrySort.presets().first { it.field == EntrySortField.TITLE }
-    VaultSortUiModel.CREATED_AT -> EntrySort.presets().first { it.field == EntrySortField.CREATED_AT }
-    VaultSortUiModel.UPDATED_AT -> EntrySort.presets().first { it.field == EntrySortField.UPDATED_AT }
-    VaultSortUiModel.USAGE_FREQUENCY -> EntrySort.presets().first { it.field == EntrySortField.USAGE_FREQUENCY }
+internal fun VaultSortUiModel.toFeatureModel(): EntrySort {
+    val preset = when (option) {
+        VaultSortOptionUiModel.DEFAULT -> EntrySort.DEFAULT
+        VaultSortOptionUiModel.TITLE -> EntrySort.presets().first { it.field == EntrySortField.TITLE }
+        VaultSortOptionUiModel.CREATED_AT -> EntrySort.presets().first { it.field == EntrySortField.CREATED_AT }
+        VaultSortOptionUiModel.UPDATED_AT -> EntrySort.presets().first { it.field == EntrySortField.UPDATED_AT }
+        VaultSortOptionUiModel.USAGE_FREQUENCY -> EntrySort.presets().first { it.field == EntrySortField.USAGE_FREQUENCY }
+    }
+    val wantsDescending = preset.direction.name == "DESC"
+    return if (wantsDescending == descending) preset else preset.toggled()
 }
 
 internal fun SwipeActionType.toUiModel() = VaultSwipeActionUiModel.valueOf(name)
@@ -77,4 +86,17 @@ internal fun EntryCardPresentation.toUiModel() = VaultCardPresentationUiModel(
     showFavorite = showFavorite,
     showSecondaryText = showSecondaryText,
     showQuickAction = showQuickAction,
+)
+
+internal fun VaultUiState.toUiModel() = VaultListScreenUiModel(
+    searchQuery = searchQuery,
+    selectedCategory = selectedCategory,
+    selectedQuickFilter = selectedQuickFilter.toUiModel(),
+    selectedSort = selectedSort.toUiModel(),
+    isSearchActive = isSearchActive,
+    availableCategories = availableCategories,
+    visibleQuickFilters = visibleQuickFilters.map(LibraryQuickFilter::toUiModel),
+    showTotpCode = showTOTPCode,
+    addType = addType?.toUiModel(),
+    pendingDelete = pendingDelete?.toUiModel(),
 )

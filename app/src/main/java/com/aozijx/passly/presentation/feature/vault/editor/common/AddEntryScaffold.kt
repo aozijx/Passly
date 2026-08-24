@@ -1,5 +1,8 @@
 package com.aozijx.passly.presentation.feature.vault.editor.common
 
+import com.aozijx.passly.presentation.ui.vault.shared.ADD_ENTRY_FAB_SHARED_KEY
+import com.aozijx.passly.presentation.ui.vault.shared.AddEntryFabVisualOverflow
+
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds

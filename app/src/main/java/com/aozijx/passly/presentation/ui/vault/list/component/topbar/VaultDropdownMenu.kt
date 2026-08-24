@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.list.component.topbar
+package com.aozijx.passly.presentation.ui.vault.list.component.topbar
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
@@ -22,7 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.query.EntrySort
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortUiModel
 
 private enum class MenuPage { MAIN, SORT, CATEGORY_FILTER }
 
@@ -35,8 +35,8 @@ fun VaultDropdownMenu(
     availableCategories: List<String>,
     selectedCategory: String?,
     onCategorySelected: (String?) -> Unit,
-    selectedSort: EntrySort,
-    onSortSelected: (EntrySort) -> Unit
+    selectedSort: VaultSortUiModel,
+    onSortSelected: (VaultSortUiModel) -> Unit
 ) {
     var currentPage by remember { mutableStateOf(MenuPage.MAIN) }
     var categorySearchQuery by remember { mutableStateOf("") }

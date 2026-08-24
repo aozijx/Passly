@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.list.component.topbar
+package com.aozijx.passly.presentation.ui.vault.list.component.topbar
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions

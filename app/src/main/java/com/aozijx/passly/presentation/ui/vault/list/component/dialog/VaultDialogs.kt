@@ -1,11 +1,10 @@
-package com.aozijx.passly.presentation.feature.vault.list.component.dialog
+package com.aozijx.passly.presentation.ui.vault.list.component.dialog
 
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
-import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.presentation.feature.vault.list.VaultUiState
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
 
 /**
  * 快捷添加的宿主。PASSWORD/TOTP 走全屏编辑器；其余类型暂不支持快捷添加，
@@ -13,7 +12,7 @@ import com.aozijx.passly.presentation.feature.vault.list.VaultUiState
  */
 @Composable
 fun AddDialogHost(
-    uiState: VaultUiState,
+    uiState: VaultListScreenUiModel,
     onDismissAddType: () -> Unit
 ) {
     val context = LocalContext.current
@@ -26,7 +25,7 @@ fun AddDialogHost(
 
 @Composable
 fun DeleteDialogHost(
-    uiState: VaultUiState,
+    uiState: VaultListScreenUiModel,
     requestAuthentication: (onSuccess: () -> Unit) -> Unit,
     onConfirmDelete: () -> Unit,
     onDismissDelete: () -> Unit
@@ -43,7 +42,7 @@ fun DeleteDialogHost(
 
 @Composable
 fun VaultDialogs(
-    uiState: VaultUiState,
+    uiState: VaultListScreenUiModel,
     onDismissAddType: () -> Unit,
     onConfirmDelete: () -> Unit,
     onDismissDelete: () -> Unit,

@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.list.component.topbar
+package com.aozijx.passly.presentation.ui.vault.list.component.topbar
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.menu.MenuOptionText
 import com.aozijx.passly.core.ui.components.menu.selectedMenuModifier
-import com.aozijx.passly.domain.entry.model.query.EntrySort
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortUiModel
 
 @Composable
 internal fun MainMenuContent(
@@ -83,17 +83,17 @@ internal fun MainMenuContent(
 
 @Composable
 internal fun SortSubMenu(
-    selectedSort: EntrySort,
-    onSortSelected: (EntrySort) -> Unit,
+    selectedSort: VaultSortUiModel,
+    onSortSelected: (VaultSortUiModel) -> Unit,
     onBack: () -> Unit
 ) {
     BackMenuItem(onBack)
-    val isDefault = selectedSort == EntrySort.DEFAULT
-    EntrySort.presets().forEach { preset ->
-        val selected = preset.field == selectedSort.field
+    val isDefault = selectedSort == VaultSortUiModel.DEFAULT
+    VaultSortUiModel.presets.forEach { preset ->
+        val selected = preset.option == selectedSort.option
         val direction = when {
-            preset == EntrySort.DEFAULT -> ""
-            selected && !isDefault -> if (selectedSort.direction.name == "DESC") " \u2193" else " \u2191"
+            preset == VaultSortUiModel.DEFAULT -> ""
+            selected && !isDefault -> if (selectedSort.descending) " \u2193" else " \u2191"
             else -> ""
         }
         DropdownMenuItem(

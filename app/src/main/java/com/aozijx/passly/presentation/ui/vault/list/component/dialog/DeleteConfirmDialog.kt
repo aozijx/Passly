@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.list.component.dialog
+package com.aozijx.passly.presentation.ui.vault.list.component.dialog
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -7,11 +7,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 
 @Composable
 fun DeleteConfirmDialog(
-    item: EntryListItem,
+    item: VaultListItemUiModel,
     requestAuthentication: (onSuccess: () -> Unit) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit

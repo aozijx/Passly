@@ -37,11 +37,11 @@ import com.aozijx.passly.presentation.feature.vault.list.action.rememberVaultAct
 import com.aozijx.passly.presentation.feature.vault.list.VaultEffect
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
 import com.aozijx.passly.presentation.feature.vault.list.display.VaultDisplayViewModel
-import com.aozijx.passly.feature.vault.model.AddType
-import com.aozijx.passly.presentation.feature.vault.list.component.dialog.VaultDialogs
-import com.aozijx.passly.presentation.feature.vault.list.component.fab.VaultFab
 import com.aozijx.passly.presentation.feature.vault.list.component.list.VaultPagerContent
-import com.aozijx.passly.presentation.feature.vault.list.component.topbar.VaultTopBar
+import com.aozijx.passly.presentation.ui.vault.list.component.dialog.VaultDialogs
+import com.aozijx.passly.presentation.ui.vault.list.component.fab.VaultFab
+import com.aozijx.passly.presentation.ui.vault.list.component.topbar.VaultTopBar
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultAddTypeUiModel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 
@@ -70,6 +70,7 @@ fun VaultContent(
     val vaultDisplayConfig by vaultDisplayViewModel.config.collectAsStateWithLifecycle()
 
     val entryCardPresentations = vaultDisplayConfig.style.entryCardPresentations
+    val renderState = uiState.toUiModel()
     var isFabVisible by remember { mutableStateOf(true) }
 
     BackHandler(enabled = uiState.isSearchActive) {
@@ -171,7 +172,7 @@ fun VaultContent(
         topBar = {
             Column {
                 VaultTopBar(
-                    uiState = uiState,
+                    uiState = renderState,
                     selectedQuickFilterIndex = pagerState.currentPage,
                     scrollBehavior = scrollBehavior,
                     onSettingsClick = onSettingsClick,
@@ -189,11 +190,11 @@ fun VaultContent(
                     onClearCategory = { vaultViewModel.onAction(VaultUiAction.ClearCategory) },
                     onToggleTotpVisibility = { vaultViewModel.onAction(VaultUiAction.ToggleShowTotpCode) },
                     onCategorySelected = { vaultViewModel.onAction(VaultUiAction.CategorySelected(it)) },
-                    onSortSelected = { vaultViewModel.onAction(VaultUiAction.SortOptionSelected(it)) },
+                    onSortSelected = { vaultViewModel.onAction(VaultUiAction.SortOptionSelected(it.toFeatureModel())) },
                     onSelectQuickFilter = {
                         vaultViewModel.onAction(
                             VaultUiAction.QuickFilterSelected(
-                                it
+                                it.toFeatureModel()
                             )
                         )
                     }
@@ -212,10 +213,10 @@ fun VaultContent(
             VaultFab(
                 onAddTypeSelected = { type ->
                     when (type) {
-                        AddType.PASSWORD -> onAddPassword()
-                        AddType.TOTP -> onAddOtp()
-                        AddType.BANK_CARD -> onAddBankCard()
-                        else -> vaultViewModel.onAction(VaultUiAction.AddTypeSelected(type))
+                        VaultAddTypeUiModel.PASSWORD -> onAddPassword()
+                        VaultAddTypeUiModel.TOTP -> onAddOtp()
+                        VaultAddTypeUiModel.BANK_CARD -> onAddBankCard()
+                        else -> vaultViewModel.onAction(VaultUiAction.AddTypeSelected(type.toFeatureModel()))
                     }
                 },
                 sharedTransitionScope = sharedTransitionScope,
@@ -243,7 +244,7 @@ fun VaultContent(
     }
 
     VaultDialogs(
-        uiState = uiState,
+        uiState = renderState,
         onDismissAddType = { vaultViewModel.onAction(VaultUiAction.AddTypeSelected(null)) },
         onConfirmDelete = { vaultViewModel.onAction(VaultUiAction.ConfirmDelete) },
         onDismissDelete = { vaultViewModel.onAction(VaultUiAction.ItemToDeleteSelected(null)) },

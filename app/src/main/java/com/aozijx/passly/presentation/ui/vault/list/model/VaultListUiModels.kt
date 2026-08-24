@@ -33,7 +33,25 @@ data class VaultOtpUiState(
 
 enum class VaultQuickFilterUiModel { ALL, PASSWORDS, TOTP }
 
-enum class VaultSortUiModel { DEFAULT, TITLE, CREATED_AT, UPDATED_AT, USAGE_FREQUENCY }
+data class VaultSortUiModel(
+    val option: VaultSortOptionUiModel,
+    val descending: Boolean,
+) {
+    fun toggled() = copy(descending = !descending)
+
+    companion object {
+        val DEFAULT = VaultSortUiModel(VaultSortOptionUiModel.DEFAULT, true)
+        val presets = listOf(
+            DEFAULT,
+            VaultSortUiModel(VaultSortOptionUiModel.TITLE, false),
+            VaultSortUiModel(VaultSortOptionUiModel.CREATED_AT, true),
+            VaultSortUiModel(VaultSortOptionUiModel.UPDATED_AT, true),
+            VaultSortUiModel(VaultSortOptionUiModel.USAGE_FREQUENCY, true),
+        )
+    }
+}
+
+enum class VaultSortOptionUiModel { DEFAULT, TITLE, CREATED_AT, UPDATED_AT, USAGE_FREQUENCY }
 
 enum class VaultSwipeActionUiModel { DELETE, DETAIL, COPY_PASSWORD, COPY_USERNAME }
 
@@ -57,3 +75,16 @@ data class VaultCardPresentationUiModel(
 )
 
 enum class VaultCardDensityUiModel { COMPACT, STANDARD, COMFORTABLE }
+
+data class VaultListScreenUiModel(
+    val searchQuery: String,
+    val selectedCategory: String?,
+    val selectedQuickFilter: VaultQuickFilterUiModel,
+    val selectedSort: VaultSortUiModel,
+    val isSearchActive: Boolean,
+    val availableCategories: List<String>,
+    val visibleQuickFilters: List<VaultQuickFilterUiModel>,
+    val showTotpCode: Boolean,
+    val addType: VaultAddTypeUiModel?,
+    val pendingDelete: VaultListItemUiModel?,
+)

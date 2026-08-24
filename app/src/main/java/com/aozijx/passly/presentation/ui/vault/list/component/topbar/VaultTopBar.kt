@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.list.component.topbar
+package com.aozijx.passly.presentation.ui.vault.list.component.topbar
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -37,14 +37,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.query.EntrySort
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
-import com.aozijx.passly.presentation.feature.vault.list.VaultUiState
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultTopBar(
-    uiState: VaultUiState,
+    uiState: VaultListScreenUiModel,
     selectedQuickFilterIndex: Int,
     scrollBehavior: TopAppBarScrollBehavior,
     onSettingsClick: () -> Unit = {},
@@ -56,8 +56,8 @@ fun VaultTopBar(
     onClearCategory: () -> Unit,
     onToggleTotpVisibility: () -> Unit,
     onCategorySelected: (String?) -> Unit,
-    onSortSelected: (EntrySort) -> Unit,
-    onSelectQuickFilter: (LibraryQuickFilter) -> Unit
+    onSortSelected: (VaultSortUiModel) -> Unit,
+    onSelectQuickFilter: (VaultQuickFilterUiModel) -> Unit
 ) {
     val density = LocalDensity.current
     var isMoreMenuExpanded by remember { mutableStateOf(false) }
@@ -147,7 +147,7 @@ fun VaultTopBar(
                         if (isMoreMenuExpanded) {
                             VaultDropdownMenu(
                                 onDismissRequest = { isMoreMenuExpanded = false },
-                                showTOTPCode = uiState.showTOTPCode,
+                                showTOTPCode = uiState.showTotpCode,
                                 onToggleTotpVisibility = onToggleTotpVisibility,
                                 onSettingsClick = {
                                     navigateToSettingsAfterDismiss = true

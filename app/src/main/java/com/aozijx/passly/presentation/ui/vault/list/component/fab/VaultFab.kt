@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.list.component.fab
+package com.aozijx.passly.presentation.ui.vault.list.component.fab
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -44,24 +44,24 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.animation.SharedTransitionOverlayClip
 import com.aozijx.passly.core.ui.animation.withSharedTransitionVisualOverflow
-import com.aozijx.passly.feature.vault.model.AddType
-import com.aozijx.passly.presentation.feature.vault.list.labelRes
-import com.aozijx.passly.presentation.feature.vault.editor.common.ADD_ENTRY_FAB_SHARED_KEY
-import com.aozijx.passly.presentation.feature.vault.editor.common.AddEntryFabVisualOverflow
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultAddTypeUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.labelRes
+import com.aozijx.passly.presentation.ui.vault.shared.ADD_ENTRY_FAB_SHARED_KEY
+import com.aozijx.passly.presentation.ui.vault.shared.AddEntryFabVisualOverflow
 import kotlinx.coroutines.delay
 
 private const val FAB_MENU_STAGGER_MILLIS = 45
 
 @Composable
 fun VaultFab(
-    onAddTypeSelected: (AddType) -> Unit,
+    onAddTypeSelected: (VaultAddTypeUiModel) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     isVisible: Boolean = true
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
     var showAddEntryBottomSheet by remember { mutableStateOf(false) }
-    var pendingSheetSelection by remember { mutableStateOf<AddType?>(null) }
+    var pendingSheetSelection by remember { mutableStateOf<VaultAddTypeUiModel?>(null) }
     val motionScheme = MaterialTheme.motionScheme
 
     val rotation by animateFloatAsState(
@@ -70,7 +70,7 @@ fun VaultFab(
         label = "fabRotation"
     )
 
-    val fabMenuOptions = AddType.fabMenuOptions
+    val fabMenuOptions = VaultAddTypeUiModel.fabMenuOptions
     val sharedFabModifier = with(sharedTransitionScope) {
         Modifier.sharedBounds(
             sharedContentState = rememberSharedContentState(ADD_ENTRY_FAB_SHARED_KEY),
