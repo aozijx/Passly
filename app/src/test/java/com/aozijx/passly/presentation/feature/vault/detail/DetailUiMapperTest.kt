@@ -7,9 +7,12 @@ import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionResolver
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailEntryTypeUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailActivityTypeUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -27,6 +30,14 @@ class DetailUiMapperTest {
             isAccessHistoryEnabled = true,
             isFaviconDownloading = true,
             relatedEntries = listOf(entry.copy(identity = entry.identity.copy(id = EntryId("related")))),
+            history = listOf(
+                EntryActivity(
+                    entryId = entry.id.value,
+                    activityType = ActivityType.AUTOFILL,
+                    source = "browser",
+                    createdAt = 3L,
+                )
+            ),
         )
 
         val ui = detailScreenUiModel(entry, state, otp = null)
@@ -40,6 +51,11 @@ class DetailUiMapperTest {
         assertTrue(ui.isAccessHistoryEnabled)
         assertTrue(ui.isFaviconDownloading)
         assertEquals("related", ui.relatedEntries.single().id)
+        assertEquals(1L, ui.metadata.createdAt)
+        assertEquals(1L, ui.metadata.updatedAt)
+        assertEquals(DetailActivityTypeUiModel.AUTOFILL, ui.activities.single().type)
+        assertEquals("browser", ui.activities.single().source)
+        assertEquals(3L, ui.activities.single().createdAt)
         assertEquals(
             DetailSectionResolver.resolve(entry).map { it.name },
             ui.sections.map { it.kind.name },

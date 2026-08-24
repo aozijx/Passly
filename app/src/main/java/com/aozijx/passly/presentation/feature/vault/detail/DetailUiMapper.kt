@@ -5,6 +5,9 @@ import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionResolver
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailEntryTypeUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailActivityTypeUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailActivityUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailMetadataUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailOtpUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailSectionKindUiModel
@@ -37,7 +40,14 @@ internal fun detailScreenUiModel(
     relatedEntries = state.relatedEntries.map {
         RelatedEntryUiModel(it.id.value, it.title, DetailEntryTypeUiModel.valueOf(it.type.name))
     },
-    activityCount = state.history.size,
+    metadata = DetailMetadataUiModel(entry.createdAt, entry.updatedAt),
+    activities = state.history.map {
+        DetailActivityUiModel(
+            type = DetailActivityTypeUiModel.valueOf(it.activityType.name),
+            source = it.source,
+            createdAt = it.createdAt,
+        )
+    },
     otp = otp?.let { DetailOtpUiModel(it.code, it.progress, it.isLoading, it.error != null) },
 )
 

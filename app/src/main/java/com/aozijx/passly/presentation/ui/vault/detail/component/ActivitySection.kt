@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail.section
+package com.aozijx.passly.presentation.ui.vault.detail.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,10 +21,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.activity.EntryActivity
-import com.aozijx.passly.domain.entry.model.history.EntryRevision
-import com.aozijx.passly.presentation.ui.vault.detail.component.InfoGroupCard
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailActivityTypeUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailActivityUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailRevisionUiModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -33,8 +32,8 @@ private enum class ActivityTab { VERSION, ACTIVITY }
 
 @Composable
 fun ActivitySection(
-    historyList: List<EntryRevision>,
-    activityList: List<EntryActivity>,
+    historyList: List<DetailRevisionUiModel>,
+    activityList: List<DetailActivityUiModel>,
     onRestore: (historyId: String) -> Unit
 ) {
     var currentTab by remember { mutableStateOf(ActivityTab.ACTIVITY) }
@@ -72,7 +71,7 @@ fun ActivitySection(
 }
 
 @Composable
-private fun VersionTab(historyList: List<EntryRevision>, onRestore: (String) -> Unit) {
+private fun VersionTab(historyList: List<DetailRevisionUiModel>, onRestore: (String) -> Unit) {
     if (historyList.isEmpty()) return
 
     val dateFormat = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
@@ -83,19 +82,19 @@ private fun VersionTab(historyList: List<EntryRevision>, onRestore: (String) -> 
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "v${history.version.value}",
+                        text = "v${history.version}",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "${dateFormat.format(Date(history.createdAtMs))} ${
-                            timeFormat.format(Date(history.createdAtMs))
+                        text = "${dateFormat.format(Date(history.createdAt))} ${
+                            timeFormat.format(Date(history.createdAt))
                         }",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                TextButton(onClick = { onRestore(history.id.value) }) {
+                TextButton(onClick = { onRestore(history.id) }) {
                     Text(stringResource(R.string.restore))
                 }
             }
@@ -104,7 +103,7 @@ private fun VersionTab(historyList: List<EntryRevision>, onRestore: (String) -> 
 }
 
 @Composable
-private fun ActivityTabContent(activityList: List<EntryActivity>) {
+private fun ActivityTabContent(activityList: List<DetailActivityUiModel>) {
     if (activityList.isEmpty()) return
 
     val dateFormat = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
@@ -141,13 +140,13 @@ private fun ActivityTabContent(activityList: List<EntryActivity>) {
 }
 
 @Composable
-private fun activityDescription(activity: EntryActivity): String = when (activity.activityType) {
-    ActivityType.CREATE -> stringResource(R.string.vault_detail_activity_create)
-    ActivityType.UPDATE -> stringResource(R.string.vault_detail_activity_update)
-    ActivityType.SENSITIVE_CHANGE -> stringResource(R.string.vault_detail_activity_sensitive_change)
-    ActivityType.DELETE -> stringResource(R.string.vault_detail_activity_delete)
-    ActivityType.RESTORE -> stringResource(R.string.vault_detail_activity_restore)
-    ActivityType.AUTOFILL -> stringResource(R.string.vault_detail_activity_autofill)
-    ActivityType.COPY_PASSWORD -> stringResource(R.string.vault_detail_activity_copy_password)
+private fun activityDescription(activity: DetailActivityUiModel): String = when (activity.type) {
+    DetailActivityTypeUiModel.CREATE -> stringResource(R.string.vault_detail_activity_create)
+    DetailActivityTypeUiModel.UPDATE -> stringResource(R.string.vault_detail_activity_update)
+    DetailActivityTypeUiModel.SENSITIVE_CHANGE -> stringResource(R.string.vault_detail_activity_sensitive_change)
+    DetailActivityTypeUiModel.DELETE -> stringResource(R.string.vault_detail_activity_delete)
+    DetailActivityTypeUiModel.RESTORE -> stringResource(R.string.vault_detail_activity_restore)
+    DetailActivityTypeUiModel.AUTOFILL -> stringResource(R.string.vault_detail_activity_autofill)
+    DetailActivityTypeUiModel.COPY_PASSWORD -> stringResource(R.string.vault_detail_activity_copy_password)
     else -> ""
 }

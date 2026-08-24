@@ -25,8 +25,9 @@ import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHa
 import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
 import com.aozijx.passly.presentation.feature.vault.detail.copySensitiveField
 import com.aozijx.passly.presentation.ui.vault.detail.component.InfoGroupCard
-import com.aozijx.passly.presentation.feature.vault.detail.component.MetadataSection
-import com.aozijx.passly.presentation.feature.vault.detail.section.ActivityTimelineSection
+import com.aozijx.passly.presentation.feature.vault.detail.detailScreenUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.component.MetadataSection
+import com.aozijx.passly.presentation.ui.vault.detail.component.ActivityTimelineSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.AssociatedInfoSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.BankCardSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.CredentialSection
@@ -57,6 +58,7 @@ fun DetailScrollableContent(
     onOpenRelatedEntry: (Entry) -> Unit
 ) {
     val entry = uiState.entry ?: return
+    val screenUiModel = detailScreenUiModel(entry, uiState, otpUiState)
     val registeredSections = DetailSectionResolver.resolve(entry)
 
     val revealField: (String, SensitiveValue?) -> Unit = { key, value ->
@@ -265,11 +267,11 @@ fun DetailScrollableContent(
         }
 
         item {
-            MetadataSection(entry)
+            MetadataSection(screenUiModel.metadata)
         }
 
         item {
-            ActivityTimelineSection(activityList = uiState.history)
+            ActivityTimelineSection(activityList = screenUiModel.activities)
         }
     }
 }

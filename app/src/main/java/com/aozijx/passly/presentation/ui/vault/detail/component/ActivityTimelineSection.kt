@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail.section
+package com.aozijx.passly.presentation.ui.vault.detail.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -28,9 +28,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.activity.EntryActivity
-import com.aozijx.passly.presentation.ui.vault.detail.component.InfoGroupCard
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailActivityTypeUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailActivityUiModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -42,23 +41,23 @@ enum class ActivityFilter {
 }
 
 @Composable
-fun ActivityTimelineSection(activityList: List<EntryActivity>) {
+fun ActivityTimelineSection(activityList: List<DetailActivityUiModel>) {
     var currentFilter by remember { mutableStateOf(ActivityFilter.ALL) }
 
     val filteredList = remember(activityList, currentFilter) {
         when (currentFilter) {
             ActivityFilter.ALL -> activityList
             ActivityFilter.ACTIONS -> activityList.filter {
-                it.activityType in listOf(
-                    ActivityType.CREATE,
-                    ActivityType.UPDATE,
-                    ActivityType.SENSITIVE_CHANGE,
-                    ActivityType.DELETE,
-                    ActivityType.RESTORE,
+                it.type in listOf(
+                    DetailActivityTypeUiModel.CREATE,
+                    DetailActivityTypeUiModel.UPDATE,
+                    DetailActivityTypeUiModel.SENSITIVE_CHANGE,
+                    DetailActivityTypeUiModel.DELETE,
+                    DetailActivityTypeUiModel.RESTORE,
                 )
             }
             ActivityFilter.AUTOFILL -> activityList.filter {
-                it.activityType == ActivityType.AUTOFILL
+                it.type == DetailActivityTypeUiModel.AUTOFILL
             }
         }
     }
@@ -124,7 +123,7 @@ private fun ActivityFilterChip(
 }
 
 @Composable
-private fun ActivityItem(activity: EntryActivity) {
+private fun ActivityItem(activity: DetailActivityUiModel) {
     val dateFormat = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
 
@@ -134,7 +133,7 @@ private fun ActivityItem(activity: EntryActivity) {
                 modifier = Modifier
                     .size(8.dp)
                     .clip(CircleShape)
-                    .background(getActivityColor(activity.activityType))
+                    .background(getActivityColor(activity.type))
             )
             Box(
                 modifier = Modifier
@@ -168,34 +167,34 @@ private fun ActivityItem(activity: EntryActivity) {
 }
 
 @Composable
-private fun formatActivityDescription(activity: EntryActivity): String {
-    return when (activity.activityType) {
-        ActivityType.CREATE -> stringResource(R.string.vault_detail_activity_create)
-        ActivityType.UPDATE -> stringResource(R.string.vault_detail_activity_update)
-        ActivityType.SENSITIVE_CHANGE -> stringResource(R.string.vault_detail_activity_sensitive_change)
-        ActivityType.DELETE -> stringResource(R.string.vault_detail_activity_delete)
-        ActivityType.RESTORE -> stringResource(R.string.vault_detail_activity_restore)
-        ActivityType.AUTOFILL -> stringResource(R.string.vault_detail_activity_autofill)
-        ActivityType.COPY_PASSWORD -> stringResource(R.string.vault_detail_activity_copy_password)
-        ActivityType.COPY_USERNAME -> stringResource(R.string.vault_detail_activity_copy_username)
-        ActivityType.VIEW -> stringResource(R.string.vault_detail_activity_view)
-        ActivityType.EXPORT -> stringResource(R.string.vault_detail_activity_export)
-        ActivityType.IMPORT -> stringResource(R.string.vault_detail_activity_import)
+private fun formatActivityDescription(activity: DetailActivityUiModel): String {
+    return when (activity.type) {
+        DetailActivityTypeUiModel.CREATE -> stringResource(R.string.vault_detail_activity_create)
+        DetailActivityTypeUiModel.UPDATE -> stringResource(R.string.vault_detail_activity_update)
+        DetailActivityTypeUiModel.SENSITIVE_CHANGE -> stringResource(R.string.vault_detail_activity_sensitive_change)
+        DetailActivityTypeUiModel.DELETE -> stringResource(R.string.vault_detail_activity_delete)
+        DetailActivityTypeUiModel.RESTORE -> stringResource(R.string.vault_detail_activity_restore)
+        DetailActivityTypeUiModel.AUTOFILL -> stringResource(R.string.vault_detail_activity_autofill)
+        DetailActivityTypeUiModel.COPY_PASSWORD -> stringResource(R.string.vault_detail_activity_copy_password)
+        DetailActivityTypeUiModel.COPY_USERNAME -> stringResource(R.string.vault_detail_activity_copy_username)
+        DetailActivityTypeUiModel.VIEW -> stringResource(R.string.vault_detail_activity_view)
+        DetailActivityTypeUiModel.EXPORT -> stringResource(R.string.vault_detail_activity_export)
+        DetailActivityTypeUiModel.IMPORT -> stringResource(R.string.vault_detail_activity_import)
     }
 }
 
 @Composable
-private fun getActivityColor(type: ActivityType): Color {
+private fun getActivityColor(type: DetailActivityTypeUiModel): Color {
     return when (type) {
-        ActivityType.CREATE -> Color(0xFF4CAF50)
-        ActivityType.UPDATE -> MaterialTheme.colorScheme.primary
-        ActivityType.SENSITIVE_CHANGE -> MaterialTheme.colorScheme.tertiary
-        ActivityType.DELETE -> MaterialTheme.colorScheme.error
-        ActivityType.RESTORE -> MaterialTheme.colorScheme.secondary
-        ActivityType.AUTOFILL -> MaterialTheme.colorScheme.primary
-        ActivityType.COPY_PASSWORD, ActivityType.COPY_USERNAME -> MaterialTheme.colorScheme.secondary
-        ActivityType.VIEW -> MaterialTheme.colorScheme.outline
-        ActivityType.EXPORT -> MaterialTheme.colorScheme.tertiary
-        ActivityType.IMPORT -> Color(0xFF8BC34A)
+        DetailActivityTypeUiModel.CREATE -> Color(0xFF4CAF50)
+        DetailActivityTypeUiModel.UPDATE -> MaterialTheme.colorScheme.primary
+        DetailActivityTypeUiModel.SENSITIVE_CHANGE -> MaterialTheme.colorScheme.tertiary
+        DetailActivityTypeUiModel.DELETE -> MaterialTheme.colorScheme.error
+        DetailActivityTypeUiModel.RESTORE -> MaterialTheme.colorScheme.secondary
+        DetailActivityTypeUiModel.AUTOFILL -> MaterialTheme.colorScheme.primary
+        DetailActivityTypeUiModel.COPY_PASSWORD, DetailActivityTypeUiModel.COPY_USERNAME -> MaterialTheme.colorScheme.secondary
+        DetailActivityTypeUiModel.VIEW -> MaterialTheme.colorScheme.outline
+        DetailActivityTypeUiModel.EXPORT -> MaterialTheme.colorScheme.tertiary
+        DetailActivityTypeUiModel.IMPORT -> Color(0xFF8BC34A)
     }
 }

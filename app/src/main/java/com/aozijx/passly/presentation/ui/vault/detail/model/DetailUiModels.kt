@@ -17,9 +17,25 @@ data class DetailScreenUiModel(
     val isFaviconDownloading: Boolean,
     val sections: List<DetailSectionUiModel>,
     val relatedEntries: List<RelatedEntryUiModel>,
-    val activityCount: Int,
+    val metadata: DetailMetadataUiModel,
+    val activities: List<DetailActivityUiModel>,
     val otp: DetailOtpUiModel?,
 )
+
+data class DetailMetadataUiModel(val createdAt: Long, val updatedAt: Long)
+
+data class DetailActivityUiModel(
+    val type: DetailActivityTypeUiModel,
+    val source: String?,
+    val createdAt: Long,
+)
+
+enum class DetailActivityTypeUiModel {
+    VIEW, COPY_USERNAME, COPY_PASSWORD, AUTOFILL, EXPORT, IMPORT,
+    CREATE, UPDATE, SENSITIVE_CHANGE, DELETE, RESTORE,
+}
+
+data class DetailRevisionUiModel(val id: String, val version: Long, val createdAt: Long)
 
 enum class DetailEntryTypeUiModel {
     ACCOUNT, LOGIN, NOTE, BANK_CARD, ID_CARD, PASSPORT, DRIVER_LICENSE,

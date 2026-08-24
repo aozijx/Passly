@@ -11,7 +11,6 @@ internal object EditorSourceBoundaryVerifier {
         "/com/aozijx/passly/presentation/feature/vault/detail/component/detailheader.kt",
         "/com/aozijx/passly/presentation/feature/vault/detail/component/detailscrollablecontent.kt",
         "/com/aozijx/passly/presentation/feature/vault/detail/component/detailtopbar.kt",
-        "/com/aozijx/passly/presentation/feature/vault/detail/component/metadatasection.kt",
         "/com/aozijx/passly/presentation/feature/vault/detail/component/totpcard.kt",
     )
     private val mapperForbiddenMarkers = linkedMapOf(
