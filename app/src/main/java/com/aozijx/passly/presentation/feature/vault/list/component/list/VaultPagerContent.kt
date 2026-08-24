@@ -58,6 +58,7 @@ import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiState
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.presentation.feature.vault.list.component.cardstyle.CardStyleRegistry
+import com.aozijx.passly.presentation.ui.vault.list.component.list.EmptyVaultPlaceholder
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged

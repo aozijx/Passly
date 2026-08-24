@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.list.component.cardstyle
+package com.aozijx.passly.presentation.ui.vault.list.component.cardstyle
 
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp

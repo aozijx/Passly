@@ -1,5 +1,7 @@
 package com.aozijx.passly.presentation.feature.vault.list.component.cardstyle
 
+import com.aozijx.passly.presentation.ui.vault.list.component.cardstyle.CardStyleTokens
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background

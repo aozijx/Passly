@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.list.component.list
+package com.aozijx.passly.presentation.ui.vault.list.component.list
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

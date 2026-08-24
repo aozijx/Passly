@@ -1,5 +1,7 @@
 package com.aozijx.passly.presentation.feature.vault.list.component.cardstyle
 
+import com.aozijx.passly.presentation.ui.vault.list.component.cardstyle.CardStyleTokens
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
