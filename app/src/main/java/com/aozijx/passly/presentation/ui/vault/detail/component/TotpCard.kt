@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail.component
+package com.aozijx.passly.presentation.ui.vault.detail.component
 
 import android.graphics.Bitmap
 import androidx.compose.animation.core.animateFloatAsState
@@ -50,12 +50,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.util.QrCodeUtils
-import com.aozijx.passly.feature.vault.model.OtpCodeState
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailOtpUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TotpCard(
-    currentState: OtpCodeState?,
+    currentState: DetailOtpUiModel?,
     totpUri: String? = null,
     qrBitmap: Bitmap? = null,
     showProgress: Boolean = true,

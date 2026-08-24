@@ -1,5 +1,6 @@
 package com.aozijx.passly.presentation.feature.vault.detail.component
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -14,9 +15,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.otp.OtpAuthUriCodec
+import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.presentation.feature.vault.detail.DetailAuthenticate
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
@@ -30,7 +33,7 @@ import com.aozijx.passly.presentation.ui.vault.detail.component.MetadataSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.ActivityTimelineSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.AssociatedInfoSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.BankCardSection
-import com.aozijx.passly.presentation.feature.vault.detail.section.CredentialSection
+import com.aozijx.passly.presentation.ui.vault.detail.component.CredentialSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionResolver
 import com.aozijx.passly.presentation.ui.vault.detail.component.EntryCategoryItem
@@ -40,7 +43,7 @@ import com.aozijx.passly.presentation.feature.vault.detail.section.PasskeySectio
 import com.aozijx.passly.presentation.ui.vault.detail.component.RelatedEntriesSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.SeedPhraseSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.SshKeySection
-import com.aozijx.passly.presentation.feature.vault.detail.section.TotpSection
+import com.aozijx.passly.presentation.ui.vault.detail.component.TotpSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.WifiSection
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.domain.sensitive.SensitiveValue
@@ -105,7 +108,14 @@ fun DetailScrollableContent(
                     passwordLabel = stringResource(R.string.password_label),
                     revealedUsername = revealedUsername?.let { String(it.toCharArray()) },
                     revealedPassword = revealedPassword?.let { String(it.toCharArray()) },
-                    editState = editState,
+                    isEditingUsername = editState.isEditingUsername,
+                    editedUsername = editState.editedUsername,
+                    isEditingPassword = editState.isEditingPassword,
+                    editedPassword = editState.editedPassword,
+                    onUsernameEditToggled = { editState.isEditingUsername = it },
+                    onPasswordEditToggled = { editState.isEditingPassword = it },
+                    onUsernameChanged = { editState.editedUsername = it },
+                    onPasswordChanged = { editState.editedPassword = it },
                     onUsernameClick = { onAction(DetailUiAction.ToggleVisibility(RevealedFieldKey.USERNAME)) },
                     onPasswordClick = { onAction(DetailUiAction.ToggleVisibility(RevealedFieldKey.PASSWORD)) },
                     onUsernameCopy = {
@@ -134,14 +144,26 @@ fun DetailScrollableContent(
 
         if (DetailSectionKey.OTP in registeredSections) {
             item {
+                val context = LocalContext.current
                 val otpConfig = entry.secret.otp?.config
                 val totpUri =
                     otpConfig?.takeIf { !it.secret.isNullOrBlank() }
                         ?.let { OtpAuthUriCodec.format(it, entry.title) }
                 TotpSection(
-                    currentState = otpUiState,
+                    currentState = screenUiModel.otp,
                     totpUri = totpUri,
-                    onAction = onAction
+                    onCodeClick = {
+                        screenUiModel.otp?.code?.takeIf { it.isNotEmpty() && !it.contains("-") }?.let { code ->
+                            ClipboardUtils.copy(context, code)
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.field_copy_success_message)
+                                    .format(context.getString(R.string.vault_detail_totp_label)),
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                            onAction(DetailUiAction.RecordAction("totp", ActivityType.COPY_PASSWORD))
+                        }
+                    },
                 )
             }
         }

@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail.section
+package com.aozijx.passly.presentation.ui.vault.detail.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
-import com.aozijx.passly.presentation.ui.vault.detail.component.SensitiveFieldCard
 
 /**
  * A purely stateless UI section for credentials (username and password).
@@ -21,7 +19,14 @@ fun CredentialSection(
     passwordLabel: String,
     revealedUsername: String?,
     revealedPassword: String?,
-    editState: EntryEditState,
+    isEditingUsername: Boolean,
+    editedUsername: String,
+    isEditingPassword: Boolean,
+    editedPassword: String,
+    onUsernameEditToggled: (Boolean) -> Unit,
+    onPasswordEditToggled: (Boolean) -> Unit,
+    onUsernameChanged: (String) -> Unit,
+    onPasswordChanged: (String) -> Unit,
     onUsernameClick: () -> Unit,
     onPasswordClick: () -> Unit,
     onUsernameCopy: () -> Unit,
@@ -36,11 +41,11 @@ fun CredentialSection(
         if (showUsername) {
             SensitiveFieldCard(
                 title = usernameLabel,
-                isEditing = editState.isEditingUsername,
-                editedValue = editState.editedUsername,
+                isEditing = isEditingUsername,
+                editedValue = editedUsername,
                 revealedValue = revealedUsername,
-                onEditToggle = { editState.isEditingUsername = it },
-                onValueChange = { editState.editedUsername = it },
+                onEditToggle = onUsernameEditToggled,
+                onValueChange = onUsernameChanged,
                 onReveal = onUsernameClick,
                 onCopy = onUsernameCopy,
                 onSave = onUsernameSave
@@ -50,11 +55,11 @@ fun CredentialSection(
         if (showPassword) {
             SensitiveFieldCard(
                 title = passwordLabel,
-                isEditing = editState.isEditingPassword,
-                editedValue = editState.editedPassword,
+                isEditing = isEditingPassword,
+                editedValue = editedPassword,
                 revealedValue = revealedPassword,
-                onEditToggle = { editState.isEditingPassword = it },
-                onValueChange = { editState.editedPassword = it },
+                onEditToggle = onPasswordEditToggled,
+                onValueChange = onPasswordChanged,
                 onReveal = onPasswordClick,
                 onCopy = onPasswordCopy,
                 onSave = onPasswordSave
