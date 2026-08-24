@@ -6,6 +6,17 @@ internal data class EditorSource(
 )
 
 internal object EditorSourceBoundaryVerifier {
+    private val temporaryVaultDetailUiAllowlist = setOf(
+        "/com/aozijx/passly/presentation/feature/vault/detail/detailscreen.kt",
+        "/com/aozijx/passly/presentation/feature/vault/detail/component/detailheader.kt",
+        "/com/aozijx/passly/presentation/feature/vault/detail/component/detailitem.kt",
+        "/com/aozijx/passly/presentation/feature/vault/detail/component/detailscrollablecontent.kt",
+        "/com/aozijx/passly/presentation/feature/vault/detail/component/detailtopbar.kt",
+        "/com/aozijx/passly/presentation/feature/vault/detail/component/infogroupcard.kt",
+        "/com/aozijx/passly/presentation/feature/vault/detail/component/metadatasection.kt",
+        "/com/aozijx/passly/presentation/feature/vault/detail/component/sensitivefieldcard.kt",
+        "/com/aozijx/passly/presentation/feature/vault/detail/component/totpcard.kt",
+    )
     private val mapperForbiddenMarkers = linkedMapOf(
         "repository" to listOf(".repository.", ".port.EntryCommandRepository"),
         "UUID" to listOf("UuidCreator", "java.util.UUID"),
@@ -55,14 +66,18 @@ internal object EditorSourceBoundaryVerifier {
                 "credentialresponseviewmodel.kt",
             )
             val fileName = lowerPath.substringAfterLast('/')
-            val isVaultListFeature = "/presentation/feature/vault/list/" in lowerPath
             val passiveUiNames = listOf("screen", "content", "component", "dialog", "sheet")
-            if (isVaultListFeature && (
-                    passiveUiNames.any(fileName::contains) ||
-                        listOf("/component/", "/dialog/", "/sheet/").any(lowerPath::contains)
-                    )
-            ) {
-                add("$path: passive vault-list UI must live below presentation/ui/vault/list")
+            listOf("list", "detail").forEach { page ->
+                val isVaultPageFeature = "/presentation/feature/vault/$page/" in lowerPath
+                val isTemporarilyAllowedDetailUi = page == "detail" &&
+                    temporaryVaultDetailUiAllowlist.any(lowerPath::endsWith)
+                if (isVaultPageFeature && !isTemporarilyAllowedDetailUi && (
+                        passiveUiNames.any(fileName::contains) ||
+                            listOf("/component/", "/dialog/", "/sheet/").any(lowerPath::contains)
+                        )
+                ) {
+                    add("$path: passive vault-$page UI must live below presentation/ui/vault/$page")
+                }
             }
             val isPresentationUi = "/presentation/ui/" in lowerPath
             if (isPresentationUi) {

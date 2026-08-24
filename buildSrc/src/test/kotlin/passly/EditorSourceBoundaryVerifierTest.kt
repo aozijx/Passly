@@ -160,5 +160,19 @@ class EditorSourceBoundaryVerifierTest {
         assertTrue(violations.all { it.contains("passive vault-list UI") })
     }
 
+    @Test
+    fun vaultDetailPassiveUiCannotReturnToFeaturePackage() {
+        val violations = EditorSourceBoundaryVerifier.verify(
+            listOf(
+                source("app/src/main/java/com/example/presentation/feature/vault/detail/DetailScreen.kt", "@Composable fun DetailScreen() = Unit"),
+                source("app/src/main/java/com/example/presentation/feature/vault/detail/component/Header.kt", "@Composable fun Header() = Unit"),
+                source("app/src/main/java/com/example/presentation/feature/vault/detail/DetailHost.kt", "@Composable fun DetailHost() = Unit"),
+            ),
+        )
+
+        assertEquals(2, violations.size)
+        assertTrue(violations.all { it.contains("passive vault-detail UI") })
+    }
+
     private fun source(path: String, content: String) = EditorSource(path, content)
 }
