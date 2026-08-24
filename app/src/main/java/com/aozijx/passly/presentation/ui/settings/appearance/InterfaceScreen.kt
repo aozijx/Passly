@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.appearance.component
+package com.aozijx.passly.presentation.ui.settings.appearance
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -20,21 +20,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.settings.appearance.InterfaceSettingsUiState
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.dropdownSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.sliderSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
-import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
+import com.aozijx.passly.presentation.ui.settings.appearance.model.EntryHierarchyDisplayModeUiModel
+import com.aozijx.passly.presentation.ui.settings.appearance.model.InterfaceUiModel
 import kotlin.math.roundToInt
 
 @Composable
 internal fun InterfaceDetail(
-    state: InterfaceSettingsUiState,
+    state: InterfaceUiModel,
     onStatusBarAutoHideChange: (Boolean) -> Unit,
     onTopBarCollapsibleChange: (Boolean) -> Unit,
     onQuickFilterBarCollapsibleChange: (Boolean) -> Unit,
@@ -42,8 +40,7 @@ internal fun InterfaceDetail(
     onInnerCornerRadiusChange: (Float) -> Unit,
     onGroupItemSpacingChange: (Float) -> Unit,
     onGroupContentPaddingChange: (Float) -> Unit,
-    onVisibleLibraryQuickFilterToggle: (LibraryQuickFilter) -> Unit,
-    onEntryHierarchyDisplayModeChange: (EntryHierarchyDisplayMode) -> Unit
+    onEntryHierarchyDisplayModeChange: (EntryHierarchyDisplayModeUiModel) -> Unit
 ) {
     var outerRadius by remember(state.outerCornerRadiusDp) {
         mutableFloatStateOf(state.outerCornerRadiusDp)
@@ -110,8 +107,7 @@ internal fun InterfaceDetail(
                         outerRadius.roundToInt()
                     ),
                     valueRange =
-                        InterfaceStyleConstraints.MIN_OUTER_RADIUS_DP..
-                                InterfaceStyleConstraints.MAX_OUTER_RADIUS_DP,
+                        state.outerCornerRadiusRange,
                     steps = 47,
                     onValueChange = { outerRadius = it },
                     onValueChangeFinished = {
@@ -133,8 +129,7 @@ internal fun InterfaceDetail(
                         innerRadius.roundToInt()
                     ),
                     valueRange =
-                        InterfaceStyleConstraints.MIN_INNER_RADIUS_DP..
-                                InterfaceStyleConstraints.MAX_INNER_RADIUS_DP,
+                        state.innerCornerRadiusRange,
                     steps = 23,
                     onValueChange = { innerRadius = it },
                     onValueChangeFinished = {
@@ -156,8 +151,7 @@ internal fun InterfaceDetail(
                         itemSpacing.roundToInt()
                     ),
                     valueRange =
-                        InterfaceStyleConstraints.MIN_ITEM_SPACING_DP..
-                                InterfaceStyleConstraints.MAX_ITEM_SPACING_DP,
+                        state.groupItemSpacingRange,
                     steps = 11,
                     onValueChange = { itemSpacing = it },
                     onValueChangeFinished = {
@@ -179,8 +173,7 @@ internal fun InterfaceDetail(
                         contentPadding.roundToInt()
                     ),
                     valueRange =
-                        InterfaceStyleConstraints.MIN_CONTENT_PADDING_DP..
-                                InterfaceStyleConstraints.MAX_CONTENT_PADDING_DP,
+                        state.groupContentPaddingRange,
                     steps = 23,
                     onValueChange = { contentPadding = it },
                     onValueChangeFinished = {
@@ -209,7 +202,7 @@ internal fun InterfaceDetail(
                     selectedLabel = stringResource(
                         state.entryHierarchyDisplayMode.labelResource()
                     ),
-                    options = EntryHierarchyDisplayMode.entries.map {
+                    options = EntryHierarchyDisplayModeUiModel.entries.map {
                         it to stringResource(it.labelResource())
                     },
                     expanded = showHierarchyModeMenu,
@@ -219,22 +212,16 @@ internal fun InterfaceDetail(
             )
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        LibraryQuickFiltersSettingsSection(
-            enabledLibraryQuickFilterKeys = state.enabledLibraryQuickFilterKeys,
-            onLibraryQuickFilterToggle = onVisibleLibraryQuickFilterToggle
-        )
     }
 }
 
-private fun EntryHierarchyDisplayMode.labelResource(): Int = when (this) {
-    EntryHierarchyDisplayMode.COLLAPSED ->
+private fun EntryHierarchyDisplayModeUiModel.labelResource(): Int = when (this) {
+    EntryHierarchyDisplayModeUiModel.COLLAPSED ->
         R.string.settings_interface_entry_hierarchy_collapsed
 
-    EntryHierarchyDisplayMode.EXPANDED ->
+    EntryHierarchyDisplayModeUiModel.EXPANDED ->
         R.string.settings_interface_entry_hierarchy_expanded
 
-    EntryHierarchyDisplayMode.SEPARATE ->
+    EntryHierarchyDisplayModeUiModel.SEPARATE ->
         R.string.settings_interface_entry_hierarchy_separate
 }

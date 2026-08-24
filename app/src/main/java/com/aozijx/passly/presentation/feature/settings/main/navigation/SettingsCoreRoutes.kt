@@ -2,7 +2,11 @@ package com.aozijx.passly.presentation.feature.settings.main.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
@@ -10,6 +14,7 @@ import com.aozijx.passly.presentation.feature.settings.appearance.AppearanceSett
 import com.aozijx.passly.presentation.feature.settings.appearance.AppearanceSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.appearance.InterfaceSettingsAction
 import com.aozijx.passly.presentation.feature.settings.appearance.InterfaceSettingsViewModel
+import com.aozijx.passly.presentation.feature.settings.appearance.toInterfaceUiModel
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsViewModel
@@ -18,12 +23,13 @@ import com.aozijx.passly.presentation.feature.settings.security.SecuritySettings
 import com.aozijx.passly.presentation.feature.settings.appearance.appLanguageFromKey
 import com.aozijx.passly.presentation.feature.settings.appearance.toAppearanceUiModel
 import com.aozijx.passly.presentation.feature.settings.appearance.toDomainModel
-import com.aozijx.passly.presentation.feature.settings.appearance.component.InterfaceDetail
+import com.aozijx.passly.presentation.feature.settings.appearance.component.LibraryQuickFiltersSettingsSection
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 import com.aozijx.passly.presentation.feature.settings.security.component.PrivacyDetail
 import com.aozijx.passly.presentation.feature.settings.security.component.SecurityDetail
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 import com.aozijx.passly.presentation.ui.settings.appearance.AppearanceDetail
+import com.aozijx.passly.presentation.ui.settings.appearance.InterfaceDetail
 
 @Composable
 internal fun CoreSettingsRouteContent(
@@ -146,7 +152,7 @@ internal fun CoreSettingsRouteContent(
             ) {
                 item {
                     InterfaceDetail(
-                        state = state,
+                        state = state.toInterfaceUiModel(),
                         onStatusBarAutoHideChange = {
                             viewModel.onAction(InterfaceSettingsAction.SetHideSystemBars(it))
                         },
@@ -172,16 +178,22 @@ internal fun CoreSettingsRouteContent(
                         onGroupContentPaddingChange = {
                             viewModel.onAction(InterfaceSettingsAction.SetGroupContentPadding(it))
                         },
-                        onVisibleLibraryQuickFilterToggle = {
-                            viewModel.onAction(
-                                InterfaceSettingsAction.ToggleVisibleLibraryQuickFilter(
-                                    it
-                                )
-                            )
-                        },
                         onEntryHierarchyDisplayModeChange = {
                             viewModel.onAction(
-                                InterfaceSettingsAction.SetEntryHierarchyDisplayMode(it)
+                                InterfaceSettingsAction.SetEntryHierarchyDisplayMode(
+                                    it.toDomainModel()
+                                )
+                            )
+                        }
+                    )
+                }
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    LibraryQuickFiltersSettingsSection(
+                        enabledLibraryQuickFilterKeys = state.enabledLibraryQuickFilterKeys,
+                        onLibraryQuickFilterToggle = {
+                            viewModel.onAction(
+                                InterfaceSettingsAction.ToggleVisibleLibraryQuickFilter(it)
                             )
                         }
                     )
