@@ -24,6 +24,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.settings.appearance.localizedDisplayName
+import com.aozijx.passly.presentation.feature.settings.appearance.languagePickerOptions
+import com.aozijx.passly.presentation.feature.settings.appearance.appLanguageFromKey
 import com.aozijx.passly.presentation.feature.settings.appearance.labelRes
 import com.aozijx.passly.presentation.feature.settings.appearance.AppearanceSettingsUiState
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
@@ -38,8 +40,8 @@ import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.domain.settings.model.ThemeCanvasTint
-import com.aozijx.passly.presentation.feature.settings.appearance.component.LanguagePicker
-import com.aozijx.passly.presentation.feature.settings.appearance.component.ThemePicker
+import com.aozijx.passly.presentation.ui.settings.appearance.LanguagePicker
+import com.aozijx.passly.presentation.ui.settings.appearance.ThemePicker
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -171,12 +173,14 @@ internal fun AppearanceDetail(
 
     if (showLanguageSheet) {
         LanguagePicker(
-            current = state.language,
-            onSelect = { lang ->
+            currentKey = state.language.name,
+            options = languagePickerOptions(),
+            onSelect = { languageKey ->
+                val language = appLanguageFromKey(languageKey) ?: return@LanguagePicker
                 scope.launch { languageSheetState.hide() }.invokeOnCompletion {
                     showLanguageSheet = false
                     // 此时触发导致 Activity 重启的语言变更
-                    onLanguageChange(lang)
+                    onLanguageChange(language)
                 }
             },
             sheetState = languageSheetState,

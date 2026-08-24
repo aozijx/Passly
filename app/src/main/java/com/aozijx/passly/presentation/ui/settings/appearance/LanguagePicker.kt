@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.appearance.component
+package com.aozijx.passly.presentation.ui.settings.appearance
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,14 +22,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.settings.model.AppLanguage
-import com.aozijx.passly.presentation.feature.settings.appearance.localizedDisplayName
+import com.aozijx.passly.presentation.ui.settings.appearance.model.LanguageOptionUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LanguagePicker(
-    current: AppLanguage,
-    onSelect: (AppLanguage) -> Unit,
+    currentKey: String,
+    options: List<LanguageOptionUiModel>,
+    onSelect: (String) -> Unit,
     sheetState: SheetState,
     onDismiss: () -> Unit
 ) {
@@ -53,20 +53,20 @@ fun LanguagePicker(
                     style = MaterialTheme.typography.titleMedium
                 )
             }
-            items(AppLanguage.entries) { lang ->
+            items(options, key = LanguageOptionUiModel::key) { language ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onSelect(lang) }
+                        .clickable { onSelect(language.key) }
                         .padding(horizontal = 24.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     RadioButton(
-                        selected = lang == current,
-                        onClick = { onSelect(lang) }
+                        selected = language.key == currentKey,
+                        onClick = { onSelect(language.key) }
                     )
                     Spacer(Modifier.padding(start = 12.dp))
-                    Text(text = lang.localizedDisplayName())
+                    Text(text = language.label)
                 }
             }
         }

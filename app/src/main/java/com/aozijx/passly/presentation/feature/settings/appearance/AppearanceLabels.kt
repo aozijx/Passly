@@ -6,6 +6,7 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.ThemeMode
+import com.aozijx.passly.presentation.ui.settings.appearance.model.LanguageOptionUiModel
 
 @StringRes
 fun ThemeMode.labelRes(): Int = when (this) {
@@ -27,3 +28,10 @@ fun AppLanguage.localizedDisplayName(): String {
         if (first.isLowerCase()) first.titlecase(languageLocale) else first.toString()
     }
 }
+
+@Composable
+fun languagePickerOptions(): List<LanguageOptionUiModel> = AppLanguage.entries.map { language ->
+    LanguageOptionUiModel(language.name, language.localizedDisplayName())
+}
+
+fun appLanguageFromKey(key: String): AppLanguage? = AppLanguage.entries.firstOrNull { it.name == key }

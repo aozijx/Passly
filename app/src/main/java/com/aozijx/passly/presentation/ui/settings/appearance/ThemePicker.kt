@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.appearance.component
+package com.aozijx.passly.presentation.ui.settings.appearance
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
