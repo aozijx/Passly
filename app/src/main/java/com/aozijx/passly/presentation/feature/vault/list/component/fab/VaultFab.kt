@@ -45,9 +45,9 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.animation.SharedTransitionOverlayClip
 import com.aozijx.passly.core.ui.animation.withSharedTransitionVisualOverflow
 import com.aozijx.passly.feature.vault.model.AddType
-import com.aozijx.passly.feature.vault.presentation.labelRes
-import com.aozijx.passly.presentation.vault.editor.common.ADD_ENTRY_FAB_SHARED_KEY
-import com.aozijx.passly.presentation.vault.editor.common.AddEntryFabVisualOverflow
+import com.aozijx.passly.presentation.feature.vault.list.labelRes
+import com.aozijx.passly.presentation.feature.vault.editor.common.ADD_ENTRY_FAB_SHARED_KEY
+import com.aozijx.passly.presentation.feature.vault.editor.common.AddEntryFabVisualOverflow
 import kotlinx.coroutines.delay
 
 private const val FAB_MENU_STAGGER_MILLIS = 45
