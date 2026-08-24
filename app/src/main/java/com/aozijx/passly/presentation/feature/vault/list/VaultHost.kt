@@ -50,7 +50,7 @@ import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VaultContent(
+fun VaultHost(
     vaultViewModel: VaultViewModel,
     requestAuthentication: (onSuccess: () -> Unit) -> Unit,
     requestReauthentication: (onSuccess: () -> Unit) -> Unit,
@@ -76,10 +76,6 @@ fun VaultContent(
     val renderState = uiState.toUiModel()
     var isFabVisible by remember { mutableStateOf(true) }
 
-    BackHandler(enabled = uiState.isSearchActive) {
-        vaultViewModel.onAction(VaultUiAction.SearchToggled(false))
-    }
-
     val actionProvider = rememberVaultActionProvider(
         vaultViewModel = vaultViewModel,
         totpStates = vaultViewModel.totpStatesFlow,
@@ -90,31 +86,6 @@ fun VaultContent(
         onShowDetail = onShowDetail,
         isFabVisible = { isFabVisible = it }
     )
-
-    val initialQuickFilterIndex =
-        uiState.visibleQuickFilters.indexOf(uiState.selectedQuickFilter).coerceAtLeast(0)
-    val pagerState = rememberPagerState(initialPage = initialQuickFilterIndex) {
-        uiState.visibleQuickFilters.size.coerceAtLeast(1)
-    }
-
-    LaunchedEffect(uiState.visibleQuickFilters, uiState.selectedQuickFilter) {
-        if (uiState.visibleQuickFilters.isEmpty()) return@LaunchedEffect
-        if (uiState.selectedQuickFilter !in uiState.visibleQuickFilters) {
-            vaultViewModel.onAction(VaultUiAction.QuickFilterSelected(uiState.visibleQuickFilters.first()))
-            return@LaunchedEffect
-        }
-        val targetIndex = uiState.visibleQuickFilters.indexOf(uiState.selectedQuickFilter)
-        if (pagerState.settledPage != targetIndex && pagerState.pageCount > targetIndex) {
-            pagerState.animateScrollToPage(targetIndex)
-        }
-    }
-
-    LaunchedEffect(pagerState, uiState.visibleQuickFilters) {
-        snapshotFlow { pagerState.settledPage }.distinctUntilChanged().collect { page ->
-            val newQuickFilter = uiState.visibleQuickFilters.getOrNull(page) ?: return@collect
-            vaultViewModel.onAction(VaultUiAction.QuickFilterSelected(newQuickFilter))
-        }
-    }
 
     val activity = context as? FragmentActivity
     LaunchedEffect(scrollBehavior, vaultDisplayConfig.layout.hideSystemBars, activity) {
@@ -160,108 +131,55 @@ fun VaultContent(
         }
     }
 
-    Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .then(
-                if (vaultDisplayConfig.layout.collapseTopBarOnScroll
-                    || vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll
-                    || vaultDisplayConfig.layout.hideSystemBars
-                ) {
-                    Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-                } else Modifier
-            )
-            .nestedScroll(actionProvider.fabScrollConnection),
-        topBar = {
-            Column {
-                VaultTopBar(
-                    uiState = renderState,
-                    selectedQuickFilterIndex = pagerState.currentPage,
-                    scrollBehavior = scrollBehavior,
-                    onSettingsClick = onSettingsClick,
-                    isStatusBarAutoHide = vaultDisplayConfig.layout.hideSystemBars,
-                    isTopBarCollapsible = vaultDisplayConfig.layout.collapseTopBarOnScroll,
-                    isQuickFilterBarCollapsible = vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll,
-                    onSearchQueryChange = {
-                        vaultViewModel.onAction(
-                            VaultUiAction.SearchQueryChanged(
-                                it
-                            )
-                        )
-                    },
-                    onToggleSearch = { vaultViewModel.onAction(VaultUiAction.SearchToggled(it)) },
-                    onClearCategory = { vaultViewModel.onAction(VaultUiAction.ClearCategory) },
-                    onToggleTotpVisibility = { vaultViewModel.onAction(VaultUiAction.ToggleShowTotpCode) },
-                    onCategorySelected = { vaultViewModel.onAction(VaultUiAction.CategorySelected(it)) },
-                    onSortSelected = { vaultViewModel.onAction(VaultUiAction.SortOptionSelected(it.toFeatureModel())) },
-                    onSelectQuickFilter = {
-                        vaultViewModel.onAction(
-                            VaultUiAction.QuickFilterSelected(
-                                it.toFeatureModel()
-                            )
-                        )
-                    }
-                )
-
-                if (isDatabaseInitializing) {
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+    com.aozijx.passly.presentation.ui.vault.list.VaultScreen(
+        state = renderState,
+        scrollBehavior = scrollBehavior,
+        entryPages = { filter ->
+            vaultViewModel.entries(filter.toFeatureModel()).map { pagingData ->
+                pagingData.map { item ->
+                    item.toUiModel(
+                        events = object : VaultListItemEventHandler {
+                            override fun onClick() = onShowDetail(item)
+                            override fun onSwipe(action: com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel) {
+                                actionProvider.onSwipeTriggered(action.toFeatureModel(), item)
+                            }
+                        },
                     )
                 }
             }
         },
-        floatingActionButton = {
-            VaultFab(
-                onAddTypeSelected = { type ->
-                    when (type) {
-                        VaultAddTypeUiModel.PASSWORD -> onAddPassword()
-                        VaultAddTypeUiModel.TOTP -> onAddOtp()
-                        VaultAddTypeUiModel.BANK_CARD -> onAddBankCard()
-                        else -> vaultViewModel.onAction(VaultUiAction.AddTypeSelected(type.toFeatureModel()))
-                    }
-                },
-                sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = animatedVisibilityScope,
-                isVisible = isFabVisible
-            )
+        cardPresentations = entryCardPresentations,
+        otpState = { id -> vaultViewModel.totpStatesFlow.map { it[id]?.toUiModel() } },
+        swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction.toUiModel(),
+        swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction.toUiModel(),
+        isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,
+        fabScrollConnection = actionProvider.fabScrollConnection,
+        isFabVisible = isFabVisible,
+        collapseTopBarOnScroll = vaultDisplayConfig.layout.collapseTopBarOnScroll,
+        collapseQuickFilterBarOnScroll = vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll,
+        hideSystemBars = vaultDisplayConfig.layout.hideSystemBars,
+        sharedTransitionScope = sharedTransitionScope,
+        animatedVisibilityScope = animatedVisibilityScope,
+        requestAuthentication = requestAuthentication,
+        onSettingsClick = onSettingsClick,
+        onSearchQueryChange = { vaultViewModel.onAction(VaultUiAction.SearchQueryChanged(it)) },
+        onSearchToggled = { vaultViewModel.onAction(VaultUiAction.SearchToggled(it)) },
+        onClearCategory = { vaultViewModel.onAction(VaultUiAction.ClearCategory) },
+        onToggleTotpVisibility = { vaultViewModel.onAction(VaultUiAction.ToggleShowTotpCode) },
+        onCategorySelected = { vaultViewModel.onAction(VaultUiAction.CategorySelected(it)) },
+        onSortSelected = { vaultViewModel.onAction(VaultUiAction.SortOptionSelected(it.toFeatureModel())) },
+        onQuickFilterSelected = { vaultViewModel.onAction(VaultUiAction.QuickFilterSelected(it.toFeatureModel())) },
+        onAddTypeSelected = { type ->
+            when (type) {
+                VaultAddTypeUiModel.PASSWORD -> onAddPassword()
+                VaultAddTypeUiModel.TOTP -> onAddOtp()
+                VaultAddTypeUiModel.BANK_CARD -> onAddBankCard()
+                else -> vaultViewModel.onAction(VaultUiAction.AddTypeSelected(type.toFeatureModel()))
+            }
         },
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
-    ) { innerPadding ->
-        VaultPagerContent(
-            pagerState = pagerState,
-            uiState = renderState,
-            entryPages = { filter ->
-                vaultViewModel.entries(filter.toFeatureModel()).map { pagingData ->
-                    pagingData.map { item ->
-                        item.toUiModel(
-                            events = object : VaultListItemEventHandler {
-                                override fun onClick() = onShowDetail(item)
-                                override fun onSwipe(action: com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel) {
-                                    actionProvider.onSwipeTriggered(action.toFeatureModel(), item)
-                                }
-                            },
-                        )
-                    }
-                }
-            },
-            entryCardPresentations = entryCardPresentations,
-            otpState = { id -> vaultViewModel.totpStatesFlow.map { it[id]?.toUiModel() } },
-            swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction.toUiModel(),
-            swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction.toUiModel(),
-            isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        )
-    }
-
-    VaultDialogs(
-        uiState = renderState,
         onDismissAddType = { vaultViewModel.onAction(VaultUiAction.AddTypeSelected(null)) },
         onConfirmDelete = { vaultViewModel.onAction(VaultUiAction.ConfirmDelete) },
         onDismissDelete = { vaultViewModel.onAction(VaultUiAction.ItemToDeleteSelected(null)) },
-        requestAuthentication = requestAuthentication,
+        isDatabaseInitializing = isDatabaseInitializing,
     )
 }

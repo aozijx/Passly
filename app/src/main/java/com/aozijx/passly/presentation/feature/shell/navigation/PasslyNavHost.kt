@@ -38,7 +38,7 @@ import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
 import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardViewModel
 import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpViewModel
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordViewModel
-import com.aozijx.passly.presentation.feature.vault.list.VaultContent
+import com.aozijx.passly.presentation.feature.vault.list.VaultHost
 import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardScreen
 import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpScreen
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordScreen
@@ -91,7 +91,7 @@ fun PasslyNavHost(
                 composable(AppRoute.Vault.route) {
                     val animatedVisibilityScope = this
 
-                    VaultContent(
+                    VaultHost(
                         vaultViewModel = vaultViewModel,
                         requestAuthentication = { onSuccess ->
                             pendingAuthCallback = onSuccess
