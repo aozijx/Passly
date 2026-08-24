@@ -141,6 +141,10 @@ fun DetailContentHost(
         if (DetailSectionKey.OTP in registeredSections) {
             item {
                 val context = LocalContext.current
+                val copySuccessMessage = stringResource(
+                    R.string.field_copy_success_message,
+                    stringResource(R.string.vault_detail_totp_label),
+                )
                 val otpConfig = entry.secret.otp?.config
                 val totpUri =
                     otpConfig?.takeIf { !it.secret.isNullOrBlank() }
@@ -153,8 +157,7 @@ fun DetailContentHost(
                             ClipboardUtils.copy(context, code)
                             Toast.makeText(
                                 context,
-                                context.getString(R.string.field_copy_success_message)
-                                    .format(context.getString(R.string.vault_detail_totp_label)),
+                                copySuccessMessage,
                                 Toast.LENGTH_SHORT,
                             ).show()
                             onAction(DetailUiAction.RecordAction("totp", ActivityType.COPY_PASSWORD))
