@@ -15,6 +15,7 @@ import com.aozijx.passly.presentation.feature.settings.appearance.AppearanceSett
 import com.aozijx.passly.presentation.feature.settings.appearance.InterfaceSettingsAction
 import com.aozijx.passly.presentation.feature.settings.appearance.InterfaceSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.appearance.toInterfaceUiModel
+import com.aozijx.passly.presentation.feature.settings.appearance.libraryQuickFilterOptions
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsViewModel
@@ -23,13 +24,13 @@ import com.aozijx.passly.presentation.feature.settings.security.SecuritySettings
 import com.aozijx.passly.presentation.feature.settings.appearance.appLanguageFromKey
 import com.aozijx.passly.presentation.feature.settings.appearance.toAppearanceUiModel
 import com.aozijx.passly.presentation.feature.settings.appearance.toDomainModel
-import com.aozijx.passly.presentation.feature.settings.appearance.component.LibraryQuickFiltersSettingsSection
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 import com.aozijx.passly.presentation.feature.settings.security.component.PrivacyDetail
 import com.aozijx.passly.presentation.feature.settings.security.component.SecurityDetail
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 import com.aozijx.passly.presentation.ui.settings.appearance.AppearanceDetail
 import com.aozijx.passly.presentation.ui.settings.appearance.InterfaceDetail
+import com.aozijx.passly.presentation.ui.settings.appearance.LibraryQuickFiltersSettingsSection
 
 @Composable
 internal fun CoreSettingsRouteContent(
@@ -190,10 +191,14 @@ internal fun CoreSettingsRouteContent(
                 item {
                     Spacer(modifier = Modifier.height(24.dp))
                     LibraryQuickFiltersSettingsSection(
-                        enabledLibraryQuickFilterKeys = state.enabledLibraryQuickFilterKeys,
+                        options = libraryQuickFilterOptions(
+                            state.enabledLibraryQuickFilterKeys
+                        ),
                         onLibraryQuickFilterToggle = {
                             viewModel.onAction(
-                                InterfaceSettingsAction.ToggleVisibleLibraryQuickFilter(it)
+                                InterfaceSettingsAction.ToggleVisibleLibraryQuickFilter(
+                                    it.toDomainModel()
+                                )
                             )
                         }
                     )

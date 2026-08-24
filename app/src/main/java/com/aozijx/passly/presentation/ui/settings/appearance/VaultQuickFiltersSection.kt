@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.appearance.component
+package com.aozijx.passly.presentation.ui.settings.appearance
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
@@ -20,16 +20,14 @@ import com.aozijx.passly.core.ui.components.group.GroupCard
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.model.RoundedGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.core.ui.components.vaultfilter.titleRes
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
+import com.aozijx.passly.presentation.ui.settings.appearance.model.LibraryQuickFilterOptionUiModel
+import com.aozijx.passly.presentation.ui.settings.appearance.model.LibraryQuickFilterUiModel
 
 @Composable
 fun LibraryQuickFiltersSettingsSection(
-    enabledLibraryQuickFilterKeys: Set<String>,
-    onLibraryQuickFilterToggle: (LibraryQuickFilter) -> Unit
+    options: List<LibraryQuickFilterOptionUiModel>,
+    onLibraryQuickFilterToggle: (LibraryQuickFilterUiModel) -> Unit
 ) {
-    val toggleableQuickFilters = LibraryQuickFilter.toggleableVisibleQuickFilters
-
     SettingsSectionTitle(
         text = stringResource(R.string.settings_interface_vault_quick_filters_section)
     )
@@ -42,15 +40,14 @@ fun LibraryQuickFiltersSettingsSection(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        toggleableQuickFilters.forEach { quickFilter ->
-                            val isChecked = quickFilter.settingsKey in enabledLibraryQuickFilterKeys
+                        options.forEach { option ->
                             FilterChip(
-                                selected = isChecked,
-                                onClick = { onLibraryQuickFilterToggle(quickFilter) },
-                                label = { Text(stringResource(quickFilter.titleRes)) },
+                                selected = option.selected,
+                                onClick = { onLibraryQuickFilterToggle(option.filter) },
+                                label = { Text(stringResource(option.filter.titleRes)) },
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = quickFilter.settingsIcon(),
+                                        imageVector = option.filter.settingsIcon(),
                                         contentDescription = null
                                     )
                                 }
@@ -63,8 +60,13 @@ fun LibraryQuickFiltersSettingsSection(
     )
 }
 
-private fun LibraryQuickFilter.settingsIcon(): ImageVector = when (this) {
-    LibraryQuickFilter.PASSWORDS -> Icons.Default.Key
-    LibraryQuickFilter.TOTP -> Icons.Default.Pin
-    LibraryQuickFilter.ALL -> Icons.Default.Key
+private fun LibraryQuickFilterUiModel.settingsIcon(): ImageVector = when (this) {
+    LibraryQuickFilterUiModel.PASSWORDS -> Icons.Default.Key
+    LibraryQuickFilterUiModel.TOTP -> Icons.Default.Pin
 }
+
+private val LibraryQuickFilterUiModel.titleRes: Int
+    get() = when (this) {
+        LibraryQuickFilterUiModel.PASSWORDS -> R.string.vault_quick_filter_passwords
+        LibraryQuickFilterUiModel.TOTP -> R.string.vault_quick_filter_totp
+    }
