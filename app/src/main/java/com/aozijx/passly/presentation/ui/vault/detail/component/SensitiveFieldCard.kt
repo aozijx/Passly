@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail.component
+package com.aozijx.passly.presentation.ui.vault.detail.component
 
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement

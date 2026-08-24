@@ -7,7 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
-import com.aozijx.passly.presentation.feature.vault.detail.component.SensitiveFieldCard
+import com.aozijx.passly.presentation.ui.vault.detail.component.SensitiveFieldCard
 
 /**
  * A purely stateless UI section for credentials (username and password).

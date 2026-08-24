@@ -35,8 +35,8 @@ import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
 import com.aozijx.passly.presentation.feature.vault.detail.copySensitiveField
 import com.aozijx.passly.presentation.feature.vault.detail.toggleRevealSensitiveField
 import com.aozijx.passly.presentation.feature.vault.detail.withWifiPassword
-import com.aozijx.passly.presentation.feature.vault.detail.component.DetailItem
-import com.aozijx.passly.presentation.feature.vault.detail.component.InfoGroupCard
+import com.aozijx.passly.presentation.ui.vault.detail.component.DetailItem
+import com.aozijx.passly.presentation.ui.vault.detail.component.InfoGroupCard
 import com.aozijx.passly.domain.sensitive.OwnedChars
 
 @Composable

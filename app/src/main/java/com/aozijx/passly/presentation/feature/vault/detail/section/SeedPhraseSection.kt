@@ -32,7 +32,7 @@ import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
 import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
 import com.aozijx.passly.presentation.feature.vault.detail.copySensitiveField
-import com.aozijx.passly.presentation.feature.vault.detail.component.DetailItem
+import com.aozijx.passly.presentation.ui.vault.detail.component.DetailItem
 import com.aozijx.passly.domain.sensitive.OwnedChars
 
 @Composable

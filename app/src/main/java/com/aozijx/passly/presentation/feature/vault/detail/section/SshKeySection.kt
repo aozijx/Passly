@@ -32,8 +32,8 @@ import com.aozijx.passly.core.ui.components.MaskedText
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.presentation.feature.vault.detail.DetailAuthenticate
-import com.aozijx.passly.presentation.feature.vault.detail.component.DetailItem
-import com.aozijx.passly.presentation.feature.vault.detail.component.EditTextField
+import com.aozijx.passly.presentation.ui.vault.detail.component.DetailItem
+import com.aozijx.passly.presentation.ui.vault.detail.component.EditTextField
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
 import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState

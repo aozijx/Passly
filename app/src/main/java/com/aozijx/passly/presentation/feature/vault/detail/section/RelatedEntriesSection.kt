@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.text.localizedName
 import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.presentation.feature.vault.detail.component.InfoGroupCard
+import com.aozijx.passly.presentation.ui.vault.detail.component.InfoGroupCard
 
 @Composable
 fun RelatedEntriesSection(

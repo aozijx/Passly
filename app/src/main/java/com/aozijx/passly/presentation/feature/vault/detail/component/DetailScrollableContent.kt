@@ -24,7 +24,7 @@ import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
 import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
 import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
 import com.aozijx.passly.presentation.feature.vault.detail.copySensitiveField
-import com.aozijx.passly.presentation.feature.vault.detail.component.InfoGroupCard
+import com.aozijx.passly.presentation.ui.vault.detail.component.InfoGroupCard
 import com.aozijx.passly.presentation.feature.vault.detail.component.MetadataSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.ActivityTimelineSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.AssociatedInfoSection

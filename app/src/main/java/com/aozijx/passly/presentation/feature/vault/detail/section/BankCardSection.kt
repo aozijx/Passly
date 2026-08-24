@@ -34,7 +34,7 @@ import com.aozijx.passly.presentation.feature.vault.detail.copySensitiveField
 import com.aozijx.passly.presentation.feature.vault.detail.withCardCvv
 import com.aozijx.passly.presentation.feature.vault.detail.withCardNumber
 import com.aozijx.passly.presentation.feature.vault.detail.withDetailUsername
-import com.aozijx.passly.presentation.feature.vault.detail.component.DetailItem
+import com.aozijx.passly.presentation.ui.vault.detail.component.DetailItem
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 
 @Composable

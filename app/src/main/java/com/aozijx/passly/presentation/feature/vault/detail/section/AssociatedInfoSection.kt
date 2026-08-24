@@ -46,7 +46,7 @@ import com.aozijx.passly.core.ui.components.rememberAppIcon
 import com.aozijx.passly.core.ui.components.rememberAppMetadata
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
-import com.aozijx.passly.presentation.feature.vault.detail.component.InfoGroupCard
+import com.aozijx.passly.presentation.ui.vault.detail.component.InfoGroupCard
 
 @Composable
 fun AssociatedInfoSection(

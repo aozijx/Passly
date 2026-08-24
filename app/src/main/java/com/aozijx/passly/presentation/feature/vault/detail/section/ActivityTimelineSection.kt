@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
-import com.aozijx.passly.presentation.feature.vault.detail.component.InfoGroupCard
+import com.aozijx.passly.presentation.ui.vault.detail.component.InfoGroupCard
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

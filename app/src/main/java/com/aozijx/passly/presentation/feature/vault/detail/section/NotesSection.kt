@@ -25,7 +25,7 @@ import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.core.ui.components.markdown.PasslyMarkdownDocument
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
-import com.aozijx.passly.presentation.feature.vault.detail.component.InfoGroupCard
+import com.aozijx.passly.presentation.ui.vault.detail.component.InfoGroupCard
 
 @Composable
 fun NotesSection(

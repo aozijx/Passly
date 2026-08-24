@@ -9,12 +9,9 @@ internal object EditorSourceBoundaryVerifier {
     private val temporaryVaultDetailUiAllowlist = setOf(
         "/com/aozijx/passly/presentation/feature/vault/detail/detailscreen.kt",
         "/com/aozijx/passly/presentation/feature/vault/detail/component/detailheader.kt",
-        "/com/aozijx/passly/presentation/feature/vault/detail/component/detailitem.kt",
         "/com/aozijx/passly/presentation/feature/vault/detail/component/detailscrollablecontent.kt",
         "/com/aozijx/passly/presentation/feature/vault/detail/component/detailtopbar.kt",
-        "/com/aozijx/passly/presentation/feature/vault/detail/component/infogroupcard.kt",
         "/com/aozijx/passly/presentation/feature/vault/detail/component/metadatasection.kt",
-        "/com/aozijx/passly/presentation/feature/vault/detail/component/sensitivefieldcard.kt",
         "/com/aozijx/passly/presentation/feature/vault/detail/component/totpcard.kt",
     )
     private val mapperForbiddenMarkers = linkedMapOf(
