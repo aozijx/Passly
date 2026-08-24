@@ -55,6 +55,15 @@ internal object EditorSourceBoundaryVerifier {
                 "credentialresponseviewmodel.kt",
             )
             val fileName = lowerPath.substringAfterLast('/')
+            val isVaultListFeature = "/presentation/feature/vault/list/" in lowerPath
+            val passiveUiNames = listOf("screen", "content", "component", "dialog", "sheet")
+            if (isVaultListFeature && (
+                    passiveUiNames.any(fileName::contains) ||
+                        listOf("/component/", "/dialog/", "/sheet/").any(lowerPath::contains)
+                    )
+            ) {
+                add("$path: passive vault-list UI must live below presentation/ui/vault/list")
+            }
             val isPresentationUi = "/presentation/ui/" in lowerPath
             if (isPresentationUi) {
                 val forbiddenUiImports = listOf(
