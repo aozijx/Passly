@@ -55,6 +55,21 @@ internal object EditorSourceBoundaryVerifier {
                 "credentialresponseviewmodel.kt",
             )
             val fileName = lowerPath.substringAfterLast('/')
+            val isPresentationUi = "/presentation/ui/" in lowerPath
+            if (isPresentationUi) {
+                val forbiddenUiImports = listOf(
+                    "import com.aozijx.passly.presentation.feature.",
+                    "import com.aozijx.passly.feature.",
+                    "import com.aozijx.passly.domain.",
+                    "import com.aozijx.passly.data.",
+                )
+                if (forbiddenUiImports.any(source.content::contains)) {
+                    add("$path: presentation UI imports a forbidden project layer")
+                }
+                if ("ViewModel" in source.content || "hiltViewModel" in source.content) {
+                    add("$path: presentation UI cannot own or look up a ViewModel")
+                }
+            }
             val isOutsidePresentationFeature = "/presentation/feature/" !in lowerPath
             val isLegacyBackupPresentation =
                 isOutsidePresentationFeature && (

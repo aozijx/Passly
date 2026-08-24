@@ -100,5 +100,51 @@ class EditorSourceBoundaryVerifierTest {
         assertTrue(violations.all { it.contains("migrated UI") })
     }
 
+    @Test
+    fun presentationUiCannotDependOnFeatureDomainOrData() {
+        val violations = EditorSourceBoundaryVerifier.verify(
+            listOf(
+                source("app/src/main/java/com/example/presentation/ui/vault/list/Feature.kt", "import com.aozijx.passly.presentation.feature.vault.list.VaultUiState"),
+                source("app/src/main/java/com/example/presentation/ui/vault/list/AppFeature.kt", "import com.aozijx.passly.feature.vault.model.AddType"),
+                source("app/src/main/java/com/example/presentation/ui/vault/list/Domain.kt", "import com.aozijx.passly.domain.entry.model.Entry"),
+                source("app/src/main/java/com/example/presentation/ui/vault/list/Data.kt", "import com.aozijx.passly.data.repository.EntryRepositoryImpl"),
+            ),
+        )
+
+        assertEquals(4, violations.size)
+        assertTrue(violations.all { it.contains("presentation UI") })
+    }
+
+    @Test
+    fun presentationUiCannotOwnViewModelsOrUseHiltViewModelLookup() {
+        val violations = EditorSourceBoundaryVerifier.verify(
+            listOf(
+                source("app/src/main/java/com/example/presentation/ui/vault/list/VaultViewModel.kt", "class VaultViewModel : ViewModel()"),
+                source("app/src/main/java/com/example/presentation/ui/vault/list/VaultScreen.kt", "val model = hiltViewModel<VaultViewModel>()"),
+            ),
+        )
+
+        assertEquals(2, violations.size)
+        assertTrue(violations.all { it.contains("ViewModel") })
+    }
+
+    @Test
+    fun presentationUiMayUseCoreUiComposeAndPaging() {
+        val violations = EditorSourceBoundaryVerifier.verify(
+            listOf(
+                source(
+                    "app/src/main/java/com/example/presentation/ui/vault/list/VaultScreen.kt",
+                    """
+                    import androidx.compose.runtime.Composable
+                    import androidx.paging.compose.LazyPagingItems
+                    import com.aozijx.passly.core.ui.theme.PasslyTheme
+                    """.trimIndent(),
+                ),
+            ),
+        )
+
+        assertEquals(emptyList(), violations)
+    }
+
     private fun source(path: String, content: String) = EditorSource(path, content)
 }
