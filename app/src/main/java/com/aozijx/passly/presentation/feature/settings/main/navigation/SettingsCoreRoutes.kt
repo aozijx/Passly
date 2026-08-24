@@ -131,9 +131,9 @@ internal fun CoreSettingsRouteContent(
                             viewModel.onAction(AppearanceSettingsAction.SetCanvasTintPercent(it))
                         },
                         onLanguageChange = {
-                            appLanguageFromKey(it)?.let { language ->
-                                viewModel.onAction(AppearanceSettingsAction.SetLanguage(language))
-                            }
+                            viewModel.onAction(
+                                AppearanceSettingsAction.SetLanguage(appLanguageFromKey(it))
+                            )
                         },
                         onFontFamilyChange = {
                             viewModel.onAction(AppearanceSettingsAction.SetFontFamily(it.toDomainModel()))
