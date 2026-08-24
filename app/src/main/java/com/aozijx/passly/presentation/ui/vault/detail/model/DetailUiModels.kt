@@ -17,6 +17,8 @@ data class DetailScreenUiModel(
     val isFaviconDownloading: Boolean,
     val sections: List<DetailSectionUiModel>,
     val relatedEntries: List<RelatedEntryUiModel>,
+    val associatedInfo: DetailAssociatedInfoUiModel,
+    val notes: DetailNotesUiModel,
     val metadata: DetailMetadataUiModel,
     val activities: List<DetailActivityUiModel>,
     val otp: DetailOtpUiModel?,
@@ -65,6 +67,19 @@ data class RelatedEntryUiModel(
     val id: String,
     val title: String,
     val entryType: DetailEntryTypeUiModel,
+)
+
+data class DetailAssociatedInfoUiModel(
+    val domain: String?,
+    val applicationIds: List<String>,
+    val isEditingDomain: Boolean,
+    val isFaviconDownloading: Boolean,
+)
+
+data class DetailNotesUiModel(
+    val notes: String?,
+    val editedNotes: String,
+    val isEditing: Boolean,
 )
 
 data class DetailOtpUiModel(

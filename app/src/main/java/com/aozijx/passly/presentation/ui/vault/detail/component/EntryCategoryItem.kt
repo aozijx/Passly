@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail.section
+package com.aozijx.passly.presentation.ui.vault.detail.component
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding

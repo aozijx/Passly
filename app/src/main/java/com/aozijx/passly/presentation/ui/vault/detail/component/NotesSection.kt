@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail.section
+package com.aozijx.passly.presentation.ui.vault.detail.component
 
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,15 +23,14 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.core.ui.components.markdown.PasslyMarkdownDocument
-import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
-import com.aozijx.passly.presentation.ui.vault.detail.component.InfoGroupCard
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailNotesUiModel
 
 @Composable
 fun NotesSection(
-    entry: Entry,
-    editState: EntryEditState,
-    onEntryUpdated: (Entry) -> Unit
+    model: DetailNotesUiModel,
+    onEditStarted: () -> Unit,
+    onNotesChanged: (String) -> Unit,
+    onNotesSaved: (String) -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
     val notesLabel = stringResource(R.string.field_notes)
@@ -39,14 +38,14 @@ fun NotesSection(
     val noNotesLabel = stringResource(R.string.vault_detail_no_notes)
 
     InfoGroupCard(title = notesLabel) {
-        if (editState.isEditingNotes) {
+        if (model.isEditing) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 PasslyOutlinedTextField(
-                    value = editState.editedNotes,
-                    onValueChange = { editState.editedNotes = it },
+                    value = model.editedNotes,
+                    onValueChange = onNotesChanged,
                     label = notesLabel,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = false,
@@ -56,9 +55,7 @@ fun NotesSection(
                 )
                 TextButton(
                     onClick = {
-                        val updatedEntry = editState.applyNotesOnly(entry)
-                        onEntryUpdated(updatedEntry)
-                        editState.isEditingNotes = false
+                        onNotesSaved(model.editedNotes)
                     },
                     modifier = Modifier.align(Alignment.End)
                 ) {
@@ -74,14 +71,14 @@ fun NotesSection(
                     .combinedClickable(
                         onLongClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            editState.startNotesEditing(entry.resolveNotes())
+                            onEditStarted()
                         },
                         onClick = { /* 不做任何事，只有长按触发 */ }
                     )
                     .padding(16.dp)
             ) {
                 PasslyMarkdownDocument(
-                    content = entry.resolveNotes(),
+                    content = model.notes,
                     modifier = Modifier.fillMaxWidth(),
                     emptyContent = {
                         Text(text = noNotesLabel, style = MaterialTheme.typography.bodyMedium)
@@ -91,5 +88,3 @@ fun NotesSection(
         }
     }
 }
-
-private fun Entry.resolveNotes(): String? = secret.notes

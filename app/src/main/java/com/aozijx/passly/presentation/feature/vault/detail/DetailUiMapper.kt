@@ -8,6 +8,8 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.DetailEntryTypeUiMod
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailActivityTypeUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailActivityUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailMetadataUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailAssociatedInfoUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailNotesUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailOtpUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailSectionKindUiModel
@@ -40,6 +42,13 @@ internal fun detailScreenUiModel(
     relatedEntries = state.relatedEntries.map {
         RelatedEntryUiModel(it.id.value, it.title, DetailEntryTypeUiModel.valueOf(it.type.name))
     },
+    associatedInfo = DetailAssociatedInfoUiModel(
+        domain = entry.associatedDomain,
+        applicationIds = entry.associations.applicationIds.sorted(),
+        isEditingDomain = false,
+        isFaviconDownloading = state.isFaviconDownloading,
+    ),
+    notes = DetailNotesUiModel(entry.secret.notes, entry.secret.notes.orEmpty(), false),
     metadata = DetailMetadataUiModel(entry.createdAt, entry.updatedAt),
     activities = state.history.map {
         DetailActivityUiModel(

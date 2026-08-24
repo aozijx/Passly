@@ -28,16 +28,16 @@ import com.aozijx.passly.presentation.ui.vault.detail.component.InfoGroupCard
 import com.aozijx.passly.presentation.feature.vault.detail.detailScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.component.MetadataSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.ActivityTimelineSection
-import com.aozijx.passly.presentation.feature.vault.detail.section.AssociatedInfoSection
+import com.aozijx.passly.presentation.ui.vault.detail.component.AssociatedInfoSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.BankCardSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.CredentialSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionResolver
-import com.aozijx.passly.presentation.feature.vault.detail.section.EntryCategoryItem
+import com.aozijx.passly.presentation.ui.vault.detail.component.EntryCategoryItem
 import com.aozijx.passly.presentation.feature.vault.detail.section.IdCardSection
-import com.aozijx.passly.presentation.feature.vault.detail.section.NotesSection
+import com.aozijx.passly.presentation.ui.vault.detail.component.NotesSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.PasskeySection
-import com.aozijx.passly.presentation.feature.vault.detail.section.RelatedEntriesSection
+import com.aozijx.passly.presentation.ui.vault.detail.component.RelatedEntriesSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.SeedPhraseSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.SshKeySection
 import com.aozijx.passly.presentation.feature.vault.detail.section.TotpSection
@@ -45,6 +45,9 @@ import com.aozijx.passly.presentation.feature.vault.detail.section.WifiSection
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailAssociatedInfoUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailNotesUiModel
+import androidx.compose.ui.text.input.TextFieldValue
 
 @Composable
 fun DetailScrollableContent(
@@ -234,8 +237,10 @@ fun DetailScrollableContent(
         if (uiState.relatedEntries.isNotEmpty()) {
             item {
                 RelatedEntriesSection(
-                    entries = uiState.relatedEntries,
-                    onOpenEntry = onOpenRelatedEntry
+                    entries = screenUiModel.relatedEntries,
+                    onOpenEntry = { id ->
+                        uiState.relatedEntries.firstOrNull { it.id.value == id }?.let(onOpenRelatedEntry)
+                    }
                 )
             }
         }
@@ -250,19 +255,42 @@ fun DetailScrollableContent(
 
         item {
             AssociatedInfoSection(
-                entry = entry,
-                editState = editState,
-                isFaviconDownloading = uiState.isFaviconDownloading,
+                model = DetailAssociatedInfoUiModel(
+                    domain = entry.associatedDomain,
+                    applicationIds = entry.associations.applicationIds.sorted(),
+                    isEditingDomain = editState.isEditingDomain,
+                    isFaviconDownloading = uiState.isFaviconDownloading,
+                ),
                 onDownloadFavicon = { onAction(DetailUiAction.DownloadFavicon(it)) },
-                onEntryUpdated = { onAction(DetailUiAction.CommitEntryUpdate(it)) }
+                onDomainEditStarted = { editState.isEditingDomain = true },
+                onDomainChanged = { editState.editedDomain = it },
+                onDomainSaved = {
+                    editState.editedDomain = it
+                    onAction(DetailUiAction.CommitEntryUpdate(editState.applyAssociatedOnly(entry)))
+                    editState.isEditingDomain = false
+                },
+                onPackageSelected = {
+                    editState.editedPackage = it
+                    onAction(DetailUiAction.CommitEntryUpdate(editState.applyAssociatedOnly(entry)))
+                    editState.isEditingPackage = false
+                },
             )
         }
 
         item {
             NotesSection(
-                entry = entry,
-                editState = editState,
-                onEntryUpdated = { onAction(DetailUiAction.CommitEntryUpdate(it)) }
+                model = DetailNotesUiModel(
+                    notes = entry.secret.notes,
+                    editedNotes = editState.editedNotes.text,
+                    isEditing = editState.isEditingNotes,
+                ),
+                onEditStarted = { editState.startNotesEditing(entry.secret.notes) },
+                onNotesChanged = { editState.editedNotes = TextFieldValue(it) },
+                onNotesSaved = {
+                    editState.editedNotes = TextFieldValue(it)
+                    onAction(DetailUiAction.CommitEntryUpdate(editState.applyNotesOnly(entry)))
+                    editState.isEditingNotes = false
+                },
             )
         }
 

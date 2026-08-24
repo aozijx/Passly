@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail.section
+package com.aozijx.passly.presentation.ui.vault.detail.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
@@ -44,24 +44,23 @@ import com.aozijx.passly.core.ui.components.AppPackagePickerBottomSheet
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.core.ui.components.rememberAppIcon
 import com.aozijx.passly.core.ui.components.rememberAppMetadata
-import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
-import com.aozijx.passly.presentation.ui.vault.detail.component.InfoGroupCard
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailAssociatedInfoUiModel
 
 @Composable
 fun AssociatedInfoSection(
     modifier: Modifier = Modifier,
-    entry: Entry,
-    editState: EntryEditState,
-    isFaviconDownloading: Boolean,
+    model: DetailAssociatedInfoUiModel,
     onDownloadFavicon: (String) -> Unit,
-    onEntryUpdated: (Entry) -> Unit
+    onDomainEditStarted: () -> Unit,
+    onDomainChanged: (String) -> Unit,
+    onDomainSaved: (String) -> Unit,
+    onPackageSelected: (String) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
     val haptic = LocalHapticFeedback.current
     var showPackagePicker by remember { mutableStateOf(false) }
-    var domainInput by remember(entry.associatedDomain) {
-        mutableStateOf(TextFieldValue(entry.associatedDomain.orEmpty()))
+    var domainInput by remember(model.domain) {
+        mutableStateOf(TextFieldValue(model.domain.orEmpty()))
     }
 
     Column(
@@ -69,30 +68,28 @@ fun AssociatedInfoSection(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         AssociatedDomainCard(
-            value = entry.associatedDomain,
+            value = model.domain,
             editedValue = domainInput,
-            editing = editState.isEditingDomain,
-            downloading = isFaviconDownloading,
+            editing = model.isEditingDomain,
+            downloading = model.isFaviconDownloading,
             onLongClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                domainInput = TextFieldValue(entry.associatedDomain.orEmpty())
-                editState.editedDomain = domainInput.text
-                editState.isEditingDomain = true
+                domainInput = TextFieldValue(model.domain.orEmpty())
+                onDomainEditStarted()
             },
             onValueChange = {
                 domainInput = it
-                editState.editedDomain = it.text
+                onDomainChanged(it.text)
             },
             onDownload = { onDownloadFavicon(domainInput.text.trim()) },
             onSave = {
                 focusManager.clearFocus()
-                saveAssociated(entry, editState, onEntryUpdated)
-                editState.isEditingDomain = false
+                onDomainSaved(domainInput.text)
             }
         )
 
         AssociatedAppsCard(
-            packageNames = entry.associations.applicationIds.sorted(),
+            packageNames = model.applicationIds,
             onLongClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 showPackagePicker = true
@@ -103,16 +100,13 @@ fun AssociatedInfoSection(
     if (showPackagePicker) {
         AppPackagePickerBottomSheet(
             onSelect = {
-                editState.editedPackage = it.packageName
-                saveAssociated(entry, editState, onEntryUpdated)
-                editState.isEditingPackage = false
+                onPackageSelected(it.packageName)
                 showPackagePicker = false
             },
             onDismiss = { showPackagePicker = false }
         )
     }
 }
-
 @Composable
 private fun AssociatedDomainCard(
     value: String?,
@@ -153,7 +147,6 @@ private fun AssociatedDomainCard(
         }
     }
 }
-
 @Composable
 private fun AssociatedAppsCard(
     packageNames: List<String>,
@@ -256,11 +249,3 @@ private fun DomainEditor(
     }
 }
 
-private fun saveAssociated(
-    entry: Entry,
-    editState: EntryEditState,
-    onEntryUpdated: (Entry) -> Unit
-) {
-    val updated = editState.applyAssociatedOnly(entry)
-    onEntryUpdated(updated)
-}
