@@ -15,12 +15,15 @@ import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsA
 import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.appearance.component.AppearanceDetail
+import com.aozijx.passly.presentation.feature.settings.appearance.appLanguageFromKey
+import com.aozijx.passly.presentation.feature.settings.appearance.toAppearanceUiModel
+import com.aozijx.passly.presentation.feature.settings.appearance.toDomainModel
 import com.aozijx.passly.presentation.feature.settings.appearance.component.InterfaceDetail
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 import com.aozijx.passly.presentation.feature.settings.security.component.PrivacyDetail
 import com.aozijx.passly.presentation.feature.settings.security.component.SecurityDetail
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
+import com.aozijx.passly.presentation.ui.settings.appearance.AppearanceDetail
 
 @Composable
 internal fun CoreSettingsRouteContent(
@@ -107,9 +110,9 @@ internal fun CoreSettingsRouteContent(
             ) {
                 item {
                     AppearanceDetail(
-                        state = state,
+                        state = state.toAppearanceUiModel(),
                         onThemeModeChange = {
-                            viewModel.onAction(AppearanceSettingsAction.SetThemeMode(it))
+                            viewModel.onAction(AppearanceSettingsAction.SetThemeMode(it.toDomainModel()))
                         },
                         onDynamicColorChange = {
                             viewModel.onAction(AppearanceSettingsAction.SetDynamicColor(it))
@@ -121,10 +124,12 @@ internal fun CoreSettingsRouteContent(
                             viewModel.onAction(AppearanceSettingsAction.SetCanvasTintPercent(it))
                         },
                         onLanguageChange = {
-                            viewModel.onAction(AppearanceSettingsAction.SetLanguage(it))
+                            appLanguageFromKey(it)?.let { language ->
+                                viewModel.onAction(AppearanceSettingsAction.SetLanguage(language))
+                            }
                         },
                         onFontFamilyChange = {
-                            viewModel.onAction(AppearanceSettingsAction.SetFontFamily(it))
+                            viewModel.onAction(AppearanceSettingsAction.SetFontFamily(it.toDomainModel()))
                         }
                     )
                 }

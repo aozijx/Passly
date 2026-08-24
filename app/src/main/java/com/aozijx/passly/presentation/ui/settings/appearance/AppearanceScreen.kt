@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.appearance.component
+package com.aozijx.passly.presentation.ui.settings.appearance
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -23,11 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.settings.appearance.localizedDisplayName
-import com.aozijx.passly.presentation.feature.settings.appearance.languagePickerOptions
-import com.aozijx.passly.presentation.feature.settings.appearance.appLanguageFromKey
-import com.aozijx.passly.presentation.feature.settings.appearance.labelRes
-import com.aozijx.passly.presentation.feature.settings.appearance.AppearanceSettingsUiState
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.dropdownSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
@@ -36,25 +31,22 @@ import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.core.ui.theme.AppThemeSchemes
-import com.aozijx.passly.domain.settings.model.AppLanguage
-import com.aozijx.passly.domain.settings.model.FontFamilyMode
-import com.aozijx.passly.domain.settings.model.ThemeMode
-import com.aozijx.passly.domain.settings.model.ThemeCanvasTint
-import com.aozijx.passly.presentation.ui.settings.appearance.LanguagePicker
-import com.aozijx.passly.presentation.ui.settings.appearance.ThemePicker
+import com.aozijx.passly.presentation.ui.settings.appearance.model.AppearanceUiModel
+import com.aozijx.passly.presentation.ui.settings.appearance.model.FontFamilyUiModel
+import com.aozijx.passly.presentation.ui.settings.appearance.model.ThemeModeUiModel
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun AppearanceDetail(
-    state: AppearanceSettingsUiState,
-    onThemeModeChange: (ThemeMode) -> Unit,
+    state: AppearanceUiModel,
+    onThemeModeChange: (ThemeModeUiModel) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
     onThemeKeySelect: (String) -> Unit,
     onCanvasTintPercentChange: (Int) -> Unit,
-    onLanguageChange: (AppLanguage) -> Unit,
-    onFontFamilyChange: (FontFamilyMode) -> Unit
+    onLanguageChange: (String) -> Unit,
+    onFontFamilyChange: (FontFamilyUiModel) -> Unit
 ) {
     var showThemeColorSheet by remember { mutableStateOf(false) }
     var showThemeModeMenu by remember { mutableStateOf(false) }
@@ -74,17 +66,17 @@ internal fun AppearanceDetail(
                 dropdownSettingsGroupItem(
                     key = "appearance.theme_mode",
                     icon = when (state.themeMode) {
-                        ThemeMode.SYSTEM -> Icons.Default.SettingsBrightness
-                        ThemeMode.LIGHT -> Icons.Default.LightMode
-                        ThemeMode.DARK -> Icons.Default.DarkMode
+                        ThemeModeUiModel.SYSTEM -> Icons.Default.SettingsBrightness
+                        ThemeModeUiModel.LIGHT -> Icons.Default.LightMode
+                        ThemeModeUiModel.DARK -> Icons.Default.DarkMode
                     },
                     title = stringResource(R.string.settings_theme_mode),
                     selected = state.themeMode,
-                    selectedLabel = stringResource(state.themeMode.labelRes()),
+                    selectedLabel = stringResource(state.themeMode.labelRes),
                     options = listOf(
-                        ThemeMode.SYSTEM to stringResource(R.string.settings_follow_system),
-                        ThemeMode.LIGHT to stringResource(R.string.settings_theme_mode_light),
-                        ThemeMode.DARK to stringResource(R.string.settings_theme_mode_dark)
+                        ThemeModeUiModel.SYSTEM to stringResource(R.string.settings_follow_system),
+                        ThemeModeUiModel.LIGHT to stringResource(R.string.settings_theme_mode_light),
+                        ThemeModeUiModel.DARK to stringResource(R.string.settings_theme_mode_dark)
                     ),
                     expanded = showThemeModeMenu,
                     onExpandedChange = { showThemeModeMenu = it },
@@ -123,9 +115,9 @@ internal fun AppearanceDetail(
                         R.string.settings_value_percent,
                         canvasTintPercent.roundToInt(),
                     ),
-                    valueRange = ThemeCanvasTint.MIN_PERCENT.toFloat()..
-                            ThemeCanvasTint.MAX_PERCENT.toFloat(),
-                    steps = ThemeCanvasTint.MAX_PERCENT - ThemeCanvasTint.MIN_PERCENT - 1,
+                    valueRange = state.canvasTintMinPercent.toFloat()..
+                            state.canvasTintMaxPercent.toFloat(),
+                    steps = state.canvasTintMaxPercent - state.canvasTintMinPercent - 1,
                     onValueChange = { canvasTintPercent = it },
                     onValueChangeFinished = {
                         val selectedPercent = canvasTintPercent.roundToInt()
@@ -146,7 +138,7 @@ internal fun AppearanceDetail(
                     key = "appearance.language",
                     icon = Icons.Default.Translate,
                     title = stringResource(R.string.settings_language),
-                    value = state.language.localizedDisplayName(),
+                    value = state.languageLabel,
                     onClick = { showLanguageSheet = true }
                 ),
                 switchSettingsGroupItem(
@@ -154,16 +146,16 @@ internal fun AppearanceDetail(
                     icon = Icons.Default.TextFields,
                     title = stringResource(R.string.settings_font),
                     subtitle = stringResource(
-                        if (state.fontFamily == FontFamilyMode.SYSTEM) {
+                        if (state.fontFamily == FontFamilyUiModel.SYSTEM) {
                             R.string.settings_font_system
                         } else {
                             R.string.settings_font_app
                         }
                     ),
-                    checked = state.fontFamily == FontFamilyMode.SYSTEM,
+                    checked = state.fontFamily == FontFamilyUiModel.SYSTEM,
                     onCheckedChange = { useSystem ->
                         onFontFamilyChange(
-                            if (useSystem) FontFamilyMode.SYSTEM else FontFamilyMode.APP_BUNDLED
+                            if (useSystem) FontFamilyUiModel.SYSTEM else FontFamilyUiModel.APP_BUNDLED
                         )
                     }
                 )
@@ -173,14 +165,13 @@ internal fun AppearanceDetail(
 
     if (showLanguageSheet) {
         LanguagePicker(
-            currentKey = state.language.name,
-            options = languagePickerOptions(),
+            currentKey = state.languageKey,
+            options = state.languageOptions,
             onSelect = { languageKey ->
-                val language = appLanguageFromKey(languageKey) ?: return@LanguagePicker
                 scope.launch { languageSheetState.hide() }.invokeOnCompletion {
                     showLanguageSheet = false
                     // 此时触发导致 Activity 重启的语言变更
-                    onLanguageChange(language)
+                    onLanguageChange(languageKey)
                 }
             },
             sheetState = languageSheetState,
@@ -202,3 +193,10 @@ internal fun AppearanceDetail(
         )
     }
 }
+
+private val ThemeModeUiModel.labelRes: Int
+    get() = when (this) {
+        ThemeModeUiModel.SYSTEM -> R.string.settings_follow_system
+        ThemeModeUiModel.LIGHT -> R.string.settings_theme_mode_light
+        ThemeModeUiModel.DARK -> R.string.settings_theme_mode_dark
+    }
