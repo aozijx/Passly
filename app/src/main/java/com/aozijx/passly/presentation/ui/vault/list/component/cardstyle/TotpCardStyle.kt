@@ -1,6 +1,5 @@
-package com.aozijx.passly.presentation.feature.vault.list.component.cardstyle
+package com.aozijx.passly.presentation.ui.vault.list.component.cardstyle
 
-import com.aozijx.passly.presentation.ui.vault.list.component.cardstyle.CardStyleTokens
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -32,9 +31,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import com.aozijx.passly.core.ui.components.VaultItemIcon
-import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpKindUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
 
 private object TotpBehaviorTokens {
     const val FALLBACK_CODE = "------"
@@ -46,8 +45,8 @@ private object TotpBehaviorTokens {
 
 @Composable
 fun TotpStyleVaultItem(
-    entry: EntryListItem,
-    totpState: OtpCodeState?,
+    entry: VaultListItemUiModel,
+    totpState: VaultOtpUiState?,
     showCode: Boolean = true,
     previewCode: String? = null,
     previewProgress: Float? = null,
@@ -55,9 +54,9 @@ fun TotpStyleVaultItem(
 ) {
     val cardShape = MaterialTheme.shapes.extraLarge
     val currentState =
-        previewCode?.let { OtpCodeState(code = it, progress = previewProgress ?: 0f) } ?: totpState
-    val isSteam = remember(entry.otpType) {
-        entry.otpType == OtpType.STEAM
+        previewCode?.let { VaultOtpUiState(code = it, progress = previewProgress ?: 0f) } ?: totpState
+    val isSteam = remember(entry.otpKind) {
+        entry.otpKind == VaultOtpKindUiModel.STEAM
     }
 
     val targetProgress = previewProgress ?: (currentState?.progress ?: 0f)
@@ -117,7 +116,7 @@ fun TotpStyleVaultItem(
                             shape = RoundedCornerShape(CardStyleTokens.Totp.iconContainerCorner)
                         ), contentAlignment = Alignment.Center
                 ) {
-                    VaultItemIcon(Modifier, entry)
+                    VaultListItemIcon(Modifier, entry)
                 }
 
                 Column(modifier = Modifier.weight(1f)) {
@@ -189,12 +188,12 @@ fun TotpStyleVaultItem(
 internal object TotpVaultCardStyle : VaultCardStyleComponent {
     override val key: String = "totp"
 
-    override fun supports(entry: EntryListItem): Boolean = entry.hasOtp
+    override fun supports(entry: VaultListItemUiModel): Boolean = entry.hasOtp
 
     @Composable
     override fun Render(
-        entry: EntryListItem,
-        totpState: OtpCodeState?,
+        entry: VaultListItemUiModel,
+        totpState: VaultOtpUiState?,
         showTotpCode: Boolean,
         onClick: () -> Unit,
     ) {

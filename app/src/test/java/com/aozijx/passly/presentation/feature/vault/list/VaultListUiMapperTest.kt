@@ -52,6 +52,7 @@ class VaultListUiMapperTest {
         assertEquals("Personal", ui.category)
         assertEquals("example.com", ui.associatedDomain)
         assertEquals("com.example", ui.associatedAppPackage)
+        assertEquals(null, ui.iconName)
         assertEquals("icons/mail.png", ui.iconCustomPath)
         assertTrue(ui.favorite)
         assertTrue(ui.hasPassword)

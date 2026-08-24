@@ -9,12 +9,24 @@ data class VaultListItemUiModel(
     val favorite: Boolean,
     val associatedDomain: String?,
     val associatedAppPackage: String?,
+    val iconName: String?,
     val iconCustomPath: String?,
     val hasPassword: Boolean,
     val hasOtp: Boolean,
     val otpKind: VaultOtpKindUiModel?,
     val otpPreview: String?,
+    val events: VaultListItemEventHandler = VaultListItemEventHandler.None,
 )
+
+interface VaultListItemEventHandler {
+    fun onClick()
+    fun onSwipe(action: VaultSwipeActionUiModel)
+
+    data object None : VaultListItemEventHandler {
+        override fun onClick() = Unit
+        override fun onSwipe(action: VaultSwipeActionUiModel) = Unit
+    }
+}
 
 enum class VaultEntryTypeUiModel {
     ACCOUNT, LOGIN, NOTE, BANK_CARD, ID_CARD, PASSPORT, DRIVER_LICENSE,

@@ -1,6 +1,5 @@
-package com.aozijx.passly.presentation.feature.vault.list.component.cardstyle
+package com.aozijx.passly.presentation.ui.vault.list.component.cardstyle
 
-import com.aozijx.passly.presentation.ui.vault.list.component.cardstyle.CardStyleTokens
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,13 +23,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.core.ui.components.VaultItemIcon
-import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpKindUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
 
 @Composable
 fun DefaultItem(
-    entry: EntryListItem,
+    entry: VaultListItemUiModel,
     onClick: () -> Unit
 ) {
     Card(
@@ -47,7 +46,7 @@ fun DefaultItem(
             modifier = Modifier.padding(CardStyleTokens.Base.contentPadding),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            VaultItemIcon(
+                VaultListItemIcon(
                 Modifier,
                 entry,
             )
@@ -72,18 +71,18 @@ fun DefaultItem(
 
 @Composable
 fun DefaultOtpItem(
-    entry: EntryListItem,
-    totpState: OtpCodeState?,
+    entry: VaultListItemUiModel,
+    totpState: VaultOtpUiState?,
     showCode: Boolean = true,
     previewCode: String? = null,
     previewProgress: Float? = null,
     onClick: () -> Unit
 ) {
     val currentState =
-        previewCode?.let { OtpCodeState(code = it, progress = previewProgress ?: 0f) } ?: totpState
+        previewCode?.let { VaultOtpUiState(code = it, progress = previewProgress ?: 0f) } ?: totpState
 
-    val isSteam = remember(entry.otpType) {
-        entry.otpType == OtpType.STEAM
+    val isSteam = remember(entry.otpKind) {
+        entry.otpKind == VaultOtpKindUiModel.STEAM
     }
 
     Card(
@@ -97,7 +96,7 @@ fun DefaultOtpItem(
         Row(
             modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically
         ) {
-            VaultItemIcon(
+                VaultListItemIcon(
                 Modifier, entry
             )
 
@@ -160,8 +159,8 @@ internal object DefaultVaultCardStyle : VaultCardStyleComponent {
 
     @Composable
     override fun Render(
-        entry: EntryListItem,
-        totpState: OtpCodeState?,
+        entry: VaultListItemUiModel,
+        totpState: VaultOtpUiState?,
         showTotpCode: Boolean,
         onClick: () -> Unit,
     ) {

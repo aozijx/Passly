@@ -31,19 +31,22 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.map
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.presentation.feature.vault.list.VaultViewModel
 import com.aozijx.passly.presentation.feature.vault.list.action.rememberVaultActionProvider
 import com.aozijx.passly.presentation.feature.vault.list.VaultEffect
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
 import com.aozijx.passly.presentation.feature.vault.list.display.VaultDisplayViewModel
-import com.aozijx.passly.presentation.feature.vault.list.component.list.VaultPagerContent
 import com.aozijx.passly.presentation.ui.vault.list.component.dialog.VaultDialogs
 import com.aozijx.passly.presentation.ui.vault.list.component.fab.VaultFab
+import com.aozijx.passly.presentation.ui.vault.list.component.list.VaultPagerContent
 import com.aozijx.passly.presentation.ui.vault.list.component.topbar.VaultTopBar
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultAddTypeUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHandler
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,7 +72,7 @@ fun VaultContent(
     val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
     val vaultDisplayConfig by vaultDisplayViewModel.config.collectAsStateWithLifecycle()
 
-    val entryCardPresentations = vaultDisplayConfig.style.entryCardPresentations
+    val entryCardPresentations = vaultDisplayConfig.style.entryCardPresentations.map { it.toUiModel() }
     val renderState = uiState.toUiModel()
     var isFabVisible by remember { mutableStateOf(true) }
 
@@ -228,15 +231,26 @@ fun VaultContent(
     ) { innerPadding ->
         VaultPagerContent(
             pagerState = pagerState,
-            uiState = uiState,
-            entryPages = vaultViewModel::entries,
+            uiState = renderState,
+            entryPages = { filter ->
+                vaultViewModel.entries(filter.toFeatureModel()).map { pagingData ->
+                    pagingData.map { item ->
+                        item.toUiModel(
+                            events = object : VaultListItemEventHandler {
+                                override fun onClick() = onShowDetail(item)
+                                override fun onSwipe(action: com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel) {
+                                    actionProvider.onSwipeTriggered(action.toFeatureModel(), item)
+                                }
+                            },
+                        )
+                    }
+                }
+            },
             entryCardPresentations = entryCardPresentations,
-            totpStates = vaultViewModel.totpStatesFlow,
-            swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction,
-            swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction,
+            otpState = { id -> vaultViewModel.totpStatesFlow.map { it[id]?.toUiModel() } },
+            swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction.toUiModel(),
+            swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction.toUiModel(),
             isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,
-            onSwipeTriggered = actionProvider.onSwipeTriggered,
-            onItemClick = { onShowDetail(it) },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)

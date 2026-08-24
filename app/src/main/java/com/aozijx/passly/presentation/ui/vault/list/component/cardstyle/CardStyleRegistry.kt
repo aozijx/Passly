@@ -1,9 +1,9 @@
-package com.aozijx.passly.presentation.feature.vault.list.component.cardstyle
+package com.aozijx.passly.presentation.ui.vault.list.component.cardstyle
 
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.domain.settings.model.EntryCardPresentation
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardPresentationUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
 
 object CardStyleRegistry {
     /*
@@ -41,8 +41,8 @@ object CardStyleRegistry {
      * primary entry type's presentation.
      */
     fun resolveStyle(
-        entry: EntryListItem,
-        presentations: List<EntryCardPresentation>,
+        entry: VaultListItemUiModel,
+        presentations: List<VaultCardPresentationUiModel>,
     ): VaultCardStyleComponent {
         val presentation = presentations.firstOrNull {
             it.entryTypeKey.equals(entry.entryType.name, ignoreCase = true)
@@ -55,8 +55,8 @@ object CardStyleRegistry {
     @Composable
     fun RenderVaultItem(
         style: VaultCardStyleComponent,
-        entry: EntryListItem,
-        totpState: OtpCodeState?,
+        entry: VaultListItemUiModel,
+        totpState: VaultOtpUiState?,
         showTotpCode: Boolean,
         onClick: () -> Unit,
     ) {

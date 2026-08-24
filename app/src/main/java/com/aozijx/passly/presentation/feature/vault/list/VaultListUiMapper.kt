@@ -16,6 +16,7 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardDensityUiMode
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardPresentationUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultEntryTypeUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHandler
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpKindUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
@@ -24,7 +25,9 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortOptionUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel
 
-internal fun EntryListItem.toUiModel() = VaultListItemUiModel(
+internal fun EntryListItem.toUiModel(
+    events: VaultListItemEventHandler = VaultListItemEventHandler.None,
+) = VaultListItemUiModel(
     id = id.value,
     entryType = VaultEntryTypeUiModel.valueOf(entryType.name),
     title = title,
@@ -33,11 +36,13 @@ internal fun EntryListItem.toUiModel() = VaultListItemUiModel(
     favorite = favorite,
     associatedDomain = associatedDomain,
     associatedAppPackage = associatedAppPackage,
+    iconName = icon.name,
     iconCustomPath = iconCustomPath,
     hasPassword = hasPassword,
     hasOtp = hasOtp,
     otpKind = otpType?.let { if (it == OtpType.STEAM) VaultOtpKindUiModel.STEAM else VaultOtpKindUiModel.STANDARD },
     otpPreview = otpPreview,
+    events = events,
 )
 
 internal fun OtpCodeState.toUiModel() = VaultOtpUiState(code, progress, isLoading, error != null)

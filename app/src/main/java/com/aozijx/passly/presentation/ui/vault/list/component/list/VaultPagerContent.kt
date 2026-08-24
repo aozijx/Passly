@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.list.component.list
+package com.aozijx.passly.presentation.ui.vault.list.component.list
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
@@ -51,31 +51,27 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionContainer
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionSpec
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.domain.settings.model.EntryCardPresentation
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
-import com.aozijx.passly.domain.settings.model.SwipeActionType
-import com.aozijx.passly.presentation.feature.vault.list.VaultUiState
-import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.presentation.feature.vault.list.component.cardstyle.CardStyleRegistry
-import com.aozijx.passly.presentation.ui.vault.list.component.list.EmptyVaultPlaceholder
+import com.aozijx.passly.presentation.ui.vault.list.component.cardstyle.CardStyleRegistry
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardPresentationUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
 @Composable
 fun VaultPagerContent(
     pagerState: PagerState,
-    uiState: VaultUiState,
-    entryPages: (LibraryQuickFilter) -> Flow<PagingData<EntryListItem>>,
-    entryCardPresentations: List<EntryCardPresentation>,
-    totpStates: StateFlow<Map<String, OtpCodeState>>,
-    swipeLeftAction: SwipeActionType,
-    swipeRightAction: SwipeActionType,
+    uiState: VaultListScreenUiModel,
+    entryPages: (VaultQuickFilterUiModel) -> Flow<PagingData<VaultListItemUiModel>>,
+    entryCardPresentations: List<VaultCardPresentationUiModel>,
+    otpState: (String) -> Flow<VaultOtpUiState?>,
+    swipeLeftAction: VaultSwipeActionUiModel,
+    swipeRightAction: VaultSwipeActionUiModel,
     isSwipeEnabled: Boolean,
-    onSwipeTriggered: (SwipeActionType, EntryListItem) -> Unit,
-    onItemClick: (EntryListItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val adaptiveLayout = LocalPasslyAdaptiveLayout.current
@@ -89,11 +85,11 @@ fun VaultPagerContent(
             (uiState.visibleQuickFilters.size - 1).coerceAtLeast(0)
         ),
         key = { pageIndex ->
-            uiState.visibleQuickFilters.getOrNull(pageIndex)?.settingsKey ?: "vault-empty"
+            uiState.visibleQuickFilters.getOrNull(pageIndex)?.name ?: "vault-empty"
         }
     ) { pageIndex ->
         val currentQuickFilter =
-            uiState.visibleQuickFilters.getOrNull(pageIndex) ?: LibraryQuickFilter.ALL
+            uiState.visibleQuickFilters.getOrNull(pageIndex) ?: VaultQuickFilterUiModel.ALL
         val pagingItems = entryPages(currentQuickFilter).collectAsLazyPagingItems()
         val refreshState = pagingItems.loadState.refresh
 
@@ -126,8 +122,8 @@ fun VaultPagerContent(
             ) {
                 items(
                     count = pagingItems.itemCount,
-                    key = pagingItems.itemKey { item -> item.id.value },
-                    contentType = pagingItems.itemContentType(EntryListItem::entryType),
+                    key = pagingItems.itemKey(VaultListItemUiModel::id),
+                    contentType = pagingItems.itemContentType(VaultListItemUiModel::entryType),
                 ) { index ->
                     val item = pagingItems[index] ?: return@items
                     EntryListItemRow(
@@ -136,10 +132,8 @@ fun VaultPagerContent(
                         swipeLeftAction = swipeLeftAction,
                         swipeRightAction = swipeRightAction,
                         isSwipeEnabled = isSwipeEnabled,
-                        onSwipeTriggered = onSwipeTriggered,
-                        onItemClick = { onItemClick(item) },
-                        totpStates = totpStates,
-                        showTotpCode = uiState.showTOTPCode,
+                        otpState = otpState,
+                        showTotpCode = uiState.showTotpCode,
                         animateInitialAppearance = playInitialEntryAnimation,
                         modifier = Modifier
                             .animateItem(
@@ -202,30 +196,26 @@ private fun VaultPagingError(
 
 @Composable
 private fun EntryListItemRow(
-    item: EntryListItem,
-    entryCardPresentations: List<EntryCardPresentation>,
-    swipeLeftAction: SwipeActionType,
-    swipeRightAction: SwipeActionType,
+    item: VaultListItemUiModel,
+    entryCardPresentations: List<VaultCardPresentationUiModel>,
+    swipeLeftAction: VaultSwipeActionUiModel,
+    swipeRightAction: VaultSwipeActionUiModel,
     isSwipeEnabled: Boolean,
-    onSwipeTriggered: (SwipeActionType, EntryListItem) -> Unit,
-    onItemClick: () -> Unit,
-    totpStates: StateFlow<Map<String, OtpCodeState>>,
+    otpState: (String) -> Flow<VaultOtpUiState?>,
     showTotpCode: Boolean,
     animateInitialAppearance: Boolean,
     modifier: Modifier = Modifier
 ) {
     val totpState = if (item.hasOtp) {
-        val itemTotpState = remember(item.id, totpStates) {
-            totpStates
-                .map { states -> states[item.id.value] }
-                .distinctUntilChanged()
+        val itemTotpState = remember(item.id, otpState) {
+            otpState(item.id).distinctUntilChanged()
         }
         val current by itemTotpState.collectAsStateWithLifecycle(initialValue = null)
         current
     } else {
         null
     }
-    val cardStyle = remember(item.entryType, item.capabilities, entryCardPresentations) {
+    val cardStyle = remember(item.entryType, item.hasPassword, item.hasOtp, entryCardPresentations) {
         CardStyleRegistry.resolveStyle(item, entryCardPresentations)
     }
     val colorScheme = MaterialTheme.colorScheme
@@ -234,20 +224,20 @@ private fun EntryListItemRow(
         MutableTransitionState(!animateInitialAppearance).apply { targetState = true }
     }
     val leftAction =
-        remember(item.id, swipeLeftAction, onSwipeTriggered, colorScheme) {
+        remember(item.id, swipeLeftAction, item.events, colorScheme) {
             createAppSwipeActionSpec(
                 actionType = swipeLeftAction,
-                onAction = { onSwipeTriggered(swipeLeftAction, item) },
-                backgroundColor = if (swipeLeftAction == SwipeActionType.DELETE) colorScheme.error else colorScheme.primary,
+                onAction = { item.events.onSwipe(swipeLeftAction) },
+                backgroundColor = if (swipeLeftAction == VaultSwipeActionUiModel.DELETE) colorScheme.error else colorScheme.primary,
                 iconTint = Color.White
             )
         }
     val rightAction =
-        remember(item.id, swipeRightAction, onSwipeTriggered, colorScheme) {
+        remember(item.id, swipeRightAction, item.events, colorScheme) {
             createAppSwipeActionSpec(
                 actionType = swipeRightAction,
-                onAction = { onSwipeTriggered(swipeRightAction, item) },
-                backgroundColor = if (swipeRightAction == SwipeActionType.DELETE) colorScheme.error else colorScheme.secondary,
+                onAction = { item.events.onSwipe(swipeRightAction) },
+                backgroundColor = if (swipeRightAction == VaultSwipeActionUiModel.DELETE) colorScheme.error else colorScheme.secondary,
                 iconTint = Color.White
             )
         }
@@ -272,23 +262,23 @@ private fun EntryListItemRow(
                 entry = item,
                 totpState = totpState,
                 showTotpCode = showTotpCode,
-                onClick = onItemClick
+                onClick = item.events::onClick
             )
         }
     }
 }
 
 private fun createAppSwipeActionSpec(
-    actionType: SwipeActionType,
+    actionType: VaultSwipeActionUiModel,
     onAction: () -> Unit,
     backgroundColor: Color,
     iconTint: Color,
 ) = SwipeActionSpec(
     icon = when (actionType) {
-        SwipeActionType.DELETE -> Icons.Default.Delete
-        SwipeActionType.DETAIL -> Icons.Default.Info
-        SwipeActionType.COPY_PASSWORD -> Icons.Default.ContentCopy
-        SwipeActionType.COPY_USERNAME -> Icons.Default.Person
+        VaultSwipeActionUiModel.DELETE -> Icons.Default.Delete
+        VaultSwipeActionUiModel.DETAIL -> Icons.Default.Info
+        VaultSwipeActionUiModel.COPY_PASSWORD -> Icons.Default.ContentCopy
+        VaultSwipeActionUiModel.COPY_USERNAME -> Icons.Default.Person
     },
     backgroundColor = backgroundColor,
     iconTint = iconTint,

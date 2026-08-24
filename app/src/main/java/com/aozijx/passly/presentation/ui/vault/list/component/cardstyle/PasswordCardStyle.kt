@@ -1,6 +1,5 @@
-package com.aozijx.passly.presentation.feature.vault.list.component.cardstyle
+package com.aozijx.passly.presentation.ui.vault.list.component.cardstyle
 
-import com.aozijx.passly.presentation.ui.vault.list.component.cardstyle.CardStyleTokens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -37,12 +36,12 @@ import coil.compose.AsyncImage
 import com.aozijx.passly.core.media.rememberImagePaletteColors
 import com.aozijx.passly.core.media.toLocalIconImageModel
 import com.aozijx.passly.core.ui.components.VaultItemIcon
-import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
 
 @Composable
 fun PasswordStyleVaultItem(
-    entry: EntryListItem,
+    entry: VaultListItemUiModel,
     onClick: () -> Unit
 ) {
     val secondaryText = when {
@@ -121,7 +120,7 @@ fun PasswordStyleVaultItem(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(CardStyleTokens.Password.contentPadding)
                 ) {
-                    VaultItemIcon(Modifier, entry)
+                    VaultListItemIcon(Modifier, entry)
                     Spacer(modifier = Modifier.width(CardStyleTokens.Password.iconTextSpacing))
 
                     Column(modifier = Modifier.weight(1f)) {
@@ -185,12 +184,12 @@ fun PasswordStyleVaultItem(
 internal object PasswordVaultCardStyle : VaultCardStyleComponent {
     override val key: String = "password"
 
-    override fun supports(entry: EntryListItem): Boolean = entry.hasPassword
+    override fun supports(entry: VaultListItemUiModel): Boolean = entry.hasPassword
 
     @Composable
     override fun Render(
-        entry: EntryListItem,
-        totpState: OtpCodeState?,
+        entry: VaultListItemUiModel,
+        totpState: VaultOtpUiState?,
         showTotpCode: Boolean,
         onClick: () -> Unit,
     ) {

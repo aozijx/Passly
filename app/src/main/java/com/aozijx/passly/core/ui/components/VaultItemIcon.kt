@@ -49,6 +49,36 @@ fun VaultItemIcon(
 )
 
 @Composable
+fun VaultItemIcon(
+    modifier: Modifier = Modifier,
+    iconName: String?,
+    iconCustomPath: String?,
+    associatedAppPackage: String?,
+    entryTypeKey: String,
+    title: String,
+    username: String,
+    associatedDomain: String?,
+    tint: Color = MaterialTheme.colorScheme.onSecondaryContainer,
+) = VaultItemIcon(
+    modifier = modifier,
+    iconName = iconName,
+    iconCustomPath = iconCustomPath,
+    associatedAppPackage = associatedAppPackage,
+    classificationInput = EntryClassificationInput(
+        entryType = enumValues<com.aozijx.passly.domain.entry.model.EntryType>()
+            .firstOrNull { it.name == entryTypeKey }
+            ?: com.aozijx.passly.domain.entry.model.EntryType.LOGIN,
+        title = title,
+        username = username,
+        urls = setOfNotNull(associatedDomain),
+        domains = setOfNotNull(associatedDomain),
+        packageNames = setOfNotNull(associatedAppPackage),
+        appNames = setOfNotNull(title.takeIf { associatedAppPackage != null && associatedDomain == null }),
+    ),
+    tint = tint,
+)
+
+@Composable
 private fun VaultItemIcon(
     modifier: Modifier,
     iconName: String?,
