@@ -21,6 +21,62 @@ internal object EditorSourceBoundaryVerifier {
             val lowerPath = path.lowercase()
             val isPresentationEditor = "/presentation/feature/vault/editor/" in lowerPath
 
+            val migratedUiDirectoryMarkers = listOf(
+                "/feature/auth/",
+                "/feature/detail/",
+                "/feature/recovery/",
+                "/feature/scanner/",
+                "/feature/settings/",
+                "/feature/vault/presentation/",
+                "/presentation/settings/",
+                "/app/navigation/",
+                "/app/shell/contract/",
+                "/app/shell/presentation/",
+                "/app/shell/ui/",
+            )
+            val migratedUiFileNames = setOf(
+                "appshellsettingscontract.kt",
+                "appshellsettingsviewmodel.kt",
+                "appshellviewmodel.kt",
+                "autofillfillactivity.kt",
+                "autofillfillcontract.kt",
+                "autofillfillreducer.kt",
+                "autofillfilluiaction.kt",
+                "autofillfillviewmodel.kt",
+                "backupfeature.kt",
+                "backupreducer.kt",
+                "backupuiaction.kt",
+                "backupuistate.kt",
+                "backupviewmodel.kt",
+                "credentialresponseactivity.kt",
+                "credentialresponsecontract.kt",
+                "credentialresponsereducer.kt",
+                "credentialresponseuiaction.kt",
+                "credentialresponseviewmodel.kt",
+            )
+            val fileName = lowerPath.substringAfterLast('/')
+            val isOutsidePresentationFeature = "/presentation/feature/" !in lowerPath
+            val isLegacyBackupPresentation =
+                isOutsidePresentationFeature && (
+                "/feature/backup/presentation/" in lowerPath ||
+                    ("/feature/backup/internal/presentation/" in lowerPath && fileName in migratedUiFileNames)
+                )
+            val isLegacyAutofillPresentation =
+                isOutsidePresentationFeature &&
+                ("/feature/autofill/credential/" in lowerPath ||
+                    "/feature/autofill/legacy/" in lowerPath) &&
+                    fileName in migratedUiFileNames
+            val isLegacyShellPresentation =
+                isOutsidePresentationFeature &&
+                    "/app/shell/" in lowerPath && fileName in migratedUiFileNames
+            if ((isOutsidePresentationFeature && migratedUiDirectoryMarkers.any(lowerPath::contains)) ||
+                isLegacyBackupPresentation ||
+                isLegacyAutofillPresentation ||
+                isLegacyShellPresentation
+            ) {
+                add("$path: migrated UI must live below presentation/feature")
+            }
+
             if (isPresentationEditor && "import com.aozijx.passly.data." in source.content) {
                 add("$path: presentation editor imports a data implementation")
             }
