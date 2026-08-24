@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.main
+package com.aozijx.passly.presentation.ui.settings.main
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,15 +29,14 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.presentation.feature.settings.main.component.SettingsGroup
-import com.aozijx.passly.presentation.feature.settings.main.navigation.SettingsRoute
+import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SettingsMainPage(
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
-    onGroupClick: (SettingsRoute) -> Unit,
+    onGroupClick: (String) -> Unit,
     selectedRouteKey: String? = null,
 ) {
     Scaffold(
@@ -84,12 +83,12 @@ internal fun SettingsMainPage(
                     RoundedGroup(
                         items = groups.map { group ->
                             navigationSettingsGroupItem(
-                                key = group.route.route,
+                                key = group.routeKey,
                                 icon = group.icon,
                                 title = stringResource(group.titleRes),
                                 subtitle = stringResource(group.subtitleRes),
-                                selected = group.route.route == selectedRouteKey,
-                                onClick = { onGroupClick(group.route) }
+                                selected = group.routeKey == selectedRouteKey,
+                                onClick = { onGroupClick(group.routeKey) }
                             )
                         }
                     )

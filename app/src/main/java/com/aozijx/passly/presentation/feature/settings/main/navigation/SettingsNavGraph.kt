@@ -38,13 +38,13 @@ import com.aozijx.passly.presentation.feature.settings.security.AppPasswordActio
 import com.aozijx.passly.presentation.feature.settings.security.validateAndSendAppPasswordAction
 import com.aozijx.passly.presentation.feature.settings.main.SettingsEffect
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiAction
+import com.aozijx.passly.presentation.ui.settings.main.SettingsMainPage
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.backup.DatabaseRecoveryViewModel
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.main.SettingsDetailPlaceholder
-import com.aozijx.passly.presentation.feature.settings.main.SettingsMainPage
+import com.aozijx.passly.presentation.ui.settings.main.SettingsDetailPlaceholder
 import com.aozijx.passly.presentation.feature.settings.main.SettingsScreenDialogsHost
 import com.aozijx.passly.presentation.feature.settings.main.SettingsScreenLocalState
 import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogsActions
@@ -155,7 +155,8 @@ fun SettingsNavGraph(
             ) {
                 SettingsMainPage(
                     onBack = onOuterBack,
-                    onGroupClick = { route ->
+                    onGroupClick = { routeKey ->
+                        val route = SettingsRoute.fromRouteKey(routeKey) ?: return@SettingsMainPage
                         selectedRoute = route
                         if (
                             isSinglePane ||

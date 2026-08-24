@@ -17,10 +17,10 @@ import com.aozijx.passly.presentation.feature.settings.security.SecuritySettings
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.appearance.component.AppearanceDetail
 import com.aozijx.passly.presentation.feature.settings.appearance.component.InterfaceDetail
-import com.aozijx.passly.presentation.feature.settings.main.component.SettingsGroup
+import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 import com.aozijx.passly.presentation.feature.settings.security.component.PrivacyDetail
 import com.aozijx.passly.presentation.feature.settings.security.component.SecurityDetail
-import com.aozijx.passly.presentation.feature.settings.main.SettingsSecondaryPage
+import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 
 @Composable
 internal fun CoreSettingsRouteContent(

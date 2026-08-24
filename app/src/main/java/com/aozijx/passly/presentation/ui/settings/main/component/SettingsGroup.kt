@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.main.component
+package com.aozijx.passly.presentation.ui.settings.main.component
 
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
@@ -15,90 +15,89 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.settings.main.navigation.SettingsRoute
 
 internal enum class SettingsGroup(
     @param:StringRes val sectionTitleRes: Int,
     @param:StringRes val titleRes: Int,
     @param:StringRes val subtitleRes: Int,
     val icon: ImageVector,
-    val route: SettingsRoute
+    val routeKey: String
 ) {
     APPEARANCE(
         sectionTitleRes = R.string.settings_section_appearance,
         icon = Icons.Default.Palette,
         titleRes = R.string.settings_page_appearance,
         subtitleRes = R.string.settings_page_appearance_summary,
-        route = SettingsRoute.Appearance
+        routeKey = "settings/appearance"
     ),
     INTERFACE(
         sectionTitleRes = R.string.settings_section_appearance,
         icon = Icons.Default.SpaceDashboard,
         titleRes = R.string.settings_page_interface,
         subtitleRes = R.string.settings_page_interface_summary,
-        route = SettingsRoute.Interface
+        routeKey = "settings/interface"
     ),
     SECURITY(
         sectionTitleRes = R.string.settings_section_security,
         icon = Icons.Default.Lock,
         titleRes = R.string.settings_page_security,
         subtitleRes = R.string.settings_page_security_summary,
-        route = SettingsRoute.Security
+        routeKey = "settings/security"
     ),
     PRIVACY(
         sectionTitleRes = R.string.settings_section_security,
         icon = Icons.Default.Visibility,
         titleRes = R.string.settings_page_privacy,
         subtitleRes = R.string.settings_page_privacy_summary,
-        route = SettingsRoute.Privacy
+        routeKey = "settings/privacy"
     ),
     INTERACTION(
         sectionTitleRes = R.string.settings_section_features,
         icon = Icons.Default.TouchApp,
         titleRes = R.string.settings_page_interaction,
         subtitleRes = R.string.settings_page_interaction_summary,
-        route = SettingsRoute.Interaction
+        routeKey = "settings/interaction"
     ),
     AUTOFILL(
         sectionTitleRes = R.string.settings_section_features,
         icon = Icons.Default.VpnKey,
         titleRes = R.string.settings_page_autofill,
         subtitleRes = R.string.settings_page_autofill_summary,
-        route = SettingsRoute.Autofill
+        routeKey = "settings/autofill"
     ),
     DATA_MANAGEMENT(
         sectionTitleRes = R.string.settings_section_data,
         icon = Icons.Default.Storage,
         titleRes = R.string.settings_page_data,
         subtitleRes = R.string.settings_page_data_summary,
-        route = SettingsRoute.DataManagement
+        routeKey = "settings/data"
     ),
     BACKUP_RESTORE(
         sectionTitleRes = R.string.settings_section_data,
         icon = Icons.Default.Restore,
         titleRes = R.string.settings_page_backup_restore,
         subtitleRes = R.string.settings_page_backup_restore_summary,
-        route = SettingsRoute.BackupRestore
+        routeKey = "settings/backup_restore"
     ),
     RECOVERY_CODE(
         sectionTitleRes = R.string.settings_section_data,
         icon = Icons.Default.Key,
         titleRes = R.string.recovery_code_label,
         subtitleRes = R.string.settings_page_recovery_code_summary,
-        route = SettingsRoute.RecoveryCode
+        routeKey = "settings/recovery_code"
     ),
     NOTIFICATIONS(
         sectionTitleRes = R.string.settings_section_other,
         icon = Icons.Default.Notifications,
         titleRes = R.string.settings_page_notifications,
         subtitleRes = R.string.settings_page_notifications_summary,
-        route = SettingsRoute.Notifications
+        routeKey = "settings/notifications"
     ),
     GENERAL(
         sectionTitleRes = R.string.settings_section_other,
         icon = Icons.Default.Info,
         titleRes = R.string.settings_page_general,
         subtitleRes = R.string.settings_page_general_summary,
-        route = SettingsRoute.General
+        routeKey = "settings/general"
     )
 }

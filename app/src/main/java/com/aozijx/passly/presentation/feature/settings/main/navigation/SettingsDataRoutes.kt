@@ -39,11 +39,11 @@ import com.aozijx.passly.presentation.feature.settings.backup.component.DataMana
 import com.aozijx.passly.presentation.feature.settings.main.general.GeneralDetail
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationDetail
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionDetail
-import com.aozijx.passly.presentation.feature.settings.main.component.SettingsGroup
+import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 import com.aozijx.passly.presentation.feature.settings.security.component.RecoveryCodeDetail
 import com.aozijx.passly.presentation.feature.settings.security.component.RecoveryCodeSheet
 import com.aozijx.passly.presentation.feature.settings.main.SettingsScreenLocalState
-import com.aozijx.passly.presentation.feature.settings.main.SettingsSecondaryPage
+import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

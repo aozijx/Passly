@@ -6,6 +6,15 @@ import java.io.Serializable
  * 设置模块嵌套导航路由。
  */
 sealed class SettingsRoute(val route: String) : Serializable {
+    companion object {
+        private val destinations by lazy {
+            listOf(Security, Privacy, Appearance, Interface, Interaction, Autofill,
+                DataManagement, BackupRestore, Notifications, RecoveryCode, General)
+                .associateBy(SettingsRoute::route)
+        }
+
+        fun fromRouteKey(routeKey: String): SettingsRoute? = destinations[routeKey]
+    }
     data object Main : SettingsRoute("settings/main") {
         private fun readResolve(): Any = Main
     }

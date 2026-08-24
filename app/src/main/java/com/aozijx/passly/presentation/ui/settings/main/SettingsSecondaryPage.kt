@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.main
+package com.aozijx.passly.presentation.ui.settings.main
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
