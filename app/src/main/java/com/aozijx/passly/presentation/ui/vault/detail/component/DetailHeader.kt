@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail.component
+package com.aozijx.passly.presentation.ui.vault.detail.component
 
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -17,17 +17,17 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.aozijx.passly.core.media.toLocalIconImageModel
-import com.aozijx.passly.domain.entry.model.Entry
 
 @Composable
 fun DetailHeader(
-    item: Entry,
+    iconCustomPath: String?,
+    updatedAt: Long,
     onIconClick: () -> Unit,
     onTitleLongClick: () -> Unit,
 ) {
     val context = LocalContext.current
-    val imageModel = remember(item.iconCustomPath, item.updatedAt) {
-        toLocalIconImageModel(item.iconCustomPath)
+    val imageModel = remember(iconCustomPath, updatedAt) {
+        toLocalIconImageModel(iconCustomPath)
     }
     val hasImage = !imageModel.isNullOrBlank()
 
@@ -51,8 +51,8 @@ fun DetailHeader(
                 AsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(imageModel)
-                        .memoryCacheKey("${imageModel}_${item.updatedAt}")
-                        .diskCacheKey("${imageModel}_${item.updatedAt}")
+                        .memoryCacheKey("${imageModel}_$updatedAt")
+                        .diskCacheKey("${imageModel}_$updatedAt")
                         .crossfade(true)
                         .build(),
                     contentDescription = null,

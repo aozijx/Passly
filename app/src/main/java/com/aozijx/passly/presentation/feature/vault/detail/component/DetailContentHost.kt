@@ -1,14 +1,7 @@
 package com.aozijx.passly.presentation.feature.vault.detail.component
 
 import android.widget.Toast
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -28,6 +21,8 @@ import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHa
 import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
 import com.aozijx.passly.presentation.feature.vault.detail.copySensitiveField
 import com.aozijx.passly.presentation.ui.vault.detail.component.InfoGroupCard
+import com.aozijx.passly.presentation.ui.vault.detail.component.DetailHeader
+import com.aozijx.passly.presentation.ui.vault.detail.component.DetailScrollableContent
 import com.aozijx.passly.presentation.feature.vault.detail.detailScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.component.MetadataSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.ActivityTimelineSection
@@ -63,7 +58,7 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.DetailSshUiModel
 import androidx.compose.ui.text.input.TextFieldValue
 
 @Composable
-fun DetailScrollableContent(
+fun DetailContentHost(
     modifier: Modifier = Modifier,
     uiState: DetailUiState,
     editState: EntryEditState,
@@ -81,20 +76,11 @@ fun DetailScrollableContent(
         onAction(DetailUiAction.RevealField(key, value))
     }
 
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onInteraction
-            ),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    DetailScrollableContent(modifier = modifier, onInteraction = onInteraction) {
         item {
             DetailHeader(
-                item = entry,
+                iconCustomPath = entry.iconCustomPath,
+                updatedAt = entry.updatedAt,
                 onIconClick = {
                     entry.associatedDomain
                         ?.takeIf { it.isNotBlank() }

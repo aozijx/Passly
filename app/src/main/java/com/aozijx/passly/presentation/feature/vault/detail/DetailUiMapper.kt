@@ -29,6 +29,7 @@ internal fun detailScreenUiModel(
     favorite = entry.favorite,
     iconName = entry.icon.name,
     iconCustomPath = entry.iconCustomPath,
+    updatedAt = entry.updatedAt,
     associatedDomain = entry.associatedDomain,
     associatedAppPackage = entry.associatedAppPackage,
     editedTitle = state.editedTitle,

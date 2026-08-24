@@ -29,7 +29,7 @@ import com.aozijx.passly.presentation.feature.vault.detail.DetailAuthenticate
 import com.aozijx.passly.presentation.feature.vault.detail.DetailViewModel
 import com.aozijx.passly.presentation.feature.vault.detail.DetailEffect
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
-import com.aozijx.passly.presentation.feature.vault.detail.DetailScreen
+import com.aozijx.passly.presentation.feature.vault.detail.DetailHost
 import com.aozijx.passly.presentation.feature.scanner.VaultScanner
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.navigation.SettingsNavGraph
@@ -231,7 +231,7 @@ fun PasslyNavHost(
                     }
 
                     initialEntry?.let { entry ->
-                        DetailScreen(
+                        DetailHost(
                             initialEntry = entry,
                             uiState = detailUiState,
                             otpUiState = currentOtpState,

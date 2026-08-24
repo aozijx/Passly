@@ -8,6 +8,7 @@ data class DetailScreenUiModel(
     val favorite: Boolean,
     val iconName: String?,
     val iconCustomPath: String?,
+    val updatedAt: Long,
     val associatedDomain: String?,
     val associatedAppPackage: String?,
     val editedTitle: String,

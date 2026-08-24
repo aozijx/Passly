@@ -6,12 +6,6 @@ internal data class EditorSource(
 )
 
 internal object EditorSourceBoundaryVerifier {
-    private val temporaryVaultDetailUiAllowlist = setOf(
-        "/com/aozijx/passly/presentation/feature/vault/detail/detailscreen.kt",
-        "/com/aozijx/passly/presentation/feature/vault/detail/component/detailheader.kt",
-        "/com/aozijx/passly/presentation/feature/vault/detail/component/detailscrollablecontent.kt",
-        "/com/aozijx/passly/presentation/feature/vault/detail/component/detailtopbar.kt",
-    )
     private val mapperForbiddenMarkers = linkedMapOf(
         "repository" to listOf(".repository.", ".port.EntryCommandRepository"),
         "UUID" to listOf("UuidCreator", "java.util.UUID"),
@@ -64,10 +58,10 @@ internal object EditorSourceBoundaryVerifier {
             val passiveUiNames = listOf("screen", "content", "component", "dialog", "sheet")
             listOf("list", "detail").forEach { page ->
                 val isVaultPageFeature = "/presentation/feature/vault/$page/" in lowerPath
-                val isTemporarilyAllowedDetailUi = page == "detail" &&
-                    temporaryVaultDetailUiAllowlist.any(lowerPath::endsWith)
-                if (isVaultPageFeature && !isTemporarilyAllowedDetailUi && (
-                        passiveUiNames.any(fileName::contains) ||
+                val isFeatureHost = fileName.endsWith("host.kt")
+                val isUiSection = fileName.endsWith("section.kt")
+                if (isVaultPageFeature && !isFeatureHost && (
+                    passiveUiNames.any(fileName::contains) || isUiSection ||
                             listOf("/component/", "/dialog/", "/sheet/").any(lowerPath::contains)
                         )
                 ) {

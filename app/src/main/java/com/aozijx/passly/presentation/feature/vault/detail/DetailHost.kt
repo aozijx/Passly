@@ -1,15 +1,9 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.feature.vault.model.OtpCodeState
@@ -18,17 +12,16 @@ import com.aozijx.passly.presentation.feature.vault.detail.DetailAuthenticate
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
 import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
-import com.aozijx.passly.presentation.feature.vault.detail.component.DetailScrollableContent
-import com.aozijx.passly.presentation.feature.vault.detail.component.DetailTopBar
+import com.aozijx.passly.presentation.feature.vault.detail.component.DetailContentHost
+import com.aozijx.passly.presentation.ui.vault.detail.DetailScreen
 
 /**
  * 详情页 UI 组件 (Stateless)
  *
  * 采用状态平铺模式，不直接持有 ViewModel，方便测试和预览。
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetailScreen(
+fun DetailHost(
     initialEntry: Entry,
     uiState: DetailUiState,
     otpUiState: OtpCodeState?,
@@ -41,7 +34,6 @@ fun DetailScreen(
     onOpenRelatedEntry: (Entry) -> Unit
 ) {
     val context = LocalContext.current
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     // 初始进入和交互更新
     LaunchedEffect(Unit) {
@@ -80,21 +72,17 @@ fun DetailScreen(
         }
     }
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            DetailTopBar(
-                entry = entry,
-                uiState = uiState,
-                scrollBehavior = scrollBehavior,
-                onAction = onAction,
-                onBack = onBack,
-                onInteraction = onUpdateInteraction
-            )
-        }
-    ) { innerPadding ->
-        DetailScrollableContent(
-            modifier = Modifier.padding(innerPadding),
+    DetailScreen(
+        model = detailScreenUiModel(entry, uiState, otpUiState),
+        onBack = onBack,
+        onInteraction = onUpdateInteraction,
+        onTitleChanged = { onAction(DetailUiAction.UpdateEditedTitle(it)) },
+        onTitleEditStarted = { onAction(DetailUiAction.StartTitleEdit) },
+        onTitleSaved = { onAction(DetailUiAction.SaveTitle) },
+        onFavoriteToggled = { onAction(DetailUiAction.ToggleFavorite) },
+    ) { modifier ->
+        DetailContentHost(
+            modifier = modifier,
             uiState = uiState,
             editState = editState,
             otpUiState = otpUiState,

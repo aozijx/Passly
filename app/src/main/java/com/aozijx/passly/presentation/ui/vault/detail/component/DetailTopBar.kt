@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail.component
+package com.aozijx.passly.presentation.ui.vault.detail.component
 
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -26,17 +26,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
-import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
-import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailScreenUiModel
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DetailTopBar(
-    entry: Entry,
-    uiState: DetailUiState,
+    model: DetailScreenUiModel,
     scrollBehavior: TopAppBarScrollBehavior,
-    onAction: (DetailUiAction) -> Unit,
+    onTitleChanged: (String) -> Unit,
+    onTitleEditStarted: () -> Unit,
+    onTitleSaved: () -> Unit,
+    onFavoriteToggled: () -> Unit,
     onBack: () -> Unit,
     onInteraction: () -> Unit = {}
 ) {
@@ -45,12 +45,10 @@ fun DetailTopBar(
 
     LargeFlexibleTopAppBar(
         title = {
-            if (uiState.isEditingTitle) {
+            if (model.isEditingTitle) {
                 PasslyOutlinedTextField(
-                    value = uiState.editedTitle,
-                    onValueChange = {
-                        onAction(DetailUiAction.UpdateEditedTitle(it))
-                    },
+                    value = model.editedTitle,
+                    onValueChange = onTitleChanged,
                     label = "",
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
@@ -58,7 +56,7 @@ fun DetailTopBar(
                     trailingIcon = {
                         IconButton(onClick = {
                             onInteraction()
-                            onAction(DetailUiAction.SaveTitle)
+                            onTitleSaved()
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Check,
@@ -70,14 +68,14 @@ fun DetailTopBar(
                 )
             } else {
                 Text(
-                    text = entry.title,
+                    text = model.title,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.combinedClickable(
                         interactionSource = titleInteractionSource,
                         indication = null,
                         onLongClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onAction(DetailUiAction.StartTitleEdit)
+                            onTitleEditStarted()
                         },
                         onClick = { onInteraction() }
                     )
@@ -95,12 +93,12 @@ fun DetailTopBar(
         actions = {
             IconButton(onClick = {
                 onInteraction()
-                onAction(DetailUiAction.ToggleFavorite)
+                onFavoriteToggled()
             }) {
                 Icon(
-                    imageVector = if (entry.favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    imageVector = if (model.favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                     contentDescription = "收藏",
-                    tint = if (entry.favorite) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                    tint = if (model.favorite) MaterialTheme.colorScheme.primary else LocalContentColor.current
                 )
             }
         },
