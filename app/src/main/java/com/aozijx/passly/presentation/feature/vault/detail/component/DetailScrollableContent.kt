@@ -32,12 +32,13 @@ import com.aozijx.passly.presentation.feature.vault.detail.detailScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.component.MetadataSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.ActivityTimelineSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.AssociatedInfoSection
-import com.aozijx.passly.presentation.feature.vault.detail.section.BankCardSection
+import com.aozijx.passly.presentation.ui.vault.detail.component.BankCardSection
+import com.aozijx.passly.presentation.ui.vault.detail.component.DetailBankCardFieldUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.component.CredentialSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionResolver
 import com.aozijx.passly.presentation.ui.vault.detail.component.EntryCategoryItem
-import com.aozijx.passly.presentation.feature.vault.detail.section.IdCardSection
+import com.aozijx.passly.presentation.ui.vault.detail.component.IdCardSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.NotesSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.PasskeySection
 import com.aozijx.passly.presentation.ui.vault.detail.component.RelatedEntriesSection
@@ -50,6 +51,11 @@ import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailAssociatedInfoUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailNotesUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailBankCardUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailIdentityUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.withCardCvv
+import com.aozijx.passly.presentation.feature.vault.detail.withCardNumber
+import com.aozijx.passly.presentation.feature.vault.detail.withDetailUsername
 import androidx.compose.ui.text.input.TextFieldValue
 
 @Composable
@@ -170,30 +176,85 @@ fun DetailScrollableContent(
 
         if (DetailSectionKey.BANK_CARD in registeredSections) {
             item {
+                val context = LocalContext.current
+                val actionHandler = DetailSectionActionHandler(onAuthenticate, onAction)
+                val cardholder = uiState.revealed(RevealedFieldKey.CARDHOLDER)?.let { String(it.toCharArray()) }
+                val cardNumber = uiState.revealed(RevealedFieldKey.CARD_NUMBER)?.let { String(it.toCharArray()) }
+                val cvv = uiState.revealed(RevealedFieldKey.CVV)?.let { String(it.toCharArray()) }
+                val paymentPin = uiState.revealed(RevealedFieldKey.PAYMENT_PIN)?.let { String(it.toCharArray()) }
+                val card = entry.secret.card
+                val hasNumber = !card?.cardNumber.isNullOrBlank() || cardNumber != null
+                val hasCvv = !card?.cardCvv.isNullOrBlank() || cvv != null || editState.isEditingTotp
+                val hasPin = !card?.paymentPin.isNullOrBlank() || paymentPin != null
                 BankCardSection(
-                    entry = entry,
-                    editState = editState,
-                    revealedCardholder = uiState.revealed(RevealedFieldKey.CARDHOLDER)?.let { String(it.toCharArray()) },
-                    revealedCardNumber = uiState.revealed(RevealedFieldKey.CARD_NUMBER)?.let { String(it.toCharArray()) },
-                    revealedCvv = uiState.revealed(RevealedFieldKey.CVV)?.let { String(it.toCharArray()) },
-                    revealedPaymentPin = uiState.revealed(RevealedFieldKey.PAYMENT_PIN)?.let { String(it.toCharArray()) },
-                    onRevealField = revealField,
-                    onAuthenticate = onAuthenticate,
-                    onEntryUpdated = { onAction(DetailUiAction.CommitEntryUpdate(it)) },
-                    onAction = onAction
+                    model = DetailBankCardUiModel(
+                        cardholder ?: entry.username, cardholder != null,
+                        cardNumber, cardNumber != null, hasNumber,
+                        cvv, cvv != null, hasCvv, card?.cardExpiry,
+                        paymentPin, paymentPin != null, hasPin,
+                        editState.isEditingUsername, editState.editedUsername,
+                        editState.isEditingPassword, editState.editedPassword,
+                        editState.isEditingTotp, editState.editedTotp,
+                        (hasNumber && cardNumber == null) || (hasCvv && cvv == null) || (hasPin && paymentPin == null),
+                    ),
+                    onEditChanged = { field, value -> when (field) {
+                        DetailBankCardFieldUiModel.CARDHOLDER -> editState.editedUsername = value
+                        DetailBankCardFieldUiModel.CARD_NUMBER -> editState.editedPassword = value
+                        DetailBankCardFieldUiModel.CVV -> editState.editedTotp = value
+                        else -> Unit
+                    } },
+                    onEditStarted = { field, value -> when (field) {
+                        DetailBankCardFieldUiModel.CARDHOLDER -> { editState.editedUsername = value; editState.isEditingUsername = true }
+                        DetailBankCardFieldUiModel.CARD_NUMBER -> { editState.editedPassword = value; editState.isEditingPassword = true }
+                        DetailBankCardFieldUiModel.CVV -> { editState.editedTotp = value; editState.isEditingTotp = true }
+                        else -> Unit
+                    } },
+                    onEditSaved = { field, value -> when (field) {
+                        DetailBankCardFieldUiModel.CARDHOLDER -> { onAction(DetailUiAction.CommitEntryUpdate(entry.withDetailUsername(value))); revealField(RevealedFieldKey.CARDHOLDER, OwnedChars.fromString(value)); editState.isEditingUsername = false }
+                        DetailBankCardFieldUiModel.CARD_NUMBER -> { onAction(DetailUiAction.CommitEntryUpdate(entry.withCardNumber(value))); revealField(RevealedFieldKey.CARD_NUMBER, OwnedChars.fromString(value)); editState.isEditingPassword = false }
+                        DetailBankCardFieldUiModel.CVV -> { onAction(DetailUiAction.CommitEntryUpdate(entry.withCardCvv(value))); revealField(RevealedFieldKey.CVV, OwnedChars.fromString(value)); editState.isEditingTotp = false }
+                        else -> Unit
+                    } },
+                    onCopy = { field ->
+                        val (name, revealed, source) = when (field) {
+                            DetailBankCardFieldUiModel.CARDHOLDER -> Triple("cardholder", cardholder?.let(OwnedChars::fromString), entry.username)
+                            DetailBankCardFieldUiModel.CARD_NUMBER -> Triple("card number", cardNumber?.let(OwnedChars::fromString), null)
+                            DetailBankCardFieldUiModel.CVV -> Triple("CVV", cvv?.let(OwnedChars::fromString), null)
+                            DetailBankCardFieldUiModel.PAYMENT_PIN -> Triple("payment PIN", paymentPin?.let(OwnedChars::fromString), null)
+                            DetailBankCardFieldUiModel.EXPIRATION -> { card?.cardExpiry?.let { ClipboardUtils.copy(context, it) }; onAction(DetailUiAction.RecordAction("expiration", ActivityType.COPY_PASSWORD)); return@BankCardSection }
+                        }
+                        copySensitiveField(context, actionHandler, name, revealed, source)
+                    },
+                    onReveal = { field ->
+                        val key = when (field) {
+                            DetailBankCardFieldUiModel.CARD_NUMBER -> RevealedFieldKey.CARD_NUMBER
+                            DetailBankCardFieldUiModel.CVV -> RevealedFieldKey.CVV
+                            DetailBankCardFieldUiModel.PAYMENT_PIN -> RevealedFieldKey.PAYMENT_PIN
+                            else -> return@BankCardSection
+                        }
+                        if (uiState.revealed(key) != null) revealField(key, null)
+                        else onAction(DetailUiAction.RevealHighSensitivityField(key))
+                    },
+                    onRevealAll = {
+                        val keys = buildSet { if (hasNumber && cardNumber == null) add(RevealedFieldKey.CARD_NUMBER); if (hasCvv && cvv == null) add(RevealedFieldKey.CVV); if (hasPin && paymentPin == null) add(RevealedFieldKey.PAYMENT_PIN) }
+                        if (keys.isNotEmpty()) onAction(DetailUiAction.RevealHighSensitivityFields(keys))
+                        if (cardholder == null) revealField(RevealedFieldKey.CARDHOLDER, OwnedChars.fromNullableString(entry.username))
+                    },
                 )
             }
         }
 
         if (DetailSectionKey.IDENTITY in registeredSections) {
             item {
+                val context = LocalContext.current
+                val actionHandler = DetailSectionActionHandler(onAuthenticate, onAction)
+                val idNumber = uiState.revealed(RevealedFieldKey.ID_NUMBER)?.let { String(it.toCharArray()) }
+                val hasIdNumber = SensitiveFieldKey.IDENTITY_NUMBER in uiState.sensitiveFieldKeys
                 IdCardSection(
-                    entry = entry,
-                    hasIdNumber = SensitiveFieldKey.IDENTITY_NUMBER in uiState.sensitiveFieldKeys,
-                    revealedIdNumber = uiState.revealed(RevealedFieldKey.ID_NUMBER)?.let { String(it.toCharArray()) },
-                    onIdNumberRevealed = { revealField(RevealedFieldKey.ID_NUMBER, OwnedChars.fromNullableString(it)) },
-                    onAuthenticate = onAuthenticate,
-                    onAction = onAction
+                    model = DetailIdentityUiModel(hasIdNumber, idNumber, idNumber != null, entry.username),
+                    onIdNumberCopy = { copySensitiveField(context, actionHandler, "ID number", idNumber?.let(OwnedChars::fromString), null) },
+                    onIdNumberReveal = { if (idNumber != null) revealField(RevealedFieldKey.ID_NUMBER, null) else onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.ID_NUMBER)) },
+                    onUsernameCopy = { ClipboardUtils.copy(context, entry.username); actionHandler.record("username", ActivityType.COPY_PASSWORD) },
                 )
             }
         }

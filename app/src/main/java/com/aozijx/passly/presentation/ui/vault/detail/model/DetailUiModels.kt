@@ -82,6 +82,25 @@ data class DetailNotesUiModel(
     val isEditing: Boolean,
 )
 
+data class DetailBankCardUiModel(
+    val cardholder: String?, val cardholderRevealed: Boolean,
+    val cardNumber: String?, val cardNumberRevealed: Boolean, val hasCardNumber: Boolean,
+    val cvv: String?, val cvvRevealed: Boolean, val hasCvv: Boolean,
+    val expiration: String?,
+    val paymentPin: String?, val paymentPinRevealed: Boolean, val hasPaymentPin: Boolean,
+    val editingCardholder: Boolean, val editedCardholder: String,
+    val editingCardNumber: Boolean, val editedCardNumber: String,
+    val editingCvv: Boolean, val editedCvv: String,
+    val canRevealMore: Boolean,
+)
+
+data class DetailIdentityUiModel(
+    val hasIdNumber: Boolean,
+    val idNumber: String?,
+    val idNumberRevealed: Boolean,
+    val username: String,
+)
+
 data class DetailOtpUiModel(
     val code: String?,
     val progress: Float,
