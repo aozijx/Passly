@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.backup.component
+package com.aozijx.passly.presentation.ui.settings.backup
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDownload

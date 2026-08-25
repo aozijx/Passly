@@ -10,7 +10,6 @@ internal object EditorSourceBoundaryVerifier {
         "/presentation/feature/settings/backup/component/backuprestoresheets.kt",
         "/presentation/feature/settings/backup/component/databaserecoverysheet.kt",
         "/presentation/feature/settings/backup/component/datamanagementdetail.kt",
-        "/presentation/feature/settings/backup/component/datasettingssection.kt",
         "/presentation/feature/settings/main/settingsscreendialogs.kt",
         "/presentation/feature/settings/main/settingsscreenlocalstate.kt",
         "/presentation/feature/settings/main/settingsscreenstatebuilders.kt",
