@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- 保险库排序与筛选 -->
-    <string name="sort_default">默认排序</string>
     <string name="sort_name">名称</string>
     <string name="sort_created">创建时间</string>
     <string name="sort_updated">修改时间</string>
     <string name="sort_usage">使用次数</string>
     <string name="sort_last_used">最近使用</string>
-    <string name="sort_entry_type">条目类型</string>
     <string name="vault_menu_sort">排序方式</string>
     <string name="vault_quick_filter_passwords">密码</string>
     <string name="vault_quick_filter_totp">验证码</string>
@@ -20,7 +18,6 @@
     <string name="vault_fab_id_card">身份证</string>
     <string name="vault_fab_passkey" translatable="false">Passkey</string>
     <string name="vault_fab_add_title">添加条目</string>
-    <string name="vault_add_generic_title">添加 %s</string>
 
     <!-- 条目历史 -->
     <string name="vault_detail_history_label">活动日志</string>

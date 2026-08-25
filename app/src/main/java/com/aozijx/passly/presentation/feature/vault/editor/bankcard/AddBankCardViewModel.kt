@@ -109,6 +109,5 @@ class AddBankCardViewModel @Inject constructor(
 
     override fun onCleared() {
         clearSensitiveContent()
-        super.onCleared()
     }
 }

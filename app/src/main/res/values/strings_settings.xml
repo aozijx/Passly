@@ -91,9 +91,9 @@
     <string name="settings_auth_current_password_incorrect">当前应用密码不正确</string>
     <string name="settings_auth_last_method_required">至少保留一种解锁方式</string>
     <string name="settings_auth_operation_failed">密码操作失败，请重试</string>
-    <string name="settings_duration_minutes">%1$d 分钟</string>
+    <plurals name="settings_duration_minutes"><item quantity="other">%d 分钟</item></plurals>
     <string name="settings_duration_minutes_seconds">%1$d 分 %2$d 秒</string>
-    <string name="settings_duration_seconds">%1$d 秒</string>
+    <plurals name="settings_duration_seconds"><item quantity="other">%d 秒</item></plurals>
     <string name="settings_recovery_code_confirm_saved">我已安全保存并启用</string>
     <string name="settings_recovery_code_copy">复制恢复码</string>
     <string name="settings_recovery_code_create">创建恢复码</string>
@@ -112,7 +112,7 @@
     <string name="settings_privacy_clipboard_protection">自动清除剪贴板</string>
     <string name="settings_privacy_clipboard_protection_description">在设定时间后尝试清除 Passly 当前写入的敏感内容，不会清除后来复制的其他内容</string>
     <string name="settings_privacy_clipboard_delay">清除延时</string>
-    <string name="settings_privacy_clipboard_delay_seconds">%1$d 秒</string>
+    <plurals name="settings_privacy_clipboard_delay_seconds"><item quantity="other">%d 秒</item></plurals>
     <string name="settings_privacy_clear_clipboard_now">立即清除</string>
     <string name="settings_privacy_clear_clipboard_now_description">仅清除 Passly 当前拥有的剪贴板内容</string>
     <string name="settings_privacy_clipboard_not_owned">当前没有可由 Passly 清除的剪贴板内容</string>
@@ -176,7 +176,7 @@
     <string name="settings_data_dangerous_actions">危险操作</string>
     <string name="settings_data_download">下载</string>
     <string name="settings_data_storage">本地数据</string>
-    <string name="settings_trash_count">%1$d 个条目</string>
+    <plurals name="settings_trash_count"><item quantity="other">%d 个条目</item></plurals>
     <string name="settings_trash_delete">永久删除</string>
     <string name="settings_trash_delete_confirm_message">条目、附件和历史记录将被永久删除，无法撤销。</string>
     <string name="settings_trash_delete_confirm_title">永久删除“%1$s”？</string>
@@ -185,7 +185,7 @@
     <string name="settings_trash_empty">回收站是空的</string>
     <string name="settings_trash_empty_description">删除的条目会显示在这里</string>
     <string name="settings_trash_empty_action">清空</string>
-    <string name="settings_trash_empty_confirm_message">将永久删除回收站中的 %1$d 个条目及其附件，无法撤销。</string>
+    <plurals name="settings_trash_empty_confirm_message"><item quantity="other">将永久删除回收站中的 %d 个条目及其附件，无法撤销。</item></plurals>
     <string name="settings_trash_empty_confirm_title">清空回收站？</string>
     <string name="settings_trash_emptying">正在清空…</string>
     <string name="settings_trash_error_dismiss">知道了</string>

@@ -140,6 +140,5 @@ class AddOtpViewModel @Inject constructor(
 
     override fun onCleared() {
         clearSensitiveContent()
-        super.onCleared()
     }
 }

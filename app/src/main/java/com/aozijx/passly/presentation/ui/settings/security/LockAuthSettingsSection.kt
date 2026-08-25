@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
@@ -103,16 +104,18 @@ fun LockAuthSettingsSection(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = stringResource(
-                                R.string.settings_duration_seconds,
+                            text = pluralStringResource(
+                                R.plurals.settings_duration_seconds,
+                                state.sliderMinSeconds.roundToInt(),
                                 state.sliderMinSeconds.roundToInt()
                             ),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline
                         )
                         Text(
-                            text = stringResource(
-                                R.string.settings_duration_minutes,
+                            text = pluralStringResource(
+                                R.plurals.settings_duration_minutes,
+                                (state.sliderMaxSeconds / 60f).roundToInt(),
                                 (state.sliderMaxSeconds / 60f).roundToInt()
                             ),
                             style = MaterialTheme.typography.labelSmall,
@@ -168,9 +171,17 @@ fun LockAuthSettingsSection(
 private fun formatLockTimeoutText(timeoutMs: Long): String {
     val seconds = (timeoutMs / 1000L).coerceAtLeast(1L)
     return when {
-        seconds < 60L -> stringResource(R.string.settings_duration_seconds, seconds)
+        seconds < 60L -> pluralStringResource(
+            R.plurals.settings_duration_seconds,
+            seconds.toInt(),
+            seconds,
+        )
         seconds % 60L == 0L ->
-            stringResource(R.string.settings_duration_minutes, seconds / 60L)
+            pluralStringResource(
+                R.plurals.settings_duration_minutes,
+                (seconds / 60L).toInt(),
+                seconds / 60L,
+            )
 
         else -> stringResource(
             R.string.settings_duration_minutes_seconds,

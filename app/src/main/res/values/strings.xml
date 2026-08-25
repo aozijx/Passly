@@ -52,8 +52,7 @@
     <string name="entry_type_recovery_code">恢复码</string>
 
     <!-- Autofill 服务相关 -->
-    <string name="autofill_entry_compact_title">选择账号</string>
-    <string name="autofill_entry_compact_summary">找到 %1$d 个可填充账号</string>
+    <plurals name="autofill_entry_compact_summary"><item quantity="other">找到 %d 个可填充账号</item></plurals>
     <string name="autofill_prompt_title">使用 %1$s 自动填充</string>
     <string name="autofill_badge_app">应用</string>
     <string name="autofill_badge_website">网站</string>
@@ -81,7 +80,6 @@
     <string name="tab_all">全部</string>
 
     <string name="vault_scan">扫码</string>
-    <string name="vault_add_entry_save_failed">保存条目失败</string>
     <string name="vault_empty_placeholder">你的保险箱空空如也</string>
     <string name="vault_load_failed">无法加载保险箱内容</string>
     <string name="retry">重试</string>

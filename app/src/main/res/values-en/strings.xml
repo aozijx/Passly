@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Common actions -->
     <string name="verify">Verify</string>
@@ -45,8 +45,10 @@
     <string name="entry_type_recovery_code">Recovery Code</string>
 
     <!-- Autofill service -->
-    <string name="autofill_entry_compact_title">Choose account</string>
-    <string name="autofill_entry_compact_summary">%1$d fillable accounts found</string>
+    <plurals name="autofill_entry_compact_summary">
+        <item quantity="one">%d fillable account found</item>
+        <item quantity="other">%d fillable accounts found</item>
+    </plurals>
     <string name="autofill_prompt_title">Autofill with %1$s</string>
     <string name="autofill_badge_app">App</string>
     <string name="autofill_badge_website">Website</string>
@@ -75,7 +77,6 @@
     <string name="tab_all">All</string>
 
     <string name="vault_scan">Scan</string>
-    <string name="vault_add_entry_save_failed">Couldn\'t save entry</string>
     <string name="vault_empty_placeholder">No items yet, tap + to add one</string>
     <string name="vault_load_failed">Could not load vault items</string>
     <string name="retry">Retry</string>
@@ -150,8 +151,8 @@
     <string name="auth_set_app_password">Set App Password</string>
     <string name="auth_biometric_unavailable_password_required">No biometric available. Please set an app password first.</string>
     <string name="auth_error_method_incorrect">Incorrect %1$s</string>
-    <string name="auth_error_method_incorrect_attempts">Incorrect %1$s. %2$d attempts left.</string>
-    <string name="auth_error_rate_limited">Too many attempts. Try again in %1$d seconds.</string>
+    <string name="auth_error_method_incorrect_attempts" tools:ignore="PluralsCandidate">Incorrect %1$s. %2$d attempts left.</string>
+    <string name="auth_error_rate_limited" tools:ignore="PluralsCandidate">Too many attempts. Try again in %1$d seconds.</string>
     <string name="auth_error_failed">Verification failed. Try again.</string>
     <string name="auth_error_app_password_setup_failed">Couldn\'t set the app password. Try again.</string>
     <string name="auth_error_password_too_short">Use at least 6 characters</string>
@@ -186,8 +187,8 @@
     <string name="database_recovery_delete_confirm_message">The original failed database will be permanently deleted. This cannot be undone.</string>
     <string name="database_recovery_package_label">Recovery package %1$s</string>
     <string name="database_recovery_package_details">%1$s · %2$s</string>
-    <string name="database_recovery_scan_summary">%1$d recoverable, %2$d conflicts, %3$d damaged; %4$d attachments</string>
-    <string name="database_recovery_report_summary">Restored %1$d entries, %2$d attachments and %3$d revisions; skipped %4$d conflicts</string>
+    <string name="database_recovery_scan_summary" tools:ignore="PluralsCandidate">%1$d recoverable, %2$d conflicts, %3$d damaged; %4$d attachments</string>
+    <string name="database_recovery_report_summary" tools:ignore="PluralsCandidate">Restored %1$d entries, %2$d attachments and %3$d revisions; skipped %4$d conflicts</string>
     <string name="database_recovery_select_types">Select entry types</string>
     <string name="database_recovery_status_pending">Not scanned</string>
     <string name="database_recovery_status_recoverable">Recoverable</string>

@@ -5,6 +5,7 @@ import com.aozijx.passly.core.telemetry.EventLevel
 import com.aozijx.passly.core.telemetry.SafeLogValue
 import com.aozijx.passly.core.telemetry.TelemetryEvent
 import com.aozijx.passly.core.telemetry.TelemetryReporter
+import java.util.Locale
 
 /**
  * Android Logcat 遥测发射器实现。
@@ -50,7 +51,7 @@ class AndroidLogSink(
     private fun formatField(value: SafeLogValue): String = when (value) {
         is SafeLogValue.Count -> value.value.toString()
         is SafeLogValue.DurationMs -> "${value.value}ms"
-        is SafeLogValue.Ratio -> String.format("%.2f", value.value)
+        is SafeLogValue.Ratio -> String.format(Locale.ROOT, "%.2f", value.value)
         is SafeLogValue.BooleanValue -> value.value.toString()
         is SafeLogValue.EnumName -> value.name
         is SafeLogValue.ErrorCodeValue -> value.code.value

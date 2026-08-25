@@ -1,11 +1,11 @@
 package com.aozijx.passly.presentation.feature.scanner
 
 import android.content.Context
-import android.net.Uri
 import android.os.VibrationEffect
 import android.os.VibratorManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.core.net.toUri
 import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.core.otp.OtpAuthUriCodec
 import com.aozijx.passly.presentation.feature.scanner.ImageRef
@@ -81,7 +81,7 @@ class ScannerViewModel @Inject constructor(
     }
 
     private fun decodeImage(image: ImageRef) {
-        val uri = Uri.parse(image.value)
+        val uri = image.value.toUri()
         BarcodeImageDecoder.decodeFromUri(
             context = appContext,
             uri = uri,

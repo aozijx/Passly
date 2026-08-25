@@ -339,7 +339,6 @@ class VaultViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         totp.clearAllSensitiveState()
     }
 

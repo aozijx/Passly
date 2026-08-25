@@ -86,6 +86,5 @@ class AddPasswordViewModel @Inject constructor(
 
     override fun onCleared() {
         clearSensitiveContent()
-        super.onCleared()
     }
 }

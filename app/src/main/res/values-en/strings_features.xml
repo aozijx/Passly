@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Vault sorting and filters -->
-    <string name="sort_default">Default order</string>
     <string name="sort_name">Name</string>
     <string name="sort_created">Created</string>
     <string name="sort_updated">Updated</string>
     <string name="sort_usage">Usage count</string>
     <string name="sort_last_used">Last used</string>
-    <string name="sort_entry_type">Entry type</string>
     <string name="vault_menu_sort">Sort by</string>
     <string name="vault_quick_filter_passwords">Passwords</string>
     <string name="vault_quick_filter_totp">Codes</string>
@@ -18,7 +16,6 @@
     <string name="vault_fab_ssh_key">SSH key</string>
     <string name="vault_fab_id_card">ID card</string>
     <string name="vault_fab_add_title">Add item</string>
-    <string name="vault_add_generic_title">Add %s</string>
 
     <!-- Entry history -->
     <string name="vault_detail_history_label">Activity log</string>

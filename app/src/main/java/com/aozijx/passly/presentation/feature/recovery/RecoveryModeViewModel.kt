@@ -126,6 +126,5 @@ class RecoveryModeViewModel @Inject constructor(
 
     override fun onCleared() {
         wipePasswords()
-        super.onCleared()
     }
 }

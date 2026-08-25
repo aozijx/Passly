@@ -185,7 +185,6 @@ class UnlockViewModel @Inject constructor(
 
     override fun onCleared() {
         wipeUnlockInputs()
-        super.onCleared()
     }
 
     private fun wipeUnlockInputs() {

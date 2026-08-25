@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
@@ -67,8 +68,9 @@ internal fun DataManagementDetail(
                             stringResource(R.string.settings_trash_empty)
 
                         else ->
-                            stringResource(
-                                R.string.settings_trash_count,
+                            pluralStringResource(
+                                R.plurals.settings_trash_count,
+                                state.deletedEntries.size,
                                 state.deletedEntries.size
                             )
                     },

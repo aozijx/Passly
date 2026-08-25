@@ -435,7 +435,6 @@ class DetailViewModel @Inject constructor(
 
     override fun onCleared() {
         wipeRevealBuffers()
-        super.onCleared()
         mutate(DetailMutation.StateCleared)
     }
 }

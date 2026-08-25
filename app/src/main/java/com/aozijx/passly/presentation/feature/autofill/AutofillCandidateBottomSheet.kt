@@ -24,6 +24,7 @@ import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -61,8 +62,9 @@ fun AutofillCandidateBottomSheet(
             ) {
                 Column(modifier = Modifier.padding(bottom = 20.dp)) {
                     Text(
-                        text = stringResource(
-                            id = R.string.autofill_entry_compact_summary,
+                        text = pluralStringResource(
+                            id = R.plurals.autofill_entry_compact_summary,
+                            count = candidates.size,
                             candidates.size
                         ),
                         style = MaterialTheme.typography.bodySmall,

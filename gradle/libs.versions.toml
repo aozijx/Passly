@@ -2,6 +2,7 @@
 # 构建与工具 (Build & Tooling)
 # Kotlin 版本决定了 KSP 和 Compose Compiler 的兼容范围
 agp = "9.3.1"
+#noinspection NewerVersionAvailable -- KSP 2.3.9 is tied to the Kotlin 2.3 toolchain.
 kotlin = "2.3.20"
 # ❗ KSP 版本 2.3.x 系列不再使用 xxx-1.0.x 后缀，直接写三段数字
 ksp = "2.3.9"
@@ -38,16 +39,16 @@ compose-adaptive = "1.3.0"
 # 数据持久化 (Data Storage)
 # ❗ Room 使用 KSP 时，对 Kotlin 版本非常敏感
 room = "2.8.4"
-paging = "3.5.0"
+paging = "3.5.1"
 datastore = "1.2.1"
 protobuf-plugin = "0.10.0"
-protobuf-javalite = "4.35.1"
+protobuf-javalite = "4.36.0"
 # ❗ 序列化库版本建议与 Kotlin 版本保持兼容性检查
 kotlinxSerializationJson = "1.11.0"
-kotlinxCoroutines = "1.10.2"
+kotlinxCoroutines = "1.11.0"
 # ❗ SQLCipher 是 SQLite 的加密层，升级其中之一需确保 native 库不冲突
 sqlite = "2.7.0"
-sqlcipher = "4.17.0"
+sqlcipher = "4.18.0"
 uuidCreator = "6.1.1"
 
 # 凭据管理器 / 自动填充 (Credentials & Autofill)
@@ -60,7 +61,7 @@ argon2kt = "1.6.0"
 
 # 媒体与多媒体 (Media & Utilities)
 coil = "2.7.0"
-markdown-renderer = "0.43.0"
+markdown-renderer = "0.44.0"
 
 # 相机与扫码 (Camera & Barcode)
 barcodeScanningBundled = "17.3.0"

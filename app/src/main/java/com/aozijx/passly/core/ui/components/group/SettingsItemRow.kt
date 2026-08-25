@@ -44,8 +44,8 @@ internal fun SettingsItemRow(
 @Composable
 internal fun AnimatedSettingValue(
     value: String,
+    modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    modifier: Modifier = Modifier
 ) = AnimatedSettingValue(
     targetState = value,
     valueLabel = { it },
@@ -61,9 +61,9 @@ internal fun AnimatedSettingValue(
 internal fun <T> AnimatedSettingValue(
     targetState: T,
     valueLabel: (T) -> String,
+    modifier: Modifier = Modifier,
     transitionDirection: (initial: T, target: T) -> Int = { _, _ -> 1 },
     enabled: Boolean = true,
-    modifier: Modifier = Modifier
 ) {
     val motionScheme = MaterialTheme.motionScheme
     AnimatedContent(

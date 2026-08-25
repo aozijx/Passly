@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Settings navigation -->
     <string name="settings_page_appearance">Theme &amp; language</string>
@@ -91,9 +91,9 @@
     <string name="settings_auth_current_password_incorrect">Incorrect current app password</string>
     <string name="settings_auth_last_method_required">Keep at least one unlock method</string>
     <string name="settings_auth_operation_failed">Password operation failed. Try again.</string>
-    <string name="settings_duration_minutes">%1$d minutes</string>
-    <string name="settings_duration_minutes_seconds">%1$d min %2$d sec</string>
-    <string name="settings_duration_seconds">%1$d seconds</string>
+    <plurals name="settings_duration_minutes"><item quantity="one">%d minute</item><item quantity="other">%d minutes</item></plurals>
+    <string name="settings_duration_minutes_seconds" tools:ignore="PluralsCandidate">%1$d min %2$d sec</string>
+    <plurals name="settings_duration_seconds"><item quantity="one">%d second</item><item quantity="other">%d seconds</item></plurals>
     <string name="settings_recovery_code_confirm_saved">I saved it securely; enable now</string>
     <string name="settings_recovery_code_copy">Copy code</string>
     <string name="settings_recovery_code_create">Create recovery code</string>
@@ -112,7 +112,7 @@
     <string name="settings_privacy_clipboard_protection">Clear clipboard automatically</string>
     <string name="settings_privacy_clipboard_protection_description">After the selected delay, Passly attempts to clear only its current sensitive clip and never newer copied content.</string>
     <string name="settings_privacy_clipboard_delay">Clear delay</string>
-    <string name="settings_privacy_clipboard_delay_seconds">%1$d seconds</string>
+    <plurals name="settings_privacy_clipboard_delay_seconds"><item quantity="one">%d second</item><item quantity="other">%d seconds</item></plurals>
     <string name="settings_privacy_clear_clipboard_now">Clear now</string>
     <string name="settings_privacy_clear_clipboard_now_description">Clears only the clipboard content currently owned by Passly</string>
     <string name="settings_privacy_clipboard_not_owned">There is no current Passly clipboard content to clear</string>
@@ -176,7 +176,7 @@
     <string name="settings_data_dangerous_actions">Dangerous actions</string>
     <string name="settings_data_download">Downloads</string>
     <string name="settings_data_storage">Local data</string>
-    <string name="settings_trash_count">%1$d entries</string>
+    <plurals name="settings_trash_count"><item quantity="one">%d entry</item><item quantity="other">%d entries</item></plurals>
     <string name="settings_trash_delete">Delete permanently</string>
     <string name="settings_trash_delete_confirm_message">The entry, its attachments, and history will be permanently deleted. This cannot be undone.</string>
     <string name="settings_trash_delete_confirm_title">Permanently delete “%1$s”?</string>
@@ -185,7 +185,7 @@
     <string name="settings_trash_empty">Trash is empty</string>
     <string name="settings_trash_empty_description">Deleted entries will appear here</string>
     <string name="settings_trash_empty_action">Empty</string>
-    <string name="settings_trash_empty_confirm_message">This permanently deletes %1$d entries in the trash and their attachments. This cannot be undone.</string>
+    <plurals name="settings_trash_empty_confirm_message"><item quantity="one">This permanently deletes %d entry in the trash and its attachments. This cannot be undone.</item><item quantity="other">This permanently deletes %d entries in the trash and their attachments. This cannot be undone.</item></plurals>
     <string name="settings_trash_empty_confirm_title">Empty trash?</string>
     <string name="settings_trash_emptying">Emptying…</string>
     <string name="settings_trash_error_dismiss">Got it</string>

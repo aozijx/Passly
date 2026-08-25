@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- 保管庫の並び替えとフィルター -->
-    <string name="sort_default">標準順</string>
     <string name="sort_name">名前</string>
     <string name="sort_created">作成日時</string>
     <string name="sort_updated">更新日時</string>
     <string name="sort_usage">使用回数</string>
     <string name="sort_last_used">最近使用した順</string>
-    <string name="sort_entry_type">項目タイプ</string>
     <string name="vault_menu_sort">並び順</string>
     <string name="vault_quick_filter_passwords">パスワード</string>
     <string name="vault_quick_filter_totp">認証コード</string>
@@ -18,7 +16,6 @@
     <string name="vault_fab_ssh_key">SSHキー</string>
     <string name="vault_fab_id_card">身分証</string>
     <string name="vault_fab_add_title">項目を追加</string>
-    <string name="vault_add_generic_title">%sを追加</string>
 
     <!-- 項目の履歴 -->
     <string name="vault_detail_history_label">操作履歴</string>

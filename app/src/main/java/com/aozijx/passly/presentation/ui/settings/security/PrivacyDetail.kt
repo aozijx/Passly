@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
@@ -35,7 +36,11 @@ internal fun PrivacyDetail(
 ) {
     var showClipboardDelayMenu by remember { mutableStateOf(false) }
     val delayOptions = state.clipboardClearDelayOptions.map { seconds ->
-        seconds to stringResource(R.string.settings_privacy_clipboard_delay_seconds, seconds)
+        seconds to pluralStringResource(
+            R.plurals.settings_privacy_clipboard_delay_seconds,
+            seconds,
+            seconds,
+        )
     }
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
@@ -78,8 +83,9 @@ internal fun PrivacyDetail(
                     key = "privacy.clipboard_clear_delay",
                     title = stringResource(R.string.settings_privacy_clipboard_delay),
                     selected = state.clipboardClearDelaySeconds,
-                    selectedLabel = stringResource(
-                        R.string.settings_privacy_clipboard_delay_seconds,
+                    selectedLabel = pluralStringResource(
+                        R.plurals.settings_privacy_clipboard_delay_seconds,
+                        state.clipboardClearDelaySeconds,
                         state.clipboardClearDelaySeconds,
                     ),
                     options = delayOptions,

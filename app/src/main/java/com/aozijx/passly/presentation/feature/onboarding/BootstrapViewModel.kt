@@ -89,7 +89,6 @@ class BootstrapViewModel @Inject constructor(
 
     override fun onCleared() {
         wipeSetupPasswords()
-        super.onCleared()
     }
 
     private fun wipeSetupPasswords() {

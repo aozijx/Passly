@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -183,8 +184,9 @@ internal fun TrashBottomSheet(
             title = { Text(stringResource(R.string.settings_trash_empty_confirm_title)) },
             text = {
                 Text(
-                    stringResource(
-                        R.string.settings_trash_empty_confirm_message,
+                    pluralStringResource(
+                        R.plurals.settings_trash_empty_confirm_message,
+                        entries.size,
                         entries.size
                     )
                 )
@@ -249,7 +251,7 @@ private fun TrashHeader(
             )
             if (count > 0) {
                 Text(
-                    text = stringResource(R.string.settings_trash_count, count),
+                    text = pluralStringResource(R.plurals.settings_trash_count, count, count),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

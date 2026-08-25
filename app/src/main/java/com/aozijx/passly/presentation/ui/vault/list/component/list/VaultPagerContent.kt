@@ -171,19 +171,19 @@ fun VaultPagerContent(
 }
 
 @Composable
-private fun VaultPagingProgress(modifier: Modifier = Modifier.fillMaxSize()) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+private fun VaultPagingProgress(modifier: Modifier = Modifier) {
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator()
     }
 }
 
 @Composable
 private fun VaultPagingError(
+    modifier: Modifier = Modifier,
     onRetry: () -> Unit,
-    modifier: Modifier = Modifier.fillMaxSize(),
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

@@ -261,7 +261,6 @@ class AutofillFillViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         viewModelScope.launch {
             requestSession.close()
         }
