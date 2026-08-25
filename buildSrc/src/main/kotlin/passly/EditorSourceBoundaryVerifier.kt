@@ -7,7 +7,6 @@ internal data class EditorSource(
 
 internal object EditorSourceBoundaryVerifier {
     private val temporarySettingsUiAllowlist = setOf(
-        "/presentation/feature/settings/backup/component/backuprestoresheets.kt",
         "/presentation/feature/settings/main/settingsscreendialogs.kt",
         "/presentation/feature/settings/main/settingsscreenlocalstate.kt",
         "/presentation/feature/settings/main/settingsscreenstatebuilders.kt",

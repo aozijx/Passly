@@ -15,8 +15,8 @@ import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
 import com.aozijx.passly.presentation.feature.backup.BackupUiAction
 import com.aozijx.passly.presentation.feature.backup.BackupViewModel
 import com.aozijx.passly.presentation.ui.settings.backup.BackupRestoreDetail
-import com.aozijx.passly.presentation.feature.settings.backup.component.BackupRestoreSheetHost
-import com.aozijx.passly.presentation.feature.settings.backup.component.BackupSheet
+import com.aozijx.passly.presentation.ui.settings.backup.BackupRestoreSheetHost
+import com.aozijx.passly.presentation.ui.settings.backup.BackupSheet
 import com.aozijx.passly.domain.sensitive.OwnedChars
 
 /**
@@ -100,14 +100,14 @@ fun BackupSettingsFeature(
 
     BackupRestoreSheetHost(
         sheet = activeSheet,
-        state = state,
+        state = state.toSheetUiState(),
         configuredDirectoryLabel = directoryLabel.takeIf { !directoryUri.isNullOrBlank() },
         onDismiss = {
             activeSheet = null
             viewModel.onAction(BackupUiAction.CancelPendingOperation)
         },
         onFormatSelected = { format ->
-            viewModel.onAction(BackupUiAction.PrepareExport(format))
+            viewModel.onAction(BackupUiAction.PrepareExport(format.toFeatureModel()))
             activeSheet = BackupSheet.EXPORT_OPTIONS
         },
         onPasswordChange = {
@@ -119,9 +119,11 @@ fun BackupSettingsFeature(
         },
         onIncludeDeletedChange = { viewModel.onAction(BackupUiAction.UpdateIncludeDeleted(it)) },
         onIncludedEntryTypesChange = {
-            viewModel.onAction(BackupUiAction.UpdateIncludedEntryTypes(it))
+            viewModel.onAction(BackupUiAction.UpdateIncludedEntryTypes(it.toFeatureModels()))
         },
-        onImportModeChange = { viewModel.onAction(BackupUiAction.UpdateImportMode(it)) },
+        onImportModeChange = {
+            viewModel.onAction(BackupUiAction.UpdateImportMode(it.toFeatureModel()))
+        },
         onExport = onExport@{
             activeSheet = null
             if (!directoryUri.isNullOrBlank()) {

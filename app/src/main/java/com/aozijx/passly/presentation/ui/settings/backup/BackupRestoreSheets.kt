@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.backup.component
+package com.aozijx.passly.presentation.ui.settings.backup
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
@@ -46,12 +46,34 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.text.localizedName
-import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
-import com.aozijx.passly.feature.backup.internal.model.ImportMode
-import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.presentation.feature.backup.BackupUiState
+
+internal enum class BackupExportFormatUiModel(
+    val requiresPassword: Boolean,
+    val supportsResources: Boolean,
+) {
+    ENCRYPTED(requiresPassword = true, supportsResources = true),
+    JSON(requiresPassword = false, supportsResources = false),
+    TEXT(requiresPassword = false, supportsResources = false),
+}
+
+internal enum class BackupImportModeUiModel { APPEND, OVERWRITE }
+
+internal enum class BackupEntryTypeUiModel {
+    ACCOUNT, LOGIN, NOTE, BANK_CARD, ID_CARD, PASSPORT, DRIVER_LICENSE,
+    SSH_KEY, WIFI, PASSKEY, OTP, DATABASE_CREDENTIAL, SERVER_CREDENTIAL,
+    API_KEY, CRYPTO_WALLET, SEED_PHRASE, RECOVERY_CODE,
+}
+
+internal data class BackupSheetUiState(
+    val password: String,
+    val importMode: BackupImportModeUiModel,
+    val selectedExportFormat: BackupExportFormatUiModel,
+    val includeIcons: Boolean,
+    val includeAttachments: Boolean,
+    val includeDeleted: Boolean,
+    val includedEntryTypes: Set<BackupEntryTypeUiModel>,
+    val canSubmitExport: Boolean,
+)
 
 internal enum class BackupSheet {
     FORMAT_PICKER,
@@ -63,16 +85,16 @@ internal enum class BackupSheet {
 @Composable
 internal fun BackupRestoreSheetHost(
     sheet: BackupSheet?,
-    state: BackupUiState,
+    state: BackupSheetUiState,
     configuredDirectoryLabel: String?,
     onDismiss: () -> Unit,
-    onFormatSelected: (BackupExportUiFormat) -> Unit,
+    onFormatSelected: (BackupExportFormatUiModel) -> Unit,
     onPasswordChange: (String) -> Unit,
     onIncludeIconsChange: (Boolean) -> Unit,
     onIncludeAttachmentsChange: (Boolean) -> Unit,
     onIncludeDeletedChange: (Boolean) -> Unit,
-    onIncludedEntryTypesChange: (Set<EntryType>) -> Unit,
-    onImportModeChange: (ImportMode) -> Unit,
+    onIncludedEntryTypesChange: (Set<BackupEntryTypeUiModel>) -> Unit,
+    onImportModeChange: (BackupImportModeUiModel) -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit
 ) {
@@ -112,7 +134,7 @@ internal fun BackupRestoreSheetHost(
 
 @Composable
 private fun BackupFormatPicker(
-    onFormatSelected: (BackupExportUiFormat) -> Unit
+    onFormatSelected: (BackupExportFormatUiModel) -> Unit
 ) {
     SheetColumn {
         Text(
@@ -129,19 +151,19 @@ private fun BackupFormatPicker(
             icon = Icons.Default.Lock,
             title = stringResource(R.string.settings_backup_format_encrypted),
             subtitle = stringResource(R.string.settings_backup_format_encrypted_description),
-            onClick = { onFormatSelected(BackupExportUiFormat.ENCRYPTED) }
+            onClick = { onFormatSelected(BackupExportFormatUiModel.ENCRYPTED) }
         )
         FormatCard(
             icon = Icons.Default.Code,
             title = stringResource(R.string.settings_backup_format_json),
             subtitle = stringResource(R.string.settings_backup_format_json_description),
-            onClick = { onFormatSelected(BackupExportUiFormat.JSON) }
+            onClick = { onFormatSelected(BackupExportFormatUiModel.JSON) }
         )
         FormatCard(
             icon = Icons.Default.Description,
             title = stringResource(R.string.settings_backup_format_text),
             subtitle = stringResource(R.string.settings_backup_format_text_description),
-            onClick = { onFormatSelected(BackupExportUiFormat.TEXT) }
+            onClick = { onFormatSelected(BackupExportFormatUiModel.TEXT) }
         )
     }
 }
@@ -177,13 +199,13 @@ private fun FormatCard(
 
 @Composable
 private fun BackupExportOptionsContent(
-    state: BackupUiState,
+    state: BackupSheetUiState,
     configuredDirectoryLabel: String?,
     onPasswordChange: (String) -> Unit,
     onIncludeIconsChange: (Boolean) -> Unit,
     onIncludeAttachmentsChange: (Boolean) -> Unit,
     onIncludeDeletedChange: (Boolean) -> Unit,
-    onIncludedEntryTypesChange: (Set<EntryType>) -> Unit,
+    onIncludedEntryTypesChange: (Set<BackupEntryTypeUiModel>) -> Unit,
     onExport: () -> Unit
 ) {
     SheetColumn(scrollable = true) {
@@ -196,7 +218,7 @@ private fun BackupExportOptionsContent(
 
         if (state.selectedExportFormat.requiresPassword) {
             OutlinedTextField(
-                value = state.backupPassword.toTextFieldString(),
+                value = state.password,
                 onValueChange = onPasswordChange,
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(stringResource(R.string.settings_backup_password_label)) },
@@ -250,17 +272,17 @@ private fun BackupExportOptionsContent(
             TextButton(
                 onClick = {
                     onIncludedEntryTypesChange(
-                        if (state.includedEntryTypes.size == EntryType.entries.size) {
+                        if (state.includedEntryTypes.size == BackupEntryTypeUiModel.entries.size) {
                             emptySet()
                         } else {
-                            EntryType.entries.toSet()
+                            BackupEntryTypeUiModel.entries.toSet()
                         }
                     )
                 }
             ) {
                 Text(
                     stringResource(
-                        if (state.includedEntryTypes.size == EntryType.entries.size) {
+                        if (state.includedEntryTypes.size == BackupEntryTypeUiModel.entries.size) {
                             R.string.settings_backup_clear_selection
                         } else {
                             R.string.settings_backup_select_all
@@ -273,7 +295,7 @@ private fun BackupExportOptionsContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            EntryType.entries.forEach { type ->
+            BackupEntryTypeUiModel.entries.forEach { type ->
                 FilterChip(
                     selected = type in state.includedEntryTypes,
                     onClick = {
@@ -282,7 +304,7 @@ private fun BackupExportOptionsContent(
                         }
                         onIncludedEntryTypesChange(updated)
                     },
-                    label = { Text(type.localizedName()) }
+                    label = { Text(stringResource(type.labelRes)) }
                 )
             }
         }
@@ -318,21 +340,21 @@ private fun BackupExportOptionsContent(
 }
 
 @Composable
-private fun ExportSecurityNotice(format: BackupExportUiFormat) {
+private fun ExportSecurityNotice(format: BackupExportFormatUiModel) {
     val text = when (format) {
-        BackupExportUiFormat.ENCRYPTED ->
+        BackupExportFormatUiModel.ENCRYPTED ->
             stringResource(R.string.settings_backup_encrypted_security_notice)
 
-        BackupExportUiFormat.JSON ->
+        BackupExportFormatUiModel.JSON ->
             stringResource(R.string.settings_backup_json_security_notice)
 
-        BackupExportUiFormat.TEXT ->
+        BackupExportFormatUiModel.TEXT ->
             stringResource(R.string.settings_backup_text_security_notice)
     }
     Text(
         text = text,
         style = MaterialTheme.typography.bodyMedium,
-        color = if (format == BackupExportUiFormat.ENCRYPTED) {
+        color = if (format == BackupExportFormatUiModel.ENCRYPTED) {
             MaterialTheme.colorScheme.onSurfaceVariant
         } else {
             MaterialTheme.colorScheme.error
@@ -367,9 +389,9 @@ private fun BackupSwitchRow(
 
 @Composable
 private fun BackupImportOptionsContent(
-    state: BackupUiState,
+    state: BackupSheetUiState,
     onPasswordChange: (String) -> Unit,
-    onImportModeChange: (ImportMode) -> Unit,
+    onImportModeChange: (BackupImportModeUiModel) -> Unit,
     onImport: () -> Unit
 ) {
     SheetColumn(scrollable = true) {
@@ -391,19 +413,19 @@ private fun BackupImportOptionsContent(
             style = MaterialTheme.typography.titleMedium
         )
         ImportModeCard(
-            selected = state.importMode == ImportMode.APPEND,
+            selected = state.importMode == BackupImportModeUiModel.APPEND,
             title = stringResource(R.string.settings_backup_import_append),
             subtitle = stringResource(R.string.settings_backup_import_append_description),
-            onClick = { onImportModeChange(ImportMode.APPEND) }
+            onClick = { onImportModeChange(BackupImportModeUiModel.APPEND) }
         )
         ImportModeCard(
-            selected = state.importMode == ImportMode.OVERWRITE,
+            selected = state.importMode == BackupImportModeUiModel.OVERWRITE,
             title = stringResource(R.string.settings_backup_import_overwrite),
             subtitle = stringResource(R.string.settings_backup_import_overwrite_description),
-            onClick = { onImportModeChange(ImportMode.OVERWRITE) }
+            onClick = { onImportModeChange(BackupImportModeUiModel.OVERWRITE) }
         )
         OutlinedTextField(
-            value = state.backupPassword.toTextFieldString(),
+            value = state.password,
             onValueChange = onPasswordChange,
             modifier = Modifier.fillMaxWidth(),
             label = { Text(stringResource(R.string.settings_backup_import_password_label)) },
@@ -422,7 +444,7 @@ private fun BackupImportOptionsContent(
         Button(onClick = onImport, modifier = Modifier.fillMaxWidth()) {
             Text(
                 stringResource(
-                    if (state.importMode == ImportMode.OVERWRITE) {
+                    if (state.importMode == BackupImportModeUiModel.OVERWRITE) {
                         R.string.settings_backup_confirm_overwrite_import
                     } else {
                         R.string.settings_backup_start_import
@@ -430,15 +452,6 @@ private fun BackupImportOptionsContent(
                 )
             )
         }
-    }
-}
-
-private fun SensitiveValue.toTextFieldString(): String {
-    val chars = toCharArray()
-    return try {
-        chars.concatToString()
-    } finally {
-        chars.fill('\u0000')
     }
 }
 
@@ -497,8 +510,29 @@ private fun SheetColumn(
 }
 
 @StringRes
-private fun exportTitleResource(format: BackupExportUiFormat): Int = when (format) {
-    BackupExportUiFormat.ENCRYPTED -> R.string.settings_backup_encrypted_options_title
-    BackupExportUiFormat.JSON -> R.string.settings_backup_json_options_title
-    BackupExportUiFormat.TEXT -> R.string.settings_backup_text_options_title
+private fun exportTitleResource(format: BackupExportFormatUiModel): Int = when (format) {
+    BackupExportFormatUiModel.ENCRYPTED -> R.string.settings_backup_encrypted_options_title
+    BackupExportFormatUiModel.JSON -> R.string.settings_backup_json_options_title
+    BackupExportFormatUiModel.TEXT -> R.string.settings_backup_text_options_title
 }
+
+private val BackupEntryTypeUiModel.labelRes: Int
+    get() = when (this) {
+        BackupEntryTypeUiModel.ACCOUNT -> R.string.entry_type_account
+        BackupEntryTypeUiModel.LOGIN -> R.string.entry_type_login
+        BackupEntryTypeUiModel.NOTE -> R.string.entry_type_note
+        BackupEntryTypeUiModel.BANK_CARD -> R.string.entry_type_bank_card
+        BackupEntryTypeUiModel.ID_CARD -> R.string.entry_type_id_card
+        BackupEntryTypeUiModel.PASSPORT -> R.string.entry_type_passport
+        BackupEntryTypeUiModel.DRIVER_LICENSE -> R.string.entry_type_driver_license
+        BackupEntryTypeUiModel.SSH_KEY -> R.string.entry_type_ssh_key
+        BackupEntryTypeUiModel.WIFI -> R.string.entry_type_wifi
+        BackupEntryTypeUiModel.PASSKEY -> R.string.entry_type_passkey
+        BackupEntryTypeUiModel.OTP -> R.string.entry_type_otp
+        BackupEntryTypeUiModel.DATABASE_CREDENTIAL -> R.string.entry_type_database_credential
+        BackupEntryTypeUiModel.SERVER_CREDENTIAL -> R.string.entry_type_server_credential
+        BackupEntryTypeUiModel.API_KEY -> R.string.entry_type_api_key
+        BackupEntryTypeUiModel.CRYPTO_WALLET -> R.string.entry_type_crypto_wallet
+        BackupEntryTypeUiModel.SEED_PHRASE -> R.string.entry_type_seed_phrase
+        BackupEntryTypeUiModel.RECOVERY_CODE -> R.string.entry_type_recovery_code
+    }
