@@ -1,6 +1,5 @@
-package com.aozijx.passly.presentation.feature.settings.security.component
+package com.aozijx.passly.presentation.ui.settings.security
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,7 +16,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -25,20 +23,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.platform.ClipboardUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecoveryCodeSheet(
     recoveryCode: String,
     sheetState: SheetState,
+    onCopy: () -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val context = LocalContext.current
-    val recoveryCodeLabel = stringResource(R.string.recovery_code_label)
-    val msgCopySuccess = stringResource(R.string.field_copy_success_message)
-
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState
@@ -86,14 +80,7 @@ fun RecoveryCodeSheet(
             Spacer(modifier = Modifier.height(12.dp))
 
             Button(
-                onClick = {
-                    ClipboardUtils.copy(context, recoveryCode)
-                    Toast.makeText(
-                        context,
-                        msgCopySuccess.format(recoveryCodeLabel),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                },
+                onClick = onCopy,
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large
             ) {

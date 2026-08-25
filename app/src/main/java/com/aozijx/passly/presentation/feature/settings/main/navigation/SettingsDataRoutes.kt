@@ -2,6 +2,7 @@ package com.aozijx.passly.presentation.feature.settings.main.navigation
 
 import android.content.Context
 import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -16,6 +17,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.util.PathDisplayFormatter
+import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.presentation.feature.backup.BackupSettingsFeature
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
@@ -44,7 +46,7 @@ import com.aozijx.passly.presentation.feature.settings.main.general.Notification
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionDetail
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 import com.aozijx.passly.presentation.feature.settings.security.component.RecoveryCodeDetail
-import com.aozijx.passly.presentation.feature.settings.security.component.RecoveryCodeSheet
+import com.aozijx.passly.presentation.ui.settings.security.RecoveryCodeSheet
 import com.aozijx.passly.presentation.feature.settings.main.SettingsScreenLocalState
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 
@@ -242,9 +244,21 @@ internal fun DataSettingsRouteContent(
             }
             recoveryCode?.let { code ->
                 if (localState.showRecoveryCodeSheet) {
+                    val copySuccessMessage = stringResource(
+                        R.string.field_copy_success_message,
+                        stringResource(R.string.recovery_code_label),
+                    )
                     RecoveryCodeSheet(
                         recoveryCode = code,
                         sheetState = localState.recoveryCodeSheetState,
+                        onCopy = {
+                            ClipboardUtils.copy(context, code)
+                            Toast.makeText(
+                                context,
+                                copySuccessMessage,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        },
                         onConfirm = {
                             localState.showRecoveryCodeSheet = false
                             draftViewModel.onAction(RecoveryDraftAction.ConfirmAndEnable)
