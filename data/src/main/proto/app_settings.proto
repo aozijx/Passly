@@ -64,6 +64,8 @@ message SecurityPreferences {
     optional int64 lock_timeout_ms = 5 [default = 60000];
     optional bool invalidate_biometric_key_on_change = 6 [default = true];
     optional bool reauthenticate_sensitive_copies = 7 [default = true];
+    optional bool clipboard_clear_enabled = 8 [default = true];
+    optional int32 clipboard_clear_delay_seconds = 9 [default = 30];
 }
 
 // 交互

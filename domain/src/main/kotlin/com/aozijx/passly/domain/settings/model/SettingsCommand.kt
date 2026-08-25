@@ -30,6 +30,8 @@ sealed interface SettingsCommand {
     data class SetLockTimeout(val timeoutMs: Long) : SettingsCommand
     data class SetInvalidateBiometricKeyOnChange(val enabled: Boolean) : SettingsCommand
     data class SetReauthenticateSensitiveCopies(val enabled: Boolean) : SettingsCommand
+    data class SetClipboardClearEnabled(val enabled: Boolean) : SettingsCommand
+    data class SetClipboardClearDelaySeconds(val delaySeconds: Int) : SettingsCommand
 
     // Interaction
     data class SetSwipeEnabled(val enabled: Boolean) : SettingsCommand

@@ -3,6 +3,7 @@ package com.aozijx.passly.data.repository.settings
 import com.aozijx.passly.data.local.datastore.settings.AppSettings
 import com.aozijx.passly.data.local.datastore.settings.VisibleQuickFilters
 import com.aozijx.passly.domain.settings.model.AutofillSettings
+import com.aozijx.passly.domain.settings.model.ClipboardClearPolicy
 import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
 import com.aozijx.passly.domain.settings.model.SettingsCommand
 import com.aozijx.passly.domain.settings.model.ThemeCanvasTint
@@ -150,6 +151,20 @@ internal fun AppSettings.applyCommand(command: SettingsCommand): AppSettings {
         is SettingsCommand.SetReauthenticateSensitiveCopies -> {
             val sb = security.toBuilder()
             sb.reauthenticateSensitiveCopies = command.enabled
+            b.setSecurity(sb)
+        }
+
+        is SettingsCommand.SetClipboardClearEnabled -> {
+            val sb = security.toBuilder()
+            sb.clipboardClearEnabled = command.enabled
+            b.setSecurity(sb)
+        }
+
+        is SettingsCommand.SetClipboardClearDelaySeconds -> {
+            val sb = security.toBuilder()
+            sb.clipboardClearDelaySeconds = ClipboardClearPolicy.normalizeDelaySeconds(
+                command.delaySeconds
+            )
             b.setSecurity(sb)
         }
 

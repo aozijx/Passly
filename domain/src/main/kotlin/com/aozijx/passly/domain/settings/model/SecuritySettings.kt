@@ -8,4 +8,5 @@ data class SecuritySettings(
     val lockTimeout: Long = 60000L,
     val isInvalidateBiometricKeyOnChange: Boolean = true,
     val reauthenticateSensitiveCopies: Boolean = true,
+    val clipboardClearPolicy: ClipboardClearPolicy = ClipboardClearPolicy(),
 )
