@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.security.component
+package com.aozijx.passly.presentation.ui.settings.security
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,7 +18,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.apppassword.PasswordFields
-import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 
 @Composable
 fun AppPasswordChangeDialog(
@@ -28,6 +27,7 @@ fun AppPasswordChangeDialog(
     onCurrentPasswordChange: (String) -> Unit,
     onNewPasswordChange: (String) -> Unit,
     onConfirmPasswordChange: (String) -> Unit,
+    isConfirmEnabled: Boolean,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -60,9 +60,7 @@ fun AppPasswordChangeDialog(
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
-                enabled = currentPassword.isNotEmpty() &&
-                        AppPasswordPolicy.DEFAULT.acceptsLength(newPassword.length) &&
-                        newPassword == confirmPassword
+                enabled = isConfirmEnabled
             ) {
                 Text(stringResource(R.string.save))
             }

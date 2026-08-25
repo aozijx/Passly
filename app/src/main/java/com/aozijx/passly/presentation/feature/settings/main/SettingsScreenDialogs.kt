@@ -9,8 +9,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.apppassword.AppPasswordSetDialog
+import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.presentation.ui.settings.security.AppPasswordActionDialog
-import com.aozijx.passly.presentation.feature.settings.security.component.AppPasswordChangeDialog
+import com.aozijx.passly.presentation.ui.settings.security.AppPasswordChangeDialog
 import com.aozijx.passly.presentation.feature.settings.main.interaction.SwipeActionSelectDialog
 import com.aozijx.passly.presentation.feature.settings.main.component.AppPasswordDialogEvent
 import com.aozijx.passly.presentation.feature.settings.main.component.AppPasswordDialogState
@@ -152,6 +153,9 @@ internal fun SettingsScreenDialogsHost(
                         SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ConfirmChanged(it))
                     )
                 },
+                isConfirmEnabled = state.appPasswordCurrent.isNotEmpty() &&
+                        AppPasswordPolicy.DEFAULT.acceptsLength(state.appPasswordNew.length) &&
+                        state.appPasswordNew == state.appPasswordConfirm,
                 onConfirm = {
                     actions.onDialogEvent(
                         SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ConfirmChange)
