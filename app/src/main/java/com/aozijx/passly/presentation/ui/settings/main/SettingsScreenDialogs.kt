@@ -1,27 +1,24 @@
-package com.aozijx.passly.presentation.feature.settings.main
+package com.aozijx.passly.presentation.ui.settings.main
 
-import android.content.Intent
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
-import androidx.core.net.toUri
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.apppassword.AppPasswordSetDialog
-import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.presentation.ui.settings.security.AppPasswordActionDialog
 import com.aozijx.passly.presentation.ui.settings.security.AppPasswordChangeDialog
-import com.aozijx.passly.presentation.feature.settings.main.interaction.SwipeActionSelectDialog
-import com.aozijx.passly.presentation.feature.settings.main.component.AppPasswordDialogEvent
-import com.aozijx.passly.presentation.feature.settings.main.component.AppPasswordDialogState
-import com.aozijx.passly.presentation.feature.settings.main.component.SettingsDialogEvent
-import com.aozijx.passly.presentation.feature.settings.main.component.SettingsDialogsActions
-import com.aozijx.passly.presentation.feature.settings.main.component.SettingsDialogsState
+import com.aozijx.passly.presentation.ui.settings.interaction.SwipeActionSelectDialog
+import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogEvent
+import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogState
+import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogEvent
+import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogsActions
+import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogsModel
 
 @Composable
 internal fun SettingsScreenDialogsHost(
-    state: SettingsDialogsState,
+    state: SettingsDialogsModel,
     actions: SettingsDialogsActions
 ) {
     if (state.showRightActionDialog) {
@@ -57,17 +54,6 @@ internal fun SettingsScreenDialogsHost(
             text = { Text(stringResource(R.string.settings_backup_clear_directory_message)) },
             confirmButton = {
                 TextButton(onClick = {
-                    if (!state.backupDirectoryUri.isNullOrBlank()) {
-                        runCatching<Unit> {
-                            val uri = state.backupDirectoryUri.toUri()
-                            val flags =
-                                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                            state.context.contentResolver.releasePersistableUriPermission(
-                                uri,
-                                flags
-                            )
-                        }
-                    }
                     actions.onDialogEvent(SettingsDialogEvent.ClearBackupDirectory)
                     actions.onDialogEvent(SettingsDialogEvent.DismissClearBackupDirConfirmDialog)
                 }) {
@@ -153,9 +139,7 @@ internal fun SettingsScreenDialogsHost(
                         SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ConfirmChanged(it))
                     )
                 },
-                isConfirmEnabled = state.appPasswordCurrent.isNotEmpty() &&
-                        AppPasswordPolicy.DEFAULT.acceptsLength(state.appPasswordNew.length) &&
-                        state.appPasswordNew == state.appPasswordConfirm,
+                isConfirmEnabled = state.isChangePasswordConfirmEnabled,
                 onConfirm = {
                     actions.onDialogEvent(
                         SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ConfirmChange)

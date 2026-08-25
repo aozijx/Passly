@@ -1,7 +1,6 @@
-package com.aozijx.passly.presentation.feature.settings.main.component
+package com.aozijx.passly.presentation.ui.settings.main.model
 
-import android.content.Context
-import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.presentation.ui.settings.interaction.SwipeActionUiModel
 
 internal sealed interface AppPasswordDialogState {
     data object None : AppPasswordDialogState
@@ -10,18 +9,17 @@ internal sealed interface AppPasswordDialogState {
     data object Change : AppPasswordDialogState
 }
 
-internal data class SettingsDialogsState(
+internal data class SettingsDialogsModel(
     val showRightActionDialog: Boolean,
     val showLeftActionDialog: Boolean,
     val showClearBackupDirConfirmDialog: Boolean,
     val activeAppPasswordDialog: AppPasswordDialogState,
-    val swipeLeftAction: SwipeActionType,
-    val swipeRightAction: SwipeActionType,
-    val backupDirectoryUri: String?,
-    val context: Context,
+    val swipeLeftAction: SwipeActionUiModel,
+    val swipeRightAction: SwipeActionUiModel,
     val appPasswordCurrent: String,
     val appPasswordNew: String,
-    val appPasswordConfirm: String
+    val appPasswordConfirm: String,
+    val isChangePasswordConfirmEnabled: Boolean,
 )
 
 internal sealed interface AppPasswordDialogEvent {
@@ -38,8 +36,8 @@ internal sealed interface AppPasswordDialogEvent {
 }
 
 internal sealed interface SettingsDialogEvent {
-    data class SetSwipeRightAction(val action: SwipeActionType) : SettingsDialogEvent
-    data class SetSwipeLeftAction(val action: SwipeActionType) : SettingsDialogEvent
+    data class SetSwipeRightAction(val action: SwipeActionUiModel) : SettingsDialogEvent
+    data class SetSwipeLeftAction(val action: SwipeActionUiModel) : SettingsDialogEvent
     data object ClearBackupDirectory : SettingsDialogEvent
     data object DismissRightActionDialog : SettingsDialogEvent
     data object DismissLeftActionDialog : SettingsDialogEvent

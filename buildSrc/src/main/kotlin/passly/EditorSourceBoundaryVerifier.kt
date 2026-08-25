@@ -6,12 +6,6 @@ internal data class EditorSource(
 )
 
 internal object EditorSourceBoundaryVerifier {
-    private val temporarySettingsUiAllowlist = setOf(
-        "/presentation/feature/settings/main/settingsscreendialogs.kt",
-        "/presentation/feature/settings/main/settingsscreenlocalstate.kt",
-        "/presentation/feature/settings/main/settingsscreenstatebuilders.kt",
-        "/presentation/feature/settings/main/component/settingsdialogmodels.kt",
-    )
     private val mapperForbiddenMarkers = linkedMapOf(
         "repository" to listOf(".repository.", ".port.EntryCommandRepository"),
         "UUID" to listOf("UuidCreator", "java.util.UUID"),
@@ -77,8 +71,7 @@ internal object EditorSourceBoundaryVerifier {
             val isSettingsFeature = "/presentation/feature/settings/" in lowerPath
             val isSettingsHost = fileName.endsWith("host.kt")
             val isSettingsUiSection = fileName.endsWith("section.kt")
-            val isTemporarilyAllowedSettingsUi = temporarySettingsUiAllowlist.any(lowerPath::endsWith)
-            if (isSettingsFeature && !isSettingsHost && !isTemporarilyAllowedSettingsUi && (
+            if (isSettingsFeature && !isSettingsHost && (
                 passiveUiNames.any(fileName::contains) || isSettingsUiSection ||
                     listOf("/component/", "/dialog/", "/sheet/").any(lowerPath::contains)
                 )

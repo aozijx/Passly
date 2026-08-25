@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.main
+package com.aozijx.passly.presentation.ui.settings.main
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetState
@@ -9,8 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.aozijx.passly.presentation.feature.settings.security.AppPasswordAction
-import com.aozijx.passly.presentation.feature.settings.main.component.AppPasswordDialogState
+import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogState
 
 @OptIn(ExperimentalMaterial3Api::class)
 internal class SettingsScreenLocalState {
@@ -83,13 +82,8 @@ internal class SettingsScreenLocalState {
         appPasswordConfirm = ""
     }
 
-    fun onAppPasswordSuccess(action: AppPasswordAction) {
-        activeAppPasswordDialog = when (action) {
-            AppPasswordAction.SET,
-            AppPasswordAction.CHANGE -> AppPasswordDialogState.None
-
-            AppPasswordAction.DISABLE -> AppPasswordDialogState.None
-        }
+    fun onAppPasswordSuccess() {
+        activeAppPasswordDialog = AppPasswordDialogState.None
         clearAppPasswordInputs()
     }
 }

@@ -1,35 +1,42 @@
 package com.aozijx.passly.presentation.feature.settings.main
 
 import android.content.Context
+import android.content.Intent
+import androidx.core.net.toUri
+import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.presentation.feature.settings.security.AppPasswordAction
-import com.aozijx.passly.presentation.feature.settings.main.component.AppPasswordDialogEvent
-import com.aozijx.passly.presentation.feature.settings.main.component.SettingsDialogEvent
-import com.aozijx.passly.presentation.feature.settings.main.component.SettingsDialogsActions
-import com.aozijx.passly.presentation.feature.settings.main.component.SettingsDialogsState
+import com.aozijx.passly.presentation.feature.settings.main.interaction.toFeatureModel
+import com.aozijx.passly.presentation.ui.settings.interaction.SwipeActionUiModel
+import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
+import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogEvent
+import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogEvent
+import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogsActions
+import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogsModel
 
 internal fun buildSettingsDialogsState(
     localState: SettingsScreenLocalState,
     swipeLeftAction: SwipeActionType,
     swipeRightAction: SwipeActionType,
-    backupDirectoryUri: String?,
-    context: Context
-): SettingsDialogsState = SettingsDialogsState(
+): SettingsDialogsModel = SettingsDialogsModel(
     showRightActionDialog = localState.showRightActionDialog,
     showLeftActionDialog = localState.showLeftActionDialog,
     showClearBackupDirConfirmDialog = localState.showClearBackupDirConfirmDialog,
     activeAppPasswordDialog = localState.activeAppPasswordDialog,
-    swipeLeftAction = swipeLeftAction,
-    swipeRightAction = swipeRightAction,
-    backupDirectoryUri = backupDirectoryUri,
-    context = context,
+    swipeLeftAction = SwipeActionUiModel.valueOf(swipeLeftAction.name),
+    swipeRightAction = SwipeActionUiModel.valueOf(swipeRightAction.name),
     appPasswordCurrent = localState.appPasswordCurrent,
     appPasswordNew = localState.appPasswordNew,
-    appPasswordConfirm = localState.appPasswordConfirm
+    appPasswordConfirm = localState.appPasswordConfirm,
+    isChangePasswordConfirmEnabled = localState.appPasswordCurrent.isNotEmpty() &&
+        AppPasswordPolicy.DEFAULT.acceptsLength(localState.appPasswordNew.length) &&
+        localState.appPasswordNew == localState.appPasswordConfirm,
 )
 
 internal fun buildSettingsDialogsActions(
     localState: SettingsScreenLocalState,
+    backupDirectoryUri: String?,
+    context: Context,
     onSetSwipeRightAction: (SwipeActionType) -> Unit,
     onSetSwipeLeftAction: (SwipeActionType) -> Unit,
     submitAppPasswordAction: (AppPasswordAction) -> Unit,
@@ -37,9 +44,19 @@ internal fun buildSettingsDialogsActions(
 ): SettingsDialogsActions = SettingsDialogsActions(
     onDialogEvent = { event ->
         when (event) {
-            is SettingsDialogEvent.SetSwipeRightAction -> onSetSwipeRightAction(event.action)
-            is SettingsDialogEvent.SetSwipeLeftAction -> onSetSwipeLeftAction(event.action)
-            SettingsDialogEvent.ClearBackupDirectory -> onClearBackupDirectory()
+            is SettingsDialogEvent.SetSwipeRightAction -> onSetSwipeRightAction(event.action.toFeatureModel())
+            is SettingsDialogEvent.SetSwipeLeftAction -> onSetSwipeLeftAction(event.action.toFeatureModel())
+            SettingsDialogEvent.ClearBackupDirectory -> {
+                if (!backupDirectoryUri.isNullOrBlank()) {
+                    runCatching {
+                        context.contentResolver.releasePersistableUriPermission(
+                            backupDirectoryUri.toUri(),
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                        )
+                    }
+                }
+                onClearBackupDirectory()
+            }
             SettingsDialogEvent.DismissRightActionDialog -> localState.dismissRightActionDialog()
             SettingsDialogEvent.DismissLeftActionDialog -> localState.dismissLeftActionDialog()
             SettingsDialogEvent.DismissClearBackupDirConfirmDialog ->

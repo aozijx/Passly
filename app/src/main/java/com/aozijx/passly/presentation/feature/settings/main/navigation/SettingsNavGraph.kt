@@ -45,11 +45,11 @@ import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSett
 import com.aozijx.passly.presentation.feature.settings.backup.DatabaseRecoveryViewModel
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.ui.settings.main.SettingsDetailPlaceholder
-import com.aozijx.passly.presentation.feature.settings.main.SettingsScreenDialogsHost
-import com.aozijx.passly.presentation.feature.settings.main.SettingsScreenLocalState
+import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenDialogsHost
+import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
 import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogsActions
 import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogsState
-import com.aozijx.passly.presentation.feature.settings.main.rememberSettingsScreenLocalState
+import com.aozijx.passly.presentation.ui.settings.main.rememberSettingsScreenLocalState
 import kotlinx.coroutines.launch
 
 /**
@@ -102,17 +102,11 @@ fun SettingsNavGraph(
         settingsViewModel.effects.collect { effect ->
             // 副作用
             when (effect) {
-                is SettingsEffect.AppPasswordSet -> localState.onAppPasswordSuccess(
-                    AppPasswordAction.SET
-                )
+                is SettingsEffect.AppPasswordSet -> localState.onAppPasswordSuccess()
 
-                is SettingsEffect.AppPasswordChanged -> localState.onAppPasswordSuccess(
-                    AppPasswordAction.CHANGE
-                )
+                is SettingsEffect.AppPasswordChanged -> localState.onAppPasswordSuccess()
 
-                is SettingsEffect.AppPasswordDisabled -> localState.onAppPasswordSuccess(
-                    AppPasswordAction.DISABLE
-                )
+                is SettingsEffect.AppPasswordDisabled -> localState.onAppPasswordSuccess()
 
                 is SettingsEffect.AppPasswordEntryAuthorized -> {
                     if (effect.alreadyEnabled) {
@@ -248,11 +242,11 @@ fun SettingsNavGraph(
             localState = localState,
             swipeLeftAction = interactionState.swipeLeftAction,
             swipeRightAction = interactionState.swipeRightAction,
-            backupDirectoryUri = dataState.directoryUri,
-            context = context
         ),
         actions = buildSettingsDialogsActions(
             localState = localState,
+            backupDirectoryUri = dataState.directoryUri,
+            context = context,
             onSetSwipeRightAction = {
                 settingsViewModel.onAction(SettingsUiAction.SetSwipeRightAction(it))
             },
