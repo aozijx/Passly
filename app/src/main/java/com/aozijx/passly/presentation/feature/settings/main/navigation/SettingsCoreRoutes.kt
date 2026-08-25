@@ -2,6 +2,9 @@ package com.aozijx.passly.presentation.feature.settings.main.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Modifier
@@ -19,6 +22,7 @@ import com.aozijx.passly.presentation.feature.settings.appearance.libraryQuickFi
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsViewModel
+import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsEffect
 import com.aozijx.passly.presentation.feature.settings.security.toPrivacySettingsUiModel
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsViewModel
@@ -82,6 +86,20 @@ internal fun CoreSettingsRouteContent(
         SettingsRoute.Privacy -> {
             val viewModel: PrivacySettingsViewModel = hiltViewModel()
             val state by viewModel.config.collectAsStateWithLifecycle()
+            val context = LocalContext.current
+            val clearedText = stringResource(com.aozijx.passly.R.string.notice_clipboard_cleared)
+            val notClearedText = stringResource(
+                com.aozijx.passly.R.string.settings_privacy_clipboard_not_owned
+            )
+            LaunchedEffect(viewModel) {
+                viewModel.effects.collect { effect ->
+                    val message = when (effect) {
+                        PrivacySettingsEffect.ClipboardCleared -> clearedText
+                        PrivacySettingsEffect.ClipboardNotCleared -> notClearedText
+                    }
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                }
+            }
             SettingsSecondaryPage(
                 title = stringResource(SettingsGroup.PRIVACY.titleRes),
                 onBack = onBack
@@ -104,7 +122,18 @@ internal fun CoreSettingsRouteContent(
                             viewModel.onAction(
                                 PrivacySettingsAction.SetSensitiveCopyReauthentication(it)
                             )
-                        }
+                        },
+                        onClipboardClearEnabledChange = {
+                            viewModel.onAction(PrivacySettingsAction.SetClipboardClearEnabled(it))
+                        },
+                        onClipboardClearDelayChange = {
+                            viewModel.onAction(
+                                PrivacySettingsAction.SetClipboardClearDelaySeconds(it)
+                            )
+                        },
+                        onClearClipboard = {
+                            viewModel.onAction(PrivacySettingsAction.ClearClipboardNow)
+                        },
                     )
                 }
             }
@@ -187,7 +216,7 @@ internal fun CoreSettingsRouteContent(
                                     it.toDomainModel()
                                 )
                             )
-                        }
+                        },
                     )
                 }
                 item {

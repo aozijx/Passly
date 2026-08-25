@@ -110,7 +110,12 @@
     <string name="settings_security_reauthenticate_sensitive_copies_description">直接复制隐藏的密码、CVV 或私钥前重新验证；已在当前详情页验证并显示的字段，复制时不重复验证</string>
     <string name="settings_privacy_sensitive_access_section">敏感数据访问</string>
     <string name="settings_privacy_clipboard_protection">自动清除剪贴板</string>
-    <string name="settings_privacy_clipboard_protection_description">Passly 写入的敏感内容会在 60 秒后或应用进入后台时清除，不会覆盖其他应用随后写入的内容</string>
+    <string name="settings_privacy_clipboard_protection_description">在设定时间后尝试清除 Passly 当前写入的敏感内容，不会清除后来复制的其他内容</string>
+    <string name="settings_privacy_clipboard_delay">清除延时</string>
+    <string name="settings_privacy_clipboard_delay_seconds">%1$d 秒</string>
+    <string name="settings_privacy_clear_clipboard_now">立即清除</string>
+    <string name="settings_privacy_clear_clipboard_now_description">仅清除 Passly 当前拥有的剪贴板内容</string>
+    <string name="settings_privacy_clipboard_not_owned">当前没有可由 Passly 清除的剪贴板内容</string>
     <string name="settings_security_auto_lock">自动锁定</string>
     <string name="settings_security_auto_lock_delay">自动锁定时间</string>
     <string name="settings_security_biometric_disabled_description">需要先验证现有凭据</string>

@@ -5,4 +5,7 @@ data class PrivacySettingsUiModel(
     val isFlipToLockEnabled: Boolean,
     val isFlipExitAndClearStackEnabled: Boolean,
     val reauthenticateSensitiveCopies: Boolean,
+    val clipboardClearEnabled: Boolean,
+    val clipboardClearDelaySeconds: Int,
+    val clipboardClearDelayOptions: List<Int>,
 )

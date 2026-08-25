@@ -110,7 +110,12 @@
     <string name="settings_security_reauthenticate_sensitive_copies_description">Verify before directly copying a hidden password, CVV, or private key. Copying a field already verified and revealed on this detail page does not verify again.</string>
     <string name="settings_privacy_sensitive_access_section">Sensitive data access</string>
     <string name="settings_privacy_clipboard_protection">Clear clipboard automatically</string>
-    <string name="settings_privacy_clipboard_protection_description">Sensitive content written by Passly is cleared after 60 seconds or when the app enters the background, without overwriting newer content from another app.</string>
+    <string name="settings_privacy_clipboard_protection_description">After the selected delay, Passly attempts to clear only its current sensitive clip and never newer copied content.</string>
+    <string name="settings_privacy_clipboard_delay">Clear delay</string>
+    <string name="settings_privacy_clipboard_delay_seconds">%1$d seconds</string>
+    <string name="settings_privacy_clear_clipboard_now">Clear now</string>
+    <string name="settings_privacy_clear_clipboard_now_description">Clears only the clipboard content currently owned by Passly</string>
+    <string name="settings_privacy_clipboard_not_owned">There is no current Passly clipboard content to clear</string>
     <string name="settings_security_auto_lock">Auto-lock</string>
     <string name="settings_security_auto_lock_delay">Auto-lock delay</string>
     <string name="settings_security_biometric_disabled_description">Existing credentials must be verified first</string>

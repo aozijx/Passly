@@ -110,7 +110,12 @@
     <string name="settings_security_reauthenticate_sensitive_copies_description">非表示のパスワード、CVV、秘密鍵を直接コピーする前に再認証します。この詳細画面ですでに認証して表示した項目は、コピー時に再認証しません。</string>
     <string name="settings_privacy_sensitive_access_section">機密データへのアクセス</string>
     <string name="settings_privacy_clipboard_protection">クリップボードを自動消去</string>
-    <string name="settings_privacy_clipboard_protection_description">Passly が書き込んだ機密内容は 60 秒後またはアプリがバックグラウンドに移動したときに消去され、他のアプリが後から書き込んだ内容は上書きしません。</string>
+    <string name="settings_privacy_clipboard_protection_description">設定時間後、Passly が現在書き込んだ機密内容だけを消去し、後からコピーされた内容は消去しません。</string>
+    <string name="settings_privacy_clipboard_delay">消去までの時間</string>
+    <string name="settings_privacy_clipboard_delay_seconds">%1$d 秒</string>
+    <string name="settings_privacy_clear_clipboard_now">今すぐ消去</string>
+    <string name="settings_privacy_clear_clipboard_now_description">Passly が現在所有するクリップボード内容だけを消去します</string>
+    <string name="settings_privacy_clipboard_not_owned">Passly が消去できるクリップボード内容はありません</string>
     <string name="settings_security_auto_lock">自動ロック</string>
     <string name="settings_security_auto_lock_delay">自動ロックまでの時間</string>
     <string name="settings_security_biometric_disabled_description">先に現在の資格情報を確認する必要があります</string>
