@@ -113,6 +113,7 @@ class EditorSourceBoundaryVerifierTest {
 
         assertEquals(4, violations.size)
         assertTrue(violations.all { it.contains("presentation UI") })
+        assertTrue(violations.all { it.contains("[PRESENTATION_UI_IMPORT]") })
     }
 
     @Test
@@ -126,6 +127,7 @@ class EditorSourceBoundaryVerifierTest {
 
         assertEquals(2, violations.size)
         assertTrue(violations.all { it.contains("ViewModel") })
+        assertTrue(violations.all { it.contains("[PRESENTATION_UI_VIEW_MODEL]") })
     }
 
     @Test

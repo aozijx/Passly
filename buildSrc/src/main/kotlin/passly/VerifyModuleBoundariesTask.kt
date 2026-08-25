@@ -82,7 +82,7 @@ abstract class VerifyModuleBoundariesTask : DefaultTask() {
         )
         if (sourceViolations.isNotEmpty()) {
             throw GradleException(
-                "Forbidden editor source dependencies:\n${sourceViolations.sorted().joinToString("\n")}",
+                "Forbidden source dependencies:\n${sourceViolations.sorted().joinToString("\n")}",
             )
         }
     }

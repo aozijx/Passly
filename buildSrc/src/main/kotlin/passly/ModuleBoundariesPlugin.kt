@@ -29,6 +29,7 @@ class ModuleBoundariesPlugin : Plugin<Project> {
                     include("core/common/src/**/*.kt")
                     include("data/src/**/*.kt")
                     include("domain/src/**/*.kt")
+                    include("runtime/session/src/**/*.kt")
                 },
             )
             sourceRoot.set(target.layout.projectDirectory)
