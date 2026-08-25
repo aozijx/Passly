@@ -106,7 +106,13 @@ private fun CandidateItem(
         ) {
             VaultItemIcon(
                 modifier = Modifier.size(32.dp),
-                candidate.entry
+                iconName = candidate.entry.profile.icon.name,
+                iconCustomPath = candidate.entry.profile.icon.customReference,
+                associatedAppPackage = candidate.entry.profile.associations.applicationIds.firstOrNull(),
+                entryTypeKey = candidate.entry.entryType.name,
+                title = candidate.entry.title,
+                username = candidate.entry.username,
+                associatedDomain = candidate.entry.associatedDomain,
             )
 
             Spacer(modifier = Modifier.width(12.dp))

@@ -18,36 +18,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aozijx.passly.core.media.toLocalIconImageModel
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
-
-@Composable
-fun VaultItemIcon(
-    modifier: Modifier = Modifier,
-    iconable: EntryListItem,
-    tint: Color = MaterialTheme.colorScheme.onSecondaryContainer,
-) = VaultItemIcon(
-    modifier = modifier,
-    iconName = iconable.profile.icon.name,
-    iconCustomPath = iconable.profile.icon.customReference,
-    associatedAppPackage = iconable.profile.associations.applicationIds.firstOrNull(),
-    classificationInput = EntryClassificationInput(
-        entryType = iconable.entryType,
-        title = iconable.title,
-        username = iconable.username,
-        urls = setOfNotNull(iconable.profile.associations.primaryUrl),
-        domains = iconable.profile.associations.domains,
-        packageNames = iconable.profile.associations.applicationIds,
-        appNames = setOfNotNull(
-            iconable.title.takeIf {
-                iconable.profile.associations.applicationIds.isNotEmpty() &&
-                    iconable.profile.associations.primaryUrl == null &&
-                    iconable.profile.associations.domains.isEmpty()
-            },
-        ),
-    ),
-    tint = tint,
-)
-
 @Composable
 fun VaultItemIcon(
     modifier: Modifier = Modifier,
