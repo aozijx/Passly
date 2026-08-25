@@ -14,7 +14,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
 import com.aozijx.passly.presentation.feature.backup.BackupUiAction
 import com.aozijx.passly.presentation.feature.backup.BackupViewModel
-import com.aozijx.passly.presentation.feature.settings.backup.component.BackupRestoreDetail
+import com.aozijx.passly.presentation.ui.settings.backup.BackupRestoreDetail
 import com.aozijx.passly.presentation.feature.settings.backup.component.BackupRestoreSheetHost
 import com.aozijx.passly.presentation.feature.settings.backup.component.BackupSheet
 import com.aozijx.passly.domain.sensitive.OwnedChars
