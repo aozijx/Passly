@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.main.interaction
+package com.aozijx.passly.presentation.ui.settings.interaction
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,27 +30,26 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.menu.MenuOptionText
-import com.aozijx.passly.domain.settings.model.SwipeActionType
 
 private val SWIPE_ACTIONS = listOf(
-    SwipeActionType.DELETE,
-    SwipeActionType.DETAIL,
-    SwipeActionType.COPY_PASSWORD,
-    SwipeActionType.COPY_USERNAME
+    SwipeActionUiModel.DELETE,
+    SwipeActionUiModel.DETAIL,
+    SwipeActionUiModel.COPY_PASSWORD,
+    SwipeActionUiModel.COPY_USERNAME
 )
 
-private fun SwipeActionType.icon(): ImageVector? = when (this) {
-    SwipeActionType.DELETE -> Icons.Default.Delete
-    SwipeActionType.DETAIL -> Icons.Default.Info
-    SwipeActionType.COPY_PASSWORD -> Icons.Default.ContentCopy
-    SwipeActionType.COPY_USERNAME -> Icons.Default.Person
+private fun SwipeActionUiModel.icon(): ImageVector? = when (this) {
+    SwipeActionUiModel.DELETE -> Icons.Default.Delete
+    SwipeActionUiModel.DETAIL -> Icons.Default.Info
+    SwipeActionUiModel.COPY_PASSWORD -> Icons.Default.ContentCopy
+    SwipeActionUiModel.COPY_USERNAME -> Icons.Default.Person
 }
 
 @Composable
-fun SwipeActionSelectDialog(
+internal fun SwipeActionSelectDialog(
     title: String,
-    currentAction: SwipeActionType,
-    onActionSelected: (SwipeActionType) -> Unit,
+    currentAction: SwipeActionUiModel,
+    onActionSelected: (SwipeActionUiModel) -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -62,14 +61,14 @@ fun SwipeActionSelectDialog(
                 SWIPE_ACTIONS.forEach { action ->
                     val isSelected = action == currentAction
                     val selectedBackground = when (action) {
-                        SwipeActionType.DELETE -> MaterialTheme.colorScheme.errorContainer
-                        SwipeActionType.COPY_PASSWORD, SwipeActionType.COPY_USERNAME -> MaterialTheme.colorScheme.secondaryContainer
-                        SwipeActionType.DETAIL -> MaterialTheme.colorScheme.primaryContainer
+                        SwipeActionUiModel.DELETE -> MaterialTheme.colorScheme.errorContainer
+                        SwipeActionUiModel.COPY_PASSWORD, SwipeActionUiModel.COPY_USERNAME -> MaterialTheme.colorScheme.secondaryContainer
+                        SwipeActionUiModel.DETAIL -> MaterialTheme.colorScheme.primaryContainer
                     }
                     val selectedContentColor = when (action) {
-                        SwipeActionType.DELETE -> MaterialTheme.colorScheme.onErrorContainer
-                        SwipeActionType.COPY_PASSWORD, SwipeActionType.COPY_USERNAME -> MaterialTheme.colorScheme.onSecondaryContainer
-                        SwipeActionType.DETAIL -> MaterialTheme.colorScheme.onPrimaryContainer
+                        SwipeActionUiModel.DELETE -> MaterialTheme.colorScheme.onErrorContainer
+                        SwipeActionUiModel.COPY_PASSWORD, SwipeActionUiModel.COPY_USERNAME -> MaterialTheme.colorScheme.onSecondaryContainer
+                        SwipeActionUiModel.DETAIL -> MaterialTheme.colorScheme.onPrimaryContainer
                     }
                     Row(
                         modifier = Modifier

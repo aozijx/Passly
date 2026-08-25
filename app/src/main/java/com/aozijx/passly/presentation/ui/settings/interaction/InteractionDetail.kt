@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.main.interaction
+package com.aozijx.passly.presentation.ui.settings.interaction
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -6,11 +6,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
-import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsUiState
+
+internal data class InteractionDetailUiModel(
+    val isSwipeEnabled: Boolean,
+    val swipeLeftAction: SwipeActionUiModel,
+    val swipeRightAction: SwipeActionUiModel,
+)
 
 @Composable
 internal fun InteractionDetail(
-    state: InteractionSettingsUiState,
+    state: InteractionDetailUiModel,
     onSwipeEnabledChange: (Boolean) -> Unit,
     onLeftSwipeActionClick: () -> Unit,
     onRightSwipeActionClick: () -> Unit,

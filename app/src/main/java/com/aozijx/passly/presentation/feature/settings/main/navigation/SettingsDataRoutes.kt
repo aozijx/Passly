@@ -47,11 +47,12 @@ import com.aozijx.passly.presentation.ui.settings.autofill.AutofillDetail
 import com.aozijx.passly.presentation.ui.settings.backup.DataManagementDetail
 import com.aozijx.passly.presentation.feature.settings.main.general.GeneralDetail
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationDetail
-import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionDetail
+import com.aozijx.passly.presentation.ui.settings.interaction.InteractionDetail
+import com.aozijx.passly.presentation.feature.settings.main.interaction.toUiModel
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 import com.aozijx.passly.presentation.ui.settings.security.RecoveryCodeDetail
 import com.aozijx.passly.presentation.ui.settings.security.RecoveryCodeSheet
-import com.aozijx.passly.presentation.feature.settings.main.SettingsScreenLocalState
+import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,7 +77,7 @@ internal fun DataSettingsRouteContent(
             ) {
                 item {
                     InteractionDetail(
-                        state = state,
+                        state = state.toUiModel(),
                         onSwipeEnabledChange = {
                             interactionViewModel.onAction(
                                 InteractionSettingsAction.SetSwipeEnabled(it)

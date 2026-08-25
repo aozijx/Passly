@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.main.interaction
+package com.aozijx.passly.presentation.ui.settings.interaction
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Swipe
@@ -9,13 +9,14 @@ import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.domain.settings.model.SwipeActionType
+
+internal enum class SwipeActionUiModel { DELETE, DETAIL, COPY_PASSWORD, COPY_USERNAME }
 
 @Composable
-fun SwipeGestureSettingsSection(
+internal fun SwipeGestureSettingsSection(
     isSwipeEnabled: Boolean,
-    swipeLeftAction: SwipeActionType,
-    swipeRightAction: SwipeActionType,
+    swipeLeftAction: SwipeActionUiModel,
+    swipeRightAction: SwipeActionUiModel,
     onSwipeEnabledChange: (Boolean) -> Unit,
     onLeftSwipeActionClick: () -> Unit,
     onRightSwipeActionClick: () -> Unit
@@ -50,11 +51,11 @@ fun SwipeGestureSettingsSection(
 }
 
 @Composable
-internal fun SwipeActionType.localizedLabel(): String = stringResource(
+internal fun SwipeActionUiModel.localizedLabel(): String = stringResource(
     when (this) {
-        SwipeActionType.DELETE -> R.string.settings_swipe_action_delete
-        SwipeActionType.DETAIL -> R.string.settings_swipe_action_detail
-        SwipeActionType.COPY_PASSWORD -> R.string.settings_swipe_action_copy_password
-        SwipeActionType.COPY_USERNAME -> R.string.settings_swipe_action_copy_username
+        SwipeActionUiModel.DELETE -> R.string.settings_swipe_action_delete
+        SwipeActionUiModel.DETAIL -> R.string.settings_swipe_action_detail
+        SwipeActionUiModel.COPY_PASSWORD -> R.string.settings_swipe_action_copy_password
+        SwipeActionUiModel.COPY_USERNAME -> R.string.settings_swipe_action_copy_username
     }
 )
