@@ -7,6 +7,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.domain.entry.otp.OtpGenerator
 import com.aozijx.passly.data.local.database.port.EntryDataRefreshNotifier
 import com.aozijx.passly.data.repository.entry.paging.EntryPagingStore
@@ -74,11 +75,16 @@ class VaultViewModel @Inject constructor(
     val entryFieldReader: EntryFieldReader,
     private val dataRefreshNotifier: EntryDataRefreshNotifier,
     private val sessionStateProvider: SessionStateProvider,
-    private val accessPolicy: SecureSessionAccessPolicy
+    private val accessPolicy: SecureSessionAccessPolicy,
+    private val clipboardCopyController: ClipboardCopyController,
 ) : ViewModel() {
 
     private val _effects = Channel<VaultEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
+
+    fun copySensitive(text: String) {
+        viewModelScope.launch { clipboardCopyController.copySensitive(text) }
+    }
 
     private val _uiState = MutableStateFlow(VaultUiState())
     val uiState: StateFlow<VaultUiState> = _uiState.asStateFlow()

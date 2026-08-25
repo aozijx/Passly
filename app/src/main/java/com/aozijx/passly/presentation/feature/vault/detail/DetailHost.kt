@@ -1,11 +1,8 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
-import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.presentation.feature.vault.detail.DetailAuthenticate
@@ -31,9 +28,9 @@ fun DetailHost(
     onUpdateInteraction: () -> Unit,
     onAutoUnlockTotp: (Entry) -> Unit,
     onAuthenticate: DetailAuthenticate,
+    onCopySensitive: (String) -> Unit,
     onOpenRelatedEntry: (Entry) -> Unit
 ) {
-    val context = LocalContext.current
 
     // 初始进入和交互更新
     LaunchedEffect(Unit) {
@@ -65,13 +62,6 @@ fun DetailHost(
         }
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            ClipboardUtils.clearIfOwned(context)
-            onAction(DetailUiAction.ClearSensitiveState)
-        }
-    }
-
     DetailScreen(
         model = detailScreenUiModel(entry, uiState, otpUiState),
         onBack = onBack,
@@ -89,6 +79,7 @@ fun DetailHost(
             onAction = onAction,
             onInteraction = onUpdateInteraction,
             onAuthenticate = onAuthenticate,
+            onCopySensitive = onCopySensitive,
             onOpenRelatedEntry = onOpenRelatedEntry
         )
     }

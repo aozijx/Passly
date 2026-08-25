@@ -236,6 +236,7 @@ fun PasslyNavHost(
                             uiState = detailUiState,
                             otpUiState = currentOtpState,
                             onAction = detailViewModel::onAction,
+                            onCopySensitive = detailViewModel::copySensitive,
                             onBack = { navController.popBackStack() },
                             onUpdateInteraction = {
                                 appShellViewModel.onAction(AppShellUiAction.UpdateInteraction)

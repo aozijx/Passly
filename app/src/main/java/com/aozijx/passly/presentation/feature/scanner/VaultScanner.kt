@@ -117,6 +117,7 @@ fun VaultScanner(
     ) {
         ScannerView(
             scanResult = scanResult,
+            onCopyResult = scannerViewModel::copySensitive,
             isScanning = scannerUiState.isScanning,
             showResultCard = scannedTotp == null,
             onBarcodeDetected = { barcode ->

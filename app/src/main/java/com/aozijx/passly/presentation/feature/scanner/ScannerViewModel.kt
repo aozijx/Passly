@@ -5,6 +5,8 @@ import android.net.Uri
 import android.os.VibrationEffect
 import android.os.VibratorManager
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.core.otp.OtpAuthUriCodec
 import com.aozijx.passly.core.util.QrCodeUtils
 import com.aozijx.passly.presentation.feature.scanner.ImageRef
@@ -16,6 +18,7 @@ import com.aozijx.passly.presentation.feature.scanner.ScannerReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +27,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ScannerViewModel @Inject constructor(
-    @param:ApplicationContext private val appContext: Context
+    @param:ApplicationContext private val appContext: Context,
+    private val clipboardCopyController: ClipboardCopyController,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ScannerUiState())
@@ -35,6 +39,10 @@ class ScannerViewModel @Inject constructor(
 
     // 防抖：缓存上次扫描结果
     private var lastScannedBarcode: String? = null
+
+    fun copySensitive(text: String) {
+        viewModelScope.launch { clipboardCopyController.copySensitive(text) }
+    }
 
     fun onAction(action: ScannerUiAction) {
         when (action) {

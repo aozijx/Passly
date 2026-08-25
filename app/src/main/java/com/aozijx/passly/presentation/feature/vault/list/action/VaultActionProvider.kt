@@ -12,7 +12,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
@@ -59,7 +58,7 @@ fun rememberVaultActionProvider(
                 totpStates.value[item.id.value]?.let { state ->
                     val code = state.code
                     if (!code.isNullOrEmpty() && !code.contains("-")) {
-                        ClipboardUtils.copy(context, code)
+                        vaultViewModel.copySensitive(code)
                         Toast.makeText(
                             context, fieldCopiedFormat.format(totpLabel), Toast.LENGTH_SHORT
                         ).show()
@@ -73,7 +72,7 @@ fun rememberVaultActionProvider(
                         val rawValue =
                             vaultViewModel.entryFieldReader.getFieldValue(fullEntry, fieldKey)
                                 ?: return@launch
-                        ClipboardUtils.copy(context, rawValue)
+                        vaultViewModel.copySensitive(rawValue)
                         Toast.makeText(
                             context,
                             fieldCopiedFormat.format(label),

@@ -2,6 +2,7 @@ package com.aozijx.passly.presentation.feature.vault.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.model.SensitiveAccessAction
@@ -52,6 +53,7 @@ class DetailViewModel @Inject constructor(
     private val entryTypePolicy: EntryTypePolicy,
     private val accessPolicy: DetailAccessPolicy,
     private val authorizationGate: AuthorizationGate,
+    private val clipboardCopyController: ClipboardCopyController,
 ) : ViewModel() {
     private val entryAnalyzer = DetailEntryAnalyzer(entryTypePolicy)
 
@@ -65,6 +67,10 @@ class DetailViewModel @Inject constructor(
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
     private val _effects = Channel<DetailEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
+
+    fun copySensitive(text: String) {
+        viewModelScope.launch { clipboardCopyController.copySensitive(text) }
+    }
 
     init {
         viewModelScope.launch {

@@ -46,7 +46,6 @@ import com.aozijx.passly.core.permission.compose.rememberPermissionRequestHost
 import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
 import com.aozijx.passly.core.permission.model.PermissionStatus
 import com.aozijx.passly.core.permission.model.RuntimePermission
-import com.aozijx.passly.core.platform.ClipboardUtils
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
@@ -66,6 +65,7 @@ private class ScannerCameraSession {
 @Composable
 fun ScannerView(
     onBarcodeDetected: (String) -> Unit,
+    onCopyResult: (String) -> Unit,
     modifier: Modifier = Modifier,
     onPermissionDenied: () -> Unit = {},
     isScanning: Boolean = true,
@@ -232,7 +232,7 @@ fun ScannerView(
                                         .show()
                                 }
                             } else {
-                                ClipboardUtils.copy(context, scanResult)
+                                onCopyResult(scanResult)
                                 Toast.makeText(context, copySucceededText, Toast.LENGTH_SHORT)
                                     .show()
                             }

@@ -1,16 +1,13 @@
 package com.aozijx.passly.app
 
-import android.content.Context
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
-import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -34,7 +31,6 @@ class AppLifecycleObserver @Inject constructor(
     private val authenticationManager: AuthenticationManager,
     private val diagnosticsRuntime: DiagnosticsRuntimeController,
     private val idleTimeoutSettings: IdleTimeoutSettings,
-    @param:ApplicationContext private val context: Context,
 ) : DefaultLifecycleObserver {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -45,7 +41,6 @@ class AppLifecycleObserver @Inject constructor(
     }
 
     override fun onStop(owner: LifecycleOwner) {
-        ClipboardUtils.clearIfOwned(context)
         scope.launch {
             val lockOnBackground = idleTimeoutSettings.isLockOnBackground.first()
             val recoveryMode = authenticationManager.state.value is AuthenticationState.RecoveryMode

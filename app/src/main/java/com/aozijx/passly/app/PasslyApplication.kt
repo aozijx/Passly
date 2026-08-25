@@ -16,8 +16,6 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
-import com.aozijx.passly.app.message.contract.AppNoticePublisher
-import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService
@@ -55,9 +53,6 @@ class PasslyApplication : Application() {
     lateinit var diagnosticsRuntimeController: DiagnosticsRuntimeController
 
     @Inject
-    lateinit var appNoticePublisher: AppNoticePublisher
-
-    @Inject
     lateinit var biometricRotationReconciler: BiometricRotationReconciler
 
     private val diagnosticsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -81,7 +76,6 @@ class PasslyApplication : Application() {
 
         // 诊断与通知
         diagnosticsRuntimeController.start(diagnosticsScope)
-        ClipboardUtils.installNoticePublisher(appNoticePublisher)
 
         // 生物识别轮换对账（后台执行）
         diagnosticsScope.launch { biometricRotationReconciler.reconcile() }

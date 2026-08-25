@@ -17,7 +17,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.util.PathDisplayFormatter
-import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.presentation.feature.backup.BackupSettingsFeature
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -276,7 +275,7 @@ internal fun DataSettingsRouteContent(
                         recoveryCode = code,
                         sheetState = localState.recoveryCodeSheetState,
                         onCopy = {
-                            ClipboardUtils.copy(context, code)
+                            settingsViewModel.copySensitive(code)
                             Toast.makeText(
                                 context,
                                 copySuccessMessage,

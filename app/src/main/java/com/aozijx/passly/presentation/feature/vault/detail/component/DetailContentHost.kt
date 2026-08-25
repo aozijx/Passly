@@ -8,7 +8,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.otp.OtpAuthUriCodec
-import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -66,6 +65,7 @@ fun DetailContentHost(
     onAction: (DetailUiAction) -> Unit,
     onInteraction: () -> Unit,
     onAuthenticate: DetailAuthenticate,
+    onCopySensitive: (String) -> Unit,
     onOpenRelatedEntry: (Entry) -> Unit
 ) {
     val entry = uiState.entry ?: return
@@ -92,8 +92,7 @@ fun DetailContentHost(
 
         if (DetailSectionKey.CREDENTIAL in registeredSections) {
             item {
-                val context = LocalContext.current
-                val actionHandler = DetailSectionActionHandler(onAuthenticate, onAction)
+                val actionHandler = DetailSectionActionHandler(onAuthenticate, onAction, onCopySensitive)
                 val revealedUsername = uiState.revealed(RevealedFieldKey.USERNAME)
                 val revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD)
 
@@ -116,7 +115,6 @@ fun DetailContentHost(
                     onPasswordClick = { onAction(DetailUiAction.ToggleVisibility(RevealedFieldKey.PASSWORD)) },
                     onUsernameCopy = {
                         copySensitiveField(
-                            context = context,
                             handler = actionHandler,
                             fieldName = "username",
                             revealedValue = revealedUsername,
@@ -125,7 +123,6 @@ fun DetailContentHost(
                     },
                     onPasswordCopy = {
                         copySensitiveField(
-                            context = context,
                             handler = actionHandler,
                             fieldName = "password",
                             revealedValue = revealedPassword,
@@ -154,7 +151,7 @@ fun DetailContentHost(
                     totpUri = totpUri,
                     onCodeClick = {
                         screenUiModel.otp?.code?.takeIf { it.isNotEmpty() && !it.contains("-") }?.let { code ->
-                            ClipboardUtils.copy(context, code)
+                            onCopySensitive(code)
                             Toast.makeText(
                                 context,
                                 copySuccessMessage,
@@ -169,8 +166,7 @@ fun DetailContentHost(
 
         if (DetailSectionKey.BANK_CARD in registeredSections) {
             item {
-                val context = LocalContext.current
-                val actionHandler = DetailSectionActionHandler(onAuthenticate, onAction)
+                val actionHandler = DetailSectionActionHandler(onAuthenticate, onAction, onCopySensitive)
                 val cardholder = uiState.revealed(RevealedFieldKey.CARDHOLDER)?.let { String(it.toCharArray()) }
                 val cardNumber = uiState.revealed(RevealedFieldKey.CARD_NUMBER)?.let { String(it.toCharArray()) }
                 val cvv = uiState.revealed(RevealedFieldKey.CVV)?.let { String(it.toCharArray()) }
@@ -214,9 +210,9 @@ fun DetailContentHost(
                             DetailBankCardFieldUiModel.CARD_NUMBER -> Triple("card number", cardNumber?.let(OwnedChars::fromString), null)
                             DetailBankCardFieldUiModel.CVV -> Triple("CVV", cvv?.let(OwnedChars::fromString), null)
                             DetailBankCardFieldUiModel.PAYMENT_PIN -> Triple("payment PIN", paymentPin?.let(OwnedChars::fromString), null)
-                            DetailBankCardFieldUiModel.EXPIRATION -> { card?.cardExpiry?.let { ClipboardUtils.copy(context, it) }; onAction(DetailUiAction.RecordAction("expiration", ActivityType.COPY_PASSWORD)); return@BankCardSection }
+                            DetailBankCardFieldUiModel.EXPIRATION -> { card?.cardExpiry?.let(actionHandler::copy); onAction(DetailUiAction.RecordAction("expiration", ActivityType.COPY_PASSWORD)); return@BankCardSection }
                         }
-                        copySensitiveField(context, actionHandler, name, revealed, source)
+                        copySensitiveField(actionHandler, name, revealed, source)
                     },
                     onReveal = { field ->
                         val key = when (field) {
@@ -239,30 +235,28 @@ fun DetailContentHost(
 
         if (DetailSectionKey.IDENTITY in registeredSections) {
             item {
-                val context = LocalContext.current
-                val actionHandler = DetailSectionActionHandler(onAuthenticate, onAction)
+                val actionHandler = DetailSectionActionHandler(onAuthenticate, onAction, onCopySensitive)
                 val idNumber = uiState.revealed(RevealedFieldKey.ID_NUMBER)?.let { String(it.toCharArray()) }
                 val hasIdNumber = SensitiveFieldKey.IDENTITY_NUMBER in uiState.sensitiveFieldKeys
                 IdCardSection(
                     model = DetailIdentityUiModel(hasIdNumber, idNumber, idNumber != null, entry.username),
-                    onIdNumberCopy = { copySensitiveField(context, actionHandler, "ID number", idNumber?.let(OwnedChars::fromString), null) },
+                    onIdNumberCopy = { copySensitiveField(actionHandler, "ID number", idNumber?.let(OwnedChars::fromString), null) },
                     onIdNumberReveal = { if (idNumber != null) revealField(RevealedFieldKey.ID_NUMBER, null) else onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.ID_NUMBER)) },
-                    onUsernameCopy = { ClipboardUtils.copy(context, entry.username); actionHandler.record("username", ActivityType.COPY_PASSWORD) },
+                    onUsernameCopy = { actionHandler.copy(entry.username); actionHandler.record("username", ActivityType.COPY_PASSWORD) },
                 )
             }
         }
 
         if (DetailSectionKey.WIFI in registeredSections) {
             item {
-                val context = LocalContext.current
-                val handler = DetailSectionActionHandler(onAuthenticate, onAction)
+                val handler = DetailSectionActionHandler(onAuthenticate, onAction, onCopySensitive)
                 val password = uiState.revealed(RevealedFieldKey.PASSWORD)?.let { String(it.toCharArray()) }
                 WifiSection(
                     model = DetailWifiUiModel(entry.username, password, password != null,
                         editState.isEditingPassword, editState.editedPassword,
                         entry.secret.wifi?.securityType ?: "WPA", entry.secret.wifi?.isHidden ?: false),
-                    onSsidCopy = { ClipboardUtils.copy(context, entry.username); handler.record("SSID", ActivityType.COPY_PASSWORD) },
-                    onPasswordCopy = { copySensitiveField(context, handler, "wifi password", password?.let(OwnedChars::fromString), entry.secret.wifi?.password) },
+                    onSsidCopy = { handler.copy(entry.username); handler.record("SSID", ActivityType.COPY_PASSWORD) },
+                    onPasswordCopy = { copySensitiveField(handler, "wifi password", password?.let(OwnedChars::fromString), entry.secret.wifi?.password) },
                     onPasswordReveal = { onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.PASSWORD)) },
                     onPasswordEditStarted = { editState.editedPassword = password.orEmpty(); editState.isEditingPassword = true },
                     onPasswordChanged = { editState.editedPassword = it },
@@ -273,8 +267,7 @@ fun DetailContentHost(
 
         if (DetailSectionKey.SSH in registeredSections) {
             item {
-                val context = LocalContext.current
-                val handler = DetailSectionActionHandler(onAuthenticate, onAction)
+                val handler = DetailSectionActionHandler(onAuthenticate, onAction, onCopySensitive)
                 val passphrase = uiState.revealed(RevealedFieldKey.SSH_PASSPHRASE)?.let { String(it.toCharArray()) }
                 val privateKey = uiState.revealed(RevealedFieldKey.SSH_PRIVATE_KEY)?.let { String(it.toCharArray()) }
                 val hasPassphrase = SensitiveFieldKey.SSH_PASSPHRASE in uiState.sensitiveFieldKeys
@@ -283,13 +276,13 @@ fun DetailContentHost(
                     model = DetailSshUiModel(entry.username, passphrase, passphrase != null,
                         privateKey, privateKey != null, editState.isEditingPassword,
                         editState.editedPassword, (hasPrivateKey && privateKey == null) || (hasPassphrase && passphrase == null)),
-                    onFingerprintCopy = { ClipboardUtils.copy(context, entry.username); handler.record("fingerprint", ActivityType.COPY_PASSWORD) },
-                    onPassphraseCopy = { copySensitiveField(context, handler, "passphrase", passphrase?.let(OwnedChars::fromString), null) },
+                    onFingerprintCopy = { handler.copy(entry.username); handler.record("fingerprint", ActivityType.COPY_PASSWORD) },
+                    onPassphraseCopy = { copySensitiveField(handler, "passphrase", passphrase?.let(OwnedChars::fromString), null) },
                     onPassphraseReveal = { if (passphrase != null) revealField(RevealedFieldKey.SSH_PASSPHRASE, null) else onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SSH_PASSPHRASE)) },
                     onPassphraseEditStarted = { editState.editedPassword = passphrase.orEmpty(); editState.isEditingPassword = true },
                     onPassphraseChanged = { editState.editedPassword = it },
                     onPassphraseSaved = { if (it != passphrase) { onAction(DetailUiAction.CommitEntryUpdate(entry.withSshPassphrase(it))); revealField(RevealedFieldKey.SSH_PASSPHRASE, OwnedChars.fromString(it)) }; editState.isEditingPassword = false },
-                    onPrivateKeyClick = { if (privateKey == null) onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SSH_PRIVATE_KEY)) else copySensitiveField(context, handler, "private key", OwnedChars.fromString(privateKey), null) },
+                    onPrivateKeyClick = { if (privateKey == null) onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SSH_PRIVATE_KEY)) else copySensitiveField(handler, "private key", OwnedChars.fromString(privateKey), null) },
                     onRevealAll = { val keys = buildSet { if (hasPrivateKey && privateKey == null) add(RevealedFieldKey.SSH_PRIVATE_KEY); if (hasPassphrase && passphrase == null) add(RevealedFieldKey.SSH_PASSPHRASE) }; if (keys.isNotEmpty()) onAction(DetailUiAction.RevealHighSensitivityFields(keys)) },
                 )
             }
@@ -297,13 +290,12 @@ fun DetailContentHost(
 
         if (DetailSectionKey.SEED_PHRASE in registeredSections) {
             item {
-                val context = LocalContext.current
-                val handler = DetailSectionActionHandler(onAuthenticate, onAction)
+                val handler = DetailSectionActionHandler(onAuthenticate, onAction, onCopySensitive)
                 val seed = uiState.revealed(RevealedFieldKey.SEED_PHRASE)?.let { String(it.toCharArray()) }
                 SeedPhraseSection(
                     hasSeedPhrase = SensitiveFieldKey.SEED_PHRASE in uiState.sensitiveFieldKeys,
                     revealedSeedPhrase = seed,
-                    onCopy = { copySensitiveField(context, handler, "seed phrase", seed?.let(OwnedChars::fromString), null) },
+                    onCopy = { copySensitiveField(handler, "seed phrase", seed?.let(OwnedChars::fromString), null) },
                     onReveal = { if (seed != null) revealField(RevealedFieldKey.SEED_PHRASE, null) else onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SEED_PHRASE)) },
                 )
             }
@@ -311,17 +303,16 @@ fun DetailContentHost(
 
         if (DetailSectionKey.PASSKEY in registeredSections) {
             item {
-                val context = LocalContext.current
-                val handler = DetailSectionActionHandler(onAuthenticate, onAction)
+                val handler = DetailSectionActionHandler(onAuthenticate, onAction, onCopySensitive)
                 val passkeyData = uiState.revealed(RevealedFieldKey.PASSKEY_DATA)?.let { String(it.toCharArray()) }
                 val hardwareInfo = entry.secret.passkey?.hardwareKeyInfo
                 PasskeySection(
                     hasPasskeyData = SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE in uiState.sensitiveFieldKeys,
                     revealedPasskeyData = passkeyData,
                     hardwareKeyInfo = hardwareInfo,
-                    onPasskeyCopy = { copySensitiveField(context, handler, "passkey data", passkeyData?.let(OwnedChars::fromString), null) },
+                    onPasskeyCopy = { copySensitiveField(handler, "passkey data", passkeyData?.let(OwnedChars::fromString), null) },
                     onPasskeyReveal = { if (passkeyData != null) revealField(RevealedFieldKey.PASSKEY_DATA, null) else onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.PASSKEY_DATA)) },
-                    onHardwareKeyCopy = { hardwareInfo?.let { ClipboardUtils.copy(context, it); handler.record("hardware key info", ActivityType.COPY_PASSWORD) } },
+                    onHardwareKeyCopy = { hardwareInfo?.let { handler.copy(it); handler.record("hardware key info", ActivityType.COPY_PASSWORD) } },
                 )
             }
         }
