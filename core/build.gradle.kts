@@ -45,4 +45,5 @@ dependencies {
     implementation(libs.markdown.renderer)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
