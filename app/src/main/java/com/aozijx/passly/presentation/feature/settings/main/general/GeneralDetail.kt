@@ -24,6 +24,7 @@ import com.aozijx.passly.presentation.feature.settings.main.general.GeneralSetti
 import com.aozijx.passly.presentation.feature.settings.main.general.GeneralSettingsViewModel
 import com.aozijx.passly.presentation.ui.settings.general.AboutSettingsSection
 import com.aozijx.passly.presentation.ui.settings.general.CacheSettingsSection
+import com.aozijx.passly.presentation.ui.settings.general.LogSettingsSection
 
 @Composable
 internal fun GeneralDetail() {
@@ -31,8 +32,10 @@ internal fun GeneralDetail() {
     val generalViewModel: GeneralSettingsViewModel = hiltViewModel()
     val generalState by generalViewModel.uiState.collectAsStateWithLifecycle()
     val diagnosticsViewModel: DiagnosticsSettingsViewModel = hiltViewModel()
+    val diagnosticsState by diagnosticsViewModel.uiState.collectAsStateWithLifecycle()
     val cacheClearedMessage = stringResource(R.string.settings_general_cache_cleared)
     val featurePendingMessage = stringResource(R.string.settings_general_feature_pending)
+    val logExportFailedMessage = stringResource(R.string.settings_log_export_failed)
 
     // 一次性效果（MVI）：缓存清理提示与页面级跳转均由页面 VM 发出，UI 只负责执行。
     LaunchedEffect(generalViewModel, cacheClearedMessage, featurePendingMessage) {
@@ -57,6 +60,15 @@ internal fun GeneralDetail() {
         }
     }
 
+    LaunchedEffect(diagnosticsViewModel, logExportFailedMessage) {
+        diagnosticsViewModel.events.collect { effect ->
+            when (effect) {
+                DiagnosticsSettingsEffect.ExportFailed ->
+                    Toast.makeText(context, logExportFailedMessage, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -70,7 +82,22 @@ internal fun GeneralDetail() {
 
         Spacer(Modifier.height(24.dp))
 
-        LogSettingsSection(viewModel = diagnosticsViewModel)
+        LogSettingsSection(
+            fileLoggingEnabled = diagnosticsState.fileLoggingEnabled,
+            isViewerOpen = diagnosticsState.isViewerOpen,
+            logContent = diagnosticsState.logContent,
+            logByteCount = diagnosticsState.logByteCount,
+            isClearConfirmationOpen = diagnosticsState.isClearConfirmationOpen,
+            onFileLoggingEnabledChange = {
+                diagnosticsViewModel.onAction(DiagnosticsSettingsAction.SetFileLoggingEnabled(it))
+            },
+            onOpenViewer = { diagnosticsViewModel.onAction(DiagnosticsSettingsAction.OpenViewer) },
+            onCloseViewer = { diagnosticsViewModel.onAction(DiagnosticsSettingsAction.CloseViewer) },
+            onExport = { diagnosticsViewModel.onAction(DiagnosticsSettingsAction.Export) },
+            onRequestClear = { diagnosticsViewModel.onAction(DiagnosticsSettingsAction.RequestClear) },
+            onConfirmClear = { diagnosticsViewModel.onAction(DiagnosticsSettingsAction.ConfirmClear) },
+            onDismissClear = { diagnosticsViewModel.onAction(DiagnosticsSettingsAction.DismissClear) },
+        )
 
         Spacer(Modifier.height(24.dp))
 
