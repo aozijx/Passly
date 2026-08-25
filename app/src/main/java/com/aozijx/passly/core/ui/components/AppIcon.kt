@@ -6,36 +6,36 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import com.aozijx.passly.core.platform.packageinfo.InstalledAppRegistry
-import com.aozijx.passly.core.platform.packageinfo.InstalledAppRegistryProvider
+import com.aozijx.passly.core.platform.packageinfo.InstalledAppMetadata
+import com.aozijx.passly.core.platform.packageinfo.InstalledAppServicesProvider
 import dagger.hilt.android.EntryPointAccessors
 
 @Composable
 fun rememberAppIcon(packageName: String?): Painter? {
     val context = LocalContext.current
-    val packageUtils = remember {
+    val iconLoader = remember {
         EntryPointAccessors.fromApplication(
             context.applicationContext,
-            InstalledAppRegistryProvider::class.java
-        ).getInstalledAppRegistry()
+            InstalledAppServicesProvider::class.java
+        ).getInstalledAppIconLoader()
     }
     return remember(packageName) {
         packageName?.let {
-            packageUtils.loadIcon(it)?.asImageBitmap()?.let(::BitmapPainter)
+            iconLoader.loadIcon(it)?.asImageBitmap()?.let(::BitmapPainter)
         }
     }
 }
 
 @Composable
-fun rememberAppMetadata(packageName: String?): InstalledAppRegistry.AppMetadata? {
+fun rememberAppMetadata(packageName: String?): InstalledAppMetadata? {
     val context = LocalContext.current
-    val packageUtils = remember {
+    val appCatalog = remember {
         EntryPointAccessors.fromApplication(
             context.applicationContext,
-            InstalledAppRegistryProvider::class.java
-        ).getInstalledAppRegistry()
+            InstalledAppServicesProvider::class.java
+        ).getInstalledAppCatalog()
     }
     return remember(packageName) {
-        packageName?.let(packageUtils::getAppMetadata)
+        packageName?.let(appCatalog::getAppMetadata)
     }
 }

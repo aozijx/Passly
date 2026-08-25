@@ -41,8 +41,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.platform.packageinfo.InstalledAppRegistry
-import com.aozijx.passly.core.platform.packageinfo.InstalledAppRegistryProvider
+import com.aozijx.passly.core.platform.packageinfo.InstalledAppMetadata
+import com.aozijx.passly.core.platform.packageinfo.InstalledAppServicesProvider
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -50,18 +50,20 @@ import kotlinx.coroutines.withContext
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppPackagePickerBottomSheet(
-    onSelect: (InstalledAppRegistry.AppMetadata) -> Unit,
+    onSelect: (InstalledAppMetadata) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
-    val packageUtils = remember {
+    val services = remember {
         EntryPointAccessors.fromApplication(
             context.applicationContext,
-            InstalledAppRegistryProvider::class.java,
-        ).getInstalledAppRegistry()
+            InstalledAppServicesProvider::class.java,
+        )
     }
-    val apps by produceState(initialValue = emptyList(), packageUtils) {
-        value = withContext(Dispatchers.IO) { packageUtils.getLaunchableApps() }
+    val appCatalog = remember(services) { services.getInstalledAppCatalog() }
+    val iconLoader = remember(services) { services.getInstalledAppIconLoader() }
+    val apps by produceState(initialValue = emptyList(), appCatalog) {
+        value = withContext(Dispatchers.IO) { appCatalog.getLaunchableApps() }
     }
     var query by remember { mutableStateOf("") }
     val filtered = remember(apps, query) {
@@ -107,7 +109,7 @@ fun AppPackagePickerBottomSheet(
             ) {
                 items(filtered, key = { it.packageName }) { app ->
                     val icon = remember(app.packageName) {
-                        packageUtils.loadIcon(app.packageName)
+                        iconLoader.loadIcon(app.packageName)
                             ?.asImageBitmap()
                             ?.let(::BitmapPainter)
                     }

@@ -2,7 +2,7 @@ package com.aozijx.passly.data.repository.autofill
 
 import com.aozijx.passly.domain.autofill.AutofillScope
 import com.aozijx.passly.domain.autofill.port.CredentialServiceRepository
-import com.aozijx.passly.core.platform.packageinfo.InstalledAppRegistry
+import com.aozijx.passly.core.platform.packageinfo.InstalledAppCatalog
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.query.buildRecentEntryIdIntersectionQuery
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
@@ -36,7 +36,7 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
     private val secretFieldStore: SecretFieldStore,
     private val blindIndexer: BlindIndexer,
     private val entryCommands: EntryCommandRepository,
-    private val packageUtils: InstalledAppRegistry,
+    private val installedAppCatalog: InstalledAppCatalog,
 ) : CredentialServiceRepository {
     override suspend fun search(
         packageName: String?,
@@ -134,7 +134,7 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
         if (usernameValue.isBlank() && passwordValue.isBlank()) return false
         val applicationId = AutofillScope.normalizeApplicationId(packageName)
         val domain = AutofillScope.normalizeDomain(webDomain)
-        val appLabel = applicationId?.let(packageUtils::getAppMetadata)?.label
+        val appLabel = applicationId?.let(installedAppCatalog::getAppMetadata)?.label
         val title = resolveAutofillCredentialTitle(
             applicationId = applicationId,
             appLabel = appLabel,
