@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.main.general
+package com.aozijx.passly.presentation.ui.settings.general
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteSweep

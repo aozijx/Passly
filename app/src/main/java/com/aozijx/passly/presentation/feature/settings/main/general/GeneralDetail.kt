@@ -22,6 +22,8 @@ import com.aozijx.passly.presentation.feature.settings.main.general.DiagnosticsS
 import com.aozijx.passly.presentation.feature.settings.main.general.GeneralSettingsAction
 import com.aozijx.passly.presentation.feature.settings.main.general.GeneralSettingsEffect
 import com.aozijx.passly.presentation.feature.settings.main.general.GeneralSettingsViewModel
+import com.aozijx.passly.presentation.ui.settings.general.AboutSettingsSection
+import com.aozijx.passly.presentation.ui.settings.general.CacheSettingsSection
 
 @Composable
 internal fun GeneralDetail() {
