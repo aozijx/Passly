@@ -20,6 +20,7 @@ import com.aozijx.passly.core.util.PathDisplayFormatter
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.presentation.feature.backup.BackupSettingsFeature
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.autofill.AutofillSettingsAction
 import com.aozijx.passly.presentation.feature.settings.autofill.AutofillSettingsViewModel
@@ -30,6 +31,9 @@ import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.backup.DatabaseRecoveryViewModel
+import com.aozijx.passly.presentation.feature.settings.backup.DatabaseRecoveryUiAction
+import com.aozijx.passly.presentation.feature.settings.backup.toDetailState
+import com.aozijx.passly.presentation.feature.settings.backup.toSheetState
 import com.aozijx.passly.presentation.feature.settings.backup.handleBackupPathPicked
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsAction
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
@@ -40,7 +44,7 @@ import com.aozijx.passly.presentation.feature.settings.security.SecuritySettings
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.messageOrNull
 import com.aozijx.passly.presentation.ui.settings.autofill.AutofillDetail
-import com.aozijx.passly.presentation.feature.settings.backup.component.DataManagementDetail
+import com.aozijx.passly.presentation.ui.settings.backup.DataManagementDetail
 import com.aozijx.passly.presentation.feature.settings.main.general.GeneralDetail
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationDetail
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionDetail
@@ -151,8 +155,8 @@ internal fun DataSettingsRouteContent(
             ) {
                 item {
                     DataManagementDetail(
-                        state = state,
-                        recoveryState = recoveryState,
+                        state = state.toDetailState(),
+                        recoveryState = recoveryState.toSheetState(),
                         isClearingDatabase = settingsState.isClearingDatabase,
                         onAutoDownloadIconsChange = {
                             dataViewModel.onAction(
@@ -181,7 +185,26 @@ internal fun DataSettingsRouteContent(
                         onClearTrashError = {
                             dataViewModel.onAction(DataManagementSettingsUiAction.ClearTrashError)
                         },
-                        onRecoveryAction = recoveryViewModel::onAction,
+                        onRefreshRecoveryPackages = {
+                            recoveryViewModel.onAction(DatabaseRecoveryUiAction.RefreshRecoveryPackages)
+                        },
+                        onClearRecoveryResult = {
+                            recoveryViewModel.onAction(DatabaseRecoveryUiAction.ClearRecoveryResult)
+                        },
+                        onScanRecoveryPackage = {
+                            recoveryViewModel.onAction(DatabaseRecoveryUiAction.ScanRecoveryPackage(it))
+                        },
+                        onRestoreRecoveryPackage = {
+                            recoveryViewModel.onAction(DatabaseRecoveryUiAction.RestoreRecoveryPackage(it))
+                        },
+                        onToggleRecoveryType = {
+                            recoveryViewModel.onAction(
+                                DatabaseRecoveryUiAction.ToggleRecoveryType(EntryType.valueOf(it))
+                            )
+                        },
+                        onDeleteRecoveryPackage = {
+                            recoveryViewModel.onAction(DatabaseRecoveryUiAction.DeleteRecoveryPackage(it))
+                        },
                         onClearDatabase = {
                             settingsViewModel.onAction(SettingsUiAction.ClearDatabase)
                         }

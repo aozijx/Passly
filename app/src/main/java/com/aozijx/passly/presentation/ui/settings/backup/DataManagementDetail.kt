@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.backup.component
+package com.aozijx.passly.presentation.ui.settings.backup
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -19,13 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.vault.trash.component.TrashBottomSheet
-import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsUiState
-import com.aozijx.passly.presentation.feature.settings.backup.DatabaseRecoveryUiAction
-import com.aozijx.passly.presentation.feature.settings.backup.DatabaseRecoveryUiState
-import com.aozijx.passly.presentation.ui.settings.backup.DataSettingsSection
-import com.aozijx.passly.presentation.ui.settings.backup.DatabaseRecoverySheet
-import com.aozijx.passly.presentation.feature.settings.backup.toSheetState
+import com.aozijx.passly.presentation.ui.vault.list.trash.TrashBottomSheet
+import com.aozijx.passly.presentation.ui.vault.list.trash.TrashEntryUiModel
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.settingsGroupItem
@@ -34,15 +29,20 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 
 @Composable
 internal fun DataManagementDetail(
-    state: DataManagementSettingsUiState,
-    recoveryState: DatabaseRecoveryUiState,
+    state: DataManagementDetailState,
+    recoveryState: DatabaseRecoverySheetState,
     isClearingDatabase: Boolean,
     onAutoDownloadIconsChange: (Boolean) -> Unit,
     onRestoreTrashEntry: (entryId: String, expectedVersion: Int) -> Unit,
     onDeleteTrashEntry: (entryId: String, expectedVersion: Int) -> Unit,
     onEmptyTrash: () -> Unit,
     onClearTrashError: () -> Unit,
-    onRecoveryAction: (DatabaseRecoveryUiAction) -> Unit,
+    onRefreshRecoveryPackages: () -> Unit,
+    onClearRecoveryResult: () -> Unit,
+    onScanRecoveryPackage: (String) -> Unit,
+    onRestoreRecoveryPackage: (String) -> Unit,
+    onToggleRecoveryType: (String) -> Unit,
+    onDeleteRecoveryPackage: (String) -> Unit,
     onClearDatabase: () -> Unit
 ) {
     var showClearConfirmation by remember { mutableStateOf(false) }
@@ -81,7 +81,7 @@ internal fun DataManagementDetail(
                     subtitle = stringResource(R.string.settings_database_recovery_summary),
                     onClick = {
                         showDatabaseRecovery = true
-                        onRecoveryAction(DatabaseRecoveryUiAction.RefreshRecoveryPackages)
+                        onRefreshRecoveryPackages()
                     },
                 )
             )
@@ -121,10 +121,10 @@ internal fun DataManagementDetail(
             onClearTrashError()
         },
         onRestore = { entry ->
-            onRestoreTrashEntry(entry.id.value, entry.identity.version.value)
+            onRestoreTrashEntry(entry.id, entry.version)
         },
         onDelete = { entry ->
-            onDeleteTrashEntry(entry.id.value, entry.identity.version.value)
+            onDeleteTrashEntry(entry.id, entry.version)
         },
         onEmpty = onEmptyTrash,
         onClearError = onClearTrashError
@@ -132,17 +132,13 @@ internal fun DataManagementDetail(
 
     DatabaseRecoverySheet(
         visible = showDatabaseRecovery,
-        state = recoveryState.toSheetState(),
+        state = recoveryState,
         onDismiss = { showDatabaseRecovery = false },
-        onClearResult = { onRecoveryAction(DatabaseRecoveryUiAction.ClearRecoveryResult) },
-        onScan = { onRecoveryAction(DatabaseRecoveryUiAction.ScanRecoveryPackage(it)) },
-        onRestore = { onRecoveryAction(DatabaseRecoveryUiAction.RestoreRecoveryPackage(it)) },
-        onToggleType = {
-            onRecoveryAction(DatabaseRecoveryUiAction.ToggleRecoveryType(
-                com.aozijx.passly.domain.entry.model.EntryType.valueOf(it)
-            ))
-        },
-        onDelete = { onRecoveryAction(DatabaseRecoveryUiAction.DeleteRecoveryPackage(it)) },
+        onClearResult = onClearRecoveryResult,
+        onScan = onScanRecoveryPackage,
+        onRestore = onRestoreRecoveryPackage,
+        onToggleType = onToggleRecoveryType,
+        onDelete = onDeleteRecoveryPackage,
     )
 
     if (showClearConfirmation) {
@@ -183,3 +179,12 @@ internal fun DataManagementDetail(
         )
     }
 }
+
+internal data class DataManagementDetailState(
+    val isAutoDownloadIcons: Boolean,
+    val deletedEntries: List<TrashEntryUiModel>,
+    val isTrashLoading: Boolean,
+    val activeTrashEntryId: String?,
+    val isEmptyingTrash: Boolean,
+    val trashError: String?,
+)

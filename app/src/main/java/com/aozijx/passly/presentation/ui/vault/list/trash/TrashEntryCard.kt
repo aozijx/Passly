@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.trash.component
+package com.aozijx.passly.presentation.ui.vault.list.trash
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
@@ -31,18 +31,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.VaultItemIcon
-import com.aozijx.passly.core.ui.text.localizedName
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultEntryTypeUiModel
 
 @Composable
 internal fun TrashEntryCard(
-    entry: EntryListItem,
+    entry: TrashEntryUiModel,
     busy: Boolean,
     isOperating: Boolean,
     onRestore: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val deletedLabel = entry.deletedAt?.let { deletedAt ->
+    val deletedLabel = entry.deletedAtEpochMs?.let { deletedAt ->
         DateUtils.getRelativeTimeSpanString(
             deletedAt,
             System.currentTimeMillis(),
@@ -73,7 +72,15 @@ internal fun TrashEntryCard(
                         modifier = Modifier.size(52.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        VaultItemIcon(iconable = entry)
+                        VaultItemIcon(
+                            iconName = entry.iconName,
+                            iconCustomPath = entry.iconCustomPath,
+                            associatedAppPackage = entry.associatedAppPackage,
+                            entryTypeKey = entry.entryType.name,
+                            title = entry.title,
+                            username = entry.username,
+                            associatedDomain = entry.associatedDomain,
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.width(14.dp))
@@ -96,7 +103,7 @@ internal fun TrashEntryCard(
                             shape = MaterialTheme.shapes.small
                         ) {
                             Text(
-                                text = entry.entryType.localizedName(),
+                                text = stringResource(entry.entryType.labelRes),
                                 style = MaterialTheme.typography.labelMedium,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
@@ -171,3 +178,24 @@ internal fun TrashEntryCard(
         }
     }
 }
+
+private val VaultEntryTypeUiModel.labelRes: Int
+    get() = when (this) {
+        VaultEntryTypeUiModel.ACCOUNT -> R.string.entry_type_account
+        VaultEntryTypeUiModel.LOGIN -> R.string.entry_type_login
+        VaultEntryTypeUiModel.NOTE -> R.string.entry_type_note
+        VaultEntryTypeUiModel.BANK_CARD -> R.string.entry_type_bank_card
+        VaultEntryTypeUiModel.ID_CARD -> R.string.entry_type_id_card
+        VaultEntryTypeUiModel.PASSPORT -> R.string.entry_type_passport
+        VaultEntryTypeUiModel.DRIVER_LICENSE -> R.string.entry_type_driver_license
+        VaultEntryTypeUiModel.SSH_KEY -> R.string.entry_type_ssh_key
+        VaultEntryTypeUiModel.WIFI -> R.string.entry_type_wifi
+        VaultEntryTypeUiModel.PASSKEY -> R.string.entry_type_passkey
+        VaultEntryTypeUiModel.OTP -> R.string.entry_type_otp
+        VaultEntryTypeUiModel.DATABASE_CREDENTIAL -> R.string.entry_type_database_credential
+        VaultEntryTypeUiModel.SERVER_CREDENTIAL -> R.string.entry_type_server_credential
+        VaultEntryTypeUiModel.API_KEY -> R.string.entry_type_api_key
+        VaultEntryTypeUiModel.CRYPTO_WALLET -> R.string.entry_type_crypto_wallet
+        VaultEntryTypeUiModel.SEED_PHRASE -> R.string.entry_type_seed_phrase
+        VaultEntryTypeUiModel.RECOVERY_CODE -> R.string.entry_type_recovery_code
+    }

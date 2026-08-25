@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.trash.component
+package com.aozijx.passly.presentation.ui.vault.list.trash
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,26 +40,39 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultEntryTypeUiModel
+
+internal data class TrashEntryUiModel(
+    val id: String,
+    val version: Int,
+    val title: String,
+    val entryType: VaultEntryTypeUiModel,
+    val username: String,
+    val deletedAtEpochMs: Long?,
+    val associatedDomain: String?,
+    val associatedAppPackage: String?,
+    val iconName: String?,
+    val iconCustomPath: String?,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun TrashBottomSheet(
     visible: Boolean,
-    entries: List<EntryListItem>,
+    entries: List<TrashEntryUiModel>,
     isLoading: Boolean,
     activeEntryId: String?,
     isEmptying: Boolean,
     error: String?,
     onDismiss: () -> Unit,
-    onRestore: (EntryListItem) -> Unit,
-    onDelete: (EntryListItem) -> Unit,
+    onRestore: (TrashEntryUiModel) -> Unit,
+    onDelete: (TrashEntryUiModel) -> Unit,
     onEmpty: () -> Unit,
     onClearError: () -> Unit
 ) {
     if (!visible) return
 
-    var pendingDelete by remember { mutableStateOf<EntryListItem?>(null) }
+    var pendingDelete by remember { mutableStateOf<TrashEntryUiModel?>(null) }
     var confirmEmpty by remember { mutableStateOf(false) }
     val isBusy = activeEntryId != null || isEmptying
 
@@ -112,11 +125,11 @@ internal fun TrashBottomSheet(
                     ),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(entries, key = { entry -> entry.id.value }) { entry ->
+                    items(entries, key = { entry -> entry.id }) { entry ->
                         TrashEntryCard(
                             entry = entry,
                             busy = isBusy,
-                            isOperating = activeEntryId == entry.id.value,
+                            isOperating = activeEntryId == entry.id,
                             onRestore = { onRestore(entry) },
                             onDelete = { pendingDelete = entry }
                         )
