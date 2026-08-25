@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.backup.component
+package com.aozijx.passly.presentation.ui.settings.backup
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,27 +28,76 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.settings.backup.DatabaseRecoveryUiState
-import com.aozijx.passly.presentation.feature.settings.backup.DatabaseRecoveryUiAction
-import com.aozijx.passly.data.local.database.model.DatabaseRecoveryPackage
-import com.aozijx.passly.data.local.database.model.DatabaseRecoveryStatus
-import com.aozijx.passly.domain.entry.model.EntryType
 import java.text.DateFormat
 import java.util.Date
+
+internal data class DatabaseRecoverySheetState(
+    val packages: List<DatabaseRecoveryPackageItem> = emptyList(),
+    val isLoading: Boolean = true,
+    val activePackageId: String? = null,
+    val scan: DatabaseRecoveryScanItem? = null,
+    val selectedTypeIds: Set<String> = emptySet(),
+    val report: DatabaseRecoveryReportItem? = null,
+    val error: String? = null,
+) {
+    val isBusy: Boolean get() = activePackageId != null
+}
+
+internal data class DatabaseRecoveryPackageItem(
+    val id: String,
+    val createdAtEpochMs: Long,
+    val sizeBytes: Long,
+    val status: DatabaseRecoveryPackageStatus,
+)
+
+internal enum class DatabaseRecoveryPackageStatus {
+    PENDING_SCAN,
+    RECOVERABLE,
+    PARTIALLY_RECOVERABLE,
+    RESTORED,
+    UNREADABLE,
+}
+
+internal data class DatabaseRecoveryScanItem(
+    val packageId: String,
+    val recoverableTypes: List<DatabaseRecoveryTypeItem>,
+    val conflictingEntries: Int,
+    val damagedEntries: Int,
+    val recoverableAttachments: Int,
+) {
+    val recoverableEntries: Int get() = recoverableTypes.sumOf { it.count }
+}
+
+internal data class DatabaseRecoveryTypeItem(
+    val id: String,
+    val label: String,
+    val count: Int,
+)
+
+internal data class DatabaseRecoveryReportItem(
+    val restoredEntries: Int,
+    val restoredAttachments: Int,
+    val restoredRevisions: Int,
+    val skippedConflicts: Int,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DatabaseRecoverySheet(
     visible: Boolean,
-    state: DatabaseRecoveryUiState,
+    state: DatabaseRecoverySheetState,
     onDismiss: () -> Unit,
-    onAction: (DatabaseRecoveryUiAction) -> Unit,
+    onClearResult: () -> Unit,
+    onScan: (String) -> Unit,
+    onRestore: (String) -> Unit,
+    onToggleType: (String) -> Unit,
+    onDelete: (String) -> Unit,
 ) {
     if (!visible) return
     var deletePackageId by remember { mutableStateOf<String?>(null) }
     ModalBottomSheet(
         onDismissRequest = {
-            onAction(DatabaseRecoveryUiAction.ClearRecoveryResult)
+            onClearResult()
             onDismiss()
         },
     ) {
@@ -63,10 +112,10 @@ internal fun DatabaseRecoverySheet(
                 text = stringResource(R.string.settings_database_recovery_title),
                 style = MaterialTheme.typography.headlineSmall,
             )
-            state.recoveryError?.let {
+            state.error?.let {
                 Text(it, color = MaterialTheme.colorScheme.error)
             }
-            state.recoveryReport?.let { report ->
+            state.report?.let { report ->
                 Text(
                     stringResource(
                         R.string.database_recovery_report_summary,
@@ -79,36 +128,22 @@ internal fun DatabaseRecoverySheet(
                 )
             }
             when {
-                state.isRecoveryLoading -> Row(
+                state.isLoading -> Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
                 ) { CircularProgressIndicator() }
 
-                state.recoveryPackages.isEmpty() -> Text(
+                state.packages.isEmpty() -> Text(
                     stringResource(R.string.database_recovery_empty),
                 )
 
-                else -> state.recoveryPackages.forEach { recoveryPackage ->
+                else -> state.packages.forEach { recoveryPackage ->
                     RecoveryPackageCard(
                         recoveryPackage = recoveryPackage,
                         state = state,
-                        onScan = {
-                            onAction(
-                                DatabaseRecoveryUiAction.ScanRecoveryPackage(
-                                    recoveryPackage.id,
-                                ),
-                            )
-                        },
-                        onRestore = {
-                            onAction(
-                                DatabaseRecoveryUiAction.RestoreRecoveryPackage(
-                                    recoveryPackage.id,
-                                ),
-                            )
-                        },
-                        onToggleType = {
-                            onAction(DatabaseRecoveryUiAction.ToggleRecoveryType(it))
-                        },
+                        onScan = { onScan(recoveryPackage.id) },
+                        onRestore = { onRestore(recoveryPackage.id) },
+                        onToggleType = onToggleType,
                         onDelete = { deletePackageId = recoveryPackage.id },
                     )
                     HorizontalDivider()
@@ -126,7 +161,7 @@ internal fun DatabaseRecoverySheet(
                 TextButton(
                     onClick = {
                         deletePackageId = null
-                        onAction(DatabaseRecoveryUiAction.DeleteRecoveryPackage(packageId))
+                        onDelete(packageId)
                     },
                 ) {
                     Text(
@@ -146,15 +181,15 @@ internal fun DatabaseRecoverySheet(
 
 @Composable
 private fun RecoveryPackageCard(
-    recoveryPackage: DatabaseRecoveryPackage,
-    state: DatabaseRecoveryUiState,
+    recoveryPackage: DatabaseRecoveryPackageItem,
+    state: DatabaseRecoverySheetState,
     onScan: () -> Unit,
     onRestore: () -> Unit,
-    onToggleType: (EntryType) -> Unit,
+    onToggleType: (String) -> Unit,
     onDelete: () -> Unit,
 ) {
-    val busy = state.activeRecoveryPackageId == recoveryPackage.id
-    val scan = state.recoveryScan?.takeIf { it.packageId == recoveryPackage.id }
+    val busy = state.activePackageId == recoveryPackage.id
+    val scan = state.scan?.takeIf { it.packageId == recoveryPackage.id }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             stringResource(
@@ -192,14 +227,14 @@ private fun RecoveryPackageCard(
                 stringResource(R.string.database_recovery_select_types),
                 style = MaterialTheme.typography.titleSmall,
             )
-            it.recoverableByType.forEach { (type, count) ->
+            it.recoverableTypes.forEach { type ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
-                        checked = type in state.selectedRecoveryTypes,
-                        onCheckedChange = { onToggleType(type) },
-                        enabled = !state.isRecoveryBusy,
+                        checked = type.id in state.selectedTypeIds,
+                        onCheckedChange = { onToggleType(type.id) },
+                        enabled = !state.isBusy,
                     )
-                    Text("${type.name.replace('_', ' ')} ($count)")
+                    Text("${type.label} (${type.count})")
                 }
             }
         }
@@ -207,19 +242,19 @@ private fun RecoveryPackageCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
         ) {
-            TextButton(onClick = onDelete, enabled = !state.isRecoveryBusy) {
+            TextButton(onClick = onDelete, enabled = !state.isBusy) {
                 Text(
                     stringResource(R.string.database_recovery_delete),
                     color = MaterialTheme.colorScheme.error,
                 )
             }
-            OutlinedButton(onClick = onScan, enabled = !state.isRecoveryBusy) {
+            OutlinedButton(onClick = onScan, enabled = !state.isBusy) {
                 Text(stringResource(R.string.database_recovery_scan))
             }
             if (scan != null && scan.recoverableEntries > 0) {
                 Button(
                     onClick = onRestore,
-                    enabled = !state.isRecoveryBusy && state.selectedRecoveryTypes.isNotEmpty(),
+                    enabled = !state.isBusy && state.selectedTypeIds.isNotEmpty(),
                 ) { Text(stringResource(R.string.database_recovery_restore)) }
             }
         }
@@ -227,13 +262,13 @@ private fun RecoveryPackageCard(
 }
 
 @Composable
-private fun recoveryStatusLabel(status: DatabaseRecoveryStatus): String = stringResource(
+private fun recoveryStatusLabel(status: DatabaseRecoveryPackageStatus): String = stringResource(
     when (status) {
-        DatabaseRecoveryStatus.PENDING_SCAN -> R.string.database_recovery_status_pending
-        DatabaseRecoveryStatus.RECOVERABLE -> R.string.database_recovery_status_recoverable
-        DatabaseRecoveryStatus.PARTIALLY_RECOVERABLE -> R.string.database_recovery_status_partial
-        DatabaseRecoveryStatus.RESTORED -> R.string.database_recovery_status_restored
-        DatabaseRecoveryStatus.UNREADABLE -> R.string.database_recovery_status_unreadable
+        DatabaseRecoveryPackageStatus.PENDING_SCAN -> R.string.database_recovery_status_pending
+        DatabaseRecoveryPackageStatus.RECOVERABLE -> R.string.database_recovery_status_recoverable
+        DatabaseRecoveryPackageStatus.PARTIALLY_RECOVERABLE -> R.string.database_recovery_status_partial
+        DatabaseRecoveryPackageStatus.RESTORED -> R.string.database_recovery_status_restored
+        DatabaseRecoveryPackageStatus.UNREADABLE -> R.string.database_recovery_status_unreadable
     },
 )
 

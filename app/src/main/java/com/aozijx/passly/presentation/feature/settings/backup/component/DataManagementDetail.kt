@@ -24,6 +24,8 @@ import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSett
 import com.aozijx.passly.presentation.feature.settings.backup.DatabaseRecoveryUiAction
 import com.aozijx.passly.presentation.feature.settings.backup.DatabaseRecoveryUiState
 import com.aozijx.passly.presentation.ui.settings.backup.DataSettingsSection
+import com.aozijx.passly.presentation.ui.settings.backup.DatabaseRecoverySheet
+import com.aozijx.passly.presentation.feature.settings.backup.toSheetState
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.settingsGroupItem
@@ -130,9 +132,17 @@ internal fun DataManagementDetail(
 
     DatabaseRecoverySheet(
         visible = showDatabaseRecovery,
-        state = recoveryState,
+        state = recoveryState.toSheetState(),
         onDismiss = { showDatabaseRecovery = false },
-        onAction = onRecoveryAction,
+        onClearResult = { onRecoveryAction(DatabaseRecoveryUiAction.ClearRecoveryResult) },
+        onScan = { onRecoveryAction(DatabaseRecoveryUiAction.ScanRecoveryPackage(it)) },
+        onRestore = { onRecoveryAction(DatabaseRecoveryUiAction.RestoreRecoveryPackage(it)) },
+        onToggleType = {
+            onRecoveryAction(DatabaseRecoveryUiAction.ToggleRecoveryType(
+                com.aozijx.passly.domain.entry.model.EntryType.valueOf(it)
+            ))
+        },
+        onDelete = { onRecoveryAction(DatabaseRecoveryUiAction.DeleteRecoveryPackage(it)) },
     )
 
     if (showClearConfirmation) {
