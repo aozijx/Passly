@@ -1,7 +1,8 @@
 package com.aozijx.passly.app.diagnostics
 
 import android.os.Process
-import com.aozijx.passly.core.telemetry.AndroidLogSink
+import com.aozijx.passly.BuildConfig
+import com.aozijx.passly.core.telemetry.android.AndroidLogSink
 import com.aozijx.passly.core.telemetry.CompositeTelemetryReporter
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.EventLevel
@@ -26,7 +27,10 @@ class DiagnosticsRuntimeController @Inject constructor(
     private val fileEnabledUntil = AtomicLong(0L)
     private val fileStore = fileStoreFactory.create(fileEnabledUntil)
     val reporter: TelemetryReporter = CompositeTelemetryReporter(
-        AndroidLogSink(enabled = androidEnabled::get),
+        AndroidLogSink(
+            minimumLevel = if (BuildConfig.DEBUG) EventLevel.DEBUG else EventLevel.WARN,
+            enabled = androidEnabled::get,
+        ),
         TelemetryReporter(fileStore::write)
     )
 

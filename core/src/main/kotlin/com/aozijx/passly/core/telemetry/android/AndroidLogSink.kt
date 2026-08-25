@@ -1,7 +1,10 @@
-package com.aozijx.passly.core.telemetry
+package com.aozijx.passly.core.telemetry.android
 
 import android.util.Log
-import com.aozijx.passly.BuildConfig
+import com.aozijx.passly.core.telemetry.EventLevel
+import com.aozijx.passly.core.telemetry.SafeLogValue
+import com.aozijx.passly.core.telemetry.TelemetryEvent
+import com.aozijx.passly.core.telemetry.TelemetryReporter
 
 /**
  * Android Logcat 遥测发射器实现。
@@ -9,7 +12,7 @@ import com.aozijx.passly.BuildConfig
  * 将 [TelemetryEvent] 输出到 [Log.v]/[Log.d]/[Log.i]/[Log.w]/[Log.e]。
  */
 class AndroidLogSink(
-    private val minimumLevel: EventLevel = if (BuildConfig.DEBUG) EventLevel.DEBUG else EventLevel.WARN,
+    private val minimumLevel: EventLevel,
     private val enabled: () -> Boolean = { true }
 ) : TelemetryReporter {
 

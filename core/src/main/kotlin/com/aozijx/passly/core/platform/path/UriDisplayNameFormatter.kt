@@ -1,8 +1,8 @@
-package com.aozijx.passly.core.util
+package com.aozijx.passly.core.platform.path
 
-import androidx.core.net.toUri
+import java.net.URI
 
-object PathDisplayFormatter {
+object UriDisplayNameFormatter {
     fun format(rawUri: String?, maxLength: Int = 32): String? {
         if (rawUri.isNullOrBlank()) return null
         val fileName = extractFileName(rawUri) ?: rawUri
@@ -11,9 +11,9 @@ object PathDisplayFormatter {
     }
 
     private fun extractFileName(rawUri: String): String? =
-        runCatching { rawUri.toUri() }.getOrNull()
-            ?.lastPathSegment
-            ?.substringAfterLast(':', missingDelimiterValue = "")
+        runCatching { URI(rawUri).path }.getOrNull()
+            ?.substringAfterLast('/')
+            ?.let { segment -> segment.substringAfterLast(':', missingDelimiterValue = segment) }
             ?.takeIf { it.isNotBlank() }
 
     private fun truncateFileName(

@@ -1,11 +1,9 @@
 package com.aozijx.passly.presentation.feature.settings.main.general
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.platform.CacheUtils
+import com.aozijx.passly.app.cache.AppCacheManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -24,7 +22,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class GeneralSettingsViewModel @Inject constructor(
-    @param:ApplicationContext private val context: Context,
+    private val appCacheManager: AppCacheManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GeneralSettingsUiState())
@@ -68,7 +66,7 @@ class GeneralSettingsViewModel @Inject constructor(
         cacheOperationJob = viewModelScope.launch {
             _uiState.update { it.copy(isCalculating = true) }
             val size = withContext(Dispatchers.IO) {
-                CacheUtils.calculateTotalCacheSize(context)
+                appCacheManager.calculateTotalSize()
             }
             _uiState.update { it.copy(cacheSize = size, isCalculating = false) }
         }
@@ -79,8 +77,8 @@ class GeneralSettingsViewModel @Inject constructor(
         cacheOperationJob = viewModelScope.launch {
             _uiState.update { it.copy(isCalculating = true) }
             val size = withContext(Dispatchers.IO) {
-                CacheUtils.clearAllCache(context)
-                CacheUtils.calculateTotalCacheSize(context)
+                appCacheManager.clearAll()
+                appCacheManager.calculateTotalSize()
             }
             _uiState.update { it.copy(cacheSize = size, isCalculating = false) }
             _effects.trySend(GeneralSettingsEffect.CacheCleared)

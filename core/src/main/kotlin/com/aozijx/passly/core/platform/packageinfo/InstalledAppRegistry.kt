@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.platform
+package com.aozijx.passly.core.platform.packageinfo
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -21,7 +21,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class PackageUtils @Inject constructor(
+class InstalledAppRegistry @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val telemetry: TelemetryReporter,
 ) {
@@ -160,6 +160,6 @@ class PackageUtils @Inject constructor(
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
-interface PackageUtilsProvider {
-    fun getPackageUtils(): PackageUtils
+interface InstalledAppRegistryProvider {
+    fun getInstalledAppRegistry(): InstalledAppRegistry
 }

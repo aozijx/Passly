@@ -49,7 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.util.QrCodeUtils
+import com.aozijx.passly.app.qr.QrCodeEncoder
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailOtpUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -186,7 +186,7 @@ private fun QRcodeRender(
     onDismiss: () -> Unit
 ) {
     val bitmap = remember(totpUri, externalBitmap) {
-        externalBitmap ?: totpUri?.let { QrCodeUtils.generateQrCode(it, 512) }
+        externalBitmap ?: totpUri?.let { QrCodeEncoder.encode(it, 512) }
     }
 
     ModalBottomSheet(

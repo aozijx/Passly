@@ -8,7 +8,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.core.otp.OtpAuthUriCodec
-import com.aozijx.passly.core.util.QrCodeUtils
 import com.aozijx.passly.presentation.feature.scanner.ImageRef
 import com.aozijx.passly.presentation.feature.scanner.ScannerEffect
 import com.aozijx.passly.presentation.feature.scanner.ScannerUiAction
@@ -83,7 +82,7 @@ class ScannerViewModel @Inject constructor(
 
     private fun decodeImage(image: ImageRef) {
         val uri = Uri.parse(image.value)
-        QrCodeUtils.decodeFromUri(
+        BarcodeImageDecoder.decodeFromUri(
             context = appContext,
             uri = uri,
             onSuccess = { onBarcodeDetected(it) },

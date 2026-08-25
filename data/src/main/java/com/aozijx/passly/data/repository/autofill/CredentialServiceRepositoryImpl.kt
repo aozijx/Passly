@@ -2,7 +2,7 @@ package com.aozijx.passly.data.repository.autofill
 
 import com.aozijx.passly.domain.autofill.AutofillScope
 import com.aozijx.passly.domain.autofill.port.CredentialServiceRepository
-import com.aozijx.passly.core.platform.PackageUtils
+import com.aozijx.passly.core.platform.packageinfo.InstalledAppRegistry
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.query.buildRecentEntryIdIntersectionQuery
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
@@ -36,7 +36,7 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
     private val secretFieldStore: SecretFieldStore,
     private val blindIndexer: BlindIndexer,
     private val entryCommands: EntryCommandRepository,
-    private val packageUtils: PackageUtils,
+    private val packageUtils: InstalledAppRegistry,
 ) : CredentialServiceRepository {
     override suspend fun search(
         packageName: String?,

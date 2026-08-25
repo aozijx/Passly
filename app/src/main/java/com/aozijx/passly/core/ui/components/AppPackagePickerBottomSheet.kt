@@ -41,8 +41,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.platform.PackageUtils
-import com.aozijx.passly.core.platform.PackageUtilsProvider
+import com.aozijx.passly.core.platform.packageinfo.InstalledAppRegistry
+import com.aozijx.passly.core.platform.packageinfo.InstalledAppRegistryProvider
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -50,15 +50,15 @@ import kotlinx.coroutines.withContext
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppPackagePickerBottomSheet(
-    onSelect: (PackageUtils.AppMetadata) -> Unit,
+    onSelect: (InstalledAppRegistry.AppMetadata) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
     val packageUtils = remember {
         EntryPointAccessors.fromApplication(
             context.applicationContext,
-            PackageUtilsProvider::class.java,
-        ).getPackageUtils()
+            InstalledAppRegistryProvider::class.java,
+        ).getInstalledAppRegistry()
     }
     val apps by produceState(initialValue = emptyList(), packageUtils) {
         value = withContext(Dispatchers.IO) { packageUtils.getLaunchableApps() }

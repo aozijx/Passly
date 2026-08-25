@@ -16,7 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.core.util.PathDisplayFormatter
+import com.aozijx.passly.core.platform.path.UriDisplayNameFormatter
 import com.aozijx.passly.presentation.feature.backup.BackupSettingsFeature
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -217,7 +217,7 @@ internal fun DataSettingsRouteContent(
             val state by dataViewModel.uiState.collectAsStateWithLifecycle()
             val notSetText = stringResource(R.string.not_set)
             val pathLabel = remember(state.directoryUri) {
-                PathDisplayFormatter.format(state.directoryUri) ?: notSetText
+                UriDisplayNameFormatter.format(state.directoryUri) ?: notSetText
             }
             val backupPathPicker = rememberLauncherForActivityResult(
                 ActivityResultContracts.OpenDocumentTree()

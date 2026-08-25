@@ -6,8 +6,8 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import com.aozijx.passly.core.platform.PackageUtils
-import com.aozijx.passly.core.platform.PackageUtilsProvider
+import com.aozijx.passly.core.platform.packageinfo.InstalledAppRegistry
+import com.aozijx.passly.core.platform.packageinfo.InstalledAppRegistryProvider
 import dagger.hilt.android.EntryPointAccessors
 
 @Composable
@@ -16,8 +16,8 @@ fun rememberAppIcon(packageName: String?): Painter? {
     val packageUtils = remember {
         EntryPointAccessors.fromApplication(
             context.applicationContext,
-            PackageUtilsProvider::class.java
-        ).getPackageUtils()
+            InstalledAppRegistryProvider::class.java
+        ).getInstalledAppRegistry()
     }
     return remember(packageName) {
         packageName?.let {
@@ -27,13 +27,13 @@ fun rememberAppIcon(packageName: String?): Painter? {
 }
 
 @Composable
-fun rememberAppMetadata(packageName: String?): PackageUtils.AppMetadata? {
+fun rememberAppMetadata(packageName: String?): InstalledAppRegistry.AppMetadata? {
     val context = LocalContext.current
     val packageUtils = remember {
         EntryPointAccessors.fromApplication(
             context.applicationContext,
-            PackageUtilsProvider::class.java
-        ).getPackageUtils()
+            InstalledAppRegistryProvider::class.java
+        ).getInstalledAppRegistry()
     }
     return remember(packageName) {
         packageName?.let(packageUtils::getAppMetadata)
