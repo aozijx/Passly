@@ -9,7 +9,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.apppassword.AppPasswordSetDialog
-import com.aozijx.passly.presentation.feature.settings.security.component.AppPasswordActionDialog
+import com.aozijx.passly.presentation.ui.settings.security.AppPasswordActionDialog
 import com.aozijx.passly.presentation.feature.settings.security.component.AppPasswordChangeDialog
 import com.aozijx.passly.presentation.feature.settings.main.interaction.SwipeActionSelectDialog
 import com.aozijx.passly.presentation.feature.settings.main.component.AppPasswordDialogEvent

@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.security.component
+package com.aozijx.passly.presentation.ui.settings.security
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
