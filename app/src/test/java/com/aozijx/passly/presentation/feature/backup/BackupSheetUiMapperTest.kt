@@ -4,9 +4,9 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
-import com.aozijx.passly.presentation.ui.settings.backup.BackupEntryTypeUiModel
 import com.aozijx.passly.presentation.ui.settings.backup.BackupExportFormatUiModel
 import com.aozijx.passly.presentation.ui.settings.backup.BackupImportModeUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultEntryTypeUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
@@ -31,7 +31,7 @@ class BackupSheetUiMapperTest {
             assertEquals(BackupImportModeUiModel.OVERWRITE, result.importMode)
             assertEquals(BackupExportFormatUiModel.ENCRYPTED, result.selectedExportFormat)
             assertEquals(
-                setOf(BackupEntryTypeUiModel.LOGIN, BackupEntryTypeUiModel.NOTE),
+                setOf(VaultEntryTypeUiModel.LOGIN, VaultEntryTypeUiModel.NOTE),
                 result.includedEntryTypes,
             )
             assertFalse(result.includeIcons)
@@ -46,7 +46,7 @@ class BackupSheetUiMapperTest {
         assertEquals(ImportMode.APPEND, BackupImportModeUiModel.APPEND.toFeatureModel())
         assertEquals(
             setOf(EntryType.WIFI, EntryType.SSH_KEY),
-            setOf(BackupEntryTypeUiModel.WIFI, BackupEntryTypeUiModel.SSH_KEY).toFeatureModels(),
+            setOf(VaultEntryTypeUiModel.WIFI, VaultEntryTypeUiModel.SSH_KEY).toFeatureModels(),
         )
     }
 }

@@ -47,7 +47,7 @@ import com.aozijx.passly.presentation.feature.settings.main.interaction.Interact
 import com.aozijx.passly.presentation.ui.settings.main.SettingsDetailPlaceholder
 import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenDialogsHost
 import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
-import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogsActions
+import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogEventHandler
 import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogsState
 import com.aozijx.passly.presentation.ui.settings.main.rememberSettingsScreenLocalState
 import kotlinx.coroutines.launch
@@ -243,7 +243,7 @@ fun SettingsNavGraph(
             swipeLeftAction = interactionState.swipeLeftAction,
             swipeRightAction = interactionState.swipeRightAction,
         ),
-        actions = buildSettingsDialogsActions(
+        onEvent = buildSettingsDialogEventHandler(
             localState = localState,
             backupDirectoryUri = dataState.directoryUri,
             context = context,

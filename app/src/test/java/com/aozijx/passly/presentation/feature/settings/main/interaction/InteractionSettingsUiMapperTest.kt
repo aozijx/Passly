@@ -1,7 +1,7 @@
 package com.aozijx.passly.presentation.feature.settings.main.interaction
 
 import com.aozijx.passly.domain.settings.model.SwipeActionType
-import com.aozijx.passly.presentation.ui.settings.interaction.SwipeActionUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -15,9 +15,9 @@ class InteractionSettingsUiMapperTest {
             swipeRightAction = SwipeActionType.COPY_USERNAME,
         ).toUiModel()
 
-        assertEquals(SwipeActionUiModel.DELETE, result.swipeLeftAction)
-        assertEquals(SwipeActionUiModel.COPY_USERNAME, result.swipeRightAction)
-        SwipeActionUiModel.entries.forEach {
+        assertEquals(VaultSwipeActionUiModel.DELETE, result.swipeLeftAction)
+        assertEquals(VaultSwipeActionUiModel.COPY_USERNAME, result.swipeRightAction)
+        VaultSwipeActionUiModel.entries.forEach {
             assertEquals(SwipeActionType.valueOf(it.name), it.toFeatureModel())
         }
     }

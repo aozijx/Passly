@@ -9,14 +9,13 @@ import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-
-internal enum class SwipeActionUiModel { DELETE, DETAIL, COPY_PASSWORD, COPY_USERNAME }
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel
 
 @Composable
 internal fun SwipeGestureSettingsSection(
     isSwipeEnabled: Boolean,
-    swipeLeftAction: SwipeActionUiModel,
-    swipeRightAction: SwipeActionUiModel,
+    swipeLeftAction: VaultSwipeActionUiModel,
+    swipeRightAction: VaultSwipeActionUiModel,
     onSwipeEnabledChange: (Boolean) -> Unit,
     onLeftSwipeActionClick: () -> Unit,
     onRightSwipeActionClick: () -> Unit
@@ -51,11 +50,11 @@ internal fun SwipeGestureSettingsSection(
 }
 
 @Composable
-internal fun SwipeActionUiModel.localizedLabel(): String = stringResource(
+internal fun VaultSwipeActionUiModel.localizedLabel(): String = stringResource(
     when (this) {
-        SwipeActionUiModel.DELETE -> R.string.settings_swipe_action_delete
-        SwipeActionUiModel.DETAIL -> R.string.settings_swipe_action_detail
-        SwipeActionUiModel.COPY_PASSWORD -> R.string.settings_swipe_action_copy_password
-        SwipeActionUiModel.COPY_USERNAME -> R.string.settings_swipe_action_copy_username
+        VaultSwipeActionUiModel.DELETE -> R.string.settings_swipe_action_delete
+        VaultSwipeActionUiModel.DETAIL -> R.string.settings_swipe_action_detail
+        VaultSwipeActionUiModel.COPY_PASSWORD -> R.string.settings_swipe_action_copy_password
+        VaultSwipeActionUiModel.COPY_USERNAME -> R.string.settings_swipe_action_copy_username
     }
 )

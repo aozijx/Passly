@@ -2,7 +2,7 @@ package com.aozijx.passly.presentation.feature.settings.main.interaction
 
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.presentation.ui.settings.interaction.InteractionDetailUiModel
-import com.aozijx.passly.presentation.ui.settings.interaction.SwipeActionUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel
 
 data class InteractionSettingsUiState(
     val isSwipeEnabled: Boolean = false,
@@ -16,8 +16,8 @@ sealed interface InteractionSettingsAction {
 
 internal fun InteractionSettingsUiState.toUiModel() = InteractionDetailUiModel(
     isSwipeEnabled = isSwipeEnabled,
-    swipeLeftAction = SwipeActionUiModel.valueOf(swipeLeftAction.name),
-    swipeRightAction = SwipeActionUiModel.valueOf(swipeRightAction.name),
+    swipeLeftAction = VaultSwipeActionUiModel.valueOf(swipeLeftAction.name),
+    swipeRightAction = VaultSwipeActionUiModel.valueOf(swipeRightAction.name),
 )
 
-internal fun SwipeActionUiModel.toFeatureModel() = SwipeActionType.valueOf(name)
+internal fun VaultSwipeActionUiModel.toFeatureModel() = SwipeActionType.valueOf(name)

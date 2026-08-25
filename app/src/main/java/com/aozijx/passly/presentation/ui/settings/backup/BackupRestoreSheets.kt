@@ -46,6 +46,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultEntryTypeUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.labelRes
 
 internal enum class BackupExportFormatUiModel(
     val requiresPassword: Boolean,
@@ -58,12 +60,6 @@ internal enum class BackupExportFormatUiModel(
 
 internal enum class BackupImportModeUiModel { APPEND, OVERWRITE }
 
-internal enum class BackupEntryTypeUiModel {
-    ACCOUNT, LOGIN, NOTE, BANK_CARD, ID_CARD, PASSPORT, DRIVER_LICENSE,
-    SSH_KEY, WIFI, PASSKEY, OTP, DATABASE_CREDENTIAL, SERVER_CREDENTIAL,
-    API_KEY, CRYPTO_WALLET, SEED_PHRASE, RECOVERY_CODE,
-}
-
 internal data class BackupSheetUiState(
     val password: String,
     val importMode: BackupImportModeUiModel,
@@ -71,7 +67,7 @@ internal data class BackupSheetUiState(
     val includeIcons: Boolean,
     val includeAttachments: Boolean,
     val includeDeleted: Boolean,
-    val includedEntryTypes: Set<BackupEntryTypeUiModel>,
+    val includedEntryTypes: Set<VaultEntryTypeUiModel>,
     val canSubmitExport: Boolean,
 )
 
@@ -93,7 +89,7 @@ internal fun BackupRestoreSheetHost(
     onIncludeIconsChange: (Boolean) -> Unit,
     onIncludeAttachmentsChange: (Boolean) -> Unit,
     onIncludeDeletedChange: (Boolean) -> Unit,
-    onIncludedEntryTypesChange: (Set<BackupEntryTypeUiModel>) -> Unit,
+    onIncludedEntryTypesChange: (Set<VaultEntryTypeUiModel>) -> Unit,
     onImportModeChange: (BackupImportModeUiModel) -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit
@@ -205,7 +201,7 @@ private fun BackupExportOptionsContent(
     onIncludeIconsChange: (Boolean) -> Unit,
     onIncludeAttachmentsChange: (Boolean) -> Unit,
     onIncludeDeletedChange: (Boolean) -> Unit,
-    onIncludedEntryTypesChange: (Set<BackupEntryTypeUiModel>) -> Unit,
+    onIncludedEntryTypesChange: (Set<VaultEntryTypeUiModel>) -> Unit,
     onExport: () -> Unit
 ) {
     SheetColumn(scrollable = true) {
@@ -272,17 +268,17 @@ private fun BackupExportOptionsContent(
             TextButton(
                 onClick = {
                     onIncludedEntryTypesChange(
-                        if (state.includedEntryTypes.size == BackupEntryTypeUiModel.entries.size) {
+                        if (state.includedEntryTypes.size == VaultEntryTypeUiModel.entries.size) {
                             emptySet()
                         } else {
-                            BackupEntryTypeUiModel.entries.toSet()
+                            VaultEntryTypeUiModel.entries.toSet()
                         }
                     )
                 }
             ) {
                 Text(
                     stringResource(
-                        if (state.includedEntryTypes.size == BackupEntryTypeUiModel.entries.size) {
+                        if (state.includedEntryTypes.size == VaultEntryTypeUiModel.entries.size) {
                             R.string.settings_backup_clear_selection
                         } else {
                             R.string.settings_backup_select_all
@@ -295,7 +291,7 @@ private fun BackupExportOptionsContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            BackupEntryTypeUiModel.entries.forEach { type ->
+            VaultEntryTypeUiModel.entries.forEach { type ->
                 FilterChip(
                     selected = type in state.includedEntryTypes,
                     onClick = {
@@ -515,24 +511,3 @@ private fun exportTitleResource(format: BackupExportFormatUiModel): Int = when (
     BackupExportFormatUiModel.JSON -> R.string.settings_backup_json_options_title
     BackupExportFormatUiModel.TEXT -> R.string.settings_backup_text_options_title
 }
-
-private val BackupEntryTypeUiModel.labelRes: Int
-    get() = when (this) {
-        BackupEntryTypeUiModel.ACCOUNT -> R.string.entry_type_account
-        BackupEntryTypeUiModel.LOGIN -> R.string.entry_type_login
-        BackupEntryTypeUiModel.NOTE -> R.string.entry_type_note
-        BackupEntryTypeUiModel.BANK_CARD -> R.string.entry_type_bank_card
-        BackupEntryTypeUiModel.ID_CARD -> R.string.entry_type_id_card
-        BackupEntryTypeUiModel.PASSPORT -> R.string.entry_type_passport
-        BackupEntryTypeUiModel.DRIVER_LICENSE -> R.string.entry_type_driver_license
-        BackupEntryTypeUiModel.SSH_KEY -> R.string.entry_type_ssh_key
-        BackupEntryTypeUiModel.WIFI -> R.string.entry_type_wifi
-        BackupEntryTypeUiModel.PASSKEY -> R.string.entry_type_passkey
-        BackupEntryTypeUiModel.OTP -> R.string.entry_type_otp
-        BackupEntryTypeUiModel.DATABASE_CREDENTIAL -> R.string.entry_type_database_credential
-        BackupEntryTypeUiModel.SERVER_CREDENTIAL -> R.string.entry_type_server_credential
-        BackupEntryTypeUiModel.API_KEY -> R.string.entry_type_api_key
-        BackupEntryTypeUiModel.CRYPTO_WALLET -> R.string.entry_type_crypto_wallet
-        BackupEntryTypeUiModel.SEED_PHRASE -> R.string.entry_type_seed_phrase
-        BackupEntryTypeUiModel.RECOVERY_CODE -> R.string.entry_type_recovery_code
-    }

@@ -7,11 +7,10 @@ import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.presentation.feature.settings.security.AppPasswordAction
 import com.aozijx.passly.presentation.feature.settings.main.interaction.toFeatureModel
-import com.aozijx.passly.presentation.ui.settings.interaction.SwipeActionUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel
 import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
 import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogEvent
 import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogEvent
-import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogsActions
 import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogsModel
 
 internal fun buildSettingsDialogsState(
@@ -23,8 +22,8 @@ internal fun buildSettingsDialogsState(
     showLeftActionDialog = localState.showLeftActionDialog,
     showClearBackupDirConfirmDialog = localState.showClearBackupDirConfirmDialog,
     activeAppPasswordDialog = localState.activeAppPasswordDialog,
-    swipeLeftAction = SwipeActionUiModel.valueOf(swipeLeftAction.name),
-    swipeRightAction = SwipeActionUiModel.valueOf(swipeRightAction.name),
+    swipeLeftAction = VaultSwipeActionUiModel.valueOf(swipeLeftAction.name),
+    swipeRightAction = VaultSwipeActionUiModel.valueOf(swipeRightAction.name),
     appPasswordCurrent = localState.appPasswordCurrent,
     appPasswordNew = localState.appPasswordNew,
     appPasswordConfirm = localState.appPasswordConfirm,
@@ -33,7 +32,7 @@ internal fun buildSettingsDialogsState(
         localState.appPasswordNew == localState.appPasswordConfirm,
 )
 
-internal fun buildSettingsDialogsActions(
+internal fun buildSettingsDialogEventHandler(
     localState: SettingsScreenLocalState,
     backupDirectoryUri: String?,
     context: Context,
@@ -41,8 +40,7 @@ internal fun buildSettingsDialogsActions(
     onSetSwipeLeftAction: (SwipeActionType) -> Unit,
     submitAppPasswordAction: (AppPasswordAction) -> Unit,
     onClearBackupDirectory: () -> Unit
-): SettingsDialogsActions = SettingsDialogsActions(
-    onDialogEvent = { event ->
+): (SettingsDialogEvent) -> Unit = { event ->
         when (event) {
             is SettingsDialogEvent.SetSwipeRightAction -> onSetSwipeRightAction(event.action.toFeatureModel())
             is SettingsDialogEvent.SetSwipeLeftAction -> onSetSwipeLeftAction(event.action.toFeatureModel())
@@ -90,4 +88,3 @@ internal fun buildSettingsDialogsActions(
             }
         }
     }
-)
