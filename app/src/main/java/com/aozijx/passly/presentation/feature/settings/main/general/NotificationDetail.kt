@@ -27,6 +27,7 @@ import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationSettingsEffect
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationSettingsViewModel
+import com.aozijx.passly.presentation.ui.settings.general.NotificationSettingsSection
 
 @Composable
 internal fun NotificationDetail(
@@ -87,7 +88,7 @@ internal fun NotificationDetail(
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
         NotificationSettingsSection(
-            state = state,
+            state = state.toUiModel(),
             onSystemNotificationsEnabledChange = { enabled ->
                 if (!enabled) {
                     viewModel.setSystemNotificationsEnabled(false)
@@ -126,7 +127,7 @@ internal fun NotificationDetail(
             onOpenSystemNotificationSettings = { viewModel.openSystemNotificationSettings() },
             onOptionalMessagesEnabledChange = { viewModel.setOptionalMessagesEnabled(it) },
             onTopicEnabledChange = { topic, enabled ->
-                viewModel.setMessageTopicEnabled(topic, enabled)
+                viewModel.setMessageTopicEnabled(topic.toFeatureModel(), enabled)
             }
         )
     }

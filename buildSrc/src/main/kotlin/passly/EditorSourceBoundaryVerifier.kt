@@ -12,7 +12,6 @@ internal object EditorSourceBoundaryVerifier {
         "/presentation/feature/settings/main/settingsscreenstatebuilders.kt",
         "/presentation/feature/settings/main/component/settingsdialogmodels.kt",
         "/presentation/feature/settings/main/general/logsettingssection.kt",
-        "/presentation/feature/settings/main/general/notificationsettingssection.kt",
         "/presentation/feature/settings/main/interaction/swipeactionselectdialog.kt",
         "/presentation/feature/settings/main/interaction/swipegesturesettingssection.kt",
     )

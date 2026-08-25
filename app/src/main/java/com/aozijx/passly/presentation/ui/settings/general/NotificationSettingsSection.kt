@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.main.general
+package com.aozijx.passly.presentation.ui.settings.general
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -7,20 +7,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.settings.main.general.NotificationSettingsUiState
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.domain.settings.model.MessageTopic
+
+internal data class NotificationSettingsUiModel(
+    val systemNotificationsEnabled: Boolean,
+    val optionalMessagesEnabled: Boolean,
+    val topics: List<NotificationTopicUiModel>,
+)
+
+internal data class NotificationTopicUiModel(
+    val topic: NotificationTopic,
+    val enabled: Boolean,
+)
+
+internal enum class NotificationTopic {
+    CLIPBOARD, APP_LIFECYCLE, ICON_DOWNLOAD, BACKUP, SECURITY, DATABASE,
+}
 
 @Composable
 internal fun NotificationSettingsSection(
-    state: NotificationSettingsUiState,
+    state: NotificationSettingsUiModel,
     onSystemNotificationsEnabledChange: (Boolean) -> Unit,
     onOpenSystemNotificationSettings: () -> Unit,
     onOptionalMessagesEnabledChange: (Boolean) -> Unit = {},
-    onTopicEnabledChange: (MessageTopic, Boolean) -> Unit = { _, _ -> }
+    onTopicEnabledChange: (NotificationTopic, Boolean) -> Unit = { _, _ -> }
 ) {
     // ---- 系统通知总开关 ----
     SettingsSectionTitle(text = stringResource(R.string.settings_system_notifications))
@@ -63,32 +76,15 @@ internal fun NotificationSettingsSection(
     if (state.optionalMessagesEnabled) {
         Spacer(modifier = Modifier.height(8.dp))
 
-        val topicLabels = mapOf(
-            MessageTopic.CLIPBOARD to R.string.settings_topic_clipboard,
-            MessageTopic.APP_LIFECYCLE to R.string.settings_topic_app_lifecycle,
-            MessageTopic.ICON_DOWNLOAD to R.string.settings_topic_icon_download,
-            MessageTopic.BACKUP to R.string.settings_topic_backup,
-            MessageTopic.SECURITY to R.string.settings_topic_security,
-            MessageTopic.DATABASE to R.string.settings_topic_database
-        )
-        val topicSummaries = mapOf(
-            MessageTopic.CLIPBOARD to R.string.settings_topic_clipboard_summary,
-            MessageTopic.APP_LIFECYCLE to R.string.settings_topic_app_lifecycle_summary,
-            MessageTopic.ICON_DOWNLOAD to R.string.settings_topic_icon_download_summary,
-            MessageTopic.BACKUP to R.string.settings_topic_backup_summary,
-            MessageTopic.SECURITY to R.string.settings_topic_security_summary,
-            MessageTopic.DATABASE to R.string.settings_topic_database_summary
-        )
-
-        MessageTopic.entries.forEach { topic ->
-            val setting = state.topicSetting(topic)
+        state.topics.forEach { item ->
+            val topic = item.topic
             RoundedGroup(
                 items = listOf(
                     switchSettingsGroupItem(
                         key = "notifications.topic.${topic.name}",
-                        title = stringResource(topicLabels.getValue(topic)),
-                        subtitle = stringResource(topicSummaries.getValue(topic)),
-                        checked = setting.enabled,
+                        title = stringResource(topic.titleRes),
+                        subtitle = stringResource(topic.summaryRes),
+                        checked = item.enabled,
                         onCheckedChange = { enabled -> onTopicEnabledChange(topic, enabled) }
                     )
                 )
@@ -97,3 +93,23 @@ internal fun NotificationSettingsSection(
         }
     }
 }
+
+private val NotificationTopic.titleRes: Int
+    get() = when (this) {
+        NotificationTopic.CLIPBOARD -> R.string.settings_topic_clipboard
+        NotificationTopic.APP_LIFECYCLE -> R.string.settings_topic_app_lifecycle
+        NotificationTopic.ICON_DOWNLOAD -> R.string.settings_topic_icon_download
+        NotificationTopic.BACKUP -> R.string.settings_topic_backup
+        NotificationTopic.SECURITY -> R.string.settings_topic_security
+        NotificationTopic.DATABASE -> R.string.settings_topic_database
+    }
+
+private val NotificationTopic.summaryRes: Int
+    get() = when (this) {
+        NotificationTopic.CLIPBOARD -> R.string.settings_topic_clipboard_summary
+        NotificationTopic.APP_LIFECYCLE -> R.string.settings_topic_app_lifecycle_summary
+        NotificationTopic.ICON_DOWNLOAD -> R.string.settings_topic_icon_download_summary
+        NotificationTopic.BACKUP -> R.string.settings_topic_backup_summary
+        NotificationTopic.SECURITY -> R.string.settings_topic_security_summary
+        NotificationTopic.DATABASE -> R.string.settings_topic_database_summary
+    }
