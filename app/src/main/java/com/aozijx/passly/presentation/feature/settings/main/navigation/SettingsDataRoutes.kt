@@ -45,7 +45,7 @@ import com.aozijx.passly.presentation.feature.settings.main.general.GeneralDetai
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationDetail
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionDetail
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
-import com.aozijx.passly.presentation.feature.settings.security.component.RecoveryCodeDetail
+import com.aozijx.passly.presentation.ui.settings.security.RecoveryCodeDetail
 import com.aozijx.passly.presentation.ui.settings.security.RecoveryCodeSheet
 import com.aozijx.passly.presentation.feature.settings.main.SettingsScreenLocalState
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage

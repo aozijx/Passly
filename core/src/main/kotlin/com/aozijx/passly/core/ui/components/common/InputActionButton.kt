@@ -35,7 +35,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import kotlinx.coroutines.delay
 
@@ -66,7 +65,7 @@ fun InputActionButton(
         onExpandedChange(false)
     }
     val submit = {
-        if (enabled && !state.progress && !state.value.isEmpty) {
+        if (enabled && !state.progress && state.value.isNotEmpty()) {
             onAction()
             dismissInput()
         }
@@ -99,7 +98,7 @@ fun InputActionButton(
         ) {
             Column {
                 OutlinedTextField(
-                    value = String(state.value.toCharArray()),
+                    value = state.value,
                     onValueChange = onValueChange,
                     singleLine = true,
                     label = { Text(config.inputLabel) },
@@ -132,7 +131,7 @@ fun InputActionButton(
             containerColor = config.containerColor,
             text = if (state.expanded) config.expandedText else config.collapsedText,
             resultText = if (state.result == true) config.successText else config.errorText,
-            enabled = enabled && (!state.expanded || !state.value.isEmpty),
+            enabled = enabled && (!state.expanded || state.value.isNotEmpty()),
             onClick = {
                 if (state.expanded) submit() else onExpandedChange(true)
             }
@@ -146,6 +145,51 @@ fun InputActionButton(
 @Composable
 fun InputActionButton(
     value: SensitiveValue,
+    expanded: Boolean,
+    progress: Boolean,
+    collapsedText: String,
+    expandedText: String,
+    inputLabel: String,
+    onValueChange: (String) -> Unit,
+    onExpandedChange: (Boolean) -> Unit,
+    onAction: () -> Unit,
+    modifier: Modifier = Modifier,
+    onResultConsumed: () -> Unit = {},
+    enabled: Boolean = true,
+    icon: ImageVector = Icons.Default.Key,
+    containerColor: Color? = null,
+    result: Boolean? = null,
+    successText: String = "Success",
+    errorText: String = "Failed"
+) {
+    InputActionButton(
+        state = InputActionButtonState(
+            value = String(value.toCharArray()),
+            expanded = expanded,
+            progress = progress,
+            result = result,
+        ),
+        config = InputActionButtonConfig(
+            collapsedText = collapsedText,
+            expandedText = expandedText,
+            inputLabel = inputLabel,
+            icon = icon,
+            containerColor = containerColor,
+            successText = successText,
+            errorText = errorText
+        ),
+        onValueChange = onValueChange,
+        onExpandedChange = onExpandedChange,
+        onAction = onAction,
+        onResultConsumed = onResultConsumed,
+        modifier = modifier,
+        enabled = enabled
+    )
+}
+
+@Composable
+fun InputActionButton(
+    value: String,
     expanded: Boolean,
     progress: Boolean,
     collapsedText: String,
@@ -184,7 +228,7 @@ fun InputActionButton(
 }
 
 data class InputActionButtonState(
-    val value: SensitiveValue = EmptySensitiveValue,
+    val value: String = "",
     val expanded: Boolean = false,
     val progress: Boolean = false,
     val result: Boolean? = null

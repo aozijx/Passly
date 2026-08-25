@@ -22,7 +22,6 @@ internal object EditorSourceBoundaryVerifier {
         "/presentation/feature/settings/main/general/notificationsettingssection.kt",
         "/presentation/feature/settings/main/interaction/swipeactionselectdialog.kt",
         "/presentation/feature/settings/main/interaction/swipegesturesettingssection.kt",
-        "/presentation/feature/settings/security/component/recoverycodedetail.kt",
     )
     private val mapperForbiddenMarkers = linkedMapOf(
         "repository" to listOf(".repository.", ".port.EntryCommandRepository"),

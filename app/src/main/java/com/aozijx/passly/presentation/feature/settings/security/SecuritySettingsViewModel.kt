@@ -52,13 +52,16 @@ class SecuritySettingsViewModel @Inject constructor(
                 setKeyInvalidationPolicy(action.enabled)
 
             is SecuritySettingsAction.VerifyRecoveryCode -> viewModelScope.launch {
-                if (isRecoveryMode()) {
+                try {
+                    if (isRecoveryMode()) {
+                        mutate(SecuritySettingsMutation.RecoveryCodeVerificationChanged(false))
+                        return@launch
+                    }
+                    val valid = methodProvisioner.checkRecoveryCode(action.code)
+                    mutate(SecuritySettingsMutation.RecoveryCodeVerificationChanged(valid))
+                } finally {
                     action.code.fill('\u0000')
-                    mutate(SecuritySettingsMutation.RecoveryCodeVerificationChanged(false))
-                    return@launch
                 }
-                val valid = methodProvisioner.checkRecoveryCode(action.code)
-                mutate(SecuritySettingsMutation.RecoveryCodeVerificationChanged(valid))
             }
 
             SecuritySettingsAction.ClearVerifyResult -> {

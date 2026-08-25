@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.security.component
+package com.aozijx.passly.presentation.ui.settings.security
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -28,7 +28,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.common.InputActionButton
-import com.aozijx.passly.domain.sensitive.OwnedChars
 
 @Composable
 fun RecoveryCodeDetail(
@@ -40,7 +39,7 @@ fun RecoveryCodeDetail(
     onClearVerifyResult: () -> Unit
 ) {
     var showRegenerateConfirm by remember { mutableStateOf(false) }
-    var verifyInput by remember { mutableStateOf(OwnedChars.EMPTY) }
+    var verifyInput by remember { mutableStateOf("") }
     var isExpanded by remember { mutableStateOf(false) }
 
     // 显式追踪验证进度，不依赖 verifyInput/isExpanded 的同步状态推导
@@ -125,12 +124,12 @@ fun RecoveryCodeDetail(
                 successText = stringResource(R.string.settings_recovery_code_verify_valid),
                 errorText = stringResource(R.string.settings_recovery_code_verify_invalid),
                 onValueChange = {
-                    verifyInput = OwnedChars.fromString(it)
+                    verifyInput = it
                     onClearVerifyResult()
                 },
                 onExpandedChange = { isExpanded = it },
                 onAction = {
-                    if (!verifyInput.isEmpty) {
+                    if (verifyInput.isNotEmpty()) {
                         isVerifying = true
                         onVerifyCode(verifyInput.toCharArray())
                     }
