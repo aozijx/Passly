@@ -66,7 +66,7 @@ import kotlinx.coroutines.flow.map
 fun VaultPagerContent(
     pagerState: PagerState,
     uiState: VaultListScreenUiModel,
-    entryPages: (VaultQuickFilterUiModel) -> Flow<PagingData<VaultListItemUiModel>>,
+    entryPages: Map<VaultQuickFilterUiModel, Flow<PagingData<VaultListItemUiModel>>>,
     entryCardPresentations: List<VaultCardPresentationUiModel>,
     otpState: (String) -> Flow<VaultOtpUiState?>,
     swipeLeftAction: VaultSwipeActionUiModel,
@@ -90,7 +90,7 @@ fun VaultPagerContent(
     ) { pageIndex ->
         val currentQuickFilter =
             uiState.visibleQuickFilters.getOrNull(pageIndex) ?: VaultQuickFilterUiModel.ALL
-        val pagingItems = entryPages(currentQuickFilter).collectAsLazyPagingItems()
+        val pagingItems = requireNotNull(entryPages[currentQuickFilter]).collectAsLazyPagingItems()
         val refreshState = pagingItems.loadState.refresh
 
         LaunchedEffect(refreshState, pagingItems.itemCount) {

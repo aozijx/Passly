@@ -23,10 +23,7 @@ import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
@@ -78,9 +75,7 @@ fun SettingsNavGraph(
 
     val backBehavior = BackNavigationBehavior.PopUntilScaffoldValueChange
     val isSinglePane = navigator.scaffoldDirective.maxHorizontalPartitions == 1
-    var selectedRoute by rememberSaveable {
-        mutableStateOf(navigator.currentDestination?.contentKey)
-    }
+    val selectedRoute = navigator.currentDestination?.contentKey
     val selectedRouteKey = if (isSinglePane) null else selectedRoute?.route
     val motionScheme = MaterialTheme.motionScheme
     val navigateBack: () -> Unit = {
@@ -151,11 +146,7 @@ fun SettingsNavGraph(
                     onBack = onOuterBack,
                     onGroupClick = { routeKey ->
                         val route = SettingsRoute.fromRouteKey(routeKey) ?: return@SettingsMainPage
-                        selectedRoute = route
-                        if (
-                            isSinglePane ||
-                            navigator.currentDestination?.pane != ListDetailPaneScaffoldRole.Detail
-                        ) {
+                        if (navigator.currentDestination?.contentKey != route) {
                             scope.launch {
                                 navigator.navigateTo(
                                     pane = ListDetailPaneScaffoldRole.Detail,
@@ -196,14 +187,9 @@ fun SettingsNavGraph(
                 AnimatedContent(
                     targetState = selectedRoute,
                     transitionSpec = {
-                        // 单栏模式：pane 切换动画（AnimatedPane）已覆盖列表↔详情过渡，
-                        // 内容层不再叠加动画，避免双重滑动。
                         if (isSinglePane) {
                             EnterTransition.None togetherWith ExitTransition.None
                         } else {
-                            // 双栏模式：列表常驻、详情内容直接切换，此处承担路由过渡。
-                            // spring 动画可中断重定向——动画播放中目标路由再次变化时
-                            // 立即追向新目标，快速连续切换也不会跳变或卡顿。
                             val enter = fadeIn(
                                 animationSpec = routeFadeIn
                             ) + slideInHorizontally(

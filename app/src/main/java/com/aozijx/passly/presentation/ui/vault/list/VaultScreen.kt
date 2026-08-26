@@ -41,7 +41,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 fun VaultScreen(
     state: VaultListScreenUiModel,
     scrollBehavior: TopAppBarScrollBehavior,
-    entryPages: (VaultQuickFilterUiModel) -> Flow<PagingData<VaultListItemUiModel>>,
+    entryPages: Map<VaultQuickFilterUiModel, Flow<PagingData<VaultListItemUiModel>>>,
     cardPresentations: List<VaultCardPresentationUiModel>,
     otpState: (String) -> Flow<VaultOtpUiState?>,
     swipeLeftAction: VaultSwipeActionUiModel,

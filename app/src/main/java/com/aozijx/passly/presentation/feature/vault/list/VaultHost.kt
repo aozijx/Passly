@@ -86,6 +86,23 @@ fun VaultHost(
         onShowDetail = onShowDetail,
         isFabVisible = { isFabVisible = it }
     )
+    val entryPages = remember(vaultViewModel, actionProvider, onShowDetail) {
+        com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel.entries
+            .associateWith { filter ->
+                vaultViewModel.entries(filter.toFeatureModel()).map { pagingData ->
+                    pagingData.map { item ->
+                        item.toUiModel(
+                            events = object : VaultListItemEventHandler {
+                                override fun onClick() = onShowDetail(item)
+                                override fun onSwipe(action: com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel) {
+                                    actionProvider.onSwipeTriggered(action.toFeatureModel(), item)
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+    }
 
     val activity = context as? FragmentActivity
     LaunchedEffect(scrollBehavior, vaultDisplayConfig.layout.hideSystemBars, activity) {
@@ -134,20 +151,7 @@ fun VaultHost(
     com.aozijx.passly.presentation.ui.vault.list.VaultScreen(
         state = renderState,
         scrollBehavior = scrollBehavior,
-        entryPages = { filter ->
-            vaultViewModel.entries(filter.toFeatureModel()).map { pagingData ->
-                pagingData.map { item ->
-                    item.toUiModel(
-                        events = object : VaultListItemEventHandler {
-                            override fun onClick() = onShowDetail(item)
-                            override fun onSwipe(action: com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel) {
-                                actionProvider.onSwipeTriggered(action.toFeatureModel(), item)
-                            }
-                        },
-                    )
-                }
-            }
-        },
+        entryPages = entryPages,
         cardPresentations = entryCardPresentations,
         otpState = { id -> vaultViewModel.totpStatesFlow.map { it[id]?.toUiModel() } },
         swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction.toUiModel(),

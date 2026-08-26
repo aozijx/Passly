@@ -188,6 +188,39 @@ class SourceBoundaryPolicyTest {
         )
     }
 
+    @Test
+    fun vaultUiCannotAcceptARecreatedPagingFlowFactory() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",
+            content =
+                "entryPages: (VaultQuickFilterUiModel) -> Flow<PagingData<VaultListItemUiModel>>",
+        )
+
+        assertEquals(
+            "VAULT_UI_PAGING_FACTORY",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
+    @Test
+    fun settingsNavigationCannotMirrorNavigatorDestinationInLocalState() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/main/navigation/SettingsNavGraph.kt",
+            content = "mutableStateOf(navigator.currentDestination?.contentKey)",
+        )
+
+        assertEquals(
+            "SETTINGS_DUPLICATE_NAVIGATION_STATE",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
     private fun uiSource(content: String) = EditorSource(
         path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",
         content = content,

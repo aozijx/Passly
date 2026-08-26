@@ -86,6 +86,22 @@ internal object SourceBoundaryPolicy {
             ),
             message = "presentation imports the concrete session controller",
         ),
+        SourceBoundaryRule(
+            id = "VAULT_UI_PAGING_FACTORY",
+            sourcePathContains = "/presentation/ui/vault/list/",
+            forbiddenContentMarkers = setOf(
+                "entryPages: (VaultQuickFilterUiModel) -> Flow",
+            ),
+            message = "vault UI accepts a paging Flow factory with unstable identity",
+        ),
+        SourceBoundaryRule(
+            id = "SETTINGS_DUPLICATE_NAVIGATION_STATE",
+            sourcePathContains = "/SettingsNavGraph.kt",
+            forbiddenContentMarkers = setOf(
+                "mutableStateOf(navigator.currentDestination?.contentKey)",
+            ),
+            message = "settings mirrors navigator destination in local state",
+        ),
         *listOf(
             "/domain/src/",
             "/data/src/",
