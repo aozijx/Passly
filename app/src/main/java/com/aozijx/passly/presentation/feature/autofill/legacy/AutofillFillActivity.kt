@@ -15,7 +15,8 @@ import com.aozijx.passly.core.ui.components.auth.AuthenticationHost
 import com.aozijx.passly.core.ui.theme.AppTheme
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
-import com.aozijx.passly.presentation.feature.autofill.AutofillCandidateBottomSheet
+import com.aozijx.passly.presentation.ui.autofill.AutofillCandidateBottomSheet
+import com.aozijx.passly.presentation.ui.autofill.AutofillCandidateItem
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -106,13 +107,16 @@ class AutofillFillActivity : FragmentActivity() {
     }
 
     private fun showBottomSheet(candidates: List<ResolvedCandidate>) {
+        val candidatesById = candidates.associateBy { it.entry.id.value }
         setContent {
             AppTheme {
                 AuthenticationHost(this, authenticationHostRegistry) {
                     AutofillCandidateBottomSheet(
-                        candidates = candidates,
-                        onCandidateSelected = { candidate ->
-                            viewModel.onAction(AutofillFillUiAction.CandidateSelected(candidate))
+                        candidates = candidates.map { candidate -> candidate.toUiItem() },
+                        onCandidateSelected = { candidateId ->
+                            candidatesById[candidateId]?.let { candidate ->
+                                viewModel.onAction(AutofillFillUiAction.CandidateSelected(candidate))
+                            }
                         },
                         onCancel = { finishWithResult(null) }
                     )
@@ -120,6 +124,17 @@ class AutofillFillActivity : FragmentActivity() {
             }
         }
     }
+
+    private fun ResolvedCandidate.toUiItem() = AutofillCandidateItem(
+        id = entry.id.value,
+        iconName = entry.profile.icon.name,
+        iconCustomPath = entry.profile.icon.customReference,
+        associatedAppPackage = entry.profile.associations.applicationIds.firstOrNull(),
+        entryTypeKey = entry.entryType.name,
+        title = entry.title,
+        username = entry.username,
+        associatedDomain = entry.associatedDomain,
+    )
 
     private fun finishWithResult(payload: AutofillAuthenticationPayload?) {
         if (!resultFinishing.compareAndSet(false, true)) return

@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.autofill
+package com.aozijx.passly.presentation.ui.autofill
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
@@ -31,13 +31,23 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.VaultItemIcon
-import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
+
+data class AutofillCandidateItem(
+    val id: String,
+    val iconName: String?,
+    val iconCustomPath: String?,
+    val associatedAppPackage: String?,
+    val entryTypeKey: String,
+    val title: String,
+    val username: String,
+    val associatedDomain: String?,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AutofillCandidateBottomSheet(
-    candidates: List<ResolvedCandidate>,
-    onCandidateSelected: (ResolvedCandidate) -> Unit,
+    candidates: List<AutofillCandidateItem>,
+    onCandidateSelected: (String) -> Unit,
     onCancel: () -> Unit
 ) {
     val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
@@ -76,10 +86,10 @@ fun AutofillCandidateBottomSheet(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(candidates, key = { it.entry.id.value }) { candidate ->
+                    items(candidates, key = AutofillCandidateItem::id) { candidate ->
                         CandidateItem(
                             candidate = candidate,
-                            onClick = { onCandidateSelected(candidate) }
+                            onClick = { onCandidateSelected(candidate.id) }
                         )
                     }
                 }
@@ -90,7 +100,7 @@ fun AutofillCandidateBottomSheet(
 
 @Composable
 private fun CandidateItem(
-    candidate: ResolvedCandidate,
+    candidate: AutofillCandidateItem,
     onClick: () -> Unit
 ) {
     Surface(
@@ -108,27 +118,27 @@ private fun CandidateItem(
         ) {
             VaultItemIcon(
                 modifier = Modifier.size(32.dp),
-                iconName = candidate.entry.profile.icon.name,
-                iconCustomPath = candidate.entry.profile.icon.customReference,
-                associatedAppPackage = candidate.entry.profile.associations.applicationIds.firstOrNull(),
-                entryTypeKey = candidate.entry.entryType.name,
-                title = candidate.entry.title,
-                username = candidate.entry.username,
-                associatedDomain = candidate.entry.associatedDomain,
+                iconName = candidate.iconName,
+                iconCustomPath = candidate.iconCustomPath,
+                associatedAppPackage = candidate.associatedAppPackage,
+                entryTypeKey = candidate.entryTypeKey,
+                title = candidate.title,
+                username = candidate.username,
+                associatedDomain = candidate.associatedDomain,
             )
 
             Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = candidate.entry.title,
+                    text = candidate.title,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = candidate.entry.username,
+                    text = candidate.username,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
