@@ -49,6 +49,19 @@ internal object SourceBoundaryPolicy {
             ),
             message = "vault paging Data types may only be imported by App adapters",
         ),
+        SourceBoundaryRule(
+            id = "DATABASE_RECOVERY_DATA_ADAPTER_ONLY",
+            sourcePathContains = "/app/src/",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.data.local.database.model.DatabaseRecovery",
+                "com.aozijx.passly.data.local.database.port.DatabaseRecoveryRepository",
+            ),
+            allowedSourcePathContains = setOf(
+                "/app/database/recovery/DataDatabaseRecoveryGateway.kt",
+                "/app/database/recovery/DataDatabaseRecoveryGatewayTest.kt",
+            ),
+            message = "database recovery Data types may only be imported by the App adapter",
+        ),
         *listOf(
             "/domain/src/",
             "/data/src/",

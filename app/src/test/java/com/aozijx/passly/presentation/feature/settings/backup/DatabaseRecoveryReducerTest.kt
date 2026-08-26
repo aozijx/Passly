@@ -1,8 +1,8 @@
 package com.aozijx.passly.presentation.feature.settings.backup
 
-import com.aozijx.passly.data.local.database.model.DatabaseRecoveryReport
-import com.aozijx.passly.data.local.database.model.DatabaseRecoveryScan
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.feature.database.recovery.RecoverableDatabaseReport
+import com.aozijx.passly.feature.database.recovery.RecoverableDatabaseScan
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -13,7 +13,7 @@ class DatabaseRecoveryReducerTest {
 
     @Test
     fun `recovery scan selects every recoverable entry type`() {
-        val scan = DatabaseRecoveryScan(
+        val scan = RecoverableDatabaseScan(
             packageId = "package-1",
             recoverableByType = mapOf(EntryType.LOGIN to 2, EntryType.NOTE to 1),
             deletedEntries = 0,
@@ -40,7 +40,7 @@ class DatabaseRecoveryReducerTest {
 
     @Test
     fun `recovery completion clears scan and keeps report`() {
-        val report = DatabaseRecoveryReport(
+        val report = RecoverableDatabaseReport(
             packageId = "package-1",
             restoredEntries = 3,
             skippedConflicts = 1,
@@ -52,7 +52,7 @@ class DatabaseRecoveryReducerTest {
         )
         val result = DatabaseRecoveryReducer.reduce(
             DatabaseRecoveryUiState(
-                recoveryScan = DatabaseRecoveryScan(
+                recoveryScan = RecoverableDatabaseScan(
                     "package-1",
                     mapOf(EntryType.LOGIN to 3),
                     0,

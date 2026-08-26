@@ -114,6 +114,31 @@ class SourceBoundaryPolicyTest {
         )
     }
 
+    @Test
+    fun databaseRecoveryDataTypesAreRestrictedToTheirAppAdapter() {
+        val dataImport =
+            "import com.aozijx.passly.data.local.database.port.DatabaseRecoveryRepository"
+        val adapter = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/app/database/recovery/DataDatabaseRecoveryGateway.kt",
+            content = dataImport,
+        )
+        val presentation = adapter.copy(
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/backup/DatabaseRecoveryViewModel.kt",
+        )
+
+        assertEquals(
+            emptyList(),
+            SourceBoundaryVerifier.verify(listOf(adapter), SourceBoundaryPolicy.generalRules),
+        )
+        assertEquals(
+            "DATABASE_RECOVERY_DATA_ADAPTER_ONLY",
+            SourceBoundaryVerifier.verify(
+                listOf(presentation),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
     private fun uiSource(content: String) = EditorSource(
         path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",
         content = content,

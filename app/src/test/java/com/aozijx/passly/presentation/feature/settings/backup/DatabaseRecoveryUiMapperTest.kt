@@ -1,9 +1,9 @@
 package com.aozijx.passly.presentation.feature.settings.backup
 
-import com.aozijx.passly.data.local.database.model.DatabaseRecoveryPackage
-import com.aozijx.passly.data.local.database.model.DatabaseRecoveryScan
-import com.aozijx.passly.data.local.database.model.DatabaseRecoveryStatus
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.feature.database.recovery.RecoverableDatabasePackage
+import com.aozijx.passly.feature.database.recovery.RecoverableDatabaseScan
+import com.aozijx.passly.feature.database.recovery.RecoverableDatabaseStatus
 import com.aozijx.passly.presentation.ui.settings.backup.DatabaseRecoveryPackageStatus
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -14,15 +14,15 @@ class DatabaseRecoveryUiMapperTest {
     fun `maps data and domain recovery models to ui-only snapshot`() {
         val state = DatabaseRecoveryUiState(
             recoveryPackages = listOf(
-                DatabaseRecoveryPackage(
+                RecoverableDatabasePackage(
                     id = "package-1",
-                    createdAtEpochMs = 123L,
+                    createdAtMillis = 123L,
                     sizeBytes = 456L,
-                    status = DatabaseRecoveryStatus.PARTIALLY_RECOVERABLE,
+                    status = RecoverableDatabaseStatus.PARTIALLY_RECOVERABLE,
                 ),
             ),
             isRecoveryLoading = false,
-            recoveryScan = DatabaseRecoveryScan(
+            recoveryScan = RecoverableDatabaseScan(
                 packageId = "package-1",
                 recoverableByType = linkedMapOf(EntryType.LOGIN to 2, EntryType.NOTE to 1),
                 deletedEntries = 0,

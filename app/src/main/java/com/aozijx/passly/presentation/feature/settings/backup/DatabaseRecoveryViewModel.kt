@@ -3,13 +3,12 @@ package com.aozijx.passly.presentation.feature.settings.backup
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.message.mapping.toUiMessage
-import com.aozijx.passly.data.local.database.model.DatabaseRecoverySelection
-import com.aozijx.passly.data.local.database.port.DatabaseRecoveryRepository
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.feature.database.recovery.DatabaseRecoveryGateway
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +20,7 @@ import javax.inject.Inject
 class DatabaseRecoveryViewModel @Inject constructor(
     private val secureSessionAccessState: SecureSessionAccessState,
     private val authenticationManager: AuthenticationManager,
-    private val databaseRecoveryRepository: DatabaseRecoveryRepository,
+    private val databaseRecoveryGateway: DatabaseRecoveryGateway,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DatabaseRecoveryUiState())
@@ -50,7 +49,7 @@ class DatabaseRecoveryViewModel @Inject constructor(
     private fun loadRecoveryPackages() {
         viewModelScope.launch {
             if (!requireRecoveryAccess()) return@launch
-            runCatching { databaseRecoveryRepository.listPackages() }
+            runCatching { databaseRecoveryGateway.packages() }
                 .onSuccess {
                     mutate(DatabaseRecoveryMutation.RecoveryPackagesLoaded(it))
                 }
@@ -69,7 +68,7 @@ class DatabaseRecoveryViewModel @Inject constructor(
         viewModelScope.launch {
             if (!requireRecoveryAccess()) return@launch
             mutate(DatabaseRecoveryMutation.RecoveryOperationStarted(packageId))
-            runCatching { databaseRecoveryRepository.scan(packageId) }
+            runCatching { databaseRecoveryGateway.scan(packageId) }
                 .onSuccess {
                     mutate(DatabaseRecoveryMutation.RecoveryScanCompleted(it))
                     refreshRecoveryPackagesAfterOperation()
@@ -101,10 +100,7 @@ class DatabaseRecoveryViewModel @Inject constructor(
                     if (!requireRecoveryAccess()) return@launch
                     mutate(DatabaseRecoveryMutation.RecoveryOperationStarted(packageId))
                     runCatching {
-                        databaseRecoveryRepository.restore(
-                            packageId,
-                            DatabaseRecoverySelection(state.selectedRecoveryTypes),
-                        )
+                        databaseRecoveryGateway.recover(packageId, state.selectedRecoveryTypes)
                     }.onSuccess {
                         mutate(DatabaseRecoveryMutation.RecoveryRestoreCompleted(it))
                         refreshRecoveryPackagesAfterOperation()
@@ -135,7 +131,7 @@ class DatabaseRecoveryViewModel @Inject constructor(
             ) {
                 is AuthenticationResult.Success -> {
                     mutate(DatabaseRecoveryMutation.RecoveryOperationStarted(packageId))
-                    runCatching { databaseRecoveryRepository.delete(packageId) }
+                    runCatching { databaseRecoveryGateway.delete(packageId) }
                         .onSuccess {
                             mutate(DatabaseRecoveryMutation.RecoveryResultCleared)
                             refreshRecoveryPackagesAfterOperation()
@@ -157,7 +153,7 @@ class DatabaseRecoveryViewModel @Inject constructor(
     }
 
     private suspend fun refreshRecoveryPackagesAfterOperation() {
-        runCatching { databaseRecoveryRepository.listPackages() }
+        runCatching { databaseRecoveryGateway.packages() }
             .onSuccess { mutate(DatabaseRecoveryMutation.RecoveryPackagesLoaded(it)) }
     }
 

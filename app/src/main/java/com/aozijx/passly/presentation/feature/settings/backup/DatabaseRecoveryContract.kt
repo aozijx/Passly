@@ -1,9 +1,9 @@
 package com.aozijx.passly.presentation.feature.settings.backup
 
-import com.aozijx.passly.data.local.database.model.DatabaseRecoveryPackage
-import com.aozijx.passly.data.local.database.model.DatabaseRecoveryReport
-import com.aozijx.passly.data.local.database.model.DatabaseRecoveryScan
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.feature.database.recovery.RecoverableDatabasePackage
+import com.aozijx.passly.feature.database.recovery.RecoverableDatabaseReport
+import com.aozijx.passly.feature.database.recovery.RecoverableDatabaseScan
 import com.aozijx.passly.presentation.ui.settings.backup.DatabaseRecoveryPackageItem
 import com.aozijx.passly.presentation.ui.settings.backup.DatabaseRecoveryPackageStatus
 import com.aozijx.passly.presentation.ui.settings.backup.DatabaseRecoveryReportItem
@@ -12,12 +12,12 @@ import com.aozijx.passly.presentation.ui.settings.backup.DatabaseRecoverySheetSt
 import com.aozijx.passly.presentation.ui.settings.backup.DatabaseRecoveryTypeItem
 
 data class DatabaseRecoveryUiState(
-    val recoveryPackages: List<DatabaseRecoveryPackage> = emptyList(),
+    val recoveryPackages: List<RecoverableDatabasePackage> = emptyList(),
     val isRecoveryLoading: Boolean = true,
     val activeRecoveryPackageId: String? = null,
-    val recoveryScan: DatabaseRecoveryScan? = null,
+    val recoveryScan: RecoverableDatabaseScan? = null,
     val selectedRecoveryTypes: Set<EntryType> = emptySet(),
-    val recoveryReport: DatabaseRecoveryReport? = null,
+    val recoveryReport: RecoverableDatabaseReport? = null,
     val recoveryError: String? = null,
 ) {
     val isRecoveryBusy: Boolean get() = activeRecoveryPackageId != null
@@ -27,7 +27,7 @@ internal fun DatabaseRecoveryUiState.toSheetState() = DatabaseRecoverySheetState
     packages = recoveryPackages.map { recoveryPackage ->
         DatabaseRecoveryPackageItem(
             id = recoveryPackage.id,
-            createdAtEpochMs = recoveryPackage.createdAtEpochMs,
+            createdAtEpochMs = recoveryPackage.createdAtMillis,
             sizeBytes = recoveryPackage.sizeBytes,
             status = DatabaseRecoveryPackageStatus.valueOf(recoveryPackage.status.name),
         )
@@ -72,12 +72,12 @@ sealed interface DatabaseRecoveryUiAction {
 
 internal sealed interface DatabaseRecoveryMutation {
     data class RecoveryPackagesLoaded(
-        val packages: List<DatabaseRecoveryPackage>,
+        val packages: List<RecoverableDatabasePackage>,
     ) : DatabaseRecoveryMutation
     data class RecoveryOperationStarted(val packageId: String) : DatabaseRecoveryMutation
-    data class RecoveryScanCompleted(val scan: DatabaseRecoveryScan) : DatabaseRecoveryMutation
+    data class RecoveryScanCompleted(val scan: RecoverableDatabaseScan) : DatabaseRecoveryMutation
     data class RecoveryTypeToggled(val entryType: EntryType) : DatabaseRecoveryMutation
-    data class RecoveryRestoreCompleted(val report: DatabaseRecoveryReport) : DatabaseRecoveryMutation
+    data class RecoveryRestoreCompleted(val report: RecoverableDatabaseReport) : DatabaseRecoveryMutation
     data class RecoveryOperationFailed(val message: String) : DatabaseRecoveryMutation
     data object RecoveryResultCleared : DatabaseRecoveryMutation
 }
