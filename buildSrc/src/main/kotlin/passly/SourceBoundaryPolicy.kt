@@ -126,6 +126,12 @@ internal object SourceBoundaryPolicy {
             forbiddenContentMarkers = setOf("EntryTitleField("),
             message = "password editor feature host renders passive fields",
         ),
+        SourceBoundaryRule(
+            id = "OTP_EDITOR_HOST_PASSIVE_UI",
+            sourcePathContains = "/presentation/feature/vault/editor/otp/",
+            forbiddenContentMarkers = setOf("OtpConfigForm("),
+            message = "OTP editor feature host renders passive form content",
+        ),
         *listOf(
             "/domain/src/",
             "/data/src/",

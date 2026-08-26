@@ -285,6 +285,22 @@ class SourceBoundaryPolicyTest {
         )
     }
 
+    @Test
+    fun otpEditorFeatureCannotRenderOtpFormDirectly() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/editor/otp/AddOtpEditorHost.kt",
+            content = "OtpConfigForm(state = state.form)",
+        )
+
+        assertEquals(
+            "OTP_EDITOR_HOST_PASSIVE_UI",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
     private fun uiSource(content: String) = EditorSource(
         path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",
         content = content,
