@@ -72,6 +72,14 @@ internal object SourceBoundaryPolicy {
             ),
             message = "feature implementation imports presentation",
         ),
+        SourceBoundaryRule(
+            id = "PRESENTATION_SESSION_CONTROLLER_IMPORT",
+            sourcePathContains = "/presentation/",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.security.authentication.VaultSessionController",
+            ),
+            message = "presentation imports the concrete session controller",
+        ),
         *listOf(
             "/domain/src/",
             "/data/src/",

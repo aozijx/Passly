@@ -6,6 +6,8 @@ import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.port.AuthorizationPermitRevoker
+import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
+import com.aozijx.passly.domain.access.port.SessionActivityReporter
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.AuthenticationRequestId
 import com.aozijx.passly.domain.access.model.LockReason
@@ -40,7 +42,7 @@ class VaultSessionController @Inject constructor(
     private val vaultBootstrapStore: VaultBootstrapStore,
     private val lockStateManager: LockStateManager,
     idleTimeoutSettings: com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
-) : SecureSessionAccessState {
+) : SecureSessionAccessState, SessionActivityReporter, DatabaseSessionFailureState {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutex = Mutex()
     private val _state = MutableStateFlow<AuthenticationState>(AuthenticationState.Locked)
@@ -49,7 +51,7 @@ class VaultSessionController @Inject constructor(
     private var timeoutMs = 30_000L
 
     override val authenticationState: StateFlow<AuthenticationState> = _state.asStateFlow()
-    val databaseFailure: StateFlow<Throwable?> = _databaseFailure.asStateFlow()
+    override val databaseFailure: StateFlow<Throwable?> = _databaseFailure.asStateFlow()
 
     override fun isUnlocked(): Boolean = lockStateManager.isUnlocked()
     override fun isRecoveryMode(): Boolean = _state.value is AuthenticationState.RecoveryMode
@@ -271,7 +273,7 @@ class VaultSessionController @Inject constructor(
         _state.value = state
     }
 
-    fun clearDatabaseFailure() {
+    override fun clearDatabaseFailure() {
         _databaseFailure.value = null
     }
 
@@ -353,7 +355,7 @@ class VaultSessionController @Inject constructor(
         }
     }
 
-    fun onUserInteraction() {
+    override fun onUserInteraction() {
         if (isUnlocked()) resetIdleTimer()
     }
 

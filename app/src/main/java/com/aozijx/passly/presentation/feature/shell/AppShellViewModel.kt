@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.app.message.mapping.toUiMessage
 import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
+import com.aozijx.passly.domain.access.port.SessionActivityReporter
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
@@ -22,7 +24,6 @@ import com.aozijx.passly.presentation.feature.shell.AppShellUiAction
 import com.aozijx.passly.presentation.feature.shell.AppShellUiState
 import com.aozijx.passly.presentation.feature.shell.AppShellMutation
 import com.aozijx.passly.presentation.feature.shell.AppShellReducer
-import com.aozijx.passly.security.authentication.VaultSessionController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,7 +39,8 @@ import javax.inject.Inject
 class AppShellViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
     private val authenticationManager: AuthenticationManager,
-    private val sessionController: VaultSessionController,
+    private val sessionActivityReporter: SessionActivityReporter,
+    private val databaseSessionFailureState: DatabaseSessionFailureState,
     private val databaseLifecycleUseCases: DatabaseLifecycleUseCases,
     private val searchIndexMaintenance: SearchIndexMaintenance,
 ) : ViewModel() {
@@ -63,7 +65,7 @@ class AppShellViewModel @Inject constructor(
         when (action) {
             AppShellUiAction.Lock -> lock(LockReason.USER)
             AppShellUiAction.ExitRecovery -> lock(LockReason.RECOVERY_EXIT)
-            AppShellUiAction.UpdateInteraction -> sessionController.onUserInteraction()
+            AppShellUiAction.UpdateInteraction -> sessionActivityReporter.onUserInteraction()
             AppShellUiAction.RetryDatabaseInitialization -> initializeDatabase()
             AppShellUiAction.RecoverDatabase -> recoverDatabase()
             AppShellUiAction.RequestAuth -> requestAuth()
@@ -159,7 +161,7 @@ class AppShellViewModel @Inject constructor(
             val outcome = runDatabaseInitialization {
                 databaseLifecycleUseCases.retryAndReport()
             }
-            if (outcome.success) sessionController.clearDatabaseFailure()
+            if (outcome.success) databaseSessionFailureState.clearDatabaseFailure()
         }
     }
 
@@ -181,7 +183,7 @@ class AppShellViewModel @Inject constructor(
 
     private fun observeDatabaseFailures() {
         viewModelScope.launch {
-            sessionController.databaseFailure.collect { error ->
+            databaseSessionFailureState.databaseFailure.collect { error ->
                 if (error != null) {
                     mutate(AppShellMutation.DatabaseFailureObserved(error))
                 }
