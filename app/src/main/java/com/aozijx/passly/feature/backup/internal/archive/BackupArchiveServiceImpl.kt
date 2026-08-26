@@ -24,8 +24,8 @@ import javax.inject.Singleton
  * 备份服务编排器。
  *
  * 只负责流程编排，不直接处理序列化、加密、数据库读取/写入。
- * - 导出：DatabaseSnapshotReader → Format Exporter → FileStore
- * - 导入：FileStore → Format Importer → DatabaseSnapshotRestorer
+ * - 导出：Snapshot Gateway → Format Exporter → FileStore
+ * - 导入：FileStore → Format Importer → Snapshot Gateway
  */
 @Singleton
 internal class BackupArchiveServiceImpl @Inject constructor(

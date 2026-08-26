@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.backup.internal.archive.snapshot
+package com.aozijx.passly.app.database.backup
 
 import android.content.Context
 import com.aozijx.passly.core.platform.VaultResourcePaths
@@ -18,6 +18,7 @@ import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
+import com.aozijx.passly.feature.backup.internal.archive.snapshot.RestoreFileJournal
 import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.data.mapper.entry.toDatabaseFlags
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
@@ -40,12 +41,12 @@ import javax.inject.Singleton
  * - 重建或标记 Blind Index 待重建
  */
 @Singleton
-internal class DatabaseSnapshotRestorer @Inject constructor(
+internal class RoomBackupSnapshotRestorer @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val databaseSession: AppDatabaseSession,
     private val databaseCleaner: DatabaseCleaner,
     private val secretFieldStore: SecretFieldStore,
-    private val documentMapper: BackupSnapshotMapper,
+    private val documentMapper: RoomBackupSnapshotMapper,
     private val attachmentContentCrypto: AttachmentContentCrypto,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
     private val telemetry: TelemetryReporter,

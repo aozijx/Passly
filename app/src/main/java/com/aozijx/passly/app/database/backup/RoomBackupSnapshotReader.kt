@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.backup.internal.archive.snapshot
+package com.aozijx.passly.app.database.backup
 
 import android.content.Context
 import com.aozijx.passly.core.platform.VaultResourcePaths
@@ -33,13 +33,13 @@ import javax.inject.Singleton
  * 排除 Draft、SearchToken 等派生/临时数据。
  */
 @Singleton
-internal class DatabaseSnapshotReader @Inject constructor(
+internal class RoomBackupSnapshotReader @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val databaseSession: AppDatabaseSession,
     private val secretFieldStore: SecretFieldStore,
     private val attachmentContentCrypto: AttachmentContentCrypto,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
-    private val documentMapper: BackupSnapshotMapper
+    private val documentMapper: RoomBackupSnapshotMapper
 ) {
 
     suspend fun readBundle(

@@ -73,6 +73,12 @@ internal object SourceBoundaryPolicy {
             message = "feature implementation imports presentation",
         ),
         SourceBoundaryRule(
+            id = "BACKUP_FEATURE_DATA_IMPORT",
+            sourcePathContains = "/feature/backup/",
+            forbiddenImportPrefixes = setOf("com.aozijx.passly.data."),
+            message = "backup feature imports persistence implementation",
+        ),
+        SourceBoundaryRule(
             id = "PRESENTATION_SESSION_CONTROLLER_IMPORT",
             sourcePathContains = "/presentation/",
             forbiddenImportPrefixes = setOf(

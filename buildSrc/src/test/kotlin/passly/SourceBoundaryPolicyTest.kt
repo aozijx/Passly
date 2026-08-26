@@ -156,6 +156,22 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun backupFeatureCannotImportDataImplementation() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/feature/backup/BackupSnapshot.kt",
+            content = "import com.aozijx.passly.data.local.database.session.AppDatabaseSession",
+        )
+
+        assertEquals(
+            "BACKUP_FEATURE_DATA_IMPORT",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
+    @Test
     fun presentationCannotImportConcreteSessionController() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/presentation/feature/shell/AppShellViewModel.kt",

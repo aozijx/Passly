@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.backup.internal.archive.snapshot
+package com.aozijx.passly.app.database.backup
 
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupCardCredential
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupCustomField
@@ -52,7 +52,7 @@ import javax.inject.Singleton
  * 只负责 Entry ↔ BackupEntryRecord 的转换，不涉及加密或文件 IO。
  */
 @Singleton
-internal class BackupSnapshotMapper @Inject constructor() {
+internal class RoomBackupSnapshotMapper @Inject constructor() {
 
     fun toRecord(
         entry: Entry,
