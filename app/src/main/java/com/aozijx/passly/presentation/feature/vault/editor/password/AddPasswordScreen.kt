@@ -17,14 +17,14 @@ import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordV
 
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordAction
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordFormState
-import com.aozijx.passly.presentation.feature.vault.editor.common.AddEntryScaffold
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryEditorSection
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryNotesField
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryPasswordField
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryTagsField
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryTitleField
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryUsernameField
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryWebsiteField
+import com.aozijx.passly.presentation.ui.vault.editor.common.AddEntryScaffold
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorSection
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryNotesField
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryPasswordField
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryTagsField
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryTitleField
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryUsernameField
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryWebsiteField
 
 @Composable
 fun AddPasswordScreen(

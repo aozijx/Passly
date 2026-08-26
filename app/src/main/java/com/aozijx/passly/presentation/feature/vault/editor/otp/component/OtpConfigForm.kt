@@ -21,7 +21,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.presentation.feature.vault.editor.otp.OtpFormState
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryEditorTextField
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

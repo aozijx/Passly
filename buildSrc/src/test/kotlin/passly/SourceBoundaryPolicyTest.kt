@@ -253,6 +253,22 @@ class SourceBoundaryPolicyTest {
         )
     }
 
+    @Test
+    fun editorSharedUiCannotRemainInFeatureCommonPackage() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/editor/common/AddEntryScaffold.kt",
+            content = "@Composable fun AddEntryScaffold()",
+        )
+
+        assertEquals(
+            "EDITOR_COMMON_UI_IN_FEATURE",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
     private fun uiSource(content: String) = EditorSource(
         path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",
         content = content,

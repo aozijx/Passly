@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.editor.common
+package com.aozijx.passly.presentation.ui.vault.editor.common
 
 import com.aozijx.passly.presentation.ui.vault.shared.ADD_ENTRY_FAB_SHARED_KEY
 import com.aozijx.passly.presentation.ui.vault.shared.AddEntryFabVisualOverflow

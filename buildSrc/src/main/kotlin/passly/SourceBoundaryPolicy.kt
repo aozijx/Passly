@@ -114,6 +114,12 @@ internal object SourceBoundaryPolicy {
             forbiddenContentMarkers = setOf("InputActionButton("),
             message = "unlock feature host renders passive credential input content",
         ),
+        SourceBoundaryRule(
+            id = "EDITOR_COMMON_UI_IN_FEATURE",
+            sourcePathContains = "/presentation/feature/vault/editor/common/",
+            forbiddenContentMarkers = setOf("@Composable"),
+            message = "shared passive editor UI remains in presentation feature",
+        ),
         *listOf(
             "/domain/src/",
             "/data/src/",

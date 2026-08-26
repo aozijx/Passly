@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.editor.common
+package com.aozijx.passly.presentation.ui.vault.editor.common
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally

@@ -34,14 +34,14 @@ import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardA
 import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardFormState
 import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardViewModel
 import com.aozijx.passly.presentation.feature.vault.editor.bankcard.CardType
-import com.aozijx.passly.presentation.feature.vault.editor.common.AddEntryScaffold
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryEditorSection
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryEditorTextField
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryNotesField
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryPasswordField
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryTagsField
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryTitleField
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryUsernameField
+import com.aozijx.passly.presentation.ui.vault.editor.common.AddEntryScaffold
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorSection
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorTextField
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryNotesField
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryPasswordField
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryTagsField
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryTitleField
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryUsernameField
 
 @Composable
 fun AddBankCardScreen(

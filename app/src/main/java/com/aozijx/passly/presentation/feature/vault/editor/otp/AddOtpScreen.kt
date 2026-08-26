@@ -30,10 +30,10 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpAction
 import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpViewModel
 import com.aozijx.passly.presentation.feature.vault.editor.otp.component.OtpConfigForm
-import com.aozijx.passly.presentation.feature.vault.editor.common.AddEntryScaffold
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryEditorSection
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryEditorTextField
-import com.aozijx.passly.presentation.feature.vault.editor.common.EntryTitleField
+import com.aozijx.passly.presentation.ui.vault.editor.common.AddEntryScaffold
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorSection
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorTextField
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryTitleField
 
 @Composable
 fun AddOtpScreen(
