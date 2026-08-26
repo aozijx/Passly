@@ -2,7 +2,7 @@ package com.aozijx.passly.presentation.feature.backup
 
 import android.net.Uri
 import com.aozijx.passly.core.error.model.AppError
-import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
+import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupOperationStatus
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -16,7 +16,7 @@ data class BackupUiState(
     val backupUri: Uri? = null,
     val backupPassword: SensitiveValue = EmptySensitiveValue,
     val importMode: ImportMode = ImportMode.APPEND,
-    val selectedExportFormat: BackupExportUiFormat = BackupExportUiFormat.ENCRYPTED,
+    val selectedExportFormat: BackupExportFormat = BackupExportFormat.ENCRYPTED,
     val includeIcons: Boolean = true,
     val includeAttachments: Boolean = true,
     val includeDeleted: Boolean = true,

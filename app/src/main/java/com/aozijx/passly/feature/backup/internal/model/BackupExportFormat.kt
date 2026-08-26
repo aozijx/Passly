@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.backup.internal.model
 
-enum class BackupExportUiFormat(
+enum class BackupExportFormat(
     val formatId: BackupFormatId,
     val extension: String,
     val mimeType: String,

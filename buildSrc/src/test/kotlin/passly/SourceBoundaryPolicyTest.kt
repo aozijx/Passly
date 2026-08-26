@@ -139,6 +139,22 @@ class SourceBoundaryPolicyTest {
         )
     }
 
+    @Test
+    fun featureImplementationCannotImportPresentation() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/feature/backup/BackupUseCase.kt",
+            content = "import com.aozijx.passly.presentation.feature.backup.BackupUiState",
+        )
+
+        assertEquals(
+            "FEATURE_PRESENTATION_IMPORT",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
     private fun uiSource(content: String) = EditorSource(
         path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",
         content = content,

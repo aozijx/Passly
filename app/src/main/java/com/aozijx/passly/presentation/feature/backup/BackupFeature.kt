@@ -11,7 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
+import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.presentation.feature.backup.BackupUiAction
 import com.aozijx.passly.presentation.feature.backup.BackupViewModel
 import com.aozijx.passly.presentation.ui.settings.backup.BackupRestoreDetail
@@ -131,9 +131,9 @@ fun BackupSettingsFeature(
             } else {
                 val fileName = state.pendingExportFileName ?: return@onExport
                 when (state.selectedExportFormat) {
-                    BackupExportUiFormat.ENCRYPTED -> encryptedExportPicker.launch(fileName)
-                    BackupExportUiFormat.JSON -> jsonExportPicker.launch(fileName)
-                    BackupExportUiFormat.TEXT -> textExportPicker.launch(fileName)
+                    BackupExportFormat.ENCRYPTED -> encryptedExportPicker.launch(fileName)
+                    BackupExportFormat.JSON -> jsonExportPicker.launch(fileName)
+                    BackupExportFormat.TEXT -> textExportPicker.launch(fileName)
                 }
             }
         },

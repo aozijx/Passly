@@ -2,7 +2,7 @@ package com.aozijx.passly.presentation.feature.backup
 
 import android.net.Uri
 import com.aozijx.passly.core.error.model.AppError
-import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
+import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupOperationStatus
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -14,7 +14,7 @@ internal sealed interface BackupMutation {
     data object OperationStarted : BackupMutation
 
     data class ExportPrepared(
-        val format: BackupExportUiFormat,
+        val format: BackupExportFormat,
         val fileName: String,
     ) : BackupMutation
 

@@ -1,7 +1,7 @@
 package com.aozijx.passly.presentation.feature.backup
 
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
+import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.presentation.ui.settings.backup.BackupExportFormatUiModel
 import com.aozijx.passly.presentation.ui.settings.backup.BackupImportModeUiModel
@@ -28,7 +28,7 @@ internal fun BackupUiState.toSheetUiState(): BackupSheetUiState {
     }
 }
 
-internal fun BackupExportFormatUiModel.toFeatureModel() = BackupExportUiFormat.valueOf(name)
+internal fun BackupExportFormatUiModel.toFeatureModel() = BackupExportFormat.valueOf(name)
 internal fun BackupImportModeUiModel.toFeatureModel() = ImportMode.valueOf(name)
 internal fun Set<VaultEntryTypeUiModel>.toFeatureModels(): Set<EntryType> =
     mapTo(linkedSetOf()) { EntryType.valueOf(it.name) }

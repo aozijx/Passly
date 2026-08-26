@@ -1,7 +1,7 @@
 package com.aozijx.passly.presentation.feature.backup
 
 import android.net.Uri
-import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
+import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.SensitiveValue
@@ -10,7 +10,7 @@ import com.aozijx.passly.domain.sensitive.SensitiveValue
 sealed interface BackupUiAction {
     data class CheckDirectoryPermission(val uri: String?) : BackupUiAction
 
-    data class PrepareExport(val format: BackupExportUiFormat) : BackupUiAction
+    data class PrepareExport(val format: BackupExportFormat) : BackupUiAction
 
     data class StartExport(
         val uri: Uri,

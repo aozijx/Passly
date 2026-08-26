@@ -3,14 +3,15 @@ package com.aozijx.passly.presentation.feature.backup
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.model.BackupFailed
-import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
+import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.feature.backup.internal.presentation.BackupExecutionResult
-import com.aozijx.passly.feature.backup.internal.presentation.BackupOperation
-import com.aozijx.passly.feature.backup.internal.presentation.BackupOperationUseCase
+import com.aozijx.passly.feature.backup.internal.operation.BackupExecutionResult
+import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
+import com.aozijx.passly.feature.backup.internal.operation.BackupOperationRequest
+import com.aozijx.passly.feature.backup.internal.operation.BackupOperationUseCase
 import com.aozijx.passly.feature.backup.internal.presentation.BackupSessionDenial
 import com.aozijx.passly.feature.backup.internal.presentation.BackupSessionPolicy
 import com.aozijx.passly.presentation.feature.backup.BackupUiAction
@@ -80,7 +81,7 @@ internal class BackupViewModel @Inject constructor(
         }
     }
 
-    private fun prepareExport(format: BackupExportUiFormat) {
+    private fun prepareExport(format: BackupExportFormat) {
         if (!requireSession(sessionPolicy.regularExportDenial(), BackupOperation.EXPORT)) return
         clearPasswordAndMutate(
             BackupMutation.ExportPrepared(
@@ -110,7 +111,7 @@ internal class BackupViewModel @Inject constructor(
         viewModelScope.launch {
             mutate(BackupMutation.OperationStarted)
             applyResult(
-                result = backupOperationUseCase.exportToConfiguredDirectory(snapshot),
+                result = backupOperationUseCase.exportToConfiguredDirectory(snapshot.toRequest()),
                 operation = BackupOperation.EXPORT,
                 clearPendingFields = true,
             )
@@ -126,7 +127,7 @@ internal class BackupViewModel @Inject constructor(
         viewModelScope.launch {
             mutate(BackupMutation.OperationStarted)
             applyResult(
-                result = backupOperationUseCase.executePending(snapshot),
+                result = backupOperationUseCase.executePending(snapshot.toRequest()),
                 operation = operation,
                 clearPendingFields = true,
             )
@@ -202,6 +203,20 @@ internal class BackupViewModel @Inject constructor(
 
 private fun BackupUiState.operation(): BackupOperation =
     if (isExporting) BackupOperation.EXPORT else BackupOperation.IMPORT
+
+private fun BackupUiState.toRequest() = BackupOperationRequest(
+    operation = operation(),
+    exportFormat = selectedExportFormat,
+    importMode = importMode,
+    includeIcons = includeIcons,
+    includeAttachments = includeAttachments,
+    includeDeleted = includeDeleted,
+    includedEntryTypes = includedEntryTypes,
+    targetUri = backupUri?.toString(),
+    password = backupPassword,
+    pendingExportFileName = pendingExportFileName,
+    deleteTargetOnFailure = deleteTargetOnFailure,
+)
 
 private fun BackupOperation.successNotice(): NoticeCode = when (this) {
     BackupOperation.EXPORT -> NoticeCode.BACKUP_EXPORT_COMPLETED

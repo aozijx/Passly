@@ -1,7 +1,7 @@
 package com.aozijx.passly.presentation.feature.backup
 
 import com.aozijx.passly.core.error.model.BackupFailed
-import com.aozijx.passly.feature.backup.internal.model.BackupExportUiFormat
+import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupOperationStatus
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -30,13 +30,13 @@ class BackupReducerTest {
         val state = BackupReducer.reduce(
             initial,
             BackupMutation.ExportPrepared(
-                format = BackupExportUiFormat.TEXT,
+                format = BackupExportFormat.TEXT,
                 fileName = "backup.txt",
             ),
         )
 
         assertTrue(state.isExporting)
-        assertEquals(BackupExportUiFormat.TEXT, state.selectedExportFormat)
+        assertEquals(BackupExportFormat.TEXT, state.selectedExportFormat)
         assertEquals("backup.txt", state.pendingExportFileName)
         assertTrue(state.backupPassword.isEmpty)
         assertFalse(state.includeIcons)
