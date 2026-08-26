@@ -23,7 +23,10 @@ import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
@@ -76,6 +79,15 @@ fun SettingsNavGraph(
     val backBehavior = BackNavigationBehavior.PopUntilScaffoldValueChange
     val isSinglePane = navigator.scaffoldDirective.maxHorizontalPartitions == 1
     val selectedRoute = navigator.currentDestination?.contentKey
+    var retainedDetailRoute by remember { mutableStateOf<SettingsRoute?>(null) }
+    LaunchedEffect(selectedRoute) {
+        if (selectedRoute != null) retainedDetailRoute = selectedRoute
+    }
+    val renderedDetailRoute = resolveSettingsDetailRoute(
+        isSinglePane = isSinglePane,
+        navigatorRoute = selectedRoute,
+        retainedDetailRoute = retainedDetailRoute,
+    )
     val selectedRouteKey = if (isSinglePane) null else selectedRoute?.route
     val motionScheme = MaterialTheme.motionScheme
     val navigateBack: () -> Unit = {
@@ -185,7 +197,7 @@ fun SettingsNavGraph(
                 // 动画播放中若目标路由再次变化，动画立即重定向到新目标，配合 spring
                 // 弹簧动画平滑衔接，快速连续点击多个设置项也不会跳变或卡顿。
                 AnimatedContent(
-                    targetState = selectedRoute,
+                    targetState = renderedDetailRoute,
                     transitionSpec = {
                         if (isSinglePane) {
                             EnterTransition.None togetherWith ExitTransition.None
@@ -245,6 +257,20 @@ fun SettingsNavGraph(
             }
         )
     )
+}
+
+/**
+ * Keeps only the outgoing detail's render key while a single-pane pop animation runs.
+ * Navigation and selection continue to come exclusively from the adaptive navigator.
+ */
+internal fun resolveSettingsDetailRoute(
+    isSinglePane: Boolean,
+    navigatorRoute: SettingsRoute?,
+    retainedDetailRoute: SettingsRoute?,
+): SettingsRoute? = if (isSinglePane) {
+    navigatorRoute ?: retainedDetailRoute
+} else {
+    navigatorRoute
 }
 
 @Composable
