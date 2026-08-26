@@ -8,7 +8,10 @@ internal object SourceBoundaryVerifier {
         sources.forEach { source ->
             val normalizedPath = "/${source.path.replace('\\', '/').trimStart('/')}"
             rules.filter { rule ->
-                normalizedPath.contains(rule.sourcePathContains, ignoreCase = true)
+                normalizedPath.contains(rule.sourcePathContains, ignoreCase = true) &&
+                    rule.allowedSourcePathContains.none { allowedPath ->
+                        normalizedPath.contains(allowedPath, ignoreCase = true)
+                    }
             }.forEach { rule ->
                 source.content.lineSequence().forEach { rawLine ->
                     val evidence = rawLine.trim()

@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.repository.entry.paging
+package com.aozijx.passly.feature.vault.entry
 
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -6,8 +6,7 @@ import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import kotlinx.coroutines.flow.Flow
 
-/** Data paging boundary exposed only to the App composition adapter. */
-interface EntryPagingStore {
+interface VaultEntryPageSource {
     fun pages(
         query: EntryListQuery,
         config: PagingConfig,

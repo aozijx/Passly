@@ -69,6 +69,51 @@ class SourceBoundaryPolicyTest {
         assertTrue(formatted.contains("import com.aozijx.passly.domain.entry.model.Entry"))
     }
 
+    @Test
+    fun presentationFeatureMayUseVaultContractButNotDataPaging() {
+        val allowed = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/list/VaultViewModel.kt",
+            content = "import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource",
+        )
+        val forbidden = allowed.copy(
+            content = "import com.aozijx.passly.data.repository.entry.paging.EntryPagingStore",
+        )
+
+        assertEquals(
+            emptyList(),
+            SourceBoundaryVerifier.verify(listOf(allowed), SourceBoundaryPolicy.generalRules),
+        )
+        val violation = SourceBoundaryVerifier.verify(
+            listOf(forbidden),
+            SourceBoundaryPolicy.generalRules,
+        ).single()
+        assertEquals("PRESENTATION_FEATURE_DATA_IMPORT", violation.ruleId)
+    }
+
+    @Test
+    fun vaultDataTypesAreRestrictedToAppAdapters() {
+        val dataImport = "import com.aozijx.passly.data.repository.entry.paging.EntryPagingStore"
+        val adapter = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/app/entry/paging/DataVaultEntryPageSource.kt",
+            content = dataImport,
+        )
+        val unrelated = adapter.copy(
+            path = "app/src/main/java/com/aozijx/passly/app/entry/Unrelated.kt",
+        )
+
+        assertEquals(
+            emptyList(),
+            SourceBoundaryVerifier.verify(listOf(adapter), SourceBoundaryPolicy.generalRules),
+        )
+        assertEquals(
+            "VAULT_DATA_ADAPTER_ONLY",
+            SourceBoundaryVerifier.verify(
+                listOf(unrelated),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
     private fun uiSource(content: String) = EditorSource(
         path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",
         content = content,

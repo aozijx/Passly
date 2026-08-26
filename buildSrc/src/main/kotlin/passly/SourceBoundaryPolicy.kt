@@ -29,10 +29,25 @@ internal object SourceBoundaryPolicy {
             message = "presentation UI cannot own or look up a ViewModel",
         ),
         SourceBoundaryRule(
-            id = "EDITOR_DATA_IMPORT",
-            sourcePathContains = "/presentation/feature/vault/editor/",
+            id = "PRESENTATION_FEATURE_DATA_IMPORT",
+            sourcePathContains = "/presentation/feature/vault/",
             forbiddenImportPrefixes = setOf("com.aozijx.passly.data."),
-            message = "presentation editor imports a data implementation",
+            message = "presentation feature imports a data implementation",
+        ),
+        SourceBoundaryRule(
+            id = "VAULT_DATA_ADAPTER_ONLY",
+            sourcePathContains = "/app/src/",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.data.repository.entry.paging.EntryPagingStore",
+                "com.aozijx.passly.data.local.database.port.EntryDataRefreshNotifier",
+            ),
+            allowedSourcePathContains = setOf(
+                "/app/entry/paging/DataVaultEntryPageSource.kt",
+                "/app/entry/paging/DataVaultDataChangeSignal.kt",
+                "/presentation/feature/",
+                "/feature/vault/entry/VaultDataAdaptersTest.kt",
+            ),
+            message = "vault paging Data types may only be imported by App adapters",
         ),
         *listOf(
             "/domain/src/",

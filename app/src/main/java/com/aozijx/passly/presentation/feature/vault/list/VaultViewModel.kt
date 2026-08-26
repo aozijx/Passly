@@ -9,8 +9,8 @@ import androidx.paging.cachedIn
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.domain.entry.otp.OtpGenerator
-import com.aozijx.passly.data.local.database.port.EntryDataRefreshNotifier
-import com.aozijx.passly.data.repository.entry.paging.EntryPagingStore
+import com.aozijx.passly.feature.vault.entry.VaultDataChangeSignal
+import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
 import com.aozijx.passly.runtime.session.SessionStateProvider
 import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -67,13 +67,13 @@ import javax.inject.Inject
 class VaultViewModel @Inject constructor(
     private val entryQueryRepository: EntryQueryRepository,
     private val entryListQueryRepository: EntryListQueryRepository,
-    private val entryPagingStore: EntryPagingStore,
+    private val entryPageSource: VaultEntryPageSource,
     private val otpConfigRepository: OtpConfigRepository,
     private val settingsRepository: AppSettingsRepository,
     private val entryCommandRepository: EntryCommandRepository,
     private val faviconService: FaviconService,
     val entryFieldReader: EntryFieldReader,
-    private val dataRefreshNotifier: EntryDataRefreshNotifier,
+    private val dataChangeSignal: VaultDataChangeSignal,
     private val sessionStateProvider: SessionStateProvider,
     private val accessPolicy: SecureSessionAccessPolicy,
     private val clipboardCopyController: ClipboardCopyController,
@@ -160,7 +160,7 @@ class VaultViewModel @Inject constructor(
                 )
             }
                 .distinctUntilChanged()
-                .flatMapLatest { query -> entryPagingStore.pages(query, ENTRY_PAGING_CONFIG) }
+                .flatMapLatest { query -> entryPageSource.pages(query, ENTRY_PAGING_CONFIG) }
                 .cachedIn(viewModelScope)
         }
 
@@ -321,7 +321,7 @@ class VaultViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            dataRefreshNotifier.events.collect {
+            dataChangeSignal.changes().collect {
                 requestFullReload()
             }
         }
