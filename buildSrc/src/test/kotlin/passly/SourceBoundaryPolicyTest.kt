@@ -221,6 +221,22 @@ class SourceBoundaryPolicyTest {
         )
     }
 
+    @Test
+    fun scannerFeatureCannotKeepAPassiveViewEntryPoint() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/scanner/ScannerView.kt",
+            content = "fun ScannerView(onBarcodeDetected: (String) -> Unit)",
+        )
+
+        assertEquals(
+            "PASSIVE_SCANNER_VIEW_IN_FEATURE",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
     private fun uiSource(content: String) = EditorSource(
         path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",
         content = content,

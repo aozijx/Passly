@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.scanner
+package com.aozijx.passly.presentation.ui.scanner
 
 import android.content.Intent
 import android.widget.Toast
@@ -63,7 +63,7 @@ private class ScannerCameraSession {
 
 @OptIn(ExperimentalGetImage::class)
 @Composable
-fun ScannerView(
+fun ScannerContent(
     onBarcodeDetected: (String) -> Unit,
     onCopyResult: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -152,7 +152,7 @@ fun ScannerView(
                                         if (disposed) return@addOnSuccessListener
                                         barcodes.firstOrNull()?.rawValue?.let { value ->
                                             AppTelemetry.d(
-                                                "ScannerView",
+                                                "ScannerContent",
                                                 "Barcode detected"
                                             )
                                             onBarcodeDetected(value)
@@ -160,7 +160,7 @@ fun ScannerView(
                                     }
                                     .addOnFailureListener { error ->
                                         AppTelemetry.e(
-                                            "ScannerView",
+                                            "ScannerContent",
                                             "Barcode analysis failed",
                                             error
                                         )
@@ -179,7 +179,7 @@ fun ScannerView(
                         imageAnalysis
                     )
                 } catch (e: Exception) {
-                    AppTelemetry.e("ScannerView", "Camera binding failed", e)
+                    AppTelemetry.e("ScannerContent", "Camera binding failed", e)
                 }
             }, ContextCompat.getMainExecutor(context))
         }

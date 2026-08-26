@@ -102,6 +102,12 @@ internal object SourceBoundaryPolicy {
             ),
             message = "settings mirrors navigator destination in local state",
         ),
+        SourceBoundaryRule(
+            id = "PASSIVE_SCANNER_VIEW_IN_FEATURE",
+            sourcePathContains = "/presentation/feature/scanner/",
+            forbiddenContentMarkers = setOf("fun ScannerView("),
+            message = "scanner render entry point remains in presentation feature",
+        ),
         *listOf(
             "/domain/src/",
             "/data/src/",
