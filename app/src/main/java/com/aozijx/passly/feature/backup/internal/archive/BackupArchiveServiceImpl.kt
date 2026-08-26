@@ -11,8 +11,8 @@ import com.aozijx.passly.feature.backup.internal.archive.di.BackupIoDispatcher
 import com.aozijx.passly.feature.backup.internal.archive.format.BackupFormatRegistry
 import com.aozijx.passly.feature.backup.internal.archive.io.BackupFileStore
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
-import com.aozijx.passly.feature.backup.internal.archive.snapshot.DatabaseSnapshotReader
-import com.aozijx.passly.feature.backup.internal.archive.snapshot.DatabaseSnapshotRestorer
+import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupSnapshotGateway
+import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupSnapshotReadOptions
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
 import kotlinx.coroutines.CoroutineDispatcher
@@ -29,8 +29,7 @@ import javax.inject.Singleton
  */
 @Singleton
 internal class BackupArchiveServiceImpl @Inject constructor(
-    private val snapshotReader: DatabaseSnapshotReader,
-    private val snapshotRestorer: DatabaseSnapshotRestorer,
+    private val snapshotGateway: BackupSnapshotGateway,
     private val formatRegistry: BackupFormatRegistry,
     private val fileStore: BackupFileStore,
     private val errorReporter: AppErrorReporter,
@@ -43,12 +42,14 @@ internal class BackupArchiveServiceImpl @Inject constructor(
         AppResult.runSuspendCatching {
             val adapter = formatRegistry.exporter(request.format)
             validatePassword(adapter.requiresPassword, request.password)
-            val bundle = snapshotReader.readBundle(
-                includeIcons = request.options.includeIcons && adapter.supportsIcons,
-                includeAttachments =
-                    request.options.includeAttachments && adapter.includesAttachments,
-                includeDeleted = request.options.includeDeleted,
-                includedEntryTypes = request.options.includedEntryTypes
+            val bundle = snapshotGateway.read(
+                BackupSnapshotReadOptions(
+                    includeIcons = request.options.includeIcons && adapter.supportsIcons,
+                    includeAttachments =
+                        request.options.includeAttachments && adapter.includesAttachments,
+                    includeDeleted = request.options.includeDeleted,
+                    includedEntryTypes = request.options.includedEntryTypes,
+                ),
             )
             try {
                 val encoded = adapter.encode(bundle, request.password)
@@ -73,7 +74,7 @@ internal class BackupArchiveServiceImpl @Inject constructor(
                 validatePassword(adapter.requiresPassword, request.password)
                 val bundle = adapter.decode(payload, request.password)
                 try {
-                    snapshotRestorer.restore(bundle, request.mode)
+                    snapshotGateway.restore(bundle, request.mode)
                 } finally {
                     bundle.clearResourceData()
                 }
