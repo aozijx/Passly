@@ -237,6 +237,22 @@ class SourceBoundaryPolicyTest {
         )
     }
 
+    @Test
+    fun unlockFeatureHostCannotRenderCredentialInputsDirectly() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/unlock/AuthenticationScreen.kt",
+            content = "InputActionButton(value = state.appPassword)",
+        )
+
+        assertEquals(
+            "UNLOCK_FEATURE_PASSIVE_CONTENT",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
     private fun uiSource(content: String) = EditorSource(
         path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",
         content = content,

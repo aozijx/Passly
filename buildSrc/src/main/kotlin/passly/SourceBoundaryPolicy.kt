@@ -108,6 +108,12 @@ internal object SourceBoundaryPolicy {
             forbiddenContentMarkers = setOf("fun ScannerView("),
             message = "scanner render entry point remains in presentation feature",
         ),
+        SourceBoundaryRule(
+            id = "UNLOCK_FEATURE_PASSIVE_CONTENT",
+            sourcePathContains = "/presentation/feature/unlock/AuthenticationScreen.kt",
+            forbiddenContentMarkers = setOf("InputActionButton("),
+            message = "unlock feature host renders passive credential input content",
+        ),
         *listOf(
             "/domain/src/",
             "/data/src/",
