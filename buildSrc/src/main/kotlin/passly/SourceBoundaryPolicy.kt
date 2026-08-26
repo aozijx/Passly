@@ -132,6 +132,12 @@ internal object SourceBoundaryPolicy {
             forbiddenContentMarkers = setOf("OtpConfigForm("),
             message = "OTP editor feature host renders passive form content",
         ),
+        SourceBoundaryRule(
+            id = "BANK_CARD_EDITOR_HOST_PASSIVE_UI",
+            sourcePathContains = "/presentation/feature/vault/editor/bankcard/",
+            forbiddenContentMarkers = setOf("CardTypeDropdown("),
+            message = "bank card editor feature host renders passive form content",
+        ),
         *listOf(
             "/domain/src/",
             "/data/src/",

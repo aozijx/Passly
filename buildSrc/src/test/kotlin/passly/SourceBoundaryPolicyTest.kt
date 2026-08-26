@@ -301,6 +301,22 @@ class SourceBoundaryPolicyTest {
         )
     }
 
+    @Test
+    fun bankCardEditorFeatureCannotRenderCardTypeDropdownDirectly() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/editor/bankcard/AddBankCardEditorHost.kt",
+            content = "CardTypeDropdown(selected = state.cardType)",
+        )
+
+        assertEquals(
+            "BANK_CARD_EDITOR_HOST_PASSIVE_UI",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
     private fun uiSource(content: String) = EditorSource(
         path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",
         content = content,

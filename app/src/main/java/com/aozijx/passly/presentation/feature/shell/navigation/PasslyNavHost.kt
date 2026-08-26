@@ -39,7 +39,7 @@ import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardV
 import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpViewModel
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordViewModel
 import com.aozijx.passly.presentation.feature.vault.list.VaultHost
-import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardScreen
+import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardEditorHost
 import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpEditorHost
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordEditorHost
 import kotlinx.coroutines.flow.collectLatest
@@ -179,7 +179,7 @@ fun PasslyNavHost(
                 composable(AppRoute.AddBankCard.route) {
                     val animatedVisibilityScope = this
                     val addBankCardViewModel: AddBankCardViewModel = hiltViewModel()
-                    AddBankCardScreen(
+                    AddBankCardEditorHost(
                         viewModel = addBankCardViewModel,
                         onBack = { navController.popBackStack() },
                         onSaved = { navController.popBackStack() },
