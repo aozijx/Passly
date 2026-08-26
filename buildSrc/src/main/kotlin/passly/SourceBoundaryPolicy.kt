@@ -120,6 +120,12 @@ internal object SourceBoundaryPolicy {
             forbiddenContentMarkers = setOf("@Composable"),
             message = "shared passive editor UI remains in presentation feature",
         ),
+        SourceBoundaryRule(
+            id = "PASSWORD_EDITOR_HOST_PASSIVE_UI",
+            sourcePathContains = "/presentation/feature/vault/editor/password/",
+            forbiddenContentMarkers = setOf("EntryTitleField("),
+            message = "password editor feature host renders passive fields",
+        ),
         *listOf(
             "/domain/src/",
             "/data/src/",
