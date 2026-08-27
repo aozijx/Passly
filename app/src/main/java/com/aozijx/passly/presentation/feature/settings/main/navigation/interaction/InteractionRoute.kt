@@ -10,7 +10,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.backup.DatabaseRecoveryViewModel
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsAction
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.ui.settings.interaction.InteractionDetail
@@ -27,7 +26,6 @@ internal fun InteractionRouteContent(
     localState: SettingsScreenLocalState,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
-    recoveryViewModel: DatabaseRecoveryViewModel,
     settingsViewModel: SettingsViewModel,
     settingsState: SettingsUiState,
     onBack: (() -> Unit)?

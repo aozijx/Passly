@@ -13,6 +13,9 @@ internal fun NavGraphBuilder.registerSettingsGraph(context: ShellNavigationConte
         SettingsNavGraph(
             onOuterBack = context.navigateBack,
             onOpenTrash = { context.navigateToRoute(AppRoute.Trash.route) },
+            onOpenDatabaseRecovery = {
+                context.navigateToRoute(AppRoute.DatabaseRecovery.route)
+            },
             settingsViewModel = settingsViewModel,
         )
     }

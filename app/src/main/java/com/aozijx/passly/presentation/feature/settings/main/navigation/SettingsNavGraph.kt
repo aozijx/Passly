@@ -42,7 +42,6 @@ import com.aozijx.passly.presentation.ui.settings.main.SettingsMainPage
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.backup.DatabaseRecoveryViewModel
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.ui.settings.main.SettingsDetailPlaceholder
 import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenDialogsHost
@@ -64,6 +63,7 @@ import kotlinx.coroutines.launch
 fun SettingsNavGraph(
     settingsViewModel: SettingsViewModel,
     onOpenTrash: () -> Unit,
+    onOpenDatabaseRecovery: () -> Unit,
     onOuterBack: () -> Unit
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<SettingsRoute>()
@@ -74,7 +74,6 @@ fun SettingsNavGraph(
     val interactionState by interactionViewModel.uiState.collectAsStateWithLifecycle()
     val dataViewModel: DataManagementSettingsViewModel = hiltViewModel()
     val dataState by dataViewModel.uiState.collectAsStateWithLifecycle()
-    val recoveryViewModel: DatabaseRecoveryViewModel = hiltViewModel()
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
     val backBehavior = BackNavigationBehavior.PopUntilScaffoldValueChange
@@ -227,9 +226,9 @@ fun SettingsNavGraph(
                         settingsViewModel = settingsViewModel,
                         interactionViewModel = interactionViewModel,
                         dataViewModel = dataViewModel,
-                        recoveryViewModel = recoveryViewModel,
                         settingsState = settingsState,
                         onOpenTrash = onOpenTrash,
+                        onOpenDatabaseRecovery = onOpenDatabaseRecovery,
                         onBack = if (isSinglePane) navigateBack else null
                     )
                 }
@@ -283,9 +282,9 @@ private fun SettingsDetailContent(
     settingsViewModel: SettingsViewModel,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
-    recoveryViewModel: DatabaseRecoveryViewModel,
     settingsState: SettingsUiState,
     onOpenTrash: () -> Unit,
+    onOpenDatabaseRecovery: () -> Unit,
     onBack: (() -> Unit)?
 ) {
     when (route) {
@@ -316,10 +315,10 @@ private fun SettingsDetailContent(
                 localState = localState,
                 interactionViewModel = interactionViewModel,
                 dataViewModel = dataViewModel,
-                recoveryViewModel = recoveryViewModel,
                 settingsViewModel = settingsViewModel,
                 settingsState = settingsState,
                 onOpenTrash = onOpenTrash,
+                onOpenDatabaseRecovery = onOpenDatabaseRecovery,
                 onBack = onBack
             )
         }

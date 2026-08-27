@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
+import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailWifiUiModel
 
 @Composable

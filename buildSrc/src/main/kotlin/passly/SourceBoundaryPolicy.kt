@@ -157,6 +157,22 @@ internal object SourceBoundaryPolicy {
             message = "data management settings owns Vault trash state or commands",
         ),
         SourceBoundaryRule(
+            id = "SETTINGS_DATABASE_CAPABILITY_OWNERSHIP",
+            sourcePathContains = "/presentation/feature/settings/",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.app.database.DatabaseLifecycleUseCases",
+                "com.aozijx.passly.feature.database.recovery.DatabaseRecoveryGateway",
+                "com.aozijx.passly.presentation.feature.database.recovery.DatabaseRecoveryViewModel",
+            ),
+            forbiddenContentMarkers = setOf(
+                "ClearDatabase",
+                "isClearingDatabase",
+                "DatabaseClearStarted",
+                "DatabaseClearFinished",
+            ),
+            message = "settings owns database lifecycle or recovery capability",
+        ),
+        SourceBoundaryRule(
             id = "SHELL_NAV_HOST_FEATURE_REGISTRATION",
             sourcePathContains = "/presentation/feature/shell/navigation/PasslyNavHost.kt",
             forbiddenContentMarkers = setOf("composable("),

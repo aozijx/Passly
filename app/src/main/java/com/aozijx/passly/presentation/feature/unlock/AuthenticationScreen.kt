@@ -5,9 +5,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.R
 import com.aozijx.passly.core.crypto.MemoryCleaner
-import com.aozijx.passly.core.ui.components.apppassword.AppPasswordSetDialog
+import com.aozijx.passly.presentation.ui.shared.components.apppassword.AppPasswordSetDialog
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
@@ -101,6 +102,10 @@ fun AuthenticationScreen(
         AppPasswordSetDialog(
             newPassword = bootstrapState.newAppPassword.toUiString(),
             confirmPassword = bootstrapState.confirmAppPassword.toUiString(),
+            confirmEnabled = AppPasswordPolicy.DEFAULT.acceptsLength(
+                bootstrapState.newAppPassword.toUiString().length,
+            ) && bootstrapState.newAppPassword.toUiString() ==
+                bootstrapState.confirmAppPassword.toUiString(),
             onNewPasswordChange = {
                 bootstrapViewModel.onAction(BootstrapUiAction.NewAppPasswordChanged(it))
             },

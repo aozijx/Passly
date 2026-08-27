@@ -12,7 +12,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.app.security.authentication.AuthenticationHost
-import com.aozijx.passly.core.ui.theme.AppTheme
+import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras

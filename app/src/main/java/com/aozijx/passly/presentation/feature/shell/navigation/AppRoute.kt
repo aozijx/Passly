@@ -16,6 +16,8 @@ sealed class AppRoute(val route: String) {
 
     data object Trash : AppRoute("vault/trash")
 
+    data object DatabaseRecovery : AppRoute("database/recovery")
+
     data object AddPassword : AppRoute("vault/add/password")
 
     data object AddOtp : AppRoute("vault/add/otp")

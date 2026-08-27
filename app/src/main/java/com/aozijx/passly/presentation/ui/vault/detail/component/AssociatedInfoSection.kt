@@ -40,10 +40,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.AppPackagePickerBottomSheet
-import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
-import com.aozijx.passly.core.ui.components.rememberAppIcon
-import com.aozijx.passly.core.ui.components.rememberAppMetadata
+import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerBottomSheet
+import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
+import com.aozijx.passly.presentation.ui.shared.components.rememberAppIcon
+import com.aozijx.passly.presentation.ui.shared.components.rememberAppMetadata
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailAssociatedInfoUiModel
 
 @Composable

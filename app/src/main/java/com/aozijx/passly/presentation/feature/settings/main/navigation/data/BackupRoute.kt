@@ -18,7 +18,6 @@ import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.backup.DatabaseRecoveryViewModel
 import com.aozijx.passly.presentation.feature.settings.backup.handleBackupPathPicked
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
@@ -33,7 +32,6 @@ internal fun BackupRouteContent(
     localState: SettingsScreenLocalState,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
-    recoveryViewModel: DatabaseRecoveryViewModel,
     settingsViewModel: SettingsViewModel,
     settingsState: SettingsUiState,
     onBack: (() -> Unit)?

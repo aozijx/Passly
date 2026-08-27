@@ -5,7 +5,6 @@ import com.aozijx.passly.domain.access.model.AuthenticationFailure
 sealed interface SettingsEffect {
     data class ShowError(val message: String) : SettingsEffect
     data object SettingsSaved : SettingsEffect
-    data object DatabaseCleared : SettingsEffect
     data object AppPasswordSet : SettingsEffect
     data object AppPasswordChanged : SettingsEffect
     data object AppPasswordDisabled : SettingsEffect

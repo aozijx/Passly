@@ -29,7 +29,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.menu.MenuOptionText
+import com.aozijx.passly.presentation.ui.shared.components.menu.MenuOptionText
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
 
 private val SWIPE_ACTIONS = listOf(

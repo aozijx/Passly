@@ -7,9 +7,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.group.RoundedGroup
-import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
-import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
+import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
+import com.aozijx.passly.presentation.ui.shared.components.group.switchSettingsGroupItem
+import com.aozijx.passly.presentation.ui.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 
 internal data class NotificationSettingsUiModel(

@@ -16,9 +16,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.group.GroupCard
-import com.aozijx.passly.core.ui.components.group.RoundedGroup
-import com.aozijx.passly.core.ui.components.group.model.RoundedGroupItem
+import com.aozijx.passly.presentation.ui.shared.components.group.GroupCard
+import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
+import com.aozijx.passly.presentation.ui.shared.components.group.model.RoundedGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.presentation.ui.settings.appearance.model.LibraryQuickFilterOptionUiModel
 import com.aozijx.passly.presentation.ui.settings.appearance.model.LibraryQuickFilterUiModel

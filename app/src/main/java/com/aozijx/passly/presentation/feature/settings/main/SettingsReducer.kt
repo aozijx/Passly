@@ -13,8 +13,6 @@ internal sealed interface SettingsMutation {
     data object LoadingFailed : SettingsMutation
     data class SwipeLeftActionSaved(val action: SwipeActionType) : SettingsMutation
     data class SwipeRightActionSaved(val action: SwipeActionType) : SettingsMutation
-    data object DatabaseClearStarted : SettingsMutation
-    data object DatabaseClearFinished : SettingsMutation
 }
 
 internal object SettingsReducer {
@@ -33,7 +31,5 @@ internal object SettingsReducer {
                 state.copy(swipeLeftAction = mutation.action)
             is SettingsMutation.SwipeRightActionSaved ->
                 state.copy(swipeRightAction = mutation.action)
-            SettingsMutation.DatabaseClearStarted -> state.copy(isClearingDatabase = true)
-            SettingsMutation.DatabaseClearFinished -> state.copy(isClearingDatabase = false)
         }
 }

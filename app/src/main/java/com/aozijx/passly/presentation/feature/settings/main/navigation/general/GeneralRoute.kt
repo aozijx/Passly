@@ -8,7 +8,6 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.backup.DatabaseRecoveryViewModel
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.general.GeneralDetail
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
@@ -23,7 +22,6 @@ internal fun GeneralRouteContent(
     localState: SettingsScreenLocalState,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
-    recoveryViewModel: DatabaseRecoveryViewModel,
     settingsViewModel: SettingsViewModel,
     settingsState: SettingsUiState,
     onBack: (() -> Unit)?

@@ -12,7 +12,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.common.DropdownSelector
+import com.aozijx.passly.presentation.ui.shared.components.common.DropdownSelector
 import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorTextField
 
 @OptIn(ExperimentalMaterial3Api::class)

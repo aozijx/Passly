@@ -16,7 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.aozijx.passly.core.media.toLocalIconImageModel
+import com.aozijx.passly.presentation.ui.shared.media.toLocalIconImageModel
 
 @Composable
 fun DetailHeader(

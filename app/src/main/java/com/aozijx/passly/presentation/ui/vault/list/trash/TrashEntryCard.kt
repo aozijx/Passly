@@ -30,7 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.VaultItemIcon
+import com.aozijx.passly.presentation.ui.shared.components.VaultItemIcon
 import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.ui.shared.entry.labelRes
 

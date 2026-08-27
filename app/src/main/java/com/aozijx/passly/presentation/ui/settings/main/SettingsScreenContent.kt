@@ -26,8 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.core.ui.components.group.RoundedGroup
-import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
+import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
+import com.aozijx.passly.presentation.ui.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 

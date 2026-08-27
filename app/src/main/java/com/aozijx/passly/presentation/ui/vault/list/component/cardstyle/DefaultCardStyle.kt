@@ -22,7 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.aozijx.passly.core.ui.components.VaultItemIcon
+import com.aozijx.passly.presentation.ui.shared.components.VaultItemIcon
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpKindUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState

@@ -15,8 +15,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
-import com.aozijx.passly.core.ui.components.PasswordInput
+import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
+import com.aozijx.passly.presentation.ui.shared.components.PasswordInput
 
 @Composable
 fun EntryEditorSection(

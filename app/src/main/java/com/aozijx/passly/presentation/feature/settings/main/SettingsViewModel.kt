@@ -11,7 +11,6 @@ import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
-import com.aozijx.passly.app.database.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.settings.model.SettingsCommand
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
@@ -35,7 +34,6 @@ class SettingsViewModel @Inject constructor(
     private val authenticationManager: AuthenticationManager,
     private val authenticationMethodProvisioner: AuthenticationMethodProvisioner,
     private val settingsRepository: AppSettingsRepository,
-    private val databaseLifecycleUseCases: DatabaseLifecycleUseCases,
     private val clipboardCopyController: ClipboardCopyController,
 ) : ViewModel() {
 
@@ -59,7 +57,6 @@ class SettingsViewModel @Inject constructor(
             is SettingsUiAction.SetSwipeLeftAction -> setSwipeLeftAction(action.action)
             is SettingsUiAction.SetSwipeRightAction -> setSwipeRightAction(action.action)
             is SettingsUiAction.LoadSettings -> loadSettings()
-            SettingsUiAction.ClearDatabase -> clearDatabase()
             SettingsUiAction.RequestAppPasswordEntry -> requestAppPasswordEntry()
             is SettingsUiAction.SetAppPassword -> setAppPassword(action.password)
             is SettingsUiAction.ChangeAppPassword -> changeAppPassword(
@@ -114,43 +111,6 @@ class SettingsViewModel @Inject constructor(
                 _effects.trySend(SettingsEffect.SettingsSaved)
             }.onFailure { error ->
                 _effects.trySend(SettingsEffect.ShowError(error.toUiMessage("保存失败")))
-            }
-        }
-    }
-
-    private fun clearDatabase() {
-        if (_uiState.value.isClearingDatabase) return
-        if (authenticationManager.state.value is AuthenticationState.RecoveryMode) {
-            _effects.trySend(SettingsEffect.ShowError("恢复模式不能清除数据库"))
-            return
-        }
-        viewModelScope.launch {
-            mutate(SettingsMutation.DatabaseClearStarted)
-            when (
-                authenticationManager.authenticate(
-                    AuthenticationRequest(AuthenticationPurpose.CLEAR_DATABASE)
-                )
-            ) {
-                is AuthenticationResult.Success -> {
-                    val outcome = databaseLifecycleUseCases.clearAndReinitialize()
-                    mutate(SettingsMutation.DatabaseClearFinished)
-                    if (outcome.success) {
-                        _effects.send(SettingsEffect.DatabaseCleared)
-                    } else {
-                        _effects.send(
-                            SettingsEffect.ShowError(
-                                "清除数据库失败"
-                            )
-                        )
-                    }
-                }
-
-                is AuthenticationResult.Cancelled ->
-                    mutate(SettingsMutation.DatabaseClearFinished)
-                is AuthenticationResult.Failure -> {
-                    mutate(SettingsMutation.DatabaseClearFinished)
-                    _effects.send(SettingsEffect.ShowError("身份验证失败，数据库未清除"))
-                }
             }
         }
     }

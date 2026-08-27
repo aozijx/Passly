@@ -8,10 +8,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.group.RoundedGroup
-import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
-import com.aozijx.passly.core.ui.components.group.sliderSettingsGroupItem
-import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
+import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
+import com.aozijx.passly.presentation.ui.shared.components.group.navigationSettingsGroupItem
+import com.aozijx.passly.presentation.ui.shared.components.group.sliderSettingsGroupItem
+import com.aozijx.passly.presentation.ui.shared.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.presentation.ui.settings.autofill.model.AutofillPresentationUiModel
 import com.aozijx.passly.presentation.ui.settings.autofill.model.AutofillSettingsUiModel

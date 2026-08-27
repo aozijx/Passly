@@ -52,8 +52,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.core.media.ImageType
-import com.aozijx.passly.core.media.rememberImagePicker
+import com.aozijx.passly.presentation.ui.shared.media.ImageType
+import com.aozijx.passly.presentation.ui.shared.media.rememberImagePicker
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.presentation.feature.scanner.ImageRef

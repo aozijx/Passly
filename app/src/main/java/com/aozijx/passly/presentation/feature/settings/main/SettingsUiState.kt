@@ -7,5 +7,4 @@ data class SettingsUiState(
     val swipeLeftAction: SwipeActionType = SwipeActionType.COPY_PASSWORD,
     val swipeRightAction: SwipeActionType = SwipeActionType.DETAIL,
     val isLoading: Boolean = false,
-    val isClearingDatabase: Boolean = false
 )

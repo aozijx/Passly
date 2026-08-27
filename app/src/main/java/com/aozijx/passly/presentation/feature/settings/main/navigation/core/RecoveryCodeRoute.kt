@@ -17,7 +17,6 @@ import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.backup.DatabaseRecoveryViewModel
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.RecoveryDraftAction
 import com.aozijx.passly.presentation.feature.settings.security.RecoveryDraftState
@@ -39,7 +38,6 @@ internal fun RecoveryCodeRouteContent(
     localState: SettingsScreenLocalState,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
-    recoveryViewModel: DatabaseRecoveryViewModel,
     settingsViewModel: SettingsViewModel,
     settingsState: SettingsUiState,
     onBack: (() -> Unit)?

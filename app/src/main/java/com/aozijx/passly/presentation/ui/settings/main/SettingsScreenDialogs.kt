@@ -6,7 +6,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.apppassword.AppPasswordSetDialog
+import com.aozijx.passly.presentation.ui.shared.components.apppassword.AppPasswordSetDialog
 import com.aozijx.passly.presentation.ui.settings.security.AppPasswordActionDialog
 import com.aozijx.passly.presentation.ui.settings.security.AppPasswordChangeDialog
 import com.aozijx.passly.presentation.ui.settings.interaction.SwipeActionSelectDialog
@@ -95,6 +95,7 @@ internal fun SettingsScreenDialogsHost(
             AppPasswordSetDialog(
                 newPassword = state.appPasswordNew,
                 confirmPassword = state.appPasswordConfirm,
+                confirmEnabled = state.isSetPasswordConfirmEnabled,
                 onNewPasswordChange = {
                     onEvent(
                         SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.NewChanged(it))

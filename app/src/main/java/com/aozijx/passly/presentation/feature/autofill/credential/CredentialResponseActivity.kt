@@ -11,7 +11,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.app.security.authentication.AuthenticationHost
-import com.aozijx.passly.core.ui.theme.AppTheme
+import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
 import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint

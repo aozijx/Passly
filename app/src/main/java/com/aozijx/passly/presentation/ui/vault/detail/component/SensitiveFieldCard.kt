@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.MaskStyle
 import com.aozijx.passly.core.ui.components.MaskedText
-import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
+import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
 
 @Composable
 fun SensitiveFieldCard(

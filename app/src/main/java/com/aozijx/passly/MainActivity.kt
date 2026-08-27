@@ -27,7 +27,7 @@ import com.aozijx.passly.core.permission.contract.PermissionRequestHistory
 import com.aozijx.passly.core.permission.contract.PermissionStatusReader
 import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
 import com.aozijx.passly.app.security.authentication.AuthenticationHost
-import com.aozijx.passly.core.ui.theme.AppTheme
+import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject

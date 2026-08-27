@@ -18,6 +18,7 @@ internal data class SettingsDialogsModel(
     val appPasswordCurrent: String,
     val appPasswordNew: String,
     val appPasswordConfirm: String,
+    val isSetPasswordConfirmEnabled: Boolean,
     val isChangePasswordConfirmEnabled: Boolean,
 )
 

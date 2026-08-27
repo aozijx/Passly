@@ -371,6 +371,25 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun settingsCannotOwnDatabaseLifecycleOrRecoveryCapability() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/main/SettingsViewModel.kt",
+            content = """
+                import com.aozijx.passly.app.database.DatabaseLifecycleUseCases
+                val action = ClearDatabase
+            """.trimIndent(),
+        )
+
+        assertEquals(
+            "SETTINGS_DATABASE_CAPABILITY_OWNERSHIP",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).map { it.ruleId }.distinct().single(),
+        )
+    }
+
+    @Test
     fun autofillPendingIntentFactoriesCannotImportPresentationActivities() {
         val sources = listOf(
             EditorSource(

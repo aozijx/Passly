@@ -27,6 +27,9 @@ internal fun buildSettingsDialogsState(
     appPasswordCurrent = localState.appPasswordCurrent,
     appPasswordNew = localState.appPasswordNew,
     appPasswordConfirm = localState.appPasswordConfirm,
+    isSetPasswordConfirmEnabled = AppPasswordPolicy.DEFAULT.acceptsLength(
+        localState.appPasswordNew.length,
+    ) && localState.appPasswordNew == localState.appPasswordConfirm,
     isChangePasswordConfirmEnabled = localState.appPasswordCurrent.isNotEmpty() &&
         AppPasswordPolicy.DEFAULT.acceptsLength(localState.appPasswordNew.length) &&
         localState.appPasswordNew == localState.appPasswordConfirm,

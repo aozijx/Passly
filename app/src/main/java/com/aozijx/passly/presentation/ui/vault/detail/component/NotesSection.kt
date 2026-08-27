@@ -21,7 +21,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
+import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
 import com.aozijx.passly.core.ui.components.markdown.PasslyMarkdownDocument
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailNotesUiModel
 

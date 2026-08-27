@@ -23,11 +23,11 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.group.GroupCard
-import com.aozijx.passly.core.ui.components.group.RoundedGroup
-import com.aozijx.passly.core.ui.components.group.model.RoundedGroupItem
-import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
-import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
+import com.aozijx.passly.presentation.ui.shared.components.group.GroupCard
+import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
+import com.aozijx.passly.presentation.ui.shared.components.group.model.RoundedGroupItem
+import com.aozijx.passly.presentation.ui.shared.components.group.navigationSettingsGroupItem
+import com.aozijx.passly.presentation.ui.shared.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.presentation.ui.settings.security.model.SecuritySettingsUiModel
 import kotlin.math.roundToInt

@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.backup.DatabaseRecoveryViewModel
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
@@ -25,20 +24,20 @@ internal fun DataSettingsRouteContent(
     localState: SettingsScreenLocalState,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
-    recoveryViewModel: DatabaseRecoveryViewModel,
     settingsViewModel: SettingsViewModel,
     settingsState: SettingsUiState,
     onOpenTrash: () -> Unit,
+    onOpenDatabaseRecovery: () -> Unit,
     onBack: (() -> Unit)?,
 ) {
     val content: @Composable () -> Unit = when (route) {
-        SettingsRoute.Interaction -> ({ InteractionRouteContent(route, context, localState, interactionViewModel, dataViewModel, recoveryViewModel, settingsViewModel, settingsState, onBack) })
-        SettingsRoute.Autofill -> ({ AutofillRouteContent(route, context, localState, interactionViewModel, dataViewModel, recoveryViewModel, settingsViewModel, settingsState, onBack) })
-        SettingsRoute.DataManagement -> ({ DataManagementRouteContent(route, context, localState, interactionViewModel, dataViewModel, recoveryViewModel, settingsViewModel, settingsState, onOpenTrash, onBack) })
-        SettingsRoute.BackupRestore -> ({ BackupRouteContent(route, context, localState, interactionViewModel, dataViewModel, recoveryViewModel, settingsViewModel, settingsState, onBack) })
-        SettingsRoute.RecoveryCode -> ({ RecoveryCodeRouteContent(route, context, localState, interactionViewModel, dataViewModel, recoveryViewModel, settingsViewModel, settingsState, onBack) })
-        SettingsRoute.General -> ({ GeneralRouteContent(route, context, localState, interactionViewModel, dataViewModel, recoveryViewModel, settingsViewModel, settingsState, onBack) })
-        SettingsRoute.Notifications -> ({ NotificationsRouteContent(route, context, localState, interactionViewModel, dataViewModel, recoveryViewModel, settingsViewModel, settingsState, onBack) })
+        SettingsRoute.Interaction -> ({ InteractionRouteContent(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
+        SettingsRoute.Autofill -> ({ AutofillRouteContent(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
+        SettingsRoute.DataManagement -> ({ DataManagementRouteContent(route, context, localState, interactionViewModel, dataViewModel, onOpenTrash, onOpenDatabaseRecovery, onBack) })
+        SettingsRoute.BackupRestore -> ({ BackupRouteContent(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
+        SettingsRoute.RecoveryCode -> ({ RecoveryCodeRouteContent(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
+        SettingsRoute.General -> ({ GeneralRouteContent(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
+        SettingsRoute.Notifications -> ({ NotificationsRouteContent(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
         else -> error("Unsupported data settings route: ${route.route}")
     }
     content()
