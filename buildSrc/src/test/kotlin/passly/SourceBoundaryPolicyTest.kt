@@ -416,6 +416,49 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun dataCanOnlyImportReviewedCoreFamilies() {
+        val allowedImports = listOf(
+            "com.aozijx.passly.core.crypto.FieldEncryptor",
+            "com.aozijx.passly.core.error.result.AppResult",
+            "com.aozijx.passly.core.platform.VaultResourcePaths",
+            "com.aozijx.passly.core.telemetry.TelemetryReporter",
+            "com.aozijx.passly.security.dek.FieldKeyManager",
+            "com.aozijx.passly.security.search.BlindIndexer",
+        )
+        val forbiddenImports = listOf(
+            "com.aozijx.passly.core.ui.theme.PasslyTheme",
+            "com.aozijx.passly.core.permission.RuntimePermission",
+            "com.aozijx.passly.core.platform.packageinfo.InstalledAppCatalog",
+        )
+
+        allowedImports.forEach { allowedImport ->
+            val source = EditorSource(
+                path = "data/src/main/java/com/aozijx/passly/data/Allowed.kt",
+                content = "import $allowedImport",
+            )
+            assertTrue(
+                SourceBoundaryVerifier.verify(
+                    listOf(source),
+                    SourceBoundaryPolicy.generalRules,
+                ).isEmpty(),
+            )
+        }
+        forbiddenImports.forEach { forbiddenImport ->
+            val source = EditorSource(
+                path = "data/src/main/java/com/aozijx/passly/data/Forbidden.kt",
+                content = "import $forbiddenImport",
+            )
+            assertEquals(
+                "DATA_CORE_PACKAGE_ACCESS",
+                SourceBoundaryVerifier.verify(
+                    listOf(source),
+                    SourceBoundaryPolicy.generalRules,
+                ).single().ruleId,
+            )
+        }
+    }
+
+    @Test
     fun autofillPendingIntentFactoriesCannotImportPresentationActivities() {
         val sources = listOf(
             EditorSource(

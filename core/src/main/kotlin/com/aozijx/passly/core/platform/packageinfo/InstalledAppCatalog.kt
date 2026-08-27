@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.util.LruCache
+import com.aozijx.passly.domain.autofill.port.ApplicationLabelResolver
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -12,7 +13,9 @@ import javax.inject.Singleton
 data class InstalledAppMetadata(val label: String, val packageName: String)
 
 @Singleton
-class InstalledAppCatalog @Inject constructor(@ApplicationContext context: Context) {
+class InstalledAppCatalog @Inject constructor(
+    @ApplicationContext context: Context,
+) : ApplicationLabelResolver {
     private val packageManager: PackageManager = context.packageManager
     private val cache = LruCache<String, InstalledAppMetadata>(60)
 
@@ -21,6 +24,8 @@ class InstalledAppCatalog @Inject constructor(@ApplicationContext context: Conte
         val label = resolveLabel(packageName) ?: return null
         return InstalledAppMetadata(label, packageName).also { cache.put(packageName, it) }
     }
+
+    override fun labelFor(packageName: String): String? = getAppMetadata(packageName)?.label
 
     @SuppressLint("QueryPermissionsNeeded")
     private fun resolveLabel(packageName: String): String? {

@@ -4,6 +4,7 @@ internal data class SourceBoundaryRule(
     val id: String,
     val sourcePathContains: String,
     val forbiddenImportPrefixes: Set<String> = emptySet(),
+    val allowedImportPrefixes: Set<String> = emptySet(),
     val forbiddenContentMarkers: Set<String> = emptySet(),
     val allowedSourcePathContains: Set<String> = emptySet(),
     val message: String,

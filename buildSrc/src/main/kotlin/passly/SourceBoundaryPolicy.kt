@@ -189,6 +189,18 @@ internal object SourceBoundaryPolicy {
             message = "session runtime imports platform, persistence, DI, or concrete key-manager code",
         ),
         SourceBoundaryRule(
+            id = "DATA_CORE_PACKAGE_ACCESS",
+            sourcePathContains = "/data/src/",
+            forbiddenImportPrefixes = setOf("com.aozijx.passly.core."),
+            allowedImportPrefixes = setOf(
+                "com.aozijx.passly.core.crypto.",
+                "com.aozijx.passly.core.error.",
+                "com.aozijx.passly.core.platform.VaultResourcePaths",
+                "com.aozijx.passly.core.telemetry.",
+            ),
+            message = "Data imports a Core package outside its reviewed persistence allowlist",
+        ),
+        SourceBoundaryRule(
             id = "SHELL_NAV_HOST_FEATURE_REGISTRATION",
             sourcePathContains = "/presentation/feature/shell/navigation/PasslyNavHost.kt",
             forbiddenContentMarkers = setOf("composable("),
