@@ -63,3 +63,17 @@ sealed class SettingsRoute(val route: String) : Serializable {
         private fun readResolve(): Any = General
     }
 }
+
+internal fun settingsDetailRoutes(): List<SettingsRoute> = listOf(
+    SettingsRoute.Security,
+    SettingsRoute.Privacy,
+    SettingsRoute.Appearance,
+    SettingsRoute.Interface,
+    SettingsRoute.Interaction,
+    SettingsRoute.Autofill,
+    SettingsRoute.DataManagement,
+    SettingsRoute.BackupRestore,
+    SettingsRoute.Notifications,
+    SettingsRoute.RecoveryCode,
+    SettingsRoute.General,
+)
