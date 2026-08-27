@@ -56,6 +56,7 @@ class DetailViewModel @Inject constructor(
     private val clipboardCopyController: ClipboardCopyController,
 ) : ViewModel() {
     private val entryAnalyzer = DetailEntryAnalyzer(entryTypePolicy)
+    private val revealStore = DetailRevealStore()
 
     companion object {
         private const val ACCESS_HISTORY_TOGGLE_KEY = "detail.access_history_enabled"
@@ -85,7 +86,7 @@ class DetailViewModel @Inject constructor(
 
     fun onAction(event: DetailUiAction) {
         if (!accessPolicy.canHandle(event)) {
-            mutate(DetailMutation.StateCleared)
+            clearSensitiveState()
             return
         }
         when (event) {
@@ -215,8 +216,7 @@ class DetailViewModel @Inject constructor(
             }
 
             DetailUiAction.ClearSensitiveState -> {
-                wipeRevealBuffers()
-                mutate(DetailMutation.StateCleared)
+                clearSensitiveState()
             }
         }
     }
@@ -264,6 +264,7 @@ class DetailViewModel @Inject constructor(
     }
 
     private fun setRevealedField(key: String, value: SensitiveValue?) {
+        revealStore.replace(key, value)
         mutate(DetailMutation.RevealedFieldChanged(key, value))
     }
 
@@ -288,7 +289,6 @@ class DetailViewModel @Inject constructor(
             revealedFields.forEach { revealed ->
                 val uiKey = requested.entries.firstOrNull { it.value == revealed.key }?.key
                     ?: return@forEach
-                revealBuffers[uiKey] = revealed.value
                 setRevealedField(uiKey, revealed.value)
             }
             if (revealedFields.isNotEmpty()) {
@@ -297,12 +297,9 @@ class DetailViewModel @Inject constructor(
         }
     }
 
-    /** 可擦除的敏感值中转缓冲；离开页面、锁定或清理状态时统一擦除。 */
-    private val revealBuffers = mutableMapOf<String, SensitiveValue>()
-
-    private fun wipeRevealBuffers() {
-        revealBuffers.values.forEach(SensitiveValue::wipe)
-        revealBuffers.clear()
+    private fun clearSensitiveState() {
+        revealStore.clear()
+        mutate(DetailMutation.StateCleared)
     }
 
     private fun String.toSensitiveFieldKey(): SensitiveFieldKey? = when (this) {
@@ -434,7 +431,6 @@ class DetailViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        wipeRevealBuffers()
-        mutate(DetailMutation.StateCleared)
+        clearSensitiveState()
     }
 }
