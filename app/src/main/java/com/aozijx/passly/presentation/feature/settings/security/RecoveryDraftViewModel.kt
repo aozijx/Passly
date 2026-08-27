@@ -84,7 +84,6 @@ class RecoveryDraftViewModel @Inject constructor(
                 is AuthenticationResult.Success -> {
                     draft = null
                     savedStateHandle[WAS_DISCLOSURE_OPEN] = false
-                    savedStateHandle[DRAFT_GENERATION_ID] = null as String?
                     mutate(RecoveryDraftMutation.Committed)
                 }
                 is AuthenticationResult.Cancelled,
@@ -102,7 +101,6 @@ class RecoveryDraftViewModel @Inject constructor(
         draft?.close()
         draft = null
         savedStateHandle[WAS_DISCLOSURE_OPEN] = false
-        savedStateHandle[DRAFT_GENERATION_ID] = null as String?
     }
 
     private suspend fun createDraft() {
@@ -113,7 +111,6 @@ class RecoveryDraftViewModel @Inject constructor(
                     draft?.close()
                     draft = creation.draft
                     savedStateHandle[WAS_DISCLOSURE_OPEN] = true
-                    savedStateHandle[DRAFT_GENERATION_ID] = creation.draft.id.value
                     mutate(RecoveryDraftMutation.DraftReady(creation.draft.id.value))
                 }
                 is RecoveryCredentialCreation.Failed -> mutate(RecoveryDraftMutation.Failed)
@@ -136,6 +133,5 @@ class RecoveryDraftViewModel @Inject constructor(
 
     private companion object {
         const val WAS_DISCLOSURE_OPEN = "wasRecoveryDisclosureOpen"
-        const val DRAFT_GENERATION_ID = "recoveryDraftGenerationId"
     }
 }
