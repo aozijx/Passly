@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.session
+package com.aozijx.passly.app.session
 
 import com.aozijx.passly.runtime.session.SessionKeySource
 import com.aozijx.passly.security.dek.DekManager

@@ -2,7 +2,7 @@ package com.aozijx.passly.security.authentication.di
 
 import android.content.Context
 import android.hardware.biometrics.BiometricManager
-import com.aozijx.passly.core.session.DekSessionKeySource
+import com.aozijx.passly.app.session.DekSessionKeySource
 import com.aozijx.passly.domain.access.model.RecoveryCredentialFactory
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner

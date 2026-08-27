@@ -23,7 +23,7 @@ import com.aozijx.passly.presentation.feature.shell.AppShellViewModel
 import com.aozijx.passly.app.shell.FlipToLockSensorController
 import com.aozijx.passly.presentation.feature.shell.AppShellEffect
 import com.aozijx.passly.presentation.feature.shell.AppShellUiAction
-import com.aozijx.passly.core.message.compose.LocalAppNoticePublisher
+import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.core.ui.components.DatabaseRecoveryDialog
 import com.aozijx.passly.presentation.feature.onboarding.BootstrapViewModel
 import com.aozijx.passly.presentation.feature.unlock.UnlockViewModel

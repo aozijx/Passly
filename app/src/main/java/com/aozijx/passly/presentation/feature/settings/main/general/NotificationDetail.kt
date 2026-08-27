@@ -18,8 +18,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
-import com.aozijx.passly.core.message.compose.LocalAppNoticePublisher
-import com.aozijx.passly.core.permission.compose.rememberPermissionRequestHost
+import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
+import com.aozijx.passly.app.platform.permission.rememberPermissionRequestHost
 import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
 import com.aozijx.passly.core.permission.model.PermissionRequestStart
 import com.aozijx.passly.core.permission.model.PermissionStatus

@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.core.net.toUri
 import com.aozijx.passly.app.clipboard.ClipboardCopyController
-import com.aozijx.passly.core.otp.OtpAuthUriCodec
+import com.aozijx.passly.feature.vault.otp.OtpAuthUriCodec
 import com.aozijx.passly.presentation.feature.scanner.ImageRef
 import com.aozijx.passly.presentation.feature.scanner.ScannerEffect
 import com.aozijx.passly.presentation.feature.scanner.ScannerUiAction

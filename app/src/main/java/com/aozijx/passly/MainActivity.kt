@@ -20,9 +20,9 @@ import com.aozijx.passly.presentation.feature.shell.AppShellViewModel
 import com.aozijx.passly.app.shell.FlipToLockSensorController
 import com.aozijx.passly.presentation.feature.shell.AppShellUiAction
 import com.aozijx.passly.presentation.feature.shell.AppShell
-import com.aozijx.passly.core.message.compose.ProvideAppNoticePublisher
-import com.aozijx.passly.core.permission.compose.PermissionServices
-import com.aozijx.passly.core.permission.compose.ProvidePermissionServices
+import com.aozijx.passly.app.message.compose.ProvideAppNoticePublisher
+import com.aozijx.passly.app.platform.permission.PermissionServices
+import com.aozijx.passly.app.platform.permission.ProvidePermissionServices
 import com.aozijx.passly.core.permission.contract.PermissionRequestHistory
 import com.aozijx.passly.core.permission.contract.PermissionStatusReader
 import com.aozijx.passly.core.permission.request.PermissionRequestArbiter

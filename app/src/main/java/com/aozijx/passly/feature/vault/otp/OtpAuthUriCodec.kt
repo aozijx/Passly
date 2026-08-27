@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.otp
+package com.aozijx.passly.feature.vault.otp
 
 import android.net.Uri
 import androidx.core.net.toUri

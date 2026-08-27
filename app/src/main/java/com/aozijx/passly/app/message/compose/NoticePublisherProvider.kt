@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.message.compose
+package com.aozijx.passly.app.message.compose
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider

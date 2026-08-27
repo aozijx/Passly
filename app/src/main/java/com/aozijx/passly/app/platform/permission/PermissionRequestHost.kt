@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.permission.compose
+package com.aozijx.passly.app.platform.permission
 
 import android.app.Activity
 import android.content.Context

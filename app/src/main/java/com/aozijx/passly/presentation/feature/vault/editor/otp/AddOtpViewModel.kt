@@ -3,7 +3,7 @@ package com.aozijx.passly.presentation.feature.vault.editor.otp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.core.otp.OtpAuthUriCodec
+import com.aozijx.passly.feature.vault.otp.OtpAuthUriCodec
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpType
