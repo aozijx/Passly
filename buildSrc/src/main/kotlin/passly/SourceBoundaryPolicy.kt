@@ -173,6 +173,22 @@ internal object SourceBoundaryPolicy {
             message = "settings owns database lifecycle or recovery capability",
         ),
         SourceBoundaryRule(
+            id = "RUNTIME_SESSION_RESOURCE_NEUTRALITY",
+            sourcePathContains = "/runtime/session/src/",
+            forbiddenImportPrefixes = setOf(
+                "android.",
+                "androidx.",
+                "com.aozijx.passly.app.",
+                "com.aozijx.passly.data.",
+                "com.aozijx.passly.presentation.",
+                "com.aozijx.passly.security.dek.DekManager",
+                "dagger.",
+                "javax.inject.",
+                "net.sqlcipher.",
+            ),
+            message = "session runtime imports platform, persistence, DI, or concrete key-manager code",
+        ),
+        SourceBoundaryRule(
             id = "SHELL_NAV_HOST_FEATURE_REGISTRATION",
             sourcePathContains = "/presentation/feature/shell/navigation/PasslyNavHost.kt",
             forbiddenContentMarkers = setOf("composable("),

@@ -3,6 +3,7 @@ package com.aozijx.passly.runtime.session
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
@@ -55,10 +56,12 @@ class RuntimeSessionManagerTest {
     @Test
     fun `seal cancels long lived observers before closing resource`() = runBlocking {
         val started = CompletableDeferred<Unit>()
+        val events = mutableListOf<SessionRuntimeEvent>()
         val resource = FakeResource()
         val manager = RuntimeSessionManager(
             resource = resource,
             keySource = SessionKeySource { byteArrayOf(9) },
+            eventSink = SessionEventSink { event, _ -> events += event },
         )
         manager.unlock()
 
@@ -77,6 +80,7 @@ class RuntimeSessionManagerTest {
 
         assertTrue(observer.isCancelled)
         assertTrue(resource.closed)
+        assertTrue(SessionRuntimeEvent.SEAL_DRAIN_TIMEOUT in events)
         assertEquals(SecureSessionState.SEALED, manager.lockState)
         runCatching { manager.read { value } }
             .onSuccess { error("sealed session accepted a read") }
@@ -84,7 +88,63 @@ class RuntimeSessionManagerTest {
         Unit
     }
 
-    private class FakeResource : SessionResource<FakeHandle> {
+    @Test
+    fun `seal waits for active lease to drain before closing resource`() = runBlocking {
+        val leaseStarted = CompletableDeferred<Unit>()
+        val releaseLease = CompletableDeferred<Unit>()
+        val resource = FakeResource()
+        val manager = RuntimeSessionManager(
+            resource = resource,
+            keySource = SessionKeySource { byteArrayOf(9) },
+        )
+        manager.unlock()
+
+        val reader = async {
+            manager.read {
+                leaseStarted.complete(Unit)
+                releaseLease.await()
+                value
+            }
+        }
+        leaseStarted.await()
+        val sealing = async { manager.seal(timeout = 500.milliseconds) }
+
+        assertTrue(!resource.closed)
+        releaseLease.complete(Unit)
+        assertEquals(7, reader.await())
+        sealing.await()
+
+        assertTrue(resource.closed)
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+    }
+
+    @Test
+    fun `close failure is reported and handle is still discarded`() = runBlocking {
+        val failure = IllegalStateException("close failed")
+        val failures = mutableListOf<Throwable?>()
+        val resource = FakeResource(closeFailure = failure)
+        val manager = RuntimeSessionManager(
+            resource = resource,
+            keySource = SessionKeySource { byteArrayOf(9) },
+            eventSink = SessionEventSink { event, error ->
+                if (event == SessionRuntimeEvent.CLOSE_FAILED) failures += error
+            },
+        )
+        manager.unlock()
+
+        manager.seal()
+
+        assertEquals(listOf(failure), failures)
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+        runCatching { manager.read { value } }
+            .onSuccess { error("failed close retained a readable handle") }
+            .onFailure { assertTrue(it is SessionLockedException) }
+        Unit
+    }
+
+    private class FakeResource(
+        private val closeFailure: Throwable? = null,
+    ) : SessionResource<FakeHandle> {
         var openedWith: ByteArray? = null
         var closed = false
 
@@ -95,6 +155,7 @@ class RuntimeSessionManagerTest {
 
         override suspend fun close(handle: FakeHandle) {
             closed = true
+            closeFailure?.let { throw it }
         }
 
         override suspend fun <T> transaction(

@@ -390,6 +390,32 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun runtimeSessionRejectsPlatformPersistenceAndPresentationImports() {
+        val forbiddenImports = listOf(
+            "android.content.Context",
+            "androidx.room.RoomDatabase",
+            "com.aozijx.passly.data.local.database.PasslyDatabase",
+            "com.aozijx.passly.security.dek.DekManager",
+            "com.aozijx.passly.presentation.feature.shell.AppShell",
+        )
+
+        forbiddenImports.forEach { forbiddenImport ->
+            val source = EditorSource(
+                path = "runtime/session/src/main/kotlin/com/aozijx/passly/runtime/session/Invalid.kt",
+                content = "import $forbiddenImport",
+            )
+
+            assertEquals(
+                "RUNTIME_SESSION_RESOURCE_NEUTRALITY",
+                SourceBoundaryVerifier.verify(
+                    listOf(source),
+                    SourceBoundaryPolicy.generalRules,
+                ).single().ruleId,
+            )
+        }
+    }
+
+    @Test
     fun autofillPendingIntentFactoriesCannotImportPresentationActivities() {
         val sources = listOf(
             EditorSource(
