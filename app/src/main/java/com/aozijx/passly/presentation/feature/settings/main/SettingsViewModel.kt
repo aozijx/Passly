@@ -17,8 +17,6 @@ import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.presentation.feature.settings.main.SettingsEffect
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
-import com.aozijx.passly.presentation.feature.settings.main.SettingsMutation
-import com.aozijx.passly.presentation.feature.settings.main.SettingsReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -70,17 +69,18 @@ class SettingsViewModel @Inject constructor(
 
     private fun loadSettings() {
         viewModelScope.launch {
-            mutate(SettingsMutation.LoadingStarted)
+            _uiState.update { it.copy(isLoading = true) }
             runCatching {
                 val interaction = settingsRepository.settings.first().interaction
-                mutate(
-                    SettingsMutation.SettingsLoaded(
+                _uiState.update {
+                    it.copy(
                         swipeLeftAction = interaction.swipeLeftAction,
                         swipeRightAction = interaction.swipeRightAction,
+                        isLoading = false,
                     )
-                )
+                }
             }.onFailure { error ->
-                mutate(SettingsMutation.LoadingFailed)
+                _uiState.update { it.copy(isLoading = false) }
                 _effects.trySend(SettingsEffect.ShowError(error.toUiMessage("加载设置失败")))
             }
         }
@@ -89,25 +89,25 @@ class SettingsViewModel @Inject constructor(
     private fun setSwipeLeftAction(action: SwipeActionType) {
         saveSwipeAction(
             command = SettingsCommand.SetSwipeLeftAction(action),
-            savedMutation = SettingsMutation.SwipeLeftActionSaved(action),
+            updateState = { it.copy(swipeLeftAction = action) },
         )
     }
 
     private fun setSwipeRightAction(action: SwipeActionType) {
         saveSwipeAction(
             command = SettingsCommand.SetSwipeRightAction(action),
-            savedMutation = SettingsMutation.SwipeRightActionSaved(action),
+            updateState = { it.copy(swipeRightAction = action) },
         )
     }
 
     private fun saveSwipeAction(
         command: SettingsCommand,
-        savedMutation: SettingsMutation,
+        updateState: (SettingsUiState) -> SettingsUiState,
     ) {
         viewModelScope.launch {
             runCatching {
                 settingsRepository.update(command)
-                mutate(savedMutation)
+                _uiState.update(updateState)
                 _effects.trySend(SettingsEffect.SettingsSaved)
             }.onFailure { error ->
                 _effects.trySend(SettingsEffect.ShowError(error.toUiMessage("保存失败")))
@@ -195,7 +195,9 @@ class SettingsViewModel @Inject constructor(
     private fun observeAuthenticationMethods() {
         viewModelScope.launch {
             authenticationManager.methods.collect { methods ->
-                mutate(SettingsMutation.AppPasswordAvailabilityChanged(AuthenticationMethod.APP_PASSWORD in methods))
+                _uiState.update {
+                    it.copy(isAppPasswordEnabled = AuthenticationMethod.APP_PASSWORD in methods)
+                }
             }
         }
     }
@@ -203,7 +205,4 @@ class SettingsViewModel @Inject constructor(
     private fun isRecoveryMode(): Boolean =
         authenticationManager.state.value is AuthenticationState.RecoveryMode
 
-    private fun mutate(mutation: SettingsMutation) {
-        _uiState.value = SettingsReducer.reduce(_uiState.value, mutation)
-    }
 }
