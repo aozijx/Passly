@@ -6,12 +6,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel
+import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
 
 internal data class InteractionDetailUiModel(
     val isSwipeEnabled: Boolean,
-    val swipeLeftAction: VaultSwipeActionUiModel,
-    val swipeRightAction: VaultSwipeActionUiModel,
+    val swipeLeftAction: SwipeActionUiModel,
+    val swipeRightAction: SwipeActionUiModel,
 )
 
 @Composable

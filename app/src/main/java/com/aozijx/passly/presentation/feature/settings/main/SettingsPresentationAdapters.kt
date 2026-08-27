@@ -7,7 +7,7 @@ import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.presentation.feature.settings.security.AppPasswordAction
 import com.aozijx.passly.presentation.feature.settings.main.interaction.toFeatureModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel
+import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
 import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
 import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogEvent
 import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogEvent
@@ -22,8 +22,8 @@ internal fun buildSettingsDialogsState(
     showLeftActionDialog = localState.showLeftActionDialog,
     showClearBackupDirConfirmDialog = localState.showClearBackupDirConfirmDialog,
     activeAppPasswordDialog = localState.activeAppPasswordDialog,
-    swipeLeftAction = VaultSwipeActionUiModel.valueOf(swipeLeftAction.name),
-    swipeRightAction = VaultSwipeActionUiModel.valueOf(swipeRightAction.name),
+    swipeLeftAction = SwipeActionUiModel.valueOf(swipeLeftAction.name),
+    swipeRightAction = SwipeActionUiModel.valueOf(swipeRightAction.name),
     appPasswordCurrent = localState.appPasswordCurrent,
     appPasswordNew = localState.appPasswordNew,
     appPasswordConfirm = localState.appPasswordConfirm,

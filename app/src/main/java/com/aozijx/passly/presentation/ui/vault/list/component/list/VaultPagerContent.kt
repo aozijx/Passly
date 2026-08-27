@@ -57,7 +57,7 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel
+import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -69,8 +69,8 @@ fun VaultPagerContent(
     entryPages: Map<VaultQuickFilterUiModel, Flow<PagingData<VaultListItemUiModel>>>,
     entryCardPresentations: List<VaultCardPresentationUiModel>,
     otpState: (String) -> Flow<VaultOtpUiState?>,
-    swipeLeftAction: VaultSwipeActionUiModel,
-    swipeRightAction: VaultSwipeActionUiModel,
+    swipeLeftAction: SwipeActionUiModel,
+    swipeRightAction: SwipeActionUiModel,
     isSwipeEnabled: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -198,8 +198,8 @@ private fun VaultPagingError(
 private fun EntryListItemRow(
     item: VaultListItemUiModel,
     entryCardPresentations: List<VaultCardPresentationUiModel>,
-    swipeLeftAction: VaultSwipeActionUiModel,
-    swipeRightAction: VaultSwipeActionUiModel,
+    swipeLeftAction: SwipeActionUiModel,
+    swipeRightAction: SwipeActionUiModel,
     isSwipeEnabled: Boolean,
     otpState: (String) -> Flow<VaultOtpUiState?>,
     showTotpCode: Boolean,
@@ -228,7 +228,7 @@ private fun EntryListItemRow(
             createAppSwipeActionSpec(
                 actionType = swipeLeftAction,
                 onAction = { item.events.onSwipe(swipeLeftAction) },
-                backgroundColor = if (swipeLeftAction == VaultSwipeActionUiModel.DELETE) colorScheme.error else colorScheme.primary,
+                backgroundColor = if (swipeLeftAction == SwipeActionUiModel.DELETE) colorScheme.error else colorScheme.primary,
                 iconTint = Color.White
             )
         }
@@ -237,7 +237,7 @@ private fun EntryListItemRow(
             createAppSwipeActionSpec(
                 actionType = swipeRightAction,
                 onAction = { item.events.onSwipe(swipeRightAction) },
-                backgroundColor = if (swipeRightAction == VaultSwipeActionUiModel.DELETE) colorScheme.error else colorScheme.secondary,
+                backgroundColor = if (swipeRightAction == SwipeActionUiModel.DELETE) colorScheme.error else colorScheme.secondary,
                 iconTint = Color.White
             )
         }
@@ -269,16 +269,16 @@ private fun EntryListItemRow(
 }
 
 private fun createAppSwipeActionSpec(
-    actionType: VaultSwipeActionUiModel,
+    actionType: SwipeActionUiModel,
     onAction: () -> Unit,
     backgroundColor: Color,
     iconTint: Color,
 ) = SwipeActionSpec(
     icon = when (actionType) {
-        VaultSwipeActionUiModel.DELETE -> Icons.Default.Delete
-        VaultSwipeActionUiModel.DETAIL -> Icons.Default.Info
-        VaultSwipeActionUiModel.COPY_PASSWORD -> Icons.Default.ContentCopy
-        VaultSwipeActionUiModel.COPY_USERNAME -> Icons.Default.Person
+        SwipeActionUiModel.DELETE -> Icons.Default.Delete
+        SwipeActionUiModel.DETAIL -> Icons.Default.Info
+        SwipeActionUiModel.COPY_PASSWORD -> Icons.Default.ContentCopy
+        SwipeActionUiModel.COPY_USERNAME -> Icons.Default.Person
     },
     backgroundColor = backgroundColor,
     iconTint = iconTint,

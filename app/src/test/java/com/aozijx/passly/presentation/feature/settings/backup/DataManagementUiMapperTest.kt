@@ -9,7 +9,7 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultEntryTypeUiModel
+import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -40,7 +40,7 @@ class DataManagementUiMapperTest {
 
         assertEquals("entry-1", result.id)
         assertEquals(3, result.version)
-        assertEquals(VaultEntryTypeUiModel.LOGIN, result.entryType)
+        assertEquals(EntryTypeUiModel.LOGIN, result.entryType)
         assertEquals(20L, result.deletedAtEpochMs)
         assertEquals("example.com", result.associatedDomain)
         assertEquals("com.example", result.associatedAppPackage)

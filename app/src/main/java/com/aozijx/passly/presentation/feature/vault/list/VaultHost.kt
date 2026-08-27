@@ -94,7 +94,7 @@ fun VaultHost(
                         item.toUiModel(
                             events = object : VaultListItemEventHandler {
                                 override fun onClick() = onShowDetail(item)
-                                override fun onSwipe(action: com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel) {
+                                override fun onSwipe(action: com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel) {
                                     actionProvider.onSwipeTriggered(action.toFeatureModel(), item)
                                 }
                             },

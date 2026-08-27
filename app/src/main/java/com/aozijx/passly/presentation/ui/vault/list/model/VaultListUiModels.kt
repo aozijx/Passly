@@ -1,8 +1,11 @@
 package com.aozijx.passly.presentation.ui.vault.list.model
 
+import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
+
 data class VaultListItemUiModel(
     val id: String,
-    val entryType: VaultEntryTypeUiModel,
+    val entryType: EntryTypeUiModel,
     val title: String,
     val username: String,
     val category: String?,
@@ -20,18 +23,12 @@ data class VaultListItemUiModel(
 
 interface VaultListItemEventHandler {
     fun onClick()
-    fun onSwipe(action: VaultSwipeActionUiModel)
+    fun onSwipe(action: SwipeActionUiModel)
 
     data object None : VaultListItemEventHandler {
         override fun onClick() = Unit
-        override fun onSwipe(action: VaultSwipeActionUiModel) = Unit
+        override fun onSwipe(action: SwipeActionUiModel) = Unit
     }
-}
-
-enum class VaultEntryTypeUiModel {
-    ACCOUNT, LOGIN, NOTE, BANK_CARD, ID_CARD, PASSPORT, DRIVER_LICENSE,
-    SSH_KEY, WIFI, PASSKEY, OTP, DATABASE_CREDENTIAL, SERVER_CREDENTIAL,
-    API_KEY, CRYPTO_WALLET, SEED_PHRASE, RECOVERY_CODE,
 }
 
 enum class VaultOtpKindUiModel { STANDARD, STEAM }
@@ -64,8 +61,6 @@ data class VaultSortUiModel(
 }
 
 enum class VaultSortOptionUiModel { DEFAULT, TITLE, CREATED_AT, UPDATED_AT, USAGE_FREQUENCY }
-
-enum class VaultSwipeActionUiModel { DELETE, DETAIL, COPY_PASSWORD, COPY_USERNAME }
 
 enum class VaultAddTypeUiModel {
     PASSWORD, TOTP, BANK_CARD, WIFI, SSH_KEY, ID_CARD, SEED_PHRASE, PASSKEY, RECOVERY_CODE;

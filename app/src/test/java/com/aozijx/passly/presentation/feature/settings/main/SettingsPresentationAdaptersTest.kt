@@ -1,7 +1,7 @@
 package com.aozijx.passly.presentation.feature.settings.main
 
 import com.aozijx.passly.domain.settings.model.SwipeActionType
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel
+import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
 import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -24,8 +24,8 @@ class SettingsPresentationAdaptersTest {
             swipeRightAction = SwipeActionType.COPY_USERNAME,
         )
 
-        assertEquals(VaultSwipeActionUiModel.DELETE, result.swipeLeftAction)
-        assertEquals(VaultSwipeActionUiModel.COPY_USERNAME, result.swipeRightAction)
+        assertEquals(SwipeActionUiModel.DELETE, result.swipeLeftAction)
+        assertEquals(SwipeActionUiModel.COPY_USERNAME, result.swipeRightAction)
         assertTrue(result.isChangePasswordConfirmEnabled)
 
         localState.appPasswordConfirm = "different"

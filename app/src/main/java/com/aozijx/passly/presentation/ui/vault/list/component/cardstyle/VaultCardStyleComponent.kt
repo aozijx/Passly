@@ -1,7 +1,7 @@
 package com.aozijx.passly.presentation.ui.vault.list.component.cardstyle
 
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultEntryTypeUiModel
+import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpKindUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
@@ -65,7 +65,7 @@ internal object CardStylePreviewFixtures {
         otpKind: VaultOtpKindUiModel? = null,
     ) = VaultListItemUiModel(
         id = id,
-        entryType = VaultEntryTypeUiModel.LOGIN,
+        entryType = EntryTypeUiModel.LOGIN,
         title = title,
         username = username,
         category = null,

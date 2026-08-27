@@ -4,9 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import com.aozijx.passly.core.ui.components.VaultItemIcon
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultEntryTypeUiModel
+import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.labelRes
+import com.aozijx.passly.presentation.ui.shared.entry.labelRes
 
 @Composable
 internal fun VaultListItemUiModel.categoryOrTemplateLabel(): String =

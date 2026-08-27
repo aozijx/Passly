@@ -32,7 +32,7 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel
+import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -44,8 +44,8 @@ fun VaultScreen(
     entryPages: Map<VaultQuickFilterUiModel, Flow<PagingData<VaultListItemUiModel>>>,
     cardPresentations: List<VaultCardPresentationUiModel>,
     otpState: (String) -> Flow<VaultOtpUiState?>,
-    swipeLeftAction: VaultSwipeActionUiModel,
-    swipeRightAction: VaultSwipeActionUiModel,
+    swipeLeftAction: SwipeActionUiModel,
+    swipeRightAction: SwipeActionUiModel,
     isSwipeEnabled: Boolean,
     fabScrollConnection: NestedScrollConnection,
     isFabVisible: Boolean,

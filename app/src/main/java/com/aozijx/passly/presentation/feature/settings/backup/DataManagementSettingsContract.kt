@@ -3,7 +3,7 @@ package com.aozijx.passly.presentation.feature.settings.backup
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.presentation.ui.settings.backup.DataManagementDetailState
 import com.aozijx.passly.presentation.ui.vault.list.trash.TrashEntryUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultEntryTypeUiModel
+import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 
 data class DataManagementSettingsUiState(
     val isAutoDownloadIcons: Boolean = true,
@@ -25,7 +25,7 @@ internal fun DataManagementSettingsUiState.toDetailState() = DataManagementDetai
             id = entry.id.value,
             version = entry.identity.version.value,
             title = entry.title,
-            entryType = VaultEntryTypeUiModel.valueOf(entry.entryType.name),
+            entryType = EntryTypeUiModel.valueOf(entry.entryType.name),
             username = entry.username,
             deletedAtEpochMs = entry.deletedAt,
             associatedDomain = entry.associatedDomain,

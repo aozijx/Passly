@@ -138,6 +138,12 @@ internal object SourceBoundaryPolicy {
             forbiddenContentMarkers = setOf("CardTypeDropdown("),
             message = "bank card editor feature host renders passive form content",
         ),
+        SourceBoundaryRule(
+            id = "SETTINGS_UI_VAULT_OWNERSHIP",
+            sourcePathContains = "/presentation/ui/settings/",
+            forbiddenImportPrefixes = setOf("com.aozijx.passly.presentation.ui.vault.list.model."),
+            message = "settings UI imports a Vault-owned list model",
+        ),
         *listOf(
             "/domain/src/",
             "/data/src/",

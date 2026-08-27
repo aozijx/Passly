@@ -46,8 +46,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultEntryTypeUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.labelRes
+import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.ui.shared.entry.labelRes
 
 internal enum class BackupExportFormatUiModel(
     val requiresPassword: Boolean,
@@ -67,7 +67,7 @@ internal data class BackupSheetUiState(
     val includeIcons: Boolean,
     val includeAttachments: Boolean,
     val includeDeleted: Boolean,
-    val includedEntryTypes: Set<VaultEntryTypeUiModel>,
+    val includedEntryTypes: Set<EntryTypeUiModel>,
     val canSubmitExport: Boolean,
 )
 
@@ -89,7 +89,7 @@ internal fun BackupRestoreSheetHost(
     onIncludeIconsChange: (Boolean) -> Unit,
     onIncludeAttachmentsChange: (Boolean) -> Unit,
     onIncludeDeletedChange: (Boolean) -> Unit,
-    onIncludedEntryTypesChange: (Set<VaultEntryTypeUiModel>) -> Unit,
+    onIncludedEntryTypesChange: (Set<EntryTypeUiModel>) -> Unit,
     onImportModeChange: (BackupImportModeUiModel) -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit
@@ -201,7 +201,7 @@ private fun BackupExportOptionsContent(
     onIncludeIconsChange: (Boolean) -> Unit,
     onIncludeAttachmentsChange: (Boolean) -> Unit,
     onIncludeDeletedChange: (Boolean) -> Unit,
-    onIncludedEntryTypesChange: (Set<VaultEntryTypeUiModel>) -> Unit,
+    onIncludedEntryTypesChange: (Set<EntryTypeUiModel>) -> Unit,
     onExport: () -> Unit
 ) {
     SheetColumn(scrollable = true) {
@@ -268,17 +268,17 @@ private fun BackupExportOptionsContent(
             TextButton(
                 onClick = {
                     onIncludedEntryTypesChange(
-                        if (state.includedEntryTypes.size == VaultEntryTypeUiModel.entries.size) {
+                        if (state.includedEntryTypes.size == EntryTypeUiModel.entries.size) {
                             emptySet()
                         } else {
-                            VaultEntryTypeUiModel.entries.toSet()
+                            EntryTypeUiModel.entries.toSet()
                         }
                     )
                 }
             ) {
                 Text(
                     stringResource(
-                        if (state.includedEntryTypes.size == VaultEntryTypeUiModel.entries.size) {
+                        if (state.includedEntryTypes.size == EntryTypeUiModel.entries.size) {
                             R.string.settings_backup_clear_selection
                         } else {
                             R.string.settings_backup_select_all
@@ -291,7 +291,7 @@ private fun BackupExportOptionsContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            VaultEntryTypeUiModel.entries.forEach { type ->
+            EntryTypeUiModel.entries.forEach { type ->
                 FilterChip(
                     selected = type in state.includedEntryTypes,
                     onClick = {

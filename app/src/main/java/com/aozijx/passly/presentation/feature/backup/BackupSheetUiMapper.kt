@@ -6,7 +6,7 @@ import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.presentation.ui.settings.backup.BackupExportFormatUiModel
 import com.aozijx.passly.presentation.ui.settings.backup.BackupImportModeUiModel
 import com.aozijx.passly.presentation.ui.settings.backup.BackupSheetUiState
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultEntryTypeUiModel
+import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 
 internal fun BackupUiState.toSheetUiState(): BackupSheetUiState {
     val passwordChars = backupPassword.toCharArray()
@@ -19,7 +19,7 @@ internal fun BackupUiState.toSheetUiState(): BackupSheetUiState {
             includeAttachments = includeAttachments,
             includeDeleted = includeDeleted,
             includedEntryTypes = includedEntryTypes.mapTo(linkedSetOf()) {
-                VaultEntryTypeUiModel.valueOf(it.name)
+                EntryTypeUiModel.valueOf(it.name)
             },
             canSubmitExport = canSubmitExport,
         )
@@ -30,5 +30,5 @@ internal fun BackupUiState.toSheetUiState(): BackupSheetUiState {
 
 internal fun BackupExportFormatUiModel.toFeatureModel() = BackupExportFormat.valueOf(name)
 internal fun BackupImportModeUiModel.toFeatureModel() = ImportMode.valueOf(name)
-internal fun Set<VaultEntryTypeUiModel>.toFeatureModels(): Set<EntryType> =
+internal fun Set<EntryTypeUiModel>.toFeatureModels(): Set<EntryType> =
     mapTo(linkedSetOf()) { EntryType.valueOf(it.name) }

@@ -1,0 +1,7 @@
+package com.aozijx.passly.presentation.ui.shared.entry
+
+enum class EntryTypeUiModel {
+    ACCOUNT, LOGIN, NOTE, BANK_CARD, ID_CARD, PASSPORT, DRIVER_LICENSE,
+    SSH_KEY, WIFI, PASSKEY, OTP, DATABASE_CREDENTIAL, SERVER_CREDENTIAL,
+    API_KEY, CRYPTO_WALLET, SEED_PHRASE, RECOVERY_CODE,
+}

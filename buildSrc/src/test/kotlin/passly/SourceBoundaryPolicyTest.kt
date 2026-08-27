@@ -317,6 +317,22 @@ class SourceBoundaryPolicyTest {
         )
     }
 
+    @Test
+    fun settingsUiCannotImportVaultOwnedUiModelsOrComponents() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/ui/settings/interaction/SwipeGestureSettingsSection.kt",
+            content = "import com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel",
+        )
+
+        assertEquals(
+            "SETTINGS_UI_VAULT_OWNERSHIP",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
     private fun uiSource(content: String) = EditorSource(
         path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",
         content = content,
