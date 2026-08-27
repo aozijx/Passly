@@ -11,7 +11,6 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.FieldRole
 import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
-import com.aozijx.passly.domain.autofill.port.AutofillGrantStore
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
@@ -37,7 +36,6 @@ class AutofillFillViewModel @Inject constructor(
     private val vaultAccessState: SecureSessionAccessState,
     private val settingsRepository: AppSettingsRepository,
     private val requestSession: AutofillRequestSession,
-    private val grantStore: AutofillGrantStore,
     private val legacyResponseFactory: LegacyResponseFactory,
     @param:ApplicationContext private val appContext: Context,
 ) : ViewModel() {
@@ -240,7 +238,7 @@ class AutofillFillViewModel @Inject constructor(
     private fun grantActiveForCurrentRequest(): Boolean {
         val request = currentRequest ?: return false
         val packageName = request.packageName?.takeIf(String::isNotBlank) ?: return false
-        return grantStore.isGranted(
+        return requestSession.isGranted(
             AutofillGrantContext(packageName = packageName, webDomain = request.webDomain)
         )
     }
@@ -248,7 +246,7 @@ class AutofillFillViewModel @Inject constructor(
     private fun grantForCurrentRequest() {
         val request = currentRequest ?: return
         val packageName = request.packageName?.takeIf(String::isNotBlank) ?: return
-        grantStore.grant(
+        requestSession.grant(
             AutofillGrantContext(packageName = packageName, webDomain = request.webDomain)
         )
     }
@@ -262,8 +260,6 @@ class AutofillFillViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        viewModelScope.launch {
-            requestSession.close()
-        }
+        requestSession.closeOnOwnerCleared()
     }
 }

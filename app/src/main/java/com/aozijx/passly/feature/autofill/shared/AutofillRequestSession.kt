@@ -6,6 +6,8 @@ import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
+import com.aozijx.passly.domain.autofill.port.AutofillGrantStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -24,6 +26,7 @@ import kotlinx.coroutines.sync.withLock
 class AutofillRequestSession(
     private val authenticationManager: AuthenticationManager,
     private val vaultAccessState: SecureSessionAccessState,
+    private val grantStore: AutofillGrantStore,
     private val sessionScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 ) {
     private val closeMutex = Mutex()
@@ -53,6 +56,10 @@ class AutofillRequestSession(
         }
     }
 
+    fun grant(context: AutofillGrantContext) = grantStore.grant(context)
+
+    fun isGranted(context: AutofillGrantContext): Boolean = grantStore.isGranted(context)
+
     /**
      * Resets the 60-second inactivity timer.
      */
@@ -71,10 +78,17 @@ class AutofillRequestSession(
         closeMutex.withLock {
             timeoutJob?.cancel()
             timeoutJob = null
-            if (!ownsUnlock) return
-            ownsUnlock = false
-            authenticationManager.lock(LockReason.AUTOFILL_REQUEST_FINISHED)
+            grantStore.clear()
+            if (ownsUnlock) {
+                ownsUnlock = false
+                authenticationManager.lock(LockReason.AUTOFILL_REQUEST_FINISHED)
+            }
         }
+    }
+
+    /** Runs cleanup on the session-owned scope after a ViewModel owner is cleared. */
+    fun closeOnOwnerCleared() {
+        sessionScope.launch { close() }
     }
 
     companion object {

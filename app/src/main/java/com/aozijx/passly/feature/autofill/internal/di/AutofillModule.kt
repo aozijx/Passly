@@ -49,11 +49,15 @@ internal abstract class AutofillModule {
 
     companion object {
         @Provides
-        @Singleton
         fun provideAutofillRequestSession(
             authenticationManager: AuthenticationManager,
-            vaultAccessState: SecureSessionAccessState
-        ): AutofillRequestSession = AutofillRequestSession(authenticationManager, vaultAccessState)
+            vaultAccessState: SecureSessionAccessState,
+            grantStore: AutofillGrantStore,
+        ): AutofillRequestSession = AutofillRequestSession(
+            authenticationManager,
+            vaultAccessState,
+            grantStore,
+        )
 
         @Provides
         @Singleton

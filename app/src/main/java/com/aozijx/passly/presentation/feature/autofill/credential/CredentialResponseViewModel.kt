@@ -14,7 +14,6 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
-import com.aozijx.passly.domain.autofill.port.AutofillGrantStore
 import com.aozijx.passly.feature.autofill.credential.CreatePasswordCredentialResult
 import com.aozijx.passly.feature.autofill.credential.CredentialAuthenticationExceptionMapper
 import com.aozijx.passly.feature.autofill.credential.CredentialRequestParser
@@ -43,7 +42,6 @@ class CredentialResponseViewModel @Inject constructor(
     private val interactor: CredentialResponseInteractor,
     private val beginGetHandler: CredentialBeginGetHandler,
     private val requestSession: AutofillRequestSession,
-    private val grantStore: AutofillGrantStore,
     @param:ApplicationContext private val appContext: android.content.Context,
 ) : ViewModel() {
 
@@ -139,7 +137,7 @@ class CredentialResponseViewModel @Inject constructor(
                 // ACTION_GET_PASSWORD 时不再重复弹认证。
                 CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo)
                     ?.let { packageName ->
-                        grantStore.grant(
+                        requestSession.grant(
                             AutofillGrantContext(packageName = packageName, webDomain = null)
                         )
                     }
@@ -226,9 +224,7 @@ class CredentialResponseViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        viewModelScope.launch {
-            requestSession.close()
-        }
+        requestSession.closeOnOwnerCleared()
     }
 
     private fun completeGetError(exception: GetCredentialException) {

@@ -11,6 +11,8 @@ import com.aozijx.passly.domain.access.model.CancellationReason
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
+import com.aozijx.passly.domain.autofill.port.AutofillGrantStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -19,6 +21,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AutofillRequestSessionTest {
@@ -26,9 +30,11 @@ class AutofillRequestSessionTest {
     private fun session(
         authentication: AuthenticationManager,
         vault: SecureSessionAccessState,
+        grantStore: AutofillGrantStore = FakeAutofillGrantStore(),
     ) = AutofillRequestSession(
         authenticationManager = authentication,
         vaultAccessState = vault,
+        grantStore = grantStore,
         sessionScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
     )
 
@@ -69,6 +75,38 @@ class AutofillRequestSessionTest {
         requestSession.close()
 
         assertNull(authentication.lastLockReason)
+    }
+
+    @Test
+    fun `terminal close revokes the request grant`() = runBlocking {
+        val vault = FakeSecureSessionAccessState(AuthenticationState.Authenticated(1L))
+        val authentication = FakeAuthenticationManager(vault)
+        val grantStore = FakeAutofillGrantStore()
+        val requestSession = session(authentication, vault, grantStore)
+        val context = AutofillGrantContext("com.example.target", null)
+
+        requestSession.grant(context)
+        assertTrue(grantStore.isGranted(context))
+
+        requestSession.close()
+
+        assertFalse(grantStore.isGranted(context))
+    }
+
+    @Test
+    fun `owner clear closes outside the cancelled view model scope`() = runBlocking {
+        val vault = FakeSecureSessionAccessState(AuthenticationState.Locked)
+        val authentication = FakeAuthenticationManager(vault)
+        val grantStore = FakeAutofillGrantStore()
+        val requestSession = session(authentication, vault, grantStore)
+        val context = AutofillGrantContext("com.example.target", null)
+        requestSession.authenticate()
+        requestSession.grant(context)
+
+        requestSession.closeOnOwnerCleared()
+
+        assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, authentication.lastLockReason)
+        assertFalse(grantStore.isGranted(context))
     }
 
     private class FakeSecureSessionAccessState(
@@ -117,5 +155,19 @@ class AutofillRequestSessionTest {
         override suspend fun completeDatabaseRecovery(): Boolean = false
         override suspend fun refreshAvailability() = Unit
         override fun snapshot() = AuthenticationSnapshot(state.value, methods.value)
+    }
+
+    private class FakeAutofillGrantStore : AutofillGrantStore {
+        private var active: AutofillGrantContext? = null
+
+        override fun grant(context: AutofillGrantContext) {
+            active = context
+        }
+
+        override fun isGranted(context: AutofillGrantContext): Boolean = active == context
+
+        override fun clear() {
+            active = null
+        }
     }
 }
