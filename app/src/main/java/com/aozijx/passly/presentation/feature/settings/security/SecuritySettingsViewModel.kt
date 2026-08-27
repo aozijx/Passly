@@ -9,8 +9,6 @@ import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.settings.model.SettingsCommand
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
-import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsMutation
-import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -54,18 +52,18 @@ class SecuritySettingsViewModel @Inject constructor(
             is SecuritySettingsAction.VerifyRecoveryCode -> viewModelScope.launch {
                 try {
                     if (isRecoveryMode()) {
-                        mutate(SecuritySettingsMutation.RecoveryCodeVerificationChanged(false))
+                        _uiState.update { it.copy(recoveryCodeVerificationResult = false) }
                         return@launch
                     }
                     val valid = methodProvisioner.checkRecoveryCode(action.code)
-                    mutate(SecuritySettingsMutation.RecoveryCodeVerificationChanged(valid))
+                    _uiState.update { it.copy(recoveryCodeVerificationResult = valid) }
                 } finally {
                     action.code.fill('\u0000')
                 }
             }
 
             SecuritySettingsAction.ClearVerifyResult -> {
-                mutate(SecuritySettingsMutation.RecoveryCodeVerificationChanged(null))
+                _uiState.update { it.copy(recoveryCodeVerificationResult = null) }
             }
         }
     }
@@ -74,14 +72,13 @@ class SecuritySettingsViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.settings.collect { settings ->
                 val security = settings.security
-                mutate(
-                    SecuritySettingsMutation.SettingsChanged(
+                _uiState.update {
+                    it.copy(
                         lockTimeout = security.lockTimeout,
-                        invalidateKeyOnBiometricChange =
-                            security.isInvalidateBiometricKeyOnChange,
-                        lockOnBackground = security.isLockOnBackground,
+                        isInvalidateKeyOnBioChange = security.isInvalidateBiometricKeyOnChange,
+                        isLockOnBackground = security.isLockOnBackground,
                     )
-                )
+                }
             }
         }
     }
@@ -89,20 +86,18 @@ class SecuritySettingsViewModel @Inject constructor(
     private fun observeAuthenticationMethods() {
         viewModelScope.launch {
             authenticationManager.methods.collect { methods ->
-                mutate(
-                    SecuritySettingsMutation.BiometricAvailabilityChanged(AuthenticationMethod.BIOMETRIC in methods)
-                )
+                _uiState.update {
+                    it.copy(isBiometricEnabled = AuthenticationMethod.BIOMETRIC in methods)
+                }
             }
         }
     }
 
     private fun loadRecoveryEnvelopeAvailability() {
         viewModelScope.launch {
-            mutate(
-                SecuritySettingsMutation.RecoveryEnvelopeAvailabilityChanged(
-                    methodProvisioner.hasRecoveryCode()
-                )
-            )
+            _uiState.update {
+                it.copy(hasRecoveryEnvelope = methodProvisioner.hasRecoveryCode())
+            }
         }
     }
 
@@ -127,10 +122,6 @@ class SecuritySettingsViewModel @Inject constructor(
                 methodProvisioner.disableBiometric()
             }
         }
-    }
-
-    private fun mutate(mutation: SecuritySettingsMutation) {
-        _uiState.update { state -> SecuritySettingsReducer.reduce(state, mutation) }
     }
 
     private fun isRecoveryMode(): Boolean =
