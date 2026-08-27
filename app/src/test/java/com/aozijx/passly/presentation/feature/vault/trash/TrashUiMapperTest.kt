@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.backup
+package com.aozijx.passly.presentation.feature.vault.trash
 
 import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.EntryIcon
@@ -13,7 +13,7 @@ import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class DataManagementUiMapperTest {
+class TrashUiMapperTest {
 
     @Test
     fun `maps deleted domain entries to ui-only trash items`() {
@@ -35,8 +35,7 @@ class DataManagementUiMapperTest {
             ),
         )
 
-        val result = DataManagementSettingsUiState(deletedEntries = listOf(entry)).toDetailState()
-            .deletedEntries.single()
+        val result = TrashUiState(entries = listOf(entry)).toUiModels().single()
 
         assertEquals("entry-1", result.id)
         assertEquals(3, result.version)

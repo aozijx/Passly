@@ -1,6 +1,8 @@
 package com.aozijx.passly.presentation.feature.vault.navigation
 
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,6 +33,8 @@ import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordV
 import com.aozijx.passly.presentation.feature.vault.list.VaultHost
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
 import com.aozijx.passly.presentation.feature.vault.list.VaultViewModel
+import com.aozijx.passly.presentation.feature.vault.trash.TrashHost
+import com.aozijx.passly.presentation.feature.vault.trash.TrashViewModel
 import kotlinx.coroutines.flow.collectLatest
 
 internal fun NavGraphBuilder.registerVaultGraph(
@@ -40,35 +44,25 @@ internal fun NavGraphBuilder.registerVaultGraph(
     isDatabaseInitializing: Boolean,
 ) {
     composable(AppRoute.Vault.route) {
-        VaultHost(
+        VaultDestinationContent(
+            context = context,
             vaultViewModel = vaultViewModel,
-            requestAuthentication = context.requestAuthentication,
-            requestReauthentication = context.requestReauthentication,
-            requestSensitiveCopy = { onSuccess ->
-                context.requestSensitiveAccess(
-                    com.aozijx.passly.domain.access.model.SensitiveAccessAction.COPY,
-                    com.aozijx.passly.app.security.SensitiveAccessLevel.STANDARD,
-                    onSuccess,
-                )
-            },
-            onUserInteraction = context.onUserInteraction,
-            onAddPassword = {
-                context.navigateToSingleTopRoute(AppRoute.AddPassword.route)
-            },
-            onAddOtp = {
-                context.navigateToSingleTopRoute(AppRoute.AddOtp.route)
-            },
-            onAddBankCard = {
-                context.navigateToSingleTopRoute(AppRoute.AddBankCard.route)
-            },
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = this,
-            onSettingsClick = { context.navigateToRoute(AppRoute.Settings.route) },
-            onShowDetail = { entry ->
-                context.navigateToRoute(AppRoute.Detail.createRoute(entry.id.value))
-            },
             isDatabaseInitializing = isDatabaseInitializing,
         )
+    }
+
+    composable(AppRoute.Trash.route) {
+        val trashViewModel: TrashViewModel = hiltViewModel()
+        VaultDestinationContent(
+            context = context,
+            vaultViewModel = vaultViewModel,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = this,
+            isDatabaseInitializing = isDatabaseInitializing,
+        )
+        TrashHost(viewModel = trashViewModel, onDismiss = context.navigateBack)
     }
 
     composable(AppRoute.AddPassword.route) {
@@ -166,4 +160,35 @@ internal fun NavGraphBuilder.registerVaultGraph(
             )
         }
     }
+}
+
+@Composable
+private fun VaultDestinationContent(
+    context: ShellNavigationContext,
+    vaultViewModel: VaultViewModel,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    isDatabaseInitializing: Boolean,
+) {
+    VaultHost(
+        vaultViewModel = vaultViewModel,
+        requestAuthentication = context.requestAuthentication,
+        requestReauthentication = context.requestReauthentication,
+        requestSensitiveCopy = { onSuccess ->
+            context.requestSensitiveAccess(
+                com.aozijx.passly.domain.access.model.SensitiveAccessAction.COPY,
+                com.aozijx.passly.app.security.SensitiveAccessLevel.STANDARD,
+                onSuccess,
+            )
+        },
+        onUserInteraction = context.onUserInteraction,
+        onAddPassword = { context.navigateToSingleTopRoute(AppRoute.AddPassword.route) },
+        onAddOtp = { context.navigateToSingleTopRoute(AppRoute.AddOtp.route) },
+        onAddBankCard = { context.navigateToSingleTopRoute(AppRoute.AddBankCard.route) },
+        sharedTransitionScope = sharedTransitionScope,
+        animatedVisibilityScope = animatedVisibilityScope,
+        onSettingsClick = { context.navigateToRoute(AppRoute.Settings.route) },
+        onShowDetail = { context.navigateToRoute(AppRoute.Detail.createRoute(it.id.value)) },
+        isDatabaseInitializing = isDatabaseInitializing,
+    )
 }

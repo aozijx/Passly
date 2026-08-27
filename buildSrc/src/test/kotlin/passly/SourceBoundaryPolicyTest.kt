@@ -334,6 +334,25 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun dataManagementSettingsCannotOwnTrashStateOrCommands() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/backup/DataManagementSettingsViewModel.kt",
+            content = """
+                import com.aozijx.passly.domain.entry.port.EntryCommandRepository
+                val deletedEntries = emptyList<String>()
+            """.trimIndent(),
+        )
+
+        assertEquals(
+            "SETTINGS_DATA_MANAGEMENT_TRASH_OWNERSHIP",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).map { it.ruleId }.distinct().single(),
+        )
+    }
+
+    @Test
     fun passlyNavHostCannotRegisterFeatureDestinationsDirectly() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/presentation/feature/shell/navigation/PasslyNavHost.kt",

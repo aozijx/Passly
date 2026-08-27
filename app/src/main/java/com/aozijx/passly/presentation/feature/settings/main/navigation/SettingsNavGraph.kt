@@ -63,6 +63,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsNavGraph(
     settingsViewModel: SettingsViewModel,
+    onOpenTrash: () -> Unit,
     onOuterBack: () -> Unit
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<SettingsRoute>()
@@ -228,6 +229,7 @@ fun SettingsNavGraph(
                         dataViewModel = dataViewModel,
                         recoveryViewModel = recoveryViewModel,
                         settingsState = settingsState,
+                        onOpenTrash = onOpenTrash,
                         onBack = if (isSinglePane) navigateBack else null
                     )
                 }
@@ -283,6 +285,7 @@ private fun SettingsDetailContent(
     dataViewModel: DataManagementSettingsViewModel,
     recoveryViewModel: DatabaseRecoveryViewModel,
     settingsState: SettingsUiState,
+    onOpenTrash: () -> Unit,
     onBack: (() -> Unit)?
 ) {
     when (route) {
@@ -316,6 +319,7 @@ private fun SettingsDetailContent(
                 recoveryViewModel = recoveryViewModel,
                 settingsViewModel = settingsViewModel,
                 settingsState = settingsState,
+                onOpenTrash = onOpenTrash,
                 onBack = onBack
             )
         }

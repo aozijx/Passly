@@ -16,12 +16,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.vault.list.trash.TrashBottomSheet
-import com.aozijx.passly.presentation.ui.vault.list.trash.TrashEntryUiModel
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.settingsGroupItem
@@ -34,10 +31,7 @@ internal fun DataManagementDetail(
     recoveryState: DatabaseRecoverySheetState,
     isClearingDatabase: Boolean,
     onAutoDownloadIconsChange: (Boolean) -> Unit,
-    onRestoreTrashEntry: (entryId: String, expectedVersion: Int) -> Unit,
-    onDeleteTrashEntry: (entryId: String, expectedVersion: Int) -> Unit,
-    onEmptyTrash: () -> Unit,
-    onClearTrashError: () -> Unit,
+    onOpenTrash: () -> Unit,
     onRefreshRecoveryPackages: () -> Unit,
     onClearRecoveryResult: () -> Unit,
     onScanRecoveryPackage: (String) -> Unit,
@@ -47,7 +41,6 @@ internal fun DataManagementDetail(
     onClearDatabase: () -> Unit
 ) {
     var showClearConfirmation by remember { mutableStateOf(false) }
-    var showTrash by remember { mutableStateOf(false) }
     var showDatabaseRecovery by remember { mutableStateOf(false) }
 
     SettingsSection {
@@ -60,21 +53,8 @@ internal fun DataManagementDetail(
                     key = "data.trash",
                     icon = Icons.Default.DeleteSweep,
                     title = stringResource(R.string.settings_trash_title),
-                    subtitle = when {
-                        state.isTrashLoading ->
-                            stringResource(R.string.settings_trash_loading)
-
-                        state.deletedEntries.isEmpty() ->
-                            stringResource(R.string.settings_trash_empty)
-
-                        else ->
-                            pluralStringResource(
-                                R.plurals.settings_trash_count,
-                                state.deletedEntries.size,
-                                state.deletedEntries.size
-                            )
-                    },
-                    onClick = { showTrash = true }
+                    subtitle = stringResource(R.string.settings_trash_description),
+                    onClick = onOpenTrash,
                 ),
                 navigationSettingsGroupItem(
                     key = "data.database_recovery",
@@ -110,27 +90,6 @@ internal fun DataManagementDetail(
             )
         )
     }
-
-    TrashBottomSheet(
-        visible = showTrash,
-        entries = state.deletedEntries,
-        isLoading = state.isTrashLoading,
-        activeEntryId = state.activeTrashEntryId,
-        isEmptying = state.isEmptyingTrash,
-        error = state.trashError,
-        onDismiss = {
-            showTrash = false
-            onClearTrashError()
-        },
-        onRestore = { entry ->
-            onRestoreTrashEntry(entry.id, entry.version)
-        },
-        onDelete = { entry ->
-            onDeleteTrashEntry(entry.id, entry.version)
-        },
-        onEmpty = onEmptyTrash,
-        onClearError = onClearTrashError
-    )
 
     DatabaseRecoverySheet(
         visible = showDatabaseRecovery,
@@ -184,9 +143,4 @@ internal fun DataManagementDetail(
 
 internal data class DataManagementDetailState(
     val isAutoDownloadIcons: Boolean,
-    val deletedEntries: List<TrashEntryUiModel>,
-    val isTrashLoading: Boolean,
-    val activeTrashEntryId: String?,
-    val isEmptyingTrash: Boolean,
-    val trashError: String?,
 )

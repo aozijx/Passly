@@ -145,6 +145,22 @@ internal object SourceBoundaryPolicy {
             message = "settings UI imports a Vault-owned list model",
         ),
         SourceBoundaryRule(
+            id = "SETTINGS_DATA_MANAGEMENT_TRASH_OWNERSHIP",
+            sourcePathContains = "/presentation/feature/settings/backup/DataManagementSettings",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.entry.port.EntryCommandRepository",
+                "com.aozijx.passly.domain.entry.port.EntryListQueryRepository",
+                "com.aozijx.passly.presentation.ui.vault.list.trash.",
+            ),
+            forbiddenContentMarkers = setOf(
+                "deletedEntries",
+                "RestoreTrashEntry",
+                "DeleteTrashEntry",
+                "EmptyTrash",
+            ),
+            message = "data management settings owns Vault trash state or commands",
+        ),
+        SourceBoundaryRule(
             id = "SHELL_NAV_HOST_FEATURE_REGISTRATION",
             sourcePathContains = "/presentation/feature/shell/navigation/PasslyNavHost.kt",
             forbiddenContentMarkers = setOf("composable("),

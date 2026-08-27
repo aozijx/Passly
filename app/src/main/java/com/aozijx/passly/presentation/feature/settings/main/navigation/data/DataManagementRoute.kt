@@ -34,6 +34,7 @@ internal fun DataManagementRouteContent(
     recoveryViewModel: DatabaseRecoveryViewModel,
     settingsViewModel: SettingsViewModel,
     settingsState: SettingsUiState,
+    onOpenTrash: () -> Unit,
     onBack: (() -> Unit)?
 ) {
     val state by dataViewModel.uiState.collectAsStateWithLifecycle()
@@ -52,28 +53,7 @@ internal fun DataManagementRouteContent(
                         DataManagementSettingsUiAction.SetAutoDownloadIcons(it)
                     )
                 },
-                onRestoreTrashEntry = { entryId, expectedVersion ->
-                    dataViewModel.onAction(
-                        DataManagementSettingsUiAction.RestoreTrashEntry(
-                            entryId,
-                            expectedVersion
-                        )
-                    )
-                },
-                onDeleteTrashEntry = { entryId, expectedVersion ->
-                    dataViewModel.onAction(
-                        DataManagementSettingsUiAction.DeleteTrashEntry(
-                            entryId,
-                            expectedVersion
-                        )
-                    )
-                },
-                onEmptyTrash = {
-                    dataViewModel.onAction(DataManagementSettingsUiAction.EmptyTrash)
-                },
-                onClearTrashError = {
-                    dataViewModel.onAction(DataManagementSettingsUiAction.ClearTrashError)
-                },
+                onOpenTrash = onOpenTrash,
                 onRefreshRecoveryPackages = {
                     recoveryViewModel.onAction(DatabaseRecoveryUiAction.RefreshRecoveryPackages)
                 },

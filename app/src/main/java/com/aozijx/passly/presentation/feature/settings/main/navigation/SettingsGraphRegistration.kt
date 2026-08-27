@@ -12,6 +12,7 @@ internal fun NavGraphBuilder.registerSettingsGraph(context: ShellNavigationConte
         val settingsViewModel: SettingsViewModel = hiltViewModel()
         SettingsNavGraph(
             onOuterBack = context.navigateBack,
+            onOpenTrash = { context.navigateToRoute(AppRoute.Trash.route) },
             settingsViewModel = settingsViewModel,
         )
     }
