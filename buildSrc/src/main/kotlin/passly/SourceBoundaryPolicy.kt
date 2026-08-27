@@ -150,6 +150,12 @@ internal object SourceBoundaryPolicy {
             forbiddenContentMarkers = setOf("composable("),
             message = "shell NavHost registers a feature destination directly",
         ),
+        SourceBoundaryRule(
+            id = "APP_LOCAL_CORE_AUTH_HOST",
+            sourcePathContains = "/app/src/main/java/com/aozijx/passly/core/ui/components/auth/",
+            forbiddenContentMarkers = setOf("AuthenticationHost", "ActivityAuthUiHost"),
+            message = "authentication host implementation remains in app-local core UI",
+        ),
         *listOf(
             "/domain/src/",
             "/data/src/",

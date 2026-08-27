@@ -34,6 +34,32 @@ class AuthenticationHostRegistryTest {
         assertNull(registry.awaitLease(10))
     }
 
+    @Test
+    fun staleRegistrationTokenCannotUnregisterReplacementHost() = runBlocking {
+        val registry = AuthenticationHostRegistry()
+        val staleToken = registry.register(FakeHost("activity-old", usable = true))
+        val replacement = FakeHost("activity-new", usable = true)
+        val replacementToken = registry.register(replacement)
+
+        registry.unregister(staleToken)
+
+        val lease = registry.awaitLease(50)
+        assertEquals(replacement, lease?.hostOrNull())
+        assertEquals(replacementToken, lease?.token)
+    }
+
+    @Test
+    fun invalidatingOwnerDoesNotClearAnotherActivityOwner() = runBlocking {
+        val registry = AuthenticationHostRegistry()
+        val replacement = FakeHost("activity-new", usable = true)
+        registry.register(FakeHost("activity-old", usable = true))
+        registry.register(replacement)
+
+        registry.invalidateOwner("activity-old")
+
+        assertEquals(replacement, registry.awaitLease(50)?.hostOrNull())
+    }
+
     private class FakeHost(
         override val ownerId: String,
         private val usable: Boolean

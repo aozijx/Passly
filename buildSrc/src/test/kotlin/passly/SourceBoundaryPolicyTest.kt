@@ -349,6 +349,22 @@ class SourceBoundaryPolicyTest {
         )
     }
 
+    @Test
+    fun authenticationHostCannotRemainInAppLocalCoreUi() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/core/ui/components/auth/AuthenticationHost.kt",
+            content = "fun AuthenticationHost() = Unit",
+        )
+
+        assertEquals(
+            "APP_LOCAL_CORE_AUTH_HOST",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
     private fun uiSource(content: String) = EditorSource(
         path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",
         content = content,
