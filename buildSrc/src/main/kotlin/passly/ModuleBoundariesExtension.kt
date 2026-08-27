@@ -13,9 +13,16 @@ abstract class ModuleBoundariesExtension @Inject constructor(
     internal val allowedEdges: SetProperty<String> =
         objects.setProperty(String::class.java)
 
+    internal val requiredEdges: SetProperty<String> =
+        objects.setProperty(String::class.java)
+
     fun module(source: String, vararg allowedTargets: String) {
         policyModules.add(source)
         allowedEdges.addAll(allowedTargets.map { target -> edge(source, target) })
+    }
+
+    fun requireDirectDependency(source: String, target: String) {
+        requiredEdges.add(edge(source, target))
     }
 }
 

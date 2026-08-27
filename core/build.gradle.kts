@@ -23,7 +23,7 @@ kotlin {
 }
 
 dependencies {
-    api(project(":domain"))
+    implementation(project(":domain"))
     api(project(":core:common"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.hilt.android)

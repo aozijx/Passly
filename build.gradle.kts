@@ -31,4 +31,6 @@ moduleBoundaries {
     )
     module(":domain", ":core:common")
     module(":runtime:session", ":domain")
+    requireDirectDependency(":app", ":domain")
+    requireDirectDependency(":data", ":domain")
 }

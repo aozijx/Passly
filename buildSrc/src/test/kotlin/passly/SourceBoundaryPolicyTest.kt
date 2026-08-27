@@ -6,6 +6,24 @@ import kotlin.test.assertTrue
 
 class SourceBoundaryPolicyTest {
     @Test
+    fun directDomainConsumersAreRequiredByTheModulePolicy() {
+        val requiredEdges = setOf(
+            edge(":app", ":domain"),
+            edge(":data", ":domain"),
+        )
+        val actualEdges = setOf(edge(":app", ":core"), edge(":data", ":core"))
+
+        assertEquals(
+            requiredEdges,
+            missingRequiredEdges(requiredEdges, actualEdges),
+        )
+        assertEquals(
+            emptySet(),
+            missingRequiredEdges(requiredEdges, actualEdges + requiredEdges),
+        )
+    }
+
+    @Test
     fun presentationUiRejectsExactForbiddenImportPrefixes() {
         val cases = listOf(
             "com.aozijx.passly.presentation.feature.vault.list.VaultUiState",

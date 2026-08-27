@@ -25,6 +25,9 @@ abstract class VerifyModuleBoundariesTask : DefaultTask() {
     @get:Input
     abstract val allowedEdges: SetProperty<String>
 
+    @get:Input
+    abstract val requiredEdges: SetProperty<String>
+
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val sourceFiles: ConfigurableFileCollection
@@ -71,6 +74,16 @@ abstract class VerifyModuleBoundariesTask : DefaultTask() {
             throw GradleException("Cyclic project dependency: ${cycle.joinToString(" -> ")}")
         }
 
+        val missingRequiredEdges = missingRequiredEdges(
+            required = requiredEdges.get(),
+            actual = actualEdges.get(),
+        )
+        if (missingRequiredEdges.isNotEmpty()) {
+            throw GradleException(
+                "Missing required direct project dependencies:\n${missingRequiredEdges.sorted().joinToString("\n")}",
+            )
+        }
+
         val root = sourceRoot.get().asFile.toPath()
         val sourceViolations = EditorSourceBoundaryVerifier.verify(
             sourceFiles.files.map { file ->
@@ -110,3 +123,6 @@ abstract class VerifyModuleBoundariesTask : DefaultTask() {
         return actualModules.get().sorted().firstNotNullOfOrNull(::visit)
     }
 }
+
+internal fun missingRequiredEdges(required: Set<String>, actual: Set<String>): Set<String> =
+    required - actual
