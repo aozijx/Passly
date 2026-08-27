@@ -333,6 +333,22 @@ class SourceBoundaryPolicyTest {
         )
     }
 
+    @Test
+    fun passlyNavHostCannotRegisterFeatureDestinationsDirectly() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/shell/navigation/PasslyNavHost.kt",
+            content = "composable(AppRoute.Vault.route) { VaultHost() }",
+        )
+
+        assertEquals(
+            "SHELL_NAV_HOST_FEATURE_REGISTRATION",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
     private fun uiSource(content: String) = EditorSource(
         path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",
         content = content,

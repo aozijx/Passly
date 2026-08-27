@@ -9,6 +9,8 @@ import com.aozijx.passly.presentation.feature.shell.navigation.PasslyNavHost
 import com.aozijx.passly.presentation.feature.shell.AppShellViewModel
 import com.aozijx.passly.core.ui.adaptive.ProvidePasslyAdaptiveLayout
 import com.aozijx.passly.presentation.feature.vault.list.VaultViewModel
+import com.aozijx.passly.presentation.feature.vault.navigation.registerVaultGraph
+import com.aozijx.passly.presentation.feature.settings.main.navigation.registerSettingsGraph
 
 @Composable
 internal fun AppShellContent(
@@ -22,8 +24,15 @@ internal fun AppShellContent(
         PasslyNavHost(
             navController = navController,
             appShellViewModel = appShellViewModel,
-            vaultViewModel = vaultViewModel,
             isDatabaseInitializing = mainUiState.isDatabaseInitializing
-        )
+        ) { context, sharedTransitionScope, isDatabaseInitializing ->
+            registerVaultGraph(
+                context = context,
+                vaultViewModel = vaultViewModel,
+                sharedTransitionScope = sharedTransitionScope,
+                isDatabaseInitializing = isDatabaseInitializing,
+            )
+            registerSettingsGraph(context)
+        }
     }
 }

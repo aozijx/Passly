@@ -144,6 +144,12 @@ internal object SourceBoundaryPolicy {
             forbiddenImportPrefixes = setOf("com.aozijx.passly.presentation.ui.vault.list.model."),
             message = "settings UI imports a Vault-owned list model",
         ),
+        SourceBoundaryRule(
+            id = "SHELL_NAV_HOST_FEATURE_REGISTRATION",
+            sourcePathContains = "/presentation/feature/shell/navigation/PasslyNavHost.kt",
+            forbiddenContentMarkers = setOf("composable("),
+            message = "shell NavHost registers a feature destination directly",
+        ),
         *listOf(
             "/domain/src/",
             "/data/src/",
