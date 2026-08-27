@@ -18,7 +18,9 @@ import javax.inject.Singleton
  */
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @Singleton
-class CredentialPlatformAdapter @Inject constructor() {
+class CredentialPlatformAdapter @Inject constructor(
+    private val entryFactory: CredentialEntryFactory,
+) {
 
     companion object {
         private const val TAG = "CredAdapter"
@@ -61,7 +63,7 @@ class CredentialPlatformAdapter @Inject constructor() {
         }
 
         return candidates.map { candidate ->
-            CredentialEntryFactory.buildPasswordEntry(
+            entryFactory.buildPasswordEntry(
                 context = context,
                 candidate = candidate,
                 option = option,

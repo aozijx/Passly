@@ -16,7 +16,9 @@ import javax.inject.Singleton
  * Legacy Platform Adapter: Converts between Android Autofill API and platform-agnostic models.
  */
 @Singleton
-class LegacyPlatformAdapter @Inject constructor() {
+class LegacyPlatformAdapter @Inject constructor(
+    private val responseFactory: LegacyResponseFactory,
+) {
 
     fun buildRequest(parsed: ParsedStructure): AutofillRequest {
         val fields = parsed.editableFields.map { field ->
@@ -48,6 +50,6 @@ class LegacyPlatformAdapter @Inject constructor() {
         uiMode: AutofillPresentation,
         context: Context,
     ): FillResponse {
-        return LegacyResponseFactory.buildFillResponse(context, response, parsed, uiMode)
+        return responseFactory.buildFillResponse(context, response, parsed, uiMode)
     }
 }

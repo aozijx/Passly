@@ -353,6 +353,26 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun autofillPendingIntentFactoriesCannotImportPresentationActivities() {
+        val sources = listOf(
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/feature/autofill/legacy/AutofillPendingIntentFactory.kt",
+                content = "import com.aozijx.passly.presentation.feature.autofill.legacy.AutofillFillActivity",
+            ),
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/CredentialPendingIntentFactory.kt",
+                content = "import com.aozijx.passly.presentation.feature.autofill.credential.CredentialResponseActivity",
+            ),
+        )
+
+        assertEquals(
+            listOf("FEATURE_PRESENTATION_IMPORT", "FEATURE_PRESENTATION_IMPORT"),
+            SourceBoundaryVerifier.verify(sources, SourceBoundaryPolicy.generalRules)
+                .map { it.ruleId },
+        )
+    }
+
+    @Test
     fun passlyNavHostCannotRegisterFeatureDestinationsDirectly() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/presentation/feature/shell/navigation/PasslyNavHost.kt",

@@ -7,11 +7,16 @@ import androidx.annotation.RequiresApi
 import androidx.credentials.provider.BeginGetPasswordOption
 import androidx.credentials.provider.PasswordCredentialEntry
 import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Credential Entry Factory: Builds entry objects for Credential Manager.
  */
-internal object CredentialEntryFactory {
+@Singleton
+class CredentialEntryFactory @Inject constructor(
+    private val pendingIntentFactory: CredentialPendingIntentFactory,
+) {
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     fun buildPasswordEntry(
@@ -21,7 +26,7 @@ internal object CredentialEntryFactory {
     ): PasswordCredentialEntry = PasswordCredentialEntry.Builder(
         context = context,
         username = candidate.entry.username,
-        pendingIntent = CredentialPendingIntentFactory.createPasswordGetPendingIntent(
+        pendingIntent = pendingIntentFactory.createPasswordGetPendingIntent(
             context = context,
             entryId = candidate.entry.id.value,
         ),

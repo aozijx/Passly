@@ -15,11 +15,16 @@ import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.legacy.AutofillPendingIntentFactory
 import com.aozijx.passly.feature.autofill.legacy.service.parser.EditableFieldInfo
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Legacy Response Factory for converting domain AutofillResponse to Android FillResponse.
  */
-internal object LegacyResponseFactory {
+@Singleton
+class LegacyResponseFactory @Inject constructor(
+    private val pendingIntentFactory: AutofillPendingIntentFactory,
+) {
 
     fun buildFillResponse(
         context: Context,
@@ -170,10 +175,10 @@ internal object LegacyResponseFactory {
             candidate = candidate,
             badge = buildBadge(context, candidate),
         )
-        val intent = AutofillPendingIntentFactory.createFillIntent(
+        val intent = pendingIntentFactory.createFillIntent(
             context, candidate, parsed, uiMode, roleIds
         )
-        val pi = AutofillPendingIntentFactory.getActivityPendingIntent(
+        val pi = pendingIntentFactory.getActivityPendingIntent(
             context,
             candidate.entry.id.value.hashCode(),
             intent,
@@ -203,10 +208,10 @@ internal object LegacyResponseFactory {
         roleIds: Map<FieldRole, List<AutofillId>> = emptyMap(),
     ) {
         if (parsed.allIds.isEmpty()) return
-        val intent = AutofillPendingIntentFactory.createBaseIntent(context, parsed, uiMode, roleIds).apply {
+        val intent = pendingIntentFactory.createBaseIntent(context, parsed, uiMode, roleIds).apply {
             putExtra("unlock_only", true)
         }
-        val pendingIntent = AutofillPendingIntentFactory.getActivityPendingIntent(
+        val pendingIntent = pendingIntentFactory.getActivityPendingIntent(
             context,
             (parsed.packageName ?: "").hashCode(),
             intent,
@@ -228,10 +233,10 @@ internal object LegacyResponseFactory {
         roleIds: Map<FieldRole, List<AutofillId>> = emptyMap(),
     ) {
         if (parsed.allIds.isEmpty()) return
-        val intent = AutofillPendingIntentFactory.createBaseIntent(context, parsed, uiMode, roleIds).apply {
+        val intent = pendingIntentFactory.createBaseIntent(context, parsed, uiMode, roleIds).apply {
             putExtra("vault_item_ids", candidates.map { it.entry.id.value }.toTypedArray())
         }
-        val pendingIntent = AutofillPendingIntentFactory.getActivityPendingIntent(
+        val pendingIntent = pendingIntentFactory.getActivityPendingIntent(
             context,
             candidates.map { it.entry.id.value }.hashCode(),
             intent,

@@ -25,6 +25,7 @@ import javax.inject.Singleton
 @Singleton
 class CredentialBeginCreateHandler @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
+    private val pendingIntentFactory: CredentialPendingIntentFactory,
 ) {
     suspend fun resolve(
         request: BeginCreateCredentialRequest,
@@ -52,7 +53,7 @@ class CredentialBeginCreateHandler @Inject constructor(
 
         val entry = CreateEntry.Builder(
             context.getString(R.string.app_name),
-            CredentialPendingIntentFactory.createPasswordCreatePendingIntent(context),
+            pendingIntentFactory.createPasswordCreatePendingIntent(context),
         )
             .setDescription(context.getString(R.string.credential_create_password_description))
             .setIcon(Icon.createWithResource(context, R.mipmap.launcher_logo))

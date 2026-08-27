@@ -23,6 +23,7 @@ import javax.inject.Singleton
 class CredentialBeginGetHandler @Inject constructor(
     @param:Strict private val dispatcher: FillRequestDispatcher,
     private val adapter: CredentialPlatformAdapter,
+    private val pendingIntentFactory: CredentialPendingIntentFactory,
 ) {
     suspend fun resolve(
         request: BeginGetCredentialRequest,
@@ -43,7 +44,7 @@ class CredentialBeginGetHandler @Inject constructor(
                     authenticationActions = listOf(
                         AuthenticationAction(
                             context.getString(R.string.vault_locked_title),
-                            CredentialPendingIntentFactory.createUnlockPendingIntent(context),
+                            pendingIntentFactory.createUnlockPendingIntent(context),
                         )
                     )
                 )

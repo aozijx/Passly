@@ -8,12 +8,19 @@ import com.aozijx.passly.domain.autofill.model.FieldRole
 import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
-import com.aozijx.passly.presentation.feature.autofill.legacy.AutofillFillActivity
+import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
+import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
+import com.aozijx.passly.feature.autofill.platform.AutofillPendingIntentPolicy
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Unified PendingIntent Factory for Autofill.
  */
-internal object AutofillPendingIntentFactory {
+@Singleton
+class AutofillPendingIntentFactory @Inject constructor(
+    private val launchTarget: AutofillLaunchTarget,
+) {
 
     fun createFillIntent(
         context: Context,
@@ -21,15 +28,18 @@ internal object AutofillPendingIntentFactory {
         parsed: ParsedStructure,
         uiMode: AutofillPresentation,
         roleIds: Map<FieldRole, List<AutofillId>> = emptyMap(),
-    ): Intent = Intent(context, AutofillFillActivity::class.java).apply {
-        setIdentifier("autofill-fill:${candidate.entry.id.value}")
-        putExtra("vault_item_id", candidate.entry.id.value)
-        putExtra("autofill_ui_mode", uiMode.name)
-        putExtra("package_name", parsed.packageName)
-        putExtra("web_domain", parsed.webDomain)
-        putExtra("editable_ids", parsed.allIds.toTypedArray())
-        putRoleIds(this, roleIds)
-        putExtra(AutofillFillActivity.EXTRA_RETURN_DATASET, true)
+    ): Intent {
+        val requestId = AutofillPendingIntentPolicy.legacyFillRequestId(candidate.entry.id.value)
+        return launchTarget.legacyFillIntent(context, requestId).apply {
+            setIdentifier(requestId)
+            putExtra("vault_item_id", candidate.entry.id.value)
+            putExtra("autofill_ui_mode", uiMode.name)
+            putExtra("package_name", parsed.packageName)
+            putExtra("web_domain", parsed.webDomain)
+            putExtra("editable_ids", parsed.allIds.toTypedArray())
+            putRoleIds(this, roleIds)
+            putExtra(AutofillLaunchExtras.RETURN_DATASET, true)
+        }
     }
 
     fun createBaseIntent(
@@ -37,13 +47,16 @@ internal object AutofillPendingIntentFactory {
         parsed: ParsedStructure,
         uiMode: AutofillPresentation,
         roleIds: Map<FieldRole, List<AutofillId>> = emptyMap(),
-    ): Intent = Intent(context, AutofillFillActivity::class.java).apply {
-        setIdentifier("autofill-base:${parsed.packageName ?: "unknown"}")
-        putExtra("autofill_ui_mode", uiMode.name)
-        putExtra("package_name", parsed.packageName)
-        putExtra("web_domain", parsed.webDomain)
-        putExtra("editable_ids", parsed.allIds.toTypedArray())
-        putRoleIds(this, roleIds)
+    ): Intent {
+        val requestId = AutofillPendingIntentPolicy.legacyBaseRequestId(parsed.packageName)
+        return launchTarget.legacyFillIntent(context, requestId).apply {
+            setIdentifier(requestId)
+            putExtra("autofill_ui_mode", uiMode.name)
+            putExtra("package_name", parsed.packageName)
+            putExtra("web_domain", parsed.webDomain)
+            putExtra("editable_ids", parsed.allIds.toTypedArray())
+            putRoleIds(this, roleIds)
+        }
     }
 
     private fun putRoleIds(intent: Intent, roleIds: Map<FieldRole, List<AutofillId>>) {
@@ -64,10 +77,6 @@ internal object AutofillPendingIntentFactory {
         context,
         requestCode,
         intent,
-        authenticationPendingIntentFlags(),
+        AutofillPendingIntentPolicy.ACTIVITY_FLAGS,
     )
-
-    private fun authenticationPendingIntentFlags(): Int =
-        PendingIntent.FLAG_UPDATE_CURRENT or
-                PendingIntent.FLAG_MUTABLE
 }

@@ -38,6 +38,7 @@ class AutofillFillViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
     private val requestSession: AutofillRequestSession,
     private val grantStore: AutofillGrantStore,
+    private val legacyResponseFactory: LegacyResponseFactory,
     @param:ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
@@ -129,7 +130,7 @@ class AutofillFillViewModel @Inject constructor(
         if (request.passwordIds.isNotEmpty()) roleIds[FieldRole.PASSWORD] = request.passwordIds
         if (request.otpIds.isNotEmpty()) roleIds[FieldRole.OTP] = request.otpIds
 
-        val response = LegacyResponseFactory.buildCandidateAuthenticationResponse(
+        val response = legacyResponseFactory.buildCandidateAuthenticationResponse(
             appContext,
             candidates = candidates,
             editableIds = request.editableIds,

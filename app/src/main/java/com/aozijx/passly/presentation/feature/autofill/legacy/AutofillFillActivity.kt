@@ -15,6 +15,7 @@ import com.aozijx.passly.app.security.authentication.AuthenticationHost
 import com.aozijx.passly.core.ui.theme.AppTheme
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
+import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
 import com.aozijx.passly.presentation.ui.autofill.AutofillCandidateBottomSheet
 import com.aozijx.passly.presentation.ui.autofill.AutofillCandidateItem
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
@@ -76,7 +77,8 @@ class AutofillFillActivity : FragmentActivity() {
         val webDomain = intent?.getStringExtra("web_domain")
         val directEntryId = intent?.getStringExtra("vault_item_id")
         val candidateEntryIds = intent?.getStringArrayExtra("vault_item_ids")?.toList().orEmpty()
-        val returnsDataset = intent?.getBooleanExtra(EXTRA_RETURN_DATASET, false) ?: false
+        val returnsDataset = intent?.getBooleanExtra(AutofillLaunchExtras.RETURN_DATASET, false)
+            ?: false
 
         val editableIds = intent?.let {
             IntentCompat.getParcelableArrayExtra(it, "editable_ids", AutofillId::class.java)?.filterIsInstance<AutofillId>().orEmpty()
@@ -175,7 +177,4 @@ class AutofillFillActivity : FragmentActivity() {
         super.onDestroy()
     }
 
-    companion object {
-        internal const val EXTRA_RETURN_DATASET = "autofill_return_dataset"
-    }
 }

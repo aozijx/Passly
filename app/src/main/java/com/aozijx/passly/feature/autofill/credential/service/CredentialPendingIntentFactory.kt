@@ -2,54 +2,66 @@ package com.aozijx.passly.feature.autofill.credential.service
 
 import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.aozijx.passly.presentation.feature.autofill.credential.CredentialResponseActivity
+import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
+import com.aozijx.passly.feature.autofill.platform.AutofillPendingIntentPolicy
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-internal object CredentialPendingIntentFactory {
+@Singleton
+class CredentialPendingIntentFactory @Inject constructor(
+    private val launchTarget: AutofillLaunchTarget,
+) {
 
     fun createPasswordGetPendingIntent(
         context: Context,
         entryId: String,
     ): PendingIntent {
-        val intent = Intent(context, CredentialResponseActivity::class.java)
+        val requestId = AutofillPendingIntentPolicy.credentialGetRequestId(entryId)
+        val intent = launchTarget.credentialResponseIntent(context, requestId)
             .setAction(ModernCredentialService.ACTION_GET_PASSWORD)
             // PendingIntent identity ignores extras. Identifier keeps two UUIDs
             // distinct even in the unlikely event of an Int hash collision.
-            .setIdentifier("password-get:$entryId")
+            .setIdentifier(requestId)
             // The entry id is only an opaque candidate pointer. Calling-app
             // identity always comes from the system-injected final request.
             .putExtra(ModernCredentialService.EXTRA_ENTRY_ID, entryId)
 
         return PendingIntent.getActivity(
             context,
-            entryId.hashCode(),
+            AutofillPendingIntentPolicy.credentialGetRequestCode(entryId),
             intent,
-            PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            AutofillPendingIntentPolicy.ACTIVITY_FLAGS,
         )
     }
 
     fun createPasswordCreatePendingIntent(context: Context): PendingIntent {
-        val intent = Intent(context, CredentialResponseActivity::class.java)
+        val intent = launchTarget.credentialResponseIntent(
+            context,
+            ModernCredentialService.ACTION_CREATE_PASSWORD,
+        )
             .setAction(ModernCredentialService.ACTION_CREATE_PASSWORD)
         return PendingIntent.getActivity(
             context,
-            0x30000,
+            AutofillPendingIntentPolicy.CREDENTIAL_CREATE_REQUEST_CODE,
             intent,
-            PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            AutofillPendingIntentPolicy.ACTIVITY_FLAGS,
         )
     }
 
     fun createUnlockPendingIntent(context: Context): PendingIntent {
-        val intent = Intent(context, CredentialResponseActivity::class.java)
+        val intent = launchTarget.credentialResponseIntent(
+            context,
+            ModernCredentialService.ACTION_UNLOCK,
+        )
             .setAction(ModernCredentialService.ACTION_UNLOCK)
         return PendingIntent.getActivity(
             context,
-            0x20000,
+            AutofillPendingIntentPolicy.CREDENTIAL_UNLOCK_REQUEST_CODE,
             intent,
-            PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            AutofillPendingIntentPolicy.ACTIVITY_FLAGS,
         )
     }
 }

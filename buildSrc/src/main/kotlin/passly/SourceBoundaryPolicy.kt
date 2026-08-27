@@ -66,10 +66,6 @@ internal object SourceBoundaryPolicy {
             id = "FEATURE_PRESENTATION_IMPORT",
             sourcePathContains = "/app/src/main/java/com/aozijx/passly/feature/",
             forbiddenImportPrefixes = setOf("com.aozijx.passly.presentation."),
-            allowedSourcePathContains = setOf(
-                "/feature/autofill/credential/service/CredentialPendingIntentFactory.kt",
-                "/feature/autofill/legacy/AutofillPendingIntentFactory.kt",
-            ),
             message = "feature implementation imports presentation",
         ),
         SourceBoundaryRule(
