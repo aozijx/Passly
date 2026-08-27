@@ -6,10 +6,9 @@ import com.aozijx.passly.core.error.mapping.fromThrowable
 import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
-import com.aozijx.passly.domain.access.model.AuthenticationRequest
-import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.feature.backup.internal.security.BackupAuthorizationPolicy
+import com.aozijx.passly.feature.backup.internal.security.BackupAuthorizationResult
 import com.aozijx.passly.feature.backup.internal.model.BackupExportOptions
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
@@ -25,7 +24,7 @@ internal class BackupOperationUseCase @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
     private val backupService: BackupArchiveService,
     private val storageSupport: BackupStorageSupport,
-    private val authenticationManager: AuthenticationManager,
+    private val authorizationPolicy: BackupAuthorizationPolicy,
 ) {
     fun buildExportFileName(format: BackupExportFormat): String =
         storageSupport.buildBackupFileName(format.extension)
@@ -66,8 +65,6 @@ internal class BackupOperationUseCase @Inject constructor(
     }
 
     suspend fun executePending(request: BackupOperationRequest): BackupExecutionResult {
-        val targetUri = request.targetUri?.let(Uri::parse)
-            ?: return BackupExecutionResult.Failure(BackupFailed())
         val purpose = if (request.operation == BackupOperation.EXPORT) {
             AuthenticationPurpose.BACKUP_EXPORT
         } else {
@@ -76,18 +73,16 @@ internal class BackupOperationUseCase @Inject constructor(
         authenticate(purpose).let { authResult ->
             if (authResult != BackupExecutionResult.Success) return authResult
         }
+        val targetUri = request.targetUri?.let(Uri::parse)
+            ?: return BackupExecutionResult.Failure(BackupFailed())
         return performOperation(request, targetUri)
     }
 
     private suspend fun authenticate(purpose: AuthenticationPurpose): BackupExecutionResult =
-        when (
-            authenticationManager.authenticate(
-                AuthenticationRequest(purpose = purpose),
-            )
-        ) {
-            is AuthenticationResult.Success -> BackupExecutionResult.Success
-            is AuthenticationResult.Cancelled -> BackupExecutionResult.Cancelled
-            is AuthenticationResult.Failure -> BackupExecutionResult.Failure(BackupFailed())
+        when (authorizationPolicy.authorize(purpose)) {
+            BackupAuthorizationResult.Authorized -> BackupExecutionResult.Success
+            BackupAuthorizationResult.Cancelled -> BackupExecutionResult.Cancelled
+            BackupAuthorizationResult.Denied -> BackupExecutionResult.Failure(BackupFailed())
         }
 
     private suspend fun performOperation(
