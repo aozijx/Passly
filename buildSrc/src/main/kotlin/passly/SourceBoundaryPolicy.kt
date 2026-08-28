@@ -32,6 +32,17 @@ internal object SourceBoundaryPolicy {
             message = "imports a forbidden namespace",
         ),
         SourceBoundaryRule(
+            id = "LAYER_PRESENTATION_ROOT",
+            owner = "presentation",
+            sourcePathContains = "/com/aozijx/passly/presentation/",
+            allowedSourcePathContains = setOf(
+                "/presentation/feature/",
+                "/presentation/ui/",
+            ),
+            forbiddenContentMarkers = setOf("package com.aozijx.passly.presentation."),
+            message = "presentation source must be classified as feature or ui",
+        ),
+        SourceBoundaryRule(
             id = "LAYER_FEATURE",
             owner = "feature",
             sourcePathContains = "/com/aozijx/passly/feature/",
@@ -40,6 +51,7 @@ internal object SourceBoundaryPolicy {
                 "/feature/autofill/platform/AutofillLaunchTargetFactoryTest.kt",
             ),
             forbiddenImportPrefixes = setOf(
+                "androidx.compose.",
                 "com.aozijx.passly.data.",
                 "com.aozijx.passly.presentation.",
             ),

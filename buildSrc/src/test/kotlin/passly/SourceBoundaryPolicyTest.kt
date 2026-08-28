@@ -6,6 +6,31 @@ import kotlin.test.assertTrue
 
 class SourceBoundaryPolicyTest {
     @Test
+    fun retiredUiPackagesRemainCoveredByCurrentOwnershipRules() {
+        val featureUi = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/feature/settings/SettingsScreen.kt",
+            content = "import androidx.compose.runtime.Composable",
+        )
+        val unclassifiedPresentation = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/vault/editor/Editor.kt",
+            content = "package com.aozijx.passly.presentation.vault.editor",
+        )
+
+        assertEquals(
+            "LAYER_FEATURE",
+            SourceBoundaryVerifier.verify(listOf(featureUi), SourceBoundaryPolicy.layerRules)
+                .single().ruleId,
+        )
+        assertEquals(
+            "LAYER_PRESENTATION_ROOT",
+            SourceBoundaryVerifier.verify(
+                listOf(unclassifiedPresentation),
+                SourceBoundaryPolicy.layerRules,
+            ).single().ruleId,
+        )
+    }
+
+    @Test
     fun packageLayerMatrixAllowsOnlyReviewedEdges() {
         val cases = listOf(
             LayerCase(

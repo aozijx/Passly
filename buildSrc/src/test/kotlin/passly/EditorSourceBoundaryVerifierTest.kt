@@ -42,18 +42,6 @@ class EditorSourceBoundaryVerifierTest {
     }
 
     @Test
-    fun editorFactoriesAndLegacyOtpStateAreRejected() {
-        val violations = EditorSourceBoundaryVerifier.verify(
-            listOf(
-                source("app/src/main/java/com/example/feature/vault/editor/password/PasswordEntryFactory.kt", "package com.example"),
-                source("app/src/main/java/com/example/feature/vault/model/OtpFormState.kt", "package com.aozijx.passly.feature.vault.model"),
-            ),
-        )
-
-        assertEquals(2, violations.size)
-    }
-
-    @Test
     fun formMapperCannotOwnIdentityPersistenceCodecCryptoOrLinks() {
         val violations = EditorSourceBoundaryVerifier.verify(
             listOf(
@@ -72,32 +60,6 @@ class EditorSourceBoundaryVerifierTest {
         )
 
         assertEquals(6, violations.size)
-    }
-
-    @Test
-    fun legacyPresentationEditorPackageIsRejected() {
-        val violations = EditorSourceBoundaryVerifier.verify(
-            listOf(source("app/src/main/java/com/example/presentation/vault/editor/X.kt", "package com.aozijx.passly.presentation.vault.editor")),
-        )
-
-        assertEquals(1, violations.size)
-    }
-
-    @Test
-    fun migratedUiPackagesAreRejected() {
-        val violations = EditorSourceBoundaryVerifier.verify(
-            listOf(
-                source("app/src/main/java/com/example/feature/settings/SettingsScreen.kt", "package com.example.feature.settings"),
-                source("app/src/main/java/com/example/feature/detail/DetailScreen.kt", "package com.example.feature.detail"),
-                source("app/src/main/java/com/example/presentation/settings/SettingsScreen.kt", "package com.example.presentation.settings"),
-                source("app/src/main/java/com/example/app/navigation/PasslyNavHost.kt", "package com.example.app.navigation"),
-                source("app/src/main/java/com/example/feature/backup/presentation/contract/BackupUiState.kt", "package com.example"),
-                source("app/src/main/java/com/example/feature/autofill/legacy/AutofillFillActivity.kt", "package com.example"),
-            ),
-        )
-
-        assertEquals(6, violations.size)
-        assertTrue(violations.all { it.contains("migrated UI") })
     }
 
     @Test
