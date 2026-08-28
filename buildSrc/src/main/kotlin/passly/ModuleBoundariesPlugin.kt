@@ -30,6 +30,17 @@ class ModuleBoundariesPlugin : Plugin<Project> {
             description = "Runs the repository architecture boundary verification."
             dependsOn(verification)
         }
+        val metrics = target.tasks.register(
+            "reportArchitectureMetrics",
+            ArchitectureMetricsTask::class.java,
+        ) {
+            group = "verification"
+            description = "Reports deterministic architecture metrics and review signals."
+            sourceRoot.set(target.layout.projectDirectory)
+            outputReport.set(
+                target.layout.buildDirectory.file("reports/architecture/metrics.txt"),
+            )
+        }
 
         target.subprojects {
             tasks.matching { it.name == "check" }.configureEach {
@@ -63,6 +74,14 @@ class ModuleBoundariesPlugin : Plugin<Project> {
                 sourceFiles.from(
                     target.fileTree(target.rootDir) {
                         architectureSourcePatterns(modulePaths.toSet()).forEach(::include)
+                    },
+                )
+            }
+            metrics.configure {
+                sourceFiles.from(
+                    target.fileTree(target.rootDir) {
+                        architectureSourcePatterns(boundaryProjects.map(Project::getPath).toSet())
+                            .forEach(::include)
                     },
                 )
             }
