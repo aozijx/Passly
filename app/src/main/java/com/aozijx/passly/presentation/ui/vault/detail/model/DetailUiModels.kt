@@ -64,6 +64,32 @@ data class DetailFieldUiModel(
     val isEditing: Boolean = false,
 )
 
+enum class CredentialFieldUiModel {
+    USERNAME,
+    PASSWORD,
+}
+
+data class CredentialFieldUiState(
+    val visible: Boolean,
+    val label: String,
+    val revealedValue: ScopedSensitiveText?,
+    val isEditing: Boolean,
+    val editedValue: String,
+)
+
+data class CredentialSectionUiState(
+    val username: CredentialFieldUiState,
+    val password: CredentialFieldUiState,
+)
+
+interface CredentialSectionEventHandler {
+    fun onEditingChanged(field: CredentialFieldUiModel, editing: Boolean)
+    fun onValueChanged(field: CredentialFieldUiModel, value: String)
+    fun onRevealRequested(field: CredentialFieldUiModel)
+    fun onCopyRequested(field: CredentialFieldUiModel)
+    fun onSaveRequested(field: CredentialFieldUiModel, value: String)
+}
+
 data class RelatedEntryUiModel(
     val id: String,
     val title: String,

@@ -54,6 +54,11 @@ import com.aozijx.passly.presentation.feature.vault.detail.withWifiPassword
 import com.aozijx.passly.presentation.feature.vault.detail.withSshPassphrase
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailWifiUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailSshUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.CredentialFieldUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.CredentialFieldUiState
+import com.aozijx.passly.presentation.ui.vault.detail.model.CredentialSectionEventHandler
+import com.aozijx.passly.presentation.ui.vault.detail.model.CredentialSectionUiState
+import com.aozijx.passly.presentation.feature.vault.detail.asScopedSensitiveText
 import androidx.compose.ui.text.input.TextFieldValue
 
 @Composable
@@ -97,40 +102,56 @@ fun DetailContentHost(
                 val revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD)
 
                 CredentialSection(
-                    showUsername = entry.username.isNotBlank() || (SensitiveFieldKey.PASSWORD !in uiState.sensitiveFieldKeys),
-                    showPassword = (SensitiveFieldKey.PASSWORD in uiState.sensitiveFieldKeys) || entry.type != EntryType.LOGIN,
-                    usernameLabel = stringResource(R.string.field_username),
-                    passwordLabel = stringResource(R.string.password_label),
-                    revealedUsername = revealedUsername?.let { String(it.toCharArray()) },
-                    revealedPassword = revealedPassword?.let { String(it.toCharArray()) },
-                    isEditingUsername = editState.isEditingUsername,
-                    editedUsername = editState.editedUsername,
-                    isEditingPassword = editState.isEditingPassword,
-                    editedPassword = editState.editedPassword,
-                    onUsernameEditToggled = { editState.isEditingUsername = it },
-                    onPasswordEditToggled = { editState.isEditingPassword = it },
-                    onUsernameChanged = { editState.editedUsername = it },
-                    onPasswordChanged = { editState.editedPassword = it },
-                    onUsernameClick = { onAction(DetailUiAction.ToggleVisibility(RevealedFieldKey.USERNAME)) },
-                    onPasswordClick = { onAction(DetailUiAction.ToggleVisibility(RevealedFieldKey.PASSWORD)) },
-                    onUsernameCopy = {
-                        copySensitiveField(
-                            handler = actionHandler,
-                            fieldName = "username",
-                            revealedValue = revealedUsername,
-                            sourceValue = entry.username
-                        )
+                    state = CredentialSectionUiState(
+                        username = CredentialFieldUiState(
+                            visible = entry.username.isNotBlank() || SensitiveFieldKey.PASSWORD !in uiState.sensitiveFieldKeys,
+                            label = stringResource(R.string.field_username),
+                            revealedValue = revealedUsername?.asScopedSensitiveText(),
+                            isEditing = editState.isEditingUsername,
+                            editedValue = editState.editedUsername,
+                        ),
+                        password = CredentialFieldUiState(
+                            visible = SensitiveFieldKey.PASSWORD in uiState.sensitiveFieldKeys || entry.type != EntryType.LOGIN,
+                            label = stringResource(R.string.password_label),
+                            revealedValue = revealedPassword?.asScopedSensitiveText(),
+                            isEditing = editState.isEditingPassword,
+                            editedValue = editState.editedPassword,
+                        ),
+                    ),
+                    eventHandler = object : CredentialSectionEventHandler {
+                        override fun onEditingChanged(field: CredentialFieldUiModel, editing: Boolean) {
+                            when (field) {
+                                CredentialFieldUiModel.USERNAME -> editState.isEditingUsername = editing
+                                CredentialFieldUiModel.PASSWORD -> editState.isEditingPassword = editing
+                            }
+                        }
+
+                        override fun onValueChanged(field: CredentialFieldUiModel, value: String) {
+                            when (field) {
+                                CredentialFieldUiModel.USERNAME -> editState.editedUsername = value
+                                CredentialFieldUiModel.PASSWORD -> editState.editedPassword = value
+                            }
+                        }
+
+                        override fun onRevealRequested(field: CredentialFieldUiModel) {
+                            onAction(DetailUiAction.ToggleVisibility(field.revealedFieldKey))
+                        }
+
+                        override fun onCopyRequested(field: CredentialFieldUiModel) {
+                            when (field) {
+                                CredentialFieldUiModel.USERNAME -> copySensitiveField(
+                                    actionHandler, "username", revealedUsername, entry.username,
+                                )
+                                CredentialFieldUiModel.PASSWORD -> copySensitiveField(
+                                    actionHandler, "password", revealedPassword, entry.secret.login?.password,
+                                )
+                            }
+                        }
+
+                        override fun onSaveRequested(field: CredentialFieldUiModel, value: String) {
+                            onAction(DetailUiAction.SaveField(field.revealedFieldKey, value))
+                        }
                     },
-                    onPasswordCopy = {
-                        copySensitiveField(
-                            handler = actionHandler,
-                            fieldName = "password",
-                            revealedValue = revealedPassword,
-                            sourceValue = entry.secret.login?.password
-                        )
-                    },
-                    onUsernameSave = { onAction(DetailUiAction.SaveField(RevealedFieldKey.USERNAME, it)) },
-                    onPasswordSave = { onAction(DetailUiAction.SaveField(RevealedFieldKey.PASSWORD, it)) }
                 )
             }
         }
@@ -386,3 +407,9 @@ fun DetailContentHost(
         }
     }
 }
+
+private val CredentialFieldUiModel.revealedFieldKey: String
+    get() = when (this) {
+        CredentialFieldUiModel.USERNAME -> RevealedFieldKey.USERNAME
+        CredentialFieldUiModel.PASSWORD -> RevealedFieldKey.PASSWORD
+    }
