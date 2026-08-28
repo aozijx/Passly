@@ -19,26 +19,34 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.ui.shared.components.apppassword.PasswordFields
 
+data class AppPasswordChangeDialogState(
+    val currentPassword: String,
+    val newPassword: String,
+    val confirmPassword: String,
+    val confirmEnabled: Boolean,
+)
+
+interface AppPasswordChangeDialogEventHandler {
+    fun onCurrentPasswordChanged(password: String)
+    fun onNewPasswordChanged(password: String)
+    fun onConfirmPasswordChanged(password: String)
+    fun onConfirm()
+    fun onDismiss()
+}
+
 @Composable
 fun AppPasswordChangeDialog(
-    currentPassword: String,
-    newPassword: String,
-    confirmPassword: String,
-    onCurrentPasswordChange: (String) -> Unit,
-    onNewPasswordChange: (String) -> Unit,
-    onConfirmPasswordChange: (String) -> Unit,
-    isConfirmEnabled: Boolean,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    state: AppPasswordChangeDialogState,
+    eventHandler: AppPasswordChangeDialogEventHandler,
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = eventHandler::onDismiss,
         title = { Text(stringResource(R.string.settings_auth_change_app_password)) },
         text = {
             Column {
                 OutlinedTextField(
-                    value = currentPassword,
-                    onValueChange = onCurrentPasswordChange,
+                    value = state.currentPassword,
+                    onValueChange = eventHandler::onCurrentPasswordChanged,
                     label = { Text(stringResource(R.string.settings_auth_current_password)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
@@ -50,23 +58,23 @@ fun AppPasswordChangeDialog(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 PasswordFields(
-                    newPassword = newPassword,
-                    confirmPassword = confirmPassword,
-                    onNewPasswordChange = onNewPasswordChange,
-                    onConfirmPasswordChange = onConfirmPasswordChange
+                    newPassword = state.newPassword,
+                    confirmPassword = state.confirmPassword,
+                    onNewPasswordChange = eventHandler::onNewPasswordChanged,
+                    onConfirmPasswordChange = eventHandler::onConfirmPasswordChanged,
                 )
             }
         },
         confirmButton = {
             TextButton(
-                onClick = onConfirm,
-                enabled = isConfirmEnabled
+                onClick = eventHandler::onConfirm,
+                enabled = state.confirmEnabled,
             ) {
                 Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            TextButton(onClick = eventHandler::onDismiss) { Text(stringResource(R.string.cancel)) }
         }
     )
 }

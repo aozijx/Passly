@@ -9,6 +9,8 @@ import com.aozijx.passly.R
 import com.aozijx.passly.presentation.ui.shared.components.apppassword.AppPasswordSetDialog
 import com.aozijx.passly.presentation.ui.settings.security.AppPasswordActionDialog
 import com.aozijx.passly.presentation.ui.settings.security.AppPasswordChangeDialog
+import com.aozijx.passly.presentation.ui.settings.security.AppPasswordChangeDialogEventHandler
+import com.aozijx.passly.presentation.ui.settings.security.AppPasswordChangeDialogState
 import com.aozijx.passly.presentation.ui.settings.interaction.SwipeActionSelectDialog
 import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogEvent
 import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogState
@@ -121,35 +123,33 @@ internal fun SettingsScreenDialogsHost(
 
         AppPasswordDialogState.Change -> {
             AppPasswordChangeDialog(
-                currentPassword = state.appPasswordCurrent,
-                newPassword = state.appPasswordNew,
-                confirmPassword = state.appPasswordConfirm,
-                onCurrentPasswordChange = {
-                    onEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.CurrentChanged(it))
+                state = AppPasswordChangeDialogState(
+                    currentPassword = state.appPasswordCurrent,
+                    newPassword = state.appPasswordNew,
+                    confirmPassword = state.appPasswordConfirm,
+                    confirmEnabled = state.isChangePasswordConfirmEnabled,
+                ),
+                eventHandler = object : AppPasswordChangeDialogEventHandler {
+                    override fun onCurrentPasswordChanged(password: String) = onEvent(
+                        SettingsDialogEvent.AppPassword(
+                            AppPasswordDialogEvent.CurrentChanged(password),
+                        ),
+                    )
+                    override fun onNewPasswordChanged(password: String) = onEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.NewChanged(password)),
+                    )
+                    override fun onConfirmPasswordChanged(password: String) = onEvent(
+                        SettingsDialogEvent.AppPassword(
+                            AppPasswordDialogEvent.ConfirmChanged(password),
+                        ),
+                    )
+                    override fun onConfirm() = onEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ConfirmChange),
+                    )
+                    override fun onDismiss() = onEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.DismissChange),
                     )
                 },
-                onNewPasswordChange = {
-                    onEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.NewChanged(it))
-                    )
-                },
-                onConfirmPasswordChange = {
-                    onEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ConfirmChanged(it))
-                    )
-                },
-                isConfirmEnabled = state.isChangePasswordConfirmEnabled,
-                onConfirm = {
-                    onEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ConfirmChange)
-                    )
-                },
-                onDismiss = {
-                    onEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.DismissChange)
-                    )
-                }
             )
         }
     }
