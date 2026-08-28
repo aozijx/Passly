@@ -15,6 +15,18 @@ data class AutofillSettingsUiModel(
     val isSystemServiceEnabled: Boolean,
 )
 
+interface AutofillSettingsEventHandler {
+    fun onOpenSystemSettings()
+    fun onEnabledChanged(enabled: Boolean)
+    fun onPresentationChanged(presentation: AutofillPresentationUiModel)
+    fun onCredentialManagerEnabledChanged(enabled: Boolean)
+    fun onAuthenticationRequiredChanged(required: Boolean)
+    fun onOtpEnabledChanged(enabled: Boolean)
+    fun onSavePromptsEnabledChanged(enabled: Boolean)
+    fun onUnmatchedSuggestionsEnabledChanged(enabled: Boolean)
+    fun onMaxSuggestionsChanged(maxSuggestions: Int)
+}
+
 enum class AutofillPresentationUiModel {
     SYSTEM_INLINE,
     BOTTOM_SHEET,
