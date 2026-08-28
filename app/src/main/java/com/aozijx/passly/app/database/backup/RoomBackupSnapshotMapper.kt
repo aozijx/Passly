@@ -130,12 +130,14 @@ private fun SecretPayload.toBackupRecord() = BackupSecretRecord(
     notes = notes,
     card = card?.let {
         BackupCardCredential(
+            cardType = it.cardType,
             cardNumber = it.cardNumber,
             cardExpiry = it.cardExpiry,
             cardCvv = it.cardCvv,
             cardHolder = it.cardHolder,
             paymentPin = it.paymentPin,
             paymentPlatform = it.paymentPlatform,
+            billingAddress = it.billingAddress,
         )
     },
     identity = identity?.let {
@@ -183,12 +185,14 @@ private fun BackupSecretRecord.toPayload() = SecretPayload(
     notes = notes,
     card = card?.let {
         CardCredentialPayload(
+            cardType = it.cardType,
             cardNumber = it.cardNumber,
             cardExpiry = it.cardExpiry,
             cardCvv = it.cardCvv,
             cardHolder = it.cardHolder,
             paymentPin = it.paymentPin,
             paymentPlatform = it.paymentPlatform,
+            billingAddress = it.billingAddress,
         )
     },
     identity = identity?.let {

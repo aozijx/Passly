@@ -35,12 +35,14 @@ data class BackupLoginCredential(
 
 @Serializable
 data class BackupCardCredential(
+    val cardType: String? = null,
     val cardNumber: String? = null,
     val cardExpiry: String? = null,
     val cardCvv: String? = null,
     val cardHolder: String? = null,
     val paymentPin: String? = null,
-    val paymentPlatform: String? = null
+    val paymentPlatform: String? = null,
+    val billingAddress: String? = null,
 )
 
 @Serializable
