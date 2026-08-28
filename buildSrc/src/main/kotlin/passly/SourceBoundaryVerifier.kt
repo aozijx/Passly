@@ -38,5 +38,5 @@ internal object SourceBoundaryVerifier {
     }
 
     private fun SourceBoundaryRule.violation(path: String, evidence: String) =
-        SourceBoundaryViolation(id, path.replace('\\', '/'), evidence, message)
+        SourceBoundaryViolation(id, owner, path.replace('\\', '/'), evidence, message)
 }

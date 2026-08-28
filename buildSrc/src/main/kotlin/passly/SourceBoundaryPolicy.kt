@@ -10,18 +10,136 @@ internal object SourceBoundaryPolicy {
         "EntryLink" to listOf("EntryLink"),
     )
 
-    val generalRules = listOf(
+    val layerRules = listOf(
         SourceBoundaryRule(
-            id = "PRESENTATION_UI_IMPORT",
-            sourcePathContains = "/presentation/ui/",
+            id = "LAYER_PRESENTATION_UI",
+            owner = "presentation.ui",
+            sourcePathContains = "/com/aozijx/passly/presentation/ui/",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.presentation.feature.",
                 "com.aozijx.passly.feature.",
                 "com.aozijx.passly.domain.",
                 "com.aozijx.passly.data.",
+                "com.aozijx.passly.security.",
             ),
-            message = "presentation UI imports a forbidden project layer",
+            message = "imports a forbidden namespace",
         ),
+        SourceBoundaryRule(
+            id = "LAYER_PRESENTATION_FEATURE",
+            owner = "presentation.feature",
+            sourcePathContains = "/com/aozijx/passly/presentation/feature/",
+            forbiddenImportPrefixes = setOf("com.aozijx.passly.data."),
+            message = "imports a forbidden namespace",
+        ),
+        SourceBoundaryRule(
+            id = "LAYER_FEATURE",
+            owner = "feature",
+            sourcePathContains = "/com/aozijx/passly/feature/",
+            allowedSourcePathContains = setOf(
+                "/feature/vault/entry/VaultDataAdaptersTest.kt",
+                "/feature/autofill/platform/AutofillLaunchTargetFactoryTest.kt",
+            ),
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.data.",
+                "com.aozijx.passly.presentation.",
+            ),
+            message = "imports a forbidden namespace",
+        ),
+        SourceBoundaryRule(
+            id = "LAYER_DOMAIN",
+            owner = "domain",
+            sourcePathContains = "/domain/src/",
+            forbiddenImportPrefixes = setOf(
+                "android.",
+                "androidx.",
+                "com.aozijx.passly.app.",
+                "com.aozijx.passly.data.",
+                "com.aozijx.passly.feature.",
+                "com.aozijx.passly.presentation.",
+                "com.aozijx.passly.security.",
+            ),
+            message = "imports a forbidden namespace",
+        ),
+        SourceBoundaryRule(
+            id = "LAYER_DATA",
+            owner = "data",
+            sourcePathContains = "/data/src/",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.app.",
+                "com.aozijx.passly.feature.",
+                "com.aozijx.passly.presentation.",
+            ),
+            message = "imports a forbidden namespace",
+        ),
+        SourceBoundaryRule(
+            id = "LAYER_CORE",
+            owner = "core",
+            sourcePathContains = "/core/src/",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.app.",
+                "com.aozijx.passly.data.",
+                "com.aozijx.passly.feature.",
+                "com.aozijx.passly.presentation.",
+            ),
+            message = "imports a forbidden namespace",
+        ),
+        SourceBoundaryRule(
+            id = "LAYER_CORE_COMMON",
+            owner = "core.common",
+            sourcePathContains = "/core/common/src/",
+            forbiddenImportPrefixes = setOf(
+                "android.",
+                "androidx.",
+                "com.aozijx.passly.app.",
+                "com.aozijx.passly.data.",
+                "com.aozijx.passly.feature.",
+                "com.aozijx.passly.presentation.",
+                "com.aozijx.passly.security.",
+            ),
+            message = "imports a forbidden namespace",
+        ),
+        SourceBoundaryRule(
+            id = "LAYER_SECURITY",
+            owner = "security",
+            sourcePathContains = "/com/aozijx/passly/security/",
+            allowedSourcePathContains = setOf(
+                "/security/authentication/RecoveryModeBoundaryTest.kt",
+            ),
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.data.",
+                "com.aozijx.passly.feature.",
+                "com.aozijx.passly.presentation.",
+            ),
+            message = "imports a forbidden namespace",
+        ),
+        SourceBoundaryRule(
+            id = "LAYER_RUNTIME_SESSION",
+            owner = "runtime.session",
+            sourcePathContains = "/runtime/session/src/",
+            forbiddenImportPrefixes = setOf(
+                "android.",
+                "androidx.",
+                "com.aozijx.passly.app.",
+                "com.aozijx.passly.core.",
+                "com.aozijx.passly.data.",
+                "com.aozijx.passly.feature.",
+                "com.aozijx.passly.presentation.",
+                "com.aozijx.passly.security.",
+                "dagger.",
+                "javax.inject.",
+                "net.sqlcipher.",
+            ),
+            message = "imports a forbidden namespace",
+        ),
+        SourceBoundaryRule(
+            id = "LAYER_APP",
+            owner = "app",
+            sourcePathContains = "/com/aozijx/passly/app/",
+            message = "imports a forbidden namespace",
+        ),
+    )
+
+    val generalRules = layerRules + listOf(
         SourceBoundaryRule(
             id = "PRESENTATION_UI_VIEW_MODEL",
             sourcePathContains = "/presentation/ui/",
@@ -33,12 +151,6 @@ internal object SourceBoundaryPolicy {
             sourcePathContains = "/presentation/",
             forbiddenContentMarkers = setOf("@Module"),
             message = "presentation cannot declare a dependency injection module",
-        ),
-        SourceBoundaryRule(
-            id = "PRESENTATION_FEATURE_DATA_IMPORT",
-            sourcePathContains = "/presentation/feature/vault/",
-            forbiddenImportPrefixes = setOf("com.aozijx.passly.data."),
-            message = "presentation feature imports a data implementation",
         ),
         SourceBoundaryRule(
             id = "VAULT_DATA_ADAPTER_ONLY",
@@ -67,18 +179,6 @@ internal object SourceBoundaryPolicy {
                 "/app/database/recovery/DataDatabaseRecoveryGatewayTest.kt",
             ),
             message = "database recovery Data types may only be imported by the App adapter",
-        ),
-        SourceBoundaryRule(
-            id = "FEATURE_PRESENTATION_IMPORT",
-            sourcePathContains = "/app/src/main/java/com/aozijx/passly/feature/",
-            forbiddenImportPrefixes = setOf("com.aozijx.passly.presentation."),
-            message = "feature implementation imports presentation",
-        ),
-        SourceBoundaryRule(
-            id = "BACKUP_FEATURE_DATA_IMPORT",
-            sourcePathContains = "/feature/backup/",
-            forbiddenImportPrefixes = setOf("com.aozijx.passly.data."),
-            message = "backup feature imports persistence implementation",
         ),
         SourceBoundaryRule(
             id = "PRESENTATION_SESSION_CONTROLLER_IMPORT",
@@ -179,22 +279,6 @@ internal object SourceBoundaryPolicy {
             message = "settings owns database lifecycle or recovery capability",
         ),
         SourceBoundaryRule(
-            id = "RUNTIME_SESSION_RESOURCE_NEUTRALITY",
-            sourcePathContains = "/runtime/session/src/",
-            forbiddenImportPrefixes = setOf(
-                "android.",
-                "androidx.",
-                "com.aozijx.passly.app.",
-                "com.aozijx.passly.data.",
-                "com.aozijx.passly.presentation.",
-                "com.aozijx.passly.security.dek.DekManager",
-                "dagger.",
-                "javax.inject.",
-                "net.sqlcipher.",
-            ),
-            message = "session runtime imports platform, persistence, DI, or concrete key-manager code",
-        ),
-        SourceBoundaryRule(
             id = "DATA_CORE_PACKAGE_ACCESS",
             sourcePathContains = "/data/src/",
             forbiddenImportPrefixes = setOf("com.aozijx.passly.core."),
@@ -218,21 +302,5 @@ internal object SourceBoundaryPolicy {
             forbiddenContentMarkers = setOf("AuthenticationHost", "ActivityAuthUiHost"),
             message = "authentication host implementation remains in app-local core UI",
         ),
-        *listOf(
-            "/domain/src/",
-            "/data/src/",
-            "/core/src/",
-            "/core/common/src/",
-            "/runtime/session/src/",
-        ).map { moduleRoot ->
-            SourceBoundaryRule(
-                id = "LOWER_MODULE_EDITOR_IMPORT",
-                sourcePathContains = moduleRoot,
-                forbiddenImportPrefixes = setOf(
-                    "com.aozijx.passly.presentation.feature.vault.editor.",
-                ),
-                message = "lower module imports presentation editor state",
-            )
-        }.toTypedArray(),
     )
 }

@@ -26,10 +26,10 @@ class EditorSourceBoundaryVerifierTest {
     @Test
     fun presentationEditorCannotImportDataImplementation() {
         val violations = EditorSourceBoundaryVerifier.verify(
-            listOf(source("app/src/main/java/com/example/presentation/feature/vault/editor/X.kt", "import com.aozijx.passly.data.repository.EntryRepositoryImpl")),
+            listOf(source("app/src/main/java/com/aozijx/passly/presentation/feature/vault/editor/X.kt", "import com.aozijx.passly.data.repository.EntryRepositoryImpl")),
         )
 
-        assertTrue(violations.single().contains("data implementation"))
+        assertTrue(violations.single().contains("owner=presentation.feature"))
     }
 
     @Test
@@ -38,7 +38,7 @@ class EditorSourceBoundaryVerifierTest {
             listOf(source("domain/src/main/kotlin/com/example/X.kt", "import com.aozijx.passly.presentation.feature.vault.editor.otp.OtpFormState")),
         )
 
-        assertTrue(violations.single().contains("lower module"))
+        assertTrue(violations.single().contains("owner=domain"))
     }
 
     @Test
@@ -104,16 +104,16 @@ class EditorSourceBoundaryVerifierTest {
     fun presentationUiCannotDependOnFeatureDomainOrData() {
         val violations = EditorSourceBoundaryVerifier.verify(
             listOf(
-                source("app/src/main/java/com/example/presentation/ui/vault/list/Feature.kt", "import com.aozijx.passly.presentation.feature.vault.list.VaultUiState"),
-                source("app/src/main/java/com/example/presentation/ui/vault/list/AppFeature.kt", "import com.aozijx.passly.feature.vault.model.AddType"),
-                source("app/src/main/java/com/example/presentation/ui/vault/list/Domain.kt", "import com.aozijx.passly.domain.entry.model.Entry"),
-                source("app/src/main/java/com/example/presentation/ui/vault/list/Data.kt", "import com.aozijx.passly.data.repository.EntryRepositoryImpl"),
+                source("app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/Feature.kt", "import com.aozijx.passly.presentation.feature.vault.list.VaultUiState"),
+                source("app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/AppFeature.kt", "import com.aozijx.passly.feature.vault.model.AddType"),
+                source("app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/Domain.kt", "import com.aozijx.passly.domain.entry.model.Entry"),
+                source("app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/Data.kt", "import com.aozijx.passly.data.repository.EntryRepositoryImpl"),
             ),
         )
 
         assertEquals(4, violations.size)
-        assertTrue(violations.all { it.contains("presentation UI") })
-        assertTrue(violations.all { it.contains("[PRESENTATION_UI_IMPORT]") })
+        assertTrue(violations.all { it.contains("owner=presentation.ui") })
+        assertTrue(violations.all { it.contains("[LAYER_PRESENTATION_UI]") })
     }
 
     @Test

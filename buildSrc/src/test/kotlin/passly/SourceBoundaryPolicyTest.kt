@@ -6,6 +6,130 @@ import kotlin.test.assertTrue
 
 class SourceBoundaryPolicyTest {
     @Test
+    fun packageLayerMatrixAllowsOnlyReviewedEdges() {
+        val cases = listOf(
+            LayerCase(
+                owner = "presentation.ui",
+                path = "app/src/main/java/com/aozijx/passly/presentation/ui/Screen.kt",
+                allowed = listOf("androidx.compose.runtime.Composable", "com.aozijx.passly.core.ui.theme.PasslyTheme"),
+                forbidden = listOf(
+                    "com.aozijx.passly.presentation.feature.vault.VaultUiState",
+                    "com.aozijx.passly.feature.vault.VaultEntryPageSource",
+                    "com.aozijx.passly.domain.entry.model.Entry",
+                    "com.aozijx.passly.data.repository.EntryRepositoryImpl",
+                    "com.aozijx.passly.security.dek.DekManager",
+                ),
+            ),
+            LayerCase(
+                owner = "presentation.feature",
+                path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/VaultViewModel.kt",
+                allowed = listOf("com.aozijx.passly.feature.vault.VaultEntryPageSource", "com.aozijx.passly.domain.entry.model.Entry"),
+                forbidden = listOf("com.aozijx.passly.data.repository.entry.RoomEntryQueryRepository"),
+            ),
+            LayerCase(
+                owner = "feature",
+                path = "app/src/main/java/com/aozijx/passly/feature/vault/VaultUseCase.kt",
+                allowed = listOf("com.aozijx.passly.domain.entry.model.Entry", "com.aozijx.passly.core.error.result.AppResult"),
+                forbidden = listOf("com.aozijx.passly.presentation.feature.vault.VaultUiState"),
+            ),
+            LayerCase(
+                owner = "domain",
+                path = "domain/src/main/kotlin/com/aozijx/passly/domain/entry/Entry.kt",
+                allowed = listOf("kotlin.time.Duration", "com.aozijx.passly.core.error.result.AppResult"),
+                forbidden = listOf(
+                    "android.content.Context",
+                    "androidx.lifecycle.ViewModel",
+                    "com.aozijx.passly.app.PasslyApplication",
+                    "com.aozijx.passly.data.repository.EntryRepositoryImpl",
+                    "com.aozijx.passly.feature.vault.VaultUseCase",
+                    "com.aozijx.passly.presentation.feature.vault.VaultUiState",
+                    "com.aozijx.passly.security.dek.DekManager",
+                ),
+            ),
+            LayerCase(
+                owner = "data",
+                path = "data/src/main/java/com/aozijx/passly/data/repository/Repository.kt",
+                allowed = listOf("androidx.room.Room", "com.aozijx.passly.domain.entry.model.Entry", "com.aozijx.passly.security.search.BlindIndexer"),
+                forbidden = listOf(
+                    "com.aozijx.passly.app.PasslyApplication",
+                    "com.aozijx.passly.feature.vault.VaultUseCase",
+                    "com.aozijx.passly.presentation.feature.vault.VaultUiState",
+                ),
+            ),
+            LayerCase(
+                owner = "core",
+                path = "core/src/main/kotlin/com/aozijx/passly/core/platform/Platform.kt",
+                allowed = listOf("android.content.Context", "com.aozijx.passly.domain.autofill.port.ApplicationLabelResolver", "com.aozijx.passly.security.dek.DekManager"),
+                forbidden = listOf(
+                    "com.aozijx.passly.app.PasslyApplication",
+                    "com.aozijx.passly.data.repository.EntryRepositoryImpl",
+                    "com.aozijx.passly.feature.vault.VaultUseCase",
+                    "com.aozijx.passly.presentation.feature.vault.VaultUiState",
+                ),
+            ),
+            LayerCase(
+                owner = "security",
+                path = "app/src/main/java/com/aozijx/passly/security/authentication/Auth.kt",
+                allowed = listOf("android.content.Context", "com.aozijx.passly.app.session.DekSessionKeySource", "com.aozijx.passly.domain.access.port.AuthenticationManager"),
+                forbidden = listOf(
+                    "com.aozijx.passly.data.repository.EntryRepositoryImpl",
+                    "com.aozijx.passly.feature.vault.VaultUseCase",
+                    "com.aozijx.passly.presentation.feature.vault.VaultUiState",
+                ),
+            ),
+            LayerCase(
+                owner = "runtime.session",
+                path = "runtime/session/src/main/kotlin/com/aozijx/passly/runtime/session/Manager.kt",
+                allowed = listOf("kotlinx.coroutines.flow.StateFlow", "com.aozijx.passly.domain.access.model.SessionState"),
+                forbidden = listOf(
+                    "android.content.Context",
+                    "androidx.room.RoomDatabase",
+                    "com.aozijx.passly.app.PasslyApplication",
+                    "com.aozijx.passly.core.crypto.CryptoEngine",
+                    "com.aozijx.passly.data.local.database.AppDatabase",
+                    "com.aozijx.passly.feature.vault.VaultUseCase",
+                    "com.aozijx.passly.presentation.feature.vault.VaultUiState",
+                    "com.aozijx.passly.security.dek.DekManager",
+                ),
+            ),
+            LayerCase(
+                owner = "app",
+                path = "app/src/main/java/com/aozijx/passly/app/Composition.kt",
+                allowed = listOf(
+                    "com.aozijx.passly.data.repository.EntryRepositoryImpl",
+                    "com.aozijx.passly.feature.vault.VaultUseCase",
+                    "com.aozijx.passly.presentation.feature.vault.VaultUiState",
+                    "com.aozijx.passly.security.dek.DekManager",
+                ),
+                forbidden = emptyList(),
+            ),
+        )
+
+        cases.forEach { case ->
+            case.allowed.forEach { imported ->
+                assertEquals(
+                    emptyList(),
+                    SourceBoundaryVerifier.verify(
+                        listOf(EditorSource(case.path, "import $imported")),
+                        SourceBoundaryPolicy.layerRules,
+                    ),
+                    "${case.owner} should allow $imported",
+                )
+            }
+            case.forbidden.forEach { imported ->
+                val violation = SourceBoundaryVerifier.verify(
+                    listOf(EditorSource(case.path, "import $imported")),
+                    SourceBoundaryPolicy.layerRules,
+                ).single()
+                assertEquals("LAYER_${case.owner.uppercase().replace('.', '_')}", violation.ruleId)
+                assertTrue(violation.format().contains("owner=${case.owner}"))
+                assertTrue(violation.format().contains(case.path))
+                assertTrue(violation.format().contains(imported))
+            }
+        }
+    }
+
+    @Test
     fun directDomainConsumersAreRequiredByTheModulePolicy() {
         val requiredEdges = setOf(
             edge(":app", ":domain"),
@@ -39,7 +163,7 @@ class SourceBoundaryPolicyTest {
             )
 
             assertEquals(1, violations.size, importedType)
-            assertEquals("PRESENTATION_UI_IMPORT", violations.single().ruleId)
+            assertEquals("LAYER_PRESENTATION_UI", violations.single().ruleId)
             assertEquals("import $importedType", violations.single().evidence)
         }
     }
@@ -82,7 +206,7 @@ class SourceBoundaryPolicyTest {
         ).single()
 
         val formatted = violation.format()
-        assertTrue(formatted.contains("[PRESENTATION_UI_IMPORT]"))
+        assertTrue(formatted.contains("[LAYER_PRESENTATION_UI]"))
         assertTrue(formatted.contains("presentation/ui/vault/list/VaultScreen.kt"))
         assertTrue(formatted.contains("import com.aozijx.passly.domain.entry.model.Entry"))
     }
@@ -105,7 +229,7 @@ class SourceBoundaryPolicyTest {
             listOf(forbidden),
             SourceBoundaryPolicy.generalRules,
         ).single()
-        assertEquals("PRESENTATION_FEATURE_DATA_IMPORT", violation.ruleId)
+        assertEquals("LAYER_PRESENTATION_FEATURE", violation.ruleId)
     }
 
     @Test
@@ -149,11 +273,11 @@ class SourceBoundaryPolicyTest {
             SourceBoundaryVerifier.verify(listOf(adapter), SourceBoundaryPolicy.generalRules),
         )
         assertEquals(
-            "DATABASE_RECOVERY_DATA_ADAPTER_ONLY",
+            setOf("DATABASE_RECOVERY_DATA_ADAPTER_ONLY", "LAYER_PRESENTATION_FEATURE"),
             SourceBoundaryVerifier.verify(
                 listOf(presentation),
                 SourceBoundaryPolicy.generalRules,
-            ).single().ruleId,
+            ).mapTo(linkedSetOf()) { it.ruleId },
         )
     }
 
@@ -165,7 +289,7 @@ class SourceBoundaryPolicyTest {
         )
 
         assertEquals(
-            "FEATURE_PRESENTATION_IMPORT",
+            "LAYER_FEATURE",
             SourceBoundaryVerifier.verify(
                 listOf(source),
                 SourceBoundaryPolicy.generalRules,
@@ -181,7 +305,7 @@ class SourceBoundaryPolicyTest {
         )
 
         assertEquals(
-            "BACKUP_FEATURE_DATA_IMPORT",
+            "LAYER_FEATURE",
             SourceBoundaryVerifier.verify(
                 listOf(source),
                 SourceBoundaryPolicy.generalRules,
@@ -406,7 +530,7 @@ class SourceBoundaryPolicyTest {
             )
 
             assertEquals(
-                "RUNTIME_SESSION_RESOURCE_NEUTRALITY",
+                "LAYER_RUNTIME_SESSION",
                 SourceBoundaryVerifier.verify(
                     listOf(source),
                     SourceBoundaryPolicy.generalRules,
@@ -472,7 +596,7 @@ class SourceBoundaryPolicyTest {
         )
 
         assertEquals(
-            listOf("FEATURE_PRESENTATION_IMPORT", "FEATURE_PRESENTATION_IMPORT"),
+            listOf("LAYER_FEATURE", "LAYER_FEATURE"),
             SourceBoundaryVerifier.verify(sources, SourceBoundaryPolicy.generalRules)
                 .map { it.ruleId },
         )
@@ -513,5 +637,12 @@ class SourceBoundaryPolicyTest {
     private fun uiSource(content: String) = EditorSource(
         path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",
         content = content,
+    )
+
+    private data class LayerCase(
+        val owner: String,
+        val path: String,
+        val allowed: List<String>,
+        val forbidden: List<String>,
     )
 }
