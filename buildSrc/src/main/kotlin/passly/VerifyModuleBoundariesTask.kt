@@ -85,17 +85,23 @@ abstract class VerifyModuleBoundariesTask : DefaultTask() {
         }
 
         val root = sourceRoot.get().asFile.toPath()
-        val sourceViolations = EditorSourceBoundaryVerifier.verify(
-            sourceFiles.files.map { file ->
-                EditorSource(
-                    path = root.relativize(file.toPath()).toString(),
-                    content = file.readText(),
-                )
-            },
-        )
+        val sources = sourceFiles.files.map { file ->
+            EditorSource(
+                path = root.relativize(file.toPath()).toString(),
+                content = file.readText(),
+            )
+        }
+        val sourceViolations = EditorSourceBoundaryVerifier.verify(sources)
         if (sourceViolations.isNotEmpty()) {
             throw GradleException(
                 "Forbidden source dependencies:\n${sourceViolations.sorted().joinToString("\n")}",
+            )
+        }
+
+        val presentationApiSignals = PresentationUiApiVerifier.inspect(sources)
+        if (presentationApiSignals.isNotEmpty()) {
+            logger.lifecycle(
+                "Presentation UI API review signals:\n${presentationApiSignals.joinToString("\n")}",
             )
         }
     }
