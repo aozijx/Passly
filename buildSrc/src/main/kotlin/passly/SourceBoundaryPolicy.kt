@@ -29,6 +29,12 @@ internal object SourceBoundaryPolicy {
             message = "presentation UI cannot own or look up a ViewModel",
         ),
         SourceBoundaryRule(
+            id = "PRESENTATION_DI_MODULE",
+            sourcePathContains = "/presentation/",
+            forbiddenContentMarkers = setOf("@Module"),
+            message = "presentation cannot declare a dependency injection module",
+        ),
+        SourceBoundaryRule(
             id = "PRESENTATION_FEATURE_DATA_IMPORT",
             sourcePathContains = "/presentation/feature/vault/",
             forbiddenImportPrefixes = setOf("com.aozijx.passly.data."),

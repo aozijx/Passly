@@ -2,14 +2,12 @@ package com.aozijx.passly.security.authentication.di
 
 import android.content.Context
 import android.hardware.biometrics.BiometricManager
-import com.aozijx.passly.app.session.DekSessionKeySource
 import com.aozijx.passly.domain.access.model.RecoveryCredentialFactory
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
-import com.aozijx.passly.runtime.session.SessionKeySource
 import com.aozijx.passly.security.authentication.DefaultAuthenticationManager
 import com.aozijx.passly.security.authentication.DefaultAuthenticationMethodProvisioner
 import com.aozijx.passly.security.authentication.DefaultRecoveryCodeDraftFactory
@@ -63,12 +61,6 @@ internal abstract class AuthenticationModule {
     abstract fun bindDatabaseSessionFailureState(
         impl: VaultSessionController,
     ): DatabaseSessionFailureState
-
-    @Binds
-    @Singleton
-    abstract fun bindSessionKeySource(
-        impl: DekSessionKeySource,
-    ): SessionKeySource
 
     companion object {
         @Provides
