@@ -3,15 +3,21 @@ package com.aozijx.passly.presentation.feature.backup
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
-import com.aozijx.passly.presentation.ui.settings.backup.BackupExportFormatUiModel
-import com.aozijx.passly.presentation.ui.settings.backup.BackupImportModeUiModel
-import com.aozijx.passly.presentation.ui.settings.backup.BackupSheetUiState
+import com.aozijx.passly.presentation.ui.settings.backup.model.BackupExportFormatUiModel
+import com.aozijx.passly.presentation.ui.settings.backup.model.BackupImportModeUiModel
+import com.aozijx.passly.presentation.ui.settings.backup.model.BackupRestoreSheetUiState
+import com.aozijx.passly.presentation.ui.settings.backup.model.BackupSheet
 import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 
-internal fun BackupUiState.toSheetUiState(): BackupSheetUiState {
+internal fun BackupUiState.toSheetUiState(
+    activeSheet: BackupSheet?,
+    configuredDirectoryLabel: String?,
+): BackupRestoreSheetUiState {
     val passwordChars = backupPassword.toCharArray()
     return try {
-        BackupSheetUiState(
+        BackupRestoreSheetUiState(
+            activeSheet = activeSheet,
+            configuredDirectoryLabel = configuredDirectoryLabel,
             password = passwordChars.concatToString(),
             importMode = BackupImportModeUiModel.valueOf(importMode.name),
             selectedExportFormat = BackupExportFormatUiModel.valueOf(selectedExportFormat.name),

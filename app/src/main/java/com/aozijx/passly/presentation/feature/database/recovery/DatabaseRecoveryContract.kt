@@ -4,12 +4,12 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.database.recovery.RecoverableDatabasePackage
 import com.aozijx.passly.feature.database.recovery.RecoverableDatabaseReport
 import com.aozijx.passly.feature.database.recovery.RecoverableDatabaseScan
-import com.aozijx.passly.presentation.ui.database.recovery.DatabaseRecoveryPackageItem
-import com.aozijx.passly.presentation.ui.database.recovery.DatabaseRecoveryPackageStatus
-import com.aozijx.passly.presentation.ui.database.recovery.DatabaseRecoveryReportItem
-import com.aozijx.passly.presentation.ui.database.recovery.DatabaseRecoveryScanItem
-import com.aozijx.passly.presentation.ui.database.recovery.DatabaseRecoverySheetState
-import com.aozijx.passly.presentation.ui.database.recovery.DatabaseRecoveryTypeItem
+import com.aozijx.passly.presentation.ui.database.recovery.model.DatabaseRecoveryPackageItem
+import com.aozijx.passly.presentation.ui.database.recovery.model.DatabaseRecoveryPackageStatus
+import com.aozijx.passly.presentation.ui.database.recovery.model.DatabaseRecoveryReportItem
+import com.aozijx.passly.presentation.ui.database.recovery.model.DatabaseRecoveryScanItem
+import com.aozijx.passly.presentation.ui.database.recovery.model.DatabaseRecoverySheetState
+import com.aozijx.passly.presentation.ui.database.recovery.model.DatabaseRecoveryTypeItem
 
 data class DatabaseRecoveryUiState(
     val recoveryPackages: List<RecoverableDatabasePackage> = emptyList(),

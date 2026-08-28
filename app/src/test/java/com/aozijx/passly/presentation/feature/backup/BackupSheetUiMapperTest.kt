@@ -4,8 +4,9 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
-import com.aozijx.passly.presentation.ui.settings.backup.BackupExportFormatUiModel
-import com.aozijx.passly.presentation.ui.settings.backup.BackupImportModeUiModel
+import com.aozijx.passly.presentation.ui.settings.backup.model.BackupExportFormatUiModel
+import com.aozijx.passly.presentation.ui.settings.backup.model.BackupImportModeUiModel
+import com.aozijx.passly.presentation.ui.settings.backup.model.BackupSheet
 import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -25,8 +26,13 @@ class BackupSheetUiMapperTest {
                 includeAttachments = true,
                 includeDeleted = false,
                 includedEntryTypes = setOf(EntryType.LOGIN, EntryType.NOTE),
-            ).toSheetUiState()
+            ).toSheetUiState(
+                activeSheet = BackupSheet.EXPORT_OPTIONS,
+                configuredDirectoryLabel = "Documents/Passly",
+            )
 
+            assertEquals(BackupSheet.EXPORT_OPTIONS, result.activeSheet)
+            assertEquals("Documents/Passly", result.configuredDirectoryLabel)
             assertEquals("temporary", result.password)
             assertEquals(BackupImportModeUiModel.OVERWRITE, result.importMode)
             assertEquals(BackupExportFormatUiModel.ENCRYPTED, result.selectedExportFormat)
@@ -35,6 +41,9 @@ class BackupSheetUiMapperTest {
                 result.includedEntryTypes,
             )
             assertFalse(result.includeIcons)
+            assertEquals(true, result.includeAttachments)
+            assertEquals(false, result.includeDeleted)
+            assertEquals(true, result.canSubmitExport)
         } finally {
             password.close()
         }

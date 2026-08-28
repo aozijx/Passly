@@ -12,6 +12,7 @@ import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSett
 import com.aozijx.passly.presentation.feature.settings.backup.toDetailState
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.ui.settings.backup.DataManagementDetail
+import com.aozijx.passly.presentation.ui.settings.backup.model.DataManagementEventHandler
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
@@ -36,13 +37,16 @@ internal fun DataManagementRouteContent(
         item {
             DataManagementDetail(
                 state = state.toDetailState(),
-                onAutoDownloadIconsChange = {
-                    dataViewModel.onAction(
-                        DataManagementSettingsUiAction.SetAutoDownloadIcons(it)
-                    )
+                eventHandler = object : DataManagementEventHandler {
+                    override fun onAutoDownloadIconsChanged(enabled: Boolean) {
+                        dataViewModel.onAction(
+                            DataManagementSettingsUiAction.SetAutoDownloadIcons(enabled),
+                        )
+                    }
+
+                    override fun onOpenTrash() = onOpenTrash.invoke()
+                    override fun onOpenDatabaseRecovery() = onOpenDatabaseRecovery.invoke()
                 },
-                onOpenTrash = onOpenTrash,
-                onOpenDatabaseRecovery = onOpenDatabaseRecovery,
             )
         }
     }

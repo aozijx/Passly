@@ -28,81 +28,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.presentation.ui.database.recovery.model.DatabaseRecoveryEventHandler
+import com.aozijx.passly.presentation.ui.database.recovery.model.DatabaseRecoveryPackageItem
+import com.aozijx.passly.presentation.ui.database.recovery.model.DatabaseRecoveryPackageStatus
+import com.aozijx.passly.presentation.ui.database.recovery.model.DatabaseRecoverySheetState
 import java.text.DateFormat
 import java.util.Date
-
-internal data class DatabaseRecoverySheetState(
-    val packages: List<DatabaseRecoveryPackageItem> = emptyList(),
-    val isLoading: Boolean = true,
-    val activePackageId: String? = null,
-    val scan: DatabaseRecoveryScanItem? = null,
-    val selectedTypeIds: Set<String> = emptySet(),
-    val report: DatabaseRecoveryReportItem? = null,
-    val error: String? = null,
-    val isClearingDatabase: Boolean = false,
-    val databaseCleared: Boolean = false,
-) {
-    val isBusy: Boolean get() = activePackageId != null
-}
-
-internal data class DatabaseRecoveryPackageItem(
-    val id: String,
-    val createdAtEpochMs: Long,
-    val sizeBytes: Long,
-    val status: DatabaseRecoveryPackageStatus,
-)
-
-internal enum class DatabaseRecoveryPackageStatus {
-    PENDING_SCAN,
-    RECOVERABLE,
-    PARTIALLY_RECOVERABLE,
-    RESTORED,
-    UNREADABLE,
-}
-
-internal data class DatabaseRecoveryScanItem(
-    val packageId: String,
-    val recoverableTypes: List<DatabaseRecoveryTypeItem>,
-    val conflictingEntries: Int,
-    val damagedEntries: Int,
-    val recoverableAttachments: Int,
-) {
-    val recoverableEntries: Int get() = recoverableTypes.sumOf { it.count }
-}
-
-internal data class DatabaseRecoveryTypeItem(
-    val id: String,
-    val label: String,
-    val count: Int,
-)
-
-internal data class DatabaseRecoveryReportItem(
-    val restoredEntries: Int,
-    val restoredAttachments: Int,
-    val restoredRevisions: Int,
-    val skippedConflicts: Int,
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DatabaseRecoverySheet(
-    visible: Boolean,
     state: DatabaseRecoverySheetState,
-    onDismiss: () -> Unit,
-    onClearResult: () -> Unit,
-    onScan: (String) -> Unit,
-    onRestore: (String) -> Unit,
-    onToggleType: (String) -> Unit,
-    onDelete: (String) -> Unit,
-    onClearDatabase: () -> Unit,
+    eventHandler: DatabaseRecoveryEventHandler,
 ) {
-    if (!visible) return
     var deletePackageId by remember { mutableStateOf<String?>(null) }
     var showClearConfirmation by remember { mutableStateOf(false) }
     ModalBottomSheet(
         onDismissRequest = {
-            onClearResult()
-            onDismiss()
+            eventHandler.onClearResult()
+            eventHandler.onDismiss()
         },
     ) {
         Column(
@@ -151,9 +95,9 @@ internal fun DatabaseRecoverySheet(
                     RecoveryPackageCard(
                         recoveryPackage = recoveryPackage,
                         state = state,
-                        onScan = { onScan(recoveryPackage.id) },
-                        onRestore = { onRestore(recoveryPackage.id) },
-                        onToggleType = onToggleType,
+                        onScan = { eventHandler.onScan(recoveryPackage.id) },
+                        onRestore = { eventHandler.onRestore(recoveryPackage.id) },
+                        onToggleType = eventHandler::onToggleType,
                         onDelete = { deletePackageId = recoveryPackage.id },
                     )
                     HorizontalDivider()
@@ -185,7 +129,7 @@ internal fun DatabaseRecoverySheet(
                     enabled = !state.isClearingDatabase,
                     onClick = {
                         showClearConfirmation = false
-                        onClearDatabase()
+                        eventHandler.onClearDatabase()
                     },
                 ) {
                     Text(
@@ -212,7 +156,7 @@ internal fun DatabaseRecoverySheet(
                 TextButton(
                     onClick = {
                         deletePackageId = null
-                        onDelete(packageId)
+                        eventHandler.onDelete(packageId)
                     },
                 ) {
                     Text(

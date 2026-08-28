@@ -14,13 +14,13 @@ import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
 import com.aozijx.passly.presentation.ui.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
+import com.aozijx.passly.presentation.ui.settings.backup.model.DataManagementDetailState
+import com.aozijx.passly.presentation.ui.settings.backup.model.DataManagementEventHandler
 
 @Composable
 internal fun DataManagementDetail(
     state: DataManagementDetailState,
-    onAutoDownloadIconsChange: (Boolean) -> Unit,
-    onOpenTrash: () -> Unit,
-    onOpenDatabaseRecovery: () -> Unit,
+    eventHandler: DataManagementEventHandler,
 ) {
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
@@ -33,14 +33,14 @@ internal fun DataManagementDetail(
                     icon = Icons.Default.DeleteSweep,
                     title = stringResource(R.string.settings_trash_title),
                     subtitle = stringResource(R.string.settings_trash_description),
-                    onClick = onOpenTrash,
+                    onClick = eventHandler::onOpenTrash,
                 ),
                 navigationSettingsGroupItem(
                     key = "data.database_recovery",
                     icon = Icons.Default.Restore,
                     title = stringResource(R.string.settings_database_recovery_title),
                     subtitle = stringResource(R.string.settings_database_recovery_summary),
-                    onClick = onOpenDatabaseRecovery,
+                    onClick = eventHandler::onOpenDatabaseRecovery,
                 )
             )
         )
@@ -48,11 +48,7 @@ internal fun DataManagementDetail(
         Spacer(modifier = Modifier.height(24.dp))
         DataSettingsSection(
             isAutoDownloadIcons = state.isAutoDownloadIcons,
-            onAutoDownloadIconsChange = onAutoDownloadIconsChange
+            onAutoDownloadIconsChange = eventHandler::onAutoDownloadIconsChanged,
         )
     }
 }
-
-internal data class DataManagementDetailState(
-    val isAutoDownloadIcons: Boolean,
-)

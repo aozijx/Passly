@@ -9,6 +9,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.presentation.feature.shell.navigation.AppRoute
 import com.aozijx.passly.presentation.feature.shell.navigation.ShellNavigationContext
 import com.aozijx.passly.presentation.ui.database.recovery.DatabaseRecoverySheet
+import com.aozijx.passly.presentation.ui.database.recovery.model.DatabaseRecoveryEventHandler
 
 internal fun NavGraphBuilder.registerDatabaseRecoveryGraph(
     context: ShellNavigationContext,
@@ -18,28 +19,22 @@ internal fun NavGraphBuilder.registerDatabaseRecoveryGraph(
         val state by viewModel.uiState.collectAsStateWithLifecycle()
 
         DatabaseRecoverySheet(
-            visible = true,
             state = state.toSheetState(),
-            onDismiss = context.navigateBack,
-            onClearResult = {
-                viewModel.onAction(DatabaseRecoveryUiAction.ClearRecoveryResult)
-            },
-            onScan = {
-                viewModel.onAction(DatabaseRecoveryUiAction.ScanRecoveryPackage(it))
-            },
-            onRestore = {
-                viewModel.onAction(DatabaseRecoveryUiAction.RestoreRecoveryPackage(it))
-            },
-            onToggleType = {
-                viewModel.onAction(
-                    DatabaseRecoveryUiAction.ToggleRecoveryType(EntryType.valueOf(it)),
+            eventHandler = object : DatabaseRecoveryEventHandler {
+                override fun onDismiss() = context.navigateBack()
+                override fun onClearResult() =
+                    viewModel.onAction(DatabaseRecoveryUiAction.ClearRecoveryResult)
+                override fun onScan(packageId: String) =
+                    viewModel.onAction(DatabaseRecoveryUiAction.ScanRecoveryPackage(packageId))
+                override fun onRestore(packageId: String) =
+                    viewModel.onAction(DatabaseRecoveryUiAction.RestoreRecoveryPackage(packageId))
+                override fun onToggleType(typeId: String) = viewModel.onAction(
+                    DatabaseRecoveryUiAction.ToggleRecoveryType(EntryType.valueOf(typeId)),
                 )
-            },
-            onDelete = {
-                viewModel.onAction(DatabaseRecoveryUiAction.DeleteRecoveryPackage(it))
-            },
-            onClearDatabase = {
-                viewModel.onAction(DatabaseRecoveryUiAction.ClearDatabase)
+                override fun onDelete(packageId: String) =
+                    viewModel.onAction(DatabaseRecoveryUiAction.DeleteRecoveryPackage(packageId))
+                override fun onClearDatabase() =
+                    viewModel.onAction(DatabaseRecoveryUiAction.ClearDatabase)
             },
         )
     }

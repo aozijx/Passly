@@ -4,7 +4,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.database.recovery.RecoverableDatabasePackage
 import com.aozijx.passly.feature.database.recovery.RecoverableDatabaseScan
 import com.aozijx.passly.feature.database.recovery.RecoverableDatabaseStatus
-import com.aozijx.passly.presentation.ui.database.recovery.DatabaseRecoveryPackageStatus
+import com.aozijx.passly.presentation.ui.database.recovery.model.DatabaseRecoveryPackageStatus
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -22,6 +22,7 @@ class DatabaseRecoveryUiMapperTest {
                 ),
             ),
             isRecoveryLoading = false,
+            activeRecoveryPackageId = "package-1",
             recoveryScan = RecoverableDatabaseScan(
                 packageId = "package-1",
                 recoverableByType = linkedMapOf(EntryType.LOGIN to 2, EntryType.NOTE to 1),
@@ -33,6 +34,9 @@ class DatabaseRecoveryUiMapperTest {
                 issues = emptyList(),
             ),
             selectedRecoveryTypes = setOf(EntryType.NOTE),
+            recoveryError = "damaged package",
+            isClearingDatabase = true,
+            databaseCleared = true,
         )
 
         val result = state.toSheetState()
@@ -42,5 +46,10 @@ class DatabaseRecoveryUiMapperTest {
         assertEquals(listOf("LOGIN", "NOTE"), result.scan?.recoverableTypes?.map { it.label })
         assertEquals(3, result.scan?.recoverableEntries)
         assertEquals(setOf("NOTE"), result.selectedTypeIds)
+        assertEquals("package-1", result.activePackageId)
+        assertEquals("damaged package", result.error)
+        assertEquals(true, result.isClearingDatabase)
+        assertEquals(true, result.databaseCleared)
+        assertEquals(true, result.isBusy)
     }
 }

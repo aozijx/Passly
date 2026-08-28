@@ -46,57 +46,23 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.presentation.ui.settings.backup.model.BackupExportFormatUiModel
+import com.aozijx.passly.presentation.ui.settings.backup.model.BackupImportModeUiModel
+import com.aozijx.passly.presentation.ui.settings.backup.model.BackupRestoreSheetEventHandler
+import com.aozijx.passly.presentation.ui.settings.backup.model.BackupRestoreSheetUiState
+import com.aozijx.passly.presentation.ui.settings.backup.model.BackupSheet
 import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.ui.shared.entry.labelRes
 
-internal enum class BackupExportFormatUiModel(
-    val requiresPassword: Boolean,
-    val supportsResources: Boolean,
-) {
-    ENCRYPTED(requiresPassword = true, supportsResources = true),
-    JSON(requiresPassword = false, supportsResources = false),
-    TEXT(requiresPassword = false, supportsResources = false),
-}
-
-internal enum class BackupImportModeUiModel { APPEND, OVERWRITE }
-
-internal data class BackupSheetUiState(
-    val password: String,
-    val importMode: BackupImportModeUiModel,
-    val selectedExportFormat: BackupExportFormatUiModel,
-    val includeIcons: Boolean,
-    val includeAttachments: Boolean,
-    val includeDeleted: Boolean,
-    val includedEntryTypes: Set<EntryTypeUiModel>,
-    val canSubmitExport: Boolean,
-)
-
-internal enum class BackupSheet {
-    FORMAT_PICKER,
-    EXPORT_OPTIONS,
-    IMPORT_OPTIONS
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun BackupRestoreSheetHost(
-    sheet: BackupSheet?,
-    state: BackupSheetUiState,
-    configuredDirectoryLabel: String?,
-    onDismiss: () -> Unit,
-    onFormatSelected: (BackupExportFormatUiModel) -> Unit,
-    onPasswordChange: (String) -> Unit,
-    onIncludeIconsChange: (Boolean) -> Unit,
-    onIncludeAttachmentsChange: (Boolean) -> Unit,
-    onIncludeDeletedChange: (Boolean) -> Unit,
-    onIncludedEntryTypesChange: (Set<EntryTypeUiModel>) -> Unit,
-    onImportModeChange: (BackupImportModeUiModel) -> Unit,
-    onExport: () -> Unit,
-    onImport: () -> Unit
+internal fun BackupRestoreSheet(
+    state: BackupRestoreSheetUiState,
+    eventHandler: BackupRestoreSheetEventHandler,
 ) {
-    if (sheet == null) return
+    val sheet = state.activeSheet ?: return
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = eventHandler::onDismiss,
         sheetState = rememberBottomSheetState(
             initialValue = SheetValue.Hidden,
             enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
@@ -104,25 +70,25 @@ internal fun BackupRestoreSheetHost(
     ) {
         when (sheet) {
             BackupSheet.FORMAT_PICKER -> BackupFormatPicker(
-                onFormatSelected = onFormatSelected
+                onFormatSelected = eventHandler::onFormatSelected
             )
 
             BackupSheet.EXPORT_OPTIONS -> BackupExportOptionsContent(
                 state = state,
-                configuredDirectoryLabel = configuredDirectoryLabel,
-                onPasswordChange = onPasswordChange,
-                onIncludeIconsChange = onIncludeIconsChange,
-                onIncludeAttachmentsChange = onIncludeAttachmentsChange,
-                onIncludeDeletedChange = onIncludeDeletedChange,
-                onIncludedEntryTypesChange = onIncludedEntryTypesChange,
-                onExport = onExport
+                configuredDirectoryLabel = state.configuredDirectoryLabel,
+                onPasswordChange = eventHandler::onPasswordChanged,
+                onIncludeIconsChange = eventHandler::onIncludeIconsChanged,
+                onIncludeAttachmentsChange = eventHandler::onIncludeAttachmentsChanged,
+                onIncludeDeletedChange = eventHandler::onIncludeDeletedChanged,
+                onIncludedEntryTypesChange = eventHandler::onIncludedEntryTypesChanged,
+                onExport = eventHandler::onExportRequested,
             )
 
             BackupSheet.IMPORT_OPTIONS -> BackupImportOptionsContent(
                 state = state,
-                onPasswordChange = onPasswordChange,
-                onImportModeChange = onImportModeChange,
-                onImport = onImport
+                onPasswordChange = eventHandler::onPasswordChanged,
+                onImportModeChange = eventHandler::onImportModeChanged,
+                onImport = eventHandler::onImportRequested,
             )
         }
     }
@@ -195,7 +161,7 @@ private fun FormatCard(
 
 @Composable
 private fun BackupExportOptionsContent(
-    state: BackupSheetUiState,
+    state: BackupRestoreSheetUiState,
     configuredDirectoryLabel: String?,
     onPasswordChange: (String) -> Unit,
     onIncludeIconsChange: (Boolean) -> Unit,
@@ -385,7 +351,7 @@ private fun BackupSwitchRow(
 
 @Composable
 private fun BackupImportOptionsContent(
-    state: BackupSheetUiState,
+    state: BackupRestoreSheetUiState,
     onPasswordChange: (String) -> Unit,
     onImportModeChange: (BackupImportModeUiModel) -> Unit,
     onImport: () -> Unit

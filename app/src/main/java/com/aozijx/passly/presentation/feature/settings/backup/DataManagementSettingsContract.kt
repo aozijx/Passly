@@ -1,6 +1,6 @@
 package com.aozijx.passly.presentation.feature.settings.backup
 
-import com.aozijx.passly.presentation.ui.settings.backup.DataManagementDetailState
+import com.aozijx.passly.presentation.ui.settings.backup.model.DataManagementDetailState
 
 data class DataManagementSettingsUiState(
     val isAutoDownloadIcons: Boolean = true,
