@@ -16,7 +16,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.presentation.feature.scanner.navigation.VaultOtpScannerContent
+import com.aozijx.passly.presentation.feature.scanner.navigation.VaultOtpScannerRoute
 import com.aozijx.passly.presentation.feature.shell.navigation.AppRoute
 import com.aozijx.passly.presentation.feature.shell.navigation.ShellNavigationContext
 import com.aozijx.passly.presentation.feature.vault.detail.DetailAuthenticate
@@ -87,7 +87,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = this,
             scannerContent = { onResult, onDismiss ->
-                VaultOtpScannerContent(onResult = onResult, onDismiss = onDismiss)
+                VaultOtpScannerRoute(onResult = onResult, onDismiss = onDismiss)
             },
         )
     }

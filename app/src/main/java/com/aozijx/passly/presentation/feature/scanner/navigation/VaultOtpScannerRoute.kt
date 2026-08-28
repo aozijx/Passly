@@ -5,7 +5,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.presentation.feature.scanner.VaultScanner
 
 @Composable
-internal fun VaultOtpScannerContent(
+internal fun VaultOtpScannerRoute(
     onResult: (OtpConfig) -> Unit,
     onDismiss: () -> Unit,
 ) {
