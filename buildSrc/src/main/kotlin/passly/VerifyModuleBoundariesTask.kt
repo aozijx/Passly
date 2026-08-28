@@ -39,14 +39,14 @@ abstract class VerifyModuleBoundariesTask : DefaultTask() {
     fun verify() {
         val modules = actualModules.get()
         val policies = policyModules.get()
-        val missingPolicies = modules - policies
+        val missingPolicies = missingPolicyModules(modules, policies)
         if (missingPolicies.isNotEmpty()) {
             throw GradleException(
                 "Missing module dependency policies: ${missingPolicies.sorted()}",
             )
         }
 
-        val stalePolicies = policies - modules
+        val stalePolicies = stalePolicyModules(modules, policies)
         if (stalePolicies.isNotEmpty()) {
             throw GradleException(
                 "Policies reference missing modules: ${stalePolicies.sorted()}",
@@ -126,3 +126,14 @@ abstract class VerifyModuleBoundariesTask : DefaultTask() {
 
 internal fun missingRequiredEdges(required: Set<String>, actual: Set<String>): Set<String> =
     required - actual
+
+internal fun missingPolicyModules(actual: Set<String>, policies: Set<String>): Set<String> =
+    actual - policies
+
+internal fun stalePolicyModules(actual: Set<String>, policies: Set<String>): Set<String> =
+    policies - actual
+
+internal fun architectureSourcePatterns(modules: Set<String>): Set<String> =
+    modules.mapTo(linkedSetOf()) { module ->
+        "${module.removePrefix(":").replace(':', '/')}/src/**/*.kt"
+    }

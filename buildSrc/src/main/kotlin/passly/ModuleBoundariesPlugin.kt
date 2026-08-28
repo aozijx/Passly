@@ -23,17 +23,12 @@ class ModuleBoundariesPlugin : Plugin<Project> {
             policyModules.set(extension.policyModules)
             allowedEdges.set(extension.allowedEdges)
             requiredEdges.set(extension.requiredEdges)
-            sourceFiles.from(
-                target.fileTree(target.rootDir) {
-                    include("app/src/**/*.kt")
-                    include("core/src/**/*.kt")
-                    include("core/common/src/**/*.kt")
-                    include("data/src/**/*.kt")
-                    include("domain/src/**/*.kt")
-                    include("runtime/session/src/**/*.kt")
-                },
-            )
             sourceRoot.set(target.layout.projectDirectory)
+        }
+        target.tasks.register("verifyArchitecture") {
+            group = "verification"
+            description = "Runs the repository architecture boundary verification."
+            dependsOn(verification)
         }
 
         target.subprojects {
@@ -48,7 +43,8 @@ class ModuleBoundariesPlugin : Plugin<Project> {
                     project.layout.projectDirectory.file("build.gradle").asFile.isFile
             }
             verification.configure {
-                actualModules.set(boundaryProjects.map(Project::getPath))
+                val modulePaths = boundaryProjects.map(Project::getPath)
+                actualModules.set(modulePaths)
                 actualEdges.set(
                     boundaryProjects.flatMap { sourceProject ->
                         sourceProject.configurations.flatMap { configuration ->
@@ -63,6 +59,11 @@ class ModuleBoundariesPlugin : Plugin<Project> {
                                 }
                         }
                     }.distinct(),
+                )
+                sourceFiles.from(
+                    target.fileTree(target.rootDir) {
+                        architectureSourcePatterns(modulePaths.toSet()).forEach(::include)
+                    },
                 )
             }
         }
