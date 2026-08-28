@@ -18,7 +18,7 @@ class AppearanceSettingsViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
-    val config: StateFlow<AppearanceSettingsUiState> = settingsRepository.settings
+    val uiState: StateFlow<AppearanceSettingsUiState> = settingsRepository.settings
         .map { it.appearance.toUiState() }
         .stateIn(
             viewModelScope,

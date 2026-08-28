@@ -25,7 +25,7 @@ class PrivacySettingsViewModel @Inject constructor(
     private val _effects = Channel<PrivacySettingsEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
-    val config: StateFlow<PrivacySettingsUiState> = settingsRepository.settings.map {
+    val uiState: StateFlow<PrivacySettingsUiState> = settingsRepository.settings.map {
         val security = it.security
         PrivacySettingsUiState(
             isSecureContentEnabled = security.isSecureContentEnabled,

@@ -18,7 +18,7 @@ class InterfaceSettingsViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
-    val config: StateFlow<InterfaceSettingsUiState> = settingsRepository.settings
+    val uiState: StateFlow<InterfaceSettingsUiState> = settingsRepository.settings
         .map { settings ->
             val prefs = settings.interfacePrefs
             InterfaceSettingsUiState(
@@ -73,7 +73,7 @@ class InterfaceSettingsViewModel @Inject constructor(
 
             is InterfaceSettingsAction.ToggleVisibleLibraryQuickFilter -> viewModelScope.launch {
                 val nextKeys = LibraryQuickFilter.toggleVisibleKey(
-                    enabledKeys = config.value.enabledLibraryQuickFilterKeys,
+                    enabledKeys = uiState.value.enabledLibraryQuickFilterKeys,
                     quickFilter = action.quickFilter
                 )
                 settingsRepository.update(SettingsCommand.SetVisibleLibraryQuickFilters(nextKeys))

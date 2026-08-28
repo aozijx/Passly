@@ -28,7 +28,7 @@ internal fun InterfaceRouteContent(
     onBack: (() -> Unit)?
 ) {
     val viewModel: InterfaceSettingsViewModel = hiltViewModel()
-    val state by viewModel.config.collectAsStateWithLifecycle()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     SettingsSecondaryPage(
         title = stringResource(SettingsGroup.INTERFACE.titleRes),

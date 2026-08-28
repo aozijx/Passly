@@ -21,7 +21,7 @@ internal fun AppearanceRouteContent(
     onBack: (() -> Unit)?
 ) {
     val viewModel: AppearanceSettingsViewModel = hiltViewModel()
-    val state by viewModel.config.collectAsStateWithLifecycle()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     SettingsSecondaryPage(
         title = stringResource(SettingsGroup.APPEARANCE.titleRes),
         onBack = onBack

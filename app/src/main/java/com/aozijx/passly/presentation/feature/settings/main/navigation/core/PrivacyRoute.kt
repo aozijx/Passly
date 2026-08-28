@@ -23,7 +23,7 @@ internal fun PrivacyRouteContent(
     onBack: (() -> Unit)?
 ) {
     val viewModel: PrivacySettingsViewModel = hiltViewModel()
-    val state by viewModel.config.collectAsStateWithLifecycle()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val clearedText = stringResource(com.aozijx.passly.R.string.notice_clipboard_cleared)
     val notClearedText = stringResource(
