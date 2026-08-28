@@ -31,6 +31,8 @@ fun AuthenticationScreen(
     val verificationFailure = unlockState.verificationFailure
     val appPasswordLabel = stringResource(R.string.auth_app_password_label)
     val recoveryCodeLabel = stringResource(R.string.recovery_code_label)
+    val appPassword = unlockState.appPassword.toUiString()
+    val recoveryCode = unlockState.recoveryCode.toUiString()
 
     BackHandler(enabled = !bootstrapState.showSetPasswordDialog) {
         unlockViewModel.onAction(UnlockUiAction.BackPressed)
@@ -44,8 +46,8 @@ fun AuthenticationScreen(
             recoveryUnlockVisible = unlockState.recoveryUnlockVisible,
             activeMethod = unlockState.activeMethod?.toUiMethod(),
             expandedMethod = unlockState.expandedMethod?.toUiMethod(),
-            appPassword = unlockState.appPassword.toUiString(),
-            recoveryCode = unlockState.recoveryCode.toUiString(),
+            appPassword = appPassword,
+            recoveryCode = recoveryCode,
             biometricFailureMessage = verificationFailure
                 ?.takeIf { it.method == AuthenticationMethod.BIOMETRIC }
                 ?.failure
@@ -99,13 +101,14 @@ fun AuthenticationScreen(
     )
 
     if (bootstrapState.showSetPasswordDialog) {
+        val newPassword = bootstrapState.newAppPassword.toUiString()
+        val confirmPassword = bootstrapState.confirmAppPassword.toUiString()
         AppPasswordSetDialog(
-            newPassword = bootstrapState.newAppPassword.toUiString(),
-            confirmPassword = bootstrapState.confirmAppPassword.toUiString(),
+            newPassword = newPassword,
+            confirmPassword = confirmPassword,
             confirmEnabled = AppPasswordPolicy.DEFAULT.acceptsLength(
-                bootstrapState.newAppPassword.toUiString().length,
-            ) && bootstrapState.newAppPassword.toUiString() ==
-                bootstrapState.confirmAppPassword.toUiString(),
+                newPassword.length,
+            ) && newPassword == confirmPassword,
             onNewPasswordChange = {
                 bootstrapViewModel.onAction(BootstrapUiAction.NewAppPasswordChanged(it))
             },
