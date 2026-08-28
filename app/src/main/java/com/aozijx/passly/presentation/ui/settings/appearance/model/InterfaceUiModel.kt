@@ -15,6 +15,17 @@ data class InterfaceUiModel(
     val entryHierarchyDisplayMode: EntryHierarchyDisplayModeUiModel,
 )
 
+interface InterfaceEventHandler {
+    fun onStatusBarAutoHideChanged(enabled: Boolean)
+    fun onTopBarCollapsibleChanged(enabled: Boolean)
+    fun onQuickFilterBarCollapsibleChanged(enabled: Boolean)
+    fun onOuterCornerRadiusChanged(radius: Float)
+    fun onInnerCornerRadiusChanged(radius: Float)
+    fun onGroupItemSpacingChanged(spacing: Float)
+    fun onGroupContentPaddingChanged(padding: Float)
+    fun onEntryHierarchyDisplayModeChanged(mode: EntryHierarchyDisplayModeUiModel)
+}
+
 enum class EntryHierarchyDisplayModeUiModel {
     COLLAPSED,
     EXPANDED,

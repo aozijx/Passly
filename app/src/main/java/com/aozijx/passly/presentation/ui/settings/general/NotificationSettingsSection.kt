@@ -27,13 +27,17 @@ internal enum class NotificationTopic {
     CLIPBOARD, APP_LIFECYCLE, ICON_DOWNLOAD, BACKUP, SECURITY, DATABASE,
 }
 
+internal interface NotificationSettingsEventHandler {
+    fun onSystemNotificationsEnabledChanged(enabled: Boolean)
+    fun onOpenSystemNotificationSettings()
+    fun onOptionalMessagesEnabledChanged(enabled: Boolean)
+    fun onTopicEnabledChanged(topic: NotificationTopic, enabled: Boolean)
+}
+
 @Composable
 internal fun NotificationSettingsSection(
     state: NotificationSettingsUiModel,
-    onSystemNotificationsEnabledChange: (Boolean) -> Unit,
-    onOpenSystemNotificationSettings: () -> Unit,
-    onOptionalMessagesEnabledChange: (Boolean) -> Unit = {},
-    onTopicEnabledChange: (NotificationTopic, Boolean) -> Unit = { _, _ -> }
+    eventHandler: NotificationSettingsEventHandler,
 ) {
     // ---- 系统通知总开关 ----
     SettingsSectionTitle(text = stringResource(R.string.settings_system_notifications))
@@ -44,14 +48,14 @@ internal fun NotificationSettingsSection(
                 title = stringResource(R.string.settings_system_notifications),
                 subtitle = stringResource(R.string.settings_system_notifications_summary),
                 checked = state.systemNotificationsEnabled,
-                onCheckedChange = onSystemNotificationsEnabledChange
+                onCheckedChange = eventHandler::onSystemNotificationsEnabledChanged,
             ),
             navigationSettingsGroupItem(
                 key = "notifications.system_settings",
                 iconPlaceholder = true,
                 title = stringResource(R.string.settings_system_notification_settings),
                 subtitle = stringResource(R.string.settings_system_notification_settings_summary),
-                onClick = onOpenSystemNotificationSettings
+                onClick = eventHandler::onOpenSystemNotificationSettings,
             )
         )
     )
@@ -67,7 +71,7 @@ internal fun NotificationSettingsSection(
                 title = stringResource(R.string.settings_optional_notices),
                 subtitle = stringResource(R.string.settings_optional_notices_summary),
                 checked = state.optionalMessagesEnabled,
-                onCheckedChange = onOptionalMessagesEnabledChange
+                onCheckedChange = eventHandler::onOptionalMessagesEnabledChanged,
             )
         )
     )
@@ -85,7 +89,9 @@ internal fun NotificationSettingsSection(
                         title = stringResource(topic.titleRes),
                         subtitle = stringResource(topic.summaryRes),
                         checked = item.enabled,
-                        onCheckedChange = { enabled -> onTopicEnabledChange(topic, enabled) }
+                        onCheckedChange = { enabled ->
+                            eventHandler.onTopicEnabledChanged(topic, enabled)
+                        },
                     )
                 )
             )

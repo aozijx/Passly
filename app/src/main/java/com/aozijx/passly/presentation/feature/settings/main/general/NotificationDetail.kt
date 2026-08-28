@@ -28,6 +28,8 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationSettingsEffect
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationSettingsViewModel
 import com.aozijx.passly.presentation.ui.settings.general.NotificationSettingsSection
+import com.aozijx.passly.presentation.ui.settings.general.NotificationSettingsEventHandler
+import com.aozijx.passly.presentation.ui.settings.general.NotificationTopic
 
 @Composable
 internal fun NotificationDetail(
@@ -89,46 +91,54 @@ internal fun NotificationDetail(
         Spacer(modifier = Modifier.height(8.dp))
         NotificationSettingsSection(
             state = state.toUiModel(),
-            onSystemNotificationsEnabledChange = { enabled ->
-                if (!enabled) {
-                    viewModel.setSystemNotificationsEnabled(false)
-                    return@NotificationSettingsSection
-                }
-                when (permissionHost.status(RuntimePermission.POST_NOTIFICATIONS)) {
-                    PermissionStatus.GRANTED,
-                    PermissionStatus.NOT_APPLICABLE -> {
-                        if (viewModel.systemNotificationsAvailableNow()) {
-                            viewModel.setSystemNotificationsEnabled(true)
-                        } else {
-                            publishPermissionDeniedNotice()
-                            viewModel.openSystemNotificationSettings()
-                        }
+            eventHandler = object : NotificationSettingsEventHandler {
+                override fun onSystemNotificationsEnabledChanged(enabled: Boolean) {
+                    if (!enabled) {
+                        viewModel.setSystemNotificationsEnabled(false)
+                        return
                     }
-
-                    PermissionStatus.DENIED -> {
-                        when (permissionHost.request(RuntimePermission.POST_NOTIFICATIONS)) {
-                            PermissionRequestStart.Launched -> Unit
-                            PermissionRequestStart.AlreadyGranted,
-                            PermissionRequestStart.NotApplicable -> {
-                                if (viewModel.systemNotificationsAvailableNow()) {
-                                    viewModel.setSystemNotificationsEnabled(true)
-                                } else {
-                                    publishPermissionDeniedNotice()
-                                    viewModel.openSystemNotificationSettings()
-                                }
+                    when (permissionHost.status(RuntimePermission.POST_NOTIFICATIONS)) {
+                        PermissionStatus.GRANTED,
+                        PermissionStatus.NOT_APPLICABLE -> {
+                            if (viewModel.systemNotificationsAvailableNow()) {
+                                viewModel.setSystemNotificationsEnabled(true)
+                            } else {
+                                publishPermissionDeniedNotice()
+                                viewModel.openSystemNotificationSettings()
                             }
+                        }
 
-                            PermissionRequestStart.Busy,
-                            PermissionRequestStart.HostUnavailable -> publishPermissionDeniedNotice()
+                        PermissionStatus.DENIED -> {
+                            when (permissionHost.request(RuntimePermission.POST_NOTIFICATIONS)) {
+                                PermissionRequestStart.Launched -> Unit
+                                PermissionRequestStart.AlreadyGranted,
+                                PermissionRequestStart.NotApplicable -> {
+                                    if (viewModel.systemNotificationsAvailableNow()) {
+                                        viewModel.setSystemNotificationsEnabled(true)
+                                    } else {
+                                        publishPermissionDeniedNotice()
+                                        viewModel.openSystemNotificationSettings()
+                                    }
+                                }
+
+                                PermissionRequestStart.Busy,
+                                PermissionRequestStart.HostUnavailable ->
+                                    publishPermissionDeniedNotice()
+                            }
                         }
                     }
+                }
+
+                override fun onOpenSystemNotificationSettings() =
+                    viewModel.openSystemNotificationSettings()
+                override fun onOptionalMessagesEnabledChanged(enabled: Boolean) {
+                    viewModel.setOptionalMessagesEnabled(enabled)
+                }
+
+                override fun onTopicEnabledChanged(topic: NotificationTopic, enabled: Boolean) {
+                    viewModel.setMessageTopicEnabled(topic.toFeatureModel(), enabled)
                 }
             },
-            onOpenSystemNotificationSettings = { viewModel.openSystemNotificationSettings() },
-            onOptionalMessagesEnabledChange = { viewModel.setOptionalMessagesEnabled(it) },
-            onTopicEnabledChange = { topic, enabled ->
-                viewModel.setMessageTopicEnabled(topic.toFeatureModel(), enabled)
-            }
         )
     }
 }

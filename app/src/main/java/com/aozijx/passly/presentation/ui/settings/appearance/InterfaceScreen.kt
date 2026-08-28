@@ -27,20 +27,14 @@ import com.aozijx.passly.presentation.ui.shared.components.group.switchSettingsG
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.presentation.ui.settings.appearance.model.EntryHierarchyDisplayModeUiModel
+import com.aozijx.passly.presentation.ui.settings.appearance.model.InterfaceEventHandler
 import com.aozijx.passly.presentation.ui.settings.appearance.model.InterfaceUiModel
 import kotlin.math.roundToInt
 
 @Composable
 internal fun InterfaceDetail(
     state: InterfaceUiModel,
-    onStatusBarAutoHideChange: (Boolean) -> Unit,
-    onTopBarCollapsibleChange: (Boolean) -> Unit,
-    onQuickFilterBarCollapsibleChange: (Boolean) -> Unit,
-    onOuterCornerRadiusChange: (Float) -> Unit,
-    onInnerCornerRadiusChange: (Float) -> Unit,
-    onGroupItemSpacingChange: (Float) -> Unit,
-    onGroupContentPaddingChange: (Float) -> Unit,
-    onEntryHierarchyDisplayModeChange: (EntryHierarchyDisplayModeUiModel) -> Unit
+    eventHandler: InterfaceEventHandler,
 ) {
     var outerRadius by remember(state.outerCornerRadiusDp) {
         mutableFloatStateOf(state.outerCornerRadiusDp)
@@ -68,7 +62,7 @@ internal fun InterfaceDetail(
                     title = stringResource(R.string.settings_interface_hide_status_bar),
                     subtitle = stringResource(R.string.settings_interface_hide_status_bar_description),
                     checked = state.hideSystemBars,
-                    onCheckedChange = onStatusBarAutoHideChange
+                    onCheckedChange = eventHandler::onStatusBarAutoHideChanged,
                 ),
                 switchSettingsGroupItem(
                     key = "interface.top_bar_collapsible",
@@ -76,7 +70,7 @@ internal fun InterfaceDetail(
                     title = stringResource(R.string.settings_interface_top_bar_collapsible),
                     subtitle = stringResource(R.string.settings_interface_top_bar_collapsible_description),
                     checked = state.collapseTopBarOnScroll,
-                    onCheckedChange = onTopBarCollapsibleChange
+                    onCheckedChange = eventHandler::onTopBarCollapsibleChanged,
                 ),
                 switchSettingsGroupItem(
                     key = "interface.quick_filter_bar_collapsible",
@@ -84,7 +78,7 @@ internal fun InterfaceDetail(
                     title = stringResource(R.string.settings_interface_quick_filter_bar_collapsible),
                     subtitle = stringResource(R.string.settings_interface_quick_filter_bar_collapsible_description),
                     checked = state.collapseQuickFilterBarOnScroll,
-                    onCheckedChange = onQuickFilterBarCollapsibleChange
+                    onCheckedChange = eventHandler::onQuickFilterBarCollapsibleChanged,
                 )
             )
         )
@@ -112,7 +106,7 @@ internal fun InterfaceDetail(
                     onValueChange = { outerRadius = it },
                     onValueChangeFinished = {
                         if (outerRadius != state.outerCornerRadiusDp) {
-                            onOuterCornerRadiusChange(outerRadius)
+                            eventHandler.onOuterCornerRadiusChanged(outerRadius)
                         }
                     }
                 ),
@@ -134,7 +128,7 @@ internal fun InterfaceDetail(
                     onValueChange = { innerRadius = it },
                     onValueChangeFinished = {
                         if (innerRadius != state.innerCornerRadiusDp) {
-                            onInnerCornerRadiusChange(innerRadius)
+                            eventHandler.onInnerCornerRadiusChanged(innerRadius)
                         }
                     }
                 ),
@@ -156,7 +150,7 @@ internal fun InterfaceDetail(
                     onValueChange = { itemSpacing = it },
                     onValueChangeFinished = {
                         if (itemSpacing != state.groupItemSpacingDp) {
-                            onGroupItemSpacingChange(itemSpacing)
+                            eventHandler.onGroupItemSpacingChanged(itemSpacing)
                         }
                     }
                 ),
@@ -178,7 +172,7 @@ internal fun InterfaceDetail(
                     onValueChange = { contentPadding = it },
                     onValueChangeFinished = {
                         if (contentPadding != state.groupContentPaddingDp) {
-                            onGroupContentPaddingChange(contentPadding)
+                            eventHandler.onGroupContentPaddingChanged(contentPadding)
                         }
                     }
                 )
@@ -207,7 +201,7 @@ internal fun InterfaceDetail(
                     },
                     expanded = showHierarchyModeMenu,
                     onExpandedChange = { showHierarchyModeMenu = it },
-                    onSelect = onEntryHierarchyDisplayModeChange
+                    onSelect = eventHandler::onEntryHierarchyDisplayModeChanged,
                 )
             )
         )

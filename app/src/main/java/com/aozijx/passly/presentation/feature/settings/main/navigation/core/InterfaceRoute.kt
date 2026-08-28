@@ -18,6 +18,8 @@ import com.aozijx.passly.presentation.feature.settings.appearance.toDomainModel
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 import com.aozijx.passly.presentation.ui.settings.appearance.InterfaceDetail
+import com.aozijx.passly.presentation.ui.settings.appearance.model.EntryHierarchyDisplayModeUiModel
+import com.aozijx.passly.presentation.ui.settings.appearance.model.InterfaceEventHandler
 import com.aozijx.passly.presentation.ui.settings.appearance.LibraryQuickFiltersSettingsSection
 
 @Composable
@@ -35,36 +37,27 @@ internal fun InterfaceRouteContent(
         item {
             InterfaceDetail(
                 state = state.toInterfaceUiModel(),
-                onStatusBarAutoHideChange = {
-                    viewModel.onAction(InterfaceSettingsAction.SetHideSystemBars(it))
-                },
-                onTopBarCollapsibleChange = {
-                    viewModel.onAction(InterfaceSettingsAction.SetTopBarCollapsible(it))
-                },
-                onQuickFilterBarCollapsibleChange = {
-                    viewModel.onAction(
-                        InterfaceSettingsAction.SetQuickFilterBarCollapsible(
-                            it
+                eventHandler = object : InterfaceEventHandler {
+                    override fun onStatusBarAutoHideChanged(enabled: Boolean) =
+                        viewModel.onAction(InterfaceSettingsAction.SetHideSystemBars(enabled))
+                    override fun onTopBarCollapsibleChanged(enabled: Boolean) =
+                        viewModel.onAction(InterfaceSettingsAction.SetTopBarCollapsible(enabled))
+                    override fun onQuickFilterBarCollapsibleChanged(enabled: Boolean) =
+                        viewModel.onAction(
+                            InterfaceSettingsAction.SetQuickFilterBarCollapsible(enabled),
                         )
-                    )
-                },
-                onOuterCornerRadiusChange = {
-                    viewModel.onAction(InterfaceSettingsAction.SetOuterCornerRadius(it))
-                },
-                onInnerCornerRadiusChange = {
-                    viewModel.onAction(InterfaceSettingsAction.SetInnerCornerRadius(it))
-                },
-                onGroupItemSpacingChange = {
-                    viewModel.onAction(InterfaceSettingsAction.SetGroupItemSpacing(it))
-                },
-                onGroupContentPaddingChange = {
-                    viewModel.onAction(InterfaceSettingsAction.SetGroupContentPadding(it))
-                },
-                onEntryHierarchyDisplayModeChange = {
-                    viewModel.onAction(
-                        InterfaceSettingsAction.SetEntryHierarchyDisplayMode(
-                            it.toDomainModel()
-                        )
+                    override fun onOuterCornerRadiusChanged(radius: Float) =
+                        viewModel.onAction(InterfaceSettingsAction.SetOuterCornerRadius(radius))
+                    override fun onInnerCornerRadiusChanged(radius: Float) =
+                        viewModel.onAction(InterfaceSettingsAction.SetInnerCornerRadius(radius))
+                    override fun onGroupItemSpacingChanged(spacing: Float) =
+                        viewModel.onAction(InterfaceSettingsAction.SetGroupItemSpacing(spacing))
+                    override fun onGroupContentPaddingChanged(padding: Float) =
+                        viewModel.onAction(InterfaceSettingsAction.SetGroupContentPadding(padding))
+                    override fun onEntryHierarchyDisplayModeChanged(
+                        mode: EntryHierarchyDisplayModeUiModel,
+                    ) = viewModel.onAction(
+                        InterfaceSettingsAction.SetEntryHierarchyDisplayMode(mode.toDomainModel()),
                     )
                 },
             )
