@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.common.ActionButton
 import com.aozijx.passly.core.ui.components.common.InputActionButton
+import com.aozijx.passly.core.ui.components.common.InputActionButtonConfig
+import com.aozijx.passly.core.ui.components.common.InputActionButtonState
 
 enum class AuthenticationInputMethod {
     BIOMETRIC,
@@ -148,15 +150,19 @@ fun AuthenticationContent(
             if (state.appPasswordAvailable) {
                 Spacer(modifier = Modifier.height(8.dp))
                 InputActionButton(
-                    value = state.appPassword,
-                    expanded = state.expandedMethod == AuthenticationInputMethod.APP_PASSWORD,
-                    progress = state.activeMethod == AuthenticationInputMethod.APP_PASSWORD,
-                    collapsedText = stringResource(R.string.auth_password_unlock),
-                    expandedText = stringResource(R.string.auth_password_verify),
-                    inputLabel = appPasswordLabel,
-                    result = state.appPasswordFailureMessage?.let { false },
-                    errorText = state.appPasswordFailureMessage
-                        ?: stringResource(R.string.auth_error_failed),
+                    state = InputActionButtonState(
+                        value = state.appPassword,
+                        expanded = state.expandedMethod == AuthenticationInputMethod.APP_PASSWORD,
+                        progress = state.activeMethod == AuthenticationInputMethod.APP_PASSWORD,
+                        result = state.appPasswordFailureMessage?.let { false },
+                    ),
+                    config = InputActionButtonConfig(
+                        collapsedText = stringResource(R.string.auth_password_unlock),
+                        expandedText = stringResource(R.string.auth_password_verify),
+                        inputLabel = appPasswordLabel,
+                        errorText = state.appPasswordFailureMessage
+                            ?: stringResource(R.string.auth_error_failed),
+                    ),
                     enabled = state.activeMethod == null ||
                         state.activeMethod == AuthenticationInputMethod.APP_PASSWORD,
                     onValueChange = onEvent.onAppPasswordChange,
@@ -188,16 +194,20 @@ fun AuthenticationContent(
             if (state.recoveryCodeAvailable && state.recoveryUnlockVisible) {
                 Spacer(modifier = Modifier.height(8.dp))
                 InputActionButton(
-                    value = state.recoveryCode,
-                    expanded = state.expandedMethod == AuthenticationInputMethod.RECOVERY_CODE,
-                    progress = state.activeMethod == AuthenticationInputMethod.RECOVERY_CODE,
-                    icon = Icons.Default.Restore,
-                    collapsedText = stringResource(R.string.restore_access),
-                    expandedText = stringResource(R.string.recovery_code_verify),
-                    inputLabel = recoveryCodeLabel,
-                    result = state.recoveryCodeFailureMessage?.let { false },
-                    errorText = state.recoveryCodeFailureMessage
-                        ?: stringResource(R.string.auth_error_failed),
+                    state = InputActionButtonState(
+                        value = state.recoveryCode,
+                        expanded = state.expandedMethod == AuthenticationInputMethod.RECOVERY_CODE,
+                        progress = state.activeMethod == AuthenticationInputMethod.RECOVERY_CODE,
+                        result = state.recoveryCodeFailureMessage?.let { false },
+                    ),
+                    config = InputActionButtonConfig(
+                        icon = Icons.Default.Restore,
+                        collapsedText = stringResource(R.string.restore_access),
+                        expandedText = stringResource(R.string.recovery_code_verify),
+                        inputLabel = recoveryCodeLabel,
+                        errorText = state.recoveryCodeFailureMessage
+                            ?: stringResource(R.string.auth_error_failed),
+                    ),
                     enabled = state.activeMethod == null ||
                         state.activeMethod == AuthenticationInputMethod.RECOVERY_CODE,
                     onValueChange = onEvent.onRecoveryCodeChange,

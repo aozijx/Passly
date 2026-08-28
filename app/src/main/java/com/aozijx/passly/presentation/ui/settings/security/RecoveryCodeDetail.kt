@@ -28,6 +28,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.common.InputActionButton
+import com.aozijx.passly.core.ui.components.common.InputActionButtonConfig
+import com.aozijx.passly.core.ui.components.common.InputActionButtonState
 
 @Composable
 fun RecoveryCodeDetail(
@@ -108,21 +110,25 @@ fun RecoveryCodeDetail(
             Spacer(modifier = Modifier.height(8.dp))
 
             InputActionButton(
-                value = verifyInput,
-                expanded = isExpanded,
-                progress = isVerifying,
-                result = verifyResult,
-                icon = Icons.Default.Restore,
-                containerColor = when (verifyResult) {
-                    true -> MaterialTheme.colorScheme.secondaryContainer
-                    false -> MaterialTheme.colorScheme.errorContainer
-                    else -> null
-                },
-                collapsedText = stringResource(R.string.restore_access),
-                expandedText = stringResource(R.string.recovery_code_verify),
-                inputLabel = stringResource(R.string.recovery_code_label),
-                successText = stringResource(R.string.settings_recovery_code_verify_valid),
-                errorText = stringResource(R.string.settings_recovery_code_verify_invalid),
+                state = InputActionButtonState(
+                    value = verifyInput,
+                    expanded = isExpanded,
+                    progress = isVerifying,
+                    result = verifyResult,
+                ),
+                config = InputActionButtonConfig(
+                    icon = Icons.Default.Restore,
+                    containerColor = when (verifyResult) {
+                        true -> MaterialTheme.colorScheme.secondaryContainer
+                        false -> MaterialTheme.colorScheme.errorContainer
+                        else -> null
+                    },
+                    collapsedText = stringResource(R.string.restore_access),
+                    expandedText = stringResource(R.string.recovery_code_verify),
+                    inputLabel = stringResource(R.string.recovery_code_label),
+                    successText = stringResource(R.string.settings_recovery_code_verify_valid),
+                    errorText = stringResource(R.string.settings_recovery_code_verify_invalid),
+                ),
                 onValueChange = {
                     verifyInput = it
                     onClearVerifyResult()

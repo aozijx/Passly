@@ -35,7 +35,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.domain.sensitive.SensitiveValue
 import kotlinx.coroutines.delay
 
 /**
@@ -137,94 +136,6 @@ fun InputActionButton(
             }
         )
     }
-}
-
-/**
- * 便捷构造方法，兼容现有调用逻辑并支持扩展参数。
- */
-@Composable
-fun InputActionButton(
-    value: SensitiveValue,
-    expanded: Boolean,
-    progress: Boolean,
-    collapsedText: String,
-    expandedText: String,
-    inputLabel: String,
-    onValueChange: (String) -> Unit,
-    onExpandedChange: (Boolean) -> Unit,
-    onAction: () -> Unit,
-    modifier: Modifier = Modifier,
-    onResultConsumed: () -> Unit = {},
-    enabled: Boolean = true,
-    icon: ImageVector = Icons.Default.Key,
-    containerColor: Color? = null,
-    result: Boolean? = null,
-    successText: String = "Success",
-    errorText: String = "Failed"
-) {
-    InputActionButton(
-        state = InputActionButtonState(
-            value = String(value.toCharArray()),
-            expanded = expanded,
-            progress = progress,
-            result = result,
-        ),
-        config = InputActionButtonConfig(
-            collapsedText = collapsedText,
-            expandedText = expandedText,
-            inputLabel = inputLabel,
-            icon = icon,
-            containerColor = containerColor,
-            successText = successText,
-            errorText = errorText
-        ),
-        onValueChange = onValueChange,
-        onExpandedChange = onExpandedChange,
-        onAction = onAction,
-        onResultConsumed = onResultConsumed,
-        modifier = modifier,
-        enabled = enabled
-    )
-}
-
-@Composable
-fun InputActionButton(
-    value: String,
-    expanded: Boolean,
-    progress: Boolean,
-    collapsedText: String,
-    expandedText: String,
-    inputLabel: String,
-    onValueChange: (String) -> Unit,
-    onExpandedChange: (Boolean) -> Unit,
-    onAction: () -> Unit,
-    modifier: Modifier = Modifier,
-    onResultConsumed: () -> Unit = {},
-    enabled: Boolean = true,
-    icon: ImageVector = Icons.Default.Key,
-    containerColor: Color? = null,
-    result: Boolean? = null,
-    successText: String = "Success",
-    errorText: String = "Failed"
-) {
-    InputActionButton(
-        state = InputActionButtonState(value, expanded, progress, result),
-        config = InputActionButtonConfig(
-            collapsedText = collapsedText,
-            expandedText = expandedText,
-            inputLabel = inputLabel,
-            icon = icon,
-            containerColor = containerColor,
-            successText = successText,
-            errorText = errorText
-        ),
-        onValueChange = onValueChange,
-        onExpandedChange = onExpandedChange,
-        onAction = onAction,
-        onResultConsumed = onResultConsumed,
-        modifier = modifier,
-        enabled = enabled
-    )
 }
 
 data class InputActionButtonState(
