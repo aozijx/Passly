@@ -43,6 +43,10 @@ import com.aozijx.passly.presentation.ui.vault.list.component.fab.VaultFab
 import com.aozijx.passly.presentation.ui.vault.list.component.list.VaultPagerContent
 import com.aozijx.passly.presentation.ui.vault.list.component.topbar.VaultTopBar
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultAddTypeUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenEventHandler
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHandler
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -73,9 +77,21 @@ fun VaultHost(
     val vaultDisplayConfig by vaultDisplayViewModel.config.collectAsStateWithLifecycle()
 
     val entryCardPresentations = vaultDisplayConfig.style.entryCardPresentations.map { it.toUiModel() }
-    val renderState = uiState.toUiModel()
     var isFabVisible by remember { mutableStateOf(true) }
-
+    val renderState = uiState.toUiModel(
+        display = VaultListDisplayUiModel(
+            cardPresentations = entryCardPresentations,
+            swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction.toUiModel(),
+            swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction.toUiModel(),
+            isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,
+            isFabVisible = isFabVisible,
+            collapseTopBarOnScroll = vaultDisplayConfig.layout.collapseTopBarOnScroll,
+            collapseQuickFilterBarOnScroll =
+                vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll,
+            hideSystemBars = vaultDisplayConfig.layout.hideSystemBars,
+        ),
+        isDatabaseInitializing = isDatabaseInitializing,
+    )
     val actionProvider = rememberVaultActionProvider(
         vaultViewModel = vaultViewModel,
         totpStates = vaultViewModel.totpStatesFlow,
@@ -152,38 +168,45 @@ fun VaultHost(
         state = renderState,
         scrollBehavior = scrollBehavior,
         entryPages = entryPages,
-        cardPresentations = entryCardPresentations,
         otpState = { id -> vaultViewModel.totpStatesFlow.map { it[id]?.toUiModel() } },
-        swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction.toUiModel(),
-        swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction.toUiModel(),
-        isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,
         fabScrollConnection = actionProvider.fabScrollConnection,
-        isFabVisible = isFabVisible,
-        collapseTopBarOnScroll = vaultDisplayConfig.layout.collapseTopBarOnScroll,
-        collapseQuickFilterBarOnScroll = vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll,
-        hideSystemBars = vaultDisplayConfig.layout.hideSystemBars,
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
-        requestAuthentication = requestAuthentication,
-        onSettingsClick = onSettingsClick,
-        onSearchQueryChange = { vaultViewModel.onAction(VaultUiAction.SearchQueryChanged(it)) },
-        onSearchToggled = { vaultViewModel.onAction(VaultUiAction.SearchToggled(it)) },
-        onClearCategory = { vaultViewModel.onAction(VaultUiAction.ClearCategory) },
-        onToggleTotpVisibility = { vaultViewModel.onAction(VaultUiAction.ToggleShowTotpCode) },
-        onCategorySelected = { vaultViewModel.onAction(VaultUiAction.CategorySelected(it)) },
-        onSortSelected = { vaultViewModel.onAction(VaultUiAction.SortOptionSelected(it.toFeatureModel())) },
-        onQuickFilterSelected = { vaultViewModel.onAction(VaultUiAction.QuickFilterSelected(it.toFeatureModel())) },
-        onAddTypeSelected = { type ->
-            when (type) {
-                VaultAddTypeUiModel.PASSWORD -> onAddPassword()
-                VaultAddTypeUiModel.TOTP -> onAddOtp()
-                VaultAddTypeUiModel.BANK_CARD -> onAddBankCard()
-                else -> vaultViewModel.onAction(VaultUiAction.AddTypeSelected(type.toFeatureModel()))
+        eventHandler = object : VaultListScreenEventHandler {
+            override fun onSettingsClick() = onSettingsClick.invoke()
+            override fun onSearchQueryChanged(query: String) =
+                vaultViewModel.onAction(VaultUiAction.SearchQueryChanged(query))
+            override fun onSearchToggled(active: Boolean) =
+                vaultViewModel.onAction(VaultUiAction.SearchToggled(active))
+            override fun onClearCategory() = vaultViewModel.onAction(VaultUiAction.ClearCategory)
+            override fun onToggleTotpVisibility() =
+                vaultViewModel.onAction(VaultUiAction.ToggleShowTotpCode)
+            override fun onCategorySelected(category: String?) =
+                vaultViewModel.onAction(VaultUiAction.CategorySelected(category))
+            override fun onSortSelected(sort: VaultSortUiModel) =
+                vaultViewModel.onAction(VaultUiAction.SortOptionSelected(sort.toFeatureModel()))
+            override fun onQuickFilterSelected(filter: VaultQuickFilterUiModel) =
+                vaultViewModel.onAction(
+                    VaultUiAction.QuickFilterSelected(filter.toFeatureModel()),
+                )
+            override fun onAddTypeSelected(type: VaultAddTypeUiModel) {
+                when (type) {
+                    VaultAddTypeUiModel.PASSWORD -> onAddPassword()
+                    VaultAddTypeUiModel.TOTP -> onAddOtp()
+                    VaultAddTypeUiModel.BANK_CARD -> onAddBankCard()
+                    else -> vaultViewModel.onAction(
+                        VaultUiAction.AddTypeSelected(type.toFeatureModel()),
+                    )
+                }
             }
+
+            override fun onDismissAddType() =
+                vaultViewModel.onAction(VaultUiAction.AddTypeSelected(null))
+            override fun onConfirmDelete() = vaultViewModel.onAction(VaultUiAction.ConfirmDelete)
+            override fun onDismissDelete() =
+                vaultViewModel.onAction(VaultUiAction.ItemToDeleteSelected(null))
+            override fun requestAuthentication(onSuccess: () -> Unit) =
+                requestAuthentication.invoke(onSuccess)
         },
-        onDismissAddType = { vaultViewModel.onAction(VaultUiAction.AddTypeSelected(null)) },
-        onConfirmDelete = { vaultViewModel.onAction(VaultUiAction.ConfirmDelete) },
-        onDismissDelete = { vaultViewModel.onAction(VaultUiAction.ItemToDeleteSelected(null)) },
-        isDatabaseInitializing = isDatabaseInitializing,
     )
 }

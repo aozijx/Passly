@@ -17,6 +17,7 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardPresentationU
 import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHandler
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpKindUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
@@ -93,7 +94,10 @@ internal fun EntryCardPresentation.toUiModel() = VaultCardPresentationUiModel(
     showQuickAction = showQuickAction,
 )
 
-internal fun VaultUiState.toUiModel() = VaultListScreenUiModel(
+internal fun VaultUiState.toUiModel(
+    display: VaultListDisplayUiModel,
+    isDatabaseInitializing: Boolean,
+) = VaultListScreenUiModel(
     searchQuery = searchQuery,
     selectedCategory = selectedCategory,
     selectedQuickFilter = selectedQuickFilter.toUiModel(),
@@ -104,4 +108,6 @@ internal fun VaultUiState.toUiModel() = VaultListScreenUiModel(
     showTotpCode = showTOTPCode,
     addType = addType?.toUiModel(),
     pendingDelete = pendingDelete?.toUiModel(),
+    display = display,
+    isDatabaseInitializing = isDatabaseInitializing,
 )

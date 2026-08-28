@@ -38,8 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenEventHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,17 +46,7 @@ fun VaultTopBar(
     uiState: VaultListScreenUiModel,
     selectedQuickFilterIndex: Int,
     scrollBehavior: TopAppBarScrollBehavior,
-    onSettingsClick: () -> Unit = {},
-    isStatusBarAutoHide: Boolean = false,
-    isTopBarCollapsible: Boolean = true,
-    isQuickFilterBarCollapsible: Boolean = true,
-    onSearchQueryChange: (String) -> Unit,
-    onToggleSearch: (Boolean) -> Unit,
-    onClearCategory: () -> Unit,
-    onToggleTotpVisibility: () -> Unit,
-    onCategorySelected: (String?) -> Unit,
-    onSortSelected: (VaultSortUiModel) -> Unit,
-    onSelectQuickFilter: (VaultQuickFilterUiModel) -> Unit
+    eventHandler: VaultListScreenEventHandler,
 ) {
     val density = LocalDensity.current
     var isMoreMenuExpanded by remember { mutableStateOf(false) }
@@ -75,12 +64,18 @@ fun VaultTopBar(
     LaunchedEffect(navigateToSettingsAfterDismiss, isMoreMenuExpanded) {
         if (navigateToSettingsAfterDismiss && !isMoreMenuExpanded) {
             navigateToSettingsAfterDismiss = false
-            onSettingsClick()
+            eventHandler.onSettingsClick()
         }
     }
 
-    LaunchedEffect(isTopBarCollapsible, isQuickFilterBarCollapsible, isStatusBarAutoHide) {
-        if (!isTopBarCollapsible && (isQuickFilterBarCollapsible || isStatusBarAutoHide)) {
+    LaunchedEffect(
+        uiState.display.collapseTopBarOnScroll,
+        uiState.display.collapseQuickFilterBarOnScroll,
+        uiState.display.hideSystemBars,
+    ) {
+        if (!uiState.display.collapseTopBarOnScroll &&
+            (uiState.display.collapseQuickFilterBarOnScroll || uiState.display.hideSystemBars)
+        ) {
             scrollBehavior.state.heightOffsetLimit = with(density) { -64.dp.toPx() }
         }
     }
@@ -93,13 +88,13 @@ fun VaultTopBar(
 
     Column {
         CenterAlignedTopAppBar(
-            scrollBehavior = if (isTopBarCollapsible) scrollBehavior else null,
+            scrollBehavior = if (uiState.display.collapseTopBarOnScroll) scrollBehavior else null,
             windowInsets = WindowInsets.statusBars,
             title = {
                 if (uiState.isSearchActive) {
                     VaultSearchBar(
                         query = uiState.searchQuery,
-                        onQueryChange = onSearchQueryChange,
+                        onQueryChange = eventHandler::onSearchQueryChanged,
                         focusRequester = focusRequester,
                     )
                 } else {
@@ -116,7 +111,7 @@ fun VaultTopBar(
                             fontWeight = FontWeight.Bold
                         )
                         if (hasCategoryFilter) {
-                            IconButton(onClick = onClearCategory) {
+                            IconButton(onClick = eventHandler::onClearCategory) {
                                 Icon(
                                     Icons.Default.Clear,
                                     stringResource(R.string.vault_clear_filter),
@@ -128,7 +123,7 @@ fun VaultTopBar(
                 }
             },
             navigationIcon = {
-                IconButton(onClick = { onToggleSearch(!uiState.isSearchActive) }) {
+                IconButton(onClick = { eventHandler.onSearchToggled(!uiState.isSearchActive) }) {
                     Icon(
                         if (uiState.isSearchActive) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Search,
                         contentDescription = stringResource(if (uiState.isSearchActive) R.string.back else R.string.search)
@@ -148,15 +143,15 @@ fun VaultTopBar(
                             VaultDropdownMenu(
                                 onDismissRequest = { isMoreMenuExpanded = false },
                                 showTOTPCode = uiState.showTotpCode,
-                                onToggleTotpVisibility = onToggleTotpVisibility,
+                                onToggleTotpVisibility = eventHandler::onToggleTotpVisibility,
                                 onSettingsClick = {
                                     navigateToSettingsAfterDismiss = true
                                 },
                                 availableCategories = uiState.availableCategories,
                                 selectedCategory = uiState.selectedCategory,
-                                onCategorySelected = onCategorySelected,
+                                onCategorySelected = eventHandler::onCategorySelected,
                                 selectedSort = uiState.selectedSort,
-                                onSortSelected = onSortSelected
+                                onSortSelected = eventHandler::onSortSelected,
                             )
                         }
                     }
@@ -167,7 +162,8 @@ fun VaultTopBar(
             visible = uiState.visibleQuickFilters.size > 1 &&
                 !uiState.isSearchActive &&
                 uiState.selectedCategory == null &&
-                    (!isQuickFilterBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
+                    (!uiState.display.collapseQuickFilterBarOnScroll ||
+                        scrollBehavior.state.collapsedFraction < 0.5f),
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
@@ -175,7 +171,8 @@ fun VaultTopBar(
                 quickFilters = uiState.visibleQuickFilters,
                 selectedQuickFilterIndex = selectedQuickFilterIndex,
                 onQuickFilterSelected = { index ->
-                    uiState.visibleQuickFilters.getOrNull(index)?.let { onSelectQuickFilter(it) }
+                    uiState.visibleQuickFilters.getOrNull(index)
+                        ?.let(eventHandler::onQuickFilterSelected)
                 }
             )
         }

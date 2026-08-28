@@ -94,4 +94,33 @@ data class VaultListScreenUiModel(
     val showTotpCode: Boolean,
     val addType: VaultAddTypeUiModel?,
     val pendingDelete: VaultListItemUiModel?,
+    val display: VaultListDisplayUiModel,
+    val isDatabaseInitializing: Boolean,
 )
+
+data class VaultListDisplayUiModel(
+    val cardPresentations: List<VaultCardPresentationUiModel>,
+    val swipeLeftAction: SwipeActionUiModel,
+    val swipeRightAction: SwipeActionUiModel,
+    val isSwipeEnabled: Boolean,
+    val isFabVisible: Boolean,
+    val collapseTopBarOnScroll: Boolean,
+    val collapseQuickFilterBarOnScroll: Boolean,
+    val hideSystemBars: Boolean,
+)
+
+interface VaultListScreenEventHandler {
+    fun onSettingsClick()
+    fun onSearchQueryChanged(query: String)
+    fun onSearchToggled(active: Boolean)
+    fun onClearCategory()
+    fun onToggleTotpVisibility()
+    fun onCategorySelected(category: String?)
+    fun onSortSelected(sort: VaultSortUiModel)
+    fun onQuickFilterSelected(filter: VaultQuickFilterUiModel)
+    fun onAddTypeSelected(type: VaultAddTypeUiModel)
+    fun onDismissAddType()
+    fun onConfirmDelete()
+    fun onDismissDelete()
+    fun requestAuthentication(onSuccess: () -> Unit)
+}
