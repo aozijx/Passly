@@ -1,9 +1,7 @@
 package com.aozijx.passly.presentation.ui.vault.list.component.cardstyle
 
-import androidx.compose.runtime.Composable
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardPresentationUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
 
 object CardStyleRegistry {
     /*
@@ -50,30 +48,6 @@ object CardStyleRegistry {
         val requested = registrationsByKey[presentation?.variantKey.normalizedStyleKey()]
             ?: defaultStyle
         return requested.takeIf { it.supports(entry) } ?: defaultStyle
-    }
-
-    @Composable
-    fun RenderVaultItem(
-        style: VaultCardStyleComponent,
-        entry: VaultListItemUiModel,
-        totpState: VaultOtpUiState?,
-        showTotpCode: Boolean,
-        onClick: () -> Unit,
-    ) {
-        style.Render(
-            entry = entry,
-            totpState = totpState,
-            showTotpCode = showTotpCode,
-            onClick = onClick,
-        )
-    }
-
-    @Composable
-    fun RenderPreviewVaultItem(
-        style: VaultCardStyleComponent,
-        onClick: () -> Unit,
-    ) {
-        style.Preview(onClick)
     }
 
     private fun String?.normalizedStyleKey(): String = this?.trim()?.lowercase().orEmpty()

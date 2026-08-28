@@ -257,8 +257,7 @@ private fun EntryListItemRow(
             modifier = Modifier.fillMaxWidth(),
             enabled = isSwipeEnabled,
         ) {
-            CardStyleRegistry.RenderVaultItem(
-                style = cardStyle,
+            cardStyle.Render(
                 entry = item,
                 totpState = totpState,
                 showTotpCode = showTotpCode,
