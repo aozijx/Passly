@@ -100,8 +100,8 @@ abstract class VerifyModuleBoundariesTask : DefaultTask() {
 
         val presentationApiSignals = PresentationUiApiVerifier.inspect(sources)
         if (presentationApiSignals.isNotEmpty()) {
-            logger.lifecycle(
-                "Presentation UI API review signals:\n${presentationApiSignals.joinToString("\n")}",
+            throw GradleException(
+                "Oversized Presentation UI APIs:\n${presentationApiSignals.joinToString("\n")}",
             )
         }
     }

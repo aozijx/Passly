@@ -40,7 +40,7 @@ fun RelatedEntriesSection(
                     overlineContent = null,
                     supportingContent = { Text(entry.entryType.localizedName()) },
                     colors = ListItemDefaults.colors(),
-                    elevation = ListItemDefaults.elevation(ListItemDefaults.Elevation),
+                    elevation = ListItemDefaults.elevation(),
                     content = { Text(entry.title) },
                 )
                 if (index < entries.lastIndex) HorizontalDivider()
