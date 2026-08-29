@@ -15,6 +15,7 @@ import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultAddTypeUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpKindUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
@@ -23,6 +24,29 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VaultListUiMapperTest {
+    @Test
+    fun dialogChangesAreIsolatedFromPagingAndPageChromeState() {
+        val display = VaultListDisplayUiModel(
+            cardPresentations = emptyList(),
+            swipeLeftAction = SwipeActionUiModel.DELETE,
+            swipeRightAction = SwipeActionUiModel.DETAIL,
+            isSwipeEnabled = true,
+            isFabVisible = true,
+            collapseTopBarOnScroll = false,
+            collapseQuickFilterBarOnScroll = false,
+            hideSystemBars = false,
+        )
+        val initial = VaultUiState().toUiModel(display, isDatabaseInitializing = false)
+        val withDialog = VaultUiState(addType = AddType.BANK_CARD)
+            .toUiModel(display, isDatabaseInitializing = false)
+
+        assertEquals(initial.toolbar, withDialog.toolbar)
+        assertEquals(initial.navigation, withDialog.navigation)
+        assertEquals(initial.content, withDialog.content)
+        assertEquals(initial.layout, withDialog.layout)
+        assertEquals(VaultAddTypeUiModel.BANK_CARD, withDialog.dialogs.addType)
+    }
+
     @Test
     fun entryMappingPreservesEveryRenderedValue() {
         val item = EntryListItem(

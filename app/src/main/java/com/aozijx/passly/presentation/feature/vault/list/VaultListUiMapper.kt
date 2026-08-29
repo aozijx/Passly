@@ -17,7 +17,12 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardPresentationU
 import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListContentUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDialogsUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListLayoutUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListNavigationUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListToolbarUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpKindUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
@@ -94,16 +99,33 @@ internal fun VaultUiState.toUiModel(
     display: VaultListDisplayUiModel,
     isDatabaseInitializing: Boolean,
 ) = VaultListScreenUiModel(
-    searchQuery = searchQuery,
-    selectedCategory = selectedCategory,
-    selectedQuickFilter = selectedQuickFilter.toUiModel(),
-    selectedSort = selectedSort.toUiModel(),
-    isSearchActive = isSearchActive,
-    availableCategories = availableCategories,
-    visibleQuickFilters = visibleQuickFilters.map(LibraryQuickFilter::toUiModel),
-    showTotpCode = showTOTPCode,
-    addType = addType?.toUiModel(),
-    pendingDelete = pendingDelete?.toUiModel(),
-    display = display,
-    isDatabaseInitializing = isDatabaseInitializing,
+    toolbar = VaultListToolbarUiModel(
+        searchQuery = searchQuery,
+        selectedCategory = selectedCategory,
+        selectedSort = selectedSort.toUiModel(),
+        isSearchActive = isSearchActive,
+        availableCategories = availableCategories,
+    ),
+    navigation = VaultListNavigationUiModel(
+        selectedQuickFilter = selectedQuickFilter.toUiModel(),
+        visibleQuickFilters = visibleQuickFilters.map(LibraryQuickFilter::toUiModel),
+    ),
+    content = VaultListContentUiModel(
+        showTotpCode = showTOTPCode,
+        cardPresentations = display.cardPresentations,
+        swipeLeftAction = display.swipeLeftAction,
+        swipeRightAction = display.swipeRightAction,
+        isSwipeEnabled = display.isSwipeEnabled,
+    ),
+    dialogs = VaultListDialogsUiModel(
+        addType = addType?.toUiModel(),
+        pendingDelete = pendingDelete?.toUiModel(),
+    ),
+    layout = VaultListLayoutUiModel(
+        isFabVisible = display.isFabVisible,
+        collapseTopBarOnScroll = display.collapseTopBarOnScroll,
+        collapseQuickFilterBarOnScroll = display.collapseQuickFilterBarOnScroll,
+        hideSystemBars = display.hideSystemBars,
+        isDatabaseInitializing = isDatabaseInitializing,
+    ),
 )

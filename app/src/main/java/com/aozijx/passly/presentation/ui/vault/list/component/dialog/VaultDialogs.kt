@@ -4,7 +4,7 @@ import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDialogsUiModel
 
 /**
  * 快捷添加的宿主。PASSWORD/TOTP 走全屏编辑器；其余类型暂不支持快捷添加，
@@ -12,7 +12,7 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
  */
 @Composable
 fun AddDialogHost(
-    uiState: VaultListScreenUiModel,
+    uiState: VaultListDialogsUiModel,
     onDismissAddType: () -> Unit
 ) {
     val context = LocalContext.current
@@ -25,7 +25,7 @@ fun AddDialogHost(
 
 @Composable
 fun DeleteDialogHost(
-    uiState: VaultListScreenUiModel,
+    uiState: VaultListDialogsUiModel,
     requestAuthentication: (onSuccess: () -> Unit) -> Unit,
     onConfirmDelete: () -> Unit,
     onDismissDelete: () -> Unit
@@ -42,7 +42,7 @@ fun DeleteDialogHost(
 
 @Composable
 fun VaultDialogs(
-    uiState: VaultListScreenUiModel,
+    uiState: VaultListDialogsUiModel,
     onDismissAddType: () -> Unit,
     onConfirmDelete: () -> Unit,
     onDismissDelete: () -> Unit,

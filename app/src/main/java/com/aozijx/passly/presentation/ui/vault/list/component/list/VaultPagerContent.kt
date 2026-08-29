@@ -54,9 +54,10 @@ import com.aozijx.passly.core.ui.components.widgets.SwipeActionContainer
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionSpec
 import com.aozijx.passly.presentation.ui.vault.list.component.cardstyle.CardStyleRegistry
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardPresentationUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListContentUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHandler
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListNavigationUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
@@ -67,14 +68,11 @@ import kotlinx.coroutines.flow.map
 @Composable
 fun VaultPagerContent(
     pagerState: PagerState,
-    uiState: VaultListScreenUiModel,
+    navigation: VaultListNavigationUiModel,
+    content: VaultListContentUiModel,
     entryPages: Map<VaultQuickFilterUiModel, Flow<PagingData<VaultListItemUiModel>>>,
     itemEventHandler: VaultListItemEventHandler,
-    entryCardPresentations: List<VaultCardPresentationUiModel>,
     otpState: (String) -> Flow<VaultOtpUiState?>,
-    swipeLeftAction: SwipeActionUiModel,
-    swipeRightAction: SwipeActionUiModel,
-    isSwipeEnabled: Boolean,
     modifier: Modifier = Modifier
 ) {
     val adaptiveLayout = LocalPasslyAdaptiveLayout.current
@@ -85,14 +83,14 @@ fun VaultPagerContent(
         modifier = modifier,
         state = pagerState,
         beyondViewportPageCount = 1.coerceAtMost(
-            (uiState.visibleQuickFilters.size - 1).coerceAtLeast(0)
+            (navigation.visibleQuickFilters.size - 1).coerceAtLeast(0)
         ),
         key = { pageIndex ->
-            uiState.visibleQuickFilters.getOrNull(pageIndex)?.name ?: "vault-empty"
+            navigation.visibleQuickFilters.getOrNull(pageIndex)?.name ?: "vault-empty"
         }
     ) { pageIndex ->
         val currentQuickFilter =
-            uiState.visibleQuickFilters.getOrNull(pageIndex) ?: VaultQuickFilterUiModel.ALL
+            navigation.visibleQuickFilters.getOrNull(pageIndex) ?: VaultQuickFilterUiModel.ALL
         val pagingItems = requireNotNull(entryPages[currentQuickFilter]).collectAsLazyPagingItems()
         val refreshState = pagingItems.loadState.refresh
 
@@ -132,12 +130,12 @@ fun VaultPagerContent(
                     EntryListItemRow(
                         item = item,
                         eventHandler = itemEventHandler,
-                        entryCardPresentations = entryCardPresentations,
-                        swipeLeftAction = swipeLeftAction,
-                        swipeRightAction = swipeRightAction,
-                        isSwipeEnabled = isSwipeEnabled,
+                        entryCardPresentations = content.cardPresentations,
+                        swipeLeftAction = content.swipeLeftAction,
+                        swipeRightAction = content.swipeRightAction,
+                        isSwipeEnabled = content.isSwipeEnabled,
                         otpState = otpState,
-                        showTotpCode = uiState.showTotpCode,
+                        showTotpCode = content.showTotpCode,
                         animateInitialAppearance = playInitialEntryAnimation,
                         modifier = Modifier
                             .animateItem(

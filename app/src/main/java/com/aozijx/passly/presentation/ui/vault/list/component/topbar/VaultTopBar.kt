@@ -37,13 +37,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListToolbarUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListContentUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListLayoutUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListNavigationUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenEventHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultTopBar(
-    uiState: VaultListScreenUiModel,
+    uiState: VaultListToolbarUiModel,
+    navigation: VaultListNavigationUiModel,
+    content: VaultListContentUiModel,
+    layout: VaultListLayoutUiModel,
     selectedQuickFilterIndex: Int,
     scrollBehavior: TopAppBarScrollBehavior,
     eventHandler: VaultListScreenEventHandler,
@@ -69,12 +75,12 @@ fun VaultTopBar(
     }
 
     LaunchedEffect(
-        uiState.display.collapseTopBarOnScroll,
-        uiState.display.collapseQuickFilterBarOnScroll,
-        uiState.display.hideSystemBars,
+        layout.collapseTopBarOnScroll,
+        layout.collapseQuickFilterBarOnScroll,
+        layout.hideSystemBars,
     ) {
-        if (!uiState.display.collapseTopBarOnScroll &&
-            (uiState.display.collapseQuickFilterBarOnScroll || uiState.display.hideSystemBars)
+        if (!layout.collapseTopBarOnScroll &&
+            (layout.collapseQuickFilterBarOnScroll || layout.hideSystemBars)
         ) {
             scrollBehavior.state.heightOffsetLimit = with(density) { -64.dp.toPx() }
         }
@@ -88,7 +94,7 @@ fun VaultTopBar(
 
     Column {
         CenterAlignedTopAppBar(
-            scrollBehavior = if (uiState.display.collapseTopBarOnScroll) scrollBehavior else null,
+            scrollBehavior = if (layout.collapseTopBarOnScroll) scrollBehavior else null,
             windowInsets = WindowInsets.statusBars,
             title = {
                 if (uiState.isSearchActive) {
@@ -142,7 +148,7 @@ fun VaultTopBar(
                         if (isMoreMenuExpanded) {
                             VaultDropdownMenu(
                                 onDismissRequest = { isMoreMenuExpanded = false },
-                                showTOTPCode = uiState.showTotpCode,
+                                showTOTPCode = content.showTotpCode,
                                 onToggleTotpVisibility = eventHandler::onToggleTotpVisibility,
                                 onSettingsClick = {
                                     navigateToSettingsAfterDismiss = true
@@ -159,19 +165,19 @@ fun VaultTopBar(
             })
 
         AnimatedVisibility(
-            visible = uiState.visibleQuickFilters.size > 1 &&
+            visible = navigation.visibleQuickFilters.size > 1 &&
                 !uiState.isSearchActive &&
                 uiState.selectedCategory == null &&
-                    (!uiState.display.collapseQuickFilterBarOnScroll ||
+                    (!layout.collapseQuickFilterBarOnScroll ||
                         scrollBehavior.state.collapsedFraction < 0.5f),
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
             LibraryQuickFilterBar(
-                quickFilters = uiState.visibleQuickFilters,
+                quickFilters = navigation.visibleQuickFilters,
                 selectedQuickFilterIndex = selectedQuickFilterIndex,
                 onQuickFilterSelected = { index ->
-                    uiState.visibleQuickFilters.getOrNull(index)
+                    navigation.visibleQuickFilters.getOrNull(index)
                         ?.let(eventHandler::onQuickFilterSelected)
                 }
             )

@@ -83,17 +83,44 @@ data class VaultCardPresentationUiModel(
 enum class VaultCardDensityUiModel { COMPACT, STANDARD, COMFORTABLE }
 
 data class VaultListScreenUiModel(
+    val toolbar: VaultListToolbarUiModel,
+    val navigation: VaultListNavigationUiModel,
+    val content: VaultListContentUiModel,
+    val dialogs: VaultListDialogsUiModel,
+    val layout: VaultListLayoutUiModel,
+)
+
+data class VaultListToolbarUiModel(
     val searchQuery: String,
     val selectedCategory: String?,
-    val selectedQuickFilter: VaultQuickFilterUiModel,
     val selectedSort: VaultSortUiModel,
     val isSearchActive: Boolean,
     val availableCategories: List<String>,
+)
+
+data class VaultListNavigationUiModel(
+    val selectedQuickFilter: VaultQuickFilterUiModel,
     val visibleQuickFilters: List<VaultQuickFilterUiModel>,
+)
+
+data class VaultListContentUiModel(
     val showTotpCode: Boolean,
+    val cardPresentations: List<VaultCardPresentationUiModel>,
+    val swipeLeftAction: SwipeActionUiModel,
+    val swipeRightAction: SwipeActionUiModel,
+    val isSwipeEnabled: Boolean,
+)
+
+data class VaultListDialogsUiModel(
     val addType: VaultAddTypeUiModel?,
     val pendingDelete: VaultListItemUiModel?,
-    val display: VaultListDisplayUiModel,
+)
+
+data class VaultListLayoutUiModel(
+    val isFabVisible: Boolean,
+    val collapseTopBarOnScroll: Boolean,
+    val collapseQuickFilterBarOnScroll: Boolean,
+    val hideSystemBars: Boolean,
     val isDatabaseInitializing: Boolean,
 )
 

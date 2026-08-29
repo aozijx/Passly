@@ -42,6 +42,7 @@ import com.aozijx.passly.presentation.ui.vault.list.component.list.VaultPagerCon
 import com.aozijx.passly.presentation.ui.vault.list.component.topbar.VaultTopBar
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultAddTypeUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenEventHandler
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortUiModel
@@ -75,7 +76,7 @@ fun VaultHost(
 
     val entryCardPresentations = vaultDisplayConfig.style.entryCardPresentations.map { it.toUiModel() }
     var isFabVisible by remember { mutableStateOf(true) }
-    val renderState = uiState.toUiModel(
+    val renderState = rememberVaultListScreenUiModel(uiState.toUiModel(
         display = VaultListDisplayUiModel(
             cardPresentations = entryCardPresentations,
             swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction.toUiModel(),
@@ -88,7 +89,7 @@ fun VaultHost(
             hideSystemBars = vaultDisplayConfig.layout.hideSystemBars,
         ),
         isDatabaseInitializing = isDatabaseInitializing,
-    )
+    ))
     val actionProvider = rememberVaultActionProvider(
         vaultViewModel = vaultViewModel,
         totpStates = vaultViewModel.totpStatesFlow,
@@ -201,4 +202,18 @@ fun VaultHost(
                 requestAuthentication.invoke(onSuccess)
         },
     )
+}
+
+@Composable
+internal fun rememberVaultListScreenUiModel(
+    mapped: VaultListScreenUiModel,
+): VaultListScreenUiModel {
+    val toolbar = remember(mapped.toolbar) { mapped.toolbar }
+    val navigation = remember(mapped.navigation) { mapped.navigation }
+    val content = remember(mapped.content) { mapped.content }
+    val dialogs = remember(mapped.dialogs) { mapped.dialogs }
+    val layout = remember(mapped.layout) { mapped.layout }
+    return remember(toolbar, navigation, content, dialogs, layout) {
+        VaultListScreenUiModel(toolbar, navigation, content, dialogs, layout)
+    }
 }

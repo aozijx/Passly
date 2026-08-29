@@ -47,27 +47,28 @@ fun VaultScreen(
     animatedVisibilityScope: AnimatedVisibilityScope,
     eventHandler: VaultListScreenEventHandler,
 ) {
-    val initialIndex = state.visibleQuickFilters.indexOf(state.selectedQuickFilter).coerceAtLeast(0)
+    val navigation = state.navigation
+    val initialIndex = navigation.visibleQuickFilters.indexOf(navigation.selectedQuickFilter).coerceAtLeast(0)
     val pagerState = rememberPagerState(initialPage = initialIndex) {
-        state.visibleQuickFilters.size.coerceAtLeast(1)
+        navigation.visibleQuickFilters.size.coerceAtLeast(1)
     }
 
-    BackHandler(enabled = state.isSearchActive) { eventHandler.onSearchToggled(false) }
+    BackHandler(enabled = state.toolbar.isSearchActive) { eventHandler.onSearchToggled(false) }
 
-    LaunchedEffect(state.visibleQuickFilters, state.selectedQuickFilter) {
-        if (state.visibleQuickFilters.isEmpty()) return@LaunchedEffect
-        if (state.selectedQuickFilter !in state.visibleQuickFilters) {
-            eventHandler.onQuickFilterSelected(state.visibleQuickFilters.first())
+    LaunchedEffect(navigation.visibleQuickFilters, navigation.selectedQuickFilter) {
+        if (navigation.visibleQuickFilters.isEmpty()) return@LaunchedEffect
+        if (navigation.selectedQuickFilter !in navigation.visibleQuickFilters) {
+            eventHandler.onQuickFilterSelected(navigation.visibleQuickFilters.first())
             return@LaunchedEffect
         }
-        val target = state.visibleQuickFilters.indexOf(state.selectedQuickFilter)
+        val target = navigation.visibleQuickFilters.indexOf(navigation.selectedQuickFilter)
         if (pagerState.settledPage != target && pagerState.pageCount > target) {
             pagerState.animateScrollToPage(target)
         }
     }
-    LaunchedEffect(pagerState, state.visibleQuickFilters) {
+    LaunchedEffect(pagerState, navigation.visibleQuickFilters) {
         snapshotFlow { pagerState.settledPage }.distinctUntilChanged().collect { page ->
-            state.visibleQuickFilters.getOrNull(page)?.let(eventHandler::onQuickFilterSelected)
+            navigation.visibleQuickFilters.getOrNull(page)?.let(eventHandler::onQuickFilterSelected)
         }
     }
 
@@ -75,8 +76,8 @@ fun VaultScreen(
         modifier = Modifier
             .fillMaxSize()
             .then(
-                if (state.display.collapseTopBarOnScroll ||
-                    state.display.collapseQuickFilterBarOnScroll || state.display.hideSystemBars
+                if (state.layout.collapseTopBarOnScroll ||
+                    state.layout.collapseQuickFilterBarOnScroll || state.layout.hideSystemBars
                 ) {
                     Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
                 } else Modifier
@@ -85,12 +86,15 @@ fun VaultScreen(
         topBar = {
             Column {
                 VaultTopBar(
-                    uiState = state,
+                    uiState = state.toolbar,
+                    navigation = state.navigation,
+                    content = state.content,
+                    layout = state.layout,
                     selectedQuickFilterIndex = pagerState.currentPage,
                     scrollBehavior = scrollBehavior,
                     eventHandler = eventHandler,
                 )
-                if (state.isDatabaseInitializing) {
+                if (state.layout.isDatabaseInitializing) {
                     LinearProgressIndicator(
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.primary,
@@ -104,27 +108,24 @@ fun VaultScreen(
                 onAddTypeSelected = eventHandler::onAddTypeSelected,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
-                isVisible = state.display.isFabVisible,
+                isVisible = state.layout.isFabVisible,
             )
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { padding ->
         VaultPagerContent(
             pagerState = pagerState,
-            uiState = state,
+            navigation = state.navigation,
+            content = state.content,
             entryPages = entryPages,
             itemEventHandler = itemEventHandler,
-            entryCardPresentations = state.display.cardPresentations,
             otpState = otpState,
-            swipeLeftAction = state.display.swipeLeftAction,
-            swipeRightAction = state.display.swipeRightAction,
-            isSwipeEnabled = state.display.isSwipeEnabled,
             modifier = Modifier.fillMaxSize().padding(padding),
         )
     }
 
     VaultDialogs(
-        uiState = state,
+        uiState = state.dialogs,
         onDismissAddType = eventHandler::onDismissAddType,
         onConfirmDelete = eventHandler::onConfirmDelete,
         onDismissDelete = eventHandler::onDismissDelete,
