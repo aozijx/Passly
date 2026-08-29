@@ -6,6 +6,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEvent
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEventHandler
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
@@ -49,6 +51,32 @@ class VaultListBindingsComposeTest {
             )
             currentBindings.eventHandler.onClick(vaultListItem("entry-1"))
             assertEquals(listOf("1:entry-1"), events)
+        }
+    }
+
+    @Test
+    fun callbackRecompositionKeepsEventHandlerWhileUsingLatestCallback() {
+        val callbackVersion = mutableIntStateOf(0)
+        val events = mutableListOf<String>()
+        lateinit var currentHandler: VaultListEventHandler
+
+        composeRule.setContent {
+            val version = callbackVersion.intValue
+            currentHandler = rememberVaultListEventHandler(
+                onEvent = { events += "$version:$it" },
+                requestAuthentication = { it() },
+            )
+        }
+
+        lateinit var initialHandler: VaultListEventHandler
+        composeRule.runOnIdle { initialHandler = currentHandler }
+        callbackVersion.intValue = 1
+        composeRule.waitForIdle()
+
+        composeRule.runOnIdle {
+            assertSame(initialHandler, currentHandler)
+            currentHandler.onEvent(VaultListEvent.SettingsClicked)
+            assertEquals(listOf("1:SettingsClicked"), events)
         }
     }
 

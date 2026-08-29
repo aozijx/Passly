@@ -135,18 +135,22 @@ data class VaultListDisplayUiModel(
     val hideSystemBars: Boolean,
 )
 
-interface VaultListScreenEventHandler {
-    fun onSettingsClick()
-    fun onSearchQueryChanged(query: String)
-    fun onSearchToggled(active: Boolean)
-    fun onClearCategory()
-    fun onToggleTotpVisibility()
-    fun onCategorySelected(category: String?)
-    fun onSortSelected(sort: VaultSortUiModel)
-    fun onQuickFilterSelected(filter: VaultQuickFilterUiModel)
-    fun onAddTypeSelected(type: VaultAddTypeUiModel)
-    fun onDismissAddType()
-    fun onConfirmDelete()
-    fun onDismissDelete()
+sealed interface VaultListEvent {
+    data object SettingsClicked : VaultListEvent
+    data class SearchQueryChanged(val query: String) : VaultListEvent
+    data class SearchToggled(val active: Boolean) : VaultListEvent
+    data object ClearCategory : VaultListEvent
+    data object ToggleTotpVisibility : VaultListEvent
+    data class CategorySelected(val category: String?) : VaultListEvent
+    data class SortSelected(val sort: VaultSortUiModel) : VaultListEvent
+    data class QuickFilterSelected(val filter: VaultQuickFilterUiModel) : VaultListEvent
+    data class AddTypeSelected(val type: VaultAddTypeUiModel) : VaultListEvent
+    data object DismissAddType : VaultListEvent
+    data object ConfirmDelete : VaultListEvent
+    data object DismissDelete : VaultListEvent
+}
+
+interface VaultListEventHandler {
+    fun onEvent(event: VaultListEvent)
     fun requestAuthentication(onSuccess: () -> Unit)
 }

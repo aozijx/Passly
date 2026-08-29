@@ -41,7 +41,8 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultListToolbarUiMode
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListContentUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListLayoutUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListNavigationUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenEventHandler
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEvent
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEventHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,7 +53,7 @@ fun VaultTopBar(
     layout: VaultListLayoutUiModel,
     selectedQuickFilterIndex: Int,
     scrollBehavior: TopAppBarScrollBehavior,
-    eventHandler: VaultListScreenEventHandler,
+    eventHandler: VaultListEventHandler,
 ) {
     val density = LocalDensity.current
     var isMoreMenuExpanded by remember { mutableStateOf(false) }
@@ -70,7 +71,7 @@ fun VaultTopBar(
     LaunchedEffect(navigateToSettingsAfterDismiss, isMoreMenuExpanded) {
         if (navigateToSettingsAfterDismiss && !isMoreMenuExpanded) {
             navigateToSettingsAfterDismiss = false
-            eventHandler.onSettingsClick()
+            eventHandler.onEvent(VaultListEvent.SettingsClicked)
         }
     }
 
@@ -100,7 +101,9 @@ fun VaultTopBar(
                 if (uiState.isSearchActive) {
                     VaultSearchBar(
                         query = uiState.searchQuery,
-                        onQueryChange = eventHandler::onSearchQueryChanged,
+                        onQueryChange = { query ->
+                            eventHandler.onEvent(VaultListEvent.SearchQueryChanged(query))
+                        },
                         focusRequester = focusRequester,
                     )
                 } else {
@@ -117,7 +120,9 @@ fun VaultTopBar(
                             fontWeight = FontWeight.Bold
                         )
                         if (hasCategoryFilter) {
-                            IconButton(onClick = eventHandler::onClearCategory) {
+                            IconButton(onClick = {
+                                eventHandler.onEvent(VaultListEvent.ClearCategory)
+                            }) {
                                 Icon(
                                     Icons.Default.Clear,
                                     stringResource(R.string.vault_clear_filter),
@@ -129,7 +134,9 @@ fun VaultTopBar(
                 }
             },
             navigationIcon = {
-                IconButton(onClick = { eventHandler.onSearchToggled(!uiState.isSearchActive) }) {
+                IconButton(onClick = {
+                    eventHandler.onEvent(VaultListEvent.SearchToggled(!uiState.isSearchActive))
+                }) {
                     Icon(
                         if (uiState.isSearchActive) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Search,
                         contentDescription = stringResource(if (uiState.isSearchActive) R.string.back else R.string.search)
@@ -149,15 +156,21 @@ fun VaultTopBar(
                             VaultDropdownMenu(
                                 onDismissRequest = { isMoreMenuExpanded = false },
                                 showTOTPCode = content.showTotpCode,
-                                onToggleTotpVisibility = eventHandler::onToggleTotpVisibility,
+                                onToggleTotpVisibility = {
+                                    eventHandler.onEvent(VaultListEvent.ToggleTotpVisibility)
+                                },
                                 onSettingsClick = {
                                     navigateToSettingsAfterDismiss = true
                                 },
                                 availableCategories = uiState.availableCategories,
                                 selectedCategory = uiState.selectedCategory,
-                                onCategorySelected = eventHandler::onCategorySelected,
+                                onCategorySelected = { category ->
+                                    eventHandler.onEvent(VaultListEvent.CategorySelected(category))
+                                },
                                 selectedSort = uiState.selectedSort,
-                                onSortSelected = eventHandler::onSortSelected,
+                                onSortSelected = { sort ->
+                                    eventHandler.onEvent(VaultListEvent.SortSelected(sort))
+                                },
                             )
                         }
                     }
@@ -177,8 +190,9 @@ fun VaultTopBar(
                 quickFilters = navigation.visibleQuickFilters,
                 selectedQuickFilterIndex = selectedQuickFilterIndex,
                 onQuickFilterSelected = { index ->
-                    navigation.visibleQuickFilters.getOrNull(index)
-                        ?.let(eventHandler::onQuickFilterSelected)
+                    navigation.visibleQuickFilters.getOrNull(index)?.let { filter ->
+                        eventHandler.onEvent(VaultListEvent.QuickFilterSelected(filter))
+                    }
                 }
             )
         }

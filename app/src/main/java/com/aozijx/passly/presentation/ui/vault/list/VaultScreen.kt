@@ -27,7 +27,8 @@ import com.aozijx.passly.presentation.ui.vault.list.component.list.VaultPagerCon
 import com.aozijx.passly.presentation.ui.vault.list.component.topbar.VaultTopBar
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHandler
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenEventHandler
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEvent
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEventHandler
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
@@ -45,7 +46,7 @@ fun VaultScreen(
     fabScrollConnection: NestedScrollConnection,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    eventHandler: VaultListScreenEventHandler,
+    eventHandler: VaultListEventHandler,
 ) {
     val navigation = state.navigation
     val initialIndex = navigation.visibleQuickFilters.indexOf(navigation.selectedQuickFilter).coerceAtLeast(0)
@@ -53,12 +54,16 @@ fun VaultScreen(
         navigation.visibleQuickFilters.size.coerceAtLeast(1)
     }
 
-    BackHandler(enabled = state.toolbar.isSearchActive) { eventHandler.onSearchToggled(false) }
+    BackHandler(enabled = state.toolbar.isSearchActive) {
+        eventHandler.onEvent(VaultListEvent.SearchToggled(false))
+    }
 
     LaunchedEffect(navigation.visibleQuickFilters, navigation.selectedQuickFilter) {
         if (navigation.visibleQuickFilters.isEmpty()) return@LaunchedEffect
         if (navigation.selectedQuickFilter !in navigation.visibleQuickFilters) {
-            eventHandler.onQuickFilterSelected(navigation.visibleQuickFilters.first())
+            eventHandler.onEvent(
+                VaultListEvent.QuickFilterSelected(navigation.visibleQuickFilters.first()),
+            )
             return@LaunchedEffect
         }
         val target = navigation.visibleQuickFilters.indexOf(navigation.selectedQuickFilter)
@@ -68,7 +73,9 @@ fun VaultScreen(
     }
     LaunchedEffect(pagerState, navigation.visibleQuickFilters) {
         snapshotFlow { pagerState.settledPage }.distinctUntilChanged().collect { page ->
-            navigation.visibleQuickFilters.getOrNull(page)?.let(eventHandler::onQuickFilterSelected)
+            navigation.visibleQuickFilters.getOrNull(page)?.let { filter ->
+                eventHandler.onEvent(VaultListEvent.QuickFilterSelected(filter))
+            }
         }
     }
 
@@ -105,7 +112,9 @@ fun VaultScreen(
         },
         floatingActionButton = {
             VaultFab(
-                onAddTypeSelected = eventHandler::onAddTypeSelected,
+                onAddTypeSelected = { type ->
+                    eventHandler.onEvent(VaultListEvent.AddTypeSelected(type))
+                },
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 isVisible = state.layout.isFabVisible,
@@ -126,9 +135,9 @@ fun VaultScreen(
 
     VaultDialogs(
         uiState = state.dialogs,
-        onDismissAddType = eventHandler::onDismissAddType,
-        onConfirmDelete = eventHandler::onConfirmDelete,
-        onDismissDelete = eventHandler::onDismissDelete,
+        onDismissAddType = { eventHandler.onEvent(VaultListEvent.DismissAddType) },
+        onConfirmDelete = { eventHandler.onEvent(VaultListEvent.ConfirmDelete) },
+        onDismissDelete = { eventHandler.onEvent(VaultListEvent.DismissDelete) },
         requestAuthentication = eventHandler::requestAuthentication,
     )
 }
