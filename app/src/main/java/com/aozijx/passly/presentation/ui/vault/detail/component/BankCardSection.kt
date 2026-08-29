@@ -11,7 +11,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.MaskStyle
-import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
+import androidx.compose.material3.OutlinedTextField
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailBankCardUiModel
 
 enum class DetailBankCardFieldUiModel { CARDHOLDER, CARD_NUMBER, CVV, EXPIRATION, PAYMENT_PIN }
@@ -66,9 +66,9 @@ private fun CardField(
     onReveal: ((DetailBankCardFieldUiModel) -> Unit)?,
     maskStyle: MaskStyle = MaskStyle.DEFAULT,
 ) {
-    if (editing) PasslyOutlinedTextField(
+    if (editing) OutlinedTextField(
         value = editedValue, onValueChange = { onEditChanged(field, it) },
-        label = stringResource(R.string.field_edit_action, label), modifier = Modifier.fillMaxWidth(),
+        label = { Text(stringResource(R.string.field_edit_action, label)) }, modifier = Modifier.fillMaxWidth(),
         trailingIcon = { IconButton(onClick = { onEditSaved(field, editedValue) }) {
             Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary) } }, singleLine = true)
     else DetailItem(label = label, value = value, isRevealed = revealed, maskStyle = maskStyle, onCopy = { onCopy(field) },

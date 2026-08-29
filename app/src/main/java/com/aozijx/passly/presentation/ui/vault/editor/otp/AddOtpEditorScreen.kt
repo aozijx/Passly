@@ -16,7 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
+import com.aozijx.passly.presentation.ui.shared.components.NextFocusTextField
 import com.aozijx.passly.presentation.ui.vault.editor.common.AddEntryScaffold
 import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorSection
 
@@ -39,7 +39,7 @@ fun AddOtpEditorScreen(
         animatedVisibilityScope = animatedVisibilityScope,
     ) {
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
-            PasslyOutlinedTextField(
+            NextFocusTextField(
                 value = state.title,
                 onValueChange = onEvent.onTitleChange,
                 label = stringResource(R.string.field_title),
@@ -47,11 +47,10 @@ fun AddOtpEditorScreen(
         }
 
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_otp_setup)) {
-            PasslyOutlinedTextField(
+            NextFocusTextField(
                 value = state.uriText,
                 onValueChange = onEvent.onUriChange,
                 label = stringResource(R.string.twofa_uri_hint),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 trailingIcon = {
                     TextButton(onClick = onEvent.onScan) {
                         Icon(

@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.MaskStyle
 import com.aozijx.passly.core.ui.components.MaskedText
-import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
+import androidx.compose.material3.OutlinedTextField
 
 @Composable
 fun SensitiveFieldCard(
@@ -68,11 +68,11 @@ fun SensitiveFieldCard(
         ) {
             if (isEditing) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PasslyOutlinedTextField(
+                    OutlinedTextField(
                         value = editedValue,
                         onValueChange = onValueChange,
                         modifier = Modifier.fillMaxWidth(),
-                        label = stringResource(R.string.field_edit_action, title),
+                        label = { Text(stringResource(R.string.field_edit_action, title)) },
                         singleLine = true
                     )
                     Row(

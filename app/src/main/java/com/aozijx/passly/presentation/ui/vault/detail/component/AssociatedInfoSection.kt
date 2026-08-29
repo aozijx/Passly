@@ -41,7 +41,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerBottomSheet
-import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
+import androidx.compose.material3.OutlinedTextField
 import com.aozijx.passly.presentation.ui.shared.components.rememberAppIcon
 import com.aozijx.passly.presentation.ui.shared.components.rememberAppMetadata
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailAssociatedInfoUiModel
@@ -213,11 +213,11 @@ private fun DomainEditor(
     onDone: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        PasslyOutlinedTextField(
+        OutlinedTextField(
             value = value.text,
             onValueChange = { onValueChange(value.copy(text = it)) },
             modifier = Modifier.fillMaxWidth(),
-            label = stringResource(R.string.vault_detail_domain_label),
+            label = { Text(stringResource(R.string.vault_detail_domain_label)) },
             placeholder = { Text(stringResource(R.string.vault_detail_domain_placeholder)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),

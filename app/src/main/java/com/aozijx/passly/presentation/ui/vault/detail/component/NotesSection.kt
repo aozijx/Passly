@@ -21,7 +21,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
+import androidx.compose.material3.OutlinedTextField
 import com.aozijx.passly.core.ui.components.markdown.PasslyMarkdownDocument
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailNotesUiModel
 
@@ -43,10 +43,10 @@ fun NotesSection(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                PasslyOutlinedTextField(
+                OutlinedTextField(
                     value = model.editedNotes,
                     onValueChange = onNotesChanged,
-                    label = notesLabel,
+                    label = { Text(notesLabel) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = false,
                     minLines = 3,

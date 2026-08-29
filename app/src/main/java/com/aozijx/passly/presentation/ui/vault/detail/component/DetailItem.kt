@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.MaskStyle
 import com.aozijx.passly.core.ui.components.MaskedText
-import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
+import androidx.compose.material3.OutlinedTextField
 
 @Composable
 fun DetailItem(
@@ -130,10 +130,10 @@ fun DetailItem(
 fun EditTextField(
     value: String, onValueChange: (String) -> Unit, label: String, onSave: () -> Unit
 ) {
-    PasslyOutlinedTextField(
+    OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = label,
+        label = { Text(label) },
         modifier = Modifier.fillMaxWidth(),
         trailingIcon = {
             IconButton(onClick = onSave) {

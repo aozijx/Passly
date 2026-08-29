@@ -4,14 +4,15 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
+import com.aozijx.passly.presentation.ui.shared.components.NextFocusTextField
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.material3.Icon
@@ -61,9 +62,6 @@ fun AddPasswordEditorScreen(
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    val moveToNextField = KeyboardActions(
-        onNext = { focusManager.moveFocus(FocusDirection.Next) },
-    )
 
     AddEntryScaffold(
         title = stringResource(R.string.vault_add_password_title),
@@ -76,33 +74,25 @@ fun AddPasswordEditorScreen(
         animatedVisibilityScope = animatedVisibilityScope,
     ) {
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
-            PasslyOutlinedTextField(
+            NextFocusTextField(
                 value = state.title,
                 onValueChange = onEvent.onTitleChange,
                 label = stringResource(R.string.field_title),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = moveToNextField,
             )
-            PasslyOutlinedTextField(
+            NextFocusTextField(
                 value = state.username,
                 onValueChange = onEvent.onUsernameChange,
                 label = stringResource(R.string.field_username_hint),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Next,
-                ),
-                keyboardActions = moveToNextField,
             )
         }
 
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_credentials)) {
-            PasslyOutlinedTextField(
+            NextFocusTextField(
                 value = state.password,
                 onValueChange = onEvent.onPasswordChange,
                 label = stringResource(R.string.password_label),
                 visualTransformation = if (state.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
-                keyboardActions = moveToNextField,
+                keyboardType = KeyboardType.Password,
                 trailingIcon = {
                     IconButton(onClick = { onEvent.onPasswordVisibilityChange(!state.isPasswordVisible) }) {
                         Icon(
@@ -119,24 +109,21 @@ fun AddPasswordEditorScreen(
         }
 
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_details)) {
-            PasslyOutlinedTextField(
+            NextFocusTextField(
                 value = state.tags,
                 onValueChange = onEvent.onTagsChange,
                 label = stringResource(R.string.field_category),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = moveToNextField,
             )
-            PasslyOutlinedTextField(
+            NextFocusTextField(
                 value = state.website,
                 onValueChange = onEvent.onWebsiteChange,
                 label = stringResource(R.string.vault_add_password_website),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
-                keyboardActions = moveToNextField,
+                keyboardType = KeyboardType.Uri,
             )
-            PasslyOutlinedTextField(
+            OutlinedTextField(
                 value = state.notes,
                 onValueChange = onEvent.onNotesChange,
-                label = stringResource(R.string.field_notes),
+                label = { Text(stringResource(R.string.field_notes)) },
                 singleLine = false,
                 minLines = 4,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),

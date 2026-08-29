@@ -438,18 +438,23 @@ class SourceBoundaryPolicyTest {
 
     @Test
     fun passwordEditorFeatureHostCannotRenderFieldsDirectly() {
-        val source = EditorSource(
-            path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/editor/password/AddPasswordEditorHost.kt",
-            content = "EntryTitleField(value = state.title)",
-        )
+        listOf(
+            "NextFocusTextField(value = state.title)",
+            "OutlinedTextField(value = state.title)",
+        ).forEach { directField ->
+            val source = EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/editor/password/AddPasswordEditorHost.kt",
+                content = directField,
+            )
 
-        assertEquals(
-            "PASSWORD_EDITOR_HOST_PASSIVE_UI",
-            SourceBoundaryVerifier.verify(
-                listOf(source),
-                SourceBoundaryPolicy.generalRules,
-            ).single().ruleId,
-        )
+            assertEquals(
+                "PASSWORD_EDITOR_HOST_PASSIVE_UI",
+                SourceBoundaryVerifier.verify(
+                    listOf(source),
+                    SourceBoundaryPolicy.generalRules,
+                ).single().ruleId,
+            )
+        }
     }
 
     @Test

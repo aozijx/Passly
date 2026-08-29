@@ -25,7 +25,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
+import androidx.compose.material3.OutlinedTextField
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailScreenUiModel
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -46,10 +46,10 @@ fun DetailTopBar(
     LargeFlexibleTopAppBar(
         title = {
             if (model.isEditingTitle) {
-                PasslyOutlinedTextField(
+                OutlinedTextField(
                     value = model.editedTitle,
                     onValueChange = onTitleChanged,
-                    label = "",
+                    label = null,
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                     singleLine = true,

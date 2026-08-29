@@ -8,48 +8,46 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 
 @Composable
-fun PasslyOutlinedTextField(
+fun NextFocusTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    readOnly: Boolean = false,
-    singleLine: Boolean = true,
-    minLines: Int = 1,
-    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    keyboardType: KeyboardType = KeyboardType.Text,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     textStyle: TextStyle = LocalTextStyle.current,
-    placeholder: @Composable (() -> Unit)? = null,
-    leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
     isError: Boolean = false,
     supportingText: @Composable (() -> Unit)? = null,
 ) {
+    val focusManager = LocalFocusManager.current
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
         enabled = enabled,
-        readOnly = readOnly,
         isError = isError,
         supportingText = supportingText,
-        singleLine = singleLine,
+        singleLine = true,
         modifier = modifier.fillMaxWidth(),
-        minLines = minLines,
-        maxLines = maxLines,
-        keyboardOptions = keyboardOptions,
-        keyboardActions = keyboardActions,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = keyboardType,
+            imeAction = ImeAction.Next,
+        ),
+        keyboardActions = KeyboardActions(
+            onNext = { focusManager.moveFocus(FocusDirection.Next) },
+        ),
         visualTransformation = visualTransformation,
         textStyle = textStyle,
-        placeholder = placeholder,
-        leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,
     )
 }

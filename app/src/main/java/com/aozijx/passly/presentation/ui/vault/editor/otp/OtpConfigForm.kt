@@ -12,7 +12,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
+import com.aozijx.passly.presentation.ui.shared.components.NextFocusTextField
 import com.aozijx.passly.presentation.ui.shared.components.common.DropdownSelector
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,17 +33,17 @@ fun OtpConfigForm(
             label = stringResource(R.string.otp_type),
             optionToString = { it.name },
         )
-        PasslyOutlinedTextField(
+        NextFocusTextField(
             value = state.secret,
             onValueChange = onEvent.onSecretChange,
             label = stringResource(R.string.totp_secret),
         )
-        PasslyOutlinedTextField(
+        NextFocusTextField(
             value = state.issuer,
             onValueChange = onEvent.onIssuerChange,
             label = stringResource(R.string.otp_issuer),
         )
-        PasslyOutlinedTextField(
+        NextFocusTextField(
             value = state.accountName,
             onValueChange = onEvent.onAccountNameChange,
             label = stringResource(R.string.otp_account_name),
@@ -61,28 +61,28 @@ fun OtpConfigForm(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (state.type == OtpEditorType.HOTP) {
-                PasslyOutlinedTextField(
+                NextFocusTextField(
                     value = state.counter,
                     onValueChange = onEvent.onCounterChange,
                     label = stringResource(R.string.otp_counter),
                     modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardType = KeyboardType.Number,
                 )
             } else {
-                PasslyOutlinedTextField(
+                NextFocusTextField(
                     value = state.period,
                     onValueChange = onEvent.onPeriodChange,
                     label = stringResource(R.string.totp_period),
                     modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardType = KeyboardType.Number,
                 )
             }
-            PasslyOutlinedTextField(
+            NextFocusTextField(
                 value = state.digits,
                 onValueChange = onEvent.onDigitsChange,
                 label = stringResource(R.string.totp_digits),
                 modifier = Modifier.weight(1f),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardType = KeyboardType.Number,
                 enabled = state.type != OtpEditorType.STEAM,
             )
         }

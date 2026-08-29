@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
+import androidx.compose.material3.OutlinedTextField
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailWifiUiModel
 
 @Composable
@@ -27,9 +27,9 @@ fun WifiSection(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(label = stringResource(R.string.wifi_ssid), value = model.ssid,
             isRevealed = true, onCopy = onSsidCopy, onEdit = null)
-        if (model.isEditingPassword) PasslyOutlinedTextField(
+        if (model.isEditingPassword) OutlinedTextField(
             value = model.editedPassword, onValueChange = onPasswordChanged,
-            label = stringResource(R.string.field_edit_action, stringResource(R.string.wifi_password)),
+            label = { Text(stringResource(R.string.field_edit_action, stringResource(R.string.wifi_password))) },
             modifier = Modifier.fillMaxWidth(), trailingIcon = {
                 IconButton(onClick = { onPasswordSaved(model.editedPassword) }) {
                     Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary) }
