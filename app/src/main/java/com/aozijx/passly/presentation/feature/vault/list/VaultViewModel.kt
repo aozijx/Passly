@@ -24,7 +24,6 @@ import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
@@ -48,17 +47,12 @@ import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.otp.OtpCodeRefreshUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -123,46 +117,21 @@ class VaultViewModel @Inject constructor(
         }
     )
 
-    @OptIn(FlowPreview::class)
-    private val debouncedSearchQuery: Flow<String> = uiState
-        .map { it.searchQuery.trim() }
-        .debounce(250)
-        .distinctUntilChanged()
-
-    private val selectedCategory: Flow<String?> = uiState
-        .map { state -> state.selectedCategory?.trim()?.takeIf(String::isNotEmpty) }
-        .distinctUntilChanged()
-
-    private val selectedSortFlow: Flow<EntrySort> = uiState
-        .map { state -> state.selectedSort }
-        .distinctUntilChanged()
-
     private val hierarchyMode: Flow<EntryHierarchyDisplayMode> = settingsRepository.settings
         .map { settings -> settings.vault.entryHierarchyDisplayMode }
         .distinctUntilChanged()
 
-    @OptIn(ExperimentalCoroutinesApi::class)
+    private val queryState: Flow<VaultQueryState> = buildVaultQueryStates(
+        uiStates = uiState,
+        hierarchyModes = hierarchyMode,
+        reloadVersions = _refreshTrigger,
+    )
+
     private val entryPages: Map<LibraryQuickFilter, Flow<PagingData<VaultListItemUiModel>>> =
         LibraryQuickFilter.entries.associateWith { quickFilter ->
-            combine(
-                debouncedSearchQuery,
-                selectedCategory,
-                selectedSortFlow,
-                hierarchyMode,
-                _refreshTrigger,
-            ) { search, category, sort, hierarchy, _ ->
-                EntryListQuery(
-                    searchText = search,
-                    filter = quickFilter.entryFilter,
-                    category = category,
-                    sort = sort,
-                    hierarchyMode = hierarchy.takeIf {
-                        quickFilter == LibraryQuickFilter.ALL
-                    },
-                )
+            queryState.switchQueryGenerations(quickFilter) { query ->
+                entryPageSource.pages(query, ENTRY_PAGING_CONFIG)
             }
-                .distinctUntilChanged()
-                .flatMapLatest { query -> entryPageSource.pages(query, ENTRY_PAGING_CONFIG) }
                 .map { pagingData -> pagingData.map(EntryListItem::toUiModel) }
                 .cachedIn(viewModelScope)
         }
