@@ -237,7 +237,7 @@ internal object SourceBoundaryPolicy {
         SourceBoundaryRule(
             id = "PASSWORD_EDITOR_HOST_PASSIVE_UI",
             sourcePathContains = "/presentation/feature/vault/editor/password/",
-            forbiddenContentMarkers = setOf("EntryTitleField("),
+            forbiddenContentMarkers = setOf("PasslyOutlinedTextField("),
             message = "password editor feature host renders passive fields",
         ),
         SourceBoundaryRule(

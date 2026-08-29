@@ -1,8 +1,6 @@
 package com.aozijx.passly.presentation.ui.vault.editor.common
 
-import com.aozijx.passly.presentation.ui.vault.shared.ADD_ENTRY_FAB_SHARED_KEY
-import com.aozijx.passly.presentation.ui.vault.shared.AddEntryFabVisualOverflow
-
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
@@ -30,8 +28,11 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
@@ -39,6 +40,8 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.animation.SharedTransitionOverlayClip
 import com.aozijx.passly.core.ui.animation.withSharedTransitionVisualOverflow
+import com.aozijx.passly.presentation.ui.vault.shared.ADD_ENTRY_FAB_SHARED_KEY
+import com.aozijx.passly.presentation.ui.vault.shared.AddEntryFabVisualOverflow
 
 /**
  * 新建条目页面的公共外壳。
@@ -58,12 +61,32 @@ fun AddEntryScaffold(
     animatedVisibilityScope: AnimatedVisibilityScope,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    val cleanupAndDo: (() -> Unit) -> Unit = { action ->
+        focusManager.clearFocus(force = true)
+        keyboardController?.hide()
+        action()
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            focusManager.clearFocus(force = true)
+            keyboardController?.hide()
+        }
+    }
+
+    BackHandler(enabled = !isSaving) {
+        cleanupAndDo(onBack)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(title) },
                 navigationIcon = {
-                    IconButton(onClick = onBack, enabled = !isSaving) {
+                    IconButton(onClick = { cleanupAndDo(onBack) }, enabled = !isSaving) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.back)
@@ -76,7 +99,7 @@ fun AddEntryScaffold(
             SaveEntryFab(
                 canSave = canSave,
                 isSaving = isSaving,
-                onSave = onSave,
+                onSave = { cleanupAndDo(onSave) },
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope
             )

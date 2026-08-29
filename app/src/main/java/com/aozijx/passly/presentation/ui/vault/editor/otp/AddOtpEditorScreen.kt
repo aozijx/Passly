@@ -16,10 +16,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
 import com.aozijx.passly.presentation.ui.vault.editor.common.AddEntryScaffold
 import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorSection
-import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorTextField
-import com.aozijx.passly.presentation.ui.vault.editor.common.EntryTitleField
 
 @Composable
 fun AddOtpEditorScreen(
@@ -40,7 +39,7 @@ fun AddOtpEditorScreen(
         animatedVisibilityScope = animatedVisibilityScope,
     ) {
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
-            EntryTitleField(
+            PasslyOutlinedTextField(
                 value = state.title,
                 onValueChange = onEvent.onTitleChange,
                 label = stringResource(R.string.field_title),
@@ -48,7 +47,7 @@ fun AddOtpEditorScreen(
         }
 
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_otp_setup)) {
-            EntryEditorTextField(
+            PasslyOutlinedTextField(
                 value = state.uriText,
                 onValueChange = onEvent.onUriChange,
                 label = stringResource(R.string.twofa_uri_hint),

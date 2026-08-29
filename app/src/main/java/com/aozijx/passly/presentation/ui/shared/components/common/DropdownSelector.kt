@@ -16,8 +16,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.aozijx.passly.presentation.ui.shared.components.passlyTextFieldColors
-import com.aozijx.passly.presentation.ui.shared.components.passlyTextFieldShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,8 +44,6 @@ fun <T> DropdownSelector(
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },
-            shape = passlyTextFieldShape(),
-            colors = passlyTextFieldColors(),
             modifier = Modifier
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                 .fillMaxWidth()
@@ -55,7 +51,6 @@ fun <T> DropdownSelector(
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            shape = passlyTextFieldShape(),
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
             options.forEach { option ->

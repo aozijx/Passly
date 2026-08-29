@@ -12,6 +12,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
@@ -28,10 +30,26 @@ fun AppPasswordSetDialog(
     isBusy: Boolean = false,
     errorMessage: String? = null
 ) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val dismissInput = {
+        focusManager.clearFocus(force = true)
+        keyboardController?.hide()
+    }
+    val submit = {
+        if (!isBusy && confirmEnabled) {
+            dismissInput()
+            onConfirm()
+        }
+    }
+    val dismiss = {
+        if (!isBusy) {
+            dismissInput()
+            onDismiss()
+        }
+    }
     AlertDialog(
-        onDismissRequest = {
-            if (!isBusy) onDismiss()
-        },
+        onDismissRequest = dismiss,
         icon = {
             Icon(
                 imageVector = Icons.Outlined.Lock,
@@ -55,7 +73,8 @@ fun AppPasswordSetDialog(
                     newPassword = newPassword,
                     confirmPassword = confirmPassword,
                     onNewPasswordChange = onNewPasswordChange,
-                    onConfirmPasswordChange = onConfirmPasswordChange
+                    onConfirmPasswordChange = onConfirmPasswordChange,
+                    onDone = submit,
                 )
                 if (errorMessage != null) {
                     Spacer(modifier = Modifier.size(8.dp))
@@ -69,14 +88,14 @@ fun AppPasswordSetDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = onConfirm,
+                onClick = submit,
                 enabled = !isBusy && confirmEnabled
             ) {
                 Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !isBusy) {
+            TextButton(onClick = dismiss, enabled = !isBusy) {
                 Text(stringResource(R.string.cancel))
             }
         }

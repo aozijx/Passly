@@ -12,8 +12,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
 import com.aozijx.passly.presentation.ui.shared.components.common.DropdownSelector
-import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,17 +33,17 @@ fun OtpConfigForm(
             label = stringResource(R.string.otp_type),
             optionToString = { it.name },
         )
-        EntryEditorTextField(
+        PasslyOutlinedTextField(
             value = state.secret,
             onValueChange = onEvent.onSecretChange,
             label = stringResource(R.string.totp_secret),
         )
-        EntryEditorTextField(
+        PasslyOutlinedTextField(
             value = state.issuer,
             onValueChange = onEvent.onIssuerChange,
             label = stringResource(R.string.otp_issuer),
         )
-        EntryEditorTextField(
+        PasslyOutlinedTextField(
             value = state.accountName,
             onValueChange = onEvent.onAccountNameChange,
             label = stringResource(R.string.otp_account_name),
@@ -61,7 +61,7 @@ fun OtpConfigForm(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (state.type == OtpEditorType.HOTP) {
-                EntryEditorTextField(
+                PasslyOutlinedTextField(
                     value = state.counter,
                     onValueChange = onEvent.onCounterChange,
                     label = stringResource(R.string.otp_counter),
@@ -69,7 +69,7 @@ fun OtpConfigForm(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
             } else {
-                EntryEditorTextField(
+                PasslyOutlinedTextField(
                     value = state.period,
                     onValueChange = onEvent.onPeriodChange,
                     label = stringResource(R.string.totp_period),
@@ -77,7 +77,7 @@ fun OtpConfigForm(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
             }
-            EntryEditorTextField(
+            PasslyOutlinedTextField(
                 value = state.digits,
                 onValueChange = onEvent.onDigitsChange,
                 label = stringResource(R.string.totp_digits),

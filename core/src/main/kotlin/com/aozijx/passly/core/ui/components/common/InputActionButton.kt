@@ -65,8 +65,8 @@ fun InputActionButton(
     }
     val submit = {
         if (enabled && !state.progress && state.value.isNotEmpty()) {
-            onAction()
             dismissInput()
+            onAction()
         }
     }
 

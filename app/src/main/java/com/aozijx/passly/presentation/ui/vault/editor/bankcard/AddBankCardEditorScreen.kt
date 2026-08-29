@@ -21,19 +21,23 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.presentation.ui.shared.components.PasslyOutlinedTextField
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import com.aozijx.passly.presentation.ui.vault.editor.common.AddEntryScaffold
 import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorSection
-import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorTextField
-import com.aozijx.passly.presentation.ui.vault.editor.common.EntryNotesField
-import com.aozijx.passly.presentation.ui.vault.editor.common.EntryPasswordField
-import com.aozijx.passly.presentation.ui.vault.editor.common.EntryTagsField
-import com.aozijx.passly.presentation.ui.vault.editor.common.EntryTitleField
-import com.aozijx.passly.presentation.ui.vault.editor.common.EntryUsernameField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +48,9 @@ fun AddBankCardEditorScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     AddEntryScaffold(
         title = stringResource(R.string.vault_add_bank_card_title),
         canSave = state.canSave,
@@ -55,7 +62,7 @@ fun AddBankCardEditorScreen(
         animatedVisibilityScope = animatedVisibilityScope,
     ) {
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
-            EntryTitleField(
+            PasslyOutlinedTextField(
                 value = state.title,
                 onValueChange = onEvent.onTitleChange,
                 label = stringResource(R.string.field_title),
@@ -65,7 +72,7 @@ fun AddBankCardEditorScreen(
                 onSelected = onEvent.onCardTypeChange,
                 label = stringResource(R.string.card_type),
             )
-            EntryUsernameField(
+            PasslyOutlinedTextField(
                 value = state.cardholder,
                 onValueChange = onEvent.onCardholderChange,
                 label = stringResource(R.string.cardholder),
@@ -73,34 +80,58 @@ fun AddBankCardEditorScreen(
         }
 
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_credentials)) {
-            EntryPasswordField(
-                password = state.cardNumber,
-                onPasswordChange = onEvent.onCardNumberChange,
-                isVisible = state.isCardNumberVisible,
-                onVisibilityChange = onEvent.onCardNumberVisibilityChange,
+            PasslyOutlinedTextField(
+                value = state.cardNumber,
+                onValueChange = onEvent.onCardNumberChange,
                 label = stringResource(R.string.card_number),
+                visualTransformation = if (state.isCardNumberVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
                 isError = state.cardNumberError != null,
-                supportingText = state.cardNumberError,
+                supportingText = state.cardNumberError?.let { { Text(it) } },
+                trailingIcon = {
+                    IconButton(onClick = { onEvent.onCardNumberVisibilityChange(!state.isCardNumberVisible) }) {
+                        Icon(
+                            imageVector = if (state.isCardNumberVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = null
+                        )
+                    }
+                }
             )
-            EntryPasswordField(
-                password = state.paymentPin,
-                onPasswordChange = onEvent.onPaymentPinChange,
-                isVisible = state.isPinVisible,
-                onVisibilityChange = onEvent.onPinVisibilityChange,
+            PasslyOutlinedTextField(
+                value = state.paymentPin,
+                onValueChange = onEvent.onPaymentPinChange,
                 label = stringResource(R.string.payment_pin),
+                visualTransformation = if (state.isPinVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
+                trailingIcon = {
+                    IconButton(onClick = { onEvent.onPinVisibilityChange(!state.isPinVisible) }) {
+                        Icon(
+                            imageVector = if (state.isPinVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = null
+                        )
+                    }
+                }
             )
-            EntryPasswordField(
-                password = state.cardCvv,
-                onPasswordChange = onEvent.onCvvChange,
-                isVisible = state.isCvvVisible,
-                onVisibilityChange = onEvent.onCvvVisibilityChange,
+            PasslyOutlinedTextField(
+                value = state.cardCvv,
+                onValueChange = onEvent.onCvvChange,
                 label = stringResource(R.string.card_cvv),
+                visualTransformation = if (state.isCvvVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
+                trailingIcon = {
+                    IconButton(onClick = { onEvent.onCvvVisibilityChange(!state.isCvvVisible) }) {
+                        Icon(
+                            imageVector = if (state.isCvvVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = null
+                        )
+                    }
+                }
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                EntryEditorTextField(
+                PasslyOutlinedTextField(
                     value = state.cardExpiryMonth,
                     onValueChange = onEvent.onExpiryMonthChange,
                     label = stringResource(R.string.card_expiry_month),
@@ -110,7 +141,7 @@ fun AddBankCardEditorScreen(
                     ),
                     modifier = Modifier.weight(1f),
                 )
-                EntryEditorTextField(
+                PasslyOutlinedTextField(
                     value = state.cardExpiryYear,
                     onValueChange = onEvent.onExpiryYearChange,
                     label = stringResource(R.string.card_expiry_year),
@@ -124,22 +155,31 @@ fun AddBankCardEditorScreen(
         }
 
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_details)) {
-            EntryTagsField(
+            PasslyOutlinedTextField(
                 value = state.tags,
                 onValueChange = onEvent.onTagsChange,
                 label = stringResource(R.string.field_category),
             )
-            EntryUsernameField(
+            PasslyOutlinedTextField(
                 value = state.billingAddress,
                 onValueChange = onEvent.onBillingAddressChange,
                 label = stringResource(R.string.billing_address),
             )
-            EntryNotesField(
+            PasslyOutlinedTextField(
                 value = state.notes,
                 onValueChange = onEvent.onNotesChange,
                 label = stringResource(R.string.field_notes),
+                singleLine = false,
+                minLines = 4,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(
-                    onDone = { if (state.isFormValid) onEvent.onSave() },
+                    onDone = {
+                        if (state.isFormValid) {
+                            focusManager.clearFocus(force = true)
+                            keyboardController?.hide()
+                            onEvent.onSave()
+                        }
+                    },
                 ),
             )
         }
@@ -158,7 +198,7 @@ private fun CardTypeDropdown(
         expanded = expanded,
         onExpandedChange = { expanded = it },
     ) {
-        EntryEditorTextField(
+        PasslyOutlinedTextField(
             value = selected?.label().orEmpty(),
             onValueChange = {},
             label = label,

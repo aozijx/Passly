@@ -214,8 +214,8 @@ private fun DomainEditor(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         PasslyOutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
+            value = value.text,
+            onValueChange = { onValueChange(value.copy(text = it)) },
             modifier = Modifier.fillMaxWidth(),
             label = stringResource(R.string.vault_detail_domain_label),
             placeholder = { Text(stringResource(R.string.vault_detail_domain_placeholder)) },

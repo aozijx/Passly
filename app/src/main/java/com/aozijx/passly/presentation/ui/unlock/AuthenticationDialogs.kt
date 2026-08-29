@@ -16,6 +16,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -87,15 +89,27 @@ private fun SecretDialog(
     onCancel: () -> Unit,
 ) {
     var secret by remember(method) { mutableStateOf("") }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val dismissInput = {
+        focusManager.clearFocus(force = true)
+        keyboardController?.hide()
+    }
     val submit = {
         if (secret.isNotEmpty()) {
             val chars = secret.toCharArray()
             secret = ""
+            dismissInput()
             onSubmit(chars)
         }
     }
+    val cancel = {
+        secret = ""
+        dismissInput()
+        onCancel()
+    }
     AlertDialog(
-        onDismissRequest = onCancel,
+        onDismissRequest = cancel,
         title = { Text(method.label()) },
         text = {
             OutlinedTextField(
@@ -116,7 +130,7 @@ private fun SecretDialog(
                 Text(stringResource(R.string.continue_action))
             }
         },
-        dismissButton = { TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel)) } },
+        dismissButton = { TextButton(onClick = cancel) { Text(stringResource(R.string.cancel)) } },
     )
 }
 
