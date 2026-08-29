@@ -16,7 +16,6 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardDensityUiMode
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardPresentationUiModel
 import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHandler
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpKindUiModel
@@ -26,9 +25,7 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortOptionUiModel
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
 
-internal fun EntryListItem.toUiModel(
-    events: VaultListItemEventHandler = VaultListItemEventHandler.None,
-) = VaultListItemUiModel(
+internal fun EntryListItem.toUiModel() = VaultListItemUiModel(
     id = id.value,
     entryType = EntryTypeUiModel.valueOf(entryType.name),
     title = title,
@@ -43,7 +40,6 @@ internal fun EntryListItem.toUiModel(
     hasOtp = hasOtp,
     otpKind = otpType?.let { if (it == OtpType.STEAM) VaultOtpKindUiModel.STEAM else VaultOtpKindUiModel.STANDARD },
     otpPreview = otpPreview,
-    events = events,
 )
 
 internal fun OtpCodeState.toUiModel() = VaultOtpUiState(code, progress, isLoading, error != null)

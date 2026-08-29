@@ -18,7 +18,7 @@ sealed interface VaultUiAction {
     data class AddTypeSelected(val type: AddType?) : VaultUiAction
     data class ItemToDeleteSelected(val item: EntryListItem?) : VaultUiAction
     data object ConfirmDelete : VaultUiAction
-    data class QuickDelete(val item: EntryListItem) : VaultUiAction
+    data class QuickDelete(val entryId: String) : VaultUiAction
     data class AddItem(val entry: Entry) : VaultUiAction
     data class UpdateEntry(val entry: Entry) : VaultUiAction
     data class AddScannedOtp(val config: OtpConfig) : VaultUiAction

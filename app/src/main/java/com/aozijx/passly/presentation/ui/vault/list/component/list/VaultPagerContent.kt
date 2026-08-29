@@ -33,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,6 +55,7 @@ import com.aozijx.passly.core.ui.components.widgets.SwipeActionSpec
 import com.aozijx.passly.presentation.ui.vault.list.component.cardstyle.CardStyleRegistry
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardPresentationUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHandler
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
@@ -67,6 +69,7 @@ fun VaultPagerContent(
     pagerState: PagerState,
     uiState: VaultListScreenUiModel,
     entryPages: Map<VaultQuickFilterUiModel, Flow<PagingData<VaultListItemUiModel>>>,
+    itemEventHandler: VaultListItemEventHandler,
     entryCardPresentations: List<VaultCardPresentationUiModel>,
     otpState: (String) -> Flow<VaultOtpUiState?>,
     swipeLeftAction: SwipeActionUiModel,
@@ -128,6 +131,7 @@ fun VaultPagerContent(
                     val item = pagingItems[index] ?: return@items
                     EntryListItemRow(
                         item = item,
+                        eventHandler = itemEventHandler,
                         entryCardPresentations = entryCardPresentations,
                         swipeLeftAction = swipeLeftAction,
                         swipeRightAction = swipeRightAction,
@@ -197,6 +201,7 @@ private fun VaultPagingError(
 @Composable
 private fun EntryListItemRow(
     item: VaultListItemUiModel,
+    eventHandler: VaultListItemEventHandler,
     entryCardPresentations: List<VaultCardPresentationUiModel>,
     swipeLeftAction: SwipeActionUiModel,
     swipeRightAction: SwipeActionUiModel,
@@ -223,20 +228,21 @@ private fun EntryListItemRow(
     val visibleState = remember(item.id) {
         MutableTransitionState(!animateInitialAppearance).apply { targetState = true }
     }
+    val currentItem by rememberUpdatedState(item)
     val leftAction =
-        remember(item.id, swipeLeftAction, item.events, colorScheme) {
+        remember(item.id, swipeLeftAction, eventHandler, colorScheme) {
             createAppSwipeActionSpec(
                 actionType = swipeLeftAction,
-                onAction = { item.events.onSwipe(swipeLeftAction) },
+                onAction = { eventHandler.onSwipe(currentItem, swipeLeftAction) },
                 backgroundColor = if (swipeLeftAction == SwipeActionUiModel.DELETE) colorScheme.error else colorScheme.primary,
                 iconTint = Color.White
             )
         }
     val rightAction =
-        remember(item.id, swipeRightAction, item.events, colorScheme) {
+        remember(item.id, swipeRightAction, eventHandler, colorScheme) {
             createAppSwipeActionSpec(
                 actionType = swipeRightAction,
-                onAction = { item.events.onSwipe(swipeRightAction) },
+                onAction = { eventHandler.onSwipe(currentItem, swipeRightAction) },
                 backgroundColor = if (swipeRightAction == SwipeActionUiModel.DELETE) colorScheme.error else colorScheme.secondary,
                 iconTint = Color.White
             )
@@ -261,7 +267,7 @@ private fun EntryListItemRow(
                 entry = item,
                 totpState = totpState,
                 showTotpCode = showTotpCode,
-                onClick = item.events::onClick
+                onClick = { eventHandler.onClick(item) }
             )
         }
     }

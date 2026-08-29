@@ -1,24 +1,28 @@
 package com.aozijx.passly.presentation.feature.vault.list.action
 
-import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.EntryIdentity
-import com.aozijx.passly.domain.entry.model.EntryProfile
-import com.aozijx.passly.domain.entry.model.EntryTimestamps
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class VaultSwipeActionHandlerTest {
 
-    private val item = EntryListItem(
-        identity = EntryIdentity(
-            id = EntryId("entry"),
-            type = EntryType.LOGIN,
-            timestamps = EntryTimestamps(0L),
-        ),
-        profile = EntryProfile(title = "Example", username = "user"),
+    private val item = VaultListItemUiModel(
+        id = "entry",
+        entryType = EntryTypeUiModel.LOGIN,
+        title = "Example",
+        username = "user",
+        category = null,
+        favorite = false,
+        associatedDomain = null,
+        associatedAppPackage = null,
+        iconName = null,
+        iconCustomPath = null,
+        hasPassword = true,
+        hasOtp = false,
+        otpKind = null,
+        otpPreview = null,
     )
 
     @Test

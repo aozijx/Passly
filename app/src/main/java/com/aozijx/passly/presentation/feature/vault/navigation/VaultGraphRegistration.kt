@@ -188,7 +188,7 @@ private fun VaultDestinationContent(
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
         onSettingsClick = { context.navigateToRoute(AppRoute.Settings.route) },
-        onShowDetail = { context.navigateToRoute(AppRoute.Detail.createRoute(it.id.value)) },
+        onShowDetail = { entryId -> context.navigateToRoute(AppRoute.Detail.createRoute(entryId)) },
         isDatabaseInitializing = isDatabaseInitializing,
     )
 }

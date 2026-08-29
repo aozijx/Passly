@@ -26,6 +26,7 @@ import com.aozijx.passly.presentation.ui.vault.list.component.fab.VaultFab
 import com.aozijx.passly.presentation.ui.vault.list.component.list.VaultPagerContent
 import com.aozijx.passly.presentation.ui.vault.list.component.topbar.VaultTopBar
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHandler
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenEventHandler
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
@@ -39,6 +40,7 @@ fun VaultScreen(
     state: VaultListScreenUiModel,
     scrollBehavior: TopAppBarScrollBehavior,
     entryPages: Map<VaultQuickFilterUiModel, Flow<PagingData<VaultListItemUiModel>>>,
+    itemEventHandler: VaultListItemEventHandler,
     otpState: (String) -> Flow<VaultOtpUiState?>,
     fabScrollConnection: NestedScrollConnection,
     sharedTransitionScope: SharedTransitionScope,
@@ -111,6 +113,7 @@ fun VaultScreen(
             pagerState = pagerState,
             uiState = state,
             entryPages = entryPages,
+            itemEventHandler = itemEventHandler,
             entryCardPresentations = state.display.cardPresentations,
             otpState = otpState,
             swipeLeftAction = state.display.swipeLeftAction,

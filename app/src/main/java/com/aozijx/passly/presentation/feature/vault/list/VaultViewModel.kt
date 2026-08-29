@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.paging.map
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.domain.entry.otp.OtpGenerator
@@ -41,6 +42,7 @@ import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.presentation.feature.vault.list.VaultEffect
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiState
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.entry.EntryManager
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.otp.OtpCodeRefreshUseCase
@@ -140,7 +142,7 @@ class VaultViewModel @Inject constructor(
         .distinctUntilChanged()
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val entryPages: Map<LibraryQuickFilter, Flow<PagingData<EntryListItem>>> =
+    private val entryPages: Map<LibraryQuickFilter, Flow<PagingData<VaultListItemUiModel>>> =
         LibraryQuickFilter.entries.associateWith { quickFilter ->
             combine(
                 debouncedSearchQuery,
@@ -161,10 +163,11 @@ class VaultViewModel @Inject constructor(
             }
                 .distinctUntilChanged()
                 .flatMapLatest { query -> entryPageSource.pages(query, ENTRY_PAGING_CONFIG) }
+                .map { pagingData -> pagingData.map(EntryListItem::toUiModel) }
                 .cachedIn(viewModelScope)
         }
 
-    fun entries(quickFilter: LibraryQuickFilter): Flow<PagingData<EntryListItem>> =
+    fun entries(quickFilter: LibraryQuickFilter): Flow<PagingData<VaultListItemUiModel>> =
         requireNotNull(entryPages[quickFilter])
 
     private fun addScannedOtp(config: OtpConfig) {
@@ -223,7 +226,7 @@ class VaultViewModel @Inject constructor(
             is VaultUiAction.AddTypeSelected -> setAddType(action.type)
             is VaultUiAction.ItemToDeleteSelected -> setItemToDelete(action.item)
             VaultUiAction.ConfirmDelete -> confirmDelete()
-            is VaultUiAction.QuickDelete -> quickDelete(action.item)
+            is VaultUiAction.QuickDelete -> quickDelete(action.entryId)
             is VaultUiAction.AddItem -> addItem(action.entry)
             is VaultUiAction.UpdateEntry -> updateEntry(action.entry)
             is VaultUiAction.AddScannedOtp -> addScannedOtp(action.config)
@@ -270,9 +273,9 @@ class VaultViewModel @Inject constructor(
         entryManager.updateEntry(entry)
     }
 
-    private fun quickDelete(item: EntryListItem) {
+    private fun quickDelete(entryId: String) {
         if (!ensureFullSecureSessionAccess("当前会话不能删除条目")) return
-        entryManager.deleteEntryById(item.id.value)
+        entryManager.deleteEntryById(entryId)
     }
 
     private fun confirmDelete() {

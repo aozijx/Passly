@@ -14,15 +14,15 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.presentation.feature.vault.list.VaultViewModel
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 
 class VaultActionProvider(
-    val onSwipeTriggered: (SwipeActionType, EntryListItem) -> Unit,
+    val onSwipeTriggered: (SwipeActionType, VaultListItemUiModel) -> Unit,
     val onUpdateInteraction: () -> Unit,
     val fabScrollConnection: NestedScrollConnection
 )
@@ -35,7 +35,7 @@ fun rememberVaultActionProvider(
     requestReauthentication: (onSuccess: () -> Unit) -> Unit,
     requestSensitiveCopy: (onSuccess: () -> Unit) -> Unit,
     onUserInteraction: () -> Unit,
-    onShowDetail: (EntryListItem) -> Unit,
+    onShowDetail: (String) -> Unit,
     isFabVisible: (Boolean) -> Unit
 ): VaultActionProvider {
     val context = LocalContext.current
@@ -47,15 +47,17 @@ fun rememberVaultActionProvider(
     val latestReauthentication by rememberUpdatedState(requestReauthentication)
     val latestSensitiveCopy by rememberUpdatedState(requestSensitiveCopy)
     val latestUserInteraction by rememberUpdatedState(onUserInteraction)
+    val latestShowDetail by rememberUpdatedState(onShowDetail)
+    val latestFabVisibility by rememberUpdatedState(isFabVisible)
 
     val performCopy = remember(
         context, vaultViewModel, totpLabel, fieldCopiedFormat
     ) {
-        { fieldKey: FieldKey, item: EntryListItem ->
+        { fieldKey: FieldKey, item: VaultListItemUiModel ->
             val label = CopyFieldLabelProvider.getCopyLabel(fieldKey)
 
             if (fieldKey == FieldKey.PASSWORD && item.hasOtp) {
-                totpStates.value[item.id.value]?.let { state ->
+                totpStates.value[item.id]?.let { state ->
                     val code = state.code
                     if (!code.isNullOrEmpty() && !code.contains("-")) {
                         vaultViewModel.copySensitive(code)
@@ -67,7 +69,7 @@ fun rememberVaultActionProvider(
             } else {
                 latestAuthentication {
                     scope.launch {
-                        val fullEntry = vaultViewModel.loadEntryById(item.id.value)
+                        val fullEntry = vaultViewModel.loadEntryById(item.id)
                             ?: return@launch
                         val rawValue =
                             vaultViewModel.entryFieldReader.getFieldValue(fullEntry, fieldKey)
@@ -85,9 +87,9 @@ fun rememberVaultActionProvider(
     }
 
     val onSwipeTriggered = remember(
-        vaultViewModel, onShowDetail, performCopy
+        vaultViewModel, performCopy
     ) {
-        { action: SwipeActionType, item: EntryListItem ->
+        { action: SwipeActionType, item: VaultListItemUiModel ->
             handleSwipeAction(
                 actionType = action,
                 item = item,
@@ -97,26 +99,28 @@ fun rememberVaultActionProvider(
                 onCopyAuthRequired = { ok -> latestSensitiveCopy(ok) },
                 onQuickDelete = { vaultViewModel.onAction(VaultUiAction.QuickDelete(it)) },
                 onCopy = { fieldKey -> performCopy(fieldKey, item) },
-                onShowDetail = onShowDetail
+                onShowDetail = { latestShowDetail(it) }
             )
         }
     }
 
     val onUpdateInteraction = remember { { latestUserInteraction() } }
 
-    val fabScrollConnection = remember(isFabVisible) {
+    val fabScrollConnection = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (available.y < -1f) isFabVisible(false)
-                else if (available.y > 1f) isFabVisible(true)
+                if (available.y < -1f) latestFabVisibility(false)
+                else if (available.y > 1f) latestFabVisibility(true)
                 return Offset.Zero
             }
         }
     }
 
-    return VaultActionProvider(
-        onSwipeTriggered = onSwipeTriggered,
-        onUpdateInteraction = onUpdateInteraction,
-        fabScrollConnection = fabScrollConnection
-    )
+    return remember(onSwipeTriggered, onUpdateInteraction, fabScrollConnection) {
+        VaultActionProvider(
+            onSwipeTriggered = onSwipeTriggered,
+            onUpdateInteraction = onUpdateInteraction,
+            fabScrollConnection = fabScrollConnection,
+        )
+    }
 }

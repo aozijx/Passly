@@ -31,8 +31,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.paging.map
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.presentation.feature.vault.list.VaultViewModel
 import com.aozijx.passly.presentation.feature.vault.list.action.rememberVaultActionProvider
 import com.aozijx.passly.presentation.feature.vault.list.VaultEffect
@@ -47,7 +45,6 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiMode
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenEventHandler
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHandler
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
@@ -66,7 +63,7 @@ fun VaultHost(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onSettingsClick: () -> Unit = {},
-    onShowDetail: (EntryListItem) -> Unit = {},
+    onShowDetail: (String) -> Unit = {},
     isDatabaseInitializing: Boolean = false
 ) {
     val context = LocalContext.current
@@ -102,23 +99,17 @@ fun VaultHost(
         onShowDetail = onShowDetail,
         isFabVisible = { isFabVisible = it }
     )
-    val entryPages = remember(vaultViewModel, actionProvider, onShowDetail) {
+    val entryPages = remember(vaultViewModel) {
         com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel.entries
-            .associateWith { filter ->
-                vaultViewModel.entries(filter.toFeatureModel()).map { pagingData ->
-                    pagingData.map { item ->
-                        item.toUiModel(
-                            events = object : VaultListItemEventHandler {
-                                override fun onClick() = onShowDetail(item)
-                                override fun onSwipe(action: com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel) {
-                                    actionProvider.onSwipeTriggered(action.toFeatureModel(), item)
-                                }
-                            },
-                        )
-                    }
-                }
-            }
+            .associateWith { filter -> vaultViewModel.entries(filter.toFeatureModel()) }
     }
+    val listBindings = rememberVaultListBindings(
+        entryPages = entryPages,
+        onItemClick = { item -> onShowDetail(item.id) },
+        onItemSwipe = { item, action ->
+            actionProvider.onSwipeTriggered(action.toFeatureModel(), item)
+        },
+    )
 
     val activity = context as? FragmentActivity
     LaunchedEffect(scrollBehavior, vaultDisplayConfig.layout.hideSystemBars, activity) {
@@ -167,7 +158,8 @@ fun VaultHost(
     com.aozijx.passly.presentation.ui.vault.list.VaultScreen(
         state = renderState,
         scrollBehavior = scrollBehavior,
-        entryPages = entryPages,
+        entryPages = listBindings.entryPages,
+        itemEventHandler = listBindings.eventHandler,
         otpState = { id -> vaultViewModel.totpStatesFlow.map { it[id]?.toUiModel() } },
         fabScrollConnection = actionProvider.fabScrollConnection,
         sharedTransitionScope = sharedTransitionScope,

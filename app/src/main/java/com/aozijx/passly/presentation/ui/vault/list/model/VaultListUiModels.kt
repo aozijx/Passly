@@ -18,16 +18,15 @@ data class VaultListItemUiModel(
     val hasOtp: Boolean,
     val otpKind: VaultOtpKindUiModel?,
     val otpPreview: String?,
-    val events: VaultListItemEventHandler = VaultListItemEventHandler.None,
 )
 
 interface VaultListItemEventHandler {
-    fun onClick()
-    fun onSwipe(action: SwipeActionUiModel)
+    fun onClick(item: VaultListItemUiModel)
+    fun onSwipe(item: VaultListItemUiModel, action: SwipeActionUiModel)
 
     data object None : VaultListItemEventHandler {
-        override fun onClick() = Unit
-        override fun onSwipe(action: SwipeActionUiModel) = Unit
+        override fun onClick(item: VaultListItemUiModel) = Unit
+        override fun onSwipe(item: VaultListItemUiModel, action: SwipeActionUiModel) = Unit
     }
 }
 
