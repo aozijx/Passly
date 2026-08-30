@@ -90,6 +90,7 @@ fun VaultPagerContent(
     ) { pageIndex ->
         val currentQuickFilter =
             navigation.visibleQuickFilters.getOrNull(pageIndex) ?: VaultQuickFilterUiModel.ALL
+        val isCurrentPage = pageIndex == pagerState.currentPage
         val pagingItems = requireNotNull(entryPages[currentQuickFilter]).collectAsLazyPagingItems()
         val refreshState = pagingItems.loadState.refresh
 
@@ -135,6 +136,7 @@ fun VaultPagerContent(
                         isSwipeEnabled = content.isSwipeEnabled,
                         otpStateProvider = otpStateProvider,
                         showTotpCode = content.showTotpCode,
+                        isCurrentPage = isCurrentPage,
                         animateInitialAppearance = playInitialEntryAnimation,
                         modifier = Modifier
                             .animateItem(
@@ -205,10 +207,19 @@ private fun EntryListItemRow(
     isSwipeEnabled: Boolean,
     otpStateProvider: VaultOtpStateProvider,
     showTotpCode: Boolean,
+    isCurrentPage: Boolean,
     animateInitialAppearance: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val totpState = if (item.hasOtp) observeVaultOtpState(item.id, otpStateProvider) else null
+    val totpState = if (item.hasOtp) {
+        observeVaultOtpState(
+            entryId = item.id,
+            provider = otpStateProvider,
+            enabled = showTotpCode && isCurrentPage,
+        )
+    } else {
+        null
+    }
     val cardStyle = remember(item.entryType, item.hasPassword, item.hasOtp, entryCardPresentations) {
         CardStyleRegistry.resolveStyle(item, entryCardPresentations)
     }
@@ -266,7 +277,9 @@ private fun EntryListItemRow(
 internal fun observeVaultOtpState(
     entryId: String,
     provider: VaultOtpStateProvider,
+    enabled: Boolean,
 ): VaultOtpUiState? {
+    if (!enabled) return null
     DisposableEffect(entryId, provider) {
         provider.subscribe(entryId)
         onDispose { provider.unsubscribe(entryId) }

@@ -32,7 +32,7 @@ class VaultOtpSubscriptionEffectTest {
         }
 
         composeRule.setContent {
-            if (showEntry.value) observeVaultOtpState("otp-1", provider)
+            if (showEntry.value) observeVaultOtpState("otp-1", provider, enabled = true)
         }
         composeRule.runOnIdle {
             assertEquals(listOf("subscribe:otp-1"), events)
@@ -40,6 +40,38 @@ class VaultOtpSubscriptionEffectTest {
         }
         composeRule.runOnIdle {
             assertEquals(listOf("subscribe:otp-1", "unsubscribe:otp-1"), events)
+        }
+    }
+
+    @Test
+    fun otpSubscriptionFollowsCodeVisibilityAndActivePage() {
+        val enabled = mutableStateOf(false)
+        val events = mutableListOf<String>()
+        val provider = object : VaultOtpStateProvider {
+            override fun state(entryId: String): Flow<VaultOtpUiState?> = flowOf(null)
+
+            override fun subscribe(entryId: String) {
+                events += "subscribe:$entryId"
+            }
+
+            override fun unsubscribe(entryId: String) {
+                events += "unsubscribe:$entryId"
+            }
+        }
+
+        composeRule.setContent {
+            observeVaultOtpState("otp-2", provider, enabled = enabled.value)
+        }
+        composeRule.runOnIdle {
+            assertEquals(emptyList<String>(), events)
+            enabled.value = true
+        }
+        composeRule.runOnIdle {
+            assertEquals(listOf("subscribe:otp-2"), events)
+            enabled.value = false
+        }
+        composeRule.runOnIdle {
+            assertEquals(listOf("subscribe:otp-2", "unsubscribe:otp-2"), events)
         }
     }
 }
