@@ -229,7 +229,7 @@ class DefaultAuthenticationManager @Inject constructor(
                             _methods.value.available - AuthenticationMethod.RECOVERY_CODE
                         )
                     }
-                    if (request.purpose.unlocksSensitiveDataKey()) {
+                    if (AuthenticationMethodPolicy.unlocksSensitiveDataKey(request.purpose)) {
                         sensitiveDataKeyManager.unlockAfterFreshAuthentication()
                     }
                     if (!opensSession) session.onUserInteraction()
@@ -305,7 +305,4 @@ class DefaultAuthenticationManager @Inject constructor(
         return result
     }
 
-    private fun AuthenticationPurpose.unlocksSensitiveDataKey(): Boolean =
-        this == AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET ||
-            this == AuthenticationPurpose.BACKUP_EXPORT
 }

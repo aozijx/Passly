@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.vault.otp
 
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.access.model.FreshAuthenticationRequiredException
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.otp.OtpResult
@@ -49,6 +50,7 @@ internal class OtpCodeRefreshUseCase(
     private val schedules = mutableMapOf<String, OtpSchedule>()
     private val activeEntryIds = mutableSetOf<String>()
     private val subscriptionCounts = mutableMapOf<String, Int>()
+    private val freshAuthPausedEntryIds = mutableSetOf<String>()
     private val entryEpochs = mutableMapOf<String, Long>()
     private var sessionEpoch = 0L
 
@@ -81,6 +83,9 @@ internal class OtpCodeRefreshUseCase(
             if (movingFactor != schedule.movingFactor) {
                 val config = try {
                     loadOtpConfig(entryId)
+                } catch (_: FreshAuthenticationRequiredException) {
+                    pauseUntilFreshAuthentication(entryId)
+                    continue
                 } catch (_: SessionLockedException) {
                     handleSessionLocked()
                     return
@@ -141,6 +146,9 @@ internal class OtpCodeRefreshUseCase(
         val token = activationToken(entryId)
         val config = try {
             loadOtpConfig(entryId)
+        } catch (_: FreshAuthenticationRequiredException) {
+            pauseUntilFreshAuthentication(entryId)
+            return OtpResult.Failure(OtpGenerationError.InvalidSecret)
         } catch (_: SessionLockedException) {
             handleSessionLocked()
             return OtpResult.Failure(OtpGenerationError.InvalidSecret)
@@ -172,6 +180,7 @@ internal class OtpCodeRefreshUseCase(
      */
     suspend fun activate(entryId: String) {
         activeEntryIds += entryId
+        freshAuthPausedEntryIds.remove(entryId)
         if (!sessionUnlocked) return
         activateTrackedEntry(entryId)
     }
@@ -180,6 +189,9 @@ internal class OtpCodeRefreshUseCase(
         val token = activationToken(entryId)
         val config = try {
             loadOtpConfig(entryId)
+        } catch (_: FreshAuthenticationRequiredException) {
+            pauseUntilFreshAuthentication(entryId)
+            return
         } catch (_: SessionLockedException) {
             handleSessionLocked()
             return
@@ -224,7 +236,9 @@ internal class OtpCodeRefreshUseCase(
     }
 
     fun autoUnlock(entryId: String) {
-        if (!activeEntryIds.add(entryId) || !sessionUnlocked) return
+        val newlyActive = activeEntryIds.add(entryId)
+        val wasPaused = freshAuthPausedEntryIds.remove(entryId)
+        if ((!newlyActive && !wasPaused) || !sessionUnlocked) return
         scope.launch {
             activateTrackedEntry(entryId)
         }
@@ -251,6 +265,7 @@ internal class OtpCodeRefreshUseCase(
     fun subscribe(entryId: String) {
         val previousCount = subscriptionCounts[entryId] ?: 0
         subscriptionCounts[entryId] = previousCount + 1
+        if (previousCount == 0) freshAuthPausedEntryIds.remove(entryId)
         if (previousCount > 0 || entryId in schedules || !sessionUnlocked) return
         scope.launch { activateTrackedEntry(entryId) }
     }
@@ -264,6 +279,7 @@ internal class OtpCodeRefreshUseCase(
         subscriptionCounts.remove(entryId)
         if (entryId !in activeEntryIds) {
             invalidateEntry(entryId)
+            freshAuthPausedEntryIds.remove(entryId)
             schedules.remove(entryId)
             _states.update { it - entryId }
         }
@@ -280,6 +296,7 @@ internal class OtpCodeRefreshUseCase(
             sessionEpoch++
             clearGeneratedState()
         } else {
+            freshAuthPausedEntryIds.clear()
             scope.launch { reactivatePendingEntries() }
         }
     }
@@ -288,6 +305,7 @@ internal class OtpCodeRefreshUseCase(
         if (!sessionUnlocked) return
         (activeEntryIds + subscriptionCounts.keys)
             .filterNot(schedules::containsKey)
+            .filterNot(freshAuthPausedEntryIds::contains)
             .toList()
             .forEach { entryId ->
                 if (!sessionUnlocked) return
@@ -306,8 +324,21 @@ internal class OtpCodeRefreshUseCase(
         _states.value = emptyMap()
     }
 
+    fun onFreshAuthentication() {
+        if (!sessionUnlocked || freshAuthPausedEntryIds.isEmpty()) return
+        freshAuthPausedEntryIds.clear()
+        scope.launch { reactivatePendingEntries() }
+    }
+
+    private fun pauseUntilFreshAuthentication(entryId: String) {
+        freshAuthPausedEntryIds += entryId
+        schedules.remove(entryId)
+        _states.update { it - entryId }
+    }
+
     fun clearSensitiveState(entryId: String) {
         invalidateEntry(entryId)
+        freshAuthPausedEntryIds.remove(entryId)
         activeEntryIds.remove(entryId)
         subscriptionCounts.remove(entryId)
         schedules.remove(entryId)
@@ -316,6 +347,7 @@ internal class OtpCodeRefreshUseCase(
 
     fun clearAllSensitiveState() {
         sessionEpoch++
+        freshAuthPausedEntryIds.clear()
         activeEntryIds.clear()
         subscriptionCounts.clear()
         clearGeneratedState()

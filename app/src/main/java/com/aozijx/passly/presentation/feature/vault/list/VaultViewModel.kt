@@ -28,6 +28,7 @@ import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
+import com.aozijx.passly.domain.access.port.SensitiveKeyFreshnessState
 import com.aozijx.passly.domain.entry.service.FaviconService
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.domain.settings.model.SettingsCommand
@@ -51,6 +52,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -68,6 +70,7 @@ class VaultViewModel @Inject constructor(
     val entryFieldReader: EntryFieldReader,
     private val dataChangeSignal: VaultDataChangeSignal,
     private val sessionStateProvider: SessionStateProvider,
+    private val sensitiveKeyFreshnessState: SensitiveKeyFreshnessState,
     private val accessPolicy: SecureSessionAccessPolicy,
     private val clipboardCopyController: ClipboardCopyController,
 ) : ViewModel() {
@@ -270,6 +273,12 @@ class VaultViewModel @Inject constructor(
                 totp.onSessionStateChanged(
                     unlocked = lockState == com.aozijx.passly.runtime.session.SecureSessionState.UNLOCKED
                 )
+            }
+        }
+
+        viewModelScope.launch {
+            sensitiveKeyFreshnessState.generation.drop(1).collect {
+                totp.onFreshAuthentication()
             }
         }
 

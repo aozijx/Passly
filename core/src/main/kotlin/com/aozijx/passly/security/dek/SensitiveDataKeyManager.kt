@@ -4,12 +4,16 @@ import com.aozijx.passly.core.crypto.CryptoConfig
 import com.aozijx.passly.core.crypto.MemoryCleaner
 import com.aozijx.passly.security.dek.SensitiveKeyScope
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
+import com.aozijx.passly.domain.access.port.SensitiveKeyFreshnessState
+import com.aozijx.passly.domain.access.model.FreshAuthenticationRequiredException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.Mac
@@ -23,18 +27,21 @@ class SensitiveDataKeyManager @Inject constructor(
     private val vaultBootstrapStore: VaultBootstrapStore,
     private val dekManager: DekManager,
     @param:SensitiveKeyScope private val scope: CoroutineScope
-) {
+) : SensitiveKeyFreshnessState {
     private val mutex = Mutex()
     private val random = SecureRandom()
     private var cachedKey: ByteArray? = null
     private var expiresAtNanos: Long = 0L
     private var clearJob: Job? = null
+    private val _generation = MutableStateFlow(0L)
+    override val generation = _generation.asStateFlow()
 
     suspend fun unlockAfterFreshAuthentication(ttlMs: Long = DEFAULT_TTL_MS) = mutex.withLock {
         val key = loadOrCreateKey()
         clearCachedKey()
         cachedKey = key
         expiresAtNanos = System.nanoTime() + ttlMs * 1_000_000L
+        _generation.value++
         clearJob = scope.launch {
             delay(ttlMs)
             clear()
@@ -42,9 +49,9 @@ class SensitiveDataKeyManager @Inject constructor(
     }
 
     suspend fun <T> withUnlockedKey(block: (ByteArray) -> T): T = mutex.withLock {
-        check(System.nanoTime() < expiresAtNanos) { "High-sensitivity access requires fresh authentication" }
+        if (System.nanoTime() >= expiresAtNanos) throw FreshAuthenticationRequiredException()
         val key = cachedKey?.clone()
-            ?: error("High-sensitivity access requires fresh authentication")
+            ?: throw FreshAuthenticationRequiredException()
         try {
             block(key)
         } finally {

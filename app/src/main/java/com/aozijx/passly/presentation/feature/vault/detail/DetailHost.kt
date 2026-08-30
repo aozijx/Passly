@@ -40,8 +40,7 @@ fun DetailHost(
     // 页面数据初始化（同 key 内串联首次 TOTP 自动解锁，避免重复 effect 触发）
     LaunchedEffect(initialEntry.id) {
         onAction(DetailUiAction.Initialize(initialEntry))
-        val initialOtpCredential = initialEntry.secret.otp?.config?.secret
-        if (!initialOtpCredential.isNullOrBlank()) {
+        if (initialEntry.shouldAutoActivateOtp()) {
             onAutoUnlockTotp(initialEntry)
         }
     }
@@ -84,3 +83,5 @@ fun DetailHost(
         )
     }
 }
+
+internal fun Entry.shouldAutoActivateOtp(): Boolean = secret.otp != null

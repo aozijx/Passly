@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.otp
 
 import com.aozijx.passly.domain.entry.otp.OtpResult
+import com.aozijx.passly.domain.access.model.FreshAuthenticationRequiredException
 import com.aozijx.passly.runtime.session.SessionLockedException
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
@@ -8,15 +9,81 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class OtpCodeRefreshUseCaseTest {
+
+    @Test
+    fun `visible otp waits for fresh authentication without crashing`() = runBlocking {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val coordinator = OtpCodeRefreshUseCase(
+            scope = scope,
+            loadOtpConfig = { throw FreshAuthenticationRequiredException() },
+            codeGenerator = { OtpResult.Success("123456") },
+        )
+
+        coordinator.subscribe("fresh-auth-entry")
+        yield()
+
+        assertEquals(null, coordinator.states.value["fresh-auth-entry"])
+        scope.cancel()
+    }
+
+    @Test
+    fun `fresh authentication failure pauses ticker retries until lifecycle changes`() = runTest {
+        var loadCount = 0
+        val coordinator = OtpCodeRefreshUseCase(
+            scope = backgroundScope,
+            loadOtpConfig = {
+                loadCount++
+                throw FreshAuthenticationRequiredException()
+            },
+            codeGenerator = { OtpResult.Success("123456") },
+        )
+
+        coordinator.subscribe("paused-entry")
+        coordinator.start()
+        runCurrent()
+        advanceTimeBy(2_500)
+        runCurrent()
+
+        assertEquals(1, loadCount)
+    }
+
+    @Test
+    fun `fresh authentication signal resumes an unchanged visible subscription`() = runBlocking {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        var freshAuthenticationAvailable = false
+        val coordinator = OtpCodeRefreshUseCase(
+            scope = scope,
+            loadOtpConfig = {
+                if (!freshAuthenticationAvailable) throw FreshAuthenticationRequiredException()
+                validTotpConfig()
+            },
+            codeGenerator = { OtpResult.Success("654321") },
+        )
+
+        coordinator.subscribe("still-visible-entry")
+        assertEquals(null, coordinator.states.value["still-visible-entry"])
+
+        freshAuthenticationAvailable = true
+        coordinator.onFreshAuthentication()
+        yield()
+
+        assertEquals("654321", coordinator.states.value["still-visible-entry"]?.code)
+        scope.cancel()
+    }
 
     @Test
     fun `visible subscriptions activate once and clear after final release`() = runBlocking {

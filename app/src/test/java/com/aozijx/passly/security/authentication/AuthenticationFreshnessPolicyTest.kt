@@ -11,6 +11,13 @@ import org.junit.Test
 class AuthenticationFreshnessPolicyTest {
 
     @Test
+    fun vaultUnlockEstablishesHighSensitivityKeyWindow() {
+        assertTrue(
+            AuthenticationMethodPolicy.unlocksSensitiveDataKey(AuthenticationPurpose.UNLOCK_VAULT)
+        )
+    }
+
+    @Test
     fun highSensitivityRevealAlwaysRequiresFreshAuthentication() {
         assertTrue(
             AuthenticationMethodPolicy.requiresFreshAuthentication(

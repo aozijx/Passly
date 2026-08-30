@@ -30,6 +30,10 @@ enum class AuthenticationPurpose {
     CLEAR_DATABASE,
 }
 
+class FreshAuthenticationRequiredException : IllegalStateException(
+    "High-sensitivity access requires fresh authentication",
+)
+
 @JvmInline
 value class AuthenticationRequestId(val value: String) {
     init {
