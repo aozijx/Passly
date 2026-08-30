@@ -37,6 +37,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
+private const val RESULT_DISPLAY_DURATION_MS = 2_500L
+private const val BRING_INTO_VIEW_DELAY_MS = 120L
+private val InputFieldSpacing = 12.dp
+
 /**
  * 输入操作按钮：将“触发操作”和“输入数据”合并为一个控件。
  *
@@ -52,7 +56,7 @@ fun InputActionButton(
     onAction: () -> Unit,
     modifier: Modifier = Modifier,
     onResultConsumed: () -> Unit = {},
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ) {
     val focusRequester = remember { FocusRequester() }
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
@@ -64,10 +68,13 @@ fun InputActionButton(
         onExpandedChange(false)
     }
     val submit = {
-        if (enabled && !state.progress && state.value.isNotEmpty()) {
-            dismissInput()
-            onAction()
-        }
+        performInputActionSubmit(
+            enabled = enabled,
+            progress = state.progress,
+            hasInput = state.value.isNotEmpty(),
+            onAction = onAction,
+            dismissInput = dismissInput,
+        )
     }
 
     BackHandler(enabled = state.expanded) {
@@ -93,7 +100,7 @@ fun InputActionButton(
         AnimatedVisibility(
             visible = state.expanded,
             enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
+            exit = shrinkVertically() + fadeOut(),
         ) {
             Column {
                 OutlinedTextField(
@@ -104,7 +111,7 @@ fun InputActionButton(
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Done
+                        imeAction = ImeAction.Done,
                     ),
                     keyboardActions = KeyboardActions(onDone = { submit() }),
                     enabled = enabled && !state.progress,
@@ -112,9 +119,9 @@ fun InputActionButton(
                         .bringIntoViewRequester(bringIntoViewRequester)
                         .focusRequester(focusRequester)
                         .fillMaxWidth(),
-                    shape = MaterialTheme.shapes.extraLarge
+                    shape = MaterialTheme.shapes.extraLarge,
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(InputFieldSpacing))
             }
         }
 
@@ -133,7 +140,7 @@ fun InputActionButton(
             enabled = enabled && (!state.expanded || state.value.isNotEmpty()),
             onClick = {
                 if (state.expanded) submit() else onExpandedChange(true)
-            }
+            },
         )
     }
 }
@@ -142,7 +149,7 @@ data class InputActionButtonState(
     val value: String = "",
     val expanded: Boolean = false,
     val progress: Boolean = false,
-    val result: Boolean? = null
+    val result: Boolean? = null,
 )
 
 data class InputActionButtonConfig(
@@ -154,8 +161,18 @@ data class InputActionButtonConfig(
     val successText: String = "Success",
     val errorText: String = "Failed",
     val successIcon: ImageVector = Icons.Default.CheckCircle,
-    val errorIcon: ImageVector = Icons.Default.Cancel
+    val errorIcon: ImageVector = Icons.Default.Cancel,
 )
 
-private const val RESULT_DISPLAY_DURATION_MS = 2_500L
-private const val BRING_INTO_VIEW_DELAY_MS = 120L
+internal fun performInputActionSubmit(
+    enabled: Boolean,
+    progress: Boolean,
+    hasInput: Boolean,
+    onAction: () -> Unit,
+    dismissInput: () -> Unit,
+) {
+    if (enabled && !progress && hasInput) {
+        onAction()
+        dismissInput()
+    }
+}
