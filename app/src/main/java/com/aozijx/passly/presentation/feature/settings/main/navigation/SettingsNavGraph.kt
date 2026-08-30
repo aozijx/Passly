@@ -3,10 +3,13 @@ package com.aozijx.passly.presentation.feature.settings.main.navigation
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.SeekableTransitionState
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.rememberTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -19,6 +22,8 @@ import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.navigation.BackNavigationBehavior
 import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
+import androidx.compose.material3.adaptive.navigation.ThreePaneScaffoldNavigator
+import androidx.compose.material3.adaptive.navigation.ThreePaneScaffoldPredictiveBackHandler
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,27 +32,26 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.security.AppPasswordAction
-import com.aozijx.passly.presentation.feature.settings.security.validateAndSendAppPasswordAction
-import com.aozijx.passly.presentation.feature.settings.main.SettingsEffect
-import com.aozijx.passly.presentation.feature.settings.main.SettingsUiAction
-import com.aozijx.passly.presentation.ui.settings.main.SettingsMainPage
-import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
-import com.aozijx.passly.presentation.ui.settings.main.SettingsDetailPlaceholder
-import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenDialogsHost
-import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
+import com.aozijx.passly.presentation.feature.settings.main.SettingsEffect
+import com.aozijx.passly.presentation.feature.settings.main.SettingsUiAction
+import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
+import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogEventHandler
 import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogsState
+import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
+import com.aozijx.passly.presentation.feature.settings.security.AppPasswordAction
+import com.aozijx.passly.presentation.feature.settings.security.validateAndSendAppPasswordAction
+import com.aozijx.passly.presentation.ui.settings.main.SettingsDetailPlaceholder
+import com.aozijx.passly.presentation.ui.settings.main.SettingsMainPage
+import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenDialogsHost
+import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
 import com.aozijx.passly.presentation.ui.settings.main.rememberSettingsScreenLocalState
 import kotlinx.coroutines.launch
 
@@ -88,8 +92,6 @@ fun SettingsNavGraph(
         navigatorRoute = selectedRoute,
         retainedDetailRoute = retainedDetailRoute,
     )
-    val selectedRouteKey = if (isSinglePane) null else selectedRoute?.route
-    val motionScheme = MaterialTheme.motionScheme
     val navigateBack: () -> Unit = {
         scope.launch { navigator.navigateBack(backBehavior) }
     }
@@ -131,29 +133,16 @@ fun SettingsNavGraph(
         }
     }
 
-    NavigableListDetailPaneScaffold(
-        navigator = navigator,
-        defaultBackBehavior = backBehavior,
-        listPane = {
-            AnimatedPane(
-                modifier = Modifier.zIndex(0f),
-                enterTransition = if (isSinglePane) {
-                    slideInHorizontally(
-                        initialOffsetX = { -it / 4 },
-                        animationSpec = motionScheme.defaultSpatialSpec()
-                    )
-                } else {
-                    EnterTransition.None
-                },
-                exitTransition = if (isSinglePane) {
-                    slideOutHorizontally(
-                        targetOffsetX = { -it / 4 },
-                        animationSpec = motionScheme.defaultSpatialSpec()
-                    )
-                } else {
-                    ExitTransition.None
-                }
-            ) {
+    if (isSinglePane) {
+        SettingsSinglePane(
+            navigator = navigator,
+            backBehavior = backBehavior,
+            currentPage = if (selectedRoute == null) {
+                SettingsSinglePanePage.List
+            } else {
+                SettingsSinglePanePage.Detail
+            },
+            listContent = {
                 SettingsMainPage(
                     onBack = onOuterBack,
                     onGroupClick = { routeKey ->
@@ -167,41 +156,62 @@ fun SettingsNavGraph(
                             }
                         }
                     },
-                    selectedRouteKey = selectedRouteKey
+                    selectedRouteKey = null
                 )
-            }
-        },
-        detailPane = {
-            AnimatedPane(
-                // 推入和返回期间，详情始终覆盖列表，避免 Scaffold 提前切换目标层级后
-                // 从退出页面边缘露出底层的分栏间隙。
-                modifier = Modifier.zIndex(1f),
-                enterTransition = if (isSinglePane) {
-                    slideInHorizontally(
-                        initialOffsetX = { it },
-                        animationSpec = motionScheme.defaultSpatialSpec()
+            },
+            detailContent = {
+                SettingsDetailContent(
+                    route = renderedDetailRoute,
+                    context = context,
+                    localState = localState,
+                    settingsViewModel = settingsViewModel,
+                    interactionViewModel = interactionViewModel,
+                    dataViewModel = dataViewModel,
+                    settingsState = settingsState,
+                    onOpenTrash = onOpenTrash,
+                    onOpenDatabaseRecovery = onOpenDatabaseRecovery,
+                    onBack = navigateBack,
+                )
+            },
+        )
+    } else {
+        NavigableListDetailPaneScaffold(
+            navigator = navigator,
+            defaultBackBehavior = backBehavior,
+            listPane = {
+                AnimatedPane(
+                    enterTransition = EnterTransition.None,
+                    exitTransition = ExitTransition.None,
+                ) {
+                    SettingsMainPage(
+                        onBack = onOuterBack,
+                        onGroupClick = { routeKey ->
+                            val route = SettingsRoute.fromRouteKey(routeKey)
+                                ?: return@SettingsMainPage
+                            if (navigator.currentDestination?.contentKey != route) {
+                                scope.launch {
+                                    navigator.navigateTo(
+                                        pane = ListDetailPaneScaffoldRole.Detail,
+                                        contentKey = route,
+                                    )
+                                }
+                            }
+                        },
+                        selectedRouteKey = selectedRoute?.route,
                     )
-                } else {
-                    EnterTransition.None
-                },
-                exitTransition = if (isSinglePane) {
-                    slideOutHorizontally(
-                        targetOffsetX = { it },
-                        animationSpec = motionScheme.defaultSpatialSpec()
-                    )
-                } else {
-                    ExitTransition.None
                 }
-            ) {
-                // 详情内容路由切换：利用 AnimatedContent 的可中断/重定向机制——
-                // 动画播放中若目标路由再次变化，动画立即重定向到新目标，配合 spring
-                // 弹簧动画平滑衔接，快速连续点击多个设置项也不会跳变或卡顿。
-                AnimatedContent(
-                    targetState = renderedDetailRoute,
-                    transitionSpec = {
-                        if (isSinglePane) {
-                            EnterTransition.None togetherWith ExitTransition.None
-                        } else {
+            },
+            detailPane = {
+                AnimatedPane(
+                    enterTransition = EnterTransition.None,
+                    exitTransition = ExitTransition.None,
+                ) {
+                    // 详情内容路由切换：利用 AnimatedContent 的可中断/重定向机制——
+                    // 动画播放中若目标路由再次变化，动画立即重定向到新目标，配合 spring
+                    // 弹簧动画平滑衔接，快速连续点击多个设置项也不会跳变或卡顿。
+                    AnimatedContent(
+                        targetState = renderedDetailRoute,
+                        transitionSpec = {
                             val enter = fadeIn(
                                 animationSpec = routeFadeIn
                             ) + slideInHorizontally(
@@ -215,26 +225,26 @@ fun SettingsNavGraph(
                                 animationSpec = routeSlide
                             )
                             enter togetherWith exit using SizeTransform(clip = false)
-                        }
-                    },
-                    label = "settingsDetail"
-                ) { route ->
-                    SettingsDetailContent(
-                        route = route,
-                        context = context,
-                        localState = localState,
-                        settingsViewModel = settingsViewModel,
-                        interactionViewModel = interactionViewModel,
-                        dataViewModel = dataViewModel,
-                        settingsState = settingsState,
-                        onOpenTrash = onOpenTrash,
-                        onOpenDatabaseRecovery = onOpenDatabaseRecovery,
-                        onBack = if (isSinglePane) navigateBack else null
-                    )
+                        },
+                        label = "settingsDetail"
+                    ) { route ->
+                        SettingsDetailContent(
+                            route = route,
+                            context = context,
+                            localState = localState,
+                            settingsViewModel = settingsViewModel,
+                            interactionViewModel = interactionViewModel,
+                            dataViewModel = dataViewModel,
+                            settingsState = settingsState,
+                            onOpenTrash = onOpenTrash,
+                            onOpenDatabaseRecovery = onOpenDatabaseRecovery,
+                            onBack = null,
+                        )
+                    }
                 }
-            }
-        }
-    )
+            },
+        )
+    }
 
     SettingsScreenDialogsHost(
         state = buildSettingsDialogsState(
@@ -258,6 +268,110 @@ fun SettingsNavGraph(
             }
         )
     )
+}
+
+internal enum class SettingsSinglePanePage {
+    List,
+    Detail,
+}
+
+internal enum class SettingsSinglePaneTargetLayer(val zIndex: Float) {
+    Background(-1f),
+    Default(0f),
+    Foreground(1f),
+}
+
+internal fun resolveSettingsSinglePaneTargetLayer(
+    initial: SettingsSinglePanePage,
+    target: SettingsSinglePanePage,
+): SettingsSinglePaneTargetLayer = when {
+    initial == target -> SettingsSinglePaneTargetLayer.Default
+    target == SettingsSinglePanePage.Detail -> SettingsSinglePaneTargetLayer.Foreground
+    else -> SettingsSinglePaneTargetLayer.Background
+}
+
+@OptIn(ExperimentalMaterial3AdaptiveApi::class)
+@Composable
+private fun SettingsSinglePane(
+    navigator: ThreePaneScaffoldNavigator<SettingsRoute>,
+    backBehavior: BackNavigationBehavior,
+    currentPage: SettingsSinglePanePage,
+    listContent: @Composable () -> Unit,
+    detailContent: @Composable () -> Unit,
+) {
+    ThreePaneScaffoldPredictiveBackHandler(
+        navigator = navigator,
+        backBehavior = backBehavior,
+    )
+
+    val motionScheme = MaterialTheme.motionScheme
+    val visualState = remember { SeekableTransitionState(currentPage) }
+    val visualTransition = rememberTransition(visualState, label = "settingsSinglePane")
+    val scaffoldState = navigator.scaffoldState
+
+    LaunchedEffect(scaffoldState) {
+        snapshotFlow {
+            scaffoldState.isPredictiveBackInProgress to scaffoldState.progressFraction
+        }.collect { (isPredictiveBackInProgress, progressFraction) ->
+            if (isPredictiveBackInProgress) {
+                visualState.seekTo(
+                    fraction = progressFraction,
+                    targetState = SettingsSinglePanePage.List,
+                )
+            }
+        }
+    }
+
+    LaunchedEffect(currentPage, scaffoldState.isPredictiveBackInProgress) {
+        if (!scaffoldState.isPredictiveBackInProgress) {
+            visualState.animateTo(currentPage)
+        }
+    }
+
+    visualTransition.AnimatedContent(
+        transitionSpec = {
+            val layer = resolveSettingsSinglePaneTargetLayer(initialState, targetState)
+            when {
+                initialState == targetState -> ContentTransform(
+                    targetContentEnter = EnterTransition.None,
+                    initialContentExit = ExitTransition.None,
+                    targetContentZIndex = layer.zIndex,
+                    sizeTransform = null,
+                )
+
+                targetState == SettingsSinglePanePage.Detail -> ContentTransform(
+                    targetContentEnter = slideInHorizontally(
+                        initialOffsetX = { it },
+                        animationSpec = motionScheme.defaultSpatialSpec(),
+                    ),
+                    initialContentExit = slideOutHorizontally(
+                        targetOffsetX = { -it / 4 },
+                        animationSpec = motionScheme.defaultSpatialSpec(),
+                    ),
+                    targetContentZIndex = layer.zIndex,
+                    sizeTransform = null,
+                )
+
+                else -> ContentTransform(
+                    targetContentEnter = slideInHorizontally(
+                        initialOffsetX = { -it / 4 },
+                        animationSpec = motionScheme.defaultSpatialSpec(),
+                    ),
+                    initialContentExit = slideOutHorizontally(
+                        targetOffsetX = { it },
+                        animationSpec = motionScheme.defaultSpatialSpec(),
+                    ),
+                    targetContentZIndex = layer.zIndex,
+                    sizeTransform = null,
+                )
+            }
+        },
+    ) { page ->
+        when (page) {
+            SettingsSinglePanePage.List -> listContent()
+            SettingsSinglePanePage.Detail -> detailContent()
+        }
+    }
 }
 
 /**
