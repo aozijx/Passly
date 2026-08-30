@@ -1,50 +1,47 @@
 package com.aozijx.passly.presentation.feature.vault.list
 
-import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
-import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.app.clipboard.ClipboardCopyController
-import com.aozijx.passly.domain.entry.otp.OtpGenerator
-import com.aozijx.passly.feature.vault.entry.VaultDataChangeSignal
-import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
-import com.aozijx.passly.runtime.session.SessionStateProvider
-import com.aozijx.passly.domain.entry.model.EntryIdentity
+import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.EntryTimestamps
-import com.aozijx.passly.domain.entry.model.EntryIcon
-import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.credential.OtpCredential
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.model.credential.OtpCredential
-import com.github.f4b6a3.uuid.UuidCreator
+import com.aozijx.passly.domain.entry.otp.OtpGenerator
+import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
 import com.aozijx.passly.domain.entry.service.FaviconService
-import com.aozijx.passly.domain.entry.policy.EntryFieldReader
-import com.aozijx.passly.domain.settings.model.SettingsCommand
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
-import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.settings.model.SettingsCommand
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
-import com.aozijx.passly.presentation.feature.vault.list.VaultEffect
-import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
-import com.aozijx.passly.presentation.feature.vault.list.VaultUiState
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
 import com.aozijx.passly.feature.vault.entry.EntryManager
+import com.aozijx.passly.feature.vault.entry.VaultDataChangeSignal
+import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
 import com.aozijx.passly.feature.vault.model.AddType
+import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRefreshUseCase
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
+import com.aozijx.passly.runtime.session.SessionStateProvider
+import com.github.f4b6a3.uuid.UuidCreator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -225,6 +222,14 @@ class VaultViewModel @Inject constructor(
         if (accessPolicy.hasFullAccess()) {
             totp.autoUnlock(entryId)
         }
+    }
+
+    fun subscribeVisibleOtp(entryId: String) {
+        totp.subscribe(entryId)
+    }
+
+    fun unsubscribeVisibleOtp(entryId: String) {
+        totp.unsubscribe(entryId)
     }
 
     suspend fun loadEntryById(entryId: String): Entry? {

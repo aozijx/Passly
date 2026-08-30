@@ -1,19 +1,9 @@
 package com.aozijx.passly.presentation.feature.vault.list
 
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -23,8 +13,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -33,17 +21,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.presentation.feature.vault.list.action.rememberVaultActionProvider
 import com.aozijx.passly.presentation.feature.vault.list.display.VaultDisplayViewModel
-import com.aozijx.passly.presentation.ui.vault.list.component.dialog.VaultDialogs
-import com.aozijx.passly.presentation.ui.vault.list.component.fab.VaultFab
-import com.aozijx.passly.presentation.ui.vault.list.component.list.VaultPagerContent
-import com.aozijx.passly.presentation.ui.vault.list.component.topbar.VaultTopBar
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultAddTypeUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEvent
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,7 +52,8 @@ fun VaultHost(
     val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
     val vaultDisplayConfig by vaultDisplayViewModel.config.collectAsStateWithLifecycle()
 
-    val entryCardPresentations = vaultDisplayConfig.style.entryCardPresentations.map { it.toUiModel() }
+    val entryCardPresentations =
+        vaultDisplayConfig.style.entryCardPresentations.map { it.toUiModel() }
     var isFabVisible by remember { mutableStateOf(true) }
     val renderState = rememberVaultListScreenUiModel(
         uiState.toUiModel(
@@ -115,22 +99,28 @@ fun VaultHost(
                 is VaultListEvent.SearchQueryChanged -> vaultViewModel.onAction(
                     VaultUiAction.SearchQueryChanged(event.query),
                 )
+
                 is VaultListEvent.SearchToggled -> vaultViewModel.onAction(
                     VaultUiAction.SearchToggled(event.active),
                 )
+
                 VaultListEvent.ClearCategory -> vaultViewModel.onAction(VaultUiAction.ClearCategory)
                 VaultListEvent.ToggleTotpVisibility -> vaultViewModel.onAction(
                     VaultUiAction.ToggleShowTotpCode,
                 )
+
                 is VaultListEvent.CategorySelected -> vaultViewModel.onAction(
                     VaultUiAction.CategorySelected(event.category),
                 )
+
                 is VaultListEvent.SortSelected -> vaultViewModel.onAction(
                     VaultUiAction.SortOptionSelected(event.sort.toFeatureModel()),
                 )
+
                 is VaultListEvent.QuickFilterSelected -> vaultViewModel.onAction(
                     VaultUiAction.QuickFilterSelected(event.filter.toFeatureModel()),
                 )
+
                 is VaultListEvent.AddTypeSelected -> when (event.type) {
                     VaultAddTypeUiModel.PASSWORD -> onAddPassword()
                     VaultAddTypeUiModel.TOTP -> onAddOtp()
@@ -139,18 +129,26 @@ fun VaultHost(
                         VaultUiAction.AddTypeSelected(event.type.toFeatureModel()),
                     )
                 }
+
                 VaultListEvent.DismissAddType -> vaultViewModel.onAction(
                     VaultUiAction.AddTypeSelected(null),
                 )
+
                 VaultListEvent.ConfirmDelete -> vaultViewModel.onAction(
                     VaultUiAction.ConfirmDelete,
                 )
+
                 VaultListEvent.DismissDelete -> vaultViewModel.onAction(
                     VaultUiAction.ItemToDeleteSelected(null),
                 )
             }
         },
         requestAuthentication = requestAuthentication,
+    )
+    val otpStateProvider = rememberVaultOtpStateProvider(
+        states = vaultViewModel.totpStatesFlow,
+        onSubscribe = vaultViewModel::subscribeVisibleOtp,
+        onUnsubscribe = vaultViewModel::unsubscribeVisibleOtp,
     )
 
     val activity = context as? FragmentActivity
@@ -202,7 +200,7 @@ fun VaultHost(
         scrollBehavior = scrollBehavior,
         entryPages = listBindings.entryPages,
         itemEventHandler = listBindings.eventHandler,
-        otpState = { id -> vaultViewModel.totpStatesFlow.map { it[id]?.toUiModel() } },
+        otpStateProvider = otpStateProvider,
         fabScrollConnection = actionProvider.fabScrollConnection,
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,

@@ -2,6 +2,7 @@ package com.aozijx.passly.presentation.ui.vault.list.model
 
 import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
+import kotlinx.coroutines.flow.Flow
 
 data class VaultListItemUiModel(
     val id: String,
@@ -38,6 +39,12 @@ data class VaultOtpUiState(
     val isLoading: Boolean = false,
     val hasError: Boolean = false,
 )
+
+interface VaultOtpStateProvider {
+    fun state(entryId: String): Flow<VaultOtpUiState?>
+    fun subscribe(entryId: String)
+    fun unsubscribe(entryId: String)
+}
 
 enum class VaultQuickFilterUiModel { ALL, PASSWORDS, TOTP }
 

@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.icons.Icons
@@ -29,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,7 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
@@ -52,18 +51,18 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionContainer
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionSpec
+import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
 import com.aozijx.passly.presentation.ui.vault.list.component.cardstyle.CardStyleRegistry
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardPresentationUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListContentUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHandler
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListNavigationUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpStateProvider
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
-import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 
 @Composable
 fun VaultPagerContent(
@@ -72,7 +71,7 @@ fun VaultPagerContent(
     content: VaultListContentUiModel,
     entryPages: Map<VaultQuickFilterUiModel, Flow<PagingData<VaultListItemUiModel>>>,
     itemEventHandler: VaultListItemEventHandler,
-    otpState: (String) -> Flow<VaultOtpUiState?>,
+    otpStateProvider: VaultOtpStateProvider,
     modifier: Modifier = Modifier
 ) {
     val adaptiveLayout = LocalPasslyAdaptiveLayout.current
@@ -134,13 +133,13 @@ fun VaultPagerContent(
                         swipeLeftAction = content.swipeLeftAction,
                         swipeRightAction = content.swipeRightAction,
                         isSwipeEnabled = content.isSwipeEnabled,
-                        otpState = otpState,
+                        otpStateProvider = otpStateProvider,
                         showTotpCode = content.showTotpCode,
                         animateInitialAppearance = playInitialEntryAnimation,
                         modifier = Modifier
                             .animateItem(
                                 fadeInSpec = null,
-                                placementSpec = motionScheme.defaultSpatialSpec<IntOffset>(),
+                                placementSpec = motionScheme.defaultSpatialSpec(),
                                 fadeOutSpec = motionScheme.fastEffectsSpec()
                             )
                             .fillMaxWidth()
@@ -204,20 +203,12 @@ private fun EntryListItemRow(
     swipeLeftAction: SwipeActionUiModel,
     swipeRightAction: SwipeActionUiModel,
     isSwipeEnabled: Boolean,
-    otpState: (String) -> Flow<VaultOtpUiState?>,
+    otpStateProvider: VaultOtpStateProvider,
     showTotpCode: Boolean,
     animateInitialAppearance: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val totpState = if (item.hasOtp) {
-        val itemTotpState = remember(item.id, otpState) {
-            otpState(item.id).distinctUntilChanged()
-        }
-        val current by itemTotpState.collectAsStateWithLifecycle(initialValue = null)
-        current
-    } else {
-        null
-    }
+    val totpState = if (item.hasOtp) observeVaultOtpState(item.id, otpStateProvider) else null
     val cardStyle = remember(item.entryType, item.hasPassword, item.hasOtp, entryCardPresentations) {
         CardStyleRegistry.resolveStyle(item, entryCardPresentations)
     }
@@ -251,7 +242,7 @@ private fun EntryListItemRow(
         modifier = modifier,
         enter = fadeIn(animationSpec = motionScheme.fastEffectsSpec()) +
                 slideInVertically(
-                    animationSpec = motionScheme.defaultSpatialSpec<IntOffset>(),
+                    animationSpec = motionScheme.defaultSpatialSpec(),
                     initialOffsetY = { height -> height / 4 }
                 )
     ) {
@@ -269,6 +260,22 @@ private fun EntryListItemRow(
             )
         }
     }
+}
+
+@Composable
+internal fun observeVaultOtpState(
+    entryId: String,
+    provider: VaultOtpStateProvider,
+): VaultOtpUiState? {
+    DisposableEffect(entryId, provider) {
+        provider.subscribe(entryId)
+        onDispose { provider.unsubscribe(entryId) }
+    }
+    val stateFlow = remember(entryId, provider) {
+        provider.state(entryId).distinctUntilChanged()
+    }
+    val current by stateFlow.collectAsStateWithLifecycle(initialValue = null)
+    return current
 }
 
 private fun createAppSwipeActionSpec(

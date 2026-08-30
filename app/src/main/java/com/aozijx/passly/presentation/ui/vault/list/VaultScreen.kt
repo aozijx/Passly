@@ -25,12 +25,12 @@ import com.aozijx.passly.presentation.ui.vault.list.component.dialog.VaultDialog
 import com.aozijx.passly.presentation.ui.vault.list.component.fab.VaultFab
 import com.aozijx.passly.presentation.ui.vault.list.component.list.VaultPagerContent
 import com.aozijx.passly.presentation.ui.vault.list.component.topbar.VaultTopBar
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHandler
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEvent
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEventHandler
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHandler
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpStateProvider
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -42,7 +42,7 @@ fun VaultScreen(
     scrollBehavior: TopAppBarScrollBehavior,
     entryPages: Map<VaultQuickFilterUiModel, Flow<PagingData<VaultListItemUiModel>>>,
     itemEventHandler: VaultListItemEventHandler,
-    otpState: (String) -> Flow<VaultOtpUiState?>,
+    otpStateProvider: VaultOtpStateProvider,
     fabScrollConnection: NestedScrollConnection,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -128,7 +128,7 @@ fun VaultScreen(
             content = state.content,
             entryPages = entryPages,
             itemEventHandler = itemEventHandler,
-            otpState = otpState,
+            otpStateProvider = otpStateProvider,
             modifier = Modifier.fillMaxSize().padding(padding),
         )
     }

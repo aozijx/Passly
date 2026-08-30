@@ -1,12 +1,12 @@
 package com.aozijx.passly.feature.vault.otp
 
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
-import com.aozijx.passly.domain.entry.otp.OtpResult
-import com.aozijx.passly.runtime.session.SessionLockedException
-import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.otp.OtpResult
+import com.aozijx.passly.feature.vault.model.OtpCodeState
+import com.aozijx.passly.runtime.session.SessionLockedException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * TOTP 状态协调器。
@@ -47,6 +48,11 @@ internal class OtpCodeRefreshUseCase(
 
     private val schedules = mutableMapOf<String, OtpSchedule>()
     private val activeEntryIds = mutableSetOf<String>()
+    private val subscriptionCounts = mutableMapOf<String, Int>()
+    private val entryEpochs = mutableMapOf<String, Long>()
+    private var sessionEpoch = 0L
+
+    private data class ActivationToken(val sessionEpoch: Long, val entryEpoch: Long)
 
     @Volatile
     private var sessionUnlocked = initiallyUnlocked
@@ -54,20 +60,21 @@ internal class OtpCodeRefreshUseCase(
     fun start() {
         scope.launch {
             val now = System.currentTimeMillis()
-            delay(1000 - (now % 1000))
+            delay((1000 - (now % 1000)).milliseconds)
             while (currentCoroutineContext().isActive) {
                 if (sessionUnlocked) {
                     reactivatePendingEntries()
                     refreshStates(System.currentTimeMillis() / 1000)
                 }
-                delay(1000)
+                delay(1000.milliseconds)
             }
         }
     }
 
     private suspend fun refreshStates(nowSeconds: Long) {
-        val refreshed = _states.value.toMutableMap()
         for ((entryId, schedule) in schedules.toMap()) {
+            val token = activationToken(entryId)
+            if (!isCurrent(entryId, token)) continue
             if (schedule.type == OtpType.HOTP) continue
 
             val movingFactor = nowSeconds / schedule.periodSeconds
@@ -78,21 +85,35 @@ internal class OtpCodeRefreshUseCase(
                     handleSessionLocked()
                     return
                 }
+                if (!isCurrent(entryId, token)) continue
                 if (config == null || config.secret.isNullOrBlank()) {
-                    refreshed[entryId] = OtpCodeState(error = OtpGenerationError.InvalidSecret)
+                    _states.update { states ->
+                        if (isCurrent(entryId, token)) {
+                            states + (entryId to OtpCodeState(error = OtpGenerationError.InvalidSecret))
+                        } else {
+                            states
+                        }
+                    }
                     continue
                 }
-                applyConfig(entryId, config, nowSeconds, refreshed)
+                applyConfig(entryId, config, nowSeconds, token)
             } else {
-                val existing = refreshed[entryId]
-                if (existing != null) {
-                    refreshed[entryId] = existing.copy(
-                        progress = computeProgress(nowSeconds, schedule.periodSeconds)
-                    )
+                _states.update { states ->
+                    val existing = states[entryId]
+                    if (
+                        isCurrent(entryId, token) &&
+                        schedules[entryId] == schedule &&
+                        existing != null
+                    ) {
+                        states + (entryId to existing.copy(
+                            progress = computeProgress(nowSeconds, schedule.periodSeconds)
+                        ))
+                    } else {
+                        states
+                    }
                 }
             }
         }
-        _states.value = refreshed
     }
 
     private suspend fun generateUiState(
@@ -117,6 +138,7 @@ internal class OtpCodeRefreshUseCase(
      */
     suspend fun generateHotpCode(entryId: String): OtpResult {
         if (!sessionUnlocked) return OtpResult.Failure(OtpGenerationError.InvalidSecret)
+        val token = activationToken(entryId)
         val config = try {
             loadOtpConfig(entryId)
         } catch (_: SessionLockedException) {
@@ -128,6 +150,8 @@ internal class OtpCodeRefreshUseCase(
         if (counter < 0) return OtpResult.Failure(OtpGenerationError.InvalidCounter)
 
         val result = codeGenerator(config)
+
+        if (!isCurrent(entryId, token)) return result
 
         if (result is OtpResult.Success) {
             _states.update { it + (entryId to OtpCodeState(code = result.code)) }
@@ -153,32 +177,33 @@ internal class OtpCodeRefreshUseCase(
     }
 
     private suspend fun activateTrackedEntry(entryId: String) {
+        val token = activationToken(entryId)
         val config = try {
             loadOtpConfig(entryId)
         } catch (_: SessionLockedException) {
             handleSessionLocked()
             return
         }
+        if (!isCurrent(entryId, token)) return
         if (config == null || config.secret.isNullOrBlank()) {
             AppTelemetry.w("OtpCodeRefreshUseCase", "OTP activation failed: missing config for $entryId")
             _states.update { it + (entryId to OtpCodeState(error = OtpGenerationError.InvalidSecret)) }
             return
         }
         val nowSeconds = System.currentTimeMillis() / 1000
-        val refreshed = _states.value.toMutableMap()
-        applyConfig(entryId, config, nowSeconds, refreshed)
-        _states.value = refreshed
+        applyConfig(entryId, config, nowSeconds, token)
     }
 
     private suspend fun applyConfig(
         entryId: String,
         config: OtpConfig,
         nowSeconds: Long,
-        target: MutableMap<String, OtpCodeState>
+        token: ActivationToken,
     ) {
         if (config.type == OtpType.HOTP) {
+            if (!isCurrent(entryId, token)) return
             schedules[entryId] = OtpSchedule(OtpType.HOTP, 1, 0)
-            target[entryId] = OtpCodeState()
+            _states.update { it + (entryId to OtpCodeState()) }
             return
         }
 
@@ -187,18 +212,60 @@ internal class OtpCodeRefreshUseCase(
         } else {
             config.periodSeconds?.coerceAtLeast(1) ?: 30
         }
-        schedules[entryId] = OtpSchedule(
+        val schedule = OtpSchedule(
             type = config.type,
             periodSeconds = period,
             movingFactor = nowSeconds / period
         )
-        target[entryId] = generateUiState(config, nowSeconds, period)
+        val state = generateUiState(config, nowSeconds, period)
+        if (!isCurrent(entryId, token)) return
+        schedules[entryId] = schedule
+        _states.update { it + (entryId to state) }
     }
 
     fun autoUnlock(entryId: String) {
         if (!activeEntryIds.add(entryId) || !sessionUnlocked) return
         scope.launch {
             activateTrackedEntry(entryId)
+        }
+    }
+
+    private fun isRequested(entryId: String): Boolean =
+        entryId in activeEntryIds || entryId in subscriptionCounts
+
+    private fun activationToken(entryId: String) = ActivationToken(
+        sessionEpoch = sessionEpoch,
+        entryEpoch = entryEpochs[entryId] ?: 0L,
+    )
+
+    private fun isCurrent(entryId: String, token: ActivationToken): Boolean =
+        sessionUnlocked &&
+            isRequested(entryId) &&
+            sessionEpoch == token.sessionEpoch &&
+            (entryEpochs[entryId] ?: 0L) == token.entryEpoch
+
+    private fun invalidateEntry(entryId: String) {
+        entryEpochs[entryId] = (entryEpochs[entryId] ?: 0L) + 1L
+    }
+
+    fun subscribe(entryId: String) {
+        val previousCount = subscriptionCounts[entryId] ?: 0
+        subscriptionCounts[entryId] = previousCount + 1
+        if (previousCount > 0 || entryId in schedules || !sessionUnlocked) return
+        scope.launch { activateTrackedEntry(entryId) }
+    }
+
+    fun unsubscribe(entryId: String) {
+        val remaining = (subscriptionCounts[entryId] ?: return) - 1
+        if (remaining > 0) {
+            subscriptionCounts[entryId] = remaining
+            return
+        }
+        subscriptionCounts.remove(entryId)
+        if (entryId !in activeEntryIds) {
+            invalidateEntry(entryId)
+            schedules.remove(entryId)
+            _states.update { it - entryId }
         }
     }
 
@@ -210,6 +277,7 @@ internal class OtpCodeRefreshUseCase(
         if (sessionUnlocked == unlocked) return
         sessionUnlocked = unlocked
         if (!unlocked) {
+            sessionEpoch++
             clearGeneratedState()
         } else {
             scope.launch { reactivatePendingEntries() }
@@ -218,7 +286,7 @@ internal class OtpCodeRefreshUseCase(
 
     private suspend fun reactivatePendingEntries() {
         if (!sessionUnlocked) return
-        activeEntryIds
+        (activeEntryIds + subscriptionCounts.keys)
             .filterNot(schedules::containsKey)
             .toList()
             .forEach { entryId ->
@@ -229,6 +297,7 @@ internal class OtpCodeRefreshUseCase(
 
     private fun handleSessionLocked() {
         sessionUnlocked = false
+        sessionEpoch++
         clearGeneratedState()
     }
 
@@ -238,13 +307,17 @@ internal class OtpCodeRefreshUseCase(
     }
 
     fun clearSensitiveState(entryId: String) {
+        invalidateEntry(entryId)
         activeEntryIds.remove(entryId)
+        subscriptionCounts.remove(entryId)
         schedules.remove(entryId)
         _states.update { it - entryId }
     }
 
     fun clearAllSensitiveState() {
+        sessionEpoch++
         activeEntryIds.clear()
+        subscriptionCounts.clear()
         clearGeneratedState()
     }
 

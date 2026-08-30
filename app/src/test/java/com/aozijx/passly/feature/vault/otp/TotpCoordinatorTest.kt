@@ -6,15 +6,221 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 
 class OtpCodeRefreshUseCaseTest {
+
+    @Test
+    fun `visible subscriptions activate once and clear after final release`() = runBlocking {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        var loadCount = 0
+        val coordinator = OtpCodeRefreshUseCase(
+            scope = scope,
+            loadOtpConfig = {
+                loadCount++
+                OtpConfig(
+                    type = OtpType.TOTP,
+                    secret = "JBSWY3DPEHPK3PXP",
+                    digits = 6,
+                    periodSeconds = 30,
+                    encoding = OtpSecretEncoding.BASE32,
+                )
+            },
+            codeGenerator = { OtpResult.Success("123456") },
+        )
+
+        coordinator.subscribe("visible-entry")
+        coordinator.subscribe("visible-entry")
+
+        assertEquals(1, loadCount)
+        assertEquals("123456", coordinator.states.value["visible-entry"]?.code)
+
+        coordinator.unsubscribe("visible-entry")
+        assertEquals("123456", coordinator.states.value["visible-entry"]?.code)
+
+        coordinator.unsubscribe("visible-entry")
+        assertEquals(null, coordinator.states.value["visible-entry"])
+        scope.cancel()
+    }
+
+    @Test
+    fun `releasing list subscription keeps explicitly activated detail entry`() = runBlocking {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val coordinator = OtpCodeRefreshUseCase(
+            scope = scope,
+            loadOtpConfig = {
+                OtpConfig(
+                    type = OtpType.TOTP,
+                    secret = "JBSWY3DPEHPK3PXP",
+                    digits = 6,
+                    periodSeconds = 30,
+                    encoding = OtpSecretEncoding.BASE32,
+                )
+            },
+            codeGenerator = { OtpResult.Success("654321") },
+        )
+
+        coordinator.autoUnlock("shared-entry")
+        coordinator.subscribe("shared-entry")
+        coordinator.unsubscribe("shared-entry")
+
+        assertEquals("654321", coordinator.states.value["shared-entry"]?.code)
+        scope.cancel()
+    }
+
+    @Test
+    fun `release before config load completes does not leave orphan refresh state`() = runBlocking {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val configGate = CompletableDeferred<Unit>()
+        val coordinator = OtpCodeRefreshUseCase(
+            scope = scope,
+            loadOtpConfig = {
+                configGate.await()
+                OtpConfig(
+                    type = OtpType.TOTP,
+                    secret = "JBSWY3DPEHPK3PXP",
+                    digits = 6,
+                    periodSeconds = 30,
+                    encoding = OtpSecretEncoding.BASE32,
+                )
+            },
+            codeGenerator = { OtpResult.Success("123456") },
+        )
+
+        coordinator.subscribe("gone-entry")
+        coordinator.unsubscribe("gone-entry")
+        configGate.complete(Unit)
+        yield()
+
+        assertEquals(null, coordinator.states.value["gone-entry"])
+        scope.cancel()
+    }
+
+    @Test
+    fun `release while code is generating does not restore disposed entry state`() = runBlocking {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val generationStarted = CompletableDeferred<Unit>()
+        val generationGate = CompletableDeferred<Unit>()
+        val coordinator = OtpCodeRefreshUseCase(
+            scope = scope,
+            loadOtpConfig = { validTotpConfig() },
+            codeGenerator = {
+                generationStarted.complete(Unit)
+                generationGate.await()
+                OtpResult.Success("123456")
+            },
+        )
+
+        coordinator.subscribe("gone-during-generation")
+        generationStarted.await()
+        coordinator.unsubscribe("gone-during-generation")
+        generationGate.complete(Unit)
+        yield()
+
+        assertEquals(null, coordinator.states.value["gone-during-generation"])
+        scope.cancel()
+    }
+
+    @Test
+    fun `session lock while code is generating does not restore sensitive state`() = runBlocking {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val generationStarted = CompletableDeferred<Unit>()
+        val generationGate = CompletableDeferred<Unit>()
+        val coordinator = OtpCodeRefreshUseCase(
+            scope = scope,
+            loadOtpConfig = { validTotpConfig() },
+            codeGenerator = {
+                generationStarted.complete(Unit)
+                generationGate.await()
+                OtpResult.Success("123456")
+            },
+        )
+
+        coordinator.subscribe("locked-during-generation")
+        generationStarted.await()
+        coordinator.onSessionStateChanged(unlocked = false)
+        generationGate.complete(Unit)
+        yield()
+
+        assertEquals(emptyMap<String, Any>(), coordinator.states.value)
+        scope.cancel()
+    }
+
+    @Test
+    fun `pre-lock generation cannot overwrite reactivated state after unlock`() = runBlocking {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val oldGenerationStarted = CompletableDeferred<Unit>()
+        val oldGenerationGate = CompletableDeferred<Unit>()
+        var generationCount = 0
+        val coordinator = OtpCodeRefreshUseCase(
+            scope = scope,
+            loadOtpConfig = { validTotpConfig() },
+            codeGenerator = {
+                generationCount++
+                if (generationCount == 1) {
+                    oldGenerationStarted.complete(Unit)
+                    oldGenerationGate.await()
+                    OtpResult.Success("111111")
+                } else {
+                    OtpResult.Success("222222")
+                }
+            },
+        )
+
+        coordinator.subscribe("lock-cycle-entry")
+        oldGenerationStarted.await()
+        coordinator.onSessionStateChanged(unlocked = false)
+        coordinator.onSessionStateChanged(unlocked = true)
+        assertEquals("222222", coordinator.states.value["lock-cycle-entry"]?.code)
+
+        oldGenerationGate.complete(Unit)
+        yield()
+
+        assertEquals("222222", coordinator.states.value["lock-cycle-entry"]?.code)
+        scope.cancel()
+    }
+
+    @Test
+    fun `disposed generation cannot overwrite a new subscription lifecycle`() = runBlocking {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val oldGenerationStarted = CompletableDeferred<Unit>()
+        val oldGenerationGate = CompletableDeferred<Unit>()
+        var generationCount = 0
+        val coordinator = OtpCodeRefreshUseCase(
+            scope = scope,
+            loadOtpConfig = { validTotpConfig() },
+            codeGenerator = {
+                generationCount++
+                if (generationCount == 1) {
+                    oldGenerationStarted.complete(Unit)
+                    oldGenerationGate.await()
+                    OtpResult.Success("111111")
+                } else {
+                    OtpResult.Success("222222")
+                }
+            },
+        )
+
+        coordinator.subscribe("resubscribed-entry")
+        oldGenerationStarted.await()
+        coordinator.unsubscribe("resubscribed-entry")
+        coordinator.subscribe("resubscribed-entry")
+        assertEquals("222222", coordinator.states.value["resubscribed-entry"]?.code)
+
+        oldGenerationGate.complete(Unit)
+        yield()
+
+        assertEquals("222222", coordinator.states.value["resubscribed-entry"]?.code)
+        scope.cancel()
+    }
 
     @Test
     fun `activate loads complete Steam config by entry id`() = runBlocking {
@@ -99,4 +305,12 @@ class OtpCodeRefreshUseCaseTest {
         assertEquals("123456", coordinator.states.value["pending-entry"]?.code)
         scope.cancel()
     }
+
+    private fun validTotpConfig() = OtpConfig(
+        type = OtpType.TOTP,
+        secret = "JBSWY3DPEHPK3PXP",
+        digits = 6,
+        periodSeconds = 30,
+        encoding = OtpSecretEncoding.BASE32,
+    )
 }
