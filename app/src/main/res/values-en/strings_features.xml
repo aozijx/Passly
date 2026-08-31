@@ -71,4 +71,36 @@
     <string name="id_number">ID number</string>
     <string name="passkey_data">Passkey data</string>
     <string name="hardware_key_info">Hardware key details</string>
+
+    <!-- Detail tag editor -->
+    <string name="vault_detail_tags_title">Tags</string>
+    <string name="vault_detail_tags_add">Add tags</string>
+    <string name="vault_detail_tag_input_label">New tag</string>
+    <string name="vault_detail_tag_input_hint">Use a comma or Enter to add</string>
+    <string name="vault_detail_tag_remove">Remove tag %1$s</string>
+    <string name="vault_detail_tag_too_many">You can add up to %1$d tags</string>
+    <string name="vault_detail_tag_too_long">Each tag can contain up to %1$d characters</string>
+    <string name="vault_detail_tag_discard_title">Discard tag changes?</string>
+    <string name="vault_detail_tag_discard_message">Unsaved tag changes will be lost.</string>
+    <string name="vault_detail_tag_discard_action">Discard</string>
+    <string name="vault_detail_tag_keep_editing">Keep editing</string>
+    <string name="vault_detail_favicon_title">Icon</string>
+    <string name="vault_detail_favicon_edit">Edit icon</string>
+    <string name="vault_detail_favicon_default">Default icon</string>
+    <string name="vault_detail_favicon_built_in">Built-in icon</string>
+    <string name="vault_detail_favicon_custom_image">Custom image</string>
+    <string name="vault_detail_favicon_library">Icon library</string>
+    <string name="vault_detail_favicon_upload">Upload</string>
+    <string name="vault_detail_favicon_image_url">Image URL</string>
+    <string name="vault_detail_favicon_choose_image">Choose image</string>
+    <string name="vault_detail_favicon_download">Download image</string>
+    <string name="vault_detail_favicon_restore_default">Restore default</string>
+    <string name="vault_detail_favicon_discard_title">Discard icon changes?</string>
+    <string name="vault_detail_favicon_discard_message">Unsaved icon changes will be lost.</string>
+    <string name="vault_detail_favicon_discard_action">Discard</string>
+    <string name="vault_detail_favicon_keep_editing">Keep editing</string>
+    <string name="vault_detail_favicon_crop_title">Crop icon</string>
+    <string name="vault_detail_favicon_crop_hint">Pinch to zoom and drag the image. The square area will be saved as the icon.</string>
+    <string name="vault_detail_favicon_no_crop">Use without cropping</string>
+    <string name="vault_detail_favicon_crop_use">Crop and use</string>
 </resources>

@@ -15,9 +15,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -50,7 +47,6 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.DetailAssociatedInfo
 fun AssociatedInfoSection(
     modifier: Modifier = Modifier,
     model: DetailAssociatedInfoUiModel,
-    onDownloadFavicon: (String) -> Unit,
     onDomainEditStarted: () -> Unit,
     onDomainChanged: (String) -> Unit,
     onDomainSaved: (String) -> Unit,
@@ -71,7 +67,6 @@ fun AssociatedInfoSection(
             value = model.domain,
             editedValue = domainInput,
             editing = model.isEditingDomain,
-            downloading = model.isFaviconDownloading,
             onLongClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 domainInput = TextFieldValue(model.domain.orEmpty())
@@ -81,7 +76,6 @@ fun AssociatedInfoSection(
                 domainInput = it
                 onDomainChanged(it.text)
             },
-            onDownload = { onDownloadFavicon(domainInput.text.trim()) },
             onSave = {
                 focusManager.clearFocus()
                 onDomainSaved(domainInput.text)
@@ -112,10 +106,8 @@ private fun AssociatedDomainCard(
     value: String?,
     editedValue: TextFieldValue,
     editing: Boolean,
-    downloading: Boolean,
     onLongClick: () -> Unit,
     onValueChange: (TextFieldValue) -> Unit,
-    onDownload: () -> Unit,
     onSave: () -> Unit
 ) {
     InfoGroupCard(title = stringResource(R.string.vault_detail_associated_domain)) {
@@ -132,9 +124,7 @@ private fun AssociatedDomainCard(
             if (editing) {
                 DomainEditor(
                     value = editedValue,
-                    downloading = downloading,
                     onValueChange = onValueChange,
-                    onDownload = onDownload,
                     onDone = onSave
                 )
             } else {
@@ -207,9 +197,7 @@ private fun AssociatedAppRow(packageName: String) {
 @Composable
 private fun DomainEditor(
     value: TextFieldValue,
-    downloading: Boolean,
     onValueChange: (TextFieldValue) -> Unit,
-    onDownload: () -> Unit,
     onDone: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -225,23 +213,11 @@ private fun DomainEditor(
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Button(
-                onClick = onDownload,
-                enabled = value.text.isNotBlank() && !downloading
-            ) {
-                if (downloading) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                } else {
-                    Icon(Icons.Default.Download, null, modifier = Modifier.size(16.dp))
-                }
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.vault_detail_download_icon))
-            }
             TextButton(onClick = onDone) {
-                Icon(Icons.Default.Check, null)
+                Icon(Icons.Default.Check, contentDescription = null)
                 Spacer(Modifier.width(4.dp))
                 Text(stringResource(R.string.save))
             }

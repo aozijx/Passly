@@ -1,6 +1,6 @@
 package com.aozijx.passly.core.ui.adaptive
 
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -9,9 +9,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.window.core.layout.WindowSizeClass
 
 enum class PasslyWindowWidth {
-    COMPACT,
-    MEDIUM,
-    EXPANDED
+    COMPACT, MEDIUM, EXPANDED
 }
 
 @Immutable
@@ -36,8 +34,7 @@ val LocalPasslyAdaptiveLayout = staticCompositionLocalOf { PasslyAdaptiveLayout.
  */
 @Composable
 fun ProvidePasslyAdaptiveLayout(content: @Composable () -> Unit) {
-    val windowSizeClass =
-        currentWindowAdaptiveInfo(supportLargeAndXLargeWidth = true).windowSizeClass
+    val windowSizeClass = currentWindowAdaptiveInfoV2().windowSizeClass
     val windowWidth = when {
         windowSizeClass.isWidthAtLeastBreakpoint(
             WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND

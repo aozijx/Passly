@@ -18,10 +18,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
-import com.aozijx.passly.presentation.feature.settings.main.general.DiagnosticsSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.main.general.GeneralSettingsAction
-import com.aozijx.passly.presentation.feature.settings.main.general.GeneralSettingsEffect
-import com.aozijx.passly.presentation.feature.settings.main.general.GeneralSettingsViewModel
 import com.aozijx.passly.presentation.ui.settings.general.AboutSettingsSection
 import com.aozijx.passly.presentation.ui.settings.general.CacheSettingsSection
 import com.aozijx.passly.presentation.ui.settings.general.LogSettingsSection

@@ -129,7 +129,9 @@ fun VaultScreen(
             entryPages = entryPages,
             itemEventHandler = itemEventHandler,
             otpStateProvider = otpStateProvider,
-            modifier = Modifier.fillMaxSize().padding(padding),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
         )
     }
 

@@ -26,13 +26,18 @@ internal class UpdateEntryExecutor @Inject constructor(
     private val activityWriter: EntryActivityWriter,
     private val clock: DatabaseClock,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
+    private val entryResourceCleaner: EntryResourceCleaner,
 ) {
     suspend fun execute(id: String, expectedVersion: Int, changes: EntryUpdate): AppResult<Unit> {
+        var replacedIconPath: String? = null
+        var currentIconPath: String? = null
         val result = databaseTransactions.write("entry_update") {
             val entity = entryQueryDao().getById(id) ?: throw NotFound()
             val oldProfile = EntryProfileMapper.fromEntity(entity)
             val oldSecret = secretFieldStore.readAll(this, id)
             val newProfile = changes.profile ?: oldProfile
+            replacedIconPath = oldProfile.icon.customReference
+            currentIconPath = newProfile.icon.customReference
             val newSecret = changes.secret?.mergePreservedFields(oldSecret) ?: oldSecret
             require(newSecret.credential.kind == entity.entryType.credentialKind) {
                 "${entity.entryType} cannot contain ${newSecret.credential.kind} credentials"
@@ -87,7 +92,10 @@ internal class UpdateEntryExecutor @Inject constructor(
                 activityWriter.recordActivity(this, id, ActivityType.SENSITIVE_CHANGE, now)
             }
         }
-        result.onSuccessSuspend { attachmentGarbageCollector.drain() }
+        result.onSuccessSuspend {
+            attachmentGarbageCollector.drain()
+            entryResourceCleaner.cleanReplacedIcon(replacedIconPath, currentIconPath)
+        }
         return result
     }
 }

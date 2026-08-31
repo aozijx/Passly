@@ -67,6 +67,9 @@ interface EntryQueryDao {
     @Query("SELECT COUNT(*) FROM entries WHERE deletedAt IS NOT NULL")
     suspend fun countDeleted(): Int
 
+    @Query("SELECT COUNT(*) FROM entries WHERE iconCustomReference = :path")
+    suspend fun countByIconCustomReference(path: String): Int
+
     @Query("SELECT entryId FROM entries WHERE deletedAt IS NULL AND searchIndexVersion < :currentVersion")
     suspend fun getActiveEntryIdsNeedingIndexRebuild(currentVersion: Int): List<String>
 

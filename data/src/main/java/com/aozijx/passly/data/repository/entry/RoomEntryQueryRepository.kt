@@ -44,6 +44,13 @@ internal class RoomEntryQueryRepository @Inject constructor(
         }
     }
 
+    override suspend fun findAllTags(): Set<String> {
+        if (!sessionState.hasFullSecureSessionAccess()) return emptySet()
+        return databaseSession.query {
+            entryQueryDao().getActive().flatMapTo(linkedSetOf()) { it.tags }
+        }
+    }
+
     override suspend fun count(): Int {
         if (!sessionState.hasFullSecureSessionAccess()) return 0
         return databaseSession.query { entryQueryDao().countActive() }

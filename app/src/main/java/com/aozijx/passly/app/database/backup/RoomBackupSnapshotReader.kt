@@ -101,7 +101,7 @@ internal class RoomBackupSnapshotReader @Inject constructor(
                                     entryId = entry.id.value,
                                     kind = com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind.ICON,
                                     fileName = iconFile.name,
-                                    mimeType = "image/png",
+                                    mimeType = iconFile.imageMimeType(),
                                     size = content.size.toLong(),
                                     sha256 = BackupBundleValidator.sha256Hex(content)
                                 )
@@ -194,4 +194,11 @@ internal class RoomBackupSnapshotReader @Inject constructor(
             bundle
         }
     }
+}
+
+private fun File.imageMimeType(): String = when (extension.lowercase()) {
+    "webp" -> "image/webp"
+    "jpg", "jpeg" -> "image/jpeg"
+    "gif" -> "image/gif"
+    else -> "image/png"
 }

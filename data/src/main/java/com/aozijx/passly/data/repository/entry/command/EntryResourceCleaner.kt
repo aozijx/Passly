@@ -7,6 +7,7 @@ import com.aozijx.passly.core.telemetry.EventLevel
 import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.report
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
+import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -29,6 +30,7 @@ internal data class DeletedEntryResources(
 internal class EntryResourceCleaner @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
+    private val databaseTransactions: DatabaseTransactionRunner,
     private val telemetry: TelemetryReporter,
 ) {
     private val imageRoot: File
@@ -51,6 +53,24 @@ internal class EntryResourceCleaner @Inject constructor(
                         )
                     }
                 }
+        }
+    }
+
+    suspend fun cleanReplacedIcon(oldPath: String?, newPath: String?) {
+        val candidate = oldPath?.takeIf { it.isNotBlank() && it != newPath } ?: return
+        val references = databaseTransactions.read("entry_icon_reference_check") {
+            entryQueryDao().countByIconCustomReference(candidate)
+        }.getOrNull() ?: return
+        if (references != 0) return
+        withContext(Dispatchers.IO) {
+            runCatching { deleteCustomIcon(candidate) }.onFailure { error ->
+                telemetry.report(
+                    EventLevel.WARN,
+                    EventCategory.FILE_IO,
+                    "entry.icon_replacement_cleanup_failed",
+                    error,
+                )
+            }
         }
     }
 

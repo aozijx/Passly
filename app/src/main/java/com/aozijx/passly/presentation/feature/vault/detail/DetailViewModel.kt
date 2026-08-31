@@ -3,10 +3,11 @@ package com.aozijx.passly.presentation.feature.vault.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.clipboard.ClipboardCopyController
+import com.aozijx.passly.app.entry.favicon.FaviconCropRequest
+import com.aozijx.passly.app.entry.favicon.FaviconImageProcessor
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.model.SensitiveAccessAction
-import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.Entry
@@ -18,7 +19,6 @@ import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
-import com.aozijx.passly.domain.entry.service.FaviconService
 import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.policy.EntryAccountGraph
 import com.aozijx.passly.domain.sensitive.OwnedChars
@@ -30,8 +30,8 @@ import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
 import com.aozijx.passly.presentation.feature.vault.detail.DetailEntryAnalyzer
 import com.aozijx.passly.presentation.feature.vault.detail.DetailMutation
 import com.aozijx.passly.presentation.feature.vault.detail.DetailReducer
-import com.aozijx.passly.presentation.feature.vault.detail.withDetailUsername
-import com.aozijx.passly.presentation.feature.vault.detail.withLoginPassword
+import com.aozijx.passly.domain.entry.model.EntryIcon
+import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,14 +49,19 @@ class DetailViewModel @Inject constructor(
     private val entryCommandRepository: EntryCommandRepository,
     private val entryLinkRepository: EntryLinkRepository,
     private val activityRecorder: ActivityRecorder,
-    private val faviconService: FaviconService,
     private val entryTypePolicy: EntryTypePolicy,
     private val accessPolicy: DetailAccessPolicy,
     private val authorizationGate: AuthorizationGate,
     private val clipboardCopyController: ClipboardCopyController,
+    private val faviconImageProcessor: FaviconImageProcessor,
 ) : ViewModel() {
     private val entryAnalyzer = DetailEntryAnalyzer(entryTypePolicy)
     private val revealStore = DetailRevealStore()
+    private val updateCoordinator = DetailEntryUpdateCoordinator(
+        entryQueryRepository = entryQueryRepository,
+        entryCommandRepository = entryCommandRepository,
+    )
+    private var pendingPromotedFaviconPath: String? = null
 
     companion object {
         private const val ACCESS_HISTORY_TOGGLE_KEY = "detail.access_history_enabled"
@@ -98,9 +103,9 @@ class DetailViewModel @Inject constructor(
                 refreshKeepingTitleEdit(event.entry)
             }
 
-            is DetailUiAction.CommitEntryUpdate -> {
+            is DetailUiAction.CommitPatch -> {
                 viewModelScope.launch {
-                    persistEntryUpdate(event.entry)
+                    persistEntryPatch(event.patch, event.completion)
                 }
             }
 
@@ -124,9 +129,9 @@ class DetailViewModel @Inject constructor(
                     mutate(DetailMutation.TitleEditingCancelled)
                 } else {
                     viewModelScope.launch {
-                        persistEntryUpdate(
-                            current.copy(profile = current.profile.copy(title = newTitle)),
-                            isEditingTitle = false
+                        persistEntryPatch(
+                            patch = DetailEntryPatch.Title(newTitle),
+                            completion = DetailEditCompletion.Title,
                         )
                     }
                 }
@@ -135,8 +140,9 @@ class DetailViewModel @Inject constructor(
             DetailUiAction.ToggleFavorite -> {
                 val current = _uiState.value.entry ?: return
                 viewModelScope.launch {
-                    persistEntryUpdate(
-                        current.copy(profile = current.profile.copy(favorite = !current.favorite))
+                    persistEntryPatch(
+                        patch = DetailEntryPatch.Favorite(!current.favorite),
+                        completion = DetailEditCompletion.Favorite,
                     )
                 }
             }
@@ -155,24 +161,176 @@ class DetailViewModel @Inject constructor(
             }
 
             is DetailUiAction.SaveField -> {
-                val current = _uiState.value.entry ?: return
+                _uiState.value.entry ?: return
                 viewModelScope.launch {
-                    val updated = when (event.key) {
-                        RevealedFieldKey.USERNAME -> current.withDetailUsername(event.newValue)
-                        RevealedFieldKey.PASSWORD -> current.withLoginPassword(event.newValue)
-                        else -> current
+                    val patch = when (event.key) {
+                        RevealedFieldKey.USERNAME -> DetailEntryPatch.Username(event.newValue)
+                        RevealedFieldKey.PASSWORD -> DetailEntryPatch.LoginPassword(event.newValue)
+                        else -> return@launch
                     }
-                    persistEntryUpdate(updated)
-                    setRevealedField(event.key, OwnedChars.fromString(event.newValue))
+                    persistEntryPatch(
+                        patch = patch,
+                        completion = DetailEditCompletion.SensitiveField(event.key),
+                    )
                 }
             }
 
-            is DetailUiAction.DownloadFavicon -> {
+            DetailUiAction.OpenTagEditor -> {
                 val current = _uiState.value.entry ?: return
                 viewModelScope.launch {
-                    downloadAndApplyFavicon(current, event.domain, updateDomain = true)
+                    mutate(
+                        DetailMutation.TagEditorOpened(
+                            currentTags = current.tags,
+                            availableTags = entryQueryRepository.findAllTags(),
+                        ),
+                    )
                 }
             }
+
+            is DetailUiAction.UpdateTagInput -> {
+                if (event.value.any { it == ',' || it == '\n' || it == '\r' }) {
+                    mutate(DetailMutation.TagSubmitted(event.value))
+                } else {
+                    mutate(DetailMutation.TagInputChanged(event.value))
+                }
+            }
+
+            is DetailUiAction.SubmitTag ->
+                mutate(DetailMutation.TagSubmitted(event.value))
+
+            is DetailUiAction.RemoveTag ->
+                mutate(DetailMutation.TagRemoved(event.value))
+
+            DetailUiAction.SaveTags -> {
+                val editor = _uiState.value.tagEditor
+                when (
+                    val normalized = DetailTagNormalizer.normalize(
+                        editor.draftTags + editor.input,
+                    )
+                ) {
+                    is TagNormalizationResult.Valid -> viewModelScope.launch {
+                        persistEntryPatch(
+                            patch = DetailEntryPatch.Tags(normalized.tags),
+                            completion = DetailEditCompletion.Tags,
+                        )
+                    }
+
+                    else -> mutate(DetailMutation.TagSubmitted(editor.input))
+                }
+            }
+
+            DetailUiAction.DismissTagEditor ->
+                mutate(DetailMutation.TagEditorDismissRequested)
+
+            DetailUiAction.ConfirmDiscardTags ->
+                mutate(DetailMutation.TagEditorDiscardConfirmed)
+
+            DetailUiAction.KeepEditingTags ->
+                mutate(DetailMutation.TagEditorDiscardCancelled)
+
+            DetailUiAction.OpenFaviconEditor -> {
+                val icon = _uiState.value.entry?.icon ?: return
+                mutate(DetailMutation.FaviconEditorOpened(icon.toFaviconDraftSource()))
+            }
+
+            is DetailUiAction.SelectFaviconSource -> {
+                val previous = _uiState.value.faviconEditor.source
+                if (previous is FaviconDraftSourceUiModel.PrivateImage && previous != event.source) {
+                    viewModelScope.launch { faviconImageProcessor.discard(previous.stagedPath) }
+                }
+                pendingPromotedFaviconPath?.let { path ->
+                    viewModelScope.launch { faviconImageProcessor.discardPromotedCandidate(path) }
+                    pendingPromotedFaviconPath = null
+                }
+                mutate(DetailMutation.FaviconSourceChanged(event.source))
+            }
+
+            is DetailUiAction.SelectFaviconTab ->
+                mutate(DetailMutation.FaviconTabChanged(event.tab))
+
+            is DetailUiAction.UpdateFaviconSearch ->
+                mutate(DetailMutation.FaviconSearchChanged(event.value))
+
+            is DetailUiAction.UpdateFaviconImageUrl ->
+                mutate(DetailMutation.FaviconImageUrlChanged(event.value))
+
+            is DetailUiAction.PickedFaviconImage -> {
+                viewModelScope.launch {
+                    stageFaviconInput { faviconImageProcessor.stageUpload(event.uri) }
+                }
+            }
+
+            DetailUiAction.DownloadFaviconImage -> {
+                val url = _uiState.value.faviconEditor.imageUrl
+                viewModelScope.launch {
+                    stageFaviconInput { faviconImageProcessor.stageHttpsUrl(url) }
+                }
+            }
+
+            DetailUiAction.UseFaviconWithoutCrop -> {
+                viewModelScope.launch { processPendingFavicon(crop = null) }
+            }
+
+            is DetailUiAction.CropFaviconImage -> {
+                viewModelScope.launch {
+                    processPendingFavicon(
+                        FaviconCropRequest(event.zoom, event.offsetX, event.offsetY),
+                    )
+                }
+            }
+
+            DetailUiAction.CancelFaviconCrop -> {
+                val pending = _uiState.value.faviconEditor.pendingInputPath
+                viewModelScope.launch { faviconImageProcessor.discard(pending) }
+                mutate(DetailMutation.FaviconCropCancelled)
+            }
+
+            DetailUiAction.SaveFavicon -> {
+                viewModelScope.launch {
+                    val source = _uiState.value.faviconEditor.source
+                    val persistedSource = if (
+                        source is FaviconDraftSourceUiModel.PrivateImage &&
+                        faviconImageProcessor.isStaged(source.stagedPath)
+                    ) {
+                        val promoted = faviconImageProcessor.promote(source.stagedPath)
+                            .getOrElse {
+                                mutate(DetailMutation.FaviconProcessingFailed(it.message))
+                                return@launch
+                            }
+                        FaviconDraftSourceUiModel.PrivateImage(promoted).also {
+                            pendingPromotedFaviconPath = promoted
+                            mutate(DetailMutation.FaviconSourceChanged(it))
+                        }
+                    } else {
+                        source
+                    }
+                    persistEntryPatch(
+                        patch = DetailEntryPatch.Icon(persistedSource.toEntryIcon()),
+                        completion = DetailEditCompletion.Icon,
+                    )
+                    if (!_uiState.value.faviconEditor.visible) {
+                        pendingPromotedFaviconPath = null
+                    }
+                }
+            }
+
+            DetailUiAction.DismissFaviconEditor ->
+                mutate(DetailMutation.FaviconEditorDismissRequested)
+
+            DetailUiAction.ConfirmDiscardFavicon ->
+                viewModelScope.launch {
+                    val editor = _uiState.value.faviconEditor
+                    val staged = (editor.source as? FaviconDraftSourceUiModel.PrivateImage)
+                        ?.stagedPath
+                    faviconImageProcessor.discard(staged)
+                    faviconImageProcessor.discard(editor.pendingInputPath)
+                    faviconImageProcessor.discardPromotedCandidate(pendingPromotedFaviconPath)
+                    pendingPromotedFaviconPath = null
+                    mutate(DetailMutation.FaviconEditorDiscardConfirmed)
+                }
+
+            DetailUiAction.KeepEditingFavicon ->
+                mutate(DetailMutation.FaviconEditorDiscardCancelled)
 
             is DetailUiAction.RevealHighSensitivityField -> {
                 val current = _uiState.value.entry ?: return
@@ -245,7 +403,6 @@ class DetailViewModel @Inject constructor(
             val presence = sensitiveFieldRepository.getPresence(latest.id)
             mutate(DetailMutation.SensitiveFieldPresenceChanged(presence.keys))
             loadRelatedEntries(latest)
-            autoDownloadFavicon(latest)
         }
         viewModelScope.launch {
             if (!accessPolicy.hasFullAccess()) return@launch
@@ -319,37 +476,41 @@ class DetailViewModel @Inject constructor(
     private fun ActivityType.clearsRevealedFields(): Boolean =
         this == ActivityType.COPY_PASSWORD || this == ActivityType.COPY_USERNAME
 
-    private suspend fun persistEntryUpdate(
-        entry: Entry,
-        isEditingTitle: Boolean = _uiState.value.isEditingTitle
+    private suspend fun persistEntryPatch(
+        patch: DetailEntryPatch,
+        completion: DetailEditCompletion,
     ) {
         if (!accessPolicy.hasFullAccess()) return
-        val result = entryCommandRepository.updateEntry(
-            entry.id,
-            entry.version,
-            EntryUpdate(profile = entry.profile, secret = entry.secret)
-        )
-        if (result.isSuccess) {
-            val latest = entryQueryRepository.getById(entry.id) ?: entry
-            refreshFromEntry(
-                latest,
-                isEditingTitle = isEditingTitle,
-                editedTitle = if (isEditingTitle) _uiState.value.editedTitle else latest.title
-            )
-            emitEntryUpdated(latest)
+        val entryId = _uiState.value.entry?.id ?: return
+        if (_uiState.value.savingEdit != null) return
+        mutate(DetailMutation.SaveStarted(completion))
+        when (val result = updateCoordinator.update(entryId, patch)) {
+            is com.aozijx.passly.core.error.result.AppResult.Success -> {
+                val latest = result.data
+                val keepTitleEditing = completion != DetailEditCompletion.Title &&
+                    _uiState.value.isEditingTitle
+                refreshFromEntry(
+                    latest,
+                    isEditingTitle = keepTitleEditing,
+                    editedTitle = if (keepTitleEditing) _uiState.value.editedTitle else latest.title,
+                )
+                if (completion is DetailEditCompletion.SensitiveField) {
+                    patch.revealedValueOrNull()?.let { value ->
+                        setRevealedField(completion.key, OwnedChars.fromString(value))
+                    }
+                }
+                mutate(DetailMutation.SaveSucceeded(completion))
+                emitEntryUpdated(latest)
+            }
+
+            is com.aozijx.passly.core.error.result.AppResult.Failure -> {
+                mutate(DetailMutation.SaveFailed(completion, result.error.code))
+            }
         }
     }
 
     private fun emitEntryUpdated(entry: Entry) {
         _effects.trySend(DetailEffect.EntryUpdated(entry))
-    }
-
-    private fun autoDownloadFavicon(entry: Entry) {
-        val domain = entry.associations.primaryUrl ?: entry.associations.domains.firstOrNull()
-        if (domain.isNullOrBlank() || !entry.icon.customReference.isNullOrBlank()) return
-        viewModelScope.launch {
-            downloadAndApplyFavicon(entry, domain, updateDomain = false)
-        }
     }
 
     private suspend fun loadRelatedEntries(entry: Entry) {
@@ -372,42 +533,6 @@ class DetailViewModel @Inject constructor(
             entryQueryRepository.getById(relatedId)
         }
         mutate(DetailMutation.RelatedEntriesChanged(related))
-    }
-
-    private suspend fun downloadAndApplyFavicon(
-        entry: Entry,
-        domain: String,
-        updateDomain: Boolean
-    ) {
-        if (domain.isBlank()) return
-        if (!accessPolicy.hasFullAccess()) return
-        mutate(DetailMutation.FaviconDownloadingChanged(true))
-        try {
-            val update = faviconService.downloadAndPrepareUpdate(
-                entry = entry,
-                domain = domain,
-                updatePrimaryUrl = updateDomain
-            )
-            if (update == null || !accessPolicy.hasFullAccess()) return
-
-            val updateResult = entryCommandRepository.updateEntry(
-                entry.id,
-                entry.version,
-                update
-            )
-            if (updateResult.isSuccess) {
-                val latest = entryQueryRepository.getById(entry.id)
-                if (latest != null) {
-                    refreshFromEntry(
-                        latest,
-                        _uiState.value.isEditingTitle,
-                        _uiState.value.editedTitle
-                    )
-                }
-            }
-        } finally {
-            mutate(DetailMutation.FaviconDownloadingChanged(false))
-        }
     }
 
     private fun refreshFromEntry(entry: Entry, isEditingTitle: Boolean, editedTitle: String) {
@@ -433,4 +558,57 @@ class DetailViewModel @Inject constructor(
     override fun onCleared() {
         clearSensitiveState()
     }
+
+    private suspend fun stageFaviconInput(
+        stage: suspend () -> Result<String>,
+    ) {
+        if (_uiState.value.faviconEditor.processing) return
+        mutate(DetailMutation.FaviconProcessingStarted)
+        stage().fold(
+            onSuccess = { mutate(DetailMutation.FaviconInputStaged(it)) },
+            onFailure = { mutate(DetailMutation.FaviconProcessingFailed(it.message)) },
+        )
+    }
+
+    private suspend fun processPendingFavicon(crop: FaviconCropRequest?) {
+        val path = _uiState.value.faviconEditor.pendingInputPath ?: return
+        if (_uiState.value.faviconEditor.processing) return
+        mutate(DetailMutation.FaviconProcessingStarted)
+        faviconImageProcessor.process(path, crop).fold(
+            onSuccess = {
+                mutate(
+                    DetailMutation.FaviconSourceChanged(
+                        FaviconDraftSourceUiModel.PrivateImage(it),
+                    ),
+                )
+            },
+            onFailure = { mutate(DetailMutation.FaviconProcessingFailed(it.message)) },
+        )
+    }
+
+    private fun EntryIcon.toFaviconDraftSource(): FaviconDraftSourceUiModel {
+        val privatePath = customReference
+        val builtInName = name
+        return when {
+            !privatePath.isNullOrBlank() -> FaviconDraftSourceUiModel.PrivateImage(privatePath)
+            !builtInName.isNullOrBlank() -> FaviconDraftSourceUiModel.BuiltIn(builtInName, color)
+            else -> FaviconDraftSourceUiModel.InferredDefault
+        }
+    }
+
+    private fun FaviconDraftSourceUiModel.toEntryIcon(): EntryIcon = when (this) {
+        FaviconDraftSourceUiModel.InferredDefault -> EntryIcon()
+        is FaviconDraftSourceUiModel.BuiltIn -> EntryIcon(name = key, color = colorToken)
+        is FaviconDraftSourceUiModel.PrivateImage -> EntryIcon(customReference = stagedPath)
+    }
+}
+
+private fun DetailEntryPatch.revealedValueOrNull(): String? = when (this) {
+    is DetailEntryPatch.Username -> value
+    is DetailEntryPatch.LoginPassword -> value
+    is DetailEntryPatch.CardNumber -> value
+    is DetailEntryPatch.CardCvv -> value
+    is DetailEntryPatch.WifiPassword -> value
+    is DetailEntryPatch.SshPassphrase -> value
+    else -> null
 }
