@@ -95,7 +95,7 @@ class DetailReducerTest {
                 DetailUiState(
                     entry = entry("Secret"),
                     revealedFields = mapOf("password" to password),
-                    isFaviconDownloading = true,
+                    savingEdit = DetailEditCompletion.Notes,
                 ),
                 DetailMutation.StateCleared,
             )

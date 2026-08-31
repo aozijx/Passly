@@ -15,7 +15,6 @@ data class DetailScreenUiModel(
     val isEditingTitle: Boolean,
     val validationError: String?,
     val isAccessHistoryEnabled: Boolean,
-    val isFaviconDownloading: Boolean,
     val sections: List<DetailSectionUiModel>,
     val relatedEntries: List<RelatedEntryUiModel>,
     val associatedInfo: DetailAssociatedInfoUiModel,
@@ -100,7 +99,6 @@ data class DetailAssociatedInfoUiModel(
     val domain: String?,
     val applicationIds: List<String>,
     val isEditingDomain: Boolean,
-    val isFaviconDownloading: Boolean,
 )
 
 data class DetailNotesUiModel(

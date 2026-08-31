@@ -8,6 +8,7 @@ import androidx.paging.cachedIn
 import androidx.paging.map
 import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.domain.access.port.SensitiveKeyFreshnessState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -28,7 +29,6 @@ import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
-import com.aozijx.passly.domain.access.port.SensitiveKeyFreshnessState
 import com.aozijx.passly.domain.entry.service.FaviconService
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.domain.settings.model.SettingsCommand
@@ -51,8 +51,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -183,14 +183,18 @@ class VaultViewModel @Inject constructor(
         when (action) {
             is VaultUiAction.SearchQueryChanged ->
                 mutate(VaultMutation.SearchQueryChanged(action.query))
+
             is VaultUiAction.CategorySelected ->
                 mutate(VaultMutation.CategoryChanged(action.category))
+
             VaultUiAction.ClearCategory -> mutate(VaultMutation.CategoryChanged(null))
             is VaultUiAction.SortOptionSelected -> selectSortOption(action.sort)
             is VaultUiAction.QuickFilterSelected ->
                 mutate(VaultMutation.QuickFilterChanged(action.filter))
+
             is VaultUiAction.SearchToggled ->
                 mutate(VaultMutation.SearchVisibilityChanged(action.active))
+
             VaultUiAction.ToggleShowTotpCode -> toggleShowTOTPCode()
             is VaultUiAction.AddTypeSelected -> setAddType(action.type)
             is VaultUiAction.ItemToDeleteSelected -> setItemToDelete(action.item)

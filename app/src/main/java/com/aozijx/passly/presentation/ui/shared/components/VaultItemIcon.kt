@@ -29,7 +29,7 @@ fun VaultItemIcon(
     title: String,
     username: String,
     associatedDomain: String?,
-    tint: Color = MaterialTheme.colorScheme.onSecondaryContainer,
+    iconColor: String? = null,
 ) = VaultItemIcon(
     modifier = modifier,
     iconName = iconName,
@@ -46,7 +46,8 @@ fun VaultItemIcon(
         packageNames = setOfNotNull(associatedAppPackage),
         appNames = setOfNotNull(title.takeIf { associatedAppPackage != null && associatedDomain == null }),
     ),
-    tint = tint,
+    iconColor = iconColor,
+    tint = MaterialTheme.colorScheme.onSecondaryContainer,
 )
 
 @Composable
@@ -56,6 +57,7 @@ private fun VaultItemIcon(
     iconCustomPath: String?,
     associatedAppPackage: String?,
     classificationInput: EntryClassificationInput,
+    iconColor: String?,
     tint: Color,
 ) {
     val appIconPainter = rememberAppIcon(associatedAppPackage)
@@ -72,6 +74,11 @@ private fun VaultItemIcon(
     val placeholderPainter = appIconPainter ?: fallbackPainter
 
     val customModel = remember(iconCustomPath) { toLocalIconImageModel(iconCustomPath) }
+    val resolvedTint = if (explicitIconVector != null && customModel == null) {
+        iconColorForStorageToken(iconColor, tint)
+    } else {
+        tint
+    }
     Box(
         modifier = modifier.size(36.dp), contentAlignment = Alignment.Center
     ) {
@@ -83,7 +90,7 @@ private fun VaultItemIcon(
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(CircleShape),
-                    contentScale = ContentScale.Crop,
+                    contentScale = ContentScale.Fit,
                     placeholder = placeholderPainter,
                     error = placeholderPainter
                 )
@@ -104,7 +111,7 @@ private fun VaultItemIcon(
                 Icon(
                     imageVector = fallbackIconVector,
                     contentDescription = null,
-                    tint = tint,
+                    tint = resolvedTint,
                     modifier = Modifier.size(24.dp)
                 )
             }

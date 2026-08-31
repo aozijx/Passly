@@ -85,7 +85,7 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
                             iconDir,
                             "restored_${
                                 BackupBundleValidator.sha256Hex(resource.id.toByteArray()).take(32)
-                            }.bin"
+                            }${resource.mimeType?.imageFileExtension() ?: ".png"}"
                         )
                         fileJournal.replace(target, content)
                         restoredFiles += target.canonicalPath
@@ -231,4 +231,12 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
     private fun report(name: String, throwable: Throwable? = null) {
         telemetry.report(EventLevel.WARN, EventCategory.BACKUP, name, throwable)
     }
+}
+
+private fun String.imageFileExtension(): String = when (lowercase()) {
+    "image/webp" -> ".webp"
+    "image/jpeg" -> ".jpg"
+    "image/gif" -> ".gif"
+    "image/png" -> ".png"
+    else -> error("Unsupported icon MIME type")
 }

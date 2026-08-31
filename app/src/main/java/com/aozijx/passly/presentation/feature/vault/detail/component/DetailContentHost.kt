@@ -2,6 +2,7 @@ package com.aozijx.passly.presentation.feature.vault.detail.component
 
 import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -13,6 +14,8 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.presentation.feature.vault.detail.DetailAuthenticate
+import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
+import com.aozijx.passly.presentation.feature.vault.detail.DetailEntryPatch
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
 import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
@@ -20,7 +23,9 @@ import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHa
 import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
 import com.aozijx.passly.presentation.feature.vault.detail.copySensitiveField
 import com.aozijx.passly.presentation.ui.vault.detail.component.InfoGroupCard
-import com.aozijx.passly.presentation.ui.vault.detail.component.DetailHeader
+import com.aozijx.passly.presentation.ui.vault.detail.component.DetailIconCard
+import com.aozijx.passly.presentation.ui.vault.detail.component.FaviconEditorSheet
+import com.aozijx.passly.presentation.ui.vault.detail.component.FaviconCropScreen
 import com.aozijx.passly.presentation.ui.vault.detail.component.DetailScrollableContent
 import com.aozijx.passly.presentation.feature.vault.detail.detailScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.component.MetadataSection
@@ -31,7 +36,7 @@ import com.aozijx.passly.presentation.ui.vault.detail.component.DetailBankCardFi
 import com.aozijx.passly.presentation.ui.vault.detail.component.CredentialSection
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionResolver
-import com.aozijx.passly.presentation.ui.vault.detail.component.EntryCategoryItem
+import com.aozijx.passly.presentation.ui.vault.detail.component.EntryTagsItem
 import com.aozijx.passly.presentation.ui.vault.detail.component.IdCardSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.NotesSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.PasskeySection
@@ -39,6 +44,7 @@ import com.aozijx.passly.presentation.ui.vault.detail.component.RelatedEntriesSe
 import com.aozijx.passly.presentation.ui.vault.detail.component.SeedPhraseSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.SshKeySection
 import com.aozijx.passly.presentation.ui.vault.detail.component.TotpSection
+import com.aozijx.passly.presentation.ui.vault.detail.component.TagEditorSheet
 import com.aozijx.passly.presentation.ui.vault.detail.component.WifiSection
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.domain.sensitive.SensitiveValue
@@ -47,11 +53,6 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.DetailAssociatedInfo
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailNotesUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailBankCardUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailIdentityUiModel
-import com.aozijx.passly.presentation.feature.vault.detail.withCardCvv
-import com.aozijx.passly.presentation.feature.vault.detail.withCardNumber
-import com.aozijx.passly.presentation.feature.vault.detail.withDetailUsername
-import com.aozijx.passly.presentation.feature.vault.detail.withWifiPassword
-import com.aozijx.passly.presentation.feature.vault.detail.withSshPassphrase
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailWifiUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailSshUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.CredentialFieldUiModel
@@ -60,6 +61,9 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.CredentialSectionEve
 import com.aozijx.passly.presentation.ui.vault.detail.model.CredentialSectionUiState
 import com.aozijx.passly.presentation.feature.vault.detail.asScopedSensitiveText
 import androidx.compose.ui.text.input.TextFieldValue
+import com.aozijx.passly.presentation.ui.shared.media.ImageType
+import com.aozijx.passly.presentation.ui.shared.media.rememberImagePicker
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailIconCardUiModel
 
 @Composable
 fun DetailContentHost(
@@ -76,6 +80,34 @@ fun DetailContentHost(
     val entry = uiState.entry ?: return
     val screenUiModel = detailScreenUiModel(entry, uiState, otpUiState)
     val registeredSections = DetailSectionResolver.resolve(entry)
+    val pickFaviconImage = rememberImagePicker { uri, _ ->
+        onAction(DetailUiAction.PickedFaviconImage(uri))
+    }
+
+    LaunchedEffect(uiState.saveCompletionId) {
+        if (uiState.saveCompletionId == 0L) return@LaunchedEffect
+        when (val completion = uiState.completedEdit) {
+            DetailEditCompletion.Notes -> editState.isEditingNotes = false
+            DetailEditCompletion.Associations -> {
+                editState.isEditingDomain = false
+                editState.isEditingPackage = false
+            }
+            is DetailEditCompletion.SensitiveField -> when (completion.key) {
+                RevealedFieldKey.USERNAME,
+                RevealedFieldKey.CARDHOLDER,
+                -> editState.isEditingUsername = false
+
+                RevealedFieldKey.PASSWORD,
+                RevealedFieldKey.CARD_NUMBER,
+                RevealedFieldKey.SSH_PASSPHRASE,
+                -> editState.isEditingPassword = false
+
+                RevealedFieldKey.CVV -> editState.isEditingTotp = false
+                else -> Unit
+            }
+            else -> Unit
+        }
+    }
 
     val revealField: (String, SensitiveValue?) -> Unit = { key, value ->
         onAction(DetailUiAction.RevealField(key, value))
@@ -83,15 +115,18 @@ fun DetailContentHost(
 
     DetailScrollableContent(modifier = modifier, onInteraction = onInteraction) {
         item {
-            DetailHeader(
-                iconCustomPath = entry.iconCustomPath,
-                updatedAt = entry.updatedAt,
-                onIconClick = {
-                    entry.associatedDomain
-                        ?.takeIf { it.isNotBlank() }
-                        ?.let { onAction(DetailUiAction.DownloadFavicon(it)) }
-                },
-                onTitleLongClick = { onAction(DetailUiAction.StartTitleEdit) }
+            DetailIconCard(
+                model = DetailIconCardUiModel(
+                    iconName = entry.icon.name,
+                    iconCustomPath = entry.icon.customReference,
+                    iconColor = entry.icon.color,
+                    associatedAppPackage = entry.associations.applicationIds.firstOrNull(),
+                    entryTypeKey = entry.type.name,
+                    title = entry.title,
+                    username = entry.username,
+                    associatedDomain = entry.associatedDomain,
+                ),
+                onEdit = { onAction(DetailUiAction.OpenFaviconEditor) },
             )
         }
 
@@ -220,9 +255,24 @@ fun DetailContentHost(
                         else -> Unit
                     } },
                     onEditSaved = { field, value -> when (field) {
-                        DetailBankCardFieldUiModel.CARDHOLDER -> { onAction(DetailUiAction.CommitEntryUpdate(entry.withDetailUsername(value))); revealField(RevealedFieldKey.CARDHOLDER, OwnedChars.fromString(value)); editState.isEditingUsername = false }
-                        DetailBankCardFieldUiModel.CARD_NUMBER -> { onAction(DetailUiAction.CommitEntryUpdate(entry.withCardNumber(value))); revealField(RevealedFieldKey.CARD_NUMBER, OwnedChars.fromString(value)); editState.isEditingPassword = false }
-                        DetailBankCardFieldUiModel.CVV -> { onAction(DetailUiAction.CommitEntryUpdate(entry.withCardCvv(value))); revealField(RevealedFieldKey.CVV, OwnedChars.fromString(value)); editState.isEditingTotp = false }
+                        DetailBankCardFieldUiModel.CARDHOLDER -> onAction(
+                            DetailUiAction.CommitPatch(
+                                DetailEntryPatch.Username(value),
+                                DetailEditCompletion.SensitiveField(RevealedFieldKey.CARDHOLDER),
+                            ),
+                        )
+                        DetailBankCardFieldUiModel.CARD_NUMBER -> onAction(
+                            DetailUiAction.CommitPatch(
+                                DetailEntryPatch.CardNumber(value),
+                                DetailEditCompletion.SensitiveField(RevealedFieldKey.CARD_NUMBER),
+                            ),
+                        )
+                        DetailBankCardFieldUiModel.CVV -> onAction(
+                            DetailUiAction.CommitPatch(
+                                DetailEntryPatch.CardCvv(value),
+                                DetailEditCompletion.SensitiveField(RevealedFieldKey.CVV),
+                            ),
+                        )
                         else -> Unit
                     } },
                     onCopy = { field ->
@@ -281,7 +331,16 @@ fun DetailContentHost(
                     onPasswordReveal = { onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.PASSWORD)) },
                     onPasswordEditStarted = { editState.editedPassword = password.orEmpty(); editState.isEditingPassword = true },
                     onPasswordChanged = { editState.editedPassword = it },
-                    onPasswordSaved = { if (it != password) { onAction(DetailUiAction.CommitEntryUpdate(entry.withWifiPassword(it))); revealField(RevealedFieldKey.PASSWORD, OwnedChars.fromString(it)) }; editState.isEditingPassword = false },
+                    onPasswordSaved = {
+                        if (it != password) {
+                            onAction(
+                                DetailUiAction.CommitPatch(
+                                    DetailEntryPatch.WifiPassword(it),
+                                    DetailEditCompletion.SensitiveField(RevealedFieldKey.PASSWORD),
+                                ),
+                            )
+                        }
+                    },
                 )
             }
         }
@@ -302,7 +361,16 @@ fun DetailContentHost(
                     onPassphraseReveal = { if (passphrase != null) revealField(RevealedFieldKey.SSH_PASSPHRASE, null) else onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SSH_PASSPHRASE)) },
                     onPassphraseEditStarted = { editState.editedPassword = passphrase.orEmpty(); editState.isEditingPassword = true },
                     onPassphraseChanged = { editState.editedPassword = it },
-                    onPassphraseSaved = { if (it != passphrase) { onAction(DetailUiAction.CommitEntryUpdate(entry.withSshPassphrase(it))); revealField(RevealedFieldKey.SSH_PASSPHRASE, OwnedChars.fromString(it)) }; editState.isEditingPassword = false },
+                    onPassphraseSaved = {
+                        if (it != passphrase) {
+                            onAction(
+                                DetailUiAction.CommitPatch(
+                                    DetailEntryPatch.SshPassphrase(it),
+                                    DetailEditCompletion.SensitiveField(RevealedFieldKey.SSH_PASSPHRASE),
+                                ),
+                            )
+                        }
+                    },
                     onPrivateKeyClick = { if (privateKey == null) onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SSH_PRIVATE_KEY)) else copySensitiveField(handler, "private key", OwnedChars.fromString(privateKey), null) },
                     onRevealAll = { val keys = buildSet { if (hasPrivateKey && privateKey == null) add(RevealedFieldKey.SSH_PRIVATE_KEY); if (hasPassphrase && passphrase == null) add(RevealedFieldKey.SSH_PASSPHRASE) }; if (keys.isNotEmpty()) onAction(DetailUiAction.RevealHighSensitivityFields(keys)) },
                 )
@@ -349,11 +417,12 @@ fun DetailContentHost(
             }
         }
 
-        entry.tags.firstOrNull { it.isNotBlank() }?.trim()?.let { category ->
-            item {
-                InfoGroupCard(title = stringResource(R.string.field_category)) {
-                    EntryCategoryItem(category)
-                }
+        item {
+            InfoGroupCard(title = stringResource(R.string.vault_detail_tags_title)) {
+                EntryTagsItem(
+                    tags = entry.tags,
+                    onClick = { onAction(DetailUiAction.OpenTagEditor) },
+                )
             }
         }
 
@@ -363,20 +432,32 @@ fun DetailContentHost(
                     domain = entry.associatedDomain,
                     applicationIds = entry.associations.applicationIds.sorted(),
                     isEditingDomain = editState.isEditingDomain,
-                    isFaviconDownloading = uiState.isFaviconDownloading,
                 ),
-                onDownloadFavicon = { onAction(DetailUiAction.DownloadFavicon(it)) },
                 onDomainEditStarted = { editState.isEditingDomain = true },
                 onDomainChanged = { editState.editedDomain = it },
                 onDomainSaved = {
                     editState.editedDomain = it
-                    onAction(DetailUiAction.CommitEntryUpdate(editState.applyAssociatedOnly(entry)))
-                    editState.isEditingDomain = false
+                    onAction(
+                        DetailUiAction.CommitPatch(
+                            DetailEntryPatch.Associations(
+                                primaryUrl = it.trim().ifBlank { null },
+                                applicationIds = entry.associations.applicationIds,
+                            ),
+                            DetailEditCompletion.Associations,
+                        ),
+                    )
                 },
                 onPackageSelected = {
                     editState.editedPackage = it
-                    onAction(DetailUiAction.CommitEntryUpdate(editState.applyAssociatedOnly(entry)))
-                    editState.isEditingPackage = false
+                    onAction(
+                        DetailUiAction.CommitPatch(
+                            DetailEntryPatch.Associations(
+                                primaryUrl = entry.associations.primaryUrl,
+                                applicationIds = setOf(it),
+                            ),
+                            DetailEditCompletion.Associations,
+                        ),
+                    )
                 },
             )
         }
@@ -392,8 +473,12 @@ fun DetailContentHost(
                 onNotesChanged = { editState.editedNotes = TextFieldValue(it) },
                 onNotesSaved = {
                     editState.editedNotes = TextFieldValue(it)
-                    onAction(DetailUiAction.CommitEntryUpdate(editState.applyNotesOnly(entry)))
-                    editState.isEditingNotes = false
+                    onAction(
+                        DetailUiAction.CommitPatch(
+                            DetailEntryPatch.Notes(it.ifBlank { null }),
+                            DetailEditCompletion.Notes,
+                        ),
+                    )
                 },
             )
         }
@@ -405,6 +490,49 @@ fun DetailContentHost(
         item {
             ActivityTimelineSection(activityList = screenUiModel.activities)
         }
+    }
+
+    if (uiState.tagEditor.visible) {
+        TagEditorSheet(
+            state = uiState.tagEditor,
+            isSaving = uiState.savingEdit == DetailEditCompletion.Tags,
+            onInputChanged = { onAction(DetailUiAction.UpdateTagInput(it)) },
+            onSubmit = { onAction(DetailUiAction.SubmitTag(it)) },
+            onRemove = { onAction(DetailUiAction.RemoveTag(it)) },
+            onSave = { onAction(DetailUiAction.SaveTags) },
+            onDismiss = { onAction(DetailUiAction.DismissTagEditor) },
+            onConfirmDiscard = { onAction(DetailUiAction.ConfirmDiscardTags) },
+            onKeepEditing = { onAction(DetailUiAction.KeepEditingTags) },
+        )
+    }
+
+    if (uiState.faviconEditor.visible) {
+        FaviconEditorSheet(
+            state = uiState.faviconEditor,
+            isSaving = uiState.savingEdit == DetailEditCompletion.Icon,
+            onTabSelected = { onAction(DetailUiAction.SelectFaviconTab(it)) },
+            onSearchChanged = { onAction(DetailUiAction.UpdateFaviconSearch(it)) },
+            onSourceSelected = { onAction(DetailUiAction.SelectFaviconSource(it)) },
+            onUploadRequested = { pickFaviconImage(ImageType.SCREEN) },
+            onImageUrlChanged = { onAction(DetailUiAction.UpdateFaviconImageUrl(it)) },
+            onDownloadRequested = { onAction(DetailUiAction.DownloadFaviconImage) },
+            onSave = { onAction(DetailUiAction.SaveFavicon) },
+            onDismiss = { onAction(DetailUiAction.DismissFaviconEditor) },
+            onConfirmDiscard = { onAction(DetailUiAction.ConfirmDiscardFavicon) },
+            onKeepEditing = { onAction(DetailUiAction.KeepEditingFavicon) },
+        )
+    }
+
+    uiState.faviconEditor.pendingInputPath?.let { path ->
+        FaviconCropScreen(
+            stagedPath = path,
+            processing = uiState.faviconEditor.processing,
+            onCrop = { zoom, x, y ->
+                onAction(DetailUiAction.CropFaviconImage(zoom, x, y))
+            },
+            onUseWithoutCrop = { onAction(DetailUiAction.UseFaviconWithoutCrop) },
+            onCancel = { onAction(DetailUiAction.CancelFaviconCrop) },
+        )
     }
 }
 

@@ -28,7 +28,6 @@ class DetailUiMapperTest {
             isEditingTitle = true,
             validationError = "invalid",
             isAccessHistoryEnabled = true,
-            isFaviconDownloading = true,
             relatedEntries = listOf(entry.copy(identity = entry.identity.copy(id = EntryId("related")))),
             history = listOf(
                 EntryActivity(
@@ -49,7 +48,6 @@ class DetailUiMapperTest {
         assertEquals("Edited", ui.editedTitle)
         assertTrue(ui.isEditingTitle)
         assertTrue(ui.isAccessHistoryEnabled)
-        assertTrue(ui.isFaviconDownloading)
         assertEquals("related", ui.relatedEntries.single().id)
         assertEquals(1L, ui.metadata.createdAt)
         assertEquals(1L, ui.metadata.updatedAt)

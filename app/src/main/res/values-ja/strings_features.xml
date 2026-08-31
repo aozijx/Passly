@@ -71,4 +71,36 @@
     <string name="id_number">証明書番号</string>
     <string name="passkey_data">Passkeyデータ</string>
     <string name="hardware_key_info">ハードウェアキー情報</string>
+
+    <!-- 詳細タグ編集 -->
+    <string name="vault_detail_tags_title">タグ</string>
+    <string name="vault_detail_tags_add">タグを追加</string>
+    <string name="vault_detail_tag_input_label">新しいタグ</string>
+    <string name="vault_detail_tag_input_hint">カンマまたはEnterで追加</string>
+    <string name="vault_detail_tag_remove">タグ %1$s を削除</string>
+    <string name="vault_detail_tag_too_many">タグは最大%1$d個まで追加できます</string>
+    <string name="vault_detail_tag_too_long">各タグは%1$d文字以内にしてください</string>
+    <string name="vault_detail_tag_discard_title">タグの変更を破棄しますか？</string>
+    <string name="vault_detail_tag_discard_message">保存されていないタグの変更は失われます。</string>
+    <string name="vault_detail_tag_discard_action">破棄</string>
+    <string name="vault_detail_tag_keep_editing">編集を続ける</string>
+    <string name="vault_detail_favicon_title">アイコン</string>
+    <string name="vault_detail_favicon_edit">アイコンを変更</string>
+    <string name="vault_detail_favicon_default">デフォルトアイコン</string>
+    <string name="vault_detail_favicon_built_in">内蔵アイコン</string>
+    <string name="vault_detail_favicon_custom_image">カスタム画像</string>
+    <string name="vault_detail_favicon_library">アイコンライブラリ</string>
+    <string name="vault_detail_favicon_upload">アップロード</string>
+    <string name="vault_detail_favicon_image_url">画像 URL</string>
+    <string name="vault_detail_favicon_choose_image">画像を選択</string>
+    <string name="vault_detail_favicon_download">画像をダウンロード</string>
+    <string name="vault_detail_favicon_restore_default">デフォルトに戻す</string>
+    <string name="vault_detail_favicon_discard_title">アイコンの変更を破棄しますか？</string>
+    <string name="vault_detail_favicon_discard_message">保存されていないアイコンの変更は失われます。</string>
+    <string name="vault_detail_favicon_discard_action">破棄</string>
+    <string name="vault_detail_favicon_keep_editing">編集を続ける</string>
+    <string name="vault_detail_favicon_crop_title">アイコンを切り抜く</string>
+    <string name="vault_detail_favicon_crop_hint">ピンチで拡大し、画像をドラッグしてください。正方形の範囲が保存されます。</string>
+    <string name="vault_detail_favicon_no_crop">切り抜かずに使用</string>
+    <string name="vault_detail_favicon_crop_use">切り抜いて使用</string>
 </resources>

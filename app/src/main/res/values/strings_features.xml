@@ -73,4 +73,38 @@
     <string name="id_number">证件号码</string>
     <string name="passkey_data">Passkey 数据</string>
     <string name="hardware_key_info">硬件密钥信息</string>
+
+    <!-- 详情页标签编辑 -->
+    <string name="vault_detail_tags_title">标签</string>
+    <string name="vault_detail_tags_add">添加标签</string>
+    <string name="vault_detail_tag_input_label">新标签</string>
+    <string name="vault_detail_tag_input_hint">使用逗号或回车添加</string>
+    <string name="vault_detail_tag_remove">移除标签 %1$s</string>
+    <string name="vault_detail_tag_too_many">最多可添加 %1$d 个标签</string>
+    <string name="vault_detail_tag_too_long">每个标签不能超过 %1$d 个字符</string>
+    <string name="vault_detail_tag_discard_title">放弃标签修改？</string>
+    <string name="vault_detail_tag_discard_message">尚未保存的标签修改将丢失。</string>
+    <string name="vault_detail_tag_discard_action">放弃修改</string>
+    <string name="vault_detail_tag_keep_editing">继续编辑</string>
+
+    <!-- 详情页图标编辑 -->
+    <string name="vault_detail_favicon_title">图标</string>
+    <string name="vault_detail_favicon_edit">修改图标</string>
+    <string name="vault_detail_favicon_default">默认图标</string>
+    <string name="vault_detail_favicon_built_in">内置图标</string>
+    <string name="vault_detail_favicon_custom_image">自定义图片</string>
+    <string name="vault_detail_favicon_library">图标库</string>
+    <string name="vault_detail_favicon_upload">上传</string>
+    <string name="vault_detail_favicon_image_url">图片 URL</string>
+    <string name="vault_detail_favicon_choose_image">选择图片</string>
+    <string name="vault_detail_favicon_download">下载图片</string>
+    <string name="vault_detail_favicon_restore_default">恢复默认</string>
+    <string name="vault_detail_favicon_discard_title">放弃图标修改？</string>
+    <string name="vault_detail_favicon_discard_message">尚未保存的图标修改将丢失。</string>
+    <string name="vault_detail_favicon_discard_action">放弃修改</string>
+    <string name="vault_detail_favicon_keep_editing">继续编辑</string>
+    <string name="vault_detail_favicon_crop_title">裁剪图标</string>
+    <string name="vault_detail_favicon_crop_hint">双指缩放并拖动图片，方框内区域会保存为图标。</string>
+    <string name="vault_detail_favicon_no_crop">不裁剪</string>
+    <string name="vault_detail_favicon_crop_use">裁剪并使用</string>
 </resources>

@@ -36,7 +36,6 @@ internal fun detailScreenUiModel(
     isEditingTitle = state.isEditingTitle,
     validationError = state.validationError,
     isAccessHistoryEnabled = state.isAccessHistoryEnabled,
-    isFaviconDownloading = state.isFaviconDownloading,
     sections = DetailSectionResolver.resolve(entry).map {
         DetailSectionUiModel(DetailSectionKindUiModel.valueOf(it.name))
     },
@@ -47,7 +46,6 @@ internal fun detailScreenUiModel(
         domain = entry.associatedDomain,
         applicationIds = entry.associations.applicationIds.sorted(),
         isEditingDomain = false,
-        isFaviconDownloading = state.isFaviconDownloading,
     ),
     notes = DetailNotesUiModel(entry.secret.notes, entry.secret.notes.orEmpty(), false),
     metadata = DetailMetadataUiModel(entry.createdAt, entry.updatedAt),
