@@ -12,9 +12,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import java.net.HttpURLConnection
-import java.net.InetAddress
-import java.net.URI
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,6 +27,7 @@ data class FaviconCropRequest(
 @Singleton
 class FaviconImageProcessor @Inject constructor(
     @param:ApplicationContext private val context: Context,
+    private val imageDownloader: FaviconImageDownloader,
 ) {
     suspend fun stageUpload(uri: Uri): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
@@ -41,34 +39,7 @@ class FaviconImageProcessor @Inject constructor(
 
     suspend fun stageHttpsUrl(value: String): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
-            var current = validatePublicHttps(value)
-            repeat(MAX_REDIRECTS + 1) { redirectIndex ->
-                val connection = (current.toURL().openConnection() as HttpURLConnection).apply {
-                    instanceFollowRedirects = false
-                    connectTimeout = CONNECT_TIMEOUT_MS
-                    readTimeout = READ_TIMEOUT_MS
-                    requestMethod = "GET"
-                    setRequestProperty("Accept", "image/*")
-                }
-                try {
-                    val status = connection.responseCode
-                    if (status in 300..399) {
-                        check(redirectIndex < MAX_REDIRECTS) { "Too many redirects" }
-                        val location = connection.getHeaderField("Location") ?: error("Invalid redirect")
-                        current = validatePublicHttps(current.resolve(location).toString())
-                    } else {
-                        check(status in 200..299) { "Image download failed" }
-                        val contentType = connection.contentType.orEmpty().lowercase()
-                        check(contentType.startsWith("image/")) { "URL is not an image" }
-                        return@runCatching connection.inputStream.use { input ->
-                            writeBoundedInput(input.readBytesBounded(), RAW_EXTENSION)
-                        }
-                    }
-                } finally {
-                    connection.disconnect()
-                }
-            }
-            error("Too many redirects")
+            writeBoundedInput(imageDownloader.download(value), RAW_EXTENSION)
         }
     }
 
@@ -167,18 +138,6 @@ class FaviconImageProcessor @Inject constructor(
         return Bitmap.createScaledBitmap(this, (width * ratio).toInt(), (height * ratio).toInt(), true)
     }
 
-    private fun validatePublicHttps(value: String): URI {
-        val uri = URI(value.trim())
-        check(uri.scheme.equals("https", ignoreCase = true) && uri.host != null && uri.userInfo == null)
-        val host = uri.host.lowercase()
-        check(host != "localhost" && !host.endsWith(".local") && !host.endsWith(".internal") && !host.endsWith(".lan"))
-        InetAddress.getAllByName(host).forEach { address ->
-            check(!address.isAnyLocalAddress && !address.isLoopbackAddress && !address.isLinkLocalAddress &&
-                !address.isSiteLocalAddress && !address.isMulticastAddress) { "Private address is not allowed" }
-        }
-        return uri
-    }
-
     private fun java.io.InputStream.readBytesBounded(): ByteArray {
         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
         val output = java.io.ByteArrayOutputStream()
@@ -222,8 +181,5 @@ class FaviconImageProcessor @Inject constructor(
         const val NO_CROP_MAX_EDGE = 1024
         const val CROP_SIZE = 512
         const val MAX_ZOOM = 6f
-        const val MAX_REDIRECTS = 5
-        const val CONNECT_TIMEOUT_MS = 10_000
-        const val READ_TIMEOUT_MS = 15_000
     }
 }
