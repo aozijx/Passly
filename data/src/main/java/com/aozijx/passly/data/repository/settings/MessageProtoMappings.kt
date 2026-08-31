@@ -13,7 +13,6 @@ import com.aozijx.passly.domain.settings.model.defaultMessageTopicSettings
 internal fun String.toMessageTopicDomain(): MessageTopic = when (this) {
     "clipboard" -> MessageTopic.CLIPBOARD
     "app_lifecycle" -> MessageTopic.APP_LIFECYCLE
-    "icon_download" -> MessageTopic.ICON_DOWNLOAD
     "backup" -> MessageTopic.BACKUP
     "security" -> MessageTopic.SECURITY
     "database" -> MessageTopic.DATABASE
@@ -23,7 +22,6 @@ internal fun String.toMessageTopicDomain(): MessageTopic = when (this) {
 internal fun MessageTopic.toMessageTopicString(): String = when (this) {
     MessageTopic.CLIPBOARD -> "clipboard"
     MessageTopic.APP_LIFECYCLE -> "app_lifecycle"
-    MessageTopic.ICON_DOWNLOAD -> "icon_download"
     MessageTopic.BACKUP -> "backup"
     MessageTopic.SECURITY -> "security"
     MessageTopic.DATABASE -> "database"

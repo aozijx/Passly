@@ -5,6 +5,4 @@ data class InteractionSettings(
     val swipeLeftAction: SwipeActionType = SwipeActionType.COPY_PASSWORD,
     val swipeRightAction: SwipeActionType = SwipeActionType.DETAIL,
     val autofill: AutofillSettings = AutofillSettings(),
-    val isAutoDownloadIcons: Boolean = true,
-    val faviconDownloadWhitelist: Set<String> = emptySet()
 )

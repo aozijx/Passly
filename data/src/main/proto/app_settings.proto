@@ -76,8 +76,8 @@ message InteractionPreferences {
     optional string swipe_left_action = 2 [default = "copy_password"];
     optional string swipe_right_action = 3 [default = "detail"];
     optional AutofillPreferences autofill = 4;
-    optional bool auto_download_icons = 5 [default = true];
-    repeated string favicon_allowed_domains = 6;
+    reserved 5, 6;
+    reserved "auto_download_icons", "favicon_allowed_domains";
 }
 
 message AutofillPreferences {
@@ -143,7 +143,7 @@ message MessagePreferences {
 }
 
 message TopicMessagePreference {
-    // 消息分类标识: "clipboard", "app_lifecycle", "icon_download",
+    // 消息分类标识: "clipboard", "app_lifecycle",
     // "backup", "security", "database"
     optional string topic_key = 1 [default = "clipboard"];
   optional bool enabled = 2 [default = true];

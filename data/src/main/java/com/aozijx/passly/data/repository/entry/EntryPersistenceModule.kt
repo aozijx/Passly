@@ -9,7 +9,6 @@ import com.aozijx.passly.data.repository.entry.RoomEntryQueryRepository
 import com.aozijx.passly.data.repository.entry.RoomSensitiveFieldRepository
 import com.aozijx.passly.data.repository.entry.paging.EntryPagingStore
 import com.aozijx.passly.data.repository.entry.paging.RoomEntryPagingStore
-import com.aozijx.passly.data.repository.favicon.FaviconRepositoryImpl
 import com.aozijx.passly.data.repository.otp.RoomOtpConfigRepository
 import com.aozijx.passly.data.repository.search.BlindIndexMaintenance
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
@@ -18,7 +17,6 @@ import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
-import com.aozijx.passly.domain.entry.port.FaviconRepository
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
 import com.aozijx.passly.domain.entry.port.SearchIndexMaintenance
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
@@ -73,9 +71,5 @@ internal abstract class EntryPersistenceModule {
     @Binds
     @Singleton
     abstract fun bindSearchIndexMaintenance(impl: BlindIndexMaintenance): SearchIndexMaintenance
-
-    @Binds
-    @Singleton
-    abstract fun bindFaviconRepository(impl: FaviconRepositoryImpl): FaviconRepository
 
 }

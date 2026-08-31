@@ -31,8 +31,6 @@ class AndroidNoticeTextResolver @Inject constructor(
         NoticeCode.CLIPBOARD_CLEAR_FAILED -> R.string.notice_clipboard_clear_failed
         NoticeCode.APP_LOCKED -> R.string.notice_app_locked
         NoticeCode.APP_CLOSE_REMINDER -> R.string.notice_app_close_reminder
-        NoticeCode.ICON_DOWNLOAD_COMPLETED -> R.string.vault_detail_icon_download_success
-        NoticeCode.ICON_DOWNLOAD_FAILED -> R.string.vault_detail_icon_download_failed
         NoticeCode.BACKUP_EXPORT_COMPLETED -> R.string.backup_export_success
         NoticeCode.BACKUP_EXPORT_FAILED -> R.string.backup_error_unknown
         NoticeCode.BACKUP_IMPORT_COMPLETED -> R.string.backup_import_success

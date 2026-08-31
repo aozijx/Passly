@@ -40,8 +40,6 @@ internal fun readInteraction(p: InteractionPreferences): InteractionSettings =
         swipeLeftAction = p.swipeLeftAction.toSwipeActionDomain(),
         swipeRightAction = p.swipeRightAction.toSwipeActionDomain(),
         autofill = readAutofill(p.autofill),
-        isAutoDownloadIcons = p.autoDownloadIcons,
-        faviconDownloadWhitelist = p.faviconAllowedDomainsList.toSet()
     )
 
 internal fun readAutofill(p: AutofillPreferences): AutofillSettings =

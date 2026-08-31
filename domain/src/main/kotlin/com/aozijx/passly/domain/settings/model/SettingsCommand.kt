@@ -45,9 +45,6 @@ sealed interface SettingsCommand {
     data class SetAutofillSavePromptsEnabled(val enabled: Boolean) : SettingsCommand
     data class SetUnmatchedAutofillSuggestionsEnabled(val enabled: Boolean) : SettingsCommand
     data class SetAutofillMaxSuggestions(val count: Int) : SettingsCommand
-    data class SetAutoDownloadIcons(val enabled: Boolean) : SettingsCommand
-    data class SetFaviconDownloadWhitelist(val whitelist: Set<String>) : SettingsCommand
-
     // Library
     data class SetVisibleLibraryQuickFilters(val keys: Set<String>) : SettingsCommand
     data object ClearVisibleLibraryQuickFilters : SettingsCommand

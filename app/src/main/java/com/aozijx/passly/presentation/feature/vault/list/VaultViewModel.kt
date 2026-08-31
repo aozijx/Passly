@@ -29,7 +29,6 @@ import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
-import com.aozijx.passly.domain.entry.service.FaviconService
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.domain.settings.model.SettingsCommand
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
@@ -66,7 +65,6 @@ class VaultViewModel @Inject constructor(
     private val otpConfigRepository: OtpConfigRepository,
     private val settingsRepository: AppSettingsRepository,
     private val entryCommandRepository: EntryCommandRepository,
-    private val faviconService: FaviconService,
     val entryFieldReader: EntryFieldReader,
     private val dataChangeSignal: VaultDataChangeSignal,
     private val sessionStateProvider: SessionStateProvider,
@@ -109,7 +107,6 @@ class VaultViewModel @Inject constructor(
         scope = viewModelScope,
         entryCommandRepository = entryCommandRepository,
         entryQueryRepository = entryQueryRepository,
-        faviconService = faviconService,
         totp = totp,
         onError = { emitError(it) },
         onEntryDeleted = { deletedId ->

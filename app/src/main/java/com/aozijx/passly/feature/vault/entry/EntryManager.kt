@@ -7,7 +7,6 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
-import com.aozijx.passly.domain.entry.service.FaviconService
 import com.aozijx.passly.feature.vault.otp.OtpCodeRefreshUseCase
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -20,7 +19,6 @@ internal class EntryManager(
     private val scope: CoroutineScope,
     private val entryCommandRepository: EntryCommandRepository,
     private val entryQueryRepository: EntryQueryRepository,
-    private val faviconService: FaviconService,
     private val totp: OtpCodeRefreshUseCase,
     private val onError: (String) -> Unit = {},
     private val onEntryDeleted: (String) -> Unit = {}
@@ -32,24 +30,10 @@ internal class EntryManager(
     private val deletingIds = mutableSetOf<String>()
     private val deletingIdsMutex = Mutex()
 
-    fun addItem(entry: Entry, domain: String? = null, onComplete: () -> Unit = {}) {
+    fun addItem(entry: Entry, onComplete: () -> Unit = {}) {
         scope.launch(Dispatchers.IO + handler) {
             when (val insertResult = entryCommandRepository.createEntry(entry)) {
                 is AppResult.Success -> {
-                    val entryId = insertResult.data
-                    if (!domain.isNullOrBlank()) {
-                        val update = faviconService.downloadAndPrepareUpdate(entry, domain)
-                        if (update != null) {
-                            val savedEntry = entryQueryRepository.getById(entryId)
-                            if (savedEntry != null) {
-                                entryCommandRepository.updateEntry(
-                                    savedEntry.id,
-                                    savedEntry.version,
-                                    update
-                                )
-                            }
-                        }
-                    }
                     onComplete()
                 }
 

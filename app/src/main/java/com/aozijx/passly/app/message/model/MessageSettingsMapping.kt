@@ -7,7 +7,6 @@ import com.aozijx.passly.domain.settings.model.MessageTopic
 fun NoticeTopic.toMessageTopic(): MessageTopic = when (this) {
     NoticeTopic.CLIPBOARD -> MessageTopic.CLIPBOARD
     NoticeTopic.APP_LIFECYCLE -> MessageTopic.APP_LIFECYCLE
-    NoticeTopic.ICON_DOWNLOAD -> MessageTopic.ICON_DOWNLOAD
     NoticeTopic.BACKUP -> MessageTopic.BACKUP
     NoticeTopic.SECURITY -> MessageTopic.SECURITY
     NoticeTopic.DATABASE -> MessageTopic.DATABASE

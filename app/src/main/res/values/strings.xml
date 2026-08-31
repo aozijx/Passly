@@ -165,8 +165,6 @@
     <string name="vault_detail_domain_label">域名或图标链接</string>
     <string name="vault_detail_domain_placeholder">如 google.com 或图标链接</string>
     <string name="vault_detail_download_icon">下载图标</string>
-    <string name="vault_detail_icon_download_success">图标下载成功！</string>
-    <string name="vault_detail_icon_download_failed">图标下载失败</string>
     <string name="vault_detail_username">用户名</string>
     <string name="vault_detail_add_notes">添加备注…</string>
     <string name="vault_detail_no_notes">暂无备注</string>
