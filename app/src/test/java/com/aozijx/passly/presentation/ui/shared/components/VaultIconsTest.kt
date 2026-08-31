@@ -26,15 +26,10 @@ class VaultIconsTest {
     }
 
     @Test
-    fun legacyResourceIdStringResolvesTheSameDefinition() {
-        VaultIcons.definitions.forEach { definition ->
-            definition.legacyResourceIds.forEach { resourceId ->
-                assertEquals(
-                    definition.imageVector,
-                    VaultIcons.getIconByName(resourceId.toString()),
-                )
-            }
-        }
+    fun decimalResourceIdStringIsNotAStoredIconKey() {
+        val resourceId = VaultIcons.definitions.first().labelRes.toString()
+
+        assertEquals(null, VaultIcons.findDefinition(resourceId))
     }
 
     @Test
