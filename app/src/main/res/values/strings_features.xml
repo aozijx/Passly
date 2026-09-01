@@ -107,4 +107,11 @@
     <string name="vault_detail_favicon_crop_hint">双指缩放并拖动图片，方框内区域会保存为图标。</string>
     <string name="vault_detail_favicon_no_crop">不裁剪</string>
     <string name="vault_detail_favicon_crop_use">裁剪并使用</string>
+    <string name="vault_detail_favicon_error_invalid_url">请输入有效的 HTTPS 图片链接</string>
+    <string name="vault_detail_favicon_error_url_not_allowed">出于安全原因，无法访问该地址</string>
+    <string name="vault_detail_favicon_error_download_failed">图片下载失败，请稍后重试</string>
+    <string name="vault_detail_favicon_error_not_image">该链接不是受支持的图片</string>
+    <string name="vault_detail_favicon_error_too_large">图片过大，请选择 10 MB 以内的图片</string>
+    <string name="vault_detail_favicon_error_invalid_image">无法读取该图片</string>
+    <string name="vault_detail_favicon_error_save_failed">图标保存失败，请重试</string>
 </resources>

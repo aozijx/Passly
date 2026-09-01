@@ -4,7 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.app.entry.favicon.FaviconCropRequest
+import com.aozijx.passly.app.entry.favicon.FaviconDownloadException
+import com.aozijx.passly.app.entry.favicon.FaviconDownloadFailure
+import com.aozijx.passly.app.entry.favicon.FaviconImageException
+import com.aozijx.passly.app.entry.favicon.FaviconImageFailure
 import com.aozijx.passly.app.entry.favicon.FaviconImageProcessor
+import com.aozijx.passly.app.entry.favicon.FaviconUrlException
+import com.aozijx.passly.app.entry.favicon.FaviconUrlFailure
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.model.SensitiveAccessAction
@@ -32,6 +38,7 @@ import com.aozijx.passly.presentation.feature.vault.detail.DetailMutation
 import com.aozijx.passly.presentation.feature.vault.detail.DetailReducer
 import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconProcessingErrorUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -294,7 +301,7 @@ class DetailViewModel @Inject constructor(
                     ) {
                         val promoted = faviconImageProcessor.promote(source.stagedPath)
                             .getOrElse {
-                                mutate(DetailMutation.FaviconProcessingFailed(it.message))
+                                mutate(DetailMutation.FaviconProcessingFailed(it.toFaviconUiError()))
                                 return@launch
                             }
                         FaviconDraftSourceUiModel.PrivateImage(promoted).also {
@@ -566,7 +573,7 @@ class DetailViewModel @Inject constructor(
         mutate(DetailMutation.FaviconProcessingStarted)
         stage().fold(
             onSuccess = { mutate(DetailMutation.FaviconInputStaged(it)) },
-            onFailure = { mutate(DetailMutation.FaviconProcessingFailed(it.message)) },
+            onFailure = { mutate(DetailMutation.FaviconProcessingFailed(it.toFaviconUiError())) },
         )
     }
 
@@ -582,7 +589,7 @@ class DetailViewModel @Inject constructor(
                     ),
                 )
             },
-            onFailure = { mutate(DetailMutation.FaviconProcessingFailed(it.message)) },
+            onFailure = { mutate(DetailMutation.FaviconProcessingFailed(it.toFaviconUiError())) },
         )
     }
 
@@ -611,4 +618,31 @@ private fun DetailEntryPatch.revealedValueOrNull(): String? = when (this) {
     is DetailEntryPatch.WifiPassword -> value
     is DetailEntryPatch.SshPassphrase -> value
     else -> null
+}
+
+private fun Throwable.toFaviconUiError(): FaviconProcessingErrorUiModel = when (this) {
+    is FaviconUrlException -> when (reason) {
+        FaviconUrlFailure.INVALID_URL,
+        FaviconUrlFailure.HTTPS_REQUIRED,
+        -> FaviconProcessingErrorUiModel.INVALID_URL
+
+        FaviconUrlFailure.CREDENTIALS_NOT_ALLOWED,
+        FaviconUrlFailure.HOST_NOT_ALLOWED,
+        FaviconUrlFailure.PRIVATE_ADDRESS,
+        -> FaviconProcessingErrorUiModel.URL_NOT_ALLOWED
+    }
+
+    is FaviconDownloadException -> when (reason) {
+        FaviconDownloadFailure.NOT_IMAGE -> FaviconProcessingErrorUiModel.NOT_IMAGE
+        FaviconDownloadFailure.TOO_LARGE -> FaviconProcessingErrorUiModel.IMAGE_TOO_LARGE
+        else -> FaviconProcessingErrorUiModel.DOWNLOAD_FAILED
+    }
+
+    is FaviconImageException -> when (reason) {
+        FaviconImageFailure.TOO_LARGE -> FaviconProcessingErrorUiModel.IMAGE_TOO_LARGE
+        FaviconImageFailure.SAVE_FAILED -> FaviconProcessingErrorUiModel.SAVE_FAILED
+        else -> FaviconProcessingErrorUiModel.INVALID_IMAGE
+    }
+
+    else -> FaviconProcessingErrorUiModel.INVALID_IMAGE
 }

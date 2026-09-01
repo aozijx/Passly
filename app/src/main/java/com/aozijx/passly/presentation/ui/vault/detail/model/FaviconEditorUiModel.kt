@@ -15,6 +15,16 @@ enum class FaviconEditorTabUiModel {
     IMAGE_URL,
 }
 
+enum class FaviconProcessingErrorUiModel {
+    INVALID_URL,
+    URL_NOT_ALLOWED,
+    DOWNLOAD_FAILED,
+    NOT_IMAGE,
+    IMAGE_TOO_LARGE,
+    INVALID_IMAGE,
+    SAVE_FAILED,
+}
+
 data class DetailFaviconEditorUiModel(
     val visible: Boolean = false,
     val initialSource: FaviconDraftSourceUiModel = FaviconDraftSourceUiModel.InferredDefault,
@@ -24,7 +34,7 @@ data class DetailFaviconEditorUiModel(
     val imageUrl: String = "",
     val processing: Boolean = false,
     val pendingInputPath: String? = null,
-    val processingError: String? = null,
+    val processingError: FaviconProcessingErrorUiModel? = null,
     val confirmDiscard: Boolean = false,
 ) {
     val dirty: Boolean get() = source != initialSource || pendingInputPath != null

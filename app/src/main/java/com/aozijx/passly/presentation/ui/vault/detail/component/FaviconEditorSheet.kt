@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
@@ -46,8 +47,8 @@ import com.aozijx.passly.presentation.ui.shared.components.iconColorForStorageTo
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconEditorTabUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconProcessingErrorUiModel
 import coil.compose.AsyncImage
-import androidx.compose.ui.layout.ContentScale
 import com.aozijx.passly.presentation.ui.shared.media.toLocalIconImageModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -134,8 +135,11 @@ fun FaviconEditorSheet(
                             modifier = Modifier.padding(start = 8.dp),
                         )
                     }
-                    state.processingError?.let {
-                        Text(text = it, color = MaterialTheme.colorScheme.error)
+                    state.processingError?.let { error ->
+                        Text(
+                            text = stringResource(error.messageRes()),
+                            color = MaterialTheme.colorScheme.error,
+                        )
                     }
                 }
             }
@@ -181,6 +185,16 @@ fun FaviconEditorSheet(
             },
         )
     }
+}
+
+private fun FaviconProcessingErrorUiModel.messageRes(): Int = when (this) {
+    FaviconProcessingErrorUiModel.INVALID_URL -> R.string.vault_detail_favicon_error_invalid_url
+    FaviconProcessingErrorUiModel.URL_NOT_ALLOWED -> R.string.vault_detail_favicon_error_url_not_allowed
+    FaviconProcessingErrorUiModel.DOWNLOAD_FAILED -> R.string.vault_detail_favicon_error_download_failed
+    FaviconProcessingErrorUiModel.NOT_IMAGE -> R.string.vault_detail_favicon_error_not_image
+    FaviconProcessingErrorUiModel.IMAGE_TOO_LARGE -> R.string.vault_detail_favicon_error_too_large
+    FaviconProcessingErrorUiModel.INVALID_IMAGE -> R.string.vault_detail_favicon_error_invalid_image
+    FaviconProcessingErrorUiModel.SAVE_FAILED -> R.string.vault_detail_favicon_error_save_failed
 }
 
 @Composable

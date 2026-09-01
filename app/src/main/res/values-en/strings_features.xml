@@ -103,4 +103,11 @@
     <string name="vault_detail_favicon_crop_hint">Pinch to zoom and drag the image. The square area will be saved as the icon.</string>
     <string name="vault_detail_favicon_no_crop">Use without cropping</string>
     <string name="vault_detail_favicon_crop_use">Crop and use</string>
+    <string name="vault_detail_favicon_error_invalid_url">Enter a valid HTTPS image URL</string>
+    <string name="vault_detail_favicon_error_url_not_allowed">This address cannot be accessed for security reasons</string>
+    <string name="vault_detail_favicon_error_download_failed">Could not download the image. Try again later</string>
+    <string name="vault_detail_favicon_error_not_image">This URL does not point to a supported image</string>
+    <string name="vault_detail_favicon_error_too_large">Choose an image smaller than 10 MB</string>
+    <string name="vault_detail_favicon_error_invalid_image">This image could not be read</string>
+    <string name="vault_detail_favicon_error_save_failed">Could not save the icon. Try again</string>
 </resources>
