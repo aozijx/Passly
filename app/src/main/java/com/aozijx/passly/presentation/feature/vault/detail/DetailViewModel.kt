@@ -250,7 +250,7 @@ class DetailViewModel @Inject constructor(
             is DetailUiAction.SelectFaviconSource -> {
                 val previous = _uiState.value.faviconEditor.source
                 if (previous is FaviconDraftSourceUiModel.PrivateImage && previous != event.source) {
-                    viewModelScope.launch { faviconImageProcessor.discard(previous.stagedPath) }
+                    viewModelScope.launch { faviconImageProcessor.discard(previous.localPath) }
                 }
                 pendingPromotedFaviconPath?.let { path ->
                     viewModelScope.launch { faviconImageProcessor.discardPromotedCandidate(path) }
@@ -308,9 +308,9 @@ class DetailViewModel @Inject constructor(
                     val source = _uiState.value.faviconEditor.source
                     val persistedSource = if (
                         source is FaviconDraftSourceUiModel.PrivateImage &&
-                        faviconImageProcessor.isStaged(source.stagedPath)
+                        faviconImageProcessor.isStaged(source.localPath)
                     ) {
-                        val promoted = faviconImageProcessor.promote(source.stagedPath)
+                        val promoted = faviconImageProcessor.promote(source.localPath)
                             .getOrElse {
                                 mutate(DetailMutation.FaviconProcessingFailed(it.toFaviconUiError()))
                                 return@launch
@@ -588,7 +588,7 @@ class DetailViewModel @Inject constructor(
         faviconJob?.cancel()
         faviconJob = null
         faviconImageProcessor.discardEditorResources(
-            stagedPath = editor.stagedSourcePath(),
+            stagedPath = editor.privateImagePath(),
             pendingInputPath = editor.pendingInputPath,
             promotedCandidatePath = pendingPromotedFaviconPath,
         )
@@ -605,7 +605,7 @@ class DetailViewModel @Inject constructor(
         faviconJob?.cancel()
         faviconJob = null
         faviconImageProcessor.discardEditorResources(
-            stagedPath = editor.stagedSourcePath(),
+            stagedPath = editor.privateImagePath(),
             pendingInputPath = editor.pendingInputPath,
             promotedCandidatePath = pendingPromotedFaviconPath,
         )
@@ -652,7 +652,7 @@ class DetailViewModel @Inject constructor(
     private fun FaviconDraftSourceUiModel.toEntryIcon(): EntryIcon = when (this) {
         FaviconDraftSourceUiModel.InferredDefault -> EntryIcon()
         is FaviconDraftSourceUiModel.BuiltIn -> EntryIcon(name = key, color = colorToken)
-        is FaviconDraftSourceUiModel.PrivateImage -> EntryIcon(customReference = stagedPath)
+        is FaviconDraftSourceUiModel.PrivateImage -> EntryIcon(customReference = localPath)
     }
 }
 
@@ -666,8 +666,8 @@ private fun DetailEntryPatch.revealedValueOrNull(): String? = when (this) {
     else -> null
 }
 
-private fun DetailFaviconEditorUiModel.stagedSourcePath(): String? =
-    (source as? FaviconDraftSourceUiModel.PrivateImage)?.stagedPath
+private fun DetailFaviconEditorUiModel.privateImagePath(): String? =
+    (source as? FaviconDraftSourceUiModel.PrivateImage)?.localPath
 
 private fun Throwable.toFaviconUiError(): FaviconProcessingErrorUiModel = when (this) {
     is FaviconUrlException -> when (reason) {

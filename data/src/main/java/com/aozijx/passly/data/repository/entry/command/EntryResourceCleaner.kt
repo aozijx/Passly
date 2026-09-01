@@ -57,11 +57,11 @@ internal class EntryResourceCleaner @Inject constructor(
     }
 
     suspend fun cleanReplacedIcon(oldPath: String?, newPath: String?) {
-        val candidate = ReplacedIconCleanupPolicy.candidate(oldPath, newPath) ?: return
+        val candidate = oldPath?.takeIf { it.isNotBlank() && it != newPath } ?: return
         val references = databaseTransactions.read("entry_icon_reference_check") {
             entryQueryDao().countByIconCustomReference(candidate)
-        }.getOrNull()
-        if (!ReplacedIconCleanupPolicy.canDelete(references)) return
+        }.getOrNull() ?: return
+        if (references != 0) return
         withContext(Dispatchers.IO) {
             runCatching { deleteCustomIcon(candidate) }.onFailure { error ->
                 telemetry.report(
@@ -75,18 +75,10 @@ internal class EntryResourceCleaner @Inject constructor(
     }
 
     private fun deleteCustomIcon(path: String?) {
-        val normalizedPath = path
-            ?.trim()
-            ?.removePrefix(FILE_SCHEME)
-            ?.takeIf(String::isNotEmpty)
-            ?: return
+        val normalizedPath = path?.trim()?.takeIf(String::isNotEmpty) ?: return
         val root = imageRoot.canonicalFile
         val target = File(normalizedPath).canonicalFile
         if (target.parentFile != root || !target.exists()) return
         require(target.delete()) { "Unable to delete custom icon" }
-    }
-
-    private companion object {
-        const val FILE_SCHEME = "file://"
     }
 }

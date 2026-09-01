@@ -3,7 +3,6 @@ package com.aozijx.passly.app.entry.favicon
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.net.InetAddress
-import java.net.URI
 import java.util.concurrent.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
@@ -25,7 +24,7 @@ class FaviconImageDownloaderTest {
         assertArrayEquals(byteArrayOf(1, 2, 3), bytes)
         assertEquals(
             listOf("https://example.com/start", "https://example.com/final.png"),
-            transport.opened.map(URI::toString),
+            transport.opened.map { it.uri.toString() },
         )
         assertTrue(transport.responses.all(FakeResponse::closed))
     }
@@ -42,6 +41,21 @@ class FaviconImageDownloaderTest {
             FaviconImageDownloader(policy, transport).download("https://public.example/icon.png")
         }
         assertEquals(1, transport.opened.size)
+    }
+
+    @Test
+    fun download_pinsPolicyApprovedAddressesIntoTransport() = runTest {
+        val approvedAddress = InetAddress.getByAddress(
+            byteArrayOf(93.toByte(), 184.toByte(), 216.toByte(), 34),
+        )
+        val policy = FaviconUrlPolicy { arrayOf(approvedAddress) }
+        val transport = QueueTransport(
+            FakeResponse(200, contentType = "image/webp", bytes = byteArrayOf(1)),
+        )
+
+        FaviconImageDownloader(policy, transport).download("https://example.com/icon.webp")
+
+        assertEquals(listOf(approvedAddress), transport.opened.single().addresses)
     }
 
     @Test
@@ -142,11 +156,11 @@ class FaviconImageDownloaderTest {
 
     private class QueueTransport(vararg response: FakeResponse) : FaviconHttpTransport {
         val responses = response.toList()
-        val opened = mutableListOf<URI>()
+        val opened = mutableListOf<ValidatedFaviconUrl>()
         private var index = 0
 
-        override fun open(uri: URI): FaviconHttpResponse {
-            opened += uri
+        override fun open(target: ValidatedFaviconUrl): FaviconHttpResponse {
+            opened += target
             return responses[index++]
         }
     }

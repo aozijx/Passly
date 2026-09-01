@@ -11,7 +11,10 @@ class FaviconUrlPolicyTest {
     fun validate_acceptsDirectPublicHttpsUrl() {
         val policy = policyWith(publicAddress())
 
-        assertEquals("https://example.com/icon.png", policy.validate(" https://example.com/icon.png ").toString())
+        assertEquals(
+            "https://example.com/icon.png",
+            policy.validate(" https://example.com/icon.png ").uri.toString(),
+        )
     }
 
     @Test
@@ -75,7 +78,7 @@ class FaviconUrlPolicyTest {
         val current = policy.validate("https://public.example/icon.png")
 
         assertThrows(FaviconUrlException::class.java) {
-            policy.resolveRedirect(current, "https://private.example/next.png")
+            policy.resolveRedirect(current.uri, "https://private.example/next.png")
         }
     }
 

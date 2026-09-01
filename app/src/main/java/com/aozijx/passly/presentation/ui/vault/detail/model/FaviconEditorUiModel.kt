@@ -6,7 +6,7 @@ sealed interface FaviconDraftSourceUiModel {
         val key: String,
         val colorToken: String?,
     ) : FaviconDraftSourceUiModel
-    data class PrivateImage(val stagedPath: String) : FaviconDraftSourceUiModel
+    data class PrivateImage(val localPath: String) : FaviconDraftSourceUiModel
 }
 
 enum class FaviconEditorTabUiModel {

@@ -40,6 +40,11 @@ internal class DetailOtpQrExporter(
                 revealed.value.wipe()
             }
         }
-        return (result as? AuthorizationResult.Allowed)?.value
+        return when (result) {
+            is AuthorizationResult.Allowed -> result.value
+            is AuthorizationResult.Denied,
+            AuthorizationResult.Cancelled,
+            -> null
+        }
     }
 }

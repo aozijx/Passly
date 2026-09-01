@@ -10,6 +10,12 @@ internal fun interface FaviconHostResolver {
     fun resolve(host: String): Array<InetAddress>
 }
 
+internal data class ValidatedFaviconUrl(
+    val uri: URI,
+    val host: String,
+    val addresses: List<InetAddress>,
+)
+
 enum class FaviconUrlFailure {
     INVALID_URL,
     HTTPS_REQUIRED,
@@ -28,7 +34,7 @@ class FaviconUrlPolicy internal constructor(
     @Inject
     constructor() : this(FaviconHostResolver(InetAddress::getAllByName))
 
-    fun validate(value: String): URI {
+    internal fun validate(value: String): ValidatedFaviconUrl {
         val uri = try {
             URI(value.trim())
         } catch (_: Exception) {
@@ -56,10 +62,14 @@ class FaviconUrlPolicy internal constructor(
         if (addresses.any { !it.isPublicAddress() }) {
             throw FaviconUrlException(FaviconUrlFailure.PRIVATE_ADDRESS)
         }
-        return uri
+        return ValidatedFaviconUrl(
+            uri = uri,
+            host = host,
+            addresses = addresses.toList(),
+        )
     }
 
-    fun resolveRedirect(current: URI, location: String): URI {
+    internal fun resolveRedirect(current: URI, location: String): ValidatedFaviconUrl {
         val target = try {
             current.resolve(location)
         } catch (_: Exception) {

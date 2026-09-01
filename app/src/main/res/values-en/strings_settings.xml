@@ -6,8 +6,8 @@
     <string name="settings_page_appearance_summary">Mode, language, colors</string>
     <string name="settings_page_backup_restore">Backup &amp; restore</string>
     <string name="settings_page_backup_restore_summary">Encrypted, JSON and TXT import or export</string>
-    <string name="settings_page_data">Data &amp; downloads</string>
-    <string name="settings_page_data_summary">Icon downloads and local data</string>
+    <string name="settings_page_data">Data management</string>
+    <string name="settings_page_data_summary">Local data, trash and database recovery</string>
     <string name="settings_page_general">General</string>
     <string name="settings_page_general_summary">Cache, logs, about</string>
     <string name="settings_page_interaction">Actions &amp; gestures</string>
@@ -174,7 +174,6 @@
     <string name="settings_data_clear_database_description">Delete all entries, attachments, and custom images; keep settings and authentication</string>
     <string name="settings_data_clearing_database">Clearing…</string>
     <string name="settings_data_dangerous_actions">Dangerous actions</string>
-    <string name="settings_data_download">Downloads</string>
     <string name="settings_data_storage">Local data</string>
     <plurals name="settings_trash_count"><item quantity="one">%d entry</item><item quantity="other">%d entries</item></plurals>
     <string name="settings_trash_delete">Delete permanently</string>

@@ -6,8 +6,8 @@
     <string name="settings_page_appearance_summary">モード、言語、配色</string>
     <string name="settings_page_backup_restore">バックアップと復元</string>
     <string name="settings_page_backup_restore_summary">暗号化、JSON、TXT の入出力</string>
-    <string name="settings_page_data">データとダウンロード</string>
-    <string name="settings_page_data_summary">アイコンとローカルデータ</string>
+    <string name="settings_page_data">データ管理</string>
+    <string name="settings_page_data_summary">ローカルデータ、ゴミ箱、データベース復旧</string>
     <string name="settings_page_general">一般</string>
     <string name="settings_page_general_summary">キャッシュ、ログ、情報</string>
     <string name="settings_page_interaction">操作とジェスチャー</string>
@@ -174,7 +174,6 @@
     <string name="settings_data_clear_database_description">すべてのエントリ、添付、画像を削除し、設定と認証は保持します</string>
     <string name="settings_data_clearing_database">消去中…</string>
     <string name="settings_data_dangerous_actions">危険な操作</string>
-    <string name="settings_data_download">ダウンロード</string>
     <string name="settings_data_storage">ローカルデータ</string>
     <plurals name="settings_trash_count"><item quantity="other">%d 件</item></plurals>
     <string name="settings_trash_delete">完全に削除</string>

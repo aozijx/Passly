@@ -76,8 +76,6 @@ message InteractionPreferences {
     optional string swipe_left_action = 2 [default = "copy_password"];
     optional string swipe_right_action = 3 [default = "detail"];
     optional AutofillPreferences autofill = 4;
-    reserved 5, 6;
-    reserved "auto_download_icons", "favicon_allowed_domains";
 }
 
 message AutofillPreferences {

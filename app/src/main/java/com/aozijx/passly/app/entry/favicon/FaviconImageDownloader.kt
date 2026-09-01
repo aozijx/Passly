@@ -2,13 +2,18 @@ package com.aozijx.passly.app.entry.favicon
 
 import java.io.Closeable
 import java.io.InputStream
-import java.net.HttpURLConnection
-import java.net.URI
+import java.net.InetAddress
+import java.net.UnknownHostException
 import java.util.concurrent.CancellationException
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.Dns
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 
 enum class FaviconDownloadFailure {
     INVALID_REDIRECT,
@@ -32,7 +37,7 @@ internal interface FaviconHttpResponse : Closeable {
 }
 
 internal fun interface FaviconHttpTransport {
-    fun open(uri: URI): FaviconHttpResponse
+    fun open(target: ValidatedFaviconUrl): FaviconHttpResponse
 }
 
 @Singleton
@@ -41,7 +46,7 @@ class FaviconImageDownloader internal constructor(
     private val transport: FaviconHttpTransport,
 ) {
     @Inject
-    constructor(urlPolicy: FaviconUrlPolicy) : this(urlPolicy, HttpUrlConnectionTransport)
+    constructor(urlPolicy: FaviconUrlPolicy) : this(urlPolicy, OkHttpTransport)
 
     suspend fun download(value: String): ByteArray = withContext(Dispatchers.IO) {
         try {
@@ -67,7 +72,7 @@ class FaviconImageDownloader internal constructor(
                     }
                     val location = response.redirectLocation
                         ?: throw FaviconDownloadException(FaviconDownloadFailure.INVALID_REDIRECT)
-                    current = urlPolicy.resolveRedirect(current, location)
+                    current = urlPolicy.resolveRedirect(current.uri, location)
                 } else {
                     if (response.statusCode !in 200..299) {
                         throw FaviconDownloadException(FaviconDownloadFailure.HTTP_STATUS)
@@ -109,29 +114,45 @@ class FaviconImageDownloader internal constructor(
         private const val CONNECT_TIMEOUT_MS = 10_000
         private const val READ_TIMEOUT_MS = 15_000
 
-        private object HttpUrlConnectionTransport : FaviconHttpTransport {
-            override fun open(uri: URI): FaviconHttpResponse {
-                val connection = (uri.toURL().openConnection() as HttpURLConnection).apply {
-                    instanceFollowRedirects = false
-                    connectTimeout = CONNECT_TIMEOUT_MS
-                    readTimeout = READ_TIMEOUT_MS
-                    requestMethod = "GET"
-                    setRequestProperty("Accept", "image/*")
-                }
-                return HttpUrlConnectionResponse(connection)
+        private object OkHttpTransport : FaviconHttpTransport {
+            private val client = OkHttpClient.Builder()
+                .followRedirects(false)
+                .followSslRedirects(false)
+                .connectTimeout(CONNECT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+                .readTimeout(READ_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+                .build()
+
+            override fun open(target: ValidatedFaviconUrl): FaviconHttpResponse {
+                val pinnedClient = client.newBuilder()
+                    .dns(object : Dns {
+                        override fun lookup(hostname: String): List<InetAddress> {
+                            if (!hostname.equals(target.host, ignoreCase = true)) {
+                                throw UnknownHostException(hostname)
+                            }
+                            return target.addresses
+                        }
+                    })
+                    .build()
+                val request = Request.Builder()
+                    .url(target.uri.toURL())
+                    .header("Accept", "image/*")
+                    .get()
+                    .build()
+                return OkHttpResponse(pinnedClient.newCall(request).execute())
             }
         }
 
-        private class HttpUrlConnectionResponse(
-            private val connection: HttpURLConnection,
+        private class OkHttpResponse(
+            private val response: Response,
         ) : FaviconHttpResponse {
-            override val statusCode: Int get() = connection.responseCode
-            override val contentType: String? get() = connection.contentType
-            override val redirectLocation: String? get() = connection.getHeaderField("Location")
-            override val body: InputStream get() = connection.inputStream
+            override val statusCode: Int get() = response.code
+            override val contentType: String? get() = response.header("Content-Type")
+            override val redirectLocation: String? get() = response.header("Location")
+            override val body: InputStream
+                get() = requireNotNull(response.body) { "HTTP response body is missing" }.byteStream()
 
             override fun close() {
-                connection.disconnect()
+                response.close()
             }
         }
     }

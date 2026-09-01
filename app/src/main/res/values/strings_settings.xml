@@ -6,8 +6,8 @@
     <string name="settings_page_appearance_summary">模式、语言、配色</string>
     <string name="settings_page_backup_restore">备份与恢复</string>
     <string name="settings_page_backup_restore_summary">加密、JSON、TXT 导出与导入</string>
-    <string name="settings_page_data">数据与下载</string>
-    <string name="settings_page_data_summary">图标下载与本地数据</string>
+    <string name="settings_page_data">数据管理</string>
+    <string name="settings_page_data_summary">本地数据、回收站与数据库恢复</string>
     <string name="settings_page_general">通用</string>
     <string name="settings_page_general_summary">缓存、日志、关于</string>
     <string name="settings_page_interaction">操作与手势</string>
@@ -174,7 +174,6 @@
     <string name="settings_data_clear_database_description">删除所有条目、附件和自定义图片；保留设置与认证方式</string>
     <string name="settings_data_clearing_database">正在清除…</string>
     <string name="settings_data_dangerous_actions">危险操作</string>
-    <string name="settings_data_download">下载</string>
     <string name="settings_data_storage">本地数据</string>
     <plurals name="settings_trash_count"><item quantity="other">%d 个条目</item></plurals>
     <string name="settings_trash_delete">永久删除</string>

@@ -21,7 +21,6 @@ import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -42,7 +41,6 @@ class DetailOtpQrExporterTest {
         val uri = requireNotNull(exporter.export(otpEntry()))
 
         assertEquals(listOf("authenticate", "reveal", "format"), events)
-        assertNotNull(uri)
         assertTrue(uri.startsWith("otpauth://totp/"))
         assertTrue(uri.contains("secret=JBSWY3DPEHPK3PXP"))
         assertTrue(revealed.isEmpty)

@@ -218,7 +218,7 @@ private fun FaviconPreview(source: FaviconDraftSourceUiModel) {
         ) {
             if (source is FaviconDraftSourceUiModel.PrivateImage) {
                 AsyncImage(
-                    model = toLocalIconImageModel(source.stagedPath),
+                    model = toLocalIconImageModel(source.localPath),
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
                     contentScale = ContentScale.Fit,
