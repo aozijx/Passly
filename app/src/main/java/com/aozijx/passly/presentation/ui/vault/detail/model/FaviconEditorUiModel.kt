@@ -6,13 +6,23 @@ sealed interface FaviconDraftSourceUiModel {
         val key: String,
         val colorToken: String?,
     ) : FaviconDraftSourceUiModel
-    data class PrivateImage(val stagedPath: String) : FaviconDraftSourceUiModel
+    data class PrivateImage(val localPath: String) : FaviconDraftSourceUiModel
 }
 
 enum class FaviconEditorTabUiModel {
     ICON_LIBRARY,
     UPLOAD,
     IMAGE_URL,
+}
+
+enum class FaviconProcessingErrorUiModel {
+    INVALID_URL,
+    URL_NOT_ALLOWED,
+    DOWNLOAD_FAILED,
+    NOT_IMAGE,
+    IMAGE_TOO_LARGE,
+    INVALID_IMAGE,
+    SAVE_FAILED,
 }
 
 data class DetailFaviconEditorUiModel(
@@ -24,8 +34,9 @@ data class DetailFaviconEditorUiModel(
     val imageUrl: String = "",
     val processing: Boolean = false,
     val pendingInputPath: String? = null,
-    val processingError: String? = null,
+    val processingError: FaviconProcessingErrorUiModel? = null,
     val confirmDiscard: Boolean = false,
+    val presentationId: Long = 0,
 ) {
     val dirty: Boolean get() = source != initialSource || pendingInputPath != null
 }

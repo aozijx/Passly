@@ -254,19 +254,6 @@ internal fun AppSettings.applyCommand(command: SettingsCommand): AppSettings {
             b.setInteraction(ib)
         }
 
-        is SettingsCommand.SetAutoDownloadIcons -> {
-            val ib = interaction.toBuilder()
-            ib.autoDownloadIcons = command.enabled
-            b.setInteraction(ib)
-        }
-
-        is SettingsCommand.SetFaviconDownloadWhitelist -> {
-            val ib = interaction.toBuilder()
-            ib.clearFaviconAllowedDomains()
-            ib.addAllFaviconAllowedDomains(command.whitelist.sorted())
-            b.setInteraction(ib)
-        }
-
         // ==================== Vault ====================
         is SettingsCommand.SetVisibleLibraryQuickFilters -> {
             val vb = vaultView.toBuilder()

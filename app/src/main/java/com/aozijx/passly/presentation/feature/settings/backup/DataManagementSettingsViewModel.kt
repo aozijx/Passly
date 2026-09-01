@@ -22,7 +22,6 @@ class DataManagementSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.settings.collect { settings ->
                 _uiState.value = DataManagementSettingsUiState(
-                    isAutoDownloadIcons = settings.interaction.isAutoDownloadIcons,
                     directoryUri = settings.backup.directoryTreeUri,
                 )
             }
@@ -31,7 +30,6 @@ class DataManagementSettingsViewModel @Inject constructor(
 
     fun onAction(action: DataManagementSettingsUiAction) {
         val command = when (action) {
-            is DataManagementSettingsUiAction.SetAutoDownloadIcons -> SettingsCommand.SetAutoDownloadIcons(action.enabled)
             is DataManagementSettingsUiAction.SetBackupDirectoryUri -> SettingsCommand.SetBackupDirectoryUri(action.uri)
             DataManagementSettingsUiAction.ClearBackupDirectory -> SettingsCommand.ClearBackupDirectoryUri
         }

@@ -76,7 +76,7 @@ class DefaultNoticeRouterTest {
 
     @Test
     fun preferSystemUsesSystemAndKeepsRuntimeFallback() {
-        val notice = newAppNotice(NoticeCode.ICON_DOWNLOAD_COMPLETED)
+        val notice = newAppNotice(NoticeCode.SECURITY_ACTION_FAILED)
         val plan = router.route(
             notice,
             defaultNoticeCodePolicy(notice.code),

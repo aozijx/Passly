@@ -24,7 +24,6 @@ data class TopicMessageSettings(
 enum class MessageTopic {
     CLIPBOARD,
     APP_LIFECYCLE,
-    ICON_DOWNLOAD,
     BACKUP,
     SECURITY,
     DATABASE
@@ -41,7 +40,6 @@ enum class MessageLevel {
 fun defaultMessageTopicSettings(): Map<MessageTopic, TopicMessageSettings> = mapOf(
     MessageTopic.CLIPBOARD to TopicMessageSettings(),
     MessageTopic.APP_LIFECYCLE to TopicMessageSettings(),
-    MessageTopic.ICON_DOWNLOAD to TopicMessageSettings(),
     MessageTopic.BACKUP to TopicMessageSettings(),
     MessageTopic.SECURITY to TopicMessageSettings(minimumLevel = MessageLevel.WARNING),
     MessageTopic.DATABASE to TopicMessageSettings(minimumLevel = MessageLevel.ERROR)

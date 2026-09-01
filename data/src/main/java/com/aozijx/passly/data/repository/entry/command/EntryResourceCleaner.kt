@@ -75,18 +75,10 @@ internal class EntryResourceCleaner @Inject constructor(
     }
 
     private fun deleteCustomIcon(path: String?) {
-        val normalizedPath = path
-            ?.trim()
-            ?.removePrefix(FILE_SCHEME)
-            ?.takeIf(String::isNotEmpty)
-            ?: return
+        val normalizedPath = path?.trim()?.takeIf(String::isNotEmpty) ?: return
         val root = imageRoot.canonicalFile
         val target = File(normalizedPath).canonicalFile
         if (target.parentFile != root || !target.exists()) return
         require(target.delete()) { "Unable to delete custom icon" }
-    }
-
-    private companion object {
-        const val FILE_SCHEME = "file://"
     }
 }

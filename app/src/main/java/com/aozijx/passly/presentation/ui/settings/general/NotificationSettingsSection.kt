@@ -24,7 +24,7 @@ internal data class NotificationTopicUiModel(
 )
 
 internal enum class NotificationTopic {
-    CLIPBOARD, APP_LIFECYCLE, ICON_DOWNLOAD, BACKUP, SECURITY, DATABASE,
+    CLIPBOARD, APP_LIFECYCLE, BACKUP, SECURITY, DATABASE,
 }
 
 internal interface NotificationSettingsEventHandler {
@@ -104,7 +104,6 @@ private val NotificationTopic.titleRes: Int
     get() = when (this) {
         NotificationTopic.CLIPBOARD -> R.string.settings_topic_clipboard
         NotificationTopic.APP_LIFECYCLE -> R.string.settings_topic_app_lifecycle
-        NotificationTopic.ICON_DOWNLOAD -> R.string.settings_topic_icon_download
         NotificationTopic.BACKUP -> R.string.settings_topic_backup
         NotificationTopic.SECURITY -> R.string.settings_topic_security
         NotificationTopic.DATABASE -> R.string.settings_topic_database
@@ -114,7 +113,6 @@ private val NotificationTopic.summaryRes: Int
     get() = when (this) {
         NotificationTopic.CLIPBOARD -> R.string.settings_topic_clipboard_summary
         NotificationTopic.APP_LIFECYCLE -> R.string.settings_topic_app_lifecycle_summary
-        NotificationTopic.ICON_DOWNLOAD -> R.string.settings_topic_icon_download_summary
         NotificationTopic.BACKUP -> R.string.settings_topic_backup_summary
         NotificationTopic.SECURITY -> R.string.settings_topic_security_summary
         NotificationTopic.DATABASE -> R.string.settings_topic_database_summary

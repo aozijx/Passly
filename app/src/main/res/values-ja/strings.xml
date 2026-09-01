@@ -130,11 +130,8 @@
 
     <!-- 詳細ページの新しい文字列 -->
     <string name="vault_detail_totp_label">二要素認証コード</string>
-    <string name="vault_detail_domain_label">ウェブサイトドメインまたはアイコンURL</string>
-    <string name="vault_detail_domain_placeholder">例：google.com または https://example.com/icon.png</string>
-    <string name="vault_detail_download_icon">アイコンをダウンロード</string>
-    <string name="vault_detail_icon_download_success">アイコンのダウンロードに成功しました！</string>
-    <string name="vault_detail_icon_download_failed">アイコンのダウンロードに失敗しました</string>
+    <string name="vault_detail_domain_label">関連ドメイン</string>
+    <string name="vault_detail_domain_placeholder">例：example.com</string>
     <string name="vault_detail_username">ユーザー名</string>
     <string name="vault_detail_add_notes">メモを追加…</string>
     <string name="vault_detail_no_notes">メモなし</string>

@@ -22,16 +22,14 @@ import java.io.ByteArrayOutputStream
 class ProtoSerializerTest {
 
     @Test
-    fun interactionSettings_fieldsAreFreshAndSequential() {
+    fun interactionSettings_activeFieldsUseOnlySupportedPreferences() {
         assertEquals(
-            (1..6).toList(),
+            (1..4).toList(),
             listOf(
                 InteractionPreferences.SWIPE_ACTIONS_ENABLED_FIELD_NUMBER,
                 InteractionPreferences.SWIPE_LEFT_ACTION_FIELD_NUMBER,
                 InteractionPreferences.SWIPE_RIGHT_ACTION_FIELD_NUMBER,
                 InteractionPreferences.AUTOFILL_FIELD_NUMBER,
-                InteractionPreferences.AUTO_DOWNLOAD_ICONS_FIELD_NUMBER,
-                InteractionPreferences.FAVICON_ALLOWED_DOMAINS_FIELD_NUMBER,
             ),
         )
     }

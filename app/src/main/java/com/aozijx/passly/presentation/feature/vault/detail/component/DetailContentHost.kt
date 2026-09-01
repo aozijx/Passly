@@ -3,12 +3,12 @@ package com.aozijx.passly.presentation.feature.vault.detail.component
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.otp.OtpAuthUriCodec
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -71,10 +71,12 @@ fun DetailContentHost(
     uiState: DetailUiState,
     editState: EntryEditState,
     otpUiState: OtpCodeState?,
+    otpQrUri: String?,
     onAction: (DetailUiAction) -> Unit,
     onInteraction: () -> Unit,
     onAuthenticate: DetailAuthenticate,
     onCopySensitive: (String) -> Unit,
+    onOtpQrDismiss: () -> Unit,
     onOpenRelatedEntry: (Entry) -> Unit
 ) {
     val entry = uiState.entry ?: return
@@ -198,13 +200,11 @@ fun DetailContentHost(
                     R.string.field_copy_success_message,
                     stringResource(R.string.vault_detail_totp_label),
                 )
-                val otpConfig = entry.secret.otp?.config
-                val totpUri =
-                    otpConfig?.takeIf { !it.secret.isNullOrBlank() }
-                        ?.let { OtpAuthUriCodec.format(it, entry.title) }
                 TotpSection(
                     currentState = screenUiModel.otp,
-                    totpUri = totpUri,
+                    totpUri = otpQrUri,
+                    onQrClick = { onAction(DetailUiAction.ExportOtpQr) },
+                    onQrDismiss = onOtpQrDismiss,
                     onCodeClick = {
                         screenUiModel.otp?.code?.takeIf { it.isNotEmpty() && !it.contains("-") }?.let { code ->
                             onCopySensitive(code)
@@ -507,20 +507,22 @@ fun DetailContentHost(
     }
 
     if (uiState.faviconEditor.visible) {
-        FaviconEditorSheet(
-            state = uiState.faviconEditor,
-            isSaving = uiState.savingEdit == DetailEditCompletion.Icon,
-            onTabSelected = { onAction(DetailUiAction.SelectFaviconTab(it)) },
-            onSearchChanged = { onAction(DetailUiAction.UpdateFaviconSearch(it)) },
-            onSourceSelected = { onAction(DetailUiAction.SelectFaviconSource(it)) },
-            onUploadRequested = { pickFaviconImage(ImageType.SCREEN) },
-            onImageUrlChanged = { onAction(DetailUiAction.UpdateFaviconImageUrl(it)) },
-            onDownloadRequested = { onAction(DetailUiAction.DownloadFaviconImage) },
-            onSave = { onAction(DetailUiAction.SaveFavicon) },
-            onDismiss = { onAction(DetailUiAction.DismissFaviconEditor) },
-            onConfirmDiscard = { onAction(DetailUiAction.ConfirmDiscardFavicon) },
-            onKeepEditing = { onAction(DetailUiAction.KeepEditingFavicon) },
-        )
+        key(uiState.faviconEditor.presentationId) {
+            FaviconEditorSheet(
+                state = uiState.faviconEditor,
+                isSaving = uiState.savingEdit == DetailEditCompletion.Icon,
+                onTabSelected = { onAction(DetailUiAction.SelectFaviconTab(it)) },
+                onSearchChanged = { onAction(DetailUiAction.UpdateFaviconSearch(it)) },
+                onSourceSelected = { onAction(DetailUiAction.SelectFaviconSource(it)) },
+                onUploadRequested = { pickFaviconImage(ImageType.SCREEN) },
+                onImageUrlChanged = { onAction(DetailUiAction.UpdateFaviconImageUrl(it)) },
+                onDownloadRequested = { onAction(DetailUiAction.DownloadFaviconImage) },
+                onSave = { onAction(DetailUiAction.SaveFavicon) },
+                onDismiss = { onAction(DetailUiAction.DismissFaviconEditor) },
+                onConfirmDiscard = { onAction(DetailUiAction.ConfirmDiscardFavicon) },
+                onKeepEditing = { onAction(DetailUiAction.KeepEditingFavicon) },
+            )
+        }
     }
 
     uiState.faviconEditor.pendingInputPath?.let { path ->

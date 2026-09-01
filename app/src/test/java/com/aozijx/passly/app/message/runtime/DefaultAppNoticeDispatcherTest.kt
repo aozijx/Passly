@@ -47,7 +47,7 @@ class DefaultAppNoticeDispatcherTest {
         )
 
         val receipt = dispatcher.dispatch(
-            newAppNotice(NoticeCode.ICON_DOWNLOAD_COMPLETED, eventId = "icon-1")
+            newAppNotice(NoticeCode.SECURITY_ACTION_FAILED, eventId = "security-1")
         )
 
         assertEquals(1, settingsReads)
@@ -116,7 +116,7 @@ class DefaultAppNoticeDispatcherTest {
         )
 
         val receipt = dispatcher.dispatch(
-            newAppNotice(NoticeCode.ICON_DOWNLOAD_COMPLETED, eventId = "icon-setting-off")
+            newAppNotice(NoticeCode.SECURITY_ACTION_FAILED, eventId = "security-setting-off")
         )
 
         assertEquals(listOf(NoticeTarget.IN_APP), delivered)

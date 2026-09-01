@@ -10,6 +10,7 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.TagEditorValidationE
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconEditorTabUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconProcessingErrorUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
 
 internal sealed interface DetailMutation {
@@ -56,7 +57,7 @@ internal sealed interface DetailMutation {
     data class FaviconImageUrlChanged(val value: String) : DetailMutation
     data object FaviconProcessingStarted : DetailMutation
     data class FaviconInputStaged(val path: String) : DetailMutation
-    data class FaviconProcessingFailed(val message: String?) : DetailMutation
+    data class FaviconProcessingFailed(val error: FaviconProcessingErrorUiModel) : DetailMutation
     data object FaviconCropCancelled : DetailMutation
     data object FaviconEditorDismissRequested : DetailMutation
     data object FaviconEditorDiscardConfirmed : DetailMutation
@@ -242,6 +243,7 @@ internal object DetailReducer {
             is DetailMutation.FaviconSourceChanged -> state.copy(
                 faviconEditor = state.faviconEditor.copy(
                     source = mutation.source,
+                    processing = false,
                     pendingInputPath = null,
                     confirmDiscard = false,
                 ),
@@ -277,7 +279,7 @@ internal object DetailReducer {
             is DetailMutation.FaviconProcessingFailed -> state.copy(
                 faviconEditor = state.faviconEditor.copy(
                     processing = false,
-                    processingError = mutation.message,
+                    processingError = mutation.error,
                 ),
             )
 
@@ -299,7 +301,10 @@ internal object DetailReducer {
                 state.copy(faviconEditor = DetailFaviconEditorUiModel())
 
             DetailMutation.FaviconEditorDiscardCancelled -> state.copy(
-                faviconEditor = state.faviconEditor.copy(confirmDiscard = false),
+                faviconEditor = state.faviconEditor.copy(
+                    confirmDiscard = false,
+                    presentationId = state.faviconEditor.presentationId + 1,
+                ),
             )
         }
 }

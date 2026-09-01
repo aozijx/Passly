@@ -13,12 +13,15 @@ object VaultResourcePaths {
 
     const val ATTACHMENTS = "attachments"
     const val VAULT_IMAGES = "vault_images"
+    const val VAULT_IMAGES_STAGING = ".staging"
 
     /** 所有 Vault 资源目录名称（用于批量清理/恢复） */
     val RESOURCE_DIRECTORY_NAMES = listOf(ATTACHMENTS, VAULT_IMAGES)
 
     fun attachmentDir(context: Context): File = File(context.filesDir, ATTACHMENTS)
     fun vaultImagesDir(context: Context): File = File(context.filesDir, VAULT_IMAGES)
+    fun vaultImagesStagingDir(context: Context): File =
+        File(vaultImagesDir(context), VAULT_IMAGES_STAGING)
 
     fun resourceDirectories(context: Context): List<File> =
         RESOURCE_DIRECTORY_NAMES.map { File(context.filesDir, it) }

@@ -4,12 +4,7 @@ import com.aozijx.passly.presentation.feature.settings.main.navigation.SettingsR
 import android.content.Context
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsUiAction
-import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.backup.toDetailState
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.ui.settings.backup.DataManagementDetail
 import com.aozijx.passly.presentation.ui.settings.backup.model.DataManagementEventHandler
@@ -24,26 +19,17 @@ internal fun DataManagementRouteContent(
     context: Context,
     localState: SettingsScreenLocalState,
     interactionViewModel: InteractionSettingsViewModel,
-    dataViewModel: DataManagementSettingsViewModel,
     onOpenTrash: () -> Unit,
     onOpenDatabaseRecovery: () -> Unit,
     onBack: (() -> Unit)?
 ) {
-    val state by dataViewModel.uiState.collectAsStateWithLifecycle()
     SettingsSecondaryPage(
         title = stringResource(SettingsGroup.DATA_MANAGEMENT.titleRes),
         onBack = onBack
     ) {
         item {
             DataManagementDetail(
-                state = state.toDetailState(),
                 eventHandler = object : DataManagementEventHandler {
-                    override fun onAutoDownloadIconsChanged(enabled: Boolean) {
-                        dataViewModel.onAction(
-                            DataManagementSettingsUiAction.SetAutoDownloadIcons(enabled),
-                        )
-                    }
-
                     override fun onOpenTrash() = onOpenTrash.invoke()
                     override fun onOpenDatabaseRecovery() = onOpenDatabaseRecovery.invoke()
                 },

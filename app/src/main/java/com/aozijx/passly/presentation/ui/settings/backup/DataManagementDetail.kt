@@ -14,12 +14,10 @@ import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
 import com.aozijx.passly.presentation.ui.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.presentation.ui.settings.backup.model.DataManagementDetailState
 import com.aozijx.passly.presentation.ui.settings.backup.model.DataManagementEventHandler
 
 @Composable
 internal fun DataManagementDetail(
-    state: DataManagementDetailState,
     eventHandler: DataManagementEventHandler,
 ) {
     SettingsSection {
@@ -43,12 +41,6 @@ internal fun DataManagementDetail(
                     onClick = eventHandler::onOpenDatabaseRecovery,
                 )
             )
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-        DataSettingsSection(
-            isAutoDownloadIcons = state.isAutoDownloadIcons,
-            onAutoDownloadIconsChange = eventHandler::onAutoDownloadIconsChanged,
         )
     }
 }

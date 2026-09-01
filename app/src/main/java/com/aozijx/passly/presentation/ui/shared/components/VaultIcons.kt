@@ -65,7 +65,6 @@ internal data class VaultIconDefinition(
     val category: VaultIconCategory,
     val searchAliases: Set<String>,
     val imageVector: ImageVector,
-    val legacyResourceIds: Set<Int>,
 )
 
 object VaultIcons {
@@ -111,13 +110,10 @@ object VaultIcons {
     )
 
     private val definitionsByKey = definitions.associateBy(VaultIconDefinition::key)
-    private val definitionsByLegacyId = definitions
-        .flatMap { definition -> definition.legacyResourceIds.map { it to definition } }
-        .toMap()
 
     internal fun findDefinition(name: String?): VaultIconDefinition? {
         val value = name?.trim()?.takeIf(String::isNotEmpty) ?: return null
-        return definitionsByKey[value] ?: value.toIntOrNull()?.let(definitionsByLegacyId::get)
+        return definitionsByKey[value]
     }
 
     internal fun search(
@@ -137,10 +133,6 @@ object VaultIcons {
         return findDefinition(name)?.imageVector ?: Icons.Default.Key
     }
 
-    fun getIconByRes(resId: Int?): ImageVector {
-        return resId?.let(definitionsByLegacyId::get)?.imageVector ?: Icons.Default.Key
-    }
-
     private fun definition(
         key: String,
         @StringRes labelRes: Int,
@@ -153,7 +145,6 @@ object VaultIcons {
         category = category,
         searchAliases = aliases.toSet(),
         imageVector = imageVector,
-        legacyResourceIds = setOf(labelRes),
     )
 
     internal fun getIconByCategory(category: EntryVisualCategory): ImageVector = when (category) {

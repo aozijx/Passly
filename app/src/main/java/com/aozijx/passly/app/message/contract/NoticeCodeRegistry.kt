@@ -51,20 +51,6 @@ fun defaultNoticeCodePolicy(code: NoticeCode): NoticeCodePolicy = when (code) {
         suppressWithinMs = 10_000
     )
 
-    NoticeCode.ICON_DOWNLOAD_COMPLETED -> NoticeCodePolicy(
-        NoticeTopic.ICON_DOWNLOAD,
-        NoticeLevel.SUCCESS,
-        DeliveryPolicy.PREFER_SYSTEM,
-        suppressWithinMs = 5_000
-    )
-
-    NoticeCode.ICON_DOWNLOAD_FAILED -> NoticeCodePolicy(
-        NoticeTopic.ICON_DOWNLOAD,
-        NoticeLevel.ERROR,
-        DeliveryPolicy.PREFER_SYSTEM,
-        suppressWithinMs = 10_000
-    )
-
     NoticeCode.BACKUP_EXPORT_COMPLETED -> NoticeCodePolicy(
         NoticeTopic.BACKUP,
         NoticeLevel.SUCCESS,

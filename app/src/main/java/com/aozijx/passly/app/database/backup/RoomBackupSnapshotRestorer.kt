@@ -80,14 +80,12 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
                     }
                     val iconPath = iconRecord?.let { resource ->
                         val content = requireNotNull(bundle.resourceData[resource.id])
-                        val iconDir = VaultResourcePaths.vaultImagesDir(context).apply { mkdirs() }
-                        val target = File(
-                            iconDir,
-                            "restored_${
-                                BackupBundleValidator.sha256Hex(resource.id.toByteArray()).take(32)
-                            }${resource.mimeType?.imageFileExtension() ?: ".png"}"
+                        val target = RoomBackupFaviconResource.restore(
+                            record = resource,
+                            content = content,
+                            iconRoot = VaultResourcePaths.vaultImagesDir(context),
+                            fileJournal = fileJournal,
                         )
-                        fileJournal.replace(target, content)
                         restoredFiles += target.canonicalPath
                         target.absolutePath
                     }
@@ -231,12 +229,4 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
     private fun report(name: String, throwable: Throwable? = null) {
         telemetry.report(EventLevel.WARN, EventCategory.BACKUP, name, throwable)
     }
-}
-
-private fun String.imageFileExtension(): String = when (lowercase()) {
-    "image/webp" -> ".webp"
-    "image/jpeg" -> ".jpg"
-    "image/gif" -> ".gif"
-    "image/png" -> ".png"
-    else -> error("Unsupported icon MIME type")
 }
