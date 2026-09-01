@@ -149,10 +149,6 @@
     <string name="auth_error_failed">認証に失敗しました。もう一度お試しください。</string>
     <string name="auth_error_app_password_setup_failed">アプリパスワードを設定できませんでした。もう一度お試しください。</string>
     <string name="auth_error_password_too_short">6文字以上で入力してください</string>
-    <string name="password_strength_weak">弱</string>
-    <string name="password_strength_medium">中</string>
-    <string name="password_strength_good">良</string>
-    <string name="password_strength_strong">強</string>
 
     <string name="notification_channel_app_messages">アプリ情報</string>
     <string name="notification_channel_app_messages_summary">取得結果などのステータスバー情報</string>
@@ -193,7 +189,6 @@
     <string name="otp_counter">カウンター</string>
     <string name="otp_issuer">発行者</string>
     <string name="otp_account_name">アカウント名</string>
-    <string name="password_strength_very_weak">非常に弱い</string>
     <string name="metadata_created_at">作成日時：%1$s</string>
     <string name="metadata_last_modified">最終更新：%1$s</string>
     <string name="continue_action">続行</string>

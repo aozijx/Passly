@@ -5,13 +5,12 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailTagEditorUiModel
-import com.aozijx.passly.presentation.ui.vault.detail.model.TagEditorValidationErrorUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailTagEditorUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconEditorTabUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconProcessingErrorUiModel
-import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
+import com.aozijx.passly.presentation.ui.vault.detail.model.TagEditorValidationErrorUiModel
 
 internal sealed interface DetailMutation {
     data object StateCleared : DetailMutation
@@ -40,10 +39,12 @@ internal sealed interface DetailMutation {
         val completion: DetailEditCompletion,
         val errorCode: String,
     ) : DetailMutation
+
     data class TagEditorOpened(
         val currentTags: Set<String>,
         val availableTags: Set<String>,
     ) : DetailMutation
+
     data class TagInputChanged(val value: String) : DetailMutation
     data class TagSubmitted(val value: String) : DetailMutation
     data class TagRemoved(val value: String) : DetailMutation
@@ -57,6 +58,7 @@ internal sealed interface DetailMutation {
     data class FaviconImageUrlChanged(val value: String) : DetailMutation
     data object FaviconProcessingStarted : DetailMutation
     data class FaviconInputStaged(val path: String) : DetailMutation
+    data class FaviconSourcePromoted(val path: String) : DetailMutation
     data class FaviconProcessingFailed(val error: FaviconProcessingErrorUiModel) : DetailMutation
     data object FaviconCropCancelled : DetailMutation
     data object FaviconEditorDismissRequested : DetailMutation
@@ -153,10 +155,11 @@ internal object DetailReducer {
             }
 
             is DetailMutation.TagEditorOpened -> {
-                val tags = when (val normalized = DetailTagNormalizer.normalize(mutation.currentTags)) {
-                    is TagNormalizationResult.Valid -> normalized.tags
-                    else -> mutation.currentTags
-                }
+                val tags =
+                    when (val normalized = DetailTagNormalizer.normalize(mutation.currentTags)) {
+                        is TagNormalizationResult.Valid -> normalized.tags
+                        else -> mutation.currentTags
+                    }
                 state.copy(
                     tagEditor = DetailTagEditorUiModel(
                         visible = true,
@@ -245,6 +248,7 @@ internal object DetailReducer {
                     source = mutation.source,
                     processing = false,
                     pendingInputPath = null,
+                    promotedCandidatePath = null,
                     confirmDiscard = false,
                 ),
             )
@@ -273,6 +277,16 @@ internal object DetailReducer {
                     processing = false,
                     pendingInputPath = mutation.path,
                     processingError = null,
+                ),
+            )
+
+            is DetailMutation.FaviconSourcePromoted -> state.copy(
+                faviconEditor = state.faviconEditor.copy(
+                    source = FaviconDraftSourceUiModel.PrivateImage(mutation.path),
+                    processing = false,
+                    pendingInputPath = null,
+                    promotedCandidatePath = mutation.path,
+                    confirmDiscard = false,
                 ),
             )
 

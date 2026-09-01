@@ -1,29 +1,22 @@
 package com.aozijx.passly.presentation.feature.settings.main.navigation
 
-import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.SeekableTransitionState
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.rememberTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.navigation.BackNavigationBehavior
 import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
-import androidx.compose.material3.adaptive.navigation.ThreePaneScaffoldNavigator
-import androidx.compose.material3.adaptive.navigation.ThreePaneScaffoldPredictiveBackHandler
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,7 +25,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -41,17 +33,14 @@ import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSett
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.SettingsEffect
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiAction
-import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogEventHandler
 import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogsState
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.AppPasswordAction
 import com.aozijx.passly.presentation.feature.settings.security.validateAndSendAppPasswordAction
-import com.aozijx.passly.presentation.ui.settings.main.SettingsDetailPlaceholder
 import com.aozijx.passly.presentation.ui.settings.main.SettingsMainPage
 import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenDialogsHost
-import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
 import com.aozijx.passly.presentation.ui.settings.main.rememberSettingsScreenLocalState
 import kotlinx.coroutines.launch
 
@@ -160,7 +149,7 @@ fun SettingsNavGraph(
                 )
             },
             detailContent = {
-                SettingsDetailContent(
+                SettingsDetailRouteRegistry(
                     route = renderedDetailRoute,
                     context = context,
                     localState = localState,
@@ -228,7 +217,7 @@ fun SettingsNavGraph(
                         },
                         label = "settingsDetail"
                     ) { route ->
-                        SettingsDetailContent(
+                        SettingsDetailRouteRegistry(
                             route = route,
                             context = context,
                             localState = localState,
@@ -268,175 +257,6 @@ fun SettingsNavGraph(
             }
         )
     )
-}
-
-internal enum class SettingsSinglePanePage {
-    List,
-    Detail,
-}
-
-internal enum class SettingsSinglePaneTargetLayer(val zIndex: Float) {
-    Background(-1f),
-    Default(0f),
-    Foreground(1f),
-}
-
-internal fun resolveSettingsSinglePaneTargetLayer(
-    initial: SettingsSinglePanePage,
-    target: SettingsSinglePanePage,
-): SettingsSinglePaneTargetLayer = when {
-    initial == target -> SettingsSinglePaneTargetLayer.Default
-    target == SettingsSinglePanePage.Detail -> SettingsSinglePaneTargetLayer.Foreground
-    else -> SettingsSinglePaneTargetLayer.Background
-}
-
-@OptIn(ExperimentalMaterial3AdaptiveApi::class)
-@Composable
-private fun SettingsSinglePane(
-    navigator: ThreePaneScaffoldNavigator<SettingsRoute>,
-    backBehavior: BackNavigationBehavior,
-    currentPage: SettingsSinglePanePage,
-    listContent: @Composable () -> Unit,
-    detailContent: @Composable () -> Unit,
-) {
-    ThreePaneScaffoldPredictiveBackHandler(
-        navigator = navigator,
-        backBehavior = backBehavior,
-    )
-
-    val motionScheme = MaterialTheme.motionScheme
-    val visualState = remember { SeekableTransitionState(currentPage) }
-    val visualTransition = rememberTransition(visualState, label = "settingsSinglePane")
-    val scaffoldState = navigator.scaffoldState
-
-    LaunchedEffect(scaffoldState) {
-        snapshotFlow {
-            scaffoldState.isPredictiveBackInProgress to scaffoldState.progressFraction
-        }.collect { (isPredictiveBackInProgress, progressFraction) ->
-            if (isPredictiveBackInProgress) {
-                visualState.seekTo(
-                    fraction = progressFraction,
-                    targetState = SettingsSinglePanePage.List,
-                )
-            }
-        }
-    }
-
-    LaunchedEffect(currentPage, scaffoldState.isPredictiveBackInProgress) {
-        if (!scaffoldState.isPredictiveBackInProgress) {
-            visualState.animateTo(currentPage)
-        }
-    }
-
-    visualTransition.AnimatedContent(
-        transitionSpec = {
-            val layer = resolveSettingsSinglePaneTargetLayer(initialState, targetState)
-            when {
-                initialState == targetState -> ContentTransform(
-                    targetContentEnter = EnterTransition.None,
-                    initialContentExit = ExitTransition.None,
-                    targetContentZIndex = layer.zIndex,
-                    sizeTransform = null,
-                )
-
-                targetState == SettingsSinglePanePage.Detail -> ContentTransform(
-                    targetContentEnter = slideInHorizontally(
-                        initialOffsetX = { it },
-                        animationSpec = motionScheme.defaultSpatialSpec(),
-                    ),
-                    initialContentExit = slideOutHorizontally(
-                        targetOffsetX = { -it / 4 },
-                        animationSpec = motionScheme.defaultSpatialSpec(),
-                    ),
-                    targetContentZIndex = layer.zIndex,
-                    sizeTransform = null,
-                )
-
-                else -> ContentTransform(
-                    targetContentEnter = slideInHorizontally(
-                        initialOffsetX = { -it / 4 },
-                        animationSpec = motionScheme.defaultSpatialSpec(),
-                    ),
-                    initialContentExit = slideOutHorizontally(
-                        targetOffsetX = { it },
-                        animationSpec = motionScheme.defaultSpatialSpec(),
-                    ),
-                    targetContentZIndex = layer.zIndex,
-                    sizeTransform = null,
-                )
-            }
-        },
-    ) { page ->
-        when (page) {
-            SettingsSinglePanePage.List -> listContent()
-            SettingsSinglePanePage.Detail -> detailContent()
-        }
-    }
-}
-
-/**
- * Keeps only the outgoing detail's render key while a single-pane pop animation runs.
- * Navigation and selection continue to come exclusively from the adaptive navigator.
- */
-internal fun resolveSettingsDetailRoute(
-    isSinglePane: Boolean,
-    navigatorRoute: SettingsRoute?,
-    retainedDetailRoute: SettingsRoute?,
-): SettingsRoute? = if (isSinglePane) {
-    navigatorRoute ?: retainedDetailRoute
-} else {
-    navigatorRoute
-}
-
-@Composable
-private fun SettingsDetailContent(
-    route: SettingsRoute?,
-    context: Context,
-    localState: SettingsScreenLocalState,
-    settingsViewModel: SettingsViewModel,
-    interactionViewModel: InteractionSettingsViewModel,
-    dataViewModel: DataManagementSettingsViewModel,
-    settingsState: SettingsUiState,
-    onOpenTrash: () -> Unit,
-    onOpenDatabaseRecovery: () -> Unit,
-    onBack: (() -> Unit)?
-) {
-    when (route) {
-        null,
-        SettingsRoute.Main -> SettingsDetailPlaceholder()
-
-        SettingsRoute.Security,
-        SettingsRoute.Privacy,
-        SettingsRoute.Appearance,
-        SettingsRoute.Interface -> {
-            CoreSettingsRouteContent(
-                route = route,
-                settingsViewModel = settingsViewModel,
-                onBack = onBack
-            )
-        }
-
-        SettingsRoute.Interaction,
-        SettingsRoute.Autofill,
-        SettingsRoute.DataManagement,
-        SettingsRoute.BackupRestore,
-        SettingsRoute.RecoveryCode,
-        SettingsRoute.General,
-        SettingsRoute.Notifications -> {
-            DataSettingsRouteContent(
-                route = route,
-                context = context,
-                localState = localState,
-                interactionViewModel = interactionViewModel,
-                dataViewModel = dataViewModel,
-                settingsViewModel = settingsViewModel,
-                settingsState = settingsState,
-                onOpenTrash = onOpenTrash,
-                onOpenDatabaseRecovery = onOpenDatabaseRecovery,
-                onBack = onBack
-            )
-        }
-    }
 }
 
 /**

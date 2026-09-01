@@ -80,8 +80,12 @@
     <string name="vault_detail_tag_input_label">新标签</string>
     <string name="vault_detail_tag_input_hint">使用逗号或回车添加</string>
     <string name="vault_detail_tag_remove">移除标签 %1$s</string>
-    <string name="vault_detail_tag_too_many">最多可添加 %1$d 个标签</string>
-    <string name="vault_detail_tag_too_long">每个标签不能超过 %1$d 个字符</string>
+    <plurals name="vault_detail_tag_too_many">
+        <item quantity="other">最多可添加 %1$d 个标签</item>
+    </plurals>
+    <plurals name="vault_detail_tag_too_long">
+        <item quantity="other">每个标签不能超过 %1$d 个字符</item>
+    </plurals>
     <string name="vault_detail_tag_discard_title">放弃标签修改？</string>
     <string name="vault_detail_tag_discard_message">尚未保存的标签修改将丢失。</string>
     <string name="vault_detail_tag_discard_action">放弃修改</string>

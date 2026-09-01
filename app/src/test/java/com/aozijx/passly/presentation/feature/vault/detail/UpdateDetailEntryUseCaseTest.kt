@@ -25,15 +25,15 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class DetailEntryUpdateCoordinatorTest {
+class UpdateDetailEntryUseCaseTest {
 
     @Test
     fun updateAppliesPatchToLatestEntryAndReturnsReloadedVersion() = runTest {
         val query = FakeQueryRepository(entry(version = 7, notes = "latest notes"))
         val command = FakeCommandRepository(query)
-        val coordinator = DetailEntryUpdateCoordinator(query, command)
+        val useCase = UpdateDetailEntryUseCase(query, command)
 
-        val result = coordinator.update(ENTRY_ID, DetailEntryPatch.Title("Renamed"))
+        val result = useCase.update(ENTRY_ID, DetailEntryPatch.Title("Renamed"))
 
         val updated = (result as AppResult.Success<Entry>).data
         assertEquals("Renamed", updated.title)
@@ -51,9 +51,9 @@ class DetailEntryUpdateCoordinatorTest {
                 query.current = entry(version = 4, notes = "concurrent notes")
             }
         }
-        val coordinator = DetailEntryUpdateCoordinator(query, command)
+        val useCase = UpdateDetailEntryUseCase(query, command)
 
-        val result = coordinator.update(ENTRY_ID, DetailEntryPatch.Title("Renamed"))
+        val result = useCase.update(ENTRY_ID, DetailEntryPatch.Title("Renamed"))
 
         val updated = (result as AppResult.Success<Entry>).data
         assertEquals("Renamed", updated.title)
@@ -69,9 +69,9 @@ class DetailEntryUpdateCoordinatorTest {
             failures += Conflict(errorId = "first-conflict")
             failures += Conflict(errorId = "second-conflict")
         }
-        val coordinator = DetailEntryUpdateCoordinator(query, command)
+        val useCase = UpdateDetailEntryUseCase(query, command)
 
-        val result = coordinator.update(ENTRY_ID, DetailEntryPatch.Title("Renamed"))
+        val result = useCase.update(ENTRY_ID, DetailEntryPatch.Title("Renamed"))
 
         assertTrue((result as AppResult.Failure).error is Conflict)
         assertEquals(2, command.expectedVersions.size)
@@ -83,9 +83,9 @@ class DetailEntryUpdateCoordinatorTest {
         val command = FakeCommandRepository(query).apply {
             failures += ValidationError(errorId = "validation")
         }
-        val coordinator = DetailEntryUpdateCoordinator(query, command)
+        val useCase = UpdateDetailEntryUseCase(query, command)
 
-        val result = coordinator.update(ENTRY_ID, DetailEntryPatch.Title("Renamed"))
+        val result = useCase.update(ENTRY_ID, DetailEntryPatch.Title("Renamed"))
 
         assertTrue((result as AppResult.Failure).error is ValidationError)
         assertEquals(1, command.expectedVersions.size)
@@ -94,9 +94,9 @@ class DetailEntryUpdateCoordinatorTest {
     @Test
     fun updateReturnsNotFoundWhenEntryDisappears() = runTest {
         val query = FakeQueryRepository(null)
-        val coordinator = DetailEntryUpdateCoordinator(query, FakeCommandRepository(query))
+        val useCase = UpdateDetailEntryUseCase(query, FakeCommandRepository(query))
 
-        val result = coordinator.update(ENTRY_ID, DetailEntryPatch.Title("Renamed"))
+        val result = useCase.update(ENTRY_ID, DetailEntryPatch.Title("Renamed"))
 
         assertTrue((result as AppResult.Failure).error is NotFound)
     }
@@ -113,11 +113,11 @@ class DetailEntryUpdateCoordinatorTest {
                 releaseFirst.await()
             }
         }
-        val coordinator = DetailEntryUpdateCoordinator(query, command)
+        val useCase = UpdateDetailEntryUseCase(query, command)
 
-        val first = async { coordinator.update(ENTRY_ID, DetailEntryPatch.Title("First")) }
+        val first = async { useCase.update(ENTRY_ID, DetailEntryPatch.Title("First")) }
         firstStarted.await()
-        val second = async { coordinator.update(ENTRY_ID, DetailEntryPatch.Notes("Second notes")) }
+        val second = async { useCase.update(ENTRY_ID, DetailEntryPatch.Notes("Second notes")) }
         runCurrent()
 
         assertEquals(listOf(1), command.expectedVersions)

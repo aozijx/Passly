@@ -181,11 +181,6 @@
     <string name="auth_error_failed">验证失败，请重试</string>
     <string name="auth_error_app_password_setup_failed">应用密码设置失败，请重试</string>
     <string name="auth_error_password_too_short">应用密码至少需要 6 位</string>
-    <string name="password_strength_very_weak">弱爆了</string>
-    <string name="password_strength_weak">弱</string>
-    <string name="password_strength_medium">一般</string>
-    <string name="password_strength_good">较好</string>
-    <string name="password_strength_strong">强</string>
 
     <!-- 条目元数据 -->
     <string name="metadata_created_at">创建于：%1$s</string>

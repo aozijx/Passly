@@ -78,8 +78,12 @@
     <string name="vault_detail_tag_input_label">新しいタグ</string>
     <string name="vault_detail_tag_input_hint">カンマまたはEnterで追加</string>
     <string name="vault_detail_tag_remove">タグ %1$s を削除</string>
-    <string name="vault_detail_tag_too_many">タグは最大%1$d個まで追加できます</string>
-    <string name="vault_detail_tag_too_long">各タグは%1$d文字以内にしてください</string>
+    <plurals name="vault_detail_tag_too_many">
+        <item quantity="other">タグは最大%1$d個まで追加できます</item>
+    </plurals>
+    <plurals name="vault_detail_tag_too_long">
+        <item quantity="other">各タグは%1$d文字以内にしてください</item>
+    </plurals>
     <string name="vault_detail_tag_discard_title">タグの変更を破棄しますか？</string>
     <string name="vault_detail_tag_discard_message">保存されていないタグの変更は失われます。</string>
     <string name="vault_detail_tag_discard_action">破棄</string>

@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
@@ -107,12 +108,14 @@ fun TagEditorSheet(
                     {
                         Text(
                             text = when (error) {
-                                TagEditorValidationErrorUiModel.TOO_MANY_TAGS -> stringResource(
-                                    R.string.vault_detail_tag_too_many,
+                                TagEditorValidationErrorUiModel.TOO_MANY_TAGS -> pluralStringResource(
+                                    R.plurals.vault_detail_tag_too_many,
+                                    20,
                                     20,
                                 )
-                                TagEditorValidationErrorUiModel.TAG_TOO_LONG -> stringResource(
-                                    R.string.vault_detail_tag_too_long,
+                                TagEditorValidationErrorUiModel.TAG_TOO_LONG -> pluralStringResource(
+                                    R.plurals.vault_detail_tag_too_long,
+                                    32,
                                     32,
                                 )
                             },

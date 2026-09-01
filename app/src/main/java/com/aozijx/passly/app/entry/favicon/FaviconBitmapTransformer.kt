@@ -3,6 +3,7 @@ package com.aozijx.passly.app.entry.favicon
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
+import androidx.core.graphics.scale
 import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
@@ -69,7 +70,7 @@ class FaviconBitmapTransformer @Inject constructor() {
         val left = (((-request.offsetX.coerceIn(-1f, 1f) + 1f) / 2f) * availableX).toInt()
         val top = (((-request.offsetY.coerceIn(-1f, 1f) + 1f) / 2f) * availableY).toInt()
         val cropped = Bitmap.createBitmap(this, left, top, sourceSide, sourceSide)
-        return Bitmap.createScaledBitmap(cropped, CROP_SIZE, CROP_SIZE, true).also {
+        return cropped.scale(CROP_SIZE, CROP_SIZE).also {
             if (it !== cropped) cropped.recycle()
         }
     }
@@ -78,7 +79,7 @@ class FaviconBitmapTransformer @Inject constructor() {
         val edge = max(width, height)
         if (edge <= maxEdge) return copy(config ?: Bitmap.Config.ARGB_8888, false)
         val ratio = maxEdge.toFloat() / edge
-        return Bitmap.createScaledBitmap(this, (width * ratio).toInt(), (height * ratio).toInt(), true)
+        return scale((width * ratio).toInt(), (height * ratio).toInt())
     }
 
     private companion object {

@@ -34,6 +34,7 @@ data class DetailFaviconEditorUiModel(
     val imageUrl: String = "",
     val processing: Boolean = false,
     val pendingInputPath: String? = null,
+    val promotedCandidatePath: String? = null,
     val processingError: FaviconProcessingErrorUiModel? = null,
     val confirmDiscard: Boolean = false,
     val presentationId: Long = 0,

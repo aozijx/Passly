@@ -171,9 +171,6 @@
     <string name="settings_swipe_select_right_action">右スワイプ操作を選択</string>
 
     <!-- Data management -->
-    <string name="settings_data_clear_database_description">すべてのエントリ、添付、画像を削除し、設定と認証は保持します</string>
-    <string name="settings_data_clearing_database">消去中…</string>
-    <string name="settings_data_dangerous_actions">危険な操作</string>
     <string name="settings_data_storage">ローカルデータ</string>
     <plurals name="settings_trash_count"><item quantity="other">%d 件</item></plurals>
     <string name="settings_trash_delete">完全に削除</string>
@@ -188,7 +185,6 @@
     <string name="settings_trash_empty_confirm_title">ゴミ箱を空にしますか？</string>
     <string name="settings_trash_emptying">削除中…</string>
     <string name="settings_trash_error_dismiss">確認</string>
-    <string name="settings_trash_loading">読み込み中…</string>
     <string name="settings_trash_title">ゴミ箱</string>
     <string name="settings_database_recovery_clear_action">Passlyデータベースを完全に消去</string>
     <string name="settings_database_recovery_clear_confirm">確認して消去</string>

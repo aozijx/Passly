@@ -153,10 +153,6 @@
     <string name="auth_error_failed">Verification failed. Try again.</string>
     <string name="auth_error_app_password_setup_failed">Couldn\'t set the app password. Try again.</string>
     <string name="auth_error_password_too_short">Use at least 6 characters</string>
-    <string name="password_strength_weak">Weak</string>
-    <string name="password_strength_medium">Medium</string>
-    <string name="password_strength_good">Good</string>
-    <string name="password_strength_strong">Strong</string>
 
     <string name="notification_channel_app_messages">App information</string>
     <string name="notification_channel_app_messages_summary">Status bar information such as download results</string>
@@ -197,7 +193,6 @@
     <string name="otp_counter">Counter</string>
     <string name="otp_issuer">Issuer</string>
     <string name="otp_account_name">Account name</string>
-    <string name="password_strength_very_weak">Very weak</string>
     <string name="metadata_created_at">Created: %1$s</string>
     <string name="metadata_last_modified">Last modified: %1$s</string>
     <string name="continue_action">Continue</string>

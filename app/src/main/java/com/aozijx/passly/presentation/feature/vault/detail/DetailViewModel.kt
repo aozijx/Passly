@@ -4,45 +4,28 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.app.entry.favicon.FaviconCropRequest
-import com.aozijx.passly.app.entry.favicon.FaviconDownloadException
-import com.aozijx.passly.app.entry.favicon.FaviconDownloadFailure
-import com.aozijx.passly.app.entry.favicon.FaviconImageException
-import com.aozijx.passly.app.entry.favicon.FaviconImageFailure
 import com.aozijx.passly.app.entry.favicon.FaviconImageProcessor
-import com.aozijx.passly.app.entry.favicon.FaviconUrlException
-import com.aozijx.passly.app.entry.favicon.FaviconUrlFailure
-import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationGate
-import com.aozijx.passly.domain.access.model.SensitiveAccessAction
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.domain.entry.policy.EntryAccountGraph
+import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
-import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
-import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
-import com.aozijx.passly.domain.entry.policy.EntryAccountGraph
+import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.presentation.feature.vault.detail.DetailEffect
-import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
-import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
-import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
-import com.aozijx.passly.presentation.feature.vault.detail.DetailEntryAnalyzer
-import com.aozijx.passly.presentation.feature.vault.detail.DetailMutation
-import com.aozijx.passly.presentation.feature.vault.detail.DetailReducer
-import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
-import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconProcessingErrorUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,7 +49,7 @@ class DetailViewModel @Inject constructor(
 ) : ViewModel() {
     private val entryAnalyzer = DetailEntryAnalyzer(entryTypePolicy)
     private val revealStore = DetailRevealStore()
-    private val updateCoordinator = DetailEntryUpdateCoordinator(
+    private val updateDetailEntry = UpdateDetailEntryUseCase(
         entryQueryRepository = entryQueryRepository,
         entryCommandRepository = entryCommandRepository,
     )
@@ -74,7 +57,11 @@ class DetailViewModel @Inject constructor(
         authorizationGate = authorizationGate,
         sensitiveFieldRepository = sensitiveFieldRepository,
     )
-    private var pendingPromotedFaviconPath: String? = null
+    private val revealSensitiveFields = RevealDetailSensitiveFieldsUseCase(
+        authorizationGate = authorizationGate,
+        sensitiveFieldRepository = sensitiveFieldRepository,
+        activityRecorder = activityRecorder,
+    )
     private var faviconJob: Job? = null
 
     companion object {
@@ -252,9 +239,8 @@ class DetailViewModel @Inject constructor(
                 if (previous is FaviconDraftSourceUiModel.PrivateImage && previous != event.source) {
                     viewModelScope.launch { faviconImageProcessor.discard(previous.localPath) }
                 }
-                pendingPromotedFaviconPath?.let { path ->
+                _uiState.value.faviconEditor.promotedCandidatePath?.let { path ->
                     viewModelScope.launch { faviconImageProcessor.discardPromotedCandidate(path) }
-                    pendingPromotedFaviconPath = null
                 }
                 mutate(DetailMutation.FaviconSourceChanged(event.source))
             }
@@ -316,8 +302,7 @@ class DetailViewModel @Inject constructor(
                                 return@launch
                             }
                         FaviconDraftSourceUiModel.PrivateImage(promoted).also {
-                            pendingPromotedFaviconPath = promoted
-                            mutate(DetailMutation.FaviconSourceChanged(it))
+                            mutate(DetailMutation.FaviconSourcePromoted(promoted))
                         }
                     } else {
                         source
@@ -326,9 +311,6 @@ class DetailViewModel @Inject constructor(
                         patch = DetailEntryPatch.Icon(persistedSource.toEntryIcon()),
                         completion = DetailEditCompletion.Icon,
                     )
-                    if (!_uiState.value.faviconEditor.visible) {
-                        pendingPromotedFaviconPath = null
-                    }
                 }
             }
 
@@ -459,26 +441,8 @@ class DetailViewModel @Inject constructor(
             uiKey.toSensitiveFieldKey()?.let { fieldKey -> uiKey to fieldKey }
         }.toMap()
         if (requested.isEmpty()) return
-        authorizationGate.authorize(
-            AuthorizationScope.SensitiveFields(
-                entryId = entryValue,
-                fieldKeys = requested.values.toSet(),
-                action = SensitiveAccessAction.REVEAL,
-            ),
-        ) authorize@{ permit ->
-            val revealedFields = sensitiveFieldRepository.revealMany(
-                entryId = entryValue,
-                keys = requested.values.toSet(),
-                permit = permit,
-            )
-            revealedFields.forEach { revealed ->
-                val uiKey = requested.entries.firstOrNull { it.value == revealed.key }?.key
-                    ?: return@forEach
-                setRevealedField(uiKey, revealed.value)
-            }
-            if (revealedFields.isNotEmpty()) {
-                activityRecorder.recordUsage(entryValue.value, ActivityType.VIEW)
-            }
+        revealSensitiveFields.reveal(entryValue, requested).forEach { (uiKey, value) ->
+            setRevealedField(uiKey, value)
         }
     }
 
@@ -512,11 +476,11 @@ class DetailViewModel @Inject constructor(
         val entryId = _uiState.value.entry?.id ?: return
         if (_uiState.value.savingEdit != null) return
         mutate(DetailMutation.SaveStarted(completion))
-        when (val result = updateCoordinator.update(entryId, patch)) {
+        when (val result = updateDetailEntry.update(entryId, patch)) {
             is com.aozijx.passly.core.error.result.AppResult.Success -> {
                 val latest = result.data
                 val keepTitleEditing = completion != DetailEditCompletion.Title &&
-                    _uiState.value.isEditingTitle
+                        _uiState.value.isEditingTitle
                 refreshFromEntry(
                     latest,
                     isEditingTitle = keepTitleEditing,
@@ -590,9 +554,8 @@ class DetailViewModel @Inject constructor(
         faviconImageProcessor.discardEditorResources(
             stagedPath = editor.privateImagePath(),
             pendingInputPath = editor.pendingInputPath,
-            promotedCandidatePath = pendingPromotedFaviconPath,
+            promotedCandidatePath = editor.promotedCandidatePath,
         )
-        pendingPromotedFaviconPath = null
         clearSensitiveState()
     }
 
@@ -607,9 +570,8 @@ class DetailViewModel @Inject constructor(
         faviconImageProcessor.discardEditorResources(
             stagedPath = editor.privateImagePath(),
             pendingInputPath = editor.pendingInputPath,
-            promotedCandidatePath = pendingPromotedFaviconPath,
+            promotedCandidatePath = editor.promotedCandidatePath,
         )
-        pendingPromotedFaviconPath = null
     }
 
     private suspend fun stageFaviconInput(
@@ -639,21 +601,6 @@ class DetailViewModel @Inject constructor(
         )
     }
 
-    private fun EntryIcon.toFaviconDraftSource(): FaviconDraftSourceUiModel {
-        val privatePath = customReference
-        val builtInName = name
-        return when {
-            !privatePath.isNullOrBlank() -> FaviconDraftSourceUiModel.PrivateImage(privatePath)
-            !builtInName.isNullOrBlank() -> FaviconDraftSourceUiModel.BuiltIn(builtInName, color)
-            else -> FaviconDraftSourceUiModel.InferredDefault
-        }
-    }
-
-    private fun FaviconDraftSourceUiModel.toEntryIcon(): EntryIcon = when (this) {
-        FaviconDraftSourceUiModel.InferredDefault -> EntryIcon()
-        is FaviconDraftSourceUiModel.BuiltIn -> EntryIcon(name = key, color = colorToken)
-        is FaviconDraftSourceUiModel.PrivateImage -> EntryIcon(customReference = localPath)
-    }
 }
 
 private fun DetailEntryPatch.revealedValueOrNull(): String? = when (this) {
@@ -664,34 +611,4 @@ private fun DetailEntryPatch.revealedValueOrNull(): String? = when (this) {
     is DetailEntryPatch.WifiPassword -> value
     is DetailEntryPatch.SshPassphrase -> value
     else -> null
-}
-
-private fun DetailFaviconEditorUiModel.privateImagePath(): String? =
-    (source as? FaviconDraftSourceUiModel.PrivateImage)?.localPath
-
-private fun Throwable.toFaviconUiError(): FaviconProcessingErrorUiModel = when (this) {
-    is FaviconUrlException -> when (reason) {
-        FaviconUrlFailure.INVALID_URL,
-        FaviconUrlFailure.HTTPS_REQUIRED,
-        -> FaviconProcessingErrorUiModel.INVALID_URL
-
-        FaviconUrlFailure.CREDENTIALS_NOT_ALLOWED,
-        FaviconUrlFailure.HOST_NOT_ALLOWED,
-        FaviconUrlFailure.PRIVATE_ADDRESS,
-        -> FaviconProcessingErrorUiModel.URL_NOT_ALLOWED
-    }
-
-    is FaviconDownloadException -> when (reason) {
-        FaviconDownloadFailure.NOT_IMAGE -> FaviconProcessingErrorUiModel.NOT_IMAGE
-        FaviconDownloadFailure.TOO_LARGE -> FaviconProcessingErrorUiModel.IMAGE_TOO_LARGE
-        else -> FaviconProcessingErrorUiModel.DOWNLOAD_FAILED
-    }
-
-    is FaviconImageException -> when (reason) {
-        FaviconImageFailure.TOO_LARGE -> FaviconProcessingErrorUiModel.IMAGE_TOO_LARGE
-        FaviconImageFailure.SAVE_FAILED -> FaviconProcessingErrorUiModel.SAVE_FAILED
-        else -> FaviconProcessingErrorUiModel.INVALID_IMAGE
-    }
-
-    else -> FaviconProcessingErrorUiModel.INVALID_IMAGE
 }

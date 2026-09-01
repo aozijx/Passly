@@ -11,7 +11,7 @@ import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-internal class DetailEntryUpdateCoordinator(
+internal class UpdateDetailEntryUseCase(
     private val entryQueryRepository: EntryQueryRepository,
     private val entryCommandRepository: EntryCommandRepository,
 ) {

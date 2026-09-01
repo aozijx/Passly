@@ -116,6 +116,37 @@ class DetailFaviconReducerTest {
     }
 
     @Test
+    fun promotedPrivateImageKeepsCandidatePathUntilSaveCompletes() {
+        val state = DetailUiState(
+            faviconEditor = DetailFaviconEditorUiModel(
+                visible = true,
+                source = FaviconDraftSourceUiModel.PrivateImage("/private/staging/icon.webp"),
+            ),
+        )
+
+        val promoted = DetailReducer.reduce(
+            state,
+            DetailMutation.FaviconSourcePromoted("/private/images/favicon.webp"),
+        )
+
+        assertEquals(
+            FaviconDraftSourceUiModel.PrivateImage("/private/images/favicon.webp"),
+            promoted.faviconEditor.source,
+        )
+        assertEquals(
+            "/private/images/favicon.webp",
+            promoted.faviconEditor.promotedCandidatePath,
+        )
+
+        val saved = DetailReducer.reduce(
+            promoted.copy(savingEdit = DetailEditCompletion.Icon),
+            DetailMutation.SaveSucceeded(DetailEditCompletion.Icon),
+        )
+
+        assertEquals(DetailFaviconEditorUiModel(), saved.faviconEditor)
+    }
+
+    @Test
     fun keepEditingRequestsFreshSheetPresentation() {
         val state = DetailUiState(
             faviconEditor = DetailFaviconEditorUiModel(

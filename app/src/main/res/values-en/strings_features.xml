@@ -78,8 +78,14 @@
     <string name="vault_detail_tag_input_label">New tag</string>
     <string name="vault_detail_tag_input_hint">Use a comma or Enter to add</string>
     <string name="vault_detail_tag_remove">Remove tag %1$s</string>
-    <string name="vault_detail_tag_too_many">You can add up to %1$d tags</string>
-    <string name="vault_detail_tag_too_long">Each tag can contain up to %1$d characters</string>
+    <plurals name="vault_detail_tag_too_many">
+        <item quantity="one">You can add up to %1$d tag</item>
+        <item quantity="other">You can add up to %1$d tags</item>
+    </plurals>
+    <plurals name="vault_detail_tag_too_long">
+        <item quantity="one">Each tag can contain up to %1$d character</item>
+        <item quantity="other">Each tag can contain up to %1$d characters</item>
+    </plurals>
     <string name="vault_detail_tag_discard_title">Discard tag changes?</string>
     <string name="vault_detail_tag_discard_message">Unsaved tag changes will be lost.</string>
     <string name="vault_detail_tag_discard_action">Discard</string>
