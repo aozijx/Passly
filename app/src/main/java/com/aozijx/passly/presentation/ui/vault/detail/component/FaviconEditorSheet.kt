@@ -158,7 +158,7 @@ fun FaviconEditorSheet(
                 }
                 Button(
                     onClick = onSave,
-                    enabled = state.dirty && !isSaving,
+                    enabled = state.dirty && !state.processing && !isSaving,
                     modifier = Modifier.weight(1f),
                 ) {
                     if (isSaving) {

@@ -92,4 +92,45 @@ class DetailFaviconReducerTest {
         assertEquals("/private/staging/input", actual.faviconEditor.pendingInputPath)
         assertFalse(actual.faviconEditor.processing)
     }
+
+    @Test
+    fun processedPrivateImageEndsProcessingSoSaveCanRun() {
+        val state = DetailUiState(
+            faviconEditor = DetailFaviconEditorUiModel(
+                visible = true,
+                processing = true,
+                initialSource = FaviconDraftSourceUiModel.InferredDefault,
+                source = FaviconDraftSourceUiModel.InferredDefault,
+            ),
+        )
+
+        val actual = DetailReducer.reduce(
+            state,
+            DetailMutation.FaviconSourceChanged(
+                FaviconDraftSourceUiModel.PrivateImage("/private/staging/icon.webp"),
+            ),
+        )
+
+        assertFalse(actual.faviconEditor.processing)
+        assertTrue(actual.faviconEditor.dirty)
+    }
+
+    @Test
+    fun keepEditingRequestsFreshSheetPresentation() {
+        val state = DetailUiState(
+            faviconEditor = DetailFaviconEditorUiModel(
+                visible = true,
+                confirmDiscard = true,
+                presentationId = 4,
+            ),
+        )
+
+        val actual = DetailReducer.reduce(
+            state,
+            DetailMutation.FaviconEditorDiscardCancelled,
+        )
+
+        assertFalse(actual.faviconEditor.confirmDiscard)
+        assertEquals(5L, actual.faviconEditor.presentationId)
+    }
 }

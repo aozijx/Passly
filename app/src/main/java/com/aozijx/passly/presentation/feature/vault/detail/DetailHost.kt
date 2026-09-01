@@ -22,6 +22,7 @@ fun DetailHost(
     initialEntry: Entry,
     uiState: DetailUiState,
     otpUiState: OtpCodeState?,
+    otpQrUri: String?,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
     onAction: (DetailUiAction) -> Unit,
     onBack: () -> Unit,
@@ -29,6 +30,7 @@ fun DetailHost(
     onAutoUnlockTotp: (Entry) -> Unit,
     onAuthenticate: DetailAuthenticate,
     onCopySensitive: (String) -> Unit,
+    onOtpQrDismiss: () -> Unit,
     onOpenRelatedEntry: (Entry) -> Unit
 ) {
 
@@ -75,10 +77,12 @@ fun DetailHost(
             uiState = uiState,
             editState = editState,
             otpUiState = otpUiState,
+            otpQrUri = otpQrUri,
             onAction = onAction,
             onInteraction = onUpdateInteraction,
             onAuthenticate = onAuthenticate,
             onCopySensitive = onCopySensitive,
+            onOtpQrDismiss = onOtpQrDismiss,
             onOpenRelatedEntry = onOpenRelatedEntry
         )
     }

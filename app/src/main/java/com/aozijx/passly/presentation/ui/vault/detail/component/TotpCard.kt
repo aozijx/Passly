@@ -37,9 +37,7 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -59,10 +57,10 @@ fun TotpCard(
     totpUri: String? = null,
     qrBitmap: Bitmap? = null,
     showProgress: Boolean = true,
-    onQrClick: (() -> Unit)? = null,
+    onQrClick: () -> Unit,
+    onQrDismiss: () -> Unit,
     onCodeClick: (() -> Unit)? = null
 ) {
-    var showQrSheet by remember { mutableStateOf(false) }
     val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -78,8 +76,7 @@ fun TotpCard(
             )
             IconButton(
                 onClick = {
-                    showQrSheet = true
-                    onQrClick?.invoke()
+                    onQrClick()
                 },
                 modifier = Modifier.size(24.dp)
             ) {
@@ -147,12 +144,12 @@ fun TotpCard(
                 )
             }
         }
-        if (showQrSheet) {
+        if (totpUri != null || qrBitmap != null) {
             QRcodeRender(
                 totpUri = totpUri,
                 externalBitmap = qrBitmap,
                 sheetState = sheetState,
-                onDismiss = { showQrSheet = false }
+                onDismiss = onQrDismiss,
             )
         }
     }

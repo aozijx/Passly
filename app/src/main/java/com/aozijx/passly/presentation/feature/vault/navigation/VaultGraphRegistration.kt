@@ -117,6 +117,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
         val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
         val totpState by vaultViewModel.totpStatesFlow.collectAsStateWithLifecycle()
         val currentOtpState = totpState[entryId]
+        var otpQrUri by remember(entryId) { mutableStateOf<String?>(null) }
 
         LaunchedEffect(detailViewModel) {
             detailViewModel.effects.collectLatest { effect ->
@@ -124,6 +125,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
                     is DetailEffect.EntryUpdated -> vaultViewModel.onAction(
                         VaultUiAction.UpdateEntry(effect.entry),
                     )
+                    is DetailEffect.ShowOtpQr -> otpQrUri = effect.uri
                 }
             }
         }
@@ -144,8 +146,10 @@ internal fun NavGraphBuilder.registerVaultGraph(
                 initialEntry = entry,
                 uiState = detailUiState,
                 otpUiState = currentOtpState,
+                otpQrUri = otpQrUri,
                 onAction = detailViewModel::onAction,
                 onCopySensitive = detailViewModel::copySensitive,
+                onOtpQrDismiss = { otpQrUri = null },
                 onBack = context.navigateBack,
                 onUpdateInteraction = context.onUserInteraction,
                 onAutoUnlockTotp = {

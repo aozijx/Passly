@@ -243,6 +243,7 @@ internal object DetailReducer {
             is DetailMutation.FaviconSourceChanged -> state.copy(
                 faviconEditor = state.faviconEditor.copy(
                     source = mutation.source,
+                    processing = false,
                     pendingInputPath = null,
                     confirmDiscard = false,
                 ),
@@ -300,7 +301,10 @@ internal object DetailReducer {
                 state.copy(faviconEditor = DetailFaviconEditorUiModel())
 
             DetailMutation.FaviconEditorDiscardCancelled -> state.copy(
-                faviconEditor = state.faviconEditor.copy(confirmDiscard = false),
+                faviconEditor = state.faviconEditor.copy(
+                    confirmDiscard = false,
+                    presentationId = state.faviconEditor.presentationId + 1,
+                ),
             )
         }
 }

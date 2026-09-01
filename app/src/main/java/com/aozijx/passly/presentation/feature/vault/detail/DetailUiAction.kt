@@ -53,6 +53,7 @@ sealed interface DetailUiAction {
     data object DismissFaviconEditor : DetailUiAction
     data object ConfirmDiscardFavicon : DetailUiAction
     data object KeepEditingFavicon : DetailUiAction
+    data object ExportOtpQr : DetailUiAction
     data class RecordAction(val field: String, val type: ActivityType) : DetailUiAction
     data class ToggleAccessHistoryRecording(val enabled: Boolean) : DetailUiAction
     object ClearSensitiveState : DetailUiAction

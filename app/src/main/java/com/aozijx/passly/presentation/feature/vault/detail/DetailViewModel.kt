@@ -70,6 +70,10 @@ class DetailViewModel @Inject constructor(
         entryQueryRepository = entryQueryRepository,
         entryCommandRepository = entryCommandRepository,
     )
+    private val otpQrExporter = DetailOtpQrExporter(
+        authorizationGate = authorizationGate,
+        sensitiveFieldRepository = sensitiveFieldRepository,
+    )
     private var pendingPromotedFaviconPath: String? = null
     private var faviconJob: Job? = null
 
@@ -299,7 +303,8 @@ class DetailViewModel @Inject constructor(
             }
 
             DetailUiAction.SaveFavicon -> {
-                launchFaviconJob {
+                if (_uiState.value.faviconEditor.processing) return
+                faviconJob = viewModelScope.launch {
                     val source = _uiState.value.faviconEditor.source
                     val persistedSource = if (
                         source is FaviconDraftSourceUiModel.PrivateImage &&
@@ -308,7 +313,7 @@ class DetailViewModel @Inject constructor(
                         val promoted = faviconImageProcessor.promote(source.stagedPath)
                             .getOrElse {
                                 mutate(DetailMutation.FaviconProcessingFailed(it.toFaviconUiError()))
-                                return@launchFaviconJob
+                                return@launch
                             }
                         FaviconDraftSourceUiModel.PrivateImage(promoted).also {
                             pendingPromotedFaviconPath = promoted
@@ -344,6 +349,16 @@ class DetailViewModel @Inject constructor(
 
             DetailUiAction.KeepEditingFavicon ->
                 mutate(DetailMutation.FaviconEditorDiscardCancelled)
+
+            DetailUiAction.ExportOtpQr -> {
+                val entry = _uiState.value.entry ?: return
+                viewModelScope.launch {
+                    otpQrExporter.export(entry)?.let { uri ->
+                        _effects.send(DetailEffect.ShowOtpQr(uri))
+                        activityRecorder.recordUsage(entry.id.value, ActivityType.VIEW)
+                    }
+                }
+            }
 
             is DetailUiAction.RevealHighSensitivityField -> {
                 val current = _uiState.value.entry ?: return

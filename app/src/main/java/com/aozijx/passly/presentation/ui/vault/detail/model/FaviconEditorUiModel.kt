@@ -36,6 +36,7 @@ data class DetailFaviconEditorUiModel(
     val pendingInputPath: String? = null,
     val processingError: FaviconProcessingErrorUiModel? = null,
     val confirmDiscard: Boolean = false,
+    val presentationId: Long = 0,
 ) {
     val dirty: Boolean get() = source != initialSource || pendingInputPath != null
 }

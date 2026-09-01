@@ -13,6 +13,8 @@ fun TotpSection(
     currentState: DetailOtpUiModel?,
     totpUri: String? = null,
     showProgress: Boolean = true,
+    onQrClick: () -> Unit,
+    onQrDismiss: () -> Unit,
     onCodeClick: () -> Unit,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -20,6 +22,8 @@ fun TotpSection(
             currentState = currentState,
             totpUri = totpUri,
             showProgress = showProgress,
+            onQrClick = onQrClick,
+            onQrDismiss = onQrDismiss,
             onCodeClick = onCodeClick,
         )
     }
