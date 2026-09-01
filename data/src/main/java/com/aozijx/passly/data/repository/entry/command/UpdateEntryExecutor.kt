@@ -92,9 +92,12 @@ internal class UpdateEntryExecutor @Inject constructor(
                 activityWriter.recordActivity(this, id, ActivityType.SENSITIVE_CHANGE, now)
             }
         }
-        result.onSuccessSuspend {
+        result.cleanReplacedIconOnSuccess(
+            oldPath = replacedIconPath,
+            newPath = currentIconPath,
+        ) { oldPath, newPath ->
             attachmentGarbageCollector.drain()
-            entryResourceCleaner.cleanReplacedIcon(replacedIconPath, currentIconPath)
+            entryResourceCleaner.cleanReplacedIcon(oldPath, newPath)
         }
         return result
     }

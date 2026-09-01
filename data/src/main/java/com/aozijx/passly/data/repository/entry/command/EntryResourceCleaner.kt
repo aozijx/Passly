@@ -57,11 +57,11 @@ internal class EntryResourceCleaner @Inject constructor(
     }
 
     suspend fun cleanReplacedIcon(oldPath: String?, newPath: String?) {
-        val candidate = oldPath?.takeIf { it.isNotBlank() && it != newPath } ?: return
+        val candidate = ReplacedIconCleanupPolicy.candidate(oldPath, newPath) ?: return
         val references = databaseTransactions.read("entry_icon_reference_check") {
             entryQueryDao().countByIconCustomReference(candidate)
-        }.getOrNull() ?: return
-        if (references != 0) return
+        }.getOrNull()
+        if (!ReplacedIconCleanupPolicy.canDelete(references)) return
         withContext(Dispatchers.IO) {
             runCatching { deleteCustomIcon(candidate) }.onFailure { error ->
                 telemetry.report(

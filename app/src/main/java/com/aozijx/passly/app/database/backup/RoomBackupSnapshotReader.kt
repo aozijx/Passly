@@ -16,7 +16,6 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.security.dek.AttachmentContentCrypto
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -81,32 +80,13 @@ internal class RoomBackupSnapshotReader @Inject constructor(
                 val iconRoot = VaultResourcePaths.vaultImagesDir(context).canonicalFile
                 entries.forEach { entry ->
                     entry.icon.customReference?.let { iconPath ->
-                        val iconFile = File(iconPath).canonicalFile
-                        require(
-                            iconFile.path.startsWith(
-                                iconRoot.path + File.separator
-                            )
-                        ) {
-                            "图标路径超出应用图标目录: ${entry.id}"
-                        }
-                        if (iconFile.isFile) {
-                            require(iconFile.length() <= BackupBundleValidator.MAX_RESOURCE_BYTES) {
-                                "图标文件过大: ${entry.id}"
-                            }
-                            val content = iconFile.readBytes()
-                            val recordId = "icon_${entry.id.value}"
-                            resourceRecords.add(
-                                com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceRecord(
-                                    id = recordId,
-                                    entryId = entry.id.value,
-                                    kind = com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind.ICON,
-                                    fileName = iconFile.name,
-                                    mimeType = iconFile.imageMimeType(),
-                                    size = content.size.toLong(),
-                                    sha256 = BackupBundleValidator.sha256Hex(content)
-                                )
-                            )
-                            resourceData[recordId] = content
+                        RoomBackupFaviconResource.export(
+                            entryId = entry.id.value,
+                            iconPath = iconPath,
+                            iconRoot = iconRoot,
+                        )?.let { exported ->
+                            resourceRecords += exported.record
+                            resourceData[exported.record.id] = exported.content
                         }
                     }
                 }
@@ -194,11 +174,4 @@ internal class RoomBackupSnapshotReader @Inject constructor(
             bundle
         }
     }
-}
-
-private fun File.imageMimeType(): String = when (extension.lowercase()) {
-    "webp" -> "image/webp"
-    "jpg", "jpeg" -> "image/jpeg"
-    "gif" -> "image/gif"
-    else -> "image/png"
 }
