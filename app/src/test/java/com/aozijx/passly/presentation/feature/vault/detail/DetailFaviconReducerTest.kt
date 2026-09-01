@@ -2,6 +2,7 @@ package com.aozijx.passly.presentation.feature.vault.detail
 
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconProcessingErrorUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -71,5 +72,24 @@ class DetailFaviconReducerTest {
         assertTrue(requested.faviconEditor.confirmDiscard)
         assertEquals(editor.source, failed.faviconEditor.source)
         assertEquals(DetailFaviconEditorUiModel(), succeeded.faviconEditor)
+    }
+
+    @Test
+    fun processingFailurePreservesPendingCropInput() {
+        val state = DetailUiState(
+            faviconEditor = DetailFaviconEditorUiModel(
+                visible = true,
+                processing = true,
+                pendingInputPath = "/private/staging/input",
+            ),
+        )
+
+        val actual = DetailReducer.reduce(
+            state,
+            DetailMutation.FaviconProcessingFailed(FaviconProcessingErrorUiModel.INVALID_IMAGE),
+        )
+
+        assertEquals("/private/staging/input", actual.faviconEditor.pendingInputPath)
+        assertFalse(actual.faviconEditor.processing)
     }
 }
