@@ -472,7 +472,7 @@ class DetailViewModel @Inject constructor(
         patch: DetailEntryPatch,
         completion: DetailEditCompletion,
     ) {
-        if (!accessPolicy.hasFullAccess()) return
+        if (patch !is DetailEntryPatch.Tags && !accessPolicy.hasFullAccess()) return
         val entryId = _uiState.value.entry?.id ?: return
         if (_uiState.value.savingEdit != null) return
         mutate(DetailMutation.SaveStarted(completion))
