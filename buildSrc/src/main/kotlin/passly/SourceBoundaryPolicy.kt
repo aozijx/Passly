@@ -259,6 +259,15 @@ internal object SourceBoundaryPolicy {
             message = "settings UI imports a Vault-owned list model",
         ),
         SourceBoundaryRule(
+            id = "SETTINGS_APPEARANCE_NARROW_PORT",
+            sourcePathContains = "/presentation/feature/settings/appearance/",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+                "com.aozijx.passly.domain.settings.model.SettingsCommand",
+            ),
+            message = "appearance settings depends on the global settings snapshot or command bus",
+        ),
+        SourceBoundaryRule(
             id = "SETTINGS_DATA_MANAGEMENT_TRASH_OWNERSHIP",
             sourcePathContains = "/presentation/feature/settings/backup/DataManagementSettings",
             forbiddenImportPrefixes = setOf(

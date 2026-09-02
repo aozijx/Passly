@@ -506,6 +506,25 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun appearanceSettingsCannotDependOnGlobalSettingsSnapshotOrCommandBus() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/appearance/AppearanceSettingsViewModel.kt",
+            content = """
+                import com.aozijx.passly.domain.settings.model.SettingsCommand
+                import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+            """.trimIndent(),
+        )
+
+        assertEquals(
+            "SETTINGS_APPEARANCE_NARROW_PORT",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).map { it.ruleId }.distinct().single(),
+        )
+    }
+
+    @Test
     fun dataManagementSettingsCannotOwnTrashStateOrCommands() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/backup/DataManagementSettingsViewModel.kt",

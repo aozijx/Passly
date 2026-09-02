@@ -2,9 +2,8 @@ package com.aozijx.passly.presentation.feature.settings.appearance
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.settings.model.SettingsCommand
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -15,12 +14,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class InterfaceSettingsViewModel @Inject constructor(
-    private val settingsRepository: AppSettingsRepository
+    private val settingsRepository: InterfaceSettingsRepository
 ) : ViewModel() {
 
-    val uiState: StateFlow<InterfaceSettingsUiState> = settingsRepository.settings
+    val uiState: StateFlow<InterfaceSettingsUiState> = settingsRepository.interfaceSettings
         .map { settings ->
-            val prefs = settings.interfacePrefs
+            val prefs = settings.preferences
             InterfaceSettingsUiState(
                 hideSystemBars = prefs.hideSystemBars,
                 collapseTopBarOnScroll = prefs.collapseTopBarOnScroll,
@@ -30,9 +29,9 @@ class InterfaceSettingsViewModel @Inject constructor(
                 groupItemSpacingDp = prefs.groupItemSpacingDp,
                 groupContentPaddingDp = prefs.groupContentPaddingDp,
                 enabledLibraryQuickFilterKeys =
-                    settings.vault.visibleQuickFilters?.filterKeys
+                    settings.visibleLibraryQuickFilterKeys
                         ?: LibraryQuickFilter.defaultVisibleKeys,
-                entryHierarchyDisplayMode = settings.vault.entryHierarchyDisplayMode
+                entryHierarchyDisplayMode = settings.entryHierarchyDisplayMode
             )
         }
         .stateIn(
@@ -44,31 +43,31 @@ class InterfaceSettingsViewModel @Inject constructor(
     fun onAction(action: InterfaceSettingsAction) {
         when (action) {
             is InterfaceSettingsAction.SetHideSystemBars -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetHideSystemBars(action.enabled))
+                settingsRepository.setHideSystemBars(action.enabled)
             }
 
             is InterfaceSettingsAction.SetTopBarCollapsible -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetTopBarCollapsible(action.enabled))
+                settingsRepository.setTopBarCollapsible(action.enabled)
             }
 
             is InterfaceSettingsAction.SetQuickFilterBarCollapsible -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetQuickFilterBarCollapsible(action.enabled))
+                settingsRepository.setQuickFilterBarCollapsible(action.enabled)
             }
 
             is InterfaceSettingsAction.SetOuterCornerRadius -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetOuterCornerRadius(action.radiusDp))
+                settingsRepository.setOuterCornerRadius(action.radiusDp)
             }
 
             is InterfaceSettingsAction.SetInnerCornerRadius -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetInnerCornerRadius(action.radiusDp))
+                settingsRepository.setInnerCornerRadius(action.radiusDp)
             }
 
             is InterfaceSettingsAction.SetGroupItemSpacing -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetGroupItemSpacing(action.spacingDp))
+                settingsRepository.setGroupItemSpacing(action.spacingDp)
             }
 
             is InterfaceSettingsAction.SetGroupContentPadding -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetGroupContentPadding(action.paddingDp))
+                settingsRepository.setGroupContentPadding(action.paddingDp)
             }
 
             is InterfaceSettingsAction.ToggleVisibleLibraryQuickFilter -> viewModelScope.launch {
@@ -76,13 +75,11 @@ class InterfaceSettingsViewModel @Inject constructor(
                     enabledKeys = uiState.value.enabledLibraryQuickFilterKeys,
                     quickFilter = action.quickFilter
                 )
-                settingsRepository.update(SettingsCommand.SetVisibleLibraryQuickFilters(nextKeys))
+                settingsRepository.setVisibleLibraryQuickFilters(nextKeys)
             }
 
             is InterfaceSettingsAction.SetEntryHierarchyDisplayMode -> viewModelScope.launch {
-                settingsRepository.update(
-                    SettingsCommand.SetEntryHierarchyDisplayMode(action.mode)
-                )
+                settingsRepository.setEntryHierarchyDisplayMode(action.mode)
             }
         }
     }
