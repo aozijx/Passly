@@ -1,8 +1,5 @@
 package com.aozijx.passly.data.repository.autofill
 
-import com.aozijx.passly.domain.autofill.AutofillScope
-import com.aozijx.passly.domain.autofill.port.CredentialServiceRepository
-import com.aozijx.passly.domain.autofill.port.ApplicationLabelResolver
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.query.buildRecentEntryIdIntersectionQuery
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
@@ -10,34 +7,26 @@ import com.aozijx.passly.data.mapper.entry.EntryAssembler
 import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.autofill.AutofillScope
+import com.aozijx.passly.domain.autofill.port.AutofillCredentialRepository
 import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.domain.entry.model.EntryAssociations
-import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.EntryIdentity
-import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.query.CredentialCandidate
 import com.aozijx.passly.domain.entry.model.query.CredentialMatch
 import com.aozijx.passly.domain.entry.model.query.LookupField
 import com.aozijx.passly.domain.entry.model.query.MatchType
-import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.security.search.BlindIndexer
-import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-internal class CredentialServiceRepositoryImpl @Inject constructor(
+internal class AutofillCredentialRepositoryImpl @Inject constructor(
     private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
     private val secretFieldStore: SecretFieldStore,
     private val blindIndexer: BlindIndexer,
-    private val entryCommands: EntryCommandRepository,
-    private val applicationLabelResolver: ApplicationLabelResolver,
-) : CredentialServiceRepository {
+) : AutofillCredentialRepository {
     override suspend fun search(
         packageName: String?,
         webDomain: String?,
@@ -123,46 +112,6 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun save(
-        packageName: String?,
-        webDomain: String?,
-        pageTitle: String?,
-        usernameValue: String,
-        passwordValue: String,
-    ): Boolean {
-        if (!sessionState.hasFullSecureSessionAccess()) return false
-        if (usernameValue.isBlank() && passwordValue.isBlank()) return false
-        val applicationId = AutofillScope.normalizeApplicationId(packageName)
-        val domain = AutofillScope.normalizeDomain(webDomain)
-        val appLabel = applicationId?.let(applicationLabelResolver::labelFor)
-        val title = resolveAutofillCredentialTitle(
-            applicationId = applicationId,
-            appLabel = appLabel,
-            domain = domain,
-            pageTitle = pageTitle,
-            usernameValue = usernameValue,
-        )
-        val now = System.currentTimeMillis()
-        val entry = Entry(
-            identity = EntryIdentity(
-                id = EntryId(UuidCreator.getTimeOrderedEpoch().toString()),
-                type = EntryType.LOGIN,
-                timestamps = EntryTimestamps(now),
-            ),
-            profile = EntryProfile(
-                title = title,
-                username = usernameValue,
-                associations = EntryAssociations(
-                    primaryUrl = webDomain?.trim()?.takeIf(String::isNotBlank),
-                    domains = setOfNotNull(domain),
-                    applicationIds = setOfNotNull(applicationId),
-                ),
-            ),
-            secret = EntrySecret(LoginCredential(password = passwordValue)),
-        )
-        return entryCommands.createEntry(entry).isSuccess
-    }
-
     private suspend fun AppDatabase.findMatchingIds(
         value: String,
         fields: List<LookupField>,
@@ -171,7 +120,7 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
         val tokens = blindIndexer.searchTokens(value)
         if (tokens.isEmpty()) return emptyList()
         return searchTokenQueryDao().searchByTokenIntersection(
-            buildRecentEntryIdIntersectionQuery(tokens, fields, limit)
+            buildRecentEntryIdIntersectionQuery(tokens, fields, limit),
         )
     }
 
@@ -199,34 +148,5 @@ internal class CredentialServiceRepositoryImpl @Inject constructor(
 
     private companion object {
         const val MAX_CANDIDATES = 10
-
-    }
-}
-
-internal fun resolveAutofillCredentialTitle(
-    applicationId: String?,
-    appLabel: String?,
-    domain: String?,
-    pageTitle: String?,
-    usernameValue: String,
-): String {
-    fun String.isApplicationIdTitle(): Boolean = applicationId != null &&
-            (equals(applicationId, ignoreCase = true) ||
-                    startsWith("$applicationId/", ignoreCase = true))
-
-    val normalizedAppLabel = appLabel?.trim()
-        ?.takeIf(String::isNotBlank)
-        ?.takeUnless(String::isApplicationIdTitle)
-    val normalizedPageTitle = pageTitle?.trim()
-        ?.takeIf { it.any(Char::isLetter) }
-        ?.takeUnless(String::isApplicationIdTitle)
-
-    return if (domain != null) {
-        normalizedPageTitle ?: domain
-    } else {
-        normalizedAppLabel
-            ?: normalizedPageTitle
-            ?: usernameValue.trim().takeIf(String::isNotBlank)
-            ?: "Login"
     }
 }

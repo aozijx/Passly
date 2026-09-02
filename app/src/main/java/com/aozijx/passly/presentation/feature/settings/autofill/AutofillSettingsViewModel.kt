@@ -2,8 +2,7 @@ package com.aozijx.passly.presentation.feature.settings.autofill
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.feature.autofill.shared.ObserveAutofillStatusUseCase
-import com.aozijx.passly.feature.autofill.shared.OpenAutofillSettingsUseCase
+import com.aozijx.passly.feature.autofill.platform.AutofillPlatformGateway
 import com.aozijx.passly.domain.settings.model.SettingsCommand
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,13 +16,12 @@ import javax.inject.Inject
 @HiltViewModel
 class AutofillSettingsViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
-    observeAutofillStatus: ObserveAutofillStatusUseCase,
-    private val openAutofillSettings: OpenAutofillSettingsUseCase,
+    private val autofillPlatformGateway: AutofillPlatformGateway,
 ) : ViewModel() {
 
     val uiState: StateFlow<AutofillSettingsUiState> = combine(
         settingsRepository.settings,
-        observeAutofillStatus(),
+        autofillPlatformGateway.observeServiceEnabled(),
     ) { settings, systemAutofillEnabled ->
         AutofillSettingsUiState(
             autofill = settings.interaction.autofill,
@@ -65,7 +63,7 @@ class AutofillSettingsViewModel @Inject constructor(
             AutofillSettingsAction.OpenSystemAutofillSettings -> null
         }
         if (command == null) {
-            openAutofillSettings()
+            autofillPlatformGateway.openSystemSettings()
         } else {
             viewModelScope.launch { settingsRepository.update(command) }
         }

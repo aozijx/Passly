@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.autofill.internal
 import com.aozijx.passly.domain.autofill.model.AutofillRequest
 import com.aozijx.passly.domain.autofill.AutofillScope
 import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
-import com.aozijx.passly.domain.autofill.port.CredentialServiceRepository
+import com.aozijx.passly.domain.autofill.port.AutofillCredentialRepository
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.otp.OtpGenerator
 import com.aozijx.passly.domain.entry.model.query.CredentialCandidate
@@ -18,7 +18,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class CandidateRetriever @Inject constructor(
-    private val repository: CredentialServiceRepository,
+    private val repository: AutofillCredentialRepository,
 ) {
     suspend fun resolve(
         request: AutofillRequest,

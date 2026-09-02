@@ -113,7 +113,7 @@ class LegacyAutofillService : AutofillService() {
                     pageTitle = pending.pageTitle,
                     usernameValue = pending.username,
                     passwordValue = pending.password,
-                )
+                ).getOrThrow()
 
                 AppTelemetry.i("LegacyAutofill", "Credential saved successfully")
                 callback.onSuccess()

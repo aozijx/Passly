@@ -3,7 +3,7 @@ package com.aozijx.passly.domain.autofill.port
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.query.CredentialCandidate
 
-interface CredentialServiceRepository {
+interface AutofillCredentialRepository {
     suspend fun search(
         packageName: String?,
         webDomain: String?,
@@ -15,13 +15,6 @@ interface CredentialServiceRepository {
     suspend fun getById(entryId: String): Entry?
     suspend fun getByIds(
         entryIds: List<String>,
-        includeSecrets: Boolean = true
+        includeSecrets: Boolean = true,
     ): List<Entry>
-    suspend fun save(
-        packageName: String?,
-        webDomain: String?,
-        pageTitle: String?,
-        usernameValue: String,
-        passwordValue: String
-    ): Boolean
 }

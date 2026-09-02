@@ -1,16 +1,19 @@
 package com.aozijx.passly.feature.autofill.credential
 
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.AutofillScope
+import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
+import com.aozijx.passly.domain.autofill.port.AutofillCredentialRepository
 import com.aozijx.passly.domain.autofill.port.AutofillGrantStore
-import com.aozijx.passly.domain.autofill.port.CredentialServiceRepository
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.feature.autofill.shared.AutofillSaveSource
 import com.aozijx.passly.feature.autofill.shared.RecordAutofillUsageUseCase
+import com.aozijx.passly.feature.autofill.shared.SaveAutofillCredentialUseCase
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
@@ -41,11 +44,12 @@ sealed interface CreatePasswordCredentialResult {
  * calling package/domain and the current autofill policy.
  */
 class CredentialResponseInteractor @Inject constructor(
-    private val credentialRepository: CredentialServiceRepository,
+    private val credentialRepository: AutofillCredentialRepository,
     private val settingsRepository: AppSettingsRepository,
     private val authenticationManager: AuthenticationManager,
     private val vaultAccessState: SecureSessionAccessState,
     private val recordAutofillUsage: RecordAutofillUsageUseCase,
+    private val saveAutofillCredential: SaveAutofillCredentialUseCase,
     private val grantStore: AutofillGrantStore,
 ) {
     suspend fun resolvePasswordCredential(
@@ -125,17 +129,16 @@ class CredentialResponseInteractor @Inject constructor(
             }
         }
 
-        val saved = credentialRepository.save(
+        return when (saveAutofillCredential(
             packageName = packageName,
             webDomain = null,
             pageTitle = null,
             usernameValue = username,
             passwordValue = password,
-        )
-        return if (saved) {
-            CreatePasswordCredentialResult.Success
-        } else {
-            CreatePasswordCredentialResult.NotSaved
+            source = AutofillSaveSource.CREDENTIAL_MANAGER,
+        )) {
+            is AppResult.Success -> CreatePasswordCredentialResult.Success
+            is AppResult.Failure -> CreatePasswordCredentialResult.NotSaved
         }
     }
 }

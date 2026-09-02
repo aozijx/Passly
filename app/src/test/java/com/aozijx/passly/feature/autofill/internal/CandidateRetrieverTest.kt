@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.autofill.internal
 import com.aozijx.passly.domain.autofill.model.AutofillField
 import com.aozijx.passly.domain.autofill.model.AutofillRequest
 import com.aozijx.passly.domain.autofill.model.AutofillSource
-import com.aozijx.passly.domain.autofill.port.CredentialServiceRepository
+import com.aozijx.passly.domain.autofill.port.AutofillCredentialRepository
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.query.CredentialCandidate
 import com.aozijx.passly.domain.settings.model.InteractionSettings
@@ -13,7 +13,7 @@ import org.junit.Test
 
 class CandidateRetrieverTest {
 
-    private val repository = object : CredentialServiceRepository {
+    private val repository = object : AutofillCredentialRepository {
         override suspend fun search(
             packageName: String?,
             webDomain: String?,
@@ -24,13 +24,6 @@ class CandidateRetrieverTest {
 
         override suspend fun getById(entryId: String): Entry? = null
         override suspend fun getByIds(entryIds: List<String>, includeSecrets: Boolean): List<Entry> = emptyList()
-        override suspend fun save(
-            packageName: String?,
-            webDomain: String?,
-            pageTitle: String?,
-            usernameValue: String,
-            passwordValue: String
-        ): Boolean = false
     }
 
     private val retriever = CandidateRetriever(repository)
@@ -69,7 +62,7 @@ class CandidateRetrieverTest {
         Unit
     }
 
-    private object ThrowingCredentialRepository : CredentialServiceRepository {
+    private object ThrowingCredentialRepository : AutofillCredentialRepository {
         override suspend fun search(
             packageName: String?,
             webDomain: String?,
@@ -84,12 +77,5 @@ class CandidateRetrieverTest {
             includeSecrets: Boolean,
         ): List<Entry> = emptyList()
 
-        override suspend fun save(
-            packageName: String?,
-            webDomain: String?,
-            pageTitle: String?,
-            usernameValue: String,
-            passwordValue: String,
-        ): Boolean = false
     }
 }

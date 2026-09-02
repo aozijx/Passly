@@ -12,7 +12,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillField
 import com.aozijx.passly.domain.autofill.model.AutofillSource
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.autofill.port.CredentialServiceRepository
+import com.aozijx.passly.domain.autofill.port.AutofillCredentialRepository
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.query.CredentialCandidate
 import com.aozijx.passly.domain.settings.model.MessageSettings
@@ -204,7 +204,7 @@ class FillRequestDispatcherTest {
         override suspend fun update(command: SettingsCommand) = Unit
     }
 
-    private object EmptyCredentialRepository : CredentialServiceRepository {
+    private object EmptyCredentialRepository : AutofillCredentialRepository {
         override suspend fun search(
             packageName: String?,
             webDomain: String?,
@@ -218,12 +218,5 @@ class FillRequestDispatcherTest {
             entryIds: List<String>,
             includeSecrets: Boolean
         ): List<Entry> = emptyList()
-        override suspend fun save(
-            packageName: String?,
-            webDomain: String?,
-            pageTitle: String?,
-            usernameValue: String,
-            passwordValue: String,
-        ): Boolean = false
     }
 }
