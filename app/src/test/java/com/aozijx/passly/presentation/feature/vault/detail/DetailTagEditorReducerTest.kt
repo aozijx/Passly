@@ -29,79 +29,71 @@ class DetailTagEditorReducerTest {
 
     @Test
     fun inputChangeFiltersSuggestionsIgnoringSelectedTags() {
-        val opened = DetailUiState(
-            tagEditor = DetailTagEditorUiModel(
-                visible = true,
-                initialTags = setOf("Passkey"),
-                draftTags = setOf("Passkey"),
-                availableTags = setOf("Passkey", "Password", "Personal"),
-            ),
+        val opened = DetailTagEditorUiModel(
+            visible = true,
+            initialTags = setOf("Passkey"),
+            draftTags = setOf("Passkey"),
+            availableTags = setOf("Passkey", "Password", "Personal"),
         )
 
-        val actual = DetailReducer.reduce(opened, DetailMutation.TagInputChanged("pas"))
+        val actual = DetailTagEditorReducer.reduce(opened, DetailMutation.TagInputChanged("pas"))
 
-        assertEquals("pas", actual.tagEditor.input)
-        assertEquals(listOf("Password"), actual.tagEditor.suggestions)
+        assertEquals("pas", actual.input)
+        assertEquals(listOf("Password"), actual.suggestions)
     }
 
     @Test
     fun addingAndRemovingTagsUpdatesDirtyDraft() {
-        val opened = DetailUiState(
-            tagEditor = DetailTagEditorUiModel(
-                visible = true,
-                initialTags = linkedSetOf("Work"),
-                draftTags = linkedSetOf("Work"),
-            ),
+        val opened = DetailTagEditorUiModel(
+            visible = true,
+            initialTags = linkedSetOf("Work"),
+            draftTags = linkedSetOf("Work"),
         )
 
-        val added = DetailReducer.reduce(opened, DetailMutation.TagSubmitted("Personal"))
-        val removed = DetailReducer.reduce(added, DetailMutation.TagRemoved("work"))
+        val added = DetailTagEditorReducer.reduce(opened, DetailMutation.TagSubmitted("Personal"))
+        val removed = DetailTagEditorReducer.reduce(added, DetailMutation.TagRemoved("work"))
 
-        assertEquals(linkedSetOf("Personal"), removed.tagEditor.draftTags)
-        assertTrue(removed.tagEditor.dirty)
-        assertNull(removed.tagEditor.validationError)
+        assertEquals(linkedSetOf("Personal"), removed.draftTags)
+        assertTrue(removed.dirty)
+        assertNull(removed.validationError)
     }
 
     @Test
     fun invalidTagPreservesInputAndDraft() {
-        val opened = DetailUiState(
-            tagEditor = DetailTagEditorUiModel(
-                visible = true,
-                initialTags = emptySet(),
-                draftTags = emptySet(),
-                input = "x".repeat(33),
-            ),
+        val opened = DetailTagEditorUiModel(
+            visible = true,
+            initialTags = emptySet(),
+            draftTags = emptySet(),
+            input = "x".repeat(33),
         )
 
-        val actual = DetailReducer.reduce(
+        val actual = DetailTagEditorReducer.reduce(
             opened,
-            DetailMutation.TagSubmitted(opened.tagEditor.input),
+            DetailMutation.TagSubmitted(opened.input),
         )
 
-        assertEquals(emptySet<String>(), actual.tagEditor.draftTags)
-        assertEquals("x".repeat(33), actual.tagEditor.input)
+        assertEquals(emptySet<String>(), actual.draftTags)
+        assertEquals("x".repeat(33), actual.input)
         assertEquals(
             TagEditorValidationErrorUiModel.TAG_TOO_LONG,
-            actual.tagEditor.validationError,
+            actual.validationError,
         )
     }
 
     @Test
     fun dirtyDismissRequestsConfirmationAndConfirmedDiscardClosesSheet() {
-        val dirty = DetailUiState(
-            tagEditor = DetailTagEditorUiModel(
-                visible = true,
-                initialTags = setOf("Work"),
-                draftTags = setOf("Personal"),
-            ),
+        val dirty = DetailTagEditorUiModel(
+            visible = true,
+            initialTags = setOf("Work"),
+            draftTags = setOf("Personal"),
         )
 
-        val requested = DetailReducer.reduce(dirty, DetailMutation.TagEditorDismissRequested)
-        val discarded = DetailReducer.reduce(requested, DetailMutation.TagEditorDiscardConfirmed)
+        val requested = DetailTagEditorReducer.reduce(dirty, DetailMutation.TagEditorDismissRequested)
+        val discarded = DetailTagEditorReducer.reduce(requested, DetailMutation.TagEditorDiscardConfirmed)
 
-        assertTrue(requested.tagEditor.visible)
-        assertTrue(requested.tagEditor.confirmDiscard)
-        assertEquals(DetailTagEditorUiModel(), discarded.tagEditor)
+        assertTrue(requested.visible)
+        assertTrue(requested.confirmDiscard)
+        assertEquals(DetailTagEditorUiModel(), discarded)
     }
 
     @Test

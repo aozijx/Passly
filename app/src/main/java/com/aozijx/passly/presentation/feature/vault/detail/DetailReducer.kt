@@ -10,7 +10,10 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.DetailTagEditorUiMod
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconEditorTabUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconProcessingErrorUiModel
-import com.aozijx.passly.presentation.ui.vault.detail.model.TagEditorValidationErrorUiModel
+
+internal sealed interface DetailTagEditorMutation : DetailMutation
+
+internal sealed interface DetailFaviconEditorMutation : DetailMutation
 
 internal sealed interface DetailMutation {
     data object StateCleared : DetailMutation
@@ -43,27 +46,27 @@ internal sealed interface DetailMutation {
     data class TagEditorOpened(
         val currentTags: Set<String>,
         val availableTags: Set<String>,
-    ) : DetailMutation
+    ) : DetailTagEditorMutation
 
-    data class TagInputChanged(val value: String) : DetailMutation
-    data class TagSubmitted(val value: String) : DetailMutation
-    data class TagRemoved(val value: String) : DetailMutation
-    data object TagEditorDismissRequested : DetailMutation
-    data object TagEditorDiscardConfirmed : DetailMutation
-    data object TagEditorDiscardCancelled : DetailMutation
-    data class FaviconEditorOpened(val source: FaviconDraftSourceUiModel) : DetailMutation
-    data class FaviconSourceChanged(val source: FaviconDraftSourceUiModel) : DetailMutation
-    data class FaviconTabChanged(val tab: FaviconEditorTabUiModel) : DetailMutation
-    data class FaviconSearchChanged(val value: String) : DetailMutation
-    data class FaviconImageUrlChanged(val value: String) : DetailMutation
-    data object FaviconProcessingStarted : DetailMutation
-    data class FaviconInputStaged(val path: String) : DetailMutation
-    data class FaviconSourcePromoted(val path: String) : DetailMutation
-    data class FaviconProcessingFailed(val error: FaviconProcessingErrorUiModel) : DetailMutation
-    data object FaviconCropCancelled : DetailMutation
-    data object FaviconEditorDismissRequested : DetailMutation
-    data object FaviconEditorDiscardConfirmed : DetailMutation
-    data object FaviconEditorDiscardCancelled : DetailMutation
+    data class TagInputChanged(val value: String) : DetailTagEditorMutation
+    data class TagSubmitted(val value: String) : DetailTagEditorMutation
+    data class TagRemoved(val value: String) : DetailTagEditorMutation
+    data object TagEditorDismissRequested : DetailTagEditorMutation
+    data object TagEditorDiscardConfirmed : DetailTagEditorMutation
+    data object TagEditorDiscardCancelled : DetailTagEditorMutation
+    data class FaviconEditorOpened(val source: FaviconDraftSourceUiModel) : DetailFaviconEditorMutation
+    data class FaviconSourceChanged(val source: FaviconDraftSourceUiModel) : DetailFaviconEditorMutation
+    data class FaviconTabChanged(val tab: FaviconEditorTabUiModel) : DetailFaviconEditorMutation
+    data class FaviconSearchChanged(val value: String) : DetailFaviconEditorMutation
+    data class FaviconImageUrlChanged(val value: String) : DetailFaviconEditorMutation
+    data object FaviconProcessingStarted : DetailFaviconEditorMutation
+    data class FaviconInputStaged(val path: String) : DetailFaviconEditorMutation
+    data class FaviconSourcePromoted(val path: String) : DetailFaviconEditorMutation
+    data class FaviconProcessingFailed(val error: FaviconProcessingErrorUiModel) : DetailFaviconEditorMutation
+    data object FaviconCropCancelled : DetailFaviconEditorMutation
+    data object FaviconEditorDismissRequested : DetailFaviconEditorMutation
+    data object FaviconEditorDiscardConfirmed : DetailFaviconEditorMutation
+    data object FaviconEditorDiscardCancelled : DetailFaviconEditorMutation
 }
 
 internal object DetailReducer {
@@ -154,171 +157,12 @@ internal object DetailReducer {
                 }
             }
 
-            is DetailMutation.TagEditorOpened -> {
-                val tags =
-                    when (val normalized = DetailTagNormalizer.normalize(mutation.currentTags)) {
-                        is TagNormalizationResult.Valid -> normalized.tags
-                        else -> mutation.currentTags
-                    }
-                state.copy(
-                    tagEditor = DetailTagEditorUiModel(
-                        visible = true,
-                        initialTags = tags,
-                        draftTags = tags,
-                        availableTags = mutation.availableTags,
-                    ),
-                )
-            }
-
-            is DetailMutation.TagInputChanged -> state.copy(
-                tagEditor = state.tagEditor.copy(
-                    input = mutation.value,
-                    suggestions = DetailTagNormalizer.suggestions(
-                        existingTags = state.tagEditor.availableTags,
-                        prefix = mutation.value.substringAfterLast(',').substringAfterLast('\n'),
-                        selectedTags = state.tagEditor.draftTags,
-                    ),
-                    validationError = null,
-                ),
+            is DetailTagEditorMutation -> state.copy(
+                tagEditor = DetailTagEditorReducer.reduce(state.tagEditor, mutation),
             )
 
-            is DetailMutation.TagSubmitted -> {
-                when (
-                    val normalized = DetailTagNormalizer.normalize(
-                        state.tagEditor.draftTags + mutation.value,
-                    )
-                ) {
-                    is TagNormalizationResult.Valid -> state.copy(
-                        tagEditor = state.tagEditor.copy(
-                            draftTags = normalized.tags,
-                            input = "",
-                            suggestions = emptyList(),
-                            validationError = null,
-                        ),
-                    )
-
-                    is TagNormalizationResult.TooMany -> state.copy(
-                        tagEditor = state.tagEditor.copy(
-                            validationError = TagEditorValidationErrorUiModel.TOO_MANY_TAGS,
-                        ),
-                    )
-
-                    is TagNormalizationResult.TooLong -> state.copy(
-                        tagEditor = state.tagEditor.copy(
-                            validationError = TagEditorValidationErrorUiModel.TAG_TOO_LONG,
-                        ),
-                    )
-                }
-            }
-
-            is DetailMutation.TagRemoved -> state.copy(
-                tagEditor = state.tagEditor.copy(
-                    draftTags = state.tagEditor.draftTags
-                        .filterNot { it.equals(mutation.value, ignoreCase = true) }
-                        .toCollection(linkedSetOf()),
-                    validationError = null,
-                ),
-            )
-
-            DetailMutation.TagEditorDismissRequested -> {
-                if (state.tagEditor.dirty) {
-                    state.copy(tagEditor = state.tagEditor.copy(confirmDiscard = true))
-                } else {
-                    state.copy(tagEditor = DetailTagEditorUiModel())
-                }
-            }
-
-            DetailMutation.TagEditorDiscardConfirmed ->
-                state.copy(tagEditor = DetailTagEditorUiModel())
-
-            DetailMutation.TagEditorDiscardCancelled -> state.copy(
-                tagEditor = state.tagEditor.copy(confirmDiscard = false),
-            )
-
-            is DetailMutation.FaviconEditorOpened -> state.copy(
-                faviconEditor = DetailFaviconEditorUiModel(
-                    visible = true,
-                    initialSource = mutation.source,
-                    source = mutation.source,
-                ),
-            )
-
-            is DetailMutation.FaviconSourceChanged -> state.copy(
-                faviconEditor = state.faviconEditor.copy(
-                    source = mutation.source,
-                    processing = false,
-                    pendingInputPath = null,
-                    promotedCandidatePath = null,
-                    confirmDiscard = false,
-                ),
-            )
-
-            is DetailMutation.FaviconTabChanged -> state.copy(
-                faviconEditor = state.faviconEditor.copy(selectedTab = mutation.tab),
-            )
-
-            is DetailMutation.FaviconSearchChanged -> state.copy(
-                faviconEditor = state.faviconEditor.copy(searchQuery = mutation.value),
-            )
-
-            is DetailMutation.FaviconImageUrlChanged -> state.copy(
-                faviconEditor = state.faviconEditor.copy(
-                    imageUrl = mutation.value,
-                    processingError = null,
-                ),
-            )
-
-            DetailMutation.FaviconProcessingStarted -> state.copy(
-                faviconEditor = state.faviconEditor.copy(processing = true, processingError = null),
-            )
-
-            is DetailMutation.FaviconInputStaged -> state.copy(
-                faviconEditor = state.faviconEditor.copy(
-                    processing = false,
-                    pendingInputPath = mutation.path,
-                    processingError = null,
-                ),
-            )
-
-            is DetailMutation.FaviconSourcePromoted -> state.copy(
-                faviconEditor = state.faviconEditor.copy(
-                    source = FaviconDraftSourceUiModel.PrivateImage(mutation.path),
-                    processing = false,
-                    pendingInputPath = null,
-                    promotedCandidatePath = mutation.path,
-                    confirmDiscard = false,
-                ),
-            )
-
-            is DetailMutation.FaviconProcessingFailed -> state.copy(
-                faviconEditor = state.faviconEditor.copy(
-                    processing = false,
-                    processingError = mutation.error,
-                ),
-            )
-
-            DetailMutation.FaviconCropCancelled -> state.copy(
-                faviconEditor = state.faviconEditor.copy(pendingInputPath = null),
-            )
-
-            DetailMutation.FaviconEditorDismissRequested -> {
-                if (state.faviconEditor.dirty) {
-                    state.copy(
-                        faviconEditor = state.faviconEditor.copy(confirmDiscard = true),
-                    )
-                } else {
-                    state.copy(faviconEditor = DetailFaviconEditorUiModel())
-                }
-            }
-
-            DetailMutation.FaviconEditorDiscardConfirmed ->
-                state.copy(faviconEditor = DetailFaviconEditorUiModel())
-
-            DetailMutation.FaviconEditorDiscardCancelled -> state.copy(
-                faviconEditor = state.faviconEditor.copy(
-                    confirmDiscard = false,
-                    presentationId = state.faviconEditor.presentationId + 1,
-                ),
+            is DetailFaviconEditorMutation -> state.copy(
+                faviconEditor = DetailFaviconEditorReducer.reduce(state.faviconEditor, mutation),
             )
         }
 }

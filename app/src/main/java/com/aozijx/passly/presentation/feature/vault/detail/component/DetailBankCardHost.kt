@@ -1,0 +1,169 @@
+package com.aozijx.passly.presentation.feature.vault.detail.component
+
+import androidx.compose.runtime.Composable
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.sensitive.OwnedChars
+import com.aozijx.passly.presentation.feature.vault.detail.DetailAuthenticate
+import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
+import com.aozijx.passly.presentation.feature.vault.detail.DetailEntryPatch
+import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
+import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
+import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
+import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
+import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
+import com.aozijx.passly.presentation.feature.vault.detail.copySensitiveField
+import com.aozijx.passly.presentation.ui.vault.detail.component.BankCardSection
+import com.aozijx.passly.presentation.ui.vault.detail.component.DetailBankCardFieldUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailBankCardUiModel
+
+@Composable
+internal fun DetailBankCardHost(
+    entry: Entry,
+    uiState: DetailUiState,
+    editState: EntryEditState,
+    onAction: (DetailUiAction) -> Unit,
+    onAuthenticate: DetailAuthenticate,
+    onCopySensitive: (String) -> Unit,
+) {
+    val handler = DetailSectionActionHandler(onAuthenticate, onAction, onCopySensitive)
+    val cardholder = uiState.revealed(RevealedFieldKey.CARDHOLDER)?.let { String(it.toCharArray()) }
+    val cardNumber = uiState.revealed(RevealedFieldKey.CARD_NUMBER)?.let { String(it.toCharArray()) }
+    val cvv = uiState.revealed(RevealedFieldKey.CVV)?.let { String(it.toCharArray()) }
+    val paymentPin = uiState.revealed(RevealedFieldKey.PAYMENT_PIN)?.let { String(it.toCharArray()) }
+    val card = entry.secret.card
+    val hasNumber = !card?.cardNumber.isNullOrBlank() || cardNumber != null
+    val hasCvv = !card?.cardCvv.isNullOrBlank() || cvv != null || editState.isEditingTotp
+    val hasPin = !card?.paymentPin.isNullOrBlank() || paymentPin != null
+
+    BankCardSection(
+        model = DetailBankCardUiModel(
+            cardholder ?: entry.username, cardholder != null,
+            cardNumber, cardNumber != null, hasNumber,
+            cvv, cvv != null, hasCvv, card?.cardExpiry,
+            paymentPin, paymentPin != null, hasPin,
+            editState.isEditingUsername, editState.editedUsername,
+            editState.isEditingPassword, editState.editedPassword,
+            editState.isEditingTotp, editState.editedTotp,
+            (hasNumber && cardNumber == null) || (hasCvv && cvv == null) ||
+                (hasPin && paymentPin == null),
+        ),
+        onEditChanged = { field, value ->
+            when (field) {
+                DetailBankCardFieldUiModel.CARDHOLDER -> editState.editedUsername = value
+                DetailBankCardFieldUiModel.CARD_NUMBER -> editState.editedPassword = value
+                DetailBankCardFieldUiModel.CVV -> editState.editedTotp = value
+                else -> Unit
+            }
+        },
+        onEditStarted = { field, value ->
+            when (field) {
+                DetailBankCardFieldUiModel.CARDHOLDER -> {
+                    editState.editedUsername = value
+                    editState.isEditingUsername = true
+                }
+
+                DetailBankCardFieldUiModel.CARD_NUMBER -> {
+                    editState.editedPassword = value
+                    editState.isEditingPassword = true
+                }
+
+                DetailBankCardFieldUiModel.CVV -> {
+                    editState.editedTotp = value
+                    editState.isEditingTotp = true
+                }
+
+                else -> Unit
+            }
+        },
+        onEditSaved = { field, value ->
+            when (field) {
+                DetailBankCardFieldUiModel.CARDHOLDER -> onAction(
+                    DetailUiAction.CommitPatch(
+                        DetailEntryPatch.Username(value),
+                        DetailEditCompletion.SensitiveField(RevealedFieldKey.CARDHOLDER),
+                    ),
+                )
+
+                DetailBankCardFieldUiModel.CARD_NUMBER -> onAction(
+                    DetailUiAction.CommitPatch(
+                        DetailEntryPatch.CardNumber(value),
+                        DetailEditCompletion.SensitiveField(RevealedFieldKey.CARD_NUMBER),
+                    ),
+                )
+
+                DetailBankCardFieldUiModel.CVV -> onAction(
+                    DetailUiAction.CommitPatch(
+                        DetailEntryPatch.CardCvv(value),
+                        DetailEditCompletion.SensitiveField(RevealedFieldKey.CVV),
+                    ),
+                )
+
+                else -> Unit
+            }
+        },
+        onCopy = { field ->
+            val (name, revealed, source) = when (field) {
+                DetailBankCardFieldUiModel.CARDHOLDER -> Triple(
+                    "cardholder",
+                    cardholder?.let(OwnedChars::fromString),
+                    entry.username,
+                )
+
+                DetailBankCardFieldUiModel.CARD_NUMBER -> Triple(
+                    "card number",
+                    cardNumber?.let(OwnedChars::fromString),
+                    null,
+                )
+
+                DetailBankCardFieldUiModel.CVV -> Triple(
+                    "CVV",
+                    cvv?.let(OwnedChars::fromString),
+                    null,
+                )
+
+                DetailBankCardFieldUiModel.PAYMENT_PIN -> Triple(
+                    "payment PIN",
+                    paymentPin?.let(OwnedChars::fromString),
+                    null,
+                )
+
+                DetailBankCardFieldUiModel.EXPIRATION -> {
+                    card?.cardExpiry?.let(handler::copy)
+                    onAction(DetailUiAction.RecordAction("expiration", ActivityType.COPY_PASSWORD))
+                    return@BankCardSection
+                }
+            }
+            copySensitiveField(handler, name, revealed, source)
+        },
+        onReveal = { field ->
+            val key = when (field) {
+                DetailBankCardFieldUiModel.CARD_NUMBER -> RevealedFieldKey.CARD_NUMBER
+                DetailBankCardFieldUiModel.CVV -> RevealedFieldKey.CVV
+                DetailBankCardFieldUiModel.PAYMENT_PIN -> RevealedFieldKey.PAYMENT_PIN
+                else -> return@BankCardSection
+            }
+            if (uiState.revealed(key) != null) {
+                onAction(DetailUiAction.RevealField(key, null))
+            } else {
+                onAction(DetailUiAction.RevealHighSensitivityField(key))
+            }
+        },
+        onRevealAll = {
+            val keys = buildSet {
+                if (hasNumber && cardNumber == null) add(RevealedFieldKey.CARD_NUMBER)
+                if (hasCvv && cvv == null) add(RevealedFieldKey.CVV)
+                if (hasPin && paymentPin == null) add(RevealedFieldKey.PAYMENT_PIN)
+            }
+            if (keys.isNotEmpty()) onAction(DetailUiAction.RevealHighSensitivityFields(keys))
+            if (cardholder == null) {
+                onAction(
+                    DetailUiAction.RevealField(
+                        RevealedFieldKey.CARDHOLDER,
+                        OwnedChars.fromNullableString(entry.username),
+                    ),
+                )
+            }
+        },
+    )
+}
