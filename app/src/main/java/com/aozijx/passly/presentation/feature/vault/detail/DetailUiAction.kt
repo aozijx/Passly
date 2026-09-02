@@ -1,5 +1,6 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
+import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
 import android.net.Uri
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType

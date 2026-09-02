@@ -19,6 +19,9 @@ import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
+import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
+import com.aozijx.passly.feature.vault.detail.RevealSensitiveFieldsUseCase
+import com.aozijx.passly.feature.vault.detail.UpdateDetailEntryUseCase
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
@@ -57,7 +60,7 @@ class DetailViewModel @Inject constructor(
         authorizationGate = authorizationGate,
         sensitiveFieldRepository = sensitiveFieldRepository,
     )
-    private val revealSensitiveFields = RevealDetailSensitiveFieldsUseCase(
+    private val revealSensitiveFields = RevealSensitiveFieldsUseCase(
         authorizationGate = authorizationGate,
         sensitiveFieldRepository = sensitiveFieldRepository,
         activityRecorder = activityRecorder,
@@ -437,12 +440,10 @@ class DetailViewModel @Inject constructor(
 
     private suspend fun revealHighSensitivityFields(entryValue: EntryId, uiKeys: Set<String>) {
         if (!accessPolicy.hasFullAccess()) return
-        val requested = uiKeys.mapNotNull { uiKey ->
-            uiKey.toSensitiveFieldKey()?.let { fieldKey -> uiKey to fieldKey }
-        }.toMap()
+        val requested = uiKeys.mapNotNull { it.toSensitiveFieldKey() }.toSet()
         if (requested.isEmpty()) return
-        revealSensitiveFields.reveal(entryValue, requested).forEach { (uiKey, value) ->
-            setRevealedField(uiKey, value)
+        revealSensitiveFields.reveal(entryValue, requested).forEach { (fieldKey, value) ->
+            fieldKey.toRevealedFieldKey()?.let { uiKey -> setRevealedField(uiKey, value) }
         }
     }
 
@@ -463,6 +464,20 @@ class DetailViewModel @Inject constructor(
         RevealedFieldKey.ID_NUMBER -> SensitiveFieldKey.IDENTITY_NUMBER
         RevealedFieldKey.RECOVERY_CODES -> SensitiveFieldKey.RECOVERY_CODES
         else -> null
+    }
+
+    private fun SensitiveFieldKey.toRevealedFieldKey(): String? = when (this) {
+        SensitiveFieldKey.PASSWORD -> RevealedFieldKey.PASSWORD
+        SensitiveFieldKey.CARD_NUMBER -> RevealedFieldKey.CARD_NUMBER
+        SensitiveFieldKey.CARD_CVV -> RevealedFieldKey.CVV
+        SensitiveFieldKey.CARD_PAYMENT_PIN -> RevealedFieldKey.PAYMENT_PIN
+        SensitiveFieldKey.SSH_PRIVATE_KEY -> RevealedFieldKey.SSH_PRIVATE_KEY
+        SensitiveFieldKey.SSH_PASSPHRASE -> RevealedFieldKey.SSH_PASSPHRASE
+        SensitiveFieldKey.SEED_PHRASE -> RevealedFieldKey.SEED_PHRASE
+        SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE -> RevealedFieldKey.PASSKEY_DATA
+        SensitiveFieldKey.IDENTITY_NUMBER -> RevealedFieldKey.ID_NUMBER
+        SensitiveFieldKey.RECOVERY_CODES -> RevealedFieldKey.RECOVERY_CODES
+        SensitiveFieldKey.OTP_SECRET -> null
     }
 
     private fun ActivityType.clearsRevealedFields(): Boolean =

@@ -20,7 +20,7 @@ import javax.inject.Inject
 
 /** Executes Backup side effects while the ViewModel remains a state-machine boundary. */
 /** Application use case boundary for backup flows; the ViewModel only dispatches state. */
-internal class BackupOperationUseCase @Inject constructor(
+internal class BackupOperationInteractor @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
     private val backupService: BackupArchiveService,
     private val storageSupport: BackupStorageSupport,

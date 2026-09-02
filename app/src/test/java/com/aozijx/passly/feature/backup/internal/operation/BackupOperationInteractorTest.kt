@@ -7,7 +7,7 @@ import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class BackupOperationUseCaseTest {
+class BackupOperationInteractorTest {
     @Test
     fun `operation request is independent from presentation state`() {
         val request = BackupOperationRequest(

@@ -6,7 +6,7 @@ import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.presentation.feature.vault.detail.DetailAuthenticate
 import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
-import com.aozijx.passly.presentation.feature.vault.detail.DetailEntryPatch
+import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
 import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState

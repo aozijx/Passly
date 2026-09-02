@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail
+package com.aozijx.passly.feature.vault.detail
 
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthInput
@@ -22,12 +22,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class RevealDetailSensitiveFieldsUseCaseTest {
+class RevealSensitiveFieldsUseCaseTest {
 
     @Test
-    fun allowedRevealReturnsValuesByUiKeyAndRecordsOneView() = runTest {
+    fun allowedRevealReturnsValuesByDomainKeyAndRecordsOneView() = runTest {
         val recorder = RecordingActivityRecorder()
-        val useCase = RevealDetailSensitiveFieldsUseCase(
+        val useCase = RevealSensitiveFieldsUseCase(
             authorizationGate = FixedAuthorizationGate(allowed = true),
             sensitiveFieldRepository = RevealingRepository(),
             activityRecorder = recorder,
@@ -35,14 +35,11 @@ class RevealDetailSensitiveFieldsUseCaseTest {
 
         val result = useCase.reveal(
             entryId = ENTRY_ID,
-            requestedFields = linkedMapOf(
-                "password" to SensitiveFieldKey.PASSWORD,
-                "cvv" to SensitiveFieldKey.CARD_CVV,
-            ),
+            requestedFields = linkedSetOf(SensitiveFieldKey.PASSWORD, SensitiveFieldKey.CARD_CVV),
         )
 
-        assertEquals("PASSWORD", String(result.getValue("password").toCharArray()))
-        assertEquals("CARD_CVV", String(result.getValue("cvv").toCharArray()))
+        assertEquals("PASSWORD", String(result.getValue(SensitiveFieldKey.PASSWORD).toCharArray()))
+        assertEquals("CARD_CVV", String(result.getValue(SensitiveFieldKey.CARD_CVV).toCharArray()))
         result.values.forEach { it.wipe() }
         assertEquals(listOf(ActivityType.VIEW), recorder.activities)
     }
@@ -50,14 +47,14 @@ class RevealDetailSensitiveFieldsUseCaseTest {
     @Test
     fun deniedOrEmptyRevealReturnsNoValuesAndRecordsNothing() = runTest {
         val recorder = RecordingActivityRecorder()
-        val denied = RevealDetailSensitiveFieldsUseCase(
+        val denied = RevealSensitiveFieldsUseCase(
             authorizationGate = FixedAuthorizationGate(allowed = false),
             sensitiveFieldRepository = RevealingRepository(),
             activityRecorder = recorder,
         )
 
-        assertTrue(denied.reveal(ENTRY_ID, mapOf("password" to SensitiveFieldKey.PASSWORD)).isEmpty())
-        assertTrue(denied.reveal(ENTRY_ID, emptyMap()).isEmpty())
+        assertTrue(denied.reveal(ENTRY_ID, setOf(SensitiveFieldKey.PASSWORD)).isEmpty())
+        assertTrue(denied.reveal(ENTRY_ID, emptySet()).isEmpty())
         assertTrue(recorder.activities.isEmpty())
     }
 

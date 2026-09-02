@@ -3,7 +3,7 @@ package com.aozijx.passly.presentation.feature.vault.detail.component
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
-import com.aozijx.passly.presentation.feature.vault.detail.DetailEntryPatch
+import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
 import com.aozijx.passly.presentation.ui.vault.detail.component.AssociatedInfoSection

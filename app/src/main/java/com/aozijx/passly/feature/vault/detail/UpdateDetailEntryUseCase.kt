@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail
+package com.aozijx.passly.feature.vault.detail
 
 import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.model.NotFound

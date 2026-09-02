@@ -11,7 +11,7 @@ import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.backup.internal.operation.BackupExecutionResult
 import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
 import com.aozijx.passly.feature.backup.internal.operation.BackupOperationRequest
-import com.aozijx.passly.feature.backup.internal.operation.BackupOperationUseCase
+import com.aozijx.passly.feature.backup.internal.operation.BackupOperationInteractor
 import com.aozijx.passly.feature.backup.internal.presentation.BackupSessionDenial
 import com.aozijx.passly.feature.backup.internal.presentation.BackupSessionPolicy
 import com.aozijx.passly.presentation.feature.backup.BackupUiAction
@@ -26,7 +26,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 internal class BackupViewModel @Inject constructor(
-    private val backupOperationUseCase: BackupOperationUseCase,
+    private val backupOperationInteractor: BackupOperationInteractor,
     private val sessionPolicy: BackupSessionPolicy,
     private val noticePublisher: AppNoticePublisher,
 ) : ViewModel() {
@@ -74,7 +74,7 @@ internal class BackupViewModel @Inject constructor(
         viewModelScope.launch {
             mutate(BackupMutation.OperationStarted)
             applyResult(
-                result = backupOperationUseCase.checkDirectoryWritable(uri),
+                result = backupOperationInteractor.checkDirectoryWritable(uri),
                 operation = BackupOperation.DIRECTORY_CHECK,
                 clearPendingFields = false,
             )
@@ -86,7 +86,7 @@ internal class BackupViewModel @Inject constructor(
         clearPasswordAndMutate(
             BackupMutation.ExportPrepared(
                 format = format,
-                fileName = backupOperationUseCase.buildExportFileName(format),
+                fileName = backupOperationInteractor.buildExportFileName(format),
             ),
         )
     }
@@ -111,7 +111,7 @@ internal class BackupViewModel @Inject constructor(
         viewModelScope.launch {
             mutate(BackupMutation.OperationStarted)
             applyResult(
-                result = backupOperationUseCase.exportToConfiguredDirectory(snapshot.toRequest()),
+                result = backupOperationInteractor.exportToConfiguredDirectory(snapshot.toRequest()),
                 operation = BackupOperation.EXPORT,
                 clearPendingFields = true,
             )
@@ -127,7 +127,7 @@ internal class BackupViewModel @Inject constructor(
         viewModelScope.launch {
             mutate(BackupMutation.OperationStarted)
             applyResult(
-                result = backupOperationUseCase.executePending(snapshot.toRequest()),
+                result = backupOperationInteractor.executePending(snapshot.toRequest()),
                 operation = operation,
                 clearPendingFields = true,
             )
