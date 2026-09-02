@@ -22,12 +22,12 @@ import org.junit.Assert.assertNotNull
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class OtpCodeRefreshUseCaseTest {
+class OtpCodeRuntimeTest {
 
     @Test
     fun `visible otp waits for fresh authentication without crashing`() = runBlocking {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-        val coordinator = OtpCodeRefreshUseCase(
+        val coordinator = OtpCodeRuntime(
             scope = scope,
             loadOtpConfig = { throw FreshAuthenticationRequiredException() },
             codeGenerator = { OtpResult.Success("123456") },
@@ -43,7 +43,7 @@ class OtpCodeRefreshUseCaseTest {
     @Test
     fun `fresh authentication failure pauses ticker retries until lifecycle changes`() = runTest {
         var loadCount = 0
-        val coordinator = OtpCodeRefreshUseCase(
+        val coordinator = OtpCodeRuntime(
             scope = backgroundScope,
             loadOtpConfig = {
                 loadCount++
@@ -65,7 +65,7 @@ class OtpCodeRefreshUseCaseTest {
     fun `fresh authentication signal resumes an unchanged visible subscription`() = runBlocking {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         var freshAuthenticationAvailable = false
-        val coordinator = OtpCodeRefreshUseCase(
+        val coordinator = OtpCodeRuntime(
             scope = scope,
             loadOtpConfig = {
                 if (!freshAuthenticationAvailable) throw FreshAuthenticationRequiredException()
@@ -89,7 +89,7 @@ class OtpCodeRefreshUseCaseTest {
     fun `visible subscriptions activate once and clear after final release`() = runBlocking {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         var loadCount = 0
-        val coordinator = OtpCodeRefreshUseCase(
+        val coordinator = OtpCodeRuntime(
             scope = scope,
             loadOtpConfig = {
                 loadCount++
@@ -121,7 +121,7 @@ class OtpCodeRefreshUseCaseTest {
     @Test
     fun `releasing list subscription keeps explicitly activated detail entry`() = runBlocking {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-        val coordinator = OtpCodeRefreshUseCase(
+        val coordinator = OtpCodeRuntime(
             scope = scope,
             loadOtpConfig = {
                 OtpConfig(
@@ -147,7 +147,7 @@ class OtpCodeRefreshUseCaseTest {
     fun `release before config load completes does not leave orphan refresh state`() = runBlocking {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         val configGate = CompletableDeferred<Unit>()
-        val coordinator = OtpCodeRefreshUseCase(
+        val coordinator = OtpCodeRuntime(
             scope = scope,
             loadOtpConfig = {
                 configGate.await()
@@ -176,7 +176,7 @@ class OtpCodeRefreshUseCaseTest {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         val generationStarted = CompletableDeferred<Unit>()
         val generationGate = CompletableDeferred<Unit>()
-        val coordinator = OtpCodeRefreshUseCase(
+        val coordinator = OtpCodeRuntime(
             scope = scope,
             loadOtpConfig = { validTotpConfig() },
             codeGenerator = {
@@ -201,7 +201,7 @@ class OtpCodeRefreshUseCaseTest {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         val generationStarted = CompletableDeferred<Unit>()
         val generationGate = CompletableDeferred<Unit>()
-        val coordinator = OtpCodeRefreshUseCase(
+        val coordinator = OtpCodeRuntime(
             scope = scope,
             loadOtpConfig = { validTotpConfig() },
             codeGenerator = {
@@ -227,7 +227,7 @@ class OtpCodeRefreshUseCaseTest {
         val oldGenerationStarted = CompletableDeferred<Unit>()
         val oldGenerationGate = CompletableDeferred<Unit>()
         var generationCount = 0
-        val coordinator = OtpCodeRefreshUseCase(
+        val coordinator = OtpCodeRuntime(
             scope = scope,
             loadOtpConfig = { validTotpConfig() },
             codeGenerator = {
@@ -261,7 +261,7 @@ class OtpCodeRefreshUseCaseTest {
         val oldGenerationStarted = CompletableDeferred<Unit>()
         val oldGenerationGate = CompletableDeferred<Unit>()
         var generationCount = 0
-        val coordinator = OtpCodeRefreshUseCase(
+        val coordinator = OtpCodeRuntime(
             scope = scope,
             loadOtpConfig = { validTotpConfig() },
             codeGenerator = {
@@ -302,7 +302,7 @@ class OtpCodeRefreshUseCaseTest {
         )
         var loadedEntryId: String? = null
         var generatedConfig: OtpConfig? = null
-        val coordinator = OtpCodeRefreshUseCase(
+        val coordinator = OtpCodeRuntime(
             scope = scope,
             loadOtpConfig = { entryId ->
                 loadedEntryId = entryId
@@ -328,7 +328,7 @@ class OtpCodeRefreshUseCaseTest {
     @Test
     fun `session lock during activation clears state without throwing`() = runBlocking {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-        val coordinator = OtpCodeRefreshUseCase(
+        val coordinator = OtpCodeRuntime(
             scope = scope,
             loadOtpConfig = {
                 throw SessionLockedException("Session is SOFT_LOCKED")
@@ -353,7 +353,7 @@ class OtpCodeRefreshUseCaseTest {
             periodSeconds = 30,
             encoding = OtpSecretEncoding.BASE32
         )
-        val coordinator = OtpCodeRefreshUseCase(
+        val coordinator = OtpCodeRuntime(
             scope = scope,
             initiallyUnlocked = false,
             loadOtpConfig = {

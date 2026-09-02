@@ -31,12 +31,12 @@ import kotlin.time.Duration.Companion.milliseconds
  * - 每秒只更新进度，仅在 moving factor 变化时查询数据库并重新生成验证码
  * - 进度由 Compose 层独立动画，StateFlow 仅保存刷新时刻的快照值
  */
-internal class OtpCodeRefreshUseCase(
+internal class OtpCodeRuntime(
     private val scope: CoroutineScope,
     private val codeGenerator: suspend (OtpConfig) -> OtpResult,
     private val loadOtpConfig: suspend (String) -> OtpConfig?,
     initiallyUnlocked: Boolean = true
-) {
+) : OtpCodeInvalidator {
     private val _states = MutableStateFlow<Map<String, OtpCodeState>>(emptyMap())
     val states: StateFlow<Map<String, OtpCodeState>> = _states
 
@@ -198,7 +198,7 @@ internal class OtpCodeRefreshUseCase(
         }
         if (!isCurrent(entryId, token)) return
         if (config == null || config.secret.isNullOrBlank()) {
-            AppTelemetry.w("OtpCodeRefreshUseCase", "OTP activation failed: missing config for $entryId")
+            AppTelemetry.w("OtpCodeRuntime", "OTP activation failed: missing config for $entryId")
             _states.update { it + (entryId to OtpCodeState(error = OtpGenerationError.InvalidSecret)) }
             return
         }
@@ -336,7 +336,7 @@ internal class OtpCodeRefreshUseCase(
         _states.update { it - entryId }
     }
 
-    fun clearSensitiveState(entryId: String) {
+    override fun entryRemoved(entryId: String) {
         invalidateEntry(entryId)
         freshAuthPausedEntryIds.remove(entryId)
         activeEntryIds.remove(entryId)
@@ -353,8 +353,8 @@ internal class OtpCodeRefreshUseCase(
         clearGeneratedState()
     }
 
-    fun onEntryUpdated(entryId: String) {
-        clearSensitiveState(entryId)
+    override fun entryChanged(entryId: String) {
+        entryRemoved(entryId)
         autoUnlock(entryId)
     }
 }

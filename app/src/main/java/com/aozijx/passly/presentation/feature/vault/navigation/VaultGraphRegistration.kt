@@ -123,7 +123,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
             detailViewModel.effects.collectLatest { effect ->
                 when (effect) {
                     is DetailEffect.EntryUpdated -> vaultViewModel.onAction(
-                        VaultUiAction.UpdateEntry(effect.entry),
+                        VaultUiAction.EntryChanged(effect.entry.id.value),
                     )
                     is DetailEffect.ShowOtpQr -> otpQrUri = effect.uri
                 }

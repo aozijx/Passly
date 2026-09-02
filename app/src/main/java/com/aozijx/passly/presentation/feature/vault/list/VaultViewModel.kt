@@ -8,17 +8,11 @@ import androidx.paging.cachedIn
 import androidx.paging.map
 import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.port.SensitiveKeyFreshnessState
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.EntryIdentity
-import com.aozijx.passly.domain.entry.model.EntryProfile
-import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.EntryTimestamps
-import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
@@ -33,15 +27,16 @@ import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.domain.settings.model.SettingsCommand
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
-import com.aozijx.passly.feature.vault.entry.EntryManager
+import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
+import com.aozijx.passly.feature.vault.entry.MoveEntryToTrashUseCase
 import com.aozijx.passly.feature.vault.entry.VaultDataChangeSignal
 import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
+import com.aozijx.passly.feature.vault.entry.toNewEntryDraft
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.feature.vault.otp.OtpCodeRefreshUseCase
+import com.aozijx.passly.feature.vault.otp.OtpCodeRuntime
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import com.aozijx.passly.runtime.session.SessionStateProvider
-import com.github.f4b6a3.uuid.UuidCreator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -64,7 +59,9 @@ class VaultViewModel @Inject constructor(
     private val entryPageSource: VaultEntryPageSource,
     private val otpConfigRepository: OtpConfigRepository,
     private val settingsRepository: AppSettingsRepository,
+    private val createEntry: CreateEntryUseCase,
     private val entryCommandRepository: EntryCommandRepository,
+    private val secureSessionAccessState: SecureSessionAccessState,
     val entryFieldReader: EntryFieldReader,
     private val dataChangeSignal: VaultDataChangeSignal,
     private val sessionStateProvider: SessionStateProvider,
@@ -88,6 +85,7 @@ class VaultViewModel @Inject constructor(
     }
 
     private val _refreshTrigger = MutableStateFlow(0L)
+    private val deletingEntryIds = mutableSetOf<EntryId>()
 
     /**
      * 外部替换数据库内容后重建 Room 订阅。
@@ -97,21 +95,17 @@ class VaultViewModel @Inject constructor(
         _refreshTrigger.value++
     }
 
-    private val totp = OtpCodeRefreshUseCase(
+    private val totp = OtpCodeRuntime(
         scope = viewModelScope,
         codeGenerator = { config -> OtpGenerator.generate(config) },
         loadOtpConfig = { otpConfigRepository.getConfig(it) },
         initiallyUnlocked = sessionStateProvider.isWritable
     )
-    private val entryManager = EntryManager(
-        scope = viewModelScope,
+    private val moveEntryToTrash = MoveEntryToTrashUseCase(
         entryCommandRepository = entryCommandRepository,
         entryQueryRepository = entryQueryRepository,
-        totp = totp,
-        onError = { emitError(it) },
-        onEntryDeleted = { deletedId ->
-            mutate(VaultMutation.DeletedEntryHandled(deletedId))
-        }
+        secureSessionAccessState = secureSessionAccessState,
+        otpCodeInvalidator = totp,
     )
 
     private val hierarchyMode: Flow<EntryHierarchyDisplayMode> = settingsRepository.settings
@@ -138,33 +132,18 @@ class VaultViewModel @Inject constructor(
 
     private fun addScannedOtp(config: OtpConfig) {
         if (!ensureFullSecureSessionAccess("恢复模式不能保存 OTP")) return
-        try {
-            val title = buildString {
-                if (!config.issuer.isNullOrBlank()) append(config.issuer)
-                if (!config.accountName.isNullOrBlank()) {
-                    if (isNotEmpty()) append(": ")
-                    append(config.accountName)
-                }
-                if (isEmpty()) append("TOTP")
+        viewModelScope.launch {
+            val draft = try {
+                config.toNewEntryDraft()
+            } catch (error: IllegalArgumentException) {
+                AppTelemetry.e("SaveScannedOtp", "Invalid scanned OTP", error)
+                emitError("OTP 数据无效")
+                return@launch
             }
-            val entry = Entry(
-                identity = EntryIdentity(
-                    id = EntryId(UuidCreator.getTimeOrderedEpoch().toString()),
-                    type = EntryType.OTP,
-                    version = EntryVersion.INITIAL,
-                    timestamps = EntryTimestamps(System.currentTimeMillis()),
-                ),
-                profile = EntryProfile(
-                    title = title,
-                    username = config.accountName ?: title,
-                    icon = EntryIcon(),
-                ),
-                secret = EntrySecret(credential = OtpCredential(config = config))
-            )
-            entryManager.addItem(entry)
-        } catch (error: Exception) {
-            AppTelemetry.e("SaveScannedOtp", "Failed to save scanned OTP entry", error)
-            emitError("加密保存失败")
+            when (val result = createEntry(draft)) {
+                is AppResult.Success -> setAddType(null)
+                is AppResult.Failure -> emitError(result.error.code)
+            }
         }
     }
 
@@ -197,8 +176,7 @@ class VaultViewModel @Inject constructor(
             is VaultUiAction.ItemToDeleteSelected -> setItemToDelete(action.item)
             VaultUiAction.ConfirmDelete -> confirmDelete()
             is VaultUiAction.QuickDelete -> quickDelete(action.entryId)
-            is VaultUiAction.AddItem -> addItem(action.entry)
-            is VaultUiAction.UpdateEntry -> updateEntry(action.entry)
+            is VaultUiAction.EntryChanged -> totp.entryChanged(action.entryId)
             is VaultUiAction.AddScannedOtp -> addScannedOtp(action.config)
             is VaultUiAction.AutoUnlockTotp -> autoUnlockTotp(action.entryId)
         }
@@ -241,28 +219,28 @@ class VaultViewModel @Inject constructor(
         return entryQueryRepository.getById(EntryId(entryId))
     }
 
-    private fun addItem(entry: Entry) {
-        if (!ensureFullSecureSessionAccess("当前会话不能新建条目")) return
-        entryManager.addItem(entry, onComplete = { setAddType(null) })
-    }
-
-    private fun updateEntry(entry: Entry) {
-        if (!ensureFullSecureSessionAccess("当前会话不能修改条目")) return
-        entryManager.updateEntry(entry)
-    }
-
     private fun quickDelete(entryId: String) {
         if (!ensureFullSecureSessionAccess("当前会话不能删除条目")) return
-        entryManager.deleteEntryById(entryId)
+        moveToTrash(EntryId(entryId))
     }
 
     private fun confirmDelete() {
         if (!ensureFullSecureSessionAccess("当前会话不能删除条目")) return
         val item = uiState.value.pendingDelete ?: return
+        moveToTrash(item.id)
+    }
+
+    private fun moveToTrash(entryId: EntryId) {
+        if (!deletingEntryIds.add(entryId)) return
         viewModelScope.launch {
-            if (!accessPolicy.hasFullAccess()) return@launch
-            val entry = entryQueryRepository.getById(item.id) ?: return@launch
-            entryManager.deleteEntry(entry)
+            try {
+                when (val result = moveEntryToTrash(entryId)) {
+                    is AppResult.Success -> mutate(VaultMutation.DeletedEntryHandled(entryId.value))
+                    is AppResult.Failure -> emitError(result.error.code)
+                }
+            } finally {
+                deletingEntryIds.remove(entryId)
+            }
         }
     }
 
