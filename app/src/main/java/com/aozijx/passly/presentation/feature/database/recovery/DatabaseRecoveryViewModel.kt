@@ -3,7 +3,8 @@ package com.aozijx.passly.presentation.feature.database.recovery
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.message.mapping.toUiMessage
-import com.aozijx.passly.app.database.DatabaseLifecycleUseCases
+import com.aozijx.passly.app.database.DatabaseLifecycleGateway
+import com.aozijx.passly.app.database.DatabaseLifecycleResult
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
@@ -22,7 +23,7 @@ class DatabaseRecoveryViewModel @Inject constructor(
     private val secureSessionAccessState: SecureSessionAccessState,
     private val authenticationManager: AuthenticationManager,
     private val databaseRecoveryGateway: DatabaseRecoveryGateway,
-    private val databaseLifecycleUseCases: DatabaseLifecycleUseCases,
+    private val databaseLifecycleGateway: DatabaseLifecycleGateway,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DatabaseRecoveryUiState())
@@ -60,12 +61,14 @@ class DatabaseRecoveryViewModel @Inject constructor(
                 )
             ) {
                 is AuthenticationResult.Success -> {
-                    val outcome = databaseLifecycleUseCases.clearAndReinitialize()
-                    if (outcome.success) {
-                        mutate(DatabaseRecoveryMutation.DatabaseClearCompleted)
-                        refreshRecoveryPackagesAfterOperation()
-                    } else {
-                        mutate(DatabaseRecoveryMutation.RecoveryOperationFailed("清除数据库失败"))
+                    when (databaseLifecycleGateway.clearAndReinitialize()) {
+                        is DatabaseLifecycleResult.Failure ->
+                            mutate(DatabaseRecoveryMutation.RecoveryOperationFailed("清除数据库失败"))
+                        DatabaseLifecycleResult.Ready,
+                        is DatabaseLifecycleResult.Reinitialized -> {
+                            mutate(DatabaseRecoveryMutation.DatabaseClearCompleted)
+                            refreshRecoveryPackagesAfterOperation()
+                        }
                     }
                 }
                 is AuthenticationResult.Cancelled ->

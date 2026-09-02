@@ -529,7 +529,7 @@ class SourceBoundaryPolicyTest {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/main/SettingsViewModel.kt",
             content = """
-                import com.aozijx.passly.app.database.DatabaseLifecycleUseCases
+                import com.aozijx.passly.app.database.DatabaseLifecycleGateway
                 val action = ClearDatabase
             """.trimIndent(),
         )

@@ -14,8 +14,8 @@ import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.model.SensitiveAccessAction
 import com.aozijx.passly.app.security.SensitiveAccessLevel
-import com.aozijx.passly.app.database.DatabaseInitOutcome
-import com.aozijx.passly.app.database.DatabaseLifecycleUseCases
+import com.aozijx.passly.app.database.DatabaseLifecycleGateway
+import com.aozijx.passly.app.database.DatabaseLifecycleResult
 import com.aozijx.passly.domain.entry.port.SearchIndexMaintenance
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.presentation.feature.shell.AppShellAuthResult
@@ -41,7 +41,7 @@ class AppShellViewModel @Inject constructor(
     private val authenticationManager: AuthenticationManager,
     private val sessionActivityReporter: SessionActivityReporter,
     private val databaseSessionFailureState: DatabaseSessionFailureState,
-    private val databaseLifecycleUseCases: DatabaseLifecycleUseCases,
+    private val databaseLifecycleGateway: DatabaseLifecycleGateway,
     private val searchIndexMaintenance: SearchIndexMaintenance,
 ) : ViewModel() {
 
@@ -126,10 +126,10 @@ class AppShellViewModel @Inject constructor(
                 val authorized = state is AuthenticationState.Authenticated
                 val recoveryMode = state is AuthenticationState.RecoveryMode
                 if (authorized) {
-                    val outcome = runDatabaseInitialization {
-                        databaseLifecycleUseCases.preWarmAndReport()
+                    val result = runDatabaseInitialization {
+                        databaseLifecycleGateway.initialize()
                     }
-                    if (outcome.success) {
+                    if (result !is DatabaseLifecycleResult.Failure) {
                         rebuildSearchIndex()
                     }
 
@@ -158,27 +158,30 @@ class AppShellViewModel @Inject constructor(
 
     private fun initializeDatabase() {
         viewModelScope.launch {
-            val outcome = runDatabaseInitialization {
-                databaseLifecycleUseCases.retryAndReport()
+            val result = runDatabaseInitialization {
+                databaseLifecycleGateway.retry()
             }
-            if (outcome.success) databaseSessionFailureState.clearDatabaseFailure()
+            if (result !is DatabaseLifecycleResult.Failure) {
+                databaseSessionFailureState.clearDatabaseFailure()
+            }
         }
     }
 
     private suspend fun runDatabaseInitialization(
-        block: suspend () -> DatabaseInitOutcome
-    ): DatabaseInitOutcome {
+        block: suspend () -> DatabaseLifecycleResult,
+    ): DatabaseLifecycleResult {
         mutate(AppShellMutation.DatabaseInitializationStarted(clearError = true))
-        val outcome = block()
-        mutate(AppShellMutation.DatabaseInitializationFinished(outcome.error))
-        outcome.error?.let { error ->
+        val result = block()
+        val error = (result as? DatabaseLifecycleResult.Failure)?.cause
+        mutate(AppShellMutation.DatabaseInitializationFinished(error))
+        error?.let {
             emitEffect(
                 AppShellEffect.ShowError(
-                    "数据库错误: ${error.toUiMessage("数据库初始化失败")}"
+                    "数据库错误: ${it.toUiMessage("数据库初始化失败")}",
                 )
             )
         }
-        return outcome
+        return result
     }
 
     private fun observeDatabaseFailures() {
@@ -199,17 +202,19 @@ class AppShellViewModel @Inject constructor(
                 authenticationManager.authenticate(request)
             ) {
                 is AuthenticationResult.Success -> {
-                    val outcome = databaseLifecycleUseCases.quarantineAndReinitialize()
-                    val sessionRecovered = outcome.success &&
+                    val result = databaseLifecycleGateway.quarantineAndReinitialize()
+                    val gatewayError = (result as? DatabaseLifecycleResult.Failure)?.cause
+                    val sessionRecovered = gatewayError == null &&
                         authenticationManager.completeDatabaseRecovery()
-                    val recoveryError = outcome.error ?: if (!sessionRecovered) {
+                    val recoveryError = gatewayError ?: if (!sessionRecovered) {
                         IllegalStateException("Recovered database session could not be activated")
                     } else {
                         null
                     }
                     mutate(AppShellMutation.DatabaseInitializationFinished(recoveryError))
                     if (sessionRecovered) {
-                        val recoveryMessage = outcome.recoveryId?.let {
+                        val recoveryId = (result as? DatabaseLifecycleResult.Reinitialized)?.recoveryId
+                        val recoveryMessage = recoveryId?.let {
                             "故障库已保留（恢复编号：$it）。可在设置 → 数据管理 → 数据库恢复中查看"
                         } ?: "已创建新数据库"
                         emitEffect(AppShellEffect.ShowToast(recoveryMessage))
@@ -218,7 +223,7 @@ class AppShellViewModel @Inject constructor(
                         authenticationManager.lock(LockReason.INTEGRITY_FAILURE)
                         emitEffect(
                             AppShellEffect.ShowError(
-                                outcome.error?.toUiMessage("创建新数据库失败")
+                                gatewayError?.toUiMessage("创建新数据库失败")
                                     ?: "创建新数据库失败"
                             )
                         )

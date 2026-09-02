@@ -278,7 +278,7 @@ internal object SourceBoundaryPolicy {
             id = "SETTINGS_DATABASE_CAPABILITY_OWNERSHIP",
             sourcePathContains = "/presentation/feature/settings/",
             forbiddenImportPrefixes = setOf(
-                "com.aozijx.passly.app.database.DatabaseLifecycleUseCases",
+                "com.aozijx.passly.app.database.DatabaseLifecycleGateway",
                 "com.aozijx.passly.feature.database.recovery.DatabaseRecoveryGateway",
                 "com.aozijx.passly.presentation.feature.database.recovery.DatabaseRecoveryViewModel",
             ),
