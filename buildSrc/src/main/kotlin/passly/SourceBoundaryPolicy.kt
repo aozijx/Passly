@@ -268,6 +268,39 @@ internal object SourceBoundaryPolicy {
             message = "appearance settings depends on the global settings snapshot or command bus",
         ),
         SourceBoundaryRule(
+            id = "SECURITY_SETTINGS_NARROW_PORT",
+            sourcePathContains = "/presentation/feature/settings/security/",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+                "com.aozijx.passly.domain.settings.model.SettingsCommand",
+            ),
+            message = "security settings depends on the global settings snapshot or command bus",
+        ),
+        SourceBoundaryRule(
+            id = "SECURITY_RUNTIME_NARROW_SOURCE",
+            sourcePathContains = "/app/clipboard/ClipboardCopyController.kt",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+            ),
+            message = "security runtime consumer depends on the global settings snapshot",
+        ),
+        SourceBoundaryRule(
+            id = "SECURITY_RUNTIME_NARROW_SOURCE",
+            sourcePathContains = "/security/authentication/DefaultAuthenticationManager.kt",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+            ),
+            message = "security runtime consumer depends on the global settings snapshot",
+        ),
+        SourceBoundaryRule(
+            id = "SECURITY_RUNTIME_NARROW_SOURCE",
+            sourcePathContains = "/presentation/feature/shell/AppShellSettingsViewModel.kt",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+            ),
+            message = "security runtime consumer depends on the global settings snapshot",
+        ),
+        SourceBoundaryRule(
             id = "SETTINGS_DATA_MANAGEMENT_TRASH_OWNERSHIP",
             sourcePathContains = "/presentation/feature/settings/backup/DataManagementSettings",
             forbiddenImportPrefixes = setOf(

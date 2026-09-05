@@ -525,6 +525,41 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun securitySettingsCannotDependOnGlobalSettingsSnapshotOrCommandBus() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/security/PrivacySettingsViewModel.kt",
+            content = """
+                import com.aozijx.passly.domain.settings.model.SettingsCommand
+                import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+            """.trimIndent(),
+        )
+
+        assertEquals(
+            "SECURITY_SETTINGS_NARROW_PORT",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).map { it.ruleId }.distinct().single(),
+        )
+    }
+
+    @Test
+    fun securityRuntimeCannotDependOnGlobalSettingsSnapshot() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/app/clipboard/ClipboardCopyController.kt",
+            content = "import com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+        )
+
+        assertEquals(
+            "SECURITY_RUNTIME_NARROW_SOURCE",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
+    @Test
     fun dataManagementSettingsCannotOwnTrashStateOrCommands() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/backup/DataManagementSettingsViewModel.kt",

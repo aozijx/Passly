@@ -18,7 +18,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationSnapshot
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.model.CancellationReason
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import kotlinx.coroutines.CancellationException
@@ -39,7 +39,7 @@ class DefaultAuthenticationManager @Inject constructor(
     private val biometricExecutor: BiometricMethodExecutor,
     private val credentialExecutor: CredentialMethodExecutor,
     private val session: VaultSessionController,
-    private val settingsRepository: AppSettingsRepository,
+    private val settingsSource: SecuritySettingsSource,
     private val availabilityResolver: AuthenticationAvailabilityResolver,
     private val sensitiveDataKeyManager: SensitiveDataKeyManager
 ) : AuthenticationManager {
@@ -73,8 +73,7 @@ class DefaultAuthenticationManager @Inject constructor(
         AuthenticationMethodPolicy.requiresFreshAuthentication(
             purpose = purpose,
             reauthenticateSensitiveCopies = if (purpose == AuthenticationPurpose.COPY_SECRET) {
-                settingsRepository.settings.first()
-                    .security.reauthenticateSensitiveCopies
+                settingsSource.security.first().reauthenticateSensitiveCopies
             } else {
                 true
             }

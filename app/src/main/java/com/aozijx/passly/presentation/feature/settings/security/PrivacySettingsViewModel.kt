@@ -4,8 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.core.platform.clipboard.ClipboardClearResult
-import com.aozijx.passly.domain.settings.model.SettingsCommand
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,15 +17,14 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PrivacySettingsViewModel @Inject constructor(
-    private val settingsRepository: AppSettingsRepository,
+    private val settingsRepository: SecuritySettingsRepository,
     private val clipboardCopyController: ClipboardCopyController,
 ) : ViewModel() {
 
     private val _effects = Channel<PrivacySettingsEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
-    val uiState: StateFlow<PrivacySettingsUiState> = settingsRepository.settings.map {
-        val security = it.security
+    val uiState: StateFlow<PrivacySettingsUiState> = settingsRepository.security.map { security ->
         PrivacySettingsUiState(
             isSecureContentEnabled = security.isSecureContentEnabled,
             isFlipToLockEnabled = security.isFlipToLockEnabled,
@@ -44,31 +42,27 @@ class PrivacySettingsViewModel @Inject constructor(
     fun onAction(action: PrivacySettingsAction) {
         when (action) {
             is PrivacySettingsAction.SetSecureContentEnabled -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetSecureContentEnabled(action.enabled))
+                settingsRepository.setSecureContentEnabled(action.enabled)
             }
 
             is PrivacySettingsAction.SetFlipToLockEnabled -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetFlipToLockEnabled(action.enabled))
+                settingsRepository.setFlipToLockEnabled(action.enabled)
             }
 
             is PrivacySettingsAction.SetFlipExitAndClearStackEnabled -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetFlipExitAndClearStackEnabled(action.enabled))
+                settingsRepository.setFlipExitAndClearStackEnabled(action.enabled)
             }
 
             is PrivacySettingsAction.SetSensitiveCopyReauthentication -> viewModelScope.launch {
-                settingsRepository.update(
-                    SettingsCommand.SetReauthenticateSensitiveCopies(action.enabled)
-                )
+                settingsRepository.setReauthenticateSensitiveCopies(action.enabled)
             }
 
             is PrivacySettingsAction.SetClipboardClearEnabled -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetClipboardClearEnabled(action.enabled))
+                settingsRepository.setClipboardClearEnabled(action.enabled)
             }
 
             is PrivacySettingsAction.SetClipboardClearDelaySeconds -> viewModelScope.launch {
-                settingsRepository.update(
-                    SettingsCommand.SetClipboardClearDelaySeconds(action.seconds)
-                )
+                settingsRepository.setClipboardClearDelaySeconds(action.seconds)
             }
 
             PrivacySettingsAction.ClearClipboardNow -> {

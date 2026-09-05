@@ -12,6 +12,7 @@ import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsSnapshot
+import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -21,7 +22,10 @@ import javax.inject.Singleton
 @Singleton
 internal class ProtoAppSettingsRepository @Inject constructor(
     @ApplicationContext context: Context,
-) : AppSettingsRepository, AppearanceSettingsRepository, InterfaceSettingsRepository {
+) : AppSettingsRepository,
+    AppearanceSettingsRepository,
+    InterfaceSettingsRepository,
+    SecuritySettingsRepository {
 
     private val dataStore = context.applicationContext.appSettingsDataStore
 
@@ -41,6 +45,8 @@ internal class ProtoAppSettingsRepository @Inject constructor(
         }
 
     override val appearance = dataStore.data.map { proto -> readAppearance(proto.appearance) }
+
+    override val security = dataStore.data.map { proto -> readSecurity(proto.security) }
 
     override val interfaceSettings: Flow<InterfaceSettingsSnapshot> =
         dataStore.data.map { proto ->
@@ -106,4 +112,22 @@ internal class ProtoAppSettingsRepository @Inject constructor(
         update(SettingsCommand.SetVisibleLibraryQuickFilters(keys))
     override suspend fun setEntryHierarchyDisplayMode(mode: EntryHierarchyDisplayMode) =
         update(SettingsCommand.SetEntryHierarchyDisplayMode(mode))
+    override suspend fun setSecureContentEnabled(enabled: Boolean) =
+        update(SettingsCommand.SetSecureContentEnabled(enabled))
+    override suspend fun setFlipToLockEnabled(enabled: Boolean) =
+        update(SettingsCommand.SetFlipToLockEnabled(enabled))
+    override suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) =
+        update(SettingsCommand.SetFlipExitAndClearStackEnabled(enabled))
+    override suspend fun setLockOnBackground(enabled: Boolean) =
+        update(SettingsCommand.SetLockOnBackground(enabled))
+    override suspend fun setLockTimeout(timeoutMs: Long) =
+        update(SettingsCommand.SetLockTimeout(timeoutMs))
+    override suspend fun setInvalidateBiometricKeyOnChange(enabled: Boolean) =
+        update(SettingsCommand.SetInvalidateBiometricKeyOnChange(enabled))
+    override suspend fun setReauthenticateSensitiveCopies(enabled: Boolean) =
+        update(SettingsCommand.SetReauthenticateSensitiveCopies(enabled))
+    override suspend fun setClipboardClearEnabled(enabled: Boolean) =
+        update(SettingsCommand.SetClipboardClearEnabled(enabled))
+    override suspend fun setClipboardClearDelaySeconds(delaySeconds: Int) =
+        update(SettingsCommand.SetClipboardClearDelaySeconds(delaySeconds))
 }

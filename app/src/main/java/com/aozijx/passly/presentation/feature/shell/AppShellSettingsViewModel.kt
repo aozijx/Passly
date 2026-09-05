@@ -2,7 +2,8 @@ package com.aozijx.passly.presentation.feature.shell
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
+import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -13,20 +14,19 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AppShellSettingsViewModel @Inject constructor(
-    private val settingsRepository: AppSettingsRepository
+    securitySettingsSource: SecuritySettingsSource,
+    interfaceSettingsRepository: InterfaceSettingsRepository,
 ) : ViewModel() {
 
     val config: StateFlow<AppShellSettingsUiState> = combine(
-        settingsRepository.settings.map { it.security.isSecureContentEnabled },
-        settingsRepository.settings.map { it.security.isFlipToLockEnabled },
-        settingsRepository.settings.map { it.security.isFlipExitAndClearStackEnabled },
-        settingsRepository.settings.map { it.interfacePrefs.hideSystemBars }
-    ) { sec, ftl, fec, sb ->
+        securitySettingsSource.security,
+        interfaceSettingsRepository.interfaceSettings,
+    ) { security, interfaceSettings ->
         AppShellSettingsUiState(
-            isSecureContentEnabled = sec,
-            isFlipToLockEnabled = ftl,
-            isFlipExitAndClearStackEnabled = fec,
-            isStatusBarAutoHide = sb,
+            isSecureContentEnabled = security.isSecureContentEnabled,
+            isFlipToLockEnabled = security.isFlipToLockEnabled,
+            isFlipExitAndClearStackEnabled = security.isFlipExitAndClearStackEnabled,
+            isStatusBarAutoHide = interfaceSettings.preferences.hideSystemBars,
         )
     }.stateIn(
         viewModelScope,

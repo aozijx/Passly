@@ -2,17 +2,9 @@ package com.aozijx.passly.app.clipboard
 
 import com.aozijx.passly.core.platform.clipboard.ClipboardClearResult
 import com.aozijx.passly.core.platform.clipboard.SecureClipboard
-import com.aozijx.passly.domain.settings.model.AppSettingsSnapshot
-import com.aozijx.passly.domain.settings.model.AppearanceSettings
-import com.aozijx.passly.domain.settings.model.BackupSettings
 import com.aozijx.passly.domain.settings.model.ClipboardClearPolicy
-import com.aozijx.passly.domain.settings.model.InteractionSettings
-import com.aozijx.passly.domain.settings.model.InterfaceSettings
-import com.aozijx.passly.domain.settings.model.LibraryViewSettings
-import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.domain.settings.model.SecuritySettings
-import com.aozijx.passly.domain.settings.model.SettingsCommand
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -25,7 +17,7 @@ class ClipboardCopyControllerTest {
     fun `enabled policy schedules configured delay`() = runTest {
         val clipboard = RecordingClipboard()
         val controller = ClipboardCopyController(
-            settingsRepository = FakeSettingsRepository(policy(enabled = true, delay = 60)),
+            settingsSource = FakeSecuritySettingsSource(policy(enabled = true, delay = 60)),
             secureClipboard = clipboard,
         )
 
@@ -38,7 +30,7 @@ class ClipboardCopyControllerTest {
     fun `disabled policy copies without scheduling clear`() = runTest {
         val clipboard = RecordingClipboard()
         val controller = ClipboardCopyController(
-            settingsRepository = FakeSettingsRepository(policy(enabled = false, delay = 15)),
+            settingsSource = FakeSecuritySettingsSource(policy(enabled = false, delay = 15)),
             secureClipboard = clipboard,
         )
 
@@ -47,25 +39,12 @@ class ClipboardCopyControllerTest {
         assertEquals("secret" to null, clipboard.lastCopy)
     }
 
-    private fun policy(enabled: Boolean, delay: Int) = AppSettingsSnapshot(
-        appearance = AppearanceSettings(),
-        interfacePrefs = InterfaceSettings(),
-        security = SecuritySettings(
-            clipboardClearPolicy = ClipboardClearPolicy(enabled, delay)
-        ),
-        interaction = InteractionSettings(),
-        messages = MessageSettings(),
-        vault = LibraryViewSettings(),
-        backup = BackupSettings(),
+    private fun policy(enabled: Boolean, delay: Int) = SecuritySettings(
+        clipboardClearPolicy = ClipboardClearPolicy(enabled, delay),
     )
 
-    private class FakeSettingsRepository(snapshot: AppSettingsSnapshot) : AppSettingsRepository {
-        override val settings: Flow<AppSettingsSnapshot> = flowOf(snapshot)
-        override val lockTimeout: Flow<Long> = flowOf(snapshot.security.lockTimeout)
-        override val isLockOnBackground: Flow<Boolean> =
-            flowOf(snapshot.security.isLockOnBackground)
-
-        override suspend fun update(command: SettingsCommand) = Unit
+    private class FakeSecuritySettingsSource(settings: SecuritySettings) : SecuritySettingsSource {
+        override val security: Flow<SecuritySettings> = flowOf(settings)
     }
 
     private class RecordingClipboard : SecureClipboard {

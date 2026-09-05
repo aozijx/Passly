@@ -7,8 +7,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationResult
-import com.aozijx.passly.domain.settings.model.SettingsCommand
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +20,7 @@ import javax.inject.Inject
 class SecuritySettingsViewModel @Inject constructor(
     private val authenticationManager: AuthenticationManager,
     private val methodProvisioner: AuthenticationMethodProvisioner,
-    private val settingsRepository: AppSettingsRepository
+    private val settingsRepository: SecuritySettingsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SecuritySettingsUiState())
@@ -36,11 +35,11 @@ class SecuritySettingsViewModel @Inject constructor(
     fun onAction(action: SecuritySettingsAction) {
         when (action) {
             is SecuritySettingsAction.SetLockTimeout -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetLockTimeout(action.timeoutMs))
+                settingsRepository.setLockTimeout(action.timeoutMs)
             }
 
             is SecuritySettingsAction.ToggleLockOnBackground -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetLockOnBackground(action.enabled))
+                settingsRepository.setLockOnBackground(action.enabled)
             }
 
             is SecuritySettingsAction.SetBiometricEnabled ->
@@ -70,8 +69,7 @@ class SecuritySettingsViewModel @Inject constructor(
 
     private fun observeSettings() {
         viewModelScope.launch {
-            settingsRepository.settings.collect { settings ->
-                val security = settings.security
+            settingsRepository.security.collect { security ->
                 _uiState.update {
                     it.copy(
                         lockTimeout = security.lockTimeout,
@@ -106,7 +104,7 @@ class SecuritySettingsViewModel @Inject constructor(
             if (isRecoveryMode()) return@launch
             val result = methodProvisioner.rotateBiometricPolicy(enabled)
             if (result is AuthenticationResult.Success) {
-                settingsRepository.update(SettingsCommand.SetInvalidateBiometricKeyOnChange(enabled))
+                settingsRepository.setInvalidateBiometricKeyOnChange(enabled)
             }
         }
     }
