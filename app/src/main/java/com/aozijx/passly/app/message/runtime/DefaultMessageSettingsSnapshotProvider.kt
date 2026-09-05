@@ -3,20 +3,19 @@ package com.aozijx.passly.app.message.runtime
 import com.aozijx.passly.app.message.contract.MessageSettingsSnapshotProvider
 import com.aozijx.passly.app.message.contract.VersionedMessageSettings
 import com.aozijx.passly.domain.settings.model.MessageSettings
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.MessageSettingsSource
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class DefaultMessageSettingsSnapshotProvider @Inject constructor(
-    settingsRepository: AppSettingsRepository
+    settingsSource: MessageSettingsSource
 ) : MessageSettingsSnapshotProvider {
     private val version = AtomicLong(0)
     private val current = AtomicReference(
@@ -26,8 +25,7 @@ class DefaultMessageSettingsSnapshotProvider @Inject constructor(
 
     init {
         scope.launch {
-            settingsRepository.settings
-                .map { it.messages }
+            settingsSource.messages
                 .collect { settings ->
                     current.set(
                         VersionedMessageSettings(

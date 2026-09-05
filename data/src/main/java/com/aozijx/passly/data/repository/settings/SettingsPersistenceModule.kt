@@ -5,6 +5,8 @@ import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
+import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
+import com.aozijx.passly.domain.settings.port.MessageSettingsSource
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
 import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
 
@@ -53,4 +55,16 @@ internal abstract class SettingsPersistenceModule {
     abstract fun bindSecuritySettingsSource(
         impl: ProtoAppSettingsRepository
     ): SecuritySettingsSource
+
+    @Binds
+    @Singleton
+    abstract fun bindMessageSettingsRepository(
+        impl: ProtoAppSettingsRepository
+    ): MessageSettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMessageSettingsSource(
+        impl: ProtoAppSettingsRepository
+    ): MessageSettingsSource
 }

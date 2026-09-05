@@ -560,6 +560,28 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun messageSettingsCannotDependOnGlobalSettingsSnapshotOrCommandBus() {
+        val sources = listOf(
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/main/general/NotificationSettingsViewModel.kt",
+                content = "import com.aozijx.passly.domain.settings.model.SettingsCommand",
+            ),
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/app/message/runtime/DefaultMessageSettingsSnapshotProvider.kt",
+                content = "import com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+            ),
+        )
+
+        assertEquals(
+            setOf("MESSAGE_SETTINGS_NARROW_PORT"),
+            SourceBoundaryVerifier.verify(
+                sources,
+                SourceBoundaryPolicy.generalRules,
+            ).map { it.ruleId }.toSet(),
+        )
+    }
+
+    @Test
     fun dataManagementSettingsCannotOwnTrashStateOrCommands() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/backup/DataManagementSettingsViewModel.kt",

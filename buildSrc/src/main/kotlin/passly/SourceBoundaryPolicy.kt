@@ -285,6 +285,23 @@ internal object SourceBoundaryPolicy {
             message = "security runtime consumer depends on the global settings snapshot",
         ),
         SourceBoundaryRule(
+            id = "MESSAGE_SETTINGS_NARROW_PORT",
+            sourcePathContains = "/presentation/feature/settings/main/general/NotificationSettingsViewModel.kt",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+                "com.aozijx.passly.domain.settings.model.SettingsCommand",
+            ),
+            message = "notification settings depends on the global settings snapshot or command bus",
+        ),
+        SourceBoundaryRule(
+            id = "MESSAGE_SETTINGS_NARROW_PORT",
+            sourcePathContains = "/app/message/runtime/DefaultMessageSettingsSnapshotProvider.kt",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+            ),
+            message = "message runtime depends on the global settings snapshot",
+        ),
+        SourceBoundaryRule(
             id = "SECURITY_RUNTIME_NARROW_SOURCE",
             sourcePathContains = "/security/authentication/DefaultAuthenticationManager.kt",
             forbiddenImportPrefixes = setOf(

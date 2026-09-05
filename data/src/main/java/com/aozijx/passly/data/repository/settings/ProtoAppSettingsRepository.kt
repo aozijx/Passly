@@ -6,12 +6,15 @@ import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AppSettingsSnapshot
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
+import com.aozijx.passly.domain.settings.model.MessageLevel
+import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.model.SettingsCommand
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsSnapshot
+import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -25,6 +28,7 @@ internal class ProtoAppSettingsRepository @Inject constructor(
 ) : AppSettingsRepository,
     AppearanceSettingsRepository,
     InterfaceSettingsRepository,
+    MessageSettingsRepository,
     SecuritySettingsRepository {
 
     private val dataStore = context.applicationContext.appSettingsDataStore
@@ -47,6 +51,10 @@ internal class ProtoAppSettingsRepository @Inject constructor(
     override val appearance = dataStore.data.map { proto -> readAppearance(proto.appearance) }
 
     override val security = dataStore.data.map { proto -> readSecurity(proto.security) }
+
+    override val messages = dataStore.data.map { proto ->
+        decodeMessageSettings(proto.message.takeIf { proto.hasMessage() })
+    }
 
     override val interfaceSettings: Flow<InterfaceSettingsSnapshot> =
         dataStore.data.map { proto ->
@@ -130,4 +138,12 @@ internal class ProtoAppSettingsRepository @Inject constructor(
         update(SettingsCommand.SetClipboardClearEnabled(enabled))
     override suspend fun setClipboardClearDelaySeconds(delaySeconds: Int) =
         update(SettingsCommand.SetClipboardClearDelaySeconds(delaySeconds))
+    override suspend fun setOptionalMessagesEnabled(enabled: Boolean) =
+        update(SettingsCommand.SetOptionalMessagesEnabled(enabled))
+    override suspend fun setSystemNotificationsEnabled(enabled: Boolean) =
+        update(SettingsCommand.SetSystemNotificationsEnabled(enabled))
+    override suspend fun setTopicEnabled(topic: MessageTopic, enabled: Boolean) =
+        update(SettingsCommand.SetMessageTopicEnabled(topic, enabled))
+    override suspend fun setTopicMinimumLevel(topic: MessageTopic, level: MessageLevel) =
+        update(SettingsCommand.SetMessageTopicMinimumLevel(topic, level))
 }
