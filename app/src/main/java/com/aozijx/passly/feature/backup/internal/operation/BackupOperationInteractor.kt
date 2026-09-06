@@ -14,14 +14,14 @@ import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
 import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveService
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 /** Executes Backup side effects while the ViewModel remains a state-machine boundary. */
 /** Application use case boundary for backup flows; the ViewModel only dispatches state. */
 internal class BackupOperationInteractor @Inject constructor(
-    private val settingsRepository: AppSettingsRepository,
+    private val settingsSource: BackupDirectorySettingsSource,
     private val backupService: BackupArchiveService,
     private val storageSupport: BackupStorageSupport,
     private val authorizationPolicy: BackupAuthorizationPolicy,
@@ -41,7 +41,7 @@ internal class BackupOperationInteractor @Inject constructor(
         authenticate(AuthenticationPurpose.BACKUP_EXPORT).let { authResult ->
             if (authResult != BackupExecutionResult.Success) return authResult
         }
-        val directoryUri = settingsRepository.settings.first().backup.directoryTreeUri
+        val directoryUri = settingsSource.backupDirectoryUri.first()
             ?: return BackupExecutionResult.Failure(BackupFailed())
         if (directoryUri.isBlank()) return BackupExecutionResult.Failure(BackupFailed())
 

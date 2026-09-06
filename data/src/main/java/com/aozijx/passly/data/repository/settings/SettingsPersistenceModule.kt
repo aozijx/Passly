@@ -3,6 +3,8 @@ package com.aozijx.passly.data.repository.settings
 import com.aozijx.passly.data.repository.settings.ProtoAppSettingsRepository
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
+import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
+import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
@@ -67,4 +69,16 @@ internal abstract class SettingsPersistenceModule {
     abstract fun bindMessageSettingsSource(
         impl: ProtoAppSettingsRepository
     ): MessageSettingsSource
+
+    @Binds
+    @Singleton
+    abstract fun bindBackupDirectorySettingsRepository(
+        impl: ProtoAppSettingsRepository
+    ): BackupDirectorySettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindBackupDirectorySettingsSource(
+        impl: ProtoAppSettingsRepository
+    ): BackupDirectorySettingsSource
 }

@@ -582,6 +582,28 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun backupSettingsCannotDependOnGlobalSettingsSnapshotOrCommandBus() {
+        val sources = listOf(
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/backup/DataManagementSettingsViewModel.kt",
+                content = "import com.aozijx.passly.domain.settings.model.SettingsCommand",
+            ),
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/feature/backup/internal/operation/BackupOperationInteractor.kt",
+                content = "import com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+            ),
+        )
+
+        assertEquals(
+            setOf("BACKUP_SETTINGS_NARROW_PORT"),
+            SourceBoundaryVerifier.verify(
+                sources,
+                SourceBoundaryPolicy.generalRules,
+            ).map { it.ruleId }.toSet(),
+        )
+    }
+
+    @Test
     fun dataManagementSettingsCannotOwnTrashStateOrCommands() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/backup/DataManagementSettingsViewModel.kt",

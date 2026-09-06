@@ -12,6 +12,7 @@ import com.aozijx.passly.domain.settings.model.SettingsCommand
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
+import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsSnapshot
 import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
@@ -27,6 +28,7 @@ internal class ProtoAppSettingsRepository @Inject constructor(
     @ApplicationContext context: Context,
 ) : AppSettingsRepository,
     AppearanceSettingsRepository,
+    BackupDirectorySettingsRepository,
     InterfaceSettingsRepository,
     MessageSettingsRepository,
     SecuritySettingsRepository {
@@ -54,6 +56,10 @@ internal class ProtoAppSettingsRepository @Inject constructor(
 
     override val messages = dataStore.data.map { proto ->
         decodeMessageSettings(proto.message.takeIf { proto.hasMessage() })
+    }
+
+    override val backupDirectoryUri = dataStore.data.map { proto ->
+        readBackup(proto.backup).directoryTreeUri
     }
 
     override val interfaceSettings: Flow<InterfaceSettingsSnapshot> =
@@ -146,4 +152,8 @@ internal class ProtoAppSettingsRepository @Inject constructor(
         update(SettingsCommand.SetMessageTopicEnabled(topic, enabled))
     override suspend fun setTopicMinimumLevel(topic: MessageTopic, level: MessageLevel) =
         update(SettingsCommand.SetMessageTopicMinimumLevel(topic, level))
+    override suspend fun setBackupDirectoryUri(uri: String) =
+        update(SettingsCommand.SetBackupDirectoryUri(uri))
+    override suspend fun clearBackupDirectoryUri() =
+        update(SettingsCommand.ClearBackupDirectoryUri)
 }

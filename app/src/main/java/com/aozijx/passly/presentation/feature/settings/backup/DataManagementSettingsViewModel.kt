@@ -2,8 +2,7 @@ package com.aozijx.passly.presentation.feature.settings.backup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.settings.model.SettingsCommand
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,26 +12,29 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class DataManagementSettingsViewModel @Inject constructor(
-    private val settingsRepository: AppSettingsRepository,
+    private val settingsRepository: BackupDirectorySettingsRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DataManagementSettingsUiState())
     val uiState: StateFlow<DataManagementSettingsUiState> = _uiState.asStateFlow()
 
     init {
         viewModelScope.launch {
-            settingsRepository.settings.collect { settings ->
+            settingsRepository.backupDirectoryUri.collect { directoryUri ->
                 _uiState.value = DataManagementSettingsUiState(
-                    directoryUri = settings.backup.directoryTreeUri,
+                    directoryUri = directoryUri,
                 )
             }
         }
     }
 
     fun onAction(action: DataManagementSettingsUiAction) {
-        val command = when (action) {
-            is DataManagementSettingsUiAction.SetBackupDirectoryUri -> SettingsCommand.SetBackupDirectoryUri(action.uri)
-            DataManagementSettingsUiAction.ClearBackupDirectory -> SettingsCommand.ClearBackupDirectoryUri
+        viewModelScope.launch {
+            when (action) {
+                is DataManagementSettingsUiAction.SetBackupDirectoryUri ->
+                    settingsRepository.setBackupDirectoryUri(action.uri)
+                DataManagementSettingsUiAction.ClearBackupDirectory ->
+                    settingsRepository.clearBackupDirectoryUri()
+            }
         }
-        viewModelScope.launch { settingsRepository.update(command) }
     }
 }
