@@ -17,7 +17,8 @@ import com.aozijx.passly.app.security.SensitiveAccessLevel
 import com.aozijx.passly.app.database.DatabaseLifecycleGateway
 import com.aozijx.passly.app.database.DatabaseLifecycleResult
 import com.aozijx.passly.domain.entry.port.SearchIndexMaintenance
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
+import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.presentation.feature.shell.AppShellAuthResult
 import com.aozijx.passly.presentation.feature.shell.AppShellEffect
 import com.aozijx.passly.presentation.feature.shell.AppShellUiAction
@@ -29,15 +30,16 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class AppShellViewModel @Inject constructor(
-    private val settingsRepository: AppSettingsRepository,
+    private val appearanceSettingsRepository: AppearanceSettingsRepository,
+    private val interfaceSettingsRepository: InterfaceSettingsRepository,
     private val authenticationManager: AuthenticationManager,
     private val sessionActivityReporter: SessionActivityReporter,
     private val databaseSessionFailureState: DatabaseSessionFailureState,
@@ -147,8 +149,11 @@ class AppShellViewModel @Inject constructor(
 
     private fun observeSettings() {
         viewModelScope.launch {
-            settingsRepository.settings
-                .map { settings -> settings.appearance to settings.interfacePrefs }
+            combine(
+                appearanceSettingsRepository.appearance,
+                interfaceSettingsRepository.interfaceSettings,
+                ::Pair,
+            )
                 .distinctUntilChanged()
                 .collect { (appearance, interfacePrefs) ->
                     mutate(AppShellMutation.SettingsChanged(appearance, interfacePrefs))

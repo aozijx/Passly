@@ -506,6 +506,28 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun applicationCodeCannotDependOnGlobalSettingsSnapshotOrCommandBus() {
+        val sources = listOf(
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/main/SettingsViewModel.kt",
+                content = "import com.aozijx.passly.domain.settings.model.SettingsCommand",
+            ),
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/presentation/feature/shell/AppShellViewModel.kt",
+                content = "import com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+            ),
+        )
+
+        assertEquals(
+            setOf("APP_GLOBAL_SETTINGS_BUS"),
+            SourceBoundaryVerifier.verify(
+                sources,
+                SourceBoundaryPolicy.generalRules,
+            ).map { it.ruleId }.toSet(),
+        )
+    }
+
+    @Test
     fun appearanceSettingsCannotDependOnGlobalSettingsSnapshotOrCommandBus() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/appearance/AppearanceSettingsViewModel.kt",

@@ -11,9 +11,8 @@ import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
-import com.aozijx.passly.domain.settings.model.SettingsCommand
 import com.aozijx.passly.domain.settings.model.SwipeActionType
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import com.aozijx.passly.presentation.feature.settings.main.SettingsEffect
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
@@ -32,7 +31,7 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val authenticationManager: AuthenticationManager,
     private val authenticationMethodProvisioner: AuthenticationMethodProvisioner,
-    private val settingsRepository: AppSettingsRepository,
+    private val interactionSettingsRepository: InteractionSettingsRepository,
     private val clipboardCopyController: ClipboardCopyController,
 ) : ViewModel() {
 
@@ -71,7 +70,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             runCatching {
-                val interaction = settingsRepository.settings.first().interaction
+                val interaction = interactionSettingsRepository.interaction.first()
                 _uiState.update {
                     it.copy(
                         swipeLeftAction = interaction.swipeLeftAction,
@@ -88,25 +87,25 @@ class SettingsViewModel @Inject constructor(
 
     private fun setSwipeLeftAction(action: SwipeActionType) {
         saveSwipeAction(
-            command = SettingsCommand.SetSwipeLeftAction(action),
+            save = { interactionSettingsRepository.setSwipeLeftAction(action) },
             updateState = { it.copy(swipeLeftAction = action) },
         )
     }
 
     private fun setSwipeRightAction(action: SwipeActionType) {
         saveSwipeAction(
-            command = SettingsCommand.SetSwipeRightAction(action),
+            save = { interactionSettingsRepository.setSwipeRightAction(action) },
             updateState = { it.copy(swipeRightAction = action) },
         )
     }
 
     private fun saveSwipeAction(
-        command: SettingsCommand,
+        save: suspend () -> Unit,
         updateState: (SettingsUiState) -> SettingsUiState,
     ) {
         viewModelScope.launch {
             runCatching {
-                settingsRepository.update(command)
+                save()
                 _uiState.update(updateState)
                 _effects.trySend(SettingsEffect.SettingsSaved)
             }.onFailure { error ->

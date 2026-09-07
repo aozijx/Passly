@@ -1,7 +1,5 @@
 package com.aozijx.passly.data.repository.settings
 
-import com.aozijx.passly.data.repository.settings.ProtoAppSettingsRepository
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
@@ -28,85 +26,79 @@ internal abstract class SettingsPersistenceModule {
 
     @Binds
     @Singleton
-    abstract fun bindAppSettingsRepository(
-        impl: ProtoAppSettingsRepository
-    ): AppSettingsRepository
-
-    @Binds
-    @Singleton
     abstract fun bindIdleTimeoutSettings(
-        impl: ProtoAppSettingsRepository
+        impl: ProtoSettingsStore
     ): IdleTimeoutSettings
 
     @Binds
     @Singleton
     abstract fun bindAppearanceSettingsRepository(
-        impl: ProtoAppSettingsRepository
+        impl: ProtoSettingsStore
     ): AppearanceSettingsRepository
 
     @Binds
     @Singleton
     abstract fun bindInterfaceSettingsRepository(
-        impl: ProtoAppSettingsRepository
+        impl: ProtoSettingsStore
     ): InterfaceSettingsRepository
 
     @Binds
     @Singleton
     abstract fun bindLibraryViewSettingsRepository(
-        impl: ProtoAppSettingsRepository
+        impl: ProtoSettingsStore
     ): LibraryViewSettingsRepository
 
     @Binds
     @Singleton
     abstract fun bindLibraryViewSettingsSource(
-        impl: ProtoAppSettingsRepository
+        impl: ProtoSettingsStore
     ): LibraryViewSettingsSource
 
     @Binds
     @Singleton
     abstract fun bindSecuritySettingsRepository(
-        impl: ProtoAppSettingsRepository
+        impl: ProtoSettingsStore
     ): SecuritySettingsRepository
 
     @Binds
     @Singleton
     abstract fun bindSecuritySettingsSource(
-        impl: ProtoAppSettingsRepository
+        impl: ProtoSettingsStore
     ): SecuritySettingsSource
 
     @Binds
     @Singleton
     abstract fun bindMessageSettingsRepository(
-        impl: ProtoAppSettingsRepository
+        impl: ProtoSettingsStore
     ): MessageSettingsRepository
 
     @Binds
     @Singleton
     abstract fun bindMessageSettingsSource(
-        impl: ProtoAppSettingsRepository
+        impl: ProtoSettingsStore
     ): MessageSettingsSource
 
     @Binds
     @Singleton
     abstract fun bindBackupDirectorySettingsRepository(
-        impl: ProtoAppSettingsRepository
+        impl: ProtoSettingsStore
     ): BackupDirectorySettingsRepository
 
     @Binds
     @Singleton
     abstract fun bindBackupDirectorySettingsSource(
-        impl: ProtoAppSettingsRepository
+        impl: ProtoSettingsStore
     ): BackupDirectorySettingsSource
 
     @Binds
     @Singleton
     abstract fun bindInteractionSettingsRepository(
-        impl: ProtoAppSettingsRepository
+        impl: ProtoSettingsStore
     ): InteractionSettingsRepository
 
     @Binds
     @Singleton
     abstract fun bindInteractionSettingsSource(
-        impl: ProtoAppSettingsRepository
+        impl: ProtoSettingsStore
     ): InteractionSettingsSource
 }
