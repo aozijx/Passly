@@ -10,7 +10,7 @@ import com.aozijx.passly.domain.autofill.AutofillScope
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.port.AutofillCredentialRepository
 import com.aozijx.passly.domain.autofill.port.AutofillGrantStore
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.autofill.shared.AutofillSaveSource
 import com.aozijx.passly.feature.autofill.shared.RecordAutofillUsageUseCase
 import com.aozijx.passly.feature.autofill.shared.SaveAutofillCredentialUseCase
@@ -45,7 +45,7 @@ sealed interface CreatePasswordCredentialResult {
  */
 class CredentialResponseInteractor @Inject constructor(
     private val credentialRepository: AutofillCredentialRepository,
-    private val settingsRepository: AppSettingsRepository,
+    private val settingsSource: InteractionSettingsSource,
     private val authenticationManager: AuthenticationManager,
     private val vaultAccessState: SecureSessionAccessState,
     private val recordAutofillUsage: RecordAutofillUsageUseCase,
@@ -58,7 +58,7 @@ class CredentialResponseInteractor @Inject constructor(
         webDomain: String?,
         allowedUserIds: Set<String> = emptySet(),
     ): PasswordCredentialResult {
-        val policy = settingsRepository.settings.first().interaction.autofill
+        val policy = settingsSource.interaction.first().autofill
         if (!policy.enabled || !policy.credentialManagerEnabled) return PasswordCredentialResult.NotFound
 
         // "填充前验证"开启时，仅当本次交互还没有短期授权（如刚完成解锁动作）
@@ -106,7 +106,7 @@ class CredentialResponseInteractor @Inject constructor(
         username: String,
         password: String,
     ): CreatePasswordCredentialResult {
-        val policy = settingsRepository.settings.first().interaction.autofill
+        val policy = settingsSource.interaction.first().autofill
         if (
             !policy.enabled ||
             !policy.credentialManagerEnabled ||

@@ -13,7 +13,7 @@ import com.aozijx.passly.domain.autofill.model.FieldRole
 import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.autofill.internal.CandidateRetriever
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyDatasetFactory
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseFactory
@@ -34,7 +34,7 @@ class AutofillFillViewModel @Inject constructor(
     private val recordAutofillUsage: RecordAutofillUsageUseCase,
     private val candidateRetriever: CandidateRetriever,
     private val vaultAccessState: SecureSessionAccessState,
-    private val settingsRepository: AppSettingsRepository,
+    private val settingsSource: InteractionSettingsSource,
     private val requestSession: AutofillRequestSession,
     private val legacyResponseFactory: LegacyResponseFactory,
     @param:ApplicationContext private val appContext: Context,
@@ -58,7 +58,7 @@ class AutofillFillViewModel @Inject constructor(
         viewModelScope.launch {
             mutate(AutofillFillMutation.Loading)
             try {
-                val settings = settingsRepository.settings.first().interaction.autofill
+                val settings = settingsSource.interaction.first().autofill
                 if (request.isUnlockOnly) {
                     handleUnlockOnly(request, settings)
                     return@launch
@@ -185,7 +185,7 @@ class AutofillFillViewModel @Inject constructor(
         val request = currentRequest ?: return
         viewModelScope.launch {
             mutate(AutofillFillMutation.Loading)
-            val settings = settingsRepository.settings.first().interaction.autofill
+            val settings = settingsSource.interaction.first().autofill
             if (!ensureAuthenticatedForSecretAccess(settings)) return@launch
             val resolved = loadSelectedCandidate(
                 candidate.entry.id.value,

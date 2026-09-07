@@ -328,6 +328,40 @@ internal object SourceBoundaryPolicy {
             message = "Vault list depends on the global settings snapshot or command bus",
         ),
         SourceBoundaryRule(
+            id = "INTERACTION_SETTINGS_NARROW_PORT",
+            sourcePathContains = "/presentation/feature/settings/main/interaction/",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+                "com.aozijx.passly.domain.settings.model.SettingsCommand",
+            ),
+            message = "interaction settings depends on the global settings snapshot or command bus",
+        ),
+        SourceBoundaryRule(
+            id = "INTERACTION_SETTINGS_NARROW_PORT",
+            sourcePathContains = "/presentation/feature/settings/autofill/",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+                "com.aozijx.passly.domain.settings.model.SettingsCommand",
+            ),
+            message = "autofill settings depends on the global settings snapshot or command bus",
+        ),
+        SourceBoundaryRule(
+            id = "INTERACTION_SETTINGS_NARROW_PORT",
+            sourcePathContains = "/feature/autofill/",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+            ),
+            message = "Autofill runtime depends on the global settings snapshot",
+        ),
+        SourceBoundaryRule(
+            id = "INTERACTION_SETTINGS_NARROW_PORT",
+            sourcePathContains = "/presentation/feature/vault/list/display/VaultDisplayViewModel.kt",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+            ),
+            message = "Vault display depends on the global settings snapshot",
+        ),
+        SourceBoundaryRule(
             id = "SECURITY_RUNTIME_NARROW_SOURCE",
             sourcePathContains = "/security/authentication/DefaultAuthenticationManager.kt",
             forbiddenImportPrefixes = setOf(

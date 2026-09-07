@@ -15,16 +15,8 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.port.AutofillCredentialRepository
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.query.CredentialCandidate
-import com.aozijx.passly.domain.settings.model.MessageSettings
-import com.aozijx.passly.domain.settings.model.SettingsCommand
-import com.aozijx.passly.domain.settings.model.AppSettingsSnapshot
-import com.aozijx.passly.domain.settings.model.AppearanceSettings
-import com.aozijx.passly.domain.settings.model.BackupSettings
 import com.aozijx.passly.domain.settings.model.InteractionSettings
-import com.aozijx.passly.domain.settings.model.InterfaceSettings
-import com.aozijx.passly.domain.settings.model.SecuritySettings
-import com.aozijx.passly.domain.settings.model.LibraryViewSettings
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -40,7 +32,7 @@ class FillRequestDispatcherTest {
     ) = FillRequestDispatcher(
         sessionState = sessionState,
         candidateRetriever = CandidateRetriever(EmptyCredentialRepository),
-        settingsRepository = DefaultSettingsRepository,
+        settingsSource = DefaultSettingsSource,
         grantStore = object : AutofillGrantStore {
             override fun grant(context: AutofillGrantContext) = Unit
             override fun isGranted(context: AutofillGrantContext) = false
@@ -187,21 +179,8 @@ class FillRequestDispatcherTest {
         override fun isUnlocked(): Boolean = false
     }
 
-    private object DefaultSettingsRepository : AppSettingsRepository {
-        override val settings: Flow<AppSettingsSnapshot> = flowOf(
-            AppSettingsSnapshot(
-                appearance = AppearanceSettings(),
-                interfacePrefs = InterfaceSettings(),
-                security = SecuritySettings(),
-                interaction = InteractionSettings(),
-                messages = MessageSettings(),
-                vault = LibraryViewSettings(),
-                backup = BackupSettings(),
-            )
-        )
-        override val isLockOnBackground: Flow<Boolean> = flowOf(false)
-        override val lockTimeout: Flow<Long> = flowOf(60_000L)
-        override suspend fun update(command: SettingsCommand) = Unit
+    private object DefaultSettingsSource : InteractionSettingsSource {
+        override val interaction: Flow<InteractionSettings> = flowOf(InteractionSettings())
     }
 
     private object EmptyCredentialRepository : AutofillCredentialRepository {

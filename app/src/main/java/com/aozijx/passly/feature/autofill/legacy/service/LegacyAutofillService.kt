@@ -8,7 +8,7 @@ import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.domain.autofill.port.FieldMatchStrategy
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.autofill.internal.FillRequestDispatcher
 import com.aozijx.passly.feature.autofill.internal.di.Heuristic
 import com.aozijx.passly.feature.autofill.internal.save.SaveRequestAnalyzer
@@ -49,7 +49,7 @@ class LegacyAutofillService : AutofillService() {
     lateinit var saveAnalyzer: SaveRequestAnalyzer
 
     @Inject
-    lateinit var settingsRepository: AppSettingsRepository
+    lateinit var settingsSource: InteractionSettingsSource
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -95,7 +95,7 @@ class LegacyAutofillService : AutofillService() {
 
         serviceScope.launch {
             try {
-                val settings = settingsRepository.settings.first().interaction.autofill
+                val settings = settingsSource.interaction.first().autofill
                 val pending = saveAnalyzer.buildCandidate(
                     parsed = parsed,
                     request = internalRequest,

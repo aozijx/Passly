@@ -10,7 +10,7 @@ import androidx.credentials.provider.BeginCreateCredentialResponse
 import androidx.credentials.provider.BeginCreatePasswordCredentialRequest
 import androidx.credentials.provider.CreateEntry
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -24,7 +24,7 @@ import javax.inject.Singleton
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @Singleton
 class CredentialBeginCreateHandler @Inject constructor(
-    private val settingsRepository: AppSettingsRepository,
+    private val settingsSource: InteractionSettingsSource,
     private val pendingIntentFactory: CredentialPendingIntentFactory,
 ) {
     suspend fun resolve(
@@ -37,7 +37,7 @@ class CredentialBeginCreateHandler @Inject constructor(
             )
         }
 
-        val policy = settingsRepository.settings.first().interaction.autofill
+        val policy = settingsSource.interaction.first().autofill
         if (
             !policy.enabled ||
             !policy.credentialManagerEnabled ||

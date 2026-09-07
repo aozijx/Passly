@@ -9,7 +9,7 @@ import com.aozijx.passly.domain.autofill.port.AutofillGrantStore
 import com.aozijx.passly.domain.autofill.port.FieldMatchStrategy
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.settings.model.AutofillSettings
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import kotlinx.coroutines.flow.first
 
 /**
@@ -18,14 +18,13 @@ import kotlinx.coroutines.flow.first
 class FillRequestDispatcher(
     private val sessionState: SecureSessionAccessState,
     private val candidateRetriever: CandidateRetriever,
-    private val settingsRepository: AppSettingsRepository,
+    private val settingsSource: InteractionSettingsSource,
     private val grantStore: AutofillGrantStore,
     private val fieldMatchStrategy: FieldMatchStrategy,
 ) {
 
     suspend fun dispatch(request: AutofillRequest): AutofillResponse {
-        val policySnapshot = settingsRepository.settings.first()
-        val policy = policySnapshot.interaction.autofill
+        val policy = settingsSource.interaction.first().autofill
         if (!policy.enabled || !policy.supports(request.source)) {
             return AutofillResponse(status = AutofillStatus.DISABLED)
         }

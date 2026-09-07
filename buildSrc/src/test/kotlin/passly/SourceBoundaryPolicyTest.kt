@@ -623,6 +623,32 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun interactionConsumersCannotDependOnGlobalSettingsSnapshotOrCommandBus() {
+        val sources = listOf(
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/autofill/AutofillSettingsViewModel.kt",
+                content = "import com.aozijx.passly.domain.settings.model.SettingsCommand",
+            ),
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/feature/autofill/internal/FillRequestDispatcher.kt",
+                content = "import com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+            ),
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/list/display/VaultDisplayViewModel.kt",
+                content = "import com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+            ),
+        )
+
+        assertEquals(
+            setOf("INTERACTION_SETTINGS_NARROW_PORT"),
+            SourceBoundaryVerifier.verify(
+                sources,
+                SourceBoundaryPolicy.generalRules,
+            ).map { it.ruleId }.toSet(),
+        )
+    }
+
+    @Test
     fun dataManagementSettingsCannotOwnTrashStateOrCommands() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/backup/DataManagementSettingsViewModel.kt",

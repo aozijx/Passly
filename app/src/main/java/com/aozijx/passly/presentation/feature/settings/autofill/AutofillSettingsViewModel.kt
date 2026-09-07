@@ -3,8 +3,7 @@ package com.aozijx.passly.presentation.feature.settings.autofill
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.feature.autofill.platform.AutofillPlatformGateway
-import com.aozijx.passly.domain.settings.model.SettingsCommand
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -15,16 +14,16 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AutofillSettingsViewModel @Inject constructor(
-    private val settingsRepository: AppSettingsRepository,
+    private val settingsRepository: InteractionSettingsRepository,
     private val autofillPlatformGateway: AutofillPlatformGateway,
 ) : ViewModel() {
 
     val uiState: StateFlow<AutofillSettingsUiState> = combine(
-        settingsRepository.settings,
+        settingsRepository.interaction,
         autofillPlatformGateway.observeServiceEnabled(),
-    ) { settings, systemAutofillEnabled ->
+    ) { interaction, systemAutofillEnabled ->
         AutofillSettingsUiState(
-            autofill = settings.interaction.autofill,
+            autofill = interaction.autofill,
             isSystemAutofillEnabled = systemAutofillEnabled,
         )
     }
@@ -35,37 +34,32 @@ class AutofillSettingsViewModel @Inject constructor(
         )
 
     fun onAction(action: AutofillSettingsAction) {
-        val command = when (action) {
-            is AutofillSettingsAction.SetEnabled ->
-                SettingsCommand.SetAutofillEnabled(action.enabled)
-
-            is AutofillSettingsAction.SetPresentation ->
-                SettingsCommand.SetAutofillPresentation(action.presentation)
-
-            is AutofillSettingsAction.SetCredentialManagerEnabled ->
-                SettingsCommand.SetCredentialManagerEnabled(action.enabled)
-
-            is AutofillSettingsAction.SetAuthenticationRequired ->
-                SettingsCommand.SetAutofillAuthenticationRequired(action.required)
-
-            is AutofillSettingsAction.SetOtpEnabled ->
-                SettingsCommand.SetAutofillOtpEnabled(action.enabled)
-
-            is AutofillSettingsAction.SetSavePromptsEnabled ->
-                SettingsCommand.SetAutofillSavePromptsEnabled(action.enabled)
-
-            is AutofillSettingsAction.SetUnmatchedSuggestionsEnabled ->
-                SettingsCommand.SetUnmatchedAutofillSuggestionsEnabled(action.enabled)
-
-            is AutofillSettingsAction.SetMaxSuggestions ->
-                SettingsCommand.SetAutofillMaxSuggestions(action.count)
-
-            AutofillSettingsAction.OpenSystemAutofillSettings -> null
-        }
-        if (command == null) {
-            autofillPlatformGateway.openSystemSettings()
-        } else {
-            viewModelScope.launch { settingsRepository.update(command) }
+        when (action) {
+            is AutofillSettingsAction.SetEnabled -> viewModelScope.launch {
+                settingsRepository.setAutofillEnabled(action.enabled)
+            }
+            is AutofillSettingsAction.SetPresentation -> viewModelScope.launch {
+                settingsRepository.setAutofillPresentation(action.presentation)
+            }
+            is AutofillSettingsAction.SetCredentialManagerEnabled -> viewModelScope.launch {
+                settingsRepository.setCredentialManagerEnabled(action.enabled)
+            }
+            is AutofillSettingsAction.SetAuthenticationRequired -> viewModelScope.launch {
+                settingsRepository.setAutofillAuthenticationRequired(action.required)
+            }
+            is AutofillSettingsAction.SetOtpEnabled -> viewModelScope.launch {
+                settingsRepository.setAutofillOtpEnabled(action.enabled)
+            }
+            is AutofillSettingsAction.SetSavePromptsEnabled -> viewModelScope.launch {
+                settingsRepository.setAutofillSavePromptsEnabled(action.enabled)
+            }
+            is AutofillSettingsAction.SetUnmatchedSuggestionsEnabled -> viewModelScope.launch {
+                settingsRepository.setUnmatchedAutofillSuggestionsEnabled(action.enabled)
+            }
+            is AutofillSettingsAction.SetMaxSuggestions -> viewModelScope.launch {
+                settingsRepository.setAutofillMaxSuggestions(action.count)
+            }
+            AutofillSettingsAction.OpenSystemAutofillSettings -> autofillPlatformGateway.openSystemSettings()
         }
     }
 }

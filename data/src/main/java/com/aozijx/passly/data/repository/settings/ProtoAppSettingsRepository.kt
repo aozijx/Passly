@@ -6,15 +6,18 @@ import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AppSettingsSnapshot
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.MessageLevel
 import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.model.SettingsCommand
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
+import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
@@ -31,6 +34,7 @@ internal class ProtoAppSettingsRepository @Inject constructor(
     AppearanceSettingsRepository,
     BackupDirectorySettingsRepository,
     InterfaceSettingsRepository,
+    InteractionSettingsRepository,
     LibraryViewSettingsRepository,
     MessageSettingsRepository,
     SecuritySettingsRepository {
@@ -69,6 +73,9 @@ internal class ProtoAppSettingsRepository @Inject constructor(
 
     override val libraryViewSettings =
         dataStore.data.map { proto -> readVault(proto.vaultView) }
+
+    override val interaction =
+        dataStore.data.map { proto -> readInteraction(proto.interaction) }
 
     // ================================================================
     // Convenience flows
@@ -156,4 +163,26 @@ internal class ProtoAppSettingsRepository @Inject constructor(
         update(SettingsCommand.SetBackupDirectoryUri(uri))
     override suspend fun clearBackupDirectoryUri() =
         update(SettingsCommand.ClearBackupDirectoryUri)
+    override suspend fun setSwipeEnabled(enabled: Boolean) =
+        update(SettingsCommand.SetSwipeEnabled(enabled))
+    override suspend fun setSwipeLeftAction(action: SwipeActionType) =
+        update(SettingsCommand.SetSwipeLeftAction(action))
+    override suspend fun setSwipeRightAction(action: SwipeActionType) =
+        update(SettingsCommand.SetSwipeRightAction(action))
+    override suspend fun setAutofillEnabled(enabled: Boolean) =
+        update(SettingsCommand.SetAutofillEnabled(enabled))
+    override suspend fun setAutofillPresentation(presentation: AutofillPresentation) =
+        update(SettingsCommand.SetAutofillPresentation(presentation))
+    override suspend fun setCredentialManagerEnabled(enabled: Boolean) =
+        update(SettingsCommand.SetCredentialManagerEnabled(enabled))
+    override suspend fun setAutofillAuthenticationRequired(required: Boolean) =
+        update(SettingsCommand.SetAutofillAuthenticationRequired(required))
+    override suspend fun setAutofillOtpEnabled(enabled: Boolean) =
+        update(SettingsCommand.SetAutofillOtpEnabled(enabled))
+    override suspend fun setAutofillSavePromptsEnabled(enabled: Boolean) =
+        update(SettingsCommand.SetAutofillSavePromptsEnabled(enabled))
+    override suspend fun setUnmatchedAutofillSuggestionsEnabled(enabled: Boolean) =
+        update(SettingsCommand.SetUnmatchedAutofillSuggestionsEnabled(enabled))
+    override suspend fun setAutofillMaxSuggestions(count: Int) =
+        update(SettingsCommand.SetAutofillMaxSuggestions(count))
 }

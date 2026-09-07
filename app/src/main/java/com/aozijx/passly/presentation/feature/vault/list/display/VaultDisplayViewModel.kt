@@ -2,36 +2,43 @@ package com.aozijx.passly.presentation.feature.vault.list.display
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
+import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
+import com.aozijx.passly.domain.settings.port.LibraryViewSettingsSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
 class VaultDisplayViewModel @Inject constructor(
-    private val settingsRepository: AppSettingsRepository
+    interfaceSettingsRepository: InterfaceSettingsRepository,
+    librarySettingsSource: LibraryViewSettingsSource,
+    interactionSettingsSource: InteractionSettingsSource,
 ) : ViewModel() {
 
-    val config: StateFlow<VaultDisplayUiState> = settingsRepository.settings
-        .map { settings ->
+    val config: StateFlow<VaultDisplayUiState> = combine(
+        interfaceSettingsRepository.interfaceSettings,
+        librarySettingsSource.libraryViewSettings,
+        interactionSettingsSource.interaction,
+    ) { interfaceSettings, librarySettings, interactionSettings ->
             VaultDisplayUiState(
                 layout = VaultLayoutConfig(
-                    hideSystemBars = settings.interfacePrefs.hideSystemBars,
-                    collapseTopBarOnScroll = settings.interfacePrefs.collapseTopBarOnScroll,
-                    collapseQuickFilterBarOnScroll = settings.interfacePrefs.collapseQuickFilterBarOnScroll
+                    hideSystemBars = interfaceSettings.hideSystemBars,
+                    collapseTopBarOnScroll = interfaceSettings.collapseTopBarOnScroll,
+                    collapseQuickFilterBarOnScroll = interfaceSettings.collapseQuickFilterBarOnScroll
                 ),
                 style = VaultStyleConfig(
-                    entryCardPresentations = settings.vault.entryCardPresentations,
-                    entryHierarchyDisplayMode = settings.vault.entryHierarchyDisplayMode
+                    entryCardPresentations = librarySettings.entryCardPresentations,
+                    entryHierarchyDisplayMode = librarySettings.entryHierarchyDisplayMode
                 ),
                 interaction = VaultInteractionConfig(
-                    isSwipeEnabled = settings.interaction.isSwipeEnabled,
-                    swipeLeftAction = settings.interaction.swipeLeftAction,
-                    swipeRightAction = settings.interaction.swipeRightAction
+                    isSwipeEnabled = interactionSettings.isSwipeEnabled,
+                    swipeLeftAction = interactionSettings.swipeLeftAction,
+                    swipeRightAction = interactionSettings.swipeRightAction
                 )
             )
         }

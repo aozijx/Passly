@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.autofill.internal.di
 import com.aozijx.passly.domain.autofill.port.AutofillGrantStore
 import com.aozijx.passly.domain.autofill.port.AutofillHintProvider
 import com.aozijx.passly.domain.autofill.port.FieldMatchStrategy
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.feature.autofill.internal.CandidateRetriever
@@ -69,13 +69,13 @@ internal abstract class AutofillModule {
         fun provideHeuristicDispatcher(
             sessionState: SecureSessionAccessState,
             candidateRetriever: CandidateRetriever,
-            settingsRepository: AppSettingsRepository,
+            settingsSource: InteractionSettingsSource,
             grantStore: AutofillGrantStore,
             @Heuristic fieldMatchStrategy: FieldMatchStrategy,
         ): FillRequestDispatcher = FillRequestDispatcher(
             sessionState,
             candidateRetriever,
-            settingsRepository,
+            settingsSource,
             grantStore,
             fieldMatchStrategy
         )
@@ -86,13 +86,13 @@ internal abstract class AutofillModule {
         fun provideStrictDispatcher(
             sessionState: SecureSessionAccessState,
             candidateRetriever: CandidateRetriever,
-            settingsRepository: AppSettingsRepository,
+            settingsSource: InteractionSettingsSource,
             grantStore: AutofillGrantStore,
             @Strict fieldMatchStrategy: FieldMatchStrategy,
         ): FillRequestDispatcher = FillRequestDispatcher(
             sessionState,
             candidateRetriever,
-            settingsRepository,
+            settingsSource,
             grantStore,
             fieldMatchStrategy
         )

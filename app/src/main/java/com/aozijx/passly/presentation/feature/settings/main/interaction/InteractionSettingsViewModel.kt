@@ -2,8 +2,7 @@ package com.aozijx.passly.presentation.feature.settings.main.interaction
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.settings.model.SettingsCommand
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -14,15 +13,15 @@ import javax.inject.Inject
 
 @HiltViewModel
 class InteractionSettingsViewModel @Inject constructor(
-    private val settingsRepository: AppSettingsRepository,
+    private val settingsRepository: InteractionSettingsRepository,
 ) : ViewModel() {
 
-    val uiState: StateFlow<InteractionSettingsUiState> = settingsRepository.settings
+    val uiState: StateFlow<InteractionSettingsUiState> = settingsRepository.interaction
         .map { settings ->
             InteractionSettingsUiState(
-                isSwipeEnabled = settings.interaction.isSwipeEnabled,
-                swipeLeftAction = settings.interaction.swipeLeftAction,
-                swipeRightAction = settings.interaction.swipeRightAction,
+                isSwipeEnabled = settings.isSwipeEnabled,
+                swipeLeftAction = settings.swipeLeftAction,
+                swipeRightAction = settings.swipeRightAction,
             )
         }
         .stateIn(
@@ -32,10 +31,10 @@ class InteractionSettingsViewModel @Inject constructor(
         )
 
     fun onAction(action: InteractionSettingsAction) {
-        val command = when (action) {
-            is InteractionSettingsAction.SetSwipeEnabled ->
-                SettingsCommand.SetSwipeEnabled(action.enabled)
+        when (action) {
+            is InteractionSettingsAction.SetSwipeEnabled -> viewModelScope.launch {
+                settingsRepository.setSwipeEnabled(action.enabled)
+            }
         }
-        viewModelScope.launch { settingsRepository.update(command) }
     }
 }

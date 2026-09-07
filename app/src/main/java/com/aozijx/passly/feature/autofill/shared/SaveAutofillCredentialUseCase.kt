@@ -11,7 +11,7 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -19,7 +19,7 @@ import javax.inject.Singleton
 
 @Singleton
 class SaveAutofillCredentialUseCase @Inject constructor(
-    private val settingsRepository: AppSettingsRepository,
+    private val settingsSource: InteractionSettingsSource,
     private val applicationLabelResolver: ApplicationLabelResolver,
     private val createEntry: CreateEntryUseCase,
 ) {
@@ -31,7 +31,7 @@ class SaveAutofillCredentialUseCase @Inject constructor(
         passwordValue: String,
         source: AutofillSaveSource = AutofillSaveSource.LEGACY_PROMPT,
     ): AppResult<EntryId> {
-        val policy = settingsRepository.settings.first().interaction.autofill
+        val policy = settingsSource.interaction.first().autofill
         val sourceEnabled = when (source) {
             AutofillSaveSource.LEGACY_PROMPT -> policy.savePromptsEnabled
             AutofillSaveSource.CREDENTIAL_MANAGER -> policy.credentialManagerEnabled
