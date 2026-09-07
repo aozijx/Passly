@@ -26,7 +26,7 @@ class AppShellSettingsViewModel @Inject constructor(
             isSecureContentEnabled = security.isSecureContentEnabled,
             isFlipToLockEnabled = security.isFlipToLockEnabled,
             isFlipExitAndClearStackEnabled = security.isFlipExitAndClearStackEnabled,
-            isStatusBarAutoHide = interfaceSettings.preferences.hideSystemBars,
+            isStatusBarAutoHide = interfaceSettings.hideSystemBars,
         )
     }.stateIn(
         viewModelScope,

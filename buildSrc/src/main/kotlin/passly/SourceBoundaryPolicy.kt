@@ -319,6 +319,15 @@ internal object SourceBoundaryPolicy {
             message = "backup execution depends on the global settings snapshot",
         ),
         SourceBoundaryRule(
+            id = "VAULT_LIBRARY_SETTINGS_NARROW_PORT",
+            sourcePathContains = "/presentation/feature/vault/list/VaultViewModel.kt",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
+                "com.aozijx.passly.domain.settings.model.SettingsCommand",
+            ),
+            message = "Vault list depends on the global settings snapshot or command bus",
+        ),
+        SourceBoundaryRule(
             id = "SECURITY_RUNTIME_NARROW_SOURCE",
             sourcePathContains = "/security/authentication/DefaultAuthenticationManager.kt",
             forbiddenImportPrefixes = setOf(

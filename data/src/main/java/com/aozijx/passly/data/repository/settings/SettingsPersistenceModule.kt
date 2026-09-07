@@ -7,6 +7,8 @@ import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
+import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
+import com.aozijx.passly.domain.settings.port.LibraryViewSettingsSource
 import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
 import com.aozijx.passly.domain.settings.port.MessageSettingsSource
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
@@ -45,6 +47,18 @@ internal abstract class SettingsPersistenceModule {
     abstract fun bindInterfaceSettingsRepository(
         impl: ProtoAppSettingsRepository
     ): InterfaceSettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindLibraryViewSettingsRepository(
+        impl: ProtoAppSettingsRepository
+    ): LibraryViewSettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindLibraryViewSettingsSource(
+        impl: ProtoAppSettingsRepository
+    ): LibraryViewSettingsSource
 
     @Binds
     @Singleton

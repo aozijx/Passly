@@ -604,6 +604,25 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun vaultListCannotDependOnGlobalSettingsSnapshotOrCommandBus() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/list/VaultViewModel.kt",
+            content = """
+                import com.aozijx.passly.domain.settings.model.SettingsCommand
+                import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+            """.trimIndent(),
+        )
+
+        assertEquals(
+            "VAULT_LIBRARY_SETTINGS_NARROW_PORT",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).map { it.ruleId }.distinct().single(),
+        )
+    }
+
+    @Test
     fun dataManagementSettingsCannotOwnTrashStateOrCommands() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/backup/DataManagementSettingsViewModel.kt",

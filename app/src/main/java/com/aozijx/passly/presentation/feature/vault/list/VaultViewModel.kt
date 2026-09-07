@@ -24,8 +24,7 @@ import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
-import com.aozijx.passly.domain.settings.model.SettingsCommand
-import com.aozijx.passly.domain.settings.port.AppSettingsRepository
+import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.entry.MoveEntryToTrashUseCase
@@ -58,7 +57,7 @@ class VaultViewModel @Inject constructor(
     private val entryListQueryRepository: EntryListQueryRepository,
     private val entryPageSource: VaultEntryPageSource,
     private val otpConfigRepository: OtpConfigRepository,
-    private val settingsRepository: AppSettingsRepository,
+    private val settingsRepository: LibraryViewSettingsRepository,
     private val createEntry: CreateEntryUseCase,
     private val entryCommandRepository: EntryCommandRepository,
     private val secureSessionAccessState: SecureSessionAccessState,
@@ -108,8 +107,8 @@ class VaultViewModel @Inject constructor(
         otpCodeInvalidator = totp,
     )
 
-    private val hierarchyMode: Flow<EntryHierarchyDisplayMode> = settingsRepository.settings
-        .map { settings -> settings.vault.entryHierarchyDisplayMode }
+    private val hierarchyMode: Flow<EntryHierarchyDisplayMode> = settingsRepository.libraryViewSettings
+        .map { settings -> settings.entryHierarchyDisplayMode }
         .distinctUntilChanged()
 
     private val queryState: Flow<VaultQueryState> = buildVaultQueryStates(
@@ -184,7 +183,7 @@ class VaultViewModel @Inject constructor(
 
     private fun selectSortOption(sort: EntrySort) {
         mutate(VaultMutation.SortChanged(sort))
-        viewModelScope.launch { settingsRepository.update(SettingsCommand.SetVaultSortOption(sort)) }
+        viewModelScope.launch { settingsRepository.setSort(sort) }
     }
 
     private fun toggleShowTOTPCode() {
@@ -262,16 +261,16 @@ class VaultViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            settingsRepository.settings
-                .map { it.vault.sort }
+            settingsRepository.libraryViewSettings
+                .map { it.sort }
                 .distinctUntilChanged()
                 .collect { mutate(VaultMutation.SortChanged(it)) }
         }
 
         viewModelScope.launch {
-            settingsRepository.settings
+            settingsRepository.libraryViewSettings
                 .map { settings ->
-                    val keys = settings.vault.visibleQuickFilters?.filterKeys
+                    val keys = settings.visibleQuickFilters?.filterKeys
                         ?: LibraryQuickFilter.defaultVisibleKeys
                     LibraryQuickFilter.resolveVisible(keys)
                 }

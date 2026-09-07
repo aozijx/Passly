@@ -3,6 +3,7 @@ package com.aozijx.passly.data.repository.settings
 import android.content.Context
 import com.aozijx.passly.data.local.datastore.appSettingsDataStore
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AppSettingsSnapshot
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
@@ -14,7 +15,7 @@ import com.aozijx.passly.domain.settings.port.AppSettingsRepository
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
-import com.aozijx.passly.domain.settings.port.InterfaceSettingsSnapshot
+import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -30,6 +31,7 @@ internal class ProtoAppSettingsRepository @Inject constructor(
     AppearanceSettingsRepository,
     BackupDirectorySettingsRepository,
     InterfaceSettingsRepository,
+    LibraryViewSettingsRepository,
     MessageSettingsRepository,
     SecuritySettingsRepository {
 
@@ -62,15 +64,11 @@ internal class ProtoAppSettingsRepository @Inject constructor(
         readBackup(proto.backup).directoryTreeUri
     }
 
-    override val interfaceSettings: Flow<InterfaceSettingsSnapshot> =
-        dataStore.data.map { proto ->
-            val vault = readVault(proto.vaultView)
-            InterfaceSettingsSnapshot(
-                preferences = readInterface(proto.interfacePrefs),
-                visibleLibraryQuickFilterKeys = vault.visibleQuickFilters?.filterKeys,
-                entryHierarchyDisplayMode = vault.entryHierarchyDisplayMode,
-            )
-        }
+    override val interfaceSettings =
+        dataStore.data.map { proto -> readInterface(proto.interfacePrefs) }
+
+    override val libraryViewSettings =
+        dataStore.data.map { proto -> readVault(proto.vaultView) }
 
     // ================================================================
     // Convenience flows
@@ -122,10 +120,12 @@ internal class ProtoAppSettingsRepository @Inject constructor(
         update(SettingsCommand.SetGroupItemSpacing(spacingDp))
     override suspend fun setGroupContentPadding(paddingDp: Float) =
         update(SettingsCommand.SetGroupContentPadding(paddingDp))
-    override suspend fun setVisibleLibraryQuickFilters(keys: Set<String>) =
+    override suspend fun setVisibleQuickFilters(keys: Set<String>) =
         update(SettingsCommand.SetVisibleLibraryQuickFilters(keys))
     override suspend fun setEntryHierarchyDisplayMode(mode: EntryHierarchyDisplayMode) =
         update(SettingsCommand.SetEntryHierarchyDisplayMode(mode))
+    override suspend fun setSort(sort: EntrySort) =
+        update(SettingsCommand.SetVaultSortOption(sort))
     override suspend fun setSecureContentEnabled(enabled: Boolean) =
         update(SettingsCommand.SetSecureContentEnabled(enabled))
     override suspend fun setFlipToLockEnabled(enabled: Boolean) =
