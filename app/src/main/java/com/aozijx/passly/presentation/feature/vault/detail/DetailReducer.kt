@@ -1,6 +1,7 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -33,9 +34,12 @@ internal sealed interface DetailMutation {
     data class EditedTitleChanged(val value: String) : DetailMutation
     data class RevealedFieldChanged(val key: String, val value: SensitiveValue?) : DetailMutation
     data object RevealedFieldsCleared : DetailMutation
-    data class SensitiveFieldPresenceChanged(val keys: Set<SensitiveFieldKey>) : DetailMutation
-    data class HistoryChanged(val history: List<EntryActivity>) : DetailMutation
-    data class RelatedEntriesChanged(val entries: List<Entry>) : DetailMutation
+    data class SensitiveFieldPresenceChanged(
+        val entryId: EntryId,
+        val keys: Set<SensitiveFieldKey>,
+    ) : DetailMutation
+    data class HistoryChanged(val entryId: EntryId, val history: List<EntryActivity>) : DetailMutation
+    data class RelatedEntriesChanged(val entryId: EntryId, val entries: List<Entry>) : DetailMutation
     data class SaveStarted(val completion: DetailEditCompletion) : DetailMutation
     data class SaveSucceeded(val completion: DetailEditCompletion) : DetailMutation
     data class SaveFailed(
@@ -106,12 +110,22 @@ internal object DetailReducer {
             )
 
             DetailMutation.RevealedFieldsCleared -> state.copy(revealedFields = emptyMap())
-            is DetailMutation.SensitiveFieldPresenceChanged ->
+            is DetailMutation.SensitiveFieldPresenceChanged -> if (state.entry?.id == mutation.entryId) {
                 state.copy(sensitiveFieldKeys = mutation.keys)
+            } else {
+                state
+            }
 
-            is DetailMutation.HistoryChanged -> state.copy(history = mutation.history)
-            is DetailMutation.RelatedEntriesChanged ->
+            is DetailMutation.HistoryChanged -> if (state.entry?.id == mutation.entryId) {
+                state.copy(history = mutation.history)
+            } else {
+                state
+            }
+            is DetailMutation.RelatedEntriesChanged -> if (state.entry?.id == mutation.entryId) {
                 state.copy(relatedEntries = mutation.entries)
+            } else {
+                state
+            }
 
             is DetailMutation.SaveStarted -> state.copy(
                 savingEdit = mutation.completion,

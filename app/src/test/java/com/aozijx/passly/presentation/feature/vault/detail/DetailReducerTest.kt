@@ -9,6 +9,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
 import org.junit.Assert.assertEquals
@@ -104,6 +105,24 @@ class DetailReducerTest {
         } finally {
             password.wipe()
         }
+    }
+
+    @Test
+    fun `late detail load result cannot update a different entry`() {
+        val state = DetailUiState(
+            entry = entry("Current"),
+            sensitiveFieldKeys = setOf(SensitiveFieldKey.PASSWORD),
+        )
+
+        val actual = DetailReducer.reduce(
+            state,
+            DetailMutation.SensitiveFieldPresenceChanged(
+                entryId = EntryId("stale-entry"),
+                keys = emptySet(),
+            ),
+        )
+
+        assertEquals(state, actual)
     }
 
     private fun entry(title: String) = Entry(

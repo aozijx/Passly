@@ -24,6 +24,7 @@ import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,6 +63,8 @@ class DetailViewModel @Inject constructor(
         activityRecorder = activityRecorder,
     )
     private val faviconSession = DetailFaviconSession(faviconImageProcessor, viewModelScope)
+    private var entryLoadJob: Job? = null
+    private var historyJob: Job? = null
 
     companion object {
         private const val ACCESS_HISTORY_TOGGLE_KEY = "detail.access_history_enabled"
@@ -395,19 +398,23 @@ class DetailViewModel @Inject constructor(
 
     private fun initialize(initialEntry: Entry) {
         refreshFromEntry(initialEntry, isEditingTitle = false, editedTitle = initialEntry.title)
-        viewModelScope.launch {
+        entryLoadJob?.cancel()
+        historyJob?.cancel()
+        entryLoadJob = viewModelScope.launch {
             if (!accessPolicy.hasFullAccess()) return@launch
             val latest = entryQueryRepository.getById(initialEntry.id)
                 ?: initialEntry
             refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
             val presence = sensitiveFieldRepository.getPresence(latest.id)
-            mutate(DetailMutation.SensitiveFieldPresenceChanged(presence.keys))
+            mutate(DetailMutation.SensitiveFieldPresenceChanged(latest.id, presence.keys))
             loadRelatedEntries(latest)
         }
-        viewModelScope.launch {
+        historyJob = viewModelScope.launch {
             if (!accessPolicy.hasFullAccess()) return@launch
             activityQueryRepository.observeByEntryId(initialEntry.id.value)
-                .collect { history -> mutate(DetailMutation.HistoryChanged(history)) }
+                .collect { history ->
+                    mutate(DetailMutation.HistoryChanged(initialEntry.id, history))
+                }
         }
     }
 
@@ -488,13 +495,13 @@ class DetailViewModel @Inject constructor(
             links = entryLinkRepository.getAll(),
         )
         if (relatedIds.isEmpty()) {
-            mutate(DetailMutation.RelatedEntriesChanged(emptyList()))
+            mutate(DetailMutation.RelatedEntriesChanged(entry.id, emptyList()))
             return
         }
         val related = relatedIds.mapNotNull { relatedId ->
             entryQueryRepository.getById(relatedId)
         }
-        mutate(DetailMutation.RelatedEntriesChanged(related))
+        mutate(DetailMutation.RelatedEntriesChanged(entry.id, related))
     }
 
     private fun refreshFromEntry(entry: Entry, isEditingTitle: Boolean, editedTitle: String) {
