@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.app.entry.favicon.FaviconCropRequest
 import com.aozijx.passly.app.entry.favicon.FaviconImageProcessor
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -24,10 +25,8 @@ import com.aozijx.passly.feature.vault.detail.RevealSensitiveFieldsUseCase
 import com.aozijx.passly.feature.vault.detail.UpdateDetailEntryUseCase
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,7 +64,7 @@ class DetailViewModel @Inject constructor(
         sensitiveFieldRepository = sensitiveFieldRepository,
         activityRecorder = activityRecorder,
     )
-    private var faviconJob: Job? = null
+    private val faviconSession = DetailFaviconSession(faviconImageProcessor, viewModelScope)
 
     companion object {
         private const val ACCESS_HISTORY_TOGGLE_KEY = "detail.access_history_enabled"
@@ -238,13 +237,7 @@ class DetailViewModel @Inject constructor(
             }
 
             is DetailUiAction.SelectFaviconSource -> {
-                val previous = _uiState.value.faviconEditor.source
-                if (previous is FaviconDraftSourceUiModel.PrivateImage && previous != event.source) {
-                    viewModelScope.launch { faviconImageProcessor.discard(previous.localPath) }
-                }
-                _uiState.value.faviconEditor.promotedCandidatePath?.let { path ->
-                    viewModelScope.launch { faviconImageProcessor.discardPromotedCandidate(path) }
-                }
+                faviconSession.discardReplacedSource(_uiState.value.faviconEditor, event.source)
                 mutate(DetailMutation.FaviconSourceChanged(event.source))
             }
 
@@ -258,24 +251,24 @@ class DetailViewModel @Inject constructor(
                 mutate(DetailMutation.FaviconImageUrlChanged(event.value))
 
             is DetailUiAction.PickedFaviconImage -> {
-                launchFaviconJob {
+                faviconSession.launch {
                     stageFaviconInput { faviconImageProcessor.stageUpload(event.uri) }
                 }
             }
 
             DetailUiAction.DownloadFaviconImage -> {
                 val url = _uiState.value.faviconEditor.imageUrl
-                launchFaviconJob {
+                faviconSession.launch {
                     stageFaviconInput { faviconImageProcessor.stageHttpsUrl(url) }
                 }
             }
 
             DetailUiAction.UseFaviconWithoutCrop -> {
-                launchFaviconJob { processPendingFavicon(crop = null) }
+                faviconSession.launch { processPendingFavicon(crop = null) }
             }
 
             is DetailUiAction.CropFaviconImage -> {
-                launchFaviconJob {
+                faviconSession.launch {
                     processPendingFavicon(
                         FaviconCropRequest(event.zoom, event.offsetX, event.offsetY),
                     )
@@ -284,16 +277,13 @@ class DetailViewModel @Inject constructor(
 
             DetailUiAction.CancelFaviconCrop -> {
                 if (_uiState.value.faviconEditor.processing) return
-                val pending = _uiState.value.faviconEditor.pendingInputPath
-                faviconJob?.cancel()
-                faviconJob = null
-                viewModelScope.launch { faviconImageProcessor.discard(pending) }
+                faviconSession.cancelCrop(_uiState.value.faviconEditor.pendingInputPath)
                 mutate(DetailMutation.FaviconCropCancelled)
             }
 
             DetailUiAction.SaveFavicon -> {
                 if (_uiState.value.faviconEditor.processing) return
-                faviconJob = viewModelScope.launch {
+                faviconSession.launch {
                     val source = _uiState.value.faviconEditor.source
                     val persistedSource = if (
                         source is FaviconDraftSourceUiModel.PrivateImage &&
@@ -322,13 +312,13 @@ class DetailViewModel @Inject constructor(
                 val editor = _uiState.value.faviconEditor
                 mutate(DetailMutation.FaviconEditorDismissRequested)
                 if (!_uiState.value.faviconEditor.visible) {
-                    cancelFaviconWorkAndDiscard(editor)
+                    faviconSession.close(editor)
                 }
             }
 
             DetailUiAction.ConfirmDiscardFavicon -> {
                 val editor = _uiState.value.faviconEditor
-                cancelFaviconWorkAndDiscard(editor)
+                faviconSession.close(editor)
                 mutate(DetailMutation.FaviconEditorDiscardConfirmed)
             }
 
@@ -492,7 +482,7 @@ class DetailViewModel @Inject constructor(
         if (_uiState.value.savingEdit != null) return
         mutate(DetailMutation.SaveStarted(completion))
         when (val result = updateDetailEntry.update(entryId, patch)) {
-            is com.aozijx.passly.core.error.result.AppResult.Success -> {
+            is AppResult.Success -> {
                 val latest = result.data
                 val keepTitleEditing = completion != DetailEditCompletion.Title &&
                         _uiState.value.isEditingTitle
@@ -510,7 +500,7 @@ class DetailViewModel @Inject constructor(
                 emitEntryUpdated(latest)
             }
 
-            is com.aozijx.passly.core.error.result.AppResult.Failure -> {
+            is AppResult.Failure -> {
                 mutate(DetailMutation.SaveFailed(completion, result.error.code))
             }
         }
@@ -564,29 +554,8 @@ class DetailViewModel @Inject constructor(
 
     override fun onCleared() {
         val editor = _uiState.value.faviconEditor
-        faviconJob?.cancel()
-        faviconJob = null
-        faviconImageProcessor.discardEditorResources(
-            stagedPath = editor.privateImagePath(),
-            pendingInputPath = editor.pendingInputPath,
-            promotedCandidatePath = editor.promotedCandidatePath,
-        )
+        faviconSession.close(editor)
         clearSensitiveState()
-    }
-
-    private fun launchFaviconJob(block: suspend () -> Unit) {
-        if (faviconJob?.isActive == true) return
-        faviconJob = viewModelScope.launch { block() }
-    }
-
-    private fun cancelFaviconWorkAndDiscard(editor: DetailFaviconEditorUiModel) {
-        faviconJob?.cancel()
-        faviconJob = null
-        faviconImageProcessor.discardEditorResources(
-            stagedPath = editor.privateImagePath(),
-            pendingInputPath = editor.pendingInputPath,
-            promotedCandidatePath = editor.promotedCandidatePath,
-        )
     }
 
     private suspend fun stageFaviconInput(

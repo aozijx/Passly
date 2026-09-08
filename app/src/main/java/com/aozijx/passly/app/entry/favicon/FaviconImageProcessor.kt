@@ -17,13 +17,23 @@ data class FaviconCropRequest(
     val offsetY: Float = 0f,
 )
 
+interface FaviconDraftFiles {
+    suspend fun discard(path: String?)
+    suspend fun discardPromotedCandidate(path: String?)
+    fun discardEditorResources(
+        stagedPath: String?,
+        pendingInputPath: String?,
+        promotedCandidatePath: String?,
+    )
+}
+
 @Singleton
 class FaviconImageProcessor @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val imageDownloader: FaviconImageDownloader,
     private val imageStore: FaviconImageStore,
     private val bitmapTransformer: FaviconBitmapTransformer,
-) {
+) : FaviconDraftFiles {
     suspend fun stageUpload(uri: Uri): Result<String> {
         var stagedPath: String? = null
         return try {
@@ -96,19 +106,19 @@ class FaviconImageProcessor @Inject constructor(
         }
     }
 
-    suspend fun discard(path: String?) = withContext(Dispatchers.IO) {
+    override suspend fun discard(path: String?) = withContext(Dispatchers.IO) {
         path ?: return@withContext
         imageStore.discard(path)
     }
 
-    suspend fun discardPromotedCandidate(path: String?) = withContext(Dispatchers.IO) {
+    override suspend fun discardPromotedCandidate(path: String?) = withContext(Dispatchers.IO) {
         path ?: return@withContext
         imageStore.discardPromotedCandidate(path)
     }
 
     fun isStaged(path: String): Boolean = imageStore.isStaged(path)
 
-    fun discardEditorResources(
+    override fun discardEditorResources(
         stagedPath: String?,
         pendingInputPath: String?,
         promotedCandidatePath: String?,
