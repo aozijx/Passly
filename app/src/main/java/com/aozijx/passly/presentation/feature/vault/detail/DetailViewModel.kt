@@ -9,9 +9,7 @@ import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.policy.EntryAccountGraph
 import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
@@ -484,20 +482,14 @@ class DetailViewModel @Inject constructor(
     }
 
     private suspend fun loadRelatedEntries(entry: Entry) {
-        val graph = EntryAccountGraph(entryLinkRepository.getAll())
-        val accountId = if (entry.type == EntryType.ACCOUNT) {
-            entry.id
-        } else {
-            graph.accountFor(entry.id)
-        }
-        if (accountId == null) {
+        val relatedIds = DetailRelatedEntryIds.resolve(
+            entryId = entry.id,
+            entryType = entry.type,
+            links = entryLinkRepository.getAll(),
+        )
+        if (relatedIds.isEmpty()) {
             mutate(DetailMutation.RelatedEntriesChanged(emptyList()))
             return
-        }
-        val relatedIds = buildSet {
-            add(accountId)
-            addAll(graph.membersOf(accountId))
-            remove(entry.id)
         }
         val related = relatedIds.mapNotNull { relatedId ->
             entryQueryRepository.getById(relatedId)
