@@ -3,23 +3,17 @@ package com.aozijx.passly.app
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
-import android.content.ComponentName
 import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.os.StrictMode
 import android.view.MotionEvent
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.access.port.AuthenticationManager
-import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService
-import com.aozijx.passly.feature.autofill.legacy.service.LegacyAutofillService
 import com.aozijx.passly.security.authentication.BiometricRotationReconciler
 import com.aozijx.passly.security.authentication.VaultSessionController
 import dagger.hilt.android.HiltAndroidApp
@@ -90,48 +84,6 @@ class PasslyApplication : Application() {
         // 生命周期与全局交互监听
         ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleObserver)
         registerGlobalTouchListener()
-
-        // Autofill 服务配置
-        configureAutofillServices()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            enableModernCredentialService()
-        }
-    }
-
-    /**
-     * - LegacyAutofillService：所有支持版本启用
-     * - ModernCredentialService（CredentialProvider）：仅 API 34+ 启用，否则禁用
-     */
-    private fun configureAutofillServices() {
-        val pm = packageManager
-        val legacyComponent = ComponentName(this, LegacyAutofillService::class.java)
-        try {
-            // Legacy：始终启用
-            pm.setComponentEnabledSetting(
-                legacyComponent,
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                PackageManager.DONT_KILL_APP,
-            )
-            AppTelemetry.i(EventCategory.AUTOFILL, "autofill.legacy_enabled")
-        } catch (e: Exception) {
-            AppTelemetry.e(EventCategory.AUTOFILL, "autofill.configure_failed", throwable = e)
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-    private fun enableModernCredentialService() {
-        val pm = packageManager
-        val modernComponent = ComponentName(this, ModernCredentialService::class.java)
-        try {
-            pm.setComponentEnabledSetting(
-                modernComponent,
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                PackageManager.DONT_KILL_APP,
-            )
-            AppTelemetry.i(EventCategory.AUTOFILL, "autofill.modern_enabled")
-        } catch (e: Exception) {
-            AppTelemetry.e(EventCategory.AUTOFILL, "autofill.modern_failed", throwable = e)
-        }
     }
 
     /** 监听所有 Activity 创建，注入全局触摸监听，用于重置空闲计时器 */

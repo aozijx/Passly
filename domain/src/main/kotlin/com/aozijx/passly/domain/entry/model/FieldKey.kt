@@ -17,9 +17,6 @@ enum class FieldKey {
     FAVORITE,
     CUSTOM_FIELDS,
 
-    /** Legacy aggregate key. New editor definitions use PRIMARY_URL and DOMAINS. */
-    URIS,
-
     OTP_TYPE,
     OTP_SECRET,
     OTP_ISSUER,

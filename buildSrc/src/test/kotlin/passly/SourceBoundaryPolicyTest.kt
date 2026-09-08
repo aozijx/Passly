@@ -829,6 +829,54 @@ class SourceBoundaryPolicyTest {
         )
     }
 
+    @Test
+    fun retiredEntryFieldKeysCannotReturn() {
+        val source = EditorSource(
+            path = "domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/FieldKey.kt",
+            content = "enum class FieldKey { TITLE, URIS }",
+        )
+
+        assertEquals(
+            "RETIRED_ENTRY_FIELD_KEY",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
+    @Test
+    fun vaultBootstrapCapabilitiesCannotHaveSilentDefaults() {
+        val source = EditorSource(
+            path = "domain/src/main/kotlin/com/aozijx/passly/domain/access/port/VaultBootstrapStore.kt",
+            content = "suspend fun loadAttachmentKeyEnvelope(): ByteArray? = null",
+        )
+
+        assertEquals(
+            "VAULT_BOOTSTRAP_SILENT_DEFAULT",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
+    @Test
+    fun applicationCannotToggleManifestServicesAtRuntime() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/app/PasslyApplication.kt",
+            content = "packageManager.setComponentEnabledSetting(component, state, flags)",
+        )
+
+        assertEquals(
+            "APPLICATION_RUNTIME_SERVICE_TOGGLE",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
     private fun uiSource(content: String) = EditorSource(
         path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",
         content = content,

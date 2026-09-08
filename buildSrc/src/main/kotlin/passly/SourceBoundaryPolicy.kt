@@ -453,5 +453,26 @@ internal object SourceBoundaryPolicy {
             forbiddenContentMarkers = setOf("AuthenticationHost", "ActivityAuthUiHost"),
             message = "authentication host implementation remains in app-local core UI",
         ),
+        SourceBoundaryRule(
+            id = "RETIRED_ENTRY_FIELD_KEY",
+            sourcePathContains = "/domain/entry/model/FieldKey.kt",
+            forbiddenContentMarkers = setOf("URIS"),
+            message = "retired aggregate URI field key returned",
+        ),
+        SourceBoundaryRule(
+            id = "VAULT_BOOTSTRAP_SILENT_DEFAULT",
+            sourcePathContains = "/domain/access/port/VaultBootstrapStore.kt",
+            forbiddenContentMarkers = setOf(
+                "saveAttachmentKeyEnvelope(envelope: ByteArray) = Unit",
+                "loadAttachmentKeyEnvelope(): ByteArray? = null",
+            ),
+            message = "vault bootstrap capability has a silent compatibility default",
+        ),
+        SourceBoundaryRule(
+            id = "APPLICATION_RUNTIME_SERVICE_TOGGLE",
+            sourcePathContains = "/app/PasslyApplication.kt",
+            forbiddenContentMarkers = setOf("setComponentEnabledSetting("),
+            message = "application toggles a manifest service at runtime",
+        ),
     )
 }

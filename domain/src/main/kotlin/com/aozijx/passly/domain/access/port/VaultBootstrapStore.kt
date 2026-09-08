@@ -24,9 +24,9 @@ interface VaultBootstrapStore {
 
     suspend fun loadSensitiveKeyEnvelope(): ByteArray?
 
-    suspend fun saveAttachmentKeyEnvelope(envelope: ByteArray) = Unit
+    suspend fun saveAttachmentKeyEnvelope(envelope: ByteArray)
 
-    suspend fun loadAttachmentKeyEnvelope(): ByteArray? = null
+    suspend fun loadAttachmentKeyEnvelope(): ByteArray?
 
     suspend fun loadBiometricState(): BiometricBootstrapState
 

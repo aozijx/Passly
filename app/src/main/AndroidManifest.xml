@@ -75,10 +75,10 @@
                 android:resource="@xml/autofill_service_config" />
         </service>
 
-        <!-- API 34+ CredentialProviderService，由 Application 在支持的系统上启用 -->
+        <!-- API 34+ CredentialProviderService，由版本资源声明是否启用。 -->
         <service
             android:name=".feature.autofill.credential.service.ModernCredentialService"
-            android:enabled="false"
+            android:enabled="@bool/credential_provider_enabled"
             android:exported="true"
             android:permission="android.permission.BIND_CREDENTIAL_PROVIDER_SERVICE"
             tools:targetApi="34">

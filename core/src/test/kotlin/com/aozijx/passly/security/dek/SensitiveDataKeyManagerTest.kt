@@ -95,6 +95,7 @@ class SensitiveDataKeyManagerTest {
         private var verificationTag: ByteArray? = null
         var sensitiveKeyEnvelope: ByteArray? = null
             private set
+        private var attachmentKeyEnvelope: ByteArray? = null
 
         override suspend fun save(envelope: KeyEnvelope) {
             envelopes[envelope.type] = envelope
@@ -119,6 +120,12 @@ class SensitiveDataKeyManagerTest {
         }
 
         override suspend fun loadSensitiveKeyEnvelope(): ByteArray? = sensitiveKeyEnvelope?.clone()
+
+        override suspend fun saveAttachmentKeyEnvelope(envelope: ByteArray) {
+            attachmentKeyEnvelope = envelope.clone()
+        }
+
+        override suspend fun loadAttachmentKeyEnvelope(): ByteArray? = attachmentKeyEnvelope?.clone()
 
         override suspend fun loadBiometricState() = BiometricBootstrapState(
             binding = null,
@@ -146,6 +153,8 @@ class SensitiveDataKeyManagerTest {
             verificationTag = null
             sensitiveKeyEnvelope?.fill(0)
             sensitiveKeyEnvelope = null
+            attachmentKeyEnvelope?.fill(0)
+            attachmentKeyEnvelope = null
         }
     }
 }

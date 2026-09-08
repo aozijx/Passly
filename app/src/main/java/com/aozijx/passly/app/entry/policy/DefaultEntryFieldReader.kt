@@ -10,7 +10,6 @@ import javax.inject.Singleton
  * 默认字段读取器。
  *
  * 根据 [FieldKey] 从 [Entry] 中提取原始数据值，处理逻辑对所有条目类型通用。
- * 提取逻辑继承自原有的 [com.aozijx.passly.domain.strategy.EntryTypeStrategy] 中的 getFieldValue 实现。
  */
 @Singleton
 class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
@@ -41,7 +40,8 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
             FieldKey.EMAIL -> secret.login?.email
             FieldKey.NOTES -> secret.notes
 
-            FieldKey.URIS -> entry.profile.associations.domains.joinToString(", ")
+            FieldKey.PRIMARY_URL -> entry.profile.associations.primaryUrl
+            FieldKey.DOMAINS -> entry.profile.associations.domains.joinToString(", ")
             else -> null
         }
     }
@@ -110,7 +110,8 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
         FieldKey.PASSWORD,
         FieldKey.EMAIL,
         FieldKey.NOTES,
-        FieldKey.URIS
+        FieldKey.PRIMARY_URL,
+        FieldKey.DOMAINS,
     )
 
     private fun FieldKey.isOtp() = this.name.startsWith("OTP")
