@@ -11,7 +11,6 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.policy.EntryAccountGraph
 import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
@@ -430,44 +429,18 @@ class DetailViewModel @Inject constructor(
 
     private suspend fun revealHighSensitivityFields(entryValue: EntryId, uiKeys: Set<String>) {
         if (!accessPolicy.hasFullAccess()) return
-        val requested = uiKeys.mapNotNull { it.toSensitiveFieldKey() }.toSet()
+        val requested = uiKeys.mapNotNull(DetailSensitiveFieldKeyMapper::toDomain).toSet()
         if (requested.isEmpty()) return
         revealSensitiveFields.reveal(entryValue, requested).forEach { (fieldKey, value) ->
-            fieldKey.toRevealedFieldKey()?.let { uiKey -> setRevealedField(uiKey, value) }
+            DetailSensitiveFieldKeyMapper.toUi(fieldKey)?.let { uiKey ->
+                setRevealedField(uiKey, value)
+            }
         }
     }
 
     private fun clearSensitiveState() {
         revealStore.clear()
         mutate(DetailMutation.StateCleared)
-    }
-
-    private fun String.toSensitiveFieldKey(): SensitiveFieldKey? = when (this) {
-        RevealedFieldKey.PASSWORD -> SensitiveFieldKey.PASSWORD
-        RevealedFieldKey.CARD_NUMBER -> SensitiveFieldKey.CARD_NUMBER
-        RevealedFieldKey.CVV -> SensitiveFieldKey.CARD_CVV
-        RevealedFieldKey.PAYMENT_PIN -> SensitiveFieldKey.CARD_PAYMENT_PIN
-        RevealedFieldKey.SSH_PRIVATE_KEY -> SensitiveFieldKey.SSH_PRIVATE_KEY
-        RevealedFieldKey.SSH_PASSPHRASE -> SensitiveFieldKey.SSH_PASSPHRASE
-        RevealedFieldKey.SEED_PHRASE -> SensitiveFieldKey.SEED_PHRASE
-        RevealedFieldKey.PASSKEY_DATA -> SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE
-        RevealedFieldKey.ID_NUMBER -> SensitiveFieldKey.IDENTITY_NUMBER
-        RevealedFieldKey.RECOVERY_CODES -> SensitiveFieldKey.RECOVERY_CODES
-        else -> null
-    }
-
-    private fun SensitiveFieldKey.toRevealedFieldKey(): String? = when (this) {
-        SensitiveFieldKey.PASSWORD -> RevealedFieldKey.PASSWORD
-        SensitiveFieldKey.CARD_NUMBER -> RevealedFieldKey.CARD_NUMBER
-        SensitiveFieldKey.CARD_CVV -> RevealedFieldKey.CVV
-        SensitiveFieldKey.CARD_PAYMENT_PIN -> RevealedFieldKey.PAYMENT_PIN
-        SensitiveFieldKey.SSH_PRIVATE_KEY -> RevealedFieldKey.SSH_PRIVATE_KEY
-        SensitiveFieldKey.SSH_PASSPHRASE -> RevealedFieldKey.SSH_PASSPHRASE
-        SensitiveFieldKey.SEED_PHRASE -> RevealedFieldKey.SEED_PHRASE
-        SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE -> RevealedFieldKey.PASSKEY_DATA
-        SensitiveFieldKey.IDENTITY_NUMBER -> RevealedFieldKey.ID_NUMBER
-        SensitiveFieldKey.RECOVERY_CODES -> RevealedFieldKey.RECOVERY_CODES
-        SensitiveFieldKey.OTP_SECRET -> null
     }
 
     private fun ActivityType.clearsRevealedFields(): Boolean =
