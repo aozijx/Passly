@@ -222,43 +222,6 @@ class VaultSessionController @Inject constructor(
         true
     }
 
-    /**
-     * 为数据库灾难恢复暂存 DEK，但不尝试打开已知损坏的数据库。
-     */
-    suspend fun stageDatabaseRecovery(
-        type: EnvelopeType,
-        ownedDek: OwnedBytes
-    ): Boolean = mutex.withLock {
-        val dek = ownedDek.consume()
-        return try {
-            val staged = if (dekManager.isUnlocked.value) {
-                // SOFT_LOCKED: DEK 仍在内存中，无需重新设置
-                true
-            } else {
-                dekManager.setDek(type, dek) is DekUnlockResult.Success
-            }
-            if (!staged) return@withLock false
-            if (type == EnvelopeType.RECOVERY && !consumeRecoveryEnvelope()) {
-                return@withLock false
-            }
-            true
-        } finally {
-            dek.fill(0)
-            ownedDek.discard()
-        }
-    }
-
-    /**
-     * 新数据库已经由恢复流程成功打开后，才发布 UNLOCKED / Authenticated。
-     */
-    suspend fun completeDatabaseRecovery(): Boolean = mutex.withLock {
-        if (sessionManager.lockState != SecureSessionState.UNLOCKED) return@withLock false
-        _databaseFailure.value = null
-        lockStateManager.mark(SecureSessionState.UNLOCKED)
-        markAuthenticatedInternal()
-        true
-    }
-
     private suspend fun markAuthenticatedInternal() = withContext(Dispatchers.Main.immediate) {
         _state.value = AuthenticationState.Authenticated(System.currentTimeMillis())
         resetIdleTimer()

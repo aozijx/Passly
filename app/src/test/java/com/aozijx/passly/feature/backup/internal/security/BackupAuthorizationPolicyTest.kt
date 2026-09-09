@@ -86,7 +86,6 @@ class BackupAuthorizationPolicyTest {
             session.state.value = AuthenticationState.Locked
         }
 
-        override suspend fun completeDatabaseRecovery(): Boolean = false
         override suspend fun refreshAvailability() = Unit
         override fun snapshot() = AuthenticationSnapshot(state.value, methods.value)
     }

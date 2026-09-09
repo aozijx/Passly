@@ -2,7 +2,6 @@ package com.aozijx.passly.data.local.database
 
 import com.aozijx.passly.data.local.database.maintenance.DatabaseCleaner
 import com.aozijx.passly.data.local.database.maintenance.DatabaseCleanerImpl
-import com.aozijx.passly.data.local.database.recovery.DatabaseRecoveryRepositoryImpl
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.local.datastore.ProtoVaultBootstrapStore
 import com.aozijx.passly.data.local.database.port.DatabaseControllerImpl
@@ -10,7 +9,6 @@ import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
 import com.aozijx.passly.runtime.session.SessionStateProvider
 import com.aozijx.passly.data.local.database.port.DatabaseController
-import com.aozijx.passly.data.local.database.port.DatabaseRecoveryRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -49,10 +47,4 @@ internal abstract class VaultStorageModule {
     abstract fun bindVaultBootstrapStore(
         impl: ProtoVaultBootstrapStore,
     ): VaultBootstrapStore
-
-    @Binds
-    @Singleton
-    abstract fun bindDatabaseRecoveryRepository(
-        impl: DatabaseRecoveryRepositoryImpl,
-    ): DatabaseRecoveryRepository
 }

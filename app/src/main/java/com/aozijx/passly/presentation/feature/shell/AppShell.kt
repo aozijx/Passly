@@ -24,7 +24,7 @@ import com.aozijx.passly.app.shell.FlipToLockSensorController
 import com.aozijx.passly.presentation.feature.shell.AppShellEffect
 import com.aozijx.passly.presentation.feature.shell.AppShellUiAction
 import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
-import com.aozijx.passly.presentation.ui.shell.DatabaseRecoveryDialog
+import com.aozijx.passly.presentation.ui.shell.DatabaseErrorDialog
 import com.aozijx.passly.presentation.feature.onboarding.BootstrapViewModel
 import com.aozijx.passly.presentation.feature.unlock.UnlockViewModel
 import com.aozijx.passly.presentation.feature.unlock.AuthenticationScreen
@@ -92,13 +92,10 @@ internal fun AppShell(
     ) { state ->
         when (state) {
             "error" -> {
-                DatabaseRecoveryDialog(
+                DatabaseErrorDialog(
                     isBusy = mainUiState.isDatabaseInitializing,
                     onRetry = {
                         viewModel.onAction(AppShellUiAction.RetryDatabaseInitialization)
-                    },
-                    onRecoverDatabase = {
-                        viewModel.onAction(AppShellUiAction.RecoverDatabase)
                     },
                     onCloseApp = {
                         noticePublisher.publish(

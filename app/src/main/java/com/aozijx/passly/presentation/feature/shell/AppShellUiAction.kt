@@ -8,7 +8,6 @@ sealed interface AppShellUiAction {
     data object ExitRecovery : AppShellUiAction
     data object UpdateInteraction : AppShellUiAction
     data object RetryDatabaseInitialization : AppShellUiAction
-    data object RecoverDatabase : AppShellUiAction
     data object RequestAuth : AppShellUiAction
     data object RequestReauth : AppShellUiAction
     data class RequestSensitiveAccess(

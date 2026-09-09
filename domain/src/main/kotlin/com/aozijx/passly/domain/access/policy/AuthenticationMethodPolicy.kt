@@ -48,12 +48,10 @@ object AuthenticationMethodPolicy {
         when (purpose) {
             AuthenticationPurpose.UNLOCK_VAULT,
             AuthenticationPurpose.BACKUP_EXPORT,
-            AuthenticationPurpose.RESTORE_DATABASE,
             AuthenticationPurpose.CLEAR_DATABASE -> PRIMARY_METHODS
 
             AuthenticationPurpose.RECOVER_AUTH_METHODS -> setOf(AuthenticationMethod.RECOVERY_CODE)
 
-            AuthenticationPurpose.RECOVER_DATABASE -> AuthenticationMethod.entries.toSet()
             else -> PRIMARY_METHODS
         }
 

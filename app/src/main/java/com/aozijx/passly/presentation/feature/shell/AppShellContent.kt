@@ -11,7 +11,7 @@ import com.aozijx.passly.core.ui.adaptive.ProvidePasslyAdaptiveLayout
 import com.aozijx.passly.presentation.feature.vault.list.VaultViewModel
 import com.aozijx.passly.presentation.feature.vault.navigation.registerVaultGraph
 import com.aozijx.passly.presentation.feature.settings.main.navigation.registerSettingsGraph
-import com.aozijx.passly.presentation.feature.database.recovery.registerDatabaseRecoveryGraph
+import com.aozijx.passly.presentation.feature.database.reset.registerDatabaseResetGraph
 
 @Composable
 internal fun AppShellContent(
@@ -34,7 +34,7 @@ internal fun AppShellContent(
                 isDatabaseInitializing = isDatabaseInitializing,
             )
             registerSettingsGraph(context)
-            registerDatabaseRecoveryGraph(context)
+            registerDatabaseResetGraph(context)
         }
     }
 }

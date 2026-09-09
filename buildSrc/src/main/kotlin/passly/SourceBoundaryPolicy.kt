@@ -180,19 +180,6 @@ internal object SourceBoundaryPolicy {
             message = "vault paging Data types may only be imported by App adapters",
         ),
         SourceBoundaryRule(
-            id = "DATABASE_RECOVERY_DATA_ADAPTER_ONLY",
-            sourcePathContains = "/app/src/",
-            forbiddenImportPrefixes = setOf(
-                "com.aozijx.passly.data.local.database.model.DatabaseRecovery",
-                "com.aozijx.passly.data.local.database.port.DatabaseRecoveryRepository",
-            ),
-            allowedSourcePathContains = setOf(
-                "/app/database/recovery/DataDatabaseRecoveryGateway.kt",
-                "/app/database/recovery/DataDatabaseRecoveryGatewayTest.kt",
-            ),
-            message = "database recovery Data types may only be imported by the App adapter",
-        ),
-        SourceBoundaryRule(
             id = "PRESENTATION_SESSION_CONTROLLER_IMPORT",
             sourcePathContains = "/presentation/",
             forbiddenImportPrefixes = setOf(
@@ -398,6 +385,19 @@ internal object SourceBoundaryPolicy {
             message = "security runtime consumer depends on the global settings snapshot",
         ),
         SourceBoundaryRule(
+            id = "RETIRED_DATABASE_RECOVERY",
+            sourcePathContains = "/src/",
+            forbiddenContentMarkers = setOf(
+                "DatabaseRecovery",
+                "database_recovery",
+                "RECOVER_DATABASE",
+                "RESTORE_DATABASE",
+                "quarantineAndReinitialize",
+                "DatabaseQuarantineResult",
+            ),
+            message = "uses the retired damaged-database recovery capability",
+        ),
+        SourceBoundaryRule(
             id = "SETTINGS_DATA_MANAGEMENT_TRASH_OWNERSHIP",
             sourcePathContains = "/presentation/feature/settings/backup/DataManagementSettings",
             forbiddenImportPrefixes = setOf(
@@ -418,16 +418,9 @@ internal object SourceBoundaryPolicy {
             sourcePathContains = "/presentation/feature/settings/",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.app.database.DatabaseLifecycleGateway",
-                "com.aozijx.passly.feature.database.recovery.DatabaseRecoveryGateway",
-                "com.aozijx.passly.presentation.feature.database.recovery.DatabaseRecoveryViewModel",
+                "com.aozijx.passly.presentation.feature.database.reset.DatabaseResetViewModel",
             ),
-            forbiddenContentMarkers = setOf(
-                "ClearDatabase",
-                "isClearingDatabase",
-                "DatabaseClearStarted",
-                "DatabaseClearFinished",
-            ),
-            message = "settings owns database lifecycle or recovery capability",
+            message = "settings owns database lifecycle or reset capability",
         ),
         SourceBoundaryRule(
             id = "DATA_CORE_PACKAGE_ACCESS",

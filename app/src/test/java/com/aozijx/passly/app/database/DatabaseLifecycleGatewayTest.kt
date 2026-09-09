@@ -1,7 +1,7 @@
 package com.aozijx.passly.app.database
 
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.local.database.port.DatabaseController
-import com.aozijx.passly.data.local.database.port.DatabaseQuarantineResult
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -23,47 +23,23 @@ class DatabaseLifecycleGatewayTest {
     }
 
     @Test
-    fun quarantinePreservesRecoveryIdAndCapturesThrownFailure() = runTest {
-        val controller = FakeController().apply {
-            quarantineResult = DatabaseQuarantineResult(recoveryId = "recovery-1")
-        }
-        val gateway = DatabaseLifecycleGateway(controller)
-
-        assertEquals(
-            DatabaseLifecycleResult.Reinitialized("recovery-1"),
-            gateway.quarantineAndReinitialize(),
-        )
-
-        val failure = IllegalArgumentException("quarantine failed")
-        controller.quarantineFailure = failure
-        val result = gateway.quarantineAndReinitialize()
-        assertSame(failure, (result as DatabaseLifecycleResult.Failure).cause)
-    }
-
-    @Test
-    fun clearReturnsReadyOrFailureInsteadOfNullableThrowable() = runTest {
+    fun resetReturnsReadyOrFailureInsteadOfNullableThrowable() = runTest {
         val controller = FakeController()
         val gateway = DatabaseLifecycleGateway(controller)
 
-        assertEquals(DatabaseLifecycleResult.Ready, gateway.clearAndReinitialize())
-        controller.clearError = IllegalStateException("clear failed")
-        assertTrue(gateway.clearAndReinitialize() is DatabaseLifecycleResult.Failure)
+        assertTrue(gateway.reset() is AppResult.Success)
+        controller.resetError = IllegalStateException("reset failed")
+        assertTrue(gateway.reset() is AppResult.Failure)
     }
 
     private class FakeController : DatabaseController {
         var preWarmError: Throwable? = null
         var retryError: Throwable? = null
-        var clearError: Throwable? = null
-        var quarantineResult = DatabaseQuarantineResult()
-        var quarantineFailure: Throwable? = null
+        var resetError: Throwable? = null
 
         override suspend fun preWarm() = preWarmError
         override suspend fun retry() = retryError
-        override suspend fun clearAndReinitialize() = clearError
-        override suspend fun quarantineAndReinitialize(): DatabaseQuarantineResult {
-            quarantineFailure?.let { throw it }
-            return quarantineResult
-        }
+        override suspend fun reset() = resetError
         override suspend fun close() = Unit
     }
 }

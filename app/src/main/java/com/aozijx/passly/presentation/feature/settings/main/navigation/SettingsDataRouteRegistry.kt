@@ -27,13 +27,13 @@ internal fun DataSettingsRouteContent(
     settingsViewModel: SettingsViewModel,
     settingsState: SettingsUiState,
     onOpenTrash: () -> Unit,
-    onOpenDatabaseRecovery: () -> Unit,
+    onOpenDatabaseReset: () -> Unit,
     onBack: (() -> Unit)?,
 ) {
     val content: @Composable () -> Unit = when (route) {
         SettingsRoute.Interaction -> ({ InteractionRouteContent(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
         SettingsRoute.Autofill -> ({ AutofillRouteContent(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
-        SettingsRoute.DataManagement -> ({ DataManagementRouteContent(route, context, localState, interactionViewModel, onOpenTrash, onOpenDatabaseRecovery, onBack) })
+        SettingsRoute.DataManagement -> ({ DataManagementRouteContent(route, context, localState, interactionViewModel, onOpenTrash, onOpenDatabaseReset, onBack) })
         SettingsRoute.BackupRestore -> ({ BackupRouteContent(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
         SettingsRoute.RecoveryCode -> ({ RecoveryCodeRouteContent(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
         SettingsRoute.General -> ({ GeneralRouteContent(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })

@@ -93,9 +93,9 @@
     <string name="backup_directory_permission_ok">保存先ディレクトリへの書き込み権限は正常です</string>
     <string name="backup_directory_permission_failed">保存先ディレクトリの書き込みテストに失敗しました。再選択してください。</string>
 
-    <!-- データベース復旧 -->
+    <!-- データベースエラー -->
     <string name="database_open_error_title">データベースを開けません</string>
-    <string name="database_open_error_message">データベースキーまたは構造が一致しません。まず再試行してください。解決しない場合は、本人確認後に障害データベース、添付ファイル、画像を保持してから、空のデータベースを作成できます。既存データが自動的に上書きされることはありません。</string>
+    <string name="database_open_error_message">データベースキーまたは構造が一致しません。再試行してください。解決しない場合はアプリを閉じてください。</string>
     <string name="database_open_retry_action">データベースを再度開く</string>
     <string name="database_open_close_app_action">アプリを閉じる</string>
 
@@ -164,26 +164,6 @@
     <string name="notice_database_operation_failed">データベース操作に失敗しました</string>
 
     <string name="not_set">未設定</string>
-    <string name="database_recovery_create_new_action">障害データベースを保持して新規作成</string>
-    <string name="auth_purpose_restore_database">障害データベースを復元するため本人確認</string>
-    <string name="settings_database_recovery_title">データベース復元</string>
-    <string name="settings_database_recovery_summary">隔離された障害データベースを検査して復元</string>
-    <string name="database_recovery_empty">保存された障害データベースはありません</string>
-    <string name="database_recovery_scan">事前検査</string>
-    <string name="database_recovery_restore">有効なデータを復元</string>
-    <string name="database_recovery_delete">復元パッケージを削除</string>
-    <string name="database_recovery_delete_confirm_title">復元パッケージを削除しますか？</string>
-    <string name="database_recovery_delete_confirm_message">元の障害データベースは完全に削除され、元に戻せません。</string>
-    <string name="database_recovery_package_label">復元パッケージ %1$s</string>
-    <string name="database_recovery_package_details">%1$s · %2$s</string>
-    <string name="database_recovery_scan_summary">復元可能 %1$d、競合 %2$d、破損 %3$d、添付 %4$d</string>
-    <string name="database_recovery_report_summary">%1$d件、添付%2$d件、履歴%3$d件を復元、競合%4$d件をスキップ</string>
-    <string name="database_recovery_select_types">項目タイプを選択</string>
-    <string name="database_recovery_status_pending">未検査</string>
-    <string name="database_recovery_status_recoverable">復元可能</string>
-    <string name="database_recovery_status_partial">一部復元可能</string>
-    <string name="database_recovery_status_restored">復元済み</string>
-    <string name="database_recovery_status_unreadable">このバージョンでは読み取れません</string>
     <string name="otp_type">OTPタイプ</string>
     <string name="otp_secret_encoding">シークレットのエンコード</string>
     <string name="otp_counter">カウンター</string>
@@ -200,7 +180,6 @@
     <string name="auth_purpose_backup_export">認証してバックアップをエクスポート</string>
     <string name="auth_purpose_backup_import">認証してバックアップをインポート</string>
     <string name="auth_purpose_export_diagnostics">認証して診断情報をエクスポート</string>
-    <string name="auth_purpose_recover_database">認証して障害データベースを保持し、新規作成</string>
     <string name="auth_purpose_recover_auth_methods">復旧コードで認証方法を復旧</string>
     <string name="auth_purpose_clear_database">認証してPasslyデータを消去</string>
     <string name="related_entries">関連エントリ</string>

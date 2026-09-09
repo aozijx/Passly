@@ -22,11 +22,6 @@ interface AuthenticationManager {
     ): AuthenticationResult
 
     suspend fun lock(reason: LockReason)
-    /**
-     * 在 [AuthenticationPurpose.RECOVER_DATABASE] 已暂存 DEK 且新数据库已打开后，
-     * 发布解锁会话。其他调用顺序必须失败。
-     */
-    suspend fun completeDatabaseRecovery(): Boolean
     suspend fun refreshAvailability()
     fun snapshot(): AuthenticationSnapshot
 }

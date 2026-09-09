@@ -56,7 +56,7 @@ import kotlinx.coroutines.launch
 fun SettingsNavGraph(
     settingsViewModel: SettingsViewModel,
     onOpenTrash: () -> Unit,
-    onOpenDatabaseRecovery: () -> Unit,
+    onOpenDatabaseReset: () -> Unit,
     onOuterBack: () -> Unit
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<SettingsRoute>()
@@ -158,7 +158,7 @@ fun SettingsNavGraph(
                     dataViewModel = dataViewModel,
                     settingsState = settingsState,
                     onOpenTrash = onOpenTrash,
-                    onOpenDatabaseRecovery = onOpenDatabaseRecovery,
+                    onOpenDatabaseReset = onOpenDatabaseReset,
                     onBack = navigateBack,
                 )
             },
@@ -226,7 +226,7 @@ fun SettingsNavGraph(
                             dataViewModel = dataViewModel,
                             settingsState = settingsState,
                             onOpenTrash = onOpenTrash,
-                            onOpenDatabaseRecovery = onOpenDatabaseRecovery,
+                            onOpenDatabaseReset = onOpenDatabaseReset,
                             onBack = null,
                         )
                     }

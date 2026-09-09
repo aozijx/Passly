@@ -8,7 +8,7 @@ import kotlinx.coroutines.withContext
  * Commits the one-time recovery-code consumption or closes the staged session.
  *
  * The caller must invoke this after the recovery DEK has been accepted but before publishing
- * either recovery-mode or database-recovery success.
+ * recovery-mode success.
  */
 internal suspend fun consumeRecoveryCodeOrRollback(
     consume: suspend () -> Unit,

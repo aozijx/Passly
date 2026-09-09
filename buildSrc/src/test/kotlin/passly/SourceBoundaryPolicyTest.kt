@@ -282,31 +282,6 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
-    fun databaseRecoveryDataTypesAreRestrictedToTheirAppAdapter() {
-        val dataImport =
-            "import com.aozijx.passly.data.local.database.port.DatabaseRecoveryRepository"
-        val adapter = EditorSource(
-            path = "app/src/main/java/com/aozijx/passly/app/database/recovery/DataDatabaseRecoveryGateway.kt",
-            content = dataImport,
-        )
-        val presentation = adapter.copy(
-            path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/backup/DatabaseRecoveryViewModel.kt",
-        )
-
-        assertEquals(
-            emptyList(),
-            SourceBoundaryVerifier.verify(listOf(adapter), SourceBoundaryPolicy.generalRules),
-        )
-        assertEquals(
-            setOf("DATABASE_RECOVERY_DATA_ADAPTER_ONLY", "LAYER_PRESENTATION_FEATURE"),
-            SourceBoundaryVerifier.verify(
-                listOf(presentation),
-                SourceBoundaryPolicy.generalRules,
-            ).mapTo(linkedSetOf()) { it.ruleId },
-        )
-    }
-
-    @Test
     fun featureImplementationCannotImportPresentation() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/feature/backup/BackupUseCase.kt",
@@ -690,12 +665,11 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
-    fun settingsCannotOwnDatabaseLifecycleOrRecoveryCapability() {
+    fun settingsCannotOwnDatabaseLifecycleOrResetCapability() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/main/SettingsViewModel.kt",
             content = """
                 import com.aozijx.passly.app.database.DatabaseLifecycleGateway
-                val action = ClearDatabase
             """.trimIndent(),
         )
 
@@ -705,6 +679,22 @@ class SourceBoundaryPolicyTest {
                 listOf(source),
                 SourceBoundaryPolicy.generalRules,
             ).map { it.ruleId }.distinct().single(),
+        )
+    }
+
+    @Test
+    fun retiredDatabaseRecoveryCannotReturn() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/feature/database/recovery/Recovery.kt",
+            content = "class DatabaseRecoveryStore",
+        )
+
+        assertEquals(
+            "RETIRED_DATABASE_RECOVERY",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
         )
     }
 

@@ -51,15 +51,15 @@ class DiOwnershipPolicyTest {
     @Test
     fun appAdapterMayBindItsImplementationToAFeatureContract() {
         val source = EditorSource(
-            path = "app/src/main/java/com/aozijx/passly/app/database/recovery/DatabaseRecoveryAdapterModule.kt",
+            path = "app/src/main/java/com/aozijx/passly/app/entry/di/VaultEntryDataAdapterModule.kt",
             content = """
-                import com.aozijx.passly.feature.database.recovery.DatabaseRecoveryGateway
+                import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
                 import dagger.Binds
                 import dagger.Module
                 @Module
-                abstract class DatabaseRecoveryAdapterModule {
+                abstract class VaultEntryDataAdapterModule {
                     @Binds
-                    abstract fun bind(impl: DataDatabaseRecoveryGateway): DatabaseRecoveryGateway
+                    abstract fun bind(impl: DataVaultEntryPageSource): VaultEntryPageSource
                 }
             """.trimIndent(),
         )

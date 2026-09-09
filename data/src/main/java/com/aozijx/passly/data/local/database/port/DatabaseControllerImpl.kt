@@ -9,9 +9,7 @@ import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.report
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.local.database.DatabaseSchema
-import com.aozijx.passly.data.local.database.recovery.DatabaseRecoveryStore
 import com.aozijx.passly.data.local.database.port.DatabaseController
-import com.aozijx.passly.data.local.database.port.DatabaseQuarantineResult
 import com.aozijx.passly.data.local.database.port.EntryDataRefreshNotifier
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -30,7 +28,6 @@ import javax.inject.Singleton
 internal class DatabaseControllerImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val databaseSession: AppDatabaseSession,
-    private val recoveryStore: DatabaseRecoveryStore,
     private val dataRefreshNotifier: EntryDataRefreshNotifier,
     private val telemetry: TelemetryReporter
 ) : DatabaseController {
@@ -63,18 +60,8 @@ internal class DatabaseControllerImpl @Inject constructor(
         databaseSession.unlock()
     }
 
-    override suspend fun quarantineAndReinitialize(): DatabaseQuarantineResult =
-        withContext(Dispatchers.IO) {
-            databaseSession.seal()
-            val recoveryId = recoveryStore.preserveAndClearActiveVault()
-            DatabaseQuarantineResult(
-                recoveryId = recoveryId,
-                error = databaseSession.unlock()
-            )
-        }
-
-    override suspend fun clearAndReinitialize(): Throwable? = withContext(Dispatchers.IO) {
-        var recoveryError: Throwable? = null
+    override suspend fun reset(): Throwable? = withContext(Dispatchers.IO) {
+        var resetError: Throwable? = null
         try {
             databaseSession.seal()
             deleteDatabaseFiles()
@@ -82,15 +69,15 @@ internal class DatabaseControllerImpl @Inject constructor(
                 deleteVaultFileDirectory(name)
             }
         } catch (error: Throwable) {
-            recoveryError = error
-            report(EventLevel.ERROR, "database.recovery_cleanup_failed", error)
+            resetError = error
+            report(EventLevel.ERROR, "database.reset_cleanup_failed", error)
         }
 
         val reopenError = databaseSession.unlock()
         if (reopenError == null) {
             dataRefreshNotifier.notifyRefresh()
         }
-        recoveryError ?: reopenError
+        resetError ?: reopenError
     }
 
     override suspend fun close() {

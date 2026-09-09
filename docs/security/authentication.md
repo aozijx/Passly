@@ -79,7 +79,6 @@ stateDiagram-v2
 | `BACKUP_EXPORT`                 | 允许          | 拒绝                              |
 | `RECOVERY_EXPORT`               | 拒绝          | 允许，仅恢复模式内的加密导出                  |
 | `RECOVER_AUTH_METHODS`          | 拒绝          | 允许                              |
-| `RECOVER_DATABASE`              | 允许          | 允许                              |
 | `CLEAR_DATABASE`                | 允许          | 拒绝                              |
 
 `AuthenticationRequest.allowedMethods` 只能继续缩小上表，不能扩大。最终交集由认证中心的

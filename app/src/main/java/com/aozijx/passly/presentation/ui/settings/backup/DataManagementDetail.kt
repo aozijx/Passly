@@ -3,8 +3,8 @@ package com.aozijx.passly.presentation.ui.settings.backup
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.Restore
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -34,11 +34,11 @@ internal fun DataManagementDetail(
                     onClick = eventHandler::onOpenTrash,
                 ),
                 navigationSettingsGroupItem(
-                    key = "data.database_recovery",
-                    icon = Icons.Default.Restore,
-                    title = stringResource(R.string.settings_database_recovery_title),
-                    subtitle = stringResource(R.string.settings_database_recovery_summary),
-                    onClick = eventHandler::onOpenDatabaseRecovery,
+                    key = "data.database_reset",
+                    icon = Icons.Default.DeleteForever,
+                    title = stringResource(R.string.settings_database_reset_title),
+                    subtitle = stringResource(R.string.settings_database_reset_summary),
+                    onClick = eventHandler::onOpenDatabaseReset,
                 )
             )
         )

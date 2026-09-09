@@ -97,9 +97,9 @@
     <string name="backup_directory_permission_ok">Backup directory write permission is available</string>
     <string name="backup_directory_permission_failed">Backup directory write test failed. Please reselect the directory.</string>
 
-    <!-- Database recovery -->
+    <!-- Database errors -->
     <string name="database_open_error_title">Unable to open database</string>
-    <string name="database_open_error_message">The database key or schema doesn’t match. Try again first. If the problem continues, verify your identity to preserve the failed database, attachments, and images before creating an empty database. Existing data won’t be overwritten automatically.</string>
+    <string name="database_open_error_message">The database key or schema doesn’t match. Try again; if the problem continues, close the app.</string>
     <string name="database_open_retry_action">Retry opening database</string>
     <string name="database_open_close_app_action">Close app</string>
 
@@ -168,26 +168,6 @@
     <string name="notice_database_operation_failed">Database operation failed</string>
 
     <string name="not_set">Not set</string>
-    <string name="database_recovery_create_new_action">Preserve failed database and create a new one</string>
-    <string name="auth_purpose_restore_database">Verify identity to restore a failed database</string>
-    <string name="settings_database_recovery_title">Database recovery</string>
-    <string name="settings_database_recovery_summary">Scan and recover quarantined databases</string>
-    <string name="database_recovery_empty">No saved failed databases</string>
-    <string name="database_recovery_scan">Preflight scan</string>
-    <string name="database_recovery_restore">Restore valid data</string>
-    <string name="database_recovery_delete">Delete recovery package</string>
-    <string name="database_recovery_delete_confirm_title">Delete recovery package?</string>
-    <string name="database_recovery_delete_confirm_message">The original failed database will be permanently deleted. This cannot be undone.</string>
-    <string name="database_recovery_package_label">Recovery package %1$s</string>
-    <string name="database_recovery_package_details">%1$s · %2$s</string>
-    <string name="database_recovery_scan_summary" tools:ignore="PluralsCandidate">%1$d recoverable, %2$d conflicts, %3$d damaged; %4$d attachments</string>
-    <string name="database_recovery_report_summary" tools:ignore="PluralsCandidate">Restored %1$d entries, %2$d attachments and %3$d revisions; skipped %4$d conflicts</string>
-    <string name="database_recovery_select_types">Select entry types</string>
-    <string name="database_recovery_status_pending">Not scanned</string>
-    <string name="database_recovery_status_recoverable">Recoverable</string>
-    <string name="database_recovery_status_partial">Partially recoverable</string>
-    <string name="database_recovery_status_restored">Restored</string>
-    <string name="database_recovery_status_unreadable">Unreadable by this version</string>
     <string name="otp_type">OTP type</string>
     <string name="otp_secret_encoding">Secret encoding</string>
     <string name="otp_counter">Counter</string>
@@ -204,7 +184,6 @@
     <string name="auth_purpose_backup_export">Verify to export backup</string>
     <string name="auth_purpose_backup_import">Verify to import backup</string>
     <string name="auth_purpose_export_diagnostics">Verify to export diagnostics</string>
-    <string name="auth_purpose_recover_database">Verify to preserve the failed database and create a new one</string>
     <string name="auth_purpose_recover_auth_methods">Use recovery code to recover authentication methods</string>
     <string name="auth_purpose_clear_database">Verify to clear Passly data</string>
     <string name="related_entries">Related entries</string>

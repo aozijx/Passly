@@ -19,7 +19,7 @@ internal fun SettingsDetailRouteRegistry(
     dataViewModel: DataManagementSettingsViewModel,
     settingsState: SettingsUiState,
     onOpenTrash: () -> Unit,
-    onOpenDatabaseRecovery: () -> Unit,
+    onOpenDatabaseReset: () -> Unit,
     onBack: (() -> Unit)?,
 ) {
     when (route) {
@@ -46,7 +46,7 @@ internal fun SettingsDetailRouteRegistry(
             settingsViewModel = settingsViewModel,
             settingsState = settingsState,
             onOpenTrash = onOpenTrash,
-            onOpenDatabaseRecovery = onOpenDatabaseRecovery,
+            onOpenDatabaseReset = onOpenDatabaseReset,
             onBack = onBack,
         )
     }

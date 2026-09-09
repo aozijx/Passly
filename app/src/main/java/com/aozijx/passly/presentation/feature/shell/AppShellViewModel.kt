@@ -69,7 +69,6 @@ class AppShellViewModel @Inject constructor(
             AppShellUiAction.ExitRecovery -> lock(LockReason.RECOVERY_EXIT)
             AppShellUiAction.UpdateInteraction -> sessionActivityReporter.onUserInteraction()
             AppShellUiAction.RetryDatabaseInitialization -> initializeDatabase()
-            AppShellUiAction.RecoverDatabase -> recoverDatabase()
             AppShellUiAction.RequestAuth -> requestAuth()
             AppShellUiAction.RequestReauth -> requestReauth()
             is AppShellUiAction.RequestSensitiveAccess -> requestSensitiveAccess(
@@ -194,52 +193,6 @@ class AppShellViewModel @Inject constructor(
             databaseSessionFailureState.databaseFailure.collect { error ->
                 if (error != null) {
                     mutate(AppShellMutation.DatabaseFailureObserved(error))
-                }
-            }
-        }
-    }
-
-    private fun recoverDatabase() {
-        viewModelScope.launch {
-            mutate(AppShellMutation.DatabaseInitializationStarted(clearError = false))
-            val request = AuthenticationRequest(AuthenticationPurpose.RECOVER_DATABASE)
-            when (
-                authenticationManager.authenticate(request)
-            ) {
-                is AuthenticationResult.Success -> {
-                    val result = databaseLifecycleGateway.quarantineAndReinitialize()
-                    val gatewayError = (result as? DatabaseLifecycleResult.Failure)?.cause
-                    val sessionRecovered = gatewayError == null &&
-                        authenticationManager.completeDatabaseRecovery()
-                    val recoveryError = gatewayError ?: if (!sessionRecovered) {
-                        IllegalStateException("Recovered database session could not be activated")
-                    } else {
-                        null
-                    }
-                    mutate(AppShellMutation.DatabaseInitializationFinished(recoveryError))
-                    if (sessionRecovered) {
-                        val recoveryId = (result as? DatabaseLifecycleResult.Reinitialized)?.recoveryId
-                        val recoveryMessage = recoveryId?.let {
-                            "故障库已保留（恢复编号：$it）。可在设置 → 数据管理 → 数据库恢复中查看"
-                        } ?: "已创建新数据库"
-                        emitEffect(AppShellEffect.ShowToast(recoveryMessage))
-                        rebuildSearchIndex()
-                    } else {
-                        authenticationManager.lock(LockReason.INTEGRITY_FAILURE)
-                        emitEffect(
-                            AppShellEffect.ShowError(
-                                gatewayError?.toUiMessage("创建新数据库失败")
-                                    ?: "创建新数据库失败"
-                            )
-                        )
-                    }
-                }
-
-                is AuthenticationResult.Cancelled ->
-                    mutate(AppShellMutation.DatabaseInitializationStopped)
-                is AuthenticationResult.Failure -> {
-                    mutate(AppShellMutation.DatabaseInitializationStopped)
-                    emitEffect(AppShellEffect.ShowError("身份验证失败，未创建新数据库"))
                 }
             }
         }

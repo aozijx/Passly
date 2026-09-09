@@ -54,9 +54,6 @@ class DefaultAuthenticationManager @Inject constructor(
     override val state: StateFlow<AuthenticationState> = session.authenticationState
     override val methods: StateFlow<AuthenticationMethods> = _methods
 
-    override suspend fun completeDatabaseRecovery(): Boolean =
-        session.completeDatabaseRecovery()
-
     init {
         scope.launch { refreshAvailability() }
     }

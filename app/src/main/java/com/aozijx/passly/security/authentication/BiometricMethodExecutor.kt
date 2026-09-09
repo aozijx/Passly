@@ -29,7 +29,6 @@ class BiometricMethodExecutor @Inject constructor(
         host: AuthUiHost
     ): MethodExecutionResult {
         val requiresDek = request.purpose == AuthenticationPurpose.UNLOCK_VAULT ||
-            request.purpose == AuthenticationPurpose.RECOVER_DATABASE ||
             // 自动填充认证后需要读取并解密候选凭据，必须解锁 DEK。
             request.purpose == AuthenticationPurpose.AUTOFILL
         if (!requiresDek) return hostResult(request, host)
@@ -58,9 +57,7 @@ class BiometricMethodExecutor @Inject constructor(
                 }
                 when (unlockResult) {
                     DekUnlockResult.Success -> {
-                        if (request.purpose == AuthenticationPurpose.RECOVER_DATABASE) {
-                            MethodExecutionResult.Success(AuthenticationMethod.BIOMETRIC)
-                        } else if (session.markAuthenticated()) {
+                        if (session.markAuthenticated()) {
                             MethodExecutionResult.Success(AuthenticationMethod.BIOMETRIC)
                         } else {
                             failure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED, request)

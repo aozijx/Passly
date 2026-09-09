@@ -7,7 +7,7 @@
     <string name="settings_page_backup_restore">Backup &amp; restore</string>
     <string name="settings_page_backup_restore_summary">Encrypted, JSON and TXT import or export</string>
     <string name="settings_page_data">Data management</string>
-    <string name="settings_page_data_summary">Local data, trash and database recovery</string>
+    <string name="settings_page_data_summary">Local data, trash and reset</string>
     <string name="settings_page_general">General</string>
     <string name="settings_page_general_summary">Cache, logs, about</string>
     <string name="settings_page_interaction">Actions &amp; gestures</string>
@@ -186,10 +186,14 @@
     <string name="settings_trash_emptying">Emptying…</string>
     <string name="settings_trash_error_dismiss">Got it</string>
     <string name="settings_trash_title">Trash</string>
-    <string name="settings_database_recovery_clear_action">Permanently clear Passly database</string>
-    <string name="settings_database_recovery_clear_confirm">Verify and clear</string>
-    <string name="settings_database_recovery_clear_confirm_message">This permanently deletes the database, attachments, and custom images and cannot be undone. App settings and authentication methods will be kept. You will need to verify your identity again after confirming.</string>
-    <string name="settings_database_recovery_clear_confirm_title">Clear Passly data?</string>
+    <string name="settings_database_reset_title">Permanently clear Passly data</string>
+    <string name="settings_database_reset_summary">Delete the database, attachments, and custom images</string>
+    <string name="database_reset_title">Permanently clear Passly data</string>
+    <string name="database_reset_description">Delete the database, attachments, and custom images, then create an empty database. App settings and authentication methods are kept.</string>
+    <string name="database_reset_action">Clear permanently</string>
+    <string name="database_reset_confirm_title">Permanently clear Passly data?</string>
+    <string name="database_reset_confirm_message">This permanently deletes the database, attachments, and custom images and cannot be undone. App settings and authentication methods will be kept. You will need to verify your identity again after confirming.</string>
+    <string name="database_reset_confirm_action">Verify and clear</string>
 
     <!-- Backup and restore -->
     <string name="settings_backup_choose_destination_after_confirm">Choose a save location after confirmation</string>
@@ -259,7 +263,7 @@
     <string name="settings_topic_clipboard">Clipboard</string>
     <string name="settings_topic_clipboard_summary">Notify when sensitive content is cleared</string>
     <string name="settings_topic_database">Data</string>
-    <string name="settings_topic_database_summary">Notify about database failures and recovery results</string>
+    <string name="settings_topic_database_summary">Notify about database failures and data operations</string>
     <string name="settings_topic_security">Security</string>
     <string name="settings_topic_security_summary">Notify about authentication and recovery changes</string>
 
@@ -294,5 +298,5 @@
     <string name="settings_value_dp">%1$d dp</string>
     <string name="settings_value_percent">%1$d%%</string>
     <string name="settings_saved">Settings saved</string>
-    <string name="database_cleared">Vault database permanently cleared</string>
+    <string name="database_reset_success">Passly data permanently cleared</string>
 </resources>
