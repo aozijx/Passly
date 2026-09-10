@@ -7,7 +7,6 @@ import com.aozijx.passly.data.BuildConfig
 import com.aozijx.passly.data.local.database.converter.ActivityTypeConverter
 import com.aozijx.passly.data.local.database.converter.EntryRelationTypeConverter
 import com.aozijx.passly.data.local.database.converter.EntryTypeConverter
-import com.aozijx.passly.data.local.database.converter.LookupFieldConverter
 import com.aozijx.passly.data.local.database.converter.StringSetConverter
 import com.aozijx.passly.data.local.database.dao.activity.EntryActivityAnalyticsDao
 import com.aozijx.passly.data.local.database.dao.activity.EntryActivityCommandDao
@@ -23,8 +22,6 @@ import com.aozijx.passly.data.local.database.dao.link.EntryLinkQueryDao
 import com.aozijx.passly.data.local.database.dao.maintenance.DatabaseMaintenanceDao
 import com.aozijx.passly.data.local.database.dao.revision.EntryRevisionCommandDao
 import com.aozijx.passly.data.local.database.dao.revision.EntryRevisionQueryDao
-import com.aozijx.passly.data.local.database.dao.search.SearchTokenCommandDao
-import com.aozijx.passly.data.local.database.dao.search.SearchTokenQueryDao
 import com.aozijx.passly.data.local.database.dao.secret.SecretFieldCommandDao
 import com.aozijx.passly.data.local.database.dao.secret.SecretFieldQueryDao
 import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
@@ -35,7 +32,6 @@ import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
 import com.aozijx.passly.data.local.database.entity.RevisionAttachmentRefEntity
-import com.aozijx.passly.data.local.database.entity.SearchTokenEntity
 
 @Database(
     entities = [
@@ -46,8 +42,7 @@ import com.aozijx.passly.data.local.database.entity.SearchTokenEntity
         EntryActivityEntity::class,
         AttachmentResourceEntity::class,
         AttachmentRefEntity::class,
-        RevisionAttachmentRefEntity::class,
-        SearchTokenEntity::class
+        RevisionAttachmentRefEntity::class
     ],
     version = DatabaseSchema.VERSION,
     exportSchema = BuildConfig.EXPORT_ROOM_SCHEMA
@@ -56,7 +51,6 @@ import com.aozijx.passly.data.local.database.entity.SearchTokenEntity
     EntryTypeConverter::class,
     EntryRelationTypeConverter::class,
     ActivityTypeConverter::class,
-    LookupFieldConverter::class,
     StringSetConverter::class,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -76,7 +70,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun attachmentRefCommandDao(): AttachmentRefCommandDao
     abstract fun attachmentResourceDao(): AttachmentResourceDao
     abstract fun revisionAttachmentRefDao(): RevisionAttachmentRefDao
-    abstract fun searchTokenQueryDao(): SearchTokenQueryDao
-    abstract fun searchTokenCommandDao(): SearchTokenCommandDao
     abstract fun databaseMaintenanceDao(): DatabaseMaintenanceDao
 }

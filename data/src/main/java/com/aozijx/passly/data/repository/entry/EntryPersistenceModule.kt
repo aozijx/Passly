@@ -10,7 +10,6 @@ import com.aozijx.passly.data.repository.entry.RoomSensitiveFieldRepository
 import com.aozijx.passly.data.repository.entry.paging.EntryPagingStore
 import com.aozijx.passly.data.repository.entry.paging.RoomEntryPagingStore
 import com.aozijx.passly.data.repository.otp.RoomOtpConfigRepository
-import com.aozijx.passly.data.repository.search.BlindIndexMaintenance
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
@@ -18,7 +17,6 @@ import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
-import com.aozijx.passly.domain.entry.port.SearchIndexMaintenance
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import dagger.Binds
 import dagger.Module
@@ -67,9 +65,5 @@ internal abstract class EntryPersistenceModule {
     @Binds
     @Singleton
     abstract fun bindOtpConfigRepository(impl: RoomOtpConfigRepository): OtpConfigRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindSearchIndexMaintenance(impl: BlindIndexMaintenance): SearchIndexMaintenance
 
 }

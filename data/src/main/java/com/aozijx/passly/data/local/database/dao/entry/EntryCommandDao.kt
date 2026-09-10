@@ -90,12 +90,6 @@ interface EntryCommandDao {
     @Query("DELETE FROM entries WHERE deletedAt IS NOT NULL AND deletedAt < :before")
     suspend fun purgeDeleted(before: Long): Int
 
-    @Query("UPDATE entries SET searchIndexVersion = :version WHERE entryId = :entryId")
-    suspend fun updateSearchIndexVersion(entryId: String, version: Int): Int
-
-    @Query("UPDATE entries SET searchIndexVersion = :version WHERE entryId IN (:entryIds)")
-    suspend fun updateSearchIndexVersions(entryIds: List<String>, version: Int): Int
-
     @Query("UPDATE entries SET capabilityFlags = capabilityFlags | :capability WHERE entryId = :entryId")
     suspend fun addCapability(entryId: String, capability: Int): Int
 

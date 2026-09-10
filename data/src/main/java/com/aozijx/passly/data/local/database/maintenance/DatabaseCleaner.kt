@@ -14,7 +14,6 @@ data class DatabaseClearResult(
     val activityDeleted: Int = 0,
     val attachmentsDeleted: Int = 0,
     val attachmentResourcesDeleted: Int = 0,
-    val searchTokensDeleted: Int = 0,
     /** PENDING 状态附件（未提交的暂存附件）删除行数 */
     val stagingDeleted: Int = 0
 )
@@ -42,14 +41,12 @@ internal class DatabaseCleanerImpl @Inject constructor(
     override suspend fun clearAllData(): DatabaseClearResult = databaseSession.transaction {
         val maintenance = databaseMaintenanceDao()
         // 子表→父表顺序：先删依赖表，再删主表
-        val searchTokensDeleted = maintenance.clearSearchTokens()
         val stagingDeleted = maintenance.clearPending()
         val attachmentsDeleted = maintenance.clearAttachments()
         val revisionsDeleted = maintenance.clearRevisions()
         maintenance.clearAttachmentGcQueue()
         val attachmentResourcesDeleted = maintenance.clearAttachmentResources()
         DatabaseClearResult(
-            searchTokensDeleted = searchTokensDeleted,
             stagingDeleted = stagingDeleted,
             revisionsDeleted = revisionsDeleted,
             activityDeleted = maintenance.clearActivities(),

@@ -38,7 +38,6 @@ Hilt binding 由 `:data` 自己拥有；App 只提供会话密钥来源、遥测
 | `attachment_refs` | 当前 Entry 的文件名、可空 MIME、顺序及 `PENDING`/`COMMITTED` 引用 |
 | `revision_attachment_refs` | 历史 Revision 对不可变附件资源的引用 |
 | `attachment_gc_queue` | 文件删除第二阶段的持久队列 |
-| `entry_search_tokens` | keyed blind-index token；可由当前 Entry 重建 |
 
 Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `data/schemas`，本文不复制完整字段声明。
 当前没有独立 `entry_drafts` 表；未提交的编辑表单只存在于 UI 生命周期，只有附件通过

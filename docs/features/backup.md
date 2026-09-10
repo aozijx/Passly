@@ -28,7 +28,7 @@ magic，因此不兼容开发期间产生的任何 `PASSLYBK`、旧 Snapshot 或
 - 本机绝对路径和未提交附件。
 
 因此该格式叫 Vault Backup，不叫 Database Snapshot。导入后搜索索引按
-`searchIndexVersion` 重建。
+搜索直接读取条目摘要字段，不需要重建派生索引。
 
 ## 2. 支持的外部格式
 

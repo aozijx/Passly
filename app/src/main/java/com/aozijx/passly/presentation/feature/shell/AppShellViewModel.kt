@@ -2,7 +2,6 @@ package com.aozijx.passly.presentation.feature.shell
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.app.message.mapping.toUiMessage
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
@@ -16,7 +15,6 @@ import com.aozijx.passly.domain.access.model.SensitiveAccessAction
 import com.aozijx.passly.app.security.SensitiveAccessLevel
 import com.aozijx.passly.app.database.DatabaseLifecycleGateway
 import com.aozijx.passly.app.database.DatabaseLifecycleResult
-import com.aozijx.passly.domain.entry.port.SearchIndexMaintenance
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.presentation.feature.shell.AppShellAuthResult
@@ -44,7 +42,6 @@ class AppShellViewModel @Inject constructor(
     private val sessionActivityReporter: SessionActivityReporter,
     private val databaseSessionFailureState: DatabaseSessionFailureState,
     private val databaseLifecycleGateway: DatabaseLifecycleGateway,
-    private val searchIndexMaintenance: SearchIndexMaintenance,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AppShellUiState())
@@ -130,10 +127,6 @@ class AppShellViewModel @Inject constructor(
                     val result = runDatabaseInitialization {
                         databaseLifecycleGateway.initialize()
                     }
-                    if (result !is DatabaseLifecycleResult.Failure) {
-                        rebuildSearchIndex()
-                    }
-
                     mutate(AppShellMutation.Authenticated)
                     emitEffect(AppShellEffect.NavigateToVault)
                 } else if (recoveryMode) {
@@ -206,18 +199,4 @@ class AppShellViewModel @Inject constructor(
         _uiState.value = AppShellReducer.reduce(_uiState.value, mutation)
     }
 
-    /**
-     * 重建搜索盲索引（首次解锁或降级回退时）。
-     * 不阻塞用户操作 —— 异步执行，仅记录日志。
-     */
-    private fun rebuildSearchIndex() {
-        viewModelScope.launch {
-            val result = searchIndexMaintenance.rebuildIndex()
-            result.onSuccess { count ->
-                AppTelemetry.i("AppShellViewModel", "Blind index rebuild complete: $count entries")
-            }.onFailure { error ->
-                AppTelemetry.w("AppShellViewModel", "Blind index rebuild skipped")
-            }
-        }
-    }
 }

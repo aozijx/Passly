@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.repository.autofill
 
 import com.aozijx.passly.data.local.database.AppDatabase
-import com.aozijx.passly.data.local.database.query.buildRecentEntryIdIntersectionQuery
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.mapper.entry.EntryAssembler
 import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
@@ -14,9 +13,7 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.CredentialCandidate
 import com.aozijx.passly.domain.entry.model.query.CredentialMatch
-import com.aozijx.passly.domain.entry.model.query.LookupField
 import com.aozijx.passly.domain.entry.model.query.MatchType
-import com.aozijx.passly.security.search.BlindIndexer
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,7 +22,6 @@ internal class AutofillCredentialRepositoryImpl @Inject constructor(
     private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
     private val secretFieldStore: SecretFieldStore,
-    private val blindIndexer: BlindIndexer,
 ) : AutofillCredentialRepository {
     override suspend fun search(
         packageName: String?,
@@ -40,16 +36,16 @@ internal class AutofillCredentialRepositoryImpl @Inject constructor(
         val boundedLimit = limit.coerceIn(1, MAX_CANDIDATES)
 
         return databaseSession.query {
-            val indexedIds = buildList {
+            val candidates = buildList {
                 applicationId?.let {
-                    addAll(findMatchingIds(it, listOf(LookupField.APPLICATION_ID), boundedLimit * 4))
+                    addAll(entryQueryDao().getAutofillCandidatesByApplicationId(it, boundedLimit * 4))
                 }
                 domain?.let {
-                    addAll(findMatchingIds(it, listOf(LookupField.DOMAIN, LookupField.URL), boundedLimit * 4))
+                    addAll(entryQueryDao().getAutofillCandidatesByDomain(it, boundedLimit * 4))
                 }
-            }.distinct()
+            }.distinctBy { it.entryId }
             val entities = when {
-                indexedIds.isNotEmpty() -> entryQueryDao().getByIds(indexedIds)
+                candidates.isNotEmpty() -> candidates
                 allowUnmatched -> entryQueryDao().getActiveByType(EntryType.LOGIN).take(boundedLimit)
                 else -> emptyList()
             }
@@ -110,18 +106,6 @@ internal class AutofillCredentialRepositoryImpl @Inject constructor(
             }
             uniqueIds.mapNotNull(entries::get)
         }
-    }
-
-    private suspend fun AppDatabase.findMatchingIds(
-        value: String,
-        fields: List<LookupField>,
-        limit: Int,
-    ): List<String> {
-        val tokens = blindIndexer.searchTokens(value)
-        if (tokens.isEmpty()) return emptyList()
-        return searchTokenQueryDao().searchByTokenIntersection(
-            buildRecentEntryIdIntersectionQuery(tokens, fields, limit),
-        )
     }
 
     private fun Entry.match(applicationId: String?, domain: String?): CredentialMatch {

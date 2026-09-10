@@ -2,17 +2,6 @@ package com.aozijx.passly.domain.entry.model.query
 
 import com.aozijx.passly.domain.entry.model.Entry
 
-enum class LookupField { TITLE, USERNAME, EMAIL, DOMAIN, URL, APPLICATION_ID }
-
-data class LookupFieldValue(
-    val field: LookupField,
-    val text: String,
-) {
-    init {
-        require(text.isNotBlank()) { "Lookup field text cannot be blank" }
-    }
-}
-
 enum class MatchType(val score: Int) {
     APPLICATION_ID(100),
     VERIFIED_ASSOCIATION(90),

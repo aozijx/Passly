@@ -41,7 +41,7 @@ Rail、全局 Snackbar 和认证遮罩属于 App Shell，不进入共享元素�
 - 首次解锁后触发 Blind Index 重建；
 - 发布应用级数据库错误和恢复结果。
 
-它直接耦合 `AuthenticationManager`、`DatabaseLifecycleUseCases`、`SearchIndexMaintenance` 和
+它直接耦合 `AuthenticationManager`、`DatabaseLifecycleUseCases` 和
 `AppSettingsRepository`，并被 `MainActivity`、`AppMainContent`、`PasslyNavHost` 使用。条目 CRUD、OTP、
 筛选和卡片展示属于 `VaultViewModel`，不应继续加入 `MainViewModel`。导航决策也应留在 Compose
 导航宿主，ViewModel 只发语义 effect。

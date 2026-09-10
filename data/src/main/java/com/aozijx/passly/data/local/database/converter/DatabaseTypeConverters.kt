@@ -5,7 +5,6 @@ import com.aozijx.passly.data.codec.json.AppJson
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
-import com.aozijx.passly.domain.entry.model.query.LookupField
 
 object EntryTypeConverter {
     @TypeConverter
@@ -22,15 +21,6 @@ object ActivityTypeConverter {
     @TypeConverter
     fun toActivityType(value: String): ActivityType =
         ActivityType.entries.find { it.name == value } ?: ActivityType.VIEW
-}
-
-object LookupFieldConverter {
-    @TypeConverter
-    fun fromLookupField(value: LookupField): String = value.name
-
-    @TypeConverter
-    fun toLookupField(value: String): LookupField =
-        LookupField.entries.find { it.name == value } ?: LookupField.TITLE
 }
 
 object StringSetConverter {

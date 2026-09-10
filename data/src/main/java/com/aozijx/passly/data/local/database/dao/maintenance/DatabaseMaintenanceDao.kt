@@ -6,9 +6,6 @@ import androidx.room.Query
 @Dao
 interface DatabaseMaintenanceDao {
 
-    @Query("DELETE FROM entry_search_tokens")
-    suspend fun clearSearchTokens(): Int
-
     @Query("DELETE FROM attachment_refs WHERE status = 'COMMITTED'")
     suspend fun clearAttachments(): Int
 

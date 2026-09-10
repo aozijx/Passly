@@ -4,12 +4,10 @@ import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.local.database.DatabaseClock
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
-import com.aozijx.passly.data.mapper.entry.EntryAssembler
 import com.aozijx.passly.data.mapper.entry.hasEntryCapability
 import com.aozijx.passly.data.mapper.entry.mergePreservedFields
 import com.aozijx.passly.data.mapper.entry.toDatabaseFlags
 import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
-import com.aozijx.passly.data.mapper.search.toLookupFields
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.entry.model.EntryUpdate
@@ -21,7 +19,6 @@ import javax.inject.Inject
 internal class UpdateEntryExecutor @Inject constructor(
     private val databaseTransactions: DatabaseTransactionRunner,
     private val secretFieldStore: SecretFieldStore,
-    private val searchIndexWriter: EntrySearchIndexWriter,
     private val revisionWriter: EntryRevisionWriter,
     private val activityWriter: EntryActivityWriter,
     private val clock: DatabaseClock,
@@ -68,15 +65,6 @@ internal class UpdateEntryExecutor @Inject constructor(
 
             if (changes.secret != null) {
                 secretFieldStore.replaceAll(this, id, newSecret)
-            }
-
-            if (changes.profile != null || changes.secret != null) {
-                val updated = EntryAssembler.assembleFromDatabase(
-                    entity.copy(version = expectedVersion + 1, updatedAt = now),
-                    newProfile,
-                    newSecret,
-                )
-                searchIndexWriter.rebuildForEntry(this, id, updated.toLookupFields())
             }
 
             revisionWriter.snapshotChanges(

@@ -29,7 +29,7 @@ import javax.inject.Singleton
  * - 自定义图标
  *
  * 输出 [BackupBundle]，不关心最终格式。
- * 排除 Draft、SearchToken 等派生/临时数据。
+ * 排除 Draft 等派生/临时数据。
  */
 @Singleton
 internal class RoomBackupSnapshotReader @Inject constructor(

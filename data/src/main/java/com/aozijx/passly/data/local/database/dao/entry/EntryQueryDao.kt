@@ -48,6 +48,45 @@ interface EntryQueryDao {
     @Query("SELECT * FROM entries WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
     suspend fun getActiveByType(entryType: EntryType): List<EntryEntity>
 
+    @Query(
+        """
+        SELECT * FROM entries
+        WHERE entryType = 'LOGIN'
+          AND deletedAt IS NULL
+          AND EXISTS (
+              SELECT 1 FROM json_each(applicationIds)
+              WHERE LOWER(TRIM(CAST(value AS TEXT))) = :applicationId
+          )
+        ORDER BY updatedAt DESC
+        LIMIT :limit
+        """
+    )
+    suspend fun getAutofillCandidatesByApplicationId(
+        applicationId: String,
+        limit: Int,
+    ): List<EntryEntity>
+
+    @Query(
+        """
+        SELECT * FROM entries
+        WHERE entryType = 'LOGIN'
+          AND deletedAt IS NULL
+          AND (
+              LOWER(COALESCE(primaryUrl, '')) LIKE '%' || :domain || '%' OR
+              EXISTS (
+                  SELECT 1 FROM json_each(domains)
+                  WHERE LOWER(CAST(value AS TEXT)) LIKE '%' || :domain || '%'
+              )
+          )
+        ORDER BY updatedAt DESC
+        LIMIT :limit
+        """
+    )
+    suspend fun getAutofillCandidatesByDomain(
+        domain: String,
+        limit: Int,
+    ): List<EntryEntity>
+
     // ---- exists ----
 
     @Query("SELECT EXISTS(SELECT 1 FROM entries WHERE entryId = :entryId)")
@@ -70,9 +109,4 @@ interface EntryQueryDao {
     @Query("SELECT COUNT(*) FROM entries WHERE iconCustomReference = :path")
     suspend fun countByIconCustomReference(path: String): Int
 
-    @Query("SELECT entryId FROM entries WHERE deletedAt IS NULL AND searchIndexVersion < :currentVersion")
-    suspend fun getActiveEntryIdsNeedingIndexRebuild(currentVersion: Int): List<String>
-
-    @Query("SELECT * FROM entries WHERE entryId IN (:entryIds)")
-    suspend fun getByIdsForMaintenance(entryIds: List<String>): List<EntryEntity>
 }

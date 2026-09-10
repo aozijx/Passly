@@ -74,7 +74,7 @@ class SourceBoundaryPolicyTest {
             LayerCase(
                 owner = "data",
                 path = "data/src/main/java/com/aozijx/passly/data/repository/Repository.kt",
-                allowed = listOf("androidx.room.Room", "com.aozijx.passly.domain.entry.model.Entry", "com.aozijx.passly.security.search.BlindIndexer"),
+                allowed = listOf("androidx.room.Room", "com.aozijx.passly.domain.entry.model.Entry"),
                 forbidden = listOf(
                     "com.aozijx.passly.app.PasslyApplication",
                     "com.aozijx.passly.feature.vault.VaultUseCase",
@@ -732,7 +732,6 @@ class SourceBoundaryPolicyTest {
             "com.aozijx.passly.core.platform.VaultResourcePaths",
             "com.aozijx.passly.core.telemetry.TelemetryReporter",
             "com.aozijx.passly.security.dek.FieldKeyManager",
-            "com.aozijx.passly.security.search.BlindIndexer",
         )
         val forbiddenImports = listOf(
             "com.aozijx.passly.core.ui.theme.PasslyTheme",

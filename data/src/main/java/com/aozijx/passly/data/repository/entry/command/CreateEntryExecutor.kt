@@ -6,7 +6,6 @@ import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.mapper.entry.toDatabaseFlags
 import com.aozijx.passly.data.mapper.entry.toSensitiveFieldValues
-import com.aozijx.passly.data.mapper.search.toLookupFields
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.entry.model.Entry
@@ -18,7 +17,6 @@ import javax.inject.Inject
 internal class CreateEntryExecutor @Inject constructor(
     private val databaseTransactions: DatabaseTransactionRunner,
     private val secretFieldStore: SecretFieldStore,
-    private val searchIndexWriter: EntrySearchIndexWriter,
     private val revisionWriter: EntryRevisionWriter,
     private val activityWriter: EntryActivityWriter,
     private val clock: DatabaseClock,
@@ -49,7 +47,6 @@ internal class CreateEntryExecutor @Inject constructor(
             )
             entryCommandDao().insertStrict(entity)
             secretFieldStore.replaceAll(this, entryId, entry.secret)
-            searchIndexWriter.rebuildForEntry(this, entryId, entry.toLookupFields())
             revisionWriter.snapshotChanges(
                 db = this,
                 entryId = entryId,

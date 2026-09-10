@@ -24,7 +24,6 @@ data class EntryEntity(
     val capabilityFlags: Int = 0,
     /** 条目有 OTP 时的类型（TOTP/HOTP/STEAM），null 表示无 OTP */
     val otpType: String? = null,
-    val searchIndexVersion: Int = 0,
     val title: String,
     val username: String = "",
     val primaryUrl: String? = null,
