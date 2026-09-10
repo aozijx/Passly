@@ -42,7 +42,10 @@ dependencies {
     implementation(libs.google.material)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.compose.material3.adaptive)
-    implementation(libs.markdown.renderer)
+    implementation(libs.markwon.core)
+    implementation(libs.markwon.ext.strikethrough)
+    implementation(libs.markwon.ext.tables)
+    implementation(libs.markwon.ext.tasklist)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

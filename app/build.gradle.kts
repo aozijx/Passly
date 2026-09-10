@@ -178,9 +178,6 @@ dependencies {
     implementation(libs.coil.svg)
     implementation(libs.okhttp)
 
-    // Markdown
-    implementation(libs.markdown.renderer)
-
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
