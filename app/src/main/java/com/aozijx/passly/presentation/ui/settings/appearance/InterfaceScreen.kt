@@ -3,10 +3,7 @@ package com.aozijx.passly.presentation.ui.settings.appearance
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BorderInner
-import androidx.compose.material.icons.filled.FormatLineSpacing
 import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.Padding
 import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material.icons.filled.SpaceDashboard
 import androidx.compose.material.icons.filled.ViewDay
@@ -20,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
+import com.aozijx.passly.presentation.ui.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.ui.shared.components.group.dropdownSettingsGroupItem
 import com.aozijx.passly.presentation.ui.shared.components.group.sliderSettingsGroupItem
 import com.aozijx.passly.presentation.ui.shared.components.group.switchSettingsGroupItem
@@ -36,25 +33,14 @@ internal fun InterfaceDetail(
     state: InterfaceUiModel,
     eventHandler: InterfaceEventHandler,
 ) {
-    var outerRadius by remember(state.outerCornerRadiusDp) {
-        mutableFloatStateOf(state.outerCornerRadiusDp)
-    }
-    var innerRadius by remember(state.innerCornerRadiusDp) {
-        mutableFloatStateOf(state.innerCornerRadiusDp)
-    }
-    var itemSpacing by remember(state.groupItemSpacingDp) {
-        mutableFloatStateOf(state.groupItemSpacingDp)
-    }
-    var contentPadding by remember(state.groupContentPaddingDp) {
-        mutableFloatStateOf(state.groupContentPaddingDp)
+    var appCornerRadius by remember(state.appCornerRadiusDp) {
+        mutableFloatStateOf(state.appCornerRadiusDp)
     }
     var showHierarchyModeMenu by remember { mutableStateOf(false) }
 
     SettingsSection {
-        Spacer(modifier = Modifier.height(8.dp))
-
         SettingsSectionTitle(text = stringResource(R.string.settings_interface_immersive_title))
-        RoundedGroup(
+        SegmentedSettingsGroup(
             items = listOf(
                 switchSettingsGroupItem(
                     key = "interface.status_bar_auto_hide",
@@ -85,94 +71,27 @@ internal fun InterfaceDetail(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        SettingsSectionTitle(text = stringResource(R.string.settings_interface_style_title))
-        RoundedGroup(
+        SettingsSectionTitle(text = stringResource(R.string.settings_interface_shape_title))
+        SegmentedSettingsGroup(
             items = listOf(
                 sliderSettingsGroupItem(
-                    key = "interface.outer_corner_radius",
+                    key = "interface.app_corner_radius",
                     icon = Icons.Default.RoundedCorner,
-                    title = stringResource(R.string.settings_interface_outer_corner_radius),
+                    title = stringResource(R.string.settings_interface_app_corner_radius),
                     subtitle = stringResource(
-                        R.string.settings_interface_outer_corner_radius_description
+                        R.string.settings_interface_app_corner_radius_description
                     ),
-                    value = outerRadius,
+                    value = appCornerRadius,
                     valueLabel = stringResource(
                         R.string.settings_value_dp,
-                        outerRadius.roundToInt()
+                        appCornerRadius.roundToInt()
                     ),
-                    valueRange =
-                        state.outerCornerRadiusRange,
+                    valueRange = state.appCornerRadiusRange,
                     steps = 47,
-                    onValueChange = { outerRadius = it },
+                    onValueChange = { appCornerRadius = it },
                     onValueChangeFinished = {
-                        if (outerRadius != state.outerCornerRadiusDp) {
-                            eventHandler.onOuterCornerRadiusChanged(outerRadius)
-                        }
-                    }
-                ),
-                sliderSettingsGroupItem(
-                    key = "interface.inner_corner_radius",
-                    icon = Icons.Default.BorderInner,
-                    title = stringResource(R.string.settings_interface_inner_corner_radius),
-                    subtitle = stringResource(
-                        R.string.settings_interface_inner_corner_radius_description
-                    ),
-                    value = innerRadius,
-                    valueLabel = stringResource(
-                        R.string.settings_value_dp,
-                        innerRadius.roundToInt()
-                    ),
-                    valueRange =
-                        state.innerCornerRadiusRange,
-                    steps = 23,
-                    onValueChange = { innerRadius = it },
-                    onValueChangeFinished = {
-                        if (innerRadius != state.innerCornerRadiusDp) {
-                            eventHandler.onInnerCornerRadiusChanged(innerRadius)
-                        }
-                    }
-                ),
-                sliderSettingsGroupItem(
-                    key = "interface.group_item_spacing",
-                    icon = Icons.Default.FormatLineSpacing,
-                    title = stringResource(R.string.settings_interface_group_item_spacing),
-                    subtitle = stringResource(
-                        R.string.settings_interface_group_item_spacing_description
-                    ),
-                    value = itemSpacing,
-                    valueLabel = stringResource(
-                        R.string.settings_value_dp,
-                        itemSpacing.roundToInt()
-                    ),
-                    valueRange =
-                        state.groupItemSpacingRange,
-                    steps = 11,
-                    onValueChange = { itemSpacing = it },
-                    onValueChangeFinished = {
-                        if (itemSpacing != state.groupItemSpacingDp) {
-                            eventHandler.onGroupItemSpacingChanged(itemSpacing)
-                        }
-                    }
-                ),
-                sliderSettingsGroupItem(
-                    key = "interface.group_content_padding",
-                    icon = Icons.Default.Padding,
-                    title = stringResource(R.string.settings_interface_group_content_padding),
-                    subtitle = stringResource(
-                        R.string.settings_interface_group_content_padding_description
-                    ),
-                    value = contentPadding,
-                    valueLabel = stringResource(
-                        R.string.settings_value_dp,
-                        contentPadding.roundToInt()
-                    ),
-                    valueRange =
-                        state.groupContentPaddingRange,
-                    steps = 23,
-                    onValueChange = { contentPadding = it },
-                    onValueChangeFinished = {
-                        if (contentPadding != state.groupContentPaddingDp) {
-                            eventHandler.onGroupContentPaddingChanged(contentPadding)
+                        if (appCornerRadius != state.appCornerRadiusDp) {
+                            eventHandler.onAppCornerRadiusChanged(appCornerRadius)
                         }
                     }
                 )
@@ -184,7 +103,7 @@ internal fun InterfaceDetail(
         SettingsSectionTitle(
             text = stringResource(R.string.settings_interface_entry_hierarchy_section)
         )
-        RoundedGroup(
+        SegmentedSettingsGroup(
             items = listOf(
                 dropdownSettingsGroupItem(
                     key = "interface.entry_hierarchy_display_mode",

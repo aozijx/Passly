@@ -46,14 +46,8 @@ internal fun InterfaceRouteContent(
                         viewModel.onAction(
                             InterfaceSettingsAction.SetQuickFilterBarCollapsible(enabled),
                         )
-                    override fun onOuterCornerRadiusChanged(radius: Float) =
-                        viewModel.onAction(InterfaceSettingsAction.SetOuterCornerRadius(radius))
-                    override fun onInnerCornerRadiusChanged(radius: Float) =
-                        viewModel.onAction(InterfaceSettingsAction.SetInnerCornerRadius(radius))
-                    override fun onGroupItemSpacingChanged(spacing: Float) =
-                        viewModel.onAction(InterfaceSettingsAction.SetGroupItemSpacing(spacing))
-                    override fun onGroupContentPaddingChanged(padding: Float) =
-                        viewModel.onAction(InterfaceSettingsAction.SetGroupContentPadding(padding))
+                    override fun onAppCornerRadiusChanged(radiusDp: Float) =
+                        viewModel.onAction(InterfaceSettingsAction.SetAppCornerRadius(radiusDp))
                     override fun onEntryHierarchyDisplayModeChanged(
                         mode: EntryHierarchyDisplayModeUiModel,
                     ) = viewModel.onAction(

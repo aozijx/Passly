@@ -26,7 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
+import com.aozijx.passly.presentation.ui.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.ui.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
@@ -80,7 +80,7 @@ internal fun SettingsMainPage(
             items(sections, key = { it.first }) { (sectionTitleRes, groups) ->
                 Column {
                     SettingsSectionTitle(text = stringResource(sectionTitleRes))
-                    RoundedGroup(
+                    SegmentedSettingsGroup(
                         items = groups.map { group ->
                             navigationSettingsGroupItem(
                                 key = group.routeKey,

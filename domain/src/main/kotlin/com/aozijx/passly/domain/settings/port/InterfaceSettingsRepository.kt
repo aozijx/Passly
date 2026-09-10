@@ -9,8 +9,5 @@ interface InterfaceSettingsRepository {
     suspend fun setHideSystemBars(enabled: Boolean)
     suspend fun setTopBarCollapsible(enabled: Boolean)
     suspend fun setQuickFilterBarCollapsible(enabled: Boolean)
-    suspend fun setOuterCornerRadius(radiusDp: Float)
-    suspend fun setInnerCornerRadius(radiusDp: Float)
-    suspend fun setGroupItemSpacing(spacingDp: Float)
-    suspend fun setGroupContentPadding(paddingDp: Float)
+    suspend fun setAppCornerRadius(radiusDp: Float)
 }

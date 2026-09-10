@@ -66,8 +66,6 @@ internal fun GeneralDetail() {
     }
 
     SettingsSection {
-        Spacer(modifier = Modifier.height(8.dp))
-
         CacheSettingsSection(
             cacheSize = generalState.cacheSize,
             isLoading = generalState.isCalculating,

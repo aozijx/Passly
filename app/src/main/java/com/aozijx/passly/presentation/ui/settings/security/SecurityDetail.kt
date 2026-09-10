@@ -1,10 +1,6 @@
 package com.aozijx.passly.presentation.ui.settings.security
 
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.presentation.ui.settings.security.model.SecuritySettingsUiModel
 
@@ -18,7 +14,6 @@ internal fun SecurityDetail(
     onLockOnBackgroundChange: (Boolean) -> Unit
 ) {
     SettingsSection {
-        Spacer(modifier = Modifier.height(8.dp))
         LockAuthSettingsSection(
             state = state,
             onLockTimeoutChange = onLockTimeoutChange,

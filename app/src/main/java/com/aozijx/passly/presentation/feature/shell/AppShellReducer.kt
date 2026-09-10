@@ -40,12 +40,9 @@ internal object AppShellReducer {
                 isDynamicColor = mutation.appearance.isDynamicColor,
                 themeKey = mutation.appearance.themeKey,
                 canvasTintPercent = mutation.appearance.canvasTintPercent,
+                appCornerRadiusDp = mutation.interfaceSettings.appCornerRadiusDp,
                 fontFamily = mutation.appearance.fontFamily,
                 language = mutation.appearance.language,
-                outerCornerRadiusDp = mutation.interfaceSettings.outerCornerRadiusDp,
-                innerCornerRadiusDp = mutation.interfaceSettings.innerCornerRadiusDp,
-                groupItemSpacingDp = mutation.interfaceSettings.groupItemSpacingDp,
-                groupContentPaddingDp = mutation.interfaceSettings.groupContentPaddingDp,
             )
             is AppShellMutation.DatabaseInitializationStarted -> state.copy(
                 isDatabaseInitializing = true,

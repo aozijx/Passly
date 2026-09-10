@@ -24,17 +24,14 @@ class InterfaceSettingsViewModel @Inject constructor(
         librarySettingsRepository.libraryViewSettings,
     ) { prefs, librarySettings ->
         InterfaceSettingsUiState(
-                hideSystemBars = prefs.hideSystemBars,
-                collapseTopBarOnScroll = prefs.collapseTopBarOnScroll,
-                collapseQuickFilterBarOnScroll = prefs.collapseQuickFilterBarOnScroll,
-                outerCornerRadiusDp = prefs.outerCornerRadiusDp,
-                innerCornerRadiusDp = prefs.innerCornerRadiusDp,
-                groupItemSpacingDp = prefs.groupItemSpacingDp,
-                groupContentPaddingDp = prefs.groupContentPaddingDp,
-                enabledLibraryQuickFilterKeys =
-                    librarySettings.visibleQuickFilters?.filterKeys
-                        ?: LibraryQuickFilter.defaultVisibleKeys,
-                entryHierarchyDisplayMode = librarySettings.entryHierarchyDisplayMode
+            hideSystemBars = prefs.hideSystemBars,
+            collapseTopBarOnScroll = prefs.collapseTopBarOnScroll,
+            collapseQuickFilterBarOnScroll = prefs.collapseQuickFilterBarOnScroll,
+            appCornerRadiusDp = prefs.appCornerRadiusDp,
+            enabledLibraryQuickFilterKeys =
+                librarySettings.visibleQuickFilters?.filterKeys
+                    ?: LibraryQuickFilter.defaultVisibleKeys,
+            entryHierarchyDisplayMode = librarySettings.entryHierarchyDisplayMode,
         )
     }
         .stateIn(
@@ -57,20 +54,8 @@ class InterfaceSettingsViewModel @Inject constructor(
                 settingsRepository.setQuickFilterBarCollapsible(action.enabled)
             }
 
-            is InterfaceSettingsAction.SetOuterCornerRadius -> viewModelScope.launch {
-                settingsRepository.setOuterCornerRadius(action.radiusDp)
-            }
-
-            is InterfaceSettingsAction.SetInnerCornerRadius -> viewModelScope.launch {
-                settingsRepository.setInnerCornerRadius(action.radiusDp)
-            }
-
-            is InterfaceSettingsAction.SetGroupItemSpacing -> viewModelScope.launch {
-                settingsRepository.setGroupItemSpacing(action.spacingDp)
-            }
-
-            is InterfaceSettingsAction.SetGroupContentPadding -> viewModelScope.launch {
-                settingsRepository.setGroupContentPadding(action.paddingDp)
+            is InterfaceSettingsAction.SetAppCornerRadius -> viewModelScope.launch {
+                settingsRepository.setAppCornerRadius(action.radiusDp)
             }
 
             is InterfaceSettingsAction.ToggleVisibleLibraryQuickFilter -> viewModelScope.launch {

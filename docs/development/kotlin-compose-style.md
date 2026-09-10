@@ -73,7 +73,7 @@
 
 - 恢复码不是日常解锁方式。
 - 恢复码只能进入受限恢复模式。
-- 恢复模式允许重建主认证方式，或导出新的加密备份。
+- 恢复模式只允许重建主认证方式，不允许调用 Backup 或导出 Vault 数据。
 - 恢复模式不得查看、复制、自动填充、搜索普通 Vault 明文。
 - 恢复模式下重设应用密码后必须锁定，让用户用新密码重新进入普通会话。
 
@@ -210,37 +210,23 @@ fun AppPasswordField(
 
 ## 主题、颜色、圆角、间距和动效
 
-Passly 的 UI 应优先使用主题 token，而不是组件内散落常量。
-
-推荐 token 结构：
-
-```text
-AppThemeTokens
-AppColorTokens
-AppShapeTokens
-AppSpacingTokens
-AppMotionTokens
-AppExpressiveTokens
-```
+Passly 的 UI 优先使用 `MaterialTheme`、组件 Defaults API 和 Material Expressive 默认值，
+不维护一套重复的通用主题 token。
 
 必须：
 
-- 页面和组件优先读取项目主题 token。
-- 圆角、组内间距、内容 padding 等可配置项应来自同一个事件源/设置源。
-- `RoundedGroup`、输入框、BottomSheet、卡片、菜单等基础组件应共享 shape/spacing token。
+- 页面和组件优先使用 Material 主题提供的默认值。
+- 设置分组条目使用 Material 3 `SegmentedListItem`，由
+  `ListItemDefaults.segmentedShapes` 和 `ListItemDefaults.SegmentedGap` 决定形状与间距。
+- 用户配置的应用圆角通过 `MaterialTheme.shapes` 统一影响组件；不重新实现组件布局。
+- Switch 的 checked 状态只由 Switch 本身表达，不改变设置条目的容器色或分组轮廓。
 - Material Expressive 始终启用；设置页不提供关闭开关。
 
 推荐：
 
 - 主题色允许由多个颜色组成，例如 primary、secondary、tertiary、surface、surfaceVariant、error。
 - 手动主题色应转换成完整 color scheme，而不是只替换一个 primary。
-- 组件默认使用 `MaterialTheme.colorScheme`，项目增强使用 `LocalAppThemeTokens` 或等价 CompositionLocal。
-- 圆角拆分为至少：
-  - container outer corner；
-  - item inner corner；
-  - top-only corner；
-  - bottom-only corner；
-  - standalone corner。
+- 组件默认使用 `MaterialTheme.colorScheme`；只有 Material 主题无法表达的产品语义才新增项目 token。
 - 动效拆分为：
   - 是否启用组件增强动画；
   - 是否降低动态效果。
@@ -248,7 +234,7 @@ AppExpressiveTokens
 禁止：
 
 - 到处写 `16.dp`、`24.dp` 作为永久组件参数。
-- 在业务页面复制 shape 计算。
+- 在业务页面复制分段列表的 shape 或 gap 计算。
 - 让 Material Expressive 决定认证、数据库、导出等业务逻辑。
 
 ## 输入框和表单
@@ -328,8 +314,8 @@ AppExpressiveTokens
 - ViewModel 是否还有硬编码 UI 文案。
 - Composable 是否直接依赖 repository/DAO/security executor。
 - 敏感字段是否通过明确命名的读取路径。
-- 恢复模式是否仍被限制在恢复页、恢复导出和重建认证方式。
-- 主题圆角、间距、颜色是否来自 token。
+- 恢复模式是否仍被限制在恢复页和重建认证方式，且无法调用 Backup。
+- 主题圆角、间距、颜色是否优先来自 `MaterialTheme` 和组件 Defaults。
 - 新组件是否足够小，是否可被其他页面复用。
 - 是否删除了已经替代的旧组件，避免双轨维护。
 - 是否补充或更新了对应边界测试。

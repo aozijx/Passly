@@ -1,10 +1,6 @@
 package com.aozijx.passly.presentation.ui.settings.backup
 
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 
 @Composable
@@ -18,7 +14,6 @@ internal fun BackupRestoreDetail(
     onClearBackupPath: (() -> Unit)?
 ) {
     SettingsSection {
-        Spacer(modifier = Modifier.height(8.dp))
         BackupRestoreSettingsSection(
             pathLabel = backupPathLabel,
             recentExportFileName = lastExportFileLabel,

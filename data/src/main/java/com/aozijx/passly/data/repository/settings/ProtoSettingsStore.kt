@@ -14,11 +14,11 @@ import com.aozijx.passly.data.local.datastore.settings.VisibleQuickFilters
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.settings.model.AppLanguage
+import com.aozijx.passly.domain.settings.model.AppCornerRadiusConstraints
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.ClipboardClearPolicy
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
-import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
 import com.aozijx.passly.domain.settings.model.MessageLevel
 import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.domain.settings.model.MessageTopic
@@ -119,29 +119,9 @@ internal class ProtoSettingsStore @Inject constructor(
     override suspend fun setQuickFilterBarCollapsible(enabled: Boolean) = updateInterface {
         collapseQuickFilterBarOnScroll = enabled
     }
-    override suspend fun setOuterCornerRadius(radiusDp: Float) = updateInterface {
-        outerCornerRadiusDp = radiusDp.coerceIn(
-            InterfaceStyleConstraints.MIN_OUTER_RADIUS_DP,
-            InterfaceStyleConstraints.MAX_OUTER_RADIUS_DP,
-        )
-    }
-    override suspend fun setInnerCornerRadius(radiusDp: Float) = updateInterface {
-        innerCornerRadiusDp = radiusDp.coerceIn(
-            InterfaceStyleConstraints.MIN_INNER_RADIUS_DP,
-            InterfaceStyleConstraints.MAX_INNER_RADIUS_DP,
-        )
-    }
-    override suspend fun setGroupItemSpacing(spacingDp: Float) = updateInterface {
-        groupItemSpacingDp = spacingDp.coerceIn(
-            InterfaceStyleConstraints.MIN_ITEM_SPACING_DP,
-            InterfaceStyleConstraints.MAX_ITEM_SPACING_DP,
-        )
-    }
-    override suspend fun setGroupContentPadding(paddingDp: Float) = updateInterface {
-        groupContentPaddingDp = paddingDp.coerceIn(
-            InterfaceStyleConstraints.MIN_CONTENT_PADDING_DP,
-            InterfaceStyleConstraints.MAX_CONTENT_PADDING_DP,
-        )
+
+    override suspend fun setAppCornerRadius(radiusDp: Float) = updateInterface {
+        appCornerRadiusDp = AppCornerRadiusConstraints.normalize(radiusDp)
     }
 
     override suspend fun setVisibleQuickFilters(keys: Set<String>) = updateVaultView {

@@ -9,12 +9,12 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
+import com.aozijx.passly.presentation.ui.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.ui.shared.components.group.dropdownSettingsGroupItem
 import org.junit.Rule
 import org.junit.Test
 
-class RoundedGroupDropdownTest {
+class SegmentedSettingsGroupDropdownTest {
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -25,7 +25,7 @@ class RoundedGroupDropdownTest {
             var selected by remember { mutableStateOf<Boolean?>(null) }
 
             MaterialTheme {
-                RoundedGroup(
+                SegmentedSettingsGroup(
                     items = listOf(
                         dropdownSettingsGroupItem(
                             key = "appearance.theme_mode",

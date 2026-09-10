@@ -2,15 +2,11 @@ package com.aozijx.passly.presentation.feature.settings.main.general
 
 import android.content.Intent
 import android.provider.Settings
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -88,7 +84,6 @@ internal fun NotificationDetail(
     }
 
     SettingsSection {
-        Spacer(modifier = Modifier.height(8.dp))
         NotificationSettingsSection(
             state = state.toUiModel(),
             eventHandler = object : NotificationSettingsEventHandler {

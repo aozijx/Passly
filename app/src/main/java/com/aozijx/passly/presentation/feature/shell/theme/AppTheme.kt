@@ -1,19 +1,18 @@
 package com.aozijx.passly.presentation.feature.shell.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MotionScheme
+import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.remember
-import com.aozijx.passly.core.ui.theme.LocalPasslyThemeTokens
+import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.ui.theme.SystemTypography
-import com.aozijx.passly.core.ui.theme.passlyThemeDefinition
 import com.aozijx.passly.core.ui.theme.rememberAppColorScheme
 import com.aozijx.passly.core.ui.theme.themeTypography
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
-import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
+import com.aozijx.passly.domain.settings.model.AppCornerRadiusConstraints
 import com.aozijx.passly.domain.settings.model.ThemeMode
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -23,11 +22,8 @@ fun AppTheme(
     dynamicColor: Boolean = true,
     themeKey: String = "default",
     canvasTintPercent: Int = 8,
+    appCornerRadiusDp: Float = AppCornerRadiusConstraints.DEFAULT_DP,
     fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
-    outerCornerRadiusDp: Float = InterfaceStyleConstraints.DEFAULT_OUTER_RADIUS_DP,
-    innerCornerRadiusDp: Float = InterfaceStyleConstraints.DEFAULT_INNER_RADIUS_DP,
-    groupItemSpacingDp: Float = InterfaceStyleConstraints.DEFAULT_ITEM_SPACING_DP,
-    groupContentPaddingDp: Float = InterfaceStyleConstraints.DEFAULT_CONTENT_PADDING_DP,
     content: @Composable () -> Unit
 ) {
     val isDark = when (themeMode) {
@@ -43,27 +39,25 @@ fun AppTheme(
     )
     val typography =
         if (fontFamily == FontFamilyMode.SYSTEM) SystemTypography else themeTypography()
-    val themeDefinition = remember(
-        outerCornerRadiusDp,
-        innerCornerRadiusDp,
-        groupItemSpacingDp,
-        groupContentPaddingDp
-    ) {
-        passlyThemeDefinition(
-            outerCornerRadiusDp = outerCornerRadiusDp,
-            innerCornerRadiusDp = innerCornerRadiusDp,
-            groupItemSpacingDp = groupItemSpacingDp,
-            groupContentPaddingDp = groupContentPaddingDp
-        )
-    }
+    MaterialExpressiveTheme(
+        colorScheme = colorScheme,
+        motionScheme = MotionScheme.expressive(),
+        shapes = appShapes(appCornerRadiusDp),
+        typography = typography,
+        content = content,
+    )
+}
 
-    CompositionLocalProvider(LocalPasslyThemeTokens provides themeDefinition.tokens) {
-        MaterialExpressiveTheme(
-            colorScheme = colorScheme,
-            motionScheme = MotionScheme.expressive(),
-            typography = typography,
-            shapes = themeDefinition.shapes,
-            content = content
-        )
-    }
+internal fun appShapes(cornerRadiusDp: Float): Shapes {
+    val radius = AppCornerRadiusConstraints.normalize(cornerRadiusDp)
+    return Shapes(
+        extraSmall = RoundedCornerShape((radius * 0.25f).dp),
+        small = RoundedCornerShape((radius * 0.4f).dp),
+        medium = RoundedCornerShape((radius * 0.6f).dp),
+        large = RoundedCornerShape((radius * 0.8f).dp),
+        extraLarge = RoundedCornerShape(radius.dp),
+        largeIncreased = RoundedCornerShape(
+            (radius * 1.25f).coerceAtMost(AppCornerRadiusConstraints.MAX_DP).dp,
+        ),
+    )
 }

@@ -4,14 +4,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.presentation.ui.shared.components.group.model.RoundedGroupItem
+import com.aozijx.passly.presentation.ui.shared.components.group.model.SegmentedSettingsItem
 import com.aozijx.passly.presentation.ui.shared.components.menu.MenuOptionText
 import com.aozijx.passly.presentation.ui.shared.components.menu.selectedMenuModifier
 
@@ -29,37 +29,32 @@ fun <T> dropdownSettingsGroupItem(
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     onSelect: (T) -> Unit
-): RoundedGroupItem = RoundedGroupItem(key = key) { itemScope ->
+): SegmentedSettingsItem = SegmentedSettingsItem(key = key) { shapes ->
     Box {
-        GroupCard(
-            itemScope = itemScope,
-            onClick = { onExpandedChange(!expanded) }
-        ) {
-            SettingsItemRow(
-                leading = icon.asLeadingContent(false),
-                content = {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                },
-                trailing = {
-                    AnimatedSettingValue(
-                        targetState = selected,
-                        valueLabel = { target ->
-                            options.firstOrNull { (value, _) -> value == target }?.second
-                                ?: selectedLabel
-                        },
-                        transitionDirection = { initial, target ->
-                            options.indexOfFirst { (value, _) -> value == target } -
-                                options.indexOfFirst { (value, _) -> value == initial }
-                        },
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
-                }
-            )
-        }
+        SegmentedListItem(
+            onClick = { onExpandedChange(!expanded) },
+            shapes = shapes,
+            colors = settingsSegmentedColors(),
+            verticalAlignment = Alignment.CenterVertically,
+            leadingContent = icon.asLeadingContent(),
+            trailingContent = {
+                AnimatedSettingValue(
+                    targetState = selected,
+                    valueLabel = { target ->
+                        options.firstOrNull { (value, _) -> value == target }?.second
+                            ?: selectedLabel
+                    },
+                    transitionDirection = { initial, target ->
+                        options.indexOfFirst { (value, _) -> value == target } -
+                            options.indexOfFirst { (value, _) -> value == initial }
+                    },
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                )
+            },
+            content = {
+                Text(text = title)
+            },
+        )
 
         DropdownMenu(
             expanded = expanded,

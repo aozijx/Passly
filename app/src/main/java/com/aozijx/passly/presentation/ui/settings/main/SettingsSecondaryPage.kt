@@ -24,7 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
@@ -42,11 +41,7 @@ internal fun SettingsSecondaryPage(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        title,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = MaterialTheme.typography.titleLarge.fontSize
-                    )
+                    Text(title)
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     titleContentColor = MaterialTheme.colorScheme.onSurface

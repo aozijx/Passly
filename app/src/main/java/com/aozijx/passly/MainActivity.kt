@@ -106,11 +106,8 @@ class MainActivity : AppCompatActivity() {
                         dynamicColor = mainUiState.isDynamicColor,
                         themeKey = mainUiState.themeKey,
                         canvasTintPercent = mainUiState.canvasTintPercent,
+                        appCornerRadiusDp = mainUiState.appCornerRadiusDp,
                         fontFamily = mainUiState.fontFamily,
-                        outerCornerRadiusDp = mainUiState.outerCornerRadiusDp,
-                        innerCornerRadiusDp = mainUiState.innerCornerRadiusDp,
-                        groupItemSpacingDp = mainUiState.groupItemSpacingDp,
-                        groupContentPaddingDp = mainUiState.groupContentPaddingDp
                     ) {
                         AuthenticationHost(this, authenticationHostRegistry) {
                             AppShell(

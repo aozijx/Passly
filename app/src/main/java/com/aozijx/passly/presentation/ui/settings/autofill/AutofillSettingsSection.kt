@@ -8,7 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
+import com.aozijx.passly.presentation.ui.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.ui.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.presentation.ui.shared.components.group.sliderSettingsGroupItem
 import com.aozijx.passly.presentation.ui.shared.components.group.switchSettingsGroupItem
@@ -32,7 +32,7 @@ internal fun AutofillSettingsSection(
 
     val enabled = settings.enabled
     SettingsSectionTitle(text = stringResource(R.string.settings_autofill_section))
-    RoundedGroup(
+    SegmentedSettingsGroup(
         items = buildList {
             add(
                 navigationSettingsGroupItem(

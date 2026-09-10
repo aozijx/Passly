@@ -6,7 +6,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
+import com.aozijx.passly.presentation.ui.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.ui.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 
@@ -17,7 +17,7 @@ fun CacheSettingsSection(
     onClearCache: () -> Unit
 ) {
     SettingsSectionTitle(text = stringResource(R.string.settings_general_cache_section))
-    RoundedGroup(
+    SegmentedSettingsGroup(
         items = listOf(
             navigationSettingsGroupItem(
                 key = "general.clear_cache",
@@ -40,7 +40,7 @@ fun AboutSettingsSection(
     onOpenSourceLicensesClick: () -> Unit
 ) {
     SettingsSectionTitle(text = stringResource(R.string.settings_general_about_section))
-    RoundedGroup(
+    SegmentedSettingsGroup(
         items = listOf(
             navigationSettingsGroupItem(
                 key = "general.about",
@@ -54,19 +54,16 @@ fun AboutSettingsSection(
             ),
             navigationSettingsGroupItem(
                 key = "general.terms",
-                iconPlaceholder = true,
                 title = stringResource(R.string.settings_general_terms),
                 onClick = onTermsClick
             ),
             navigationSettingsGroupItem(
                 key = "general.privacy_policy",
-                iconPlaceholder = true,
                 title = stringResource(R.string.settings_general_privacy_policy),
                 onClick = onPrivacyPolicyClick
             ),
             navigationSettingsGroupItem(
                 key = "general.open_source",
-                iconPlaceholder = true,
                 title = stringResource(R.string.settings_general_open_source_licenses),
                 onClick = onOpenSourceLicensesClick
             )

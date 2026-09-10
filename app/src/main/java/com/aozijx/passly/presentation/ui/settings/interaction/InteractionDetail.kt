@@ -1,10 +1,6 @@
 package com.aozijx.passly.presentation.ui.settings.interaction
 
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
 
@@ -22,8 +18,6 @@ internal fun InteractionDetail(
     onRightSwipeActionClick: () -> Unit,
 ) {
     SettingsSection {
-        Spacer(modifier = Modifier.height(8.dp))
-
         SwipeGestureSettingsSection(
             isSwipeEnabled = state.isSwipeEnabled,
             swipeLeftAction = state.swipeLeftAction,

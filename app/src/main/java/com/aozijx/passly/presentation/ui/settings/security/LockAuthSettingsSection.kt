@@ -1,6 +1,7 @@
 package com.aozijx.passly.presentation.ui.settings.security
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,6 +10,7 @@ import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,10 +25,10 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.group.GroupCard
-import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
-import com.aozijx.passly.presentation.ui.shared.components.group.model.RoundedGroupItem
+import com.aozijx.passly.presentation.ui.shared.components.group.SegmentedSettingsGroup
+import com.aozijx.passly.presentation.ui.shared.components.group.model.SegmentedSettingsItem
 import com.aozijx.passly.presentation.ui.shared.components.group.navigationSettingsGroupItem
+import com.aozijx.passly.presentation.ui.shared.components.group.settingsSegmentedColors
 import com.aozijx.passly.presentation.ui.shared.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.presentation.ui.settings.security.model.SecuritySettingsUiModel
@@ -47,7 +49,7 @@ fun LockAuthSettingsSection(
     var sliderValue by remember(state.lockTimeoutMs) { mutableFloatStateOf(currentSeconds) }
 
     SettingsSectionTitle(text = stringResource(R.string.authentication_label))
-    RoundedGroup(
+    SegmentedSettingsGroup(
         items = listOf(
 
             switchSettingsGroupItem(
@@ -65,64 +67,76 @@ fun LockAuthSettingsSection(
                 value = formatLockTimeoutText(state.lockTimeoutMs),
                 onClick = { expanded = !expanded }
             ),
-            RoundedGroupItem(
+            SegmentedSettingsItem(
                 key = "security.lock_timeout_slider",
                 visible = expanded
-            ) { itemScope ->
-                GroupCard(itemScope = itemScope, contentPadding = PaddingValues(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.settings_security_auto_lock_delay),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = formatLockTimeoutText((sliderValue.toLong() * 1000L)),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Slider(
-                        value = sliderValue,
-                        onValueChange = { sliderValue = it },
-                        onValueChangeFinished = {
-                            val rounded =
-                                ((sliderValue / state.sliderStepSeconds).roundToInt() *
-                                    state.sliderStepSeconds)
-                                    .coerceIn(state.sliderMinSeconds, state.sliderMaxSeconds)
-                            sliderValue = rounded
-                            onLockTimeoutChange(rounded.toLong() * 1000L)
-                        },
-                        valueRange = state.sliderMinSeconds..state.sliderMaxSeconds,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = pluralStringResource(
-                                R.plurals.settings_duration_seconds,
-                                state.sliderMinSeconds.roundToInt(),
-                                state.sliderMinSeconds.roundToInt()
-                            ),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                        Text(
-                            text = pluralStringResource(
-                                R.plurals.settings_duration_minutes,
-                                (state.sliderMaxSeconds / 60f).roundToInt(),
-                                (state.sliderMaxSeconds / 60f).roundToInt()
-                            ),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                    }
-                }
+            ) { shapes ->
+                SegmentedListItem(
+                    shapes = shapes,
+                    colors = settingsSegmentedColors(),
+                    contentPadding = PaddingValues(16.dp),
+                    content = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.settings_security_auto_lock_delay),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = formatLockTimeoutText(sliderValue.toLong() * 1000L),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
+                    supportingContent = {
+                        Column {
+                            Slider(
+                                value = sliderValue,
+                                onValueChange = { sliderValue = it },
+                                onValueChangeFinished = {
+                                    val rounded =
+                                        ((sliderValue / state.sliderStepSeconds).roundToInt() *
+                                            state.sliderStepSeconds)
+                                            .coerceIn(
+                                                state.sliderMinSeconds,
+                                                state.sliderMaxSeconds
+                                            )
+                                    sliderValue = rounded
+                                    onLockTimeoutChange(rounded.toLong() * 1000L)
+                                },
+                                valueRange = state.sliderMinSeconds..state.sliderMaxSeconds,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = pluralStringResource(
+                                        R.plurals.settings_duration_seconds,
+                                        state.sliderMinSeconds.roundToInt(),
+                                        state.sliderMinSeconds.roundToInt()
+                                    ),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                                Text(
+                                    text = pluralStringResource(
+                                        R.plurals.settings_duration_minutes,
+                                        (state.sliderMaxSeconds / 60f).roundToInt(),
+                                        (state.sliderMaxSeconds / 60f).roundToInt()
+                                    ),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                            }
+                        }
+                    },
+                )
             },
             navigationSettingsGroupItem(
                 key = "security.app_password",

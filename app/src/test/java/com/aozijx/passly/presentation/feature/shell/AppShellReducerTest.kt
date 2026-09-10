@@ -63,19 +63,14 @@ class AppShellReducerTest {
                     language = AppLanguage.EN,
                     fontFamily = FontFamilyMode.SYSTEM,
                 ),
-                interfaceSettings = InterfaceSettings(
-                    outerCornerRadiusDp = 30f,
-                    innerCornerRadiusDp = 12f,
-                    groupItemSpacingDp = 4f,
-                    groupContentPaddingDp = 10f,
-                ),
+                interfaceSettings = InterfaceSettings(appCornerRadiusDp = 30f),
             ),
         )
 
         assertEquals(ThemeMode.DARK, result.themeMode)
         assertFalse(result.isDynamicColor)
         assertEquals(AppLanguage.EN, result.language)
-        assertEquals(30f, result.outerCornerRadiusDp)
+        assertEquals(30f, result.appCornerRadiusDp)
         assertTrue(result.isAuthorized)
         assertSame(error, result.databaseError)
     }

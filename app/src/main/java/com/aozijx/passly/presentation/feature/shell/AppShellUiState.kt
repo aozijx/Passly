@@ -1,8 +1,8 @@
 package com.aozijx.passly.presentation.feature.shell
 
 import com.aozijx.passly.domain.settings.model.AppLanguage
+import com.aozijx.passly.domain.settings.model.AppCornerRadiusConstraints
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
-import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
 import com.aozijx.passly.domain.settings.model.ThemeCanvasTint
 import com.aozijx.passly.domain.settings.model.ThemeMode
 
@@ -13,12 +13,9 @@ data class AppShellUiState(
     val isDynamicColor: Boolean = true,
     val themeKey: String = "default",
     val canvasTintPercent: Int = ThemeCanvasTint.DEFAULT_PERCENT,
+    val appCornerRadiusDp: Float = AppCornerRadiusConstraints.DEFAULT_DP,
     val language: AppLanguage = AppLanguage.SYSTEM,
     val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
-    val outerCornerRadiusDp: Float = InterfaceStyleConstraints.DEFAULT_OUTER_RADIUS_DP,
-    val innerCornerRadiusDp: Float = InterfaceStyleConstraints.DEFAULT_INNER_RADIUS_DP,
-    val groupItemSpacingDp: Float = InterfaceStyleConstraints.DEFAULT_ITEM_SPACING_DP,
-    val groupContentPaddingDp: Float = InterfaceStyleConstraints.DEFAULT_CONTENT_PADDING_DP,
     val isDatabaseInitializing: Boolean = false,
     val databaseError: Throwable? = null
 )

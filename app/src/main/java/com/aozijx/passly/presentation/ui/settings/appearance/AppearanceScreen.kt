@@ -23,7 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
+import com.aozijx.passly.presentation.ui.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.ui.shared.components.group.dropdownSettingsGroupItem
 import com.aozijx.passly.presentation.ui.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.presentation.ui.shared.components.group.sliderSettingsGroupItem
@@ -59,9 +59,8 @@ internal fun AppearanceDetail(
     }
 
     SettingsSection {
-        Spacer(modifier = Modifier.height(8.dp))
         SettingsSectionTitle(text = stringResource(R.string.settings_group_theme))
-        RoundedGroup(
+        SegmentedSettingsGroup(
             items = listOf(
                 dropdownSettingsGroupItem(
                     key = "appearance.theme_mode",
@@ -132,7 +131,7 @@ internal fun AppearanceDetail(
         Spacer(Modifier.height(24.dp))
 
         SettingsSectionTitle(text = stringResource(R.string.settings_topic_language_font))
-        RoundedGroup(
+        SegmentedSettingsGroup(
             items = listOf(
                 navigationSettingsGroupItem(
                     key = "appearance.language",

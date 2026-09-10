@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
+import com.aozijx.passly.presentation.ui.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.ui.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 
@@ -25,7 +25,7 @@ internal fun BackupRestoreSettingsSection(
     onClearPath: (() -> Unit)?
 ) {
     SettingsSectionTitle(text = stringResource(R.string.settings_backup_restore_section))
-    RoundedGroup(
+    SegmentedSettingsGroup(
         items = listOf(
             navigationSettingsGroupItem(
                 key = "backup.export",
@@ -50,7 +50,7 @@ internal fun BackupRestoreSettingsSection(
     Spacer(Modifier.height(24.dp))
 
     SettingsSectionTitle(text = stringResource(R.string.settings_backup_storage_section))
-    RoundedGroup(
+    SegmentedSettingsGroup(
         items = listOf(
             navigationSettingsGroupItem(
                 key = "backup.directory",

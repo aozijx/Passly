@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
+import com.aozijx.passly.presentation.ui.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.ui.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.presentation.ui.shared.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
@@ -55,7 +55,7 @@ fun LogSettingsSection(
     val exportLogsSubtitle = stringResource(R.string.settings_log_export_action_subtitle)
     val clearLogsTitle = stringResource(R.string.settings_log_clear_action)
     SettingsSectionTitle(text = logManagementTitle)
-    RoundedGroup(
+    SegmentedSettingsGroup(
         items = listOf(
             switchSettingsGroupItem(
                 key = "logs.diagnostics",
@@ -67,7 +67,6 @@ fun LogSettingsSection(
             ),
             navigationSettingsGroupItem(
                 key = "logs.view",
-                iconPlaceholder = true,
                 title = viewLogsTitle,
                 onClick = onOpenViewer,
             ),

@@ -15,7 +15,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
+import com.aozijx.passly.presentation.ui.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.ui.shared.components.group.settingsGroupItem
 import com.aozijx.passly.presentation.ui.shared.components.group.switchSettingsGroupItem
 import com.aozijx.passly.presentation.ui.shared.components.group.dropdownSettingsGroupItem
@@ -43,7 +43,6 @@ internal fun PrivacyDetail(
         )
     }
     SettingsSection {
-        Spacer(modifier = Modifier.height(8.dp))
         SecurityProtectionSettingsSection(
             isSecureContentEnabled = state.isSecureContentEnabled,
             isFlipToLockEnabled = state.isFlipToLockEnabled,
@@ -52,10 +51,11 @@ internal fun PrivacyDetail(
             onFlipToLockEnabledChange = onFlipToLockEnabledChange,
             onFlipExitAndClearStackEnabledChange = onFlipExitAndClearStackEnabledChange
         )
+        Spacer(modifier = Modifier.height(24.dp))
         SettingsSectionTitle(
             text = stringResource(R.string.settings_privacy_sensitive_access_section)
         )
-        RoundedGroup(
+        SegmentedSettingsGroup(
             items = listOf(
                 switchSettingsGroupItem(
                     key = "privacy.reauthenticate_sensitive_copies",

@@ -6,7 +6,7 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.group.RoundedGroup
+import com.aozijx.passly.presentation.ui.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.ui.shared.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 
@@ -20,7 +20,7 @@ fun SecurityProtectionSettingsSection(
     onFlipExitAndClearStackEnabledChange: (Boolean) -> Unit
 ) {
     SettingsSectionTitle(text = stringResource(R.string.settings_security_protection_section))
-    RoundedGroup(
+    SegmentedSettingsGroup(
         items = listOf(
             switchSettingsGroupItem(
                 key = "privacy.secure_content",
@@ -41,7 +41,6 @@ fun SecurityProtectionSettingsSection(
             switchSettingsGroupItem(
                 key = "privacy.flip_exit",
                 visible = isFlipToLockEnabled,
-                iconPlaceholder = true,
                 title = stringResource(R.string.settings_security_flip_exit),
                 subtitle = stringResource(R.string.settings_security_flip_exit_description),
                 checked = isFlipExitAndClearStackEnabled,

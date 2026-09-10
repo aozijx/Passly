@@ -3,43 +3,12 @@ package com.aozijx.passly.core.ui.theme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class ThemeTokensTest {
-
-    @Test
-    fun numericValues_areExposedAsRoundedGroupTokens() {
-        val definition = passlyThemeDefinition(
-            outerCornerRadiusDp = 36f,
-            innerCornerRadiusDp = 10f,
-            groupItemSpacingDp = 5f,
-            groupContentPaddingDp = 20f
-        )
-
-        assertEquals(36.dp, definition.tokens.roundedGroup.outerRadius)
-        assertEquals(10.dp, definition.tokens.roundedGroup.innerRadius)
-        assertEquals(5.dp, definition.tokens.roundedGroup.itemSpacing)
-        assertEquals(20.dp, definition.tokens.roundedGroup.contentPadding)
-    }
-
-    @Test
-    fun outOfRangeValues_areClampedAtThemeBoundary() {
-        val style = passlyThemeDefinition(
-            outerCornerRadiusDp = 80f,
-            innerCornerRadiusDp = -4f,
-            groupItemSpacingDp = 30f,
-            groupContentPaddingDp = 2f
-        ).tokens.roundedGroup
-
-        assertEquals(48.dp, style.outerRadius)
-        assertEquals(0.dp, style.innerRadius)
-        assertEquals(12.dp, style.itemSpacing)
-        assertEquals(8.dp, style.contentPadding)
-    }
+class AppThemeSchemesTest {
 
     @Test
     fun everyConfiguredTheme_resolvesToThreeSeeds() {

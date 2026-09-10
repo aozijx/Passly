@@ -1,7 +1,7 @@
 package com.aozijx.passly.presentation.feature.settings.appearance
 
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
-import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
+import com.aozijx.passly.domain.settings.model.AppCornerRadiusConstraints
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.presentation.ui.settings.appearance.model.EntryHierarchyDisplayModeUiModel
 import com.aozijx.passly.presentation.ui.settings.appearance.model.InterfaceUiModel
@@ -12,18 +12,9 @@ fun InterfaceSettingsUiState.toInterfaceUiModel(): InterfaceUiModel = InterfaceU
     hideSystemBars = hideSystemBars,
     collapseTopBarOnScroll = collapseTopBarOnScroll,
     collapseQuickFilterBarOnScroll = collapseQuickFilterBarOnScroll,
-    outerCornerRadiusDp = outerCornerRadiusDp,
-    outerCornerRadiusRange = InterfaceStyleConstraints.MIN_OUTER_RADIUS_DP..
-        InterfaceStyleConstraints.MAX_OUTER_RADIUS_DP,
-    innerCornerRadiusDp = innerCornerRadiusDp,
-    innerCornerRadiusRange = InterfaceStyleConstraints.MIN_INNER_RADIUS_DP..
-        InterfaceStyleConstraints.MAX_INNER_RADIUS_DP,
-    groupItemSpacingDp = groupItemSpacingDp,
-    groupItemSpacingRange = InterfaceStyleConstraints.MIN_ITEM_SPACING_DP..
-        InterfaceStyleConstraints.MAX_ITEM_SPACING_DP,
-    groupContentPaddingDp = groupContentPaddingDp,
-    groupContentPaddingRange = InterfaceStyleConstraints.MIN_CONTENT_PADDING_DP..
-        InterfaceStyleConstraints.MAX_CONTENT_PADDING_DP,
+    appCornerRadiusDp = appCornerRadiusDp,
+    appCornerRadiusRange =
+        AppCornerRadiusConstraints.MIN_DP..AppCornerRadiusConstraints.MAX_DP,
     entryHierarchyDisplayMode = entryHierarchyDisplayMode.toUiModel(),
 )
 
