@@ -16,6 +16,7 @@ internal class SettingsScreenLocalState {
     var showLeftActionDialog by mutableStateOf(false)
     var showRightActionDialog by mutableStateOf(false)
     var showClearBackupDirConfirmDialog by mutableStateOf(false)
+    var showDatabaseResetSheet by mutableStateOf(false)
     var activeAppPasswordDialog by mutableStateOf<AppPasswordDialogState>(AppPasswordDialogState.None)
     var showRecoveryCodeSheet by mutableStateOf(false)
     lateinit var recoveryCodeSheetState: SheetState
@@ -48,6 +49,14 @@ internal class SettingsScreenLocalState {
 
     fun dismissClearBackupDirConfirmDialog() {
         showClearBackupDirConfirmDialog = false
+    }
+
+    fun openDatabaseResetSheet() {
+        showDatabaseResetSheet = true
+    }
+
+    fun dismissDatabaseResetSheet() {
+        showDatabaseResetSheet = false
     }
 
     fun openAppPasswordActionDialog() {

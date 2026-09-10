@@ -11,6 +11,17 @@ import org.junit.Test
 class SettingsPresentationAdaptersTest {
 
     @Test
+    fun `database reset opens in settings without leaving the current route`() {
+        val localState = SettingsScreenLocalState()
+
+        localState.openDatabaseResetSheet()
+        assertTrue(localState.showDatabaseResetSheet)
+
+        localState.dismissDatabaseResetSheet()
+        assertFalse(localState.showDatabaseResetSheet)
+    }
+
+    @Test
     fun `dialog model maps swipe actions and password validation`() {
         val localState = SettingsScreenLocalState().apply {
             appPasswordCurrent = "current"

@@ -39,6 +39,7 @@ import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogs
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.AppPasswordAction
 import com.aozijx.passly.presentation.feature.settings.security.validateAndSendAppPasswordAction
+import com.aozijx.passly.presentation.feature.database.reset.DatabaseResetOverlay
 import com.aozijx.passly.presentation.ui.settings.main.SettingsMainPage
 import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenDialogsHost
 import com.aozijx.passly.presentation.ui.settings.main.rememberSettingsScreenLocalState
@@ -56,7 +57,6 @@ import kotlinx.coroutines.launch
 fun SettingsNavGraph(
     settingsViewModel: SettingsViewModel,
     onOpenTrash: () -> Unit,
-    onOpenDatabaseReset: () -> Unit,
     onOuterBack: () -> Unit
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<SettingsRoute>()
@@ -158,7 +158,6 @@ fun SettingsNavGraph(
                     dataViewModel = dataViewModel,
                     settingsState = settingsState,
                     onOpenTrash = onOpenTrash,
-                    onOpenDatabaseReset = onOpenDatabaseReset,
                     onBack = navigateBack,
                 )
             },
@@ -226,7 +225,6 @@ fun SettingsNavGraph(
                             dataViewModel = dataViewModel,
                             settingsState = settingsState,
                             onOpenTrash = onOpenTrash,
-                            onOpenDatabaseReset = onOpenDatabaseReset,
                             onBack = null,
                         )
                     }
@@ -257,6 +255,10 @@ fun SettingsNavGraph(
             }
         )
     )
+
+    if (localState.showDatabaseResetSheet) {
+        DatabaseResetOverlay(onDismiss = localState::dismissDatabaseResetSheet)
+    }
 }
 
 /**

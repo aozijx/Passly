@@ -20,7 +20,6 @@ internal fun DataManagementRouteContent(
     localState: SettingsScreenLocalState,
     interactionViewModel: InteractionSettingsViewModel,
     onOpenTrash: () -> Unit,
-    onOpenDatabaseReset: () -> Unit,
     onBack: (() -> Unit)?
 ) {
     SettingsSecondaryPage(
@@ -31,7 +30,7 @@ internal fun DataManagementRouteContent(
             DataManagementDetail(
                 eventHandler = object : DataManagementEventHandler {
                     override fun onOpenTrash() = onOpenTrash.invoke()
-                    override fun onOpenDatabaseReset() = onOpenDatabaseReset.invoke()
+                    override fun onOpenDatabaseReset() = localState.openDatabaseResetSheet()
                 },
             )
         }
