@@ -21,8 +21,6 @@
     <string name="vault_detail_history_label">操作履歴</string>
     <string name="vault_detail_history_updates">変更</string>
     <string name="vault_detail_history_empty_filtered">記録はありません</string>
-    <string name="vault_detail_history_tab_version">バージョン</string>
-    <string name="vault_detail_history_tab_activity">操作</string>
     <string name="vault_detail_activity_create">作成</string>
     <string name="vault_detail_activity_update">更新</string>
     <string name="vault_detail_activity_sensitive_change">機密フィールドを変更</string>

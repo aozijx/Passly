@@ -37,8 +37,6 @@ enum class DetailActivityTypeUiModel {
     CREATE, UPDATE, SENSITIVE_CHANGE, DELETE, RESTORE,
 }
 
-data class DetailRevisionUiModel(val id: String, val version: Long, val createdAt: Long)
-
 enum class DetailEntryTypeUiModel {
     ACCOUNT, LOGIN, NOTE, BANK_CARD, ID_CARD, PASSPORT, DRIVER_LICENSE,
     SSH_KEY, WIFI, PASSKEY, OTP, DATABASE_CREDENTIAL, SERVER_CREDENTIAL,

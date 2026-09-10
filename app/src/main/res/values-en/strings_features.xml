@@ -21,8 +21,6 @@
     <string name="vault_detail_history_label">Activity log</string>
     <string name="vault_detail_history_updates">Changes</string>
     <string name="vault_detail_history_empty_filtered">No records</string>
-    <string name="vault_detail_history_tab_version">Versions</string>
-    <string name="vault_detail_history_tab_activity">Activity</string>
     <string name="vault_detail_activity_create">Created</string>
     <string name="vault_detail_activity_update">Updated</string>
     <string name="vault_detail_activity_sensitive_change">Sensitive fields changed</string>
