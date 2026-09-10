@@ -107,7 +107,7 @@ sequenceDiagram
     participant Activity as CredentialResponseActivity
     participant VM as CredentialResponseViewModel
     participant Domain as CredentialResponseInteractor
-    participant Vault as CredentialServiceRepository
+    participant Vault as AutofillCredentialRepository
 
     Client->>System: getCredential(GetPasswordOption)
     System->>Service: BeginGetCredentialRequest
@@ -197,7 +197,7 @@ sequenceDiagram
     participant Activity as CredentialResponseActivity
     participant VM as CredentialResponseViewModel
     participant Domain as CredentialResponseInteractor
-    participant Vault as CredentialServiceRepository
+    participant Vault as AutofillCredentialRepository
 
     Client->>System: createCredential(CreatePasswordRequest)
     System->>Service: BeginCreatePasswordCredentialRequest
@@ -229,7 +229,7 @@ sequenceDiagram
 
 完成阶段从 `ProviderCreateCredentialRequest.callingRequest` 取得 `CreatePasswordRequest`
 ，再验证系统调用包并执行当前设置与
-认证策略。保存调用 `CredentialServiceRepository.save()`，最终由 `EntryCommandRepository.createEntry()`
+认证策略。保存调用 `AutofillCredentialRepository.save()`，最终由 `EntryCommandRepository.createEntry()`
 正式事务写入
 加密条目、查询索引、修订和活动数据。
 
@@ -329,7 +329,7 @@ allowlist。只有调用包和签名
 | `CredentialResponseActivity`     | 安装 AuthenticationHost、返回 Activity result  | 决定凭据是否正确                       |
 | `CredentialResponseViewModel`    | 提取系统最终请求、调用用例、映射平台结果                      | 实现密码/生物识别验证                    |
 | `CredentialResponseInteractor`   | 当前设置、认证、重新查询、作用域校验、保存编排                   | Android Activity、PendingIntent |
-| `CredentialServiceRepository`    | 候选读取、按 ID 读取、正式保存契约                       | AndroidX Credential 类型         |
+| `AutofillCredentialRepository`   | 候选读取、按 ID 读取、正式保存契约                       | AndroidX Credential 类型         |
 | `AuthenticationManager`          | 认证方式、正确性、失败原因、新鲜认证策略                      | 构建 Credential Manager 响应       |
 
 核心边界：
@@ -458,18 +458,18 @@ Passly 数据模型已经存在：
 
 ## 相关实现
 
-- [ModernCredentialService](../../app/src/main/java/com/aozijx/passly/service/autofill/credential/ModernCredentialService.kt)
-- [CredentialBeginGetHandler](../../app/src/main/java/com/aozijx/passly/service/autofill/credential/CredentialBeginGetHandler.kt)
-- [CredentialBeginCreateHandler](../../app/src/main/java/com/aozijx/passly/service/autofill/credential/CredentialBeginCreateHandler.kt)
-- [CredentialCallingAppResolver](../../app/src/main/java/com/aozijx/passly/service/autofill/credential/CredentialCallingAppResolver.kt)
-- [CredentialPlatformAdapter](../../app/src/main/java/com/aozijx/passly/service/autofill/credential/CredentialPlatformAdapter.kt)
-- [CredentialPendingIntentFactory](../../app/src/main/java/com/aozijx/passly/service/autofill/credential/CredentialPendingIntentFactory.kt)
-- [CredentialEntryFactory](../../app/src/main/java/com/aozijx/passly/service/autofill/credential/CredentialEntryFactory.kt)
-- [CredentialResponseFactory](../../app/src/main/java/com/aozijx/passly/service/autofill/credential/CredentialResponseFactory.kt)
-- [CredentialResponseActivity](../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialResponseActivity.kt)
-- [CredentialResponseViewModel](../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialResponseViewModel.kt)
+- [ModernCredentialService](../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/ModernCredentialService.kt)
+- [CredentialBeginGetHandler](../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/CredentialBeginGetHandler.kt)
+- [CredentialBeginCreateHandler](../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/CredentialBeginCreateHandler.kt)
+- [CredentialCallingAppResolver](../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/CredentialCallingAppResolver.kt)
+- [CredentialPlatformAdapter](../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/CredentialPlatformAdapter.kt)
+- [CredentialPendingIntentFactory](../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/CredentialPendingIntentFactory.kt)
+- [CredentialEntryFactory](../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/CredentialEntryFactory.kt)
+- [CredentialResponseFactory](../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/CredentialResponseFactory.kt)
+- [CredentialResponseActivity](../../app/src/main/java/com/aozijx/passly/presentation/feature/autofill/credential/CredentialResponseActivity.kt)
+- [CredentialResponseViewModel](../../app/src/main/java/com/aozijx/passly/presentation/feature/autofill/credential/CredentialResponseViewModel.kt)
 - [CredentialResponseInteractor](../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialResponseInteractor.kt)
-- [CredentialServiceRepository](../../app/src/main/java/com/aozijx/passly/domain/autofill/repository/CredentialServiceRepository.kt)
+- [AutofillCredentialRepository](../../domain/src/main/kotlin/com/aozijx/passly/domain/autofill/port/AutofillCredentialRepository.kt)
 - [Provider capability](../../app/src/main/res/xml/credential_service_config.xml)
 - [Provider Manifest](../../app/src/main/AndroidManifest.xml)
 - [Autofill 安全与一次验证](../security/autofill.md)

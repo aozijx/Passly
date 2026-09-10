@@ -107,5 +107,5 @@ Compose 使用 `LazyPagingItems` 消费数据：首次加载显示全页进度�
 - [`EntrySort`](../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/query/EntrySort.kt)
 - [`EntryPagingQueryFactory`](../../data/src/main/java/com/aozijx/passly/data/local/database/query/EntryPagingQueryFactory.kt)
 - [`RoomEntryPagingStore`](../../data/src/main/java/com/aozijx/passly/data/repository/entry/paging/RoomEntryPagingStore.kt)
-- [`VaultViewModel`](../../app/src/main/java/com/aozijx/passly/feature/vault/VaultViewModel.kt)
-- [`VaultPagerContent`](../../app/src/main/java/com/aozijx/passly/presentation/vault/components/list/VaultPagerContent.kt)
+- [`VaultViewModel`](../../app/src/main/java/com/aozijx/passly/presentation/feature/vault/list/VaultViewModel.kt)
+- [`VaultPagerContent`](../../app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/component/list/VaultPagerContent.kt)
