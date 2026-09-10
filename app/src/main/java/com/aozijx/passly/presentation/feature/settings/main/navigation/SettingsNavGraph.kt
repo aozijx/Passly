@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
@@ -68,6 +69,7 @@ fun SettingsNavGraph(
     val dataViewModel: DataManagementSettingsViewModel = hiltViewModel()
     val dataState by dataViewModel.uiState.collectAsStateWithLifecycle()
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+    val mainListState = rememberLazyGridState()
 
     val backBehavior = BackNavigationBehavior.PopUntilScaffoldValueChange
     val isSinglePane = navigator.scaffoldDirective.maxHorizontalPartitions == 1
@@ -145,7 +147,8 @@ fun SettingsNavGraph(
                             }
                         }
                     },
-                    selectedRouteKey = null
+                    selectedRouteKey = null,
+                    listState = mainListState,
                 )
             },
             detailContent = {
@@ -186,6 +189,7 @@ fun SettingsNavGraph(
                             }
                         },
                         selectedRouteKey = selectedRoute?.route,
+                        listState = mainListState,
                     )
                 }
             },

@@ -18,6 +18,7 @@ fun settingsGroupItem(
     visible: Boolean = true,
     enabled: Boolean = true,
     icon: ImageVector? = null,
+    reserveLeadingIconSpace: Boolean = false,
     title: String,
     subtitle: String? = null,
     isLoading: Boolean = false,
@@ -37,7 +38,7 @@ fun settingsGroupItem(
         } else {
             trailing
         }
-    val leadingContent = icon.asLeadingContent()
+    val leadingContent = icon.asLeadingContent(reserveLeadingIconSpace)
     val supportingText = subtitle
     val supportingContent: (@Composable () -> Unit)? =
         if (supportingText != null) {

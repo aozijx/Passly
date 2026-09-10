@@ -165,7 +165,7 @@ fun LockAuthSettingsSection(
             switchSettingsGroupItem(
                 key = "security.invalidate_biometric",
                 visible = state.isBiometricEnabled,
-                icon = Icons.Default.Fingerprint,
+                reserveLeadingIconSpace = true,
                 title = stringResource(R.string.settings_security_invalidate_biometric_key),
                 subtitle = stringResource(
                     if (state.isInvalidateKeyOnBioChange) {

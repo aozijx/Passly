@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
@@ -37,6 +38,7 @@ internal fun SettingsMainPage(
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
     onGroupClick: (String) -> Unit,
+    listState: LazyGridState,
     selectedRouteKey: String? = null,
 ) {
     Scaffold(
@@ -66,6 +68,7 @@ internal fun SettingsMainPage(
     ) { innerPadding ->
         val sections = SettingsGroup.entries.groupBy { it.sectionTitleRes }.toList()
         LazyVerticalGrid(
+            state = listState,
             columns = GridCells.Fixed(1),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(

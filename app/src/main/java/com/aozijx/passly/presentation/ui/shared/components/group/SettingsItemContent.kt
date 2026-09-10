@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
@@ -14,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+
+private val LeadingIconSize = 24.dp
 
 /** 设置值文案的切换动画（值变化时上下滑动过渡）。 */
 @Composable
@@ -72,17 +75,29 @@ internal fun <T> AnimatedSettingValue(
 }
 
 /** 将 [ImageVector] 图标转换为 Material 列表项的行首内容。 */
-internal fun ImageVector?.asLeadingContent(): (@Composable () -> Unit)? = when {
-    this != null -> {
-        val image = this
-        {
-            Icon(
-                imageVector = image,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-    }
+internal enum class LeadingSlot { NONE, ICON, PLACEHOLDER }
 
-    else -> null
+internal fun resolveLeadingSlot(hasIcon: Boolean, reserveSpace: Boolean): LeadingSlot = when {
+    hasIcon -> LeadingSlot.ICON
+    reserveSpace -> LeadingSlot.PLACEHOLDER
+    else -> LeadingSlot.NONE
+}
+
+/** 将图标或等宽占位转换为 Material 列表项的行首内容。 */
+internal fun ImageVector?.asLeadingContent(
+    reserveSpace: Boolean = false,
+): (@Composable () -> Unit)? = when (resolveLeadingSlot(this != null, reserveSpace)) {
+    LeadingSlot.ICON -> requireNotNull(this).asIconLeadingContent()
+    LeadingSlot.PLACEHOLDER -> {
+        { Spacer(Modifier.size(LeadingIconSize)) }
+    }
+    LeadingSlot.NONE -> null
+}
+
+private fun ImageVector.asIconLeadingContent(): @Composable () -> Unit = {
+    Icon(
+        imageVector = this,
+        contentDescription = null,
+        modifier = Modifier.size(LeadingIconSize),
+    )
 }

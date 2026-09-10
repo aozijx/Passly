@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -21,7 +22,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import androidx.compose.material3.OutlinedTextField
 import com.aozijx.passly.core.ui.components.markdown.PasslyMarkdownDocument
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailNotesUiModel
 
@@ -36,6 +36,10 @@ fun NotesSection(
     val notesLabel = stringResource(R.string.field_notes)
     val addNotesPlaceholder = stringResource(R.string.vault_detail_add_notes)
     val noNotesLabel = stringResource(R.string.vault_detail_no_notes)
+    val startEditing = {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        onEditStarted()
+    }
 
     InfoGroupCard(title = notesLabel) {
         if (model.isEditing) {
@@ -69,10 +73,7 @@ fun NotesSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .combinedClickable(
-                        onLongClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onEditStarted()
-                        },
+                        onLongClick = startEditing,
                         onClick = { /* 不做任何事，只有长按触发 */ }
                     )
                     .padding(16.dp)
@@ -80,6 +81,7 @@ fun NotesSection(
                 PasslyMarkdownDocument(
                     content = model.notes,
                     modifier = Modifier.fillMaxWidth(),
+                    onLongClick = startEditing,
                     emptyContent = {
                         Text(text = noNotesLabel, style = MaterialTheme.typography.bodyMedium)
                     }

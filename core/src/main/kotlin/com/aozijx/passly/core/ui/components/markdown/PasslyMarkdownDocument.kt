@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 fun PasslyMarkdownDocument(
     content: String?,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
     emptyContent: (@Composable () -> Unit)? = null
 ) {
     val normalizedContent = normalizeMarkdownDocument(content)
@@ -23,7 +24,7 @@ fun PasslyMarkdownDocument(
         if (normalizedContent == null) {
             emptyContent?.invoke()
         } else {
-            MarkwonDocumentView(content = normalizedContent)
+            MarkwonDocumentView(content = normalizedContent, onLongClick = onLongClick)
         }
     }
 }

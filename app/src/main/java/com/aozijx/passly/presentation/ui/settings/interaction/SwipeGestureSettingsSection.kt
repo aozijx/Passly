@@ -34,6 +34,7 @@ internal fun SwipeGestureSettingsSection(
             navigationSettingsGroupItem(
                 key = "interaction.swipe_left",
                 visible = isSwipeEnabled,
+                reserveLeadingIconSpace = true,
                 title = stringResource(R.string.settings_swipe_gesture_left_action),
                 value = swipeLeftAction.localizedLabel(),
                 onClick = onLeftSwipeActionClick
@@ -41,6 +42,7 @@ internal fun SwipeGestureSettingsSection(
             navigationSettingsGroupItem(
                 key = "interaction.swipe_right",
                 visible = isSwipeEnabled,
+                reserveLeadingIconSpace = true,
                 title = stringResource(R.string.settings_swipe_gesture_right_action),
                 value = swipeRightAction.localizedLabel(),
                 onClick = onRightSwipeActionClick

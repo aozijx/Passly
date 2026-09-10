@@ -23,6 +23,7 @@ fun switchSettingsGroupItem(
     visible: Boolean = true,
     enabled: Boolean = true,
     icon: ImageVector? = null,
+    reserveLeadingIconSpace: Boolean = false,
     title: String,
     subtitle: String? = null,
     checked: Boolean,
@@ -37,7 +38,7 @@ fun switchSettingsGroupItem(
         ),
         enabled = enabled,
         verticalAlignment = Alignment.CenterVertically,
-        leadingContent = icon.asLeadingContent(),
+        leadingContent = icon.asLeadingContent(reserveLeadingIconSpace),
         trailingContent = {
             Switch(
                 checked = checked,

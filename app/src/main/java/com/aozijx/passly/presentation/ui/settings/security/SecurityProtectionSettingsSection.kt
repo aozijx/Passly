@@ -41,6 +41,7 @@ fun SecurityProtectionSettingsSection(
             switchSettingsGroupItem(
                 key = "privacy.flip_exit",
                 visible = isFlipToLockEnabled,
+                reserveLeadingIconSpace = true,
                 title = stringResource(R.string.settings_security_flip_exit),
                 subtitle = stringResource(R.string.settings_security_flip_exit_description),
                 checked = isFlipExitAndClearStackEnabled,

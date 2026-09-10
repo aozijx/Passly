@@ -26,4 +26,11 @@ class SegmentedSettingsShapePolicyTest {
         assertEquals(shapes.pressedShape, stableShapes.pressedShape)
         assertNotEquals(stableShapes.shape, stableShapes.pressedShape)
     }
+
+    @Test
+    fun `child reserves an empty leading slot only when requested without its own icon`() {
+        assertEquals(LeadingSlot.ICON, resolveLeadingSlot(hasIcon = true, reserveSpace = true))
+        assertEquals(LeadingSlot.PLACEHOLDER, resolveLeadingSlot(hasIcon = false, reserveSpace = true))
+        assertEquals(LeadingSlot.NONE, resolveLeadingSlot(hasIcon = false, reserveSpace = false))
+    }
 }

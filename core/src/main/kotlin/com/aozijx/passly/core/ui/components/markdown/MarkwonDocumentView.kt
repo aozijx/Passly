@@ -22,6 +22,7 @@ import io.noties.markwon.ext.tasklist.TaskListPlugin
 internal fun MarkwonDocumentView(
     content: String,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val applicationContext = LocalContext.current.applicationContext
     val markwon = remember(applicationContext) { createMarkwon(applicationContext) }
@@ -33,6 +34,14 @@ internal fun MarkwonDocumentView(
         factory = { context -> PasslyMarkdownTextView(context) },
         modifier = modifier.fillMaxWidth(),
         update = { textView ->
+            textView.setOnLongClickListener(
+                onLongClick?.let { callback ->
+                    android.view.View.OnLongClickListener {
+                        callback()
+                        true
+                    }
+                },
+            )
             textView.setTextColor(textColor)
             textView.setLinkTextColor(linkColor)
             textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSizeSp)

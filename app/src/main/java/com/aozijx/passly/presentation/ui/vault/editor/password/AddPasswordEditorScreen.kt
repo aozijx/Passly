@@ -2,29 +2,31 @@ package com.aozijx.passly.presentation.ui.vault.editor.password
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.stringResource
-import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.NextFocusTextField
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import com.aozijx.passly.presentation.ui.vault.editor.common.AddEntryScaffold
-import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorSection
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import com.aozijx.passly.R
+import com.aozijx.passly.presentation.ui.shared.components.NextFocusTextField
+import com.aozijx.passly.presentation.ui.vault.editor.common.AddEntryScaffold
+import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorSection
 
 @Immutable
 class PasswordEditorState(
@@ -121,6 +123,7 @@ fun AddPasswordEditorScreen(
                 keyboardType = KeyboardType.Uri,
             )
             OutlinedTextField(
+                modifier = Modifier.fillMaxWidth(),
                 value = state.notes,
                 onValueChange = onEvent.onNotesChange,
                 label = { Text(stringResource(R.string.field_notes)) },
