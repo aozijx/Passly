@@ -45,7 +45,6 @@ sealed interface ArgumentValue {
     }
 }
 
-fun countArgument(key: ArgumentKey, value: Long) = key to ArgumentValue.Count(value)
 fun durationArgument(key: ArgumentKey, value: Long) = key to ArgumentValue.DurationMs(value)
 fun enumArgument(key: ArgumentKey, value: String) = key to ArgumentValue.EnumCode(value)
 fun reasonArgument(key: ArgumentKey, value: String) = key to ArgumentValue.ReasonCode(value)

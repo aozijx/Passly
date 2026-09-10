@@ -90,9 +90,6 @@ interface EntryCommandDao {
     @Query("DELETE FROM entries WHERE deletedAt IS NOT NULL AND deletedAt < :before")
     suspend fun purgeDeleted(before: Long): Int
 
-    @Query("UPDATE entries SET capabilityFlags = capabilityFlags | :capability WHERE entryId = :entryId")
-    suspend fun addCapability(entryId: String, capability: Int): Int
-
     @Query("UPDATE entries SET capabilityFlags = capabilityFlags & :retainedMask WHERE entryId = :entryId")
     suspend fun retainCapabilities(entryId: String, retainedMask: Int): Int
 

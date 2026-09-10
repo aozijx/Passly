@@ -27,20 +27,6 @@ object EntryProfileMapper {
         expiresAtMs = entity.expiresAt,
     )
 
-    fun applyToEntity(profile: EntryProfile, entity: EntryEntity): EntryEntity = entity.copy(
-        title = profile.title,
-        username = profile.username,
-        primaryUrl = profile.associations.primaryUrl,
-        domains = profile.associations.domains,
-        applicationIds = profile.associations.applicationIds,
-        iconName = profile.icon.name,
-        iconCustomReference = profile.icon.customReference,
-        favorite = profile.favorite,
-        tags = profile.tags,
-        iconColor = profile.icon.color,
-        expiresAt = profile.expiresAtMs,
-    )
-
     fun toPayload(summary: EntryProfile): SummaryPayload = SummaryPayload(
         title = summary.title,
         username = summary.username,
