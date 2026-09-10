@@ -14,8 +14,6 @@ internal data class DetailSectionActionHandler(
     fun record(field: String, type: ActivityType) {
         onAction(DetailUiAction.RecordAction(field, type))
     }
-
-    fun copy(text: String) = onCopySensitive(text)
 }
 
 internal inline fun copySensitiveField(
@@ -29,14 +27,14 @@ internal inline fun copySensitiveField(
         val chars = revealedValue.toCharArray()
         val plain = String(chars)
         chars.fill('\u0000')
-        handler.copy(plain)
+        handler.onCopySensitive(plain)
         afterCopy(plain)
         handler.record(fieldName, ActivityType.COPY_PASSWORD)
         return
     }
     val source = sourceValue?.takeIf { it.isNotBlank() } ?: return
     handler.onAuthenticate.copy {
-        handler.copy(source)
+        handler.onCopySensitive(source)
         afterCopy(source)
         handler.record(fieldName, ActivityType.COPY_PASSWORD)
     }

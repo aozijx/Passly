@@ -46,7 +46,7 @@ internal fun DetailPasskeyHost(
         },
         onHardwareKeyCopy = {
             hardwareInfo?.let {
-                handler.copy(it)
+                handler.onCopySensitive(it)
                 handler.record("hardware key info", ActivityType.COPY_PASSWORD)
             }
         },

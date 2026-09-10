@@ -38,7 +38,7 @@ internal fun DetailWifiHost(
             entry.secret.wifi?.isHidden ?: false,
         ),
         onSsidCopy = {
-            handler.copy(entry.username)
+            handler.onCopySensitive(entry.username)
             handler.record("SSID", ActivityType.COPY_PASSWORD)
         },
         onPasswordCopy = {

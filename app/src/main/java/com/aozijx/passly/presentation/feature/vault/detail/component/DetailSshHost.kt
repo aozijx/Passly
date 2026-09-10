@@ -45,7 +45,7 @@ internal fun DetailSshHost(
             (hasPrivateKey && privateKey == null) || (hasPassphrase && passphrase == null),
         ),
         onFingerprintCopy = {
-            handler.copy(entry.username)
+            handler.onCopySensitive(entry.username)
             handler.record("fingerprint", ActivityType.COPY_PASSWORD)
         },
         onPassphraseCopy = {

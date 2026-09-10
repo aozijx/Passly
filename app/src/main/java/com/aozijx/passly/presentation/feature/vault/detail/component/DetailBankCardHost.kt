@@ -129,7 +129,7 @@ internal fun DetailBankCardHost(
                 )
 
                 DetailBankCardFieldUiModel.EXPIRATION -> {
-                    card?.cardExpiry?.let(handler::copy)
+                    card?.cardExpiry?.let(handler.onCopySensitive)
                     onAction(DetailUiAction.RecordAction("expiration", ActivityType.COPY_PASSWORD))
                     return@BankCardSection
                 }

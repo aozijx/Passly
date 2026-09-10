@@ -47,7 +47,7 @@ internal fun DetailIdentityHost(
             }
         },
         onUsernameCopy = {
-            handler.copy(entry.username)
+            handler.onCopySensitive(entry.username)
             handler.record("username", ActivityType.COPY_PASSWORD)
         },
     )
