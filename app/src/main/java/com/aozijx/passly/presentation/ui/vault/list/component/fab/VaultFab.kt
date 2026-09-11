@@ -45,6 +45,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.animation.SharedTransitionOverlayClip
 import com.aozijx.passly.core.ui.animation.withSharedTransitionVisualOverflow
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultAddTypeUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.icon
 import com.aozijx.passly.presentation.ui.vault.list.model.labelRes
 import com.aozijx.passly.presentation.ui.vault.shared.ADD_ENTRY_FAB_SHARED_KEY
 import com.aozijx.passly.presentation.ui.vault.shared.AddEntryFabVisualOverflow

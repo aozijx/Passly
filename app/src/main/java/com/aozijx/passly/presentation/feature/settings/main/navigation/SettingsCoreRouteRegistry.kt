@@ -17,7 +17,7 @@ internal fun CoreSettingsRouteContent(
         SettingsRoute.Security -> SecurityRouteContent(settingsViewModel, onBack)
         SettingsRoute.Privacy -> PrivacyRouteContent(settingsViewModel, onBack)
         SettingsRoute.Appearance -> AppearanceRouteContent(settingsViewModel, onBack)
-        SettingsRoute.Interface -> InterfaceRouteContent(settingsViewModel, onBack)
+        SettingsRoute.Interface -> InterfaceRouteContent(onBack)
         else -> error("Unsupported core settings route: ${route.route}")
     }
 }

@@ -7,8 +7,6 @@
     <string name="sort_usage">使用次数</string>
     <string name="sort_last_used">最近使用</string>
     <string name="vault_menu_sort">排序方式</string>
-    <string name="vault_quick_filter_passwords">密码</string>
-    <string name="vault_quick_filter_totp">验证码</string>
 
     <!-- 添加条目 -->
     <string name="vault_add_type_totp">动态口令</string>

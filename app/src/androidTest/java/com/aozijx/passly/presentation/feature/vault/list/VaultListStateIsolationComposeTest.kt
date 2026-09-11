@@ -41,7 +41,7 @@ class VaultListStateIsolationComposeTest {
         content: VaultListContentUiModel,
         onComposition: () -> Unit,
     ) {
-        navigation.visibleQuickFilters
+        navigation.filterOptions
         content.showTotpCode
         onComposition()
     }

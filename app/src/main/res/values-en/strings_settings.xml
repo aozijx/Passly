@@ -62,7 +62,6 @@
     <string name="settings_interface_quick_filter_bar_collapsible_description">Auto-hide quick filters while scrolling</string>
     <string name="settings_interface_top_bar_collapsible">Collapsible top bar</string>
     <string name="settings_interface_top_bar_collapsible_description">Shrink the top bar on scroll for more content</string>
-    <string name="settings_interface_vault_quick_filters_section">Quick filters</string>
     <string name="settings_interface_entry_hierarchy_section">Linked accounts</string>
     <string name="settings_interface_entry_hierarchy_display_mode">Linked entry display</string>
     <string name="settings_interface_entry_hierarchy_collapsed">Collapsed</string>

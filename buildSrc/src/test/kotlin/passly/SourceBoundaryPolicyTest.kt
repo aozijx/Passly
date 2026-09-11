@@ -331,11 +331,11 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
-    fun vaultUiCannotAcceptARecreatedPagingFlowFactory() {
+    fun vaultUiCannotAcceptMultiplePagingStreams() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",
             content =
-                "entryPages: (VaultQuickFilterUiModel) -> Flow<PagingData<VaultListItemUiModel>>",
+                "entryPages: Map<VaultAddTypeUiModel, Flow<PagingData<VaultListItemUiModel>>>",
         )
 
         assertEquals(

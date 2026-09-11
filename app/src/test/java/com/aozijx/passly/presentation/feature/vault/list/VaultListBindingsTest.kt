@@ -4,7 +4,6 @@ import androidx.paging.PagingData
 import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -13,9 +12,9 @@ import org.junit.Test
 class VaultListBindingsTest {
     @Test
     fun `updating callbacks keeps paging flows and dispatches to latest callback`() {
-        val passwordPages = flowOf(PagingData.empty<VaultListItemUiModel>())
+        val entries = flowOf(PagingData.empty<VaultListItemUiModel>())
         val bindings = VaultListBindings(
-            entryPages = mapOf(VaultQuickFilterUiModel.PASSWORDS to passwordPages),
+            entries = entries,
         )
         val item = vaultListItem(id = "entry-1")
         val events = mutableListOf<String>()
@@ -24,7 +23,7 @@ class VaultListBindingsTest {
             onItemClick = { events += "old-click:${it.id}" },
             onItemSwipe = { entry, action -> events += "old-swipe:${entry.id}:$action" },
         )
-        val flowBeforeCallbackChange = bindings.entryPages.getValue(VaultQuickFilterUiModel.PASSWORDS)
+        val flowBeforeCallbackChange = bindings.entries
 
         bindings.updateEvents(
             onItemClick = { events += "new-click:${it.id}" },
@@ -35,7 +34,7 @@ class VaultListBindingsTest {
 
         assertSame(
             flowBeforeCallbackChange,
-            bindings.entryPages.getValue(VaultQuickFilterUiModel.PASSWORDS),
+            bindings.entries,
         )
         assertEquals(
             listOf("new-click:entry-1", "new-swipe:entry-1:DELETE"),

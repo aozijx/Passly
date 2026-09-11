@@ -11,13 +11,11 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.domain.entry.model.query.EntryCapability
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultAddTypeUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpKindUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -87,10 +85,8 @@ class VaultListUiMapperTest {
 
     @Test
     fun interactionEnumsRoundTripAcrossFeatureBoundary() {
-        LibraryQuickFilter.entries.forEach { assertEquals(it, it.toUiModel().toFeatureModel()) }
         SwipeActionType.entries.forEach { assertEquals(it, it.toUiModel().toFeatureModel()) }
         AddType.entries.forEach { assertEquals(it, it.toUiModel().toFeatureModel()) }
-        assertEquals(VaultQuickFilterUiModel.ALL, LibraryQuickFilter.ALL.toUiModel())
         assertEquals(SwipeActionUiModel.DELETE, SwipeActionType.DELETE.toUiModel())
         assertEquals(VaultAddTypeUiModel.PASSWORD, AddType.PASSWORD.toUiModel())
     }

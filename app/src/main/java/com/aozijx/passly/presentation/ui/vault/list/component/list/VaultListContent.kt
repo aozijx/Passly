@@ -15,9 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
@@ -57,117 +56,100 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardPresentationU
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListContentUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHandler
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListNavigationUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpStateProvider
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
-fun VaultPagerContent(
-    pagerState: PagerState,
-    navigation: VaultListNavigationUiModel,
+fun VaultListContent(
     content: VaultListContentUiModel,
-    entryPages: Map<VaultQuickFilterUiModel, Flow<PagingData<VaultListItemUiModel>>>,
+    entries: Flow<PagingData<VaultListItemUiModel>>,
     itemEventHandler: VaultListItemEventHandler,
     otpStateProvider: VaultOtpStateProvider,
+    gridState: LazyGridState,
     modifier: Modifier = Modifier
 ) {
     val adaptiveLayout = LocalPasslyAdaptiveLayout.current
     val motionScheme = MaterialTheme.motionScheme
     var playInitialEntryAnimation by rememberSaveable { mutableStateOf(true) }
 
-    HorizontalPager(
-        modifier = modifier,
-        state = pagerState,
-        beyondViewportPageCount = 1.coerceAtMost(
-            (navigation.visibleQuickFilters.size - 1).coerceAtLeast(0)
-        ),
-        key = { pageIndex ->
-            navigation.visibleQuickFilters.getOrNull(pageIndex)?.name ?: "vault-empty"
+    val pagingItems = entries.collectAsLazyPagingItems()
+    val refreshState = pagingItems.loadState.refresh
+
+    LaunchedEffect(refreshState, pagingItems.itemCount) {
+        if (refreshState !is LoadState.Loading && pagingItems.itemCount > 0) {
+            playInitialEntryAnimation = false
         }
-    ) { pageIndex ->
-        val currentQuickFilter =
-            navigation.visibleQuickFilters.getOrNull(pageIndex) ?: VaultQuickFilterUiModel.ALL
-        val isCurrentPage = pageIndex == pagerState.currentPage
-        val pagingItems = requireNotNull(entryPages[currentQuickFilter]).collectAsLazyPagingItems()
-        val refreshState = pagingItems.loadState.refresh
+    }
 
-        LaunchedEffect(refreshState, pagingItems.itemCount) {
-            if (refreshState !is LoadState.Loading && pagingItems.itemCount > 0) {
-                playInitialEntryAnimation = false
-            }
-        }
+    when {
+        refreshState is LoadState.Loading && pagingItems.itemCount == 0 ->
+            VaultPagingProgress()
 
-        when {
-            refreshState is LoadState.Loading && pagingItems.itemCount == 0 ->
-                VaultPagingProgress()
+        refreshState is LoadState.Error && pagingItems.itemCount == 0 ->
+            VaultPagingError(onRetry = pagingItems::retry)
 
-            refreshState is LoadState.Error && pagingItems.itemCount == 0 ->
-                VaultPagingError(onRetry = pagingItems::retry)
+        pagingItems.itemCount == 0 -> EmptyVaultPlaceholder()
 
-            pagingItems.itemCount == 0 -> EmptyVaultPlaceholder()
-
-            else -> LazyVerticalGrid(
-                columns = GridCells.Adaptive(
-                    minSize = if (adaptiveLayout.isExpanded) 360.dp else 440.dp
-                ),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    horizontal = if (adaptiveLayout.isAtLeastMedium) 24.dp else 16.dp,
-                    vertical = 16.dp
-                ),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(
-                    count = pagingItems.itemCount,
-                    key = pagingItems.itemKey(VaultListItemUiModel::id),
-                    contentType = pagingItems.itemContentType(VaultListItemUiModel::entryType),
-                ) { index ->
-                    val item = pagingItems[index] ?: return@items
-                    EntryListItemRow(
-                        item = item,
-                        eventHandler = itemEventHandler,
-                        entryCardPresentations = content.cardPresentations,
-                        swipeLeftAction = content.swipeLeftAction,
-                        swipeRightAction = content.swipeRightAction,
-                        isSwipeEnabled = content.isSwipeEnabled,
-                        otpStateProvider = otpStateProvider,
-                        showTotpCode = content.showTotpCode,
-                        isCurrentPage = isCurrentPage,
-                        animateInitialAppearance = playInitialEntryAnimation,
-                        modifier = Modifier
-                            .animateItem(
-                                fadeInSpec = null,
-                                placementSpec = motionScheme.defaultSpatialSpec(),
-                                fadeOutSpec = motionScheme.fastEffectsSpec()
-                            )
-                            .fillMaxWidth()
-                    )
-                }
-
-                when (pagingItems.loadState.append) {
-                    is LoadState.Loading -> item(span = { GridItemSpan(maxLineSpan) }) {
-                        VaultPagingProgress(modifier = Modifier.fillMaxWidth().height(64.dp))
-                    }
-                    is LoadState.Error -> item(span = { GridItemSpan(maxLineSpan) }) {
-                        VaultPagingError(
-                            onRetry = pagingItems::retry,
-                            modifier = Modifier.fillMaxWidth().height(96.dp),
+        else -> LazyVerticalGrid(
+            state = gridState,
+            columns = GridCells.Adaptive(
+                minSize = if (adaptiveLayout.isExpanded) 360.dp else 440.dp
+            ),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                horizontal = if (adaptiveLayout.isAtLeastMedium) 24.dp else 16.dp,
+                vertical = 16.dp
+            ),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(
+                count = pagingItems.itemCount,
+                key = pagingItems.itemKey(VaultListItemUiModel::id),
+                contentType = pagingItems.itemContentType(VaultListItemUiModel::entryType),
+            ) { index ->
+                val item = pagingItems[index] ?: return@items
+                EntryListItemRow(
+                    item = item,
+                    eventHandler = itemEventHandler,
+                    entryCardPresentations = content.cardPresentations,
+                    swipeLeftAction = content.swipeLeftAction,
+                    swipeRightAction = content.swipeRightAction,
+                    isSwipeEnabled = content.isSwipeEnabled,
+                    otpStateProvider = otpStateProvider,
+                    showTotpCode = content.showTotpCode,
+                    animateInitialAppearance = playInitialEntryAnimation,
+                    modifier = Modifier
+                        .animateItem(
+                            fadeInSpec = null,
+                            placementSpec = motionScheme.defaultSpatialSpec(),
+                            fadeOutSpec = motionScheme.fastEffectsSpec()
                         )
-                    }
-                    is LoadState.NotLoading -> Unit
-                }
+                        .fillMaxWidth()
+                )
+            }
 
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Spacer(
-                        modifier = Modifier
-                            .height(60.dp)
-                            .navigationBarsPadding()
+            when (pagingItems.loadState.append) {
+                is LoadState.Loading -> item(span = { GridItemSpan(maxLineSpan) }) {
+                    VaultPagingProgress(modifier = Modifier.fillMaxWidth().height(64.dp))
+                }
+                is LoadState.Error -> item(span = { GridItemSpan(maxLineSpan) }) {
+                    VaultPagingError(
+                        onRetry = pagingItems::retry,
+                        modifier = Modifier.fillMaxWidth().height(96.dp),
                     )
                 }
+                is LoadState.NotLoading -> Unit
+            }
+
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Spacer(
+                    modifier = Modifier
+                        .height(60.dp)
+                        .navigationBarsPadding()
+                )
             }
         }
     }
@@ -207,7 +189,6 @@ private fun EntryListItemRow(
     isSwipeEnabled: Boolean,
     otpStateProvider: VaultOtpStateProvider,
     showTotpCode: Boolean,
-    isCurrentPage: Boolean,
     animateInitialAppearance: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -215,7 +196,7 @@ private fun EntryListItemRow(
         observeVaultOtpState(
             entryId = item.id,
             provider = otpStateProvider,
-            enabled = showTotpCode && isCurrentPage,
+            enabled = showTotpCode,
         )
     } else {
         null

@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.vault.list.component.fab
+package com.aozijx.passly.presentation.ui.vault.list.model
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TextSnippet
@@ -11,8 +11,6 @@ import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultAddTypeUiModel
-
 internal fun VaultAddTypeUiModel.icon(): ImageVector = when (this) {
     VaultAddTypeUiModel.PASSWORD -> Icons.Default.Key
     VaultAddTypeUiModel.TOTP -> Icons.Default.Pin

@@ -62,7 +62,6 @@
     <string name="settings_interface_quick_filter_bar_collapsible_description">スクロール時にクイックフィルターを自動的に隠す</string>
     <string name="settings_interface_top_bar_collapsible">トップバーを折りたたむ</string>
     <string name="settings_interface_top_bar_collapsible_description">スクロール時にトップバーを収縮</string>
-    <string name="settings_interface_vault_quick_filters_section">クイックフィルター</string>
     <string name="settings_interface_entry_hierarchy_section">関連アカウント</string>
     <string name="settings_interface_entry_hierarchy_display_mode">関連エントリの表示</string>
     <string name="settings_interface_entry_hierarchy_collapsed">折りたたむ</string>

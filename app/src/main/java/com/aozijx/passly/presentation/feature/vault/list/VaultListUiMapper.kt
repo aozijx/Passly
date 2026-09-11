@@ -7,7 +7,6 @@ import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.settings.model.CardDensity
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.OtpCodeState
@@ -25,7 +24,6 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListToolbarUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpKindUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortOptionUiModel
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
@@ -49,8 +47,6 @@ internal fun EntryListItem.toUiModel() = VaultListItemUiModel(
 
 internal fun OtpCodeState.toUiModel() = VaultOtpUiState(code, progress, isLoading, error != null)
 
-internal fun LibraryQuickFilter.toUiModel() = VaultQuickFilterUiModel.valueOf(name)
-internal fun VaultQuickFilterUiModel.toFeatureModel() = LibraryQuickFilter.valueOf(name)
 
 internal fun EntrySort.toUiModel() = VaultSortUiModel(
     option = when (field) {
@@ -107,8 +103,8 @@ internal fun VaultUiState.toUiModel(
         availableCategories = availableCategories,
     ),
     navigation = VaultListNavigationUiModel(
-        selectedQuickFilter = selectedQuickFilter.toUiModel(),
-        visibleQuickFilters = visibleQuickFilters.map(LibraryQuickFilter::toUiModel),
+        selectedFilters = selectedFilters.map(AddType::toUiModel).toSet(),
+        filterOptions = AddType.allOptions.map(AddType::toUiModel),
     ),
     content = VaultListContentUiModel(
         showTotpCode = showTOTPCode,

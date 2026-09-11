@@ -191,9 +191,9 @@ internal object SourceBoundaryPolicy {
             id = "VAULT_UI_PAGING_FACTORY",
             sourcePathContains = "/presentation/ui/vault/list/",
             forbiddenContentMarkers = setOf(
-                "entryPages: (VaultQuickFilterUiModel) -> Flow",
+                "entryPages: Map<",
             ),
-            message = "vault UI accepts a paging Flow factory with unstable identity",
+            message = "vault UI accepts multiple paging streams instead of one stable list flow",
         ),
         SourceBoundaryRule(
             id = "SETTINGS_DUPLICATE_NAVIGATION_STATE",

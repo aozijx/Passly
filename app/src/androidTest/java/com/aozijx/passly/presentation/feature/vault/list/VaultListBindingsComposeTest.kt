@@ -8,7 +8,6 @@ import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEvent
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEventHandler
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -24,15 +23,14 @@ class VaultListBindingsComposeTest {
     @Test
     fun callbackRecompositionKeepsBindingsAndPagingFlowWhileUsingLatestCallback() {
         val callbackVersion = mutableIntStateOf(0)
-        val passwordPages = flowOf(PagingData.empty<VaultListItemUiModel>())
-        val entryPages = mapOf(VaultQuickFilterUiModel.PASSWORDS to passwordPages)
+        val entries = flowOf(PagingData.empty<VaultListItemUiModel>())
         val events = mutableListOf<String>()
         lateinit var currentBindings: VaultListBindings
 
         composeRule.setContent {
             val version = callbackVersion.intValue
             currentBindings = rememberVaultListBindings(
-                entryPages = entryPages,
+                entries = entries,
                 onItemClick = { events += "$version:${it.id}" },
                 onItemSwipe = { _, _ -> },
             )
@@ -46,8 +44,8 @@ class VaultListBindingsComposeTest {
         composeRule.runOnIdle {
             assertSame(initialBindings, currentBindings)
             assertSame(
-                passwordPages,
-                currentBindings.entryPages.getValue(VaultQuickFilterUiModel.PASSWORDS),
+                entries,
+                currentBindings.entries,
             )
             currentBindings.eventHandler.onClick(vaultListItem("entry-1"))
             assertEquals(listOf("1:entry-1"), events)

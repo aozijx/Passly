@@ -7,8 +7,6 @@
     <string name="sort_usage">使用回数</string>
     <string name="sort_last_used">最近使用した順</string>
     <string name="vault_menu_sort">並び順</string>
-    <string name="vault_quick_filter_passwords">パスワード</string>
-    <string name="vault_quick_filter_totp">認証コード</string>
 
     <!-- 項目の追加 -->
     <string name="vault_add_type_totp">ワンタイムパスワード</string>

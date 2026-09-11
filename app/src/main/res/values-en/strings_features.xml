@@ -7,8 +7,6 @@
     <string name="sort_usage">Usage count</string>
     <string name="sort_last_used">Last used</string>
     <string name="vault_menu_sort">Sort by</string>
-    <string name="vault_quick_filter_passwords">Passwords</string>
-    <string name="vault_quick_filter_totp">Codes</string>
 
     <!-- Add entry -->
     <string name="vault_add_type_totp">Authenticator code</string>

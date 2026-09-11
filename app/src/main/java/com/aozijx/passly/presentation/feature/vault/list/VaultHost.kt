@@ -81,12 +81,8 @@ fun VaultHost(
         onShowDetail = onShowDetail,
         isFabVisible = { isFabVisible = it }
     )
-    val entryPages = remember(vaultViewModel) {
-        com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel.entries
-            .associateWith { filter -> vaultViewModel.entries(filter.toFeatureModel()) }
-    }
     val listBindings = rememberVaultListBindings(
-        entryPages = entryPages,
+        entries = vaultViewModel.entries,
         onItemClick = { item -> onShowDetail(item.id) },
         onItemSwipe = { item, action ->
             actionProvider.onSwipeTriggered(action.toFeatureModel(), item)
@@ -117,8 +113,8 @@ fun VaultHost(
                     VaultUiAction.SortOptionSelected(event.sort.toFeatureModel()),
                 )
 
-                is VaultListEvent.QuickFilterSelected -> vaultViewModel.onAction(
-                    VaultUiAction.QuickFilterSelected(event.filter.toFeatureModel()),
+                is VaultListEvent.FilterToggled -> vaultViewModel.onAction(
+                    VaultUiAction.FilterToggled(event.filter?.toFeatureModel()),
                 )
 
                 is VaultListEvent.AddTypeSelected -> when (event.type) {
@@ -198,7 +194,7 @@ fun VaultHost(
     com.aozijx.passly.presentation.ui.vault.list.VaultScreen(
         state = renderState,
         scrollBehavior = scrollBehavior,
-        entryPages = listBindings.entryPages,
+        entries = listBindings.entries,
         itemEventHandler = listBindings.eventHandler,
         otpStateProvider = otpStateProvider,
         fabScrollConnection = actionProvider.fabScrollConnection,

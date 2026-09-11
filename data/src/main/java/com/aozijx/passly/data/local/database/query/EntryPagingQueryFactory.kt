@@ -1,11 +1,8 @@
 package com.aozijx.passly.data.local.database.query
 
 import androidx.sqlite.db.SimpleSQLiteQuery
-import com.aozijx.passly.data.mapper.entry.databaseFlag
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.query.EntryCapability
-import com.aozijx.passly.domain.entry.model.query.EntryFilter
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
@@ -31,16 +28,9 @@ internal fun buildEntryPagingQuery(query: EntryListQuery): SimpleSQLiteQuery {
     args.addAll(usageTypes.map(ActivityType::name))
 
     val predicates = mutableListOf("entry.deletedAt IS NULL")
-    when (query.filter) {
-        EntryFilter.ALL -> Unit
-        EntryFilter.PASSWORD_ONLY -> {
-            predicates += "(entry.capabilityFlags & ?) != 0"
-            args += databaseFlag(EntryCapability.PASSWORD)
-        }
-        EntryFilter.TOTP_ONLY -> {
-            predicates += "(entry.capabilityFlags & ?) != 0"
-            args += databaseFlag(EntryCapability.OTP)
-        }
+    if (query.entryTypes.isNotEmpty()) {
+        predicates += "entry.entryType IN (${query.entryTypes.joinToString(",") { "?" }})"
+        args.addAll(query.entryTypes.map(EntryType::name))
     }
 
     if (query.normalizedSearchText.isNotEmpty()) {

@@ -46,8 +46,6 @@ interface VaultOtpStateProvider {
     fun unsubscribe(entryId: String)
 }
 
-enum class VaultQuickFilterUiModel { ALL, PASSWORDS, TOTP }
-
 data class VaultSortUiModel(
     val option: VaultSortOptionUiModel,
     val descending: Boolean,
@@ -106,8 +104,8 @@ data class VaultListToolbarUiModel(
 )
 
 data class VaultListNavigationUiModel(
-    val selectedQuickFilter: VaultQuickFilterUiModel,
-    val visibleQuickFilters: List<VaultQuickFilterUiModel>,
+    val selectedFilters: Set<VaultAddTypeUiModel>,
+    val filterOptions: List<VaultAddTypeUiModel>,
 )
 
 data class VaultListContentUiModel(
@@ -150,7 +148,7 @@ sealed interface VaultListEvent {
     data object ToggleTotpVisibility : VaultListEvent
     data class CategorySelected(val category: String?) : VaultListEvent
     data class SortSelected(val sort: VaultSortUiModel) : VaultListEvent
-    data class QuickFilterSelected(val filter: VaultQuickFilterUiModel) : VaultListEvent
+    data class FilterToggled(val filter: VaultAddTypeUiModel?) : VaultListEvent
     data class AddTypeSelected(val type: VaultAddTypeUiModel) : VaultListEvent
     data object DismissAddType : VaultListEvent
     data object ConfirmDelete : VaultListEvent

@@ -15,7 +15,6 @@ import com.aozijx.passly.data.mapper.entry.databaseFlag
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.query.EntryCapability
-import com.aozijx.passly.domain.entry.model.query.EntryFilter
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
@@ -79,7 +78,7 @@ class EntryPagingDaoTest {
         val rows = load(
             EntryListQuery(
                 searchText = "example",
-                filter = EntryFilter.PASSWORD_ONLY,
+                entryTypes = setOf(EntryType.LOGIN),
                 category = "work",
             )
         )
@@ -88,6 +87,19 @@ class EntryPagingDaoTest {
         assertEquals(2, rows.single().usageCount)
         assertEquals(200L, rows.single().lastUsedAt)
         assertEquals("account", rows.single().accountId)
+    }
+
+    @Test
+    fun pagingQuery_matchesAnySelectedEntryType() = runBlocking {
+        insert(entry("login", EntryType.LOGIN, "Login"))
+        insert(entry("otp", EntryType.OTP, "OTP"))
+        insert(entry("wifi", EntryType.WIFI, "Wi-Fi"))
+
+        val rows = load(
+            EntryListQuery(entryTypes = setOf(EntryType.LOGIN, EntryType.OTP)),
+        )
+
+        assertEquals(setOf("login", "otp"), rows.map { it.entry.entryId }.toSet())
     }
 
     @Test

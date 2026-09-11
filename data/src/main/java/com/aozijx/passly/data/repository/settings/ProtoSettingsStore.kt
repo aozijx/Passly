@@ -10,7 +10,6 @@ import com.aozijx.passly.data.local.datastore.settings.InteractionPreferences
 import com.aozijx.passly.data.local.datastore.settings.InterfacePreferences
 import com.aozijx.passly.data.local.datastore.settings.SecurityPreferences
 import com.aozijx.passly.data.local.datastore.settings.VaultViewPreferences
-import com.aozijx.passly.data.local.datastore.settings.VisibleQuickFilters
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.settings.model.AppLanguage
@@ -124,12 +123,6 @@ internal class ProtoSettingsStore @Inject constructor(
         appCornerRadiusDp = AppCornerRadiusConstraints.normalize(radiusDp)
     }
 
-    override suspend fun setVisibleQuickFilters(keys: Set<String>) = updateVaultView {
-        visibleQuickFilters = VisibleQuickFilters.newBuilder()
-            .addAllFilterKeys(keys.sorted())
-            .setConfigured(true)
-            .build()
-    }
     override suspend fun setEntryHierarchyDisplayMode(mode: EntryHierarchyDisplayMode) =
         updateVaultView { entryHierarchyDisplayMode = mode.key }
 

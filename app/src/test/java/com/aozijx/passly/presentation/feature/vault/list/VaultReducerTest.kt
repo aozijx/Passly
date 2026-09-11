@@ -1,6 +1,5 @@
 package com.aozijx.passly.presentation.feature.vault.list
 
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.feature.vault.model.AddType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -58,15 +57,16 @@ class VaultReducerTest {
     }
 
     @Test
-    fun `quick filter settings update only visible filters`() {
-        val initial = VaultUiState(selectedQuickFilter = LibraryQuickFilter.TOTP)
+    fun `specific filters toggle independently and all clears them`() {
+        val initial = VaultUiState(selectedFilters = setOf(AddType.TOTP))
 
-        val result = VaultReducer.reduce(
+        val combined = VaultReducer.reduce(
             initial,
-            VaultMutation.VisibleQuickFiltersChanged(listOf(LibraryQuickFilter.ALL)),
+            VaultMutation.FilterToggled(AddType.PASSWORD),
         )
+        val cleared = VaultReducer.reduce(combined, VaultMutation.FilterToggled(null))
 
-        assertEquals(LibraryQuickFilter.TOTP, result.selectedQuickFilter)
-        assertEquals(listOf(LibraryQuickFilter.ALL), result.visibleQuickFilters)
+        assertEquals(setOf(AddType.TOTP, AddType.PASSWORD), combined.selectedFilters)
+        assertEquals(emptySet<AddType>(), cleared.selectedFilters)
     }
 }

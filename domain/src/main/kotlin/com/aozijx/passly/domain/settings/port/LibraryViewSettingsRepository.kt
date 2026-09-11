@@ -10,7 +10,6 @@ interface LibraryViewSettingsSource {
 }
 
 interface LibraryViewSettingsRepository : LibraryViewSettingsSource {
-    suspend fun setVisibleQuickFilters(keys: Set<String>)
     suspend fun setSort(sort: EntrySort)
     suspend fun setEntryHierarchyDisplayMode(mode: EntryHierarchyDisplayMode)
 }

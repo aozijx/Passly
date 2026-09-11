@@ -7,14 +7,13 @@ import androidx.paging.PagingData
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHandler
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
 import kotlinx.coroutines.flow.Flow
 
 /**
  * Keeps paging inputs independent from callbacks that may change during Compose recomposition.
  */
 internal class VaultListBindings(
-    val entryPages: Map<VaultQuickFilterUiModel, Flow<PagingData<VaultListItemUiModel>>>,
+    val entries: Flow<PagingData<VaultListItemUiModel>>,
 ) {
     private var onItemClick: (VaultListItemUiModel) -> Unit = {}
     private var onItemSwipe: (VaultListItemUiModel, SwipeActionUiModel) -> Unit = { _, _ -> }
@@ -38,11 +37,11 @@ internal class VaultListBindings(
 
 @Composable
 internal fun rememberVaultListBindings(
-    entryPages: Map<VaultQuickFilterUiModel, Flow<PagingData<VaultListItemUiModel>>>,
+    entries: Flow<PagingData<VaultListItemUiModel>>,
     onItemClick: (VaultListItemUiModel) -> Unit,
     onItemSwipe: (VaultListItemUiModel, SwipeActionUiModel) -> Unit,
 ): VaultListBindings {
-    val bindings = remember(entryPages) { VaultListBindings(entryPages) }
+    val bindings = remember(entries) { VaultListBindings(entries) }
     SideEffect {
         bindings.updateEvents(
             onItemClick = onItemClick,

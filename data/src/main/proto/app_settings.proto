@@ -88,16 +88,10 @@ message AutofillPreferences {
 // 保险库视图 / 条目卡片
 
 message VaultViewPreferences {
-    optional VisibleQuickFilters visible_quick_filters = 1;
     optional VaultSortPreference sort = 2;
     repeated EntryCardPresentation entry_card_presentations = 3;
     // "collapsed", "expanded", "separate"
     optional string entry_hierarchy_display_mode = 4 [default = "collapsed"];
-}
-
-message VisibleQuickFilters {
-    repeated string filter_keys = 1;
-    optional bool configured = 2 [default = false];
 }
 
 message VaultSortPreference {

@@ -2,7 +2,6 @@ package com.aozijx.passly.presentation.feature.vault.list
 
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.feature.vault.model.AddType
 
@@ -11,7 +10,7 @@ sealed interface VaultUiAction {
     data class CategorySelected(val category: String?) : VaultUiAction
     data object ClearCategory : VaultUiAction
     data class SortOptionSelected(val sort: EntrySort) : VaultUiAction
-    data class QuickFilterSelected(val filter: LibraryQuickFilter) : VaultUiAction
+    data class FilterToggled(val filter: AddType?) : VaultUiAction
     data class SearchToggled(val active: Boolean) : VaultUiAction
     data object ToggleShowTotpCode : VaultUiAction
     data class AddTypeSelected(val type: AddType?) : VaultUiAction

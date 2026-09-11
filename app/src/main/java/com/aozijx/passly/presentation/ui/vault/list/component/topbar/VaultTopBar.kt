@@ -51,7 +51,6 @@ fun VaultTopBar(
     navigation: VaultListNavigationUiModel,
     content: VaultListContentUiModel,
     layout: VaultListLayoutUiModel,
-    selectedQuickFilterIndex: Int,
     scrollBehavior: TopAppBarScrollBehavior,
     eventHandler: VaultListEventHandler,
 ) {
@@ -178,22 +177,19 @@ fun VaultTopBar(
             })
 
         AnimatedVisibility(
-            visible = navigation.visibleQuickFilters.size > 1 &&
-                !uiState.isSearchActive &&
+            visible = !uiState.isSearchActive &&
                 uiState.selectedCategory == null &&
                     (!layout.collapseQuickFilterBarOnScroll ||
                         scrollBehavior.state.collapsedFraction < 0.5f),
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
-            LibraryQuickFilterBar(
-                quickFilters = navigation.visibleQuickFilters,
-                selectedQuickFilterIndex = selectedQuickFilterIndex,
-                onQuickFilterSelected = { index ->
-                    navigation.visibleQuickFilters.getOrNull(index)?.let { filter ->
-                        eventHandler.onEvent(VaultListEvent.QuickFilterSelected(filter))
-                    }
-                }
+            VaultFilterBar(
+                filters = navigation.filterOptions,
+                selectedFilters = navigation.selectedFilters,
+                onFilterToggled = { filter ->
+                    eventHandler.onEvent(VaultListEvent.FilterToggled(filter))
+                },
             )
         }
     }

@@ -8,22 +8,26 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Velocity
+import androidx.compose.ui.unit.dp
 import androidx.paging.PagingData
 import com.aozijx.passly.presentation.ui.vault.list.component.dialog.VaultDialogs
 import com.aozijx.passly.presentation.ui.vault.list.component.fab.VaultFab
-import com.aozijx.passly.presentation.ui.vault.list.component.list.VaultPagerContent
+import com.aozijx.passly.presentation.ui.vault.list.component.list.VaultListContent
 import com.aozijx.passly.presentation.ui.vault.list.component.topbar.VaultTopBar
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEvent
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEventHandler
@@ -31,16 +35,14 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHand
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpStateProvider
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultQuickFilterUiModel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultScreen(
     state: VaultListScreenUiModel,
     scrollBehavior: TopAppBarScrollBehavior,
-    entryPages: Map<VaultQuickFilterUiModel, Flow<PagingData<VaultListItemUiModel>>>,
+    entries: Flow<PagingData<VaultListItemUiModel>>,
     itemEventHandler: VaultListItemEventHandler,
     otpStateProvider: VaultOtpStateProvider,
     fabScrollConnection: NestedScrollConnection,
@@ -48,35 +50,35 @@ fun VaultScreen(
     animatedVisibilityScope: AnimatedVisibilityScope,
     eventHandler: VaultListEventHandler,
 ) {
-    val navigation = state.navigation
-    val initialIndex = navigation.visibleQuickFilters.indexOf(navigation.selectedQuickFilter).coerceAtLeast(0)
-    val pagerState = rememberPagerState(initialPage = initialIndex) {
-        navigation.visibleQuickFilters.size.coerceAtLeast(1)
+    val gridState = rememberLazyGridState()
+    val pullThresholdPx = with(LocalDensity.current) { 72.dp.toPx() }
+    val pullState = remember(pullThresholdPx, eventHandler) {
+        PullToSearchGestureState(pullThresholdPx) {
+            eventHandler.onEvent(VaultListEvent.SearchToggled(true))
+        }
+    }
+    val pullToSearchConnection = remember(gridState, pullState, state.toolbar.isSearchActive) {
+        object : NestedScrollConnection {
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource,
+            ): Offset {
+                if (!state.toolbar.isSearchActive) {
+                    pullState.onPull(available.y, isAtTop = !gridState.canScrollBackward)
+                }
+                return Offset.Zero
+            }
+
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                pullState.reset()
+                return Velocity.Zero
+            }
+        }
     }
 
     BackHandler(enabled = state.toolbar.isSearchActive) {
         eventHandler.onEvent(VaultListEvent.SearchToggled(false))
-    }
-
-    LaunchedEffect(navigation.visibleQuickFilters, navigation.selectedQuickFilter) {
-        if (navigation.visibleQuickFilters.isEmpty()) return@LaunchedEffect
-        if (navigation.selectedQuickFilter !in navigation.visibleQuickFilters) {
-            eventHandler.onEvent(
-                VaultListEvent.QuickFilterSelected(navigation.visibleQuickFilters.first()),
-            )
-            return@LaunchedEffect
-        }
-        val target = navigation.visibleQuickFilters.indexOf(navigation.selectedQuickFilter)
-        if (pagerState.settledPage != target && pagerState.pageCount > target) {
-            pagerState.animateScrollToPage(target)
-        }
-    }
-    LaunchedEffect(pagerState, navigation.visibleQuickFilters) {
-        snapshotFlow { pagerState.settledPage }.distinctUntilChanged().collect { page ->
-            navigation.visibleQuickFilters.getOrNull(page)?.let { filter ->
-                eventHandler.onEvent(VaultListEvent.QuickFilterSelected(filter))
-            }
-        }
     }
 
     Scaffold(
@@ -97,7 +99,6 @@ fun VaultScreen(
                     navigation = state.navigation,
                     content = state.content,
                     layout = state.layout,
-                    selectedQuickFilterIndex = pagerState.currentPage,
                     scrollBehavior = scrollBehavior,
                     eventHandler = eventHandler,
                 )
@@ -122,16 +123,16 @@ fun VaultScreen(
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { padding ->
-        VaultPagerContent(
-            pagerState = pagerState,
-            navigation = state.navigation,
+        VaultListContent(
             content = state.content,
-            entryPages = entryPages,
+            entries = entries,
             itemEventHandler = itemEventHandler,
             otpStateProvider = otpStateProvider,
+            gridState = gridState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .nestedScroll(pullToSearchConnection),
         )
     }
 
@@ -142,4 +143,30 @@ fun VaultScreen(
         onDismissDelete = { eventHandler.onEvent(VaultListEvent.DismissDelete) },
         requestAuthentication = eventHandler::requestAuthentication,
     )
+}
+
+internal class PullToSearchGestureState(
+    private val thresholdPx: Float,
+    private val onTriggered: () -> Unit,
+) {
+    private var distance = 0f
+    private var triggered = false
+
+    fun onPull(deltaY: Float, isAtTop: Boolean) {
+        if (!isAtTop || deltaY <= 0f) {
+            if (!triggered) distance = 0f
+            return
+        }
+        if (triggered) return
+        distance += deltaY
+        if (distance >= thresholdPx) {
+            triggered = true
+            onTriggered()
+        }
+    }
+
+    fun reset() {
+        distance = 0f
+        triggered = false
+    }
 }

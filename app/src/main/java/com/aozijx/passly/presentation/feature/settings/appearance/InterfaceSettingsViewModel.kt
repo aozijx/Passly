@@ -2,7 +2,6 @@ package com.aozijx.passly.presentation.feature.settings.appearance
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,9 +27,6 @@ class InterfaceSettingsViewModel @Inject constructor(
             collapseTopBarOnScroll = prefs.collapseTopBarOnScroll,
             collapseQuickFilterBarOnScroll = prefs.collapseQuickFilterBarOnScroll,
             appCornerRadiusDp = prefs.appCornerRadiusDp,
-            enabledLibraryQuickFilterKeys =
-                librarySettings.visibleQuickFilters?.filterKeys
-                    ?: LibraryQuickFilter.defaultVisibleKeys,
             entryHierarchyDisplayMode = librarySettings.entryHierarchyDisplayMode,
         )
     }
@@ -56,14 +52,6 @@ class InterfaceSettingsViewModel @Inject constructor(
 
             is InterfaceSettingsAction.SetAppCornerRadius -> viewModelScope.launch {
                 settingsRepository.setAppCornerRadius(action.radiusDp)
-            }
-
-            is InterfaceSettingsAction.ToggleVisibleLibraryQuickFilter -> viewModelScope.launch {
-                val nextKeys = LibraryQuickFilter.toggleVisibleKey(
-                    enabledKeys = uiState.value.enabledLibraryQuickFilterKeys,
-                    quickFilter = action.quickFilter
-                )
-                librarySettingsRepository.setVisibleQuickFilters(nextKeys)
             }
 
             is InterfaceSettingsAction.SetEntryHierarchyDisplayMode -> viewModelScope.launch {

@@ -3,7 +3,8 @@ package com.aozijx.passly.presentation.feature.vault.list
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntrySort
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.feature.vault.model.entryTypes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -13,20 +14,21 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 
-/** Shared query inputs used to derive each quick-filter page's Paging generation. */
+/** Stable inputs used to derive the vault's single Paging generation. */
 internal data class VaultQueryState(
     val searchText: String,
     val category: String?,
     val sort: EntrySort,
+    val entryTypes: Set<EntryType> = emptySet(),
     val hierarchyMode: EntryHierarchyDisplayMode,
     val reloadVersion: Long,
 ) {
-    fun toEntryListQuery(quickFilter: LibraryQuickFilter) = EntryListQuery(
+    fun toEntryListQuery() = EntryListQuery(
         searchText = searchText,
-        filter = quickFilter.entryFilter,
+        entryTypes = entryTypes,
         category = category,
         sort = sort,
-        hierarchyMode = hierarchyMode.takeIf { quickFilter == LibraryQuickFilter.ALL },
+        hierarchyMode = hierarchyMode.takeIf { entryTypes.isEmpty() },
     )
 
     companion object {
@@ -34,12 +36,14 @@ internal data class VaultQueryState(
             searchText: String,
             category: String?,
             sort: EntrySort,
+            entryTypes: Set<EntryType> = emptySet(),
             hierarchyMode: EntryHierarchyDisplayMode,
             reloadVersion: Long,
         ) = VaultQueryState(
             searchText = searchText.trim(),
             category = category?.trim()?.takeIf(String::isNotEmpty),
             sort = sort,
+            entryTypes = entryTypes,
             hierarchyMode = hierarchyMode,
             reloadVersion = reloadVersion,
         )
@@ -53,11 +57,10 @@ private data class VaultQueryGeneration(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal fun <T> Flow<VaultQueryState>.switchQueryGenerations(
-    quickFilter: LibraryQuickFilter,
     load: (EntryListQuery) -> Flow<T>,
 ): Flow<T> = map { state ->
     VaultQueryGeneration(
-        query = state.toEntryListQuery(quickFilter),
+        query = state.toEntryListQuery(),
         reloadVersion = state.reloadVersion,
     )
 }.distinctUntilChanged().flatMapLatest { generation -> load(generation.query) }
@@ -73,7 +76,13 @@ internal fun buildVaultQueryStates(
         .debounce(SEARCH_DEBOUNCE_MILLIS)
         .distinctUntilChanged()
     val selection = uiStates
-        .map { state -> VaultQuerySelection(state.selectedCategory, state.selectedSort) }
+        .map { state ->
+            VaultQuerySelection(
+                state.selectedCategory,
+                state.selectedSort,
+                state.selectedFilters.flatMap { it.entryTypes }.toSet(),
+            )
+        }
         .distinctUntilChanged()
 
     return combine(
@@ -86,6 +95,7 @@ internal fun buildVaultQueryStates(
             searchText = search,
             category = currentSelection.category,
             sort = currentSelection.sort,
+            entryTypes = currentSelection.entryTypes,
             hierarchyMode = hierarchy,
             reloadVersion = reloadVersion,
         )
@@ -95,6 +105,7 @@ internal fun buildVaultQueryStates(
 private data class VaultQuerySelection(
     val category: String?,
     val sort: EntrySort,
+    val entryTypes: Set<EntryType>,
 )
 
 private const val SEARCH_DEBOUNCE_MILLIS = 250L

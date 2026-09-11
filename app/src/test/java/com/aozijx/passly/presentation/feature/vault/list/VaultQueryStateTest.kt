@@ -1,15 +1,15 @@
 package com.aozijx.passly.presentation.feature.vault.list
 
-import com.aozijx.passly.domain.entry.model.query.EntryFilter
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntrySort
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -28,18 +28,19 @@ class VaultQueryStateTest {
             searchText = "  Mail  ",
             category = "  Work  ",
             sort = EntrySort.DEFAULT,
+            entryTypes = emptySet(),
             hierarchyMode = EntryHierarchyDisplayMode.EXPANDED,
             reloadVersion = 7L,
         )
 
-        val allQuery = state.toEntryListQuery(LibraryQuickFilter.ALL)
-        val passwordQuery = state.toEntryListQuery(LibraryQuickFilter.PASSWORDS)
+        val allQuery = state.toEntryListQuery()
+        val passwordQuery = state.copy(entryTypes = setOf(EntryType.LOGIN)).toEntryListQuery()
 
         assertEquals("Mail", allQuery.searchText)
         assertEquals("Work", allQuery.category)
-        assertEquals(EntryFilter.ALL, allQuery.filter)
+        assertEquals(emptySet<EntryType>(), allQuery.entryTypes)
         assertEquals(EntryHierarchyDisplayMode.EXPANDED, allQuery.hierarchyMode)
-        assertEquals(EntryFilter.PASSWORD_ONLY, passwordQuery.filter)
+        assertEquals(setOf(EntryType.LOGIN), passwordQuery.entryTypes)
         assertNull(passwordQuery.hierarchyMode)
     }
 
@@ -50,6 +51,7 @@ class VaultQueryStateTest {
             searchText = "mail",
             category = null,
             sort = EntrySort.DEFAULT,
+            entryTypes = emptySet(),
             hierarchyMode = EntryHierarchyDisplayMode.COLLAPSED,
             reloadVersion = 0L,
         )
@@ -59,7 +61,7 @@ class VaultQueryStateTest {
         val outputs = mutableListOf<Int>()
 
         val collection = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            states.switchQueryGenerations(LibraryQuickFilter.ALL) { query ->
+            states.switchQueryGenerations { query ->
                 loadedQueries += query.searchText
                 flowOf(loadedQueries.size)
             }.take(2).toList(outputs)
@@ -80,11 +82,12 @@ class VaultQueryStateTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun `hierarchy changes restart all page but not capability pages`() = runTest {
+    fun `hierarchy changes restart unfiltered query but not type filtered query`() = runTest {
         val initial = VaultQueryState.create(
             searchText = "",
             category = null,
             sort = EntrySort.DEFAULT,
+            entryTypes = emptySet(),
             hierarchyMode = EntryHierarchyDisplayMode.COLLAPSED,
             reloadVersion = 0L,
         )
@@ -94,13 +97,13 @@ class VaultQueryStateTest {
         val passwordLoads = mutableListOf<EntryHierarchyDisplayMode?>()
 
         val allCollection = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            states.switchQueryGenerations(LibraryQuickFilter.ALL) { query ->
+            states.switchQueryGenerations { query ->
                 allLoads += query.hierarchyMode
                 flowOf(Unit)
             }.collect {}
         }
         val passwordCollection = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            states.switchQueryGenerations(LibraryQuickFilter.PASSWORDS) { query ->
+            states.map { it.copy(entryTypes = setOf(EntryType.LOGIN)) }.switchQueryGenerations { query ->
                 passwordLoads += query.hierarchyMode
                 flowOf(Unit)
             }.collect {}
@@ -126,6 +129,7 @@ class VaultQueryStateTest {
             searchText = "mail",
             category = null,
             sort = EntrySort.DEFAULT,
+            entryTypes = emptySet(),
             hierarchyMode = EntryHierarchyDisplayMode.COLLAPSED,
             reloadVersion = 0L,
         )
@@ -135,7 +139,7 @@ class VaultQueryStateTest {
         val cancelled = mutableListOf<String>()
 
         val collection = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            states.switchQueryGenerations(LibraryQuickFilter.ALL) { query ->
+            states.switchQueryGenerations { query ->
                 flow<Unit> {
                     started += query.searchText
                     try {

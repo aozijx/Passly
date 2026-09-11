@@ -8,8 +8,6 @@ import com.aozijx.passly.data.local.datastore.settings.MessagePreferences
 import com.aozijx.passly.data.local.datastore.settings.NoticeLevelProto
 import com.aozijx.passly.data.local.datastore.settings.SecurityPreferences
 import com.aozijx.passly.data.local.datastore.settings.TopicMessagePreference
-import com.aozijx.passly.data.local.datastore.settings.VaultViewPreferences
-import com.aozijx.passly.data.local.datastore.settings.VisibleQuickFilters
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -66,16 +64,6 @@ class ProtoSerializerTest {
             .setSecurity(
                 SecurityPreferences.newBuilder()
                     .setLockTimeoutMs(45_000)
-                    .build()
-            )
-            .setVaultView(
-                VaultViewPreferences.newBuilder()
-                    .setVisibleQuickFilters(
-                        VisibleQuickFilters.newBuilder()
-                            .addFilterKeys("login")
-                            .setConfigured(true)
-                            .build()
-                    )
                     .build()
             )
             .setMessage(

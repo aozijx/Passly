@@ -11,7 +11,6 @@ import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.domain.settings.model.LibraryViewSettings
-import com.aozijx.passly.domain.settings.model.VisibleQuickFiltersConfig
 
 // -- CardDensity --
 internal fun ProtoCardDensity.toDomain(): CardDensity = when (this) {
@@ -70,12 +69,6 @@ internal fun EntryCardPresentation.toProto(): ProtoEntryCardPresentation =
 
 internal fun readVault(p: VaultViewPreferences): LibraryViewSettings =
     LibraryViewSettings(
-        visibleQuickFilters = if (p.hasVisibleQuickFilters()) {
-            VisibleQuickFiltersConfig(
-                filterKeys = p.visibleQuickFilters.filterKeysList.toSet(),
-                configured = p.visibleQuickFilters.configured
-            )
-        } else null,
         sort = if (p.hasSort()) p.sort.toDomain() else EntrySort.DEFAULT,
         entryCardPresentations = p.entryCardPresentationsList.map { it.toDomain() },
         entryHierarchyDisplayMode =

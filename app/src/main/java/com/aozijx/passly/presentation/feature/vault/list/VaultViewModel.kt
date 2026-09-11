@@ -23,7 +23,6 @@ import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
-import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
@@ -117,17 +116,10 @@ class VaultViewModel @Inject constructor(
         reloadVersions = _refreshTrigger,
     )
 
-    private val entryPages: Map<LibraryQuickFilter, Flow<PagingData<VaultListItemUiModel>>> =
-        LibraryQuickFilter.entries.associateWith { quickFilter ->
-            queryState.switchQueryGenerations(quickFilter) { query ->
-                entryPageSource.pages(query, ENTRY_PAGING_CONFIG)
-            }
-                .map { pagingData -> pagingData.map(EntryListItem::toUiModel) }
-                .cachedIn(viewModelScope)
-        }
-
-    fun entries(quickFilter: LibraryQuickFilter): Flow<PagingData<VaultListItemUiModel>> =
-        requireNotNull(entryPages[quickFilter])
+    val entries: Flow<PagingData<VaultListItemUiModel>> = queryState
+        .switchQueryGenerations { query -> entryPageSource.pages(query, ENTRY_PAGING_CONFIG) }
+        .map { pagingData -> pagingData.map(EntryListItem::toUiModel) }
+        .cachedIn(viewModelScope)
 
     private fun addScannedOtp(config: OtpConfig) {
         if (!ensureFullSecureSessionAccess("恢复模式不能保存 OTP")) return
@@ -164,8 +156,7 @@ class VaultViewModel @Inject constructor(
 
             VaultUiAction.ClearCategory -> mutate(VaultMutation.CategoryChanged(null))
             is VaultUiAction.SortOptionSelected -> selectSortOption(action.sort)
-            is VaultUiAction.QuickFilterSelected ->
-                mutate(VaultMutation.QuickFilterChanged(action.filter))
+            is VaultUiAction.FilterToggled -> mutate(VaultMutation.FilterToggled(action.filter))
 
             is VaultUiAction.SearchToggled ->
                 mutate(VaultMutation.SearchVisibilityChanged(action.active))
@@ -265,17 +256,6 @@ class VaultViewModel @Inject constructor(
                 .map { it.sort }
                 .distinctUntilChanged()
                 .collect { mutate(VaultMutation.SortChanged(it)) }
-        }
-
-        viewModelScope.launch {
-            settingsRepository.libraryViewSettings
-                .map { settings ->
-                    val keys = settings.visibleQuickFilters?.filterKeys
-                        ?: LibraryQuickFilter.defaultVisibleKeys
-                    LibraryQuickFilter.resolveVisible(keys)
-                }
-                .distinctUntilChanged()
-                .collect { mutate(VaultMutation.VisibleQuickFiltersChanged(it)) }
         }
 
         viewModelScope.launch {
