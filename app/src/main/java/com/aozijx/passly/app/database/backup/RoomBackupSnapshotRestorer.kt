@@ -38,7 +38,6 @@ import javax.inject.Singleton
  * - 生成 Summary/Secret 密文
  * - 写 Entry、Secret
  * - OVERWRITE 时在同一个事务中清库并插入
- * - 重建或标记 Blind Index 待重建
  */
 @Singleton
 internal class RoomBackupSnapshotRestorer @Inject constructor(
@@ -149,11 +148,10 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
                         }
                         val target = attachmentGarbageCollector.resourceFile(resourceId)
                         target.parentFile?.mkdirs()
-                        if (!target.isFile) {
+                        retainRestoredAttachmentFile(target, restoredFiles) {
                             val encryptedContent = attachmentContentCrypto.encrypt(content, resourceId)
                             try {
                                 fileJournal.replace(target, encryptedContent)
-                                restoredFiles += target.canonicalPath
                             } finally {
                                 encryptedContent.fill(0)
                             }
@@ -229,4 +227,14 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
     private fun report(name: String, throwable: Throwable? = null) {
         telemetry.report(EventLevel.WARN, EventCategory.BACKUP, name, throwable)
     }
+}
+
+internal inline fun retainRestoredAttachmentFile(
+    target: File,
+    retainedCanonicalPaths: MutableSet<String>,
+    writeIfMissing: () -> Unit,
+) {
+    if (!target.isFile) writeIfMissing()
+    require(target.isFile) { "附件恢复文件缺失: ${target.name}" }
+    retainedCanonicalPaths += target.canonicalPath
 }

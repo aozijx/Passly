@@ -101,7 +101,7 @@ enum class BackupOtpEncoding {
 @Serializable
 data class BackupOtpConfig(
     val type: BackupOtpType = BackupOtpType.TOTP,
-    val secret: String,
+    val secret: String? = null,
     val algorithm: BackupOtpAlgorithm = BackupOtpAlgorithm.SHA1,
     val digits: Int = 6,
     val periodSeconds: Int? = 30,

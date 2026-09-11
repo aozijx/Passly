@@ -69,7 +69,12 @@ object BackupBundleValidator {
                 "条目包含重复附件 ID: ${entry.id}"
             }
             entry.secret.otp?.config?.let { otp ->
-                require(otp.secret.isNotBlank()) { "OTP 密钥为空: ${entry.id}" }
+                val splitSecret = entry.sensitiveFields.firstOrNull {
+                    it.key == SensitiveFieldKey.OTP_SECRET.name
+                }?.value
+                require(!otp.secret.isNullOrBlank() || !splitSecret.isNullOrBlank()) {
+                    "OTP 密钥为空: ${entry.id}"
+                }
                 require(otp.digits in 5..10) { "OTP 位数无效: ${entry.id}" }
                 when (otp.type) {
                     BackupOtpType.HOTP -> require(otp.counter != null && otp.counter >= 0) {
@@ -250,11 +255,10 @@ object BackupBundleValidator {
         }
         val allowed = when (EntryType.valueOf(entry.type)) {
             EntryType.ACCOUNT, EntryType.NOTE -> null
-            EntryType.BANK_CARD, EntryType.BANK_CARD -> "card"
+            EntryType.BANK_CARD -> "card"
             EntryType.ID_CARD,
             EntryType.PASSPORT,
             EntryType.DRIVER_LICENSE,
-            EntryType.ID_CARD,
             EntryType.SEED_PHRASE,
             EntryType.RECOVERY_CODE -> "identity"
 

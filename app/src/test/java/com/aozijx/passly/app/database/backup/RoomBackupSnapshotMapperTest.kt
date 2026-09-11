@@ -11,7 +11,14 @@ import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.credential.CardCredential
 import com.aozijx.passly.domain.entry.model.credential.CustomField
 import com.aozijx.passly.domain.entry.model.credential.CustomFieldKind
+import com.aozijx.passly.domain.entry.model.credential.OtpCredential
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class RoomBackupSnapshotMapperTest {
@@ -52,5 +59,42 @@ class RoomBackupSnapshotMapperTest {
         )
 
         assertEquals(entry, mapper.toEntry(mapper.toRecord(entry)))
+    }
+
+    @Test
+    fun otpRoundTripPreservesSeparatedSecretAndConfiguration() {
+        val entry = Entry(
+            identity = EntryIdentity(
+                id = EntryId("otp-1"),
+                type = EntryType.OTP,
+                version = EntryVersion(2),
+                timestamps = EntryTimestamps(100L, 200L),
+            ),
+            profile = EntryProfile(title = "Production OTP", username = "alice"),
+            secret = EntrySecret(
+                credential = OtpCredential(
+                    OtpConfig(
+                        type = OtpType.TOTP,
+                        secret = "JBSWY3DPEHPK3PXP",
+                        algorithm = OtpHashAlgorithm.SHA256,
+                        digits = 8,
+                        periodSeconds = 60,
+                        encoding = OtpSecretEncoding.BASE32,
+                        issuer = "Example",
+                        accountName = "alice@example.com",
+                    ),
+                ),
+                notes = "primary token",
+            ),
+        )
+
+        val record = mapper.toRecord(entry)
+
+        assertNull(record.secret.otp?.config?.secret)
+        assertEquals(
+            "JBSWY3DPEHPK3PXP",
+            record.sensitiveFields.single { it.key == SensitiveFieldKey.OTP_SECRET.name }.value,
+        )
+        assertEquals(entry, mapper.toEntry(record))
     }
 }
