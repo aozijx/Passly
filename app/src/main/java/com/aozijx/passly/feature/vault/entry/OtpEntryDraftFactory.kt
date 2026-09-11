@@ -14,7 +14,10 @@ internal fun OtpConfig.toNewEntryDraft(): EntryDraft {
     val title = listOfNotNull(
         issuer?.trim()?.takeIf(String::isNotEmpty),
         accountName?.trim()?.takeIf(String::isNotEmpty),
-    ).joinToString(": ").ifEmpty { "TOTP" }
+    ).joinToString(": ")
+        .substringBefore(':')
+        .trim()
+        .ifEmpty { "TOTP" }
 
     var draft = EntryDraft(EntryDraftTarget.New(EntryType.OTP))
         .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text(title))
