@@ -22,7 +22,7 @@ class VaultListStateIsolationComposeTest {
         var pagingCompositions = 0
 
         composeRule.setContent {
-            val mapped = uiState.value.toUiModel(display(fabVisible.value), false)
+            val mapped = uiState.value.toUiModel(display(fabVisible.value))
             val stable = rememberVaultListScreenUiModel(mapped)
             PagingProbe(stable.navigation, stable.content) { pagingCompositions++ }
         }

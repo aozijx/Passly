@@ -1,9 +1,7 @@
 package com.aozijx.passly.presentation.feature.shell
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.aozijx.passly.presentation.feature.shell.navigation.PasslyNavHost
 import com.aozijx.passly.presentation.feature.shell.AppShellViewModel
@@ -17,20 +15,17 @@ internal fun AppShellContent(
     appShellViewModel: AppShellViewModel
 ) {
     val vaultViewModel: VaultViewModel = hiltViewModel()
-    val mainUiState by appShellViewModel.uiState.collectAsStateWithLifecycle()
     val navController = rememberNavController()
 
     ProvidePasslyAdaptiveLayout {
         PasslyNavHost(
             navController = navController,
             appShellViewModel = appShellViewModel,
-            isDatabaseInitializing = mainUiState.isDatabaseInitializing
-        ) { context, sharedTransitionScope, isDatabaseInitializing ->
+        ) { context, sharedTransitionScope ->
             registerVaultGraph(
                 context = context,
                 vaultViewModel = vaultViewModel,
                 sharedTransitionScope = sharedTransitionScope,
-                isDatabaseInitializing = isDatabaseInitializing,
             )
             registerSettingsGraph(context)
         }

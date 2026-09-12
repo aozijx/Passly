@@ -41,7 +41,6 @@ internal fun NavGraphBuilder.registerVaultGraph(
     context: ShellNavigationContext,
     vaultViewModel: VaultViewModel,
     sharedTransitionScope: SharedTransitionScope,
-    isDatabaseInitializing: Boolean,
 ) {
     composable(AppRoute.Vault.route) {
         VaultDestinationContent(
@@ -49,7 +48,6 @@ internal fun NavGraphBuilder.registerVaultGraph(
             vaultViewModel = vaultViewModel,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = this,
-            isDatabaseInitializing = isDatabaseInitializing,
         )
     }
 
@@ -60,7 +58,6 @@ internal fun NavGraphBuilder.registerVaultGraph(
             vaultViewModel = vaultViewModel,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = this,
-            isDatabaseInitializing = isDatabaseInitializing,
         )
         TrashHost(viewModel = trashViewModel, onDismiss = context.navigateBack)
     }
@@ -172,7 +169,6 @@ private fun VaultDestinationContent(
     vaultViewModel: VaultViewModel,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    isDatabaseInitializing: Boolean,
 ) {
     VaultHost(
         vaultViewModel = vaultViewModel,
@@ -193,6 +189,5 @@ private fun VaultDestinationContent(
         animatedVisibilityScope = animatedVisibilityScope,
         onSettingsClick = { context.navigateToRoute(AppRoute.Settings.route) },
         onShowDetail = { entryId -> context.navigateToRoute(AppRoute.Detail.createRoute(entryId)) },
-        isDatabaseInitializing = isDatabaseInitializing,
     )
 }

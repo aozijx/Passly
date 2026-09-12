@@ -34,9 +34,9 @@ class VaultListUiMapperTest {
             collapseQuickFilterBarOnScroll = false,
             hideSystemBars = false,
         )
-        val initial = VaultUiState().toUiModel(display, isDatabaseInitializing = false)
+        val initial = VaultUiState().toUiModel(display)
         val withDialog = VaultUiState(addType = AddType.BANK_CARD)
-            .toUiModel(display, isDatabaseInitializing = false)
+            .toUiModel(display)
 
         assertEquals(initial.toolbar, withDialog.toolbar)
         assertEquals(initial.navigation, withDialog.navigation)

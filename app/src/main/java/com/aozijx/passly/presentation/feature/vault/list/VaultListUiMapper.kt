@@ -93,7 +93,6 @@ internal fun EntryCardPresentation.toUiModel() = VaultCardPresentationUiModel(
 
 internal fun VaultUiState.toUiModel(
     display: VaultListDisplayUiModel,
-    isDatabaseInitializing: Boolean,
 ) = VaultListScreenUiModel(
     toolbar = VaultListToolbarUiModel(
         searchQuery = searchQuery,
@@ -122,6 +121,5 @@ internal fun VaultUiState.toUiModel(
         collapseTopBarOnScroll = display.collapseTopBarOnScroll,
         collapseQuickFilterBarOnScroll = display.collapseQuickFilterBarOnScroll,
         hideSystemBars = display.hideSystemBars,
-        isDatabaseInitializing = isDatabaseInitializing,
     ),
 )

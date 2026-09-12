@@ -348,6 +348,22 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun vaultListContentCannotDiscardItsExternalModifier() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/component/list/VaultListContent.kt",
+            content = "modifier = Modifier.fillMaxSize()",
+        )
+
+        assertEquals(
+            "VAULT_LIST_EXTERNAL_MODIFIER",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
+    @Test
     fun settingsNavigationCannotMirrorNavigatorDestinationInLocalState() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/presentation/feature/settings/main/navigation/SettingsNavGraph.kt",

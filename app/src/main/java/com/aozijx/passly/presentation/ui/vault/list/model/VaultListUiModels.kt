@@ -126,7 +126,6 @@ data class VaultListLayoutUiModel(
     val collapseTopBarOnScroll: Boolean,
     val collapseQuickFilterBarOnScroll: Boolean,
     val hideSystemBars: Boolean,
-    val isDatabaseInitializing: Boolean,
 )
 
 data class VaultListDisplayUiModel(

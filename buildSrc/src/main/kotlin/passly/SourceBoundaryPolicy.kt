@@ -196,6 +196,12 @@ internal object SourceBoundaryPolicy {
             message = "vault UI accepts multiple paging streams instead of one stable list flow",
         ),
         SourceBoundaryRule(
+            id = "VAULT_LIST_EXTERNAL_MODIFIER",
+            sourcePathContains = "/presentation/ui/vault/list/component/list/VaultListContent.kt",
+            forbiddenContentMarkers = setOf("modifier = Modifier.fillMaxSize()"),
+            message = "vault list discards the caller modifier and its gesture or layout modifiers",
+        ),
+        SourceBoundaryRule(
             id = "SETTINGS_DUPLICATE_NAVIGATION_STATE",
             sourcePathContains = "/SettingsNavGraph.kt",
             forbiddenContentMarkers = setOf(

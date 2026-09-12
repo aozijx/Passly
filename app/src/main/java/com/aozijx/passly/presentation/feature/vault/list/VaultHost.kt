@@ -43,7 +43,6 @@ fun VaultHost(
     animatedVisibilityScope: AnimatedVisibilityScope,
     onSettingsClick: () -> Unit = {},
     onShowDetail: (String) -> Unit = {},
-    isDatabaseInitializing: Boolean = false
 ) {
     val context = LocalContext.current
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
@@ -68,7 +67,6 @@ fun VaultHost(
                     vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll,
                 hideSystemBars = vaultDisplayConfig.layout.hideSystemBars,
             ),
-            isDatabaseInitializing = isDatabaseInitializing,
         ),
     )
     val actionProvider = rememberVaultActionProvider(

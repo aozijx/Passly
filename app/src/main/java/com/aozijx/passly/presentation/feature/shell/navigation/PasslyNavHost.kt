@@ -18,7 +18,6 @@ import com.aozijx.passly.presentation.feature.shell.AppShellViewModel
 internal typealias FeatureGraphRegistration = NavGraphBuilder.(
     context: ShellNavigationContext,
     sharedTransitionScope: SharedTransitionScope,
-    isDatabaseInitializing: Boolean,
 ) -> Unit
 
 /** Creates the shell NavHost and delegates all feature destination registration. */
@@ -26,7 +25,6 @@ internal typealias FeatureGraphRegistration = NavGraphBuilder.(
 internal fun PasslyNavHost(
     navController: NavHostController,
     appShellViewModel: AppShellViewModel,
-    isDatabaseInitializing: Boolean = false,
     registerFeatureGraphs: FeatureGraphRegistration,
 ) {
     val authContinuation = remember { ShellAuthContinuation() }
@@ -77,7 +75,6 @@ internal fun PasslyNavHost(
                 registerFeatureGraphs(
                     navigationContext,
                     this@SharedTransitionLayout,
-                    isDatabaseInitializing,
                 )
             }
         }

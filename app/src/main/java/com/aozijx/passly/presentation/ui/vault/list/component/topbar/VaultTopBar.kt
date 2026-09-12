@@ -1,10 +1,5 @@
 package com.aozijx.passly.presentation.ui.vault.list.component.topbar
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,7 +35,6 @@ import com.aozijx.passly.R
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListToolbarUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListContentUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListLayoutUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListNavigationUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEvent
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEventHandler
 
@@ -48,7 +42,6 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEventHandler
 @Composable
 fun VaultTopBar(
     uiState: VaultListToolbarUiModel,
-    navigation: VaultListNavigationUiModel,
     content: VaultListContentUiModel,
     layout: VaultListLayoutUiModel,
     scrollBehavior: TopAppBarScrollBehavior,
@@ -175,22 +168,5 @@ fun VaultTopBar(
                     }
                 }
             })
-
-        AnimatedVisibility(
-            visible = !uiState.isSearchActive &&
-                uiState.selectedCategory == null &&
-                    (!layout.collapseQuickFilterBarOnScroll ||
-                        scrollBehavior.state.collapsedFraction < 0.5f),
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            VaultFilterBar(
-                filters = navigation.filterOptions,
-                selectedFilters = navigation.selectedFilters,
-                onFilterToggled = { filter ->
-                    eventHandler.onEvent(VaultListEvent.FilterToggled(filter))
-                },
-            )
-        }
     }
 }
