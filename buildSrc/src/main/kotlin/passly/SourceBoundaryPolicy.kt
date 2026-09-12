@@ -197,9 +197,15 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "VAULT_LIST_EXTERNAL_MODIFIER",
-            sourcePathContains = "/presentation/ui/vault/list/component/list/VaultListContent.kt",
+            sourcePathContains = "/presentation/ui/vault/list/component/list/VaultEntryGrid.kt",
             forbiddenContentMarkers = setOf("modifier = Modifier.fillMaxSize()"),
             message = "vault list discards the caller modifier and its gesture or layout modifiers",
+        ),
+        SourceBoundaryRule(
+            id = "VAULT_LIST_ROW_OWNERSHIP",
+            sourcePathContains = "/presentation/ui/vault/list/component/list/VaultEntryGrid.kt",
+            forbiddenContentMarkers = setOf("fun VaultEntryRow("),
+            message = "vault paging container also owns entry-row rendering",
         ),
         SourceBoundaryRule(
             id = "SETTINGS_DUPLICATE_NAVIGATION_STATE",

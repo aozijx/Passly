@@ -348,14 +348,30 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
-    fun vaultListContentCannotDiscardItsExternalModifier() {
+    fun vaultEntryGridCannotDiscardItsExternalModifier() {
         val source = EditorSource(
-            path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/component/list/VaultListContent.kt",
+            path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/component/list/VaultEntryGrid.kt",
             content = "modifier = Modifier.fillMaxSize()",
         )
 
         assertEquals(
             "VAULT_LIST_EXTERNAL_MODIFIER",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
+    @Test
+    fun vaultPagingContainerCannotOwnEntryRowRendering() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/component/list/VaultEntryGrid.kt",
+            content = "fun VaultEntryRow() = Unit",
+        )
+
+        assertEquals(
+            "VAULT_LIST_ROW_OWNERSHIP",
             SourceBoundaryVerifier.verify(
                 listOf(source),
                 SourceBoundaryPolicy.generalRules,
