@@ -29,7 +29,6 @@ class VaultListUiMapperTest {
             swipeLeftAction = SwipeActionUiModel.DELETE,
             swipeRightAction = SwipeActionUiModel.DETAIL,
             isSwipeEnabled = true,
-            isFabVisible = true,
             collapseTopBarOnScroll = false,
             collapseQuickFilterBarOnScroll = false,
             hideSystemBars = false,

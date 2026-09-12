@@ -122,7 +122,6 @@ data class VaultListDialogsUiModel(
 )
 
 data class VaultListLayoutUiModel(
-    val isFabVisible: Boolean,
     val collapseTopBarOnScroll: Boolean,
     val collapseQuickFilterBarOnScroll: Boolean,
     val hideSystemBars: Boolean,
@@ -133,7 +132,6 @@ data class VaultListDisplayUiModel(
     val swipeLeftAction: SwipeActionUiModel,
     val swipeRightAction: SwipeActionUiModel,
     val isSwipeEnabled: Boolean,
-    val isFabVisible: Boolean,
     val collapseTopBarOnScroll: Boolean,
     val collapseQuickFilterBarOnScroll: Boolean,
     val hideSystemBars: Boolean,

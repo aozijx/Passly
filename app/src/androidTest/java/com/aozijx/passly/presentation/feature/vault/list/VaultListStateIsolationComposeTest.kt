@@ -16,13 +16,12 @@ class VaultListStateIsolationComposeTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun dialogSearchAndFabUpdatesDoNotRecomposePagingNode() {
+    fun dialogAndSearchUpdatesDoNotRecomposePagingNode() {
         val uiState = mutableStateOf(VaultUiState())
-        val fabVisible = mutableStateOf(true)
         var pagingCompositions = 0
 
         composeRule.setContent {
-            val mapped = uiState.value.toUiModel(display(fabVisible.value))
+            val mapped = uiState.value.toUiModel(display())
             val stable = rememberVaultListScreenUiModel(mapped)
             PagingProbe(stable.navigation, stable.content) { pagingCompositions++ }
         }
@@ -30,8 +29,6 @@ class VaultListStateIsolationComposeTest {
 
         composeRule.runOnIdle { uiState.value = uiState.value.copy(addType = com.aozijx.passly.feature.vault.model.AddType.BANK_CARD) }
         composeRule.runOnIdle { uiState.value = uiState.value.copy(searchQuery = "mail") }
-        composeRule.runOnIdle { fabVisible.value = false }
-
         composeRule.runOnIdle { assertEquals(1, pagingCompositions) }
     }
 
@@ -46,12 +43,11 @@ class VaultListStateIsolationComposeTest {
         onComposition()
     }
 
-    private fun display(isFabVisible: Boolean) = VaultListDisplayUiModel(
+    private fun display() = VaultListDisplayUiModel(
         cardPresentations = emptyList(),
         swipeLeftAction = SwipeActionUiModel.DELETE,
         swipeRightAction = SwipeActionUiModel.DETAIL,
         isSwipeEnabled = true,
-        isFabVisible = isFabVisible,
         collapseTopBarOnScroll = false,
         collapseQuickFilterBarOnScroll = false,
         hideSystemBars = false,

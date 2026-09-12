@@ -18,14 +18,18 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.paging.PagingData
 import com.aozijx.passly.presentation.ui.vault.list.component.fab.VaultFab
 import com.aozijx.passly.presentation.ui.vault.list.component.list.VaultListContent
 import com.aozijx.passly.presentation.ui.vault.list.component.topbar.VaultFilterBar
 import com.aozijx.passly.presentation.ui.vault.list.component.topbar.VaultTopBar
+import com.aozijx.passly.presentation.ui.vault.list.gesture.rememberFabVisibilityNestedScrollConnection
 import com.aozijx.passly.presentation.ui.vault.list.gesture.rememberPullToSearchNestedScrollConnection
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEvent
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEventHandler
@@ -43,12 +47,15 @@ fun VaultScreen(
     entries: Flow<PagingData<VaultListItemUiModel>>,
     itemEventHandler: VaultListItemEventHandler,
     otpStateProvider: VaultOtpStateProvider,
-    fabScrollConnection: NestedScrollConnection,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     eventHandler: VaultListEventHandler,
 ) {
     val gridState = rememberLazyGridState()
+    var isFabVisible by rememberSaveable { mutableStateOf(true) }
+    val fabVisibilityConnection = rememberFabVisibilityNestedScrollConnection {
+        isFabVisible = it
+    }
     val pullToSearchConnection = rememberPullToSearchNestedScrollConnection(
         gridState = gridState,
         enabled = !state.toolbar.isSearchActive,
@@ -71,7 +78,7 @@ fun VaultScreen(
                     Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
                 } else Modifier
             )
-            .nestedScroll(fabScrollConnection),
+            .nestedScroll(fabVisibilityConnection),
         topBar = {
             VaultTopBar(
                 uiState = state.toolbar,
@@ -88,7 +95,7 @@ fun VaultScreen(
                 },
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
-                isVisible = state.layout.isFabVisible,
+                isVisible = isFabVisible,
             )
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),

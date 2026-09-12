@@ -1,7 +1,8 @@
 package com.aozijx.passly.presentation.feature.vault.list
 
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.feature.vault.model.AddType
 
@@ -17,6 +18,8 @@ sealed interface VaultUiAction {
     data class ItemToDeleteSelected(val item: EntryListItem?) : VaultUiAction
     data object ConfirmDelete : VaultUiAction
     data class QuickDelete(val entryId: String) : VaultUiAction
+    data class CopyField(val entryId: String, val fieldKey: FieldKey) : VaultUiAction
+    data class CopyOtp(val entryId: String) : VaultUiAction
     data class EntryChanged(val entryId: String) : VaultUiAction
     data class AddScannedOtp(val config: OtpConfig) : VaultUiAction
     data class AutoUnlockTotp(val entryId: String) : VaultUiAction

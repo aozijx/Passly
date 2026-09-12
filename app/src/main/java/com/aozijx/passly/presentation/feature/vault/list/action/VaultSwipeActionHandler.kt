@@ -4,6 +4,18 @@ import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 
+sealed interface VaultCopyRequest {
+    data class Field(val entryId: String, val fieldKey: FieldKey) : VaultCopyRequest
+    data class Otp(val entryId: String) : VaultCopyRequest
+}
+
+fun resolveCopyRequest(item: VaultListItemUiModel, fieldKey: FieldKey): VaultCopyRequest =
+    if (fieldKey == FieldKey.PASSWORD && item.hasOtp) {
+        VaultCopyRequest.Otp(item.id)
+    } else {
+        VaultCopyRequest.Field(item.id, fieldKey)
+    }
+
 fun handleSwipeAction(
     actionType: SwipeActionType,
     item: VaultListItemUiModel,

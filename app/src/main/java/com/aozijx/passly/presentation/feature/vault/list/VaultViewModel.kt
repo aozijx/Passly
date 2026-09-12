@@ -9,10 +9,11 @@ import androidx.paging.map
 import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.domain.access.port.SensitiveKeyFreshnessState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.access.port.SensitiveKeyFreshnessState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
@@ -60,7 +61,7 @@ class VaultViewModel @Inject constructor(
     private val createEntry: CreateEntryUseCase,
     private val entryCommandRepository: EntryCommandRepository,
     private val secureSessionAccessState: SecureSessionAccessState,
-    val entryFieldReader: EntryFieldReader,
+    private val entryFieldReader: EntryFieldReader,
     private val dataChangeSignal: VaultDataChangeSignal,
     private val sessionStateProvider: SessionStateProvider,
     private val sensitiveKeyFreshnessState: SensitiveKeyFreshnessState,
@@ -70,10 +71,6 @@ class VaultViewModel @Inject constructor(
 
     private val _effects = Channel<VaultEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
-
-    fun copySensitive(text: String) {
-        viewModelScope.launch { clipboardCopyController.copySensitive(text) }
-    }
 
     private val _uiState = MutableStateFlow(VaultUiState())
     val uiState: StateFlow<VaultUiState> = _uiState.asStateFlow()
@@ -106,9 +103,10 @@ class VaultViewModel @Inject constructor(
         otpCodeInvalidator = totp,
     )
 
-    private val hierarchyMode: Flow<EntryHierarchyDisplayMode> = settingsRepository.libraryViewSettings
-        .map { settings -> settings.entryHierarchyDisplayMode }
-        .distinctUntilChanged()
+    private val hierarchyMode: Flow<EntryHierarchyDisplayMode> =
+        settingsRepository.libraryViewSettings
+            .map { settings -> settings.entryHierarchyDisplayMode }
+            .distinctUntilChanged()
 
     private val queryState: Flow<VaultQueryState> = buildVaultQueryStates(
         uiStates = uiState,
@@ -166,6 +164,8 @@ class VaultViewModel @Inject constructor(
             is VaultUiAction.ItemToDeleteSelected -> setItemToDelete(action.item)
             VaultUiAction.ConfirmDelete -> confirmDelete()
             is VaultUiAction.QuickDelete -> quickDelete(action.entryId)
+            is VaultUiAction.CopyField -> copyField(action.entryId, action.fieldKey)
+            is VaultUiAction.CopyOtp -> copyOtp(action.entryId)
             is VaultUiAction.EntryChanged -> totp.entryChanged(action.entryId)
             is VaultUiAction.AddScannedOtp -> addScannedOtp(action.config)
             is VaultUiAction.AutoUnlockTotp -> autoUnlockTotp(action.entryId)
@@ -218,6 +218,30 @@ class VaultViewModel @Inject constructor(
         if (!ensureFullSecureSessionAccess("当前会话不能删除条目")) return
         val item = uiState.value.pendingDelete ?: return
         moveToTrash(item.id)
+    }
+
+    private fun copyField(
+        entryId: String,
+        fieldKey: FieldKey,
+    ) {
+        if (!ensureFullSecureSessionAccess("当前会话不能复制敏感字段")) return
+        viewModelScope.launch {
+            val entry = entryQueryRepository.getById(EntryId(entryId)) ?: return@launch
+            val value = entryFieldReader.getFieldValue(entry, fieldKey) ?: return@launch
+            clipboardCopyController.copySensitive(value)
+            _effects.send(VaultEffect.FieldCopied(fieldKey))
+        }
+    }
+
+    private fun copyOtp(entryId: String) {
+        if (!ensureFullSecureSessionAccess("当前会话不能复制动态验证码")) return
+        val code = totp.states.value[entryId]?.code
+            ?.takeIf { it.isNotEmpty() && '-' !in it }
+            ?: return
+        viewModelScope.launch {
+            clipboardCopyController.copySensitive(code)
+            _effects.send(VaultEffect.OtpCopied)
+        }
     }
 
     private fun moveToTrash(entryId: EntryId) {

@@ -53,4 +53,14 @@ class VaultSwipeActionHandlerTest {
             events
         )
     }
+
+    @Test
+    fun passwordCopyTargetsOtpWhenTheEntryHasOtp() {
+        val otpItem = item.copy(hasOtp = true)
+
+        assertEquals(
+            VaultCopyRequest.Otp(entryId = "entry"),
+            resolveCopyRequest(otpItem, com.aozijx.passly.domain.entry.model.FieldKey.PASSWORD),
+        )
+    }
 }

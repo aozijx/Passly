@@ -122,6 +122,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
                     is DetailEffect.EntryUpdated -> vaultViewModel.onAction(
                         VaultUiAction.EntryChanged(effect.entry.id.value),
                     )
+
                     is DetailEffect.ShowOtpQr -> otpQrUri = effect.uri
                 }
             }
@@ -181,7 +182,6 @@ private fun VaultDestinationContent(
                 onSuccess,
             )
         },
-        onUserInteraction = context.onUserInteraction,
         onAddPassword = { context.navigateToSingleTopRoute(AppRoute.AddPassword.route) },
         onAddOtp = { context.navigateToSingleTopRoute(AppRoute.AddOtp.route) },
         onAddBankCard = { context.navigateToSingleTopRoute(AppRoute.AddBankCard.route) },

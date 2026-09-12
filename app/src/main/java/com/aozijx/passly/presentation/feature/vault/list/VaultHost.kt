@@ -9,17 +9,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.presentation.feature.vault.list.action.rememberVaultActionProvider
+import com.aozijx.passly.R
+import com.aozijx.passly.presentation.feature.vault.list.action.CopyFieldLabelProvider
+import com.aozijx.passly.presentation.feature.vault.list.action.VaultCopyRequest
+import com.aozijx.passly.presentation.feature.vault.list.action.handleSwipeAction
+import com.aozijx.passly.presentation.feature.vault.list.action.resolveCopyRequest
 import com.aozijx.passly.presentation.feature.vault.list.display.VaultDisplayViewModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultAddTypeUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiModel
@@ -35,7 +38,6 @@ fun VaultHost(
     requestAuthentication: (onSuccess: () -> Unit) -> Unit,
     requestReauthentication: (onSuccess: () -> Unit) -> Unit,
     requestSensitiveCopy: (onSuccess: () -> Unit) -> Unit,
-    onUserInteraction: () -> Unit,
     onAddPassword: () -> Unit,
     onAddOtp: () -> Unit,
     onAddBankCard: () -> Unit,
@@ -53,7 +55,6 @@ fun VaultHost(
 
     val entryCardPresentations =
         vaultDisplayConfig.style.entryCardPresentations.map { it.toUiModel() }
-    var isFabVisible by remember { mutableStateOf(true) }
     val renderState = rememberVaultListScreenUiModel(
         uiState.toUiModel(
             display = VaultListDisplayUiModel(
@@ -61,7 +62,6 @@ fun VaultHost(
                 swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction.toUiModel(),
                 swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction.toUiModel(),
                 isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,
-                isFabVisible = isFabVisible,
                 collapseTopBarOnScroll = vaultDisplayConfig.layout.collapseTopBarOnScroll,
                 collapseQuickFilterBarOnScroll =
                     vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll,
@@ -69,21 +69,33 @@ fun VaultHost(
             ),
         ),
     )
-    val actionProvider = rememberVaultActionProvider(
-        vaultViewModel = vaultViewModel,
-        totpStates = vaultViewModel.totpStatesFlow,
-        requestAuthentication = requestAuthentication,
-        requestReauthentication = requestReauthentication,
-        requestSensitiveCopy = requestSensitiveCopy,
-        onUserInteraction = onUserInteraction,
-        onShowDetail = onShowDetail,
-        isFabVisible = { isFabVisible = it }
-    )
     val listBindings = rememberVaultListBindings(
         entries = vaultViewModel.entries,
         onItemClick = { item -> onShowDetail(item.id) },
         onItemSwipe = { item, action ->
-            actionProvider.onSwipeTriggered(action.toFeatureModel(), item)
+            handleSwipeAction(
+                actionType = action.toFeatureModel(),
+                item = item,
+                onDeleteAuthRequired = requestReauthentication,
+                onCopyAuthRequired = requestSensitiveCopy,
+                onQuickDelete = { entryId ->
+                    vaultViewModel.onAction(VaultUiAction.QuickDelete(entryId))
+                },
+                onShowDetail = onShowDetail,
+                onCopy = { fieldKey ->
+                    when (val request = resolveCopyRequest(item, fieldKey)) {
+                        is VaultCopyRequest.Field -> requestAuthentication {
+                            vaultViewModel.onAction(
+                                VaultUiAction.CopyField(request.entryId, request.fieldKey),
+                            )
+                        }
+
+                        is VaultCopyRequest.Otp -> vaultViewModel.onAction(
+                            VaultUiAction.CopyOtp(request.entryId),
+                        )
+                    }
+                },
+            )
         },
     )
     val eventHandler = rememberVaultListEventHandler(
@@ -170,11 +182,18 @@ fun VaultHost(
         }
     }
 
-    LaunchedEffect(vaultViewModel, context) {
+    val totpLabel = stringResource(R.string.vault_detail_totp_label)
+    val fieldCopiedFormat = stringResource(R.string.field_copy_success_message)
+    LaunchedEffect(vaultViewModel, context, totpLabel, fieldCopiedFormat) {
         vaultViewModel.effects.collect { effect ->
             val message = when (effect) {
                 is VaultEffect.ShowError -> effect.message
                 is VaultEffect.ShowToast -> effect.message
+                is VaultEffect.FieldCopied -> fieldCopiedFormat.format(
+                    CopyFieldLabelProvider.getCopyLabel(effect.fieldKey),
+                )
+
+                VaultEffect.OtpCopied -> fieldCopiedFormat.format(totpLabel)
             }
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
@@ -195,7 +214,6 @@ fun VaultHost(
         entries = listBindings.entries,
         itemEventHandler = listBindings.eventHandler,
         otpStateProvider = otpStateProvider,
-        fabScrollConnection = actionProvider.fabScrollConnection,
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
         eventHandler = eventHandler,

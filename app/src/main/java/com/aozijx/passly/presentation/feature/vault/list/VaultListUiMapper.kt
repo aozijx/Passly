@@ -1,6 +1,5 @@
 package com.aozijx.passly.presentation.feature.vault.list
 
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
@@ -10,23 +9,23 @@ import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.OtpCodeState
+import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultAddTypeUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardDensityUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardPresentationUiModel
-import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListContentUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDialogsUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListLayoutUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListNavigationUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListToolbarUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpKindUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortOptionUiModel
-import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortUiModel
 
 internal fun EntryListItem.toUiModel() = VaultListItemUiModel(
     id = id.value,
@@ -62,10 +61,17 @@ internal fun EntrySort.toUiModel() = VaultSortUiModel(
 internal fun VaultSortUiModel.toFeatureModel(): EntrySort {
     val preset = when (option) {
         VaultSortOptionUiModel.DEFAULT -> EntrySort.DEFAULT
-        VaultSortOptionUiModel.TITLE -> EntrySort.presets().first { it.field == EntrySortField.TITLE }
-        VaultSortOptionUiModel.CREATED_AT -> EntrySort.presets().first { it.field == EntrySortField.CREATED_AT }
-        VaultSortOptionUiModel.UPDATED_AT -> EntrySort.presets().first { it.field == EntrySortField.UPDATED_AT }
-        VaultSortOptionUiModel.USAGE_FREQUENCY -> EntrySort.presets().first { it.field == EntrySortField.USAGE_FREQUENCY }
+        VaultSortOptionUiModel.TITLE -> EntrySort.presets()
+            .first { it.field == EntrySortField.TITLE }
+
+        VaultSortOptionUiModel.CREATED_AT -> EntrySort.presets()
+            .first { it.field == EntrySortField.CREATED_AT }
+
+        VaultSortOptionUiModel.UPDATED_AT -> EntrySort.presets()
+            .first { it.field == EntrySortField.UPDATED_AT }
+
+        VaultSortOptionUiModel.USAGE_FREQUENCY -> EntrySort.presets()
+            .first { it.field == EntrySortField.USAGE_FREQUENCY }
     }
     val wantsDescending = preset.direction.name == "DESC"
     return if (wantsDescending == descending) preset else preset.toggled()
@@ -117,7 +123,6 @@ internal fun VaultUiState.toUiModel(
         pendingDelete = pendingDelete?.toUiModel(),
     ),
     layout = VaultListLayoutUiModel(
-        isFabVisible = display.isFabVisible,
         collapseTopBarOnScroll = display.collapseTopBarOnScroll,
         collapseQuickFilterBarOnScroll = display.collapseQuickFilterBarOnScroll,
         hideSystemBars = display.hideSystemBars,
