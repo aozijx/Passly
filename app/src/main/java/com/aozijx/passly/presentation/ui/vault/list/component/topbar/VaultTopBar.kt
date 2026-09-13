@@ -5,11 +5,8 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.snap
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -25,6 +22,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarScrollBehavior
@@ -62,6 +60,7 @@ fun VaultTopBar(
 ) {
     val density = LocalDensity.current
     val focusManager = LocalFocusManager.current
+    val motionScheme = MaterialTheme.motionScheme
     var isMoreMenuExpanded by remember { mutableStateOf(false) }
     var navigateToSettingsAfterDismiss by remember { mutableStateOf(false) }
 
@@ -84,17 +83,15 @@ fun VaultTopBar(
     val expansionProgress by animateFloatAsState(
         targetValue = expansionTarget,
         animationSpec = if (pullSearchProgress > 0f) {
-            tween(durationMillis = 70, easing = LinearOutSlowInEasing)
+            snap()
         } else {
-            spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessMediumLow,
-            )
+            motionScheme.defaultSpatialSpec()
         },
         label = "VaultSearchExpansion",
     )
-    val horizontalInset = lerp(10.dp, 0.dp, expansionProgress)
-    val verticalOffset = lerp(0.dp, 4.dp, expansionProgress)
+    val layoutProgress = clampVaultSearchBarLayoutProgress(expansionProgress)
+    val horizontalInset = lerp(10.dp, 0.dp, layoutProgress)
+    val verticalOffset = lerp(0.dp, 4.dp, layoutProgress)
 
     LaunchedEffect(navigateToSettingsAfterDismiss, isMoreMenuExpanded) {
         if (navigateToSettingsAfterDismiss && !isMoreMenuExpanded) {
@@ -123,7 +120,11 @@ fun VaultTopBar(
         }
     }
 
-    Column(modifier = Modifier.animateContentSize()) {
+    Column(
+        modifier = Modifier.animateContentSize(
+            animationSpec = motionScheme.defaultSpatialSpec(),
+        ),
+    ) {
         TopAppBar(
             scrollBehavior = if (layout.collapseTopBarOnScroll && !isSearchEditing) {
                 scrollBehavior
@@ -153,7 +154,10 @@ fun VaultTopBar(
                     trailingIcon = {
                         AnimatedContent(
                             targetState = searchMode,
-                            transitionSpec = { fadeIn() togetherWith fadeOut() },
+                            transitionSpec = {
+                                fadeIn(motionScheme.fastEffectsSpec()) togetherWith
+                                        fadeOut(motionScheme.fastEffectsSpec())
+                            },
                             label = "VaultSearchAction",
                         ) { mode ->
                             if (mode == VaultSearchBarMode.DEFAULT) {

@@ -20,3 +20,6 @@ internal fun resolveVaultSearchBarExpansion(
 } else {
     pullProgress.coerceIn(0f, 1f)
 }
+
+internal fun clampVaultSearchBarLayoutProgress(animationProgress: Float): Float =
+    animationProgress.coerceIn(0f, 1f)

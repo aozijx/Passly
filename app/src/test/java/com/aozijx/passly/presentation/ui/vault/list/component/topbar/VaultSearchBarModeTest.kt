@@ -39,4 +39,11 @@ class VaultSearchBarModeTest {
             resolveVaultSearchBarExpansion(-0.2f, VaultSearchBarMode.RESULT),
         )
     }
+
+    @Test
+    fun `spring overshoot is clamped before calculating layout dimensions`() {
+        assertEquals(1f, clampVaultSearchBarLayoutProgress(1.08f))
+        assertEquals(0f, clampVaultSearchBarLayoutProgress(-0.08f))
+        assertEquals(0.6f, clampVaultSearchBarLayoutProgress(0.6f))
+    }
 }
