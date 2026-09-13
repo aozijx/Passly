@@ -59,7 +59,6 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.presentation.feature.scanner.ImageRef
 import com.aozijx.passly.presentation.feature.scanner.ScannerEffect
 import com.aozijx.passly.presentation.feature.scanner.ScannerUiAction
-import com.aozijx.passly.presentation.ui.scanner.ScannerContent
 
 /**
  * Vault 专用的扫码特化组件
@@ -115,13 +114,13 @@ fun VaultScanner(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        ScannerContent(
+        ScannerCameraHost(
             scanResult = scanResult,
             onCopyResult = scannerViewModel::copySensitive,
             isScanning = scannerUiState.isScanning,
             showResultCard = scannedTotp == null,
             onBarcodeDetected = { barcode ->
-                if (scannedTotp != null) return@ScannerContent
+                if (scannedTotp != null) return@ScannerCameraHost
                 scannerViewModel.onAction(ScannerUiAction.BarcodeDetected(barcode))
             },
             onPermissionDenied = { onDismiss() })
