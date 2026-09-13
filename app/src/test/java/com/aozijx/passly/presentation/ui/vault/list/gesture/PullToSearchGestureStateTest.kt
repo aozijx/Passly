@@ -5,7 +5,7 @@ import org.junit.Test
 
 class PullToSearchGestureStateTest {
     @Test
-    fun `pull triggers once only after threshold while list is at top`() {
+    fun `pull past threshold triggers only when released`() {
         var triggers = 0
         val state = PullToSearchGestureState(
             thresholdPx = 80f,
@@ -13,19 +13,33 @@ class PullToSearchGestureStateTest {
             onTriggered = { triggers++ },
         )
 
-        state.onPull(deltaY = 60f, isAtTop = true)
-        state.onPull(deltaY = 30f, isAtTop = false)
         state.onPull(deltaY = 50f, isAtTop = true)
+        state.onPull(deltaY = 40f, isAtTop = true)
         assertEquals(0, triggers)
 
-        state.onPull(deltaY = 30f, isAtTop = true)
-        state.onPull(deltaY = 100f, isAtTop = true)
-
+        state.onRelease()
         assertEquals(1, triggers)
     }
 
     @Test
-    fun `leaving top clears an unfinished pull`() {
+    fun `release below threshold does not trigger search`() {
+        var triggers = 0
+        val progress = mutableListOf<Float>()
+        val state = PullToSearchGestureState(
+            thresholdPx = 80f,
+            onProgressChanged = progress::add,
+            onTriggered = { triggers++ },
+        )
+
+        state.onPull(deltaY = 60f, isAtTop = true)
+        state.onRelease()
+
+        assertEquals(0, triggers)
+        assertEquals(listOf(0.75f, 0f), progress)
+    }
+
+    @Test
+    fun `leaving top before release cancels an armed pull`() {
         var triggers = 0
         val state = PullToSearchGestureState(
             thresholdPx = 80f,
@@ -33,9 +47,9 @@ class PullToSearchGestureStateTest {
             onTriggered = { triggers++ },
         )
 
-        state.onPull(deltaY = 50f, isAtTop = true)
+        state.onPull(deltaY = 90f, isAtTop = true)
         state.onPull(deltaY = 10f, isAtTop = false)
-        state.onPull(deltaY = 40f, isAtTop = true)
+        state.onRelease()
 
         assertEquals(0, triggers)
     }
@@ -51,7 +65,7 @@ class PullToSearchGestureStateTest {
 
         state.onPull(deltaY = 25f, isAtTop = true)
         state.onPull(deltaY = 50f, isAtTop = true)
-        state.reset()
+        state.onRelease()
 
         assertEquals(listOf(0.25f, 0.75f, 0f), progress)
     }

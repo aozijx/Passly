@@ -49,15 +49,18 @@ internal fun rememberPullToSearchNestedScrollConnection(
                 return Offset.Zero
             }
 
-            override suspend fun onPostFling(
-                consumed: Velocity,
+            override suspend fun onPreFling(
                 available: Velocity,
             ): Velocity {
-                gestureState.reset()
+                if (currentEnabled) {
+                    gestureState.onRelease()
+                } else {
+                    gestureState.reset()
+                }
                 return Velocity.Zero
             }
         }
     }
 }
 
-private val PullToSearchThreshold = 72.dp
+private val PullToSearchThreshold = 88.dp
