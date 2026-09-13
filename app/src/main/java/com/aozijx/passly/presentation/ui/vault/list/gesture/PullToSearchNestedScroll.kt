@@ -16,13 +16,19 @@ import androidx.compose.ui.unit.dp
 internal fun rememberPullToSearchNestedScrollConnection(
     gridState: LazyGridState,
     enabled: Boolean,
+    onProgressChanged: (Float) -> Unit,
     onTriggered: () -> Unit,
 ): NestedScrollConnection {
     val thresholdPx = with(LocalDensity.current) { PullToSearchThreshold.toPx() }
     val currentEnabled by rememberUpdatedState(enabled)
+    val currentOnProgressChanged by rememberUpdatedState(onProgressChanged)
     val currentOnTriggered by rememberUpdatedState(onTriggered)
     val gestureState = remember(thresholdPx) {
-        PullToSearchGestureState(thresholdPx) { currentOnTriggered() }
+        PullToSearchGestureState(
+            thresholdPx = thresholdPx,
+            onProgressChanged = { currentOnProgressChanged(it) },
+            onTriggered = { currentOnTriggered() },
+        )
     }
 
     return remember(gridState, gestureState) {
@@ -32,7 +38,7 @@ internal fun rememberPullToSearchNestedScrollConnection(
                 available: Offset,
                 source: NestedScrollSource,
             ): Offset {
-                if (currentEnabled) {
+                if (currentEnabled && source == NestedScrollSource.UserInput) {
                     gestureState.onPull(
                         deltaY = available.y,
                         isAtTop = !gridState.canScrollBackward,

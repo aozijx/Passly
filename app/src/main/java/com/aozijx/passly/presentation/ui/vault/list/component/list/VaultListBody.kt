@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.paging.PagingData
@@ -34,14 +36,22 @@ internal fun VaultListBody(
     itemEventHandler: VaultListItemEventHandler,
     otpStateProvider: VaultOtpStateProvider,
     eventHandler: VaultListEventHandler,
+    onPullSearchProgressChanged: (Float) -> Unit,
+    onSearchRequested: () -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
-    val gridState = rememberLazyGridState()
+    val mainGridState = rememberLazyGridState()
+    val searchGridState = remember(state.toolbar.isSearchActive) { LazyGridState() }
+    val gridState = when (resolveVaultListViewport(state.toolbar.isSearchActive)) {
+        VaultListViewport.MAIN -> mainGridState
+        VaultListViewport.SEARCH -> searchGridState
+    }
     val pullToSearchConnection = rememberPullToSearchNestedScrollConnection(
         gridState = gridState,
         enabled = !state.toolbar.isSearchActive,
-        onTriggered = { eventHandler.onEvent(VaultListEvent.SearchToggled(true)) },
+        onProgressChanged = onPullSearchProgressChanged,
+        onTriggered = onSearchRequested,
     )
 
     Column(

@@ -10,7 +10,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -41,11 +43,17 @@ fun VaultScreen(
     eventHandler: VaultListEventHandler,
 ) {
     var isFabVisible by rememberSaveable { mutableStateOf(true) }
+    var isSearchEditing by rememberSaveable { mutableStateOf(false) }
+    var pullSearchProgress by remember { mutableFloatStateOf(0f) }
     val fabVisibilityConnection = rememberFabVisibilityNestedScrollConnection {
         isFabVisible = it
     }
     BackHandler(enabled = state.toolbar.isSearchActive) {
-        eventHandler.onEvent(VaultListEvent.SearchToggled(false))
+        if (isSearchEditing) {
+            isSearchEditing = false
+        } else {
+            eventHandler.onEvent(VaultListEvent.SearchToggled(false))
+        }
     }
 
     Scaffold(
@@ -65,6 +73,9 @@ fun VaultScreen(
                 content = state.content,
                 layout = state.layout,
                 scrollBehavior = scrollBehavior,
+                isSearchEditing = isSearchEditing,
+                pullSearchProgress = pullSearchProgress,
+                onSearchEditingChanged = { isSearchEditing = it },
                 eventHandler = eventHandler,
             )
         },
@@ -87,6 +98,11 @@ fun VaultScreen(
             itemEventHandler = itemEventHandler,
             otpStateProvider = otpStateProvider,
             eventHandler = eventHandler,
+            onPullSearchProgressChanged = { pullSearchProgress = it },
+            onSearchRequested = {
+                isSearchEditing = true
+                eventHandler.onEvent(VaultListEvent.SearchToggled(true))
+            },
             contentPadding = padding,
         )
     }
