@@ -17,6 +17,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.paging.PagingData
 import com.aozijx.passly.presentation.ui.vault.list.component.fab.VaultFab
 import com.aozijx.passly.presentation.ui.vault.list.component.list.VaultListBody
@@ -43,17 +44,21 @@ fun VaultScreen(
     eventHandler: VaultListEventHandler,
 ) {
     var isFabVisible by rememberSaveable { mutableStateOf(true) }
-    var isSearchEditing by rememberSaveable { mutableStateOf(false) }
+    val searchEditingSession = remember { VaultSearchEditingSession() }
+    val isSearchEditing = searchEditingSession.isEditing
     var pullSearchProgress by remember { mutableFloatStateOf(0f) }
     val fabVisibilityConnection = rememberFabVisibilityNestedScrollConnection {
         isFabVisible = it
     }
     BackHandler(enabled = state.toolbar.isSearchActive) {
         if (isSearchEditing) {
-            isSearchEditing = false
+            searchEditingSession.updateEditing(false)
         } else {
             eventHandler.onEvent(VaultListEvent.SearchToggled(false))
         }
+    }
+    LifecycleResumeEffect(searchEditingSession) {
+        onPauseOrDispose { searchEditingSession.onScreenPaused() }
     }
 
     Scaffold(
@@ -75,7 +80,7 @@ fun VaultScreen(
                 scrollBehavior = scrollBehavior,
                 isSearchEditing = isSearchEditing,
                 pullSearchProgress = pullSearchProgress,
-                onSearchEditingChanged = { isSearchEditing = it },
+                onSearchEditingChanged = searchEditingSession::updateEditing,
                 eventHandler = eventHandler,
             )
         },
@@ -100,7 +105,7 @@ fun VaultScreen(
             eventHandler = eventHandler,
             onPullSearchProgressChanged = { pullSearchProgress = it },
             onSearchRequested = {
-                isSearchEditing = true
+                searchEditingSession.updateEditing(true)
                 eventHandler.onEvent(VaultListEvent.SearchToggled(true))
             },
             contentPadding = padding,
