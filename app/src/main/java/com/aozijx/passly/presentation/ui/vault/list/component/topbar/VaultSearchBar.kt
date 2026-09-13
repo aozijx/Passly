@@ -20,6 +20,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -28,20 +29,21 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 @Composable
 internal fun VaultSearchBar(
     query: String,
-    mode: VaultSearchBarMode,
+    isEditing: Boolean,
     onQueryChange: (String) -> Unit,
     onSearch: (String) -> Unit,
-    onEditingChange: (Boolean) -> Unit,
+    onFocusChanged: (Boolean) -> Unit,
     trailingIcon: @Composable (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val textFieldState = rememberTextFieldState(query)
     val searchBarState = rememberSearchBarState()
     val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val currentOnQueryChange by rememberUpdatedState(onQueryChange)
-    val currentOnEditingChange by rememberUpdatedState(onEditingChange)
+    val currentOnFocusChanged by rememberUpdatedState(onFocusChanged)
 
     LaunchedEffect(query) {
         if (textFieldState.text.toString() != query) {
@@ -53,16 +55,15 @@ internal fun VaultSearchBar(
             .distinctUntilChanged()
             .collect(currentOnQueryChange)
     }
-    LaunchedEffect(mode) {
-        if (mode == VaultSearchBarMode.EDITING) {
-            searchBarState.animateToExpanded()
+    LaunchedEffect(isEditing) {
+        if (isEditing) {
             focusRequester.requestFocus()
         } else {
-            searchBarState.animateToCollapsed()
+            focusManager.clearFocus()
         }
     }
     LaunchedEffect(isFocused) {
-        currentOnEditingChange(isFocused)
+        currentOnFocusChanged(isFocused)
     }
 
     SearchBarDefaults.InputField(

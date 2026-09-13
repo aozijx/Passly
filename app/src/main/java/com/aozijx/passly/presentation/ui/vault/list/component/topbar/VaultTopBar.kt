@@ -2,19 +2,18 @@ package com.aozijx.passly.presentation.ui.vault.list.component.topbar
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
@@ -32,12 +31,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.lerp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListContentUiModel
@@ -45,6 +43,8 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEvent
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEventHandler
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListLayoutUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListToolbarUiModel
+import com.aozijx.passly.presentation.ui.vault.list.search.VaultSearchPhase
+import com.aozijx.passly.presentation.ui.vault.list.search.VaultSearchState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,13 +53,13 @@ fun VaultTopBar(
     content: VaultListContentUiModel,
     layout: VaultListLayoutUiModel,
     scrollBehavior: TopAppBarScrollBehavior,
-    isSearchEditing: Boolean,
-    pullSearchProgress: Float,
-    onSearchEditingChanged: (Boolean) -> Unit,
+    searchState: VaultSearchState,
+    onSearchFocusChanged: (Boolean) -> Unit,
+    onSearchSubmitted: (String) -> Unit,
+    onSearchExitRequested: () -> Unit,
     eventHandler: VaultListEventHandler,
 ) {
     val density = LocalDensity.current
-    val focusManager = LocalFocusManager.current
     val motionScheme = MaterialTheme.motionScheme
     var isMoreMenuExpanded by remember { mutableStateOf(false) }
     var navigateToSettingsAfterDismiss by remember { mutableStateOf(false) }
@@ -71,27 +71,16 @@ fun VaultTopBar(
         }
     }
 
-    val searchMode = resolveVaultSearchBarMode(
-        isSearchActive = uiState.isSearchActive,
-        isEditing = isSearchEditing,
-        query = uiState.searchQuery,
-    )
-    val expansionTarget = resolveVaultSearchBarExpansion(
-        pullProgress = pullSearchProgress,
-        mode = searchMode,
-    )
     val expansionProgress by animateFloatAsState(
-        targetValue = expansionTarget,
-        animationSpec = if (pullSearchProgress > 0f) {
+        targetValue = searchState.layoutProgress,
+        animationSpec = if (searchState.isDirectManipulation) {
             snap()
         } else {
-            motionScheme.defaultSpatialSpec()
+            motionScheme.defaultEffectsSpec()
         },
         label = "VaultSearchExpansion",
     )
-    val layoutProgress = clampVaultSearchBarLayoutProgress(expansionProgress)
-    val horizontalInset = lerp(10.dp, 0.dp, layoutProgress)
-    val verticalOffset = lerp(0.dp, 4.dp, layoutProgress)
+    val searchWidthFraction = 0.94f + (0.06f * expansionProgress.coerceIn(0f, 1f))
 
     LaunchedEffect(navigateToSettingsAfterDismiss, isMoreMenuExpanded) {
         if (navigateToSettingsAfterDismiss && !isMoreMenuExpanded) {
@@ -112,122 +101,102 @@ fun VaultTopBar(
         }
     }
 
-    LaunchedEffect(isSearchEditing) {
-        if (isSearchEditing) {
-            scrollBehavior.state.heightOffset = 0f
-        } else {
-            focusManager.clearFocus()
-        }
-    }
-
     Column(
         modifier = Modifier.animateContentSize(
-            animationSpec = motionScheme.defaultSpatialSpec(),
+            animationSpec = motionScheme.defaultEffectsSpec(),
         ),
     ) {
         TopAppBar(
-            scrollBehavior = if (layout.collapseTopBarOnScroll && !isSearchEditing) {
+            scrollBehavior = if (layout.collapseTopBarOnScroll && !searchState.isEditing) {
                 scrollBehavior
             } else {
                 null
             },
             windowInsets = WindowInsets.statusBars,
             title = {
-                VaultSearchBar(
-                    query = uiState.searchQuery,
-                    mode = searchMode,
-                    onQueryChange = { query ->
-                        eventHandler.onEvent(VaultListEvent.SearchQueryChanged(query))
-                    },
-                    onSearch = { query ->
-                        onSearchEditingChanged(false)
-                        if (query.isBlank()) {
-                            eventHandler.onEvent(VaultListEvent.SearchToggled(false))
-                        }
-                    },
-                    onEditingChange = { editing ->
-                        onSearchEditingChanged(editing)
-                        if (editing && !uiState.isSearchActive) {
-                            eventHandler.onEvent(VaultListEvent.SearchToggled(true))
-                        }
-                    },
-                    trailingIcon = {
-                        AnimatedContent(
-                            targetState = searchMode,
-                            transitionSpec = {
-                                fadeIn(motionScheme.fastEffectsSpec()) togetherWith
-                                        fadeOut(motionScheme.fastEffectsSpec())
-                            },
-                            label = "VaultSearchAction",
-                        ) { mode ->
-                            if (mode == VaultSearchBarMode.DEFAULT) {
-                                Box {
-                                    IconButton(onClick = { isMoreMenuExpanded = true }) {
-                                        Icon(Icons.Default.MoreVert, stringResource(R.string.more))
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    VaultSearchBar(
+                        query = uiState.searchQuery,
+                        isEditing = searchState.isEditing,
+                        onQueryChange = { query ->
+                            eventHandler.onEvent(VaultListEvent.SearchQueryChanged(query))
+                        },
+                        onSearch = onSearchSubmitted,
+                        onFocusChanged = onSearchFocusChanged,
+                        trailingIcon = {
+                            AnimatedContent(
+                                targetState = searchState.phase.takeUnless {
+                                    it == VaultSearchPhase.PULLING
+                                } ?: VaultSearchPhase.BROWSING,
+                                transitionSpec = {
+                                    fadeIn(motionScheme.fastEffectsSpec()) togetherWith
+                                            fadeOut(motionScheme.fastEffectsSpec())
+                                },
+                                label = "VaultSearchAction",
+                            ) { phase ->
+                                if (phase == VaultSearchPhase.BROWSING ||
+                                    phase == VaultSearchPhase.PULLING
+                                ) {
+                                    Box {
+                                        IconButton(onClick = { isMoreMenuExpanded = true }) {
+                                            Icon(
+                                                Icons.Default.MoreVert,
+                                                stringResource(R.string.more),
+                                            )
+                                        }
+                                        if (isMoreMenuExpanded) {
+                                            VaultDropdownMenu(
+                                                onDismissRequest = { isMoreMenuExpanded = false },
+                                                showTOTPCode = content.showTotpCode,
+                                                onToggleTotpVisibility = {
+                                                    eventHandler.onEvent(
+                                                        VaultListEvent.ToggleTotpVisibility,
+                                                    )
+                                                },
+                                                onSettingsClick = {
+                                                    navigateToSettingsAfterDismiss = true
+                                                },
+                                                availableCategories = uiState.availableCategories,
+                                                selectedCategory = uiState.selectedCategory,
+                                                onCategorySelected = { category ->
+                                                    eventHandler.onEvent(
+                                                        VaultListEvent.CategorySelected(category),
+                                                    )
+                                                },
+                                                selectedSort = uiState.selectedSort,
+                                                onSortSelected = { sort ->
+                                                    eventHandler.onEvent(
+                                                        VaultListEvent.SortSelected(sort),
+                                                    )
+                                                },
+                                            )
+                                        }
                                     }
-                                    if (isMoreMenuExpanded) {
-                                        VaultDropdownMenu(
-                                            onDismissRequest = { isMoreMenuExpanded = false },
-                                            showTOTPCode = content.showTotpCode,
-                                            onToggleTotpVisibility = {
-                                                eventHandler.onEvent(VaultListEvent.ToggleTotpVisibility)
-                                            },
-                                            onSettingsClick = {
-                                                navigateToSettingsAfterDismiss = true
-                                            },
-                                            availableCategories = uiState.availableCategories,
-                                            selectedCategory = uiState.selectedCategory,
-                                            onCategorySelected = { category ->
-                                                eventHandler.onEvent(
-                                                    VaultListEvent.CategorySelected(
-                                                        category
-                                                    )
-                                                )
-                                            },
-                                            selectedSort = uiState.selectedSort,
-                                            onSortSelected = { sort ->
-                                                eventHandler.onEvent(
-                                                    VaultListEvent.SortSelected(
-                                                        sort
-                                                    )
-                                                )
-                                            },
+                                } else if (uiState.searchQuery.isNotEmpty()) {
+                                    IconButton(
+                                        onClick = {
+                                            eventHandler.onEvent(
+                                                VaultListEvent.SearchQueryChanged(""),
+                                            )
+                                            if (phase == VaultSearchPhase.RESULTS) {
+                                                onSearchExitRequested()
+                                            }
+                                        },
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Clear,
+                                            stringResource(R.string.vault_clear_filter),
                                         )
                                     }
                                 }
-                            } else if (uiState.searchQuery.isNotEmpty()) {
-                                IconButton(
-                                    onClick = {
-                                        eventHandler.onEvent(VaultListEvent.SearchQueryChanged(""))
-                                        if (mode == VaultSearchBarMode.RESULT) {
-                                            eventHandler.onEvent(VaultListEvent.SearchToggled(false))
-                                        }
-                                    },
-                                ) {
-                                    Icon(
-                                        Icons.Default.Clear,
-                                        stringResource(R.string.vault_clear_filter)
-                                    )
-                                }
-                            } else {
-                                IconButton(
-                                    onClick = {
-                                        onSearchEditingChanged(false)
-                                        eventHandler.onEvent(VaultListEvent.SearchToggled(false))
-                                    },
-                                ) {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.ArrowBack,
-                                        stringResource(R.string.back),
-                                    )
-                                }
                             }
-                        }
-                    },
-                    modifier = Modifier
-                        .padding(horizontal = horizontalInset)
-                        .offset(y = verticalOffset),
-                )
+                        },
+                        modifier = Modifier.fillMaxWidth(searchWidthFraction),
+                    )
+                }
             },
         )
         uiState.selectedCategory?.takeIf(String::isNotBlank)?.let { category ->

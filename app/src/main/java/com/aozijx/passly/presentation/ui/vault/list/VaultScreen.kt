@@ -9,10 +9,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -29,6 +30,8 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHand
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpStateProvider
+import com.aozijx.passly.presentation.ui.vault.list.search.VaultSearchPhase
+import com.aozijx.passly.presentation.ui.vault.list.search.VaultSearchState
 import kotlinx.coroutines.flow.Flow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,21 +47,55 @@ fun VaultScreen(
     eventHandler: VaultListEventHandler,
 ) {
     var isFabVisible by rememberSaveable { mutableStateOf(true) }
-    val searchEditingSession = remember { VaultSearchEditingSession() }
-    val isSearchEditing = searchEditingSession.isEditing
-    var pullSearchProgress by remember { mutableFloatStateOf(0f) }
+    var searchState by remember {
+        mutableStateOf(
+            VaultSearchState.initial(
+                isSearchActive = state.toolbar.isSearchActive,
+                query = state.toolbar.searchQuery,
+            ),
+        )
+    }
+    var wasSearchActive by remember { mutableStateOf(state.toolbar.isSearchActive) }
+    val currentSearchQuery by rememberUpdatedState(state.toolbar.searchQuery)
+    val currentSearchActive by rememberUpdatedState(state.toolbar.isSearchActive)
     val fabVisibilityConnection = rememberFabVisibilityNestedScrollConnection {
         isFabVisible = it
     }
+
+    fun expandVaultBars() {
+        scrollBehavior.state.heightOffset = 0f
+        scrollBehavior.state.contentOffset = 0f
+    }
+
+    LaunchedEffect(state.toolbar.isSearchActive, state.toolbar.searchQuery) {
+        val searchExited = wasSearchActive && !state.toolbar.isSearchActive
+        searchState = searchState.synchronize(
+            isSearchActive = state.toolbar.isSearchActive,
+            query = state.toolbar.searchQuery,
+        )
+        if (searchExited || searchState.isEditing) expandVaultBars()
+        wasSearchActive = state.toolbar.isSearchActive
+    }
+
     BackHandler(enabled = state.toolbar.isSearchActive) {
-        if (isSearchEditing) {
-            searchEditingSession.updateEditing(false)
+        if (searchState.isEditing) {
+            searchState = searchState.settle(state.toolbar.searchQuery)
+            if (state.toolbar.searchQuery.isBlank()) {
+                eventHandler.onEvent(VaultListEvent.SearchToggled(false))
+            }
         } else {
+            searchState = searchState.synchronize(false, state.toolbar.searchQuery)
+            expandVaultBars()
             eventHandler.onEvent(VaultListEvent.SearchToggled(false))
         }
     }
-    LifecycleResumeEffect(searchEditingSession) {
-        onPauseOrDispose { searchEditingSession.onScreenPaused() }
+    LifecycleResumeEffect(Unit) {
+        onPauseOrDispose {
+            searchState = searchState.onScreenPaused(currentSearchQuery)
+            if (currentSearchActive && currentSearchQuery.isBlank()) {
+                eventHandler.onEvent(VaultListEvent.SearchToggled(false))
+            }
+        }
     }
 
     Scaffold(
@@ -78,9 +115,34 @@ fun VaultScreen(
                 content = state.content,
                 layout = state.layout,
                 scrollBehavior = scrollBehavior,
-                isSearchEditing = isSearchEditing,
-                pullSearchProgress = pullSearchProgress,
-                onSearchEditingChanged = searchEditingSession::updateEditing,
+                searchState = searchState,
+                onSearchFocusChanged = { focused ->
+                    val nextState = searchState.onFocusChanged(
+                        focused = focused,
+                        query = state.toolbar.searchQuery,
+                    )
+                    searchState = nextState
+                    if (focused && !state.toolbar.isSearchActive) {
+                        expandVaultBars()
+                        eventHandler.onEvent(VaultListEvent.SearchToggled(true))
+                    } else if (!focused &&
+                        nextState.phase == VaultSearchPhase.BROWSING &&
+                        state.toolbar.isSearchActive
+                    ) {
+                        eventHandler.onEvent(VaultListEvent.SearchToggled(false))
+                    }
+                },
+                onSearchSubmitted = { query ->
+                    searchState = searchState.settle(query)
+                    if (query.isBlank()) {
+                        eventHandler.onEvent(VaultListEvent.SearchToggled(false))
+                    }
+                },
+                onSearchExitRequested = {
+                    searchState = searchState.synchronize(false, state.toolbar.searchQuery)
+                    expandVaultBars()
+                    eventHandler.onEvent(VaultListEvent.SearchToggled(false))
+                },
                 eventHandler = eventHandler,
             )
         },
@@ -103,9 +165,12 @@ fun VaultScreen(
             itemEventHandler = itemEventHandler,
             otpStateProvider = otpStateProvider,
             eventHandler = eventHandler,
-            onPullSearchProgressChanged = { pullSearchProgress = it },
+            onPullSearchProgressChanged = { progress ->
+                searchState = searchState.onPullProgressChanged(progress)
+            },
             onSearchRequested = {
-                searchEditingSession.updateEditing(true)
+                searchState = searchState.startEditing()
+                expandVaultBars()
                 eventHandler.onEvent(VaultListEvent.SearchToggled(true))
             },
             contentPadding = padding,

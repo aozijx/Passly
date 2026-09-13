@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -41,12 +42,10 @@ internal fun VaultListBody(
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
+    val motionScheme = MaterialTheme.motionScheme
     val mainGridState = rememberLazyGridState()
     val searchGridState = remember(state.toolbar.isSearchActive) { LazyGridState() }
-    val gridState = when (resolveVaultListViewport(state.toolbar.isSearchActive)) {
-        VaultListViewport.MAIN -> mainGridState
-        VaultListViewport.SEARCH -> searchGridState
-    }
+    val gridState = if (state.toolbar.isSearchActive) searchGridState else mainGridState
     val pullToSearchConnection = rememberPullToSearchNestedScrollConnection(
         gridState = gridState,
         enabled = !state.toolbar.isSearchActive,
@@ -64,8 +63,10 @@ internal fun VaultListBody(
                     state.toolbar.selectedCategory == null &&
                     (!state.layout.collapseQuickFilterBarOnScroll ||
                             scrollBehavior.state.collapsedFraction < 0.5f),
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut(),
+            enter = expandVertically(animationSpec = motionScheme.defaultSpatialSpec()) +
+                    fadeIn(animationSpec = motionScheme.fastEffectsSpec()),
+            exit = shrinkVertically(animationSpec = motionScheme.defaultSpatialSpec()) +
+                    fadeOut(animationSpec = motionScheme.fastEffectsSpec()),
         ) {
             VaultFilterBar(
                 filters = state.navigation.filterOptions,
