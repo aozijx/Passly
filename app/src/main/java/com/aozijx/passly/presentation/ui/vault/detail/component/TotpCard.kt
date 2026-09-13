@@ -47,15 +47,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
-import com.aozijx.passly.app.qr.QrCodeEncoder
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailOtpUiModel
+
+sealed interface TotpQrUiState {
+    data object Hidden : TotpQrUiState
+    data object Loading : TotpQrUiState
+    data class Ready(val bitmap: Bitmap) : TotpQrUiState
+    data object Failed : TotpQrUiState
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TotpCard(
     currentState: DetailOtpUiModel?,
-    totpUri: String? = null,
-    qrBitmap: Bitmap? = null,
+    qrCode: TotpQrUiState = TotpQrUiState.Hidden,
     showProgress: Boolean = true,
     onQrClick: () -> Unit,
     onQrDismiss: () -> Unit,
@@ -144,10 +149,9 @@ fun TotpCard(
                 )
             }
         }
-        if (totpUri != null || qrBitmap != null) {
+        if (qrCode !== TotpQrUiState.Hidden) {
             QRcodeRender(
-                totpUri = totpUri,
-                externalBitmap = qrBitmap,
+                qrCode = qrCode,
                 sheetState = sheetState,
                 onDismiss = onQrDismiss,
             )
@@ -177,15 +181,10 @@ private fun TotpCircularWavyProgressIndicator(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun QRcodeRender(
-    totpUri: String?,
-    externalBitmap: Bitmap?,
+    qrCode: TotpQrUiState,
     sheetState: SheetState,
     onDismiss: () -> Unit
 ) {
-    val bitmap = remember(totpUri, externalBitmap) {
-        externalBitmap ?: totpUri?.let { QrCodeEncoder.encode(it, 512) }
-    }
-
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -232,21 +231,24 @@ private fun QRcodeRender(
                         .padding(20.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (bitmap != null) {
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
+                    when (qrCode) {
+                        TotpQrUiState.Hidden -> Unit
+                        TotpQrUiState.Loading -> CircularWavyProgressIndicator()
+                        is TotpQrUiState.Ready -> Image(
+                            bitmap = qrCode.bitmap.asImageBitmap(),
                             contentDescription = "QR Code",
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
                         )
-                    } else {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                Icons.Default.QrCode,
-                                null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.outline
-                            )
-                            Text("无法生成二维码", style = MaterialTheme.typography.labelMedium)
+                        TotpQrUiState.Failed -> {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    Icons.Default.QrCode,
+                                    null,
+                                    modifier = Modifier.size(48.dp),
+                                    tint = MaterialTheme.colorScheme.outline
+                                )
+                                Text("无法生成二维码", style = MaterialTheme.typography.labelMedium)
+                            }
                         }
                     }
                 }

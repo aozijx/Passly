@@ -27,44 +27,31 @@ import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.platform.packageinfo.InstalledAppMetadata
-import com.aozijx.passly.core.platform.packageinfo.InstalledAppServicesProvider
-import dagger.hilt.android.EntryPointAccessors
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+
+data class AppPackagePickerItemUiModel(
+    val label: String,
+    val packageName: String,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppPackagePickerBottomSheet(
-    onSelect: (InstalledAppMetadata) -> Unit,
+    apps: List<AppPackagePickerItemUiModel>,
+    appIcon: @Composable (String) -> ImageBitmap?,
+    onSelect: (AppPackagePickerItemUiModel) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val services = remember {
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            InstalledAppServicesProvider::class.java,
-        )
-    }
-    val appCatalog = remember(services) { services.getInstalledAppCatalog() }
-    val iconLoader = remember(services) { services.getInstalledAppIconLoader() }
-    val apps by produceState(initialValue = emptyList(), appCatalog) {
-        value = withContext(Dispatchers.IO) { appCatalog.getLaunchableApps() }
-    }
     var query by remember { mutableStateOf("") }
     val filtered = remember(apps, query) {
         val normalized = query.trim()
@@ -108,11 +95,7 @@ fun AppPackagePickerBottomSheet(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(filtered, key = { it.packageName }) { app ->
-                    val icon = remember(app.packageName) {
-                        iconLoader.loadIcon(app.packageName)
-                            ?.asImageBitmap()
-                            ?.let(::BitmapPainter)
-                    }
+                    val icon = appIcon(app.packageName)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -123,7 +106,7 @@ fun AppPackagePickerBottomSheet(
                     ) {
                         if (icon != null) {
                             Image(
-                                painter = icon,
+                                bitmap = icon,
                                 contentDescription = null,
                                 modifier = Modifier
                                     .size(40.dp)

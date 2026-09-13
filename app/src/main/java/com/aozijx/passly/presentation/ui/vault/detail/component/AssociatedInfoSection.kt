@@ -17,16 +17,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
@@ -37,10 +40,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import com.aozijx.passly.presentation.ui.shared.components.rememberAppIcon
-import com.aozijx.passly.presentation.ui.shared.components.rememberAppMetadata
+import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerItemUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailAssociatedInfoUiModel
 
 @Composable
@@ -50,11 +50,12 @@ fun AssociatedInfoSection(
     onDomainEditStarted: () -> Unit,
     onDomainChanged: (String) -> Unit,
     onDomainSaved: (String) -> Unit,
-    onPackageSelected: (String) -> Unit,
+    associatedApps: List<AppPackagePickerItemUiModel>,
+    appIcon: @Composable (String) -> ImageBitmap?,
+    onPackagePickerRequested: () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
     val haptic = LocalHapticFeedback.current
-    var showPackagePicker by remember { mutableStateOf(false) }
     var domainInput by remember(model.domain) {
         mutableStateOf(TextFieldValue(model.domain.orEmpty()))
     }
@@ -83,21 +84,12 @@ fun AssociatedInfoSection(
         )
 
         AssociatedAppsCard(
-            packageNames = model.applicationIds,
+            apps = associatedApps,
+            appIcon = appIcon,
             onLongClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                showPackagePicker = true
+                onPackagePickerRequested()
             }
-        )
-    }
-
-    if (showPackagePicker) {
-        AppPackagePickerBottomSheet(
-            onSelect = {
-                onPackageSelected(it.packageName)
-                showPackagePicker = false
-            },
-            onDismiss = { showPackagePicker = false }
         )
     }
 }
@@ -139,7 +131,8 @@ private fun AssociatedDomainCard(
 }
 @Composable
 private fun AssociatedAppsCard(
-    packageNames: List<String>,
+    apps: List<AppPackagePickerItemUiModel>,
+    appIcon: @Composable (String) -> ImageBitmap?,
     onLongClick: () -> Unit,
 ) {
     InfoGroupCard(title = stringResource(R.string.vault_detail_associated_package)) {
@@ -150,15 +143,17 @@ private fun AssociatedAppsCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (packageNames.isEmpty()) {
+            if (apps.isEmpty()) {
                 Text(
                     text = stringResource(R.string.not_set),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium
                 )
             } else {
-                packageNames.forEach { packageName ->
-                    AssociatedAppRow(packageName)
+                apps.forEach { app ->
+                    key(app.packageName) {
+                        AssociatedAppRow(app, appIcon(app.packageName))
+                    }
                 }
             }
         }
@@ -166,11 +161,10 @@ private fun AssociatedAppsCard(
 }
 
 @Composable
-private fun AssociatedAppRow(packageName: String) {
-    val icon = rememberAppIcon(packageName)
-    val metadata = rememberAppMetadata(packageName)
-    val appName = metadata?.label?.takeIf { it.isNotBlank() } ?: packageName
-
+private fun AssociatedAppRow(
+    app: AppPackagePickerItemUiModel,
+    icon: ImageBitmap?,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -178,7 +172,7 @@ private fun AssociatedAppRow(packageName: String) {
     ) {
         if (icon != null) {
             Image(
-                painter = icon,
+                bitmap = icon,
                 contentDescription = null,
                 modifier = Modifier
                     .size(36.dp)
@@ -187,7 +181,7 @@ private fun AssociatedAppRow(packageName: String) {
             )
         }
         Text(
-            text = appName,
+            text = app.label,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium
         )

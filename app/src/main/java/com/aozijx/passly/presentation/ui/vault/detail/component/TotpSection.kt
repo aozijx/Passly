@@ -11,7 +11,7 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.DetailOtpUiModel
 fun TotpSection(
     modifier: Modifier = Modifier,
     currentState: DetailOtpUiModel?,
-    totpUri: String? = null,
+    qrCode: TotpQrUiState = TotpQrUiState.Hidden,
     showProgress: Boolean = true,
     onQrClick: () -> Unit,
     onQrDismiss: () -> Unit,
@@ -20,7 +20,7 @@ fun TotpSection(
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         TotpCard(
             currentState = currentState,
-            totpUri = totpUri,
+            qrCode = qrCode,
             showProgress = showProgress,
             onQrClick = onQrClick,
             onQrDismiss = onQrDismiss,
