@@ -83,7 +83,6 @@ internal fun DetailAssociationsHost(
     AssociatedInfoSection(
         model = DetailAssociatedInfoUiModel(
             domain = entry.associatedDomain,
-            applicationIds = applicationIds,
             isEditingDomain = editState.isEditingDomain,
         ),
         associatedApps = associatedApps,

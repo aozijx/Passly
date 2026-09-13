@@ -2,6 +2,7 @@ package com.aozijx.passly.presentation.feature.vault.detail.component
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.feature.vault.model.OtpCodeState
@@ -11,7 +12,8 @@ import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
 import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
 import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
-import com.aozijx.passly.presentation.feature.vault.detail.detailScreenUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.detailContentUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.detailOtpUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionResolver
 import com.aozijx.passly.presentation.ui.vault.detail.component.ActivityTimelineSection
@@ -35,7 +37,10 @@ fun DetailContentHost(
     onOpenRelatedEntry: (Entry) -> Unit,
 ) {
     val entry = uiState.entry ?: return
-    val screenUiModel = detailScreenUiModel(entry, uiState, otpUiState)
+    val contentUiModel = remember(entry, uiState.relatedEntries, uiState.history) {
+        detailContentUiModel(entry, uiState)
+    }
+    val otpModel = detailOtpUiModel(otpUiState)
     val registeredSections = DetailSectionResolver.resolve(entry)
 
     LaunchedEffect(uiState.saveCompletionId) {
@@ -84,7 +89,7 @@ fun DetailContentHost(
             item { DetailCredentialHost(entry, uiState, editState, onAction, onAuthenticate, onCopySensitive) }
         }
         if (DetailSectionKey.OTP in registeredSections) {
-            item { DetailOtpHost(screenUiModel.otp, otpQrUri, onAction, onCopySensitive, onOtpQrDismiss) }
+            item { DetailOtpHost(otpModel, otpQrUri, onAction, onCopySensitive, onOtpQrDismiss) }
         }
         if (DetailSectionKey.BANK_CARD in registeredSections) {
             item { DetailBankCardHost(entry, uiState, editState, onAction, onAuthenticate, onCopySensitive) }
@@ -105,13 +110,13 @@ fun DetailContentHost(
             item { DetailPasskeyHost(entry, uiState, onAction, onAuthenticate, onCopySensitive) }
         }
         if (uiState.relatedEntries.isNotEmpty()) {
-            item { DetailRelatedEntriesHost(uiState.relatedEntries, screenUiModel.relatedEntries, onOpenRelatedEntry) }
+            item { DetailRelatedEntriesHost(uiState.relatedEntries, contentUiModel.relatedEntries, onOpenRelatedEntry) }
         }
         item { DetailTagsHost(entry, onAction) }
         item { DetailAssociationsHost(entry, editState, onAction) }
         item { DetailNotesHost(entry, editState, onAction) }
-        item { MetadataSection(screenUiModel.metadata) }
-        item { ActivityTimelineSection(activityList = screenUiModel.activities) }
+        item { MetadataSection(contentUiModel.metadata) }
+        item { ActivityTimelineSection(activityList = contentUiModel.activities) }
     }
 
     DetailEditorOverlaysHost(uiState = uiState, onAction = onAction)

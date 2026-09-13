@@ -8,12 +8,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.aozijx.passly.presentation.ui.vault.detail.component.DetailTopBar
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailScreenUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailHeaderUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
-    model: DetailScreenUiModel,
+    model: DetailHeaderUiModel,
     onBack: () -> Unit,
     onInteraction: () -> Unit,
     onTitleChanged: (String) -> Unit,

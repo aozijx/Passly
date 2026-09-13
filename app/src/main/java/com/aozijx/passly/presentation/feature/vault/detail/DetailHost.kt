@@ -64,7 +64,7 @@ fun DetailHost(
     }
 
     DetailScreen(
-        model = detailScreenUiModel(entry, uiState, otpUiState),
+        model = detailHeaderUiModel(entry, uiState),
         onBack = onBack,
         onInteraction = onUpdateInteraction,
         onTitleChanged = { onAction(DetailUiAction.UpdateEditedTitle(it)) },

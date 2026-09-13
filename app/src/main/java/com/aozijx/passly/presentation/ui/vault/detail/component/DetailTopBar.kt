@@ -26,12 +26,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.aozijx.passly.R
 import androidx.compose.material3.OutlinedTextField
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailScreenUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailHeaderUiModel
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DetailTopBar(
-    model: DetailScreenUiModel,
+    model: DetailHeaderUiModel,
     scrollBehavior: TopAppBarScrollBehavior,
     onTitleChanged: (String) -> Unit,
     onTitleEditStarted: () -> Unit,
