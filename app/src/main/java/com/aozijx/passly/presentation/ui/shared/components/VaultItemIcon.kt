@@ -13,12 +13,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.aozijx.passly.presentation.ui.shared.media.toLocalIconImageModel
+import com.aozijx.passly.app.platform.packageinfo.rememberInstalledAppIconBitmap
 import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.ui.shared.media.toLocalIconImageModel
+
 @Composable
 fun VaultItemIcon(
     modifier: Modifier = Modifier,
@@ -60,7 +63,10 @@ private fun VaultItemIcon(
     iconColor: String?,
     tint: Color,
 ) {
-    val appIconPainter = rememberAppIcon(associatedAppPackage)
+    val appIconBitmap = rememberInstalledAppIconBitmap(associatedAppPackage)
+    val appIconPainter = remember(appIconBitmap) {
+        appIconBitmap?.let(::BitmapPainter)
+    }
     val explicitIconVector = remember(iconName) {
         iconName
             ?.takeIf { it.isNotBlank() }

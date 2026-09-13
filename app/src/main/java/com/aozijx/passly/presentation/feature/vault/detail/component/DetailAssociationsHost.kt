@@ -1,17 +1,14 @@
 package com.aozijx.passly.presentation.feature.vault.detail.component
 
-import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import com.aozijx.passly.app.platform.packageinfo.rememberInstalledAppIconBitmap
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppServicesProvider
-import com.aozijx.passly.core.platform.packageinfo.InstalledAppIconLoader
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
 import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
@@ -39,7 +36,6 @@ internal fun DetailAssociationsHost(
         )
     }
     val appCatalog = remember(services) { services.getInstalledAppCatalog() }
-    val iconLoader = remember(services) { services.getInstalledAppIconLoader() }
     val applicationIds = remember(entry.associations.applicationIds) {
         entry.associations.applicationIds.sorted()
     }
@@ -86,7 +82,7 @@ internal fun DetailAssociationsHost(
             isEditingDomain = editState.isEditingDomain,
         ),
         associatedApps = associatedApps,
-        appIcon = { packageName -> rememberInstalledAppIcon(iconLoader, packageName) },
+        appIcon = { packageName -> rememberInstalledAppIconBitmap(packageName) },
         onDomainEditStarted = { editState.isEditingDomain = true },
         onDomainChanged = { editState.editedDomain = it },
         onDomainSaved = {
@@ -107,7 +103,7 @@ internal fun DetailAssociationsHost(
     if (showPackagePicker) {
         AppPackagePickerBottomSheet(
             apps = pickerApps,
-            appIcon = { packageName -> rememberInstalledAppIcon(iconLoader, packageName) },
+            appIcon = { packageName -> rememberInstalledAppIconBitmap(packageName) },
             onSelect = { app ->
                 showPackagePicker = false
                 editState.editedPackage = app.packageName
@@ -130,17 +126,3 @@ private fun placeholderApp(packageName: String) = AppPackagePickerItemUiModel(
     label = packageName,
     packageName = packageName,
 )
-
-@Composable
-private fun rememberInstalledAppIcon(
-    iconLoader: InstalledAppIconLoader,
-    packageName: String,
-): ImageBitmap? {
-    val bitmap by produceState<Bitmap?>(null, iconLoader, packageName) {
-        value = null
-        value = withContext(Dispatchers.IO) {
-            iconLoader.loadIcon(packageName)
-        }
-    }
-    return remember(bitmap) { bitmap?.asImageBitmap() }
-}
