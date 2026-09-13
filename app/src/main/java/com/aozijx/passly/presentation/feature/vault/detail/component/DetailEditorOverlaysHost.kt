@@ -1,7 +1,6 @@
 package com.aozijx.passly.presentation.feature.vault.detail.component
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.key
 import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
@@ -35,22 +34,20 @@ internal fun DetailEditorOverlaysHost(
     }
 
     if (uiState.faviconEditor.visible) {
-        key(uiState.faviconEditor.presentationId) {
-            FaviconEditorSheet(
-                state = uiState.faviconEditor,
-                isSaving = uiState.savingEdit == DetailEditCompletion.Icon,
-                onTabSelected = { onAction(DetailUiAction.SelectFaviconTab(it)) },
-                onSearchChanged = { onAction(DetailUiAction.UpdateFaviconSearch(it)) },
-                onSourceSelected = { onAction(DetailUiAction.SelectFaviconSource(it)) },
-                onUploadRequested = { pickFaviconImage(ImageType.SCREEN) },
-                onImageUrlChanged = { onAction(DetailUiAction.UpdateFaviconImageUrl(it)) },
-                onDownloadRequested = { onAction(DetailUiAction.DownloadFaviconImage) },
-                onSave = { onAction(DetailUiAction.SaveFavicon) },
-                onDismiss = { onAction(DetailUiAction.DismissFaviconEditor) },
-                onConfirmDiscard = { onAction(DetailUiAction.ConfirmDiscardFavicon) },
-                onKeepEditing = { onAction(DetailUiAction.KeepEditingFavicon) },
-            )
-        }
+        FaviconEditorSheet(
+            state = uiState.faviconEditor,
+            isSaving = uiState.savingEdit == DetailEditCompletion.Icon,
+            onTabSelected = { onAction(DetailUiAction.SelectFaviconTab(it)) },
+            onSearchChanged = { onAction(DetailUiAction.UpdateFaviconSearch(it)) },
+            onSourceSelected = { onAction(DetailUiAction.SelectFaviconSource(it)) },
+            onUploadRequested = { pickFaviconImage(ImageType.SCREEN) },
+            onImageUrlChanged = { onAction(DetailUiAction.UpdateFaviconImageUrl(it)) },
+            onDownloadRequested = { onAction(DetailUiAction.DownloadFaviconImage) },
+            onSave = { onAction(DetailUiAction.SaveFavicon) },
+            onDismiss = { onAction(DetailUiAction.DismissFaviconEditor) },
+            onConfirmDiscard = { onAction(DetailUiAction.ConfirmDiscardFavicon) },
+            onKeepEditing = { onAction(DetailUiAction.KeepEditingFavicon) },
+        )
     }
 
     uiState.faviconEditor.pendingInputPath?.let { path ->

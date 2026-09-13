@@ -2,6 +2,7 @@ package com.aozijx.passly.presentation.feature.vault.detail
 
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconEditorTabUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconProcessingErrorUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -112,6 +113,18 @@ class DetailFaviconReducerTest {
     }
 
     @Test
+    fun openingPrivateImageStartsInCustomImageMode() {
+        val actual = DetailFaviconEditorReducer.reduce(
+            DetailFaviconEditorUiModel(),
+            DetailMutation.FaviconEditorOpened(
+                FaviconDraftSourceUiModel.PrivateImage("/private/images/favicon.webp"),
+            ),
+        )
+
+        assertEquals("CUSTOM_IMAGE", actual.selectedTab.name)
+    }
+
+    @Test
     fun promotedPrivateImageKeepsCandidatePathUntilSaveCompletes() {
         val state = DetailFaviconEditorUiModel(
             visible = true,
@@ -144,11 +157,10 @@ class DetailFaviconReducerTest {
     }
 
     @Test
-    fun keepEditingRequestsFreshSheetPresentation() {
+    fun keepEditingOnlyClearsDiscardConfirmation() {
         val state = DetailFaviconEditorUiModel(
             visible = true,
             confirmDiscard = true,
-            presentationId = 4,
         )
 
         val actual = DetailFaviconEditorReducer.reduce(
@@ -156,7 +168,14 @@ class DetailFaviconReducerTest {
             DetailMutation.FaviconEditorDiscardCancelled,
         )
 
-        assertFalse(actual.confirmDiscard)
-        assertEquals(5L, actual.presentationId)
+        assertEquals(state.copy(confirmDiscard = false), actual)
+    }
+
+    @Test
+    fun editorOffersLibraryAndSingleCustomImageMode() {
+        assertEquals(
+            listOf("ICON_LIBRARY", "CUSTOM_IMAGE"),
+            FaviconEditorTabUiModel.entries.map { it.name },
+        )
     }
 }

@@ -92,7 +92,6 @@
     <string name="vault_detail_favicon_built_in">Built-in icon</string>
     <string name="vault_detail_favicon_custom_image">Custom image</string>
     <string name="vault_detail_favicon_library">Icon library</string>
-    <string name="vault_detail_favicon_upload">Upload</string>
     <string name="vault_detail_favicon_image_url">Image URL</string>
     <string name="vault_detail_favicon_choose_image">Choose image</string>
     <string name="vault_detail_favicon_download">Download image</string>

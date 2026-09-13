@@ -11,8 +11,7 @@ sealed interface FaviconDraftSourceUiModel {
 
 enum class FaviconEditorTabUiModel {
     ICON_LIBRARY,
-    UPLOAD,
-    IMAGE_URL,
+    CUSTOM_IMAGE,
 }
 
 enum class FaviconProcessingErrorUiModel {
@@ -37,7 +36,6 @@ data class DetailFaviconEditorUiModel(
     val promotedCandidatePath: String? = null,
     val processingError: FaviconProcessingErrorUiModel? = null,
     val confirmDiscard: Boolean = false,
-    val presentationId: Long = 0,
 ) {
     val dirty: Boolean get() = source != initialSource || pendingInputPath != null
 }

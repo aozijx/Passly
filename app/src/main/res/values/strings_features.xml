@@ -94,7 +94,6 @@
     <string name="vault_detail_favicon_built_in">内置图标</string>
     <string name="vault_detail_favicon_custom_image">自定义图片</string>
     <string name="vault_detail_favicon_library">图标库</string>
-    <string name="vault_detail_favicon_upload">上传</string>
     <string name="vault_detail_favicon_image_url">图片 URL</string>
     <string name="vault_detail_favicon_choose_image">选择图片</string>
     <string name="vault_detail_favicon_download">下载图片</string>
