@@ -152,13 +152,7 @@ fun LockAuthSettingsSection(
                 key = "security.biometric_enabled",
                 icon = Icons.Default.Fingerprint,
                 title = stringResource(R.string.settings_security_biometric_unlock),
-                subtitle = stringResource(
-                    if (state.isBiometricEnabled) {
-                        R.string.settings_security_biometric_enabled_description
-                    } else {
-                        R.string.settings_security_biometric_disabled_description
-                    }
-                ),
+                subtitle = stringResource(R.string.settings_security_biometric_enabled_description),
                 checked = state.isBiometricEnabled,
                 onCheckedChange = onBiometricEnabledChange
             ),

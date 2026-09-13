@@ -182,12 +182,6 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
         invalidateOnEnrollment: Boolean
     ): AuthenticationResult {
         val correlationId = UuidCreator.getTimeOrderedEpoch().toString()
-        if (!session.isRecoveryMode()) {
-            val authentication = authenticationManager.authenticate(
-                AuthenticationRequest(AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY)
-            )
-            if (authentication !is AuthenticationResult.Success) return authentication
-        }
         val host = hostRegistry.awaitLease()?.hostOrNull()
             ?: return AuthenticationResult.Failure(
                 AuthenticationFailure(

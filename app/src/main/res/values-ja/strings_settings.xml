@@ -112,7 +112,6 @@
     <string name="settings_privacy_clipboard_not_owned">Passly が消去できるクリップボード内容はありません</string>
     <string name="settings_security_auto_lock">自動ロック</string>
     <string name="settings_security_auto_lock_delay">自動ロックまでの時間</string>
-    <string name="settings_security_biometric_disabled_description">先に現在の資格情報を確認する必要があります</string>
     <string name="settings_security_biometric_enabled_description">強力な生体認証でPasslyをロック解除します</string>
     <string name="settings_security_biometric_unlock">生体認証でロック解除</string>
     <string name="settings_security_flip_exit">アプリを終了</string>

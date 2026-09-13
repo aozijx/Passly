@@ -112,7 +112,6 @@
     <string name="settings_privacy_clipboard_not_owned">There is no current Passly clipboard content to clear</string>
     <string name="settings_security_auto_lock">Auto-lock</string>
     <string name="settings_security_auto_lock_delay">Auto-lock delay</string>
-    <string name="settings_security_biometric_disabled_description">Existing credentials must be verified first</string>
     <string name="settings_security_biometric_enabled_description">Use strong biometrics to unlock Passly</string>
     <string name="settings_security_biometric_unlock">Biometric unlock</string>
     <string name="settings_security_flip_exit">Exit application</string>

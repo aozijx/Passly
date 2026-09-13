@@ -20,6 +20,11 @@ interface AuthenticationMethodProvisioner {
 
     suspend fun disableAppPassword(): AuthenticationResult
     suspend fun disableBiometric(): AuthenticationResult
+
+    /**
+     * 通过新密钥的系统强生物识别 CryptoObject 验证并更新生物识别策略。
+     * 调用方不应在此之前重复要求应用密码或其他认证。
+     */
     suspend fun rotateBiometricPolicy(invalidateOnEnrollment: Boolean): AuthenticationResult
     suspend fun hasRecoveryCode(): Boolean
 
