@@ -130,6 +130,11 @@ internal object DetailReducer {
             is DetailMutation.SaveStarted -> state.copy(
                 savingEdit = mutation.completion,
                 saveErrorCode = null,
+                faviconEditor = if (mutation.completion == DetailEditCompletion.Icon) {
+                    state.faviconEditor.copy(processingError = null)
+                } else {
+                    state.faviconEditor
+                },
             )
 
             is DetailMutation.SaveSucceeded -> {
@@ -167,6 +172,14 @@ internal object DetailReducer {
                     state.copy(
                         savingEdit = null,
                         saveErrorCode = mutation.errorCode,
+                        faviconEditor = if (mutation.completion == DetailEditCompletion.Icon) {
+                            state.faviconEditor.copy(
+                                processingError = state.faviconEditor.processingError
+                                    ?: FaviconProcessingErrorUiModel.SAVE_FAILED,
+                            )
+                        } else {
+                            state.faviconEditor
+                        },
                     )
                 }
             }

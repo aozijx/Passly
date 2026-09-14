@@ -8,27 +8,61 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DetailFaviconSessionTest {
 
     @Test
-    fun `active favicon work rejects a second launch`() = runTest {
+    fun `active preparation rejects a second preparation`() = runTest {
         val gate = CompletableDeferred<Unit>()
         val session = DetailFaviconSession(FakeFiles(), this)
         var launches = 0
 
-        session.launch {
+        session.launchPreparation {
             launches++
             gate.await()
         }
         runCurrent()
-        session.launch { launches++ }
+        session.launchPreparation { launches++ }
         runCurrent()
 
         assertEquals(1, launches)
         gate.complete(Unit)
+        runCurrent()
+    }
+
+    @Test
+    fun `active preparation does not discard a save`() = runTest {
+        val releasePreparation = CompletableDeferred<Unit>()
+        val session = DetailFaviconSession(FakeFiles(), this)
+        var saved = false
+
+        session.launchPreparation { releasePreparation.await() }
+        runCurrent()
+        session.launchSave { saved = true }
+        runCurrent()
+
+        assertTrue(saved)
+        releasePreparation.complete(Unit)
+        runCurrent()
+    }
+
+    @Test
+    fun `active save cannot be replaced`() = runTest {
+        val releaseSave = CompletableDeferred<Unit>()
+        val session = DetailFaviconSession(FakeFiles(), this)
+
+        session.launchSave { releaseSave.await() }
+        runCurrent()
+
+        assertThrows(IllegalStateException::class.java) {
+            session.launchSave { }
+        }
+
+        releaseSave.complete(Unit)
         runCurrent()
     }
 

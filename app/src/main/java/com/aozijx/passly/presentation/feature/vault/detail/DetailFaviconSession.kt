@@ -11,11 +11,17 @@ internal class DetailFaviconSession(
     private val files: FaviconDraftFiles,
     private val scope: CoroutineScope,
 ) {
-    private var job: Job? = null
+    private var preparationJob: Job? = null
+    private var saveJob: Job? = null
 
-    fun launch(block: suspend () -> Unit) {
-        if (job?.isActive == true) return
-        job = scope.launch { block() }
+    fun launchPreparation(block: suspend () -> Unit) {
+        if (preparationJob?.isActive == true) return
+        preparationJob = scope.launch { block() }
+    }
+
+    fun launchSave(block: suspend () -> Unit) {
+        check(saveJob?.isActive != true) { "A favicon save is already active" }
+        saveJob = scope.launch { block() }
     }
 
     fun discardReplacedSource(
@@ -32,12 +38,12 @@ internal class DetailFaviconSession(
     }
 
     fun cancelCrop(pendingInputPath: String?) {
-        cancel()
+        cancelPreparation()
         scope.launch { files.discard(pendingInputPath) }
     }
 
     fun close(editor: DetailFaviconEditorUiModel) {
-        cancel()
+        cancelAll()
         files.discardEditorResources(
             stagedPath = editor.privateImagePath(),
             pendingInputPath = editor.pendingInputPath,
@@ -45,8 +51,14 @@ internal class DetailFaviconSession(
         )
     }
 
-    private fun cancel() {
-        job?.cancel()
-        job = null
+    private fun cancelPreparation() {
+        preparationJob?.cancel()
+        preparationJob = null
+    }
+
+    private fun cancelAll() {
+        cancelPreparation()
+        saveJob?.cancel()
+        saveJob = null
     }
 }

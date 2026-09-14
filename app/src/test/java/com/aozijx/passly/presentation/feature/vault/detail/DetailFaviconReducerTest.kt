@@ -72,6 +72,7 @@ class DetailFaviconReducerTest {
 
         assertTrue(requested.confirmDiscard)
         assertEquals(editor.source, failed.faviconEditor.source)
+        assertEquals(FaviconProcessingErrorUiModel.SAVE_FAILED, failed.faviconEditor.processingError)
         assertEquals(DetailFaviconEditorUiModel(), succeeded.faviconEditor)
     }
 
@@ -90,6 +91,24 @@ class DetailFaviconReducerTest {
 
         assertEquals("/private/staging/input", actual.pendingInputPath)
         assertFalse(actual.processing)
+    }
+
+    @Test
+    fun iconSaveStartClearsPreviousEditorError() {
+        val state = DetailUiState(
+            faviconEditor = DetailFaviconEditorUiModel(
+                visible = true,
+                processingError = FaviconProcessingErrorUiModel.SAVE_FAILED,
+            ),
+        )
+
+        val actual = DetailReducer.reduce(
+            state,
+            DetailMutation.SaveStarted(DetailEditCompletion.Icon),
+        )
+
+        assertEquals(DetailEditCompletion.Icon, actual.savingEdit)
+        assertEquals(null, actual.faviconEditor.processingError)
     }
 
     @Test

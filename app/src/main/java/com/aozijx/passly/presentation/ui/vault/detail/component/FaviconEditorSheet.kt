@@ -146,6 +146,13 @@ fun FaviconEditorSheet(
                     )
                 }
             }
+            state.processingError?.let { error ->
+                Text(
+                    text = stringResource(error.messageRes()),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -240,12 +247,6 @@ private fun FaviconCustomImage(
                     modifier = Modifier.padding(start = 8.dp),
                 )
             }
-        }
-        state.processingError?.let { error ->
-            Text(
-                text = stringResource(error.messageRes()),
-                color = MaterialTheme.colorScheme.error,
-            )
         }
     }
 }

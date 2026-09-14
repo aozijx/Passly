@@ -251,24 +251,24 @@ class DetailViewModel @Inject constructor(
                 mutate(DetailMutation.FaviconImageUrlChanged(event.value))
 
             is DetailUiAction.PickedFaviconImage -> {
-                faviconSession.launch {
+                faviconSession.launchPreparation {
                     stageFaviconInput { faviconImageProcessor.stageUpload(event.uri) }
                 }
             }
 
             DetailUiAction.DownloadFaviconImage -> {
                 val url = _uiState.value.faviconEditor.imageUrl
-                faviconSession.launch {
+                faviconSession.launchPreparation {
                     stageFaviconInput { faviconImageProcessor.stageHttpsUrl(url) }
                 }
             }
 
             DetailUiAction.UseFaviconWithoutCrop -> {
-                faviconSession.launch { processPendingFavicon(crop = null) }
+                faviconSession.launchPreparation { processPendingFavicon(crop = null) }
             }
 
             is DetailUiAction.CropFaviconImage -> {
-                faviconSession.launch {
+                faviconSession.launchPreparation {
                     processPendingFavicon(
                         FaviconCropRequest(event.zoom, event.offsetX, event.offsetY),
                     )
@@ -281,31 +281,7 @@ class DetailViewModel @Inject constructor(
                 mutate(DetailMutation.FaviconCropCancelled)
             }
 
-            DetailUiAction.SaveFavicon -> {
-                if (_uiState.value.faviconEditor.processing) return
-                faviconSession.launch {
-                    val source = _uiState.value.faviconEditor.source
-                    val persistedSource = if (
-                        source is FaviconDraftSourceUiModel.PrivateImage &&
-                        faviconImageProcessor.isStaged(source.localPath)
-                    ) {
-                        val promoted = faviconImageProcessor.promote(source.localPath)
-                            .getOrElse {
-                                mutate(DetailMutation.FaviconProcessingFailed(it.toFaviconUiError()))
-                                return@launch
-                            }
-                        FaviconDraftSourceUiModel.PrivateImage(promoted).also {
-                            mutate(DetailMutation.FaviconSourcePromoted(promoted))
-                        }
-                    } else {
-                        source
-                    }
-                    persistEntryPatch(
-                        patch = DetailEntryPatch.Icon(persistedSource.toEntryIcon()),
-                        completion = DetailEditCompletion.Icon,
-                    )
-                }
-            }
+            DetailUiAction.SaveFavicon -> saveFavicon()
 
             DetailUiAction.DismissFaviconEditor -> {
                 if (_uiState.value.faviconEditor.processing) return
@@ -459,6 +435,14 @@ class DetailViewModel @Inject constructor(
         val entryId = _uiState.value.entry?.id ?: return
         if (_uiState.value.savingEdit != null) return
         mutate(DetailMutation.SaveStarted(completion))
+        persistStartedEntryPatch(entryId, patch, completion)
+    }
+
+    private suspend fun persistStartedEntryPatch(
+        entryId: EntryId,
+        patch: DetailEntryPatch,
+        completion: DetailEditCompletion,
+    ) {
         when (val result = updateDetailEntry.update(entryId, patch)) {
             is AppResult.Success -> {
                 val latest = result.data
@@ -481,6 +465,47 @@ class DetailViewModel @Inject constructor(
             is AppResult.Failure -> {
                 mutate(DetailMutation.SaveFailed(completion, result.error.code))
             }
+        }
+    }
+
+    private fun saveFavicon() {
+        val state = _uiState.value
+        val editor = state.faviconEditor
+        val entryId = state.entry?.id ?: return
+        if (
+            editor.processing ||
+            !editor.dirty ||
+            state.savingEdit != null ||
+            !accessPolicy.hasFullAccess()
+        ) {
+            return
+        }
+
+        mutate(DetailMutation.SaveStarted(DetailEditCompletion.Icon))
+        faviconSession.launchSave {
+            val source = _uiState.value.faviconEditor.source
+            val persistedSource = if (
+                source is FaviconDraftSourceUiModel.PrivateImage &&
+                faviconImageProcessor.isStaged(source.localPath)
+            ) {
+                val promoted = faviconImageProcessor.promote(source.localPath)
+                    .getOrElse { error ->
+                        val uiError = error.toFaviconUiError()
+                        mutate(DetailMutation.FaviconProcessingFailed(uiError))
+                        mutate(DetailMutation.SaveFailed(DetailEditCompletion.Icon, uiError.name))
+                        return@launchSave
+                    }
+                FaviconDraftSourceUiModel.PrivateImage(promoted).also {
+                    mutate(DetailMutation.FaviconSourcePromoted(promoted))
+                }
+            } else {
+                source
+            }
+            persistStartedEntryPatch(
+                entryId = entryId,
+                patch = DetailEntryPatch.Icon(persistedSource.toEntryIcon()),
+                completion = DetailEditCompletion.Icon,
+            )
         }
     }
 
