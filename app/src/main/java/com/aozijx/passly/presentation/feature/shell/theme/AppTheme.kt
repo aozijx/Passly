@@ -8,6 +8,7 @@ import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.ui.theme.SystemTypography
@@ -27,22 +28,27 @@ fun AppTheme(
     appCornerRadiusDp: Float = AppCornerRadiusConstraints.DEFAULT_DP,
     content: @Composable () -> Unit
 ) {
+    val motionScheme = remember { MotionScheme.expressive() }
     val isDark = when (appearance.themeMode) {
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
     }
-    val colorScheme = rememberAppColorScheme(
+    val targetColorScheme = rememberAppColorScheme(
         isDark = isDark,
         dynamicColor = appearance.isDynamicColor,
         themeKey = appearance.themeKey,
         canvasTintPercent = appearance.canvasTintPercent,
     )
+    val colorScheme = rememberAnimatedColorScheme(
+        target = targetColorScheme,
+        animationSpec = motionScheme.defaultEffectsSpec(),
+    )
     val typography =
         if (appearance.fontFamily == FontFamilyMode.SYSTEM) SystemTypography else themeTypography()
     MaterialExpressiveTheme(
         colorScheme = colorScheme,
-        motionScheme = MotionScheme.expressive(),
+        motionScheme = motionScheme,
         shapes = appShapes(appCornerRadiusDp),
         typography = typography,
     ) {

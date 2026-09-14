@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 
@@ -21,20 +22,20 @@ fun rememberAppColorScheme(
     canvasTintPercent: Int,
 ): ColorScheme {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
     val selectedScheme = remember(themeKey) { AppThemeSchemes.find(themeKey) }
-    val baseColorScheme = if (isDark) darkColorScheme() else lightColorScheme()
 
-    return when {
-        dynamicColor -> {
+    if (dynamicColor) {
+        return remember(context, configuration, isDark) {
             if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        selectedScheme != null -> baseColorScheme.withGeneratedAccents(
-            seeds = selectedScheme.resolveAccentSeeds(),
-            isDark = isDark,
-            canvasTintFraction = canvasTintPercent / 100f,
-        )
-        else -> baseColorScheme.withGeneratedAccents(
-            seeds = AppThemeSchemes.all.first().resolveAccentSeeds(),
+    }
+
+    val accentSeeds = (selectedScheme ?: AppThemeSchemes.all.first()).resolveAccentSeeds()
+    return remember(isDark, accentSeeds, canvasTintPercent) {
+        val baseColorScheme = if (isDark) darkColorScheme() else lightColorScheme()
+        baseColorScheme.withGeneratedAccents(
+            seeds = accentSeeds,
             isDark = isDark,
             canvasTintFraction = canvasTintPercent / 100f,
         )
