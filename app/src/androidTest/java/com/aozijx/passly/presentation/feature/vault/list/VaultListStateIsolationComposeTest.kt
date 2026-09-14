@@ -22,8 +22,7 @@ class VaultListStateIsolationComposeTest {
 
         composeRule.setContent {
             val mapped = uiState.value.toUiModel(display())
-            val stable = rememberVaultListScreenUiModel(mapped)
-            PagingProbe(stable.navigation, stable.content) { pagingCompositions++ }
+            PagingProbe(mapped.navigation, mapped.content) { pagingCompositions++ }
         }
         composeRule.runOnIdle { assertEquals(1, pagingCompositions) }
 

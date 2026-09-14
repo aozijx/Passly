@@ -22,7 +22,6 @@ import com.aozijx.passly.presentation.feature.vault.list.display.VaultDisplayVie
 import com.aozijx.passly.presentation.ui.vault.list.VaultScreen
 import com.aozijx.passly.presentation.ui.vault.list.VaultSystemBarsEffect
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,24 +45,22 @@ fun VaultHost(
     val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
     val vaultDisplayConfig by vaultDisplayViewModel.config.collectAsStateWithLifecycle()
 
-    val entryCardPresentations =
-        vaultDisplayConfig.style.entryCardPresentations.map { it.toUiModel() }
-    val renderState = rememberVaultListScreenUiModel(
-        uiState.toUiModel(
-            display = VaultListDisplayUiModel(
-                cardPresentations = entryCardPresentations,
-                swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction.toUiModel(),
-                swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction.toUiModel(),
-                isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,
-                collapseTopBarOnScroll = vaultDisplayConfig.layout.collapseTopBarOnScroll,
-                collapseQuickFilterBarOnScroll =
-                    vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll,
-                hideSystemBars = vaultDisplayConfig.layout.hideSystemBars,
-            ),
-        ),
-    )
-    val listBindings = rememberVaultListBindings(
-        entries = vaultViewModel.entries,
+    val display = remember(vaultDisplayConfig) {
+        VaultListDisplayUiModel(
+            cardPresentations = vaultDisplayConfig.style.entryCardPresentations.map {
+                it.toUiModel()
+            },
+            swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction.toUiModel(),
+            swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction.toUiModel(),
+            isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,
+            collapseTopBarOnScroll = vaultDisplayConfig.layout.collapseTopBarOnScroll,
+            collapseQuickFilterBarOnScroll =
+                vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll,
+            hideSystemBars = vaultDisplayConfig.layout.hideSystemBars,
+        )
+    }
+    val renderState = uiState.toUiModel(display)
+    val itemEventHandler = rememberVaultListItemEventHandler(
         onItemClick = { item -> onShowDetail(item.id) },
         onItemSwipe = { item, action ->
             handleSwipeAction(
@@ -133,25 +130,11 @@ fun VaultHost(
     VaultScreen(
         state = renderState,
         scrollBehavior = scrollBehavior,
-        entries = listBindings.entries,
-        itemEventHandler = listBindings.eventHandler,
+        entries = vaultViewModel.entries,
+        itemEventHandler = itemEventHandler,
         otpStateProvider = otpStateProvider,
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
         eventHandler = eventHandler,
     )
-}
-
-@Composable
-internal fun rememberVaultListScreenUiModel(
-    mapped: VaultListScreenUiModel,
-): VaultListScreenUiModel {
-    val toolbar = remember(mapped.toolbar) { mapped.toolbar }
-    val navigation = remember(mapped.navigation) { mapped.navigation }
-    val content = remember(mapped.content) { mapped.content }
-    val dialogs = remember(mapped.dialogs) { mapped.dialogs }
-    val layout = remember(mapped.layout) { mapped.layout }
-    return remember(toolbar, navigation, content, dialogs, layout) {
-        VaultListScreenUiModel(toolbar, navigation, content, dialogs, layout)
-    }
 }

@@ -1,9 +1,11 @@
 package com.aozijx.passly.presentation.ui.vault.list.model
 
+import androidx.compose.runtime.Immutable
 import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
 import kotlinx.coroutines.flow.Flow
 
+@Immutable
 data class VaultListItemUiModel(
     val id: String,
     val entryType: EntryTypeUiModel,
@@ -33,6 +35,7 @@ interface VaultListItemEventHandler {
 
 enum class VaultOtpKindUiModel { STANDARD, STEAM }
 
+@Immutable
 data class VaultOtpUiState(
     val code: String? = null,
     val progress: Float = 0f,
@@ -46,6 +49,7 @@ interface VaultOtpStateProvider {
     fun unsubscribe(entryId: String)
 }
 
+@Immutable
 data class VaultSortUiModel(
     val option: VaultSortOptionUiModel,
     val descending: Boolean,
@@ -75,6 +79,7 @@ enum class VaultAddTypeUiModel {
     }
 }
 
+@Immutable
 data class VaultCardPresentationUiModel(
     val entryTypeKey: String,
     val variantKey: String,
@@ -87,6 +92,7 @@ data class VaultCardPresentationUiModel(
 
 enum class VaultCardDensityUiModel { COMPACT, STANDARD, COMFORTABLE }
 
+@Immutable
 data class VaultListScreenUiModel(
     val toolbar: VaultListToolbarUiModel,
     val navigation: VaultListNavigationUiModel,
@@ -95,6 +101,7 @@ data class VaultListScreenUiModel(
     val layout: VaultListLayoutUiModel,
 )
 
+@Immutable
 data class VaultListToolbarUiModel(
     val searchQuery: String,
     val selectedCategory: String?,
@@ -103,11 +110,13 @@ data class VaultListToolbarUiModel(
     val availableCategories: List<String>,
 )
 
+@Immutable
 data class VaultListNavigationUiModel(
     val selectedFilters: Set<VaultAddTypeUiModel>,
     val filterOptions: List<VaultAddTypeUiModel>,
 )
 
+@Immutable
 data class VaultListContentUiModel(
     val showTotpCode: Boolean,
     val cardPresentations: List<VaultCardPresentationUiModel>,
@@ -116,17 +125,20 @@ data class VaultListContentUiModel(
     val isSwipeEnabled: Boolean,
 )
 
+@Immutable
 data class VaultListDialogsUiModel(
     val addType: VaultAddTypeUiModel?,
     val pendingDelete: VaultListItemUiModel?,
 )
 
+@Immutable
 data class VaultListLayoutUiModel(
     val collapseTopBarOnScroll: Boolean,
     val collapseQuickFilterBarOnScroll: Boolean,
     val hideSystemBars: Boolean,
 )
 
+@Immutable
 data class VaultListDisplayUiModel(
     val cardPresentations: List<VaultCardPresentationUiModel>,
     val swipeLeftAction: SwipeActionUiModel,

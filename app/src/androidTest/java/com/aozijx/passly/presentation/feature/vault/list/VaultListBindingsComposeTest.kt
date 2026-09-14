@@ -1,14 +1,13 @@
 package com.aozijx.passly.presentation.feature.vault.list
 
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.paging.PagingData
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEvent
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEventHandler
-import kotlinx.coroutines.flow.flowOf
+import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHandler
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Rule
@@ -21,33 +20,27 @@ class VaultListBindingsComposeTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun callbackRecompositionKeepsBindingsAndPagingFlowWhileUsingLatestCallback() {
+    fun callbackRecompositionKeepsItemHandlerWhileUsingLatestCallback() {
         val callbackVersion = mutableIntStateOf(0)
-        val entries = flowOf(PagingData.empty<VaultListItemUiModel>())
         val events = mutableListOf<String>()
-        lateinit var currentBindings: VaultListBindings
+        lateinit var currentHandler: VaultListItemEventHandler
 
         composeRule.setContent {
             val version = callbackVersion.intValue
-            currentBindings = rememberVaultListBindings(
-                entries = entries,
+            currentHandler = rememberVaultListItemEventHandler(
                 onItemClick = { events += "$version:${it.id}" },
                 onItemSwipe = { _, _ -> },
             )
         }
 
-        lateinit var initialBindings: VaultListBindings
-        composeRule.runOnIdle { initialBindings = currentBindings }
+        lateinit var initialHandler: VaultListItemEventHandler
+        composeRule.runOnIdle { initialHandler = currentHandler }
         callbackVersion.intValue = 1
         composeRule.waitForIdle()
 
         composeRule.runOnIdle {
-            assertSame(initialBindings, currentBindings)
-            assertSame(
-                entries,
-                currentBindings.entries,
-            )
-            currentBindings.eventHandler.onClick(vaultListItem("entry-1"))
+            assertSame(initialHandler, currentHandler)
+            currentHandler.onClick(vaultListItem("entry-1"))
             assertEquals(listOf("1:entry-1"), events)
         }
     }
