@@ -2,13 +2,8 @@ package com.aozijx.passly.presentation.feature.settings.appearance
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -16,14 +11,6 @@ import javax.inject.Inject
 class AppearanceSettingsViewModel @Inject constructor(
     private val settingsRepository: AppearanceSettingsRepository
 ) : ViewModel() {
-
-    val uiState: StateFlow<AppearanceSettingsUiState> = settingsRepository.appearance
-        .map(AppearanceSettings::toUiState)
-        .stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5_000L),
-            AppearanceSettingsUiState()
-        )
 
     fun onAction(action: AppearanceSettingsAction) {
         when (action) {
@@ -53,12 +40,3 @@ class AppearanceSettingsViewModel @Inject constructor(
         }
     }
 }
-
-private fun AppearanceSettings.toUiState(): AppearanceSettingsUiState = AppearanceSettingsUiState(
-    themeMode = themeMode,
-    isDynamicColor = isDynamicColor,
-    themeKey = themeKey,
-    canvasTintPercent = canvasTintPercent,
-    language = language,
-    fontFamily = fontFamily
-)

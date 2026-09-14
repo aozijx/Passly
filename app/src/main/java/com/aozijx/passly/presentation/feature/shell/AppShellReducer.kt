@@ -36,13 +36,8 @@ internal object AppShellReducer {
                 isRecoveryMode = false,
             )
             is AppShellMutation.SettingsChanged -> state.copy(
-                themeMode = mutation.appearance.themeMode,
-                isDynamicColor = mutation.appearance.isDynamicColor,
-                themeKey = mutation.appearance.themeKey,
-                canvasTintPercent = mutation.appearance.canvasTintPercent,
+                appearance = mutation.appearance,
                 appCornerRadiusDp = mutation.interfaceSettings.appCornerRadiusDp,
-                fontFamily = mutation.appearance.fontFamily,
-                language = mutation.appearance.language,
             )
             is AppShellMutation.DatabaseInitializationStarted -> state.copy(
                 isDatabaseInitializing = true,

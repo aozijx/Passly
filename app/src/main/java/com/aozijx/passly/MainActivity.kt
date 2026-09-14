@@ -85,8 +85,8 @@ class MainActivity : AppCompatActivity() {
             val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
 
             // 响应语言切换
-            LaunchedEffect(mainUiState.language) {
-                val tag = mainUiState.language.applicationLocaleTags
+            LaunchedEffect(mainUiState.appearance.language) {
+                val tag = mainUiState.appearance.language.applicationLocaleTags
                 val currentTags = AppCompatDelegate.getApplicationLocales().toLanguageTags()
                 if (currentTags != tag) {
                     AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
@@ -102,12 +102,8 @@ class MainActivity : AppCompatActivity() {
             ) {
                 ProvideAppNoticePublisher(noticePublisher) {
                     AppTheme(
-                        themeMode = mainUiState.themeMode,
-                        dynamicColor = mainUiState.isDynamicColor,
-                        themeKey = mainUiState.themeKey,
-                        canvasTintPercent = mainUiState.canvasTintPercent,
+                        appearance = mainUiState.appearance,
                         appCornerRadiusDp = mainUiState.appCornerRadiusDp,
-                        fontFamily = mainUiState.fontFamily,
                     ) {
                         AuthenticationHost(this, authenticationHostRegistry) {
                             AppShell(

@@ -54,22 +54,21 @@ class AppShellReducerTest {
     @Test
     fun `settings projection changes only shell appearance fields`() {
         val error = IllegalStateException("keep")
+        val appearance = AppearanceSettings(
+            themeMode = ThemeMode.DARK,
+            isDynamicColor = false,
+            language = AppLanguage.EN,
+            fontFamily = FontFamilyMode.SYSTEM,
+        )
         val result = AppShellReducer.reduce(
             AppShellUiState(isAuthorized = true, databaseError = error),
             AppShellMutation.SettingsChanged(
-                appearance = AppearanceSettings(
-                    themeMode = ThemeMode.DARK,
-                    isDynamicColor = false,
-                    language = AppLanguage.EN,
-                    fontFamily = FontFamilyMode.SYSTEM,
-                ),
+                appearance = appearance,
                 interfaceSettings = InterfaceSettings(appCornerRadiusDp = 30f),
             ),
         )
 
-        assertEquals(ThemeMode.DARK, result.themeMode)
-        assertFalse(result.isDynamicColor)
-        assertEquals(AppLanguage.EN, result.language)
+        assertSame(appearance, result.appearance)
         assertEquals(30f, result.appCornerRadiusDp)
         assertTrue(result.isAuthorized)
         assertSame(error, result.databaseError)

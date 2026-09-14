@@ -1,16 +1,15 @@
 package com.aozijx.passly.presentation.feature.settings.main.navigation.core
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.appearance.AppearanceSettingsAction
 import com.aozijx.passly.presentation.feature.settings.appearance.AppearanceSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.appearance.appLanguageFromKey
 import com.aozijx.passly.presentation.feature.settings.appearance.toAppearanceUiModel
 import com.aozijx.passly.presentation.feature.settings.appearance.toDomainModel
+import com.aozijx.passly.presentation.feature.shell.theme.LocalAppearanceSettings
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 import com.aozijx.passly.presentation.ui.settings.appearance.AppearanceDetail
@@ -21,14 +20,14 @@ internal fun AppearanceRouteContent(
     onBack: (() -> Unit)?
 ) {
     val viewModel: AppearanceSettingsViewModel = hiltViewModel()
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val appearance = LocalAppearanceSettings.current
     SettingsSecondaryPage(
         title = stringResource(SettingsGroup.APPEARANCE.titleRes),
         onBack = onBack
     ) {
         item {
             AppearanceDetail(
-                state = state.toAppearanceUiModel(),
+                state = appearance.toAppearanceUiModel(),
                 onThemeModeChange = {
                     viewModel.onAction(AppearanceSettingsAction.SetThemeMode(it.toDomainModel()))
                 },

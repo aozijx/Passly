@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.settings.model.AppLanguage
+import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ThemeCanvasTint
@@ -34,7 +35,7 @@ fun languagePickerOptions(): List<LanguageOptionUiModel> = AppLanguage.entries.m
 fun appLanguageFromKey(key: String): AppLanguage = AppLanguage.valueOf(key)
 
 @Composable
-fun AppearanceSettingsUiState.toAppearanceUiModel(): AppearanceUiModel = AppearanceUiModel(
+fun AppearanceSettings.toAppearanceUiModel(): AppearanceUiModel = AppearanceUiModel(
     themeMode = themeMode.toUiModel(),
     isDynamicColor = isDynamicColor,
     themeKey = themeKey,

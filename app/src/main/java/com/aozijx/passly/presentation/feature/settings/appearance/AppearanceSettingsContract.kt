@@ -3,16 +3,6 @@ package com.aozijx.passly.presentation.feature.settings.appearance
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ThemeMode
-import com.aozijx.passly.domain.settings.model.ThemeCanvasTint
-
-data class AppearanceSettingsUiState(
-    val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val isDynamicColor: Boolean = true,
-    val themeKey: String = "default",
-    val canvasTintPercent: Int = ThemeCanvasTint.DEFAULT_PERCENT,
-    val language: AppLanguage = AppLanguage.SYSTEM,
-    val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED
-)
 
 sealed interface AppearanceSettingsAction {
     data class SetThemeMode(val mode: ThemeMode) : AppearanceSettingsAction
