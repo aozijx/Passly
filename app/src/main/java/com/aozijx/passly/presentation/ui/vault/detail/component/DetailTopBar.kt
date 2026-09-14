@@ -15,7 +15,6 @@ import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -27,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.aozijx.passly.R
 import androidx.compose.material3.OutlinedTextField
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailHeaderUiModel
+import com.aozijx.passly.presentation.ui.shared.components.topbar.passlyTopAppBarColors
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -103,6 +103,6 @@ fun DetailTopBar(
             }
         },
         scrollBehavior = scrollBehavior,
-        colors = TopAppBarDefaults.topAppBarColors()
+        colors = passlyTopAppBarColors()
     )
 }

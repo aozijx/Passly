@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -25,8 +24,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
@@ -42,6 +39,7 @@ import com.aozijx.passly.core.ui.animation.SharedTransitionOverlayClip
 import com.aozijx.passly.core.ui.animation.withSharedTransitionVisualOverflow
 import com.aozijx.passly.presentation.ui.vault.shared.ADD_ENTRY_FAB_SHARED_KEY
 import com.aozijx.passly.presentation.ui.vault.shared.AddEntryFabVisualOverflow
+import com.aozijx.passly.presentation.ui.shared.components.topbar.PasslyNavigationTopBar
 
 /**
  * 新建条目页面的公共外壳。
@@ -83,16 +81,10 @@ fun AddEntryScaffold(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(title) },
-                navigationIcon = {
-                    IconButton(onClick = { cleanupAndDo(onBack) }, enabled = !isSaving) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                }
+            PasslyNavigationTopBar(
+                title = title,
+                onNavigateBack = { cleanupAndDo(onBack) },
+                navigationEnabled = !isSaving,
             )
         },
         floatingActionButton = {

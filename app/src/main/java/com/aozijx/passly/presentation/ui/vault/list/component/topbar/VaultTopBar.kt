@@ -45,6 +45,7 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultListLayoutUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListToolbarUiModel
 import com.aozijx.passly.presentation.ui.vault.list.search.VaultSearchPhase
 import com.aozijx.passly.presentation.ui.vault.list.search.VaultSearchState
+import com.aozijx.passly.presentation.ui.shared.components.topbar.passlyTopAppBarColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,6 +114,7 @@ fun VaultTopBar(
                 null
             },
             windowInsets = WindowInsets.statusBars,
+            colors = passlyTopAppBarColors(),
             title = {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
