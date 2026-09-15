@@ -6,7 +6,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.presentation.feature.vault.detail.DetailAuthenticate
 import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
@@ -31,8 +30,6 @@ fun DetailContentHost(
     otpQrUri: String?,
     onAction: (DetailUiAction) -> Unit,
     onInteraction: () -> Unit,
-    onAuthenticate: DetailAuthenticate,
-    onCopySensitive: (String) -> Unit,
     onOtpQrDismiss: () -> Unit,
     onOpenRelatedEntry: (Entry) -> Unit,
 ) {
@@ -51,19 +48,21 @@ fun DetailContentHost(
                 editState.isEditingDomain = false
                 editState.isEditingPackage = false
             }
+
             is DetailEditCompletion.SensitiveField -> when (completion.key) {
                 RevealedFieldKey.USERNAME,
                 RevealedFieldKey.CARDHOLDER,
-                -> editState.isEditingUsername = false
+                    -> editState.isEditingUsername = false
 
                 RevealedFieldKey.PASSWORD,
                 RevealedFieldKey.CARD_NUMBER,
                 RevealedFieldKey.SSH_PASSPHRASE,
-                -> editState.isEditingPassword = false
+                    -> editState.isEditingPassword = false
 
                 RevealedFieldKey.CVV -> editState.isEditingTotp = false
                 else -> Unit
             }
+
             else -> Unit
         }
     }
@@ -86,31 +85,37 @@ fun DetailContentHost(
         }
 
         if (DetailSectionKey.CREDENTIAL in registeredSections) {
-            item { DetailCredentialHost(entry, uiState, editState, onAction, onAuthenticate, onCopySensitive) }
+            item { DetailCredentialHost(entry, uiState, editState, onAction) }
         }
         if (DetailSectionKey.OTP in registeredSections) {
-            item { DetailOtpHost(otpModel, otpQrUri, onAction, onCopySensitive, onOtpQrDismiss) }
+            item { DetailOtpHost(otpModel, otpQrUri, onAction, onOtpQrDismiss) }
         }
         if (DetailSectionKey.BANK_CARD in registeredSections) {
-            item { DetailBankCardHost(entry, uiState, editState, onAction, onAuthenticate, onCopySensitive) }
+            item { DetailBankCardHost(entry, uiState, editState, onAction) }
         }
         if (DetailSectionKey.IDENTITY in registeredSections) {
-            item { DetailIdentityHost(entry, uiState, onAction, onAuthenticate, onCopySensitive) }
+            item { DetailIdentityHost(entry, uiState, onAction) }
         }
         if (DetailSectionKey.WIFI in registeredSections) {
-            item { DetailWifiHost(entry, uiState, editState, onAction, onAuthenticate, onCopySensitive) }
+            item { DetailWifiHost(entry, uiState, editState, onAction) }
         }
         if (DetailSectionKey.SSH in registeredSections) {
-            item { DetailSshHost(entry, uiState, editState, onAction, onAuthenticate, onCopySensitive) }
+            item { DetailSshHost(entry, uiState, editState, onAction) }
         }
         if (DetailSectionKey.SEED_PHRASE in registeredSections) {
-            item { DetailSeedPhraseHost(uiState, onAction, onAuthenticate, onCopySensitive) }
+            item { DetailSeedPhraseHost(uiState, onAction) }
         }
         if (DetailSectionKey.PASSKEY in registeredSections) {
-            item { DetailPasskeyHost(entry, uiState, onAction, onAuthenticate, onCopySensitive) }
+            item { DetailPasskeyHost(entry, uiState, onAction) }
         }
         if (uiState.relatedEntries.isNotEmpty()) {
-            item { DetailRelatedEntriesHost(uiState.relatedEntries, contentUiModel.relatedEntries, onOpenRelatedEntry) }
+            item {
+                DetailRelatedEntriesHost(
+                    uiState.relatedEntries,
+                    contentUiModel.relatedEntries,
+                    onOpenRelatedEntry
+                )
+            }
         }
         item { DetailTagsHost(entry, onAction) }
         item { DetailAssociationsHost(entry, editState, onAction) }

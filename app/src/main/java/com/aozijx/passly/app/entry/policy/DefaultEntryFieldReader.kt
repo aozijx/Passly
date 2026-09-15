@@ -32,7 +32,10 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
         val secret = entry.secret
         return when (key) {
             FieldKey.TITLE -> entry.profile.title
-            FieldKey.USERNAME -> entry.profile.username
+            FieldKey.USERNAME,
+            FieldKey.CARD_HOLDER,
+            FieldKey.WIFI_SSID,
+            -> entry.profile.username
             FieldKey.PASSWORD -> secret.login?.password
                 ?: secret.wifi?.password
                 ?: secret.ssh?.passphrase
@@ -107,6 +110,8 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
     private fun FieldKey.isCommon() = this in listOf(
         FieldKey.TITLE,
         FieldKey.USERNAME,
+        FieldKey.CARD_HOLDER,
+        FieldKey.WIFI_SSID,
         FieldKey.PASSWORD,
         FieldKey.EMAIL,
         FieldKey.NOTES,

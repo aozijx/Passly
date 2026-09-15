@@ -3,12 +3,8 @@ package com.aozijx.passly.presentation.feature.vault.detail
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.presentation.feature.vault.detail.DetailAuthenticate
-import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
-import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
-import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
+import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.presentation.feature.vault.detail.component.DetailContentHost
 import com.aozijx.passly.presentation.ui.vault.detail.DetailScreen
 
@@ -28,8 +24,6 @@ fun DetailRoute(
     onBack: () -> Unit,
     onUpdateInteraction: () -> Unit,
     onAutoUnlockTotp: (Entry) -> Unit,
-    onAuthenticate: DetailAuthenticate,
-    onCopySensitive: (String) -> Unit,
     onOtpQrDismiss: () -> Unit,
     onOpenRelatedEntry: (Entry) -> Unit
 ) {
@@ -80,8 +74,6 @@ fun DetailRoute(
             otpQrUri = otpQrUri,
             onAction = onAction,
             onInteraction = onUpdateInteraction,
-            onAuthenticate = onAuthenticate,
-            onCopySensitive = onCopySensitive,
             onOtpQrDismiss = onOtpQrDismiss,
             onOpenRelatedEntry = onOpenRelatedEntry
         )

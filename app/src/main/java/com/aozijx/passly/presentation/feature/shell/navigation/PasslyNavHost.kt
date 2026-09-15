@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavGraphBuilder
@@ -27,31 +25,11 @@ internal fun PasslyNavHost(
     appShellViewModel: AppShellViewModel,
     registerFeatureGraphs: FeatureGraphRegistration,
 ) {
-    val authContinuation = remember { ShellAuthContinuation() }
-
-    LaunchedEffect(appShellViewModel) {
-        appShellViewModel.authResults.collect(authContinuation::onResult)
-    }
-
     val navigationContext = ShellNavigationContext(
         navigateBack = { navController.popBackStack() },
         navigateToRoute = navController::navigate,
         navigateToSingleTopRoute = { route ->
             navController.navigate(route) { launchSingleTop = true }
-        },
-        requestAuthentication = { onSuccess ->
-            authContinuation.replace(onSuccess)
-            appShellViewModel.onAction(AppShellUiAction.RequestAuth)
-        },
-        requestReauthentication = { onSuccess ->
-            authContinuation.replace(onSuccess)
-            appShellViewModel.onAction(AppShellUiAction.RequestReauth)
-        },
-        requestSensitiveAccess = { action, accessLevel, onSuccess ->
-            authContinuation.replace(onSuccess)
-            appShellViewModel.onAction(
-                AppShellUiAction.RequestSensitiveAccess(action, accessLevel),
-            )
         },
         onUserInteraction = {
             appShellViewModel.onAction(AppShellUiAction.UpdateInteraction)

@@ -21,6 +21,7 @@ class DefaultEntryFieldReaderTest {
         ),
         profile = EntryProfile(
             title = "Example",
+            username = "display-name",
             associations = EntryAssociations(
                 primaryUrl = "https://example.com/login",
                 domains = linkedSetOf("example.com", "example.org"),
@@ -28,6 +29,11 @@ class DefaultEntryFieldReaderTest {
         ),
     )
 
+    @Test
+    fun readsProfileBackedSemanticFieldKeys() {
+        assertEquals("display-name", reader.getFieldValue(entry, FieldKey.CARD_HOLDER))
+        assertEquals("display-name", reader.getFieldValue(entry, FieldKey.WIFI_SSID))
+    }
     @Test
     fun readsPrimaryUrlFromItsDedicatedFieldKey() {
         assertEquals(

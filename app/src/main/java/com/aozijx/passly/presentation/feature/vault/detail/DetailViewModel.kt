@@ -2,14 +2,16 @@ package com.aozijx.passly.presentation.feature.vault.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.app.entry.favicon.FaviconCropRequest
 import com.aozijx.passly.app.entry.favicon.FaviconImageProcessor
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.port.AuthorizationGate
+import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
@@ -17,11 +19,14 @@ import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
+import com.aozijx.passly.domain.sensitive.OwnedChars
+import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
 import com.aozijx.passly.feature.vault.detail.RevealSensitiveFieldsUseCase
 import com.aozijx.passly.feature.vault.detail.UpdateDetailEntryUseCase
-import com.aozijx.passly.domain.sensitive.OwnedChars
-import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
+import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
+import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -42,9 +47,10 @@ class DetailViewModel @Inject constructor(
     private val entryLinkRepository: EntryLinkRepository,
     private val activityRecorder: ActivityRecorder,
     private val entryTypePolicy: EntryTypePolicy,
+    private val entryFieldReader: EntryFieldReader,
     private val accessPolicy: DetailAccessPolicy,
     private val authorizationGate: AuthorizationGate,
-    private val clipboardCopyController: ClipboardCopyController,
+    private val clipboardWriter: SensitiveClipboardWriter,
     private val faviconImageProcessor: FaviconImageProcessor,
 ) : ViewModel() {
     private val entryAnalyzer = DetailEntryAnalyzer(entryTypePolicy)
@@ -62,6 +68,17 @@ class DetailViewModel @Inject constructor(
         sensitiveFieldRepository = sensitiveFieldRepository,
         activityRecorder = activityRecorder,
     )
+    private val copyEntryFieldUseCase = CopyEntryFieldUseCase(
+        authorizationGate = authorizationGate,
+        entryQueryRepository = entryQueryRepository,
+        entryFieldReader = entryFieldReader,
+        sensitiveFieldRepository = sensitiveFieldRepository,
+        clipboardWriter = clipboardWriter,
+    )
+    private val copyOtpCodeUseCase = CopyOtpCodeUseCase(
+        authorizationGate = authorizationGate,
+        clipboardWriter = clipboardWriter,
+    )
     private val faviconSession = DetailFaviconSession(faviconImageProcessor, viewModelScope)
     private var entryLoadJob: Job? = null
     private var historyJob: Job? = null
@@ -76,10 +93,6 @@ class DetailViewModel @Inject constructor(
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
     private val _effects = Channel<DetailEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
-
-    fun copySensitive(text: String) {
-        viewModelScope.launch { clipboardCopyController.writeSensitive(text) }
-    }
 
     init {
         viewModelScope.launch {
@@ -301,6 +314,8 @@ class DetailViewModel @Inject constructor(
             DetailUiAction.KeepEditingFavicon ->
                 mutate(DetailMutation.FaviconEditorDiscardCancelled)
 
+            is DetailUiAction.CopyField -> copyField(event.fieldKey)
+            is DetailUiAction.CopyOtpCode -> copyOtpCode(event.code)
             DetailUiAction.ExportOtpQr -> {
                 val entry = _uiState.value.entry ?: return
                 viewModelScope.launch {
@@ -334,19 +349,6 @@ class DetailViewModel @Inject constructor(
                 }
             }
 
-            is DetailUiAction.RecordAction -> {
-                val current = _uiState.value.entry ?: return
-                if (event.type == ActivityType.VIEW && !_uiState.value.isAccessHistoryEnabled) return
-                if (event.type.clearsRevealedFields()) {
-                    mutate(DetailMutation.RevealedFieldsCleared)
-                }
-
-                viewModelScope.launch {
-                    if (!accessPolicy.hasFullAccess()) return@launch
-                    activityRecorder.recordUsage(current.id.value, event.type)
-                }
-            }
-
             is DetailUiAction.ToggleAccessHistoryRecording -> {
                 mutate(DetailMutation.AccessHistoryChanged(event.enabled))
                 userConfigExtras.value += (ACCESS_HISTORY_TOGGLE_KEY to event.enabled.toString())
@@ -358,12 +360,44 @@ class DetailViewModel @Inject constructor(
         }
     }
 
+    private fun copyField(fieldKey: FieldKey) {
+        val entry = _uiState.value.entry ?: return
+        viewModelScope.launch {
+            if (copyEntryFieldUseCase(entry.id, entry.type, fieldKey) != CopyEntryFieldResult.Copied) return@launch
+            recordCopy(entry.id, fieldKey.copyActivityType())
+            _effects.send(DetailEffect.ContentCopied(fieldKey))
+        }
+    }
+
+    private fun copyOtpCode(code: String?) {
+        val entry = _uiState.value.entry ?: return
+        viewModelScope.launch {
+            if (copyOtpCodeUseCase { code } != CopyEntryFieldResult.Copied) return@launch
+            recordCopy(entry.id, ActivityType.COPY_PASSWORD)
+            _effects.send(DetailEffect.ContentCopied(null))
+        }
+    }
+
+    private suspend fun recordCopy(entryId: EntryId, type: ActivityType) {
+        revealStore.clear()
+        mutate(DetailMutation.RevealedFieldsCleared)
+        activityRecorder.recordUsage(entryId.value, type)
+    }
+
+    private fun FieldKey.copyActivityType(): ActivityType = when (this) {
+        FieldKey.USERNAME, FieldKey.CARD_HOLDER, FieldKey.WIFI_SSID -> ActivityType.COPY_USERNAME
+        else -> ActivityType.COPY_PASSWORD
+    }
     private fun handleRevealLogic(key: String) {
         val entry = _uiState.value.entry ?: return
         when (key) {
             RevealedFieldKey.USERNAME -> {
                 setRevealedField(key, OwnedChars.fromNullableString(entry.username))
-                onAction(DetailUiAction.RecordAction("username", ActivityType.VIEW))
+                viewModelScope.launch {
+                    if (_uiState.value.isAccessHistoryEnabled) {
+                        activityRecorder.recordUsage(entry.id.value, ActivityType.VIEW)
+                    }
+                }
             }
 
             RevealedFieldKey.PASSWORD -> {
@@ -423,9 +457,6 @@ class DetailViewModel @Inject constructor(
         revealStore.clear()
         mutate(DetailMutation.StateCleared)
     }
-
-    private fun ActivityType.clearsRevealedFields(): Boolean =
-        this == ActivityType.COPY_PASSWORD || this == ActivityType.COPY_USERNAME
 
     private suspend fun persistEntryPatch(
         patch: DetailEntryPatch,

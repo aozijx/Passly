@@ -2,17 +2,15 @@ package com.aozijx.passly.presentation.feature.vault.detail.component
 
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
-import com.aozijx.passly.presentation.feature.vault.detail.DetailAuthenticate
-import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
 import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
+import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
 import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
 import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
 import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
-import com.aozijx.passly.presentation.feature.vault.detail.copySensitiveField
 import com.aozijx.passly.presentation.ui.vault.detail.component.BankCardSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.DetailBankCardFieldUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailBankCardUiModel
@@ -23,10 +21,8 @@ internal fun DetailBankCardHost(
     uiState: DetailUiState,
     editState: EntryEditState,
     onAction: (DetailUiAction) -> Unit,
-    onAuthenticate: DetailAuthenticate,
-    onCopySensitive: (String) -> Unit,
 ) {
-    val handler = DetailSectionActionHandler(onAuthenticate, onAction, onCopySensitive)
+    val handler = DetailSectionActionHandler(onAction)
     val cardholder = uiState.revealed(RevealedFieldKey.CARDHOLDER)?.let { String(it.toCharArray()) }
     val cardNumber = uiState.revealed(RevealedFieldKey.CARD_NUMBER)?.let { String(it.toCharArray()) }
     val cvv = uiState.revealed(RevealedFieldKey.CVV)?.let { String(it.toCharArray()) }
@@ -103,38 +99,15 @@ internal fun DetailBankCardHost(
             }
         },
         onCopy = { field ->
-            val (name, revealed, source) = when (field) {
-                DetailBankCardFieldUiModel.CARDHOLDER -> Triple(
-                    "cardholder",
-                    cardholder?.let(OwnedChars::fromString),
-                    entry.username,
-                )
-
-                DetailBankCardFieldUiModel.CARD_NUMBER -> Triple(
-                    "card number",
-                    cardNumber?.let(OwnedChars::fromString),
-                    null,
-                )
-
-                DetailBankCardFieldUiModel.CVV -> Triple(
-                    "CVV",
-                    cvv?.let(OwnedChars::fromString),
-                    null,
-                )
-
-                DetailBankCardFieldUiModel.PAYMENT_PIN -> Triple(
-                    "payment PIN",
-                    paymentPin?.let(OwnedChars::fromString),
-                    null,
-                )
-
-                DetailBankCardFieldUiModel.EXPIRATION -> {
-                    card?.cardExpiry?.let(handler.onCopySensitive)
-                    onAction(DetailUiAction.RecordAction("expiration", ActivityType.COPY_PASSWORD))
-                    return@BankCardSection
-                }
-            }
-            copySensitiveField(handler, name, revealed, source)
+            handler.copy(
+                when (field) {
+                    DetailBankCardFieldUiModel.CARDHOLDER -> FieldKey.CARD_HOLDER
+                    DetailBankCardFieldUiModel.CARD_NUMBER -> FieldKey.CARD_NUMBER
+                    DetailBankCardFieldUiModel.CVV -> FieldKey.CARD_CVV
+                    DetailBankCardFieldUiModel.PAYMENT_PIN -> FieldKey.PAYMENT_PIN
+                    DetailBankCardFieldUiModel.EXPIRATION -> FieldKey.CARD_EXPIRATION
+                },
+            )
         },
         onReveal = { field ->
             val key = when (field) {

@@ -1,5 +1,6 @@
 package com.aozijx.passly.presentation.feature.vault.navigation
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.runtime.Composable
@@ -9,17 +10,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.presentation.feature.scanner.navigation.VaultOtpScannerRoute
 import com.aozijx.passly.presentation.feature.shell.navigation.AppRoute
 import com.aozijx.passly.presentation.feature.shell.navigation.ShellNavigationContext
-import com.aozijx.passly.presentation.feature.vault.detail.DetailAuthenticate
 import com.aozijx.passly.presentation.feature.vault.detail.DetailEffect
 import com.aozijx.passly.presentation.feature.vault.detail.DetailRoute
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
@@ -33,6 +36,7 @@ import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordV
 import com.aozijx.passly.presentation.feature.vault.list.VaultRoute
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
 import com.aozijx.passly.presentation.feature.vault.list.VaultViewModel
+import com.aozijx.passly.presentation.feature.vault.list.action.CopyFieldLabelProvider
 import com.aozijx.passly.presentation.feature.vault.trash.TrashRoute
 import com.aozijx.passly.presentation.feature.vault.trash.TrashViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -111,6 +115,9 @@ internal fun NavGraphBuilder.registerVaultGraph(
             ?.getString(AppRoute.Detail.ARG_ENTRY_ID)
             ?: return@composable
         val detailViewModel: DetailViewModel = hiltViewModel()
+        val androidContext = LocalContext.current
+        val copiedMessageFormat = stringResource(R.string.field_copy_success_message)
+        val otpLabel = stringResource(R.string.vault_detail_totp_label)
         val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
         val totpState by vaultViewModel.totpStatesFlow.collectAsStateWithLifecycle()
         val currentOtpState = totpState[entryId]
@@ -124,6 +131,16 @@ internal fun NavGraphBuilder.registerVaultGraph(
                     )
 
                     is DetailEffect.ShowOtpQr -> otpQrUri = effect.uri
+                    is DetailEffect.ContentCopied -> {
+                        val label = effect.fieldKey
+                            ?.let(CopyFieldLabelProvider::getCopyLabel)
+                            ?: otpLabel
+                        Toast.makeText(
+                            androidContext,
+                            copiedMessageFormat.format(label),
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
                 }
             }
         }
@@ -146,7 +163,6 @@ internal fun NavGraphBuilder.registerVaultGraph(
                 otpUiState = currentOtpState,
                 otpQrUri = otpQrUri,
                 onAction = detailViewModel::onAction,
-                onCopySensitive = detailViewModel::copySensitive,
                 onOtpQrDismiss = { otpQrUri = null },
                 onBack = context.navigateBack,
                 onUpdateInteraction = context.onUserInteraction,
@@ -155,9 +171,6 @@ internal fun NavGraphBuilder.registerVaultGraph(
                 },
                 onOpenRelatedEntry = {
                     context.navigateToRoute(AppRoute.Detail.createRoute(it.id.value))
-                },
-                onAuthenticate = DetailAuthenticate { action, accessLevel, success ->
-                    context.requestSensitiveAccess(action, accessLevel, success)
                 },
             )
         }

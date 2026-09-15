@@ -6,18 +6,12 @@ import com.aozijx.passly.app.message.mapping.toUiMessage
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
-import com.aozijx.passly.domain.access.model.AuthenticationPurpose
-import com.aozijx.passly.domain.access.model.AuthenticationRequest
-import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.LockReason
-import com.aozijx.passly.domain.access.model.SensitiveAccessAction
-import com.aozijx.passly.app.security.SensitiveAccessLevel
 import com.aozijx.passly.app.database.DatabaseLifecycleGateway
 import com.aozijx.passly.app.database.DatabaseLifecycleResult
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
-import com.aozijx.passly.presentation.feature.shell.AppShellAuthResult
 import com.aozijx.passly.presentation.feature.shell.AppShellEffect
 import com.aozijx.passly.presentation.feature.shell.AppShellUiAction
 import com.aozijx.passly.presentation.feature.shell.AppShellUiState
@@ -50,9 +44,6 @@ class AppShellViewModel @Inject constructor(
     private val _effects = Channel<AppShellEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
-    // 认证回调只属于导航层，不能与 AppShell 的通知事件竞争消费。
-    private val _authResults = Channel<AppShellAuthResult>(Channel.BUFFERED)
-    val authResults = _authResults.receiveAsFlow()
 
     init {
         observeSettings()
@@ -66,51 +57,6 @@ class AppShellViewModel @Inject constructor(
             AppShellUiAction.ExitRecovery -> lock(LockReason.RECOVERY_EXIT)
             AppShellUiAction.UpdateInteraction -> sessionActivityReporter.onUserInteraction()
             AppShellUiAction.RetryDatabaseInitialization -> initializeDatabase()
-            AppShellUiAction.RequestAuth -> requestAuth()
-            AppShellUiAction.RequestReauth -> requestReauth()
-            is AppShellUiAction.RequestSensitiveAccess -> requestSensitiveAccess(
-                action.action,
-                action.accessLevel
-            )
-        }
-    }
-
-    val isAuthorizedNow: Boolean
-        get() = authenticationManager.state.value is AuthenticationState.Authenticated
-
-    private fun requestAuth() {
-        requestAuthentication(AuthenticationPurpose.UNLOCK_VAULT)
-    }
-
-    private fun requestReauth() {
-        requestAuthentication(AuthenticationPurpose.REAUTHENTICATE)
-    }
-
-    private fun requestSensitiveAccess(
-        action: SensitiveAccessAction,
-        accessLevel: SensitiveAccessLevel
-    ) {
-        val purpose = when (action) {
-            SensitiveAccessAction.COPY -> AuthenticationPurpose.COPY_SECRET
-            SensitiveAccessAction.REVEAL -> when (accessLevel) {
-                SensitiveAccessLevel.STANDARD -> AuthenticationPurpose.REVEAL_SECRET
-                SensitiveAccessLevel.HIGH ->
-                    AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET
-            }
-        }
-        requestAuthentication(purpose)
-    }
-
-    private fun requestAuthentication(purpose: AuthenticationPurpose) {
-        viewModelScope.launch {
-            when (authenticationManager.authenticate(AuthenticationRequest(purpose))) {
-                is AuthenticationResult.Success ->
-                    _authResults.send(AppShellAuthResult.Success)
-
-                is AuthenticationResult.Cancelled,
-                is AuthenticationResult.Failure ->
-                    _authResults.send(AppShellAuthResult.NotAuthorized)
-            }
         }
     }
 

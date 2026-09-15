@@ -1,61 +1,11 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
-import com.aozijx.passly.app.security.SensitiveAccessLevel
-import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.presentation.feature.vault.detail.DetailAuthenticate
-import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
-import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.domain.entry.model.FieldKey
 
-internal data class DetailSectionActionHandler(
-    val onAuthenticate: DetailAuthenticate,
-    val onAction: (DetailUiAction) -> Unit,
-    val onCopySensitive: (String) -> Unit,
+internal class DetailSectionActionHandler(
+    private val onAction: (DetailUiAction) -> Unit,
 ) {
-    fun record(field: String, type: ActivityType) {
-        onAction(DetailUiAction.RecordAction(field, type))
-    }
-}
-
-internal inline fun copySensitiveField(
-    handler: DetailSectionActionHandler,
-    fieldName: String,
-    revealedValue: SensitiveValue?,
-    sourceValue: String?,
-    crossinline afterCopy: (String) -> Unit = {}
-) {
-    if (revealedValue != null) {
-        val chars = revealedValue.toCharArray()
-        val plain = String(chars)
-        chars.fill('\u0000')
-        handler.onCopySensitive(plain)
-        afterCopy(plain)
-        handler.record(fieldName, ActivityType.COPY_PASSWORD)
-        return
-    }
-    val source = sourceValue?.takeIf { it.isNotBlank() } ?: return
-    handler.onAuthenticate.copy {
-        handler.onCopySensitive(source)
-        afterCopy(source)
-        handler.record(fieldName, ActivityType.COPY_PASSWORD)
-    }
-}
-
-internal inline fun toggleRevealSensitiveField(
-    handler: DetailSectionActionHandler,
-    fieldName: String,
-    revealedValue: SensitiveValue?,
-    sourceValue: String?,
-    accessLevel: SensitiveAccessLevel = SensitiveAccessLevel.STANDARD,
-    crossinline onReveal: (String?) -> Unit
-) {
-    val source = sourceValue?.takeIf { it.isNotBlank() } ?: return
-    if (revealedValue != null) {
-        onReveal(null)
-        return
-    }
-
-    handler.onAuthenticate.reveal(accessLevel) {
-        onReveal(source)
-        handler.record(fieldName, ActivityType.VIEW)
+    fun copy(fieldKey: FieldKey) {
+        onAction(DetailUiAction.CopyField(fieldKey))
     }
 }

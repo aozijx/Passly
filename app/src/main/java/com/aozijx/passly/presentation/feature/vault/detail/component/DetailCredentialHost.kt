@@ -5,15 +5,14 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.presentation.feature.vault.detail.DetailAuthenticate
 import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
 import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
 import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
 import com.aozijx.passly.presentation.feature.vault.detail.asScopedSensitiveText
-import com.aozijx.passly.presentation.feature.vault.detail.copySensitiveField
 import com.aozijx.passly.presentation.ui.vault.detail.component.CredentialSection
 import com.aozijx.passly.presentation.ui.vault.detail.model.CredentialFieldUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.CredentialFieldUiState
@@ -26,10 +25,8 @@ internal fun DetailCredentialHost(
     uiState: DetailUiState,
     editState: EntryEditState,
     onAction: (DetailUiAction) -> Unit,
-    onAuthenticate: DetailAuthenticate,
-    onCopySensitive: (String) -> Unit,
 ) {
-    val actionHandler = DetailSectionActionHandler(onAuthenticate, onAction, onCopySensitive)
+    val actionHandler = DetailSectionActionHandler(onAction)
     val revealedUsername = uiState.revealed(RevealedFieldKey.USERNAME)
     val revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD)
 
@@ -70,15 +67,12 @@ internal fun DetailCredentialHost(
             }
 
             override fun onCopyRequested(field: CredentialFieldUiModel) {
-                when (field) {
-                    CredentialFieldUiModel.USERNAME -> copySensitiveField(
-                        actionHandler, "username", revealedUsername, entry.username,
-                    )
-
-                    CredentialFieldUiModel.PASSWORD -> copySensitiveField(
-                        actionHandler, "password", revealedPassword, entry.secret.login?.password,
-                    )
-                }
+                actionHandler.copy(
+                    when (field) {
+                        CredentialFieldUiModel.USERNAME -> FieldKey.USERNAME
+                        CredentialFieldUiModel.PASSWORD -> FieldKey.PASSWORD
+                    },
+                )
             }
 
             override fun onSaveRequested(field: CredentialFieldUiModel, value: String) {

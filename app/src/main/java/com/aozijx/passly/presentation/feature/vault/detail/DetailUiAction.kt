@@ -3,7 +3,7 @@ package com.aozijx.passly.presentation.feature.vault.detail
 import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
 import android.net.Uri
 import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconEditorTabUiModel
@@ -54,8 +54,9 @@ sealed interface DetailUiAction {
     data object DismissFaviconEditor : DetailFaviconAction
     data object ConfirmDiscardFavicon : DetailFaviconAction
     data object KeepEditingFavicon : DetailFaviconAction
+    data class CopyField(val fieldKey: FieldKey) : DetailSensitiveAction
+    data class CopyOtpCode(val code: String?) : DetailSensitiveAction
     data object ExportOtpQr : DetailSensitiveAction
-    data class RecordAction(val field: String, val type: ActivityType) : DetailSensitiveAction
     data class ToggleAccessHistoryRecording(val enabled: Boolean) : DetailSensitiveAction
     data object ClearSensitiveState : DetailSensitiveAction
 }
