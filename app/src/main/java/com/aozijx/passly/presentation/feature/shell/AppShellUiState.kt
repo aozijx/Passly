@@ -11,3 +11,18 @@ data class AppShellUiState(
     val isDatabaseInitializing: Boolean = false,
     val databaseError: Throwable? = null
 )
+
+internal enum class AppShellDestination {
+    DATABASE_ERROR,
+    VAULT,
+    RECOVERY,
+    AUTHENTICATION,
+}
+
+internal val AppShellUiState.destination: AppShellDestination
+    get() = when {
+        databaseError != null -> AppShellDestination.DATABASE_ERROR
+        isAuthorized -> AppShellDestination.VAULT
+        isRecoveryMode -> AppShellDestination.RECOVERY
+        else -> AppShellDestination.AUTHENTICATION
+    }

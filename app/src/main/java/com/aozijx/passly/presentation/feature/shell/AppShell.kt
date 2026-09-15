@@ -1,28 +1,19 @@
 package com.aozijx.passly.presentation.feature.shell
 
-import android.view.WindowManager
 import android.widget.Toast
 import androidx.compose.animation.Crossfade
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.message.presentation.AppNoticeHostViewModel
-import com.aozijx.passly.presentation.feature.shell.AppShellSettingsViewModel
-import com.aozijx.passly.presentation.feature.shell.AppShellViewModel
 import com.aozijx.passly.app.shell.FlipToLockSensorController
-import com.aozijx.passly.presentation.feature.shell.AppShellEffect
-import com.aozijx.passly.presentation.feature.shell.AppShellUiAction
 import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.presentation.ui.shell.DatabaseErrorDialog
 import com.aozijx.passly.presentation.feature.onboarding.BootstrapViewModel
@@ -41,14 +32,6 @@ internal fun AppShell(
     val context = LocalContext.current
     val noticePublisher = LocalAppNoticePublisher.current
 
-    fun showLocalMessage(text: String, longDuration: Boolean = false) {
-        Toast.makeText(
-            context,
-            text,
-            if (longDuration) Toast.LENGTH_LONG else Toast.LENGTH_SHORT
-        ).show()
-    }
-
     val mainConfigViewModel: AppShellSettingsViewModel = hiltViewModel()
     val mainConfig by mainConfigViewModel.config.collectAsStateWithLifecycle()
 
@@ -57,7 +40,7 @@ internal fun AppShell(
     val recoveryViewModel: RecoveryModeViewModel = hiltViewModel()
     val messageHostViewModel: AppNoticeHostViewModel = hiltViewModel()
 
-    LaunchedEffect(messageHostViewModel) {
+    LaunchedEffect(messageHostViewModel, context) {
         messageHostViewModel.toastMessages.collect { message ->
             Toast.makeText(
                 context,
@@ -67,31 +50,25 @@ internal fun AppShell(
         }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(viewModel, context) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                is AppShellEffect.ShowToast -> showLocalMessage(effect.message)
-
-                is AppShellEffect.ShowError ->
-                    showLocalMessage(effect.error, longDuration = true)
-
-                AppShellEffect.LockedByTimeout, AppShellEffect.NavigateToVault -> Unit
+                is AppShellEffect.ShowError -> Toast.makeText(
+                    context,
+                    effect.error,
+                    Toast.LENGTH_LONG,
+                ).show()
             }
         }
     }
 
     Crossfade(
-        targetState = when {
-            mainUiState.databaseError != null -> "error"
-            mainUiState.isAuthorized -> "main"
-            mainUiState.isRecoveryMode -> "recovery"
-            else -> "verification"
-        },
+        targetState = mainUiState.destination,
         animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
         label = "auth_transition"
     ) { state ->
         when (state) {
-            "error" -> {
+            AppShellDestination.DATABASE_ERROR -> {
                 DatabaseErrorDialog(
                     isBusy = mainUiState.isDatabaseInitializing,
                     onRetry = {
@@ -109,20 +86,20 @@ internal fun AppShell(
                 )
             }
 
-            "main" -> {
+            AppShellDestination.VAULT -> {
                 AppShellContent(
                     appShellViewModel = viewModel
                 )
             }
 
-            "recovery" -> {
+            AppShellDestination.RECOVERY -> {
                 RecoveryModeScreen(
                     viewModel = recoveryViewModel,
                     onExit = { viewModel.onAction(AppShellUiAction.ExitRecovery) }
                 )
             }
 
-            else -> {
+            AppShellDestination.AUTHENTICATION -> {
                 AuthenticationScreen(
                     unlockViewModel = unlockViewModel,
                     bootstrapViewModel = bootstrapViewModel
@@ -131,36 +108,9 @@ internal fun AppShell(
         }
     }
 
-    val window = activity.window
-
-    SideEffect {
-        if (mainConfig.isSecureContentEnabled) {
-            window.setFlags(
-                WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE
-            )
-        } else {
-            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-        }
-    }
-
-    DisposableEffect(sensorController, mainConfig.isFlipToLockEnabled) {
-        sensorController.isFlipLockEnabled = mainConfig.isFlipToLockEnabled
-        if (mainConfig.isFlipToLockEnabled) sensorController.register() else sensorController.unregister()
-        onDispose {
-            sensorController.unregister()
-        }
-    }
-
-    SideEffect {
-        sensorController.isFlipExitAndClearStackEnabled = mainConfig.isFlipExitAndClearStackEnabled
-    }
-
-    SideEffect {
-        val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-        insetsController.systemBarsBehavior = if (mainConfig.isStatusBarAutoHide) {
-            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        } else {
-            WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
-        }
-    }
+    AppWindowPolicyEffects(
+        window = activity.window,
+        settings = mainConfig,
+        sensorController = sensorController,
+    )
 }

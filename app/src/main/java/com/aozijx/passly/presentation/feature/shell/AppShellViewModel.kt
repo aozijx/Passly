@@ -124,11 +124,10 @@ class AppShellViewModel @Inject constructor(
                 val authorized = state is AuthenticationState.Authenticated
                 val recoveryMode = state is AuthenticationState.RecoveryMode
                 if (authorized) {
-                    val result = runDatabaseInitialization {
+                    runDatabaseInitialization {
                         databaseLifecycleGateway.initialize()
                     }
                     mutate(AppShellMutation.Authenticated)
-                    emitEffect(AppShellEffect.NavigateToVault)
                 } else if (recoveryMode) {
                     mutate(AppShellMutation.RecoveryModeEntered)
                 } else {
