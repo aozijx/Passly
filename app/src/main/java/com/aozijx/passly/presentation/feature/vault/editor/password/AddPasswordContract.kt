@@ -18,8 +18,3 @@ data class AddPasswordUiState(
     val canSave: Boolean = false,
     val isSaving: Boolean = false,
 )
-
-sealed interface AddPasswordEffect {
-    data object Saved : AddPasswordEffect
-    data class SaveFailed(val message: String?) : AddPasswordEffect
-}

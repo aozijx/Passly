@@ -4,14 +4,13 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffectHandler
 import com.aozijx.passly.presentation.ui.vault.editor.bankcard.AddBankCardEditorScreen
 import com.aozijx.passly.presentation.ui.vault.editor.bankcard.BankCardEditorEventHandler
 import com.aozijx.passly.presentation.ui.vault.editor.bankcard.BankCardEditorState
@@ -30,18 +29,7 @@ fun AddBankCardEditorHost(
     val snackbarHostState = remember { SnackbarHostState() }
     val keyboardController = LocalSoftwareKeyboardController.current
     val saveFailedMessage = stringResource(R.string.vault_add_bank_card_save_failed)
-    val latestOnSaved by rememberUpdatedState(onSaved)
-
-    LaunchedEffect(viewModel, snackbarHostState, saveFailedMessage) {
-        viewModel.effects.collect { effect ->
-            when (effect) {
-                AddBankCardEffect.Saved -> latestOnSaved()
-                is AddBankCardEffect.SaveFailed -> {
-                    snackbarHostState.showSnackbar(effect.message ?: saveFailedMessage)
-                }
-            }
-        }
-    }
+    EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
 
     fun submit(action: AddBankCardAction, userInitiated: Boolean = false) {
         if (userInitiated) onUserInteraction()

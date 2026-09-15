@@ -36,8 +36,3 @@ data class AddBankCardUiState(
     val canSave: Boolean = false,
     val isSaving: Boolean = false,
 )
-
-sealed interface AddBankCardEffect {
-    data object Saved : AddBankCardEffect
-    data class SaveFailed(val message: String?) : AddBankCardEffect
-}

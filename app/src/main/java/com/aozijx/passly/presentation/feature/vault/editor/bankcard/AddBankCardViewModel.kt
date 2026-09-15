@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.feature.vault.editor.bankcard.CardNumberValidator
 import com.aozijx.passly.feature.vault.editor.bankcard.ValidationResult
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
+import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffect
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
@@ -24,8 +25,8 @@ class AddBankCardViewModel @Inject constructor(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AddBankCardUiState())
     val uiState = _uiState.asStateFlow()
-    private val _effects = Channel<AddBankCardEffect>(Channel.BUFFERED)
-    val effects = _effects.receiveAsFlow()
+    private val _effects = Channel<EditorSaveEffect>(Channel.BUFFERED)
+    internal val effects = _effects.receiveAsFlow()
 
     init {
         viewModelScope.launch {
@@ -85,7 +86,7 @@ class AddBankCardViewModel @Inject constructor(
                 when (val result = createEntryUseCase(current.form.toEntryDraft())) {
                     is AppResult.Success -> {
                         clearSensitiveContent()
-                        _effects.send(AddBankCardEffect.Saved)
+                        _effects.send(EditorSaveEffect.Saved)
                     }
                     is AppResult.Failure -> restoreAfterFailure(result.error.code)
                 }
@@ -100,7 +101,7 @@ class AddBankCardViewModel @Inject constructor(
     private suspend fun restoreAfterFailure(message: String?) {
         val form = _uiState.value.form
         _uiState.value = _uiState.value.copy(canSave = form.isValid, isSaving = false)
-        _effects.send(AddBankCardEffect.SaveFailed(message))
+        _effects.send(EditorSaveEffect.Failed(message))
     }
 
     private fun clearSensitiveContent() {

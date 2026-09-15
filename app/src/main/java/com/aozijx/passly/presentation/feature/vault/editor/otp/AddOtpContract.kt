@@ -6,11 +6,6 @@ data class AddOtpCodeState(
     val isSaving: Boolean = false,
 )
 
-sealed interface AddOtpEffect {
-    data object Saved : AddOtpEffect
-    data class SaveFailed(val message: String?) : AddOtpEffect
-}
-
 sealed interface AddOtpEvent {
     data object UriParsed : AddOtpEvent
     data object UriParseFailed : AddOtpEvent

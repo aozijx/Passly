@@ -8,6 +8,7 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
+import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffect
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
@@ -25,8 +26,8 @@ class AddOtpViewModel @Inject constructor(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AddOtpCodeState())
     val uiState = _uiState.asStateFlow()
-    private val _effects = Channel<AddOtpEffect>(Channel.BUFFERED)
-    val effects = _effects.receiveAsFlow()
+    private val _effects = Channel<EditorSaveEffect>(Channel.BUFFERED)
+    internal val effects = _effects.receiveAsFlow()
     private val _events = Channel<AddOtpEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
@@ -64,7 +65,7 @@ class AddOtpViewModel @Inject constructor(
                 when (val result = createEntryUseCase(current.form.toEntryDraft())) {
                     is AppResult.Success -> {
                         clearSensitiveContent()
-                        _effects.send(AddOtpEffect.Saved)
+                        _effects.send(EditorSaveEffect.Saved)
                     }
                     is AppResult.Failure -> restoreAfterFailure(result.error.code)
                 }
@@ -79,7 +80,7 @@ class AddOtpViewModel @Inject constructor(
     private suspend fun restoreAfterFailure(message: String?) {
         val form = _uiState.value.form
         _uiState.value = _uiState.value.copy(canSave = form.isValid, isSaving = false)
-        _effects.send(AddOtpEffect.SaveFailed(message))
+        _effects.send(EditorSaveEffect.Failed(message))
     }
 
     private fun applyScannedConfig(config: OtpConfig) {

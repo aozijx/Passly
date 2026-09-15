@@ -4,14 +4,13 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffectHandler
 import com.aozijx.passly.presentation.ui.vault.editor.password.AddPasswordEditorScreen
 import com.aozijx.passly.presentation.ui.vault.editor.password.PasswordEditorEventHandler
 import com.aozijx.passly.presentation.ui.vault.editor.password.PasswordEditorState
@@ -29,18 +28,7 @@ fun AddPasswordEditorHost(
     val snackbarHostState = remember { SnackbarHostState() }
     val keyboardController = LocalSoftwareKeyboardController.current
     val saveFailedMessage = stringResource(R.string.vault_add_password_save_failed)
-    val latestOnSaved by rememberUpdatedState(onSaved)
-
-    LaunchedEffect(viewModel, snackbarHostState, saveFailedMessage) {
-        viewModel.effects.collect { effect ->
-            when (effect) {
-                AddPasswordEffect.Saved -> latestOnSaved()
-                is AddPasswordEffect.SaveFailed -> {
-                    snackbarHostState.showSnackbar(effect.message ?: saveFailedMessage)
-                }
-            }
-        }
-    }
+    EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
 
     fun submit(action: AddPasswordAction, userInitiated: Boolean = false) {
         if (userInitiated) onUserInteraction()

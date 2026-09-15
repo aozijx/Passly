@@ -9,7 +9,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -20,6 +19,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffectHandler
 import com.aozijx.passly.presentation.ui.vault.editor.otp.AddOtpEditorScreen
 import com.aozijx.passly.presentation.ui.vault.editor.otp.OtpEditorAlgorithm
 import com.aozijx.passly.presentation.ui.vault.editor.otp.OtpEditorEncoding
@@ -47,20 +47,16 @@ fun AddOtpEditorHost(
     val saveFailedMessage = stringResource(R.string.vault_add_otp_save_failed)
     val uriParsedMessage = stringResource(R.string.vault_otp_uri_parsed)
     val uriParseFailedMessage = stringResource(R.string.vault_otp_uri_parse_failed)
-    val latestOnSaved by rememberUpdatedState(onSaved)
     var showScanner by remember { mutableStateOf(false) }
 
-    LaunchedEffect(viewModel, snackbarHostState, saveFailedMessage) {
-        viewModel.effects.collect { effect ->
-            when (effect) {
-                AddOtpEffect.Saved -> latestOnSaved()
-                is AddOtpEffect.SaveFailed -> {
-                    snackbarHostState.showSnackbar(effect.message ?: saveFailedMessage)
-                }
-            }
-        }
-    }
-    LaunchedEffect(viewModel, snackbarHostState, uriParsedMessage, uriParseFailedMessage) {
+    EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
+    LaunchedEffect(
+        viewModel,
+        context,
+        snackbarHostState,
+        uriParsedMessage,
+        uriParseFailedMessage,
+    ) {
         viewModel.events.collect { event ->
             when (event) {
                 AddOtpEvent.UriParsed ->
