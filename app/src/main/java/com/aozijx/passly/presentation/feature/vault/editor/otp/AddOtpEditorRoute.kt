@@ -28,7 +28,7 @@ import com.aozijx.passly.presentation.ui.vault.editor.otp.OtpEditorState
 import com.aozijx.passly.presentation.ui.vault.editor.otp.OtpEditorType
 
 @Composable
-fun AddOtpEditorHost(
+fun AddOtpEditorRoute(
     viewModel: AddOtpViewModel,
     onBack: () -> Unit,
     onSaved: () -> Unit,

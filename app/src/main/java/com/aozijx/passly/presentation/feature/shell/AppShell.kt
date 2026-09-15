@@ -87,7 +87,7 @@ internal fun AppShell(
             }
 
             AppShellDestination.VAULT -> {
-                AppShellContent(
+                PasslyAppNavigation(
                     appShellViewModel = viewModel
                 )
             }

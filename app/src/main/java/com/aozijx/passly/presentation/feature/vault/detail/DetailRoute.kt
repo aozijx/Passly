@@ -18,7 +18,7 @@ import com.aozijx.passly.presentation.ui.vault.detail.DetailScreen
  * 采用状态平铺模式，不直接持有 ViewModel，方便测试和预览。
  */
 @Composable
-fun DetailHost(
+fun DetailRoute(
     initialEntry: Entry,
     uiState: DetailUiState,
     otpUiState: OtpCodeState?,

@@ -6,7 +6,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.presentation.ui.vault.list.trash.TrashBottomSheet
 
 @Composable
-internal fun TrashHost(viewModel: TrashViewModel, onDismiss: () -> Unit) {
+internal fun TrashRoute(viewModel: TrashViewModel, onDismiss: () -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     TrashBottomSheet(
         visible = true,

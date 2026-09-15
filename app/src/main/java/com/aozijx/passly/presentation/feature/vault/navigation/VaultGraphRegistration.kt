@@ -21,19 +21,19 @@ import com.aozijx.passly.presentation.feature.shell.navigation.AppRoute
 import com.aozijx.passly.presentation.feature.shell.navigation.ShellNavigationContext
 import com.aozijx.passly.presentation.feature.vault.detail.DetailAuthenticate
 import com.aozijx.passly.presentation.feature.vault.detail.DetailEffect
-import com.aozijx.passly.presentation.feature.vault.detail.DetailHost
+import com.aozijx.passly.presentation.feature.vault.detail.DetailRoute
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailViewModel
-import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardEditorHost
+import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardEditorRoute
 import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardViewModel
-import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpEditorHost
+import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpEditorRoute
 import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpViewModel
-import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordEditorHost
+import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordEditorRoute
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordViewModel
-import com.aozijx.passly.presentation.feature.vault.list.VaultHost
+import com.aozijx.passly.presentation.feature.vault.list.VaultRoute
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
 import com.aozijx.passly.presentation.feature.vault.list.VaultViewModel
-import com.aozijx.passly.presentation.feature.vault.trash.TrashHost
+import com.aozijx.passly.presentation.feature.vault.trash.TrashRoute
 import com.aozijx.passly.presentation.feature.vault.trash.TrashViewModel
 import kotlinx.coroutines.flow.collectLatest
 
@@ -59,12 +59,12 @@ internal fun NavGraphBuilder.registerVaultGraph(
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = this,
         )
-        TrashHost(viewModel = trashViewModel, onDismiss = context.navigateBack)
+        TrashRoute(viewModel = trashViewModel, onDismiss = context.navigateBack)
     }
 
     composable(AppRoute.AddPassword.route) {
         val viewModel: AddPasswordViewModel = hiltViewModel()
-        AddPasswordEditorHost(
+        AddPasswordEditorRoute(
             viewModel = viewModel,
             onBack = context.navigateBack,
             onSaved = context.navigateBack,
@@ -76,7 +76,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
 
     composable(AppRoute.AddOtp.route) {
         val viewModel: AddOtpViewModel = hiltViewModel()
-        AddOtpEditorHost(
+        AddOtpEditorRoute(
             viewModel = viewModel,
             onBack = context.navigateBack,
             onSaved = context.navigateBack,
@@ -91,7 +91,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
 
     composable(AppRoute.AddBankCard.route) {
         val viewModel: AddBankCardViewModel = hiltViewModel()
-        AddBankCardEditorHost(
+        AddBankCardEditorRoute(
             viewModel = viewModel,
             onBack = context.navigateBack,
             onSaved = context.navigateBack,
@@ -140,7 +140,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
         }
 
         initialEntry?.let { entry ->
-            DetailHost(
+            DetailRoute(
                 initialEntry = entry,
                 uiState = detailUiState,
                 otpUiState = currentOtpState,
@@ -171,7 +171,7 @@ private fun VaultDestinationContent(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
-    VaultHost(
+    VaultRoute(
         vaultViewModel = vaultViewModel,
         requestAuthentication = context.requestAuthentication,
         requestReauthentication = context.requestReauthentication,

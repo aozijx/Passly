@@ -18,7 +18,7 @@ import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogEvent
 import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogsModel
 
 @Composable
-internal fun SettingsScreenDialogsHost(
+internal fun SettingsDialogs(
     state: SettingsDialogsModel,
     onEvent: (SettingsDialogEvent) -> Unit,
 ) {

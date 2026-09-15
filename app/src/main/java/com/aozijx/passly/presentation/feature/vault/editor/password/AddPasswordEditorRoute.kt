@@ -16,7 +16,7 @@ import com.aozijx.passly.presentation.ui.vault.editor.password.PasswordEditorEve
 import com.aozijx.passly.presentation.ui.vault.editor.password.PasswordEditorState
 
 @Composable
-fun AddPasswordEditorHost(
+fun AddPasswordEditorRoute(
     viewModel: AddPasswordViewModel,
     onBack: () -> Unit,
     onSaved: () -> Unit,

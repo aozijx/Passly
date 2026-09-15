@@ -42,7 +42,7 @@ import com.aozijx.passly.presentation.feature.settings.security.AppPasswordActio
 import com.aozijx.passly.presentation.feature.settings.security.validateAndSendAppPasswordAction
 import com.aozijx.passly.presentation.feature.database.reset.DatabaseResetOverlay
 import com.aozijx.passly.presentation.ui.settings.main.SettingsMainPage
-import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenDialogsHost
+import com.aozijx.passly.presentation.ui.settings.main.SettingsDialogs
 import com.aozijx.passly.presentation.ui.settings.main.rememberSettingsScreenLocalState
 import kotlinx.coroutines.launch
 
@@ -237,7 +237,7 @@ fun SettingsNavGraph(
         )
     }
 
-    SettingsScreenDialogsHost(
+    SettingsDialogs(
         state = buildSettingsDialogsState(
             localState = localState,
             swipeLeftAction = interactionState.swipeLeftAction,

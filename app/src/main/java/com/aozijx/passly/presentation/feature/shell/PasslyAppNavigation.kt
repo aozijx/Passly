@@ -11,7 +11,7 @@ import com.aozijx.passly.presentation.feature.vault.navigation.registerVaultGrap
 import com.aozijx.passly.presentation.feature.settings.main.navigation.registerSettingsGraph
 
 @Composable
-internal fun AppShellContent(
+internal fun PasslyAppNavigation(
     appShellViewModel: AppShellViewModel
 ) {
     val vaultViewModel: VaultViewModel = hiltViewModel()

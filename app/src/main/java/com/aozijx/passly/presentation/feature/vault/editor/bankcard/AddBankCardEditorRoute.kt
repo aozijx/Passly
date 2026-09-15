@@ -17,7 +17,7 @@ import com.aozijx.passly.presentation.ui.vault.editor.bankcard.BankCardEditorSta
 import com.aozijx.passly.presentation.ui.vault.editor.bankcard.BankCardTypeUi
 
 @Composable
-fun AddBankCardEditorHost(
+fun AddBankCardEditorRoute(
     viewModel: AddBankCardViewModel,
     onBack: () -> Unit,
     onSaved: () -> Unit,

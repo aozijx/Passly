@@ -25,7 +25,7 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VaultHost(
+fun VaultRoute(
     vaultViewModel: VaultViewModel,
     requestAuthentication: (onSuccess: () -> Unit) -> Unit,
     requestReauthentication: (onSuccess: () -> Unit) -> Unit,
