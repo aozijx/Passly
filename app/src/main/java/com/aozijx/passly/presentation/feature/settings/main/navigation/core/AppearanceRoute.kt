@@ -15,7 +15,7 @@ import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 import com.aozijx.passly.presentation.ui.settings.appearance.AppearanceDetail
 
 @Composable
-internal fun AppearanceRouteContent(
+internal fun AppearanceRoute(
     settingsViewModel: SettingsViewModel,
     onBack: (() -> Unit)?
 ) {

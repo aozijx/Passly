@@ -28,7 +28,7 @@ internal fun SettingsDetailRouteRegistry(
         SettingsRoute.Security,
         SettingsRoute.Privacy,
         SettingsRoute.Appearance,
-        SettingsRoute.Interface -> CoreSettingsRouteContent(route, settingsViewModel, onBack)
+        SettingsRoute.Interface -> CoreSettingsRoute(route, settingsViewModel, onBack)
 
         SettingsRoute.Interaction,
         SettingsRoute.Autofill,
@@ -36,7 +36,7 @@ internal fun SettingsDetailRouteRegistry(
         SettingsRoute.BackupRestore,
         SettingsRoute.RecoveryCode,
         SettingsRoute.General,
-        SettingsRoute.Notifications -> DataSettingsRouteContent(
+        SettingsRoute.Notifications -> DataSettingsRoute(
             route = route,
             context = context,
             localState = localState,

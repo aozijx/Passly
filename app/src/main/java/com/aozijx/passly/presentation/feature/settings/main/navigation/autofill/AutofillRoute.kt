@@ -26,7 +26,7 @@ import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun AutofillRouteContent(
+internal fun AutofillRoute(
     route: SettingsRoute,
     context: Context,
     localState: SettingsScreenLocalState,

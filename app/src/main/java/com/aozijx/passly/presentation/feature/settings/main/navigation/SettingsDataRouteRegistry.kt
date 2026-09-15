@@ -7,18 +7,18 @@ import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSett
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.main.navigation.autofill.AutofillRouteContent
-import com.aozijx.passly.presentation.feature.settings.main.navigation.core.RecoveryCodeRouteContent
-import com.aozijx.passly.presentation.feature.settings.main.navigation.data.BackupRouteContent
-import com.aozijx.passly.presentation.feature.settings.main.navigation.data.DataManagementRouteContent
-import com.aozijx.passly.presentation.feature.settings.main.navigation.general.GeneralRouteContent
-import com.aozijx.passly.presentation.feature.settings.main.navigation.general.NotificationsRouteContent
-import com.aozijx.passly.presentation.feature.settings.main.navigation.interaction.InteractionRouteContent
+import com.aozijx.passly.presentation.feature.settings.main.navigation.autofill.AutofillRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.core.RecoveryCodeRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.data.BackupRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.data.DataManagementRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.general.GeneralRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.general.NotificationsRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.interaction.InteractionRoute
 import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun DataSettingsRouteContent(
+internal fun DataSettingsRoute(
     route: SettingsRoute,
     context: Context,
     localState: SettingsScreenLocalState,
@@ -30,13 +30,13 @@ internal fun DataSettingsRouteContent(
     onBack: (() -> Unit)?,
 ) {
     val content: @Composable () -> Unit = when (route) {
-        SettingsRoute.Interaction -> ({ InteractionRouteContent(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
-        SettingsRoute.Autofill -> ({ AutofillRouteContent(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
-        SettingsRoute.DataManagement -> ({ DataManagementRouteContent(route, context, localState, interactionViewModel, onOpenTrash, onBack) })
-        SettingsRoute.BackupRestore -> ({ BackupRouteContent(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
-        SettingsRoute.RecoveryCode -> ({ RecoveryCodeRouteContent(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
-        SettingsRoute.General -> ({ GeneralRouteContent(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
-        SettingsRoute.Notifications -> ({ NotificationsRouteContent(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
+        SettingsRoute.Interaction -> ({ InteractionRoute(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
+        SettingsRoute.Autofill -> ({ AutofillRoute(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
+        SettingsRoute.DataManagement -> ({ DataManagementRoute(route, context, localState, interactionViewModel, onOpenTrash, onBack) })
+        SettingsRoute.BackupRestore -> ({ BackupRoute(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
+        SettingsRoute.RecoveryCode -> ({ RecoveryCodeRoute(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
+        SettingsRoute.General -> ({ GeneralRoute(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
+        SettingsRoute.Notifications -> ({ NotificationsRoute(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
         else -> error("Unsupported data settings route: ${route.route}")
     }
     content()

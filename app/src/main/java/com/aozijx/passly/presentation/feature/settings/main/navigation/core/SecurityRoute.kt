@@ -15,7 +15,7 @@ import com.aozijx.passly.presentation.ui.settings.security.SecurityDetail
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 
 @Composable
-internal fun SecurityRouteContent(
+internal fun SecurityRoute(
     settingsViewModel: SettingsViewModel,
     onBack: (() -> Unit)?
 ) {

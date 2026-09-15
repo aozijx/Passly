@@ -14,7 +14,7 @@ import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun DataManagementRouteContent(
+internal fun DataManagementRoute(
     route: SettingsRoute,
     context: Context,
     localState: SettingsScreenLocalState,

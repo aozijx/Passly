@@ -32,7 +32,7 @@ import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun RecoveryCodeRouteContent(
+internal fun RecoveryCodeRoute(
     route: SettingsRoute,
     context: Context,
     localState: SettingsScreenLocalState,
