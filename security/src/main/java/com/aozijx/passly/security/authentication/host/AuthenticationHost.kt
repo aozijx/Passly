@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.security.authentication
+package com.aozijx.passly.security.authentication.host
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
@@ -11,16 +11,12 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
-import com.aozijx.passly.presentation.ui.unlock.AuthenticationDialogEventHandler
-import com.aozijx.passly.presentation.ui.unlock.AuthenticationDialogUiState
-import com.aozijx.passly.presentation.ui.unlock.AuthenticationDialogs
-import com.aozijx.passly.presentation.ui.unlock.AuthenticationMethodUiModel
 import com.aozijx.passly.security.authentication.host.ActivityAuthUiHost
 import com.aozijx.passly.security.authentication.host.AuthenticationDialogRequest
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 
 @Composable
-internal fun AuthenticationHost(
+fun AuthenticationHost(
     activity: FragmentActivity,
     registry: AuthenticationHostRegistry,
     content: @Composable () -> Unit,

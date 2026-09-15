@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.unlock
+package com.aozijx.passly.security.authentication.host
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,7 +23,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.R
+import com.aozijx.passly.security.R
 
 internal enum class AuthenticationMethodUiModel {
     BIOMETRIC, APP_PASSWORD, RECOVERY_CODE,
@@ -67,7 +67,7 @@ private fun MethodDialog(
 ) {
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text(stringResource(R.string.auth_verify_identity)) },
+        title = { Text(stringResource(R.string.security_auth_verify_identity)) },
         text = {
             Column {
                 methods.forEach { method ->
@@ -78,7 +78,7 @@ private fun MethodDialog(
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel)) } },
+        dismissButton = { TextButton(onClick = onCancel) { Text(stringResource(R.string.security_auth_cancel)) } },
     )
 }
 
@@ -116,7 +116,7 @@ private fun SecretDialog(
                 value = secret,
                 onValueChange = { secret = it },
                 label = {
-                    Text(stringResource(if (method == AuthenticationMethodUiModel.RECOVERY_CODE) R.string.recovery_code_label else R.string.auth_app_password_label))
+                    Text(stringResource(if (method == AuthenticationMethodUiModel.RECOVERY_CODE) R.string.security_auth_recovery_code_label else R.string.security_auth_app_password_label))
                 },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
@@ -127,18 +127,18 @@ private fun SecretDialog(
         },
         confirmButton = {
             Button(enabled = secret.isNotEmpty(), onClick = submit) {
-                Text(stringResource(R.string.continue_action))
+                Text(stringResource(R.string.security_auth_continue))
             }
         },
-        dismissButton = { TextButton(onClick = cancel) { Text(stringResource(R.string.cancel)) } },
+        dismissButton = { TextButton(onClick = cancel) { Text(stringResource(R.string.security_auth_cancel)) } },
     )
 }
 
 @Composable
 private fun AuthenticationMethodUiModel.label(): String = stringResource(
     when (this) {
-        AuthenticationMethodUiModel.BIOMETRIC -> R.string.auth_method_biometric
-        AuthenticationMethodUiModel.APP_PASSWORD -> R.string.auth_app_password_label
-        AuthenticationMethodUiModel.RECOVERY_CODE -> R.string.restore_access
+        AuthenticationMethodUiModel.BIOMETRIC -> R.string.security_auth_method_biometric
+        AuthenticationMethodUiModel.APP_PASSWORD -> R.string.security_auth_app_password_label
+        AuthenticationMethodUiModel.RECOVERY_CODE -> R.string.security_auth_restore_access
     },
 )

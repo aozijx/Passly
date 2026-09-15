@@ -5,7 +5,7 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
-import com.aozijx.passly.R
+import com.aozijx.passly.security.R
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
@@ -237,27 +237,27 @@ internal object BiometricPromptSpecFactory {
         }
         return BiometricPrompt.PromptInfo.Builder()
             .setTitle(context.getString(titleResource(spec.purpose)))
-            .setSubtitle(context.getString(R.string.auth_biometric_subtitle))
+            .setSubtitle(context.getString(R.string.security_auth_biometric_subtitle))
             .setAllowedAuthenticators(authenticators)
             .apply {
                 if (!spec.allowDeviceCredential) {
-                    setNegativeButtonText(context.getString(R.string.cancel))
+                    setNegativeButtonText(context.getString(R.string.security_auth_cancel))
                 }
             }
             .build()
     }
 
     private fun titleResource(purpose: AuthenticationPurpose): Int = when (purpose) {
-        AuthenticationPurpose.UNLOCK_VAULT -> R.string.auth_purpose_unlock_vault
-        AuthenticationPurpose.AUTOFILL -> R.string.auth_purpose_autofill
-        AuthenticationPurpose.BACKUP_EXPORT -> R.string.auth_purpose_backup_export
-        AuthenticationPurpose.BACKUP_IMPORT -> R.string.auth_purpose_backup_import
+        AuthenticationPurpose.UNLOCK_VAULT -> R.string.security_auth_purpose_unlock_vault
+        AuthenticationPurpose.AUTOFILL -> R.string.security_auth_purpose_autofill
+        AuthenticationPurpose.BACKUP_EXPORT -> R.string.security_auth_purpose_backup_export
+        AuthenticationPurpose.BACKUP_IMPORT -> R.string.security_auth_purpose_backup_import
         AuthenticationPurpose.EXPORT_DIAGNOSTICS ->
-            R.string.auth_purpose_export_diagnostics
+            R.string.security_auth_purpose_export_diagnostics
 
-        AuthenticationPurpose.RECOVER_AUTH_METHODS -> R.string.auth_purpose_recover_auth_methods
-        AuthenticationPurpose.CLEAR_DATABASE -> R.string.auth_purpose_clear_database
-        else -> R.string.auth_verify_identity
+        AuthenticationPurpose.RECOVER_AUTH_METHODS -> R.string.security_auth_purpose_recover_auth_methods
+        AuthenticationPurpose.CLEAR_DATABASE -> R.string.security_auth_purpose_clear_database
+        else -> R.string.security_auth_verify_identity
     }
 }
 
