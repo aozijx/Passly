@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.access.model.RecoveryCredentialFactory
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
+import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
 import com.aozijx.passly.security.authentication.DefaultAuthenticationManager
@@ -61,6 +62,11 @@ internal abstract class AuthenticationModule {
     abstract fun bindDatabaseSessionFailureState(
         impl: VaultSessionController,
     ): DatabaseSessionFailureState
+    @Binds
+    @Singleton
+    abstract fun bindDatabaseSessionRecovery(
+        impl: VaultSessionController,
+    ): DatabaseSessionRecovery
 
     companion object {
         @Provides

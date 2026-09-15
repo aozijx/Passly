@@ -8,7 +8,7 @@ data class AppShellUiState(
     val isRecoveryMode: Boolean = false,
     val appearance: AppearanceSettings = AppearanceSettings(),
     val appCornerRadiusDp: Float = AppCornerRadiusConstraints.DEFAULT_DP,
-    val isDatabaseInitializing: Boolean = false,
+    val isDatabaseRetrying: Boolean = false,
     val databaseError: Throwable? = null
 )
 

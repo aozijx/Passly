@@ -2,7 +2,6 @@ package com.aozijx.passly.presentation.feature.shell
 
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
-import com.aozijx.passly.presentation.feature.shell.AppShellUiState
 
 internal sealed interface AppShellMutation {
     data object Authenticated : AppShellMutation
@@ -12,9 +11,8 @@ internal sealed interface AppShellMutation {
         val appearance: AppearanceSettings,
         val interfaceSettings: InterfaceSettings,
     ) : AppShellMutation
-    data class DatabaseInitializationStarted(val clearError: Boolean) : AppShellMutation
-    data class DatabaseInitializationFinished(val error: Throwable?) : AppShellMutation
-    data object DatabaseInitializationStopped : AppShellMutation
+    data object DatabaseRetryStarted : AppShellMutation
+    data class DatabaseRetryFinished(val error: Throwable?) : AppShellMutation
     data class DatabaseFailureObserved(val error: Throwable) : AppShellMutation
 }
 
@@ -24,11 +22,13 @@ internal object AppShellReducer {
             AppShellMutation.Authenticated -> state.copy(
                 isAuthorized = true,
                 isRecoveryMode = false,
+                isDatabaseRetrying = false,
+                databaseError = null,
             )
             AppShellMutation.RecoveryModeEntered -> state.copy(
                 isAuthorized = false,
                 isRecoveryMode = true,
-                isDatabaseInitializing = false,
+                isDatabaseRetrying = false,
                 databaseError = null,
             )
             AppShellMutation.SessionLocked -> state.copy(
@@ -39,18 +39,16 @@ internal object AppShellReducer {
                 appearance = mutation.appearance,
                 appCornerRadiusDp = mutation.interfaceSettings.appCornerRadiusDp,
             )
-            is AppShellMutation.DatabaseInitializationStarted -> state.copy(
-                isDatabaseInitializing = true,
-                databaseError = state.databaseError.takeUnless { mutation.clearError },
+            AppShellMutation.DatabaseRetryStarted -> state.copy(
+                isDatabaseRetrying = true,
+                databaseError = null,
             )
-            is AppShellMutation.DatabaseInitializationFinished -> state.copy(
-                isDatabaseInitializing = false,
+            is AppShellMutation.DatabaseRetryFinished -> state.copy(
+                isDatabaseRetrying = false,
                 databaseError = mutation.error,
             )
-            AppShellMutation.DatabaseInitializationStopped ->
-                state.copy(isDatabaseInitializing = false)
             is AppShellMutation.DatabaseFailureObserved -> state.copy(
-                isDatabaseInitializing = false,
+                isDatabaseRetrying = false,
                 databaseError = mutation.error,
                 isAuthorized = false,
             )

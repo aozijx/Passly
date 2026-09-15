@@ -8,5 +8,4 @@ interface SessionActivityReporter {
 
 interface DatabaseSessionFailureState {
     val databaseFailure: StateFlow<Throwable?>
-    fun clearDatabaseFailure()
 }

@@ -5,11 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.message.mapping.toUiMessage
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
+import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
+import com.aozijx.passly.domain.access.port.DatabaseSessionRetryResult
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.LockReason
-import com.aozijx.passly.app.database.DatabaseLifecycleGateway
-import com.aozijx.passly.app.database.DatabaseLifecycleResult
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.presentation.feature.shell.AppShellEffect
@@ -35,7 +35,7 @@ class AppShellViewModel @Inject constructor(
     private val authenticationManager: AuthenticationManager,
     private val sessionActivityReporter: SessionActivityReporter,
     private val databaseSessionFailureState: DatabaseSessionFailureState,
-    private val databaseLifecycleGateway: DatabaseLifecycleGateway,
+    private val databaseSessionRecovery: DatabaseSessionRecovery,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AppShellUiState())
@@ -56,7 +56,7 @@ class AppShellViewModel @Inject constructor(
             AppShellUiAction.Lock -> lock(LockReason.USER)
             AppShellUiAction.ExitRecovery -> lock(LockReason.RECOVERY_EXIT)
             AppShellUiAction.UpdateInteraction -> sessionActivityReporter.onUserInteraction()
-            AppShellUiAction.RetryDatabaseInitialization -> initializeDatabase()
+            AppShellUiAction.RetryDatabaseSession -> retryDatabaseSession()
         }
     }
 
@@ -70,9 +70,6 @@ class AppShellViewModel @Inject constructor(
                 val authorized = state is AuthenticationState.Authenticated
                 val recoveryMode = state is AuthenticationState.RecoveryMode
                 if (authorized) {
-                    runDatabaseInitialization {
-                        databaseLifecycleGateway.initialize()
-                    }
                     mutate(AppShellMutation.Authenticated)
                 } else if (recoveryMode) {
                     mutate(AppShellMutation.RecoveryModeEntered)
@@ -97,33 +94,24 @@ class AppShellViewModel @Inject constructor(
                 }
         }
     }
-
-    private fun initializeDatabase() {
+    private fun retryDatabaseSession() {
         viewModelScope.launch {
-            val result = runDatabaseInitialization {
-                databaseLifecycleGateway.retry()
-            }
-            if (result !is DatabaseLifecycleResult.Failure) {
-                databaseSessionFailureState.clearDatabaseFailure()
-            }
-        }
-    }
+            mutate(AppShellMutation.DatabaseRetryStarted)
+            when (val result = databaseSessionRecovery.retry()) {
+                DatabaseSessionRetryResult.Ready -> Unit
+                DatabaseSessionRetryResult.Unavailable ->
+                    mutate(AppShellMutation.DatabaseRetryFinished(error = null))
 
-    private suspend fun runDatabaseInitialization(
-        block: suspend () -> DatabaseLifecycleResult,
-    ): DatabaseLifecycleResult {
-        mutate(AppShellMutation.DatabaseInitializationStarted(clearError = true))
-        val result = block()
-        val error = (result as? DatabaseLifecycleResult.Failure)?.cause
-        mutate(AppShellMutation.DatabaseInitializationFinished(error))
-        error?.let {
-            emitEffect(
-                AppShellEffect.ShowError(
-                    "数据库错误: ${it.toUiMessage("数据库初始化失败")}",
-                )
-            )
+                is DatabaseSessionRetryResult.Failed -> {
+                    mutate(AppShellMutation.DatabaseRetryFinished(result.cause))
+                    emitEffect(
+                        AppShellEffect.ShowError(
+                            "数据库错误: ${result.cause.toUiMessage("数据库重试失败")}",
+                        ),
+                    )
+                }
+            }
         }
-        return result
     }
 
     private fun observeDatabaseFailures() {

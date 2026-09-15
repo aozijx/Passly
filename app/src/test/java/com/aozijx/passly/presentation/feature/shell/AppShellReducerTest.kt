@@ -20,7 +20,7 @@ class AppShellReducerTest {
         val result = AppShellReducer.reduce(
             AppShellUiState(
                 isAuthorized = true,
-                isDatabaseInitializing = true,
+                isDatabaseRetrying = true,
                 databaseError = IllegalStateException("failure"),
             ),
             AppShellMutation.RecoveryModeEntered,
@@ -28,27 +28,22 @@ class AppShellReducerTest {
 
         assertFalse(result.isAuthorized)
         assertTrue(result.isRecoveryMode)
-        assertFalse(result.isDatabaseInitializing)
+        assertFalse(result.isDatabaseRetrying)
         assertNull(result.databaseError)
     }
 
     @Test
-    fun `database retry clears stale error but recovery authentication keeps it`() {
+    fun `database retry clears stale error and marks retry in progress`() {
         val error = IllegalStateException("failure")
         val initial = AppShellUiState(databaseError = error)
 
         val retry = AppShellReducer.reduce(
             initial,
-            AppShellMutation.DatabaseInitializationStarted(clearError = true),
-        )
-        val recovery = AppShellReducer.reduce(
-            initial,
-            AppShellMutation.DatabaseInitializationStarted(clearError = false),
+            AppShellMutation.DatabaseRetryStarted,
         )
 
-        assertTrue(retry.isDatabaseInitializing)
+        assertTrue(retry.isDatabaseRetrying)
         assertNull(retry.databaseError)
-        assertSame(error, recovery.databaseError)
     }
 
     @Test

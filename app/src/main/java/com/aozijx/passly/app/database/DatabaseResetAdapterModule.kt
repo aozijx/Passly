@@ -13,6 +13,6 @@ abstract class DatabaseResetAdapterModule {
     @Binds
     @Singleton
     abstract fun bindDatabaseResetGateway(
-        implementation: DatabaseLifecycleGateway,
+        implementation: DatabaseResetGatewayAdapter,
     ): DatabaseResetGateway
 }

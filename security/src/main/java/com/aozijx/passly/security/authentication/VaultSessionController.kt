@@ -7,6 +7,8 @@ import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.port.AuthorizationPermitRevoker
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
+import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
+import com.aozijx.passly.domain.access.port.DatabaseSessionRetryResult
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.AuthenticationRequestId
@@ -42,7 +44,7 @@ class VaultSessionController @Inject constructor(
     private val vaultBootstrapStore: VaultBootstrapStore,
     private val lockStateManager: LockStateManager,
     idleTimeoutSettings: com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
-) : SecureSessionAccessState, SessionActivityReporter, DatabaseSessionFailureState {
+) : SecureSessionAccessState, SessionActivityReporter, DatabaseSessionFailureState, DatabaseSessionRecovery {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutex = Mutex()
     private val _state = MutableStateFlow<AuthenticationState>(AuthenticationState.Locked)
@@ -236,8 +238,14 @@ class VaultSessionController @Inject constructor(
         _state.value = state
     }
 
-    override fun clearDatabaseFailure() {
-        _databaseFailure.value = null
+    override suspend fun retry(): DatabaseSessionRetryResult = mutex.withLock {
+        DatabaseSessionRetryCoordinator(
+            sessionManager = sessionManager,
+            lockStateManager = lockStateManager,
+            currentFailure = { _databaseFailure.value },
+            updateFailure = { _databaseFailure.value = it },
+            publishAuthenticated = ::markAuthenticatedInternal,
+        ).retry()
     }
 
     private suspend fun consumeRecoveryEnvelope(): Boolean =

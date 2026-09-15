@@ -70,9 +70,9 @@ internal fun AppShell(
         when (state) {
             AppShellDestination.DATABASE_ERROR -> {
                 DatabaseErrorDialog(
-                    isBusy = mainUiState.isDatabaseInitializing,
+                    isBusy = mainUiState.isDatabaseRetrying,
                     onRetry = {
-                        viewModel.onAction(AppShellUiAction.RetryDatabaseInitialization)
+                        viewModel.onAction(AppShellUiAction.RetryDatabaseSession)
                     },
                     onCloseApp = {
                         noticePublisher.publish(
