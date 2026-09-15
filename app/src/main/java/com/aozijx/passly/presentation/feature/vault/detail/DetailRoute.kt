@@ -5,7 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.presentation.feature.vault.detail.component.DetailContentHost
+import com.aozijx.passly.presentation.feature.vault.detail.binding.DetailBodyBinding
 import com.aozijx.passly.presentation.ui.vault.detail.DetailScreen
 
 /**
@@ -66,7 +66,7 @@ fun DetailRoute(
         onTitleSaved = { onAction(DetailUiAction.SaveTitle) },
         onFavoriteToggled = { onAction(DetailUiAction.ToggleFavorite) },
     ) { modifier ->
-        DetailContentHost(
+        DetailBodyBinding(
             modifier = modifier,
             uiState = uiState,
             editState = editState,

@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail.component
+package com.aozijx.passly.presentation.feature.vault.detail.binding
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.input.TextFieldValue
@@ -11,7 +11,7 @@ import com.aozijx.passly.presentation.ui.vault.detail.component.NotesSection
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailNotesUiModel
 
 @Composable
-internal fun DetailNotesHost(
+internal fun DetailNotesBinding(
     entry: Entry,
     editState: EntryEditState,
     onAction: (DetailUiAction) -> Unit,

@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail.component
+package com.aozijx.passly.presentation.feature.vault.detail.binding
 
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.domain.entry.model.Entry
@@ -6,7 +6,7 @@ import com.aozijx.passly.presentation.ui.vault.detail.component.RelatedEntriesSe
 import com.aozijx.passly.presentation.ui.vault.detail.model.RelatedEntryUiModel
 
 @Composable
-internal fun DetailRelatedEntriesHost(
+internal fun DetailRelatedEntriesBinding(
     entries: List<Entry>,
     models: List<RelatedEntryUiModel>,
     onOpenEntry: (Entry) -> Unit,

@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail.component
+package com.aozijx.passly.presentation.feature.vault.detail.binding
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,7 +22,7 @@ import com.aozijx.passly.presentation.ui.vault.detail.component.MetadataSection
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailIconCardUiModel
 
 @Composable
-fun DetailContentHost(
+fun DetailBodyBinding(
     modifier: Modifier = Modifier,
     uiState: DetailUiState,
     editState: EntryEditState,
@@ -85,44 +85,44 @@ fun DetailContentHost(
         }
 
         if (DetailSectionKey.CREDENTIAL in registeredSections) {
-            item { DetailCredentialHost(entry, uiState, editState, onAction) }
+            item { DetailCredentialBinding(entry, uiState, editState, onAction) }
         }
         if (DetailSectionKey.OTP in registeredSections) {
-            item { DetailOtpHost(otpModel, otpQrUri, onAction, onOtpQrDismiss) }
+            item { DetailOtpBinding(otpModel, otpQrUri, onAction, onOtpQrDismiss) }
         }
         if (DetailSectionKey.BANK_CARD in registeredSections) {
-            item { DetailBankCardHost(entry, uiState, editState, onAction) }
+            item { DetailBankCardBinding(entry, uiState, editState, onAction) }
         }
         if (DetailSectionKey.IDENTITY in registeredSections) {
-            item { DetailIdentityHost(entry, uiState, onAction) }
+            item { DetailIdentityBinding(entry, uiState, onAction) }
         }
         if (DetailSectionKey.WIFI in registeredSections) {
-            item { DetailWifiHost(entry, uiState, editState, onAction) }
+            item { DetailWifiBinding(entry, uiState, editState, onAction) }
         }
         if (DetailSectionKey.SSH in registeredSections) {
-            item { DetailSshHost(entry, uiState, editState, onAction) }
+            item { DetailSshBinding(entry, uiState, editState, onAction) }
         }
         if (DetailSectionKey.SEED_PHRASE in registeredSections) {
-            item { DetailSeedPhraseHost(uiState, onAction) }
+            item { DetailSeedPhraseBinding(uiState, onAction) }
         }
         if (DetailSectionKey.PASSKEY in registeredSections) {
-            item { DetailPasskeyHost(entry, uiState, onAction) }
+            item { DetailPasskeyBinding(entry, uiState, onAction) }
         }
         if (uiState.relatedEntries.isNotEmpty()) {
             item {
-                DetailRelatedEntriesHost(
+                DetailRelatedEntriesBinding(
                     uiState.relatedEntries,
                     contentUiModel.relatedEntries,
                     onOpenRelatedEntry
                 )
             }
         }
-        item { DetailTagsHost(entry, onAction) }
-        item { DetailAssociationsHost(entry, editState, onAction) }
-        item { DetailNotesHost(entry, editState, onAction) }
+        item { DetailTagsBinding(entry, onAction) }
+        item { DetailAssociationsBinding(entry, editState, onAction) }
+        item { DetailNotesBinding(entry, editState, onAction) }
         item { MetadataSection(contentUiModel.metadata) }
         item { ActivityTimelineSection(activityList = contentUiModel.activities) }
     }
 
-    DetailEditorOverlaysHost(uiState = uiState, onAction = onAction)
+    DetailEditorOverlayBinding(uiState = uiState, onAction = onAction)
 }

@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail.component
+package com.aozijx.passly.presentation.feature.vault.detail.binding
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -20,7 +20,7 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.CredentialSectionEve
 import com.aozijx.passly.presentation.ui.vault.detail.model.CredentialSectionUiState
 
 @Composable
-internal fun DetailCredentialHost(
+internal fun DetailCredentialBinding(
     entry: Entry,
     uiState: DetailUiState,
     editState: EntryEditState,

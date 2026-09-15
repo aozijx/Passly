@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail.component
+package com.aozijx.passly.presentation.feature.vault.detail.binding
 
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
@@ -11,7 +11,7 @@ import com.aozijx.passly.presentation.ui.vault.detail.component.FaviconEditorShe
 import com.aozijx.passly.presentation.ui.vault.detail.component.TagEditorSheet
 
 @Composable
-internal fun DetailEditorOverlaysHost(
+internal fun DetailEditorOverlayBinding(
     uiState: DetailUiState,
     onAction: (DetailUiAction) -> Unit,
 ) {

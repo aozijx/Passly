@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail.component
+package com.aozijx.passly.presentation.feature.vault.detail.binding
 
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.domain.entry.model.Entry
@@ -11,7 +11,7 @@ import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
 import com.aozijx.passly.presentation.ui.vault.detail.component.PasskeySection
 
 @Composable
-internal fun DetailPasskeyHost(
+internal fun DetailPasskeyBinding(
     entry: Entry,
     uiState: DetailUiState,
     onAction: (DetailUiAction) -> Unit,
