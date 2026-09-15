@@ -7,6 +7,7 @@ import androidx.compose.animation.core.snap
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -45,7 +46,8 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultListLayoutUiModel
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListToolbarUiModel
 import com.aozijx.passly.presentation.ui.vault.list.search.VaultSearchPhase
 import com.aozijx.passly.presentation.ui.vault.list.search.VaultSearchState
-import com.aozijx.passly.presentation.ui.shared.components.topbar.passlyTopAppBarColors
+import com.aozijx.passly.presentation.ui.shared.components.topbar.passlyCompactTopAppBarColors
+import com.aozijx.passly.presentation.ui.shared.components.topbar.topAppBarContainerColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,6 +84,11 @@ fun VaultTopBar(
         label = "VaultSearchExpansion",
     )
     val searchWidthFraction = 0.94f + (0.06f * expansionProgress.coerceIn(0f, 1f))
+    val topBarContainerColor = topAppBarContainerColor(
+        containerColor = MaterialTheme.colorScheme.surface,
+        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+        scrollProgress = scrollBehavior.state.overlappedFraction,
+    )
 
     LaunchedEffect(navigateToSettingsAfterDismiss, isMoreMenuExpanded) {
         if (navigateToSettingsAfterDismiss && !isMoreMenuExpanded) {
@@ -108,13 +115,14 @@ fun VaultTopBar(
         ),
     ) {
         TopAppBar(
+            modifier = Modifier.background(topBarContainerColor),
             scrollBehavior = if (layout.collapseTopBarOnScroll && !searchState.isEditing) {
                 scrollBehavior
             } else {
                 null
             },
             windowInsets = WindowInsets.statusBars,
-            colors = passlyTopAppBarColors(),
+            colors = passlyCompactTopAppBarColors(),
             title = {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
