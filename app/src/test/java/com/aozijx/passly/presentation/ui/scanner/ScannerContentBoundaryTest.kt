@@ -21,7 +21,7 @@ class ScannerContentBoundaryTest {
             "BarcodeScanning",
             "InputImage",
             "rememberPermissionRequestHost",
-            "AppTelemetry",
+            "TelemetryRuntime",
             "Intent(",
             "Toast.",
             "DisposableEffect",

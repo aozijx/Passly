@@ -6,7 +6,7 @@ import android.service.autofill.FillCallback
 import android.service.autofill.FillRequest
 import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
-import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.domain.autofill.port.FieldMatchStrategy
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.autofill.internal.FillRequestDispatcher
@@ -55,7 +55,7 @@ class LegacyAutofillService : AutofillService() {
 
     override fun onCreate() {
         super.onCreate()
-        AppTelemetry.i("LegacyAutofill", "Service created (API < 34 fallback)")
+        TelemetryRuntime.i("LegacyAutofill", "Service created (API < 34 fallback)")
     }
 
     override fun onFillRequest(
@@ -79,7 +79,7 @@ class LegacyAutofillService : AutofillService() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                AppTelemetry.e("LegacyAutofill", "Fill request failed", e)
+                TelemetryRuntime.e("LegacyAutofill", "Fill request failed", e)
                 callback.onFailure(e.message ?: "Fill request failed")
             }
         }
@@ -115,12 +115,12 @@ class LegacyAutofillService : AutofillService() {
                     passwordValue = pending.password,
                 ).getOrThrow()
 
-                AppTelemetry.i("LegacyAutofill", "Credential saved successfully")
+                TelemetryRuntime.i("LegacyAutofill", "Credential saved successfully")
                 callback.onSuccess()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                AppTelemetry.e("LegacyAutofill", "Save request failed", e)
+                TelemetryRuntime.e("LegacyAutofill", "Save request failed", e)
                 callback.onFailure(e.message ?: "Save request failed")
             }
         }

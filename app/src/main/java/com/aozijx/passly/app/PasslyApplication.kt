@@ -10,7 +10,7 @@ import android.view.MotionEvent
 import android.view.ViewGroup
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.aozijx.passly.BuildConfig
-import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.access.port.AuthenticationManager
@@ -78,7 +78,7 @@ class PasslyApplication : Application() {
         try {
             System.loadLibrary("sqlcipher")
         } catch (e: UnsatisfiedLinkError) {
-            AppTelemetry.e(EventCategory.DATABASE, "sqlcipher.load_failed", throwable = e)
+            TelemetryRuntime.e(EventCategory.DATABASE, "sqlcipher.load_failed", throwable = e)
         }
 
         // 生命周期与全局交互监听

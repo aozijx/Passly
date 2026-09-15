@@ -4,7 +4,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
-import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.core.crypto.CryptoConfig
 import java.security.KeyStore
 import javax.crypto.Cipher
@@ -27,10 +27,10 @@ internal object AndroidKeystoreKeyProvider {
             val secretKey = (ks.getEntry(alias, null) as KeyStore.SecretKeyEntry).secretKey
             val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
             cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-            AppTelemetry.i(TAG, "Cipher initialized in ENCRYPT mode")
+            TelemetryRuntime.i(TAG, "Cipher initialized in ENCRYPT mode")
             cipher
         } catch (e: Exception) {
-            AppTelemetry.logCryptoException(TAG, "Get encrypt cipher", e)
+            TelemetryRuntime.logCryptoException(TAG, "Get encrypt cipher", e)
             null
         }
     }
@@ -45,17 +45,17 @@ internal object AndroidKeystoreKeyProvider {
             val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
             val spec = GCMParameterSpec(CryptoConfig.GCM_TAG_BITS, iv)
             cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
-            AppTelemetry.i(TAG, "Cipher initialized in DECRYPT mode")
+            TelemetryRuntime.i(TAG, "Cipher initialized in DECRYPT mode")
             cipher
         } catch (e: KeyPermanentlyInvalidatedException) {
-            AppTelemetry.logCryptoException(TAG, "Key invalidated", e)
+            TelemetryRuntime.logCryptoException(TAG, "Key invalidated", e)
             synchronized(keyGenLock) {
                 val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
                 ks.deleteEntry(alias)
             }
             null
         } catch (e: Exception) {
-            AppTelemetry.logCryptoException(TAG, "Get decrypt cipher", e)
+            TelemetryRuntime.logCryptoException(TAG, "Get decrypt cipher", e)
             null
         }
     }
@@ -65,7 +65,7 @@ internal object AndroidKeystoreKeyProvider {
         synchronized(keyGenLock) {
             val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
             if (!ks.containsAlias(alias)) {
-                AppTelemetry.i(TAG, "Generating new AndroidKeyStore key: $alias")
+                TelemetryRuntime.i(TAG, "Generating new AndroidKeyStore key: $alias")
                 generateMasterKey(alias, invalidateOnBiometricChange)
             }
         }
@@ -90,6 +90,6 @@ internal object AndroidKeystoreKeyProvider {
             .build()
         keyGenerator.init(spec)
         keyGenerator.generateKey()
-        AppTelemetry.i(TAG, "Master key generated: $alias")
+        TelemetryRuntime.i(TAG, "Master key generated: $alias")
     }
 }

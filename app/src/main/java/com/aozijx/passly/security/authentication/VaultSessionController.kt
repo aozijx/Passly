@@ -1,6 +1,6 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
 import com.aozijx.passly.core.telemetry.EventCategory
@@ -250,7 +250,7 @@ class VaultSessionController @Inject constructor(
     private suspend fun sealStagedRecoverySession() {
         runCatching { sessionManager.seal() }
             .onFailure { error ->
-                AppTelemetry.e(EventCategory.DATABASE, "recovery_rollback_seal_failed", throwable = error)
+                TelemetryRuntime.e(EventCategory.DATABASE, "recovery_rollback_seal_failed", throwable = error)
             }
         dekManager.lock()
         lockStateManager.mark(SecureSessionState.SEALED)
@@ -296,7 +296,7 @@ class VaultSessionController @Inject constructor(
                 SecureSessionState.SOFT_LOCKED -> {
                     runCatching { sessionManager.softLock() }
                         .onFailure { e ->
-                            AppTelemetry.e(EventCategory.DATABASE, "soft_lock_failed", throwable = e)
+                            TelemetryRuntime.e(EventCategory.DATABASE, "soft_lock_failed", throwable = e)
                         }
                     lockStateManager.mark(SecureSessionState.SOFT_LOCKED)
                 }
@@ -304,7 +304,7 @@ class VaultSessionController @Inject constructor(
                 SecureSessionState.SEALED -> {
                     runCatching { sessionManager.seal() }
                         .onFailure { e ->
-                            AppTelemetry.e(EventCategory.DATABASE, "seal_failed", throwable = e)
+                            TelemetryRuntime.e(EventCategory.DATABASE, "seal_failed", throwable = e)
                         }
                     dekManager.lock()
                     lockStateManager.mark(SecureSessionState.SEALED)

@@ -7,7 +7,7 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
 import com.aozijx.passly.app.clipboard.ClipboardCopyController
-import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -129,7 +129,7 @@ class VaultViewModel @Inject constructor(
             val draft = try {
                 config.toNewEntryDraft()
             } catch (error: IllegalArgumentException) {
-                AppTelemetry.e("SaveScannedOtp", "Invalid scanned OTP", error)
+                TelemetryRuntime.e("SaveScannedOtp", "Invalid scanned OTP", error)
                 emitError("OTP 数据无效")
                 return@launch
             }

@@ -11,7 +11,7 @@ import androidx.credentials.exceptions.NoCredentialException
 import androidx.credentials.provider.PendingIntentHandler
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.feature.autofill.credential.CreatePasswordCredentialResult
@@ -63,7 +63,7 @@ class CredentialResponseViewModel @Inject constructor(
     private fun handlePasswordGet(sourceIntent: Intent) {
         if (!requestStarted.compareAndSet(false, true)) return
         viewModelScope.launch {
-            AppTelemetry.i(TAG, "Password credential request received")
+            TelemetryRuntime.i(TAG, "Password credential request received")
 
             try {
                 val request = when (val parsed = CredentialRequestParser.parsePasswordGet(
@@ -89,16 +89,16 @@ class CredentialResponseViewModel @Inject constructor(
                             result.username, result.password
                         )
                         mutate(CredentialResponseMutation.Completed(intent))
-                        AppTelemetry.i(TAG, "Password credential resolved")
+                        TelemetryRuntime.i(TAG, "Password credential resolved")
                     }
 
                     is PasswordCredentialResult.NotFound -> {
-                        AppTelemetry.w(TAG, "Password credential not found")
+                        TelemetryRuntime.w(TAG, "Password credential not found")
                         completeGetError(NoCredentialException("Credential is no longer available"))
                     }
 
                     is PasswordCredentialResult.NotAuthorized -> {
-                        AppTelemetry.i(TAG, "Password credential authorization did not complete")
+                        TelemetryRuntime.i(TAG, "Password credential authorization did not complete")
                         completeGetError(
                             CredentialAuthenticationExceptionMapper.toGetException(
                                 result.authentication
@@ -109,7 +109,7 @@ class CredentialResponseViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                AppTelemetry.e(TAG, "Password credential resolution failed", e)
+                TelemetryRuntime.e(TAG, "Password credential resolution failed", e)
                 completeGetError(GetCredentialUnknownException("Credential resolution failed"))
             }
         }
@@ -152,7 +152,7 @@ class CredentialResponseViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                AppTelemetry.e(TAG, "Credential unlock failed", e)
+                TelemetryRuntime.e(TAG, "Credential unlock failed", e)
                 completeGetError(GetCredentialUnknownException("Credential unlock failed"))
             }
         }
@@ -185,7 +185,7 @@ class CredentialResponseViewModel @Inject constructor(
                                 CredentialResponseFactory.buildPasswordCreateResponse()
                             )
                         )
-                        AppTelemetry.i(TAG, "Password credential created")
+                        TelemetryRuntime.i(TAG, "Password credential created")
                     }
 
                     CreatePasswordCredentialResult.NotSaved -> {
@@ -205,7 +205,7 @@ class CredentialResponseViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                AppTelemetry.e(TAG, "Password credential creation failed", e)
+                TelemetryRuntime.e(TAG, "Password credential creation failed", e)
                 completeCreateError(
                     CreateCredentialUnknownException("Credential creation failed")
                 )

@@ -9,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
-import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.app.security.authentication.AuthenticationHost
 import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
 import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService
@@ -84,7 +84,7 @@ class CredentialResponseActivity : AppCompatActivity() {
             }
 
             else -> {
-                AppTelemetry.w(TAG, "Unknown action: $action")
+                TelemetryRuntime.w(TAG, "Unknown action: $action")
                 viewModel.onAction(CredentialResponseUiAction.UnknownAction)
             }
         }

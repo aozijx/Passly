@@ -1,12 +1,6 @@
-package com.aozijx.passly.app.diagnostics
+package com.aozijx.passly.core.telemetry
 
 import android.security.keystore.UserNotAuthenticatedException
-import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.core.telemetry.EventLevel
-import com.aozijx.passly.core.telemetry.OperationCode
-import com.aozijx.passly.core.telemetry.SafeLogValue
-import com.aozijx.passly.core.telemetry.TelemetryReporter
-import com.aozijx.passly.core.telemetry.TelemetryEvent
 
 /**
  * Android framework callbacks and legacy utility objects cannot receive constructor injection.
@@ -15,7 +9,7 @@ import com.aozijx.passly.core.telemetry.TelemetryEvent
  * Free-form messages are never persisted. Structured names are accepted only when they match the
  * telemetry identifier grammar, and structured calls accept only [SafeLogValue] fields.
  */
-object AppTelemetry {
+object TelemetryRuntime {
     @Volatile
     private var reporter: TelemetryReporter = TelemetryReporter { }
 

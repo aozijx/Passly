@@ -25,7 +25,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aozijx.passly.R
-import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.app.platform.permission.rememberPermissionRequestHost
 import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
 import com.aozijx.passly.core.permission.model.PermissionStatus
@@ -129,12 +129,12 @@ internal fun ScannerCameraHost(
                                         .addOnSuccessListener { barcodes ->
                                             if (disposed) return@addOnSuccessListener
                                             barcodes.firstOrNull()?.rawValue?.let { value ->
-                                                AppTelemetry.d("ScannerCameraHost", "Barcode detected")
+                                                TelemetryRuntime.d("ScannerCameraHost", "Barcode detected")
                                                 currentOnBarcodeDetected(value)
                                             }
                                         }
                                         .addOnFailureListener { error ->
-                                            AppTelemetry.e(
+                                            TelemetryRuntime.e(
                                                 "ScannerCameraHost",
                                                 "Barcode analysis failed",
                                                 error,
@@ -143,7 +143,7 @@ internal fun ScannerCameraHost(
                                         .addOnCompleteListener { imageProxy.close() }
                                 } catch (error: Exception) {
                                     imageProxy.close()
-                                    AppTelemetry.e(
+                                    TelemetryRuntime.e(
                                         "ScannerCameraHost",
                                         "Barcode analysis submission failed",
                                         error,
@@ -162,7 +162,7 @@ internal fun ScannerCameraHost(
                         imageAnalysis,
                     )
                 } catch (error: Exception) {
-                    AppTelemetry.e("ScannerCameraHost", "Camera binding failed", error)
+                    TelemetryRuntime.e("ScannerCameraHost", "Camera binding failed", error)
                 }
             }, ContextCompat.getMainExecutor(context))
         }

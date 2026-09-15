@@ -10,6 +10,7 @@ import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.TelemetryEvent
 import com.aozijx.passly.core.telemetry.TelemetryFileStoreFactory
 import com.aozijx.passly.core.telemetry.TelemetryPolicyController
+import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -38,7 +39,7 @@ class DiagnosticsRuntimeController @Inject constructor(
     private var previousCrashHandler: Thread.UncaughtExceptionHandler? = null
 
     fun start(scope: CoroutineScope) {
-        AppTelemetry.install(reporter)
+        TelemetryRuntime.install(reporter)
         installCrashHandler()
         scope.launch {
             policyController.policies.collectLatest { policy ->

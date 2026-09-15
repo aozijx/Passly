@@ -6,7 +6,7 @@ import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
@@ -87,7 +87,7 @@ class ActivityAuthUiHost(
                 cryptoBound = cryptoObject != null
             )
         } catch (failure: IllegalArgumentException) {
-            AppTelemetry.e(
+            TelemetryRuntime.e(
                 EventCategory.AUTHENTICATION,
                 "biometric.prompt_configuration_invalid",
                 throwable = failure
@@ -126,7 +126,7 @@ class ActivityAuthUiHost(
             val prompt = try {
                 BiometricPrompt(activity, activity.mainExecutor, callback)
             } catch (failure: IllegalStateException) {
-                AppTelemetry.w(
+                TelemetryRuntime.w(
                     EventCategory.AUTHENTICATION,
                     "biometric.prompt_host_invalid",
                     throwable = failure
@@ -148,7 +148,7 @@ class ActivityAuthUiHost(
                 else prompt.authenticate(promptInfo, cryptoObject)
             } catch (failure: IllegalArgumentException) {
                 activePrompt.set(null)
-                AppTelemetry.e(
+                TelemetryRuntime.e(
                     EventCategory.AUTHENTICATION,
                     "biometric.crypto_or_prompt_invalid",
                     throwable = failure
@@ -160,7 +160,7 @@ class ActivityAuthUiHost(
                 }
             } catch (failure: IllegalStateException) {
                 activePrompt.set(null)
-                AppTelemetry.w(
+                TelemetryRuntime.w(
                     EventCategory.AUTHENTICATION,
                     "biometric.prompt_show_host_invalid",
                     throwable = failure
@@ -168,7 +168,7 @@ class ActivityAuthUiHost(
                 if (continuation.isActive) continuation.resume(BiometricHostResult.HostUnavailable)
             } catch (failure: SecurityException) {
                 activePrompt.set(null)
-                AppTelemetry.e(
+                TelemetryRuntime.e(
                     EventCategory.AUTHENTICATION,
                     "biometric.prompt_permission_denied",
                     throwable = failure
@@ -180,7 +180,7 @@ class ActivityAuthUiHost(
                 }
             } catch (failure: Exception) {
                 activePrompt.set(null)
-                AppTelemetry.e(
+                TelemetryRuntime.e(
                     EventCategory.AUTHENTICATION,
                     "biometric.prompt_unexpected_failure",
                     throwable = failure

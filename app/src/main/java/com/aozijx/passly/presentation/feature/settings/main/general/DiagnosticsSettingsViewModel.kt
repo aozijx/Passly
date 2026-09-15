@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.TelemetryRuntime
 
 @HiltViewModel
 class DiagnosticsSettingsViewModel @Inject constructor(
@@ -112,7 +112,7 @@ class DiagnosticsSettingsViewModel @Inject constructor(
         }.mapCatching { file ->
             exportService.share(file).getOrThrow()
         }.onFailure { error ->
-            AppTelemetry.e("DiagnosticsExport", "Plaintext diagnostics export failed", error)
+            TelemetryRuntime.e("DiagnosticsExport", "Plaintext diagnostics export failed", error)
             eventChannel.trySend(DiagnosticsSettingsEffect.ExportFailed)
         }
     }

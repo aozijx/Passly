@@ -4,7 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
-import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 
@@ -19,7 +19,7 @@ object QrCodeEncoder {
             }
         }
     } catch (error: Exception) {
-        AppTelemetry.e("QrCodeEncoder", "Generate QR code failed", error)
+        TelemetryRuntime.e("QrCodeEncoder", "Generate QR code failed", error)
         null
     }
 }

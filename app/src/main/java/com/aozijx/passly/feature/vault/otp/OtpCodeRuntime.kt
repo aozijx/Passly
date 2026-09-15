@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault.otp
 
-import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.access.model.FreshAuthenticationRequiredException
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
@@ -198,7 +198,7 @@ internal class OtpCodeRuntime(
         }
         if (!isCurrent(entryId, token)) return
         if (config == null || config.secret.isNullOrBlank()) {
-            AppTelemetry.w("OtpCodeRuntime", "OTP activation failed: missing config for $entryId")
+            TelemetryRuntime.w("OtpCodeRuntime", "OTP activation failed: missing config for $entryId")
             _states.update { it + (entryId to OtpCodeState(error = OtpGenerationError.InvalidSecret)) }
             return
         }

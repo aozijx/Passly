@@ -1,6 +1,6 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.core.telemetry.ErrorCode
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.SafeLogValue
@@ -290,7 +290,7 @@ class DefaultAuthenticationManager @Inject constructor(
         result: AuthenticationResult
     ): AuthenticationResult {
         if (result is AuthenticationResult.Failure) {
-            AppTelemetry.w(
+            TelemetryRuntime.w(
                 EventCategory.AUTHENTICATION,
                 "authentication_failed",
                 fields = mapOf(

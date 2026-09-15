@@ -5,7 +5,7 @@ import android.service.autofill.FillResponse
 import android.view.autofill.AutofillId
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
@@ -101,7 +101,7 @@ class AutofillFillViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                AppTelemetry.e("AutofillVM", "Error", e)
+                TelemetryRuntime.e("AutofillVM", "Error", e)
                 mutate(AutofillFillMutation.Failed(e.message ?: "Unknown error"))
             }
         }
