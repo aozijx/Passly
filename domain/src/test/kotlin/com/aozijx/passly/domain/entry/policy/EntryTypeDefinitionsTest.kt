@@ -21,6 +21,14 @@ import org.junit.Test
 class EntryTypeDefinitionsTest {
 
     @Test
+    fun sensitiveStorageKeyIsResolvedWithinEntryType() {
+        assertEquals(
+            SensitiveFieldKey.PASSWORD,
+            EntryTypeDefinitions.sensitiveStorageKey(EntryType.LOGIN, FieldKey.PASSWORD),
+        )
+        assertEquals(null, EntryTypeDefinitions.sensitiveStorageKey(EntryType.WIFI, FieldKey.PASSWORD))
+    }
+    @Test
     fun otpDefinition_usesOtpScopedIdentityFields() {
         val otp = EntryTypeDefinitions[EntryType.OTP]
 

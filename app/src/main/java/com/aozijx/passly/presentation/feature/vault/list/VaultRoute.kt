@@ -27,8 +27,6 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiMode
 @Composable
 fun VaultRoute(
     vaultViewModel: VaultViewModel,
-    requestAuthentication: (onSuccess: () -> Unit) -> Unit,
-    requestSensitiveCopy: (onSuccess: () -> Unit) -> Unit,
     onAddPassword: () -> Unit,
     onAddOtp: () -> Unit,
     onAddBankCard: () -> Unit,
@@ -65,18 +63,19 @@ fun VaultRoute(
             handleSwipeAction(
                 actionType = action.toFeatureModel(),
                 item = item,
-                onCopyAuthRequired = requestSensitiveCopy,
                 onQuickDelete = { entryId ->
                     vaultViewModel.onAction(VaultUiAction.QuickDelete(entryId))
                 },
                 onShowDetail = onShowDetail,
                 onCopy = { fieldKey ->
                     when (val request = resolveCopyRequest(item, fieldKey)) {
-                        is VaultCopyRequest.Field -> requestAuthentication {
-                            vaultViewModel.onAction(
-                                VaultUiAction.CopyField(request.entryId, request.fieldKey),
-                            )
-                        }
+                        is VaultCopyRequest.Field -> vaultViewModel.onAction(
+                            VaultUiAction.CopyField(
+                                entryId = request.entryId,
+                                entryType = request.entryType,
+                                fieldKey = request.fieldKey,
+                            ),
+                        )
 
                         is VaultCopyRequest.Otp -> vaultViewModel.onAction(
                             VaultUiAction.CopyOtp(request.entryId),
@@ -96,7 +95,6 @@ fun VaultRoute(
         onEvent = { event ->
             dispatchVaultListEvent(event, vaultViewModel::onAction, routeCallbacks)
         },
-        requestAuthentication = requestAuthentication,
     )
     val otpStateProvider = rememberVaultOtpStateProvider(
         states = vaultViewModel.totpStatesFlow,

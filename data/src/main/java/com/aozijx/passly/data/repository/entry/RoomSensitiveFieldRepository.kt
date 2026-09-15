@@ -41,12 +41,14 @@ internal class RoomSensitiveFieldRepository @Inject constructor(
     override suspend fun reveal(
         entryId: EntryId,
         key: SensitiveFieldKey,
+        action: SensitiveAccessAction,
         permit: AuthorizationPermit,
-    ): RevealedSensitiveField? = revealMany(entryId, setOf(key), permit).singleOrNull()
+    ): RevealedSensitiveField? = revealMany(entryId, setOf(key), action, permit).singleOrNull()
 
     override suspend fun revealMany(
         entryId: EntryId,
         keys: Set<SensitiveFieldKey>,
+        action: SensitiveAccessAction,
         permit: AuthorizationPermit,
     ): List<RevealedSensitiveField> = if (
         !sessionState.hasFullSecureSessionAccess() ||
@@ -55,7 +57,7 @@ internal class RoomSensitiveFieldRepository @Inject constructor(
             AuthorizationScope.SensitiveFields(
                 entryId = entryId,
                 fieldKeys = keys,
-                action = SensitiveAccessAction.REVEAL,
+                action = action,
             ),
         )
     ) emptyList() else {

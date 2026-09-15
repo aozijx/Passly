@@ -1,11 +1,17 @@
 package com.aozijx.passly.presentation.feature.vault.list.action
 
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
 
 sealed interface VaultCopyRequest {
-    data class Field(val entryId: String, val fieldKey: FieldKey) : VaultCopyRequest
+    data class Field(
+        val entryId: String,
+        val entryType: EntryType,
+        val fieldKey: FieldKey,
+    ) : VaultCopyRequest
+
     data class Otp(val entryId: String) : VaultCopyRequest
 }
 
@@ -13,34 +19,24 @@ fun resolveCopyRequest(item: VaultListItemUiModel, fieldKey: FieldKey): VaultCop
     if (fieldKey == FieldKey.PASSWORD && item.hasOtp) {
         VaultCopyRequest.Otp(item.id)
     } else {
-        VaultCopyRequest.Field(item.id, fieldKey)
+        VaultCopyRequest.Field(
+            entryId = item.id,
+            entryType = EntryType.valueOf(item.entryType.name),
+            fieldKey = fieldKey,
+        )
     }
 
 fun handleSwipeAction(
     actionType: SwipeActionType,
     item: VaultListItemUiModel,
-    onCopyAuthRequired: (onSuccess: () -> Unit) -> Unit,
     onQuickDelete: (String) -> Unit,
     onShowDetail: (String) -> Unit,
-    onCopy: (FieldKey) -> Unit
+    onCopy: (FieldKey) -> Unit,
 ) {
-    val copyField = when (actionType) {
-        SwipeActionType.COPY_PASSWORD -> FieldKey.PASSWORD
-        SwipeActionType.COPY_USERNAME -> FieldKey.USERNAME
-        else -> null
-    }
-
-    val performAction: () -> Unit = {
-        when (actionType) {
-            SwipeActionType.DELETE -> onQuickDelete(item.id)
-            SwipeActionType.DETAIL -> onShowDetail(item.id)
-            else -> copyField?.let(onCopy) ?: Unit
-        }
-    }
-
-    if (copyField != null) {
-        onCopyAuthRequired(performAction)
-    } else {
-        performAction()
+    when (actionType) {
+        SwipeActionType.COPY_PASSWORD -> onCopy(FieldKey.PASSWORD)
+        SwipeActionType.COPY_USERNAME -> onCopy(FieldKey.USERNAME)
+        SwipeActionType.DELETE -> onQuickDelete(item.id)
+        SwipeActionType.DETAIL -> onShowDetail(item.id)
     }
 }

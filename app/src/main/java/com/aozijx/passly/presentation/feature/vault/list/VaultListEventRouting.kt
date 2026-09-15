@@ -10,16 +10,11 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEventHandler
 @Composable
 internal fun rememberVaultListEventHandler(
     onEvent: (VaultListEvent) -> Unit,
-    requestAuthentication: (() -> Unit) -> Unit,
 ): VaultListEventHandler {
     val currentOnEvent = rememberUpdatedState(onEvent)
-    val currentRequestAuthentication = rememberUpdatedState(requestAuthentication)
     return remember {
         object : VaultListEventHandler {
             override fun onEvent(event: VaultListEvent) = currentOnEvent.value(event)
-
-            override fun requestAuthentication(onSuccess: () -> Unit) =
-                currentRequestAuthentication.value(onSuccess)
         }
     }
 }

@@ -21,7 +21,7 @@ class ClipboardCopyControllerTest {
             secureClipboard = clipboard,
         )
 
-        controller.copySensitive("secret")
+        controller.writeSensitive("secret")
 
         assertEquals("secret" to 60, clipboard.lastCopy)
     }
@@ -34,7 +34,7 @@ class ClipboardCopyControllerTest {
             secureClipboard = clipboard,
         )
 
-        controller.copySensitive("secret")
+        controller.writeSensitive("secret")
 
         assertEquals("secret" to null, clipboard.lastCopy)
     }

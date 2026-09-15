@@ -31,6 +31,7 @@ internal class RevealSensitiveFieldsUseCase(
                 sensitiveFieldRepository.revealMany(
                     entryId = entryId,
                     keys = scope.fieldKeys,
+                    action = SensitiveAccessAction.REVEAL,
                     permit = permit,
                 )
             }

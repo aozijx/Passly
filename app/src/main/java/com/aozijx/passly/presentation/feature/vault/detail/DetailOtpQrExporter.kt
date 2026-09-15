@@ -27,6 +27,7 @@ internal class DetailOtpQrExporter(
             val revealed = sensitiveFieldRepository.reveal(
                 entryId = entry.id,
                 key = SensitiveFieldKey.OTP_SECRET,
+                action = SensitiveAccessAction.REVEAL,
                 permit = permit,
             ) ?: return@authorize null
             val secretChars = revealed.value.toCharArray()

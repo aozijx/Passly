@@ -40,7 +40,7 @@ class ScannerViewModel @Inject constructor(
     private var lastScannedBarcode: String? = null
 
     fun copySensitive(text: String) {
-        viewModelScope.launch { clipboardCopyController.copySensitive(text) }
+        viewModelScope.launch { clipboardCopyController.writeSensitive(text) }
     }
 
     fun onAction(action: ScannerUiAction) {

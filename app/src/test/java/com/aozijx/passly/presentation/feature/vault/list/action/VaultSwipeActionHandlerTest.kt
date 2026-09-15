@@ -26,13 +26,12 @@ class VaultSwipeActionHandlerTest {
     )
 
     @Test
-    fun copyUsesCopyAuthorizationWhileDeleteDelegatesAuthorizationToItsUseCase() {
+    fun copyAndDeleteOnlyDispatchTheirRequestedActions() {
         val events = mutableListOf<String>()
 
         handleSwipeAction(
             actionType = SwipeActionType.COPY_PASSWORD,
             item = item,
-            onCopyAuthRequired = { events += "copy-auth"; it() },
             onQuickDelete = { events += "delete" },
             onShowDetail = { events += "detail" },
             onCopy = { events += "copy" }
@@ -40,18 +39,28 @@ class VaultSwipeActionHandlerTest {
         handleSwipeAction(
             actionType = SwipeActionType.DELETE,
             item = item,
-            onCopyAuthRequired = { events += "copy-auth"; it() },
             onQuickDelete = { events += "delete" },
             onShowDetail = { events += "detail" },
             onCopy = { events += "copy" }
         )
 
         assertEquals(
-            listOf("copy-auth", "copy", "delete"),
+            listOf("copy", "delete"),
             events
         )
     }
 
+    @Test
+    fun fieldCopyCarriesTheDomainEntryType() {
+        assertEquals(
+            VaultCopyRequest.Field(
+                entryId = "entry",
+                entryType = com.aozijx.passly.domain.entry.model.EntryType.LOGIN,
+                fieldKey = com.aozijx.passly.domain.entry.model.FieldKey.USERNAME,
+            ),
+            resolveCopyRequest(item, com.aozijx.passly.domain.entry.model.FieldKey.USERNAME),
+        )
+    }
     @Test
     fun passwordCopyTargetsOtpWhenTheEntryHasOtp() {
         val otpItem = item.copy(hasOtp = true)

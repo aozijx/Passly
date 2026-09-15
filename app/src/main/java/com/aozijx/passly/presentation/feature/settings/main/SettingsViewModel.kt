@@ -42,7 +42,7 @@ class SettingsViewModel @Inject constructor(
     val effects = _effects.receiveAsFlow()
 
     fun copySensitive(text: String) {
-        viewModelScope.launch { clipboardCopyController.copySensitive(text) }
+        viewModelScope.launch { clipboardCopyController.writeSensitive(text) }
     }
 
     init {

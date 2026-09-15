@@ -17,6 +17,9 @@ object EntryTypeDefinitions {
 
     operator fun get(type: EntryType): EntryTypeDefinition = definitions.getValue(type)
 
+    fun sensitiveStorageKey(type: EntryType, fieldKey: FieldKey): SensitiveFieldKey? =
+        definitions.getValue(type)[fieldKey]?.sensitiveFieldKey
+
     private fun definitionFor(type: EntryType): EntryTypeDefinition = EntryTypeDefinition(
         type = type,
         fields = when (type) {

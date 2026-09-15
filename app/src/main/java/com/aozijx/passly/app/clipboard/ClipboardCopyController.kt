@@ -2,6 +2,7 @@ package com.aozijx.passly.app.clipboard
 
 import com.aozijx.passly.core.platform.clipboard.ClipboardClearResult
 import com.aozijx.passly.core.platform.clipboard.SecureClipboard
+import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
 import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -11,8 +12,8 @@ import javax.inject.Singleton
 class ClipboardCopyController @Inject constructor(
     private val settingsSource: SecuritySettingsSource,
     private val secureClipboard: SecureClipboard,
-) {
-    suspend fun copySensitive(text: String) {
+) : SensitiveClipboardWriter {
+    override suspend fun writeSensitive(text: String) {
         val policy = settingsSource.security.first().clipboardClearPolicy
         secureClipboard.copySensitive(
             text = text,

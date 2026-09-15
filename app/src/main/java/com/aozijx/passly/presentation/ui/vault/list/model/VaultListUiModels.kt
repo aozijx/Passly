@@ -166,5 +166,4 @@ sealed interface VaultListEvent {
 
 interface VaultListEventHandler {
     fun onEvent(event: VaultListEvent)
-    fun requestAuthentication(onSuccess: () -> Unit)
 }

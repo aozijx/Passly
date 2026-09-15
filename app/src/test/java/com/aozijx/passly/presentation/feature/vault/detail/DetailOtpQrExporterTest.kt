@@ -4,6 +4,7 @@ import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationResult
 import com.aozijx.passly.domain.access.model.AuthorizationScope
+import com.aozijx.passly.domain.access.model.SensitiveAccessAction
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -66,6 +67,7 @@ class DetailOtpQrExporterTest {
         override suspend fun reveal(
             entryId: EntryId,
             key: SensitiveFieldKey,
+            action: SensitiveAccessAction,
             permit: AuthorizationPermit,
         ): RevealedSensitiveField {
             events += "reveal"
@@ -78,6 +80,7 @@ class DetailOtpQrExporterTest {
         override suspend fun revealMany(
             entryId: EntryId,
             keys: Set<SensitiveFieldKey>,
+            action: SensitiveAccessAction,
             permit: AuthorizationPermit,
         ) = emptyList<RevealedSensitiveField>()
 

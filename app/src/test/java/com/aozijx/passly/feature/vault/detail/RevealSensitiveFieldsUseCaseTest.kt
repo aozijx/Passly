@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationResult
 import com.aozijx.passly.domain.access.model.AuthorizationScope
+import com.aozijx.passly.domain.access.model.SensitiveAccessAction
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
@@ -78,6 +79,7 @@ class RevealSensitiveFieldsUseCaseTest {
         override suspend fun revealMany(
             entryId: EntryId,
             keys: Set<SensitiveFieldKey>,
+            action: SensitiveAccessAction,
             permit: AuthorizationPermit,
         ): List<RevealedSensitiveField> = keys.map { key ->
             RevealedSensitiveField(entryId, key, OwnedChars.fromString(key.name))
@@ -89,6 +91,7 @@ class RevealSensitiveFieldsUseCaseTest {
         override suspend fun reveal(
             entryId: EntryId,
             key: SensitiveFieldKey,
+            action: SensitiveAccessAction,
             permit: AuthorizationPermit,
         ): RevealedSensitiveField? = null
 

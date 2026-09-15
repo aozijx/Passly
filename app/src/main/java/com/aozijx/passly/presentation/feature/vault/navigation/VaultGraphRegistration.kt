@@ -173,14 +173,7 @@ private fun VaultDestinationContent(
 ) {
     VaultRoute(
         vaultViewModel = vaultViewModel,
-        requestAuthentication = context.requestAuthentication,
-        requestSensitiveCopy = { onSuccess ->
-            context.requestSensitiveAccess(
-                com.aozijx.passly.domain.access.model.SensitiveAccessAction.COPY,
-                com.aozijx.passly.app.security.SensitiveAccessLevel.STANDARD,
-                onSuccess,
-            )
-        },
+
         onAddPassword = { context.navigateToSingleTopRoute(AppRoute.AddPassword.route) },
         onAddOtp = { context.navigateToSingleTopRoute(AppRoute.AddOtp.route) },
         onAddBankCard = { context.navigateToSingleTopRoute(AppRoute.AddBankCard.route) },
