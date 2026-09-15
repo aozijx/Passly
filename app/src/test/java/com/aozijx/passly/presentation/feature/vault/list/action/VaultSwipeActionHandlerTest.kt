@@ -26,13 +26,12 @@ class VaultSwipeActionHandlerTest {
     )
 
     @Test
-    fun copyUsesCopyAuthorizationAndDeleteUsesDeleteAuthorization() {
+    fun copyUsesCopyAuthorizationWhileDeleteDelegatesAuthorizationToItsUseCase() {
         val events = mutableListOf<String>()
 
         handleSwipeAction(
             actionType = SwipeActionType.COPY_PASSWORD,
             item = item,
-            onDeleteAuthRequired = { events += "delete-auth"; it() },
             onCopyAuthRequired = { events += "copy-auth"; it() },
             onQuickDelete = { events += "delete" },
             onShowDetail = { events += "detail" },
@@ -41,7 +40,6 @@ class VaultSwipeActionHandlerTest {
         handleSwipeAction(
             actionType = SwipeActionType.DELETE,
             item = item,
-            onDeleteAuthRequired = { events += "delete-auth"; it() },
             onCopyAuthRequired = { events += "copy-auth"; it() },
             onQuickDelete = { events += "delete" },
             onShowDetail = { events += "detail" },
@@ -49,7 +47,7 @@ class VaultSwipeActionHandlerTest {
         )
 
         assertEquals(
-            listOf("copy-auth", "copy", "delete-auth", "delete"),
+            listOf("copy-auth", "copy", "delete"),
             events
         )
     }

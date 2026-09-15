@@ -174,7 +174,6 @@ private fun VaultDestinationContent(
     VaultRoute(
         vaultViewModel = vaultViewModel,
         requestAuthentication = context.requestAuthentication,
-        requestReauthentication = context.requestReauthentication,
         requestSensitiveCopy = { onSuccess ->
             context.requestSensitiveAccess(
                 com.aozijx.passly.domain.access.model.SensitiveAccessAction.COPY,

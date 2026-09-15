@@ -9,6 +9,7 @@ import androidx.paging.map
 import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SensitiveKeyFreshnessState
 import com.aozijx.passly.domain.entry.model.Entry
@@ -28,6 +29,7 @@ import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.entry.MoveEntryToTrashUseCase
+import com.aozijx.passly.feature.vault.entry.MoveEntryToTrashResult
 import com.aozijx.passly.feature.vault.entry.VaultDataChangeSignal
 import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
 import com.aozijx.passly.feature.vault.entry.toNewEntryDraft
@@ -67,6 +69,7 @@ class VaultViewModel @Inject constructor(
     private val sensitiveKeyFreshnessState: SensitiveKeyFreshnessState,
     private val accessPolicy: SecureSessionAccessPolicy,
     private val clipboardCopyController: ClipboardCopyController,
+    private val authorizationGate: AuthorizationGate,
 ) : ViewModel() {
 
     private val _effects = Channel<VaultEffect>(Channel.BUFFERED)
@@ -101,6 +104,7 @@ class VaultViewModel @Inject constructor(
         entryQueryRepository = entryQueryRepository,
         secureSessionAccessState = secureSessionAccessState,
         otpCodeInvalidator = totp,
+        authorizationGate = authorizationGate,
     )
 
     private val hierarchyMode: Flow<EntryHierarchyDisplayMode> =
@@ -249,8 +253,11 @@ class VaultViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 when (val result = moveEntryToTrash(entryId)) {
-                    is AppResult.Success -> mutate(VaultMutation.DeletedEntryHandled(entryId.value))
-                    is AppResult.Failure -> emitError(result.error.code)
+                    MoveEntryToTrashResult.Moved ->
+                        mutate(VaultMutation.DeletedEntryHandled(entryId.value))
+
+                    MoveEntryToTrashResult.NotAuthorized -> Unit
+                    is MoveEntryToTrashResult.Failed -> emitError(result.error.code)
                 }
             } finally {
                 deletingEntryIds.remove(entryId)

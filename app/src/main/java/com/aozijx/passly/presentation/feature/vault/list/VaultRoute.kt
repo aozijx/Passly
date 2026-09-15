@@ -28,7 +28,6 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiMode
 fun VaultRoute(
     vaultViewModel: VaultViewModel,
     requestAuthentication: (onSuccess: () -> Unit) -> Unit,
-    requestReauthentication: (onSuccess: () -> Unit) -> Unit,
     requestSensitiveCopy: (onSuccess: () -> Unit) -> Unit,
     onAddPassword: () -> Unit,
     onAddOtp: () -> Unit,
@@ -66,7 +65,6 @@ fun VaultRoute(
             handleSwipeAction(
                 actionType = action.toFeatureModel(),
                 item = item,
-                onDeleteAuthRequired = requestReauthentication,
                 onCopyAuthRequired = requestSensitiveCopy,
                 onQuickDelete = { entryId ->
                     vaultViewModel.onAction(VaultUiAction.QuickDelete(entryId))

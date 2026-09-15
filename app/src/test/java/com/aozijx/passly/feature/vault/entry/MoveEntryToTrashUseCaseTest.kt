@@ -4,6 +4,12 @@ import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.model.AuthInput
+import com.aozijx.passly.domain.access.model.AuthorizationPermit
+import com.aozijx.passly.domain.access.model.AuthorizationResult
+import com.aozijx.passly.domain.access.model.AuthorizationScope
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -30,7 +36,7 @@ class MoveEntryToTrashUseCaseTest {
 
         val result = fixture.useCase(EntryId("entry-id"))
 
-        assertTrue((result as AppResult.Failure).error is SessionModeRestricted)
+        assertTrue((result as MoveEntryToTrashResult.Failed).error is SessionModeRestricted)
         assertEquals(0, fixture.query.reads)
         assertEquals(0, fixture.commands.moves)
     }
@@ -41,7 +47,7 @@ class MoveEntryToTrashUseCaseTest {
 
         val result = fixture.useCase(EntryId("missing"))
 
-        assertTrue((result as AppResult.Failure).error is NotFound)
+        assertTrue((result as MoveEntryToTrashResult.Failed).error is NotFound)
         assertEquals(1, fixture.query.reads)
         assertEquals(0, fixture.commands.moves)
     }
@@ -52,20 +58,51 @@ class MoveEntryToTrashUseCaseTest {
 
         val result = fixture.useCase(EntryId("entry-id"))
 
-        assertEquals(AppResult.Success(Unit), result)
+        assertEquals(MoveEntryToTrashResult.Moved, result)
         assertEquals(EntryId("entry-id") to EntryVersion(4), fixture.commands.lastMove)
         assertEquals(listOf("entry-id"), fixture.invalidator.removedIds)
     }
 
-    private fun fixture(state: AuthenticationState, entry: Entry?): Fixture {
+    @Test
+    fun cancelledAuthorizationDoesNotReadOrWriteEntry() = runTest {
+        val fixture = fixture(
+            state = AuthenticationState.Authenticated(1L),
+            entry = entry(),
+            authorizationAllowed = false,
+        )
+
+        val result = fixture.useCase(EntryId("entry-id"))
+
+        assertEquals(MoveEntryToTrashResult.NotAuthorized, result)
+        assertEquals(0, fixture.query.reads)
+        assertEquals(0, fixture.commands.moves)
+        assertEquals(
+            AuthorizationScope.Global(AuthenticationPurpose.DELETE_ENTRY),
+            fixture.authorizationGate.lastScope,
+        )
+    }
+
+    private fun fixture(
+        state: AuthenticationState,
+        entry: Entry?,
+        authorizationAllowed: Boolean = true,
+    ): Fixture {
         val query = RecordingQuery(entry)
         val commands = RecordingCommands()
         val invalidator = RecordingInvalidator()
+        val authorizationGate = RecordingAuthorizationGate(authorizationAllowed)
         return Fixture(
-            MoveEntryToTrashUseCase(commands, query, FixedAccess(state), invalidator),
+            MoveEntryToTrashUseCase(
+                commands,
+                query,
+                FixedAccess(state),
+                invalidator,
+                authorizationGate,
+            ),
             query,
             commands,
             invalidator,
+            authorizationGate,
         )
     }
 
@@ -79,6 +116,7 @@ class MoveEntryToTrashUseCaseTest {
         val query: RecordingQuery,
         val commands: RecordingCommands,
         val invalidator: RecordingInvalidator,
+        val authorizationGate: RecordingAuthorizationGate,
     )
 
     private class FixedAccess(state: AuthenticationState) : SecureSessionAccessState {
@@ -113,5 +151,24 @@ class MoveEntryToTrashUseCaseTest {
         val removedIds = mutableListOf<String>()
         override fun entryChanged(entryId: String) = Unit
         override fun entryRemoved(entryId: String) { removedIds += entryId }
+    }
+
+    private class RecordingAuthorizationGate(
+        private val allowed: Boolean,
+    ) : AuthorizationGate {
+        var lastScope: AuthorizationScope? = null
+
+        override suspend fun <T> authorize(
+            scope: AuthorizationScope,
+            input: AuthInput,
+            block: suspend (AuthorizationPermit) -> T,
+        ): AuthorizationResult<T> {
+            lastScope = scope
+            return if (allowed) {
+                AuthorizationResult.Allowed(block(object : AuthorizationPermit {}))
+            } else {
+                AuthorizationResult.Cancelled
+            }
+        }
     }
 }

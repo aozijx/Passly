@@ -19,7 +19,6 @@ fun resolveCopyRequest(item: VaultListItemUiModel, fieldKey: FieldKey): VaultCop
 fun handleSwipeAction(
     actionType: SwipeActionType,
     item: VaultListItemUiModel,
-    onDeleteAuthRequired: (onSuccess: () -> Unit) -> Unit,
     onCopyAuthRequired: (onSuccess: () -> Unit) -> Unit,
     onQuickDelete: (String) -> Unit,
     onShowDetail: (String) -> Unit,
@@ -31,21 +30,17 @@ fun handleSwipeAction(
         else -> null
     }
 
-    val performAction = {
+    val performAction: () -> Unit = {
         when (actionType) {
             SwipeActionType.DELETE -> onQuickDelete(item.id)
             SwipeActionType.DETAIL -> onShowDetail(item.id)
-            else -> copyField?.let { onCopy(it) }
+            else -> copyField?.let(onCopy) ?: Unit
         }
     }
 
-    when {
-        actionType == SwipeActionType.DELETE ->
-            onDeleteAuthRequired { performAction() }
-
-        copyField != null ->
-            onCopyAuthRequired { performAction() }
-
-        else -> performAction()
+    if (copyField != null) {
+        onCopyAuthRequired(performAction)
+    } else {
+        performAction()
     }
 }

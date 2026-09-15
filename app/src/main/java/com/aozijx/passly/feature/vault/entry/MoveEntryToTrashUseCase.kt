@@ -1,8 +1,13 @@
 package com.aozijx.passly.feature.vault.entry
 
+import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthorizationResult
+import com.aozijx.passly.domain.access.model.AuthorizationScope
+import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
@@ -14,16 +19,38 @@ internal class MoveEntryToTrashUseCase(
     private val entryQueryRepository: EntryQueryRepository,
     private val secureSessionAccessState: SecureSessionAccessState,
     private val otpCodeInvalidator: OtpCodeInvalidator,
+    private val authorizationGate: AuthorizationGate,
 ) {
-    suspend operator fun invoke(entryId: EntryId): AppResult<Unit> {
+    suspend operator fun invoke(entryId: EntryId): MoveEntryToTrashResult {
         if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
-            return AppResult.Failure(SessionModeRestricted())
+            return MoveEntryToTrashResult.Failed(SessionModeRestricted())
         }
-        val entry = entryQueryRepository.getById(entryId)
-            ?: return AppResult.Failure(NotFound())
 
-        return entryCommandRepository.moveToTrash(entry.id, entry.version).onSuccess {
-            otpCodeInvalidator.entryRemoved(entry.id.value)
+        return when (
+            val authorization = authorizationGate.authorize(
+                AuthorizationScope.Global(AuthenticationPurpose.DELETE_ENTRY),
+            ) {
+                val entry = entryQueryRepository.getById(entryId)
+                    ?: return@authorize MoveEntryToTrashResult.Failed(NotFound())
+                when (val result = entryCommandRepository.moveToTrash(entry.id, entry.version)) {
+                    is AppResult.Success -> {
+                        otpCodeInvalidator.entryRemoved(entry.id.value)
+                        MoveEntryToTrashResult.Moved
+                    }
+
+                    is AppResult.Failure -> MoveEntryToTrashResult.Failed(result.error)
+                }
+            }
+        ) {
+            is AuthorizationResult.Allowed -> authorization.value
+            is AuthorizationResult.Cancelled,
+            is AuthorizationResult.Denied -> MoveEntryToTrashResult.NotAuthorized
         }
     }
+}
+
+internal sealed interface MoveEntryToTrashResult {
+    data object Moved : MoveEntryToTrashResult
+    data object NotAuthorized : MoveEntryToTrashResult
+    data class Failed(val error: AppError) : MoveEntryToTrashResult
 }
