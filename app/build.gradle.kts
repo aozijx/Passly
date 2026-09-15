@@ -115,6 +115,7 @@ dependencies {
     implementation(project(":data"))
     implementation(project(":domain"))
     implementation(project(":runtime:session"))
+    implementation(project(":security"))
 
     // Android Core
     implementation(libs.androidx.core.ktx)
