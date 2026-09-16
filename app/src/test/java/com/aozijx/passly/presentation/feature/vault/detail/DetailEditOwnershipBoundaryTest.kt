@@ -18,6 +18,9 @@ class DetailEditOwnershipBoundaryTest {
         assertFalse(featureRoot.resolve("DetailLocalEditState.kt").exists())
         assertFalse(route.contains("DetailLocalEditState"))
         assertFalse(body.contains("localEditState"))
+        val state = featureRoot.resolve("DetailUiState.kt").readText()
+        assertFalse(state.contains("completedEdit"))
+        assertFalse(state.contains("saveCompletionId"))
         listOf(
             "StartNotesEdit", "UpdateNotesDraft", "SaveNotes",
             "StartDomainEdit", "UpdateDomainDraft", "SaveDomain",

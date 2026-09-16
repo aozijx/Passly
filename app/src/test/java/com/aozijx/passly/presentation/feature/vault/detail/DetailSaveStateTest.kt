@@ -41,16 +41,14 @@ class DetailSaveStateTest {
         assertEquals("Draft title", actual.editedTitle)
         assertNull(actual.savingEdit)
         assertEquals("CONFLICT", actual.saveErrorCode)
-        assertEquals(0L, actual.saveCompletionId)
     }
 
     @Test
-    fun confirmedTitleSaveClosesEditorAndPublishesCompletion() {
+    fun confirmedTitleSaveClosesEditor() {
         val state = DetailUiState(
             isEditingTitle = true,
             editedTitle = "Draft title",
             savingEdit = DetailEditCompletion.Title,
-            saveCompletionId = 4,
         )
 
         val actual = DetailReducer.reduce(
@@ -61,8 +59,6 @@ class DetailSaveStateTest {
         assertFalse(actual.isEditingTitle)
         assertNull(actual.savingEdit)
         assertNull(actual.saveErrorCode)
-        assertEquals(DetailEditCompletion.Title, actual.completedEdit)
-        assertEquals(5L, actual.saveCompletionId)
     }
 
     @Test
@@ -80,7 +76,6 @@ class DetailSaveStateTest {
 
         assertTrue(actual.isEditingTitle)
         assertEquals("Draft title", actual.editedTitle)
-        assertEquals(DetailEditCompletion.Notes, actual.completedEdit)
     }
 
     @Test

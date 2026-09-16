@@ -163,7 +163,6 @@ internal object DetailReducer {
                             state.isEditingTitle
                         },
                         savingEdit = null,
-                        completedEdit = mutation.completion,
                         fieldEdits = when (mutation.completion) {
                             is DetailEditCompletion.SensitiveField ->
                                 state.fieldEdits.finish(mutation.completion.key)
@@ -173,7 +172,6 @@ internal object DetailReducer {
                                 state.fieldEdits.finish(DetailEditKey.DOMAIN)
                             else -> state.fieldEdits
                         },
-                        saveCompletionId = state.saveCompletionId + 1,
                         saveErrorCode = null,
                         tagEditor = if (mutation.completion == DetailEditCompletion.Tags) {
                             DetailTagEditorUiModel()

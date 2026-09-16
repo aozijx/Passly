@@ -25,8 +25,6 @@ data class DetailUiState(
     val sections: List<DetailSectionKey> = emptyList(),
     val fieldEdits: DetailFieldEditState = DetailFieldEditState(),
     val savingEdit: DetailEditCompletion? = null,
-    val completedEdit: DetailEditCompletion? = null,
-    val saveCompletionId: Long = 0,
     val saveErrorCode: String? = null,
     val tagEditor: DetailTagEditorUiModel = DetailTagEditorUiModel(),
     val faviconEditor: DetailFaviconEditorUiModel = DetailFaviconEditorUiModel(),
