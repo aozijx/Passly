@@ -12,13 +12,13 @@ import com.aozijx.passly.domain.entry.model.PasswordStrengthLevel
 import com.aozijx.passly.domain.entry.model.PasswordStrengthResult
 import com.aozijx.passly.domain.entry.policy.PasswordStrengthEvaluator
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.presentation.ui.recovery.RecoveryModeContent
+import com.aozijx.passly.presentation.ui.recovery.RecoveryModeScreen
 import com.aozijx.passly.presentation.ui.recovery.RecoveryPasswordDialog
 import com.aozijx.passly.presentation.ui.recovery.RecoveryPasswordStrengthTone
 import com.aozijx.passly.presentation.ui.recovery.RecoveryPasswordStrengthUiModel
 
 @Composable
-fun RecoveryModeScreen(viewModel: RecoveryModeViewModel, onExit: () -> Unit) {
+fun RecoveryModeRoute(viewModel: RecoveryModeViewModel, onExit: () -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LaunchedEffect(viewModel) {
@@ -33,7 +33,7 @@ fun RecoveryModeScreen(viewModel: RecoveryModeViewModel, onExit: () -> Unit) {
             }
         }
     }
-    RecoveryModeContent(
+    RecoveryModeScreen(
         isSettingPassword = state.isSettingPassword,
         onSetPassword = { viewModel.onAction(RecoveryModeUiAction.SetPasswordClicked) },
         onExit = { viewModel.onAction(RecoveryModeUiAction.ExitClicked) },

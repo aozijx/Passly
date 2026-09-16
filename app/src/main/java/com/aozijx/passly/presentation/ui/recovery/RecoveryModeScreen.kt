@@ -21,7 +21,7 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 
 @Composable
-fun RecoveryModeContent(isSettingPassword: Boolean, onSetPassword: () -> Unit, onExit: () -> Unit) {
+fun RecoveryModeScreen(isSettingPassword: Boolean, onSetPassword: () -> Unit, onExit: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().navigationBarsPadding().verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 32.dp),

@@ -15,13 +15,13 @@ import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.presentation.feature.onboarding.BootstrapUiAction
 import com.aozijx.passly.presentation.feature.onboarding.BootstrapViewModel
-import com.aozijx.passly.presentation.ui.unlock.AuthenticationContent
-import com.aozijx.passly.presentation.ui.unlock.AuthenticationContentState
-import com.aozijx.passly.presentation.ui.unlock.AuthenticationEventHandler
+import com.aozijx.passly.presentation.ui.unlock.AuthenticationScreen
+import com.aozijx.passly.presentation.ui.unlock.AuthenticationScreenState
+import com.aozijx.passly.presentation.ui.unlock.AuthenticationScreenEvents
 import com.aozijx.passly.presentation.ui.unlock.AuthenticationInputMethod
 
 @Composable
-fun AuthenticationScreen(
+fun AuthenticationRoute(
     unlockViewModel: UnlockViewModel,
     bootstrapViewModel: BootstrapViewModel,
 ) {
@@ -38,8 +38,8 @@ fun AuthenticationScreen(
         unlockViewModel.onAction(UnlockUiAction.BackPressed)
     }
 
-    AuthenticationContent(
-        state = AuthenticationContentState(
+    AuthenticationScreen(
+        state = AuthenticationScreenState(
             biometricAvailable = AuthenticationMethod.BIOMETRIC in methods,
             appPasswordAvailable = AuthenticationMethod.APP_PASSWORD in methods,
             recoveryCodeAvailable = AuthenticationMethod.RECOVERY_CODE in methods,
@@ -62,7 +62,7 @@ fun AuthenticationScreen(
                 ?.message(recoveryCodeLabel),
             isSettingAppPassword = bootstrapState.isSettingAppPassword,
         ),
-        onEvent = AuthenticationEventHandler(
+        onEvent = AuthenticationScreenEvents(
             onLockIconClick = {
                 unlockViewModel.onAction(UnlockUiAction.LockIconClicked)
             },

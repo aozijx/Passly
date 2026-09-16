@@ -42,7 +42,7 @@ enum class AuthenticationInputMethod {
 }
 
 @Immutable
-class AuthenticationContentState(
+class AuthenticationScreenState(
     val biometricAvailable: Boolean,
     val appPasswordAvailable: Boolean,
     val recoveryCodeAvailable: Boolean,
@@ -57,7 +57,7 @@ class AuthenticationContentState(
     val isSettingAppPassword: Boolean,
 )
 
-data class AuthenticationEventHandler(
+data class AuthenticationScreenEvents(
     val onLockIconClick: () -> Unit,
     val onBiometricClick: () -> Unit,
     val onAppPasswordChange: (String) -> Unit,
@@ -71,9 +71,9 @@ data class AuthenticationEventHandler(
 )
 
 @Composable
-fun AuthenticationContent(
-    state: AuthenticationContentState,
-    onEvent: AuthenticationEventHandler,
+fun AuthenticationScreen(
+    state: AuthenticationScreenState,
+    onEvent: AuthenticationScreenEvents,
     modifier: Modifier = Modifier,
 ) {
     val lockIconInteractionSource = remember { MutableInteractionSource() }
