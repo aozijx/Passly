@@ -1,6 +1,5 @@
 package com.aozijx.passly.presentation.feature.vault.navigation
 
-import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -22,6 +21,7 @@ import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpEditorRoute
 import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpViewModel
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordEditorRoute
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordViewModel
+import com.aozijx.passly.presentation.feature.vault.list.VaultNavigation
 import com.aozijx.passly.presentation.feature.vault.list.VaultRoute
 import com.aozijx.passly.presentation.feature.vault.list.VaultViewModel
 import com.aozijx.passly.presentation.feature.vault.trash.TrashRoute
@@ -37,8 +37,8 @@ internal fun NavGraphBuilder.registerVaultGraph(
         route = AppRoute.VaultGraph.route,
     ) {
         composable(AppRoute.Vault.route) { backStackEntry ->
-            VaultDestinationContent(
-                context = context,
+            VaultRoute(
+                navigation = context.toVaultNavigation(),
                 vaultViewModel = vaultGraphViewModel(navController, backStackEntry),
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = this,
@@ -47,8 +47,8 @@ internal fun NavGraphBuilder.registerVaultGraph(
 
         composable(AppRoute.Trash.route) { backStackEntry ->
             val trashViewModel: TrashViewModel = hiltViewModel()
-            VaultDestinationContent(
-                context = context,
+            VaultRoute(
+                navigation = context.toVaultNavigation(),
                 vaultViewModel = vaultGraphViewModel(navController, backStackEntry),
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = this,
@@ -123,21 +123,10 @@ private fun vaultGraphViewModel(
     return hiltViewModel<VaultViewModel>(owner)
 }
 
-@Composable
-private fun VaultDestinationContent(
-    context: ShellNavigationContext,
-    vaultViewModel: VaultViewModel,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope,
-) {
-    VaultRoute(
-        vaultViewModel = vaultViewModel,
-        onAddPassword = { context.navigateToSingleTopRoute(AppRoute.AddPassword.route) },
-        onAddOtp = { context.navigateToSingleTopRoute(AppRoute.AddOtp.route) },
-        onAddBankCard = { context.navigateToSingleTopRoute(AppRoute.AddBankCard.route) },
-        sharedTransitionScope = sharedTransitionScope,
-        animatedVisibilityScope = animatedVisibilityScope,
-        onSettingsClick = { context.navigateToRoute(AppRoute.Settings.route) },
-        onShowDetail = { entryId -> context.navigateToRoute(AppRoute.Detail.createRoute(entryId)) },
-    )
-}
+private fun ShellNavigationContext.toVaultNavigation() = VaultNavigation(
+    onSettingsClick = { navigateToRoute(AppRoute.Settings.route) },
+    onAddPassword = { navigateToSingleTopRoute(AppRoute.AddPassword.route) },
+    onAddOtp = { navigateToSingleTopRoute(AppRoute.AddOtp.route) },
+    onAddBankCard = { navigateToSingleTopRoute(AppRoute.AddBankCard.route) },
+    onShowDetail = { entryId -> navigateToRoute(AppRoute.Detail.createRoute(entryId)) },
+)

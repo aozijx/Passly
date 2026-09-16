@@ -19,20 +19,21 @@ internal fun rememberVaultListEventHandler(
     }
 }
 
-internal data class VaultListRouteCallbacks(
+internal data class VaultNavigation(
     val onSettingsClick: () -> Unit,
     val onAddPassword: () -> Unit,
     val onAddOtp: () -> Unit,
     val onAddBankCard: () -> Unit,
+    val onShowDetail: (String) -> Unit,
 )
 
 internal fun dispatchVaultListEvent(
     event: VaultListEvent,
     onAction: (VaultUiAction) -> Unit,
-    callbacks: VaultListRouteCallbacks,
+    navigation: VaultNavigation,
 ) {
     when (event) {
-        VaultListEvent.SettingsClicked -> callbacks.onSettingsClick()
+        VaultListEvent.SettingsClicked -> navigation.onSettingsClick()
         is VaultListEvent.SearchQueryChanged -> onAction(
             VaultUiAction.SearchQueryChanged(event.query),
         )
@@ -49,9 +50,9 @@ internal fun dispatchVaultListEvent(
             VaultUiAction.FilterToggled(event.filter?.toFeatureModel()),
         )
         is VaultListEvent.AddTypeSelected -> when (event.type) {
-            VaultAddTypeUiModel.PASSWORD -> callbacks.onAddPassword()
-            VaultAddTypeUiModel.TOTP -> callbacks.onAddOtp()
-            VaultAddTypeUiModel.BANK_CARD -> callbacks.onAddBankCard()
+            VaultAddTypeUiModel.PASSWORD -> navigation.onAddPassword()
+            VaultAddTypeUiModel.TOTP -> navigation.onAddOtp()
+            VaultAddTypeUiModel.BANK_CARD -> navigation.onAddBankCard()
             else -> onAction(VaultUiAction.AddTypeSelected(event.type.toFeatureModel()))
         }
         VaultListEvent.DismissAddType -> onAction(VaultUiAction.AddTypeSelected(null))

@@ -18,6 +18,26 @@ class VaultDetailOwnershipBoundaryTest {
     }
 
     @Test
+    fun `vault graph exposes one navigation contract without a content wrapper`() {
+        val graph = source(
+            "com/aozijx/passly/presentation/feature/vault/navigation/VaultGraphRegistration.kt",
+        )
+        val route = source(
+            "com/aozijx/passly/presentation/feature/vault/list/VaultRoute.kt",
+        )
+        val signature = route.substringAfter("fun VaultRoute(").substringBefore(") {")
+
+        assertFalse(graph.contains("VaultDestinationContent"))
+        assertTrue(signature.contains("navigation: VaultNavigation"))
+        listOf(
+            "onAddPassword", "onAddOtp", "onAddBankCard",
+            "onSettingsClick", "onShowDetail",
+        ).forEach { callback ->
+            assertFalse("VaultRoute still accepts $callback directly", signature.contains(callback))
+        }
+    }
+
+    @Test
     fun `detail destination never depends on vault view model`() {
         val graph = source(
             "com/aozijx/passly/presentation/feature/vault/navigation/VaultGraphRegistration.kt",

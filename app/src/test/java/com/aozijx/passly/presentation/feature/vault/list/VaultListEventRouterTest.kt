@@ -12,27 +12,28 @@ class VaultListEventRouterTest {
     fun routesUiEventsToActionsOrNavigationOwners() {
         val actions = mutableListOf<VaultUiAction>()
         var addOtpOpened = false
-        val callbacks = VaultListRouteCallbacks(
+        val navigation = VaultNavigation(
             onSettingsClick = {},
             onAddPassword = {},
             onAddOtp = { addOtpOpened = true },
             onAddBankCard = {},
+            onShowDetail = {},
         )
 
         dispatchVaultListEvent(
             event = VaultListEvent.SearchQueryChanged("mail"),
             onAction = actions::add,
-            callbacks = callbacks,
+            navigation = navigation,
         )
         dispatchVaultListEvent(
             event = VaultListEvent.AddTypeSelected(VaultAddTypeUiModel.TOTP),
             onAction = actions::add,
-            callbacks = callbacks,
+            navigation = navigation,
         )
         dispatchVaultListEvent(
             event = VaultListEvent.AddTypeSelected(VaultAddTypeUiModel.WIFI),
             onAction = actions::add,
-            callbacks = callbacks,
+            navigation = navigation,
         )
 
         assertEquals(VaultUiAction.SearchQueryChanged("mail"), actions[0])

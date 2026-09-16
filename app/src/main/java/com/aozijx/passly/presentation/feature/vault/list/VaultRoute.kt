@@ -25,15 +25,11 @@ import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VaultRoute(
+internal fun VaultRoute(
     vaultViewModel: VaultViewModel,
-    onAddPassword: () -> Unit,
-    onAddOtp: () -> Unit,
-    onAddBankCard: () -> Unit,
+    navigation: VaultNavigation,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onSettingsClick: () -> Unit = {},
-    onShowDetail: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
@@ -58,7 +54,7 @@ fun VaultRoute(
     }
     val renderState = uiState.toUiModel(display)
     val itemEventHandler = rememberVaultListItemEventHandler(
-        onItemClick = { item -> onShowDetail(item.id) },
+        onItemClick = { item -> navigation.onShowDetail(item.id) },
         onItemSwipe = { item, action ->
             handleSwipeAction(
                 actionType = action.toFeatureModel(),
@@ -66,7 +62,7 @@ fun VaultRoute(
                 onQuickDelete = { entryId ->
                     vaultViewModel.onAction(VaultUiAction.QuickDelete(entryId))
                 },
-                onShowDetail = onShowDetail,
+                onShowDetail = navigation.onShowDetail,
                 onCopy = { fieldKey ->
                     when (val request = resolveCopyRequest(item, fieldKey)) {
                         is VaultCopyRequest.Field -> vaultViewModel.onAction(
@@ -85,15 +81,9 @@ fun VaultRoute(
             )
         },
     )
-    val routeCallbacks = VaultListRouteCallbacks(
-        onSettingsClick = onSettingsClick,
-        onAddPassword = onAddPassword,
-        onAddOtp = onAddOtp,
-        onAddBankCard = onAddBankCard,
-    )
     val eventHandler = rememberVaultListEventHandler(
         onEvent = { event ->
-            dispatchVaultListEvent(event, vaultViewModel::onAction, routeCallbacks)
+            dispatchVaultListEvent(event, vaultViewModel::onAction, navigation)
         },
     )
     val otpStateProvider = rememberVaultOtpStateProvider(
