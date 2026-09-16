@@ -10,7 +10,6 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
-import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
 import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
 import com.aozijx.passly.presentation.feature.vault.detail.asScopedSensitiveText
 import com.aozijx.passly.presentation.ui.vault.detail.component.CredentialSection
@@ -23,7 +22,6 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.CredentialSectionUiS
 internal fun DetailCredentialBinding(
     entry: Entry,
     uiState: DetailUiState,
-    editState: EntryEditState,
     onAction: (DetailUiAction) -> Unit,
 ) {
     val actionHandler = DetailSectionActionHandler(onAction)
@@ -36,30 +34,37 @@ internal fun DetailCredentialBinding(
                 visible = entry.username.isNotBlank() || SensitiveFieldKey.PASSWORD !in uiState.sensitiveFieldKeys,
                 label = stringResource(R.string.field_username),
                 revealedValue = revealedUsername?.asScopedSensitiveText(),
-                isEditing = editState.isEditingUsername,
-                editedValue = editState.editedUsername,
+                isEditing = uiState.fieldEdits.isEditing(RevealedFieldKey.USERNAME),
+                editedValue = uiState.fieldEdits.draft(RevealedFieldKey.USERNAME),
             ),
             password = CredentialFieldUiState(
                 visible = SensitiveFieldKey.PASSWORD in uiState.sensitiveFieldKeys || entry.type != EntryType.LOGIN,
                 label = stringResource(R.string.password_label),
                 revealedValue = revealedPassword?.asScopedSensitiveText(),
-                isEditing = editState.isEditingPassword,
-                editedValue = editState.editedPassword,
+                isEditing = uiState.fieldEdits.isEditing(RevealedFieldKey.PASSWORD),
+                editedValue = uiState.fieldEdits.draft(RevealedFieldKey.PASSWORD),
             ),
         ),
         eventHandler = object : CredentialSectionEventHandler {
             override fun onEditingChanged(field: CredentialFieldUiModel, editing: Boolean) {
-                when (field) {
-                    CredentialFieldUiModel.USERNAME -> editState.isEditingUsername = editing
-                    CredentialFieldUiModel.PASSWORD -> editState.isEditingPassword = editing
+                val key = field.revealedFieldKey
+                if (editing) {
+                    val initialValue = when (field) {
+                        CredentialFieldUiModel.USERNAME -> revealedUsername
+                            ?.let { String(it.toCharArray()) }
+                            ?: entry.username
+                        CredentialFieldUiModel.PASSWORD -> revealedPassword
+                            ?.let { String(it.toCharArray()) }
+                            .orEmpty()
+                    }
+                    onAction(DetailUiAction.StartFieldEdit(key, initialValue))
+                } else {
+                    onAction(DetailUiAction.CancelFieldEdit(key))
                 }
             }
 
             override fun onValueChanged(field: CredentialFieldUiModel, value: String) {
-                when (field) {
-                    CredentialFieldUiModel.USERNAME -> editState.editedUsername = value
-                    CredentialFieldUiModel.PASSWORD -> editState.editedPassword = value
-                }
+                onAction(DetailUiAction.UpdateFieldDraft(field.revealedFieldKey, value))
             }
 
             override fun onRevealRequested(field: CredentialFieldUiModel) {

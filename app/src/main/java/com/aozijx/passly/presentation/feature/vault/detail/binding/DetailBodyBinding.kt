@@ -9,8 +9,7 @@ import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
-import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
-import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
+import com.aozijx.passly.presentation.feature.vault.detail.DetailLocalEditState
 import com.aozijx.passly.presentation.feature.vault.detail.detailContentUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.detailOtpUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
@@ -25,7 +24,7 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.DetailIconCardUiMode
 fun DetailBodyBinding(
     modifier: Modifier = Modifier,
     uiState: DetailUiState,
-    editState: EntryEditState,
+    localEditState: DetailLocalEditState,
     otpUiState: OtpCodeState?,
     otpQrUri: String?,
     onAction: (DetailUiAction) -> Unit,
@@ -42,25 +41,12 @@ fun DetailBodyBinding(
     LaunchedEffect(uiState.saveCompletionId) {
         if (uiState.saveCompletionId == 0L) return@LaunchedEffect
         when (val completion = uiState.completedEdit) {
-            DetailEditCompletion.Notes -> editState.isEditingNotes = false
+            DetailEditCompletion.Notes -> localEditState.isEditingNotes = false
             DetailEditCompletion.Associations -> {
-                editState.isEditingDomain = false
-                editState.isEditingPackage = false
+                localEditState.isEditingDomain = false
+                localEditState.isEditingPackage = false
             }
 
-            is DetailEditCompletion.SensitiveField -> when (completion.key) {
-                RevealedFieldKey.USERNAME,
-                RevealedFieldKey.CARDHOLDER,
-                    -> editState.isEditingUsername = false
-
-                RevealedFieldKey.PASSWORD,
-                RevealedFieldKey.CARD_NUMBER,
-                RevealedFieldKey.SSH_PASSPHRASE,
-                    -> editState.isEditingPassword = false
-
-                RevealedFieldKey.CVV -> editState.isEditingTotp = false
-                else -> Unit
-            }
 
             else -> Unit
         }
@@ -84,22 +70,22 @@ fun DetailBodyBinding(
         }
 
         if (DetailSectionKey.CREDENTIAL in registeredSections) {
-            item { DetailCredentialBinding(entry, uiState, editState, onAction) }
+            item { DetailCredentialBinding(entry, uiState, onAction) }
         }
         if (DetailSectionKey.OTP in registeredSections) {
             item { DetailOtpBinding(otpModel, otpQrUri, onAction, onOtpQrDismiss) }
         }
         if (DetailSectionKey.BANK_CARD in registeredSections) {
-            item { DetailBankCardBinding(entry, uiState, editState, onAction) }
+            item { DetailBankCardBinding(entry, uiState, onAction) }
         }
         if (DetailSectionKey.IDENTITY in registeredSections) {
             item { DetailIdentityBinding(entry, uiState, onAction) }
         }
         if (DetailSectionKey.WIFI in registeredSections) {
-            item { DetailWifiBinding(entry, uiState, editState, onAction) }
+            item { DetailWifiBinding(entry, uiState, onAction) }
         }
         if (DetailSectionKey.SSH in registeredSections) {
-            item { DetailSshBinding(entry, uiState, editState, onAction) }
+            item { DetailSshBinding(entry, uiState, onAction) }
         }
         if (DetailSectionKey.SEED_PHRASE in registeredSections) {
             item { DetailSeedPhraseBinding(uiState, onAction) }
@@ -117,8 +103,8 @@ fun DetailBodyBinding(
             }
         }
         item { DetailTagsBinding(entry, onAction) }
-        item { DetailAssociationsBinding(entry, editState, onAction) }
-        item { DetailNotesBinding(entry, editState, onAction) }
+        item { DetailAssociationsBinding(entry, localEditState, onAction) }
+        item { DetailNotesBinding(entry, localEditState, onAction) }
         item { MetadataSection(contentUiModel.metadata) }
         item { ActivityTimelineSection(activityList = contentUiModel.activities) }
     }

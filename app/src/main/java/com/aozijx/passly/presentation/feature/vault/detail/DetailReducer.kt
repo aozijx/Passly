@@ -32,6 +32,9 @@ internal sealed interface DetailMutation {
     data object TitleEditingStarted : DetailMutation
     data object TitleEditingCancelled : DetailMutation
     data class EditedTitleChanged(val value: String) : DetailMutation
+    data class FieldEditingStarted(val key: String, val initialValue: String) : DetailMutation
+    data class FieldDraftChanged(val key: String, val value: String) : DetailMutation
+    data class FieldEditingCancelled(val key: String) : DetailMutation
     data class RevealedFieldChanged(val key: String, val value: SensitiveValue?) : DetailMutation
     data object RevealedFieldsCleared : DetailMutation
     data class SensitiveFieldPresenceChanged(
@@ -101,6 +104,15 @@ internal object DetailReducer {
             )
 
             is DetailMutation.EditedTitleChanged -> state.copy(editedTitle = mutation.value)
+            is DetailMutation.FieldEditingStarted -> state.copy(
+                fieldEdits = state.fieldEdits.start(mutation.key, mutation.initialValue),
+            )
+            is DetailMutation.FieldDraftChanged -> state.copy(
+                fieldEdits = state.fieldEdits.update(mutation.key, mutation.value),
+            )
+            is DetailMutation.FieldEditingCancelled -> state.copy(
+                fieldEdits = state.fieldEdits.finish(mutation.key),
+            )
             is DetailMutation.RevealedFieldChanged -> state.copy(
                 revealedFields = if (mutation.value == null) {
                     state.revealedFields - mutation.key
@@ -149,6 +161,11 @@ internal object DetailReducer {
                         },
                         savingEdit = null,
                         completedEdit = mutation.completion,
+                        fieldEdits = if (mutation.completion is DetailEditCompletion.SensitiveField) {
+                            state.fieldEdits.finish(mutation.completion.key)
+                        } else {
+                            state.fieldEdits
+                        },
                         saveCompletionId = state.saveCompletionId + 1,
                         saveErrorCode = null,
                         tagEditor = if (mutation.completion == DetailEditCompletion.Tags) {

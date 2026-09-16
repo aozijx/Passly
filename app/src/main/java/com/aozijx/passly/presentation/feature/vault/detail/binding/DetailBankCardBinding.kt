@@ -8,7 +8,6 @@ import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
 import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
-import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
 import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
 import com.aozijx.passly.presentation.ui.vault.detail.component.BankCardSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.DetailBankCardFieldUiModel
@@ -18,7 +17,6 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.DetailBankCardUiMode
 internal fun DetailBankCardBinding(
     entry: Entry,
     uiState: DetailUiState,
-    editState: EntryEditState,
     onAction: (DetailUiAction) -> Unit,
 ) {
     val handler = DetailSectionActionHandler(onAction)
@@ -28,7 +26,7 @@ internal fun DetailBankCardBinding(
     val paymentPin = uiState.revealed(RevealedFieldKey.PAYMENT_PIN)?.let { String(it.toCharArray()) }
     val card = entry.secret.card
     val hasNumber = !card?.cardNumber.isNullOrBlank() || cardNumber != null
-    val hasCvv = !card?.cardCvv.isNullOrBlank() || cvv != null || editState.isEditingTotp
+    val hasCvv = !card?.cardCvv.isNullOrBlank() || cvv != null || uiState.fieldEdits.isEditing(RevealedFieldKey.CVV)
     val hasPin = !card?.paymentPin.isNullOrBlank() || paymentPin != null
 
     BankCardSection(
@@ -37,38 +35,23 @@ internal fun DetailBankCardBinding(
             cardNumber, cardNumber != null, hasNumber,
             cvv, cvv != null, hasCvv, card?.cardExpiry,
             paymentPin, paymentPin != null, hasPin,
-            editState.isEditingUsername, editState.editedUsername,
-            editState.isEditingPassword, editState.editedPassword,
-            editState.isEditingTotp, editState.editedTotp,
+            uiState.fieldEdits.isEditing(RevealedFieldKey.CARDHOLDER),
+            uiState.fieldEdits.draft(RevealedFieldKey.CARDHOLDER),
+            uiState.fieldEdits.isEditing(RevealedFieldKey.CARD_NUMBER),
+            uiState.fieldEdits.draft(RevealedFieldKey.CARD_NUMBER),
+            uiState.fieldEdits.isEditing(RevealedFieldKey.CVV),
+            uiState.fieldEdits.draft(RevealedFieldKey.CVV),
             (hasNumber && cardNumber == null) || (hasCvv && cvv == null) ||
                 (hasPin && paymentPin == null),
         ),
         onEditChanged = { field, value ->
-            when (field) {
-                DetailBankCardFieldUiModel.CARDHOLDER -> editState.editedUsername = value
-                DetailBankCardFieldUiModel.CARD_NUMBER -> editState.editedPassword = value
-                DetailBankCardFieldUiModel.CVV -> editState.editedTotp = value
-                else -> Unit
+            field.revealedFieldKey?.let { key ->
+                onAction(DetailUiAction.UpdateFieldDraft(key, value))
             }
         },
         onEditStarted = { field, value ->
-            when (field) {
-                DetailBankCardFieldUiModel.CARDHOLDER -> {
-                    editState.editedUsername = value
-                    editState.isEditingUsername = true
-                }
-
-                DetailBankCardFieldUiModel.CARD_NUMBER -> {
-                    editState.editedPassword = value
-                    editState.isEditingPassword = true
-                }
-
-                DetailBankCardFieldUiModel.CVV -> {
-                    editState.editedTotp = value
-                    editState.isEditingTotp = true
-                }
-
-                else -> Unit
+            field.revealedFieldKey?.let { key ->
+                onAction(DetailUiAction.StartFieldEdit(key, value))
             }
         },
         onEditSaved = { field, value ->
@@ -128,3 +111,13 @@ internal fun DetailBankCardBinding(
         },
     )
 }
+
+private val DetailBankCardFieldUiModel.revealedFieldKey: String?
+    get() = when (this) {
+        DetailBankCardFieldUiModel.CARDHOLDER -> RevealedFieldKey.CARDHOLDER
+        DetailBankCardFieldUiModel.CARD_NUMBER -> RevealedFieldKey.CARD_NUMBER
+        DetailBankCardFieldUiModel.CVV -> RevealedFieldKey.CVV
+        DetailBankCardFieldUiModel.PAYMENT_PIN,
+        DetailBankCardFieldUiModel.EXPIRATION,
+            -> null
+    }

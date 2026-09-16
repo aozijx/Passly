@@ -6,14 +6,14 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
 import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
-import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
+import com.aozijx.passly.presentation.feature.vault.detail.DetailLocalEditState
 import com.aozijx.passly.presentation.ui.vault.detail.component.NotesSection
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailNotesUiModel
 
 @Composable
 internal fun DetailNotesBinding(
     entry: Entry,
-    editState: EntryEditState,
+    editState: DetailLocalEditState,
     onAction: (DetailUiAction) -> Unit,
 ) {
     NotesSection(

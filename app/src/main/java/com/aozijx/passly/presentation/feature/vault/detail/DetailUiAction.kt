@@ -20,6 +20,9 @@ sealed interface DetailUiAction {
     data object SaveTitle : DetailEntryAction
     data object ToggleFavorite : DetailEntryAction
 
+    data class StartFieldEdit(val key: String, val initialValue: String) : DetailSensitiveAction
+    data class UpdateFieldDraft(val key: String, val value: String) : DetailSensitiveAction
+    data class CancelFieldEdit(val key: String) : DetailSensitiveAction
     data class ToggleFieldVisibility(val key: String) : DetailSensitiveAction
     data class RevealFields(val keys: Set<String>) : DetailSensitiveAction
     data class SaveField(val key: String, val newValue: String) : DetailSensitiveAction

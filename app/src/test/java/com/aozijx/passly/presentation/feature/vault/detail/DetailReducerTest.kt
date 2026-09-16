@@ -40,8 +40,54 @@ class DetailReducerTest {
     }
 
     @Test
-    fun `revealed field mutation adds and wipes individual values`() {
-        val cvv = OwnedChars.fromString("123")
+    fun `field edit draft is owned by detail state until save succeeds`() {
+        val started = DetailReducer.reduce(
+            DetailUiState(),
+            DetailMutation.FieldEditingStarted(RevealedFieldKey.PASSWORD, "old"),
+        )
+        val changed = DetailReducer.reduce(
+            started,
+            DetailMutation.FieldDraftChanged(RevealedFieldKey.PASSWORD, "new"),
+        )
+        val saving = DetailReducer.reduce(
+            changed,
+            DetailMutation.SaveStarted(
+                DetailEditCompletion.SensitiveField(RevealedFieldKey.PASSWORD),
+            ),
+        )
+        val saved = DetailReducer.reduce(
+            saving,
+            DetailMutation.SaveSucceeded(
+                DetailEditCompletion.SensitiveField(RevealedFieldKey.PASSWORD),
+            ),
+        )
+
+        assertTrue(started.fieldEdits.isEditing(RevealedFieldKey.PASSWORD))
+        assertEquals("old", started.fieldEdits.draft(RevealedFieldKey.PASSWORD))
+        assertEquals("new", changed.fieldEdits.draft(RevealedFieldKey.PASSWORD))
+        assertFalse(saved.fieldEdits.isEditing(RevealedFieldKey.PASSWORD))
+        assertEquals("", saved.fieldEdits.draft(RevealedFieldKey.PASSWORD))
+    }
+
+    @Test
+    fun `failed field save keeps draft open for correction`() {
+        val completion = DetailEditCompletion.SensitiveField(RevealedFieldKey.CVV)
+        val editing = DetailReducer.reduce(
+            DetailUiState(),
+            DetailMutation.FieldEditingStarted(RevealedFieldKey.CVV, "123"),
+        )
+        val saving = DetailReducer.reduce(editing, DetailMutation.SaveStarted(completion))
+        val failed = DetailReducer.reduce(
+            saving,
+            DetailMutation.SaveFailed(completion, "write_failed"),
+        )
+
+        assertTrue(failed.fieldEdits.isEditing(RevealedFieldKey.CVV))
+        assertEquals("123", failed.fieldEdits.draft(RevealedFieldKey.CVV))
+    }
+
+    @Test
+    fun `revealed field mutation adds and wipes individual values`() {        val cvv = OwnedChars.fromString("123")
         try {
             val revealed = DetailReducer.reduce(
                 DetailUiState(),

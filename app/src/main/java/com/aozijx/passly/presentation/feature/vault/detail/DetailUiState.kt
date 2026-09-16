@@ -21,6 +21,7 @@ data class DetailUiState(
     val sensitiveFieldKeys: Set<SensitiveFieldKey> = emptySet(),
     val history: List<EntryActivity> = emptyList(),
     val relatedEntries: List<Entry> = emptyList(),
+    val fieldEdits: DetailFieldEditState = DetailFieldEditState(),
     val savingEdit: DetailEditCompletion? = null,
     val completedEdit: DetailEditCompletion? = null,
     val saveCompletionId: Long = 0,
@@ -29,6 +30,23 @@ data class DetailUiState(
     val faviconEditor: DetailFaviconEditorUiModel = DetailFaviconEditorUiModel(),
 ) {
     fun revealed(key: String): SensitiveValue? = revealedFields[key]
+}
+
+data class DetailFieldEditState(
+    private val drafts: Map<String, String> = emptyMap(),
+) {
+    fun isEditing(key: String): Boolean = key in drafts
+    fun draft(key: String): String = drafts[key].orEmpty()
+
+    fun start(key: String, initialValue: String): DetailFieldEditState =
+        copy(drafts = drafts + (key to initialValue))
+
+    fun update(key: String, value: String): DetailFieldEditState =
+        if (key in drafts) copy(drafts = drafts + (key to value)) else this
+
+    fun finish(key: String): DetailFieldEditState = copy(drafts = drafts - key)
+
+    override fun toString(): String = "DetailFieldEditState(editingKeys=${drafts.keys})"
 }
 
 sealed interface DetailEditCompletion {

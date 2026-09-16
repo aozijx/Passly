@@ -60,15 +60,19 @@ fun DetailRoute(
     }
 
     val entry = uiState.entry ?: return
-    val editState = remember(entry.id) { EntryEditState(entry) }
+    val localEditState = remember(entry.id) { DetailLocalEditState(entry) }
 
     LaunchedEffect(entry.id, launchMode) {
         if (launchMode == DetailLaunchMode.VIEW) return@LaunchedEffect
 
         if (entry.username.isNotEmpty()) {
-            editState.isEditingUsername = true
+            viewModel.onAction(
+                DetailUiAction.StartFieldEdit(RevealedFieldKey.USERNAME, entry.username),
+            )
         } else if (SensitiveFieldKey.PASSWORD in uiState.sensitiveFieldKeys) {
-            editState.isEditingPassword = true
+            viewModel.onAction(
+                DetailUiAction.StartFieldEdit(RevealedFieldKey.PASSWORD, ""),
+            )
         }
     }
 
@@ -83,7 +87,7 @@ fun DetailRoute(
         DetailBodyBinding(
             modifier = modifier,
             uiState = uiState,
-            editState = editState,
+            localEditState = localEditState,
             otpUiState = otpUiState,
             otpQrUri = otpQrUri,
             onAction = viewModel::onAction,

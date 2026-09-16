@@ -13,7 +13,7 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
 import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
-import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
+import com.aozijx.passly.presentation.feature.vault.detail.DetailLocalEditState
 import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerBottomSheet
 import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerItemUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.component.AssociatedInfoSection
@@ -25,7 +25,7 @@ import kotlinx.coroutines.withContext
 @Composable
 internal fun DetailAssociationsBinding(
     entry: Entry,
-    editState: EntryEditState,
+    editState: DetailLocalEditState,
     onAction: (DetailUiAction) -> Unit,
 ) {
     val context = LocalContext.current

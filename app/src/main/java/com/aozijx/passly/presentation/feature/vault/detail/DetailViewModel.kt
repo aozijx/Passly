@@ -168,6 +168,15 @@ class DetailViewModel @Inject constructor(
                 }
             }
 
+            is DetailUiAction.StartFieldEdit ->
+                mutate(DetailMutation.FieldEditingStarted(event.key, event.initialValue))
+
+            is DetailUiAction.UpdateFieldDraft ->
+                mutate(DetailMutation.FieldDraftChanged(event.key, event.value))
+
+            is DetailUiAction.CancelFieldEdit ->
+                mutate(DetailMutation.FieldEditingCancelled(event.key))
+
             is DetailUiAction.ToggleFieldVisibility -> {
                 val current = _uiState.value.entry ?: return
                 if (_uiState.value.revealed(event.key) != null) {

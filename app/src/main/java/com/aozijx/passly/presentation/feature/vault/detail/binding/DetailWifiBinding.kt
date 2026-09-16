@@ -8,7 +8,6 @@ import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
 import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
-import com.aozijx.passly.presentation.feature.vault.detail.EntryEditState
 import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
 import com.aozijx.passly.presentation.ui.vault.detail.component.WifiSection
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailWifiUiModel
@@ -17,7 +16,6 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.DetailWifiUiModel
 internal fun DetailWifiBinding(
     entry: Entry,
     uiState: DetailUiState,
-    editState: EntryEditState,
     onAction: (DetailUiAction) -> Unit,
 ) {
     val handler = DetailSectionActionHandler(onAction)
@@ -27,8 +25,8 @@ internal fun DetailWifiBinding(
             entry.username,
             password,
             password != null,
-            editState.isEditingPassword,
-            editState.editedPassword,
+            uiState.fieldEdits.isEditing(RevealedFieldKey.PASSWORD),
+            uiState.fieldEdits.draft(RevealedFieldKey.PASSWORD),
             entry.secret.wifi?.securityType ?: "WPA",
             entry.secret.wifi?.isHidden ?: false,
         ),
@@ -38,10 +36,9 @@ internal fun DetailWifiBinding(
             onAction(DetailUiAction.ToggleFieldVisibility(RevealedFieldKey.PASSWORD))
         },
         onPasswordEditStarted = {
-            editState.editedPassword = password.orEmpty()
-            editState.isEditingPassword = true
+            onAction(DetailUiAction.StartFieldEdit(RevealedFieldKey.PASSWORD, password.orEmpty()))
         },
-        onPasswordChanged = { editState.editedPassword = it },
+        onPasswordChanged = { onAction(DetailUiAction.UpdateFieldDraft(RevealedFieldKey.PASSWORD, it)) },
         onPasswordSaved = {
             if (it != password) {
                 onAction(
