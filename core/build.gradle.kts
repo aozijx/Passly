@@ -31,6 +31,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.argon2kt)
     implementation(libs.javax.inject)
+    implementation(libs.zxing.core)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)

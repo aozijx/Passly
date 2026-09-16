@@ -3,7 +3,7 @@ package com.aozijx.passly.presentation.feature.vault.detail.binding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
-import com.aozijx.passly.app.qr.QrCodeEncoder
+import com.aozijx.passly.core.platform.qr.QrCodeEncoder
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.ui.vault.detail.component.TotpSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.TotpQrUiState

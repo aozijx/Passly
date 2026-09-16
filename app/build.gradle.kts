@@ -171,7 +171,6 @@ dependencies {
 
     // Barcode Scanning & QR Code
     implementation(libs.barcode.scanning)
-    implementation(libs.zxing.core)
 
     // Image Loading
     implementation(libs.coil.compose)

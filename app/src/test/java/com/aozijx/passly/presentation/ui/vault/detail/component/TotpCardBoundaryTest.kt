@@ -2,9 +2,24 @@ package com.aozijx.passly.presentation.ui.vault.detail.component
 
 import java.io.File
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TotpCardBoundaryTest {
+    @Test
+    fun `detail otp binding uses the core qr encoder`() {
+        val sourceRoot = listOf(
+            File("src/main/java"),
+            File("app/src/main/java"),
+        ).firstOrNull(File::isDirectory) ?: error("Cannot locate app source root")
+        val binding = File(
+            sourceRoot,
+            "com/aozijx/passly/presentation/feature/vault/detail/binding/DetailOtpBinding.kt",
+        ).readText()
+
+        assertFalse(binding.contains("com.aozijx.passly.app.qr"))
+        assertTrue(binding.contains("com.aozijx.passly.core.platform.qr.QrCodeEncoder"))
+    }
     @Test
     fun `totp ui does not encode qr data`() {
         val sourceRoot = listOf(

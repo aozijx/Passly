@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.qr
+package com.aozijx.passly.core.platform.qr
 
 import android.graphics.Bitmap
 import android.graphics.Color
