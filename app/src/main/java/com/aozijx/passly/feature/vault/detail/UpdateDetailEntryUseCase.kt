@@ -1,5 +1,7 @@
 package com.aozijx.passly.feature.vault.detail
 
+import javax.inject.Inject
+
 import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.result.AppResult
@@ -11,7 +13,7 @@ import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-internal class UpdateDetailEntryUseCase(
+internal class UpdateDetailEntryUseCase @Inject constructor(
     private val entryQueryRepository: EntryQueryRepository,
     private val entryCommandRepository: EntryCommandRepository,
 ) {

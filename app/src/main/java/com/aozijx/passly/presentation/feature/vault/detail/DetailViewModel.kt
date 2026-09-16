@@ -12,7 +12,6 @@ import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
-import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
@@ -43,13 +42,13 @@ class DetailViewModel @Inject internal constructor(
     private val entryQueryRepository: EntryQueryRepository,
     private val sensitiveFieldRepository: SensitiveFieldRepository,
     private val activityQueryRepository: ActivityQueryRepository,
-    private val entryCommandRepository: EntryCommandRepository,
     private val entryLinkRepository: EntryLinkRepository,
     private val activityRecorder: ActivityRecorder,
     private val entryTypePolicy: EntryTypePolicy,
     private val accessPolicy: DetailAccessPolicy,
     private val exportOtpQr: ExportOtpQrUseCase,
     private val revealEntryFields: RevealEntryFieldsUseCase,
+    private val updateDetailEntry: UpdateDetailEntryUseCase,
     private val copyEntryFieldUseCase: CopyEntryFieldUseCase,
     private val copyOtpCodeUseCase: CopyOtpCodeUseCase,
     private val faviconImageProcessor: FaviconImageProcessor,
@@ -57,10 +56,6 @@ class DetailViewModel @Inject internal constructor(
 ) : ViewModel() {
     private val entryAnalyzer = DetailEntryAnalyzer(entryTypePolicy)
     private val revealStore = DetailRevealStore()
-    private val updateDetailEntry = UpdateDetailEntryUseCase(
-        entryQueryRepository = entryQueryRepository,
-        entryCommandRepository = entryCommandRepository,
-    )
     private val faviconSession = DetailFaviconSession(faviconImageProcessor, viewModelScope)
     private val otpRuntime = otpCodeRuntimeFactory.create(viewModelScope)
     private var entryLoadJob: Job? = null
