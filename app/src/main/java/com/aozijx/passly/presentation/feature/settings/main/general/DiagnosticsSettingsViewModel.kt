@@ -2,14 +2,9 @@ package com.aozijx.passly.presentation.feature.settings.main.general
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.app.diagnostics.DiagnosticsExportService
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
 import com.aozijx.passly.core.telemetry.TelemetryPolicyController
-import com.aozijx.passly.domain.access.port.AuthenticationManager
-import com.aozijx.passly.domain.access.model.AuthenticationPurpose
-import com.aozijx.passly.domain.access.model.AuthenticationRequest
-import com.aozijx.passly.domain.access.model.AuthenticationResult
-import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -22,13 +17,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
+import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportResult
+import com.aozijx.passly.feature.settings.diagnostics.ExportDiagnosticsUseCase
 
 @HiltViewModel
 class DiagnosticsSettingsViewModel @Inject constructor(
     private val policies: TelemetryPolicyController,
-    private val authenticationManager: AuthenticationManager,
+    private val secureSessionAccessState: SecureSessionAccessState,
     private val runtime: DiagnosticsRuntimeController,
-    private val exportService: DiagnosticsExportService
+    private val exportDiagnostics: ExportDiagnosticsUseCase
 ) : ViewModel() {
     private val eventChannel = Channel<DiagnosticsSettingsEffect>(Channel.BUFFERED)
     val events = eventChannel.receiveAsFlow()
@@ -82,7 +79,7 @@ class DiagnosticsSettingsViewModel @Inject constructor(
     }
 
     private suspend fun readPage(): String =
-        if (authenticationManager.state.value is AuthenticationState.Authenticated) {
+        if (secureSessionAccessState.hasFullSecureSessionAccess()) {
             withContext(Dispatchers.IO) {
                 runtime.readLines(MAX_VIEW_LINES).joinToString("\n")
             }
@@ -91,32 +88,29 @@ class DiagnosticsSettingsViewModel @Inject constructor(
         }
 
     private fun clearLogs() = viewModelScope.launch(Dispatchers.IO) {
-        if (authenticationManager.state.value !is AuthenticationState.Authenticated) return@launch
+        if (!secureSessionAccessState.hasFullSecureSessionAccess()) return@launch
         runtime.clear()
         mutate(DiagnosticsSettingsMutation.LogsCleared)
     }
 
     private fun authenticateAndExport() = viewModelScope.launch {
-        if (authenticationManager.state.value !is AuthenticationState.Authenticated) {
-            eventChannel.trySend(DiagnosticsSettingsEffect.ExportFailed)
-            return@launch
-        }
-        val result = authenticationManager.authenticate(
-            AuthenticationRequest(AuthenticationPurpose.EXPORT_DIAGNOSTICS)
-        )
-        if (result !is AuthenticationResult.Success) return@launch
-        runCatching {
-            withContext(Dispatchers.IO) {
-                exportService.createPlaintextExport()
+        when (val result = exportDiagnostics()) {
+            DiagnosticsExportResult.Completed,
+            DiagnosticsExportResult.Cancelled,
+                -> Unit
+            DiagnosticsExportResult.Denied,
+            DiagnosticsExportResult.SessionRestricted,
+                -> eventChannel.trySend(DiagnosticsSettingsEffect.ExportFailed)
+            is DiagnosticsExportResult.Failed -> {
+                TelemetryRuntime.e(
+                    "DiagnosticsExport",
+                    "Plaintext diagnostics export failed",
+                    result.cause,
+                )
+                eventChannel.trySend(DiagnosticsSettingsEffect.ExportFailed)
             }
-        }.mapCatching { file ->
-            exportService.share(file).getOrThrow()
-        }.onFailure { error ->
-            TelemetryRuntime.e("DiagnosticsExport", "Plaintext diagnostics export failed", error)
-            eventChannel.trySend(DiagnosticsSettingsEffect.ExportFailed)
         }
     }
-
     private fun mutate(mutation: DiagnosticsSettingsMutation) {
         _uiState.update { state -> DiagnosticsSettingsReducer.reduce(state, mutation) }
     }

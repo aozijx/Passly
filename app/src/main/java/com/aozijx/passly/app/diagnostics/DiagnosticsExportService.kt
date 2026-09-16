@@ -7,6 +7,7 @@ import android.os.Looper
 import android.content.ClipData
 import androidx.core.content.FileProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportGateway
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -21,8 +22,12 @@ import javax.inject.Singleton
 class DiagnosticsExportService @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val runtime: DiagnosticsRuntimeController
-) {
-    fun createPlaintextExport(): File {
+) : DiagnosticsExportGateway {
+    override suspend fun exportAndShare(): Result<Unit> = runCatching {
+        share(createPlaintextExport()).getOrThrow()
+    }
+
+    private fun createPlaintextExport(): File {
         clearExports()
         val target = File(
             context.cacheDir,
@@ -34,7 +39,7 @@ class DiagnosticsExportService @Inject constructor(
         return target
     }
 
-    fun share(file: File): Result<Unit> = runCatching {
+    private fun share(file: File): Result<Unit> = runCatching {
         require(file.isFile && file.canonicalFile.parentFile == context.cacheDir.canonicalFile)
         val uri = FileProvider.getUriForFile(
             context,

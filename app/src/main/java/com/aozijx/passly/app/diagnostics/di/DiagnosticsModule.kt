@@ -1,6 +1,8 @@
 package com.aozijx.passly.app.diagnostics.di
 
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
+import com.aozijx.passly.app.diagnostics.DiagnosticsExportService
+import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportGateway
 import com.aozijx.passly.app.diagnostics.TelemetryAppErrorReporter
 import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.reporting.AppErrorReporter
@@ -13,6 +15,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class DiagnosticsModule {
+    @Binds
+    @Singleton
+    internal abstract fun bindDiagnosticsExportGateway(
+        impl: DiagnosticsExportService,
+    ): DiagnosticsExportGateway
+
     @Binds
     @Singleton
     internal abstract fun bindAppErrorReporter(
