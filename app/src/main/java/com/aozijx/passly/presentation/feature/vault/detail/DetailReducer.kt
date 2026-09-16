@@ -164,10 +164,14 @@ internal object DetailReducer {
                         },
                         savingEdit = null,
                         completedEdit = mutation.completion,
-                        fieldEdits = if (mutation.completion is DetailEditCompletion.SensitiveField) {
-                            state.fieldEdits.finish(mutation.completion.key)
-                        } else {
-                            state.fieldEdits
+                        fieldEdits = when (mutation.completion) {
+                            is DetailEditCompletion.SensitiveField ->
+                                state.fieldEdits.finish(mutation.completion.key)
+                            DetailEditCompletion.Notes ->
+                                state.fieldEdits.finish(DetailEditKey.NOTES)
+                            DetailEditCompletion.Associations ->
+                                state.fieldEdits.finish(DetailEditKey.DOMAIN)
+                            else -> state.fieldEdits
                         },
                         saveCompletionId = state.saveCompletionId + 1,
                         saveErrorCode = null,

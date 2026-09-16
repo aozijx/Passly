@@ -61,6 +61,10 @@ sealed interface DetailEditCompletion {
     data class SensitiveField(val key: String) : DetailEditCompletion
 }
 
+object DetailEditKey {
+    const val NOTES = "notes"
+    const val DOMAIN = "domain"
+}
 object RevealedFieldKey {
     const val USERNAME = "username"
     const val PASSWORD = "password"

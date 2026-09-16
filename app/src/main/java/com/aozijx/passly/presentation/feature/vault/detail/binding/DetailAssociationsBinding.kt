@@ -12,8 +12,9 @@ import com.aozijx.passly.core.platform.packageinfo.InstalledAppServicesProvider
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
 import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
+import com.aozijx.passly.presentation.feature.vault.detail.DetailEditKey
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
-import com.aozijx.passly.presentation.feature.vault.detail.DetailLocalEditState
+import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
 import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerBottomSheet
 import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerItemUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.component.AssociatedInfoSection
@@ -25,7 +26,7 @@ import kotlinx.coroutines.withContext
 @Composable
 internal fun DetailAssociationsBinding(
     entry: Entry,
-    editState: DetailLocalEditState,
+    uiState: DetailUiState,
     onAction: (DetailUiAction) -> Unit,
 ) {
     val context = LocalContext.current
@@ -79,24 +80,14 @@ internal fun DetailAssociationsBinding(
     AssociatedInfoSection(
         model = DetailAssociatedInfoUiModel(
             domain = entry.associatedDomain,
-            isEditingDomain = editState.isEditingDomain,
+            editedDomain = uiState.fieldEdits.draft(DetailEditKey.DOMAIN),
+            isEditingDomain = uiState.fieldEdits.isEditing(DetailEditKey.DOMAIN),
         ),
         associatedApps = associatedApps,
         appIcon = { packageName -> rememberInstalledAppIconBitmap(packageName) },
-        onDomainEditStarted = { editState.isEditingDomain = true },
-        onDomainChanged = { editState.editedDomain = it },
-        onDomainSaved = {
-            editState.editedDomain = it
-            onAction(
-                DetailUiAction.CommitPatch(
-                    DetailEntryPatch.Associations(
-                        primaryUrl = it.trim().ifBlank { null },
-                        applicationIds = entry.associations.applicationIds,
-                    ),
-                    DetailEditCompletion.Associations,
-                ),
-            )
-        },
+        onDomainEditStarted = { onAction(DetailUiAction.StartDomainEdit) },
+        onDomainChanged = { onAction(DetailUiAction.UpdateDomainDraft(it)) },
+        onDomainSaved = { onAction(DetailUiAction.SaveDomain) },
         onPackagePickerRequested = { showPackagePicker = true },
     )
 
@@ -106,7 +97,6 @@ internal fun DetailAssociationsBinding(
             appIcon = { packageName -> rememberInstalledAppIconBitmap(packageName) },
             onSelect = { app ->
                 showPackagePicker = false
-                editState.editedPackage = app.packageName
                 onAction(
                     DetailUiAction.CommitPatch(
                         DetailEntryPatch.Associations(

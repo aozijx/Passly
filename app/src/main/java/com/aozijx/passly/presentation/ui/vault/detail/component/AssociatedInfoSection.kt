@@ -56,8 +56,8 @@ fun AssociatedInfoSection(
 ) {
     val focusManager = LocalFocusManager.current
     val haptic = LocalHapticFeedback.current
-    var domainInput by remember(model.domain) {
-        mutableStateOf(TextFieldValue(model.domain.orEmpty()))
+    var domainInput by remember(model.isEditingDomain) {
+        mutableStateOf(TextFieldValue(model.editedDomain))
     }
 
     Column(

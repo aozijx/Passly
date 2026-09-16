@@ -141,6 +141,46 @@ class DetailViewModel @Inject internal constructor(
                 }
             }
 
+            DetailUiAction.StartNotesEdit -> {
+                val notes = _uiState.value.entry?.secret?.notes.orEmpty()
+                mutate(DetailMutation.FieldEditingStarted(DetailEditKey.NOTES, notes))
+            }
+
+            is DetailUiAction.UpdateNotesDraft ->
+                mutate(DetailMutation.FieldDraftChanged(DetailEditKey.NOTES, event.value))
+
+            DetailUiAction.SaveNotes -> {
+                val notes = _uiState.value.fieldEdits.draft(DetailEditKey.NOTES)
+                viewModelScope.launch {
+                    persistEntryPatch(
+                        DetailEntryPatch.Notes(notes.ifBlank { null }),
+                        DetailEditCompletion.Notes,
+                    )
+                }
+            }
+
+            DetailUiAction.StartDomainEdit -> {
+                val domain = _uiState.value.entry?.associations?.primaryUrl.orEmpty()
+                mutate(DetailMutation.FieldEditingStarted(DetailEditKey.DOMAIN, domain))
+            }
+
+            is DetailUiAction.UpdateDomainDraft ->
+                mutate(DetailMutation.FieldDraftChanged(DetailEditKey.DOMAIN, event.value))
+
+            DetailUiAction.SaveDomain -> {
+                val state = _uiState.value
+                val entry = state.entry ?: return
+                val domain = state.fieldEdits.draft(DetailEditKey.DOMAIN)
+                viewModelScope.launch {
+                    persistEntryPatch(
+                        DetailEntryPatch.Associations(
+                            primaryUrl = domain.trim().ifBlank { null },
+                            applicationIds = entry.associations.applicationIds,
+                        ),
+                        DetailEditCompletion.Associations,
+                    )
+                }
+            }
             is DetailUiAction.StartFieldEdit ->
                 mutate(DetailMutation.FieldEditingStarted(event.key, event.initialValue))
 

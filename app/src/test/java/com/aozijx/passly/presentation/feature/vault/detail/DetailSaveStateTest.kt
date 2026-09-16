@@ -82,4 +82,41 @@ class DetailSaveStateTest {
         assertEquals("Draft title", actual.editedTitle)
         assertEquals(DetailEditCompletion.Notes, actual.completedEdit)
     }
+
+    @Test
+    fun successfulNotesAndDomainSavesCloseOnlyTheirOwnedDrafts() {
+        val edits = DetailFieldEditState()
+            .start(DetailEditKey.NOTES, "draft notes")
+            .start(DetailEditKey.DOMAIN, "example.com")
+        val notesSaved = DetailReducer.reduce(
+            DetailUiState(fieldEdits = edits, savingEdit = DetailEditCompletion.Notes),
+            DetailMutation.SaveSucceeded(DetailEditCompletion.Notes),
+        )
+        assertFalse(notesSaved.fieldEdits.isEditing(DetailEditKey.NOTES))
+        assertTrue(notesSaved.fieldEdits.isEditing(DetailEditKey.DOMAIN))
+
+        val domainSaved = DetailReducer.reduce(
+            DetailUiState(fieldEdits = edits, savingEdit = DetailEditCompletion.Associations),
+            DetailMutation.SaveSucceeded(DetailEditCompletion.Associations),
+        )
+        assertTrue(domainSaved.fieldEdits.isEditing(DetailEditKey.NOTES))
+        assertFalse(domainSaved.fieldEdits.isEditing(DetailEditKey.DOMAIN))
+    }
+
+    @Test
+    fun failedNotesSavePreservesViewModelOwnedDraft() {
+        val state = DetailUiState(
+            fieldEdits = DetailFieldEditState().start(DetailEditKey.NOTES, "draft notes"),
+            savingEdit = DetailEditCompletion.Notes,
+        )
+
+        val actual = DetailReducer.reduce(
+            state,
+            DetailMutation.SaveFailed(DetailEditCompletion.Notes, "CONFLICT"),
+        )
+
+        assertTrue(actual.fieldEdits.isEditing(DetailEditKey.NOTES))
+        assertEquals("draft notes", actual.fieldEdits.draft(DetailEditKey.NOTES))
+        assertEquals("CONFLICT", actual.saveErrorCode)
+    }
 }

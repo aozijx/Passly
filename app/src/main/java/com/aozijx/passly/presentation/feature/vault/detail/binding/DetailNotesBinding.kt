@@ -1,37 +1,27 @@
 package com.aozijx.passly.presentation.feature.vault.detail.binding
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.text.input.TextFieldValue
 import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
-import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
+import com.aozijx.passly.presentation.feature.vault.detail.DetailEditKey
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
-import com.aozijx.passly.presentation.feature.vault.detail.DetailLocalEditState
+import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
 import com.aozijx.passly.presentation.ui.vault.detail.component.NotesSection
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailNotesUiModel
 
 @Composable
 internal fun DetailNotesBinding(
     entry: Entry,
-    editState: DetailLocalEditState,
+    uiState: DetailUiState,
     onAction: (DetailUiAction) -> Unit,
 ) {
     NotesSection(
         model = DetailNotesUiModel(
             notes = entry.secret.notes,
-            editedNotes = editState.editedNotes.text,
-            isEditing = editState.isEditingNotes,
+            editedNotes = uiState.fieldEdits.draft(DetailEditKey.NOTES),
+            isEditing = uiState.fieldEdits.isEditing(DetailEditKey.NOTES),
         ),
-        onEditStarted = { editState.startNotesEditing(entry.secret.notes) },
-        onNotesChanged = { editState.editedNotes = TextFieldValue(it) },
-        onNotesSaved = {
-            editState.editedNotes = TextFieldValue(it)
-            onAction(
-                DetailUiAction.CommitPatch(
-                    DetailEntryPatch.Notes(it.ifBlank { null }),
-                    DetailEditCompletion.Notes,
-                ),
-            )
-        },
+        onEditStarted = { onAction(DetailUiAction.StartNotesEdit) },
+        onNotesChanged = { onAction(DetailUiAction.UpdateNotesDraft(it)) },
+        onNotesSaved = { onAction(DetailUiAction.SaveNotes) },
     )
 }

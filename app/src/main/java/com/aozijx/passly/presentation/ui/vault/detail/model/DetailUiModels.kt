@@ -66,6 +66,7 @@ data class RelatedEntryUiModel(
 
 data class DetailAssociatedInfoUiModel(
     val domain: String?,
+    val editedDomain: String,
     val isEditingDomain: Boolean,
 )
 

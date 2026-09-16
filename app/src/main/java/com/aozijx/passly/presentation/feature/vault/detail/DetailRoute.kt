@@ -60,7 +60,6 @@ fun DetailRoute(
     }
 
     val entry = uiState.entry ?: return
-    val localEditState = remember(entry.id) { DetailLocalEditState(entry) }
 
     LaunchedEffect(entry.id, launchMode) {
         if (launchMode == DetailLaunchMode.VIEW) return@LaunchedEffect
@@ -87,7 +86,6 @@ fun DetailRoute(
         DetailBodyBinding(
             modifier = modifier,
             uiState = uiState,
-            localEditState = localEditState,
             otpUiState = otpUiState,
             otpQrUri = otpQrUri,
             onAction = viewModel::onAction,

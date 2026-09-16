@@ -1,15 +1,12 @@
 package com.aozijx.passly.presentation.feature.vault.detail.binding
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
-import com.aozijx.passly.presentation.feature.vault.detail.DetailLocalEditState
 import com.aozijx.passly.presentation.feature.vault.detail.detailContentUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.detailOtpUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
@@ -23,7 +20,6 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.DetailIconCardUiMode
 fun DetailBodyBinding(
     modifier: Modifier = Modifier,
     uiState: DetailUiState,
-    localEditState: DetailLocalEditState,
     otpUiState: OtpCodeState?,
     otpQrUri: String?,
     onAction: (DetailUiAction) -> Unit,
@@ -35,21 +31,6 @@ fun DetailBodyBinding(
         detailContentUiModel(entry, uiState)
     }
     val otpModel = detailOtpUiModel(otpUiState)
-
-
-    LaunchedEffect(uiState.saveCompletionId) {
-        if (uiState.saveCompletionId == 0L) return@LaunchedEffect
-        when (val completion = uiState.completedEdit) {
-            DetailEditCompletion.Notes -> localEditState.isEditingNotes = false
-            DetailEditCompletion.Associations -> {
-                localEditState.isEditingDomain = false
-                localEditState.isEditingPackage = false
-            }
-
-
-            else -> Unit
-        }
-    }
 
     DetailScrollableContent(modifier = modifier) {
         item {
@@ -102,8 +83,8 @@ fun DetailBodyBinding(
             }
         }
         item { DetailTagsBinding(entry, onAction) }
-        item { DetailAssociationsBinding(entry, localEditState, onAction) }
-        item { DetailNotesBinding(entry, localEditState, onAction) }
+        item { DetailAssociationsBinding(entry, uiState, onAction) }
+        item { DetailNotesBinding(entry, uiState, onAction) }
         item { MetadataSection(contentUiModel.metadata) }
         item { ActivityTimelineSection(activityList = contentUiModel.activities) }
     }

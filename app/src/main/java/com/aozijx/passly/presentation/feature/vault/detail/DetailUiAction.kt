@@ -19,6 +19,12 @@ sealed interface DetailUiAction {
 
     data object SaveTitle : DetailEntryAction
     data object ToggleFavorite : DetailEntryAction
+    data object StartNotesEdit : DetailEntryAction
+    data class UpdateNotesDraft(val value: String) : DetailEntryAction
+    data object SaveNotes : DetailEntryAction
+    data object StartDomainEdit : DetailEntryAction
+    data class UpdateDomainDraft(val value: String) : DetailEntryAction
+    data object SaveDomain : DetailEntryAction
 
     data class StartFieldEdit(val key: String, val initialValue: String) : DetailSensitiveAction
     data class UpdateFieldDraft(val key: String, val value: String) : DetailSensitiveAction
