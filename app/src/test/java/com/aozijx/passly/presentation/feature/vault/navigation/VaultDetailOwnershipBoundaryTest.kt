@@ -55,6 +55,19 @@ class VaultDetailOwnershipBoundaryTest {
         assertFalse(viewModel.contains("CopyEntryFieldUseCase("))
         assertFalse(viewModel.contains("CopyOtpCodeUseCase("))
     }
+    @Test
+    fun `detail view model receives authorized operations instead of assembling them`() {
+        val viewModel = source(
+            "com/aozijx/passly/presentation/feature/vault/detail/DetailViewModel.kt",
+        )
+
+        assertFalse(viewModel.contains("AuthorizationGate"))
+        assertFalse(viewModel.contains("DetailOtpQrExporter("))
+        assertFalse(viewModel.contains("RevealEntryFieldsUseCase("))
+        assertFalse(viewModel.contains("CopyEntryFieldUseCase("))
+        assertFalse(viewModel.contains("CopyOtpCodeUseCase("))
+        assertTrue(viewModel.contains("entryQueryRepository.getById(entryId)"))
+    }
     private fun source(relativePath: String): String {
         val sourceRoot = listOf(
             File("src/main/java"),

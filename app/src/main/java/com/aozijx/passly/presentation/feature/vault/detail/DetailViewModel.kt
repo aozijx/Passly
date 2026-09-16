@@ -5,13 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.entry.favicon.FaviconCropRequest
 import com.aozijx.passly.app.entry.favicon.FaviconImageProcessor
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.domain.access.port.AuthorizationGate
-import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
@@ -41,7 +38,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class DetailViewModel @Inject constructor(
+class DetailViewModel @Inject internal constructor(
     private val entryQueryRepository: EntryQueryRepository,
     private val sensitiveFieldRepository: SensitiveFieldRepository,
     private val activityQueryRepository: ActivityQueryRepository,
@@ -49,10 +46,11 @@ class DetailViewModel @Inject constructor(
     private val entryLinkRepository: EntryLinkRepository,
     private val activityRecorder: ActivityRecorder,
     private val entryTypePolicy: EntryTypePolicy,
-    private val entryFieldReader: EntryFieldReader,
     private val accessPolicy: DetailAccessPolicy,
-    private val authorizationGate: AuthorizationGate,
-    private val clipboardWriter: SensitiveClipboardWriter,
+    private val otpQrExporter: DetailOtpQrExporter,
+    private val revealEntryFields: RevealEntryFieldsUseCase,
+    private val copyEntryFieldUseCase: CopyEntryFieldUseCase,
+    private val copyOtpCodeUseCase: CopyOtpCodeUseCase,
     private val faviconImageProcessor: FaviconImageProcessor,
     otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
 ) : ViewModel() {
@@ -61,27 +59,6 @@ class DetailViewModel @Inject constructor(
     private val updateDetailEntry = UpdateDetailEntryUseCase(
         entryQueryRepository = entryQueryRepository,
         entryCommandRepository = entryCommandRepository,
-    )
-    private val otpQrExporter = DetailOtpQrExporter(
-        authorizationGate = authorizationGate,
-        sensitiveFieldRepository = sensitiveFieldRepository,
-    )
-    private val revealEntryFields = RevealEntryFieldsUseCase(
-        authorizationGate = authorizationGate,
-        entryFieldReader = entryFieldReader,
-        sensitiveFieldRepository = sensitiveFieldRepository,
-        activityRecorder = activityRecorder,
-    )
-    private val copyEntryFieldUseCase = CopyEntryFieldUseCase(
-        authorizationGate = authorizationGate,
-        entryQueryRepository = entryQueryRepository,
-        entryFieldReader = entryFieldReader,
-        sensitiveFieldRepository = sensitiveFieldRepository,
-        clipboardWriter = clipboardWriter,
-    )
-    private val copyOtpCodeUseCase = CopyOtpCodeUseCase(
-        authorizationGate = authorizationGate,
-        clipboardWriter = clipboardWriter,
     )
     private val faviconSession = DetailFaviconSession(faviconImageProcessor, viewModelScope)
     private val otpRuntime = otpCodeRuntimeFactory.create(viewModelScope)

@@ -1,5 +1,7 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
+import javax.inject.Inject
+
 import com.aozijx.passly.domain.access.model.AuthorizationResult
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.model.SensitiveAccessAction
@@ -10,11 +12,17 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.feature.vault.otp.OtpAuthUriCodec
 
-internal class DetailOtpQrExporter(
+internal class DetailOtpQrExporter internal constructor(
     private val authorizationGate: AuthorizationGate,
     private val sensitiveFieldRepository: SensitiveFieldRepository,
     private val formatUri: (OtpConfig, String) -> String = OtpAuthUriCodec::format,
 ) {
+    @Inject
+    constructor(
+        authorizationGate: AuthorizationGate,
+        sensitiveFieldRepository: SensitiveFieldRepository,
+    ) : this(authorizationGate, sensitiveFieldRepository, OtpAuthUriCodec::format)
+
     suspend fun export(entry: Entry): String? {
         val config = entry.secret.otp?.config ?: return null
         val result = authorizationGate.authorize(

@@ -1,5 +1,7 @@
 package com.aozijx.passly.feature.vault.detail
 
+import javax.inject.Inject
+
 import com.aozijx.passly.domain.access.model.AuthorizationResult
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.model.SensitiveAccessAction
@@ -15,7 +17,7 @@ import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 
-internal class RevealEntryFieldsUseCase(
+internal class RevealEntryFieldsUseCase @Inject constructor(
     private val authorizationGate: AuthorizationGate,
     private val entryFieldReader: EntryFieldReader,
     private val sensitiveFieldRepository: SensitiveFieldRepository,
