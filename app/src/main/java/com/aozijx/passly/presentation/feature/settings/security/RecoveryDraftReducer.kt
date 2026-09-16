@@ -1,11 +1,8 @@
 package com.aozijx.passly.presentation.feature.settings.security
 
-import com.aozijx.passly.presentation.feature.settings.security.RecoveryDraftState
-
 internal sealed interface RecoveryDraftMutation {
-    data object AuthenticationStarted : RecoveryDraftMutation
-    data object AuthenticationCancelled : RecoveryDraftMutation
-    data object GenerationStarted : RecoveryDraftMutation
+    data object CreationStarted : RecoveryDraftMutation
+    data object CreationCancelled : RecoveryDraftMutation
     data class DraftReady(val generationId: String) : RecoveryDraftMutation
     data object Committed : RecoveryDraftMutation
     data object Failed : RecoveryDraftMutation
@@ -17,14 +14,10 @@ internal object RecoveryDraftReducer {
         state: RecoveryDraftState,
         mutation: RecoveryDraftMutation,
     ): RecoveryDraftState = when (mutation) {
-        RecoveryDraftMutation.AuthenticationStarted -> RecoveryDraftState.Authenticating
-        RecoveryDraftMutation.AuthenticationCancelled -> RecoveryDraftState.Empty
-        RecoveryDraftMutation.GenerationStarted -> state.transitionFrom(
-            expected = RecoveryDraftState.Authenticating,
-            next = RecoveryDraftState.Generating,
-        )
+        RecoveryDraftMutation.CreationStarted -> RecoveryDraftState.Creating
+        RecoveryDraftMutation.CreationCancelled -> RecoveryDraftState.Empty
         is RecoveryDraftMutation.DraftReady -> state.transitionFrom(
-            expected = RecoveryDraftState.Generating,
+            expected = RecoveryDraftState.Creating,
             next = RecoveryDraftState.Ready(mutation.generationId),
         )
         RecoveryDraftMutation.Committed -> if (state is RecoveryDraftState.Ready) {

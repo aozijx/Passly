@@ -2,8 +2,7 @@ package com.aozijx.passly.presentation.feature.settings.security
 
 sealed interface RecoveryDraftState {
     data object Empty : RecoveryDraftState
-    data object Authenticating : RecoveryDraftState
-    data object Generating : RecoveryDraftState
+    data object Creating : RecoveryDraftState
     data class Ready(val generationId: String) : RecoveryDraftState
     data object DraftExpired : RecoveryDraftState
     data object Committed : RecoveryDraftState

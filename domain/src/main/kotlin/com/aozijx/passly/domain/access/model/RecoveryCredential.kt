@@ -18,6 +18,7 @@ interface RecoveryCredentialDraft : AutoCloseable {
 sealed interface RecoveryCredentialCreation {
     data class Ready(val draft: RecoveryCredentialDraft) : RecoveryCredentialCreation
     data class Failed(val failure: AuthenticationFailure) : RecoveryCredentialCreation
+    data object Cancelled : RecoveryCredentialCreation
 }
 
 fun interface RecoveryCredentialFactory {

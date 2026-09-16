@@ -3,29 +3,22 @@ package com.aozijx.passly.presentation.feature.settings.security
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.access.port.AuthenticationManager
-import com.aozijx.passly.domain.access.model.AuthenticationPurpose
-import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
-import com.aozijx.passly.domain.access.model.AuthenticationState
-import com.aozijx.passly.domain.access.model.RecoveryCredentialDraft
 import com.aozijx.passly.domain.access.model.RecoveryCredentialCreation
+import com.aozijx.passly.domain.access.model.RecoveryCredentialDraft
 import com.aozijx.passly.domain.access.model.RecoveryCredentialFactory
-import com.aozijx.passly.presentation.feature.settings.security.RecoveryDraftMutation
-import com.aozijx.passly.presentation.feature.settings.security.RecoveryDraftReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 
 @HiltViewModel
 class RecoveryDraftViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
-    private val authenticationManager: AuthenticationManager,
-    private val draftFactory: RecoveryCredentialFactory
+    private val draftFactory: RecoveryCredentialFactory,
 ) : ViewModel() {
     private var draft: RecoveryCredentialDraft? = null
     private val _state = MutableStateFlow<RecoveryDraftState>(
@@ -43,42 +36,33 @@ class RecoveryDraftViewModel @Inject constructor(
     }
 
     private fun generateDraft() {
-        if (authenticationManager.state.value !is AuthenticationState.Authenticated) {
-            mutate(RecoveryDraftMutation.Failed)
-            return
-        }
-        if (_state.value is RecoveryDraftState.Authenticating ||
-            _state.value is RecoveryDraftState.Generating
-        ) return
+        if (_state.value is RecoveryDraftState.Creating) return
         viewModelScope.launch {
-            mutate(RecoveryDraftMutation.AuthenticationStarted)
-            when (
-                authenticationManager.authenticate(
-                    AuthenticationRequest(AuthenticationPurpose.MANAGE_RECOVERY_CODE)
-                )
-            ) {
-                is AuthenticationResult.Success -> createDraft()
-                is AuthenticationResult.Cancelled ->
-                    mutate(RecoveryDraftMutation.AuthenticationCancelled)
-                is AuthenticationResult.Failure -> mutate(RecoveryDraftMutation.Failed)
+            mutate(RecoveryDraftMutation.CreationStarted)
+            try {
+                when (val creation = draftFactory.create()) {
+                    is RecoveryCredentialCreation.Ready -> {
+                        draft?.close()
+                        draft = creation.draft
+                        savedStateHandle[WAS_DISCLOSURE_OPEN] = true
+                        mutate(RecoveryDraftMutation.DraftReady(creation.draft.id.value))
+                    }
+                    is RecoveryCredentialCreation.Failed -> mutate(RecoveryDraftMutation.Failed)
+                    RecoveryCredentialCreation.Cancelled ->
+                        mutate(RecoveryDraftMutation.CreationCancelled)
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Throwable) {
+                mutate(RecoveryDraftMutation.Failed)
             }
         }
     }
 
-    fun revealCode(): CharArray? =
-        if (authenticationManager.state.value is AuthenticationState.Authenticated) {
-            draft?.reveal()
-        } else {
-            null
-        }
+    fun revealCode(): CharArray? = draft?.reveal()
 
     private fun confirmAndEnable() {
         viewModelScope.launch {
-            if (authenticationManager.state.value !is AuthenticationState.Authenticated) {
-                clearDraft()
-                mutate(RecoveryDraftMutation.Failed)
-                return@launch
-            }
             val activeDraft = draft ?: return@launch
             when (activeDraft.commit()) {
                 is AuthenticationResult.Success -> {
@@ -101,25 +85,6 @@ class RecoveryDraftViewModel @Inject constructor(
         draft?.close()
         draft = null
         savedStateHandle[WAS_DISCLOSURE_OPEN] = false
-    }
-
-    private suspend fun createDraft() {
-        mutate(RecoveryDraftMutation.GenerationStarted)
-        try {
-            when (val creation = draftFactory.create()) {
-                is RecoveryCredentialCreation.Ready -> {
-                    draft?.close()
-                    draft = creation.draft
-                    savedStateHandle[WAS_DISCLOSURE_OPEN] = true
-                    mutate(RecoveryDraftMutation.DraftReady(creation.draft.id.value))
-                }
-                is RecoveryCredentialCreation.Failed -> mutate(RecoveryDraftMutation.Failed)
-            }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (_: Throwable) {
-            mutate(RecoveryDraftMutation.Failed)
-        }
     }
 
     private fun mutate(mutation: RecoveryDraftMutation) {

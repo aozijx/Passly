@@ -12,6 +12,8 @@ import com.aozijx.passly.domain.access.port.SessionActivityReporter
 import com.aozijx.passly.security.authentication.DefaultAuthenticationManager
 import com.aozijx.passly.security.authentication.DefaultAuthenticationMethodProvisioner
 import com.aozijx.passly.security.authentication.DefaultRecoveryCodeDraftFactory
+import com.aozijx.passly.security.authentication.DefaultRecoveryCredentialGenerator
+import com.aozijx.passly.security.authentication.RecoveryCredentialGenerator
 import com.aozijx.passly.security.authentication.KdfRunner
 import com.aozijx.passly.security.authentication.SingleThreadKdfRunner
 import com.aozijx.passly.security.authentication.VaultSessionController
@@ -44,6 +46,12 @@ internal abstract class AuthenticationModule {
     abstract fun bindRecoveryCredentialFactory(
         impl: DefaultRecoveryCodeDraftFactory,
     ): RecoveryCredentialFactory
+
+    @Binds
+    @Singleton
+    abstract fun bindRecoveryCredentialGenerator(
+        impl: DefaultRecoveryCredentialGenerator,
+    ): RecoveryCredentialGenerator
 
     @Binds
     @Singleton
