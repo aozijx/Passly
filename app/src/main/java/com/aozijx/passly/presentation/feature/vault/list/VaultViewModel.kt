@@ -10,9 +10,7 @@ import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.access.port.SensitiveKeyFreshnessState
 import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
-import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
@@ -20,12 +18,10 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
-import com.aozijx.passly.domain.entry.otp.OtpGenerator
 import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
-import com.aozijx.passly.domain.entry.port.OtpConfigRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
@@ -40,9 +36,8 @@ import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
 import com.aozijx.passly.feature.vault.entry.toNewEntryDraft
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.feature.vault.otp.OtpCodeRuntime
+import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
 import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
-import com.aozijx.passly.runtime.session.SessionStateProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -51,7 +46,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -63,19 +57,17 @@ class VaultViewModel @Inject constructor(
     private val entryQueryRepository: EntryQueryRepository,
     private val entryListQueryRepository: EntryListQueryRepository,
     private val entryPageSource: VaultEntryPageSource,
-    private val otpConfigRepository: OtpConfigRepository,
     private val settingsRepository: LibraryViewSettingsRepository,
     private val createEntry: CreateEntryUseCase,
     private val entryCommandRepository: EntryCommandRepository,
     private val secureSessionAccessState: SecureSessionAccessState,
     private val entryFieldReader: EntryFieldReader,
     private val dataChangeSignal: VaultDataChangeSignal,
-    private val sessionStateProvider: SessionStateProvider,
-    private val sensitiveKeyFreshnessState: SensitiveKeyFreshnessState,
     private val accessPolicy: SecureSessionAccessPolicy,
     private val sensitiveFieldRepository: SensitiveFieldRepository,
     private val clipboardWriter: SensitiveClipboardWriter,
     private val authorizationGate: AuthorizationGate,
+    otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
 ) : ViewModel() {
 
     private val _effects = Channel<VaultEffect>(Channel.BUFFERED)
@@ -99,12 +91,7 @@ class VaultViewModel @Inject constructor(
         _refreshTrigger.value++
     }
 
-    private val totp = OtpCodeRuntime(
-        scope = viewModelScope,
-        codeGenerator = { config -> OtpGenerator.generate(config) },
-        loadOtpConfig = { otpConfigRepository.getConfig(it) },
-        initiallyUnlocked = sessionStateProvider.isWritable
-    )
+    private val totp = otpCodeRuntimeFactory.create(viewModelScope)
     private val moveEntryToTrash = MoveEntryToTrashUseCase(
         entryCommandRepository = entryCommandRepository,
         entryQueryRepository = entryQueryRepository,
@@ -188,9 +175,7 @@ class VaultViewModel @Inject constructor(
             is VaultUiAction.QuickDelete -> quickDelete(action.entryId)
             is VaultUiAction.CopyField -> copyField(action.entryId, action.entryType, action.fieldKey)
             is VaultUiAction.CopyOtp -> copyOtp(action.entryId)
-            is VaultUiAction.EntryChanged -> totp.entryChanged(action.entryId)
             is VaultUiAction.AddScannedOtp -> addScannedOtp(action.config)
-            is VaultUiAction.AutoUnlockTotp -> autoUnlockTotp(action.entryId)
         }
     }
 
@@ -212,23 +197,12 @@ class VaultViewModel @Inject constructor(
         mutate(VaultMutation.PendingDeleteChanged(item))
     }
 
-    private fun autoUnlockTotp(entryId: String) {
-        if (accessPolicy.hasFullAccess()) {
-            totp.autoUnlock(entryId)
-        }
-    }
-
     fun subscribeVisibleOtp(entryId: String) {
         totp.subscribe(entryId)
     }
 
     fun unsubscribeVisibleOtp(entryId: String) {
         totp.unsubscribe(entryId)
-    }
-
-    suspend fun loadEntryById(entryId: String): Entry? {
-        if (!accessPolicy.hasFullAccess()) return null
-        return entryQueryRepository.getById(EntryId(entryId))
     }
 
     private fun quickDelete(entryId: String) {
@@ -288,22 +262,6 @@ class VaultViewModel @Inject constructor(
     }
 
     init {
-        totp.start()
-
-        viewModelScope.launch {
-            sessionStateProvider.lockStateFlow.collect { lockState ->
-                totp.onSessionStateChanged(
-                    unlocked = lockState == com.aozijx.passly.runtime.session.SecureSessionState.UNLOCKED
-                )
-            }
-        }
-
-        viewModelScope.launch {
-            sensitiveKeyFreshnessState.generation.drop(1).collect {
-                totp.onFreshAuthentication()
-            }
-        }
-
         viewModelScope.launch {
             settingsRepository.libraryViewSettings
                 .map { it.sort }

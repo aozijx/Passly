@@ -27,6 +27,8 @@ import com.aozijx.passly.feature.vault.detail.UpdateDetailEntryUseCase
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
+import com.aozijx.passly.feature.vault.model.OtpCodeState
+import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -52,6 +54,7 @@ class DetailViewModel @Inject constructor(
     private val authorizationGate: AuthorizationGate,
     private val clipboardWriter: SensitiveClipboardWriter,
     private val faviconImageProcessor: FaviconImageProcessor,
+    otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
 ) : ViewModel() {
     private val entryAnalyzer = DetailEntryAnalyzer(entryTypePolicy)
     private val revealStore = DetailRevealStore()
@@ -80,8 +83,10 @@ class DetailViewModel @Inject constructor(
         clipboardWriter = clipboardWriter,
     )
     private val faviconSession = DetailFaviconSession(faviconImageProcessor, viewModelScope)
+    private val otpRuntime = otpCodeRuntimeFactory.create(viewModelScope)
     private var entryLoadJob: Job? = null
     private var historyJob: Job? = null
+    private var loadedEntryId: EntryId? = null
 
     companion object {
         private const val ACCESS_HISTORY_TOGGLE_KEY = "detail.access_history_enabled"
@@ -93,8 +98,15 @@ class DetailViewModel @Inject constructor(
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
     private val _effects = Channel<DetailEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
+    private val _otpState = MutableStateFlow<OtpCodeState?>(null)
+    val otpState: StateFlow<OtpCodeState?> = _otpState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            otpRuntime.states.collect { states ->
+                _otpState.value = loadedEntryId?.value?.let(states::get)
+            }
+        }
         viewModelScope.launch {
             userConfigExtras.collect { extras ->
                 val enabled = extras[ACCESS_HISTORY_TOGGLE_KEY]
@@ -111,14 +123,6 @@ class DetailViewModel @Inject constructor(
             return
         }
         when (event) {
-            is DetailUiAction.Initialize -> {
-                initialize(event.initialEntry)
-            }
-
-            is DetailUiAction.SyncEntry -> {
-                refreshKeepingTitleEdit(event.entry)
-            }
-
             is DetailUiAction.CommitPatch -> {
                 viewModelScope.launch {
                     persistEntryPatch(event.patch, event.completion)
@@ -315,7 +319,7 @@ class DetailViewModel @Inject constructor(
                 mutate(DetailMutation.FaviconEditorDiscardCancelled)
 
             is DetailUiAction.CopyField -> copyField(event.fieldKey)
-            is DetailUiAction.CopyOtpCode -> copyOtpCode(event.code)
+            DetailUiAction.CopyOtpCode -> copyOtpCode()
             DetailUiAction.ExportOtpQr -> {
                 val entry = _uiState.value.entry ?: return
                 viewModelScope.launch {
@@ -369,10 +373,10 @@ class DetailViewModel @Inject constructor(
         }
     }
 
-    private fun copyOtpCode(code: String?) {
+    private fun copyOtpCode() {
         val entry = _uiState.value.entry ?: return
         viewModelScope.launch {
-            if (copyOtpCodeUseCase { code } != CopyEntryFieldResult.Copied) return@launch
+            if (copyOtpCodeUseCase { otpState.value?.code } != CopyEntryFieldResult.Copied) return@launch
             recordCopy(entry.id, ActivityType.COPY_PASSWORD)
             _effects.send(DetailEffect.ContentCopied(null))
         }
@@ -406,24 +410,30 @@ class DetailViewModel @Inject constructor(
         }
     }
 
-    private fun initialize(initialEntry: Entry) {
-        refreshFromEntry(initialEntry, isEditingTitle = false, editedTitle = initialEntry.title)
+    fun load(rawEntryId: String) {
+        val entryId = EntryId(rawEntryId)
+        if (loadedEntryId == entryId && _uiState.value.entry != null) return
+        loadedEntryId = entryId
         entryLoadJob?.cancel()
         historyJob?.cancel()
+        otpRuntime.clearAllSensitiveState()
+        _otpState.value = null
+        revealStore.clear()
+        mutate(DetailMutation.StateCleared)
         entryLoadJob = viewModelScope.launch {
             if (!accessPolicy.hasFullAccess()) return@launch
-            val latest = entryQueryRepository.getById(initialEntry.id)
-                ?: initialEntry
+            val latest = entryQueryRepository.getById(entryId) ?: return@launch
             refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
             val presence = sensitiveFieldRepository.getPresence(latest.id)
             mutate(DetailMutation.SensitiveFieldPresenceChanged(latest.id, presence.keys))
             loadRelatedEntries(latest)
+            if (latest.secret.otp != null) otpRuntime.autoUnlock(entryId.value)
         }
         historyJob = viewModelScope.launch {
             if (!accessPolicy.hasFullAccess()) return@launch
-            activityQueryRepository.observeByEntryId(initialEntry.id.value)
+            activityQueryRepository.observeByEntryId(entryId.value)
                 .collect { history ->
-                    mutate(DetailMutation.HistoryChanged(initialEntry.id, history))
+                    mutate(DetailMutation.HistoryChanged(entryId, history))
                 }
         }
     }
@@ -455,6 +465,8 @@ class DetailViewModel @Inject constructor(
 
     private fun clearSensitiveState() {
         revealStore.clear()
+        otpRuntime.clearAllSensitiveState()
+        _otpState.value = null
         mutate(DetailMutation.StateCleared)
     }
 
@@ -490,7 +502,6 @@ class DetailViewModel @Inject constructor(
                     }
                 }
                 mutate(DetailMutation.SaveSucceeded(completion))
-                emitEntryUpdated(latest)
             }
 
             is AppResult.Failure -> {
@@ -538,10 +549,6 @@ class DetailViewModel @Inject constructor(
                 completion = DetailEditCompletion.Icon,
             )
         }
-    }
-
-    private fun emitEntryUpdated(entry: Entry) {
-        _effects.trySend(DetailEffect.EntryUpdated(entry))
     }
 
     private suspend fun loadRelatedEntries(entry: Entry) {

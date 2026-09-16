@@ -25,7 +25,5 @@ sealed interface VaultUiAction {
         val fieldKey: FieldKey,
     ) : VaultUiAction
     data class CopyOtp(val entryId: String) : VaultUiAction
-    data class EntryChanged(val entryId: String) : VaultUiAction
     data class AddScannedOtp(val config: OtpConfig) : VaultUiAction
-    data class AutoUnlockTotp(val entryId: String) : VaultUiAction
 }

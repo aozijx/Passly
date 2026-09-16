@@ -9,8 +9,6 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUi
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconEditorTabUiModel
 
 sealed interface DetailUiAction {
-    data class Initialize(val initialEntry: Entry) : DetailEntryAction
-    data class SyncEntry(val entry: Entry) : DetailEntryAction
     data class CommitPatch(
         val patch: DetailEntryPatch,
         val completion: DetailEditCompletion,
@@ -55,7 +53,7 @@ sealed interface DetailUiAction {
     data object ConfirmDiscardFavicon : DetailFaviconAction
     data object KeepEditingFavicon : DetailFaviconAction
     data class CopyField(val fieldKey: FieldKey) : DetailSensitiveAction
-    data class CopyOtpCode(val code: String?) : DetailSensitiveAction
+    data object CopyOtpCode : DetailSensitiveAction
     data object ExportOtpQr : DetailSensitiveAction
     data class ToggleAccessHistoryRecording(val enabled: Boolean) : DetailSensitiveAction
     data object ClearSensitiveState : DetailSensitiveAction

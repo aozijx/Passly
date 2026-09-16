@@ -1,20 +1,16 @@
 package com.aozijx.passly.presentation.feature.shell
 
 import androidx.compose.runtime.Composable
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
-import com.aozijx.passly.presentation.feature.shell.navigation.PasslyNavHost
-import com.aozijx.passly.presentation.feature.shell.AppShellViewModel
 import com.aozijx.passly.core.ui.adaptive.ProvidePasslyAdaptiveLayout
-import com.aozijx.passly.presentation.feature.vault.list.VaultViewModel
-import com.aozijx.passly.presentation.feature.vault.navigation.registerVaultGraph
 import com.aozijx.passly.presentation.feature.settings.main.navigation.registerSettingsGraph
+import com.aozijx.passly.presentation.feature.shell.navigation.PasslyNavHost
+import com.aozijx.passly.presentation.feature.vault.navigation.registerVaultGraph
 
 @Composable
 internal fun PasslyAppNavigation(
-    appShellViewModel: AppShellViewModel
+    appShellViewModel: AppShellViewModel,
 ) {
-    val vaultViewModel: VaultViewModel = hiltViewModel()
     val navController = rememberNavController()
 
     ProvidePasslyAdaptiveLayout {
@@ -24,7 +20,7 @@ internal fun PasslyAppNavigation(
         ) { context, sharedTransitionScope ->
             registerVaultGraph(
                 context = context,
-                vaultViewModel = vaultViewModel,
+                navController = navController,
                 sharedTransitionScope = sharedTransitionScope,
             )
             registerSettingsGraph(context)

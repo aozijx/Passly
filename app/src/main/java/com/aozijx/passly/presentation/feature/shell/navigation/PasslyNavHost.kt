@@ -44,7 +44,7 @@ internal fun PasslyNavHost(
             NavHost(
                 modifier = Modifier.fillMaxSize(),
                 navController = navController,
-                startDestination = AppRoute.Vault.route,
+                startDestination = AppRoute.VaultGraph.route,
                 enterTransition = PasslyNavigationAnim.enterTransition,
                 exitTransition = PasslyNavigationAnim.exitTransition,
                 popEnterTransition = PasslyNavigationAnim.popEnterTransition,

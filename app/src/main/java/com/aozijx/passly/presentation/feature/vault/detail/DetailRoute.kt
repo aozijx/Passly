@@ -1,58 +1,75 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
+import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.feature.vault.model.OtpCodeState
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.presentation.feature.vault.detail.binding.DetailBodyBinding
+import com.aozijx.passly.presentation.feature.vault.list.action.CopyFieldLabelProvider
 import com.aozijx.passly.presentation.ui.vault.detail.DetailScreen
+import kotlinx.coroutines.flow.collectLatest
 
-/**
- * 详情页 UI 组件 (Stateless)
- *
- * 采用状态平铺模式，不直接持有 ViewModel，方便测试和预览。
- */
 @Composable
 fun DetailRoute(
-    initialEntry: Entry,
-    uiState: DetailUiState,
-    otpUiState: OtpCodeState?,
-    otpQrUri: String?,
-    launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
-    onAction: (DetailUiAction) -> Unit,
+    entryId: String,
     onBack: () -> Unit,
     onUpdateInteraction: () -> Unit,
-    onAutoUnlockTotp: (Entry) -> Unit,
-    onOtpQrDismiss: () -> Unit,
-    onOpenRelatedEntry: (Entry) -> Unit
+    onOpenRelatedEntry: (Entry) -> Unit,
+    launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
+    viewModel: DetailViewModel = hiltViewModel(),
 ) {
+    val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val otpUiState by viewModel.otpState.collectAsStateWithLifecycle()
+    val copiedMessageFormat = stringResource(R.string.field_copy_success_message)
+    val otpLabel = stringResource(R.string.vault_detail_totp_label)
+    var otpQrUri by remember(entryId) { mutableStateOf<String?>(null) }
 
-    // 初始进入和交互更新
-    LaunchedEffect(Unit) {
+    LaunchedEffect(entryId, viewModel) {
         onUpdateInteraction()
+        viewModel.load(entryId)
     }
-
-    // 页面数据初始化（同 key 内串联首次 TOTP 自动解锁，避免重复 effect 触发）
-    LaunchedEffect(initialEntry.id) {
-        onAction(DetailUiAction.Initialize(initialEntry))
-        if (initialEntry.shouldAutoActivateOtp()) {
-            onAutoUnlockTotp(initialEntry)
+    LaunchedEffect(viewModel, context, copiedMessageFormat, otpLabel) {
+        viewModel.effects.collectLatest { effect ->
+            when (effect) {
+                is DetailEffect.ShowOtpQr -> otpQrUri = effect.uri
+                is DetailEffect.ContentCopied -> {
+                    val label = effect.fieldKey
+                        ?.let(CopyFieldLabelProvider::getCopyLabel)
+                        ?: otpLabel
+                    Toast.makeText(
+                        context,
+                        copiedMessageFormat.format(label),
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                }
+            }
         }
     }
+    DisposableEffect(viewModel, entryId) {
+        onDispose { viewModel.onAction(DetailUiAction.ClearSensitiveState) }
+    }
 
-    val entry = uiState.entry ?: initialEntry
-    val editState = remember(entry) { EntryEditState(entry) }
+    val entry = uiState.entry ?: return
+    val editState = remember(entry.id) { EntryEditState(entry) }
 
-    // 处理外部启动模式（如编辑 TOTP）
     LaunchedEffect(entry.id, launchMode) {
         if (launchMode == DetailLaunchMode.VIEW) return@LaunchedEffect
 
         if (entry.username.isNotEmpty()) {
             editState.isEditingUsername = true
-        } else if (com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.PASSWORD in
-            uiState.sensitiveFieldKeys
-        ) {
+        } else if (SensitiveFieldKey.PASSWORD in uiState.sensitiveFieldKeys) {
             editState.isEditingPassword = true
         }
     }
@@ -61,10 +78,10 @@ fun DetailRoute(
         model = detailHeaderUiModel(entry, uiState),
         onBack = onBack,
         onInteraction = onUpdateInteraction,
-        onTitleChanged = { onAction(DetailUiAction.UpdateEditedTitle(it)) },
-        onTitleEditStarted = { onAction(DetailUiAction.StartTitleEdit) },
-        onTitleSaved = { onAction(DetailUiAction.SaveTitle) },
-        onFavoriteToggled = { onAction(DetailUiAction.ToggleFavorite) },
+        onTitleChanged = { viewModel.onAction(DetailUiAction.UpdateEditedTitle(it)) },
+        onTitleEditStarted = { viewModel.onAction(DetailUiAction.StartTitleEdit) },
+        onTitleSaved = { viewModel.onAction(DetailUiAction.SaveTitle) },
+        onFavoriteToggled = { viewModel.onAction(DetailUiAction.ToggleFavorite) },
     ) { modifier ->
         DetailBodyBinding(
             modifier = modifier,
@@ -72,12 +89,10 @@ fun DetailRoute(
             editState = editState,
             otpUiState = otpUiState,
             otpQrUri = otpQrUri,
-            onAction = onAction,
+            onAction = viewModel::onAction,
             onInteraction = onUpdateInteraction,
-            onOtpQrDismiss = onOtpQrDismiss,
-            onOpenRelatedEntry = onOpenRelatedEntry
+            onOtpQrDismiss = { otpQrUri = null },
+            onOpenRelatedEntry = onOpenRelatedEntry,
         )
     }
 }
-
-internal fun Entry.shouldAutoActivateOtp(): Boolean = secret.otp != null

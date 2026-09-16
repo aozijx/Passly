@@ -36,6 +36,6 @@ internal fun DetailOtpBinding(
         qrCode = qrCode,
         onQrClick = { onAction(DetailUiAction.ExportOtpQr) },
         onQrDismiss = onOtpQrDismiss,
-        onCodeClick = { onAction(DetailUiAction.CopyOtpCode(otp?.code)) },
+        onCodeClick = { onAction(DetailUiAction.CopyOtpCode) },
     )
 }

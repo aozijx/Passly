@@ -12,6 +12,8 @@ package com.aozijx.passly.presentation.feature.shell.navigation
  */
 sealed class AppRoute(val route: String) {
 
+    data object VaultGraph : AppRoute("vault_graph")
+
     data object Vault : AppRoute("vault")
 
     data object Trash : AppRoute("vault/trash")

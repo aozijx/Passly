@@ -1,32 +1,21 @@
 package com.aozijx.passly.presentation.feature.vault.navigation
 
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
-import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.presentation.feature.scanner.navigation.VaultOtpScannerRoute
 import com.aozijx.passly.presentation.feature.shell.navigation.AppRoute
 import com.aozijx.passly.presentation.feature.shell.navigation.ShellNavigationContext
-import com.aozijx.passly.presentation.feature.vault.detail.DetailEffect
 import com.aozijx.passly.presentation.feature.vault.detail.DetailRoute
-import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
-import com.aozijx.passly.presentation.feature.vault.detail.DetailViewModel
 import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardEditorRoute
 import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardViewModel
 import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpEditorRoute
@@ -34,36 +23,38 @@ import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpViewModel
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordEditorRoute
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordViewModel
 import com.aozijx.passly.presentation.feature.vault.list.VaultRoute
-import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
 import com.aozijx.passly.presentation.feature.vault.list.VaultViewModel
-import com.aozijx.passly.presentation.feature.vault.list.action.CopyFieldLabelProvider
 import com.aozijx.passly.presentation.feature.vault.trash.TrashRoute
 import com.aozijx.passly.presentation.feature.vault.trash.TrashViewModel
-import kotlinx.coroutines.flow.collectLatest
 
 internal fun NavGraphBuilder.registerVaultGraph(
     context: ShellNavigationContext,
-    vaultViewModel: VaultViewModel,
+    navController: NavHostController,
     sharedTransitionScope: SharedTransitionScope,
 ) {
-    composable(AppRoute.Vault.route) {
-        VaultDestinationContent(
-            context = context,
-            vaultViewModel = vaultViewModel,
-            sharedTransitionScope = sharedTransitionScope,
-            animatedVisibilityScope = this,
-        )
-    }
+    navigation(
+        startDestination = AppRoute.Vault.route,
+        route = AppRoute.VaultGraph.route,
+    ) {
+        composable(AppRoute.Vault.route) { backStackEntry ->
+            VaultDestinationContent(
+                context = context,
+                vaultViewModel = vaultGraphViewModel(navController, backStackEntry),
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = this,
+            )
+        }
 
-    composable(AppRoute.Trash.route) {
-        val trashViewModel: TrashViewModel = hiltViewModel()
-        VaultDestinationContent(
-            context = context,
-            vaultViewModel = vaultViewModel,
-            sharedTransitionScope = sharedTransitionScope,
-            animatedVisibilityScope = this,
-        )
-        TrashRoute(viewModel = trashViewModel, onDismiss = context.navigateBack)
+        composable(AppRoute.Trash.route) { backStackEntry ->
+            val trashViewModel: TrashViewModel = hiltViewModel()
+            VaultDestinationContent(
+                context = context,
+                vaultViewModel = vaultGraphViewModel(navController, backStackEntry),
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = this,
+            )
+            TrashRoute(viewModel = trashViewModel, onDismiss = context.navigateBack)
+        }
     }
 
     composable(AppRoute.AddPassword.route) {
@@ -114,67 +105,26 @@ internal fun NavGraphBuilder.registerVaultGraph(
         val entryId = backStackEntry.arguments
             ?.getString(AppRoute.Detail.ARG_ENTRY_ID)
             ?: return@composable
-        val detailViewModel: DetailViewModel = hiltViewModel()
-        val androidContext = LocalContext.current
-        val copiedMessageFormat = stringResource(R.string.field_copy_success_message)
-        val otpLabel = stringResource(R.string.vault_detail_totp_label)
-        val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
-        val totpState by vaultViewModel.totpStatesFlow.collectAsStateWithLifecycle()
-        val currentOtpState = totpState[entryId]
-        var otpQrUri by remember(entryId) { mutableStateOf<String?>(null) }
-
-        LaunchedEffect(detailViewModel) {
-            detailViewModel.effects.collectLatest { effect ->
-                when (effect) {
-                    is DetailEffect.EntryUpdated -> vaultViewModel.onAction(
-                        VaultUiAction.EntryChanged(effect.entry.id.value),
-                    )
-
-                    is DetailEffect.ShowOtpQr -> otpQrUri = effect.uri
-                    is DetailEffect.ContentCopied -> {
-                        val label = effect.fieldKey
-                            ?.let(CopyFieldLabelProvider::getCopyLabel)
-                            ?: otpLabel
-                        Toast.makeText(
-                            androidContext,
-                            copiedMessageFormat.format(label),
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                    }
-                }
-            }
-        }
-
-        var initialEntry by remember { mutableStateOf<Entry?>(null) }
-        LaunchedEffect(entryId) {
-            initialEntry = vaultViewModel.loadEntryById(entryId)
-        }
-        DisposableEffect(entryId) {
-            onDispose {
-                initialEntry = null
-                detailViewModel.onAction(DetailUiAction.ClearSensitiveState)
-            }
-        }
-
-        initialEntry?.let { entry ->
-            DetailRoute(
-                initialEntry = entry,
-                uiState = detailUiState,
-                otpUiState = currentOtpState,
-                otpQrUri = otpQrUri,
-                onAction = detailViewModel::onAction,
-                onOtpQrDismiss = { otpQrUri = null },
-                onBack = context.navigateBack,
-                onUpdateInteraction = context.onUserInteraction,
-                onAutoUnlockTotp = {
-                    vaultViewModel.onAction(VaultUiAction.AutoUnlockTotp(it.id.value))
-                },
-                onOpenRelatedEntry = {
-                    context.navigateToRoute(AppRoute.Detail.createRoute(it.id.value))
-                },
-            )
-        }
+        DetailRoute(
+            entryId = entryId,
+            onBack = context.navigateBack,
+            onUpdateInteraction = context.onUserInteraction,
+            onOpenRelatedEntry = {
+                context.navigateToRoute(AppRoute.Detail.createRoute(it.id.value))
+            },
+        )
     }
+}
+
+@Composable
+private fun vaultGraphViewModel(
+    navController: NavHostController,
+    backStackEntry: NavBackStackEntry,
+): VaultViewModel {
+    val owner = remember(backStackEntry) {
+        navController.getBackStackEntry(AppRoute.VaultGraph.route)
+    }
+    return hiltViewModel<VaultViewModel>(owner)
 }
 
 @Composable
@@ -186,7 +136,6 @@ private fun VaultDestinationContent(
 ) {
     VaultRoute(
         vaultViewModel = vaultViewModel,
-
         onAddPassword = { context.navigateToSingleTopRoute(AppRoute.AddPassword.route) },
         onAddOtp = { context.navigateToSingleTopRoute(AppRoute.AddOtp.route) },
         onAddBankCard = { context.navigateToSingleTopRoute(AppRoute.AddBankCard.route) },
