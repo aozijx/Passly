@@ -11,6 +11,7 @@ import com.aozijx.passly.core.telemetry.TelemetryEvent
 import com.aozijx.passly.core.telemetry.TelemetryFileStoreFactory
 import com.aozijx.passly.core.telemetry.TelemetryPolicyController
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
+import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -23,7 +24,7 @@ import javax.inject.Singleton
 class DiagnosticsRuntimeController @Inject constructor(
     fileStoreFactory: TelemetryFileStoreFactory,
     private val policyController: TelemetryPolicyController
-) {
+) : DiagnosticsLogStore {
     private val androidEnabled = AtomicBoolean(true)
     private val fileEnabledUntil = AtomicLong(0L)
     private val fileStore = fileStoreFactory.create(fileEnabledUntil)
@@ -51,10 +52,10 @@ class DiagnosticsRuntimeController @Inject constructor(
 
     fun flush(timeoutMs: Long = 300L): Boolean = fileStore.flush(timeoutMs)
 
-    fun readLines(limit: Int = 500): List<String> =
+    override fun readLines(limit: Int): List<String> =
         fileStore.readEvents(limit).map(::formatEvent)
 
-    fun clear() = fileStore.clear()
+    override fun clear() = fileStore.clear()
 
     fun shutdown() {
         fileStore.close()

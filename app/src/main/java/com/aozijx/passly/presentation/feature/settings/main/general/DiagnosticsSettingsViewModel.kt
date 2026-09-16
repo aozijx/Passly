@@ -2,7 +2,7 @@ package com.aozijx.passly.presentation.feature.settings.main.general
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
+import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
 import com.aozijx.passly.core.telemetry.TelemetryPolicyController
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,7 +24,7 @@ import com.aozijx.passly.feature.settings.diagnostics.ExportDiagnosticsUseCase
 class DiagnosticsSettingsViewModel @Inject constructor(
     private val policies: TelemetryPolicyController,
     private val secureSessionAccessState: SecureSessionAccessState,
-    private val runtime: DiagnosticsRuntimeController,
+    private val logStore: DiagnosticsLogStore,
     private val exportDiagnostics: ExportDiagnosticsUseCase
 ) : ViewModel() {
     private val eventChannel = Channel<DiagnosticsSettingsEffect>(Channel.BUFFERED)
@@ -81,7 +81,7 @@ class DiagnosticsSettingsViewModel @Inject constructor(
     private suspend fun readPage(): String =
         if (secureSessionAccessState.hasFullSecureSessionAccess()) {
             withContext(Dispatchers.IO) {
-                runtime.readLines(MAX_VIEW_LINES).joinToString("\n")
+                logStore.readLines(MAX_VIEW_LINES).joinToString("\n")
             }
         } else {
             ""
@@ -89,7 +89,7 @@ class DiagnosticsSettingsViewModel @Inject constructor(
 
     private fun clearLogs() = viewModelScope.launch(Dispatchers.IO) {
         if (!secureSessionAccessState.hasFullSecureSessionAccess()) return@launch
-        runtime.clear()
+        logStore.clear()
         mutate(DiagnosticsSettingsMutation.LogsCleared)
     }
 
