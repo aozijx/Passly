@@ -2,7 +2,6 @@ package com.aozijx.passly.presentation.feature.settings.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.app.message.mapping.toUiMessage
 import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
@@ -29,7 +28,6 @@ class SettingsViewModel @Inject constructor(
     private val authenticationMethodAvailability: AuthenticationMethodAvailability,
     private val authenticationMethodProvisioner: AuthenticationMethodProvisioner,
     private val interactionSettingsRepository: InteractionSettingsRepository,
-    private val clipboardCopyController: ClipboardCopyController,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -38,9 +36,6 @@ class SettingsViewModel @Inject constructor(
     private val _effects = Channel<SettingsEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
-    fun copySensitive(text: String) {
-        viewModelScope.launch { clipboardCopyController.writeSensitive(text) }
-    }
 
     init {
         observeAuthenticationMethods()

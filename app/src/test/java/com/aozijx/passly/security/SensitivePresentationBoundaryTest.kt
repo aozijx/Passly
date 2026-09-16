@@ -46,6 +46,14 @@ class SensitivePresentationBoundaryTest {
         assertFalse(mainSettings.contains("AuthenticationManager"))
         assertTrue(mainSettings.contains("AuthenticationMethodAvailability"))
         assertTrue(mainSettings.contains("authorizeAppPasswordManagement"))
+        assertFalse(mainSettings.contains("ClipboardCopyController"))
+        assertFalse(mainSettings.contains("copySensitive"))
+
+        val recoveryDraft = source(
+            "com/aozijx/passly/presentation/feature/settings/security/RecoveryDraftViewModel.kt"
+        )
+        assertTrue(recoveryDraft.contains("SensitiveClipboardWriter"))
+        assertTrue(recoveryDraft.contains("chars.fill"))
     }
 
     @Test

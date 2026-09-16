@@ -13,8 +13,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.RecoveryDraftAction
+import com.aozijx.passly.presentation.feature.settings.security.RecoveryDraftEffect
 import com.aozijx.passly.presentation.feature.settings.security.RecoveryDraftState
 import com.aozijx.passly.presentation.feature.settings.security.RecoveryDraftViewModel
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsAction
@@ -31,13 +31,27 @@ import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 internal fun RecoveryCodeRoute(
     context: Context,
     localState: SettingsScreenLocalState,
-    settingsViewModel: SettingsViewModel,
     onBack: (() -> Unit)?,
 ) {
     val viewModel: SecuritySettingsViewModel = hiltViewModel()
     val draftViewModel: RecoveryDraftViewModel = hiltViewModel()
     val draftState by draftViewModel.state.collectAsStateWithLifecycle()
     val securityState by viewModel.uiState.collectAsStateWithLifecycle()
+    val copySuccessMessage = stringResource(
+        R.string.field_copy_success_message,
+        stringResource(R.string.recovery_code_label),
+    )
+    LaunchedEffect(draftViewModel, context, copySuccessMessage) {
+        draftViewModel.effects.collect { effect ->
+            when (effect) {
+                RecoveryDraftEffect.Copied -> Toast.makeText(
+                    context,
+                    copySuccessMessage,
+                    Toast.LENGTH_SHORT,
+                ).show()
+            }
+        }
+    }
     val recoveryCode = remember(draftState) {
         if (draftState is RecoveryDraftState.Ready) {
             draftViewModel.revealCode()?.concatToString()
@@ -50,20 +64,11 @@ internal fun RecoveryCodeRoute(
     }
     recoveryCode?.let { code ->
         if (localState.showRecoveryCodeSheet) {
-            val copySuccessMessage = stringResource(
-                R.string.field_copy_success_message,
-                stringResource(R.string.recovery_code_label),
-            )
             RecoveryCodeSheet(
                 recoveryCode = code,
                 sheetState = localState.recoveryCodeSheetState,
                 onCopy = {
-                    settingsViewModel.copySensitive(code)
-                    Toast.makeText(
-                        context,
-                        copySuccessMessage,
-                        Toast.LENGTH_SHORT,
-                    ).show()
+                    draftViewModel.onAction(RecoveryDraftAction.Copy)
                 },
                 onConfirm = {
                     localState.showRecoveryCodeSheet = false

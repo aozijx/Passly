@@ -40,7 +40,6 @@ internal fun SettingsDetailRouteRegistry(
             localState = localState,
             interactionViewModel = interactionViewModel,
             dataViewModel = dataViewModel,
-            settingsViewModel = settingsViewModel,
             onOpenTrash = onOpenTrash,
             onBack = onBack,
         )

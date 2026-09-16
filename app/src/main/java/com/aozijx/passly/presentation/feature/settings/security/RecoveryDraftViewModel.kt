@@ -7,11 +7,14 @@ import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.RecoveryCredentialCreation
 import com.aozijx.passly.domain.access.model.RecoveryCredentialDraft
 import com.aozijx.passly.domain.access.model.RecoveryCredentialFactory
+import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -19,6 +22,7 @@ import javax.inject.Inject
 class RecoveryDraftViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val draftFactory: RecoveryCredentialFactory,
+    private val clipboardWriter: SensitiveClipboardWriter,
 ) : ViewModel() {
     private var draft: RecoveryCredentialDraft? = null
     private val _state = MutableStateFlow<RecoveryDraftState>(
@@ -26,12 +30,15 @@ class RecoveryDraftViewModel @Inject constructor(
         else RecoveryDraftState.Empty
     )
     val state: StateFlow<RecoveryDraftState> = _state.asStateFlow()
+    private val _effects = Channel<RecoveryDraftEffect>(Channel.BUFFERED)
+    val effects = _effects.receiveAsFlow()
 
     fun onAction(action: RecoveryDraftAction) {
         when (action) {
             RecoveryDraftAction.Generate -> generateDraft()
             RecoveryDraftAction.ConfirmAndEnable -> confirmAndEnable()
             RecoveryDraftAction.Dismiss -> dismissDraft()
+            RecoveryDraftAction.Copy -> copyDraft()
         }
     }
 
@@ -61,6 +68,17 @@ class RecoveryDraftViewModel @Inject constructor(
 
     fun revealCode(): CharArray? = draft?.reveal()
 
+    private fun copyDraft() {
+        viewModelScope.launch {
+            val chars = draft?.reveal() ?: return@launch
+            try {
+                clipboardWriter.writeSensitive(String(chars))
+                _effects.send(RecoveryDraftEffect.Copied)
+            } finally {
+                chars.fill('\u0000')
+            }
+        }
+    }
     private fun confirmAndEnable() {
         viewModelScope.launch {
             val activeDraft = draft ?: return@launch

@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.navigation.autofill.AutofillRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.core.RecoveryCodeRoute
@@ -23,7 +22,6 @@ internal fun DataSettingsRoute(
     localState: SettingsScreenLocalState,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
-    settingsViewModel: SettingsViewModel,
     onOpenTrash: () -> Unit,
     onBack: (() -> Unit)?,
 ) {
@@ -32,7 +30,7 @@ internal fun DataSettingsRoute(
         SettingsRoute.Autofill -> ({ AutofillRoute(onBack) })
         SettingsRoute.DataManagement -> ({ DataManagementRoute(localState, onOpenTrash, onBack) })
         SettingsRoute.BackupRestore -> ({ BackupRoute(context, localState, dataViewModel, onBack) })
-        SettingsRoute.RecoveryCode -> ({ RecoveryCodeRoute(context, localState, settingsViewModel, onBack) })
+        SettingsRoute.RecoveryCode -> ({ RecoveryCodeRoute(context, localState, onBack) })
         SettingsRoute.General -> ({ GeneralRoute(onBack) })
         SettingsRoute.Notifications -> ({ NotificationsRoute(onBack) })
         else -> error("Unsupported data settings route: ${route.route}")

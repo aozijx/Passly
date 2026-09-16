@@ -13,6 +13,11 @@ sealed interface RecoveryDraftAction {
     data object Generate : RecoveryDraftAction
     data object ConfirmAndEnable : RecoveryDraftAction
     data object Dismiss : RecoveryDraftAction
+    data object Copy : RecoveryDraftAction
+}
+
+sealed interface RecoveryDraftEffect {
+    data object Copied : RecoveryDraftEffect
 }
 
 fun RecoveryDraftState.messageOrNull(): String? = when (this) {
