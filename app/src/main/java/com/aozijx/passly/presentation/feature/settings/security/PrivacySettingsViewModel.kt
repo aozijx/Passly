@@ -2,8 +2,7 @@ package com.aozijx.passly.presentation.feature.settings.security
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.app.clipboard.ClipboardCopyController
-import com.aozijx.passly.core.platform.clipboard.ClipboardClearResult
+import com.aozijx.passly.domain.clipboard.port.OwnedClipboardCleaner
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,7 +17,7 @@ import javax.inject.Inject
 @HiltViewModel
 class PrivacySettingsViewModel @Inject constructor(
     private val settingsRepository: SecuritySettingsRepository,
-    private val clipboardCopyController: ClipboardCopyController,
+    private val clipboardCleaner: OwnedClipboardCleaner,
 ) : ViewModel() {
 
     private val _effects = Channel<PrivacySettingsEffect>(Channel.BUFFERED)
@@ -66,9 +65,10 @@ class PrivacySettingsViewModel @Inject constructor(
             }
 
             PrivacySettingsAction.ClearClipboardNow -> {
-                val effect = when (clipboardCopyController.clearOwned()) {
-                    ClipboardClearResult.Cleared -> PrivacySettingsEffect.ClipboardCleared
-                    else -> PrivacySettingsEffect.ClipboardNotCleared
+                val effect = if (clipboardCleaner.clearOwned()) {
+                    PrivacySettingsEffect.ClipboardCleared
+                } else {
+                    PrivacySettingsEffect.ClipboardNotCleared
                 }
                 _effects.trySend(effect)
             }

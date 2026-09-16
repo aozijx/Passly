@@ -54,6 +54,17 @@ class SensitivePresentationBoundaryTest {
         )
         assertTrue(recoveryDraft.contains("SensitiveClipboardWriter"))
         assertTrue(recoveryDraft.contains("chars.fill"))
+        val scanner = source(
+            "com/aozijx/passly/presentation/feature/scanner/ScannerViewModel.kt"
+        )
+        assertFalse(scanner.contains("ClipboardCopyController"))
+        assertTrue(scanner.contains("SensitiveClipboardWriter"))
+
+        val privacy = source(
+            "com/aozijx/passly/presentation/feature/settings/security/PrivacySettingsViewModel.kt"
+        )
+        assertFalse(privacy.contains("ClipboardCopyController"))
+        assertTrue(privacy.contains("OwnedClipboardCleaner"))
     }
 
     @Test

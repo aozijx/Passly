@@ -1,5 +1,6 @@
 package com.aozijx.passly.app.clipboard
 
+import com.aozijx.passly.domain.clipboard.port.OwnedClipboardCleaner
 import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
 import dagger.Binds
 import dagger.Module
@@ -13,4 +14,9 @@ internal abstract class ClipboardModule {
     abstract fun bindSensitiveClipboardWriter(
         implementation: ClipboardCopyController,
     ): SensitiveClipboardWriter
+
+    @Binds
+    abstract fun bindOwnedClipboardCleaner(
+        implementation: ClipboardCopyController,
+    ): OwnedClipboardCleaner
 }
