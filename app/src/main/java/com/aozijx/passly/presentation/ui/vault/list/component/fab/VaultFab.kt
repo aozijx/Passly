@@ -50,6 +50,7 @@ import com.aozijx.passly.presentation.ui.vault.list.model.labelRes
 import com.aozijx.passly.presentation.ui.vault.shared.ADD_ENTRY_FAB_SHARED_KEY
 import com.aozijx.passly.presentation.ui.vault.shared.AddEntryFabVisualOverflow
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val FAB_MENU_STAGGER_MILLIS = 45
 
@@ -202,7 +203,7 @@ private fun StaggeredFabMenuItem(
 
     LaunchedEffect(visible, index, itemCount) {
         val staggerIndex = if (visible) itemCount - index - 1 else index
-        delay((staggerIndex * FAB_MENU_STAGGER_MILLIS).toLong())
+        delay((staggerIndex * FAB_MENU_STAGGER_MILLIS).toLong().milliseconds)
         itemVisible = visible
     }
 
