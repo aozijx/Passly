@@ -12,10 +12,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 
-interface AuthenticationManager {
+interface AuthenticationManager : AuthenticationMethodAvailability {
     val state: StateFlow<AuthenticationState>
-    val methods: StateFlow<AuthenticationMethods>
-
     suspend fun authenticate(
         request: AuthenticationRequest,
         input: AuthInput = AuthInput.Interactive,

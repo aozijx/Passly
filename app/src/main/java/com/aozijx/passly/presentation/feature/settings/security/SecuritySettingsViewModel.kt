@@ -2,8 +2,8 @@ package com.aozijx.passly.presentation.feature.settings.security
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.access.port.AuthenticationManager
-import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationResult
@@ -18,7 +18,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SecuritySettingsViewModel @Inject constructor(
-    private val authenticationManager: AuthenticationManager,
+    private val authenticationMethodAvailability: AuthenticationMethodAvailability,
+    private val secureSessionAccessState: SecureSessionAccessState,
     private val methodProvisioner: AuthenticationMethodProvisioner,
     private val settingsRepository: SecuritySettingsRepository
 ) : ViewModel() {
@@ -83,7 +84,7 @@ class SecuritySettingsViewModel @Inject constructor(
 
     private fun observeAuthenticationMethods() {
         viewModelScope.launch {
-            authenticationManager.methods.collect { methods ->
+            authenticationMethodAvailability.methods.collect { methods ->
                 _uiState.update {
                     it.copy(isBiometricEnabled = AuthenticationMethod.BIOMETRIC in methods)
                 }
@@ -123,5 +124,5 @@ class SecuritySettingsViewModel @Inject constructor(
     }
 
     private fun isRecoveryMode(): Boolean =
-        authenticationManager.state.value is AuthenticationState.RecoveryMode
+        secureSessionAccessState.isRecoveryMode()
 }

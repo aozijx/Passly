@@ -4,13 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.clipboard.ClipboardCopyController
 import com.aozijx.passly.app.message.mapping.toUiMessage
-import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
-import com.aozijx.passly.domain.access.model.AuthenticationPurpose
-import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
-import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import com.aozijx.passly.presentation.feature.settings.main.SettingsEffect
@@ -29,7 +26,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val authenticationManager: AuthenticationManager,
+    private val authenticationMethodAvailability: AuthenticationMethodAvailability,
     private val authenticationMethodProvisioner: AuthenticationMethodProvisioner,
     private val interactionSettingsRepository: InteractionSettingsRepository,
     private val clipboardCopyController: ClipboardCopyController,
@@ -147,14 +144,7 @@ class SettingsViewModel @Inject constructor(
         successEffect: SettingsEffect,
         operation: suspend () -> AuthenticationResult
     ) {
-        if (isRecoveryMode()) {
-            _effects.trySend(
-                SettingsEffect.AppPasswordError(
-                    "恢复模式不能修改应用密码"
-                )
-            )
-            return
-        }
+
         viewModelScope.launch {
             when (val result = operation()) {
                 is AuthenticationResult.Success -> _effects.trySend(successEffect)
@@ -174,9 +164,8 @@ class SettingsViewModel @Inject constructor(
 
     private fun requestAppPasswordEntry() {
         viewModelScope.launch {
-            val result = authenticationManager.authenticate(
-                AuthenticationRequest(AuthenticationPurpose.REAUTHENTICATE)
-            )
+            val result = authenticationMethodProvisioner.authorizeAppPasswordManagement()
+
             when (result) {
                 is AuthenticationResult.Success -> _effects.trySend(
                     SettingsEffect.AppPasswordEntryAuthorized(
@@ -193,7 +182,7 @@ class SettingsViewModel @Inject constructor(
 
     private fun observeAuthenticationMethods() {
         viewModelScope.launch {
-            authenticationManager.methods.collect { methods ->
+            authenticationMethodAvailability.methods.collect { methods ->
                 _uiState.update {
                     it.copy(isAppPasswordEnabled = AuthenticationMethod.APP_PASSWORD in methods)
                 }
@@ -201,7 +190,5 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    private fun isRecoveryMode(): Boolean =
-        authenticationManager.state.value is AuthenticationState.RecoveryMode
 
 }

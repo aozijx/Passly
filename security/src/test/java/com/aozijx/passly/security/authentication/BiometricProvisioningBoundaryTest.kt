@@ -24,6 +24,15 @@ class BiometricProvisioningBoundaryTest {
         assertTrue(rotationBody.contains("BiometricPrompt.CryptoObject(cipher)"))
     }
 
+    @Test
+    fun `app password management uses its exact authentication purpose`() {
+        val authorizationBody = source("DefaultAuthenticationMethodProvisioner.kt")
+            .substringAfter("override suspend fun authorizeAppPasswordManagement")
+            .substringBefore("override suspend fun setAppPassword")
+
+        assertTrue(authorizationBody.contains("AuthenticationPurpose.MANAGE_APP_PASSWORD"))
+        assertFalse(authorizationBody.contains("AuthenticationPurpose.REAUTHENTICATE"))
+    }
     private fun source(name: String): String {
         val sourceRoot = listOf(
             File("src/main/java"),

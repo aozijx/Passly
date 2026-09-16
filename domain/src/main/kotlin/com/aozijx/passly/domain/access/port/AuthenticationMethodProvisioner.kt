@@ -3,6 +3,8 @@ package com.aozijx.passly.domain.access.port
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 
 interface AuthenticationMethodProvisioner {
+    /** Authorizes entry into app-password management with its exact security purpose. */
+    suspend fun authorizeAppPasswordManagement(): AuthenticationResult
     /**
      * 调用方将 [password] 的所有权转移给实现；返回前数组会被清零。
      *

@@ -37,6 +37,10 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     private val cryptoFactory: BiometricCryptoFactory,
     private val availabilityResolver: AuthenticationAvailabilityResolver
 ) : AuthenticationMethodProvisioner {
+    override suspend fun authorizeAppPasswordManagement(): AuthenticationResult =
+        authenticationManager.authenticate(
+            AuthenticationRequest(AuthenticationPurpose.MANAGE_APP_PASSWORD)
+        )
     override suspend fun setAppPassword(password: CharArray): AuthenticationResult {
         val correlationId = UuidCreator.getTimeOrderedEpoch().toString()
         val wasRecoveryMode = session.isRecoveryMode()

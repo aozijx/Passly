@@ -32,6 +32,23 @@ class SensitivePresentationBoundaryTest {
     }
 
     @Test
+    fun `settings presentation uses narrow authentication ports`() {
+        val securitySettings = source(
+            "com/aozijx/passly/presentation/feature/settings/security/SecuritySettingsViewModel.kt"
+        )
+        val mainSettings = source(
+            "com/aozijx/passly/presentation/feature/settings/main/SettingsViewModel.kt"
+        )
+
+        assertFalse(securitySettings.contains("AuthenticationManager"))
+        assertTrue(securitySettings.contains("AuthenticationMethodAvailability"))
+        assertTrue(securitySettings.contains("SecureSessionAccessState"))
+        assertFalse(mainSettings.contains("AuthenticationManager"))
+        assertTrue(mainSettings.contains("AuthenticationMethodAvailability"))
+        assertTrue(mainSettings.contains("authorizeAppPasswordManagement"))
+    }
+
+    @Test
     fun `recovery mode presentation exposes password reset only`() {
         val source = source(
             "com/aozijx/passly/presentation/feature/recovery/RecoveryModeViewModel.kt"

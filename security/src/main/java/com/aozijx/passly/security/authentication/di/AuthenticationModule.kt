@@ -4,6 +4,7 @@ import android.content.Context
 import android.hardware.biometrics.BiometricManager
 import com.aozijx.passly.domain.access.model.RecoveryCredentialFactory
 import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
 import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
@@ -34,6 +35,12 @@ internal abstract class AuthenticationModule {
     abstract fun bindAuthenticationManager(
         impl: DefaultAuthenticationManager,
     ): AuthenticationManager
+
+    @Binds
+    @Singleton
+    abstract fun bindAuthenticationMethodAvailability(
+        impl: DefaultAuthenticationManager,
+    ): AuthenticationMethodAvailability
 
     @Binds
     @Singleton
