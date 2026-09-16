@@ -3,8 +3,6 @@ package com.aozijx.passly.presentation.feature.vault.detail.binding
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
-import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
 import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
@@ -55,29 +53,8 @@ internal fun DetailBankCardBinding(
             }
         },
         onEditSaved = { field, value ->
-            when (field) {
-                DetailBankCardFieldUiModel.CARDHOLDER -> onAction(
-                    DetailUiAction.CommitPatch(
-                        DetailEntryPatch.Username(value),
-                        DetailEditCompletion.SensitiveField(RevealedFieldKey.CARDHOLDER),
-                    ),
-                )
-
-                DetailBankCardFieldUiModel.CARD_NUMBER -> onAction(
-                    DetailUiAction.CommitPatch(
-                        DetailEntryPatch.CardNumber(value),
-                        DetailEditCompletion.SensitiveField(RevealedFieldKey.CARD_NUMBER),
-                    ),
-                )
-
-                DetailBankCardFieldUiModel.CVV -> onAction(
-                    DetailUiAction.CommitPatch(
-                        DetailEntryPatch.CardCvv(value),
-                        DetailEditCompletion.SensitiveField(RevealedFieldKey.CVV),
-                    ),
-                )
-
-                else -> Unit
+            field.revealedFieldKey?.let { key ->
+                onAction(DetailUiAction.SaveField(key, value))
             }
         },
         onCopy = { field ->

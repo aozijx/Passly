@@ -7,6 +7,7 @@ import com.aozijx.passly.app.entry.favicon.FaviconImageProcessor
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
@@ -97,11 +98,6 @@ class DetailViewModel @Inject internal constructor(
             return
         }
         when (event) {
-            is DetailUiAction.CommitPatch -> {
-                viewModelScope.launch {
-                    persistEntryPatch(event.patch, event.completion)
-                }
-            }
 
             DetailUiAction.StartTitleEdit -> {
                 mutate(DetailMutation.TitleEditingStarted)
@@ -141,6 +137,18 @@ class DetailViewModel @Inject internal constructor(
                 }
             }
 
+            is DetailUiAction.SelectAssociatedPackage -> {
+                val entry = _uiState.value.entry ?: return
+                viewModelScope.launch {
+                    persistEntryPatch(
+                        DetailEntryPatch.Associations(
+                            primaryUrl = entry.associations.primaryUrl,
+                            applicationIds = setOf(event.packageName),
+                        ),
+                        DetailEditCompletion.Associations,
+                    )
+                }
+            }
             DetailUiAction.StartNotesEdit -> {
                 val notes = _uiState.value.entry?.secret?.notes.orEmpty()
                 mutate(DetailMutation.FieldEditingStarted(DetailEditKey.NOTES, notes))
@@ -213,11 +221,19 @@ class DetailViewModel @Inject internal constructor(
             }
 
             is DetailUiAction.SaveField -> {
-                _uiState.value.entry ?: return
+                val current = _uiState.value.entry ?: return
                 viewModelScope.launch {
                     val patch = when (event.key) {
-                        RevealedFieldKey.USERNAME -> DetailEntryPatch.Username(event.newValue)
-                        RevealedFieldKey.PASSWORD -> DetailEntryPatch.LoginPassword(event.newValue)
+                        RevealedFieldKey.USERNAME,
+                        RevealedFieldKey.CARDHOLDER -> DetailEntryPatch.Username(event.newValue)
+                        RevealedFieldKey.PASSWORD -> when (current.type) {
+                            EntryType.WIFI -> DetailEntryPatch.WifiPassword(event.newValue)
+                            else -> DetailEntryPatch.LoginPassword(event.newValue)
+                        }
+                        RevealedFieldKey.CARD_NUMBER -> DetailEntryPatch.CardNumber(event.newValue)
+                        RevealedFieldKey.CVV -> DetailEntryPatch.CardCvv(event.newValue)
+                        RevealedFieldKey.SSH_PASSPHRASE ->
+                            DetailEntryPatch.SshPassphrase(event.newValue)
                         else -> return@launch
                     }
                     persistEntryPatch(

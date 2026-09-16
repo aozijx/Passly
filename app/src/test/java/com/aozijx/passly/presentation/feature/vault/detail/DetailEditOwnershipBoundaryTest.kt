@@ -21,6 +21,11 @@ class DetailEditOwnershipBoundaryTest {
         val state = featureRoot.resolve("DetailUiState.kt").readText()
         assertFalse(state.contains("completedEdit"))
         assertFalse(state.contains("saveCompletionId"))
+        val bindings = featureRoot.resolve("binding").walkTopDown()
+            .filter { it.extension == "kt" }
+            .joinToString("\n") { it.readText() }
+        assertFalse(bindings.contains("DetailUiAction.CommitPatch"))
+        assertFalse(bindings.contains("feature.vault.detail.DetailEntryPatch"))
         listOf(
             "StartNotesEdit", "UpdateNotesDraft", "SaveNotes",
             "StartDomainEdit", "UpdateDomainDraft", "SaveDomain",

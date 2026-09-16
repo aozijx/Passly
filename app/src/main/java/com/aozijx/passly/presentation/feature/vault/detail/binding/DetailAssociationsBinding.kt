@@ -10,8 +10,6 @@ import androidx.compose.ui.platform.LocalContext
 import com.aozijx.passly.app.platform.packageinfo.rememberInstalledAppIconBitmap
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppServicesProvider
 import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
-import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
 import com.aozijx.passly.presentation.feature.vault.detail.DetailEditKey
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
@@ -97,15 +95,7 @@ internal fun DetailAssociationsBinding(
             appIcon = { packageName -> rememberInstalledAppIconBitmap(packageName) },
             onSelect = { app ->
                 showPackagePicker = false
-                onAction(
-                    DetailUiAction.CommitPatch(
-                        DetailEntryPatch.Associations(
-                            primaryUrl = entry.associations.primaryUrl,
-                            applicationIds = setOf(app.packageName),
-                        ),
-                        DetailEditCompletion.Associations,
-                    ),
-                )
+                onAction(DetailUiAction.SelectAssociatedPackage(app.packageName))
             },
             onDismiss = { showPackagePicker = false },
         )

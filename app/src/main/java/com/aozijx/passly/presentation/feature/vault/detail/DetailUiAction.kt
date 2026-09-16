@@ -1,6 +1,5 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
-import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
 import android.net.Uri
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.FieldKey
@@ -8,10 +7,6 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUi
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconEditorTabUiModel
 
 sealed interface DetailUiAction {
-    data class CommitPatch(
-        val patch: DetailEntryPatch,
-        val completion: DetailEditCompletion,
-    ) : DetailEntryAction
 
     data object StartTitleEdit : DetailEntryAction
     data object CancelTitleEdit : DetailEntryAction
@@ -25,6 +20,7 @@ sealed interface DetailUiAction {
     data object StartDomainEdit : DetailEntryAction
     data class UpdateDomainDraft(val value: String) : DetailEntryAction
     data object SaveDomain : DetailEntryAction
+    data class SelectAssociatedPackage(val packageName: String) : DetailEntryAction
 
     data class StartFieldEdit(val key: String, val initialValue: String) : DetailSensitiveAction
     data class UpdateFieldDraft(val key: String, val value: String) : DetailSensitiveAction

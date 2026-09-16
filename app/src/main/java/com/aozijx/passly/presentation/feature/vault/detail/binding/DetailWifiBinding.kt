@@ -3,8 +3,6 @@ package com.aozijx.passly.presentation.feature.vault.detail.binding
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
-import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
 import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
@@ -41,13 +39,7 @@ internal fun DetailWifiBinding(
         onPasswordChanged = { onAction(DetailUiAction.UpdateFieldDraft(RevealedFieldKey.PASSWORD, it)) },
         onPasswordSaved = {
             if (it != password) {
-                onAction(
-                    DetailUiAction.CommitPatch(
-                        DetailEntryPatch.WifiPassword(it),
-                        DetailEditCompletion.SensitiveField(RevealedFieldKey.PASSWORD),
-                    ),
-                )
+                onAction(DetailUiAction.SaveField(RevealedFieldKey.PASSWORD, it))
             }
-        },
-    )
+        },    )
 }

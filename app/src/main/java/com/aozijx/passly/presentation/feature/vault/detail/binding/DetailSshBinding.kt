@@ -4,8 +4,6 @@ import androidx.compose.runtime.Composable
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
-import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
 import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
@@ -48,12 +46,7 @@ internal fun DetailSshBinding(
         onPassphraseChanged = { onAction(DetailUiAction.UpdateFieldDraft(RevealedFieldKey.SSH_PASSPHRASE, it)) },
         onPassphraseSaved = {
             if (it != passphrase) {
-                onAction(
-                    DetailUiAction.CommitPatch(
-                        DetailEntryPatch.SshPassphrase(it),
-                        DetailEditCompletion.SensitiveField(RevealedFieldKey.SSH_PASSPHRASE),
-                    ),
-                )
+                onAction(DetailUiAction.SaveField(RevealedFieldKey.SSH_PASSPHRASE, it))
             }
         },
         onPrivateKeyClick = {
