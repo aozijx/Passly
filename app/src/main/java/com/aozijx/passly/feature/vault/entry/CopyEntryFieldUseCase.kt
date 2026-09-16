@@ -1,5 +1,7 @@
 package com.aozijx.passly.feature.vault.entry
 
+import javax.inject.Inject
+
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationResult
@@ -16,7 +18,7 @@ import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 
-internal class CopyEntryFieldUseCase(
+internal class CopyEntryFieldUseCase @Inject constructor(
     private val authorizationGate: AuthorizationGate,
     private val entryQueryRepository: EntryQueryRepository,
     private val entryFieldReader: EntryFieldReader,
@@ -86,7 +88,7 @@ internal class CopyEntryFieldUseCase(
     }
 }
 
-internal class CopyOtpCodeUseCase(
+internal class CopyOtpCodeUseCase @Inject constructor(
     private val authorizationGate: AuthorizationGate,
     private val clipboardWriter: SensitiveClipboardWriter,
 ) {

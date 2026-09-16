@@ -8,9 +8,6 @@ import androidx.paging.cachedIn
 import androidx.paging.map
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.domain.access.port.AuthorizationGate
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
@@ -18,11 +15,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
-import com.aozijx.passly.domain.entry.policy.EntryFieldReader
-import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
-import com.aozijx.passly.domain.entry.port.EntryQueryRepository
-import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
@@ -53,20 +46,16 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class VaultViewModel @Inject constructor(
-    private val entryQueryRepository: EntryQueryRepository,
+class VaultViewModel @Inject internal constructor(
     private val entryListQueryRepository: EntryListQueryRepository,
     private val entryPageSource: VaultEntryPageSource,
     private val settingsRepository: LibraryViewSettingsRepository,
     private val createEntry: CreateEntryUseCase,
-    private val entryCommandRepository: EntryCommandRepository,
-    private val secureSessionAccessState: SecureSessionAccessState,
-    private val entryFieldReader: EntryFieldReader,
+    private val moveEntryToTrash: MoveEntryToTrashUseCase,
+    private val copyEntryField: CopyEntryFieldUseCase,
+    private val copyOtpCode: CopyOtpCodeUseCase,
     private val dataChangeSignal: VaultDataChangeSignal,
     private val accessPolicy: SecureSessionAccessPolicy,
-    private val sensitiveFieldRepository: SensitiveFieldRepository,
-    private val clipboardWriter: SensitiveClipboardWriter,
-    private val authorizationGate: AuthorizationGate,
     otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
 ) : ViewModel() {
 
@@ -92,25 +81,6 @@ class VaultViewModel @Inject constructor(
     }
 
     private val totp = otpCodeRuntimeFactory.create(viewModelScope)
-    private val moveEntryToTrash = MoveEntryToTrashUseCase(
-        entryCommandRepository = entryCommandRepository,
-        entryQueryRepository = entryQueryRepository,
-        secureSessionAccessState = secureSessionAccessState,
-        otpCodeInvalidator = totp,
-        authorizationGate = authorizationGate,
-    )
-
-    private val copyEntryField = CopyEntryFieldUseCase(
-        authorizationGate = authorizationGate,
-        entryQueryRepository = entryQueryRepository,
-        entryFieldReader = entryFieldReader,
-        sensitiveFieldRepository = sensitiveFieldRepository,
-        clipboardWriter = clipboardWriter,
-    )
-    private val copyOtpCode = CopyOtpCodeUseCase(
-        authorizationGate = authorizationGate,
-        clipboardWriter = clipboardWriter,
-    )
 
     private val hierarchyMode: Flow<EntryHierarchyDisplayMode> =
         settingsRepository.libraryViewSettings
@@ -249,8 +219,10 @@ class VaultViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 when (val result = moveEntryToTrash(entryId)) {
-                    MoveEntryToTrashResult.Moved ->
+                    MoveEntryToTrashResult.Moved -> {
+                        totp.entryRemoved(entryId.value)
                         mutate(VaultMutation.DeletedEntryHandled(entryId.value))
+                    }
 
                     MoveEntryToTrashResult.NotAuthorized -> Unit
                     is MoveEntryToTrashResult.Failed -> emitError(result.error.code)

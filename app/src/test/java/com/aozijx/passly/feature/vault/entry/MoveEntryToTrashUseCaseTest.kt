@@ -21,7 +21,6 @@ import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
-import com.aozijx.passly.feature.vault.otp.OtpCodeInvalidator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runTest
@@ -53,14 +52,13 @@ class MoveEntryToTrashUseCaseTest {
     }
 
     @Test
-    fun successfulMoveUsesCurrentVersionAndInvalidatesOtpAfterWrite() = runTest {
+    fun successfulMoveUsesCurrentVersion() = runTest {
         val fixture = fixture(AuthenticationState.Authenticated(1L), entry(version = EntryVersion(4)))
 
         val result = fixture.useCase(EntryId("entry-id"))
 
         assertEquals(MoveEntryToTrashResult.Moved, result)
         assertEquals(EntryId("entry-id") to EntryVersion(4), fixture.commands.lastMove)
-        assertEquals(listOf("entry-id"), fixture.invalidator.removedIds)
     }
 
     @Test
@@ -89,19 +87,16 @@ class MoveEntryToTrashUseCaseTest {
     ): Fixture {
         val query = RecordingQuery(entry)
         val commands = RecordingCommands()
-        val invalidator = RecordingInvalidator()
         val authorizationGate = RecordingAuthorizationGate(authorizationAllowed)
         return Fixture(
             MoveEntryToTrashUseCase(
                 commands,
                 query,
                 FixedAccess(state),
-                invalidator,
                 authorizationGate,
             ),
             query,
             commands,
-            invalidator,
             authorizationGate,
         )
     }
@@ -115,7 +110,6 @@ class MoveEntryToTrashUseCaseTest {
         val useCase: MoveEntryToTrashUseCase,
         val query: RecordingQuery,
         val commands: RecordingCommands,
-        val invalidator: RecordingInvalidator,
         val authorizationGate: RecordingAuthorizationGate,
     )
 
@@ -145,12 +139,6 @@ class MoveEntryToTrashUseCaseTest {
         override suspend fun restoreEntry(id: EntryId, expectedVersion: EntryVersion) = AppResult.Success(Unit)
         override suspend fun deletePermanently(id: EntryId, expectedVersion: EntryVersion) = AppResult.Success(Unit)
         override suspend fun emptyTrash() = AppResult.Success(0)
-    }
-
-    private class RecordingInvalidator : OtpCodeInvalidator {
-        val removedIds = mutableListOf<String>()
-        override fun entryChanged(entryId: String) = Unit
-        override fun entryRemoved(entryId: String) { removedIds += entryId }
     }
 
     private class RecordingAuthorizationGate(

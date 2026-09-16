@@ -1,5 +1,7 @@
 package com.aozijx.passly.feature.vault.entry
 
+import javax.inject.Inject
+
 import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.model.SessionModeRestricted
@@ -12,13 +14,11 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
-import com.aozijx.passly.feature.vault.otp.OtpCodeInvalidator
 
-internal class MoveEntryToTrashUseCase(
+internal class MoveEntryToTrashUseCase @Inject constructor(
     private val entryCommandRepository: EntryCommandRepository,
     private val entryQueryRepository: EntryQueryRepository,
     private val secureSessionAccessState: SecureSessionAccessState,
-    private val otpCodeInvalidator: OtpCodeInvalidator,
     private val authorizationGate: AuthorizationGate,
 ) {
     suspend operator fun invoke(entryId: EntryId): MoveEntryToTrashResult {
@@ -34,7 +34,6 @@ internal class MoveEntryToTrashUseCase(
                     ?: return@authorize MoveEntryToTrashResult.Failed(NotFound())
                 when (val result = entryCommandRepository.moveToTrash(entry.id, entry.version)) {
                     is AppResult.Success -> {
-                        otpCodeInvalidator.entryRemoved(entry.id.value)
                         MoveEntryToTrashResult.Moved
                     }
 
