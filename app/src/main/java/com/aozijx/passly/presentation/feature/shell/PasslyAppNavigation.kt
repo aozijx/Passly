@@ -8,15 +8,12 @@ import com.aozijx.passly.presentation.feature.shell.navigation.PasslyNavHost
 import com.aozijx.passly.presentation.feature.vault.navigation.registerVaultGraph
 
 @Composable
-internal fun PasslyAppNavigation(
-    onUserInteraction: () -> Unit,
-) {
+internal fun PasslyAppNavigation() {
     val navController = rememberNavController()
 
     ProvidePasslyAdaptiveLayout {
         PasslyNavHost(
             navController = navController,
-            onUserInteraction = onUserInteraction,
         ) { context, sharedTransitionScope ->
             registerVaultGraph(
                 context = context,

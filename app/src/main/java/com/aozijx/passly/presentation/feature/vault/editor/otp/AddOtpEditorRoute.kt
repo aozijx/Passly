@@ -32,7 +32,6 @@ fun AddOtpEditorRoute(
     viewModel: AddOtpViewModel,
     onBack: () -> Unit,
     onSaved: () -> Unit,
-    onUserInteraction: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     scannerContent: @Composable (
@@ -70,7 +69,6 @@ fun AddOtpEditorRoute(
 
     val form = uiState.form
     fun updateForm(transform: (OtpFormState) -> OtpFormState) {
-        onUserInteraction()
         viewModel.onAction(AddOtpAction.FormChanged(transform(form)))
     }
     val save = {
@@ -83,13 +81,11 @@ fun AddOtpEditorRoute(
             onBack = onBack,
             onSave = save,
             onScan = {
-                onUserInteraction()
                 keyboardController?.hide()
                 showScanner = true
             },
             onTitleChange = { updateForm { current -> current.copy(title = it) } },
             onUriChange = {
-                onUserInteraction()
                 viewModel.onAction(AddOtpAction.UriChanged(it))
             },
             onIssuerChange = { updateForm { current -> current.copy(issuer = it) } },
@@ -100,7 +96,6 @@ fun AddOtpEditorRoute(
             onPeriodChange = { updateForm { current -> current.copy(period = it) } },
             onDigitsChange = { updateForm { current -> current.copy(digits = it) } },
             onTypeChange = {
-                onUserInteraction()
                 viewModel.onAction(AddOtpAction.TypeChanged(it.toDomainType()))
             },
             onAlgorithmChange = {
@@ -119,7 +114,6 @@ fun AddOtpEditorRoute(
     if (showScanner) {
         scannerContent(
             { config ->
-                onUserInteraction()
                 viewModel.onAction(AddOtpAction.ScannedConfigApplied(config))
             },
             { showScanner = false },

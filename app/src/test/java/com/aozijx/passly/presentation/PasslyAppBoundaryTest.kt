@@ -34,6 +34,18 @@ class PasslyAppBoundaryTest {
     }
 
     @Test
+    fun `navigation context contains navigation only`() {
+        val navigationContext = source(
+            "com/aozijx/passly/presentation/feature/shell/navigation/ShellNavigationContext.kt",
+        )
+        val detailList = source(
+            "com/aozijx/passly/presentation/ui/vault/detail/component/DetailScrollableContent.kt",
+        )
+
+        assertFalse(navigationContext.contains("onUserInteraction"))
+        assertFalse(detailList.contains("clickable("))
+    }
+    @Test
     fun `shell depends on window and close intent instead of activity`() {
         val shell = source(
             "com/aozijx/passly/presentation/feature/shell/AppShell.kt",

@@ -38,7 +38,6 @@ fun DetailTopBar(
     onTitleSaved: () -> Unit,
     onFavoriteToggled: () -> Unit,
     onBack: () -> Unit,
-    onInteraction: () -> Unit = {}
 ) {
     val haptic = LocalHapticFeedback.current
     val titleInteractionSource = remember { MutableInteractionSource() }
@@ -55,7 +54,6 @@ fun DetailTopBar(
                     singleLine = true,
                     trailingIcon = {
                         IconButton(onClick = {
-                            onInteraction()
                             onTitleSaved()
                         }) {
                             Icon(
@@ -77,7 +75,7 @@ fun DetailTopBar(
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             onTitleEditStarted()
                         },
-                        onClick = { onInteraction() }
+                        onClick = {}
                     )
                 )
             }
@@ -92,7 +90,6 @@ fun DetailTopBar(
         },
         actions = {
             IconButton(onClick = {
-                onInteraction()
                 onFavoriteToggled()
             }) {
                 Icon(

@@ -24,7 +24,6 @@ import kotlinx.coroutines.flow.collectLatest
 fun DetailRoute(
     entryId: String,
     onBack: () -> Unit,
-    onUpdateInteraction: () -> Unit,
     onOpenRelatedEntry: (Entry) -> Unit,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
     viewModel: DetailViewModel = hiltViewModel(),
@@ -37,7 +36,6 @@ fun DetailRoute(
     var otpQrUri by remember(entryId) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(entryId, viewModel) {
-        onUpdateInteraction()
         viewModel.load(entryId)
     }
     LaunchedEffect(viewModel, context, copiedMessageFormat, otpLabel) {
@@ -77,7 +75,6 @@ fun DetailRoute(
     DetailScreen(
         model = detailHeaderUiModel(entry, uiState),
         onBack = onBack,
-        onInteraction = onUpdateInteraction,
         onTitleChanged = { viewModel.onAction(DetailUiAction.UpdateEditedTitle(it)) },
         onTitleEditStarted = { viewModel.onAction(DetailUiAction.StartTitleEdit) },
         onTitleSaved = { viewModel.onAction(DetailUiAction.SaveTitle) },
@@ -90,7 +87,6 @@ fun DetailRoute(
             otpUiState = otpUiState,
             otpQrUri = otpQrUri,
             onAction = viewModel::onAction,
-            onInteraction = onUpdateInteraction,
             onOtpQrDismiss = { otpQrUri = null },
             onOpenRelatedEntry = onOpenRelatedEntry,
         )

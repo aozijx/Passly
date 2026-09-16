@@ -21,7 +21,6 @@ fun AddBankCardEditorRoute(
     viewModel: AddBankCardViewModel,
     onBack: () -> Unit,
     onSaved: () -> Unit,
-    onUserInteraction: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
@@ -31,8 +30,7 @@ fun AddBankCardEditorRoute(
     val saveFailedMessage = stringResource(R.string.vault_add_bank_card_save_failed)
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
 
-    fun submit(action: AddBankCardAction, userInitiated: Boolean = false) {
-        if (userInitiated) onUserInteraction()
+    fun submit(action: AddBankCardAction) {
         viewModel.onAction(action)
     }
     val save = {
@@ -64,40 +62,40 @@ fun AddBankCardEditorRoute(
         onEvent = BankCardEditorEventHandler(
             onBack = onBack,
             onSave = save,
-            onTitleChange = { submit(AddBankCardAction.TitleChanged(it), true) },
+            onTitleChange = { submit(AddBankCardAction.TitleChanged(it)) },
             onCardTypeChange = {
-                submit(AddBankCardAction.CardTypeChanged(it.toFeatureType()), true)
+                submit(AddBankCardAction.CardTypeChanged(it.toFeatureType()))
             },
             onCardholderChange = {
-                submit(AddBankCardAction.CardholderChanged(it), true)
+                submit(AddBankCardAction.CardholderChanged(it))
             },
             onCardNumberChange = {
-                submit(AddBankCardAction.CardNumberChanged(it), true)
+                submit(AddBankCardAction.CardNumberChanged(it))
             },
             onCardNumberVisibilityChange = {
                 submit(AddBankCardAction.CardNumberVisibilityChanged(it))
             },
             onPaymentPinChange = {
-                submit(AddBankCardAction.PaymentPinChanged(it), true)
+                submit(AddBankCardAction.PaymentPinChanged(it))
             },
             onPinVisibilityChange = {
                 submit(AddBankCardAction.PinVisibilityChanged(it))
             },
-            onCvvChange = { submit(AddBankCardAction.CvvChanged(it), true) },
+            onCvvChange = { submit(AddBankCardAction.CvvChanged(it)) },
             onCvvVisibilityChange = {
                 submit(AddBankCardAction.CvvVisibilityChanged(it))
             },
             onExpiryMonthChange = {
-                submit(AddBankCardAction.ExpiryMonthChanged(it), true)
+                submit(AddBankCardAction.ExpiryMonthChanged(it))
             },
             onExpiryYearChange = {
-                submit(AddBankCardAction.ExpiryYearChanged(it), true)
+                submit(AddBankCardAction.ExpiryYearChanged(it))
             },
-            onTagsChange = { submit(AddBankCardAction.TagsChanged(it), true) },
+            onTagsChange = { submit(AddBankCardAction.TagsChanged(it)) },
             onBillingAddressChange = {
-                submit(AddBankCardAction.BillingAddressChanged(it), true)
+                submit(AddBankCardAction.BillingAddressChanged(it))
             },
-            onNotesChange = { submit(AddBankCardAction.NotesChanged(it), true) },
+            onNotesChange = { submit(AddBankCardAction.NotesChanged(it)) },
         ),
         snackbarHostState = snackbarHostState,
         sharedTransitionScope = sharedTransitionScope,

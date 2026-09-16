@@ -63,7 +63,6 @@ internal fun NavGraphBuilder.registerVaultGraph(
             viewModel = viewModel,
             onBack = context.navigateBack,
             onSaved = context.navigateBack,
-            onUserInteraction = context.onUserInteraction,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = this,
         )
@@ -75,7 +74,6 @@ internal fun NavGraphBuilder.registerVaultGraph(
             viewModel = viewModel,
             onBack = context.navigateBack,
             onSaved = context.navigateBack,
-            onUserInteraction = context.onUserInteraction,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = this,
             scannerContent = { onResult, onDismiss ->
@@ -90,7 +88,6 @@ internal fun NavGraphBuilder.registerVaultGraph(
             viewModel = viewModel,
             onBack = context.navigateBack,
             onSaved = context.navigateBack,
-            onUserInteraction = context.onUserInteraction,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = this,
         )
@@ -108,7 +105,6 @@ internal fun NavGraphBuilder.registerVaultGraph(
         DetailRoute(
             entryId = entryId,
             onBack = context.navigateBack,
-            onUpdateInteraction = context.onUserInteraction,
             onOpenRelatedEntry = {
                 context.navigateToRoute(AppRoute.Detail.createRoute(it.id.value))
             },

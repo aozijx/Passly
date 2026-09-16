@@ -78,11 +78,7 @@ internal fun AppShell(
             }
 
             AppShellDestination.VAULT -> {
-                PasslyAppNavigation(
-                    onUserInteraction = {
-                        onAction(AppShellUiAction.UpdateInteraction)
-                    },
-                )
+                PasslyAppNavigation()
             }
 
             AppShellDestination.RECOVERY -> {

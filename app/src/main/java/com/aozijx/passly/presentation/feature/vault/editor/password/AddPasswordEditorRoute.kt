@@ -20,7 +20,6 @@ fun AddPasswordEditorRoute(
     viewModel: AddPasswordViewModel,
     onBack: () -> Unit,
     onSaved: () -> Unit,
-    onUserInteraction: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
@@ -30,8 +29,7 @@ fun AddPasswordEditorRoute(
     val saveFailedMessage = stringResource(R.string.vault_add_password_save_failed)
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
 
-    fun submit(action: AddPasswordAction, userInitiated: Boolean = false) {
-        if (userInitiated) onUserInteraction()
+    fun submit(action: AddPasswordAction) {
         viewModel.onAction(action)
     }
 
@@ -56,15 +54,15 @@ fun AddPasswordEditorRoute(
         onEvent = PasswordEditorEventHandler(
             onBack = onBack,
             onSave = save,
-            onTitleChange = { submit(AddPasswordAction.TitleChanged(it), true) },
-            onUsernameChange = { submit(AddPasswordAction.UsernameChanged(it), true) },
-            onPasswordChange = { submit(AddPasswordAction.PasswordChanged(it), true) },
+            onTitleChange = { submit(AddPasswordAction.TitleChanged(it)) },
+            onUsernameChange = { submit(AddPasswordAction.UsernameChanged(it)) },
+            onPasswordChange = { submit(AddPasswordAction.PasswordChanged(it)) },
             onPasswordVisibilityChange = {
                 submit(AddPasswordAction.PasswordVisibilityChanged(it))
             },
-            onWebsiteChange = { submit(AddPasswordAction.WebsiteChanged(it), true) },
-            onNotesChange = { submit(AddPasswordAction.NotesChanged(it), true) },
-            onTagsChange = { submit(AddPasswordAction.TagsChanged(it), true) },
+            onWebsiteChange = { submit(AddPasswordAction.WebsiteChanged(it)) },
+            onNotesChange = { submit(AddPasswordAction.NotesChanged(it)) },
+            onTagsChange = { submit(AddPasswordAction.TagsChanged(it)) },
         ),
         snackbarHostState = snackbarHostState,
         sharedTransitionScope = sharedTransitionScope,

@@ -20,7 +20,6 @@ internal typealias FeatureGraphRegistration = NavGraphBuilder.(
 @Composable
 internal fun PasslyNavHost(
     navController: NavHostController,
-    onUserInteraction: () -> Unit,
     registerFeatureGraphs: FeatureGraphRegistration,
 ) {
     val navigationContext = ShellNavigationContext(
@@ -29,7 +28,6 @@ internal fun PasslyNavHost(
         navigateToSingleTopRoute = { route ->
             navController.navigate(route) { launchSingleTop = true }
         },
-        onUserInteraction = onUserInteraction,
     )
 
     Surface(

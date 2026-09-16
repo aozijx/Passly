@@ -15,7 +15,6 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.DetailHeaderUiModel
 fun DetailScreen(
     model: DetailHeaderUiModel,
     onBack: () -> Unit,
-    onInteraction: () -> Unit,
     onTitleChanged: (String) -> Unit,
     onTitleEditStarted: () -> Unit,
     onTitleSaved: () -> Unit,
@@ -26,8 +25,17 @@ fun DetailScreen(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            DetailTopBar(model, scrollBehavior, onTitleChanged, onTitleEditStarted,
-                onTitleSaved, onFavoriteToggled, onBack, onInteraction)
+            DetailTopBar(
+                model = model,
+                scrollBehavior = scrollBehavior,
+                onTitleChanged = onTitleChanged,
+                onTitleEditStarted = onTitleEditStarted,
+                onTitleSaved = onTitleSaved,
+                onFavoriteToggled = onFavoriteToggled,
+                onBack = onBack,
+            )
         },
-    ) { innerPadding -> content(Modifier.padding(innerPadding)) }
+    ) { innerPadding ->
+        content(Modifier.padding(innerPadding))
+    }
 }

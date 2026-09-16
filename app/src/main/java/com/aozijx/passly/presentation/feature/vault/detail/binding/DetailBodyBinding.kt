@@ -29,7 +29,6 @@ fun DetailBodyBinding(
     otpUiState: OtpCodeState?,
     otpQrUri: String?,
     onAction: (DetailUiAction) -> Unit,
-    onInteraction: () -> Unit,
     onOtpQrDismiss: () -> Unit,
     onOpenRelatedEntry: (Entry) -> Unit,
 ) {
@@ -67,7 +66,7 @@ fun DetailBodyBinding(
         }
     }
 
-    DetailScrollableContent(modifier = modifier, onInteraction = onInteraction) {
+    DetailScrollableContent(modifier = modifier) {
         item {
             DetailIconCard(
                 model = DetailIconCardUiModel(
