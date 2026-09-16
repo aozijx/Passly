@@ -31,12 +31,12 @@ internal fun DataSettingsRoute(
 ) {
     val content: @Composable () -> Unit = when (route) {
         SettingsRoute.Interaction -> ({ InteractionRoute(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
-        SettingsRoute.Autofill -> ({ AutofillRoute(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
-        SettingsRoute.DataManagement -> ({ DataManagementRoute(route, context, localState, interactionViewModel, onOpenTrash, onBack) })
+        SettingsRoute.Autofill -> ({ AutofillRoute(onBack) })
+        SettingsRoute.DataManagement -> ({ DataManagementRoute(localState, onOpenTrash, onBack) })
         SettingsRoute.BackupRestore -> ({ BackupRoute(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
         SettingsRoute.RecoveryCode -> ({ RecoveryCodeRoute(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
-        SettingsRoute.General -> ({ GeneralRoute(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
-        SettingsRoute.Notifications -> ({ NotificationsRoute(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
+        SettingsRoute.General -> ({ GeneralRoute(onBack) })
+        SettingsRoute.Notifications -> ({ NotificationsRoute(onBack) })
         else -> error("Unsupported data settings route: ${route.route}")
     }
     content()

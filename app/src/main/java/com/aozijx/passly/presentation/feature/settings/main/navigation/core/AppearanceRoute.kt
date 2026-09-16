@@ -3,7 +3,6 @@ package com.aozijx.passly.presentation.feature.settings.main.navigation.core
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.appearance.AppearanceSettingsAction
 import com.aozijx.passly.presentation.feature.settings.appearance.AppearanceSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.appearance.appLanguageFromKey
@@ -16,8 +15,7 @@ import com.aozijx.passly.presentation.ui.settings.appearance.AppearanceDetail
 
 @Composable
 internal fun AppearanceRoute(
-    settingsViewModel: SettingsViewModel,
-    onBack: (() -> Unit)?
+    onBack: (() -> Unit)?,
 ) {
     val viewModel: AppearanceSettingsViewModel = hiltViewModel()
     val appearance = LocalAppearanceSettings.current

@@ -8,7 +8,6 @@ import android.widget.Toast
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsEffect
@@ -19,8 +18,7 @@ import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 
 @Composable
 internal fun PrivacyRoute(
-    settingsViewModel: SettingsViewModel,
-    onBack: (() -> Unit)?
+    onBack: (() -> Unit)?,
 ) {
     val viewModel: PrivacySettingsViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
