@@ -26,6 +26,8 @@ class DetailEditOwnershipBoundaryTest {
             .joinToString("\n") { it.readText() }
         assertFalse(bindings.contains("DetailUiAction.CommitPatch"))
         assertFalse(bindings.contains("feature.vault.detail.DetailEntryPatch"))
+        assertFalse(bindings.contains("DetailSectionActionHandler"))
+        assertFalse(featureRoot.resolve("DetailSectionActionHandler.kt").exists())
         listOf(
             "StartNotesEdit", "UpdateNotesDraft", "SaveNotes",
             "StartDomainEdit", "UpdateDomainDraft", "SaveDomain",

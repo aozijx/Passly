@@ -3,7 +3,6 @@ package com.aozijx.passly.presentation.feature.vault.detail.binding
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
 import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
@@ -16,7 +15,6 @@ internal fun DetailWifiBinding(
     uiState: DetailUiState,
     onAction: (DetailUiAction) -> Unit,
 ) {
-    val handler = DetailSectionActionHandler(onAction)
     val password = uiState.revealed(RevealedFieldKey.PASSWORD)?.let { String(it.toCharArray()) }
     WifiSection(
         model = DetailWifiUiModel(
@@ -28,8 +26,8 @@ internal fun DetailWifiBinding(
             entry.secret.wifi?.securityType ?: "WPA",
             entry.secret.wifi?.isHidden ?: false,
         ),
-        onSsidCopy = { handler.copy(FieldKey.WIFI_SSID) },
-        onPasswordCopy = { handler.copy(FieldKey.PASSWORD) },
+        onSsidCopy = { onAction(DetailUiAction.CopyField(FieldKey.WIFI_SSID)) },
+        onPasswordCopy = { onAction(DetailUiAction.CopyField(FieldKey.PASSWORD)) },
         onPasswordReveal = {
             onAction(DetailUiAction.ToggleFieldVisibility(RevealedFieldKey.PASSWORD))
         },

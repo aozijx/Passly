@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
 import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
@@ -17,7 +16,6 @@ internal fun DetailIdentityBinding(
     uiState: DetailUiState,
     onAction: (DetailUiAction) -> Unit,
 ) {
-    val handler = DetailSectionActionHandler(onAction)
     val idNumber = uiState.revealed(RevealedFieldKey.ID_NUMBER)?.let { String(it.toCharArray()) }
     IdCardSection(
         model = DetailIdentityUiModel(
@@ -26,10 +24,10 @@ internal fun DetailIdentityBinding(
             idNumber != null,
             entry.username,
         ),
-        onIdNumberCopy = { handler.copy(FieldKey.ID_NUMBER) },
+        onIdNumberCopy = { onAction(DetailUiAction.CopyField(FieldKey.ID_NUMBER)) },
         onIdNumberReveal = {
             onAction(DetailUiAction.ToggleFieldVisibility(RevealedFieldKey.ID_NUMBER))
         },
-        onUsernameCopy = { handler.copy(FieldKey.USERNAME) },
+        onUsernameCopy = { onAction(DetailUiAction.CopyField(FieldKey.USERNAME)) },
     )
 }

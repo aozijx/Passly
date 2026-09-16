@@ -7,7 +7,6 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
 import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
@@ -24,7 +23,6 @@ internal fun DetailCredentialBinding(
     uiState: DetailUiState,
     onAction: (DetailUiAction) -> Unit,
 ) {
-    val actionHandler = DetailSectionActionHandler(onAction)
     val revealedUsername = uiState.revealed(RevealedFieldKey.USERNAME)
     val revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD)
 
@@ -72,12 +70,12 @@ internal fun DetailCredentialBinding(
             }
 
             override fun onCopyRequested(field: CredentialFieldUiModel) {
-                actionHandler.copy(
+                onAction(DetailUiAction.CopyField(
                     when (field) {
                         CredentialFieldUiModel.USERNAME -> FieldKey.USERNAME
                         CredentialFieldUiModel.PASSWORD -> FieldKey.PASSWORD
                     },
-                )
+                ))
             }
 
             override fun onSaveRequested(field: CredentialFieldUiModel, value: String) {

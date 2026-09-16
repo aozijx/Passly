@@ -3,7 +3,6 @@ package com.aozijx.passly.presentation.feature.vault.detail.binding
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
 import com.aozijx.passly.presentation.feature.vault.detail.RevealedFieldKey
@@ -17,7 +16,6 @@ internal fun DetailBankCardBinding(
     uiState: DetailUiState,
     onAction: (DetailUiAction) -> Unit,
 ) {
-    val handler = DetailSectionActionHandler(onAction)
     val cardholder = uiState.revealed(RevealedFieldKey.CARDHOLDER)?.let { String(it.toCharArray()) }
     val cardNumber = uiState.revealed(RevealedFieldKey.CARD_NUMBER)?.let { String(it.toCharArray()) }
     val cvv = uiState.revealed(RevealedFieldKey.CVV)?.let { String(it.toCharArray()) }
@@ -58,7 +56,7 @@ internal fun DetailBankCardBinding(
             }
         },
         onCopy = { field ->
-            handler.copy(
+            onAction(DetailUiAction.CopyField(
                 when (field) {
                     DetailBankCardFieldUiModel.CARDHOLDER -> FieldKey.CARD_HOLDER
                     DetailBankCardFieldUiModel.CARD_NUMBER -> FieldKey.CARD_NUMBER
@@ -66,7 +64,7 @@ internal fun DetailBankCardBinding(
                     DetailBankCardFieldUiModel.PAYMENT_PIN -> FieldKey.PAYMENT_PIN
                     DetailBankCardFieldUiModel.EXPIRATION -> FieldKey.CARD_EXPIRATION
                 },
-            )
+            ))
         },
         onReveal = { field ->
             val key = when (field) {
