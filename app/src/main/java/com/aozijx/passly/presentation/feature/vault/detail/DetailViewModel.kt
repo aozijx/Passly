@@ -560,6 +560,7 @@ class DetailViewModel @Inject constructor(
                 entryType = analysis.entryType,
                 strategySummary = analysis.strategySummary,
                 validationError = analysis.validationError,
+                sections = analysis.sections,
                 isEditingTitle = isEditingTitle,
                 editedTitle = editedTitle,
                 strategyReady = analysis.strategyReady,

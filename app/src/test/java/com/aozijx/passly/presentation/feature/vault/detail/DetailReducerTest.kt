@@ -12,6 +12,7 @@ import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
+import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -121,6 +122,7 @@ class DetailReducerTest {
                     strategySummary = "ready",
                     validationError = null,
                     strategyReady = true,
+                    sections = listOf(DetailSectionKey.CREDENTIAL, DetailSectionKey.NOTES),
                     isEditingTitle = false,
                     editedTitle = "Updated",
                 ),
@@ -129,6 +131,7 @@ class DetailReducerTest {
             assertTrue(presented.isAccessHistoryEnabled)
             assertEquals("secret", String(presented.revealed("password")!!.toCharArray()))
             assertEquals("Updated", presented.entry?.title)
+            assertEquals(listOf(DetailSectionKey.CREDENTIAL, DetailSectionKey.NOTES), presented.sections)
         } finally {
             password.wipe()
         }

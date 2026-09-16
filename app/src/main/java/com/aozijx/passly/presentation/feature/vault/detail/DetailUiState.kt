@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailTagEditorUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
 
 data class DetailUiState(
@@ -21,6 +22,7 @@ data class DetailUiState(
     val sensitiveFieldKeys: Set<SensitiveFieldKey> = emptySet(),
     val history: List<EntryActivity> = emptyList(),
     val relatedEntries: List<Entry> = emptyList(),
+    val sections: List<DetailSectionKey> = emptyList(),
     val fieldEdits: DetailFieldEditState = DetailFieldEditState(),
     val savingEdit: DetailEditCompletion? = null,
     val completedEdit: DetailEditCompletion? = null,

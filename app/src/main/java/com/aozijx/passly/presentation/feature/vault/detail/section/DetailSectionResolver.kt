@@ -32,8 +32,6 @@ object DetailSectionResolver {
         EntryType.NOTE to emptySet(),
         EntryType.OTP to setOf(DetailSectionKey.OTP),
         EntryType.BANK_CARD to setOf(DetailSectionKey.BANK_CARD),
-        EntryType.BANK_CARD to setOf(DetailSectionKey.BANK_CARD),
-        EntryType.ID_CARD to setOf(DetailSectionKey.IDENTITY),
         EntryType.ID_CARD to setOf(DetailSectionKey.IDENTITY),
         EntryType.PASSPORT to setOf(DetailSectionKey.IDENTITY),
         EntryType.DRIVER_LICENSE to setOf(DetailSectionKey.IDENTITY),

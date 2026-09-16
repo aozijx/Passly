@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailTagEditorUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconEditorTabUiModel
@@ -25,6 +26,7 @@ internal sealed interface DetailMutation {
         val strategySummary: String,
         val validationError: String?,
         val strategyReady: Boolean,
+        val sections: List<DetailSectionKey>,
         val isEditingTitle: Boolean,
         val editedTitle: String,
     ) : DetailMutation
@@ -89,6 +91,7 @@ internal object DetailReducer {
                 strategySummary = mutation.strategySummary,
                 validationError = mutation.validationError,
                 strategyReady = mutation.strategyReady,
+                sections = mutation.sections,
                 isEditingTitle = mutation.isEditingTitle,
                 editedTitle = mutation.editedTitle,
             )

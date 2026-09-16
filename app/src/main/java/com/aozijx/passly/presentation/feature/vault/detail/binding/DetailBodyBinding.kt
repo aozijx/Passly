@@ -13,7 +13,6 @@ import com.aozijx.passly.presentation.feature.vault.detail.DetailLocalEditState
 import com.aozijx.passly.presentation.feature.vault.detail.detailContentUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.detailOtpUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
-import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionResolver
 import com.aozijx.passly.presentation.ui.vault.detail.component.ActivityTimelineSection
 import com.aozijx.passly.presentation.ui.vault.detail.component.DetailIconCard
 import com.aozijx.passly.presentation.ui.vault.detail.component.DetailScrollableContent
@@ -36,7 +35,7 @@ fun DetailBodyBinding(
         detailContentUiModel(entry, uiState)
     }
     val otpModel = detailOtpUiModel(otpUiState)
-    val registeredSections = DetailSectionResolver.resolve(entry)
+
 
     LaunchedEffect(uiState.saveCompletionId) {
         if (uiState.saveCompletionId == 0L) return@LaunchedEffect
@@ -69,28 +68,28 @@ fun DetailBodyBinding(
             )
         }
 
-        if (DetailSectionKey.CREDENTIAL in registeredSections) {
+        if (DetailSectionKey.CREDENTIAL in uiState.sections) {
             item { DetailCredentialBinding(entry, uiState, onAction) }
         }
-        if (DetailSectionKey.OTP in registeredSections) {
+        if (DetailSectionKey.OTP in uiState.sections) {
             item { DetailOtpBinding(otpModel, otpQrUri, onAction, onOtpQrDismiss) }
         }
-        if (DetailSectionKey.BANK_CARD in registeredSections) {
+        if (DetailSectionKey.BANK_CARD in uiState.sections) {
             item { DetailBankCardBinding(entry, uiState, onAction) }
         }
-        if (DetailSectionKey.IDENTITY in registeredSections) {
+        if (DetailSectionKey.IDENTITY in uiState.sections) {
             item { DetailIdentityBinding(entry, uiState, onAction) }
         }
-        if (DetailSectionKey.WIFI in registeredSections) {
+        if (DetailSectionKey.WIFI in uiState.sections) {
             item { DetailWifiBinding(entry, uiState, onAction) }
         }
-        if (DetailSectionKey.SSH in registeredSections) {
+        if (DetailSectionKey.SSH in uiState.sections) {
             item { DetailSshBinding(entry, uiState, onAction) }
         }
-        if (DetailSectionKey.SEED_PHRASE in registeredSections) {
+        if (DetailSectionKey.SEED_PHRASE in uiState.sections) {
             item { DetailSeedPhraseBinding(uiState, onAction) }
         }
-        if (DetailSectionKey.PASSKEY in registeredSections) {
+        if (DetailSectionKey.PASSKEY in uiState.sections) {
             item { DetailPasskeyBinding(entry, uiState, onAction) }
         }
         if (uiState.relatedEntries.isNotEmpty()) {
