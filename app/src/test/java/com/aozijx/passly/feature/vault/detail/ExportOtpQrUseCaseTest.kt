@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail
+package com.aozijx.passly.feature.vault.detail
 
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
@@ -25,12 +25,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class DetailOtpQrExporterTest {
+class ExportOtpQrUseCaseTest {
     @Test
     fun authenticatesBeforeRevealingSecretAndBuildingQrPayload() = runTest {
         val events = mutableListOf<String>()
         val revealed = OwnedChars.fromString("JBSWY3DPEHPK3PXP")
-        val exporter = DetailOtpQrExporter(
+        val exporter = ExportOtpQrUseCase(
             authorizationGate = RecordingAuthorizationGate(events),
             sensitiveFieldRepository = RecordingSensitiveFieldRepository(events, revealed),
             formatUri = { config, _ ->
@@ -39,7 +39,7 @@ class DetailOtpQrExporterTest {
             },
         )
 
-        val uri = requireNotNull(exporter.export(otpEntry()))
+        val uri = requireNotNull(exporter(otpEntry()))
 
         assertEquals(listOf("authenticate", "reveal", "format"), events)
         assertTrue(uri.startsWith("otpauth://totp/"))

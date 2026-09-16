@@ -19,6 +19,7 @@ import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
+import com.aozijx.passly.feature.vault.detail.ExportOtpQrUseCase
 import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
 import com.aozijx.passly.feature.vault.detail.UpdateDetailEntryUseCase
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
@@ -47,7 +48,7 @@ class DetailViewModel @Inject internal constructor(
     private val activityRecorder: ActivityRecorder,
     private val entryTypePolicy: EntryTypePolicy,
     private val accessPolicy: DetailAccessPolicy,
-    private val otpQrExporter: DetailOtpQrExporter,
+    private val exportOtpQr: ExportOtpQrUseCase,
     private val revealEntryFields: RevealEntryFieldsUseCase,
     private val copyEntryFieldUseCase: CopyEntryFieldUseCase,
     private val copyOtpCodeUseCase: CopyOtpCodeUseCase,
@@ -319,7 +320,7 @@ class DetailViewModel @Inject internal constructor(
             DetailUiAction.ExportOtpQr -> {
                 val entry = _uiState.value.entry ?: return
                 viewModelScope.launch {
-                    otpQrExporter.export(entry)?.let { uri ->
+                    exportOtpQr(entry)?.let { uri ->
                         _effects.send(DetailEffect.ShowOtpQr(uri))
                         activityRecorder.recordUsage(entry.id.value, ActivityType.VIEW)
                     }

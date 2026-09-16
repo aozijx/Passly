@@ -62,7 +62,7 @@ class VaultDetailOwnershipBoundaryTest {
         )
 
         assertFalse(viewModel.contains("AuthorizationGate"))
-        assertFalse(viewModel.contains("DetailOtpQrExporter("))
+        assertFalse(viewModel.contains("ExportOtpQrUseCase("))
         assertFalse(viewModel.contains("RevealEntryFieldsUseCase("))
         assertFalse(viewModel.contains("CopyEntryFieldUseCase("))
         assertFalse(viewModel.contains("CopyOtpCodeUseCase("))
