@@ -63,7 +63,7 @@ internal fun DetailCredentialBinding(
             }
 
             override fun onRevealRequested(field: CredentialFieldUiModel) {
-                onAction(DetailUiAction.ToggleVisibility(field.revealedFieldKey))
+                onAction(DetailUiAction.ToggleFieldVisibility(field.revealedFieldKey))
             }
 
             override fun onCopyRequested(field: CredentialFieldUiModel) {

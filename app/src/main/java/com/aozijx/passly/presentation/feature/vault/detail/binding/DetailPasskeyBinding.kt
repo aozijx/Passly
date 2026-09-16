@@ -26,11 +26,7 @@ internal fun DetailPasskeyBinding(
         hardwareKeyInfo = hardwareInfo,
         onPasskeyCopy = { handler.copy(FieldKey.PASSKEY_DATA) },
         onPasskeyReveal = {
-            if (passkeyData != null) {
-                onAction(DetailUiAction.RevealField(RevealedFieldKey.PASSKEY_DATA, null))
-            } else {
-                onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.PASSKEY_DATA))
-            }
+            onAction(DetailUiAction.ToggleFieldVisibility(RevealedFieldKey.PASSKEY_DATA))
         },
         onHardwareKeyCopy = { handler.copy(FieldKey.HARDWARE_INFO) },
     )

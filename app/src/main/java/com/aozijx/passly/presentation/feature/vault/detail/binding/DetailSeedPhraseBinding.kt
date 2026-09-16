@@ -21,11 +21,7 @@ internal fun DetailSeedPhraseBinding(
         revealedSeedPhrase = seed,
         onCopy = { handler.copy(FieldKey.SEED_PHRASE) },
         onReveal = {
-            if (seed != null) {
-                onAction(DetailUiAction.RevealField(RevealedFieldKey.SEED_PHRASE, null))
-            } else {
-                onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SEED_PHRASE))
-            }
+            onAction(DetailUiAction.ToggleFieldVisibility(RevealedFieldKey.SEED_PHRASE))
         },
     )
 }

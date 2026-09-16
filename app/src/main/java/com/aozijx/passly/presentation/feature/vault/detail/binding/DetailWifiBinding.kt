@@ -35,7 +35,7 @@ internal fun DetailWifiBinding(
         onSsidCopy = { handler.copy(FieldKey.WIFI_SSID) },
         onPasswordCopy = { handler.copy(FieldKey.PASSWORD) },
         onPasswordReveal = {
-            onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.PASSWORD))
+            onAction(DetailUiAction.ToggleFieldVisibility(RevealedFieldKey.PASSWORD))
         },
         onPasswordEditStarted = {
             editState.editedPassword = password.orEmpty()

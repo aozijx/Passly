@@ -3,7 +3,6 @@ package com.aozijx.passly.presentation.feature.vault.detail.binding
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
 import com.aozijx.passly.presentation.feature.vault.detail.DetailEditCompletion
 import com.aozijx.passly.presentation.feature.vault.detail.DetailSectionActionHandler
@@ -116,27 +115,16 @@ internal fun DetailBankCardBinding(
                 DetailBankCardFieldUiModel.PAYMENT_PIN -> RevealedFieldKey.PAYMENT_PIN
                 else -> return@BankCardSection
             }
-            if (uiState.revealed(key) != null) {
-                onAction(DetailUiAction.RevealField(key, null))
-            } else {
-                onAction(DetailUiAction.RevealHighSensitivityField(key))
-            }
+            onAction(DetailUiAction.ToggleFieldVisibility(key))
         },
         onRevealAll = {
             val keys = buildSet {
                 if (hasNumber && cardNumber == null) add(RevealedFieldKey.CARD_NUMBER)
                 if (hasCvv && cvv == null) add(RevealedFieldKey.CVV)
                 if (hasPin && paymentPin == null) add(RevealedFieldKey.PAYMENT_PIN)
+                if (cardholder == null) add(RevealedFieldKey.CARDHOLDER)
             }
-            if (keys.isNotEmpty()) onAction(DetailUiAction.RevealHighSensitivityFields(keys))
-            if (cardholder == null) {
-                onAction(
-                    DetailUiAction.RevealField(
-                        RevealedFieldKey.CARDHOLDER,
-                        OwnedChars.fromNullableString(entry.username),
-                    ),
-                )
-            }
+            if (keys.isNotEmpty()) onAction(DetailUiAction.RevealFields(keys))
         },
     )
 }

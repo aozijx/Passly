@@ -22,7 +22,7 @@ import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
-import com.aozijx.passly.feature.vault.detail.RevealSensitiveFieldsUseCase
+import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
 import com.aozijx.passly.feature.vault.detail.UpdateDetailEntryUseCase
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
@@ -66,8 +66,9 @@ class DetailViewModel @Inject constructor(
         authorizationGate = authorizationGate,
         sensitiveFieldRepository = sensitiveFieldRepository,
     )
-    private val revealSensitiveFields = RevealSensitiveFieldsUseCase(
+    private val revealEntryFields = RevealEntryFieldsUseCase(
         authorizationGate = authorizationGate,
+        entryFieldReader = entryFieldReader,
         sensitiveFieldRepository = sensitiveFieldRepository,
         activityRecorder = activityRecorder,
     )
@@ -167,16 +168,25 @@ class DetailViewModel @Inject constructor(
                 }
             }
 
-            is DetailUiAction.RevealField -> {
-                setRevealedField(event.key, event.value)
-            }
-
-            is DetailUiAction.ToggleVisibility -> {
-                val current = _uiState.value.revealed(event.key)
-                if (current != null) {
+            is DetailUiAction.ToggleFieldVisibility -> {
+                val current = _uiState.value.entry ?: return
+                if (_uiState.value.revealed(event.key) != null) {
                     setRevealedField(event.key, null)
                 } else {
-                    handleRevealLogic(event.key)
+                    viewModelScope.launch {
+                        revealFields(current, setOf(event.key))
+                    }
+                }
+            }
+
+            is DetailUiAction.RevealFields -> {
+                val current = _uiState.value.entry ?: return
+                val hiddenKeys = event.keys.filterTo(linkedSetOf()) {
+                    _uiState.value.revealed(it) == null
+                }
+                if (hiddenKeys.isEmpty()) return
+                viewModelScope.launch {
+                    revealFields(current, hiddenKeys)
                 }
             }
 
@@ -330,28 +340,6 @@ class DetailViewModel @Inject constructor(
                 }
             }
 
-            is DetailUiAction.RevealHighSensitivityField -> {
-                val current = _uiState.value.entry ?: return
-                val key = event.key
-                if (_uiState.value.revealed(key) != null) {
-                    mutate(DetailMutation.RevealedFieldChanged(key, null))
-                    return
-                }
-                viewModelScope.launch {
-                    revealHighSensitivityFields(current.id, setOf(key))
-                }
-            }
-
-            is DetailUiAction.RevealHighSensitivityFields -> {
-                val current = _uiState.value.entry ?: return
-                val hiddenKeys = event.keys.filterTo(linkedSetOf()) {
-                    _uiState.value.revealed(it) == null
-                }
-                if (hiddenKeys.isEmpty()) return
-                viewModelScope.launch {
-                    revealHighSensitivityFields(current.id, hiddenKeys)
-                }
-            }
 
             is DetailUiAction.ToggleAccessHistoryRecording -> {
                 mutate(DetailMutation.AccessHistoryChanged(event.enabled))
@@ -391,23 +379,6 @@ class DetailViewModel @Inject constructor(
     private fun FieldKey.copyActivityType(): ActivityType = when (this) {
         FieldKey.USERNAME, FieldKey.CARD_HOLDER, FieldKey.WIFI_SSID -> ActivityType.COPY_USERNAME
         else -> ActivityType.COPY_PASSWORD
-    }
-    private fun handleRevealLogic(key: String) {
-        val entry = _uiState.value.entry ?: return
-        when (key) {
-            RevealedFieldKey.USERNAME -> {
-                setRevealedField(key, OwnedChars.fromNullableString(entry.username))
-                viewModelScope.launch {
-                    if (_uiState.value.isAccessHistoryEnabled) {
-                        activityRecorder.recordUsage(entry.id.value, ActivityType.VIEW)
-                    }
-                }
-            }
-
-            RevealedFieldKey.PASSWORD -> {
-                onAction(DetailUiAction.RevealHighSensitivityField(key))
-            }
-        }
     }
 
     fun load(rawEntryId: String) {
@@ -452,12 +423,16 @@ class DetailViewModel @Inject constructor(
         mutate(DetailMutation.RevealedFieldChanged(key, value))
     }
 
-    private suspend fun revealHighSensitivityFields(entryValue: EntryId, uiKeys: Set<String>) {
+    private suspend fun revealFields(entry: Entry, uiKeys: Set<String>) {
         if (!accessPolicy.hasFullAccess()) return
-        val requested = uiKeys.mapNotNull(DetailSensitiveFieldKeyMapper::toDomain).toSet()
+        val requested = uiKeys.mapNotNull(DetailSensitiveFieldKeyMapper::toFieldKey).toSet()
         if (requested.isEmpty()) return
-        revealSensitiveFields.reveal(entryValue, requested).forEach { (fieldKey, value) ->
-            DetailSensitiveFieldKeyMapper.toUi(fieldKey)?.let { uiKey ->
+        revealEntryFields.reveal(
+            entry = entry,
+            requestedFields = requested,
+            recordLowSensitivityAccess = _uiState.value.isAccessHistoryEnabled,
+        ).forEach { (fieldKey, value) ->
+            DetailSensitiveFieldKeyMapper.toUiKey(fieldKey)?.let { uiKey ->
                 setRevealedField(uiKey, value)
             }
         }

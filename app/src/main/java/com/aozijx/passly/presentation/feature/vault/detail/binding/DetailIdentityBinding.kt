@@ -28,11 +28,7 @@ internal fun DetailIdentityBinding(
         ),
         onIdNumberCopy = { handler.copy(FieldKey.ID_NUMBER) },
         onIdNumberReveal = {
-            if (idNumber != null) {
-                onAction(DetailUiAction.RevealField(RevealedFieldKey.ID_NUMBER, null))
-            } else {
-                onAction(DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.ID_NUMBER))
-            }
+            onAction(DetailUiAction.ToggleFieldVisibility(RevealedFieldKey.ID_NUMBER))
         },
         onUsernameCopy = { handler.copy(FieldKey.USERNAME) },
     )

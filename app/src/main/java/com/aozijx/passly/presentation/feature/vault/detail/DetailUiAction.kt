@@ -4,7 +4,6 @@ import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
 import android.net.Uri
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconEditorTabUiModel
 
@@ -21,11 +20,9 @@ sealed interface DetailUiAction {
     data object SaveTitle : DetailEntryAction
     data object ToggleFavorite : DetailEntryAction
 
-    data class RevealField(val key: String, val value: SensitiveValue?) : DetailSensitiveAction
-    data class ToggleVisibility(val key: String) : DetailSensitiveAction
+    data class ToggleFieldVisibility(val key: String) : DetailSensitiveAction
+    data class RevealFields(val keys: Set<String>) : DetailSensitiveAction
     data class SaveField(val key: String, val newValue: String) : DetailSensitiveAction
-    data class RevealHighSensitivityField(val key: String) : DetailSensitiveAction
-    data class RevealHighSensitivityFields(val keys: Set<String>) : DetailSensitiveAction
     data object OpenTagEditor : DetailTagAction
     data class UpdateTagInput(val value: String) : DetailTagAction
     data class SubmitTag(val value: String) : DetailTagAction

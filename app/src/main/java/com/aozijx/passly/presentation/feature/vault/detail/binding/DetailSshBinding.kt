@@ -42,13 +42,7 @@ internal fun DetailSshBinding(
         onFingerprintCopy = { handler.copy(FieldKey.USERNAME) },
         onPassphraseCopy = { handler.copy(FieldKey.SSH_PASSPHRASE) },
         onPassphraseReveal = {
-            if (passphrase != null) {
-                onAction(DetailUiAction.RevealField(RevealedFieldKey.SSH_PASSPHRASE, null))
-            } else {
-                onAction(
-                    DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SSH_PASSPHRASE),
-                )
-            }
+            onAction(DetailUiAction.ToggleFieldVisibility(RevealedFieldKey.SSH_PASSPHRASE))
         },
         onPassphraseEditStarted = {
             editState.editedPassword = passphrase.orEmpty()
@@ -68,7 +62,7 @@ internal fun DetailSshBinding(
         onPrivateKeyClick = {
             if (privateKey == null) {
                 onAction(
-                    DetailUiAction.RevealHighSensitivityField(RevealedFieldKey.SSH_PRIVATE_KEY),
+                    DetailUiAction.ToggleFieldVisibility(RevealedFieldKey.SSH_PRIVATE_KEY),
                 )
             } else {
                 handler.copy(FieldKey.SSH_KEY)
@@ -79,7 +73,7 @@ internal fun DetailSshBinding(
                 if (hasPrivateKey && privateKey == null) add(RevealedFieldKey.SSH_PRIVATE_KEY)
                 if (hasPassphrase && passphrase == null) add(RevealedFieldKey.SSH_PASSPHRASE)
             }
-            if (keys.isNotEmpty()) onAction(DetailUiAction.RevealHighSensitivityFields(keys))
+            if (keys.isNotEmpty()) onAction(DetailUiAction.RevealFields(keys))
         },
     )
 }
