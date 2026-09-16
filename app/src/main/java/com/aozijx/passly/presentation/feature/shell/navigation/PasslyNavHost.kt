@@ -10,8 +10,6 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
-import com.aozijx.passly.presentation.feature.shell.AppShellUiAction
-import com.aozijx.passly.presentation.feature.shell.AppShellViewModel
 
 internal typealias FeatureGraphRegistration = NavGraphBuilder.(
     context: ShellNavigationContext,
@@ -22,7 +20,7 @@ internal typealias FeatureGraphRegistration = NavGraphBuilder.(
 @Composable
 internal fun PasslyNavHost(
     navController: NavHostController,
-    appShellViewModel: AppShellViewModel,
+    onUserInteraction: () -> Unit,
     registerFeatureGraphs: FeatureGraphRegistration,
 ) {
     val navigationContext = ShellNavigationContext(
@@ -31,9 +29,7 @@ internal fun PasslyNavHost(
         navigateToSingleTopRoute = { route ->
             navController.navigate(route) { launchSingleTop = true }
         },
-        onUserInteraction = {
-            appShellViewModel.onAction(AppShellUiAction.UpdateInteraction)
-        },
+        onUserInteraction = onUserInteraction,
     )
 
     Surface(

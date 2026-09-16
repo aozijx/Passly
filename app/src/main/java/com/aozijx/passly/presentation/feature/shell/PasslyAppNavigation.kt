@@ -9,14 +9,14 @@ import com.aozijx.passly.presentation.feature.vault.navigation.registerVaultGrap
 
 @Composable
 internal fun PasslyAppNavigation(
-    appShellViewModel: AppShellViewModel,
+    onUserInteraction: () -> Unit,
 ) {
     val navController = rememberNavController()
 
     ProvidePasslyAdaptiveLayout {
         PasslyNavHost(
             navController = navController,
-            appShellViewModel = appShellViewModel,
+            onUserInteraction = onUserInteraction,
         ) { context, sharedTransitionScope ->
             registerVaultGraph(
                 context = context,

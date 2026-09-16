@@ -6,28 +6,19 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
-import com.aozijx.passly.presentation.feature.shell.AppShellViewModel
-import com.aozijx.passly.app.shell.FlipToLockSensorController
-import com.aozijx.passly.presentation.feature.shell.AppShellUiAction
-import com.aozijx.passly.presentation.feature.shell.AppShell
-import com.aozijx.passly.app.message.compose.ProvideAppNoticePublisher
 import com.aozijx.passly.app.platform.permission.PermissionServices
-import com.aozijx.passly.app.platform.permission.ProvidePermissionServices
+import com.aozijx.passly.app.shell.FlipToLockSensorController
 import com.aozijx.passly.core.permission.contract.PermissionRequestHistory
 import com.aozijx.passly.core.permission.contract.PermissionStatusReader
 import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
-import com.aozijx.passly.security.authentication.host.AuthenticationHost
-import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
+import com.aozijx.passly.presentation.PasslyApp
+import com.aozijx.passly.presentation.feature.shell.AppShellUiAction
+import com.aozijx.passly.presentation.feature.shell.AppShellViewModel
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -77,44 +68,23 @@ class MainActivity : AppCompatActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         enableEdgeToEdge()
 
-        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-        windowInsetsController.systemBarsBehavior =
+        WindowCompat.getInsetsController(window, window.decorView).systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
+        val permissionServices = PermissionServices(
+            statusReader = permissionStatusReader,
+            requestArbiter = permissionRequestArbiter,
+            requestHistory = permissionRequestHistory,
+        )
         setContent {
-            val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-            // 响应语言切换
-            LaunchedEffect(mainUiState.appearance.language) {
-                val tag = mainUiState.appearance.language.applicationLocaleTags
-                val currentTags = AppCompatDelegate.getApplicationLocales().toLanguageTags()
-                if (currentTags != tag) {
-                    AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
-                }
-            }
-
-            ProvidePermissionServices(
-                PermissionServices(
-                    statusReader = permissionStatusReader,
-                    requestArbiter = permissionRequestArbiter,
-                    requestHistory = permissionRequestHistory
-                )
-            ) {
-                ProvideAppNoticePublisher(noticePublisher) {
-                    AppTheme(
-                        appearance = mainUiState.appearance,
-                        appCornerRadiusDp = mainUiState.appCornerRadiusDp,
-                    ) {
-                        AuthenticationHost(this, authenticationHostRegistry) {
-                            AppShell(
-                                activity = this,
-                                viewModel = viewModel,
-                                sensorController = sensorController
-                            )
-                        }
-                    }
-                }
-            }
+            PasslyApp(
+                activity = this,
+                shellViewModel = viewModel,
+                sensorController = sensorController,
+                authenticationHostRegistry = authenticationHostRegistry,
+                noticePublisher = noticePublisher,
+                permissionServices = permissionServices,
+            )
         }
     }
 
