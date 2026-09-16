@@ -68,7 +68,6 @@ fun SettingsNavGraph(
     val interactionState by interactionViewModel.uiState.collectAsStateWithLifecycle()
     val dataViewModel: DataManagementSettingsViewModel = hiltViewModel()
     val dataState by dataViewModel.uiState.collectAsStateWithLifecycle()
-    val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val mainListState = rememberLazyGridState()
 
     val backBehavior = BackNavigationBehavior.PopUntilScaffoldValueChange
@@ -159,7 +158,6 @@ fun SettingsNavGraph(
                     settingsViewModel = settingsViewModel,
                     interactionViewModel = interactionViewModel,
                     dataViewModel = dataViewModel,
-                    settingsState = settingsState,
                     onOpenTrash = onOpenTrash,
                     onBack = navigateBack,
                 )
@@ -227,7 +225,6 @@ fun SettingsNavGraph(
                             settingsViewModel = settingsViewModel,
                             interactionViewModel = interactionViewModel,
                             dataViewModel = dataViewModel,
-                            settingsState = settingsState,
                             onOpenTrash = onOpenTrash,
                             onBack = null,
                         )

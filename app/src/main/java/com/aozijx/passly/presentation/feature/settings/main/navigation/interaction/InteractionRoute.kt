@@ -1,15 +1,10 @@
 package com.aozijx.passly.presentation.feature.settings.main.navigation.interaction
 
-import com.aozijx.passly.presentation.feature.settings.main.navigation.SettingsRoute
-import android.content.Context
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
-import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsAction
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.ui.settings.interaction.InteractionDetail
@@ -21,14 +16,9 @@ import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun InteractionRoute(
-    route: SettingsRoute,
-    context: Context,
     localState: SettingsScreenLocalState,
     interactionViewModel: InteractionSettingsViewModel,
-    dataViewModel: DataManagementSettingsViewModel,
-    settingsViewModel: SettingsViewModel,
-    settingsState: SettingsUiState,
-    onBack: (() -> Unit)?
+    onBack: (() -> Unit)?,
 ) {
     val state by interactionViewModel.uiState.collectAsStateWithLifecycle()
     SettingsSecondaryPage(

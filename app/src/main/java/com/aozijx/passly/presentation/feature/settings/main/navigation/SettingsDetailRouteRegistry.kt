@@ -3,7 +3,6 @@ package com.aozijx.passly.presentation.feature.settings.main.navigation
 import android.content.Context
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.ui.settings.main.SettingsDetailPlaceholder
@@ -17,7 +16,6 @@ internal fun SettingsDetailRouteRegistry(
     settingsViewModel: SettingsViewModel,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
-    settingsState: SettingsUiState,
     onOpenTrash: () -> Unit,
     onBack: (() -> Unit)?,
 ) {
@@ -43,7 +41,6 @@ internal fun SettingsDetailRouteRegistry(
             interactionViewModel = interactionViewModel,
             dataViewModel = dataViewModel,
             settingsViewModel = settingsViewModel,
-            settingsState = settingsState,
             onOpenTrash = onOpenTrash,
             onBack = onBack,
         )

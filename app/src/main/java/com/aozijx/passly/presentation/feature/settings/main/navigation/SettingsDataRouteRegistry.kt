@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.navigation.autofill.AutofillRoute
@@ -25,16 +24,15 @@ internal fun DataSettingsRoute(
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
     settingsViewModel: SettingsViewModel,
-    settingsState: SettingsUiState,
     onOpenTrash: () -> Unit,
     onBack: (() -> Unit)?,
 ) {
     val content: @Composable () -> Unit = when (route) {
-        SettingsRoute.Interaction -> ({ InteractionRoute(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
+        SettingsRoute.Interaction -> ({ InteractionRoute(localState, interactionViewModel, onBack) })
         SettingsRoute.Autofill -> ({ AutofillRoute(onBack) })
         SettingsRoute.DataManagement -> ({ DataManagementRoute(localState, onOpenTrash, onBack) })
-        SettingsRoute.BackupRestore -> ({ BackupRoute(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
-        SettingsRoute.RecoveryCode -> ({ RecoveryCodeRoute(route, context, localState, interactionViewModel, dataViewModel, settingsViewModel, settingsState, onBack) })
+        SettingsRoute.BackupRestore -> ({ BackupRoute(context, localState, dataViewModel, onBack) })
+        SettingsRoute.RecoveryCode -> ({ RecoveryCodeRoute(context, localState, settingsViewModel, onBack) })
         SettingsRoute.General -> ({ GeneralRoute(onBack) })
         SettingsRoute.Notifications -> ({ NotificationsRoute(onBack) })
         else -> error("Unsupported data settings route: ${route.route}")

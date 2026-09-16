@@ -1,6 +1,5 @@
 package com.aozijx.passly.presentation.feature.settings.main.navigation.core
 
-import com.aozijx.passly.presentation.feature.settings.main.navigation.SettingsRoute
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -15,9 +14,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.main.SettingsUiState
-import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.RecoveryDraftAction
 import com.aozijx.passly.presentation.feature.settings.security.RecoveryDraftState
 import com.aozijx.passly.presentation.feature.settings.security.RecoveryDraftViewModel
@@ -33,14 +29,10 @@ import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun RecoveryCodeRoute(
-    route: SettingsRoute,
     context: Context,
     localState: SettingsScreenLocalState,
-    interactionViewModel: InteractionSettingsViewModel,
-    dataViewModel: DataManagementSettingsViewModel,
     settingsViewModel: SettingsViewModel,
-    settingsState: SettingsUiState,
-    onBack: (() -> Unit)?
+    onBack: (() -> Unit)?,
 ) {
     val viewModel: SecuritySettingsViewModel = hiltViewModel()
     val draftViewModel: RecoveryDraftViewModel = hiltViewModel()

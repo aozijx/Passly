@@ -27,6 +27,27 @@ class SettingsRouteParameterBoundaryTest {
             "data/DataManagementRoute.kt",
             forbidden = listOf("SettingsRoute", "Context", "InteractionSettingsViewModel"),
         )
+        assertNarrow(
+            "interaction/InteractionRoute.kt",
+            forbidden = listOf(
+                "SettingsRoute", "Context", "DataManagementSettingsViewModel",
+                "SettingsViewModel", "SettingsUiState",
+            ),
+        )
+        assertNarrow(
+            "data/BackupRoute.kt",
+            forbidden = listOf(
+                "SettingsRoute", "InteractionSettingsViewModel",
+                "SettingsViewModel", "SettingsUiState",
+            ),
+        )
+        assertNarrow(
+            "core/RecoveryCodeRoute.kt",
+            forbidden = listOf(
+                "SettingsRoute", "InteractionSettingsViewModel",
+                "DataManagementSettingsViewModel", "SettingsUiState",
+            ),
+        )
         listOf("general/GeneralRoute.kt", "general/NotificationsRoute.kt").forEach { path ->
             assertNarrow(
                 path,
@@ -44,7 +65,7 @@ class SettingsRouteParameterBoundaryTest {
             .substringAfter("internal fun ")
             .substringBefore(") {")
         forbidden.forEach { type ->
-            assertFalse("$relativePath still accepts $type", signature.contains(type))
+            assertFalse("$relativePath still accepts $type", Regex("\\b${Regex.escape(type)}\\b").containsMatchIn(signature))
         }
     }
 
