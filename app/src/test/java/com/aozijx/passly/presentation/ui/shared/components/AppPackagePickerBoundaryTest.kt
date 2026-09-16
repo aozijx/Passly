@@ -2,9 +2,24 @@ package com.aozijx.passly.presentation.ui.shared.components
 
 import java.io.File
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AppPackagePickerBoundaryTest {
+    @Test
+    fun `installed app icon state comes from core platform ui`() {
+        val detailBinding = source(
+            "presentation/feature/vault/detail/binding/DetailAssociationsBinding.kt",
+        )
+        val vaultItemIcon = source(
+            "presentation/ui/shared/components/VaultItemIcon.kt",
+        )
+
+        listOf(detailBinding, vaultItemIcon).forEach { consumer ->
+            assertFalse(consumer.contains("app.platform.packageinfo.rememberInstalledAppIconBitmap"))
+            assertTrue(consumer.contains("core.platform.packageinfo.rememberInstalledAppIconBitmap"))
+        }
+    }
     @Test
     fun `package picker ui does not load platform data`() {
         val picker = source(

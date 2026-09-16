@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.platform.packageinfo
+package com.aozijx.passly.core.platform.packageinfo
 
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
@@ -9,7 +9,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import com.aozijx.passly.core.platform.packageinfo.InstalledAppServicesProvider
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

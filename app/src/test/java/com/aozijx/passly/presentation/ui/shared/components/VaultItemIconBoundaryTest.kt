@@ -21,9 +21,13 @@ class VaultItemIconBoundaryTest {
         assertFalse(source.contains("InstalledAppIconLoader"))
         assertFalse(source.contains("rememberAppIcon"))
 
+        val coreSourceRoot = listOf(
+            File("../core/src/main/kotlin/com/aozijx/passly"),
+            File("core/src/main/kotlin/com/aozijx/passly"),
+        ).firstOrNull(File::isDirectory) ?: error("Cannot locate core source root")
         val platformState = File(
-            sourceRoot,
-            "app/platform/packageinfo/InstalledAppIconState.kt",
+            coreSourceRoot,
+            "core/platform/packageinfo/InstalledAppIconState.kt",
         ).readText()
         assertTrue(platformState.contains("remember(iconLoader, packageName)"))
         assertTrue(platformState.contains("Dispatchers.IO"))
