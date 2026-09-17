@@ -19,5 +19,7 @@ class GeneralSettingsBoundaryTest {
         assertFalse(viewModel.contains("AppCacheManager"))
         assertTrue(viewModel.contains("AppCacheStore"))
         assertTrue(viewModel.contains("ByteSizeFormatter"))
+        assertFalse(viewModel.contains("Dispatchers.IO"))
+        assertFalse(viewModel.contains("withContext"))
     }
 }

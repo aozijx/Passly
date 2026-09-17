@@ -27,7 +27,7 @@ class DiagnosticsExportService @Inject constructor(
         share(createPlaintextExport()).getOrThrow()
     }
 
-    private fun createPlaintextExport(): File {
+    private suspend fun createPlaintextExport(): File {
         clearExports()
         val target = File(
             context.cacheDir,

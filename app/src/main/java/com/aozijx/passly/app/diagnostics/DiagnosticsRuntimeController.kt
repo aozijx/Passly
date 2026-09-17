@@ -13,8 +13,10 @@ import com.aozijx.passly.core.telemetry.TelemetryPolicyController
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
@@ -52,10 +54,13 @@ class DiagnosticsRuntimeController @Inject constructor(
 
     fun flush(timeoutMs: Long = 300L): Boolean = fileStore.flush(timeoutMs)
 
-    override fun readLines(limit: Int): List<String> =
+    override suspend fun readLines(limit: Int): List<String> = withContext(Dispatchers.IO) {
         fileStore.readEvents(limit).map(::formatEvent)
+    }
 
-    override fun clear() = fileStore.clear()
+    override suspend fun clear() = withContext(Dispatchers.IO) {
+        fileStore.clear()
+    }
 
     fun shutdown() {
         fileStore.close()

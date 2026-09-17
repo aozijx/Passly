@@ -7,7 +7,6 @@ import com.aozijx.passly.core.telemetry.TelemetryPolicyController
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +14,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportResult
 import com.aozijx.passly.feature.settings.diagnostics.ExportDiagnosticsUseCase
@@ -80,14 +78,12 @@ class DiagnosticsSettingsViewModel @Inject constructor(
 
     private suspend fun readPage(): String =
         if (secureSessionAccessState.hasFullSecureSessionAccess()) {
-            withContext(Dispatchers.IO) {
-                logStore.readLines(MAX_VIEW_LINES).joinToString("\n")
-            }
+            logStore.readLines(MAX_VIEW_LINES).joinToString("\n")
         } else {
             ""
         }
 
-    private fun clearLogs() = viewModelScope.launch(Dispatchers.IO) {
+    private fun clearLogs() = viewModelScope.launch {
         if (!secureSessionAccessState.hasFullSecureSessionAccess()) return@launch
         logStore.clear()
         mutate(DiagnosticsSettingsMutation.LogsCleared)

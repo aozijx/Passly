@@ -17,5 +17,7 @@ class DiagnosticsSettingsBoundaryTest {
 
         assertFalse(viewModel.contains("app.diagnostics.DiagnosticsRuntimeController"))
         assertTrue(viewModel.contains("DiagnosticsLogStore"))
+        assertFalse(viewModel.contains("Dispatchers.IO"))
+        assertFalse(viewModel.contains("withContext"))
     }
 }
