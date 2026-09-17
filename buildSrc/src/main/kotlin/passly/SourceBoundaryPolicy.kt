@@ -197,12 +197,10 @@ internal object SourceBoundaryPolicy {
             message = "application lifecycle imports the full authentication manager",
         ),
         SourceBoundaryRule(
-            id = "APPLICATION_SESSION_CONTROLLER_IMPORT",
+            id = "APPLICATION_SECURITY_IMPLEMENTATION_IMPORT",
             sourcePathContains = "/app/PasslyApplication.kt",
-            forbiddenImportPrefixes = setOf(
-                "com.aozijx.passly.security.authentication.VaultSessionController",
-            ),
-            message = "application imports the concrete session controller",
+            forbiddenImportPrefixes = setOf("com.aozijx.passly.security."),
+            message = "application imports a security implementation",
         ),
         SourceBoundaryRule(
             id = "PRESENTATION_SESSION_CONTROLLER_IMPORT",

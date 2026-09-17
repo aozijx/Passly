@@ -13,7 +13,7 @@ import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
 import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.security.authentication.BiometricRotationReconciler
+import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenance
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -43,7 +43,7 @@ class PasslyApplication : Application() {
     lateinit var diagnosticsRuntimeController: DiagnosticsRuntimeController
 
     @Inject
-    lateinit var biometricRotationReconciler: BiometricRotationReconciler
+    lateinit var authenticationRuntimeMaintenance: AuthenticationRuntimeMaintenance
 
     private val diagnosticsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -68,7 +68,7 @@ class PasslyApplication : Application() {
         diagnosticsRuntimeController.start(diagnosticsScope)
 
         // 生物识别轮换对账（后台执行）
-        diagnosticsScope.launch { biometricRotationReconciler.reconcile() }
+        diagnosticsScope.launch { authenticationRuntimeMaintenance.reconcileStartupState() }
 
         // 加载 SQLCipher
         try {

@@ -1,6 +1,7 @@
 package com.aozijx.passly.security.authentication
 
 import com.aozijx.passly.domain.access.model.BiometricRotationPhase
+import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenance
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -9,8 +10,8 @@ import javax.inject.Singleton
 class BiometricRotationReconciler @Inject constructor(
     private val vaultBootstrapStore: VaultBootstrapStore,
     private val cryptoFactory: BiometricCryptoFactory
-) {
-    suspend fun reconcile() {
+) : AuthenticationRuntimeMaintenance {
+    override suspend fun reconcileStartupState() {
         val state = vaultBootstrapStore.loadBiometricState()
         val rotation = state.rotation
         if (rotation?.phase == BiometricRotationPhase.PREPARED &&

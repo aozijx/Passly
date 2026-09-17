@@ -4,6 +4,7 @@ import android.content.Context
 import android.hardware.biometrics.BiometricManager
 import com.aozijx.passly.domain.access.model.RecoveryCredentialFactory
 import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenance
 import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
@@ -11,6 +12,7 @@ import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
 import com.aozijx.passly.domain.access.port.SessionLockController
+import com.aozijx.passly.security.authentication.BiometricRotationReconciler
 import com.aozijx.passly.security.authentication.DefaultAuthenticationManager
 import com.aozijx.passly.security.authentication.DefaultAuthenticationMethodProvisioner
 import com.aozijx.passly.security.authentication.DefaultRecoveryCodeDraftFactory
@@ -31,6 +33,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class AuthenticationModule {
+    @Binds
+    @Singleton
+    abstract fun bindAuthenticationRuntimeMaintenance(
+        impl: BiometricRotationReconciler,
+    ): AuthenticationRuntimeMaintenance
+
     @Binds
     @Singleton
     abstract fun bindAuthenticationManager(

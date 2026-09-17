@@ -915,15 +915,15 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
-    fun applicationCannotImportConcreteSessionController() {
+    fun applicationCannotImportSecurityImplementation() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/app/PasslyApplication.kt",
             content =
-                "import com.aozijx.passly.security.authentication.VaultSessionController",
+                "import com.aozijx.passly.security.authentication.BiometricRotationReconciler",
         )
 
         assertEquals(
-            "APPLICATION_SESSION_CONTROLLER_IMPORT",
+            "APPLICATION_SECURITY_IMPLEMENTATION_IMPORT",
             SourceBoundaryVerifier.verify(
                 listOf(source),
                 SourceBoundaryPolicy.generalRules,
