@@ -23,7 +23,7 @@ import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.data.mapper.entry.toDatabaseFlags
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
-import com.aozijx.passly.security.dek.AttachmentContentCrypto
+import com.aozijx.passly.core.crypto.AttachmentContentProtector
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -46,7 +46,7 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
     private val databaseCleaner: DatabaseCleaner,
     private val secretFieldStore: SecretFieldStore,
     private val documentMapper: RoomBackupSnapshotMapper,
-    private val attachmentContentCrypto: AttachmentContentCrypto,
+    private val attachmentContentProtector: AttachmentContentProtector,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
     private val telemetry: TelemetryReporter,
 ) {
@@ -128,7 +128,7 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
 
                     attachmentResources.forEach { resource ->
                         val content = requireNotNull(bundle.resourceData[resource.id])
-                        val resourceId = attachmentContentCrypto.contentId(content)
+                        val resourceId = attachmentContentProtector.contentId(content)
                         val existingResource = attachmentResourceDao().getById(resourceId)
                         if (existingResource == null) {
                             attachmentResourceDao().insertStrict(
@@ -149,7 +149,7 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
                         val target = attachmentGarbageCollector.resourceFile(resourceId)
                         target.parentFile?.mkdirs()
                         retainRestoredAttachmentFile(target, restoredFiles) {
-                            val encryptedContent = attachmentContentCrypto.encrypt(content, resourceId)
+                            val encryptedContent = attachmentContentProtector.encrypt(content, resourceId)
                             try {
                                 fileJournal.replace(target, encryptedContent)
                             } finally {

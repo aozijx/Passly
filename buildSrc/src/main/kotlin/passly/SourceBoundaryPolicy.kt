@@ -203,6 +203,13 @@ internal object SourceBoundaryPolicy {
             message = "application imports a security implementation",
         ),
         SourceBoundaryRule(
+            id = "APP_ADAPTER_SECURITY_IMPLEMENTATION_IMPORT",
+            sourcePathContains = "/com/aozijx/passly/app/",
+            allowedSourcePathContains = setOf("/app/PasslyApplication.kt"),
+            forbiddenImportPrefixes = setOf("com.aozijx.passly.security."),
+            message = "app adapter imports a security implementation instead of a capability port",
+        ),
+        SourceBoundaryRule(
             id = "PRESENTATION_SESSION_CONTROLLER_IMPORT",
             sourcePathContains = "/presentation/",
             forbiddenImportPrefixes = setOf(

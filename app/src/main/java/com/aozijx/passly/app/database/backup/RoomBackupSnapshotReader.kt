@@ -13,7 +13,7 @@ import com.aozijx.passly.data.mapper.entry.EntryAssembler
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.security.dek.AttachmentContentCrypto
+import com.aozijx.passly.core.crypto.AttachmentContentProtector
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -36,7 +36,7 @@ internal class RoomBackupSnapshotReader @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val databaseSession: AppDatabaseSession,
     private val secretFieldStore: SecretFieldStore,
-    private val attachmentContentCrypto: AttachmentContentCrypto,
+    private val attachmentContentProtector: AttachmentContentProtector,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
     private val documentMapper: RoomBackupSnapshotMapper
 ) {
@@ -104,14 +104,14 @@ internal class RoomBackupSnapshotReader @Inject constructor(
                     require(encryptedFile.length() <= BackupBundleValidator.MAX_RESOURCE_BYTES * 2L) {
                         "附件密文过大: ${entity.attachmentId}"
                     }
-                    val content = attachmentContentCrypto.decrypt(
+                    val content = attachmentContentProtector.decrypt(
                         encryptedFile.readBytes(), resource.resourceId
                     )
                     require(content.size <= BackupBundleValidator.MAX_RESOURCE_BYTES) {
                         "附件过大: ${entity.attachmentId}"
                     }
                     val sha256 = BackupBundleValidator.sha256Hex(content)
-                    require(attachmentContentCrypto.verifyContentId(content, resource.resourceId)) {
+                    require(attachmentContentProtector.verifyContentId(content, resource.resourceId)) {
                         "附件校验失败: ${entity.attachmentId}"
                     }
                     resourceRecords += com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceRecord(

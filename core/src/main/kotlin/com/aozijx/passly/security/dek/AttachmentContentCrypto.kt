@@ -1,6 +1,7 @@
 package com.aozijx.passly.security.dek
 
 import com.aozijx.passly.core.error.boundary.CryptoException
+import com.aozijx.passly.core.crypto.AttachmentContentProtector
 import com.aozijx.passly.core.crypto.CryptoConfig
 import com.aozijx.passly.core.crypto.MemoryCleaner
 import java.security.SecureRandom
@@ -15,10 +16,10 @@ import javax.inject.Singleton
 @Singleton
 class AttachmentContentCrypto @Inject constructor(
     private val keyManager: AttachmentDataKeyManager,
-) {
+) : AttachmentContentProtector {
     private val random = SecureRandom()
 
-    suspend fun contentId(content: ByteArray): String = keyManager.withKey { masterKey ->
+    override suspend fun contentId(content: ByteArray): String = keyManager.withKey { masterKey ->
         val idKey = derive(masterKey, ID_KEY_LABEL)
         try {
             hmac(idKey, content).toHex()
@@ -27,7 +28,7 @@ class AttachmentContentCrypto @Inject constructor(
         }
     }
 
-    suspend fun encrypt(content: ByteArray, resourceId: String): ByteArray =
+    override suspend fun encrypt(content: ByteArray, resourceId: String): ByteArray =
         keyManager.withKey { masterKey ->
             val encryptionKey = derive(masterKey, ENCRYPTION_KEY_LABEL)
             val nonce = ByteArray(CryptoConfig.IV_LENGTH).also(random::nextBytes)
@@ -46,7 +47,7 @@ class AttachmentContentCrypto @Inject constructor(
             }
         }
 
-    suspend fun decrypt(encrypted: ByteArray, resourceId: String): ByteArray {
+    override suspend fun decrypt(encrypted: ByteArray, resourceId: String): ByteArray {
         require(encrypted.size >= CryptoConfig.IV_LENGTH + CryptoConfig.GCM_TAG_BITS / Byte.SIZE_BITS) {
             "Invalid encrypted attachment length"
         }
@@ -75,7 +76,7 @@ class AttachmentContentCrypto @Inject constructor(
         }
     }
 
-    suspend fun verifyContentId(content: ByteArray, resourceId: String): Boolean =
+    override suspend fun verifyContentId(content: ByteArray, resourceId: String): Boolean =
         contentId(content).equals(resourceId, ignoreCase = false)
 
     private fun derive(masterKey: ByteArray, label: String): ByteArray =

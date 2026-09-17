@@ -930,6 +930,30 @@ class SourceBoundaryPolicyTest {
             ).single().ruleId,
         )
     }
+
+    @Test
+    fun appAdaptersCannotImportSecurityImplementation() {
+        val sources = listOf(
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/app/session/DekSessionKeySource.kt",
+                content = "import com.aozijx.passly.security.dek.DekManager",
+            ),
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/app/database/backup/RoomBackupSnapshotReader.kt",
+                content = "import com.aozijx.passly.security.dek.AttachmentContentCrypto",
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                "APP_ADAPTER_SECURITY_IMPLEMENTATION_IMPORT",
+                "APP_ADAPTER_SECURITY_IMPLEMENTATION_IMPORT",
+            ),
+            SourceBoundaryVerifier.verify(sources, SourceBoundaryPolicy.generalRules)
+                .map { it.ruleId },
+        )
+    }
+
     @Test
     fun applicationCannotToggleManifestServicesAtRuntime() {
         val source = EditorSource(

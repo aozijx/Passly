@@ -5,6 +5,8 @@ import com.aozijx.passly.security.dek.FieldKeyManager
 import com.aozijx.passly.security.dek.SensitiveKeyScope
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import com.aozijx.passly.domain.access.port.SensitiveKeyFreshnessState
+import com.aozijx.passly.runtime.session.SessionKeySource
+import com.aozijx.passly.security.session.SecureSessionKeySource
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -18,6 +20,9 @@ import kotlinx.coroutines.SupervisorJob
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class SensitiveKeyModule {
+    @Binds
+    @Singleton
+    abstract fun bindSessionKeySource(implementation: SecureSessionKeySource): SessionKeySource
     @Binds
     @Singleton
     abstract fun bindFieldKeyProvider(implementation: FieldKeyManager): FieldKeyProvider
