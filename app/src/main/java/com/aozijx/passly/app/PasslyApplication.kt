@@ -13,9 +13,8 @@ import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
 import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.security.authentication.BiometricRotationReconciler
-import com.aozijx.passly.security.authentication.VaultSessionController
+import com.aozijx.passly.domain.access.port.SessionActivityReporter
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,10 +37,7 @@ class PasslyApplication : Application() {
     lateinit var appLifecycleObserver: AppLifecycleObserver
 
     @Inject
-    lateinit var authenticationManager: AuthenticationManager
-
-    @Inject
-    lateinit var sessionController: VaultSessionController
+    lateinit var sessionActivityReporter: SessionActivityReporter
 
     @Inject
     lateinit var diagnosticsRuntimeController: DiagnosticsRuntimeController
@@ -112,7 +108,7 @@ class PasslyApplication : Application() {
         content.setOnTouchListener { v, event ->
             if (event.action == MotionEvent.ACTION_DOWN) {
                 v.performClick()
-                sessionController.onUserInteraction()
+                sessionActivityReporter.onUserInteraction()
             }
             false // 不消费事件，继续分发
         }

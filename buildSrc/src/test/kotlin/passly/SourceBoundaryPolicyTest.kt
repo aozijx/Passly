@@ -883,6 +883,22 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun applicationCannotImportConcreteSessionController() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/app/PasslyApplication.kt",
+            content =
+                "import com.aozijx.passly.security.authentication.VaultSessionController",
+        )
+
+        assertEquals(
+            "APPLICATION_SESSION_CONTROLLER_IMPORT",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+    @Test
     fun applicationCannotToggleManifestServicesAtRuntime() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/app/PasslyApplication.kt",

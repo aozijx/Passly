@@ -180,6 +180,13 @@ internal object SourceBoundaryPolicy {
             message = "vault paging Data types may only be imported by App adapters",
         ),
         SourceBoundaryRule(
+            id = "APPLICATION_SESSION_CONTROLLER_IMPORT",
+            sourcePathContains = "/app/PasslyApplication.kt",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.security.authentication.VaultSessionController",
+            ),
+            message = "application imports the concrete session controller",
+        ),        SourceBoundaryRule(
             id = "PRESENTATION_SESSION_CONTROLLER_IMPORT",
             sourcePathContains = "/presentation/",
             forbiddenImportPrefixes = setOf(
