@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.entry.favicon.FaviconCropRequest
 import com.aozijx.passly.app.entry.favicon.FaviconImageProcessor
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.platform.packageinfo.InstalledAppDirectory
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -27,6 +28,7 @@ import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
+import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerItemUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -53,6 +55,7 @@ class DetailViewModel @Inject internal constructor(
     private val copyEntryFieldUseCase: CopyEntryFieldUseCase,
     private val copyOtpCodeUseCase: CopyOtpCodeUseCase,
     private val faviconImageProcessor: FaviconImageProcessor,
+    private val installedAppDirectory: InstalledAppDirectory,
     otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
 ) : ViewModel() {
     private val entryAnalyzer = DetailEntryAnalyzer(entryTypePolicy)
@@ -61,6 +64,7 @@ class DetailViewModel @Inject internal constructor(
     private val otpRuntime = otpCodeRuntimeFactory.create(viewModelScope)
     private var entryLoadJob: Job? = null
     private var historyJob: Job? = null
+    private var packagePickerLoadJob: Job? = null
     private var loadedEntryId: EntryId? = null
 
     companion object {
@@ -137,6 +141,7 @@ class DetailViewModel @Inject internal constructor(
                 }
             }
 
+            DetailUiAction.LoadPackagePickerApps -> loadPackagePickerApps()
             is DetailUiAction.SelectAssociatedPackage -> {
                 val entry = _uiState.value.entry ?: return
                 viewModelScope.launch {
@@ -425,6 +430,7 @@ class DetailViewModel @Inject internal constructor(
         loadedEntryId = entryId
         entryLoadJob?.cancel()
         historyJob?.cancel()
+        packagePickerLoadJob?.cancel()
         otpRuntime.clearAllSensitiveState()
         _otpState.value = null
         revealStore.clear()
@@ -433,6 +439,7 @@ class DetailViewModel @Inject internal constructor(
             if (!accessPolicy.hasFullAccess()) return@launch
             val latest = entryQueryRepository.getById(entryId) ?: return@launch
             refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
+            loadAssociatedApps(latest)
             val presence = sensitiveFieldRepository.getPresence(latest.id)
             mutate(DetailMutation.SensitiveFieldPresenceChanged(latest.id, presence.keys))
             loadRelatedEntries(latest)
@@ -509,6 +516,9 @@ class DetailViewModel @Inject internal constructor(
                     isEditingTitle = keepTitleEditing,
                     editedTitle = if (keepTitleEditing) _uiState.value.editedTitle else latest.title,
                 )
+                if (completion == DetailEditCompletion.Associations) {
+                    loadAssociatedApps(latest)
+                }
                 if (completion is DetailEditCompletion.SensitiveField) {
                     patch.revealedValueOrNull()?.let { value ->
                         setRevealedField(completion.key, OwnedChars.fromString(value))
@@ -564,6 +574,33 @@ class DetailViewModel @Inject internal constructor(
         }
     }
 
+    private suspend fun loadAssociatedApps(entry: Entry) {
+        val apps = entry.associations.applicationIds
+            .sorted()
+            .map { packageName ->
+                val metadata = installedAppDirectory.metadataFor(packageName)
+                AppPackagePickerItemUiModel(
+                    label = metadata?.label?.takeIf(String::isNotBlank) ?: packageName,
+                    packageName = packageName,
+                )
+            }
+        mutate(DetailMutation.AssociatedAppsChanged(entry.id, apps))
+    }
+
+    private fun loadPackagePickerApps() {
+        val state = _uiState.value
+        val entryId = state.entry?.id ?: return
+        if (state.packagePickerAppsLoaded || packagePickerLoadJob?.isActive == true) return
+        packagePickerLoadJob = viewModelScope.launch {
+            val apps = installedAppDirectory.launchableApps().map { metadata ->
+                AppPackagePickerItemUiModel(
+                    label = metadata.label,
+                    packageName = metadata.packageName,
+                )
+            }
+            mutate(DetailMutation.PackagePickerAppsChanged(entryId, apps))
+        }
+    }
     private suspend fun loadRelatedEntries(entry: Entry) {
         val relatedIds = DetailRelatedEntryIds.resolve(
             entryId = entry.id,

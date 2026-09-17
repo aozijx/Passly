@@ -20,6 +20,7 @@ class AppPackagePickerBoundaryTest {
             assertTrue(consumer.contains("core.platform.packageinfo.rememberInstalledAppIconBitmap"))
         }
     }
+
     @Test
     fun `package picker ui does not load platform data`() {
         val picker = source(
@@ -27,6 +28,9 @@ class AppPackagePickerBoundaryTest {
         )
         val associations = source(
             "presentation/ui/vault/detail/component/AssociatedInfoSection.kt",
+        )
+        val detailBinding = source(
+            "presentation/feature/vault/detail/binding/DetailAssociationsBinding.kt",
         )
 
         val forbiddenPlatformLoadingTokens = listOf(
@@ -36,13 +40,20 @@ class AppPackagePickerBoundaryTest {
             "withContext",
             "produceState",
         )
-        mapOf("picker" to picker, "associations" to associations).forEach { (name, source) ->
+        mapOf(
+            "picker" to picker,
+            "associations" to associations,
+            "detailBinding" to detailBinding,
+        ).forEach { (name, source) ->
             forbiddenPlatformLoadingTokens.forEach { forbidden ->
                 assertFalse("$name UI must not reference $forbidden", source.contains(forbidden))
             }
         }
         assertFalse(associations.contains("rememberAppIcon"))
         assertFalse(associations.contains("rememberAppMetadata"))
+        assertTrue(detailBinding.contains("uiState.associatedApps"))
+        assertTrue(detailBinding.contains("uiState.packagePickerApps"))
+        assertTrue(detailBinding.contains("DetailUiAction.LoadPackagePickerApps"))
     }
 
     private fun source(relativePath: String): String {

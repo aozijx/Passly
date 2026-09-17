@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerItemUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailTagEditorUiModel
@@ -45,6 +46,14 @@ internal sealed interface DetailMutation {
     ) : DetailMutation
     data class HistoryChanged(val entryId: EntryId, val history: List<EntryActivity>) : DetailMutation
     data class RelatedEntriesChanged(val entryId: EntryId, val entries: List<Entry>) : DetailMutation
+    data class AssociatedAppsChanged(
+        val entryId: EntryId,
+        val apps: List<AppPackagePickerItemUiModel>,
+    ) : DetailMutation
+    data class PackagePickerAppsChanged(
+        val entryId: EntryId,
+        val apps: List<AppPackagePickerItemUiModel>,
+    ) : DetailMutation
     data class SaveStarted(val completion: DetailEditCompletion) : DetailMutation
     data class SaveSucceeded(val completion: DetailEditCompletion) : DetailMutation
     data class SaveFailed(
@@ -141,7 +150,19 @@ internal object DetailReducer {
             } else {
                 state
             }
-
+            is DetailMutation.AssociatedAppsChanged -> if (state.entry?.id == mutation.entryId) {
+                state.copy(associatedApps = mutation.apps)
+            } else {
+                state
+            }
+            is DetailMutation.PackagePickerAppsChanged -> if (state.entry?.id == mutation.entryId) {
+                state.copy(
+                    packagePickerApps = mutation.apps,
+                    packagePickerAppsLoaded = true,
+                )
+            } else {
+                state
+            }
             is DetailMutation.SaveStarted -> state.copy(
                 savingEdit = mutation.completion,
                 saveErrorCode = null,

@@ -13,6 +13,7 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
+import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerItemUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -174,6 +175,43 @@ class DetailReducerTest {
         assertEquals(state, actual)
     }
 
+    @Test
+    fun `application metadata updates only the currently presented entry`() {
+        val item = AppPackagePickerItemUiModel(
+            label = "Browser",
+            packageName = "com.example.browser",
+        )
+        val state = DetailUiState(entry = entry("Current"))
+
+        val associated = DetailReducer.reduce(
+            state,
+            DetailMutation.AssociatedAppsChanged(EntryId("entry-1"), listOf(item)),
+        )
+        val stalePicker = DetailReducer.reduce(
+            associated,
+            DetailMutation.PackagePickerAppsChanged(EntryId("stale-entry"), listOf(item)),
+        )
+
+        assertEquals(listOf(item), associated.associatedApps)
+        assertEquals(emptyList<Any>(), stalePicker.packagePickerApps)
+        assertFalse(stalePicker.packagePickerAppsLoaded)
+    }
+
+    @Test
+    fun `package picker metadata marks the current entry load complete`() {
+        val item = AppPackagePickerItemUiModel(
+            label = "Browser",
+            packageName = "com.example.browser",
+        )
+
+        val actual = DetailReducer.reduce(
+            DetailUiState(entry = entry("Current")),
+            DetailMutation.PackagePickerAppsChanged(EntryId("entry-1"), listOf(item)),
+        )
+
+        assertEquals(listOf(item), actual.packagePickerApps)
+        assertTrue(actual.packagePickerAppsLoaded)
+    }
     private fun entry(title: String) = Entry(
         identity = EntryIdentity(
             id = EntryId("entry-1"),
