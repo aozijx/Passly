@@ -18,7 +18,7 @@ class SettingsDestinationParameterBoundaryTest {
         assertNarrow(
             "autofill/AutofillRoute.kt",
             forbidden = listOf(
-                "SettingsDestination", "Context", "SettingsOverlayState",
+                "SettingsDestination", "Context", "AppPasswordDialogStateHolder",
                 "InteractionSettingsViewModel", "DataManagementSettingsViewModel",
                 "SettingsViewModel", "SettingsUiState",
             ),
@@ -26,14 +26,14 @@ class SettingsDestinationParameterBoundaryTest {
         assertNarrow(
             "data/DataManagementRoute.kt",
             forbidden = listOf(
-                "SettingsDestination", "Context", "SettingsOverlayState",
+                "SettingsDestination", "Context", "AppPasswordDialogStateHolder",
                 "InteractionSettingsViewModel",
             ),
         )
         assertNarrow(
             "interaction/InteractionRoute.kt",
             forbidden = listOf(
-                "SettingsDestination", "Context", "SettingsOverlayState",
+                "SettingsDestination", "Context", "AppPasswordDialogStateHolder",
                 "DataManagementSettingsViewModel",
                 "InteractionSettingsViewModel", "SettingsViewModel", "SettingsUiState",
             ),
@@ -48,15 +48,16 @@ class SettingsDestinationParameterBoundaryTest {
         assertNarrow(
             "core/RecoveryCodeRoute.kt",
             forbidden = listOf(
-                "SettingsDestination", "InteractionSettingsViewModel",
-                "DataManagementSettingsViewModel", "SettingsUiState",
+                "SettingsDestination", "Context", "AppPasswordDialogStateHolder",
+                "InteractionSettingsViewModel", "DataManagementSettingsViewModel",
+                "SettingsUiState",
             ),
         )
         listOf("general/GeneralRoute.kt", "general/NotificationsRoute.kt").forEach { path ->
             assertNarrow(
                 path,
                 forbidden = listOf(
-                    "SettingsDestination", "Context", "SettingsOverlayState",
+                    "SettingsDestination", "Context", "AppPasswordDialogStateHolder",
                     "InteractionSettingsViewModel", "DataManagementSettingsViewModel",
                     "SettingsViewModel", "SettingsUiState",
                 ),

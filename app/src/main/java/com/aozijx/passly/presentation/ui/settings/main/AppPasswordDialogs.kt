@@ -3,7 +3,7 @@ package com.aozijx.passly.presentation.ui.settings.main
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogEvent
 import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogState
-import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogsModel
+import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogsModel
 import com.aozijx.passly.presentation.ui.settings.security.AppPasswordActionDialog
 import com.aozijx.passly.presentation.ui.settings.security.AppPasswordChangeDialog
 import com.aozijx.passly.presentation.ui.settings.security.AppPasswordChangeDialogEventHandler
@@ -11,8 +11,8 @@ import com.aozijx.passly.presentation.ui.settings.security.AppPasswordChangeDial
 import com.aozijx.passly.presentation.ui.shared.components.apppassword.AppPasswordSetDialog
 
 @Composable
-internal fun SettingsDialogs(
-    state: SettingsDialogsModel,
+internal fun AppPasswordDialogs(
+    state: AppPasswordDialogsModel,
     onEvent: (AppPasswordDialogEvent) -> Unit,
 ) {
     when (state.activeAppPasswordDialog) {

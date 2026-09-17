@@ -30,13 +30,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import com.aozijx.passly.presentation.feature.settings.main.SettingsEffect
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogEventHandler
-import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogsState
+import com.aozijx.passly.presentation.feature.settings.main.buildAppPasswordDialogEventHandler
+import com.aozijx.passly.presentation.feature.settings.main.buildAppPasswordDialogsModel
 import com.aozijx.passly.presentation.feature.settings.security.AppPasswordAction
 import com.aozijx.passly.presentation.feature.settings.security.validateAndSendAppPasswordAction
 import com.aozijx.passly.presentation.ui.settings.main.SettingsMainPage
-import com.aozijx.passly.presentation.ui.settings.main.SettingsDialogs
-import com.aozijx.passly.presentation.ui.settings.main.rememberSettingsOverlayState
+import com.aozijx.passly.presentation.ui.settings.main.AppPasswordDialogs
+import com.aozijx.passly.presentation.ui.settings.main.rememberAppPasswordDialogStateHolder
 import kotlinx.coroutines.launch
 
 /**
@@ -55,7 +55,7 @@ fun SettingsRoute(
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<SettingsDestination>()
     val scope = rememberCoroutineScope()
-    val localState = rememberSettingsOverlayState()
+    val appPasswordDialogs = rememberAppPasswordDialogStateHolder()
     val context = LocalContext.current
     val mainListState = rememberLazyGridState()
 
@@ -79,9 +79,9 @@ fun SettingsRoute(
         validateAndSendAppPasswordAction(
             context = context,
             action = action,
-            currentPassword = localState.appPasswordCurrent,
-            newPassword = localState.appPasswordNew,
-            confirmPassword = localState.appPasswordConfirm,
+            currentPassword = appPasswordDialogs.appPasswordCurrent,
+            newPassword = appPasswordDialogs.appPasswordNew,
+            confirmPassword = appPasswordDialogs.appPasswordConfirm,
             settingsViewModel = settingsViewModel
         )
     }
@@ -90,17 +90,17 @@ fun SettingsRoute(
         settingsViewModel.effects.collect { effect ->
             // 副作用
             when (effect) {
-                is SettingsEffect.AppPasswordSet -> localState.onAppPasswordSuccess()
+                is SettingsEffect.AppPasswordSet -> appPasswordDialogs.onAppPasswordSuccess()
 
-                is SettingsEffect.AppPasswordChanged -> localState.onAppPasswordSuccess()
+                is SettingsEffect.AppPasswordChanged -> appPasswordDialogs.onAppPasswordSuccess()
 
-                is SettingsEffect.AppPasswordDisabled -> localState.onAppPasswordSuccess()
+                is SettingsEffect.AppPasswordDisabled -> appPasswordDialogs.onAppPasswordSuccess()
 
                 is SettingsEffect.AppPasswordEntryAuthorized -> {
                     if (effect.alreadyEnabled) {
-                        localState.openAppPasswordActionDialog()
+                        appPasswordDialogs.openAppPasswordActionDialog()
                     } else {
-                        localState.openSetAppPasswordDialog()
+                        appPasswordDialogs.openSetAppPasswordDialog()
                     }
                 }
 
@@ -143,7 +143,6 @@ fun SettingsRoute(
                 SettingsDetailRouteRegistry(
                     route = renderedDetailRoute,
                     context = context,
-                    localState = localState,
                     settingsViewModel = settingsViewModel,
                     onOpenTrash = onOpenTrash,
                     onBack = navigateBack,
@@ -208,7 +207,6 @@ fun SettingsRoute(
                         SettingsDetailRouteRegistry(
                             route = route,
                             context = context,
-                            localState = localState,
                             settingsViewModel = settingsViewModel,
                             onOpenTrash = onOpenTrash,
                             onBack = null,
@@ -219,10 +217,10 @@ fun SettingsRoute(
         )
     }
 
-    SettingsDialogs(
-        state = buildSettingsDialogsState(localState),
-        onEvent = buildSettingsDialogEventHandler(
-            localState = localState,
+    AppPasswordDialogs(
+        state = buildAppPasswordDialogsModel(appPasswordDialogs),
+        onEvent = buildAppPasswordDialogEventHandler(
+            stateHolder = appPasswordDialogs,
             submitAppPasswordAction = ::submitAppPasswordAction,
         ),
     )

@@ -10,14 +10,12 @@ import com.aozijx.passly.presentation.feature.settings.main.navigation.data.Data
 import com.aozijx.passly.presentation.feature.settings.main.navigation.general.GeneralRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.general.NotificationsRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.interaction.InteractionRoute
-import com.aozijx.passly.presentation.ui.settings.main.SettingsOverlayState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DataSettingsRoute(
     route: SettingsDestination,
     context: Context,
-    localState: SettingsOverlayState,
     onOpenTrash: () -> Unit,
     onBack: (() -> Unit)?,
 ) {
@@ -26,7 +24,7 @@ internal fun DataSettingsRoute(
         SettingsDestination.Autofill -> ({ AutofillRoute(onBack) })
         SettingsDestination.DataManagement -> ({ DataManagementRoute(onOpenTrash, onBack) })
         SettingsDestination.BackupRestore -> ({ BackupRoute(context, onBack) })
-        SettingsDestination.RecoveryCode -> ({ RecoveryCodeRoute(context, localState, onBack) })
+        SettingsDestination.RecoveryCode -> ({ RecoveryCodeRoute(onBack) })
         SettingsDestination.General -> ({ GeneralRoute(onBack) })
         SettingsDestination.Notifications -> ({ NotificationsRoute(onBack) })
         else -> error("Unsupported data settings route: ${route.route}")

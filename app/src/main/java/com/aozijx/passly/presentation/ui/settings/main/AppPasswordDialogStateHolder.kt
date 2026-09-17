@@ -1,9 +1,5 @@
 package com.aozijx.passly.presentation.ui.settings.main
 
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.SheetState
-import androidx.compose.material3.SheetValue
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -11,11 +7,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogState
 
-@OptIn(ExperimentalMaterial3Api::class)
-internal class SettingsOverlayState {
+internal class AppPasswordDialogStateHolder {
     var activeAppPasswordDialog by mutableStateOf<AppPasswordDialogState>(AppPasswordDialogState.None)
-    var showRecoveryCodeSheet by mutableStateOf(false)
-    lateinit var recoveryCodeSheetState: SheetState
 
     var appPasswordCurrent by mutableStateOf("")
     var appPasswordNew by mutableStateOf("")
@@ -59,10 +52,7 @@ internal class SettingsOverlayState {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun rememberSettingsOverlayState(): SettingsOverlayState {
-    val state = remember { SettingsOverlayState() }
-    state.recoveryCodeSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
-    return state
+internal fun rememberAppPasswordDialogStateHolder(): AppPasswordDialogStateHolder {
+    return remember { AppPasswordDialogStateHolder() }
 }

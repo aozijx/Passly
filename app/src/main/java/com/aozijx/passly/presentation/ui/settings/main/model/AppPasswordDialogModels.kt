@@ -7,7 +7,7 @@ internal sealed interface AppPasswordDialogState {
     data object Change : AppPasswordDialogState
 }
 
-internal data class SettingsDialogsModel(
+internal data class AppPasswordDialogsModel(
     val activeAppPasswordDialog: AppPasswordDialogState,
     val appPasswordCurrent: String,
     val appPasswordNew: String,

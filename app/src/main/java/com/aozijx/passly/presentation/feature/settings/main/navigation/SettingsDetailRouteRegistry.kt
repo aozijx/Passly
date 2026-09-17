@@ -4,13 +4,11 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.ui.settings.main.SettingsDetailPlaceholder
-import com.aozijx.passly.presentation.ui.settings.main.SettingsOverlayState
 
 @Composable
 internal fun SettingsDetailRouteRegistry(
     route: SettingsDestination?,
     context: Context,
-    localState: SettingsOverlayState,
     settingsViewModel: SettingsViewModel,
     onOpenTrash: () -> Unit,
     onBack: (() -> Unit)?,
@@ -33,7 +31,6 @@ internal fun SettingsDetailRouteRegistry(
         SettingsDestination.Notifications -> DataSettingsRoute(
             route = route,
             context = context,
-            localState = localState,
             onOpenTrash = onOpenTrash,
             onBack = onBack,
         )
