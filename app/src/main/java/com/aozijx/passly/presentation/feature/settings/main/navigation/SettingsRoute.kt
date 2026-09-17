@@ -36,7 +36,6 @@ import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogE
 import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogsState
 import com.aozijx.passly.presentation.feature.settings.security.AppPasswordAction
 import com.aozijx.passly.presentation.feature.settings.security.validateAndSendAppPasswordAction
-import com.aozijx.passly.presentation.feature.database.reset.DatabaseResetOverlay
 import com.aozijx.passly.presentation.ui.settings.main.SettingsMainPage
 import com.aozijx.passly.presentation.ui.settings.main.SettingsDialogs
 import com.aozijx.passly.presentation.ui.settings.main.rememberSettingsOverlayState
@@ -240,10 +239,6 @@ fun SettingsRoute(
             submitAppPasswordAction = ::submitAppPasswordAction,
         )
     )
-
-    if (localState.showDatabaseResetSheet) {
-        DatabaseResetOverlay(onDismiss = localState::dismissDatabaseResetSheet)
-    }
 }
 
 /**
