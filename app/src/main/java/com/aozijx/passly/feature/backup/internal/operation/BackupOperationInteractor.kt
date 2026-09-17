@@ -1,30 +1,30 @@
 package com.aozijx.passly.feature.backup.internal.operation
 
 import android.net.Uri
-import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
 import com.aozijx.passly.core.error.mapping.fromThrowable
 import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
-import com.aozijx.passly.feature.backup.internal.security.BackupAuthorizationPolicy
-import com.aozijx.passly.feature.backup.internal.security.BackupAuthorizationResult
+import com.aozijx.passly.domain.access.model.AuthorizationResult
+import com.aozijx.passly.domain.access.model.AuthorizationScope
+import com.aozijx.passly.domain.access.port.AuthorizationGate
+import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
+import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveService
+import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
+import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupExportOptions
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
-import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
-import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveService
-import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
-/** Executes Backup side effects while the ViewModel remains a state-machine boundary. */
 /** Application use case boundary for backup flows; the ViewModel only dispatches state. */
 internal class BackupOperationInteractor @Inject constructor(
     private val settingsSource: BackupDirectorySettingsSource,
     private val backupService: BackupArchiveService,
     private val storageSupport: BackupStorageSupport,
-    private val authorizationPolicy: BackupAuthorizationPolicy,
+    private val authorizationGate: AuthorizationGate,
 ) {
     fun buildExportFileName(format: BackupExportFormat): String =
         storageSupport.buildBackupFileName(format.extension)
@@ -37,13 +37,14 @@ internal class BackupOperationInteractor @Inject constructor(
         }
     }
 
-    suspend fun exportToConfiguredDirectory(request: BackupOperationRequest): BackupExecutionResult {
-        authenticate(AuthenticationPurpose.BACKUP_EXPORT).let { authResult ->
-            if (authResult != BackupExecutionResult.Success) return authResult
-        }
+    suspend fun exportToConfiguredDirectory(
+        request: BackupOperationRequest,
+    ): BackupExecutionResult = authorizeOperation(AuthenticationPurpose.BACKUP_EXPORT) {
         val directoryUri = settingsSource.backupDirectoryUri.first()
-            ?: return BackupExecutionResult.Failure(BackupFailed())
-        if (directoryUri.isBlank()) return BackupExecutionResult.Failure(BackupFailed())
+            ?: return@authorizeOperation BackupExecutionResult.Failure(BackupFailed())
+        if (directoryUri.isBlank()) {
+            return@authorizeOperation BackupExecutionResult.Failure(BackupFailed())
+        }
 
         val fileName = request.pendingExportFileName
             ?: buildExportFileName(request.exportFormat)
@@ -52,9 +53,9 @@ internal class BackupOperationInteractor @Inject constructor(
             fileName = fileName,
             mimeType = request.exportFormat.mimeType,
         ).getOrElse { error ->
-            return BackupExecutionResult.Failure(AppError.fromThrowable(error))
+            return@authorizeOperation BackupExecutionResult.Failure(AppError.fromThrowable(error))
         }
-        return performOperation(
+        performOperation(
             request = request.copy(
                 targetUri = target.fileUri.toString(),
                 pendingExportFileName = target.fileName,
@@ -65,25 +66,31 @@ internal class BackupOperationInteractor @Inject constructor(
     }
 
     suspend fun executePending(request: BackupOperationRequest): BackupExecutionResult {
-        val purpose = if (request.operation == BackupOperation.EXPORT) {
-            AuthenticationPurpose.BACKUP_EXPORT
-        } else {
-            AuthenticationPurpose.BACKUP_IMPORT
+        val purpose = when (request.operation) {
+            BackupOperation.EXPORT -> AuthenticationPurpose.BACKUP_EXPORT
+            BackupOperation.IMPORT -> AuthenticationPurpose.BACKUP_IMPORT
+            BackupOperation.DIRECTORY_CHECK ->
+                return BackupExecutionResult.Failure(BackupFailed())
         }
-        authenticate(purpose).let { authResult ->
-            if (authResult != BackupExecutionResult.Success) return authResult
+        return authorizeOperation(purpose) {
+            val targetUri = request.targetUri?.let(Uri::parse)
+                ?: return@authorizeOperation BackupExecutionResult.Failure(BackupFailed())
+            performOperation(request, targetUri)
         }
-        val targetUri = request.targetUri?.let(Uri::parse)
-            ?: return BackupExecutionResult.Failure(BackupFailed())
-        return performOperation(request, targetUri)
     }
 
-    private suspend fun authenticate(purpose: AuthenticationPurpose): BackupExecutionResult =
-        when (authorizationPolicy.authorize(purpose)) {
-            BackupAuthorizationResult.Authorized -> BackupExecutionResult.Success
-            BackupAuthorizationResult.Cancelled -> BackupExecutionResult.Cancelled
-            BackupAuthorizationResult.Denied -> BackupExecutionResult.Failure(BackupFailed())
+    private suspend fun authorizeOperation(
+        purpose: AuthenticationPurpose,
+        operation: suspend () -> BackupExecutionResult,
+    ): BackupExecutionResult = when (
+        val authorization = authorizationGate.authorize(AuthorizationScope.Global(purpose)) {
+            operation()
         }
+    ) {
+        is AuthorizationResult.Allowed -> authorization.value
+        AuthorizationResult.Cancelled -> BackupExecutionResult.Cancelled
+        is AuthorizationResult.Denied -> BackupExecutionResult.Failure(BackupFailed())
+    }
 
     private suspend fun performOperation(
         request: BackupOperationRequest,
@@ -101,8 +108,7 @@ internal class BackupOperationInteractor @Inject constructor(
                             includeIcons =
                                 request.includeIcons && request.exportFormat.supportsResources,
                             includeAttachments =
-                                request.includeAttachments &&
-                                        request.exportFormat.supportsResources,
+                                request.includeAttachments && request.exportFormat.supportsResources,
                             includeDeleted = request.includeDeleted,
                             includedEntryTypes = request.includedEntryTypes,
                         ),
@@ -138,7 +144,6 @@ internal class BackupOperationInteractor @Inject constructor(
             storageSupport.deleteDocument(targetUri)
         }
     }
-
 }
 
 internal sealed interface BackupExecutionResult {
