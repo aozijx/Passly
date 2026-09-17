@@ -10,6 +10,7 @@ import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
 import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
+import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.security.authentication.DefaultAuthenticationManager
 import com.aozijx.passly.security.authentication.DefaultAuthenticationMethodProvisioner
 import com.aozijx.passly.security.authentication.DefaultRecoveryCodeDraftFactory
@@ -35,6 +36,12 @@ internal abstract class AuthenticationModule {
     abstract fun bindAuthenticationManager(
         impl: DefaultAuthenticationManager,
     ): AuthenticationManager
+
+    @Binds
+    @Singleton
+    abstract fun bindSessionLockController(
+        impl: DefaultAuthenticationManager,
+    ): SessionLockController
 
     @Binds
     @Singleton

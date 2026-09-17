@@ -4,9 +4,9 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
-import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.LockReason
-import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,7 +28,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class AppLifecycleObserver @Inject constructor(
-    private val authenticationManager: AuthenticationManager,
+    private val secureSessionAccessState: SecureSessionAccessState,
+    private val sessionLockController: SessionLockController,
     private val diagnosticsRuntime: DiagnosticsRuntimeController,
     private val idleTimeoutSettings: IdleTimeoutSettings,
 ) : DefaultLifecycleObserver {
@@ -43,13 +44,13 @@ class AppLifecycleObserver @Inject constructor(
     override fun onStop(owner: LifecycleOwner) {
         scope.launch {
             val lockOnBackground = idleTimeoutSettings.isLockOnBackground.first()
-            val recoveryMode = authenticationManager.state.value is AuthenticationState.RecoveryMode
+            val recoveryMode = secureSessionAccessState.isRecoveryMode()
             if (!lockOnBackground && !recoveryMode) {
                 TelemetryRuntime.i(tag, "Lock on background disabled by settings, skipping")
                 return@launch
             }
             // 封存会话：排干租约 → 关闭数据库 → 同步认证状态
-            authenticationManager.lock(LockReason.BACKGROUND)
+            sessionLockController.lock(LockReason.BACKGROUND)
         }
         // 确保应用进入后台时，所有待写入的日志落盘
         diagnosticsRuntime.flush()
@@ -57,7 +58,7 @@ class AppLifecycleObserver @Inject constructor(
 
     override fun onDestroy(owner: LifecycleOwner) {
         scope.launch {
-            authenticationManager.lock(LockReason.APP_EXIT)
+            sessionLockController.lock(LockReason.APP_EXIT)
         }
         diagnosticsRuntime.shutdown()
     }

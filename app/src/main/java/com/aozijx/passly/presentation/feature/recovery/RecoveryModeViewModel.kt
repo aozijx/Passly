@@ -2,10 +2,9 @@ package com.aozijx.passly.presentation.feature.recovery
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.model.AuthenticationResult
-import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.presentation.feature.recovery.RecoveryModeEffect
 import com.aozijx.passly.presentation.feature.recovery.RecoveryModeUiAction
 import com.aozijx.passly.presentation.feature.recovery.RecoveryModeUiState
@@ -24,7 +23,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class RecoveryModeViewModel @Inject constructor(
-    private val authenticationManager: AuthenticationManager,
+    private val secureSessionAccessState: SecureSessionAccessState,
     private val methodProvisioner: AuthenticationMethodProvisioner,
 ) : ViewModel() {
 
@@ -108,7 +107,7 @@ class RecoveryModeViewModel @Inject constructor(
     }
 
     private fun ensureRecoveryMode(): Boolean {
-        val recoveryMode = authenticationManager.state.value is AuthenticationState.RecoveryMode
+        val recoveryMode = secureSessionAccessState.isRecoveryMode()
         if (recoveryMode) return true
         wipePasswords()
         mutate(RecoveryModeMutation.RecoveryModeRejected("当前不在恢复模式"))

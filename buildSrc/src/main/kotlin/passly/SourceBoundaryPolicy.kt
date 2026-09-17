@@ -180,13 +180,31 @@ internal object SourceBoundaryPolicy {
             message = "vault paging Data types may only be imported by App adapters",
         ),
         SourceBoundaryRule(
+            id = "PRESENTATION_AUTH_MANAGER_IMPORT",
+            sourcePathContains = "/presentation/",
+            allowedSourcePathContains = setOf("/presentation/feature/unlock/"),
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.access.port.AuthenticationManager",
+            ),
+            message = "presentation outside unlock imports the full authentication manager",
+        ),
+        SourceBoundaryRule(
+            id = "APPLICATION_AUTH_MANAGER_IMPORT",
+            sourcePathContains = "/app/AppLifecycleObserver.kt",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.access.port.AuthenticationManager",
+            ),
+            message = "application lifecycle imports the full authentication manager",
+        ),
+        SourceBoundaryRule(
             id = "APPLICATION_SESSION_CONTROLLER_IMPORT",
             sourcePathContains = "/app/PasslyApplication.kt",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.security.authentication.VaultSessionController",
             ),
             message = "application imports the concrete session controller",
-        ),        SourceBoundaryRule(
+        ),
+        SourceBoundaryRule(
             id = "PRESENTATION_SESSION_CONTROLLER_IMPORT",
             sourcePathContains = "/presentation/",
             forbiddenImportPrefixes = setOf(

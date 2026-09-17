@@ -12,16 +12,20 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 
-interface AuthenticationManager : AuthenticationMethodAvailability {
+interface AuthenticationManager : AuthenticationMethodAvailability, SessionLockController {
     val state: StateFlow<AuthenticationState>
     suspend fun authenticate(
         request: AuthenticationRequest,
         input: AuthInput = AuthInput.Interactive,
     ): AuthenticationResult
 
-    suspend fun lock(reason: LockReason)
+    override suspend fun lock(reason: LockReason)
     suspend fun refreshAvailability()
     fun snapshot(): AuthenticationSnapshot
+}
+
+interface SessionLockController {
+    suspend fun lock(reason: LockReason)
 }
 
 interface SecureSessionAccessState {

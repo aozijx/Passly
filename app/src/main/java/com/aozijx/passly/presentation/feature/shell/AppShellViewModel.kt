@@ -3,7 +3,8 @@ package com.aozijx.passly.presentation.feature.shell
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.message.mapping.toUiMessage
-import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
 import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
 import com.aozijx.passly.domain.access.port.DatabaseSessionRetryResult
@@ -32,7 +33,8 @@ import javax.inject.Inject
 class AppShellViewModel @Inject constructor(
     private val appearanceSettingsRepository: AppearanceSettingsRepository,
     private val interfaceSettingsRepository: InterfaceSettingsRepository,
-    private val authenticationManager: AuthenticationManager,
+    private val secureSessionAccessState: SecureSessionAccessState,
+    private val sessionLockController: SessionLockController,
     private val sessionActivityReporter: SessionActivityReporter,
     private val databaseSessionFailureState: DatabaseSessionFailureState,
     private val databaseSessionRecovery: DatabaseSessionRecovery,
@@ -61,12 +63,12 @@ class AppShellViewModel @Inject constructor(
     }
 
     private fun lock(reason: LockReason) {
-        viewModelScope.launch { authenticationManager.lock(reason) }
+        viewModelScope.launch { sessionLockController.lock(reason) }
     }
 
     private fun observeAuthStates() {
         viewModelScope.launch {
-            authenticationManager.state.collect { state ->
+            secureSessionAccessState.authenticationState.collect { state ->
                 val authorized = state is AuthenticationState.Authenticated
                 val recoveryMode = state is AuthenticationState.RecoveryMode
                 if (authorized) {

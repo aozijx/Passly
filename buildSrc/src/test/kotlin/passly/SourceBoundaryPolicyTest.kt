@@ -314,6 +314,38 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun presentationOutsideUnlockCannotImportAuthenticationManager() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/shell/AppShellViewModel.kt",
+            content = "import com.aozijx.passly.domain.access.port.AuthenticationManager",
+        )
+
+        assertEquals(
+            "PRESENTATION_AUTH_MANAGER_IMPORT",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
+    @Test
+    fun applicationLifecycleCannotImportAuthenticationManager() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/app/AppLifecycleObserver.kt",
+            content = "import com.aozijx.passly.domain.access.port.AuthenticationManager",
+        )
+
+        assertEquals(
+            "APPLICATION_AUTH_MANAGER_IMPORT",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
+    @Test
     fun presentationCannotImportConcreteSessionController() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/presentation/feature/shell/AppShellViewModel.kt",
