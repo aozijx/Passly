@@ -10,7 +10,7 @@ import com.aozijx.passly.presentation.feature.shell.navigation.ShellNavigationCo
 internal fun NavGraphBuilder.registerSettingsGraph(context: ShellNavigationContext) {
     composable(AppRoute.Settings.route) {
         val settingsViewModel: SettingsViewModel = hiltViewModel()
-        SettingsNavGraph(
+        SettingsRoute(
             onOuterBack = context.navigateBack,
             onOpenTrash = { context.navigateToRoute(AppRoute.Trash.route) },
             settingsViewModel = settingsViewModel,

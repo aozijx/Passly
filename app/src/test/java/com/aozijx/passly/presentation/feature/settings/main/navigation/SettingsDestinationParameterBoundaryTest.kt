@@ -4,7 +4,7 @@ import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Test
 
-class SettingsRouteParameterBoundaryTest {
+class SettingsDestinationParameterBoundaryTest {
     @Test
     fun `leaf settings routes accept only state and events they consume`() {
         assertNarrow(
@@ -18,33 +18,33 @@ class SettingsRouteParameterBoundaryTest {
         assertNarrow(
             "autofill/AutofillRoute.kt",
             forbidden = listOf(
-                "SettingsRoute", "Context", "SettingsOverlayState",
+                "SettingsDestination", "Context", "SettingsOverlayState",
                 "InteractionSettingsViewModel", "DataManagementSettingsViewModel",
                 "SettingsViewModel", "SettingsUiState",
             ),
         )
         assertNarrow(
             "data/DataManagementRoute.kt",
-            forbidden = listOf("SettingsRoute", "Context", "InteractionSettingsViewModel"),
+            forbidden = listOf("SettingsDestination", "Context", "InteractionSettingsViewModel"),
         )
         assertNarrow(
             "interaction/InteractionRoute.kt",
             forbidden = listOf(
-                "SettingsRoute", "Context", "DataManagementSettingsViewModel",
+                "SettingsDestination", "Context", "DataManagementSettingsViewModel",
                 "SettingsViewModel", "SettingsUiState",
             ),
         )
         assertNarrow(
             "data/BackupRoute.kt",
             forbidden = listOf(
-                "SettingsRoute", "InteractionSettingsViewModel",
+                "SettingsDestination", "InteractionSettingsViewModel",
                 "SettingsViewModel", "SettingsUiState",
             ),
         )
         assertNarrow(
             "core/RecoveryCodeRoute.kt",
             forbidden = listOf(
-                "SettingsRoute", "InteractionSettingsViewModel",
+                "SettingsDestination", "InteractionSettingsViewModel",
                 "DataManagementSettingsViewModel", "SettingsUiState",
             ),
         )
@@ -52,7 +52,7 @@ class SettingsRouteParameterBoundaryTest {
             assertNarrow(
                 path,
                 forbidden = listOf(
-                    "SettingsRoute", "Context", "SettingsOverlayState",
+                    "SettingsDestination", "Context", "SettingsOverlayState",
                     "InteractionSettingsViewModel", "DataManagementSettingsViewModel",
                     "SettingsViewModel", "SettingsUiState",
                 ),

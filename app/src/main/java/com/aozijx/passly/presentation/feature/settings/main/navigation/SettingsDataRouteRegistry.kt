@@ -17,7 +17,7 @@ import com.aozijx.passly.presentation.ui.settings.main.SettingsOverlayState
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DataSettingsRoute(
-    route: SettingsRoute,
+    route: SettingsDestination,
     context: Context,
     localState: SettingsOverlayState,
     interactionViewModel: InteractionSettingsViewModel,
@@ -26,13 +26,13 @@ internal fun DataSettingsRoute(
     onBack: (() -> Unit)?,
 ) {
     val content: @Composable () -> Unit = when (route) {
-        SettingsRoute.Interaction -> ({ InteractionRoute(localState, interactionViewModel, onBack) })
-        SettingsRoute.Autofill -> ({ AutofillRoute(onBack) })
-        SettingsRoute.DataManagement -> ({ DataManagementRoute(localState, onOpenTrash, onBack) })
-        SettingsRoute.BackupRestore -> ({ BackupRoute(context, localState, dataViewModel, onBack) })
-        SettingsRoute.RecoveryCode -> ({ RecoveryCodeRoute(context, localState, onBack) })
-        SettingsRoute.General -> ({ GeneralRoute(onBack) })
-        SettingsRoute.Notifications -> ({ NotificationsRoute(onBack) })
+        SettingsDestination.Interaction -> ({ InteractionRoute(localState, interactionViewModel, onBack) })
+        SettingsDestination.Autofill -> ({ AutofillRoute(onBack) })
+        SettingsDestination.DataManagement -> ({ DataManagementRoute(localState, onOpenTrash, onBack) })
+        SettingsDestination.BackupRestore -> ({ BackupRoute(context, localState, dataViewModel, onBack) })
+        SettingsDestination.RecoveryCode -> ({ RecoveryCodeRoute(context, localState, onBack) })
+        SettingsDestination.General -> ({ GeneralRoute(onBack) })
+        SettingsDestination.Notifications -> ({ NotificationsRoute(onBack) })
         else -> error("Unsupported data settings route: ${route.route}")
     }
     content()

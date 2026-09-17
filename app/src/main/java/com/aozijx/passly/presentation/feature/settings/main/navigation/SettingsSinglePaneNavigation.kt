@@ -41,7 +41,7 @@ internal fun resolveSettingsSinglePaneTargetLayer(
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 internal fun SettingsSinglePane(
-    navigator: ThreePaneScaffoldNavigator<SettingsRoute>,
+    navigator: ThreePaneScaffoldNavigator<SettingsDestination>,
     backBehavior: BackNavigationBehavior,
     currentPage: SettingsSinglePanePage,
     listContent: @Composable () -> Unit,
@@ -125,6 +125,6 @@ internal fun SettingsSinglePane(
 /** Keeps the outgoing render key only while a single-pane pop animation runs. */
 internal fun resolveSettingsDetailRoute(
     isSinglePane: Boolean,
-    navigatorRoute: SettingsRoute?,
-    retainedDetailRoute: SettingsRoute?,
-): SettingsRoute? = if (isSinglePane) navigatorRoute ?: retainedDetailRoute else navigatorRoute
+    navigatorRoute: SettingsDestination?,
+    retainedDetailRoute: SettingsDestination?,
+): SettingsDestination? = if (isSinglePane) navigatorRoute ?: retainedDetailRoute else navigatorRoute

@@ -6,11 +6,11 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class SettingsRouteTest {
+class SettingsDestinationTest {
     @Test
     fun everyMainUiGroupRouteKeyMapsToFeatureRoute() {
         SettingsGroup.entries.forEach { group ->
-            val route = SettingsRoute.fromRouteKey(group.routeKey)
+            val route = SettingsDestination.fromRouteKey(group.routeKey)
 
             assertNotNull(group.name, route)
             assertEquals(group.routeKey, route?.route)
@@ -19,7 +19,7 @@ class SettingsRouteTest {
 
     @Test
     fun unknownRouteKeyIsRejected() {
-        assertEquals(null, SettingsRoute.fromRouteKey("settings/unknown"))
+        assertEquals(null, SettingsDestination.fromRouteKey("settings/unknown"))
     }
 
     @Test
@@ -28,8 +28,8 @@ class SettingsRouteTest {
 
         assertEquals(11, routes.size)
         assertEquals(routes.size, routes.distinct().size)
-        assertEquals(routes.size, routes.map(SettingsRoute::route).distinct().size)
-        assertTrue(SettingsRoute.Main !in routes)
+        assertEquals(routes.size, routes.map(SettingsDestination::route).distinct().size)
+        assertTrue(SettingsDestination.Main !in routes)
         assertEquals(
             setOf(
                 "settings/security", "settings/privacy", "settings/appearance",
@@ -37,7 +37,7 @@ class SettingsRouteTest {
                 "settings/data", "settings/backup_restore", "settings/notifications",
                 "settings/recovery_code", "settings/general",
             ),
-            routes.map(SettingsRoute::route).toSet(),
+            routes.map(SettingsDestination::route).toSet(),
         )
     }
 }

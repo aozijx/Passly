@@ -39,11 +39,11 @@ class SettingsDetailRouteResolverTest {
     @Test
     fun singlePaneRetainsOutgoingDetailWhileNavigatorReturnsToList() {
         assertEquals(
-            SettingsRoute.Appearance,
+            SettingsDestination.Appearance,
             resolveSettingsDetailRoute(
                 isSinglePane = true,
                 navigatorRoute = null,
-                retainedDetailRoute = SettingsRoute.Appearance,
+                retainedDetailRoute = SettingsDestination.Appearance,
             ),
         )
     }
@@ -51,11 +51,11 @@ class SettingsDetailRouteResolverTest {
     @Test
     fun navigatorRouteAlwaysWinsWhenDetailIsCurrent() {
         assertEquals(
-            SettingsRoute.Interface,
+            SettingsDestination.Interface,
             resolveSettingsDetailRoute(
                 isSinglePane = true,
-                navigatorRoute = SettingsRoute.Interface,
-                retainedDetailRoute = SettingsRoute.Appearance,
+                navigatorRoute = SettingsDestination.Interface,
+                retainedDetailRoute = SettingsDestination.Appearance,
             ),
         )
     }
@@ -67,7 +67,7 @@ class SettingsDetailRouteResolverTest {
             resolveSettingsDetailRoute(
                 isSinglePane = false,
                 navigatorRoute = null,
-                retainedDetailRoute = SettingsRoute.Appearance,
+                retainedDetailRoute = SettingsDestination.Appearance,
             ),
         )
     }

@@ -9,15 +9,15 @@ import com.aozijx.passly.presentation.feature.settings.main.navigation.core.Secu
 
 @Composable
 internal fun CoreSettingsRoute(
-    route: SettingsRoute,
+    route: SettingsDestination,
     settingsViewModel: SettingsViewModel,
     onBack: (() -> Unit)?,
 ) {
     when (route) {
-        SettingsRoute.Security -> SecurityRoute(settingsViewModel, onBack)
-        SettingsRoute.Privacy -> PrivacyRoute(onBack)
-        SettingsRoute.Appearance -> AppearanceRoute(onBack)
-        SettingsRoute.Interface -> InterfaceRoute(onBack)
+        SettingsDestination.Security -> SecurityRoute(settingsViewModel, onBack)
+        SettingsDestination.Privacy -> PrivacyRoute(onBack)
+        SettingsDestination.Appearance -> AppearanceRoute(onBack)
+        SettingsDestination.Interface -> InterfaceRoute(onBack)
         else -> error("Unsupported core settings route: ${route.route}")
     }
 }

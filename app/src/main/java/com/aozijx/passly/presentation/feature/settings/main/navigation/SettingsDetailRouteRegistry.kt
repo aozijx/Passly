@@ -10,7 +10,7 @@ import com.aozijx.passly.presentation.ui.settings.main.SettingsOverlayState
 
 @Composable
 internal fun SettingsDetailRouteRegistry(
-    route: SettingsRoute?,
+    route: SettingsDestination?,
     context: Context,
     localState: SettingsOverlayState,
     settingsViewModel: SettingsViewModel,
@@ -21,20 +21,20 @@ internal fun SettingsDetailRouteRegistry(
 ) {
     when (route) {
         null,
-        SettingsRoute.Main -> SettingsDetailPlaceholder()
+        SettingsDestination.Main -> SettingsDetailPlaceholder()
 
-        SettingsRoute.Security,
-        SettingsRoute.Privacy,
-        SettingsRoute.Appearance,
-        SettingsRoute.Interface -> CoreSettingsRoute(route, settingsViewModel, onBack)
+        SettingsDestination.Security,
+        SettingsDestination.Privacy,
+        SettingsDestination.Appearance,
+        SettingsDestination.Interface -> CoreSettingsRoute(route, settingsViewModel, onBack)
 
-        SettingsRoute.Interaction,
-        SettingsRoute.Autofill,
-        SettingsRoute.DataManagement,
-        SettingsRoute.BackupRestore,
-        SettingsRoute.RecoveryCode,
-        SettingsRoute.General,
-        SettingsRoute.Notifications -> DataSettingsRoute(
+        SettingsDestination.Interaction,
+        SettingsDestination.Autofill,
+        SettingsDestination.DataManagement,
+        SettingsDestination.BackupRestore,
+        SettingsDestination.RecoveryCode,
+        SettingsDestination.General,
+        SettingsDestination.Notifications -> DataSettingsRoute(
             route = route,
             context = context,
             localState = localState,
