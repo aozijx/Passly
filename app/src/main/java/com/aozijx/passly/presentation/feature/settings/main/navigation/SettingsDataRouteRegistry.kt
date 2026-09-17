@@ -3,7 +3,6 @@ package com.aozijx.passly.presentation.feature.settings.main.navigation
 import android.content.Context
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.navigation.autofill.AutofillRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.core.RecoveryCodeRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.data.BackupRoute
@@ -19,7 +18,6 @@ internal fun DataSettingsRoute(
     route: SettingsDestination,
     context: Context,
     localState: SettingsOverlayState,
-    dataViewModel: DataManagementSettingsViewModel,
     onOpenTrash: () -> Unit,
     onBack: (() -> Unit)?,
 ) {
@@ -27,7 +25,7 @@ internal fun DataSettingsRoute(
         SettingsDestination.Interaction -> ({ InteractionRoute(localState, onBack) })
         SettingsDestination.Autofill -> ({ AutofillRoute(onBack) })
         SettingsDestination.DataManagement -> ({ DataManagementRoute(localState, onOpenTrash, onBack) })
-        SettingsDestination.BackupRestore -> ({ BackupRoute(context, localState, dataViewModel, onBack) })
+        SettingsDestination.BackupRestore -> ({ BackupRoute(context, onBack) })
         SettingsDestination.RecoveryCode -> ({ RecoveryCodeRoute(context, localState, onBack) })
         SettingsDestination.General -> ({ GeneralRoute(onBack) })
         SettingsDestination.Notifications -> ({ NotificationsRoute(onBack) })

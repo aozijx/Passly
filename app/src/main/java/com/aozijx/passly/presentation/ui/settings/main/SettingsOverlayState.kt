@@ -15,7 +15,6 @@ import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogSt
 internal class SettingsOverlayState {
     var showLeftActionDialog by mutableStateOf(false)
     var showRightActionDialog by mutableStateOf(false)
-    var showClearBackupDirConfirmDialog by mutableStateOf(false)
     var showDatabaseResetSheet by mutableStateOf(false)
     var activeAppPasswordDialog by mutableStateOf<AppPasswordDialogState>(AppPasswordDialogState.None)
     var showRecoveryCodeSheet by mutableStateOf(false)
@@ -41,14 +40,6 @@ internal class SettingsOverlayState {
 
     fun dismissRightActionDialog() {
         showRightActionDialog = false
-    }
-
-    fun openClearBackupDirConfirmDialog() {
-        showClearBackupDirConfirmDialog = true
-    }
-
-    fun dismissClearBackupDirConfirmDialog() {
-        showClearBackupDirConfirmDialog = false
     }
 
     fun openDatabaseResetSheet() {

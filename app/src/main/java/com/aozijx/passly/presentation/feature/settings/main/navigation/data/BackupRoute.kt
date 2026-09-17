@@ -1,34 +1,40 @@
 package com.aozijx.passly.presentation.feature.settings.main.navigation.data
 
 import android.content.Context
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
+import androidx.core.net.toUri
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.path.UriDisplayNameFormatter
-import com.aozijx.passly.presentation.feature.backup.BackupSettingsFeature
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
+import com.aozijx.passly.presentation.feature.backup.BackupSettingsFeature
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.backup.handleBackupPathPicked
-import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
-import com.aozijx.passly.presentation.ui.settings.main.SettingsOverlayState
+import com.aozijx.passly.presentation.ui.settings.backup.BackupDirectoryClearDialog
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
+import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun BackupRoute(
     context: Context,
-    localState: SettingsOverlayState,
-    dataViewModel: DataManagementSettingsViewModel,
     onBack: (() -> Unit)?,
 ) {
-    val state by dataViewModel.uiState.collectAsStateWithLifecycle()
+    val viewModel: DataManagementSettingsViewModel = hiltViewModel()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var showClearDirectoryDialog by rememberSaveable { mutableStateOf(false) }
     val notSetText = stringResource(R.string.not_set)
     val pathLabel = remember(state.directoryUri) {
         UriDisplayNameFormatter.format(state.directoryUri) ?: notSetText
@@ -37,7 +43,7 @@ internal fun BackupRoute(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
         handleBackupPathPicked(context, uri) { resolvedUri ->
-            dataViewModel.onAction(
+            viewModel.onAction(
                 DataManagementSettingsUiAction.SetBackupDirectoryUri(resolvedUri)
             )
         }
@@ -58,8 +64,27 @@ internal fun BackupRoute(
                     )
                 },
                 onClearBackupPath = if (state.directoryUri.isNullOrBlank()) null
-                else localState::openClearBackupDirConfirmDialog
+                else ({ showClearDirectoryDialog = true }),
             )
         }
+    }
+
+    if (showClearDirectoryDialog) {
+        BackupDirectoryClearDialog(
+            onConfirm = {
+                state.directoryUri?.takeIf(String::isNotBlank)?.let { directoryUri ->
+                    runCatching {
+                        context.contentResolver.releasePersistableUriPermission(
+                            directoryUri.toUri(),
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                                Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                        )
+                    }
+                }
+                viewModel.onAction(DataManagementSettingsUiAction.ClearBackupDirectory)
+                showClearDirectoryDialog = false
+            },
+            onDismiss = { showClearDirectoryDialog = false },
+        )
     }
 }

@@ -11,7 +11,6 @@ internal sealed interface AppPasswordDialogState {
 internal data class SettingsDialogsModel(
     val showRightActionDialog: Boolean,
     val showLeftActionDialog: Boolean,
-    val showClearBackupDirConfirmDialog: Boolean,
     val activeAppPasswordDialog: AppPasswordDialogState,
     val swipeLeftAction: SwipeActionUiModel,
     val swipeRightAction: SwipeActionUiModel,
@@ -38,9 +37,7 @@ internal sealed interface AppPasswordDialogEvent {
 internal sealed interface SettingsDialogEvent {
     data class SetSwipeRightAction(val action: SwipeActionUiModel) : SettingsDialogEvent
     data class SetSwipeLeftAction(val action: SwipeActionUiModel) : SettingsDialogEvent
-    data object ClearBackupDirectory : SettingsDialogEvent
     data object DismissRightActionDialog : SettingsDialogEvent
     data object DismissLeftActionDialog : SettingsDialogEvent
-    data object DismissClearBackupDirConfirmDialog : SettingsDialogEvent
     data class AppPassword(val event: AppPasswordDialogEvent) : SettingsDialogEvent
 }

@@ -1,8 +1,5 @@
 package com.aozijx.passly.presentation.ui.settings.main
 
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
@@ -43,31 +40,6 @@ internal fun SettingsDialogs(
                 onEvent(SettingsDialogEvent.DismissLeftActionDialog)
             },
             { onEvent(SettingsDialogEvent.DismissLeftActionDialog) }
-        )
-    }
-
-    if (state.showClearBackupDirConfirmDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                onEvent(SettingsDialogEvent.DismissClearBackupDirConfirmDialog)
-            },
-            title = { Text(stringResource(R.string.settings_backup_clear_directory_title)) },
-            text = { Text(stringResource(R.string.settings_backup_clear_directory_message)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    onEvent(SettingsDialogEvent.ClearBackupDirectory)
-                    onEvent(SettingsDialogEvent.DismissClearBackupDirConfirmDialog)
-                }) {
-                    Text(stringResource(R.string.settings_backup_clear_selection))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    onEvent(SettingsDialogEvent.DismissClearBackupDirConfirmDialog)
-                }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
         )
     }
 

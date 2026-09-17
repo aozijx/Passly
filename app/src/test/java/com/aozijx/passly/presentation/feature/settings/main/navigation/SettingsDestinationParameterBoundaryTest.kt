@@ -60,6 +60,13 @@ class SettingsDestinationParameterBoundaryTest {
         }
     }
 
+    @Test
+    fun `root settings route does not own backup view model`() {
+        assertFalse(
+            "SettingsRoute still owns backup destination state",
+            source("SettingsRoute.kt").contains("DataManagementSettingsViewModel"),
+        )
+    }
     private fun assertNarrow(relativePath: String, forbidden: List<String>) {
         val signature = source(relativePath)
             .substringAfter("internal fun ")

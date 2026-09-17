@@ -28,10 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsUiAction
-import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.SettingsEffect
 import com.aozijx.passly.presentation.feature.settings.main.SettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
@@ -64,8 +61,6 @@ fun SettingsRoute(
     val localState = rememberSettingsOverlayState()
     val context = LocalContext.current
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
-    val dataViewModel: DataManagementSettingsViewModel = hiltViewModel()
-    val dataState by dataViewModel.uiState.collectAsStateWithLifecycle()
     val mainListState = rememberLazyGridState()
 
     val backBehavior = BackNavigationBehavior.PopUntilScaffoldValueChange
@@ -154,7 +149,6 @@ fun SettingsRoute(
                     context = context,
                     localState = localState,
                     settingsViewModel = settingsViewModel,
-                    dataViewModel = dataViewModel,
                     onOpenTrash = onOpenTrash,
                     onBack = navigateBack,
                 )
@@ -220,7 +214,6 @@ fun SettingsRoute(
                             context = context,
                             localState = localState,
                             settingsViewModel = settingsViewModel,
-                            dataViewModel = dataViewModel,
                             onOpenTrash = onOpenTrash,
                             onBack = null,
                         )
@@ -238,8 +231,6 @@ fun SettingsRoute(
         ),
         onEvent = buildSettingsDialogEventHandler(
             localState = localState,
-            backupDirectoryUri = dataState.directoryUri,
-            context = context,
             onSetSwipeRightAction = {
                 settingsViewModel.onAction(SettingsUiAction.SetSwipeRightAction(it))
             },
@@ -247,9 +238,6 @@ fun SettingsRoute(
                 settingsViewModel.onAction(SettingsUiAction.SetSwipeLeftAction(it))
             },
             submitAppPasswordAction = ::submitAppPasswordAction,
-            onClearBackupDirectory = {
-                dataViewModel.onAction(DataManagementSettingsUiAction.ClearBackupDirectory)
-            }
         )
     )
 

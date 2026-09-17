@@ -2,7 +2,6 @@ package com.aozijx.passly.presentation.feature.settings.main.navigation
 
 import android.content.Context
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.ui.settings.main.SettingsDetailPlaceholder
 import com.aozijx.passly.presentation.ui.settings.main.SettingsOverlayState
@@ -13,7 +12,6 @@ internal fun SettingsDetailRouteRegistry(
     context: Context,
     localState: SettingsOverlayState,
     settingsViewModel: SettingsViewModel,
-    dataViewModel: DataManagementSettingsViewModel,
     onOpenTrash: () -> Unit,
     onBack: (() -> Unit)?,
 ) {
@@ -36,7 +34,6 @@ internal fun SettingsDetailRouteRegistry(
             route = route,
             context = context,
             localState = localState,
-            dataViewModel = dataViewModel,
             onOpenTrash = onOpenTrash,
             onBack = onBack,
         )
