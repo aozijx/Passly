@@ -4,6 +4,7 @@ import android.content.Context
 import android.hardware.biometrics.BiometricManager
 import com.aozijx.passly.domain.access.model.RecoveryCredentialFactory
 import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.port.AuthenticationRequester
 import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenance
 import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
@@ -38,6 +39,12 @@ internal abstract class AuthenticationModule {
     abstract fun bindAuthenticationRuntimeMaintenance(
         impl: BiometricRotationReconciler,
     ): AuthenticationRuntimeMaintenance
+
+    @Binds
+    @Singleton
+    abstract fun bindAuthenticationRequester(
+        impl: DefaultAuthenticationManager,
+    ): AuthenticationRequester
 
     @Binds
     @Singleton

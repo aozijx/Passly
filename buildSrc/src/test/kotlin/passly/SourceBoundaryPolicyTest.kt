@@ -363,6 +363,22 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun autofillCannotImportFullAuthenticationManager() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/feature/autofill/shared/AutofillRequestSession.kt",
+            content = "import com.aozijx.passly.domain.access.port.AuthenticationManager",
+        )
+
+        assertEquals(
+            "AUTOFILL_AUTH_MANAGER_IMPORT",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
+    @Test
     fun vaultUiCannotAcceptMultiplePagingStreams() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",

@@ -189,6 +189,14 @@ internal object SourceBoundaryPolicy {
             message = "presentation outside unlock imports the full authentication manager",
         ),
         SourceBoundaryRule(
+            id = "AUTOFILL_AUTH_MANAGER_IMPORT",
+            sourcePathContains = "/feature/autofill/",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.access.port.AuthenticationManager",
+            ),
+            message = "autofill imports the full authentication manager",
+        ),
+        SourceBoundaryRule(
             id = "APPLICATION_AUTH_MANAGER_IMPORT",
             sourcePathContains = "/app/AppLifecycleObserver.kt",
             forbiddenImportPrefixes = setOf(

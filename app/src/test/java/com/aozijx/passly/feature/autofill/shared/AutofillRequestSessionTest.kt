@@ -2,14 +2,13 @@ package com.aozijx.passly.feature.autofill.shared
 
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
-import com.aozijx.passly.domain.access.model.AuthenticationMethods
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
-import com.aozijx.passly.domain.access.model.AuthenticationSnapshot
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.CancellationReason
 import com.aozijx.passly.domain.access.model.LockReason
-import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.port.AuthenticationRequester
+import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.port.AutofillGrantStore
@@ -28,11 +27,12 @@ import org.junit.Test
 class AutofillRequestSessionTest {
 
     private fun session(
-        authentication: AuthenticationManager,
+        authentication: FakeAuthenticationController,
         vault: SecureSessionAccessState,
         grantStore: AutofillGrantStore = FakeAutofillGrantStore(),
     ) = AutofillRequestSession(
-        authenticationManager = authentication,
+        authenticationRequester = authentication,
+        sessionLockController = authentication,
         vaultAccessState = vault,
         grantStore = grantStore,
         sessionScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
@@ -41,7 +41,7 @@ class AutofillRequestSessionTest {
     @Test
     fun `request relocks only the full vault unlock it acquired`() = runBlocking {
         val vault = FakeSecureSessionAccessState(AuthenticationState.Locked)
-        val authentication = FakeAuthenticationManager(vault)
+        val authentication = FakeAuthenticationController(vault)
         val requestSession = session(authentication, vault)
 
         assertEquals(
@@ -56,7 +56,7 @@ class AutofillRequestSessionTest {
     @Test
     fun `request does not lock a vault that was already fully unlocked`() = runBlocking {
         val vault = FakeSecureSessionAccessState(AuthenticationState.Authenticated(1L))
-        val authentication = FakeAuthenticationManager(vault)
+        val authentication = FakeAuthenticationController(vault)
         val requestSession = session(authentication, vault)
 
         requestSession.trackUnlock { "result" }
@@ -68,7 +68,7 @@ class AutofillRequestSessionTest {
     @Test
     fun `request does not claim a restricted recovery session`() = runBlocking {
         val vault = FakeSecureSessionAccessState(AuthenticationState.RecoveryMode(1L))
-        val authentication = FakeAuthenticationManager(vault, authenticationSucceeds = false)
+        val authentication = FakeAuthenticationController(vault, authenticationSucceeds = false)
         val requestSession = session(authentication, vault)
 
         requestSession.authenticate()
@@ -80,7 +80,7 @@ class AutofillRequestSessionTest {
     @Test
     fun `terminal close revokes the request grant`() = runBlocking {
         val vault = FakeSecureSessionAccessState(AuthenticationState.Authenticated(1L))
-        val authentication = FakeAuthenticationManager(vault)
+        val authentication = FakeAuthenticationController(vault)
         val grantStore = FakeAutofillGrantStore()
         val requestSession = session(authentication, vault, grantStore)
         val context = AutofillGrantContext("com.example.target", null)
@@ -96,7 +96,7 @@ class AutofillRequestSessionTest {
     @Test
     fun `owner clear closes outside the cancelled view model scope`() = runBlocking {
         val vault = FakeSecureSessionAccessState(AuthenticationState.Locked)
-        val authentication = FakeAuthenticationManager(vault)
+        val authentication = FakeAuthenticationController(vault)
         val grantStore = FakeAutofillGrantStore()
         val requestSession = session(authentication, vault, grantStore)
         val context = AutofillGrantContext("com.example.target", null)
@@ -126,14 +126,10 @@ class AutofillRequestSessionTest {
         }
     }
 
-    private class FakeAuthenticationManager(
+    private class FakeAuthenticationController(
         private val vault: FakeSecureSessionAccessState,
         private val authenticationSucceeds: Boolean = true,
-    ) : AuthenticationManager {
-        override val state = MutableStateFlow<AuthenticationState>(vault.authenticationState.value)
-        override val methods = MutableStateFlow(
-            AuthenticationMethods(setOf(AuthenticationMethod.APP_PASSWORD))
-        )
+    ) : AuthenticationRequester, SessionLockController {
         var lastLockReason: LockReason? = null
 
         override suspend fun authenticate(
@@ -152,8 +148,6 @@ class AutofillRequestSessionTest {
             vault.lock()
         }
 
-        override suspend fun refreshAvailability() = Unit
-        override fun snapshot() = AuthenticationSnapshot(state.value, methods.value)
     }
 
     private class FakeAutofillGrantStore : AutofillGrantStore {

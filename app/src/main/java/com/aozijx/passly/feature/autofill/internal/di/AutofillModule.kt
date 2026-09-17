@@ -4,7 +4,8 @@ import com.aozijx.passly.domain.autofill.port.AutofillGrantStore
 import com.aozijx.passly.domain.autofill.port.AutofillHintProvider
 import com.aozijx.passly.domain.autofill.port.FieldMatchStrategy
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
-import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.port.AuthenticationRequester
+import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.feature.autofill.internal.CandidateRetriever
 import com.aozijx.passly.feature.autofill.internal.FillRequestDispatcher
@@ -50,11 +51,13 @@ internal abstract class AutofillModule {
     companion object {
         @Provides
         fun provideAutofillRequestSession(
-            authenticationManager: AuthenticationManager,
+            authenticationRequester: AuthenticationRequester,
+            sessionLockController: SessionLockController,
             vaultAccessState: SecureSessionAccessState,
             grantStore: AutofillGrantStore,
         ): AutofillRequestSession = AutofillRequestSession(
-            authenticationManager,
+            authenticationRequester,
+            sessionLockController,
             vaultAccessState,
             grantStore,
         )

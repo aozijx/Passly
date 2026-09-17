@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.autofill.shared
 
-import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.port.AuthenticationRequester
+import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
@@ -24,7 +25,8 @@ import kotlinx.coroutines.sync.withLock
  * activity is abandoned without a clean exit.
  */
 class AutofillRequestSession(
-    private val authenticationManager: AuthenticationManager,
+    private val authenticationRequester: AuthenticationRequester,
+    private val sessionLockController: SessionLockController,
     private val vaultAccessState: SecureSessionAccessState,
     private val grantStore: AutofillGrantStore,
     private val sessionScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -38,7 +40,7 @@ class AutofillRequestSession(
     suspend fun authenticate(): AuthenticationResult {
         resetTimeout()
         return trackUnlock {
-            authenticationManager.authenticate(
+            authenticationRequester.authenticate(
                 AuthenticationRequest(AuthenticationPurpose.AUTOFILL)
             )
         }
@@ -81,7 +83,7 @@ class AutofillRequestSession(
             grantStore.clear()
             if (ownsUnlock) {
                 ownsUnlock = false
-                authenticationManager.lock(LockReason.AUTOFILL_REQUEST_FINISHED)
+                sessionLockController.lock(LockReason.AUTOFILL_REQUEST_FINISHED)
             }
         }
     }

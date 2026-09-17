@@ -4,7 +4,7 @@ import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
-import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.port.AuthenticationRequester
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.AutofillScope
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
@@ -46,7 +46,7 @@ sealed interface CreatePasswordCredentialResult {
 class CredentialResponseInteractor @Inject constructor(
     private val credentialRepository: AutofillCredentialRepository,
     private val settingsSource: InteractionSettingsSource,
-    private val authenticationManager: AuthenticationManager,
+    private val authenticationRequester: AuthenticationRequester,
     private val vaultAccessState: SecureSessionAccessState,
     private val recordAutofillUsage: RecordAutofillUsageUseCase,
     private val saveAutofillCredential: SaveAutofillCredentialUseCase,
@@ -69,7 +69,7 @@ class CredentialResponseInteractor @Inject constructor(
         if ((policy.requireAuthentication && !grantActive) ||
             !vaultAccessState.hasFullSecureSessionAccess()
         ) {
-            val authentication = authenticationManager.authenticate(
+            val authentication = authenticationRequester.authenticate(
                 AuthenticationRequest(AuthenticationPurpose.AUTOFILL)
             )
             if (authentication !is AuthenticationResult.Success) {
@@ -121,7 +121,7 @@ class CredentialResponseInteractor @Inject constructor(
         // 只需确保会话可写。vault 锁定（未解锁）时仍然认证以解锁会话，
         // 已解锁则直接写入，避免保存流程被多余的认证弹窗打断。
         if (!vaultAccessState.hasFullSecureSessionAccess()) {
-            val authentication = authenticationManager.authenticate(
+            val authentication = authenticationRequester.authenticate(
                 AuthenticationRequest(AuthenticationPurpose.AUTOFILL)
             )
             if (authentication !is AuthenticationResult.Success) {
