@@ -28,9 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.presentation.feature.settings.main.SettingsEffect
-import com.aozijx.passly.presentation.feature.settings.main.SettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogEventHandler
 import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogsState
@@ -59,7 +57,6 @@ fun SettingsRoute(
     val scope = rememberCoroutineScope()
     val localState = rememberSettingsOverlayState()
     val context = LocalContext.current
-    val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val mainListState = rememberLazyGridState()
 
     val backBehavior = BackNavigationBehavior.PopUntilScaffoldValueChange
@@ -223,21 +220,11 @@ fun SettingsRoute(
     }
 
     SettingsDialogs(
-        state = buildSettingsDialogsState(
-            localState = localState,
-            swipeLeftAction = settingsState.swipeLeftAction,
-            swipeRightAction = settingsState.swipeRightAction,
-        ),
+        state = buildSettingsDialogsState(localState),
         onEvent = buildSettingsDialogEventHandler(
             localState = localState,
-            onSetSwipeRightAction = {
-                settingsViewModel.onAction(SettingsUiAction.SetSwipeRightAction(it))
-            },
-            onSetSwipeLeftAction = {
-                settingsViewModel.onAction(SettingsUiAction.SetSwipeLeftAction(it))
-            },
             submitAppPasswordAction = ::submitAppPasswordAction,
-        )
+        ),
     )
 }
 

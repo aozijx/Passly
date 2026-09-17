@@ -13,8 +13,6 @@ import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogSt
 
 @OptIn(ExperimentalMaterial3Api::class)
 internal class SettingsOverlayState {
-    var showLeftActionDialog by mutableStateOf(false)
-    var showRightActionDialog by mutableStateOf(false)
     var activeAppPasswordDialog by mutableStateOf<AppPasswordDialogState>(AppPasswordDialogState.None)
     var showRecoveryCodeSheet by mutableStateOf(false)
     lateinit var recoveryCodeSheetState: SheetState
@@ -22,24 +20,6 @@ internal class SettingsOverlayState {
     var appPasswordCurrent by mutableStateOf("")
     var appPasswordNew by mutableStateOf("")
     var appPasswordConfirm by mutableStateOf("")
-
-    fun openLeftActionDialog() {
-        showRightActionDialog = false
-        showLeftActionDialog = true
-    }
-
-    fun openRightActionDialog() {
-        showLeftActionDialog = false
-        showRightActionDialog = true
-    }
-
-    fun dismissLeftActionDialog() {
-        showLeftActionDialog = false
-    }
-
-    fun dismissRightActionDialog() {
-        showRightActionDialog = false
-    }
 
     fun openAppPasswordActionDialog() {
         activeAppPasswordDialog = AppPasswordDialogState.Action

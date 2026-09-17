@@ -1,128 +1,53 @@
 package com.aozijx.passly.presentation.ui.settings.main
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
-import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.apppassword.AppPasswordSetDialog
+import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogEvent
+import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogState
+import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogsModel
 import com.aozijx.passly.presentation.ui.settings.security.AppPasswordActionDialog
 import com.aozijx.passly.presentation.ui.settings.security.AppPasswordChangeDialog
 import com.aozijx.passly.presentation.ui.settings.security.AppPasswordChangeDialogEventHandler
 import com.aozijx.passly.presentation.ui.settings.security.AppPasswordChangeDialogState
-import com.aozijx.passly.presentation.ui.settings.interaction.SwipeActionSelectDialog
-import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogEvent
-import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogState
-import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogEvent
-import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogsModel
+import com.aozijx.passly.presentation.ui.shared.components.apppassword.AppPasswordSetDialog
 
 @Composable
 internal fun SettingsDialogs(
     state: SettingsDialogsModel,
-    onEvent: (SettingsDialogEvent) -> Unit,
+    onEvent: (AppPasswordDialogEvent) -> Unit,
 ) {
-    if (state.showRightActionDialog) {
-        SwipeActionSelectDialog(
-            stringResource(R.string.settings_swipe_select_right_action),
-            state.swipeRightAction,
-            {
-                onEvent(SettingsDialogEvent.SetSwipeRightAction(it))
-                onEvent(SettingsDialogEvent.DismissRightActionDialog)
-            },
-            { onEvent(SettingsDialogEvent.DismissRightActionDialog) }
-        )
-    }
-
-    if (state.showLeftActionDialog) {
-        SwipeActionSelectDialog(
-            stringResource(R.string.settings_swipe_select_left_action),
-            state.swipeLeftAction,
-            {
-                onEvent(SettingsDialogEvent.SetSwipeLeftAction(it))
-                onEvent(SettingsDialogEvent.DismissLeftActionDialog)
-            },
-            { onEvent(SettingsDialogEvent.DismissLeftActionDialog) }
-        )
-    }
-
     when (state.activeAppPasswordDialog) {
         AppPasswordDialogState.None -> Unit
-        AppPasswordDialogState.Action -> {
-            AppPasswordActionDialog(
-                onDismiss = {
-                    onEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.DismissAction)
-                    )
-                },
-                onChangePassword = {
-                    onEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ShowChange)
-                    )
-                },
-                onDisablePassword = {
-                    onEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ShowDisable)
-                    )
-                }
-            )
-        }
-
-        AppPasswordDialogState.Set -> {
-            AppPasswordSetDialog(
+        AppPasswordDialogState.Action -> AppPasswordActionDialog(
+            onDismiss = { onEvent(AppPasswordDialogEvent.DismissAction) },
+            onChangePassword = { onEvent(AppPasswordDialogEvent.ShowChange) },
+            onDisablePassword = { onEvent(AppPasswordDialogEvent.ShowDisable) },
+        )
+        AppPasswordDialogState.Set -> AppPasswordSetDialog(
+            newPassword = state.appPasswordNew,
+            confirmPassword = state.appPasswordConfirm,
+            confirmEnabled = state.isSetPasswordConfirmEnabled,
+            onNewPasswordChange = { onEvent(AppPasswordDialogEvent.NewChanged(it)) },
+            onConfirmPasswordChange = { onEvent(AppPasswordDialogEvent.ConfirmChanged(it)) },
+            onConfirm = { onEvent(AppPasswordDialogEvent.ConfirmSet) },
+            onDismiss = { onEvent(AppPasswordDialogEvent.DismissSet) },
+        )
+        AppPasswordDialogState.Change -> AppPasswordChangeDialog(
+            state = AppPasswordChangeDialogState(
+                currentPassword = state.appPasswordCurrent,
                 newPassword = state.appPasswordNew,
                 confirmPassword = state.appPasswordConfirm,
-                confirmEnabled = state.isSetPasswordConfirmEnabled,
-                onNewPasswordChange = {
-                    onEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.NewChanged(it))
-                    )
-                },
-                onConfirmPasswordChange = {
-                    onEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ConfirmChanged(it))
-                    )
-                },
-                onConfirm = {
-                    onEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ConfirmSet)
-                    )
-                },
-                onDismiss = {
-                    onEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.DismissSet)
-                    )
-                }
-            )
-        }
-
-        AppPasswordDialogState.Change -> {
-            AppPasswordChangeDialog(
-                state = AppPasswordChangeDialogState(
-                    currentPassword = state.appPasswordCurrent,
-                    newPassword = state.appPasswordNew,
-                    confirmPassword = state.appPasswordConfirm,
-                    confirmEnabled = state.isChangePasswordConfirmEnabled,
-                ),
-                eventHandler = object : AppPasswordChangeDialogEventHandler {
-                    override fun onCurrentPasswordChanged(password: String) = onEvent(
-                        SettingsDialogEvent.AppPassword(
-                            AppPasswordDialogEvent.CurrentChanged(password),
-                        ),
-                    )
-                    override fun onNewPasswordChanged(password: String) = onEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.NewChanged(password)),
-                    )
-                    override fun onConfirmPasswordChanged(password: String) = onEvent(
-                        SettingsDialogEvent.AppPassword(
-                            AppPasswordDialogEvent.ConfirmChanged(password),
-                        ),
-                    )
-                    override fun onConfirm() = onEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ConfirmChange),
-                    )
-                    override fun onDismiss() = onEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.DismissChange),
-                    )
-                },
-            )
-        }
+                confirmEnabled = state.isChangePasswordConfirmEnabled,
+            ),
+            eventHandler = object : AppPasswordChangeDialogEventHandler {
+                override fun onCurrentPasswordChanged(password: String) =
+                    onEvent(AppPasswordDialogEvent.CurrentChanged(password))
+                override fun onNewPasswordChanged(password: String) =
+                    onEvent(AppPasswordDialogEvent.NewChanged(password))
+                override fun onConfirmPasswordChanged(password: String) =
+                    onEvent(AppPasswordDialogEvent.ConfirmChanged(password))
+                override fun onConfirm() = onEvent(AppPasswordDialogEvent.ConfirmChange)
+                override fun onDismiss() = onEvent(AppPasswordDialogEvent.DismissChange)
+            },
+        )
     }
 }

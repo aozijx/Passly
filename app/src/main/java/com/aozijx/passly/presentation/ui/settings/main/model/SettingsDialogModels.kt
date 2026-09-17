@@ -1,19 +1,14 @@
 package com.aozijx.passly.presentation.ui.settings.main.model
 
-import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
-
 internal sealed interface AppPasswordDialogState {
     data object None : AppPasswordDialogState
     data object Action : AppPasswordDialogState
     data object Set : AppPasswordDialogState
     data object Change : AppPasswordDialogState
 }
+
 internal data class SettingsDialogsModel(
-    val showRightActionDialog: Boolean,
-    val showLeftActionDialog: Boolean,
     val activeAppPasswordDialog: AppPasswordDialogState,
-    val swipeLeftAction: SwipeActionUiModel,
-    val swipeRightAction: SwipeActionUiModel,
     val appPasswordCurrent: String,
     val appPasswordNew: String,
     val appPasswordConfirm: String,
@@ -32,12 +27,4 @@ internal sealed interface AppPasswordDialogEvent {
     data object ConfirmSet : AppPasswordDialogEvent
     data object ConfirmChange : AppPasswordDialogEvent
     data object ShowDisable : AppPasswordDialogEvent
-}
-
-internal sealed interface SettingsDialogEvent {
-    data class SetSwipeRightAction(val action: SwipeActionUiModel) : SettingsDialogEvent
-    data class SetSwipeLeftAction(val action: SwipeActionUiModel) : SettingsDialogEvent
-    data object DismissRightActionDialog : SettingsDialogEvent
-    data object DismissLeftActionDialog : SettingsDialogEvent
-    data class AppPassword(val event: AppPasswordDialogEvent) : SettingsDialogEvent
 }

@@ -22,7 +22,7 @@ internal fun DataSettingsRoute(
     onBack: (() -> Unit)?,
 ) {
     val content: @Composable () -> Unit = when (route) {
-        SettingsDestination.Interaction -> ({ InteractionRoute(localState, onBack) })
+        SettingsDestination.Interaction -> ({ InteractionRoute(onBack) })
         SettingsDestination.Autofill -> ({ AutofillRoute(onBack) })
         SettingsDestination.DataManagement -> ({ DataManagementRoute(onOpenTrash, onBack) })
         SettingsDestination.BackupRestore -> ({ BackupRoute(context, onBack) })

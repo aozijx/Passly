@@ -12,6 +12,13 @@ data class InteractionSettingsUiState(
 
 sealed interface InteractionSettingsAction {
     data class SetSwipeEnabled(val enabled: Boolean) : InteractionSettingsAction
+    data class SetSwipeLeftAction(val action: SwipeActionUiModel) : InteractionSettingsAction
+    data class SetSwipeRightAction(val action: SwipeActionUiModel) : InteractionSettingsAction
+}
+
+sealed interface InteractionSettingsEffect {
+    data object Saved : InteractionSettingsEffect
+    data class SaveFailed(val message: String) : InteractionSettingsEffect
 }
 
 internal fun InteractionSettingsUiState.toUiModel() = InteractionDetailUiModel(
