@@ -43,7 +43,7 @@ import com.aozijx.passly.presentation.feature.settings.security.validateAndSendA
 import com.aozijx.passly.presentation.feature.database.reset.DatabaseResetOverlay
 import com.aozijx.passly.presentation.ui.settings.main.SettingsMainPage
 import com.aozijx.passly.presentation.ui.settings.main.SettingsDialogs
-import com.aozijx.passly.presentation.ui.settings.main.rememberSettingsScreenLocalState
+import com.aozijx.passly.presentation.ui.settings.main.rememberSettingsOverlayState
 import kotlinx.coroutines.launch
 
 /**
@@ -62,7 +62,7 @@ fun SettingsNavGraph(
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<SettingsRoute>()
     val scope = rememberCoroutineScope()
-    val localState = rememberSettingsScreenLocalState()
+    val localState = rememberSettingsOverlayState()
     val context = LocalContext.current
     val interactionViewModel: InteractionSettingsViewModel = hiltViewModel()
     val interactionState by interactionViewModel.uiState.collectAsStateWithLifecycle()

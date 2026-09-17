@@ -6,13 +6,13 @@ import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSett
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.ui.settings.main.SettingsDetailPlaceholder
-import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
+import com.aozijx.passly.presentation.ui.settings.main.SettingsOverlayState
 
 @Composable
 internal fun SettingsDetailRouteRegistry(
     route: SettingsRoute?,
     context: Context,
-    localState: SettingsScreenLocalState,
+    localState: SettingsOverlayState,
     settingsViewModel: SettingsViewModel,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,

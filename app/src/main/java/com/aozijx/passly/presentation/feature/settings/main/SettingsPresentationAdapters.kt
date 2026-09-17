@@ -8,13 +8,13 @@ import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.presentation.feature.settings.security.AppPasswordAction
 import com.aozijx.passly.presentation.feature.settings.main.interaction.toFeatureModel
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
-import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
+import com.aozijx.passly.presentation.ui.settings.main.SettingsOverlayState
 import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogEvent
 import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogEvent
 import com.aozijx.passly.presentation.ui.settings.main.model.SettingsDialogsModel
 
 internal fun buildSettingsDialogsState(
-    localState: SettingsScreenLocalState,
+    localState: SettingsOverlayState,
     swipeLeftAction: SwipeActionType,
     swipeRightAction: SwipeActionType,
 ): SettingsDialogsModel = SettingsDialogsModel(
@@ -36,7 +36,7 @@ internal fun buildSettingsDialogsState(
 )
 
 internal fun buildSettingsDialogEventHandler(
-    localState: SettingsScreenLocalState,
+    localState: SettingsOverlayState,
     backupDirectoryUri: String?,
     context: Context,
     onSetSwipeRightAction: (SwipeActionType) -> Unit,

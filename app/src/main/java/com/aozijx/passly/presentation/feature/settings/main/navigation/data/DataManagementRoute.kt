@@ -6,13 +6,13 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.presentation.ui.settings.backup.DataManagementDetail
 import com.aozijx.passly.presentation.ui.settings.backup.model.DataManagementEventHandler
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
-import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
+import com.aozijx.passly.presentation.ui.settings.main.SettingsOverlayState
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DataManagementRoute(
-    localState: SettingsScreenLocalState,
+    localState: SettingsOverlayState,
     onOpenTrash: () -> Unit,
     onBack: (() -> Unit)?,
 ) {

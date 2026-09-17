@@ -2,7 +2,7 @@ package com.aozijx.passly.presentation.feature.settings.main
 
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
-import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
+import com.aozijx.passly.presentation.ui.settings.main.SettingsOverlayState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -12,7 +12,7 @@ class SettingsPresentationAdaptersTest {
 
     @Test
     fun `database reset opens in settings without leaving the current route`() {
-        val localState = SettingsScreenLocalState()
+        val localState = SettingsOverlayState()
 
         localState.openDatabaseResetSheet()
         assertTrue(localState.showDatabaseResetSheet)
@@ -23,7 +23,7 @@ class SettingsPresentationAdaptersTest {
 
     @Test
     fun `dialog model maps swipe actions and password validation`() {
-        val localState = SettingsScreenLocalState().apply {
+        val localState = SettingsOverlayState().apply {
             appPasswordCurrent = "current"
             appPasswordNew = "long-enough-password"
             appPasswordConfirm = "long-enough-password"

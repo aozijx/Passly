@@ -12,14 +12,14 @@ import com.aozijx.passly.presentation.feature.settings.main.navigation.data.Data
 import com.aozijx.passly.presentation.feature.settings.main.navigation.general.GeneralRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.general.NotificationsRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.interaction.InteractionRoute
-import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
+import com.aozijx.passly.presentation.ui.settings.main.SettingsOverlayState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DataSettingsRoute(
     route: SettingsRoute,
     context: Context,
-    localState: SettingsScreenLocalState,
+    localState: SettingsOverlayState,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
     onOpenTrash: () -> Unit,

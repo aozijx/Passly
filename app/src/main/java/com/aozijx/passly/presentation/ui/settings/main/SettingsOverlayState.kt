@@ -12,7 +12,7 @@ import androidx.compose.runtime.setValue
 import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogState
 
 @OptIn(ExperimentalMaterial3Api::class)
-internal class SettingsScreenLocalState {
+internal class SettingsOverlayState {
     var showLeftActionDialog by mutableStateOf(false)
     var showRightActionDialog by mutableStateOf(false)
     var showClearBackupDirConfirmDialog by mutableStateOf(false)
@@ -99,8 +99,8 @@ internal class SettingsScreenLocalState {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun rememberSettingsScreenLocalState(): SettingsScreenLocalState {
-    val state = remember { SettingsScreenLocalState() }
+internal fun rememberSettingsOverlayState(): SettingsOverlayState {
+    val state = remember { SettingsOverlayState() }
     state.recoveryCodeSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
     return state
 }

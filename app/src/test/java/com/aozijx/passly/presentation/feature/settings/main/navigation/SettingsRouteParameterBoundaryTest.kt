@@ -18,7 +18,7 @@ class SettingsRouteParameterBoundaryTest {
         assertNarrow(
             "autofill/AutofillRoute.kt",
             forbidden = listOf(
-                "SettingsRoute", "Context", "SettingsScreenLocalState",
+                "SettingsRoute", "Context", "SettingsOverlayState",
                 "InteractionSettingsViewModel", "DataManagementSettingsViewModel",
                 "SettingsViewModel", "SettingsUiState",
             ),
@@ -52,7 +52,7 @@ class SettingsRouteParameterBoundaryTest {
             assertNarrow(
                 path,
                 forbidden = listOf(
-                    "SettingsRoute", "Context", "SettingsScreenLocalState",
+                    "SettingsRoute", "Context", "SettingsOverlayState",
                     "InteractionSettingsViewModel", "DataManagementSettingsViewModel",
                     "SettingsViewModel", "SettingsUiState",
                 ),

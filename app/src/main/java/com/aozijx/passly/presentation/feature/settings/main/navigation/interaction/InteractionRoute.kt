@@ -10,13 +10,13 @@ import com.aozijx.passly.presentation.feature.settings.main.interaction.Interact
 import com.aozijx.passly.presentation.ui.settings.interaction.InteractionDetail
 import com.aozijx.passly.presentation.feature.settings.main.interaction.toUiModel
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
-import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
+import com.aozijx.passly.presentation.ui.settings.main.SettingsOverlayState
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun InteractionRoute(
-    localState: SettingsScreenLocalState,
+    localState: SettingsOverlayState,
     interactionViewModel: InteractionSettingsViewModel,
     onBack: (() -> Unit)?,
 ) {

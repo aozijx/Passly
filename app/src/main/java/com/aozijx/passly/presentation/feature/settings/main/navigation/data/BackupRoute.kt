@@ -17,14 +17,14 @@ import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSett
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.backup.handleBackupPathPicked
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
-import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
+import com.aozijx.passly.presentation.ui.settings.main.SettingsOverlayState
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun BackupRoute(
     context: Context,
-    localState: SettingsScreenLocalState,
+    localState: SettingsOverlayState,
     dataViewModel: DataManagementSettingsViewModel,
     onBack: (() -> Unit)?,
 ) {

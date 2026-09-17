@@ -23,14 +23,14 @@ import com.aozijx.passly.presentation.feature.settings.security.messageOrNull
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 import com.aozijx.passly.presentation.ui.settings.security.RecoveryCodeDetail
 import com.aozijx.passly.presentation.ui.settings.security.RecoveryCodeSheet
-import com.aozijx.passly.presentation.ui.settings.main.SettingsScreenLocalState
+import com.aozijx.passly.presentation.ui.settings.main.SettingsOverlayState
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun RecoveryCodeRoute(
     context: Context,
-    localState: SettingsScreenLocalState,
+    localState: SettingsOverlayState,
     onBack: (() -> Unit)?,
 ) {
     val viewModel: SecuritySettingsViewModel = hiltViewModel()
