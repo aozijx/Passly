@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.navigation.autofill.AutofillRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.core.RecoveryCodeRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.data.BackupRoute
@@ -20,13 +19,12 @@ internal fun DataSettingsRoute(
     route: SettingsDestination,
     context: Context,
     localState: SettingsOverlayState,
-    interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
     onOpenTrash: () -> Unit,
     onBack: (() -> Unit)?,
 ) {
     val content: @Composable () -> Unit = when (route) {
-        SettingsDestination.Interaction -> ({ InteractionRoute(localState, interactionViewModel, onBack) })
+        SettingsDestination.Interaction -> ({ InteractionRoute(localState, onBack) })
         SettingsDestination.Autofill -> ({ AutofillRoute(onBack) })
         SettingsDestination.DataManagement -> ({ DataManagementRoute(localState, onOpenTrash, onBack) })
         SettingsDestination.BackupRestore -> ({ BackupRoute(context, localState, dataViewModel, onBack) })

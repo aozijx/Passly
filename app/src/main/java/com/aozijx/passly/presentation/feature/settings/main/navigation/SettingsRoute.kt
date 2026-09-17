@@ -37,7 +37,6 @@ import com.aozijx.passly.presentation.feature.settings.main.SettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogEventHandler
 import com.aozijx.passly.presentation.feature.settings.main.buildSettingsDialogsState
-import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.AppPasswordAction
 import com.aozijx.passly.presentation.feature.settings.security.validateAndSendAppPasswordAction
 import com.aozijx.passly.presentation.feature.database.reset.DatabaseResetOverlay
@@ -64,8 +63,7 @@ fun SettingsRoute(
     val scope = rememberCoroutineScope()
     val localState = rememberSettingsOverlayState()
     val context = LocalContext.current
-    val interactionViewModel: InteractionSettingsViewModel = hiltViewModel()
-    val interactionState by interactionViewModel.uiState.collectAsStateWithLifecycle()
+    val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val dataViewModel: DataManagementSettingsViewModel = hiltViewModel()
     val dataState by dataViewModel.uiState.collectAsStateWithLifecycle()
     val mainListState = rememberLazyGridState()
@@ -156,7 +154,6 @@ fun SettingsRoute(
                     context = context,
                     localState = localState,
                     settingsViewModel = settingsViewModel,
-                    interactionViewModel = interactionViewModel,
                     dataViewModel = dataViewModel,
                     onOpenTrash = onOpenTrash,
                     onBack = navigateBack,
@@ -223,7 +220,6 @@ fun SettingsRoute(
                             context = context,
                             localState = localState,
                             settingsViewModel = settingsViewModel,
-                            interactionViewModel = interactionViewModel,
                             dataViewModel = dataViewModel,
                             onOpenTrash = onOpenTrash,
                             onBack = null,
@@ -237,8 +233,8 @@ fun SettingsRoute(
     SettingsDialogs(
         state = buildSettingsDialogsState(
             localState = localState,
-            swipeLeftAction = interactionState.swipeLeftAction,
-            swipeRightAction = interactionState.swipeRightAction,
+            swipeLeftAction = settingsState.swipeLeftAction,
+            swipeRightAction = settingsState.swipeRightAction,
         ),
         onEvent = buildSettingsDialogEventHandler(
             localState = localState,
