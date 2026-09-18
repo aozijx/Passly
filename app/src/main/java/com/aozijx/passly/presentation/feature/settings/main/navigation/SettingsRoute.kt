@@ -28,6 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.aozijx.passly.presentation.feature.settings.main.SettingsEffect
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.buildAppPasswordDialogEventHandler
@@ -49,9 +50,9 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 fun SettingsRoute(
-    settingsViewModel: SettingsViewModel,
     onOpenTrash: () -> Unit,
-    onOuterBack: () -> Unit
+    onOuterBack: () -> Unit,
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<SettingsDestination>()
     val scope = rememberCoroutineScope()

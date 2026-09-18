@@ -66,6 +66,12 @@ class SettingsDestinationParameterBoundaryTest {
     }
 
     @Test
+    fun `settings graph delegates view model ownership to route`() {
+        val graph = source("SettingsGraphRegistration.kt")
+        assertFalse(graph.contains("SettingsViewModel"))
+        assertFalse(graph.contains("hiltViewModel"))
+    }
+    @Test
     fun `root settings route does not own backup view model`() {
         assertFalse(
             "SettingsRoute still owns backup destination state",
