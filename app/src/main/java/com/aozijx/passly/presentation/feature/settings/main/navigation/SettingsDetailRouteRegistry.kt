@@ -1,7 +1,6 @@
 package com.aozijx.passly.presentation.feature.settings.main.navigation
 
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.navigation.autofill.AutofillRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.core.AppearanceRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.core.InterfaceRoute
@@ -18,14 +17,13 @@ import com.aozijx.passly.presentation.ui.settings.main.SettingsDetailPlaceholder
 @Composable
 internal fun SettingsDetailRouteRegistry(
     route: SettingsDestination?,
-    settingsViewModel: SettingsViewModel,
     onOpenTrash: () -> Unit,
     onBack: (() -> Unit)?,
 ) {
     when (route) {
         null,
         SettingsDestination.Main -> SettingsDetailPlaceholder()
-        SettingsDestination.Security -> SecurityRoute(settingsViewModel, onBack)
+        SettingsDestination.Security -> SecurityRoute(onBack)
         SettingsDestination.Privacy -> PrivacyRoute(onBack)
         SettingsDestination.Appearance -> AppearanceRoute(onBack)
         SettingsDestination.Interface -> InterfaceRoute(onBack)

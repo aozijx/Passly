@@ -8,6 +8,10 @@ class SettingsDestinationParameterBoundaryTest {
     @Test
     fun `leaf settings routes accept only state and events they consume`() {
         assertNarrow(
+            "core/SecurityRoute.kt",
+            forbidden = listOf("SettingsViewModel"),
+        )
+        assertNarrow(
             "core/AppearanceRoute.kt",
             forbidden = listOf("SettingsViewModel"),
         )
@@ -70,6 +74,12 @@ class SettingsDestinationParameterBoundaryTest {
         val graph = source("SettingsGraphRegistration.kt")
         assertFalse(graph.contains("SettingsViewModel"))
         assertFalse(graph.contains("hiltViewModel"))
+    }
+    @Test
+    fun `root settings route does not own destination view models`() {
+        val route = source("SettingsRoute.kt")
+        assertFalse(route.contains("SettingsViewModel"))
+        assertFalse(route.contains("hiltViewModel"))
     }
     @Test
     fun `root settings route does not own backup view model`() {
