@@ -43,6 +43,7 @@ data class CredentialFieldUiState(
     val revealedValue: ScopedSensitiveText?,
     val isEditing: Boolean,
     val editedValue: String,
+    val valueForEditing: String = editedValue,
 )
 
 data class CredentialSectionUiState(
@@ -103,6 +104,7 @@ data class DetailWifiUiModel(
 
 data class DetailSshUiModel(
     val fingerprint: String,
+    val hasPassphrase: Boolean, val hasPrivateKey: Boolean,
     val passphrase: String?, val passphraseRevealed: Boolean,
     val privateKey: String?, val privateKeyRevealed: Boolean,
     val isEditingPassphrase: Boolean, val editedPassphrase: String,

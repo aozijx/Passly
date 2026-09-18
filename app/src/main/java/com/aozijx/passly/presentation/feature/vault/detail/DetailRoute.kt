@@ -15,9 +15,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.presentation.feature.vault.detail.binding.DetailBodyBinding
 import com.aozijx.passly.presentation.feature.vault.list.action.CopyFieldLabelProvider
+import com.aozijx.passly.presentation.ui.shared.media.ImageType
+import com.aozijx.passly.presentation.ui.shared.media.rememberImagePicker
+import com.aozijx.passly.presentation.ui.vault.detail.DetailContent
+import com.aozijx.passly.presentation.ui.vault.detail.DetailEditorOverlays
 import com.aozijx.passly.presentation.ui.vault.detail.DetailScreen
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailContentEvent
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailEditorOverlayEvent
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -33,7 +38,12 @@ fun DetailRoute(
     val otpUiState by viewModel.otpState.collectAsStateWithLifecycle()
     val copiedMessageFormat = stringResource(R.string.field_copy_success_message)
     val otpLabel = stringResource(R.string.vault_detail_totp_label)
+    val usernameLabel = stringResource(R.string.field_username)
+    val passwordLabel = stringResource(R.string.password_label)
     var otpQrUri by remember(entryId) { mutableStateOf<String?>(null) }
+    val pickFaviconImage = rememberImagePicker { uri, _ ->
+        viewModel.onAction(DetailUiAction.PickedFaviconImage(uri))
+    }
 
     LaunchedEffect(entryId, viewModel) {
         viewModel.load(entryId)
@@ -60,10 +70,12 @@ fun DetailRoute(
     }
 
     val entry = uiState.entry ?: return
+    val presentation = remember(uiState, otpUiState, usernameLabel, passwordLabel) {
+        toDetailPresentationModel(uiState, otpUiState, usernameLabel, passwordLabel)
+    } ?: return
 
     LaunchedEffect(entry.id, launchMode) {
         if (launchMode == DetailLaunchMode.VIEW) return@LaunchedEffect
-
         if (entry.username.isNotEmpty()) {
             viewModel.onAction(
                 DetailUiAction.StartFieldEdit(RevealedFieldKey.USERNAME, entry.username),
@@ -76,21 +88,37 @@ fun DetailRoute(
     }
 
     DetailScreen(
-        model = detailHeaderUiModel(entry, uiState),
+        model = presentation.header,
         onBack = onBack,
         onTitleChanged = { viewModel.onAction(DetailUiAction.UpdateEditedTitle(it)) },
         onTitleEditStarted = { viewModel.onAction(DetailUiAction.StartTitleEdit) },
         onTitleSaved = { viewModel.onAction(DetailUiAction.SaveTitle) },
         onFavoriteToggled = { viewModel.onAction(DetailUiAction.ToggleFavorite) },
     ) { modifier ->
-        DetailBodyBinding(
-            modifier = modifier,
-            uiState = uiState,
-            otpUiState = otpUiState,
+        DetailContent(
+            model = presentation.content,
             otpQrUri = otpQrUri,
-            onAction = viewModel::onAction,
+            onEvent = { event ->
+                if (event is DetailContentEvent.OpenRelatedEntry) {
+                    uiState.relatedEntries.firstOrNull { it.id.value == event.id }
+                        ?.let(onOpenRelatedEntry)
+                } else {
+                    event.toDetailUiAction()?.let(viewModel::onAction)
+                }
+            },
             onOtpQrDismiss = { otpQrUri = null },
-            onOpenRelatedEntry = onOpenRelatedEntry,
+            modifier = modifier,
         )
     }
+
+    DetailEditorOverlays(
+        model = presentation.overlays,
+        onEvent = { event ->
+            if (event == DetailEditorOverlayEvent.UploadFavicon) {
+                pickFaviconImage(ImageType.SCREEN)
+            } else {
+                event.toDetailUiAction()?.let(viewModel::onAction)
+            }
+        },
+    )
 }

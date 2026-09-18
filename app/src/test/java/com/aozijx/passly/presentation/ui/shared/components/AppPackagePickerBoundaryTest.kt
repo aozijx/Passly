@@ -8,42 +8,30 @@ import org.junit.Test
 class AppPackagePickerBoundaryTest {
     @Test
     fun `installed app icon state comes from core platform ui`() {
-        val detailBinding = source(
-            "presentation/feature/vault/detail/binding/DetailAssociationsBinding.kt",
-        )
-        val vaultItemIcon = source(
-            "presentation/ui/shared/components/VaultItemIcon.kt",
-        )
+        val detailContent = source("presentation/ui/vault/detail/DetailContent.kt")
+        val vaultItemIcon = source("presentation/ui/shared/components/VaultItemIcon.kt")
 
-        listOf(detailBinding, vaultItemIcon).forEach { consumer ->
+        listOf(detailContent, vaultItemIcon).forEach { consumer ->
             assertFalse(consumer.contains("app.platform.packageinfo.rememberInstalledAppIconBitmap"))
             assertTrue(consumer.contains("core.platform.packageinfo.rememberInstalledAppIconBitmap"))
         }
     }
 
     @Test
-    fun `package picker ui does not load platform data`() {
-        val picker = source(
-            "presentation/ui/shared/components/AppPackagePickerBottomSheet.kt",
-        )
-        val associations = source(
-            "presentation/ui/vault/detail/component/AssociatedInfoSection.kt",
-        )
-        val detailBinding = source(
-            "presentation/feature/vault/detail/binding/DetailAssociationsBinding.kt",
-        )
+    fun `package picker consumes mapped data and emits semantic ui events`() {
+        val picker = source("presentation/ui/shared/components/AppPackagePickerBottomSheet.kt")
+        val associations = source("presentation/ui/vault/detail/component/AssociatedInfoSection.kt")
+        val detailContent = source("presentation/ui/vault/detail/DetailContent.kt")
 
         val forbiddenPlatformLoadingTokens = listOf(
             "EntryPointAccessors",
             "InstalledAppServicesProvider",
-            "Dispatchers",
-            "withContext",
-            "produceState",
+            "InstalledAppDirectory",
         )
         mapOf(
             "picker" to picker,
             "associations" to associations,
-            "detailBinding" to detailBinding,
+            "detailContent" to detailContent,
         ).forEach { (name, source) ->
             forbiddenPlatformLoadingTokens.forEach { forbidden ->
                 assertFalse("$name UI must not reference $forbidden", source.contains(forbidden))
@@ -51,9 +39,10 @@ class AppPackagePickerBoundaryTest {
         }
         assertFalse(associations.contains("rememberAppIcon"))
         assertFalse(associations.contains("rememberAppMetadata"))
-        assertTrue(detailBinding.contains("uiState.associatedApps"))
-        assertTrue(detailBinding.contains("uiState.packagePickerApps"))
-        assertTrue(detailBinding.contains("DetailUiAction.LoadPackagePickerApps"))
+        assertTrue(detailContent.contains("model.associatedApps"))
+        assertTrue(detailContent.contains("model.packagePickerApps"))
+        assertTrue(detailContent.contains("DetailContentEvent.OpenPackagePicker"))
+        assertFalse(detailContent.contains("DetailUiAction"))
     }
 
     private fun source(relativePath: String): String {

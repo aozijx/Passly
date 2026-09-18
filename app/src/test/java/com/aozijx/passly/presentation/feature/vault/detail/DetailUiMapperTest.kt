@@ -99,6 +99,24 @@ class DetailUiMapperTest {
         source.close()
     }
 
+    @Test
+    fun presentationMapperProjectsEditorOwnershipAndSaveProgress() {
+        val entry = noteEntry()
+        val state = DetailUiState(
+            entry = entry,
+            fieldEdits = DetailFieldEditState().start(DetailEditKey.NOTES, "draft"),
+            savingEdit = DetailEditCompletion.Tags,
+        )
+
+        val presentation = requireNotNull(
+            toDetailPresentationModel(state, null, "Username", "Password"),
+        )
+
+        assertTrue(presentation.content.notes.isEditing)
+        assertEquals("draft", presentation.content.notes.editedNotes)
+        assertTrue(presentation.overlays.savingTags)
+        assertFalse(presentation.overlays.savingIcon)
+    }
     private fun noteEntry() = Entry(
         identity = EntryIdentity(
             id = EntryId("entry"),
