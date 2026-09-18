@@ -1,6 +1,5 @@
 package com.aozijx.passly.presentation.feature.settings.main.navigation.data
 
-import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -29,9 +29,9 @@ import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun BackupRoute(
-    context: Context,
     onBack: (() -> Unit)?,
 ) {
+    val context = LocalContext.current
     val viewModel: DataManagementSettingsViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showClearDirectoryDialog by rememberSaveable { mutableStateOf(false) }

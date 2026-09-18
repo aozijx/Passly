@@ -142,7 +142,6 @@ fun SettingsRoute(
             detailContent = {
                 SettingsDetailRouteRegistry(
                     route = renderedDetailRoute,
-                    context = context,
                     settingsViewModel = settingsViewModel,
                     onOpenTrash = onOpenTrash,
                     onBack = navigateBack,
@@ -206,7 +205,6 @@ fun SettingsRoute(
                     ) { route ->
                         SettingsDetailRouteRegistry(
                             route = route,
-                            context = context,
                             settingsViewModel = settingsViewModel,
                             onOpenTrash = onOpenTrash,
                             onBack = null,

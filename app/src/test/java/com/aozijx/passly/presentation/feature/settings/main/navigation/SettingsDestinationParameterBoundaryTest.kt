@@ -41,7 +41,7 @@ class SettingsDestinationParameterBoundaryTest {
         assertNarrow(
             "data/BackupRoute.kt",
             forbidden = listOf(
-                "SettingsDestination", "InteractionSettingsViewModel",
+                "SettingsDestination", "Context", "InteractionSettingsViewModel",
                 "SettingsViewModel", "SettingsUiState",
             ),
         )

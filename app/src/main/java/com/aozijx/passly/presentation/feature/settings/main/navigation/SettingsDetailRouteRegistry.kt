@@ -1,14 +1,23 @@
 package com.aozijx.passly.presentation.feature.settings.main.navigation
 
-import android.content.Context
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
+import com.aozijx.passly.presentation.feature.settings.main.navigation.autofill.AutofillRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.core.AppearanceRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.core.InterfaceRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.core.PrivacyRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.core.RecoveryCodeRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.core.SecurityRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.data.BackupRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.data.DataManagementRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.general.GeneralRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.general.NotificationsRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.interaction.InteractionRoute
 import com.aozijx.passly.presentation.ui.settings.main.SettingsDetailPlaceholder
 
 @Composable
 internal fun SettingsDetailRouteRegistry(
     route: SettingsDestination?,
-    context: Context,
     settingsViewModel: SettingsViewModel,
     onOpenTrash: () -> Unit,
     onBack: (() -> Unit)?,
@@ -16,23 +25,16 @@ internal fun SettingsDetailRouteRegistry(
     when (route) {
         null,
         SettingsDestination.Main -> SettingsDetailPlaceholder()
-
-        SettingsDestination.Security,
-        SettingsDestination.Privacy,
-        SettingsDestination.Appearance,
-        SettingsDestination.Interface -> CoreSettingsRoute(route, settingsViewModel, onBack)
-
-        SettingsDestination.Interaction,
-        SettingsDestination.Autofill,
-        SettingsDestination.DataManagement,
-        SettingsDestination.BackupRestore,
-        SettingsDestination.RecoveryCode,
-        SettingsDestination.General,
-        SettingsDestination.Notifications -> DataSettingsRoute(
-            route = route,
-            context = context,
-            onOpenTrash = onOpenTrash,
-            onBack = onBack,
-        )
+        SettingsDestination.Security -> SecurityRoute(settingsViewModel, onBack)
+        SettingsDestination.Privacy -> PrivacyRoute(onBack)
+        SettingsDestination.Appearance -> AppearanceRoute(onBack)
+        SettingsDestination.Interface -> InterfaceRoute(onBack)
+        SettingsDestination.Interaction -> InteractionRoute(onBack)
+        SettingsDestination.Autofill -> AutofillRoute(onBack)
+        SettingsDestination.DataManagement -> DataManagementRoute(onOpenTrash, onBack)
+        SettingsDestination.BackupRestore -> BackupRoute(onBack)
+        SettingsDestination.RecoveryCode -> RecoveryCodeRoute(onBack)
+        SettingsDestination.General -> GeneralRoute(onBack)
+        SettingsDestination.Notifications -> NotificationsRoute(onBack)
     }
 }
