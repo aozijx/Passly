@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
@@ -29,7 +30,6 @@ import com.aozijx.passly.presentation.ui.vault.editor.otp.OtpEditorType
 
 @Composable
 fun AddOtpEditorRoute(
-    viewModel: AddOtpViewModel,
     onBack: () -> Unit,
     onSaved: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
@@ -38,6 +38,7 @@ fun AddOtpEditorRoute(
         onResult: (OtpConfig) -> Unit,
         onDismiss: () -> Unit,
     ) -> Unit,
+    viewModel: AddOtpViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()

@@ -2,11 +2,15 @@ package com.aozijx.passly.presentation.feature.vault.trash
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.presentation.ui.vault.list.trash.TrashBottomSheet
 
 @Composable
-internal fun TrashRoute(viewModel: TrashViewModel, onDismiss: () -> Unit) {
+internal fun TrashRoute(
+    onDismiss: () -> Unit,
+    viewModel: TrashViewModel = hiltViewModel(),
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     TrashBottomSheet(
         visible = true,

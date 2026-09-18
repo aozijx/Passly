@@ -16,16 +16,12 @@ import com.aozijx.passly.presentation.feature.shell.navigation.AppRoute
 import com.aozijx.passly.presentation.feature.shell.navigation.ShellNavigationContext
 import com.aozijx.passly.presentation.feature.vault.detail.DetailRoute
 import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardEditorRoute
-import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardViewModel
 import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpEditorRoute
-import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpViewModel
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordEditorRoute
-import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordViewModel
 import com.aozijx.passly.presentation.feature.vault.list.VaultNavigation
 import com.aozijx.passly.presentation.feature.vault.list.VaultRoute
 import com.aozijx.passly.presentation.feature.vault.list.VaultViewModel
 import com.aozijx.passly.presentation.feature.vault.trash.TrashRoute
-import com.aozijx.passly.presentation.feature.vault.trash.TrashViewModel
 
 internal fun NavGraphBuilder.registerVaultGraph(
     context: ShellNavigationContext,
@@ -46,21 +42,18 @@ internal fun NavGraphBuilder.registerVaultGraph(
         }
 
         composable(AppRoute.Trash.route) { backStackEntry ->
-            val trashViewModel: TrashViewModel = hiltViewModel()
             VaultRoute(
                 navigation = context.toVaultNavigation(),
                 vaultViewModel = vaultGraphViewModel(navController, backStackEntry),
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = this,
             )
-            TrashRoute(viewModel = trashViewModel, onDismiss = context.navigateBack)
+            TrashRoute(onDismiss = context.navigateBack)
         }
     }
 
     composable(AppRoute.AddPassword.route) {
-        val viewModel: AddPasswordViewModel = hiltViewModel()
         AddPasswordEditorRoute(
-            viewModel = viewModel,
             onBack = context.navigateBack,
             onSaved = context.navigateBack,
             sharedTransitionScope = sharedTransitionScope,
@@ -69,9 +62,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
     }
 
     composable(AppRoute.AddOtp.route) {
-        val viewModel: AddOtpViewModel = hiltViewModel()
         AddOtpEditorRoute(
-            viewModel = viewModel,
             onBack = context.navigateBack,
             onSaved = context.navigateBack,
             sharedTransitionScope = sharedTransitionScope,
@@ -83,9 +74,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
     }
 
     composable(AppRoute.AddBankCard.route) {
-        val viewModel: AddBankCardViewModel = hiltViewModel()
         AddBankCardEditorRoute(
-            viewModel = viewModel,
             onBack = context.navigateBack,
             onSaved = context.navigateBack,
             sharedTransitionScope = sharedTransitionScope,

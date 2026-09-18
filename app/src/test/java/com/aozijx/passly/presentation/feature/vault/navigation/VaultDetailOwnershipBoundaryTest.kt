@@ -38,6 +38,21 @@ class VaultDetailOwnershipBoundaryTest {
     }
 
     @Test
+    fun `vault graph does not create destination owned view models`() {
+        val graph = source(
+            "com/aozijx/passly/presentation/feature/vault/navigation/VaultGraphRegistration.kt",
+        )
+
+        listOf(
+            "AddPasswordViewModel",
+            "AddOtpViewModel",
+            "AddBankCardViewModel",
+            "TrashViewModel",
+        ).forEach { viewModel ->
+            assertFalse("Vault graph still creates $viewModel", graph.contains(viewModel))
+        }
+    }
+    @Test
     fun `detail destination never depends on vault view model`() {
         val graph = source(
             "com/aozijx/passly/presentation/feature/vault/navigation/VaultGraphRegistration.kt",

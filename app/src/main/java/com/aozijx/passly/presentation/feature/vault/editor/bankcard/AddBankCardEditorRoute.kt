@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffectHandler
@@ -18,11 +19,11 @@ import com.aozijx.passly.presentation.ui.vault.editor.bankcard.BankCardTypeUi
 
 @Composable
 fun AddBankCardEditorRoute(
-    viewModel: AddBankCardViewModel,
     onBack: () -> Unit,
     onSaved: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    viewModel: AddBankCardViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
