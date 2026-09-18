@@ -4,8 +4,8 @@ import android.content.Context
 import android.widget.Toast
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
-import com.aozijx.passly.presentation.feature.settings.main.SettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.main.SettingsUiAction
+import com.aozijx.passly.presentation.feature.settings.security.AppPasswordSettingsViewModel
+import com.aozijx.passly.presentation.feature.settings.security.AppPasswordSettingsAction
 
 enum class AppPasswordAction {
     SET,
@@ -19,7 +19,7 @@ internal fun validateAndSendAppPasswordAction(
     currentPassword: String,
     newPassword: String,
     confirmPassword: String,
-    settingsViewModel: SettingsViewModel,
+    settingsViewModel: AppPasswordSettingsViewModel,
 ): Boolean {
     when (action) {
         AppPasswordAction.SET -> {
@@ -32,7 +32,7 @@ internal fun validateAndSendAppPasswordAction(
                 return false
             }
             settingsViewModel.onAction(
-                SettingsUiAction.SetAppPassword(newPassword.toCharArray())
+                AppPasswordSettingsAction.SetAppPassword(newPassword.toCharArray())
             )
         }
 
@@ -50,7 +50,7 @@ internal fun validateAndSendAppPasswordAction(
                 return false
             }
             settingsViewModel.onAction(
-                SettingsUiAction.ChangeAppPassword(
+                AppPasswordSettingsAction.ChangeAppPassword(
                     currentPassword.toCharArray(),
                     newPassword.toCharArray(),
                 )
@@ -58,7 +58,7 @@ internal fun validateAndSendAppPasswordAction(
         }
 
         AppPasswordAction.DISABLE -> {
-            settingsViewModel.onAction(SettingsUiAction.DisableAppPassword)
+            settingsViewModel.onAction(AppPasswordSettingsAction.DisableAppPassword)
         }
     }
     return true

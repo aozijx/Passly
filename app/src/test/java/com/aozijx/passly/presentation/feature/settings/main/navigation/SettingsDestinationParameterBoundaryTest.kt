@@ -9,22 +9,22 @@ class SettingsDestinationParameterBoundaryTest {
     fun `leaf settings routes accept only state and events they consume`() {
         assertNarrow(
             "core/SecurityRoute.kt",
-            forbidden = listOf("SettingsViewModel"),
+            forbidden = listOf("AppPasswordSettingsViewModel"),
         )
         assertNarrow(
             "core/AppearanceRoute.kt",
-            forbidden = listOf("SettingsViewModel"),
+            forbidden = listOf("AppPasswordSettingsViewModel"),
         )
         assertNarrow(
             "core/PrivacyRoute.kt",
-            forbidden = listOf("SettingsViewModel"),
+            forbidden = listOf("AppPasswordSettingsViewModel"),
         )
         assertNarrow(
             "autofill/AutofillRoute.kt",
             forbidden = listOf(
                 "SettingsDestination", "Context", "AppPasswordDialogStateHolder",
                 "InteractionSettingsViewModel", "DataManagementSettingsViewModel",
-                "SettingsViewModel", "SettingsUiState",
+                "AppPasswordSettingsViewModel", "AppPasswordSettingsUiState",
             ),
         )
         assertNarrow(
@@ -39,14 +39,14 @@ class SettingsDestinationParameterBoundaryTest {
             forbidden = listOf(
                 "SettingsDestination", "Context", "AppPasswordDialogStateHolder",
                 "DataManagementSettingsViewModel",
-                "InteractionSettingsViewModel", "SettingsViewModel", "SettingsUiState",
+                "InteractionSettingsViewModel", "AppPasswordSettingsViewModel", "AppPasswordSettingsUiState",
             ),
         )
         assertNarrow(
             "data/BackupRoute.kt",
             forbidden = listOf(
                 "SettingsDestination", "Context", "InteractionSettingsViewModel",
-                "SettingsViewModel", "SettingsUiState",
+                "AppPasswordSettingsViewModel", "AppPasswordSettingsUiState",
             ),
         )
         assertNarrow(
@@ -54,7 +54,7 @@ class SettingsDestinationParameterBoundaryTest {
             forbidden = listOf(
                 "SettingsDestination", "Context", "AppPasswordDialogStateHolder",
                 "InteractionSettingsViewModel", "DataManagementSettingsViewModel",
-                "SettingsUiState",
+                "AppPasswordSettingsUiState",
             ),
         )
         listOf("general/GeneralRoute.kt", "general/NotificationsRoute.kt").forEach { path ->
@@ -63,7 +63,7 @@ class SettingsDestinationParameterBoundaryTest {
                 forbidden = listOf(
                     "SettingsDestination", "Context", "AppPasswordDialogStateHolder",
                     "InteractionSettingsViewModel", "DataManagementSettingsViewModel",
-                    "SettingsViewModel", "SettingsUiState",
+                    "AppPasswordSettingsViewModel", "AppPasswordSettingsUiState",
                 ),
             )
         }
@@ -72,13 +72,13 @@ class SettingsDestinationParameterBoundaryTest {
     @Test
     fun `settings graph delegates view model ownership to route`() {
         val graph = source("SettingsGraphRegistration.kt")
-        assertFalse(graph.contains("SettingsViewModel"))
+        assertFalse(graph.contains("AppPasswordSettingsViewModel"))
         assertFalse(graph.contains("hiltViewModel"))
     }
     @Test
     fun `root settings route does not own destination view models`() {
         val route = source("SettingsRoute.kt")
-        assertFalse(route.contains("SettingsViewModel"))
+        assertFalse(route.contains("AppPasswordSettingsViewModel"))
         assertFalse(route.contains("hiltViewModel"))
     }
     @Test

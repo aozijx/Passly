@@ -37,7 +37,7 @@ class SensitivePresentationBoundaryTest {
             "com/aozijx/passly/presentation/feature/settings/security/SecuritySettingsViewModel.kt"
         )
         val mainSettings = source(
-            "com/aozijx/passly/presentation/feature/settings/main/SettingsViewModel.kt"
+            "com/aozijx/passly/presentation/feature/settings/security/AppPasswordSettingsViewModel.kt"
         )
 
         assertFalse(securitySettings.contains("AuthenticationManager"))

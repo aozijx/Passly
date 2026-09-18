@@ -1,18 +1,17 @@
-package com.aozijx.passly.presentation.feature.settings.main.navigation
+package com.aozijx.passly.presentation.feature.settings.security
 
 import android.content.Context
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
-import com.aozijx.passly.presentation.feature.settings.main.SettingsEffect
 
-internal fun SettingsEffect.toMessage(context: Context): String? = when (this) {
-    is SettingsEffect.AppPasswordSet -> context.getString(R.string.settings_auth_password_set_success)
-    is SettingsEffect.AppPasswordChanged -> context.getString(R.string.settings_auth_password_change_success)
-    is SettingsEffect.AppPasswordDisabled -> context.getString(R.string.settings_auth_password_disabled)
-    is SettingsEffect.AppPasswordError -> message
-    is SettingsEffect.AppPasswordEntryAuthorized -> null
-    is SettingsEffect.AppPasswordEntryAuthenticationFailed -> failure.toMessage(context)
+internal fun AppPasswordSettingsEffect.toAppPasswordMessage(context: Context): String? = when (this) {
+    is AppPasswordSettingsEffect.AppPasswordSet -> context.getString(R.string.settings_auth_password_set_success)
+    is AppPasswordSettingsEffect.AppPasswordChanged -> context.getString(R.string.settings_auth_password_change_success)
+    is AppPasswordSettingsEffect.AppPasswordDisabled -> context.getString(R.string.settings_auth_password_disabled)
+    is AppPasswordSettingsEffect.AppPasswordError -> message
+    is AppPasswordSettingsEffect.AppPasswordEntryAuthorized -> null
+    is AppPasswordSettingsEffect.AppPasswordEntryAuthenticationFailed -> failure.toMessage(context)
 }
 
 private fun AuthenticationFailure.toMessage(context: Context): String = when (code) {

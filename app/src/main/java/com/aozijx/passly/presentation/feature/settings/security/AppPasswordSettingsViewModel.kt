@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.main
+package com.aozijx.passly.presentation.feature.settings.security
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,43 +17,43 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(
+class AppPasswordSettingsViewModel @Inject constructor(
     private val authenticationMethodAvailability: AuthenticationMethodAvailability,
     private val authenticationMethodProvisioner: AuthenticationMethodProvisioner,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(SettingsUiState())
-    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(AppPasswordSettingsUiState())
+    val uiState: StateFlow<AppPasswordSettingsUiState> = _uiState.asStateFlow()
 
-    private val _effects = Channel<SettingsEffect>(Channel.BUFFERED)
+    private val _effects = Channel<AppPasswordSettingsEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
     init {
         observeAuthenticationMethods()
     }
 
-    fun onAction(action: SettingsUiAction) {
+    fun onAction(action: AppPasswordSettingsAction) {
         when (action) {
-            SettingsUiAction.RequestAppPasswordEntry -> requestAppPasswordEntry()
-            is SettingsUiAction.SetAppPassword -> setAppPassword(action.password)
-            is SettingsUiAction.ChangeAppPassword -> changeAppPassword(
+            AppPasswordSettingsAction.RequestAppPasswordEntry -> requestAppPasswordEntry()
+            is AppPasswordSettingsAction.SetAppPassword -> setAppPassword(action.password)
+            is AppPasswordSettingsAction.ChangeAppPassword -> changeAppPassword(
                 action.currentPassword,
                 action.newPassword,
             )
-            SettingsUiAction.DisableAppPassword -> disableAppPassword()
+            AppPasswordSettingsAction.DisableAppPassword -> disableAppPassword()
         }
     }
 
     private fun setAppPassword(password: CharArray) {
         runPrimaryAuthMethodChange(
-            successEffect = SettingsEffect.AppPasswordSet,
+            successEffect = AppPasswordSettingsEffect.AppPasswordSet,
             operation = { authenticationMethodProvisioner.setAppPassword(password) },
         )
     }
 
     private fun changeAppPassword(currentPassword: CharArray, newPassword: CharArray) {
         runPrimaryAuthMethodChange(
-            successEffect = SettingsEffect.AppPasswordChanged,
+            successEffect = AppPasswordSettingsEffect.AppPasswordChanged,
             operation = {
                 authenticationMethodProvisioner.changeAppPassword(currentPassword, newPassword)
             },
@@ -62,20 +62,20 @@ class SettingsViewModel @Inject constructor(
 
     private fun disableAppPassword() {
         runPrimaryAuthMethodChange(
-            successEffect = SettingsEffect.AppPasswordDisabled,
+            successEffect = AppPasswordSettingsEffect.AppPasswordDisabled,
             operation = { authenticationMethodProvisioner.disableAppPassword() },
         )
     }
 
     private fun runPrimaryAuthMethodChange(
-        successEffect: SettingsEffect,
+        successEffect: AppPasswordSettingsEffect,
         operation: suspend () -> AuthenticationResult,
     ) {
         viewModelScope.launch {
             when (operation()) {
                 is AuthenticationResult.Success -> _effects.trySend(successEffect)
                 is AuthenticationResult.Failure -> _effects.trySend(
-                    SettingsEffect.AppPasswordError("操作失败"),
+                    AppPasswordSettingsEffect.AppPasswordError("操作失败"),
                 )
                 is AuthenticationResult.Cancelled -> Unit
             }
@@ -86,13 +86,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = authenticationMethodProvisioner.authorizeAppPasswordManagement()) {
                 is AuthenticationResult.Success -> _effects.trySend(
-                    SettingsEffect.AppPasswordEntryAuthorized(
+                    AppPasswordSettingsEffect.AppPasswordEntryAuthorized(
                         alreadyEnabled = _uiState.value.isAppPasswordEnabled,
                     ),
                 )
                 is AuthenticationResult.Cancelled -> Unit
                 is AuthenticationResult.Failure -> _effects.trySend(
-                    SettingsEffect.AppPasswordEntryAuthenticationFailed(result.failure),
+                    AppPasswordSettingsEffect.AppPasswordEntryAuthenticationFailed(result.failure),
                 )
             }
         }

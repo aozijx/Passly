@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.main
+package com.aozijx.passly.presentation.feature.settings.security
 
 import com.aozijx.passly.presentation.ui.settings.main.AppPasswordDialogStateHolder
 import org.junit.Assert.assertFalse
