@@ -13,7 +13,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.presentation.feature.vault.list.action.CopyFieldLabelProvider
 import com.aozijx.passly.presentation.ui.shared.media.ImageType
@@ -29,7 +28,7 @@ import kotlinx.coroutines.flow.collectLatest
 fun DetailRoute(
     entryId: String,
     onBack: () -> Unit,
-    onOpenRelatedEntry: (Entry) -> Unit,
+    onOpenRelatedEntry: (String) -> Unit,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
     viewModel: DetailViewModel = hiltViewModel(),
 ) {
@@ -100,8 +99,7 @@ fun DetailRoute(
             otpQrUri = otpQrUri,
             onEvent = { event ->
                 if (event is DetailContentEvent.OpenRelatedEntry) {
-                    uiState.relatedEntries.firstOrNull { it.id.value == event.id }
-                        ?.let(onOpenRelatedEntry)
+                    onOpenRelatedEntry(event.id)
                 } else {
                     event.toDetailUiAction()?.let(viewModel::onAction)
                 }

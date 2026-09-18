@@ -73,7 +73,10 @@ class VaultDetailOwnershipBoundaryTest {
             "com/aozijx/passly/presentation/feature/vault/detail/DetailViewModel.kt",
         )
 
+        val signature = route.substringAfter("fun DetailRoute(").substringBefore(") {")
         assertTrue(route.contains("entryId: String"))
+        assertTrue(signature.contains("onOpenRelatedEntry: (String) -> Unit"))
+        assertFalse(signature.contains("(Entry) -> Unit"))
         assertFalse(route.contains("initialEntry"))
         assertFalse(route.contains("onAutoUnlockTotp"))
         assertTrue(viewModel.contains("entryQueryRepository.getById(entryId)"))

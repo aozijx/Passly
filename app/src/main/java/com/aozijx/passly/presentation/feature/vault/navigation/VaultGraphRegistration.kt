@@ -95,7 +95,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
             entryId = entryId,
             onBack = context.navigateBack,
             onOpenRelatedEntry = {
-                context.navigateToRoute(AppRoute.Detail.createRoute(it.id.value))
+                context.navigateToRoute(AppRoute.Detail.createRoute(it))
             },
         )
     }
