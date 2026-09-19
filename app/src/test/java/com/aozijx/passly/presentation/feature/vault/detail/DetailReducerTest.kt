@@ -13,7 +13,6 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiState
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
-import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerItemUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -177,7 +176,7 @@ class DetailReducerTest {
 
     @Test
     fun `application metadata updates only the currently presented entry`() {
-        val item = AppPackagePickerItemUiModel(
+        val item = DetailInstalledApp(
             label = "Browser",
             packageName = "com.example.browser",
         )
@@ -199,7 +198,7 @@ class DetailReducerTest {
 
     @Test
     fun `package picker metadata marks the current entry load complete`() {
-        val item = AppPackagePickerItemUiModel(
+        val item = DetailInstalledApp(
             label = "Browser",
             packageName = "com.example.browser",
         )

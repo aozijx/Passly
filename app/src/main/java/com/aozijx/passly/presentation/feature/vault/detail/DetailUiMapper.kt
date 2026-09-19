@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
+import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerItemUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.CredentialFieldUiState
 import com.aozijx.passly.presentation.ui.vault.detail.model.CredentialSectionUiState
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailActivityTypeUiModel
@@ -175,8 +176,8 @@ internal fun toDetailPresentationModel(
                 editedDomain = state.fieldEdits.draft(DetailEditKey.DOMAIN),
                 isEditingDomain = state.fieldEdits.isEditing(DetailEditKey.DOMAIN),
             ),
-            associatedApps = state.associatedApps,
-            packagePickerApps = state.packagePickerApps,
+            associatedApps = state.associatedApps.map(DetailInstalledApp::toPackagePickerItemUiModel),
+            packagePickerApps = state.packagePickerApps.map(DetailInstalledApp::toPackagePickerItemUiModel),
             notes = DetailNotesUiModel(
                 notes = entry.secret.notes,
                 editedNotes = state.fieldEdits.draft(DetailEditKey.NOTES),
@@ -193,6 +194,11 @@ internal fun toDetailPresentationModel(
         ),
     )
 }
+
+internal fun DetailInstalledApp.toPackagePickerItemUiModel() = AppPackagePickerItemUiModel(
+    label = label,
+    packageName = packageName,
+)
 
 internal fun SensitiveValue?.asScopedSensitiveText(): ScopedSensitiveText {
     val source = this ?: return ScopedSensitiveText.Empty

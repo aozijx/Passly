@@ -28,7 +28,6 @@ import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
-import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerItemUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -579,7 +578,7 @@ class DetailViewModel @Inject internal constructor(
             .sorted()
             .map { packageName ->
                 val metadata = installedAppDirectory.metadataFor(packageName)
-                AppPackagePickerItemUiModel(
+                DetailInstalledApp(
                     label = metadata?.label?.takeIf(String::isNotBlank) ?: packageName,
                     packageName = packageName,
                 )
@@ -593,7 +592,7 @@ class DetailViewModel @Inject internal constructor(
         if (state.packagePickerAppsLoaded || packagePickerLoadJob?.isActive == true) return
         packagePickerLoadJob = viewModelScope.launch {
             val apps = installedAppDirectory.launchableApps().map { metadata ->
-                AppPackagePickerItemUiModel(
+                DetailInstalledApp(
                     label = metadata.label,
                     packageName = metadata.packageName,
                 )

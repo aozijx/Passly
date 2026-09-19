@@ -5,7 +5,6 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerItemUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailTagEditorUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
@@ -23,8 +22,8 @@ data class DetailUiState(
     val sensitiveFieldKeys: Set<SensitiveFieldKey> = emptySet(),
     val history: List<EntryActivity> = emptyList(),
     val relatedEntries: List<Entry> = emptyList(),
-    val associatedApps: List<AppPackagePickerItemUiModel> = emptyList(),
-    val packagePickerApps: List<AppPackagePickerItemUiModel> = emptyList(),
+    val associatedApps: List<DetailInstalledApp> = emptyList(),
+    val packagePickerApps: List<DetailInstalledApp> = emptyList(),
     val packagePickerAppsLoaded: Boolean = false,
     val sections: List<DetailSectionKey> = emptyList(),
     val fieldEdits: DetailFieldEditState = DetailFieldEditState(),

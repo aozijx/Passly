@@ -6,7 +6,6 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerItemUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailTagEditorUiModel
@@ -48,11 +47,11 @@ internal sealed interface DetailMutation {
     data class RelatedEntriesChanged(val entryId: EntryId, val entries: List<Entry>) : DetailMutation
     data class AssociatedAppsChanged(
         val entryId: EntryId,
-        val apps: List<AppPackagePickerItemUiModel>,
+        val apps: List<DetailInstalledApp>,
     ) : DetailMutation
     data class PackagePickerAppsChanged(
         val entryId: EntryId,
-        val apps: List<AppPackagePickerItemUiModel>,
+        val apps: List<DetailInstalledApp>,
     ) : DetailMutation
     data class SaveStarted(val completion: DetailEditCompletion) : DetailMutation
     data class SaveSucceeded(val completion: DetailEditCompletion) : DetailMutation
