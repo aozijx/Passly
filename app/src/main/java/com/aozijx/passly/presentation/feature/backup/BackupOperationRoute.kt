@@ -5,12 +5,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
+import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.presentation.feature.backup.BackupUiAction
 import com.aozijx.passly.presentation.feature.backup.BackupViewModel
@@ -30,7 +33,7 @@ import com.aozijx.passly.domain.sensitive.OwnedChars
  * actions, platform document launchers, and sheets remain private to this feature.
  */
 @Composable
-fun BackupSettingsFeature(
+fun BackupOperationRoute(
     directoryUri: String?,
     directoryLabel: String,
     lastExportFileLabel: String,
@@ -39,7 +42,14 @@ fun BackupSettingsFeature(
 ) {
     val viewModel: BackupViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val noticePublisher = LocalAppNoticePublisher.current
     var activeSheet by remember { mutableStateOf<BackupSheet?>(null) }
+
+    LaunchedEffect(viewModel, noticePublisher) {
+        viewModel.effects.collect { effect ->
+            noticePublisher.publish(newAppNotice(effect.toNoticeCode()))
+        }
+    }
 
     fun startManualExport(uri: Uri?) {
         if (uri == null) {

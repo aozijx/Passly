@@ -4,9 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
-import com.aozijx.passly.app.message.model.NoticeCode
-import com.aozijx.passly.app.message.model.newAppNotice
-import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.backup.internal.operation.BackupExecutionResult
 import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
@@ -17,9 +14,11 @@ import com.aozijx.passly.feature.backup.internal.presentation.BackupSessionPolic
 import com.aozijx.passly.presentation.feature.backup.BackupUiAction
 import com.aozijx.passly.presentation.feature.backup.BackupUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,11 +27,13 @@ import javax.inject.Inject
 internal class BackupViewModel @Inject constructor(
     private val backupOperationInteractor: BackupOperationInteractor,
     private val sessionPolicy: BackupSessionPolicy,
-    private val noticePublisher: AppNoticePublisher,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BackupUiState())
     val uiState: StateFlow<BackupUiState> = _uiState.asStateFlow()
+
+    private val _effects = Channel<BackupEffect>(Channel.BUFFERED)
+    val effects = _effects.receiveAsFlow()
 
     fun onAction(action: BackupUiAction) {
         when (action) {
@@ -141,7 +142,7 @@ internal class BackupViewModel @Inject constructor(
     ) {
         when (result) {
             BackupExecutionResult.Success -> {
-                noticePublisher.publish(newAppNotice(operation.successNotice()))
+                emitEffect(BackupEffect.Succeeded(operation))
                 mutate(BackupMutation.OperationSucceeded)
                 if (clearPendingFields) {
                     clearPasswordAndMutate(BackupMutation.PendingFieldsCleared)
@@ -152,7 +153,7 @@ internal class BackupViewModel @Inject constructor(
                 clearPasswordAndMutate(BackupMutation.PendingOperationCleared)
 
             is BackupExecutionResult.Failure -> {
-                noticePublisher.publish(newAppNotice(operation.failureNotice()))
+                emitEffect(BackupEffect.Failed(operation))
                 mutate(BackupMutation.OperationFailed(result.error))
                 if (clearPendingFields) {
                     clearPasswordAndMutate(BackupMutation.PendingFieldsCleared)
@@ -175,9 +176,13 @@ internal class BackupViewModel @Inject constructor(
         operation: BackupOperation,
     ): Boolean {
         if (denial == null) return true
-        noticePublisher.publish(newAppNotice(operation.failureNotice()))
+        emitEffect(BackupEffect.Failed(operation))
         mutate(BackupMutation.OperationFailed(BackupFailed()))
         return false
+    }
+
+    private fun emitEffect(effect: BackupEffect) {
+        _effects.trySend(effect)
     }
 
     private fun mutate(mutation: BackupMutation) {
@@ -217,15 +222,3 @@ private fun BackupUiState.toRequest() = BackupOperationRequest(
     pendingExportFileName = pendingExportFileName,
     deleteTargetOnFailure = deleteTargetOnFailure,
 )
-
-private fun BackupOperation.successNotice(): NoticeCode = when (this) {
-    BackupOperation.EXPORT -> NoticeCode.BACKUP_EXPORT_COMPLETED
-    BackupOperation.IMPORT -> NoticeCode.BACKUP_IMPORT_COMPLETED
-    BackupOperation.DIRECTORY_CHECK -> NoticeCode.BACKUP_DIRECTORY_CHECK_COMPLETED
-}
-
-private fun BackupOperation.failureNotice(): NoticeCode = when (this) {
-    BackupOperation.EXPORT -> NoticeCode.BACKUP_EXPORT_FAILED
-    BackupOperation.IMPORT -> NoticeCode.BACKUP_IMPORT_FAILED
-    BackupOperation.DIRECTORY_CHECK -> NoticeCode.BACKUP_DIRECTORY_CHECK_FAILED
-}

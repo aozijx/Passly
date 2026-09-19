@@ -18,7 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.path.UriDisplayNameFormatter
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
-import com.aozijx.passly.presentation.feature.backup.BackupSettingsFeature
+import com.aozijx.passly.presentation.feature.backup.BackupOperationRoute
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.backup.handleBackupPathPicked
@@ -54,7 +54,7 @@ internal fun BackupRoute(
         onBack = onBack
     ) {
         item {
-            BackupSettingsFeature(
+            BackupOperationRoute(
                 directoryUri = state.directoryUri,
                 directoryLabel = pathLabel,
                 lastExportFileLabel = notSetText,
