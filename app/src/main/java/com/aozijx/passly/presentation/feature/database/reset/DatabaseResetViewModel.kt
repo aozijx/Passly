@@ -2,7 +2,7 @@ package com.aozijx.passly.presentation.feature.database.reset
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.app.message.mapping.toUiMessage
+import com.aozijx.passly.presentation.feature.common.error.toUiMessage
 import com.aozijx.passly.feature.database.reset.DatabaseResetResult
 import com.aozijx.passly.feature.database.reset.ResetDatabaseUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel

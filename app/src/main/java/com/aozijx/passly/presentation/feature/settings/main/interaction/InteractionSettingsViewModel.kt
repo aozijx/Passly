@@ -2,7 +2,7 @@ package com.aozijx.passly.presentation.feature.settings.main.interaction
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.app.message.mapping.toUiMessage
+import com.aozijx.passly.presentation.feature.common.error.toUiMessage
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject

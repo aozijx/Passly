@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.message.mapping
+package com.aozijx.passly.presentation.feature.common.error
 
 import com.aozijx.passly.core.error.mapping.fromThrowable
 import com.aozijx.passly.core.error.model.AppError
@@ -14,14 +14,13 @@ import com.aozijx.passly.core.error.model.UNEXPECTED
 import com.aozijx.passly.core.error.model.VALIDATION_ERROR
 
 /**
- * 将 AppError 映射为用户可读的 UI 消息（内联显示，如 Snackbar、输入框错误）。
- * 基于 [code] 匹配，UI 层无需依赖具体错误子类所在的物理子包。
- * 新增错误类型时只需在 ErrorCodes.kt 加常量，在此加分支处理。
+ * Maps a stable application error to copy suitable for inline presentation.
  *
- * 对于需要发布到消息中心的通知，使用 [AppErrorNoticeMapper.toNoticeCode]。
+ * Global notices have their own mapping and routing boundary; this mapper is only for UI state,
+ * snackbar, dialog, and toast text owned by a feature.
  */
-fun AppError.toUiMessage(defaultMessage: String = "操作失败，请稍后重试"): String {
-    return when (code) {
+fun AppError.toUiMessage(defaultMessage: String = "操作失败，请稍后重试"): String =
+    when (code) {
         DATABASE_LOCKED -> "数据库已锁定，请先解锁"
         DATABASE_INIT_FAILED -> "数据库初始化失败"
         BACKUP_FAILED -> "备份操作失败"
@@ -34,16 +33,10 @@ fun AppError.toUiMessage(defaultMessage: String = "操作失败，请稍后重�
         UNEXPECTED -> defaultMessage
         else -> defaultMessage
     }
-}
 
-/**
- * 将 Throwable 转换为 UI 消息。
- * 如果是 AppError 则使用其映射，否则转换为 AppError 后再映射。
- */
-fun Throwable.toUiMessage(defaultMessage: String = "操作失败，请稍后重试"): String {
-    return if (this is AppError) {
-        this.toUiMessage(defaultMessage)
+fun Throwable.toUiMessage(defaultMessage: String = "操作失败，请稍后重试"): String =
+    if (this is AppError) {
+        toUiMessage(defaultMessage)
     } else {
         AppError.fromThrowable(this).toUiMessage(defaultMessage)
     }
-}
