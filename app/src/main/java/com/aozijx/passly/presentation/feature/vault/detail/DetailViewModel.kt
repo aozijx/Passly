@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.platform.media.FaviconCropRequest
 import com.aozijx.passly.core.platform.media.FaviconImageProcessor
-import com.aozijx.passly.core.platform.packageinfo.InstalledAppDirectory
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -53,7 +52,7 @@ class DetailViewModel @Inject internal constructor(
     private val copyEntryFieldUseCase: CopyEntryFieldUseCase,
     private val copyOtpCodeUseCase: CopyOtpCodeUseCase,
     private val faviconImageProcessor: FaviconImageProcessor,
-    private val installedAppDirectory: InstalledAppDirectory,
+    private val installedAppLoader: DetailInstalledAppLoader,
     otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
 ) : ViewModel() {
     private val entryAnalyzer = DetailEntryAnalyzer(entryTypePolicy)
@@ -573,15 +572,7 @@ class DetailViewModel @Inject internal constructor(
     }
 
     private suspend fun loadAssociatedApps(entry: Entry) {
-        val apps = entry.associations.applicationIds
-            .sorted()
-            .map { packageName ->
-                val metadata = installedAppDirectory.metadataFor(packageName)
-                DetailInstalledApp(
-                    label = metadata?.label?.takeIf(String::isNotBlank) ?: packageName,
-                    packageName = packageName,
-                )
-            }
+        val apps = installedAppLoader.associatedWith(entry)
         mutate(DetailMutation.AssociatedAppsChanged(entry.id, apps))
     }
 
@@ -590,12 +581,7 @@ class DetailViewModel @Inject internal constructor(
         val entryId = state.entry?.id ?: return
         if (state.packagePickerAppsLoaded || packagePickerLoadJob?.isActive == true) return
         packagePickerLoadJob = viewModelScope.launch {
-            val apps = installedAppDirectory.launchableApps().map { metadata ->
-                DetailInstalledApp(
-                    label = metadata.label,
-                    packageName = metadata.packageName,
-                )
-            }
+            val apps = installedAppLoader.launchable()
             mutate(DetailMutation.PackagePickerAppsChanged(entryId, apps))
         }
     }
