@@ -1,8 +1,6 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
 import com.aozijx.passly.app.entry.favicon.FaviconDraftFiles
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
-import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
@@ -70,8 +68,8 @@ class DetailFaviconSessionTest {
     fun `closing editor cancels work and discards every owned path`() = runTest {
         val files = FakeFiles()
         val session = DetailFaviconSession(files, backgroundScope)
-        val editor = DetailFaviconEditorUiModel(
-            source = FaviconDraftSourceUiModel.PrivateImage("staged"),
+        val editor = DetailFaviconEditorState(
+            source = DetailFaviconSource.PrivateImage("staged"),
             pendingInputPath = "pending",
             promotedCandidatePath = "promoted",
         )

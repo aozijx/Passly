@@ -1,9 +1,5 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
-import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
-import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconEditorTabUiModel
-import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconProcessingErrorUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -16,13 +12,13 @@ class DetailFaviconReducerTest {
         val actual = DetailReducer.reduce(
             DetailUiState(),
             DetailMutation.FaviconEditorOpened(
-                FaviconDraftSourceUiModel.BuiltIn("security.key", "primary"),
+                DetailFaviconSource.BuiltIn("security.key", "primary"),
             ),
         )
 
         assertTrue(actual.faviconEditor.visible)
         assertEquals(
-            FaviconDraftSourceUiModel.BuiltIn("security.key", "primary"),
+            DetailFaviconSource.BuiltIn("security.key", "primary"),
             actual.faviconEditor.source,
         )
         assertFalse(actual.faviconEditor.dirty)
@@ -30,27 +26,27 @@ class DetailFaviconReducerTest {
 
     @Test
     fun selectingDefaultMakesBuiltInDraftDirty() {
-        val opened = DetailFaviconEditorUiModel(
+        val opened = DetailFaviconEditorState(
             visible = true,
-            initialSource = FaviconDraftSourceUiModel.BuiltIn("security.key", null),
-            source = FaviconDraftSourceUiModel.BuiltIn("security.key", null),
+            initialSource = DetailFaviconSource.BuiltIn("security.key", null),
+            source = DetailFaviconSource.BuiltIn("security.key", null),
         )
 
         val actual = DetailFaviconEditorReducer.reduce(
             opened,
-            DetailMutation.FaviconSourceChanged(FaviconDraftSourceUiModel.InferredDefault),
+            DetailMutation.FaviconSourceChanged(DetailFaviconSource.InferredDefault),
         )
 
-        assertEquals(FaviconDraftSourceUiModel.InferredDefault, actual.source)
+        assertEquals(DetailFaviconSource.InferredDefault, actual.source)
         assertTrue(actual.dirty)
     }
 
     @Test
     fun dirtyDismissConfirmsAndFailurePreservesDraftWhileSuccessCloses() {
-        val editor = DetailFaviconEditorUiModel(
+        val editor = DetailFaviconEditorState(
             visible = true,
-            initialSource = FaviconDraftSourceUiModel.InferredDefault,
-            source = FaviconDraftSourceUiModel.BuiltIn("finance.bank", "secondary"),
+            initialSource = DetailFaviconSource.InferredDefault,
+            source = DetailFaviconSource.BuiltIn("finance.bank", "secondary"),
         )
         val requested = DetailFaviconEditorReducer.reduce(
             editor,
@@ -72,13 +68,13 @@ class DetailFaviconReducerTest {
 
         assertTrue(requested.confirmDiscard)
         assertEquals(editor.source, failed.faviconEditor.source)
-        assertEquals(FaviconProcessingErrorUiModel.SAVE_FAILED, failed.faviconEditor.processingError)
-        assertEquals(DetailFaviconEditorUiModel(), succeeded.faviconEditor)
+        assertEquals(DetailFaviconProcessingError.SAVE_FAILED, failed.faviconEditor.processingError)
+        assertEquals(DetailFaviconEditorState(), succeeded.faviconEditor)
     }
 
     @Test
     fun processingFailurePreservesPendingCropInput() {
-        val state = DetailFaviconEditorUiModel(
+        val state = DetailFaviconEditorState(
             visible = true,
             processing = true,
             pendingInputPath = "/private/staging/input",
@@ -86,7 +82,7 @@ class DetailFaviconReducerTest {
 
         val actual = DetailFaviconEditorReducer.reduce(
             state,
-            DetailMutation.FaviconProcessingFailed(FaviconProcessingErrorUiModel.INVALID_IMAGE),
+            DetailMutation.FaviconProcessingFailed(DetailFaviconProcessingError.INVALID_IMAGE),
         )
 
         assertEquals("/private/staging/input", actual.pendingInputPath)
@@ -96,9 +92,9 @@ class DetailFaviconReducerTest {
     @Test
     fun iconSaveStartClearsPreviousEditorError() {
         val state = DetailUiState(
-            faviconEditor = DetailFaviconEditorUiModel(
+            faviconEditor = DetailFaviconEditorState(
                 visible = true,
-                processingError = FaviconProcessingErrorUiModel.SAVE_FAILED,
+                processingError = DetailFaviconProcessingError.SAVE_FAILED,
             ),
         )
 
@@ -113,17 +109,17 @@ class DetailFaviconReducerTest {
 
     @Test
     fun processedPrivateImageEndsProcessingSoSaveCanRun() {
-        val state = DetailFaviconEditorUiModel(
+        val state = DetailFaviconEditorState(
             visible = true,
             processing = true,
-            initialSource = FaviconDraftSourceUiModel.InferredDefault,
-            source = FaviconDraftSourceUiModel.InferredDefault,
+            initialSource = DetailFaviconSource.InferredDefault,
+            source = DetailFaviconSource.InferredDefault,
         )
 
         val actual = DetailFaviconEditorReducer.reduce(
             state,
             DetailMutation.FaviconSourceChanged(
-                FaviconDraftSourceUiModel.PrivateImage("/private/staging/icon.webp"),
+                DetailFaviconSource.PrivateImage("/private/staging/icon.webp"),
             ),
         )
 
@@ -134,9 +130,9 @@ class DetailFaviconReducerTest {
     @Test
     fun openingPrivateImageStartsInCustomImageMode() {
         val actual = DetailFaviconEditorReducer.reduce(
-            DetailFaviconEditorUiModel(),
+            DetailFaviconEditorState(),
             DetailMutation.FaviconEditorOpened(
-                FaviconDraftSourceUiModel.PrivateImage("/private/images/favicon.webp"),
+                DetailFaviconSource.PrivateImage("/private/images/favicon.webp"),
             ),
         )
 
@@ -145,9 +141,9 @@ class DetailFaviconReducerTest {
 
     @Test
     fun promotedPrivateImageKeepsCandidatePathUntilSaveCompletes() {
-        val state = DetailFaviconEditorUiModel(
+        val state = DetailFaviconEditorState(
             visible = true,
-            source = FaviconDraftSourceUiModel.PrivateImage("/private/staging/icon.webp"),
+            source = DetailFaviconSource.PrivateImage("/private/staging/icon.webp"),
         )
 
         val promoted = DetailFaviconEditorReducer.reduce(
@@ -156,7 +152,7 @@ class DetailFaviconReducerTest {
         )
 
         assertEquals(
-            FaviconDraftSourceUiModel.PrivateImage("/private/images/favicon.webp"),
+            DetailFaviconSource.PrivateImage("/private/images/favicon.webp"),
             promoted.source,
         )
         assertEquals(
@@ -172,12 +168,12 @@ class DetailFaviconReducerTest {
             DetailMutation.SaveSucceeded(DetailEditCompletion.Icon),
         )
 
-        assertEquals(DetailFaviconEditorUiModel(), saved.faviconEditor)
+        assertEquals(DetailFaviconEditorState(), saved.faviconEditor)
     }
 
     @Test
     fun keepEditingOnlyClearsDiscardConfirmation() {
-        val state = DetailFaviconEditorUiModel(
+        val state = DetailFaviconEditorState(
             visible = true,
             confirmDiscard = true,
         )
@@ -194,7 +190,7 @@ class DetailFaviconReducerTest {
     fun editorOffersLibraryAndSingleCustomImageMode() {
         assertEquals(
             listOf("ICON_LIBRARY", "CUSTOM_IMAGE"),
-            FaviconEditorTabUiModel.entries.map { it.name },
+            DetailFaviconTab.entries.map { it.name },
         )
     }
 }

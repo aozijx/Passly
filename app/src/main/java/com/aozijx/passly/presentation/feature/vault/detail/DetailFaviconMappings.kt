@@ -7,52 +7,48 @@ import com.aozijx.passly.app.entry.favicon.FaviconImageFailure
 import com.aozijx.passly.app.entry.favicon.FaviconUrlException
 import com.aozijx.passly.app.entry.favicon.FaviconUrlFailure
 import com.aozijx.passly.domain.entry.model.EntryIcon
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
-import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
-import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconProcessingErrorUiModel
-
-internal fun EntryIcon.toFaviconDraftSource(): FaviconDraftSourceUiModel {
+internal fun EntryIcon.toDetailFaviconSource(): DetailFaviconSource {
     val privatePath = customReference
     val builtInName = name
     return when {
-        !privatePath.isNullOrBlank() -> FaviconDraftSourceUiModel.PrivateImage(privatePath)
-        !builtInName.isNullOrBlank() -> FaviconDraftSourceUiModel.BuiltIn(builtInName, color)
-        else -> FaviconDraftSourceUiModel.InferredDefault
+        !privatePath.isNullOrBlank() -> DetailFaviconSource.PrivateImage(privatePath)
+        !builtInName.isNullOrBlank() -> DetailFaviconSource.BuiltIn(builtInName, color)
+        else -> DetailFaviconSource.InferredDefault
     }
 }
 
-internal fun FaviconDraftSourceUiModel.toEntryIcon(): EntryIcon = when (this) {
-    FaviconDraftSourceUiModel.InferredDefault -> EntryIcon()
-    is FaviconDraftSourceUiModel.BuiltIn -> EntryIcon(name = key, color = colorToken)
-    is FaviconDraftSourceUiModel.PrivateImage -> EntryIcon(customReference = localPath)
+internal fun DetailFaviconSource.toEntryIcon(): EntryIcon = when (this) {
+    DetailFaviconSource.InferredDefault -> EntryIcon()
+    is DetailFaviconSource.BuiltIn -> EntryIcon(name = key, color = colorToken)
+    is DetailFaviconSource.PrivateImage -> EntryIcon(customReference = localPath)
 }
 
-internal fun DetailFaviconEditorUiModel.privateImagePath(): String? =
-    (source as? FaviconDraftSourceUiModel.PrivateImage)?.localPath
+internal fun DetailFaviconEditorState.privateImagePath(): String? =
+    (source as? DetailFaviconSource.PrivateImage)?.localPath
 
-internal fun Throwable.toFaviconUiError(): FaviconProcessingErrorUiModel = when (this) {
+internal fun Throwable.toFaviconProcessingError(): DetailFaviconProcessingError = when (this) {
     is FaviconUrlException -> when (reason) {
         FaviconUrlFailure.INVALID_URL,
         FaviconUrlFailure.HTTPS_REQUIRED,
-            -> FaviconProcessingErrorUiModel.INVALID_URL
+            -> DetailFaviconProcessingError.INVALID_URL
 
         FaviconUrlFailure.CREDENTIALS_NOT_ALLOWED,
         FaviconUrlFailure.HOST_NOT_ALLOWED,
         FaviconUrlFailure.PRIVATE_ADDRESS,
-            -> FaviconProcessingErrorUiModel.URL_NOT_ALLOWED
+            -> DetailFaviconProcessingError.URL_NOT_ALLOWED
     }
 
     is FaviconDownloadException -> when (reason) {
-        FaviconDownloadFailure.NOT_IMAGE -> FaviconProcessingErrorUiModel.NOT_IMAGE
-        FaviconDownloadFailure.TOO_LARGE -> FaviconProcessingErrorUiModel.IMAGE_TOO_LARGE
-        else -> FaviconProcessingErrorUiModel.DOWNLOAD_FAILED
+        FaviconDownloadFailure.NOT_IMAGE -> DetailFaviconProcessingError.NOT_IMAGE
+        FaviconDownloadFailure.TOO_LARGE -> DetailFaviconProcessingError.IMAGE_TOO_LARGE
+        else -> DetailFaviconProcessingError.DOWNLOAD_FAILED
     }
 
     is FaviconImageException -> when (reason) {
-        FaviconImageFailure.TOO_LARGE -> FaviconProcessingErrorUiModel.IMAGE_TOO_LARGE
-        FaviconImageFailure.SAVE_FAILED -> FaviconProcessingErrorUiModel.SAVE_FAILED
-        else -> FaviconProcessingErrorUiModel.INVALID_IMAGE
+        FaviconImageFailure.TOO_LARGE -> DetailFaviconProcessingError.IMAGE_TOO_LARGE
+        FaviconImageFailure.SAVE_FAILED -> DetailFaviconProcessingError.SAVE_FAILED
+        else -> DetailFaviconProcessingError.INVALID_IMAGE
     }
 
-    else -> FaviconProcessingErrorUiModel.INVALID_IMAGE
+    else -> DetailFaviconProcessingError.INVALID_IMAGE
 }

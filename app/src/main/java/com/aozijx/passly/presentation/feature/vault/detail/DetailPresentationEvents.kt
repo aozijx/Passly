@@ -46,9 +46,11 @@ internal fun DetailEditorOverlayEvent.toDetailUiAction(): DetailUiAction? = when
     DetailEditorOverlayEvent.DismissTagEditor -> DetailUiAction.DismissTagEditor
     DetailEditorOverlayEvent.ConfirmDiscardTags -> DetailUiAction.ConfirmDiscardTags
     DetailEditorOverlayEvent.KeepEditingTags -> DetailUiAction.KeepEditingTags
-    is DetailEditorOverlayEvent.SelectFaviconTab -> DetailUiAction.SelectFaviconTab(tab)
+    is DetailEditorOverlayEvent.SelectFaviconTab ->
+        DetailUiAction.SelectFaviconTab(tab.toDetailFaviconTab())
     is DetailEditorOverlayEvent.UpdateFaviconSearch -> DetailUiAction.UpdateFaviconSearch(value)
-    is DetailEditorOverlayEvent.SelectFaviconSource -> DetailUiAction.SelectFaviconSource(source)
+    is DetailEditorOverlayEvent.SelectFaviconSource ->
+        DetailUiAction.SelectFaviconSource(source.toDetailFaviconSource())
     DetailEditorOverlayEvent.UploadFavicon -> null
     is DetailEditorOverlayEvent.UpdateFaviconImageUrl -> DetailUiAction.UpdateFaviconImageUrl(value)
     DetailEditorOverlayEvent.DownloadFaviconImage -> DetailUiAction.DownloadFaviconImage

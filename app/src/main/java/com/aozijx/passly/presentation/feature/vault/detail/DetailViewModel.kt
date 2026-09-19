@@ -28,7 +28,6 @@ import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
-import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -302,7 +301,7 @@ class DetailViewModel @Inject internal constructor(
 
             DetailUiAction.OpenFaviconEditor -> {
                 val icon = _uiState.value.entry?.icon ?: return
-                mutate(DetailMutation.FaviconEditorOpened(icon.toFaviconDraftSource()))
+                mutate(DetailMutation.FaviconEditorOpened(icon.toDetailFaviconSource()))
             }
 
             is DetailUiAction.SelectFaviconSource -> {
@@ -549,17 +548,17 @@ class DetailViewModel @Inject internal constructor(
         faviconSession.launchSave {
             val source = _uiState.value.faviconEditor.source
             val persistedSource = if (
-                source is FaviconDraftSourceUiModel.PrivateImage &&
+                source is DetailFaviconSource.PrivateImage &&
                 faviconImageProcessor.isStaged(source.localPath)
             ) {
                 val promoted = faviconImageProcessor.promote(source.localPath)
                     .getOrElse { error ->
-                        val uiError = error.toFaviconUiError()
-                        mutate(DetailMutation.FaviconProcessingFailed(uiError))
-                        mutate(DetailMutation.SaveFailed(DetailEditCompletion.Icon, uiError.name))
+                        val processingError = error.toFaviconProcessingError()
+                        mutate(DetailMutation.FaviconProcessingFailed(processingError))
+                        mutate(DetailMutation.SaveFailed(DetailEditCompletion.Icon, processingError.name))
                         return@launchSave
                     }
-                FaviconDraftSourceUiModel.PrivateImage(promoted).also {
+                DetailFaviconSource.PrivateImage(promoted).also {
                     mutate(DetailMutation.FaviconSourcePromoted(promoted))
                 }
             } else {
@@ -650,7 +649,7 @@ class DetailViewModel @Inject internal constructor(
         mutate(DetailMutation.FaviconProcessingStarted)
         stage().fold(
             onSuccess = { mutate(DetailMutation.FaviconInputStaged(it)) },
-            onFailure = { mutate(DetailMutation.FaviconProcessingFailed(it.toFaviconUiError())) },
+            onFailure = { mutate(DetailMutation.FaviconProcessingFailed(it.toFaviconProcessingError())) },
         )
     }
 
@@ -662,11 +661,11 @@ class DetailViewModel @Inject internal constructor(
             onSuccess = {
                 mutate(
                     DetailMutation.FaviconSourceChanged(
-                        FaviconDraftSourceUiModel.PrivateImage(it),
+                        DetailFaviconSource.PrivateImage(it),
                     ),
                 )
             },
-            onFailure = { mutate(DetailMutation.FaviconProcessingFailed(it.toFaviconUiError())) },
+            onFailure = { mutate(DetailMutation.FaviconProcessingFailed(it.toFaviconProcessingError())) },
         )
     }
 

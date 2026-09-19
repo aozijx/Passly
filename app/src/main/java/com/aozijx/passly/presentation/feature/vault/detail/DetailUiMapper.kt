@@ -190,7 +190,7 @@ internal fun toDetailPresentationModel(
         ),
         overlays = DetailEditorOverlaysUiModel(
             tagEditor = state.tagEditor.toTagEditorUiModel(),
-            faviconEditor = state.faviconEditor,
+            faviconEditor = state.faviconEditor.toFaviconEditorUiModel(),
             savingTags = state.savingEdit == DetailEditCompletion.Tags,
             savingIcon = state.savingEdit == DetailEditCompletion.Icon,
         ),

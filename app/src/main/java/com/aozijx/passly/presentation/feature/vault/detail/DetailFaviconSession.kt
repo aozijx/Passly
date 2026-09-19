@@ -1,8 +1,6 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
 import com.aozijx.passly.app.entry.favicon.FaviconDraftFiles
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
-import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -25,11 +23,11 @@ internal class DetailFaviconSession(
     }
 
     fun discardReplacedSource(
-        editor: DetailFaviconEditorUiModel,
-        replacement: FaviconDraftSourceUiModel,
+        editor: DetailFaviconEditorState,
+        replacement: DetailFaviconSource,
     ) {
         val previous = editor.source
-        if (previous is FaviconDraftSourceUiModel.PrivateImage && previous != replacement) {
+        if (previous is DetailFaviconSource.PrivateImage && previous != replacement) {
             scope.launch { files.discard(previous.localPath) }
         }
         editor.promotedCandidatePath?.let { path ->
@@ -42,7 +40,7 @@ internal class DetailFaviconSession(
         scope.launch { files.discard(pendingInputPath) }
     }
 
-    fun close(editor: DetailFaviconEditorUiModel) {
+    fun close(editor: DetailFaviconEditorState) {
         cancelAll()
         files.discardEditorResources(
             stagedPath = editor.privateImagePath(),

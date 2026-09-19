@@ -6,11 +6,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
-import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
-import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconEditorTabUiModel
-import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconProcessingErrorUiModel
 
 internal sealed interface DetailTagEditorMutation : DetailMutation
 
@@ -70,15 +66,15 @@ internal sealed interface DetailMutation {
     data object TagEditorDismissRequested : DetailTagEditorMutation
     data object TagEditorDiscardConfirmed : DetailTagEditorMutation
     data object TagEditorDiscardCancelled : DetailTagEditorMutation
-    data class FaviconEditorOpened(val source: FaviconDraftSourceUiModel) : DetailFaviconEditorMutation
-    data class FaviconSourceChanged(val source: FaviconDraftSourceUiModel) : DetailFaviconEditorMutation
-    data class FaviconTabChanged(val tab: FaviconEditorTabUiModel) : DetailFaviconEditorMutation
+    data class FaviconEditorOpened(val source: DetailFaviconSource) : DetailFaviconEditorMutation
+    data class FaviconSourceChanged(val source: DetailFaviconSource) : DetailFaviconEditorMutation
+    data class FaviconTabChanged(val tab: DetailFaviconTab) : DetailFaviconEditorMutation
     data class FaviconSearchChanged(val value: String) : DetailFaviconEditorMutation
     data class FaviconImageUrlChanged(val value: String) : DetailFaviconEditorMutation
     data object FaviconProcessingStarted : DetailFaviconEditorMutation
     data class FaviconInputStaged(val path: String) : DetailFaviconEditorMutation
     data class FaviconSourcePromoted(val path: String) : DetailFaviconEditorMutation
-    data class FaviconProcessingFailed(val error: FaviconProcessingErrorUiModel) : DetailFaviconEditorMutation
+    data class FaviconProcessingFailed(val error: DetailFaviconProcessingError) : DetailFaviconEditorMutation
     data object FaviconCropCancelled : DetailFaviconEditorMutation
     data object FaviconEditorDismissRequested : DetailFaviconEditorMutation
     data object FaviconEditorDiscardConfirmed : DetailFaviconEditorMutation
@@ -198,7 +194,7 @@ internal object DetailReducer {
                             state.tagEditor
                         },
                         faviconEditor = if (mutation.completion == DetailEditCompletion.Icon) {
-                            DetailFaviconEditorUiModel()
+                            DetailFaviconEditorState()
                         } else {
                             state.faviconEditor
                         },
@@ -216,7 +212,7 @@ internal object DetailReducer {
                         faviconEditor = if (mutation.completion == DetailEditCompletion.Icon) {
                             state.faviconEditor.copy(
                                 processingError = state.faviconEditor.processingError
-                                    ?: FaviconProcessingErrorUiModel.SAVE_FAILED,
+                                    ?: DetailFaviconProcessingError.SAVE_FAILED,
                             )
                         } else {
                             state.faviconEditor

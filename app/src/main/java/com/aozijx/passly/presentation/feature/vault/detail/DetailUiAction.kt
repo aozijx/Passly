@@ -3,8 +3,6 @@ package com.aozijx.passly.presentation.feature.vault.detail
 import android.net.Uri
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
-import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconEditorTabUiModel
 
 sealed interface DetailUiAction {
 
@@ -38,8 +36,8 @@ sealed interface DetailUiAction {
     data object ConfirmDiscardTags : DetailTagAction
     data object KeepEditingTags : DetailTagAction
     data object OpenFaviconEditor : DetailFaviconAction
-    data class SelectFaviconSource(val source: FaviconDraftSourceUiModel) : DetailFaviconAction
-    data class SelectFaviconTab(val tab: FaviconEditorTabUiModel) : DetailFaviconAction
+    data class SelectFaviconSource(val source: DetailFaviconSource) : DetailFaviconAction
+    data class SelectFaviconTab(val tab: DetailFaviconTab) : DetailFaviconAction
     data class UpdateFaviconSearch(val value: String) : DetailFaviconAction
     data class UpdateFaviconImageUrl(val value: String) : DetailFaviconAction
     data class PickedFaviconImage(val uri: Uri) : DetailFaviconAction
