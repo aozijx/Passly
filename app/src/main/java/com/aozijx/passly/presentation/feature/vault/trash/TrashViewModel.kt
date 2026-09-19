@@ -3,12 +3,12 @@ package com.aozijx.passly.presentation.feature.vault.trash
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.presentation.feature.common.error.toUiMessage
-import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
+import com.aozijx.passly.feature.vault.trash.TrashCommandResult
+import com.aozijx.passly.feature.vault.trash.TrashCommandUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,10 +18,9 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-class TrashViewModel @Inject constructor(
+internal class TrashViewModel @Inject constructor(
     private val entryListQueryRepository: EntryListQueryRepository,
-    private val entryCommandRepository: EntryCommandRepository,
-    private val secureSessionAccessState: SecureSessionAccessState,
+    private val trashCommand: TrashCommandUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(TrashUiState())
     val uiState: StateFlow<TrashUiState> = _uiState.asStateFlow()
@@ -37,23 +36,31 @@ class TrashViewModel @Inject constructor(
     fun onAction(action: TrashUiAction) {
         when (action) {
             is TrashUiAction.Restore -> runEntryAction(action.entryId) {
-                entryCommandRepository.restoreEntry(EntryId(action.entryId), EntryVersion(action.expectedVersion))
+                trashCommand.restore(
+                    EntryId(action.entryId),
+                    EntryVersion(action.expectedVersion),
+                )
             }
             is TrashUiAction.DeletePermanently -> runEntryAction(action.entryId) {
-                entryCommandRepository.deletePermanently(EntryId(action.entryId), EntryVersion(action.expectedVersion))
+                trashCommand.deletePermanently(
+                    EntryId(action.entryId),
+                    EntryVersion(action.expectedVersion),
+                )
             }
             TrashUiAction.Empty -> emptyTrash()
             TrashUiAction.ClearError -> mutate(TrashMutation.ErrorCleared)
         }
     }
 
-    private fun runEntryAction(entryId: String, operation: suspend () -> AppResult<Unit>) {
-        if (_uiState.value.isBusy || !requireAccess()) return
+    private fun runEntryAction(
+        entryId: String,
+        operation: suspend () -> TrashCommandResult,
+    ) {
+        if (_uiState.value.isBusy) return
         viewModelScope.launch {
-            if (!requireAccess()) return@launch
             mutate(TrashMutation.EntryActionStarted(entryId))
             try {
-                operation().updateError("回收站操作失败")
+                applyResult(operation(), "回收站操作失败")
             } finally {
                 mutate(TrashMutation.EntryActionFinished)
             }
@@ -61,26 +68,31 @@ class TrashViewModel @Inject constructor(
     }
 
     private fun emptyTrash() {
-        if (_uiState.value.isBusy || _uiState.value.entries.isEmpty() || !requireAccess()) return
+        if (_uiState.value.isBusy || _uiState.value.entries.isEmpty()) return
         viewModelScope.launch {
-            if (!requireAccess()) return@launch
             mutate(TrashMutation.EmptyStarted)
             try {
-                entryCommandRepository.emptyTrash().updateError("无法清空回收站")
+                applyResult(trashCommand.empty(), "无法清空回收站")
             } finally {
                 mutate(TrashMutation.EmptyFinished)
             }
         }
     }
 
-    private fun requireAccess(): Boolean {
-        if (secureSessionAccessState.hasFullSecureSessionAccess()) return true
-        mutate(TrashMutation.ActionFailed("当前会话不能操作回收站"))
-        return false
-    }
+    private fun applyResult(result: TrashCommandResult, fallback: String) {
+        when (result) {
+            TrashCommandResult.Completed,
+            TrashCommandResult.NotAuthorized -> Unit
 
-    private fun AppResult<*>.updateError(fallback: String) {
-        if (this is AppResult.Failure) mutate(TrashMutation.ActionFailed(error.toUiMessage(fallback)))
+            is TrashCommandResult.Failed -> {
+                val message = if (result.error is SessionModeRestricted) {
+                    "当前会话不能操作回收站"
+                } else {
+                    result.error.toUiMessage(fallback)
+                }
+                mutate(TrashMutation.ActionFailed(message))
+            }
+        }
     }
 
     private fun mutate(mutation: TrashMutation) {
