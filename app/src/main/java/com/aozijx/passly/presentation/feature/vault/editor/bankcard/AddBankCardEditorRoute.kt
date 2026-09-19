@@ -103,7 +103,7 @@ fun AddBankCardEditorRoute(
             onNotesChange = { submit(AddBankCardAction.NotesChanged(it)) },
         ),
         snackbarHostState = snackbarHostState,
-        saveActionModifier = saveActionModifier,
+        modifier = saveActionModifier,
     )
 }
 

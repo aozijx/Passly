@@ -57,7 +57,7 @@ fun AddPasswordEditorScreen(
     state: PasswordEditorState,
     onEvent: PasswordEditorEventHandler,
     snackbarHostState: SnackbarHostState,
-    saveActionModifier: Modifier = Modifier,
+    modifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -69,7 +69,7 @@ fun AddPasswordEditorScreen(
         snackbarHostState = snackbarHostState,
         onBack = onEvent.onBack,
         onSave = onEvent.onSave,
-        saveActionModifier = saveActionModifier,
+        modifier = modifier,
     ) {
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
             NextFocusTextField(

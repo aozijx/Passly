@@ -48,7 +48,7 @@ fun AddEntryScaffold(
     snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
     onSave: () -> Unit,
-    saveActionModifier: Modifier = Modifier,
+    modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val focusManager = LocalFocusManager.current
@@ -84,7 +84,7 @@ fun AddEntryScaffold(
                 canSave = canSave,
                 isSaving = isSaving,
                 onSave = { cleanupAndDo(onSave) },
-                modifier = saveActionModifier,
+                modifier = modifier,
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }

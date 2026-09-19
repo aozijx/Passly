@@ -49,7 +49,7 @@ class EntryFocusBehaviorTest {
                 state = state,
                 onEvent = eventHandler,
                 snackbarHostState = remember { SnackbarHostState() },
-                saveActionModifier = Modifier,
+                modifier = Modifier,
             )
         }
 

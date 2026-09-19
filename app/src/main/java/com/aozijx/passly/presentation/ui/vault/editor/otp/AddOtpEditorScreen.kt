@@ -23,7 +23,7 @@ fun AddOtpEditorScreen(
     state: OtpEditorState,
     onEvent: OtpEditorEventHandler,
     snackbarHostState: SnackbarHostState,
-    saveActionModifier: Modifier = Modifier,
+    modifier: Modifier = Modifier,
 ) {
     AddEntryScaffold(
         title = stringResource(R.string.vault_add_otp_title),
@@ -32,7 +32,7 @@ fun AddOtpEditorScreen(
         snackbarHostState = snackbarHostState,
         onBack = onEvent.onBack,
         onSave = onEvent.onSave,
-        saveActionModifier = saveActionModifier,
+        modifier = modifier,
     ) {
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
             NextFocusTextField(
