@@ -12,7 +12,7 @@ class DetailEditOwnershipBoundaryTest {
             "com/aozijx/passly/presentation/feature/vault/detail",
         )
         val route = featureRoot.resolve("DetailRoute.kt").readText()
-        val body = sourceRoot().resolve("com/aozijx/passly/presentation/ui/vault/detail/DetailContent.kt").readText()
+        val body = sourceRoot().resolve("com/aozijx/passly/presentation/feature/vault/detail/ui/DetailContent.kt").readText()
         val actions = featureRoot.resolve("DetailUiAction.kt").readText()
 
         assertFalse(featureRoot.resolve("DetailLocalEditState.kt").exists())

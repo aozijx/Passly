@@ -17,11 +17,11 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.presentation.feature.vault.list.action.CopyFieldLabelProvider
 import com.aozijx.passly.presentation.ui.shared.media.ImageType
 import com.aozijx.passly.presentation.ui.shared.media.rememberImagePicker
-import com.aozijx.passly.presentation.ui.vault.detail.DetailContent
-import com.aozijx.passly.presentation.ui.vault.detail.DetailEditorOverlays
-import com.aozijx.passly.presentation.ui.vault.detail.DetailScreen
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailContentEvent
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailEditorOverlayEvent
+import com.aozijx.passly.presentation.feature.vault.detail.ui.DetailContent
+import com.aozijx.passly.presentation.feature.vault.detail.ui.DetailEditorOverlays
+import com.aozijx.passly.presentation.feature.vault.detail.ui.DetailScreen
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailContentEvent
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailEditorOverlayEvent
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable

@@ -1,8 +1,8 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
-import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
-import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconEditorTabUiModel
-import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconProcessingErrorUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconDraftSourceUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconEditorTabUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconProcessingErrorUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

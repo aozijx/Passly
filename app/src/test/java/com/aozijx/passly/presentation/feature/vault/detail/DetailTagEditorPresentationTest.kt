@@ -1,6 +1,6 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
-import com.aozijx.passly.presentation.ui.vault.detail.model.TagEditorValidationErrorUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.TagEditorValidationErrorUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

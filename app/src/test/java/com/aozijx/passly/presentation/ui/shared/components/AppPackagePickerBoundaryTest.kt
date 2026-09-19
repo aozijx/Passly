@@ -8,7 +8,7 @@ import org.junit.Test
 class AppPackagePickerBoundaryTest {
     @Test
     fun `installed app icon state comes from core platform ui`() {
-        val detailContent = source("presentation/ui/vault/detail/DetailContent.kt")
+        val detailContent = source("presentation/feature/vault/detail/ui/DetailContent.kt")
         val vaultItemIcon = source("presentation/ui/shared/components/VaultItemIcon.kt")
 
         listOf(detailContent, vaultItemIcon).forEach { consumer ->
@@ -20,8 +20,8 @@ class AppPackagePickerBoundaryTest {
     @Test
     fun `package picker consumes mapped data and emits semantic ui events`() {
         val picker = source("presentation/ui/shared/components/AppPackagePickerBottomSheet.kt")
-        val associations = source("presentation/ui/vault/detail/component/AssociatedInfoSection.kt")
-        val detailContent = source("presentation/ui/vault/detail/DetailContent.kt")
+        val associations = source("presentation/feature/vault/detail/ui/component/AssociatedInfoSection.kt")
+        val detailContent = source("presentation/feature/vault/detail/ui/DetailContent.kt")
 
         val forbiddenPlatformLoadingTokens = listOf(
             "EntryPointAccessors",

@@ -39,7 +39,7 @@ class PasslyAppBoundaryTest {
             "com/aozijx/passly/presentation/feature/shell/navigation/ShellNavigationContext.kt",
         )
         val detailList = source(
-            "com/aozijx/passly/presentation/ui/vault/detail/component/DetailScrollableContent.kt",
+            "com/aozijx/passly/presentation/feature/vault/detail/ui/component/DetailScrollableContent.kt",
         )
 
         assertFalse(navigationContext.contains("onUserInteraction"))

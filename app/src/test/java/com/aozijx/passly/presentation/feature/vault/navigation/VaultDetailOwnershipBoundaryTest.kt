@@ -8,6 +8,19 @@ import org.junit.Test
 class VaultDetailOwnershipBoundaryTest {
 
     @Test
+    fun `detail ui lives inside the detail feature root`() {
+        val legacyRoot = File(
+            "app/src/main/java/com/aozijx/passly/presentation/ui/vault/detail",
+        ).takeIf { File("app").isDirectory }
+            ?: File("src/main/java/com/aozijx/passly/presentation/ui/vault/detail")
+
+        assertFalse(
+            "Detail UI still has a parallel presentation ui root",
+            legacyRoot.walkTopDown().any { it.isFile && it.extension == "kt" },
+        )
+    }
+
+    @Test
     fun `root navigation does not own the vault view model`() {
         val source = source(
             "com/aozijx/passly/presentation/feature/shell/PasslyAppNavigation.kt",

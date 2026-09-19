@@ -1,9 +1,9 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailContentEvent
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailEditorOverlayEvent
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFieldUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailContentEvent
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailEditorOverlayEvent
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFieldUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

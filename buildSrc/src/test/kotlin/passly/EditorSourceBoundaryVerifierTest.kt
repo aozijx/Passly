@@ -131,6 +131,8 @@ class EditorSourceBoundaryVerifierTest {
                 source("app/src/main/java/com/example/presentation/feature/vault/detail/DetailScreen.kt", "@Composable fun DetailScreen() = Unit"),
                 source("app/src/main/java/com/example/presentation/feature/vault/detail/component/Header.kt", "@Composable fun Header() = Unit"),
                 source("app/src/main/java/com/example/presentation/feature/vault/detail/DetailHost.kt", "@Composable fun DetailHost() = Unit"),
+                source("app/src/main/java/com/example/presentation/feature/vault/detail/ui/DetailScreen.kt", "@Composable fun DetailScreen() = Unit"),
+                source("app/src/main/java/com/example/presentation/feature/vault/detail/ui/component/Header.kt", "@Composable fun Header() = Unit"),
             ),
         )
 

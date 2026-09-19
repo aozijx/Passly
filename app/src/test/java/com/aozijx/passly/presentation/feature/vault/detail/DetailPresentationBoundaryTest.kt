@@ -10,17 +10,16 @@ class DetailPresentationBoundaryTest {
     fun `detail content and overlays are passive ui`() {
         val sourceRoot = sourceRoot()
         val content = sourceRoot.resolve(
-            "com/aozijx/passly/presentation/ui/vault/detail/DetailContent.kt",
+            "com/aozijx/passly/presentation/feature/vault/detail/ui/DetailContent.kt",
         )
         val overlays = sourceRoot.resolve(
-            "com/aozijx/passly/presentation/ui/vault/detail/DetailEditorOverlays.kt",
+            "com/aozijx/passly/presentation/feature/vault/detail/ui/DetailEditorOverlays.kt",
         )
 
         assertTrue(content.exists())
         assertTrue(overlays.exists())
         listOf(content, overlays).forEach { file ->
             val source = file.readText()
-            assertFalse(source.contains("presentation.feature.vault.detail"))
             assertFalse(source.contains("DetailUiState"))
             assertFalse(source.contains("DetailUiAction"))
             assertFalse(source.contains("rememberImagePicker"))
