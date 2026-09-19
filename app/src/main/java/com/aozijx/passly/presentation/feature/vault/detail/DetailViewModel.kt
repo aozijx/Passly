@@ -14,7 +14,6 @@ import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
-import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
@@ -39,7 +38,6 @@ import javax.inject.Inject
 @HiltViewModel
 class DetailViewModel @Inject internal constructor(
     private val entryQueryRepository: EntryQueryRepository,
-    private val sensitiveFieldRepository: SensitiveFieldRepository,
     private val activityQueryRepository: ActivityQueryRepository,
     private val activityRecorder: ActivityRecorder,
     private val entryTypePolicy: EntryTypePolicy,
@@ -50,6 +48,7 @@ class DetailViewModel @Inject internal constructor(
     private val copyEntryFieldUseCase: CopyEntryFieldUseCase,
     private val copyOtpCodeUseCase: CopyOtpCodeUseCase,
     private val faviconImageProcessor: FaviconImageProcessor,
+    private val entryLoader: DetailEntryLoader,
     private val installedAppLoader: DetailInstalledAppLoader,
     private val relatedEntryLoader: DetailRelatedEntryLoader,
     otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
@@ -433,11 +432,16 @@ class DetailViewModel @Inject internal constructor(
         mutate(DetailMutation.StateCleared)
         entryLoadJob = viewModelScope.launch {
             if (!accessPolicy.hasFullAccess()) return@launch
-            val latest = entryQueryRepository.getById(entryId) ?: return@launch
+            val snapshot = entryLoader.load(entryId) ?: return@launch
+            val latest = snapshot.entry
             refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
             loadAssociatedApps(latest)
-            val presence = sensitiveFieldRepository.getPresence(latest.id)
-            mutate(DetailMutation.SensitiveFieldPresenceChanged(latest.id, presence.keys))
+            mutate(
+                DetailMutation.SensitiveFieldPresenceChanged(
+                    latest.id,
+                    snapshot.sensitiveFieldKeys,
+                )
+            )
             loadRelatedEntries(latest)
             if (latest.secret.otp != null) otpRuntime.autoUnlock(entryId.value)
         }

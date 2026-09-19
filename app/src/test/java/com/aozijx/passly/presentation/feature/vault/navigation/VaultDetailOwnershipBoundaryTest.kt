@@ -72,6 +72,9 @@ class VaultDetailOwnershipBoundaryTest {
         val viewModel = source(
             "com/aozijx/passly/presentation/feature/vault/detail/DetailViewModel.kt",
         )
+        val entryLoader = source(
+            "com/aozijx/passly/presentation/feature/vault/detail/DetailEntryLoader.kt",
+        )
 
         val signature = route.substringAfter("fun DetailRoute(").substringBefore(") {")
         assertTrue(route.contains("entryId: String"))
@@ -79,7 +82,8 @@ class VaultDetailOwnershipBoundaryTest {
         assertFalse(signature.contains("(Entry) -> Unit"))
         assertFalse(route.contains("initialEntry"))
         assertFalse(route.contains("onAutoUnlockTotp"))
-        assertTrue(viewModel.contains("entryQueryRepository.getById(entryId)"))
+        assertTrue(viewModel.contains("entryLoader.load(entryId)"))
+        assertTrue(entryLoader.contains("entryQueryRepository.getById(entryId)"))
     }
 
     @Test
@@ -106,7 +110,8 @@ class VaultDetailOwnershipBoundaryTest {
         assertFalse(viewModel.contains("CopyEntryFieldUseCase("))
         assertFalse(viewModel.contains("CopyOtpCodeUseCase("))
         assertFalse(viewModel.contains("UpdateDetailEntryUseCase("))
-        assertTrue(viewModel.contains("entryQueryRepository.getById(entryId)"))
+        assertFalse(viewModel.contains("SensitiveFieldRepository"))
+        assertTrue(viewModel.contains("private val entryLoader: DetailEntryLoader"))
     }
     private fun source(relativePath: String): String {
         val sourceRoot = listOf(
