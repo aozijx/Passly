@@ -1,6 +1,6 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
-import com.aozijx.passly.app.entry.favicon.FaviconDraftFiles
+import com.aozijx.passly.core.platform.media.FaviconDraftFiles
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch

@@ -2,9 +2,9 @@ package com.aozijx.passly.presentation.feature.vault.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.app.entry.favicon.FaviconCropRequest
-import com.aozijx.passly.app.entry.favicon.FaviconImageProcessor
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.platform.media.FaviconCropRequest
+import com.aozijx.passly.core.platform.media.FaviconImageProcessor
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppDirectory
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId

@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import androidx.core.graphics.scale
+import com.aozijx.passly.core.platform.media.FaviconCropRequest
 import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject

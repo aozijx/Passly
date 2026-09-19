@@ -2,6 +2,8 @@ package com.aozijx.passly.app.entry.favicon
 
 import android.content.Context
 import android.net.Uri
+import com.aozijx.passly.core.platform.media.FaviconCropRequest
+import com.aozijx.passly.core.platform.media.FaviconImageProcessor
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.ByteArrayInputStream
 import java.util.concurrent.CancellationException
@@ -11,30 +13,14 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-data class FaviconCropRequest(
-    val zoom: Float = 1f,
-    val offsetX: Float = 0f,
-    val offsetY: Float = 0f,
-)
-
-interface FaviconDraftFiles {
-    suspend fun discard(path: String?)
-    suspend fun discardPromotedCandidate(path: String?)
-    fun discardEditorResources(
-        stagedPath: String?,
-        pendingInputPath: String?,
-        promotedCandidatePath: String?,
-    )
-}
-
 @Singleton
-class FaviconImageProcessor @Inject constructor(
+class DefaultFaviconImageProcessor @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val imageDownloader: FaviconImageDownloader,
     private val imageStore: FaviconImageStore,
     private val bitmapTransformer: FaviconBitmapTransformer,
-) : FaviconDraftFiles {
-    suspend fun stageUpload(uri: Uri): Result<String> {
+) : FaviconImageProcessor {
+    override suspend fun stageUpload(uri: Uri): Result<String> {
         var stagedPath: String? = null
         return try {
             withContext(Dispatchers.IO) {
@@ -50,7 +36,7 @@ class FaviconImageProcessor @Inject constructor(
         }
     }
 
-    suspend fun stageHttpsUrl(value: String): Result<String> {
+    override suspend fun stageHttpsUrl(value: String): Result<String> {
         var stagedPath: String? = null
         return try {
             withContext(Dispatchers.IO) {
@@ -65,7 +51,7 @@ class FaviconImageProcessor @Inject constructor(
         }
     }
 
-    suspend fun process(
+    override suspend fun process(
         stagedInputPath: String,
         crop: FaviconCropRequest?,
     ): Result<String> {
@@ -90,7 +76,7 @@ class FaviconImageProcessor @Inject constructor(
         }
     }
 
-    suspend fun promote(stagedPath: String): Result<String> {
+    override suspend fun promote(stagedPath: String): Result<String> {
         var promotedPath: String? = null
         return try {
             withContext(Dispatchers.IO) {
@@ -116,7 +102,7 @@ class FaviconImageProcessor @Inject constructor(
         imageStore.discardPromotedCandidate(path)
     }
 
-    fun isStaged(path: String): Boolean = imageStore.isStaged(path)
+    override fun isStaged(path: String): Boolean = imageStore.isStaged(path)
 
     override fun discardEditorResources(
         stagedPath: String?,

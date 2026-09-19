@@ -55,7 +55,6 @@ class VaultListBindingsComposeTest {
             val version = callbackVersion.intValue
             currentHandler = rememberVaultListEventHandler(
                 onEvent = { events += "$version:$it" },
-                requestAuthentication = { it() },
             )
         }
 

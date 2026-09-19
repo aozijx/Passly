@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.media.ExifInterface
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.aozijx.passly.core.platform.media.FaviconCropRequest
 import java.io.File
 import java.io.FileOutputStream
 import org.junit.Assert.assertEquals
