@@ -1,9 +1,6 @@
 package com.aozijx.passly.presentation.ui.vault.editor.common
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,10 +32,6 @@ import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.animation.SharedTransitionOverlayClip
-import com.aozijx.passly.core.ui.animation.withSharedTransitionVisualOverflow
-import com.aozijx.passly.presentation.ui.vault.shared.ADD_ENTRY_FAB_SHARED_KEY
-import com.aozijx.passly.presentation.ui.vault.shared.AddEntryFabVisualOverflow
 import com.aozijx.passly.presentation.ui.shared.components.topbar.PasslyNavigationTopBar
 
 /**
@@ -55,8 +48,7 @@ fun AddEntryScaffold(
     snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
     onSave: () -> Unit,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope,
+    saveActionModifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val focusManager = LocalFocusManager.current
@@ -92,8 +84,7 @@ fun AddEntryScaffold(
                 canSave = canSave,
                 isSaving = isSaving,
                 onSave = { cleanupAndDo(onSave) },
-                sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = animatedVisibilityScope
+                modifier = saveActionModifier,
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -124,18 +115,9 @@ private fun SaveEntryFab(
     canSave: Boolean,
     isSaving: Boolean,
     onSave: () -> Unit,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope
+    modifier: Modifier = Modifier,
 ) {
     val enabled = canSave && !isSaving
-    val sharedModifier = with(sharedTransitionScope) {
-        Modifier.sharedBounds(
-            sharedContentState = rememberSharedContentState(ADD_ENTRY_FAB_SHARED_KEY),
-            animatedVisibilityScope = animatedVisibilityScope,
-            resizeMode = RemeasureToBounds,
-            clipInOverlayDuringTransition = SharedTransitionOverlayClip.None
-        )
-    }
 
     val labelVisible = rememberSharedFabLabelVisible(visible = !isSaving)
     SharedAddEntryExtendedFab(
@@ -154,11 +136,7 @@ private fun SaveEntryFab(
         expanded = !isSaving,
         enabled = enabled,
         labelVisible = labelVisible,
-        modifier = Modifier
-            .withSharedTransitionVisualOverflow(
-                sharedModifier = sharedModifier,
-                visualOverflow = AddEntryFabVisualOverflow
-            )
+        modifier = modifier
             .then(if (enabled) Modifier else Modifier.semantics { disabled() })
     )
 }

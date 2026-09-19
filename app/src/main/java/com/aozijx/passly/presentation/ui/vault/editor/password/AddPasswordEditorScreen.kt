@@ -1,7 +1,5 @@
 package com.aozijx.passly.presentation.ui.vault.editor.password
 
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -59,8 +57,7 @@ fun AddPasswordEditorScreen(
     state: PasswordEditorState,
     onEvent: PasswordEditorEventHandler,
     snackbarHostState: SnackbarHostState,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope,
+    saveActionModifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -72,8 +69,7 @@ fun AddPasswordEditorScreen(
         snackbarHostState = snackbarHostState,
         onBack = onEvent.onBack,
         onSave = onEvent.onSave,
-        sharedTransitionScope = sharedTransitionScope,
-        animatedVisibilityScope = animatedVisibilityScope,
+        saveActionModifier = saveActionModifier,
     ) {
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
             NextFocusTextField(

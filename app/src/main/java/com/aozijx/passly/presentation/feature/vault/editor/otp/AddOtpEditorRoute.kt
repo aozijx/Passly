@@ -21,6 +21,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffectHandler
+import com.aozijx.passly.presentation.ui.vault.editor.common.rememberAddEntryFabTransitionModifier
 import com.aozijx.passly.presentation.ui.vault.editor.otp.AddOtpEditorScreen
 import com.aozijx.passly.presentation.ui.vault.editor.otp.OtpEditorAlgorithm
 import com.aozijx.passly.presentation.ui.vault.editor.otp.OtpEditorEncoding
@@ -47,6 +48,9 @@ fun AddOtpEditorRoute(
     val saveFailedMessage = stringResource(R.string.vault_add_otp_save_failed)
     val uriParsedMessage = stringResource(R.string.vault_otp_uri_parsed)
     val uriParseFailedMessage = stringResource(R.string.vault_otp_uri_parse_failed)
+    val saveActionModifier = with(sharedTransitionScope) {
+        rememberAddEntryFabTransitionModifier(animatedVisibilityScope)
+    }
     var showScanner by remember { mutableStateOf(false) }
 
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
@@ -108,8 +112,7 @@ fun AddOtpEditorRoute(
             onCounterChange = { updateForm { current -> current.copy(counter = it) } },
         ),
         snackbarHostState = snackbarHostState,
-        sharedTransitionScope = sharedTransitionScope,
-        animatedVisibilityScope = animatedVisibilityScope,
+        saveActionModifier = saveActionModifier,
     )
 
     if (showScanner) {

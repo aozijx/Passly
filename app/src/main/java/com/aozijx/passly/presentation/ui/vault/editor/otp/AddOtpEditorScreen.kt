@@ -1,7 +1,5 @@
 package com.aozijx.passly.presentation.ui.vault.editor.otp
 
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -25,8 +23,7 @@ fun AddOtpEditorScreen(
     state: OtpEditorState,
     onEvent: OtpEditorEventHandler,
     snackbarHostState: SnackbarHostState,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope,
+    saveActionModifier: Modifier = Modifier,
 ) {
     AddEntryScaffold(
         title = stringResource(R.string.vault_add_otp_title),
@@ -35,8 +32,7 @@ fun AddOtpEditorScreen(
         snackbarHostState = snackbarHostState,
         onBack = onEvent.onBack,
         onSave = onEvent.onSave,
-        sharedTransitionScope = sharedTransitionScope,
-        animatedVisibilityScope = animatedVisibilityScope,
+        saveActionModifier = saveActionModifier,
     ) {
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
             NextFocusTextField(

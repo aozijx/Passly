@@ -1,10 +1,8 @@
 package com.aozijx.passly.presentation.ui.vault.editor
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -20,7 +18,6 @@ class EntryFocusBehaviorTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    @OptIn(ExperimentalSharedTransitionApi::class)
     @Test
     fun focusMovesThroughFieldsOnNextImeAction() {
         val state = PasswordEditorState(
@@ -48,17 +45,12 @@ class EntryFocusBehaviorTest {
         )
 
         composeRule.setContent {
-            SharedTransitionLayout {
-                AnimatedVisibility(visible = true) {
-                    AddPasswordEditorScreen(
-                        state = state,
-                        onEvent = eventHandler,
-                        snackbarHostState = remember { SnackbarHostState() },
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedVisibilityScope = this@AnimatedVisibility
-                    )
-                }
-            }
+            AddPasswordEditorScreen(
+                state = state,
+                onEvent = eventHandler,
+                snackbarHostState = remember { SnackbarHostState() },
+                saveActionModifier = Modifier,
+            )
         }
 
         // Start focus on Title

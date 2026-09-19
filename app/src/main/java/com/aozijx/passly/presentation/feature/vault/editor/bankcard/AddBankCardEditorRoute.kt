@@ -12,6 +12,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffectHandler
+import com.aozijx.passly.presentation.ui.vault.editor.common.rememberAddEntryFabTransitionModifier
 import com.aozijx.passly.presentation.ui.vault.editor.bankcard.AddBankCardEditorScreen
 import com.aozijx.passly.presentation.ui.vault.editor.bankcard.BankCardEditorEventHandler
 import com.aozijx.passly.presentation.ui.vault.editor.bankcard.BankCardEditorState
@@ -29,6 +30,9 @@ fun AddBankCardEditorRoute(
     val snackbarHostState = remember { SnackbarHostState() }
     val keyboardController = LocalSoftwareKeyboardController.current
     val saveFailedMessage = stringResource(R.string.vault_add_bank_card_save_failed)
+    val saveActionModifier = with(sharedTransitionScope) {
+        rememberAddEntryFabTransitionModifier(animatedVisibilityScope)
+    }
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
 
     fun submit(action: AddBankCardAction) {
@@ -99,8 +103,7 @@ fun AddBankCardEditorRoute(
             onNotesChange = { submit(AddBankCardAction.NotesChanged(it)) },
         ),
         snackbarHostState = snackbarHostState,
-        sharedTransitionScope = sharedTransitionScope,
-        animatedVisibilityScope = animatedVisibilityScope,
+        saveActionModifier = saveActionModifier,
     )
 }
 
