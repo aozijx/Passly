@@ -33,12 +33,13 @@ internal fun InteractionRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val uiState = state.toUiModel()
     val context = LocalContext.current
+    val savedMessage = stringResource(R.string.settings_saved)
     var activeDialog by rememberSaveable { mutableStateOf<SwipeActionDialog?>(null) }
 
-    LaunchedEffect(viewModel, context) {
+    LaunchedEffect(viewModel, context, savedMessage) {
         viewModel.effects.collect { effect ->
             val message = when (effect) {
-                InteractionSettingsEffect.Saved -> context.getString(R.string.settings_saved)
+                InteractionSettingsEffect.Saved -> savedMessage
                 is InteractionSettingsEffect.SaveFailed -> effect.message
             }
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
