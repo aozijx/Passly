@@ -13,7 +13,6 @@ import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
-import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.OwnedChars
@@ -42,7 +41,6 @@ class DetailViewModel @Inject internal constructor(
     private val entryQueryRepository: EntryQueryRepository,
     private val sensitiveFieldRepository: SensitiveFieldRepository,
     private val activityQueryRepository: ActivityQueryRepository,
-    private val entryLinkRepository: EntryLinkRepository,
     private val activityRecorder: ActivityRecorder,
     private val entryTypePolicy: EntryTypePolicy,
     private val accessPolicy: DetailAccessPolicy,
@@ -53,6 +51,7 @@ class DetailViewModel @Inject internal constructor(
     private val copyOtpCodeUseCase: CopyOtpCodeUseCase,
     private val faviconImageProcessor: FaviconImageProcessor,
     private val installedAppLoader: DetailInstalledAppLoader,
+    private val relatedEntryLoader: DetailRelatedEntryLoader,
     otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
 ) : ViewModel() {
     private val entryAnalyzer = DetailEntryAnalyzer(entryTypePolicy)
@@ -586,18 +585,7 @@ class DetailViewModel @Inject internal constructor(
         }
     }
     private suspend fun loadRelatedEntries(entry: Entry) {
-        val relatedIds = DetailRelatedEntryIds.resolve(
-            entryId = entry.id,
-            entryType = entry.type,
-            links = entryLinkRepository.getAll(),
-        )
-        if (relatedIds.isEmpty()) {
-            mutate(DetailMutation.RelatedEntriesChanged(entry.id, emptyList()))
-            return
-        }
-        val related = relatedIds.mapNotNull { relatedId ->
-            entryQueryRepository.getById(relatedId)
-        }
+        val related = relatedEntryLoader.loadFor(entry)
         mutate(DetailMutation.RelatedEntriesChanged(entry.id, related))
     }
 
