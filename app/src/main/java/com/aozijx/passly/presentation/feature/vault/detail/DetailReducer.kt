@@ -8,7 +8,6 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailTagEditorUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconDraftSourceUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconEditorTabUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.FaviconProcessingErrorUiModel
@@ -194,7 +193,7 @@ internal object DetailReducer {
                         },
                         saveErrorCode = null,
                         tagEditor = if (mutation.completion == DetailEditCompletion.Tags) {
-                            DetailTagEditorUiModel()
+                            DetailTagEditorState()
                         } else {
                             state.tagEditor
                         },

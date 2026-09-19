@@ -28,9 +28,11 @@ import com.aozijx.passly.presentation.ui.vault.detail.model.DetailPresentationMo
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailSectionUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailSeedPhraseUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailSshUiModel
+import com.aozijx.passly.presentation.ui.vault.detail.model.DetailTagEditorUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailWifiUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.RelatedEntryUiModel
 import com.aozijx.passly.presentation.ui.vault.detail.model.ScopedSensitiveText
+import com.aozijx.passly.presentation.ui.vault.detail.model.TagEditorValidationErrorUiModel
 
 internal fun detailHeaderUiModel(
     entry: Entry,
@@ -187,7 +189,7 @@ internal fun toDetailPresentationModel(
             activities = shared.activities,
         ),
         overlays = DetailEditorOverlaysUiModel(
-            tagEditor = state.tagEditor,
+            tagEditor = state.tagEditor.toTagEditorUiModel(),
             faviconEditor = state.faviconEditor,
             savingTags = state.savingEdit == DetailEditCompletion.Tags,
             savingIcon = state.savingEdit == DetailEditCompletion.Icon,
@@ -198,6 +200,19 @@ internal fun toDetailPresentationModel(
 internal fun DetailInstalledApp.toPackagePickerItemUiModel() = AppPackagePickerItemUiModel(
     label = label,
     packageName = packageName,
+)
+
+internal fun DetailTagEditorState.toTagEditorUiModel() = DetailTagEditorUiModel(
+    visible = visible,
+    initialTags = initialTags,
+    draftTags = draftTags,
+    availableTags = availableTags,
+    input = input,
+    suggestions = suggestions,
+    validationError = validationError?.let {
+        TagEditorValidationErrorUiModel.valueOf(it.name)
+    },
+    confirmDiscard = confirmDiscard,
 )
 
 internal fun SensitiveValue?.asScopedSensitiveText(): ScopedSensitiveText {

@@ -5,7 +5,6 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailTagEditorUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.ui.vault.detail.model.DetailFaviconEditorUiModel
 
@@ -29,7 +28,7 @@ data class DetailUiState(
     val fieldEdits: DetailFieldEditState = DetailFieldEditState(),
     val savingEdit: DetailEditCompletion? = null,
     val saveErrorCode: String? = null,
-    val tagEditor: DetailTagEditorUiModel = DetailTagEditorUiModel(),
+    val tagEditor: DetailTagEditorState = DetailTagEditorState(),
     val faviconEditor: DetailFaviconEditorUiModel = DetailFaviconEditorUiModel(),
 ) {
     fun revealed(key: String): SensitiveValue? = revealedFields[key]

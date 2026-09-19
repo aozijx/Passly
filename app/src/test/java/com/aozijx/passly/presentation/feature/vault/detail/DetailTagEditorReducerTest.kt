@@ -1,7 +1,5 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailTagEditorUiModel
-import com.aozijx.passly.presentation.ui.vault.detail.model.TagEditorValidationErrorUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -29,7 +27,7 @@ class DetailTagEditorReducerTest {
 
     @Test
     fun inputChangeFiltersSuggestionsIgnoringSelectedTags() {
-        val opened = DetailTagEditorUiModel(
+        val opened = DetailTagEditorState(
             visible = true,
             initialTags = setOf("Passkey"),
             draftTags = setOf("Passkey"),
@@ -44,7 +42,7 @@ class DetailTagEditorReducerTest {
 
     @Test
     fun addingAndRemovingTagsUpdatesDirtyDraft() {
-        val opened = DetailTagEditorUiModel(
+        val opened = DetailTagEditorState(
             visible = true,
             initialTags = linkedSetOf("Work"),
             draftTags = linkedSetOf("Work"),
@@ -60,7 +58,7 @@ class DetailTagEditorReducerTest {
 
     @Test
     fun invalidTagPreservesInputAndDraft() {
-        val opened = DetailTagEditorUiModel(
+        val opened = DetailTagEditorState(
             visible = true,
             initialTags = emptySet(),
             draftTags = emptySet(),
@@ -75,14 +73,14 @@ class DetailTagEditorReducerTest {
         assertEquals(emptySet<String>(), actual.draftTags)
         assertEquals("x".repeat(33), actual.input)
         assertEquals(
-            TagEditorValidationErrorUiModel.TAG_TOO_LONG,
+            DetailTagValidationError.TAG_TOO_LONG,
             actual.validationError,
         )
     }
 
     @Test
     fun dirtyDismissRequestsConfirmationAndConfirmedDiscardClosesSheet() {
-        val dirty = DetailTagEditorUiModel(
+        val dirty = DetailTagEditorState(
             visible = true,
             initialTags = setOf("Work"),
             draftTags = setOf("Personal"),
@@ -93,14 +91,14 @@ class DetailTagEditorReducerTest {
 
         assertTrue(requested.visible)
         assertTrue(requested.confirmDiscard)
-        assertEquals(DetailTagEditorUiModel(), discarded)
+        assertEquals(DetailTagEditorState(), discarded)
     }
 
     @Test
     fun successfulTagSaveClosesSheetButFailurePreservesDraft() {
         val saving = DetailUiState(
             savingEdit = DetailEditCompletion.Tags,
-            tagEditor = DetailTagEditorUiModel(
+            tagEditor = DetailTagEditorState(
                 visible = true,
                 initialTags = setOf("Work"),
                 draftTags = setOf("Personal"),
@@ -118,6 +116,6 @@ class DetailTagEditorReducerTest {
 
         assertTrue(failed.tagEditor.visible)
         assertEquals(setOf("Personal"), failed.tagEditor.draftTags)
-        assertEquals(DetailTagEditorUiModel(), succeeded.tagEditor)
+        assertEquals(DetailTagEditorState(), succeeded.tagEditor)
     }
 }

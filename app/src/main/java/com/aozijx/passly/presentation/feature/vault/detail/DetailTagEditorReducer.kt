@@ -1,19 +1,16 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
-import com.aozijx.passly.presentation.ui.vault.detail.model.DetailTagEditorUiModel
-import com.aozijx.passly.presentation.ui.vault.detail.model.TagEditorValidationErrorUiModel
-
 internal object DetailTagEditorReducer {
     fun reduce(
-        state: DetailTagEditorUiModel,
+        state: DetailTagEditorState,
         mutation: DetailTagEditorMutation,
-    ): DetailTagEditorUiModel = when (mutation) {
+    ): DetailTagEditorState = when (mutation) {
         is DetailMutation.TagEditorOpened -> {
             val tags = when (val normalized = DetailTagNormalizer.normalize(mutation.currentTags)) {
                 is TagNormalizationResult.Valid -> normalized.tags
                 else -> mutation.currentTags
             }
-            DetailTagEditorUiModel(
+            DetailTagEditorState(
                 visible = true,
                 initialTags = tags,
                 draftTags = tags,
@@ -42,11 +39,11 @@ internal object DetailTagEditorReducer {
             )
 
             is TagNormalizationResult.TooMany -> state.copy(
-                validationError = TagEditorValidationErrorUiModel.TOO_MANY_TAGS,
+                validationError = DetailTagValidationError.TOO_MANY_TAGS,
             )
 
             is TagNormalizationResult.TooLong -> state.copy(
-                validationError = TagEditorValidationErrorUiModel.TAG_TOO_LONG,
+                validationError = DetailTagValidationError.TAG_TOO_LONG,
             )
         }
 
@@ -58,10 +55,10 @@ internal object DetailTagEditorReducer {
         )
 
         DetailMutation.TagEditorDismissRequested -> {
-            if (state.dirty) state.copy(confirmDiscard = true) else DetailTagEditorUiModel()
+            if (state.dirty) state.copy(confirmDiscard = true) else DetailTagEditorState()
         }
 
-        DetailMutation.TagEditorDiscardConfirmed -> DetailTagEditorUiModel()
+        DetailMutation.TagEditorDiscardConfirmed -> DetailTagEditorState()
         DetailMutation.TagEditorDiscardCancelled -> state.copy(confirmDiscard = false)
     }
 }
