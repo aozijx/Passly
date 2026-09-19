@@ -8,6 +8,21 @@ data class FaviconCropRequest(
     val offsetY: Float = 0f,
 )
 
+enum class FaviconProcessingFailure {
+    INVALID_URL,
+    URL_NOT_ALLOWED,
+    DOWNLOAD_FAILED,
+    NOT_IMAGE,
+    IMAGE_TOO_LARGE,
+    INVALID_IMAGE,
+    SAVE_FAILED,
+}
+
+class FaviconProcessingException(
+    val failure: FaviconProcessingFailure,
+    cause: Throwable? = null,
+) : IllegalStateException(failure.name, cause)
+
 interface FaviconDraftFiles {
     suspend fun discard(path: String?)
     suspend fun discardPromotedCandidate(path: String?)

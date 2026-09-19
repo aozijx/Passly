@@ -1,9 +1,7 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
-import com.aozijx.passly.app.entry.favicon.FaviconDownloadException
-import com.aozijx.passly.app.entry.favicon.FaviconDownloadFailure
-import com.aozijx.passly.app.entry.favicon.FaviconUrlException
-import com.aozijx.passly.app.entry.favicon.FaviconUrlFailure
+import com.aozijx.passly.core.platform.media.FaviconProcessingException
+import com.aozijx.passly.core.platform.media.FaviconProcessingFailure
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -13,15 +11,15 @@ class DetailFaviconMappingsTest {
     fun faviconFailuresMapToStableUiErrors() {
         assertEquals(
             DetailFaviconProcessingError.INVALID_URL,
-            FaviconUrlException(FaviconUrlFailure.HTTPS_REQUIRED).toFaviconProcessingError(),
+            FaviconProcessingException(FaviconProcessingFailure.INVALID_URL).toFaviconProcessingError(),
         )
         assertEquals(
             DetailFaviconProcessingError.URL_NOT_ALLOWED,
-            FaviconUrlException(FaviconUrlFailure.PRIVATE_ADDRESS).toFaviconProcessingError(),
+            FaviconProcessingException(FaviconProcessingFailure.URL_NOT_ALLOWED).toFaviconProcessingError(),
         )
         assertEquals(
             DetailFaviconProcessingError.IMAGE_TOO_LARGE,
-            FaviconDownloadException(FaviconDownloadFailure.TOO_LARGE).toFaviconProcessingError(),
+            FaviconProcessingException(FaviconProcessingFailure.IMAGE_TOO_LARGE).toFaviconProcessingError(),
         )
         assertEquals(
             DetailFaviconProcessingError.INVALID_IMAGE,

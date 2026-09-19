@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import com.aozijx.passly.core.platform.media.FaviconCropRequest
 import com.aozijx.passly.core.platform.media.FaviconImageProcessor
+import com.aozijx.passly.core.platform.media.FaviconProcessingException
+import com.aozijx.passly.core.platform.media.FaviconProcessingFailure
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.ByteArrayInputStream
 import java.util.concurrent.CancellationException
@@ -127,6 +129,37 @@ class DefaultFaviconImageProcessor @Inject constructor(
     } catch (error: CancellationException) {
         throw error
     } catch (error: Throwable) {
-        Result.failure(error)
+        Result.failure(error.toFaviconProcessingException())
     }
 }
+
+internal fun Throwable.toFaviconProcessingException(): FaviconProcessingException =
+    this as? FaviconProcessingException ?: FaviconProcessingException(
+        failure = when (this) {
+            is FaviconUrlException -> when (reason) {
+                FaviconUrlFailure.INVALID_URL,
+                FaviconUrlFailure.HTTPS_REQUIRED,
+                    -> FaviconProcessingFailure.INVALID_URL
+
+                FaviconUrlFailure.CREDENTIALS_NOT_ALLOWED,
+                FaviconUrlFailure.HOST_NOT_ALLOWED,
+                FaviconUrlFailure.PRIVATE_ADDRESS,
+                    -> FaviconProcessingFailure.URL_NOT_ALLOWED
+            }
+
+            is FaviconDownloadException -> when (reason) {
+                FaviconDownloadFailure.NOT_IMAGE -> FaviconProcessingFailure.NOT_IMAGE
+                FaviconDownloadFailure.TOO_LARGE -> FaviconProcessingFailure.IMAGE_TOO_LARGE
+                else -> FaviconProcessingFailure.DOWNLOAD_FAILED
+            }
+
+            is FaviconImageException -> when (reason) {
+                FaviconImageFailure.TOO_LARGE -> FaviconProcessingFailure.IMAGE_TOO_LARGE
+                FaviconImageFailure.SAVE_FAILED -> FaviconProcessingFailure.SAVE_FAILED
+                else -> FaviconProcessingFailure.INVALID_IMAGE
+            }
+
+            else -> FaviconProcessingFailure.INVALID_IMAGE
+        },
+        cause = this,
+    )
