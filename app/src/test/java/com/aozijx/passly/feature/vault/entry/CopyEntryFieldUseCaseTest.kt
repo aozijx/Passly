@@ -173,7 +173,6 @@ class CopyEntryFieldUseCaseTest {
         var reads = 0
         override suspend fun getById(entryId: EntryId): Entry? = entry.also { reads++ }
         override suspend fun findEntriesWithCustomIcons() = emptyList<Entry>()
-        override suspend fun findAllTags() = emptySet<String>()
         override suspend fun count() = 0
     }
 

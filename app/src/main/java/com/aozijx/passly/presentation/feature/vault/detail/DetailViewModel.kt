@@ -11,7 +11,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
-import com.aozijx.passly.domain.entry.port.EntryQueryRepository
+import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
@@ -35,7 +35,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DetailViewModel @Inject internal constructor(
-    private val entryQueryRepository: EntryQueryRepository,
+    private val entryTagQuery: EntryTagQuery,
     private val activityQueryRepository: ActivityQueryRepository,
     private val entryTypePolicy: EntryTypePolicy,
     private val accessPolicy: DetailAccessPolicy,
@@ -246,7 +246,7 @@ class DetailViewModel @Inject internal constructor(
                     mutate(
                         DetailMutation.TagEditorOpened(
                             currentTags = current.tags,
-                            availableTags = entryQueryRepository.findAllTags(),
+                            availableTags = entryTagQuery.findAllTags(),
                         ),
                     )
                 }

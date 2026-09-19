@@ -78,7 +78,6 @@ class DetailRelatedEntryLoaderTest {
     ) : EntryQueryRepository {
         override suspend fun getById(entryId: EntryId): Entry? = entries[entryId]
         override suspend fun findEntriesWithCustomIcons() = emptyList<Entry>()
-        override suspend fun findAllTags() = emptySet<String>()
         override suspend fun count() = entries.size
     }
 

@@ -8,6 +8,7 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
+import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,7 +21,7 @@ internal class RoomEntryQueryRepository @Inject constructor(
     private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
     private val secretFieldStore: SecretFieldStore,
-) : EntryQueryRepository {
+) : EntryQueryRepository, EntryTagQuery {
 
     override suspend fun getById(entryId: EntryId): Entry? {
         if (!sessionState.hasFullSecureSessionAccess()) return null

@@ -139,7 +139,6 @@ class UpdateDetailEntryUseCaseTest {
         override suspend fun findEntriesWithCustomIcons(): List<Entry> =
             listOfNotNull(current?.takeIf { it.icon.customReference != null })
 
-        override suspend fun findAllTags(): Set<String> = current?.tags.orEmpty()
 
         override suspend fun count(): Int = if (current == null) 0 else 1
     }

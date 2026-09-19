@@ -112,7 +112,9 @@ class VaultDetailOwnershipBoundaryTest {
         assertFalse(viewModel.contains("UpdateDetailEntryUseCase("))
         assertFalse(viewModel.contains("SensitiveFieldRepository"))
         assertFalse(viewModel.contains("ActivityRecorder"))
+        assertFalse(viewModel.contains("EntryQueryRepository"))
         assertTrue(viewModel.contains("private val entryLoader: DetailEntryLoader"))
+        assertTrue(viewModel.contains("private val entryTagQuery: EntryTagQuery"))
     }
     private fun source(relativePath: String): String {
         val sourceRoot = listOf(
