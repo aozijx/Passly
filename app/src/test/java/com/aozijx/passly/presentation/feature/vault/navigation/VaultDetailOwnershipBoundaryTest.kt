@@ -113,6 +113,7 @@ class VaultDetailOwnershipBoundaryTest {
         assertFalse(viewModel.contains("SensitiveFieldRepository"))
         assertFalse(viewModel.contains("ActivityRecorder"))
         assertFalse(viewModel.contains("EntryQueryRepository"))
+        assertFalse(viewModel.contains("userConfigExtras"))
         assertTrue(viewModel.contains("private val entryLoader: DetailEntryLoader"))
         assertTrue(viewModel.contains("private val entryTagQuery: EntryTagQuery"))
     }

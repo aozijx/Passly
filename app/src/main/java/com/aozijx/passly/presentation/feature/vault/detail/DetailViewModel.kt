@@ -59,12 +59,6 @@ class DetailViewModel @Inject internal constructor(
     private var packagePickerLoadJob: Job? = null
     private var loadedEntryId: EntryId? = null
 
-    companion object {
-        private const val ACCESS_HISTORY_TOGGLE_KEY = "detail.access_history_enabled"
-    }
-
-    private val userConfigExtras = MutableStateFlow<Map<String, String>>(emptyMap())
-
     private val _uiState = MutableStateFlow(DetailUiState())
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
     private val _effects = Channel<DetailEffect>(Channel.BUFFERED)
@@ -76,14 +70,6 @@ class DetailViewModel @Inject internal constructor(
         viewModelScope.launch {
             otpRuntime.states.collect { states ->
                 _otpState.value = loadedEntryId?.value?.let(states::get)
-            }
-        }
-        viewModelScope.launch {
-            userConfigExtras.collect { extras ->
-                val enabled = extras[ACCESS_HISTORY_TOGGLE_KEY]
-                    ?.toBooleanStrictOrNull()
-                    ?: false
-                mutate(DetailMutation.AccessHistoryChanged(enabled))
             }
         }
     }
@@ -377,7 +363,6 @@ class DetailViewModel @Inject internal constructor(
 
             is DetailUiAction.ToggleAccessHistoryRecording -> {
                 mutate(DetailMutation.AccessHistoryChanged(event.enabled))
-                userConfigExtras.value += (ACCESS_HISTORY_TOGGLE_KEY to event.enabled.toString())
             }
 
             DetailUiAction.ClearSensitiveState -> {
