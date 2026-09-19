@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.detail
 
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationResult
@@ -14,11 +15,13 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
+import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -33,6 +36,7 @@ class ExportOtpQrUseCaseTest {
         val exporter = ExportOtpQrUseCase(
             authorizationGate = RecordingAuthorizationGate(events),
             sensitiveFieldRepository = RecordingSensitiveFieldRepository(events, revealed),
+            activityRecorder = RecordingActivityRecorder(events),
             formatUri = { config, _ ->
                 events += "format"
                 "otpauth://totp/Example?secret=${config.secret}"
@@ -41,7 +45,7 @@ class ExportOtpQrUseCaseTest {
 
         val uri = requireNotNull(exporter(otpEntry()))
 
-        assertEquals(listOf("authenticate", "reveal", "format"), events)
+        assertEquals(listOf("authenticate", "reveal", "format", "record"), events)
         assertTrue(uri.startsWith("otpauth://totp/"))
         assertTrue(uri.contains("secret=JBSWY3DPEHPK3PXP"))
         assertTrue(revealed.isEmpty)
@@ -86,6 +90,20 @@ class ExportOtpQrUseCaseTest {
 
         override suspend fun readBundle(entryId: EntryId) = EntrySecret()
         override suspend fun readAll(entryId: EntryId) = EntrySecret()
+    }
+
+    private class RecordingActivityRecorder(
+        private val events: MutableList<String>,
+    ) : ActivityRecorder {
+        override suspend fun recordUsage(entryId: String, type: ActivityType): AppResult<Unit> {
+            assertEquals("otp-1", entryId)
+            assertEquals(ActivityType.VIEW, type)
+            events += "record"
+            return AppResult.Success(Unit)
+        }
+
+        override suspend fun deleteByEntryId(entryId: String) = Unit
+        override suspend fun deleteBefore(timestamp: Long) = Unit
     }
 
     private fun otpEntry() = Entry(

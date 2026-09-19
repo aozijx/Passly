@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.entry
 
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationResult
@@ -16,11 +17,13 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
 import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
+import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import kotlinx.coroutines.test.runTest
@@ -39,6 +42,7 @@ class CopyEntryFieldUseCaseTest {
         assertEquals(AuthorizationScope.Global(AuthenticationPurpose.COPY_SECRET), fixture.gate.scope)
         assertEquals(listOf("alice"), fixture.clipboard.values)
         assertEquals(1, fixture.query.reads)
+        assertEquals(listOf(ENTRY_ID.value to ActivityType.COPY_USERNAME), fixture.activityRecorder.activities)
     }
 
     @Test
@@ -61,6 +65,7 @@ class CopyEntryFieldUseCaseTest {
         assertEquals(listOf("secret"), fixture.clipboard.values)
         assertTrue(value.isEmpty)
         assertEquals(0, fixture.query.reads)
+        assertEquals(listOf(ENTRY_ID.value to ActivityType.COPY_PASSWORD), fixture.activityRecorder.activities)
     }
 
     @Test
@@ -72,15 +77,17 @@ class CopyEntryFieldUseCaseTest {
         assertEquals(CopyEntryFieldResult.NotAuthorized, result)
         assertEquals(0, fixture.query.reads)
         assertTrue(fixture.clipboard.values.isEmpty())
+        assertTrue(fixture.activityRecorder.activities.isEmpty())
     }
 
     @Test
     fun otpValueIsResolvedOnlyAfterAuthorization() = runTest {
         val gate = RecordingGate(allowed = true)
         val clipboard = RecordingClipboard()
+        val activityRecorder = RecordingActivityRecorder()
         var reads = 0
 
-        val result = CopyOtpCodeUseCase(gate, clipboard).invoke {
+        val result = CopyOtpCodeUseCase(gate, clipboard, activityRecorder).invoke(ENTRY_ID) {
             reads++
             "123456"
         }
@@ -89,15 +96,17 @@ class CopyEntryFieldUseCaseTest {
         assertEquals(AuthorizationScope.Global(AuthenticationPurpose.COPY_SECRET), gate.scope)
         assertEquals(1, reads)
         assertEquals(listOf("123456"), clipboard.values)
+        assertEquals(listOf(ENTRY_ID.value to ActivityType.COPY_PASSWORD), activityRecorder.activities)
     }
 
     @Test
     fun cancelledOtpAuthorizationDoesNotResolveValue() = runTest {
         val gate = RecordingGate(allowed = false)
         val clipboard = RecordingClipboard()
+        val activityRecorder = RecordingActivityRecorder()
         var reads = 0
 
-        val result = CopyOtpCodeUseCase(gate, clipboard).invoke {
+        val result = CopyOtpCodeUseCase(gate, clipboard, activityRecorder).invoke(ENTRY_ID) {
             reads++
             "123456"
         }
@@ -105,6 +114,7 @@ class CopyEntryFieldUseCaseTest {
         assertEquals(CopyEntryFieldResult.NotAuthorized, result)
         assertEquals(0, reads)
         assertTrue(clipboard.values.isEmpty())
+        assertTrue(activityRecorder.activities.isEmpty())
     }
 
     private fun fixture(
@@ -116,6 +126,7 @@ class CopyEntryFieldUseCaseTest {
         val query = RecordingQuery(entry)
         val sensitiveRepository = RecordingSensitiveRepository(revealed)
         val clipboard = RecordingClipboard()
+        val activityRecorder = RecordingActivityRecorder()
         return Fixture(
             useCase = CopyEntryFieldUseCase(
                 authorizationGate = gate,
@@ -123,11 +134,13 @@ class CopyEntryFieldUseCaseTest {
                 entryFieldReader = UsernameReader,
                 sensitiveFieldRepository = sensitiveRepository,
                 clipboardWriter = clipboard,
+                activityRecorder = activityRecorder,
             ),
             gate = gate,
             query = query,
             sensitiveRepository = sensitiveRepository,
             clipboard = clipboard,
+            activityRecorder = activityRecorder,
         )
     }
 
@@ -137,6 +150,7 @@ class CopyEntryFieldUseCaseTest {
         val query: RecordingQuery,
         val sensitiveRepository: RecordingSensitiveRepository,
         val clipboard: RecordingClipboard,
+        val activityRecorder: RecordingActivityRecorder,
     )
 
     private class RecordingGate(private val allowed: Boolean) : AuthorizationGate {
@@ -195,6 +209,18 @@ class CopyEntryFieldUseCaseTest {
     private class RecordingClipboard : SensitiveClipboardWriter {
         val values = mutableListOf<String>()
         override suspend fun writeSensitive(text: String) { values += text }
+    }
+
+    private class RecordingActivityRecorder : ActivityRecorder {
+        val activities = mutableListOf<Pair<String, ActivityType>>()
+
+        override suspend fun recordUsage(entryId: String, type: ActivityType): AppResult<Unit> {
+            activities += entryId to type
+            return AppResult.Success(Unit)
+        }
+
+        override suspend fun deleteByEntryId(entryId: String) = Unit
+        override suspend fun deleteBefore(timestamp: Long) = Unit
     }
 
     private fun entry(username: String = "") = Entry(

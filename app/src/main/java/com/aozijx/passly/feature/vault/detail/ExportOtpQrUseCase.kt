@@ -7,21 +7,30 @@ import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.model.SensitiveAccessAction
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
+import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.feature.vault.otp.OtpAuthUriCodec
 
 internal class ExportOtpQrUseCase internal constructor(
     private val authorizationGate: AuthorizationGate,
     private val sensitiveFieldRepository: SensitiveFieldRepository,
+    private val activityRecorder: ActivityRecorder,
     private val formatUri: (OtpConfig, String) -> String = OtpAuthUriCodec::format,
 ) {
     @Inject
     constructor(
         authorizationGate: AuthorizationGate,
         sensitiveFieldRepository: SensitiveFieldRepository,
-    ) : this(authorizationGate, sensitiveFieldRepository, OtpAuthUriCodec::format)
+        activityRecorder: ActivityRecorder,
+    ) : this(
+        authorizationGate,
+        sensitiveFieldRepository,
+        activityRecorder,
+        OtpAuthUriCodec::format,
+    )
 
     suspend operator fun invoke(entry: Entry): String? {
         val config = entry.secret.otp?.config ?: return null
@@ -49,11 +58,15 @@ internal class ExportOtpQrUseCase internal constructor(
                 revealed.value.wipe()
             }
         }
-        return when (result) {
+        val uri = when (result) {
             is AuthorizationResult.Allowed -> result.value
             is AuthorizationResult.Denied,
             AuthorizationResult.Cancelled,
             -> null
         }
+        if (uri != null) {
+            activityRecorder.recordUsage(entry.id.value, ActivityType.VIEW)
+        }
+        return uri
     }
 }

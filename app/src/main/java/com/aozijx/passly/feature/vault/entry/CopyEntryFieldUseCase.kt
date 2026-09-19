@@ -13,9 +13,11 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
+import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 
 internal class CopyEntryFieldUseCase @Inject constructor(
@@ -24,6 +26,7 @@ internal class CopyEntryFieldUseCase @Inject constructor(
     private val entryFieldReader: EntryFieldReader,
     private val sensitiveFieldRepository: SensitiveFieldRepository,
     private val clipboardWriter: SensitiveClipboardWriter,
+    private val activityRecorder: ActivityRecorder,
 ) {
     suspend operator fun invoke(
         entryId: EntryId,
@@ -39,7 +42,7 @@ internal class CopyEntryFieldUseCase @Inject constructor(
             )
         } ?: AuthorizationScope.Global(AuthenticationPurpose.COPY_SECRET)
 
-        return when (val authorization = authorizationGate.authorize(scope) { permit ->
+        val result = when (val authorization = authorizationGate.authorize(scope) { permit ->
             if (sensitiveKey == null) {
                 val entry = entryQueryRepository.getById(entryId)
                     ?: return@authorize CopyEntryFieldResult.Unavailable
@@ -57,6 +60,10 @@ internal class CopyEntryFieldUseCase @Inject constructor(
             AuthorizationResult.Cancelled,
             -> CopyEntryFieldResult.NotAuthorized
         }
+        if (result == CopyEntryFieldResult.Copied) {
+            activityRecorder.recordUsage(entryId.value, fieldKey.copyActivityType())
+        }
+        return result
     }
 
     private suspend fun copySensitiveField(
@@ -86,14 +93,23 @@ internal class CopyEntryFieldUseCase @Inject constructor(
             revealed.value.wipe()
         }
     }
+
+    private fun FieldKey.copyActivityType(): ActivityType = when (this) {
+        FieldKey.USERNAME, FieldKey.CARD_HOLDER, FieldKey.WIFI_SSID -> ActivityType.COPY_USERNAME
+        else -> ActivityType.COPY_PASSWORD
+    }
 }
 
 internal class CopyOtpCodeUseCase @Inject constructor(
     private val authorizationGate: AuthorizationGate,
     private val clipboardWriter: SensitiveClipboardWriter,
+    private val activityRecorder: ActivityRecorder,
 ) {
-    suspend operator fun invoke(codeProvider: () -> String?): CopyEntryFieldResult =
-        when (
+    suspend operator fun invoke(
+        entryId: EntryId,
+        codeProvider: () -> String?,
+    ): CopyEntryFieldResult {
+        val result = when (
             val authorization = authorizationGate.authorize(
                 AuthorizationScope.Global(AuthenticationPurpose.COPY_SECRET),
             ) {
@@ -108,6 +124,11 @@ internal class CopyOtpCodeUseCase @Inject constructor(
             AuthorizationResult.Cancelled,
             -> CopyEntryFieldResult.NotAuthorized
         }
+        if (result == CopyEntryFieldResult.Copied) {
+            activityRecorder.recordUsage(entryId.value, ActivityType.COPY_PASSWORD)
+        }
+        return result
+    }
 }
 
 internal sealed interface CopyEntryFieldResult {

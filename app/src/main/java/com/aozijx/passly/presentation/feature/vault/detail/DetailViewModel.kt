@@ -9,10 +9,8 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
-import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
@@ -39,7 +37,6 @@ import javax.inject.Inject
 class DetailViewModel @Inject internal constructor(
     private val entryQueryRepository: EntryQueryRepository,
     private val activityQueryRepository: ActivityQueryRepository,
-    private val activityRecorder: ActivityRecorder,
     private val entryTypePolicy: EntryTypePolicy,
     private val accessPolicy: DetailAccessPolicy,
     private val exportOtpQr: ExportOtpQrUseCase,
@@ -373,7 +370,6 @@ class DetailViewModel @Inject internal constructor(
                 viewModelScope.launch {
                     exportOtpQr(entry)?.let { uri ->
                         _effects.send(DetailEffect.ShowOtpQr(uri))
-                        activityRecorder.recordUsage(entry.id.value, ActivityType.VIEW)
                     }
                 }
             }
@@ -394,7 +390,7 @@ class DetailViewModel @Inject internal constructor(
         val entry = _uiState.value.entry ?: return
         viewModelScope.launch {
             if (copyEntryFieldUseCase(entry.id, entry.type, fieldKey) != CopyEntryFieldResult.Copied) return@launch
-            recordCopy(entry.id, fieldKey.copyActivityType())
+            clearRevealedFields()
             _effects.send(DetailEffect.ContentCopied(fieldKey))
         }
     }
@@ -402,21 +398,15 @@ class DetailViewModel @Inject internal constructor(
     private fun copyOtpCode() {
         val entry = _uiState.value.entry ?: return
         viewModelScope.launch {
-            if (copyOtpCodeUseCase { otpState.value?.code } != CopyEntryFieldResult.Copied) return@launch
-            recordCopy(entry.id, ActivityType.COPY_PASSWORD)
+            if (copyOtpCodeUseCase(entry.id) { otpState.value?.code } != CopyEntryFieldResult.Copied) return@launch
+            clearRevealedFields()
             _effects.send(DetailEffect.ContentCopied(null))
         }
     }
 
-    private suspend fun recordCopy(entryId: EntryId, type: ActivityType) {
+    private fun clearRevealedFields() {
         revealStore.clear()
         mutate(DetailMutation.RevealedFieldsCleared)
-        activityRecorder.recordUsage(entryId.value, type)
-    }
-
-    private fun FieldKey.copyActivityType(): ActivityType = when (this) {
-        FieldKey.USERNAME, FieldKey.CARD_HOLDER, FieldKey.WIFI_SSID -> ActivityType.COPY_USERNAME
-        else -> ActivityType.COPY_PASSWORD
     }
 
     fun load(rawEntryId: String) {

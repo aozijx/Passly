@@ -111,6 +111,7 @@ class VaultDetailOwnershipBoundaryTest {
         assertFalse(viewModel.contains("CopyOtpCodeUseCase("))
         assertFalse(viewModel.contains("UpdateDetailEntryUseCase("))
         assertFalse(viewModel.contains("SensitiveFieldRepository"))
+        assertFalse(viewModel.contains("ActivityRecorder"))
         assertTrue(viewModel.contains("private val entryLoader: DetailEntryLoader"))
     }
     private fun source(relativePath: String): String {
