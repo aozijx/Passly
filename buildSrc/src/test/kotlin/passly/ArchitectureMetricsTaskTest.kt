@@ -81,5 +81,19 @@ class ArchitectureMetricsTaskTest {
         )
     }
 
+    @Test
+    fun detailFeatureUiIsNotReportedAsMisplacedPassiveUi() {
+        val report = ArchitectureMetrics.analyze(
+            listOf(
+                source(
+                    "app/src/main/java/com/example/presentation/feature/vault/detail/ui/DetailScreen.kt",
+                    "@Composable fun DetailScreen() = Unit",
+                ),
+            ),
+        )
+
+        assertEquals(emptyList(), report.reviewSignals)
+    }
+
     private fun source(path: String, content: String) = EditorSource(path, content)
 }

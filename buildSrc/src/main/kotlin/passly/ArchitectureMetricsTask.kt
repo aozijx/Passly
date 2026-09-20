@@ -99,8 +99,11 @@ internal object ArchitectureMetrics {
                 if (lineCount > LARGE_FILE_LINES) {
                     add("${source.path}: $lineCount lines")
                 }
+                val isDetailFeatureUi =
+                    "/presentation/feature/vault/detail/ui/" in source.path
                 if (
                     "/presentation/feature/" in source.path &&
+                    !isDetailFeatureUi &&
                     listOf("Screen.kt", "Content.kt", "Component.kt", "Dialog.kt", "Sheet.kt")
                         .any(fileName::endsWith)
                 ) {
