@@ -49,6 +49,7 @@ fun AddEntryScaffold(
     onBack: () -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
+    saveActionModifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val focusManager = LocalFocusManager.current
@@ -72,6 +73,7 @@ fun AddEntryScaffold(
     }
 
     Scaffold(
+        modifier = modifier,
         topBar = {
             PasslyNavigationTopBar(
                 title = title,
@@ -84,7 +86,7 @@ fun AddEntryScaffold(
                 canSave = canSave,
                 isSaving = isSaving,
                 onSave = { cleanupAndDo(onSave) },
-                modifier = modifier,
+                modifier = saveActionModifier,
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }

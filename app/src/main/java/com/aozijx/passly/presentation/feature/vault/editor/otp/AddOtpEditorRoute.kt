@@ -112,7 +112,7 @@ fun AddOtpEditorRoute(
             onCounterChange = { updateForm { current -> current.copy(counter = it) } },
         ),
         snackbarHostState = snackbarHostState,
-        modifier = saveActionModifier,
+        saveActionModifier = saveActionModifier,
     )
 
     if (showScanner) {

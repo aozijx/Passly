@@ -4,10 +4,13 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.platform.testTag
 import com.aozijx.passly.presentation.ui.vault.editor.password.AddPasswordEditorScreen
 import com.aozijx.passly.presentation.ui.vault.editor.password.PasswordEditorEventHandler
 import com.aozijx.passly.presentation.ui.vault.editor.password.PasswordEditorState
@@ -63,5 +66,45 @@ class EntryFocusBehaviorTest {
         // Move to Password (Next)
         composeRule.onNodeWithText("账号或邮箱").performImeAction()
         composeRule.onNodeWithText("密码").assertIsFocused()
+    }
+
+    @Test
+    fun screenAndSaveActionModifiersHaveIndependentOwners() {
+        val state = PasswordEditorState(
+            title = "",
+            username = "",
+            password = "",
+            website = "",
+            notes = "",
+            tags = "",
+            isPasswordVisible = false,
+            isFormValid = true,
+            canSave = true,
+            isSaving = false,
+        )
+        val eventHandler = PasswordEditorEventHandler(
+            onBack = {},
+            onSave = {},
+            onTitleChange = {},
+            onUsernameChange = {},
+            onPasswordChange = {},
+            onPasswordVisibilityChange = {},
+            onWebsiteChange = {},
+            onNotesChange = {},
+            onTagsChange = {},
+        )
+
+        composeRule.setContent {
+            AddPasswordEditorScreen(
+                state = state,
+                onEvent = eventHandler,
+                snackbarHostState = remember { SnackbarHostState() },
+                modifier = Modifier.testTag("editor-screen"),
+                saveActionModifier = Modifier.testTag("editor-save-action"),
+            )
+        }
+
+        composeRule.onNodeWithTag("editor-screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("editor-save-action").assertIsDisplayed()
     }
 }

@@ -45,6 +45,7 @@ fun AddBankCardEditorScreen(
     onEvent: BankCardEditorEventHandler,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
+    saveActionModifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -57,6 +58,7 @@ fun AddBankCardEditorScreen(
         onBack = onEvent.onBack,
         onSave = onEvent.onSave,
         modifier = modifier,
+        saveActionModifier = saveActionModifier,
     ) {
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
             NextFocusTextField(

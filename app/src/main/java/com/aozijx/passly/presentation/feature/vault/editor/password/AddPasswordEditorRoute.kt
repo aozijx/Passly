@@ -70,6 +70,6 @@ fun AddPasswordEditorRoute(
             onTagsChange = { submit(AddPasswordAction.TagsChanged(it)) },
         ),
         snackbarHostState = snackbarHostState,
-        modifier = saveActionModifier,
+        saveActionModifier = saveActionModifier,
     )
 }
