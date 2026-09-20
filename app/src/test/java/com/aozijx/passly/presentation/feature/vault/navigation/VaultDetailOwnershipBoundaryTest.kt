@@ -109,7 +109,6 @@ class VaultDetailOwnershipBoundaryTest {
         assertFalse(viewModel.contains("MoveEntryToTrashUseCase("))
         assertFalse(viewModel.contains("CopyEntryFieldUseCase("))
         assertFalse(viewModel.contains("CopyOtpCodeUseCase("))
-        assertFalse(viewModel.contains("UpdateDetailEntryUseCase("))
     }
     @Test
     fun `detail view model receives authorized operations instead of assembling them`() {
@@ -122,12 +121,13 @@ class VaultDetailOwnershipBoundaryTest {
         assertFalse(viewModel.contains("RevealEntryFieldsUseCase("))
         assertFalse(viewModel.contains("CopyEntryFieldUseCase("))
         assertFalse(viewModel.contains("CopyOtpCodeUseCase("))
-        assertFalse(viewModel.contains("UpdateDetailEntryUseCase("))
+        assertFalse(viewModel.contains("DetailEntryPatch"))
         assertFalse(viewModel.contains("SensitiveFieldRepository"))
         assertFalse(viewModel.contains("ActivityRecorder"))
         assertFalse(viewModel.contains("EntryQueryRepository"))
         assertFalse(viewModel.contains("userConfigExtras"))
         assertTrue(viewModel.contains("private val entryLoader: DetailEntryLoader"))
+        assertTrue(viewModel.contains("private val editDetailEntry: EditDetailEntryUseCase"))
         assertTrue(viewModel.contains("private val entryTagQuery: EntryTagQuery"))
     }
     private fun source(relativePath: String): String {

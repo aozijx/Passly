@@ -5,6 +5,7 @@ import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryProfile
@@ -25,15 +26,15 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class UpdateDetailEntryUseCaseTest {
+class EditDetailEntryUseCaseTest {
 
     @Test
     fun updateAppliesPatchToLatestEntryAndReturnsReloadedVersion() = runTest {
         val query = FakeQueryRepository(entry(version = 7, notes = "latest notes"))
         val command = FakeCommandRepository(query)
-        val useCase = UpdateDetailEntryUseCase(query, command)
+        val useCase = EditDetailEntryUseCase(query, command)
 
-        val result = useCase.update(ENTRY_ID, DetailEntryPatch.Title("Renamed"))
+        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
 
         val updated = (result as AppResult.Success<Entry>).data
         assertEquals("Renamed", updated.title)
@@ -51,9 +52,9 @@ class UpdateDetailEntryUseCaseTest {
                 query.current = entry(version = 4, notes = "concurrent notes")
             }
         }
-        val useCase = UpdateDetailEntryUseCase(query, command)
+        val useCase = EditDetailEntryUseCase(query, command)
 
-        val result = useCase.update(ENTRY_ID, DetailEntryPatch.Title("Renamed"))
+        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
 
         val updated = (result as AppResult.Success<Entry>).data
         assertEquals("Renamed", updated.title)
@@ -69,9 +70,9 @@ class UpdateDetailEntryUseCaseTest {
             failures += Conflict(errorId = "first-conflict")
             failures += Conflict(errorId = "second-conflict")
         }
-        val useCase = UpdateDetailEntryUseCase(query, command)
+        val useCase = EditDetailEntryUseCase(query, command)
 
-        val result = useCase.update(ENTRY_ID, DetailEntryPatch.Title("Renamed"))
+        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
 
         assertTrue((result as AppResult.Failure).error is Conflict)
         assertEquals(2, command.expectedVersions.size)
@@ -83,9 +84,9 @@ class UpdateDetailEntryUseCaseTest {
         val command = FakeCommandRepository(query).apply {
             failures += ValidationError(errorId = "validation")
         }
-        val useCase = UpdateDetailEntryUseCase(query, command)
+        val useCase = EditDetailEntryUseCase(query, command)
 
-        val result = useCase.update(ENTRY_ID, DetailEntryPatch.Title("Renamed"))
+        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
 
         assertTrue((result as AppResult.Failure).error is ValidationError)
         assertEquals(1, command.expectedVersions.size)
@@ -94,9 +95,9 @@ class UpdateDetailEntryUseCaseTest {
     @Test
     fun updateReturnsNotFoundWhenEntryDisappears() = runTest {
         val query = FakeQueryRepository(null)
-        val useCase = UpdateDetailEntryUseCase(query, FakeCommandRepository(query))
+        val useCase = EditDetailEntryUseCase(query, FakeCommandRepository(query))
 
-        val result = useCase.update(ENTRY_ID, DetailEntryPatch.Title("Renamed"))
+        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
 
         assertTrue((result as AppResult.Failure).error is NotFound)
     }
@@ -113,11 +114,11 @@ class UpdateDetailEntryUseCaseTest {
                 releaseFirst.await()
             }
         }
-        val useCase = UpdateDetailEntryUseCase(query, command)
+        val useCase = EditDetailEntryUseCase(query, command)
 
-        val first = async { useCase.update(ENTRY_ID, DetailEntryPatch.Title("First")) }
+        val first = async { useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("First")) }
         firstStarted.await()
-        val second = async { useCase.update(ENTRY_ID, DetailEntryPatch.Notes("Second notes")) }
+        val second = async { useCase.edit(ENTRY_ID, DetailEntryEdit.SetNotes("Second notes")) }
         runCurrent()
 
         assertEquals(listOf(1), command.expectedVersions)
@@ -129,6 +130,64 @@ class UpdateDetailEntryUseCaseTest {
         assertEquals("First", secondResult.title)
         assertEquals("Second notes", secondResult.secret.notes)
         assertEquals(3, secondResult.version.value)
+    }
+
+    @Test
+    fun primaryUrlEditPreservesLatestApplicationIds() = runTest {
+        val query = FakeQueryRepository(
+            entry(
+                version = 2,
+                primaryUrl = "https://old.example.com",
+                applicationIds = setOf("com.example.latest"),
+            ),
+        )
+        val useCase = EditDetailEntryUseCase(query, FakeCommandRepository(query))
+
+        val result = useCase.edit(
+            ENTRY_ID,
+            DetailEntryEdit.SetPrimaryUrl("https://new.example.com"),
+        )
+
+        val updated = (result as AppResult.Success<Entry>).data
+        assertEquals("https://new.example.com", updated.associations.primaryUrl)
+        assertEquals(setOf("com.example.latest"), updated.associations.applicationIds)
+    }
+
+    @Test
+    fun applicationIdEditPreservesLatestPrimaryUrl() = runTest {
+        val query = FakeQueryRepository(
+            entry(
+                version = 2,
+                primaryUrl = "https://latest.example.com",
+                applicationIds = setOf("com.example.old"),
+            ),
+        )
+        val useCase = EditDetailEntryUseCase(query, FakeCommandRepository(query))
+
+        val result = useCase.edit(
+            ENTRY_ID,
+            DetailEntryEdit.SetApplicationIds(setOf("com.example.new")),
+        )
+
+        val updated = (result as AppResult.Success<Entry>).data
+        assertEquals("https://latest.example.com", updated.associations.primaryUrl)
+        assertEquals(setOf("com.example.new"), updated.associations.applicationIds)
+    }
+
+    @Test
+    fun toggleFavoriteReevaluatesLatestEntryAfterConflict() = runTest {
+        val query = FakeQueryRepository(entry(version = 3, favorite = true))
+        val command = FakeCommandRepository(query).apply {
+            failures += Conflict(errorId = "first-conflict")
+            onFailure = { query.current = entry(version = 4, favorite = false) }
+        }
+        val useCase = EditDetailEntryUseCase(query, command)
+
+        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.ToggleFavorite)
+
+        val updated = (result as AppResult.Success<Entry>).data
+        assertEquals(true, updated.favorite)
+        assertEquals(listOf(3, 4), command.expectedVersions)
     }
 
     private class FakeQueryRepository(initial: Entry?) : EntryQueryRepository {
@@ -198,6 +257,9 @@ class UpdateDetailEntryUseCaseTest {
     private fun entry(
         version: Int,
         notes: String = "notes",
+        favorite: Boolean = true,
+        primaryUrl: String? = null,
+        applicationIds: Set<String> = emptySet(),
     ) = Entry(
         identity = EntryIdentity(
             id = ENTRY_ID,
@@ -208,7 +270,11 @@ class UpdateDetailEntryUseCaseTest {
         profile = EntryProfile(
             title = "Original",
             username = "latest-user",
-            favorite = true,
+            associations = EntryAssociations(
+                primaryUrl = primaryUrl,
+                applicationIds = applicationIds,
+            ),
+            favorite = favorite,
             tags = setOf("Latest"),
         ),
         secret = EntrySecret(

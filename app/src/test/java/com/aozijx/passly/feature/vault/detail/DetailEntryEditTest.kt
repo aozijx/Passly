@@ -10,50 +10,58 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.CardCredential
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
-class DetailEntryPatchTest {
+class DetailEntryEditTest {
 
     @Test
-    fun titlePatchPreservesLatestUnrelatedFields() {
+    fun titleEditPreservesLatestUnrelatedFields() {
         val latest = loginEntry()
 
-        val actual = DetailEntryPatch.Title("Renamed").applyTo(latest)
+        val actual = DetailEntryEdit.SetTitle("Renamed").applyRequired(latest)
 
         assertEquals("Renamed", actual.title)
         assertEquals(latest.copy(profile = latest.profile.copy(title = "Renamed")), actual)
     }
 
     @Test
-    fun favoritePatchPreservesLatestUnrelatedFields() {
+    fun favoriteEditPreservesLatestUnrelatedFields() {
         val latest = loginEntry()
 
-        val actual = DetailEntryPatch.Favorite(false).applyTo(latest)
+        val actual = DetailEntryEdit.ToggleFavorite.applyRequired(latest)
 
         assertEquals(false, actual.favorite)
         assertEquals(latest.copy(profile = latest.profile.copy(favorite = false)), actual)
     }
 
     @Test
-    fun usernamePatchPreservesLatestUnrelatedFields() {
+    fun usernameEditPreservesLatestUnrelatedFields() {
         val latest = loginEntry()
 
-        val actual = DetailEntryPatch.Username("latest-user").applyTo(latest)
+        val actual = DetailEntryEdit.SetSensitiveField(
+            FieldKey.USERNAME,
+            "latest-user",
+        ).applyRequired(latest)
 
         assertEquals("latest-user", actual.username)
         assertEquals(latest.copy(profile = latest.profile.copy(username = "latest-user")), actual)
     }
 
     @Test
-    fun loginPasswordPatchPreservesLatestCredentialFields() {
+    fun loginPasswordEditPreservesLatestCredentialFields() {
         val latest = loginEntry()
 
-        val actual = DetailEntryPatch.LoginPassword("new-password").applyTo(latest)
+        val actual = DetailEntryEdit.SetSensitiveField(
+            FieldKey.PASSWORD,
+            "new-password",
+        ).applyRequired(latest)
 
         assertEquals("new-password", actual.secret.login?.password)
         assertEquals("mail@example.com", actual.secret.login?.email)
@@ -61,11 +69,17 @@ class DetailEntryPatchTest {
     }
 
     @Test
-    fun cardPatchesPreserveOtherCardFields() {
+    fun cardEditsPreserveOtherCardFields() {
         val latest = cardEntry()
 
-        val withNumber = DetailEntryPatch.CardNumber("5555555555554444").applyTo(latest)
-        val withCvv = DetailEntryPatch.CardCvv("999").applyTo(latest)
+        val withNumber = DetailEntryEdit.SetSensitiveField(
+            FieldKey.CARD_NUMBER,
+            "5555555555554444",
+        ).applyRequired(latest)
+        val withCvv = DetailEntryEdit.SetSensitiveField(
+            FieldKey.CARD_CVV,
+            "999",
+        ).applyRequired(latest)
 
         assertEquals("5555555555554444", withNumber.secret.card?.cardNumber)
         assertEquals("123", withNumber.secret.card?.cardCvv)
@@ -76,10 +90,13 @@ class DetailEntryPatchTest {
     }
 
     @Test
-    fun wifiPasswordPatchPreservesWifiMetadata() {
+    fun wifiPasswordEditPreservesWifiMetadata() {
         val latest = wifiEntry()
 
-        val actual = DetailEntryPatch.WifiPassword("new-wifi-password").applyTo(latest)
+        val actual = DetailEntryEdit.SetSensitiveField(
+            FieldKey.PASSWORD,
+            "new-wifi-password",
+        ).applyRequired(latest)
 
         assertEquals("new-wifi-password", actual.secret.wifi?.password)
         assertEquals("WPA3", actual.secret.wifi?.securityType)
@@ -88,10 +105,13 @@ class DetailEntryPatchTest {
     }
 
     @Test
-    fun sshPassphrasePatchPreservesKeys() {
+    fun sshPassphraseEditPreservesKeys() {
         val latest = sshEntry()
 
-        val actual = DetailEntryPatch.SshPassphrase("new-passphrase").applyTo(latest)
+        val actual = DetailEntryEdit.SetSensitiveField(
+            FieldKey.SSH_PASSPHRASE,
+            "new-passphrase",
+        ).applyRequired(latest)
 
         assertEquals("new-passphrase", actual.secret.ssh?.passphrase)
         assertEquals("private", actual.secret.ssh?.privateKey)
@@ -100,10 +120,10 @@ class DetailEntryPatchTest {
     }
 
     @Test
-    fun notesPatchPreservesCredentialAndProfile() {
+    fun notesEditPreservesCredentialAndProfile() {
         val latest = loginEntry()
 
-        val actual = DetailEntryPatch.Notes("new notes").applyTo(latest)
+        val actual = DetailEntryEdit.SetNotes("new notes").applyRequired(latest)
 
         assertEquals("new notes", actual.secret.notes)
         assertEquals(latest.secret.credential, actual.secret.credential)
@@ -111,13 +131,15 @@ class DetailEntryPatchTest {
     }
 
     @Test
-    fun associationsPatchPreservesMatchDomains() {
+    fun associationEditsPreserveMatchDomains() {
         val latest = loginEntry()
 
-        val actual = DetailEntryPatch.Associations(
-            primaryUrl = "https://new.example.com",
-            applicationIds = setOf("com.example.new"),
-        ).applyTo(latest)
+        val withUrl = DetailEntryEdit.SetPrimaryUrl(
+            "https://new.example.com",
+        ).applyRequired(latest)
+        val actual = DetailEntryEdit.SetApplicationIds(
+            setOf("com.example.new"),
+        ).applyRequired(withUrl)
 
         assertEquals("https://new.example.com", actual.associations.primaryUrl)
         assertEquals(setOf("com.example.new"), actual.associations.applicationIds)
@@ -127,10 +149,10 @@ class DetailEntryPatchTest {
     }
 
     @Test
-    fun tagsPatchPreservesIconAndAssociations() {
+    fun tagsEditPreservesIconAndAssociations() {
         val latest = loginEntry()
 
-        val actual = DetailEntryPatch.Tags(linkedSetOf("Finance", "Work")).applyTo(latest)
+        val actual = DetailEntryEdit.SetTags(linkedSetOf("Finance", "Work")).applyRequired(latest)
 
         assertEquals(linkedSetOf("Finance", "Work"), actual.tags)
         assertEquals(latest.icon, actual.icon)
@@ -139,16 +161,26 @@ class DetailEntryPatchTest {
     }
 
     @Test
-    fun iconPatchPreservesDomainAndTags() {
+    fun iconEditPreservesDomainAndTags() {
         val latest = loginEntry()
         val icon = EntryIcon(name = "security.key", color = "primary")
 
-        val actual = DetailEntryPatch.Icon(icon).applyTo(latest)
+        val actual = DetailEntryEdit.SetIcon(icon).applyRequired(latest)
 
         assertEquals(icon, actual.icon)
         assertEquals(latest.associations, actual.associations)
         assertEquals(latest.tags, actual.tags)
         assertEquals(latest.secret, actual.secret)
+    }
+
+    @Test
+    fun unsupportedSensitiveFieldDoesNotProduceAnEntryUpdate() {
+        val actual = DetailEntryEdit.SetSensitiveField(
+            FieldKey.PAYMENT_PIN,
+            "1234",
+        ).applyTo(cardEntry())
+
+        assertNull(actual)
     }
 
     private fun loginEntry() = entry(
@@ -226,4 +258,7 @@ class DetailEntryPatchTest {
         ),
         secret = secret,
     )
+
+    private fun DetailEntryEdit.applyRequired(entry: Entry): Entry =
+        requireNotNull(applyTo(entry))
 }

@@ -7,17 +7,16 @@ import com.aozijx.passly.core.platform.media.FaviconCropRequest
 import com.aozijx.passly.core.platform.media.FaviconImageProcessor
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.feature.vault.detail.DetailEntryPatch
+import com.aozijx.passly.feature.vault.detail.DetailEntryEdit
+import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
 import com.aozijx.passly.feature.vault.detail.ExportOtpQrUseCase
 import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
-import com.aozijx.passly.feature.vault.detail.UpdateDetailEntryUseCase
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
@@ -41,7 +40,7 @@ class DetailViewModel @Inject internal constructor(
     private val accessPolicy: DetailAccessPolicy,
     private val exportOtpQr: ExportOtpQrUseCase,
     private val revealEntryFields: RevealEntryFieldsUseCase,
-    private val updateDetailEntry: UpdateDetailEntryUseCase,
+    private val editDetailEntry: EditDetailEntryUseCase,
     private val copyEntryFieldUseCase: CopyEntryFieldUseCase,
     private val copyOtpCodeUseCase: CopyOtpCodeUseCase,
     private val faviconImageProcessor: FaviconImageProcessor,
@@ -101,8 +100,8 @@ class DetailViewModel @Inject internal constructor(
                     mutate(DetailMutation.TitleEditingCancelled)
                 } else {
                     viewModelScope.launch {
-                        persistEntryPatch(
-                            patch = DetailEntryPatch.Title(newTitle),
+                        persistEntryEdit(
+                            edit = DetailEntryEdit.SetTitle(newTitle),
                             completion = DetailEditCompletion.Title,
                         )
                     }
@@ -110,10 +109,10 @@ class DetailViewModel @Inject internal constructor(
             }
 
             DetailUiAction.ToggleFavorite -> {
-                val current = _uiState.value.entry ?: return
+                if (_uiState.value.entry == null) return
                 viewModelScope.launch {
-                    persistEntryPatch(
-                        patch = DetailEntryPatch.Favorite(!current.favorite),
+                    persistEntryEdit(
+                        edit = DetailEntryEdit.ToggleFavorite,
                         completion = DetailEditCompletion.Favorite,
                     )
                 }
@@ -121,13 +120,10 @@ class DetailViewModel @Inject internal constructor(
 
             DetailUiAction.LoadPackagePickerApps -> loadPackagePickerApps()
             is DetailUiAction.SelectAssociatedPackage -> {
-                val entry = _uiState.value.entry ?: return
+                if (_uiState.value.entry == null) return
                 viewModelScope.launch {
-                    persistEntryPatch(
-                        DetailEntryPatch.Associations(
-                            primaryUrl = entry.associations.primaryUrl,
-                            applicationIds = setOf(event.packageName),
-                        ),
+                    persistEntryEdit(
+                        DetailEntryEdit.SetApplicationIds(setOf(event.packageName)),
                         DetailEditCompletion.Associations,
                     )
                 }
@@ -143,8 +139,8 @@ class DetailViewModel @Inject internal constructor(
             DetailUiAction.SaveNotes -> {
                 val notes = _uiState.value.fieldEdits.draft(DetailEditKey.NOTES)
                 viewModelScope.launch {
-                    persistEntryPatch(
-                        DetailEntryPatch.Notes(notes.ifBlank { null }),
+                    persistEntryEdit(
+                        DetailEntryEdit.SetNotes(notes.ifBlank { null }),
                         DetailEditCompletion.Notes,
                     )
                 }
@@ -160,14 +156,11 @@ class DetailViewModel @Inject internal constructor(
 
             DetailUiAction.SaveDomain -> {
                 val state = _uiState.value
-                val entry = state.entry ?: return
+                if (state.entry == null) return
                 val domain = state.fieldEdits.draft(DetailEditKey.DOMAIN)
                 viewModelScope.launch {
-                    persistEntryPatch(
-                        DetailEntryPatch.Associations(
-                            primaryUrl = domain.trim().ifBlank { null },
-                            applicationIds = entry.associations.applicationIds,
-                        ),
+                    persistEntryEdit(
+                        DetailEntryEdit.SetPrimaryUrl(domain.trim().ifBlank { null }),
                         DetailEditCompletion.Associations,
                     )
                 }
@@ -204,23 +197,12 @@ class DetailViewModel @Inject internal constructor(
             }
 
             is DetailUiAction.SaveField -> {
-                val current = _uiState.value.entry ?: return
+                if (_uiState.value.entry == null) return
                 viewModelScope.launch {
-                    val patch = when (event.key) {
-                        RevealedFieldKey.USERNAME,
-                        RevealedFieldKey.CARDHOLDER -> DetailEntryPatch.Username(event.newValue)
-                        RevealedFieldKey.PASSWORD -> when (current.type) {
-                            EntryType.WIFI -> DetailEntryPatch.WifiPassword(event.newValue)
-                            else -> DetailEntryPatch.LoginPassword(event.newValue)
-                        }
-                        RevealedFieldKey.CARD_NUMBER -> DetailEntryPatch.CardNumber(event.newValue)
-                        RevealedFieldKey.CVV -> DetailEntryPatch.CardCvv(event.newValue)
-                        RevealedFieldKey.SSH_PASSPHRASE ->
-                            DetailEntryPatch.SshPassphrase(event.newValue)
-                        else -> return@launch
-                    }
-                    persistEntryPatch(
-                        patch = patch,
+                    val fieldKey = DetailSensitiveFieldKeyMapper.toFieldKey(event.key)
+                        ?: return@launch
+                    persistEntryEdit(
+                        edit = DetailEntryEdit.SetSensitiveField(fieldKey, event.newValue),
                         completion = DetailEditCompletion.SensitiveField(event.key),
                     )
                 }
@@ -260,8 +242,8 @@ class DetailViewModel @Inject internal constructor(
                     )
                 ) {
                     is TagNormalizationResult.Valid -> viewModelScope.launch {
-                        persistEntryPatch(
-                            patch = DetailEntryPatch.Tags(normalized.tags),
+                        persistEntryEdit(
+                            edit = DetailEntryEdit.SetTags(normalized.tags),
                             completion = DetailEditCompletion.Tags,
                         )
                     }
@@ -465,23 +447,23 @@ class DetailViewModel @Inject internal constructor(
         mutate(DetailMutation.StateCleared)
     }
 
-    private suspend fun persistEntryPatch(
-        patch: DetailEntryPatch,
+    private suspend fun persistEntryEdit(
+        edit: DetailEntryEdit,
         completion: DetailEditCompletion,
     ) {
-        if (patch !is DetailEntryPatch.Tags && !accessPolicy.hasFullAccess()) return
+        if (edit !is DetailEntryEdit.SetTags && !accessPolicy.hasFullAccess()) return
         val entryId = _uiState.value.entry?.id ?: return
         if (_uiState.value.savingEdit != null) return
         mutate(DetailMutation.SaveStarted(completion))
-        persistStartedEntryPatch(entryId, patch, completion)
+        persistStartedEntryEdit(entryId, edit, completion)
     }
 
-    private suspend fun persistStartedEntryPatch(
+    private suspend fun persistStartedEntryEdit(
         entryId: EntryId,
-        patch: DetailEntryPatch,
+        edit: DetailEntryEdit,
         completion: DetailEditCompletion,
     ) {
-        when (val result = updateDetailEntry.update(entryId, patch)) {
+        when (val result = editDetailEntry.edit(entryId, edit)) {
             is AppResult.Success -> {
                 val latest = result.data
                 val keepTitleEditing = completion != DetailEditCompletion.Title &&
@@ -494,10 +476,11 @@ class DetailViewModel @Inject internal constructor(
                 if (completion == DetailEditCompletion.Associations) {
                     loadAssociatedApps(latest)
                 }
-                if (completion is DetailEditCompletion.SensitiveField) {
-                    patch.revealedValueOrNull()?.let { value ->
-                        setRevealedField(completion.key, OwnedChars.fromString(value))
-                    }
+                if (
+                    completion is DetailEditCompletion.SensitiveField &&
+                    edit is DetailEntryEdit.SetSensitiveField
+                ) {
+                    setRevealedField(completion.key, OwnedChars.fromString(edit.value))
                 }
                 mutate(DetailMutation.SaveSucceeded(completion))
             }
@@ -541,9 +524,9 @@ class DetailViewModel @Inject internal constructor(
             } else {
                 source
             }
-            persistStartedEntryPatch(
+            persistStartedEntryEdit(
                 entryId = entryId,
-                patch = DetailEntryPatch.Icon(persistedSource.toEntryIcon()),
+                edit = DetailEntryEdit.SetIcon(persistedSource.toEntryIcon()),
                 completion = DetailEditCompletion.Icon,
             )
         }
@@ -622,14 +605,4 @@ class DetailViewModel @Inject internal constructor(
         )
     }
 
-}
-
-private fun DetailEntryPatch.revealedValueOrNull(): String? = when (this) {
-    is DetailEntryPatch.Username -> value
-    is DetailEntryPatch.LoginPassword -> value
-    is DetailEntryPatch.CardNumber -> value
-    is DetailEntryPatch.CardCvv -> value
-    is DetailEntryPatch.WifiPassword -> value
-    is DetailEntryPatch.SshPassphrase -> value
-    else -> null
 }
