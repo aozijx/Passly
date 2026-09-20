@@ -41,8 +41,7 @@ class AppPackagePickerBoundaryTest {
         assertFalse(associations.contains("rememberAppMetadata"))
         assertTrue(detailContent.contains("model.associatedApps"))
         assertTrue(detailContent.contains("model.packagePickerApps"))
-        assertTrue(detailContent.contains("DetailContentEvent.OpenPackagePicker"))
-        assertFalse(detailContent.contains("DetailUiAction"))
+        assertTrue(detailContent.contains("DetailUiAction.LoadPackagePickerApps"))
     }
 
     private fun source(relativePath: String): String {

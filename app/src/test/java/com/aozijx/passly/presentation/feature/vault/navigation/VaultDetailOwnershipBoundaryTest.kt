@@ -130,11 +130,33 @@ class VaultDetailOwnershipBoundaryTest {
         assertTrue(viewModel.contains("private val editDetailEntry: EditDetailEntryUseCase"))
         assertTrue(viewModel.contains("private val entryTagQuery: EntryTagQuery"))
     }
+
+    @Test
+    fun `detail passive ui emits feature actions without a route bridge`() {
+        val detailRoot = "com/aozijx/passly/presentation/feature/vault/detail/"
+        val content = source("${detailRoot}ui/DetailContent.kt")
+        val overlays = source("${detailRoot}ui/DetailEditorOverlays.kt")
+        val models = source("${detailRoot}ui/model/DetailPresentationModels.kt")
+        val bridge = sourceFile("${detailRoot}DetailPresentationEvents.kt")
+
+        assertFalse("Detail Route still needs a presentation event bridge", bridge.exists())
+        assertFalse(models.contains("sealed interface DetailContentEvent"))
+        assertFalse(models.contains("sealed interface DetailEditorOverlayEvent"))
+        assertTrue(content.contains("onAction: (DetailUiAction) -> Unit"))
+        assertTrue(content.contains("onOpenRelatedEntry: (String) -> Unit"))
+        assertTrue(overlays.contains("onAction: (DetailUiAction) -> Unit"))
+        assertTrue(overlays.contains("onUploadFavicon: () -> Unit"))
+    }
+
     private fun source(relativePath: String): String {
+        return sourceFile(relativePath).readText()
+    }
+
+    private fun sourceFile(relativePath: String): File {
         val sourceRoot = listOf(
             File("src/main/java"),
             File("app/src/main/java"),
         ).firstOrNull(File::isDirectory) ?: error("Cannot locate app source root")
-        return File(sourceRoot, relativePath).readText()
+        return File(sourceRoot, relativePath)
     }
 }

@@ -1,8 +1,9 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
 import android.net.Uri
-import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFieldUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconDraftSourceUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconEditorTabUiModel
 
 sealed interface DetailUiAction {
 
@@ -21,12 +22,12 @@ sealed interface DetailUiAction {
     data object LoadPackagePickerApps : DetailEntryAction
     data class SelectAssociatedPackage(val packageName: String) : DetailEntryAction
 
-    data class StartFieldEdit(val key: String, val initialValue: String) : DetailSensitiveAction
-    data class UpdateFieldDraft(val key: String, val value: String) : DetailSensitiveAction
-    data class CancelFieldEdit(val key: String) : DetailSensitiveAction
-    data class ToggleFieldVisibility(val key: String) : DetailSensitiveAction
-    data class RevealFields(val keys: Set<String>) : DetailSensitiveAction
-    data class SaveField(val key: String, val newValue: String) : DetailSensitiveAction
+    data class StartFieldEdit(val field: DetailFieldUiModel, val initialValue: String) : DetailSensitiveAction
+    data class UpdateFieldDraft(val field: DetailFieldUiModel, val value: String) : DetailSensitiveAction
+    data class CancelFieldEdit(val field: DetailFieldUiModel) : DetailSensitiveAction
+    data class ToggleFieldVisibility(val field: DetailFieldUiModel) : DetailSensitiveAction
+    data class RevealFields(val fields: Set<DetailFieldUiModel>) : DetailSensitiveAction
+    data class SaveField(val field: DetailFieldUiModel, val newValue: String) : DetailSensitiveAction
     data object OpenTagEditor : DetailTagAction
     data class UpdateTagInput(val value: String) : DetailTagAction
     data class SubmitTag(val value: String) : DetailTagAction
@@ -36,8 +37,8 @@ sealed interface DetailUiAction {
     data object ConfirmDiscardTags : DetailTagAction
     data object KeepEditingTags : DetailTagAction
     data object OpenFaviconEditor : DetailFaviconAction
-    data class SelectFaviconSource(val source: DetailFaviconSource) : DetailFaviconAction
-    data class SelectFaviconTab(val tab: DetailFaviconTab) : DetailFaviconAction
+    data class SelectFaviconSource(val source: FaviconDraftSourceUiModel) : DetailFaviconAction
+    data class SelectFaviconTab(val tab: FaviconEditorTabUiModel) : DetailFaviconAction
     data class UpdateFaviconSearch(val value: String) : DetailFaviconAction
     data class UpdateFaviconImageUrl(val value: String) : DetailFaviconAction
     data class PickedFaviconImage(val uri: Uri) : DetailFaviconAction
@@ -53,7 +54,7 @@ sealed interface DetailUiAction {
     data object DismissFaviconEditor : DetailFaviconAction
     data object ConfirmDiscardFavicon : DetailFaviconAction
     data object KeepEditingFavicon : DetailFaviconAction
-    data class CopyField(val fieldKey: FieldKey) : DetailSensitiveAction
+    data class CopyField(val field: DetailFieldUiModel) : DetailSensitiveAction
     data object CopyOtpCode : DetailSensitiveAction
     data object ExportOtpQr : DetailSensitiveAction
     data class ToggleAccessHistoryRecording(val enabled: Boolean) : DetailSensitiveAction

@@ -20,8 +20,7 @@ import com.aozijx.passly.presentation.ui.shared.media.rememberImagePicker
 import com.aozijx.passly.presentation.feature.vault.detail.ui.DetailContent
 import com.aozijx.passly.presentation.feature.vault.detail.ui.DetailEditorOverlays
 import com.aozijx.passly.presentation.feature.vault.detail.ui.DetailScreen
-import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailContentEvent
-import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailEditorOverlayEvent
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFieldUiModel
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -77,11 +76,11 @@ fun DetailRoute(
         if (launchMode == DetailLaunchMode.VIEW) return@LaunchedEffect
         if (entry.username.isNotEmpty()) {
             viewModel.onAction(
-                DetailUiAction.StartFieldEdit(RevealedFieldKey.USERNAME, entry.username),
+                DetailUiAction.StartFieldEdit(DetailFieldUiModel.USERNAME, entry.username),
             )
         } else if (SensitiveFieldKey.PASSWORD in uiState.sensitiveFieldKeys) {
             viewModel.onAction(
-                DetailUiAction.StartFieldEdit(RevealedFieldKey.PASSWORD, ""),
+                DetailUiAction.StartFieldEdit(DetailFieldUiModel.PASSWORD, ""),
             )
         }
     }
@@ -97,13 +96,8 @@ fun DetailRoute(
         DetailContent(
             model = presentation.content,
             otpQrUri = otpQrUri,
-            onEvent = { event ->
-                if (event is DetailContentEvent.OpenRelatedEntry) {
-                    onOpenRelatedEntry(event.id)
-                } else {
-                    event.toDetailUiAction()?.let(viewModel::onAction)
-                }
-            },
+            onAction = viewModel::onAction,
+            onOpenRelatedEntry = onOpenRelatedEntry,
             onOtpQrDismiss = { otpQrUri = null },
             modifier = modifier,
         )
@@ -111,12 +105,7 @@ fun DetailRoute(
 
     DetailEditorOverlays(
         model = presentation.overlays,
-        onEvent = { event ->
-            if (event == DetailEditorOverlayEvent.UploadFavicon) {
-                pickFaviconImage(ImageType.SCREEN)
-            } else {
-                event.toDetailUiAction()?.let(viewModel::onAction)
-            }
-        },
+        onAction = viewModel::onAction,
+        onUploadFavicon = { pickFaviconImage(ImageType.SCREEN) },
     )
 }

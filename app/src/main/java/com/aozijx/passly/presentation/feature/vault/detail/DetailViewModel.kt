@@ -161,28 +161,35 @@ class DetailViewModel @Inject internal constructor(
                 }
             }
             is DetailUiAction.StartFieldEdit ->
-                mutate(DetailMutation.FieldEditingStarted(event.key, event.initialValue))
+                event.field.revealedKey?.let {
+                    mutate(DetailMutation.FieldEditingStarted(it, event.initialValue))
+                }
 
             is DetailUiAction.UpdateFieldDraft ->
-                mutate(DetailMutation.FieldDraftChanged(event.key, event.value))
+                event.field.revealedKey?.let {
+                    mutate(DetailMutation.FieldDraftChanged(it, event.value))
+                }
 
             is DetailUiAction.CancelFieldEdit ->
-                mutate(DetailMutation.FieldEditingCancelled(event.key))
+                event.field.revealedKey?.let {
+                    mutate(DetailMutation.FieldEditingCancelled(it))
+                }
 
             is DetailUiAction.ToggleFieldVisibility -> {
                 val current = _uiState.value.entry ?: return
-                if (_uiState.value.revealed(event.key) != null) {
-                    setRevealedField(event.key, null)
+                val key = event.field.revealedKey ?: return
+                if (_uiState.value.revealed(key) != null) {
+                    setRevealedField(key, null)
                 } else {
                     viewModelScope.launch {
-                        revealFields(current, setOf(event.key))
+                        revealFields(current, setOf(key))
                     }
                 }
             }
 
             is DetailUiAction.RevealFields -> {
                 val current = _uiState.value.entry ?: return
-                val hiddenKeys = event.keys.filterTo(linkedSetOf()) {
+                val hiddenKeys = event.fields.mapNotNullTo(linkedSetOf()) { it.revealedKey }.filterTo(linkedSetOf()) {
                     _uiState.value.revealed(it) == null
                 }
                 if (hiddenKeys.isEmpty()) return
@@ -194,11 +201,12 @@ class DetailViewModel @Inject internal constructor(
             is DetailUiAction.SaveField -> {
                 if (_uiState.value.entry == null) return
                 viewModelScope.launch {
-                    val fieldKey = DetailSensitiveFieldKeyMapper.toFieldKey(event.key)
+                    val revealedKey = event.field.revealedKey ?: return@launch
+                    val fieldKey = DetailSensitiveFieldKeyMapper.toFieldKey(revealedKey)
                         ?: return@launch
                     persistEntryEdit(
                         edit = DetailEntryEdit.SetSensitiveField(fieldKey, event.newValue),
-                        completion = DetailEditCompletion.SensitiveField(event.key),
+                        completion = DetailEditCompletion.SensitiveField(revealedKey),
                     )
                 }
             }
@@ -262,12 +270,13 @@ class DetailViewModel @Inject internal constructor(
             }
 
             is DetailUiAction.SelectFaviconSource -> {
-                faviconSession.discardReplacedSource(_uiState.value.faviconEditor, event.source)
-                mutate(DetailMutation.FaviconSourceChanged(event.source))
+                val source = event.source.toDetailFaviconSource()
+                faviconSession.discardReplacedSource(_uiState.value.faviconEditor, source)
+                mutate(DetailMutation.FaviconSourceChanged(source))
             }
 
             is DetailUiAction.SelectFaviconTab ->
-                mutate(DetailMutation.FaviconTabChanged(event.tab))
+                mutate(DetailMutation.FaviconTabChanged(event.tab.toDetailFaviconTab()))
 
             is DetailUiAction.UpdateFaviconSearch ->
                 mutate(DetailMutation.FaviconSearchChanged(event.value))
@@ -326,7 +335,7 @@ class DetailViewModel @Inject internal constructor(
             DetailUiAction.KeepEditingFavicon ->
                 mutate(DetailMutation.FaviconEditorDiscardCancelled)
 
-            is DetailUiAction.CopyField -> copyField(event.fieldKey)
+            is DetailUiAction.CopyField -> event.field.copyKey?.let(::copyField)
             DetailUiAction.CopyOtpCode -> copyOtpCode()
             DetailUiAction.ExportOtpQr -> {
                 val entry = _uiState.value.entry ?: return

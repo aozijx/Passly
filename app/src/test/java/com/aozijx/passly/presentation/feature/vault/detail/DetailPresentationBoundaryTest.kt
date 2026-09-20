@@ -21,8 +21,9 @@ class DetailPresentationBoundaryTest {
         listOf(content, overlays).forEach { file ->
             val source = file.readText()
             assertFalse(source.contains("DetailUiState"))
-            assertFalse(source.contains("DetailUiAction"))
             assertFalse(source.contains("rememberImagePicker"))
+            assertFalse(source.contains("DetailViewModel"))
+            assertTrue(source.contains("onAction: (DetailUiAction) -> Unit"))
         }
     }
 
