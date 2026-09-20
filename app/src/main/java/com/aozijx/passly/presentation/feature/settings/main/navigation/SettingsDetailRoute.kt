@@ -15,7 +15,7 @@ import com.aozijx.passly.presentation.feature.settings.main.navigation.interacti
 import com.aozijx.passly.presentation.ui.settings.main.SettingsDetailPlaceholder
 
 @Composable
-internal fun SettingsDetailRouteRegistry(
+internal fun SettingsDetailRoute(
     route: SettingsDestination?,
     onOpenTrash: () -> Unit,
     onBack: (() -> Unit)?,
