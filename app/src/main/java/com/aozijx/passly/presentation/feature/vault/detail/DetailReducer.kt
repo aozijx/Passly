@@ -1,12 +1,8 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
-import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
-import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 
 internal sealed interface DetailTagEditorMutation : DetailMutation
 
@@ -15,13 +11,11 @@ internal sealed interface DetailFaviconEditorMutation : DetailMutation
 internal sealed interface DetailMutation {
     data object StateCleared : DetailMutation
     data class AccessHistoryChanged(val enabled: Boolean) : DetailMutation
+    data class SessionOpened(
+        val snapshot: DetailSessionSnapshot,
+    ) : DetailMutation
     data class EntryPresented(
-        val entry: Entry,
-        val entryType: EntryType,
-        val strategySummary: String,
-        val validationError: String?,
-        val strategyReady: Boolean,
-        val sections: List<DetailSectionKey>,
+        val presentation: DetailEntryPresentation,
         val isEditingTitle: Boolean,
         val editedTitle: String,
     ) : DetailMutation
@@ -34,16 +28,7 @@ internal sealed interface DetailMutation {
     data class FieldEditingCancelled(val key: String) : DetailMutation
     data class RevealedFieldChanged(val key: String, val value: SensitiveValue?) : DetailMutation
     data object RevealedFieldsCleared : DetailMutation
-    data class SensitiveFieldPresenceChanged(
-        val entryId: EntryId,
-        val keys: Set<SensitiveFieldKey>,
-    ) : DetailMutation
     data class HistoryChanged(val entryId: EntryId, val history: List<EntryActivity>) : DetailMutation
-    data class RelatedEntriesChanged(val entryId: EntryId, val entries: List<Entry>) : DetailMutation
-    data class AssociatedAppsChanged(
-        val entryId: EntryId,
-        val apps: List<DetailInstalledApp>,
-    ) : DetailMutation
     data class PackagePickerAppsChanged(
         val entryId: EntryId,
         val apps: List<DetailInstalledApp>,
@@ -88,16 +73,39 @@ internal object DetailReducer {
             is DetailMutation.AccessHistoryChanged ->
                 state.copy(isAccessHistoryEnabled = mutation.enabled)
 
-            is DetailMutation.EntryPresented -> state.copy(
-                entry = mutation.entry,
-                entryType = mutation.entryType,
-                strategySummary = mutation.strategySummary,
-                validationError = mutation.validationError,
-                strategyReady = mutation.strategyReady,
-                sections = mutation.sections,
+            is DetailMutation.SessionOpened -> mutation.snapshot.let { snapshot ->
+                val presentation = snapshot.presentation
+                val analysis = presentation.analysis
+                state.copy(
+                    entry = presentation.entry,
+                    entryType = analysis.entryType,
+                    strategySummary = analysis.strategySummary,
+                    validationError = analysis.validationError,
+                    strategyReady = analysis.strategyReady,
+                    sections = analysis.sections,
+                    associatedApps = presentation.associatedApps,
+                    sensitiveFieldKeys = presentation.sensitiveFieldKeys,
+                    relatedEntries = snapshot.relatedEntries,
+                    isEditingTitle = false,
+                    editedTitle = presentation.entry.title,
+                )
+            }
+
+            is DetailMutation.EntryPresented -> mutation.presentation.let { presentation ->
+                val analysis = presentation.analysis
+                state.copy(
+                entry = presentation.entry,
+                entryType = analysis.entryType,
+                strategySummary = analysis.strategySummary,
+                validationError = analysis.validationError,
+                strategyReady = analysis.strategyReady,
+                sections = analysis.sections,
+                associatedApps = presentation.associatedApps,
+                sensitiveFieldKeys = presentation.sensitiveFieldKeys,
                 isEditingTitle = mutation.isEditingTitle,
                 editedTitle = mutation.editedTitle,
-            )
+                )
+            }
 
             DetailMutation.TitleEditingStarted -> state.copy(
                 isEditingTitle = true,
@@ -128,24 +136,8 @@ internal object DetailReducer {
             )
 
             DetailMutation.RevealedFieldsCleared -> state.copy(revealedFields = emptyMap())
-            is DetailMutation.SensitiveFieldPresenceChanged -> if (state.entry?.id == mutation.entryId) {
-                state.copy(sensitiveFieldKeys = mutation.keys)
-            } else {
-                state
-            }
-
             is DetailMutation.HistoryChanged -> if (state.entry?.id == mutation.entryId) {
                 state.copy(history = mutation.history)
-            } else {
-                state
-            }
-            is DetailMutation.RelatedEntriesChanged -> if (state.entry?.id == mutation.entryId) {
-                state.copy(relatedEntries = mutation.entries)
-            } else {
-                state
-            }
-            is DetailMutation.AssociatedAppsChanged -> if (state.entry?.id == mutation.entryId) {
-                state.copy(associatedApps = mutation.apps)
             } else {
                 state
             }

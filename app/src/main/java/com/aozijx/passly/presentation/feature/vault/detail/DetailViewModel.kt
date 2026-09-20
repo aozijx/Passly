@@ -8,7 +8,6 @@ import com.aozijx.passly.core.platform.media.FaviconImageProcessor
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.sensitive.OwnedChars
@@ -36,7 +35,6 @@ import javax.inject.Inject
 class DetailViewModel @Inject internal constructor(
     private val entryTagQuery: EntryTagQuery,
     private val activityQueryRepository: ActivityQueryRepository,
-    private val entryTypePolicy: EntryTypePolicy,
     private val accessPolicy: DetailAccessPolicy,
     private val exportOtpQr: ExportOtpQrUseCase,
     private val revealEntryFields: RevealEntryFieldsUseCase,
@@ -44,12 +42,9 @@ class DetailViewModel @Inject internal constructor(
     private val copyEntryFieldUseCase: CopyEntryFieldUseCase,
     private val copyOtpCodeUseCase: CopyOtpCodeUseCase,
     private val faviconImageProcessor: FaviconImageProcessor,
-    private val entryLoader: DetailEntryLoader,
-    private val installedAppLoader: DetailInstalledAppLoader,
-    private val relatedEntryLoader: DetailRelatedEntryLoader,
+    private val sessionLoader: DetailSessionLoader,
     otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
 ) : ViewModel() {
-    private val entryAnalyzer = DetailEntryAnalyzer(entryTypePolicy)
     private val revealStore = DetailRevealStore()
     private val faviconSession = DetailFaviconSession(faviconImageProcessor, viewModelScope)
     private val otpRuntime = otpCodeRuntimeFactory.create(viewModelScope)
@@ -389,17 +384,9 @@ class DetailViewModel @Inject internal constructor(
         mutate(DetailMutation.StateCleared)
         entryLoadJob = viewModelScope.launch {
             if (!accessPolicy.hasFullAccess()) return@launch
-            val snapshot = entryLoader.load(entryId) ?: return@launch
-            val latest = snapshot.entry
-            refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
-            loadAssociatedApps(latest)
-            mutate(
-                DetailMutation.SensitiveFieldPresenceChanged(
-                    latest.id,
-                    snapshot.sensitiveFieldKeys,
-                )
-            )
-            loadRelatedEntries(latest)
+            val snapshot = sessionLoader.open(entryId) ?: return@launch
+            val latest = snapshot.presentation.entry
+            mutate(DetailMutation.SessionOpened(snapshot))
             if (latest.secret.otp != null) otpRuntime.autoUnlock(entryId.value)
         }
         historyJob = viewModelScope.launch {
@@ -409,15 +396,6 @@ class DetailViewModel @Inject internal constructor(
                     mutate(DetailMutation.HistoryChanged(entryId, history))
                 }
         }
-    }
-
-    private fun refreshKeepingTitleEdit(entry: Entry) {
-        val isEditing = _uiState.value.isEditingTitle
-        refreshFromEntry(
-            entry,
-            isEditingTitle = isEditing,
-            editedTitle = if (isEditing) _uiState.value.editedTitle else entry.title
-        )
     }
 
     private fun setRevealedField(key: String, value: SensitiveValue?) {
@@ -468,14 +446,13 @@ class DetailViewModel @Inject internal constructor(
                 val latest = result.data
                 val keepTitleEditing = completion != DetailEditCompletion.Title &&
                         _uiState.value.isEditingTitle
-                refreshFromEntry(
-                    latest,
-                    isEditingTitle = keepTitleEditing,
-                    editedTitle = if (keepTitleEditing) _uiState.value.editedTitle else latest.title,
+                mutate(
+                    DetailMutation.EntryPresented(
+                        presentation = sessionLoader.present(latest),
+                        isEditingTitle = keepTitleEditing,
+                        editedTitle = if (keepTitleEditing) _uiState.value.editedTitle else latest.title,
+                    ),
                 )
-                if (completion == DetailEditCompletion.Associations) {
-                    loadAssociatedApps(latest)
-                }
                 if (
                     completion is DetailEditCompletion.SensitiveField &&
                     edit is DetailEntryEdit.SetSensitiveField
@@ -532,40 +509,14 @@ class DetailViewModel @Inject internal constructor(
         }
     }
 
-    private suspend fun loadAssociatedApps(entry: Entry) {
-        val apps = installedAppLoader.associatedWith(entry)
-        mutate(DetailMutation.AssociatedAppsChanged(entry.id, apps))
-    }
-
     private fun loadPackagePickerApps() {
         val state = _uiState.value
         val entryId = state.entry?.id ?: return
         if (state.packagePickerAppsLoaded || packagePickerLoadJob?.isActive == true) return
         packagePickerLoadJob = viewModelScope.launch {
-            val apps = installedAppLoader.launchable()
+            val apps = sessionLoader.launchableApps()
             mutate(DetailMutation.PackagePickerAppsChanged(entryId, apps))
         }
-    }
-    private suspend fun loadRelatedEntries(entry: Entry) {
-        val related = relatedEntryLoader.loadFor(entry)
-        mutate(DetailMutation.RelatedEntriesChanged(entry.id, related))
-    }
-
-    private fun refreshFromEntry(entry: Entry, isEditingTitle: Boolean, editedTitle: String) {
-        val analysis = entryAnalyzer.analyze(entry)
-
-        mutate(
-            DetailMutation.EntryPresented(
-                entry = entry,
-                entryType = analysis.entryType,
-                strategySummary = analysis.strategySummary,
-                validationError = analysis.validationError,
-                sections = analysis.sections,
-                isEditingTitle = isEditingTitle,
-                editedTitle = editedTitle,
-                strategyReady = analysis.strategyReady,
-            )
-        )
     }
 
     private fun mutate(mutation: DetailMutation) {

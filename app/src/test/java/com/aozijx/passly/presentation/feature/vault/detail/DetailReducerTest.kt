@@ -117,12 +117,10 @@ class DetailReducerTest {
             val presented = DetailReducer.reduce(
                 state,
                 DetailMutation.EntryPresented(
-                    entry = entry("Updated"),
-                    entryType = EntryType.LOGIN,
-                    strategySummary = "ready",
-                    validationError = null,
-                    strategyReady = true,
-                    sections = listOf(DetailSectionKey.CREDENTIAL, DetailSectionKey.NOTES),
+                    presentation = presentation(
+                        entry = entry("Updated"),
+                        associatedApps = emptyList(),
+                    ),
                     isEditingTitle = false,
                     editedTitle = "Updated",
                 ),
@@ -157,24 +155,6 @@ class DetailReducerTest {
     }
 
     @Test
-    fun `late detail load result cannot update a different entry`() {
-        val state = DetailUiState(
-            entry = entry("Current"),
-            sensitiveFieldKeys = setOf(SensitiveFieldKey.PASSWORD),
-        )
-
-        val actual = DetailReducer.reduce(
-            state,
-            DetailMutation.SensitiveFieldPresenceChanged(
-                entryId = EntryId("stale-entry"),
-                keys = emptySet(),
-            ),
-        )
-
-        assertEquals(state, actual)
-    }
-
-    @Test
     fun `application metadata updates only the currently presented entry`() {
         val item = DetailInstalledApp(
             label = "Browser",
@@ -184,7 +164,11 @@ class DetailReducerTest {
 
         val associated = DetailReducer.reduce(
             state,
-            DetailMutation.AssociatedAppsChanged(EntryId("entry-1"), listOf(item)),
+            DetailMutation.EntryPresented(
+                presentation = presentation(state.entry!!, listOf(item)),
+                isEditingTitle = false,
+                editedTitle = state.entry.title,
+            ),
         )
         val stalePicker = DetailReducer.reduce(
             associated,
@@ -195,6 +179,22 @@ class DetailReducerTest {
         assertEquals(emptyList<Any>(), stalePicker.packagePickerApps)
         assertFalse(stalePicker.packagePickerAppsLoaded)
     }
+
+    private fun presentation(
+        entry: Entry,
+        associatedApps: List<DetailInstalledApp>,
+    ) = DetailEntryPresentation(
+        entry = entry,
+        analysis = DetailEntryAnalysis(
+            entryType = EntryType.LOGIN,
+            strategySummary = "ready",
+            validationError = null,
+            strategyReady = true,
+            sections = listOf(DetailSectionKey.CREDENTIAL, DetailSectionKey.NOTES),
+        ),
+        associatedApps = associatedApps,
+        sensitiveFieldKeys = emptySet(),
+    )
 
     @Test
     fun `package picker metadata marks the current entry load complete`() {

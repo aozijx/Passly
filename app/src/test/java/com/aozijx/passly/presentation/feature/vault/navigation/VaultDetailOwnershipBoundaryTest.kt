@@ -85,8 +85,8 @@ class VaultDetailOwnershipBoundaryTest {
         val viewModel = source(
             "com/aozijx/passly/presentation/feature/vault/detail/DetailViewModel.kt",
         )
-        val entryLoader = source(
-            "com/aozijx/passly/presentation/feature/vault/detail/DetailEntryLoader.kt",
+        val sessionLoader = source(
+            "com/aozijx/passly/presentation/feature/vault/detail/DetailSessionLoader.kt",
         )
 
         val signature = route.substringAfter("fun DetailRoute(").substringBefore(") {")
@@ -95,8 +95,8 @@ class VaultDetailOwnershipBoundaryTest {
         assertFalse(signature.contains("(Entry) -> Unit"))
         assertFalse(route.contains("initialEntry"))
         assertFalse(route.contains("onAutoUnlockTotp"))
-        assertTrue(viewModel.contains("entryLoader.load(entryId)"))
-        assertTrue(entryLoader.contains("entryQueryRepository.getById(entryId)"))
+        assertTrue(viewModel.contains("sessionLoader.open(entryId)"))
+        assertTrue(sessionLoader.contains("entryQueryRepository.getById(entryId)"))
     }
 
     @Test
@@ -126,7 +126,7 @@ class VaultDetailOwnershipBoundaryTest {
         assertFalse(viewModel.contains("ActivityRecorder"))
         assertFalse(viewModel.contains("EntryQueryRepository"))
         assertFalse(viewModel.contains("userConfigExtras"))
-        assertTrue(viewModel.contains("private val entryLoader: DetailEntryLoader"))
+        assertTrue(viewModel.contains("private val sessionLoader: DetailSessionLoader"))
         assertTrue(viewModel.contains("private val editDetailEntry: EditDetailEntryUseCase"))
         assertTrue(viewModel.contains("private val entryTagQuery: EntryTagQuery"))
     }
