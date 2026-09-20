@@ -39,7 +39,6 @@ enum class CredentialFieldUiModel {
 
 data class CredentialFieldUiState(
     val visible: Boolean,
-    val label: String,
     val revealedValue: ScopedSensitiveText?,
     val isEditing: Boolean,
     val editedValue: String,

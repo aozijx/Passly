@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.CredentialFieldUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.CredentialFieldUiState
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.CredentialSectionEventHandler
@@ -39,7 +41,12 @@ private fun CredentialField(
 
     val revealedValue = state.revealedValue?.useChars(::String)
     SensitiveFieldCard(
-        title = state.label,
+        title = stringResource(
+            when (field) {
+                CredentialFieldUiModel.USERNAME -> R.string.field_username
+                CredentialFieldUiModel.PASSWORD -> R.string.password_label
+            },
+        ),
         isEditing = state.isEditing,
         editedValue = state.editedValue,
         revealedValue = revealedValue,

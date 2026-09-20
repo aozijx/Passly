@@ -8,6 +8,7 @@ import com.aozijx.passly.core.platform.media.FaviconImageProcessor
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.sensitive.OwnedChars
@@ -21,13 +22,17 @@ import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailPresentationModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -59,6 +64,13 @@ class DetailViewModel @Inject internal constructor(
     val effects = _effects.receiveAsFlow()
     private val _otpState = MutableStateFlow<OtpCodeState?>(null)
     val otpState: StateFlow<OtpCodeState?> = _otpState.asStateFlow()
+    val presentation: StateFlow<DetailPresentationModel?> = combine(_uiState, _otpState) { state, otp ->
+        toDetailPresentationModel(state, otp)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = null,
+    )
 
     init {
         viewModelScope.launch {
@@ -380,7 +392,7 @@ class DetailViewModel @Inject internal constructor(
         mutate(DetailMutation.RevealedFieldsCleared)
     }
 
-    fun load(rawEntryId: String) {
+    fun load(rawEntryId: String, launchMode: DetailLaunchMode = DetailLaunchMode.VIEW) {
         val entryId = EntryId(rawEntryId)
         if (loadedEntryId == entryId && _uiState.value.entry != null) return
         loadedEntryId = entryId
@@ -396,6 +408,16 @@ class DetailViewModel @Inject internal constructor(
             val snapshot = sessionLoader.open(entryId) ?: return@launch
             val latest = snapshot.presentation.entry
             mutate(DetailMutation.SessionOpened(snapshot))
+            if (launchMode != DetailLaunchMode.VIEW) {
+                when {
+                    latest.username.isNotEmpty() -> mutate(
+                        DetailMutation.FieldEditingStarted(RevealedFieldKey.USERNAME, latest.username),
+                    )
+                    SensitiveFieldKey.PASSWORD in snapshot.presentation.sensitiveFieldKeys -> mutate(
+                        DetailMutation.FieldEditingStarted(RevealedFieldKey.PASSWORD, ""),
+                    )
+                }
+            }
             if (latest.secret.otp != null) otpRuntime.autoUnlock(entryId.value)
         }
         historyJob = viewModelScope.launch {

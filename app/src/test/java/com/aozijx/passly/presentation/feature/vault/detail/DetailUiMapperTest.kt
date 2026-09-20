@@ -109,7 +109,7 @@ class DetailUiMapperTest {
         )
 
         val presentation = requireNotNull(
-            toDetailPresentationModel(state, null, "Username", "Password"),
+            toDetailPresentationModel(state, null),
         )
 
         assertTrue(presentation.content.notes.isEditing)

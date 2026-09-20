@@ -13,14 +13,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.presentation.feature.vault.list.action.CopyFieldLabelProvider
 import com.aozijx.passly.presentation.ui.shared.media.ImageType
 import com.aozijx.passly.presentation.ui.shared.media.rememberImagePicker
 import com.aozijx.passly.presentation.feature.vault.detail.ui.DetailContent
 import com.aozijx.passly.presentation.feature.vault.detail.ui.DetailEditorOverlays
 import com.aozijx.passly.presentation.feature.vault.detail.ui.DetailScreen
-import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFieldUiModel
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -32,19 +30,16 @@ fun DetailRoute(
     viewModel: DetailViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val otpUiState by viewModel.otpState.collectAsStateWithLifecycle()
+    val presentationState by viewModel.presentation.collectAsStateWithLifecycle()
     val copiedMessageFormat = stringResource(R.string.field_copy_success_message)
     val otpLabel = stringResource(R.string.vault_detail_totp_label)
-    val usernameLabel = stringResource(R.string.field_username)
-    val passwordLabel = stringResource(R.string.password_label)
     var otpQrUri by remember(entryId) { mutableStateOf<String?>(null) }
     val pickFaviconImage = rememberImagePicker { uri, _ ->
         viewModel.onAction(DetailUiAction.PickedFaviconImage(uri))
     }
 
     LaunchedEffect(entryId, viewModel) {
-        viewModel.load(entryId)
+        viewModel.load(entryId, launchMode)
     }
     LaunchedEffect(viewModel, context, copiedMessageFormat, otpLabel) {
         viewModel.effects.collectLatest { effect ->
@@ -67,23 +62,7 @@ fun DetailRoute(
         onDispose { viewModel.onAction(DetailUiAction.ClearSensitiveState) }
     }
 
-    val entry = uiState.entry ?: return
-    val presentation = remember(uiState, otpUiState, usernameLabel, passwordLabel) {
-        toDetailPresentationModel(uiState, otpUiState, usernameLabel, passwordLabel)
-    } ?: return
-
-    LaunchedEffect(entry.id, launchMode) {
-        if (launchMode == DetailLaunchMode.VIEW) return@LaunchedEffect
-        if (entry.username.isNotEmpty()) {
-            viewModel.onAction(
-                DetailUiAction.StartFieldEdit(DetailFieldUiModel.USERNAME, entry.username),
-            )
-        } else if (SensitiveFieldKey.PASSWORD in uiState.sensitiveFieldKeys) {
-            viewModel.onAction(
-                DetailUiAction.StartFieldEdit(DetailFieldUiModel.PASSWORD, ""),
-            )
-        }
-    }
+    val presentation = presentationState ?: return
 
     DetailScreen(
         model = presentation.header,

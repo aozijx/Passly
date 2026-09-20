@@ -28,7 +28,7 @@ class DetailPresentationBoundaryTest {
     }
 
     @Test
-    fun `detail route owns presentation mapping and platform image picking`() {
+    fun `detail view model owns presentation mapping while route owns platform image picking`() {
         val sourceRoot = sourceRoot()
         val route = sourceRoot.resolve(
             "com/aozijx/passly/presentation/feature/vault/detail/DetailRoute.kt",
@@ -37,7 +37,15 @@ class DetailPresentationBoundaryTest {
             "com/aozijx/passly/presentation/feature/vault/detail/binding",
         )
 
-        assertTrue(route.contains("toDetailPresentationModel"))
+        val viewModel = sourceRoot.resolve(
+            "com/aozijx/passly/presentation/feature/vault/detail/DetailViewModel.kt",
+        ).readText()
+
+        assertFalse(route.contains("toDetailPresentationModel"))
+        assertFalse(route.contains("viewModel.uiState"))
+        assertFalse(route.contains("viewModel.otpState"))
+        assertTrue(route.contains("viewModel.presentation"))
+        assertTrue(viewModel.contains("toDetailPresentationModel"))
         assertTrue(route.contains("rememberImagePicker"))
         assertFalse(bindingRoot.resolve("DetailBodyBinding.kt").exists())
         assertFalse(bindingRoot.resolve("DetailEditorOverlayBinding.kt").exists())

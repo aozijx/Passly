@@ -68,8 +68,6 @@ internal fun detailOtpUiModel(otp: OtpCodeState?): DetailOtpUiModel? = otp?.let 
 internal fun toDetailPresentationModel(
     state: DetailUiState,
     otp: OtpCodeState?,
-    usernameLabel: String,
-    passwordLabel: String,
 ): DetailPresentationModel? {
     val entry = state.entry ?: return null
     val shared = detailContentUiModel(entry, state)
@@ -104,7 +102,6 @@ internal fun toDetailPresentationModel(
                 CredentialSectionUiState(
                     username = CredentialFieldUiState(
                         visible = entry.username.isNotBlank() || SensitiveFieldKey.PASSWORD !in state.sensitiveFieldKeys,
-                        label = usernameLabel,
                         revealedValue = revealedUsername?.asScopedSensitiveText(),
                         isEditing = state.fieldEdits.isEditing(RevealedFieldKey.USERNAME),
                         editedValue = state.fieldEdits.draft(RevealedFieldKey.USERNAME),
@@ -112,7 +109,6 @@ internal fun toDetailPresentationModel(
                     ),
                     password = CredentialFieldUiState(
                         visible = SensitiveFieldKey.PASSWORD in state.sensitiveFieldKeys || entry.type != EntryType.LOGIN,
-                        label = passwordLabel,
                         revealedValue = revealedPassword?.asScopedSensitiveText(),
                         isEditing = state.fieldEdits.isEditing(RevealedFieldKey.PASSWORD),
                         editedValue = state.fieldEdits.draft(RevealedFieldKey.PASSWORD),
