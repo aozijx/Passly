@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.vault.editor.bankcard
+package com.aozijx.passly.presentation.feature.vault.editor.ui.bankcard
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -35,8 +35,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import com.aozijx.passly.presentation.ui.vault.editor.common.AddEntryScaffold
-import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorSection
+import com.aozijx.passly.presentation.feature.vault.editor.ui.common.AddEntryScaffold
+import com.aozijx.passly.presentation.feature.vault.editor.ui.common.EntryEditorSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

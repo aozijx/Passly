@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.vault.shared
+package com.aozijx.passly.presentation.feature.vault.ui
 
 import androidx.compose.ui.unit.dp
 

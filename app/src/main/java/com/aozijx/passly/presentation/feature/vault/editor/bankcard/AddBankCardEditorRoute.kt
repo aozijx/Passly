@@ -12,11 +12,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffectHandler
-import com.aozijx.passly.presentation.ui.vault.editor.common.rememberAddEntryFabTransitionModifier
-import com.aozijx.passly.presentation.ui.vault.editor.bankcard.AddBankCardEditorScreen
-import com.aozijx.passly.presentation.ui.vault.editor.bankcard.BankCardEditorEventHandler
-import com.aozijx.passly.presentation.ui.vault.editor.bankcard.BankCardEditorState
-import com.aozijx.passly.presentation.ui.vault.editor.bankcard.BankCardTypeUi
+import com.aozijx.passly.presentation.feature.vault.editor.ui.common.rememberAddEntryFabTransitionModifier
+import com.aozijx.passly.presentation.feature.vault.editor.ui.bankcard.AddBankCardEditorScreen
+import com.aozijx.passly.presentation.feature.vault.editor.ui.bankcard.BankCardEditorEventHandler
+import com.aozijx.passly.presentation.feature.vault.editor.ui.bankcard.BankCardEditorState
+import com.aozijx.passly.presentation.feature.vault.editor.ui.bankcard.BankCardTypeUi
 
 @Composable
 fun AddBankCardEditorRoute(

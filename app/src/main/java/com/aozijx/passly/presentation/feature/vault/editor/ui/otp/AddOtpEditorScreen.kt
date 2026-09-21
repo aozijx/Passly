@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.vault.editor.otp
+package com.aozijx.passly.presentation.feature.vault.editor.ui.otp
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
@@ -15,8 +15,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.ui.shared.components.NextFocusTextField
-import com.aozijx.passly.presentation.ui.vault.editor.common.AddEntryScaffold
-import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorSection
+import com.aozijx.passly.presentation.feature.vault.editor.ui.common.AddEntryScaffold
+import com.aozijx.passly.presentation.feature.vault.editor.ui.common.EntryEditorSection
 
 @Composable
 fun AddOtpEditorScreen(

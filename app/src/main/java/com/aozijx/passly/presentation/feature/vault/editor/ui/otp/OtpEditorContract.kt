@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.vault.editor.otp
+package com.aozijx.passly.presentation.feature.vault.editor.ui.otp
 
 import androidx.compose.runtime.Immutable
 

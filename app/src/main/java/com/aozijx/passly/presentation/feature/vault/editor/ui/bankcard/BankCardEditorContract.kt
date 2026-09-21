@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.vault.editor.bankcard
+package com.aozijx.passly.presentation.feature.vault.editor.ui.bankcard
 
 import androidx.compose.runtime.Immutable
 

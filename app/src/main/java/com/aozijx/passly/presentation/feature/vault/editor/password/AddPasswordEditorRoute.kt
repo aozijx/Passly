@@ -12,10 +12,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffectHandler
-import com.aozijx.passly.presentation.ui.vault.editor.common.rememberAddEntryFabTransitionModifier
-import com.aozijx.passly.presentation.ui.vault.editor.password.AddPasswordEditorScreen
-import com.aozijx.passly.presentation.ui.vault.editor.password.PasswordEditorEventHandler
-import com.aozijx.passly.presentation.ui.vault.editor.password.PasswordEditorState
+import com.aozijx.passly.presentation.feature.vault.editor.ui.common.rememberAddEntryFabTransitionModifier
+import com.aozijx.passly.presentation.feature.vault.editor.ui.password.AddPasswordEditorScreen
+import com.aozijx.passly.presentation.feature.vault.editor.ui.password.PasswordEditorEventHandler
+import com.aozijx.passly.presentation.feature.vault.editor.ui.password.PasswordEditorState
 
 @Composable
 fun AddPasswordEditorRoute(

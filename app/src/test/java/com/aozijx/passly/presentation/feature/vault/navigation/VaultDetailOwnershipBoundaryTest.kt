@@ -35,6 +35,29 @@ class VaultDetailOwnershipBoundaryTest {
     }
 
     @Test
+    fun `vault editor ui lives inside the editor feature root`() {
+        val sourceRoot = listOf(
+            File("src/main/java"),
+            File("app/src/main/java"),
+        ).firstOrNull(File::isDirectory) ?: error("Cannot locate app source root")
+        val legacyRoots = listOf(
+            "com/aozijx/passly/presentation/ui/vault/editor",
+            "com/aozijx/passly/presentation/ui/vault/shared",
+        ).map { File(sourceRoot, it) }
+
+        assertFalse(
+            "Vault editor UI still has a parallel presentation ui root",
+            legacyRoots.any { root ->
+                root.walkTopDown().any { it.isFile && it.extension == "kt" }
+            },
+        )
+        source(
+            "com/aozijx/passly/presentation/feature/vault/editor/ui/common/" +
+                "AddEntryScaffold.kt",
+        )
+    }
+
+    @Test
     fun `root navigation does not own the vault view model`() {
         val source = source(
             "com/aozijx/passly/presentation/feature/shell/PasslyAppNavigation.kt",

@@ -476,34 +476,18 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
-    fun editorSharedUiCannotRemainInFeatureCommonPackage() {
-        val source = EditorSource(
-            path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/editor/common/AddEntryScaffold.kt",
-            content = "@Composable fun AddEntryScaffold()",
-        )
-
-        assertEquals(
-            "EDITOR_COMMON_UI_IN_FEATURE",
-            SourceBoundaryVerifier.verify(
-                listOf(source),
-                SourceBoundaryPolicy.generalRules,
-            ).single().ruleId,
-        )
-    }
-
-    @Test
-    fun passwordEditorFeatureHostCannotRenderFieldsDirectly() {
+    fun passwordEditorRouteCannotRenderFieldsDirectly() {
         listOf(
             "NextFocusTextField(value = state.title)",
             "OutlinedTextField(value = state.title)",
         ).forEach { directField ->
             val source = EditorSource(
-                path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/editor/password/AddPasswordEditorHost.kt",
+                path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/editor/password/AddPasswordEditorRoute.kt",
                 content = directField,
             )
 
             assertEquals(
-                "PASSWORD_EDITOR_HOST_PASSIVE_UI",
+                "PASSWORD_EDITOR_ROUTE_PASSIVE_UI",
                 SourceBoundaryVerifier.verify(
                     listOf(source),
                     SourceBoundaryPolicy.generalRules,
@@ -515,12 +499,12 @@ class SourceBoundaryPolicyTest {
     @Test
     fun otpEditorFeatureCannotRenderOtpFormDirectly() {
         val source = EditorSource(
-            path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/editor/otp/AddOtpEditorHost.kt",
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/editor/otp/AddOtpEditorRoute.kt",
             content = "OtpConfigForm(state = state.form)",
         )
 
         assertEquals(
-            "OTP_EDITOR_HOST_PASSIVE_UI",
+            "OTP_EDITOR_ROUTE_PASSIVE_UI",
             SourceBoundaryVerifier.verify(
                 listOf(source),
                 SourceBoundaryPolicy.generalRules,
@@ -531,12 +515,12 @@ class SourceBoundaryPolicyTest {
     @Test
     fun bankCardEditorFeatureCannotRenderCardTypeDropdownDirectly() {
         val source = EditorSource(
-            path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/editor/bankcard/AddBankCardEditorHost.kt",
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/editor/bankcard/AddBankCardEditorRoute.kt",
             content = "CardTypeDropdown(selected = state.cardType)",
         )
 
         assertEquals(
-            "BANK_CARD_EDITOR_HOST_PASSIVE_UI",
+            "BANK_CARD_EDITOR_ROUTE_PASSIVE_UI",
             SourceBoundaryVerifier.verify(
                 listOf(source),
                 SourceBoundaryPolicy.generalRules,

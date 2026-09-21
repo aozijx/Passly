@@ -47,8 +47,8 @@ import com.aozijx.passly.core.ui.animation.withSharedTransitionVisualOverflow
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.icon
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.labelRes
-import com.aozijx.passly.presentation.ui.vault.shared.ADD_ENTRY_FAB_SHARED_KEY
-import com.aozijx.passly.presentation.ui.vault.shared.AddEntryFabVisualOverflow
+import com.aozijx.passly.presentation.feature.vault.ui.ADD_ENTRY_FAB_SHARED_KEY
+import com.aozijx.passly.presentation.feature.vault.ui.AddEntryFabVisualOverflow
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 

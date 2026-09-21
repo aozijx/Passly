@@ -21,13 +21,13 @@ import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffectHandler
-import com.aozijx.passly.presentation.ui.vault.editor.common.rememberAddEntryFabTransitionModifier
-import com.aozijx.passly.presentation.ui.vault.editor.otp.AddOtpEditorScreen
-import com.aozijx.passly.presentation.ui.vault.editor.otp.OtpEditorAlgorithm
-import com.aozijx.passly.presentation.ui.vault.editor.otp.OtpEditorEncoding
-import com.aozijx.passly.presentation.ui.vault.editor.otp.OtpEditorEventHandler
-import com.aozijx.passly.presentation.ui.vault.editor.otp.OtpEditorState
-import com.aozijx.passly.presentation.ui.vault.editor.otp.OtpEditorType
+import com.aozijx.passly.presentation.feature.vault.editor.ui.common.rememberAddEntryFabTransitionModifier
+import com.aozijx.passly.presentation.feature.vault.editor.ui.otp.AddOtpEditorScreen
+import com.aozijx.passly.presentation.feature.vault.editor.ui.otp.OtpEditorAlgorithm
+import com.aozijx.passly.presentation.feature.vault.editor.ui.otp.OtpEditorEncoding
+import com.aozijx.passly.presentation.feature.vault.editor.ui.otp.OtpEditorEventHandler
+import com.aozijx.passly.presentation.feature.vault.editor.ui.otp.OtpEditorState
+import com.aozijx.passly.presentation.feature.vault.editor.ui.otp.OtpEditorType
 
 @Composable
 fun AddOtpEditorRoute(

@@ -17,8 +17,15 @@ internal object EditorSourceBoundaryVerifier {
             val isPresentationEditor = "/presentation/feature/vault/editor/" in lowerPath
 
             val fileName = lowerPath.substringAfterLast('/')
-            val passiveUiNames = listOf("screen", "content", "component", "dialog", "sheet")
-            listOf("list", "detail").forEach { page ->
+            val passiveUiNames = listOf(
+                "screen",
+                "content",
+                "component",
+                "dialog",
+                "sheet",
+                "scaffold",
+            )
+            listOf("list", "detail", "editor").forEach { page ->
                 val isVaultPageFeature = "/presentation/feature/vault/$page/" in lowerPath
                 val isFeatureUi = "/presentation/feature/vault/$page/ui/" in lowerPath
                 val isFeatureHost = fileName.endsWith("host.kt")

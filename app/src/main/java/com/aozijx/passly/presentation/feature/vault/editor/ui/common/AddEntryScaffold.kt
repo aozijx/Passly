@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.vault.editor.common
+package com.aozijx.passly.presentation.feature.vault.editor.ui.common
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement

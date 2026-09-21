@@ -142,6 +142,21 @@ class EditorSourceBoundaryVerifierTest {
     }
 
     @Test
+    fun vaultEditorPassiveUiCannotReturnOutsideUiPackage() {
+        val violations = EditorSourceBoundaryVerifier.verify(
+            listOf(
+                source("app/src/main/java/com/example/presentation/feature/vault/editor/password/AddPasswordEditorScreen.kt", "@Composable fun AddPasswordEditorScreen() = Unit"),
+                source("app/src/main/java/com/example/presentation/feature/vault/editor/common/AddEntryScaffold.kt", "class AddEntryScaffold"),
+                source("app/src/main/java/com/example/presentation/feature/vault/editor/ui/password/AddPasswordEditorScreen.kt", "@Composable fun AddPasswordEditorScreen() = Unit"),
+                source("app/src/main/java/com/example/presentation/feature/vault/editor/password/AddPasswordEditorRoute.kt", "@Composable fun AddPasswordEditorRoute() = Unit"),
+            ),
+        )
+
+        assertEquals(2, violations.size)
+        assertTrue(violations.all { it.contains("passive vault-editor UI") })
+    }
+
+    @Test
     fun settingsPassiveUiCannotRemainInFeaturePackage() {
         val violations = EditorSourceBoundaryVerifier.verify(
             listOf(

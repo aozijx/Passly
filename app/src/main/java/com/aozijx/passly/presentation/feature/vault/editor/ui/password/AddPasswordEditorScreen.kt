@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.vault.editor.password
+package com.aozijx.passly.presentation.feature.vault.editor.ui.password
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
@@ -23,8 +23,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.ui.shared.components.NextFocusTextField
-import com.aozijx.passly.presentation.ui.vault.editor.common.AddEntryScaffold
-import com.aozijx.passly.presentation.ui.vault.editor.common.EntryEditorSection
+import com.aozijx.passly.presentation.feature.vault.editor.ui.common.AddEntryScaffold
+import com.aozijx.passly.presentation.feature.vault.editor.ui.common.EntryEditorSection
 
 @Immutable
 class PasswordEditorState(

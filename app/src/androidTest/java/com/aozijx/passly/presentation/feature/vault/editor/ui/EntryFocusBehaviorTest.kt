@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.vault.editor
+package com.aozijx.passly.presentation.feature.vault.editor.ui
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
@@ -11,9 +11,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.platform.testTag
-import com.aozijx.passly.presentation.ui.vault.editor.password.AddPasswordEditorScreen
-import com.aozijx.passly.presentation.ui.vault.editor.password.PasswordEditorEventHandler
-import com.aozijx.passly.presentation.ui.vault.editor.password.PasswordEditorState
+import com.aozijx.passly.presentation.feature.vault.editor.ui.password.AddPasswordEditorScreen
+import com.aozijx.passly.presentation.feature.vault.editor.ui.password.PasswordEditorEventHandler
+import com.aozijx.passly.presentation.feature.vault.editor.ui.password.PasswordEditorState
 import org.junit.Rule
 import org.junit.Test
 

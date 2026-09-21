@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.vault.editor.common
+package com.aozijx.passly.presentation.feature.vault.editor.ui.common
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
@@ -7,8 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.aozijx.passly.core.ui.animation.SharedTransitionOverlayClip
 import com.aozijx.passly.core.ui.animation.withSharedTransitionVisualOverflow
-import com.aozijx.passly.presentation.ui.vault.shared.ADD_ENTRY_FAB_SHARED_KEY
-import com.aozijx.passly.presentation.ui.vault.shared.AddEntryFabVisualOverflow
+import com.aozijx.passly.presentation.feature.vault.ui.ADD_ENTRY_FAB_SHARED_KEY
+import com.aozijx.passly.presentation.feature.vault.ui.AddEntryFabVisualOverflow
 
 @Composable
 fun SharedTransitionScope.rememberAddEntryFabTransitionModifier(
