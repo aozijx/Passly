@@ -381,7 +381,7 @@ class SourceBoundaryPolicyTest {
     @Test
     fun vaultUiCannotAcceptMultiplePagingStreams() {
         val source = EditorSource(
-            path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/VaultScreen.kt",
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/list/ui/VaultScreen.kt",
             content =
                 "entryPages: Map<VaultAddTypeUiModel, Flow<PagingData<VaultListItemUiModel>>>",
         )
@@ -398,7 +398,7 @@ class SourceBoundaryPolicyTest {
     @Test
     fun vaultEntryGridCannotDiscardItsExternalModifier() {
         val source = EditorSource(
-            path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/component/list/VaultEntryGrid.kt",
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/list/ui/component/list/VaultEntryGrid.kt",
             content = "modifier = Modifier.fillMaxSize()",
         )
 
@@ -414,7 +414,7 @@ class SourceBoundaryPolicyTest {
     @Test
     fun vaultPagingContainerCannotOwnEntryRowRendering() {
         val source = EditorSource(
-            path = "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/component/list/VaultEntryGrid.kt",
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/list/ui/component/list/VaultEntryGrid.kt",
             content = "fun VaultEntryRow() = Unit",
         )
 

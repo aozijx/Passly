@@ -2,7 +2,7 @@ package com.aozijx.passly.presentation.feature.vault.trash
 
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
-import com.aozijx.passly.presentation.ui.vault.list.trash.TrashEntryUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.trash.TrashEntryUiModel
 
 data class TrashUiState(
     val entries: List<EntryListItem> = emptyList(),

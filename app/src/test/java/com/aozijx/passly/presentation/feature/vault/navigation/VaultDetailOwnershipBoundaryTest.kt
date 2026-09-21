@@ -21,6 +21,20 @@ class VaultDetailOwnershipBoundaryTest {
     }
 
     @Test
+    fun `vault list ui lives inside the list feature root`() {
+        val legacyRoot = File(
+            "app/src/main/java/com/aozijx/passly/presentation/ui/vault/list",
+        ).takeIf { File("app").isDirectory }
+            ?: File("src/main/java/com/aozijx/passly/presentation/ui/vault/list")
+
+        assertFalse(
+            "Vault list UI still has a parallel presentation ui root",
+            legacyRoot.walkTopDown().any { it.isFile && it.extension == "kt" },
+        )
+        source("com/aozijx/passly/presentation/feature/vault/list/ui/VaultScreen.kt")
+    }
+
+    @Test
     fun `root navigation does not own the vault view model`() {
         val source = source(
             "com/aozijx/passly/presentation/feature/shell/PasslyAppNavigation.kt",

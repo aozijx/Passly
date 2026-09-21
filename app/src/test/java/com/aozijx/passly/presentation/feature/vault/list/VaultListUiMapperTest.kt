@@ -13,9 +13,9 @@ import com.aozijx.passly.domain.entry.model.query.EntryCapability
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.model.AddType
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultAddTypeUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpKindUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultAddTypeUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListDisplayUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpKindUiModel
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.presentation.ui.vault.list.trash.TrashBottomSheet
+import com.aozijx.passly.presentation.feature.vault.list.ui.trash.TrashBottomSheet
 
 @Composable
 internal fun TrashRoute(

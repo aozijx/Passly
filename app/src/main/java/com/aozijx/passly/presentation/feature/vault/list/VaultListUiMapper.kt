@@ -11,21 +11,21 @@ import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultAddTypeUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardDensityUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultCardPresentationUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListContentUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDialogsUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListLayoutUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListNavigationUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListScreenUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListToolbarUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpKindUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortOptionUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultSortUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultAddTypeUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultCardDensityUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultCardPresentationUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListContentUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListDialogsUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListDisplayUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListLayoutUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListNavigationUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListScreenUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListToolbarUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpKindUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpUiState
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultSortOptionUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultSortUiModel
 
 internal fun EntryListItem.toUiModel() = VaultListItemUiModel(
     id = id.value,

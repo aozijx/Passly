@@ -3,9 +3,9 @@ package com.aozijx.passly.presentation.feature.vault.list
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultAddTypeUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEvent
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListEventHandler
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultAddTypeUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListEvent
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListEventHandler
 
 @Composable
 internal fun rememberVaultListEventHandler(

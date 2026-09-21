@@ -227,7 +227,7 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "VAULT_UI_PAGING_FACTORY",
-            sourcePathContains = "/presentation/ui/vault/list/",
+            sourcePathContains = "/presentation/feature/vault/list/ui/",
             forbiddenContentMarkers = setOf(
                 "entryPages: Map<",
             ),
@@ -235,13 +235,13 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "VAULT_LIST_EXTERNAL_MODIFIER",
-            sourcePathContains = "/presentation/ui/vault/list/component/list/VaultEntryGrid.kt",
+            sourcePathContains = "/presentation/feature/vault/list/ui/component/list/VaultEntryGrid.kt",
             forbiddenContentMarkers = setOf("modifier = Modifier.fillMaxSize()"),
             message = "vault list discards the caller modifier and its gesture or layout modifiers",
         ),
         SourceBoundaryRule(
             id = "VAULT_LIST_ROW_OWNERSHIP",
-            sourcePathContains = "/presentation/ui/vault/list/component/list/VaultEntryGrid.kt",
+            sourcePathContains = "/presentation/feature/vault/list/ui/component/list/VaultEntryGrid.kt",
             forbiddenContentMarkers = setOf("fun VaultEntryRow("),
             message = "vault paging container also owns entry-row rendering",
         ),

@@ -2,7 +2,7 @@ package com.aozijx.passly.presentation.feature.vault.list.action
 
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

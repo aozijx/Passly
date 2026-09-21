@@ -117,6 +117,7 @@ class EditorSourceBoundaryVerifierTest {
                 source("app/src/main/java/com/example/presentation/feature/vault/list/VaultScreen.kt", "@Composable fun VaultScreen() = Unit"),
                 source("app/src/main/java/com/example/presentation/feature/vault/list/component/Card.kt", "@Composable fun Card() = Unit"),
                 source("app/src/main/java/com/example/presentation/feature/vault/list/VaultHost.kt", "@Composable fun VaultHost() = Unit"),
+                source("app/src/main/java/com/example/presentation/feature/vault/list/ui/VaultScreen.kt", "@Composable fun VaultScreen() = Unit"),
             ),
         )
 

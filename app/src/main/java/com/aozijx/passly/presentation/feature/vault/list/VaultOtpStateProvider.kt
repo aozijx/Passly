@@ -4,8 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpStateProvider
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultOtpUiState
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpStateProvider
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpUiState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map

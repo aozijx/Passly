@@ -4,8 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemEventHandler
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListItemUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemEventHandler
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemUiModel
 
 @Composable
 internal fun rememberVaultListItemEventHandler(

@@ -4,9 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListDisplayUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListContentUiModel
-import com.aozijx.passly.presentation.ui.vault.list.model.VaultListNavigationUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListDisplayUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListContentUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListNavigationUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test

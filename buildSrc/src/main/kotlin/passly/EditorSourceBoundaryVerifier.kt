@@ -20,20 +20,15 @@ internal object EditorSourceBoundaryVerifier {
             val passiveUiNames = listOf("screen", "content", "component", "dialog", "sheet")
             listOf("list", "detail").forEach { page ->
                 val isVaultPageFeature = "/presentation/feature/vault/$page/" in lowerPath
-                val isDetailFeatureUi =
-                    page == "detail" && "/presentation/feature/vault/detail/ui/" in lowerPath
+                val isFeatureUi = "/presentation/feature/vault/$page/ui/" in lowerPath
                 val isFeatureHost = fileName.endsWith("host.kt")
                 val isUiSection = fileName.endsWith("section.kt")
-                if (isVaultPageFeature && !isDetailFeatureUi && !isFeatureHost && (
+                if (isVaultPageFeature && !isFeatureUi && !isFeatureHost && (
                     passiveUiNames.any(fileName::contains) || isUiSection ||
                             listOf("/component/", "/dialog/", "/sheet/").any(lowerPath::contains)
                         )
                 ) {
-                    val expectedRoot = if (page == "detail") {
-                        "presentation/feature/vault/detail/ui"
-                    } else {
-                        "presentation/ui/vault/$page"
-                    }
+                    val expectedRoot = "presentation/feature/vault/$page/ui"
                     add("$path: passive vault-$page UI must live below $expectedRoot")
                 }
             }
