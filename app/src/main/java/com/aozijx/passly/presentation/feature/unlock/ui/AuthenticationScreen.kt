@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.unlock
+package com.aozijx.passly.presentation.feature.unlock.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

@@ -15,7 +15,6 @@ import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.message.presentation.AppNoticeHostViewModel
 import com.aozijx.passly.app.shell.FlipToLockSensorController
-import com.aozijx.passly.presentation.feature.onboarding.BootstrapViewModel
 import com.aozijx.passly.presentation.feature.recovery.RecoveryModeRoute
 import com.aozijx.passly.presentation.feature.recovery.RecoveryModeViewModel
 import com.aozijx.passly.presentation.feature.unlock.AuthenticationRoute
@@ -91,11 +90,7 @@ internal fun AppShell(
 
             AppShellDestination.AUTHENTICATION -> {
                 val unlockViewModel: UnlockViewModel = hiltViewModel()
-                val bootstrapViewModel: BootstrapViewModel = hiltViewModel()
-                AuthenticationRoute(
-                    unlockViewModel = unlockViewModel,
-                    bootstrapViewModel = bootstrapViewModel,
-                )
+                AuthenticationRoute(viewModel = unlockViewModel)
             }
         }
     }

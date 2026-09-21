@@ -13,4 +13,9 @@ sealed interface UnlockUiAction {
     data class InputExpanded(val method: AuthenticationMethod, val expanded: Boolean) :
         UnlockUiAction
     data object ClearVerificationFailure : UnlockUiAction
+    data object SetPasswordClicked : UnlockUiAction
+    data class NewAppPasswordChanged(val value: String) : UnlockUiAction
+    data class ConfirmAppPasswordChanged(val value: String) : UnlockUiAction
+    data object SetPasswordConfirmed : UnlockUiAction
+    data object DismissSetPasswordDialog : UnlockUiAction
 }

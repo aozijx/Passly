@@ -16,5 +16,10 @@ data class UnlockUiState(
     val recoveryUnlockVisible: Boolean = false,
     val expandedMethod: AuthenticationMethod? = null,
     val activeMethod: AuthenticationMethod? = null,
-    val verificationFailure: UnlockVerificationFailure? = null
+    val verificationFailure: UnlockVerificationFailure? = null,
+    val showSetPasswordDialog: Boolean = false,
+    val newAppPassword: SensitiveValue = EmptySensitiveValue,
+    val confirmAppPassword: SensitiveValue = EmptySensitiveValue,
+    val isSettingAppPassword: Boolean = false,
+    val setupFailure: AuthenticationFailure? = null,
 )

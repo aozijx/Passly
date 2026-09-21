@@ -13,29 +13,23 @@ import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.presentation.feature.onboarding.BootstrapUiAction
-import com.aozijx.passly.presentation.feature.onboarding.BootstrapViewModel
-import com.aozijx.passly.presentation.ui.unlock.AuthenticationScreen
-import com.aozijx.passly.presentation.ui.unlock.AuthenticationScreenState
-import com.aozijx.passly.presentation.ui.unlock.AuthenticationScreenEvents
-import com.aozijx.passly.presentation.ui.unlock.AuthenticationInputMethod
+import com.aozijx.passly.presentation.feature.unlock.ui.AuthenticationScreen
+import com.aozijx.passly.presentation.feature.unlock.ui.AuthenticationScreenState
+import com.aozijx.passly.presentation.feature.unlock.ui.AuthenticationScreenEvents
+import com.aozijx.passly.presentation.feature.unlock.ui.AuthenticationInputMethod
 
 @Composable
-fun AuthenticationRoute(
-    unlockViewModel: UnlockViewModel,
-    bootstrapViewModel: BootstrapViewModel,
-) {
-    val methods by unlockViewModel.methodAvailability.collectAsStateWithLifecycle()
-    val unlockState by unlockViewModel.uiState.collectAsStateWithLifecycle()
-    val bootstrapState by bootstrapViewModel.uiState.collectAsStateWithLifecycle()
+fun AuthenticationRoute(viewModel: UnlockViewModel) {
+    val methods by viewModel.methodAvailability.collectAsStateWithLifecycle()
+    val unlockState by viewModel.uiState.collectAsStateWithLifecycle()
     val verificationFailure = unlockState.verificationFailure
     val appPasswordLabel = stringResource(R.string.auth_app_password_label)
     val recoveryCodeLabel = stringResource(R.string.recovery_code_label)
     val appPassword = unlockState.appPassword.toUiString()
     val recoveryCode = unlockState.recoveryCode.toUiString()
 
-    BackHandler(enabled = !bootstrapState.showSetPasswordDialog) {
-        unlockViewModel.onAction(UnlockUiAction.BackPressed)
+    BackHandler(enabled = !unlockState.showSetPasswordDialog) {
+        viewModel.onAction(UnlockUiAction.BackPressed)
     }
 
     AuthenticationScreen(
@@ -60,49 +54,49 @@ fun AuthenticationRoute(
                 ?.takeIf { it.method == AuthenticationMethod.RECOVERY_CODE }
                 ?.failure
                 ?.message(recoveryCodeLabel),
-            isSettingAppPassword = bootstrapState.isSettingAppPassword,
+            isSettingAppPassword = unlockState.isSettingAppPassword,
         ),
         onEvent = AuthenticationScreenEvents(
             onLockIconClick = {
-                unlockViewModel.onAction(UnlockUiAction.LockIconClicked)
+                viewModel.onAction(UnlockUiAction.LockIconClicked)
             },
             onBiometricClick = {
-                unlockViewModel.onAction(UnlockUiAction.BiometricClicked)
+                viewModel.onAction(UnlockUiAction.BiometricClicked)
             },
             onAppPasswordChange = {
-                unlockViewModel.onAction(UnlockUiAction.AppPasswordChanged(it))
+                viewModel.onAction(UnlockUiAction.AppPasswordChanged(it))
             },
             onAppPasswordExpandedChange = {
-                unlockViewModel.onAction(
+                viewModel.onAction(
                     UnlockUiAction.InputExpanded(AuthenticationMethod.APP_PASSWORD, it)
                 )
             },
             onAppPasswordSubmit = {
-                unlockViewModel.onAction(UnlockUiAction.AppPasswordSubmitted)
+                viewModel.onAction(UnlockUiAction.AppPasswordSubmitted)
             },
             onRecoveryCodeChange = {
-                unlockViewModel.onAction(UnlockUiAction.RecoveryCodeChanged(it))
+                viewModel.onAction(UnlockUiAction.RecoveryCodeChanged(it))
             },
             onRecoveryCodeExpandedChange = {
-                unlockViewModel.onAction(
+                viewModel.onAction(
                     UnlockUiAction.InputExpanded(AuthenticationMethod.RECOVERY_CODE, it)
                 )
             },
             onRecoveryCodeSubmit = {
-                unlockViewModel.onAction(UnlockUiAction.RecoveryCodeSubmitted)
+                viewModel.onAction(UnlockUiAction.RecoveryCodeSubmitted)
             },
             onVerificationFailureConsumed = {
-                unlockViewModel.onAction(UnlockUiAction.ClearVerificationFailure)
+                viewModel.onAction(UnlockUiAction.ClearVerificationFailure)
             },
             onSetPasswordClick = {
-                bootstrapViewModel.onAction(BootstrapUiAction.SetPasswordClicked)
+                viewModel.onAction(UnlockUiAction.SetPasswordClicked)
             },
         ),
     )
 
-    if (bootstrapState.showSetPasswordDialog) {
-        val newPassword = bootstrapState.newAppPassword.toUiString()
-        val confirmPassword = bootstrapState.confirmAppPassword.toUiString()
+    if (unlockState.showSetPasswordDialog) {
+        val newPassword = unlockState.newAppPassword.toUiString()
+        val confirmPassword = unlockState.confirmAppPassword.toUiString()
         AppPasswordSetDialog(
             newPassword = newPassword,
             confirmPassword = confirmPassword,
@@ -110,19 +104,19 @@ fun AuthenticationRoute(
                 newPassword.length,
             ) && newPassword == confirmPassword,
             onNewPasswordChange = {
-                bootstrapViewModel.onAction(BootstrapUiAction.NewAppPasswordChanged(it))
+                viewModel.onAction(UnlockUiAction.NewAppPasswordChanged(it))
             },
             onConfirmPasswordChange = {
-                bootstrapViewModel.onAction(BootstrapUiAction.ConfirmAppPasswordChanged(it))
+                viewModel.onAction(UnlockUiAction.ConfirmAppPasswordChanged(it))
             },
             onConfirm = {
-                bootstrapViewModel.onAction(BootstrapUiAction.SetPasswordConfirmed)
+                viewModel.onAction(UnlockUiAction.SetPasswordConfirmed)
             },
             onDismiss = {
-                bootstrapViewModel.onAction(BootstrapUiAction.DismissSetPasswordDialog)
+                viewModel.onAction(UnlockUiAction.DismissSetPasswordDialog)
             },
-            isBusy = bootstrapState.isSettingAppPassword,
-            errorMessage = bootstrapState.setupFailure?.message(forSetup = true),
+            isBusy = unlockState.isSettingAppPassword,
+            errorMessage = unlockState.setupFailure?.message(forSetup = true),
         )
     }
 }

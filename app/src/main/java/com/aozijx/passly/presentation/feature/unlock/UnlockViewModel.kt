@@ -9,6 +9,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.presentation.feature.unlock.UnlockUiAction
@@ -22,7 +23,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class UnlockViewModel @Inject constructor(
-    private val authenticationManager: AuthenticationManager
+    private val authenticationManager: AuthenticationManager,
+    private val methodProvisioner: AuthenticationMethodProvisioner,
 ) : ViewModel() {
 
     val methodAvailability = authenticationManager.methods
@@ -43,6 +45,55 @@ class UnlockViewModel @Inject constructor(
             UnlockUiAction.RecoveryCodeSubmitted -> unlockWithRecoveryCode()
             is UnlockUiAction.InputExpanded -> onInputExpanded(action.method, action.expanded)
             UnlockUiAction.ClearVerificationFailure -> clearVerificationFailure()
+            UnlockUiAction.SetPasswordClicked ->
+                mutate(UnlockMutation.SetPasswordDialogVisibilityChanged(true))
+            is UnlockUiAction.NewAppPasswordChanged -> updateNewAppPassword(action.value)
+            is UnlockUiAction.ConfirmAppPasswordChanged -> updateConfirmAppPassword(action.value)
+            UnlockUiAction.SetPasswordConfirmed -> setAppPassword()
+            UnlockUiAction.DismissSetPasswordDialog -> dismissSetPasswordDialog()
+        }
+    }
+
+    private fun updateNewAppPassword(value: String) {
+        _uiState.value.newAppPassword.wipe()
+        mutate(UnlockMutation.NewAppPasswordChanged(OwnedChars.fromString(value)))
+    }
+
+    private fun updateConfirmAppPassword(value: String) {
+        _uiState.value.confirmAppPassword.wipe()
+        mutate(UnlockMutation.ConfirmAppPasswordChanged(OwnedChars.fromString(value)))
+    }
+
+    private fun dismissSetPasswordDialog() {
+        wipeSetupPasswords()
+        mutate(UnlockMutation.SetPasswordDialogVisibilityChanged(false))
+    }
+
+    private fun setAppPassword() {
+        val password = _uiState.value.newAppPassword.toCharArray()
+        val confirm = _uiState.value.confirmAppPassword.toCharArray()
+        if (password.isEmpty() || !password.contentEquals(confirm)) {
+            MemoryCleaner.wipeCharArray(password)
+            MemoryCleaner.wipeCharArray(confirm)
+            return
+        }
+        mutate(UnlockMutation.PasswordSetupStarted)
+        viewModelScope.launch {
+            try {
+                when (val result = methodProvisioner.setAppPassword(password)) {
+                    is AuthenticationResult.Success -> {
+                        wipeSetupPasswords()
+                        mutate(UnlockMutation.PasswordSetupCompleted)
+                    }
+                    is AuthenticationResult.Cancelled -> Unit
+                    is AuthenticationResult.Failure ->
+                        mutate(UnlockMutation.PasswordSetupFailed(result.failure))
+                }
+            } finally {
+                MemoryCleaner.wipeCharArray(password)
+                MemoryCleaner.wipeCharArray(confirm)
+                mutate(UnlockMutation.PasswordSetupFinished)
+            }
         }
     }
 
@@ -185,11 +236,17 @@ class UnlockViewModel @Inject constructor(
 
     override fun onCleared() {
         wipeUnlockInputs()
+        wipeSetupPasswords()
     }
 
     private fun wipeUnlockInputs() {
         _uiState.value.appPassword.wipe()
         _uiState.value.recoveryCode.wipe()
+    }
+
+    private fun wipeSetupPasswords() {
+        _uiState.value.newAppPassword.wipe()
+        _uiState.value.confirmAppPassword.wipe()
     }
 
     private companion object {

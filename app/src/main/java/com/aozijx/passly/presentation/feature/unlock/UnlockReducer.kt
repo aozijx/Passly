@@ -20,6 +20,13 @@ internal sealed interface UnlockMutation {
     data object AuthenticationFinished : UnlockMutation
     data object VerificationFailureCleared : UnlockMutation
     data object UnlockInputsReset : UnlockMutation
+    data class NewAppPasswordChanged(val value: SensitiveValue) : UnlockMutation
+    data class ConfirmAppPasswordChanged(val value: SensitiveValue) : UnlockMutation
+    data class SetPasswordDialogVisibilityChanged(val visible: Boolean) : UnlockMutation
+    data object PasswordSetupStarted : UnlockMutation
+    data class PasswordSetupFailed(val failure: AuthenticationFailure) : UnlockMutation
+    data object PasswordSetupFinished : UnlockMutation
+    data object PasswordSetupCompleted : UnlockMutation
 }
 
 internal object UnlockReducer {
@@ -60,6 +67,32 @@ internal object UnlockReducer {
             recoveryUnlockVisible = false,
             expandedMethod = null,
             verificationFailure = null,
+        )
+        is UnlockMutation.NewAppPasswordChanged -> state.copy(
+            newAppPassword = mutation.value,
+            setupFailure = null,
+        )
+        is UnlockMutation.ConfirmAppPasswordChanged -> state.copy(
+            confirmAppPassword = mutation.value,
+            setupFailure = null,
+        )
+        is UnlockMutation.SetPasswordDialogVisibilityChanged -> state.copy(
+            showSetPasswordDialog = mutation.visible,
+            newAppPassword = if (mutation.visible) state.newAppPassword else EmptySensitiveValue,
+            confirmAppPassword = if (mutation.visible) state.confirmAppPassword else EmptySensitiveValue,
+            setupFailure = null,
+        )
+        UnlockMutation.PasswordSetupStarted -> state.copy(
+            isSettingAppPassword = true,
+            setupFailure = null,
+        )
+        is UnlockMutation.PasswordSetupFailed -> state.copy(setupFailure = mutation.failure)
+        UnlockMutation.PasswordSetupFinished -> state.copy(isSettingAppPassword = false)
+        UnlockMutation.PasswordSetupCompleted -> state.copy(
+            showSetPasswordDialog = false,
+            newAppPassword = EmptySensitiveValue,
+            confirmAppPassword = EmptySensitiveValue,
+            setupFailure = null,
         )
     }
 }

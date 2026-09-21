@@ -15,7 +15,7 @@ class RootRouteNamingBoundaryTest {
             "com/aozijx/passly/presentation/feature/unlock/AuthenticationRoute.kt",
         )
         val unlockScreen = sourceRoot.resolve(
-            "com/aozijx/passly/presentation/ui/unlock/AuthenticationScreen.kt",
+            "com/aozijx/passly/presentation/feature/unlock/ui/AuthenticationScreen.kt",
         )
         val recoveryRoute = sourceRoot.resolve(
             "com/aozijx/passly/presentation/feature/recovery/RecoveryModeRoute.kt",
@@ -33,5 +33,14 @@ class RootRouteNamingBoundaryTest {
         assertTrue(recoveryScreen.readText().contains("fun RecoveryModeScreen("))
         assertFalse(unlockScreen.readText().contains("ViewModel"))
         assertFalse(recoveryScreen.readText().contains("ViewModel"))
+
+        val obsoleteOnboarding = sourceRoot.resolve(
+            "com/aozijx/passly/presentation/feature/onboarding",
+        )
+        assertFalse(
+            "Unlock password provisioning must not be owned by a second feature state machine",
+            obsoleteOnboarding.walkTopDown().any { it.isFile && it.extension == "kt" },
+        )
+        assertFalse(unlockRoute.readText().contains("BootstrapViewModel"))
     }
 }
