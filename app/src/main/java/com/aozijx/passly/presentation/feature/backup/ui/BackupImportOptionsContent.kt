@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.settings.backup
+package com.aozijx.passly.presentation.feature.backup.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,9 +25,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.settings.backup.model.BackupImportModeUiModel
-import com.aozijx.passly.presentation.ui.settings.backup.model.BackupRestoreSheetEventHandler
-import com.aozijx.passly.presentation.ui.settings.backup.model.BackupRestoreSheetUiState
+import com.aozijx.passly.presentation.feature.backup.ui.model.BackupImportModeUiModel
+import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheetEventHandler
+import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheetUiState
 
 @Composable
 internal fun BackupImportOptionsContent(

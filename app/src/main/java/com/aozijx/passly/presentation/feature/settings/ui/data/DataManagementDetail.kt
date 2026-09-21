@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.settings.backup
+package com.aozijx.passly.presentation.feature.settings.ui.data
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteForever
@@ -10,7 +10,7 @@ import com.aozijx.passly.presentation.ui.shared.components.group.SegmentedSettin
 import com.aozijx.passly.presentation.ui.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.presentation.ui.settings.backup.model.DataManagementEventHandler
+import com.aozijx.passly.presentation.feature.settings.ui.data.model.DataManagementEventHandler
 
 @Composable
 internal fun DataManagementDetail(

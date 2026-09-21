@@ -8,8 +8,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.presentation.feature.database.reset.DatabaseResetOverlay
-import com.aozijx.passly.presentation.ui.settings.backup.DataManagementDetail
-import com.aozijx.passly.presentation.ui.settings.backup.model.DataManagementEventHandler
+import com.aozijx.passly.presentation.feature.settings.ui.data.DataManagementDetail
+import com.aozijx.passly.presentation.feature.settings.ui.data.model.DataManagementEventHandler
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 

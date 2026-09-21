@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.settings.backup
+package com.aozijx.passly.presentation.feature.backup.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

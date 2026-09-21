@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.settings.backup.model
+package com.aozijx.passly.presentation.feature.backup.ui.model
 
 import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
 

@@ -171,6 +171,32 @@ class EditorSourceBoundaryVerifierTest {
     }
 
     @Test
+    fun backupPassiveUiCannotReturnOutsideUiPackage() {
+        val violations = EditorSourceBoundaryVerifier.verify(
+            listOf(
+                source("app/src/main/java/com/example/presentation/feature/backup/BackupRestoreSheet.kt", "@Composable fun BackupRestoreSheet() = Unit"),
+                source("app/src/main/java/com/example/presentation/feature/backup/ui/BackupRestoreSheet.kt", "@Composable fun BackupRestoreSheet() = Unit"),
+                source("app/src/main/java/com/example/presentation/feature/backup/BackupOperationRoute.kt", "@Composable fun BackupOperationRoute() = Unit"),
+            ),
+        )
+
+        assertEquals(1, violations.size)
+        assertTrue(violations.single().contains("passive backup UI"))
+    }
+
+    @Test
+    fun backupMapperNamesAreNotClassifiedAsPassiveUi() {
+        val violations = EditorSourceBoundaryVerifier.verify(
+            listOf(
+                source("app/src/main/java/com/example/presentation/feature/backup/BackupSheetUiMapper.kt", "class BackupSheetUiMapper"),
+                source("app/src/test/java/com/example/presentation/feature/backup/BackupSheetUiMapperTest.kt", "class BackupSheetUiMapperTest"),
+            ),
+        )
+
+        assertEquals(emptyList(), violations)
+    }
+
+    @Test
     fun settingsPassiveUiCannotRemainInFeaturePackage() {
         val violations = EditorSourceBoundaryVerifier.verify(
             listOf(
@@ -183,6 +209,7 @@ class EditorSourceBoundaryVerifierTest {
                 source("app/src/main/java/com/example/presentation/feature/settings/main/SettingsRoute.kt", "data object SettingsRoute"),
                 source("app/src/main/java/com/example/presentation/feature/settings/main/SettingsViewModel.kt", "class SettingsViewModel"),
                 source("app/src/main/java/com/example/presentation/feature/settings/main/SettingsReducer.kt", "object SettingsReducer"),
+                source("app/src/main/java/com/example/presentation/feature/settings/ui/data/DataManagementContent.kt", "@Composable fun DataManagementContent() = Unit"),
             ),
         )
 

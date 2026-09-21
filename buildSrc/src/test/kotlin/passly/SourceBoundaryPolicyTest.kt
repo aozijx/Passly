@@ -6,6 +6,22 @@ import kotlin.test.assertTrue
 
 class SourceBoundaryPolicyTest {
     @Test
+    fun backupFeatureCannotImportSettingsOwnedUi() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/feature/backup/BackupRoute.kt",
+            content = "import com.aozijx.passly.presentation.ui.settings.backup.BackupSheet",
+        )
+
+        assertEquals(
+            "BACKUP_FEATURE_SETTINGS_UI_OWNERSHIP",
+            SourceBoundaryVerifier.verify(
+                listOf(source),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+    }
+
+    @Test
     fun retiredUiPackagesRemainCoveredByCurrentOwnershipRules() {
         val featureUi = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/feature/settings/SettingsScreen.kt",

@@ -22,7 +22,7 @@ import com.aozijx.passly.presentation.feature.backup.BackupOperationRoute
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.backup.handleBackupPathPicked
-import com.aozijx.passly.presentation.ui.settings.backup.BackupDirectoryClearDialog
+import com.aozijx.passly.presentation.feature.settings.ui.data.BackupDirectoryClearDialog
 import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
 import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
 

@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.settings.backup
+package com.aozijx.passly.presentation.feature.backup.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,7 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.settings.backup.model.BackupExportFormatUiModel
+import com.aozijx.passly.presentation.feature.backup.ui.model.BackupExportFormatUiModel
 
 @Composable
 internal fun BackupFormatPickerContent(

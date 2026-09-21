@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.settings.backup
+package com.aozijx.passly.presentation.feature.settings.ui.data
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text

@@ -254,6 +254,15 @@ internal object SourceBoundaryPolicy {
             message = "settings mirrors navigator destination in local state",
         ),
         SourceBoundaryRule(
+            id = "BACKUP_FEATURE_SETTINGS_UI_OWNERSHIP",
+            sourcePathContains = "/presentation/feature/backup/",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.presentation.ui.settings.",
+                "com.aozijx.passly.presentation.feature.settings.ui.",
+            ),
+            message = "backup feature imports settings-owned UI",
+        ),
+        SourceBoundaryRule(
             id = "UNLOCK_FEATURE_PASSIVE_CONTENT",
             sourcePathContains = "/presentation/feature/unlock/AuthenticationScreen.kt",
             forbiddenContentMarkers = setOf("InputActionButton("),

@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.settings.backup
+package com.aozijx.passly.presentation.feature.backup.ui
 
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
