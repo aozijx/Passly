@@ -157,6 +157,20 @@ class EditorSourceBoundaryVerifierTest {
     }
 
     @Test
+    fun scannerPassiveUiCannotReturnOutsideUiPackage() {
+        val violations = EditorSourceBoundaryVerifier.verify(
+            listOf(
+                source("app/src/main/java/com/example/presentation/feature/scanner/ScannerContent.kt", "@Composable fun ScannerContent() = Unit"),
+                source("app/src/main/java/com/example/presentation/feature/scanner/ui/ScannerContent.kt", "@Composable fun ScannerContent() = Unit"),
+                source("app/src/main/java/com/example/presentation/feature/scanner/ScannerCameraHost.kt", "@Composable fun ScannerCameraHost() = Unit"),
+            ),
+        )
+
+        assertEquals(1, violations.size)
+        assertTrue(violations.single().contains("passive scanner UI"))
+    }
+
+    @Test
     fun settingsPassiveUiCannotRemainInFeaturePackage() {
         val violations = EditorSourceBoundaryVerifier.verify(
             listOf(

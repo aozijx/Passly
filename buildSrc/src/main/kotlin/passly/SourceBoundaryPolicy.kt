@@ -254,12 +254,6 @@ internal object SourceBoundaryPolicy {
             message = "settings mirrors navigator destination in local state",
         ),
         SourceBoundaryRule(
-            id = "PASSIVE_SCANNER_VIEW_IN_FEATURE",
-            sourcePathContains = "/presentation/feature/scanner/",
-            forbiddenContentMarkers = setOf("fun ScannerView("),
-            message = "scanner render entry point remains in presentation feature",
-        ),
-        SourceBoundaryRule(
             id = "UNLOCK_FEATURE_PASSIVE_CONTENT",
             sourcePathContains = "/presentation/feature/unlock/AuthenticationScreen.kt",
             forbiddenContentMarkers = setOf("InputActionButton("),

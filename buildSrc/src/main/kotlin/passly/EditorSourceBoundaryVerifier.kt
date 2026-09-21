@@ -39,6 +39,19 @@ internal object EditorSourceBoundaryVerifier {
                     add("$path: passive vault-$page UI must live below $expectedRoot")
                 }
             }
+            val isScannerFeature = "/presentation/feature/scanner/" in lowerPath
+            val isScannerUi = "/presentation/feature/scanner/ui/" in lowerPath
+            val isScannerHost = fileName.endsWith("host.kt")
+            if (isScannerFeature && !isScannerUi && !isScannerHost && (
+                passiveUiNames.any(fileName::contains) ||
+                    listOf("/component/", "/dialog/", "/sheet/").any(lowerPath::contains)
+                )
+            ) {
+                add(
+                    "$path: passive scanner UI must live below " +
+                        "presentation/feature/scanner/ui",
+                )
+            }
             val isSettingsFeature = "/presentation/feature/settings/" in lowerPath
             val isSettingsHost = fileName.endsWith("host.kt")
             val isSettingsUiSection = fileName.endsWith("section.kt")

@@ -30,7 +30,7 @@ import com.aozijx.passly.app.platform.permission.rememberPermissionRequestHost
 import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
 import com.aozijx.passly.core.permission.model.PermissionStatus
 import com.aozijx.passly.core.permission.model.RuntimePermission
-import com.aozijx.passly.presentation.ui.scanner.ScannerContent
+import com.aozijx.passly.presentation.feature.scanner.ui.ScannerContent
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors

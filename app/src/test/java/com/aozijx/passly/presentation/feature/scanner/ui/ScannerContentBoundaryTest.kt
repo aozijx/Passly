@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.scanner
+package com.aozijx.passly.presentation.feature.scanner.ui
 
 import java.io.File
 import org.junit.Assert.assertFalse
@@ -13,8 +13,17 @@ class ScannerContentBoundaryTest {
         ).firstOrNull(File::isDirectory) ?: error("Cannot locate app source root")
         val source = File(
             sourceRoot,
-            "com/aozijx/passly/presentation/ui/scanner/ScannerContent.kt",
+            "com/aozijx/passly/presentation/feature/scanner/ui/ScannerContent.kt",
         ).readText()
+        val legacyRoot = File(
+            sourceRoot,
+            "com/aozijx/passly/presentation/ui/scanner",
+        )
+
+        assertFalse(
+            "Scanner UI still has a parallel presentation ui root",
+            legacyRoot.walkTopDown().any { it.isFile && it.extension == "kt" },
+        )
 
         listOf(
             "androidx.camera",

@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.scanner
+package com.aozijx.passly.presentation.feature.scanner.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
