@@ -1,6 +1,6 @@
 package com.aozijx.passly.presentation.feature.settings.main.navigation
 
-import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
+import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue

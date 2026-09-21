@@ -25,11 +25,11 @@ import com.aozijx.passly.presentation.feature.settings.main.general.DiagnosticsS
 import com.aozijx.passly.presentation.feature.settings.main.general.GeneralSettingsAction
 import com.aozijx.passly.presentation.feature.settings.main.general.GeneralSettingsEffect
 import com.aozijx.passly.presentation.feature.settings.main.general.GeneralSettingsViewModel
-import com.aozijx.passly.presentation.ui.settings.general.AboutSettingsSection
-import com.aozijx.passly.presentation.ui.settings.general.CacheSettingsSection
-import com.aozijx.passly.presentation.ui.settings.general.LogSettingsSection
-import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
-import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
+import com.aozijx.passly.presentation.feature.settings.ui.general.AboutSettingsSection
+import com.aozijx.passly.presentation.feature.settings.ui.general.CacheSettingsSection
+import com.aozijx.passly.presentation.feature.settings.ui.general.LogSettingsSection
+import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
+import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

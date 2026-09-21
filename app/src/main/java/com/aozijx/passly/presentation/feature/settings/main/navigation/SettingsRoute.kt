@@ -26,7 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntOffset
-import com.aozijx.passly.presentation.ui.settings.main.SettingsMainPage
+import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsMainPage
 import kotlinx.coroutines.launch
 
 /**

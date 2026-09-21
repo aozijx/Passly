@@ -11,7 +11,13 @@ internal object PresentationUiApiVerifier {
     fun inspect(sources: List<EditorSource>): List<String> = buildList {
         sources.asSequence()
             .map { source -> source.copy(path = source.path.replace('\\', '/')) }
-            .filter { source -> "/presentation/ui/" in source.path }
+            .filter { source ->
+                "/presentation/ui/" in source.path ||
+                    (
+                        "/presentation/feature/" in source.path &&
+                            "/ui/" in source.path
+                        )
+            }
             .forEach { source ->
                 composableFunction.findAll(source.content).forEach { match ->
                     if (match.groupValues[1] == "private") return@forEach

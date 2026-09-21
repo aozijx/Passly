@@ -12,9 +12,9 @@ import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsA
 import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsEffect
 import com.aozijx.passly.presentation.feature.settings.security.toPrivacySettingsUiModel
-import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
-import com.aozijx.passly.presentation.ui.settings.security.PrivacyDetail
-import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
+import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
+import com.aozijx.passly.presentation.feature.settings.ui.security.PrivacyDetail
+import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
 
 @Composable
 internal fun PrivacyRoute(

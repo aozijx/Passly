@@ -2,7 +2,7 @@ package com.aozijx.passly.presentation.feature.settings.autofill
 
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
-import com.aozijx.passly.presentation.ui.settings.autofill.model.AutofillPresentationUiModel
+import com.aozijx.passly.presentation.feature.settings.ui.autofill.model.AutofillPresentationUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

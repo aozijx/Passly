@@ -25,10 +25,10 @@ import com.aozijx.passly.presentation.feature.settings.security.RecoveryDraftVie
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.messageOrNull
-import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
-import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
-import com.aozijx.passly.presentation.ui.settings.security.RecoveryCodeDetail
-import com.aozijx.passly.presentation.ui.settings.security.RecoveryCodeSheet
+import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
+import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
+import com.aozijx.passly.presentation.feature.settings.ui.security.RecoveryCodeDetail
+import com.aozijx.passly.presentation.feature.settings.ui.security.RecoveryCodeSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

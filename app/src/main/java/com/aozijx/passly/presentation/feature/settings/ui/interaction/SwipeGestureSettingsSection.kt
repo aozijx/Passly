@@ -1,0 +1,62 @@
+package com.aozijx.passly.presentation.feature.settings.ui.interaction
+
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Swipe
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.aozijx.passly.R
+import com.aozijx.passly.presentation.ui.shared.components.group.SegmentedSettingsGroup
+import com.aozijx.passly.presentation.ui.shared.components.group.navigationSettingsGroupItem
+import com.aozijx.passly.presentation.ui.shared.components.group.switchSettingsGroupItem
+import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
+import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
+
+@Composable
+internal fun SwipeGestureSettingsSection(
+    isSwipeEnabled: Boolean,
+    swipeLeftAction: SwipeActionUiModel,
+    swipeRightAction: SwipeActionUiModel,
+    onSwipeEnabledChange: (Boolean) -> Unit,
+    onLeftSwipeActionClick: () -> Unit,
+    onRightSwipeActionClick: () -> Unit
+) {
+    SettingsSectionTitle(text = stringResource(R.string.settings_swipe_gesture_section))
+    SegmentedSettingsGroup(
+        items = listOf(
+            switchSettingsGroupItem(
+                key = "interaction.swipe_enabled",
+                icon = Icons.Default.Swipe,
+                title = stringResource(R.string.settings_swipe_gesture_enabled),
+                subtitle = stringResource(R.string.settings_swipe_gesture_enabled_description),
+                checked = isSwipeEnabled,
+                onCheckedChange = onSwipeEnabledChange
+            ),
+            navigationSettingsGroupItem(
+                key = "interaction.swipe_left",
+                visible = isSwipeEnabled,
+                reserveLeadingIconSpace = true,
+                title = stringResource(R.string.settings_swipe_gesture_left_action),
+                value = swipeLeftAction.localizedLabel(),
+                onClick = onLeftSwipeActionClick
+            ),
+            navigationSettingsGroupItem(
+                key = "interaction.swipe_right",
+                visible = isSwipeEnabled,
+                reserveLeadingIconSpace = true,
+                title = stringResource(R.string.settings_swipe_gesture_right_action),
+                value = swipeRightAction.localizedLabel(),
+                onClick = onRightSwipeActionClick
+            )
+        )
+    )
+}
+
+@Composable
+internal fun SwipeActionUiModel.localizedLabel(): String = stringResource(
+    when (this) {
+        SwipeActionUiModel.DELETE -> R.string.settings_swipe_action_delete
+        SwipeActionUiModel.DETAIL -> R.string.settings_swipe_action_detail
+        SwipeActionUiModel.COPY_PASSWORD -> R.string.settings_swipe_action_copy_password
+        SwipeActionUiModel.COPY_USERNAME -> R.string.settings_swipe_action_copy_username
+    }
+)

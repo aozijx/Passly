@@ -17,10 +17,10 @@ import com.aozijx.passly.presentation.feature.settings.main.interaction.Interact
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsEffect
 import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.interaction.toUiModel
-import com.aozijx.passly.presentation.ui.settings.interaction.InteractionDetail
-import com.aozijx.passly.presentation.ui.settings.interaction.SwipeActionSelectDialog
-import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
-import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
+import com.aozijx.passly.presentation.feature.settings.ui.interaction.InteractionDetail
+import com.aozijx.passly.presentation.feature.settings.ui.interaction.SwipeActionSelectDialog
+import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
+import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
 
 private enum class SwipeActionDialog { Left, Right }
 

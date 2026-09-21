@@ -23,8 +23,8 @@ import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSett
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.backup.handleBackupPathPicked
 import com.aozijx.passly.presentation.feature.settings.ui.data.BackupDirectoryClearDialog
-import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
-import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
+import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
+import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

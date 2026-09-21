@@ -2,9 +2,9 @@ package com.aozijx.passly.presentation.feature.settings.security
 
 import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.presentation.feature.settings.security.AppPasswordAction
-import com.aozijx.passly.presentation.ui.settings.main.AppPasswordDialogStateHolder
-import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogEvent
-import com.aozijx.passly.presentation.ui.settings.main.model.AppPasswordDialogsModel
+import com.aozijx.passly.presentation.feature.settings.ui.main.AppPasswordDialogStateHolder
+import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPasswordDialogEvent
+import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPasswordDialogsModel
 
 internal fun buildAppPasswordDialogsModel(
     stateHolder: AppPasswordDialogStateHolder,

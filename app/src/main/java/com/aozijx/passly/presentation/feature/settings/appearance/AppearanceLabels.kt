@@ -8,10 +8,10 @@ import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ThemeCanvasTint
-import com.aozijx.passly.presentation.ui.settings.appearance.model.AppearanceUiModel
-import com.aozijx.passly.presentation.ui.settings.appearance.model.FontFamilyUiModel
-import com.aozijx.passly.presentation.ui.settings.appearance.model.LanguageOptionUiModel
-import com.aozijx.passly.presentation.ui.settings.appearance.model.ThemeModeUiModel
+import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.AppearanceUiModel
+import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.FontFamilyUiModel
+import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.LanguageOptionUiModel
+import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.ThemeModeUiModel
 
 /**
  * 语言选择器使用语言自称（中文 / English / 日本語），不会随当前界面语言二次翻译。

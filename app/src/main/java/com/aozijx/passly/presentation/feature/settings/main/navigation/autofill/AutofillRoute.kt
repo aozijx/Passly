@@ -11,11 +11,11 @@ import com.aozijx.passly.presentation.feature.settings.autofill.AutofillSettings
 import com.aozijx.passly.presentation.feature.settings.autofill.AutofillSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.autofill.toAutofillSettingsUiModel
 import com.aozijx.passly.presentation.feature.settings.autofill.toDomainModel
-import com.aozijx.passly.presentation.ui.settings.autofill.AutofillDetail
-import com.aozijx.passly.presentation.ui.settings.autofill.model.AutofillPresentationUiModel
-import com.aozijx.passly.presentation.ui.settings.autofill.model.AutofillSettingsEventHandler
-import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
-import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
+import com.aozijx.passly.presentation.feature.settings.ui.autofill.AutofillDetail
+import com.aozijx.passly.presentation.feature.settings.ui.autofill.model.AutofillPresentationUiModel
+import com.aozijx.passly.presentation.feature.settings.ui.autofill.model.AutofillSettingsEventHandler
+import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
+import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

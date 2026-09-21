@@ -9,11 +9,11 @@ import com.aozijx.passly.presentation.feature.settings.appearance.InterfaceSetti
 import com.aozijx.passly.presentation.feature.settings.appearance.InterfaceSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.appearance.toDomainModel
 import com.aozijx.passly.presentation.feature.settings.appearance.toInterfaceUiModel
-import com.aozijx.passly.presentation.ui.settings.appearance.InterfaceDetail
-import com.aozijx.passly.presentation.ui.settings.appearance.model.EntryHierarchyDisplayModeUiModel
-import com.aozijx.passly.presentation.ui.settings.appearance.model.InterfaceEventHandler
-import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
-import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
+import com.aozijx.passly.presentation.feature.settings.ui.appearance.InterfaceDetail
+import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.EntryHierarchyDisplayModeUiModel
+import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.InterfaceEventHandler
+import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
+import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
 
 @Composable
 internal fun InterfaceRoute(

@@ -9,7 +9,7 @@ class PresentationUiApiVerifierTest {
         val signals = PresentationUiApiVerifier.inspect(
             listOf(
                 EditorSource(
-                    path = "app/src/main/java/com/example/presentation/ui/settings/SettingsContent.kt",
+                    path = "app/src/main/java/com/example/presentation/feature/settings/ui/SettingsContent.kt",
                     content = """
                         @Composable
                         internal fun SettingsContent(
@@ -32,7 +32,7 @@ class PresentationUiApiVerifierTest {
 
         assertEquals(
             listOf(
-                "app/src/main/java/com/example/presentation/ui/settings/SettingsContent.kt: " +
+                "app/src/main/java/com/example/presentation/feature/settings/ui/SettingsContent.kt: " +
                     "SettingsContent has 9 business parameters (threshold 8)",
             ),
             signals,

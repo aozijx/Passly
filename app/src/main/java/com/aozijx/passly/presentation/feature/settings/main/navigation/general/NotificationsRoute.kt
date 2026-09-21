@@ -27,11 +27,11 @@ import com.aozijx.passly.presentation.feature.settings.main.general.Notification
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.general.toFeatureModel
 import com.aozijx.passly.presentation.feature.settings.main.general.toUiModel
-import com.aozijx.passly.presentation.ui.settings.general.NotificationSettingsEventHandler
-import com.aozijx.passly.presentation.ui.settings.general.NotificationSettingsSection
-import com.aozijx.passly.presentation.ui.settings.general.NotificationTopic
-import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
-import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
+import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationSettingsEventHandler
+import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationSettingsSection
+import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationTopic
+import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
+import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

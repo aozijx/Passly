@@ -1,7 +1,7 @@
 package com.aozijx.passly.presentation.feature.settings.main.interaction
 
 import com.aozijx.passly.domain.settings.model.SwipeActionType
-import com.aozijx.passly.presentation.ui.settings.interaction.InteractionDetailUiModel
+import com.aozijx.passly.presentation.feature.settings.ui.interaction.InteractionDetailUiModel
 import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
 
 data class InteractionSettingsUiState(

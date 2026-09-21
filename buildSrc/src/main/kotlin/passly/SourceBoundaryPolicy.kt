@@ -288,7 +288,7 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "SETTINGS_UI_VAULT_OWNERSHIP",
-            sourcePathContains = "/presentation/ui/settings/",
+            sourcePathContains = "/presentation/feature/settings/ui/",
             forbiddenImportPrefixes = setOf("com.aozijx.passly.presentation.ui.vault.list.model."),
             message = "settings UI imports a Vault-owned list model",
         ),

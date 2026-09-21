@@ -9,9 +9,9 @@ import com.aozijx.passly.presentation.feature.settings.appearance.appLanguageFro
 import com.aozijx.passly.presentation.feature.settings.appearance.toAppearanceUiModel
 import com.aozijx.passly.presentation.feature.settings.appearance.toDomainModel
 import com.aozijx.passly.presentation.feature.shell.theme.LocalAppearanceSettings
-import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
-import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
-import com.aozijx.passly.presentation.ui.settings.appearance.AppearanceDetail
+import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
+import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
+import com.aozijx.passly.presentation.feature.settings.ui.appearance.AppearanceDetail
 
 @Composable
 internal fun AppearanceRoute(

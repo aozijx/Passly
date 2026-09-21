@@ -2,9 +2,9 @@ package com.aozijx.passly.presentation.feature.settings.main.general
 
 import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.model.TopicMessageSettings
-import com.aozijx.passly.presentation.ui.settings.general.NotificationSettingsUiModel
-import com.aozijx.passly.presentation.ui.settings.general.NotificationTopic
-import com.aozijx.passly.presentation.ui.settings.general.NotificationTopicUiModel
+import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationSettingsUiModel
+import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationTopic
+import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationTopicUiModel
 
 data class NotificationSettingsUiState(
     val optionalMessagesEnabled: Boolean = true,

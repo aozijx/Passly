@@ -10,8 +10,8 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.presentation.feature.database.reset.DatabaseResetOverlay
 import com.aozijx.passly.presentation.feature.settings.ui.data.DataManagementDetail
 import com.aozijx.passly.presentation.feature.settings.ui.data.model.DataManagementEventHandler
-import com.aozijx.passly.presentation.ui.settings.main.SettingsSecondaryPage
-import com.aozijx.passly.presentation.ui.settings.main.component.SettingsGroup
+import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
+import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -7,6 +7,30 @@ import org.junit.Test
 
 class SettingsRouteOwnershipBoundaryTest {
     @Test
+    fun `settings passive ui lives inside the settings feature root`() {
+        val sourceRoot = listOf(
+            File("src/main/java"),
+            File("app/src/main/java"),
+        ).firstOrNull(File::isDirectory) ?: error("Cannot locate app source root")
+        val legacyRoot = File(
+            sourceRoot,
+            "com/aozijx/passly/presentation/ui/settings",
+        )
+
+        assertFalse(
+            "Settings UI still has a parallel presentation ui root",
+            legacyRoot.walkTopDown().any { it.isFile && it.extension == "kt" },
+        )
+        assertTrue(
+            File(
+                sourceRoot,
+                "com/aozijx/passly/presentation/feature/settings/ui/main/" +
+                    "SettingsMainPage.kt",
+            ).isFile,
+        )
+    }
+
+    @Test
     fun `general and notifications destinations have one route owner`() {
         val sourceRoot = listOf(
             File("src/main/java"),

@@ -2,7 +2,7 @@ package com.aozijx.passly.presentation.feature.settings.main.general
 
 import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.model.TopicMessageSettings
-import com.aozijx.passly.presentation.ui.settings.general.NotificationTopic
+import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationTopic
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test

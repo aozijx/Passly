@@ -2,8 +2,8 @@ package com.aozijx.passly.presentation.feature.settings.appearance
 
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.model.AppCornerRadiusConstraints
-import com.aozijx.passly.presentation.ui.settings.appearance.model.EntryHierarchyDisplayModeUiModel
-import com.aozijx.passly.presentation.ui.settings.appearance.model.InterfaceUiModel
+import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.EntryHierarchyDisplayModeUiModel
+import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.InterfaceUiModel
 
 fun InterfaceSettingsUiState.toInterfaceUiModel(): InterfaceUiModel = InterfaceUiModel(
     hideSystemBars = hideSystemBars,
