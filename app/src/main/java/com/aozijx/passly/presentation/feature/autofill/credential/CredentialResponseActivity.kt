@@ -1,5 +1,6 @@
 package com.aozijx.passly.presentation.feature.autofill.credential
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -15,7 +16,6 @@ import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
 import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -30,9 +30,6 @@ class CredentialResponseActivity : AppCompatActivity() {
     private val viewModel: CredentialResponseViewModel by viewModels()
     private val resultFinishing = AtomicBoolean(false)
 
-    /** 是否为最终步骤（get/create）：仅最终步骤完成后关闭自动填充会话。 */
-    private var isFinalStepAction = false
-
     companion object {
         private const val TAG = "CredResponse"
     }
@@ -40,53 +37,67 @@ class CredentialResponseActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val launch = responseLaunch(intent)
+
         setContent {
             AppTheme {
-                AuthenticationHost(this, authenticationHostRegistry) {}
-            }
-        }
-
-        lifecycleScope.launch {
-            viewModel.state.collectLatest { state ->
-                when (state) {
-                    is CredentialResponseUiState.Complete -> {
-                        if (!resultFinishing.compareAndSet(false, true)) return@collectLatest
-                        // PendingIntentHandler requires RESULT_OK for both valid
-                        // responses and valid Credential Manager exceptions.
-                        setResult(RESULT_OK, state.resultIntent)
-                        hideIme()
-                        // 解锁动作（ACTION_UNLOCK）是中间步骤：用户随后选择条目会再进
-                        // 一个 ACTION_GET_PASSWORD Activity，此刻关闭会话会把 vault
-                        // SEAL（擦 DEK），导致第二次认证。仅最终步骤（get/create）关闭。
-                        if (isFinalStepAction) viewModel.closeRequestSession()
-                        finish()
-                    }
-
-                    is CredentialResponseUiState.Unrecoverable -> finishWithError()
-                    is CredentialResponseUiState.Loading -> { /* 等待结果 */
-                    }
+                AuthenticationHost(this, authenticationHostRegistry) {
+                    CredentialResponseRoute(
+                        action = launch.action,
+                        viewModel = viewModel,
+                        onComplete = { resultIntent ->
+                            finishWithResult(
+                                resultIntent = resultIntent,
+                                closeSession = launch.closeSessionOnComplete,
+                            )
+                        },
+                        onUnrecoverable = ::finishWithError,
+                    )
                 }
             }
         }
+    }
 
-        when (val action = intent.action) {
-            ModernCredentialService.ACTION_GET_PASSWORD -> {
-                isFinalStepAction = true
-                viewModel.onAction(CredentialResponseUiAction.PasswordGet(intent))
-            }
+    private fun responseLaunch(sourceIntent: Intent): CredentialResponseLaunch =
+        when (val action = sourceIntent.action) {
+            ModernCredentialService.ACTION_GET_PASSWORD -> CredentialResponseLaunch(
+                action = CredentialResponseUiAction.PasswordGet(sourceIntent),
+                closeSessionOnComplete = true,
+            )
 
-            ModernCredentialService.ACTION_UNLOCK ->
-                viewModel.onAction(CredentialResponseUiAction.Unlock(intent))
+            ModernCredentialService.ACTION_UNLOCK -> CredentialResponseLaunch(
+                action = CredentialResponseUiAction.Unlock(sourceIntent),
+                closeSessionOnComplete = false,
+            )
 
-            ModernCredentialService.ACTION_CREATE_PASSWORD -> {
-                isFinalStepAction = true
-                viewModel.onAction(CredentialResponseUiAction.PasswordCreate(intent))
-            }
+            ModernCredentialService.ACTION_CREATE_PASSWORD -> CredentialResponseLaunch(
+                action = CredentialResponseUiAction.PasswordCreate(sourceIntent),
+                closeSessionOnComplete = true,
+            )
 
             else -> {
                 TelemetryRuntime.w(TAG, "Unknown action: $action")
-                viewModel.onAction(CredentialResponseUiAction.UnknownAction)
+                CredentialResponseLaunch(
+                    action = CredentialResponseUiAction.UnknownAction,
+                    closeSessionOnComplete = true,
+                )
             }
+        }
+
+    private fun finishWithResult(
+        resultIntent: Intent,
+        closeSession: Boolean,
+    ) {
+        if (!resultFinishing.compareAndSet(false, true)) return
+        // PendingIntentHandler requires RESULT_OK for both valid responses and
+        // valid Credential Manager exceptions.
+        setResult(RESULT_OK, resultIntent)
+        hideIme()
+        // Unlock is an intermediate step. Closing its request session would seal
+        // the vault before the subsequent password request and force authentication again.
+        lifecycleScope.launch {
+            if (closeSession) viewModel.closeRequestSession()
+            finish()
         }
     }
 
@@ -111,4 +122,9 @@ class CredentialResponseActivity : AppCompatActivity() {
         WindowCompat.getInsetsController(window, window.decorView)
             .hide(WindowInsetsCompat.Type.ime())
     }
+
+    private data class CredentialResponseLaunch(
+        val action: CredentialResponseUiAction,
+        val closeSessionOnComplete: Boolean,
+    )
 }
