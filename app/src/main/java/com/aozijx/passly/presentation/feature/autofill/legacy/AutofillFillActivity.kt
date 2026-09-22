@@ -14,10 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
-import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
-import com.aozijx.passly.presentation.ui.autofill.AutofillCandidateBottomSheet
-import com.aozijx.passly.presentation.ui.autofill.AutofillCandidateItem
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -36,34 +33,19 @@ class AutofillFillActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setResult(RESULT_CANCELED)
+        val request = parseIntent(intent)
 
         setContent {
             AppTheme {
-                AuthenticationHost(this, authenticationHostRegistry) {}
-            }
-        }
-
-        val request = parseIntent(intent)
-
-        lifecycleScope.launch {
-            viewModel.uiState.collect { state ->
-                when (state) {
-                    is AutofillFillUiState.Initial -> Unit
-                    is AutofillFillUiState.Loading -> { }
-                    is AutofillFillUiState.ShowCandidates -> {
-                        showBottomSheet(state.candidates)
-                    }
-                    is AutofillFillUiState.Result -> {
-                        finishWithResult(state.payload)
-                    }
-                    is AutofillFillUiState.Error -> {
-                        finishWithResult(null)
-                    }
+                AuthenticationHost(this, authenticationHostRegistry) {
+                    AutofillFillRoute(
+                        request = request,
+                        viewModel = viewModel,
+                        onResult = ::finishWithResult,
+                    )
                 }
             }
         }
-
-        viewModel.onAction(AutofillFillUiAction.Initialize(request))
     }
 
     private fun parseIntent(intent: Intent?): AutofillFillRequest {
@@ -107,36 +89,6 @@ class AutofillFillActivity : FragmentActivity() {
             otpIds = otpIds,
         )
     }
-
-    private fun showBottomSheet(candidates: List<ResolvedCandidate>) {
-        val candidatesById = candidates.associateBy { it.entry.id.value }
-        setContent {
-            AppTheme {
-                AuthenticationHost(this, authenticationHostRegistry) {
-                    AutofillCandidateBottomSheet(
-                        candidates = candidates.map { candidate -> candidate.toUiItem() },
-                        onCandidateSelected = { candidateId ->
-                            candidatesById[candidateId]?.let { candidate ->
-                                viewModel.onAction(AutofillFillUiAction.CandidateSelected(candidate))
-                            }
-                        },
-                        onCancel = { finishWithResult(null) }
-                    )
-                }
-            }
-        }
-    }
-
-    private fun ResolvedCandidate.toUiItem() = AutofillCandidateItem(
-        id = entry.id.value,
-        iconName = entry.profile.icon.name,
-        iconCustomPath = entry.profile.icon.customReference,
-        associatedAppPackage = entry.profile.associations.applicationIds.firstOrNull(),
-        entryTypeKey = entry.entryType.name,
-        title = entry.title,
-        username = entry.username,
-        associatedDomain = entry.associatedDomain,
-    )
 
     private fun finishWithResult(payload: AutofillAuthenticationPayload?) {
         if (!resultFinishing.compareAndSet(false, true)) return
