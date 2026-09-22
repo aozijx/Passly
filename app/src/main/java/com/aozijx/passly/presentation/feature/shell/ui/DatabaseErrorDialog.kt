@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.shell
+package com.aozijx.passly.presentation.feature.shell.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row

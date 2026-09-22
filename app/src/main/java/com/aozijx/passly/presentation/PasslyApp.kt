@@ -12,7 +12,7 @@ import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.app.platform.permission.PermissionServices
 import com.aozijx.passly.app.platform.permission.ProvidePermissionServices
 import com.aozijx.passly.app.shell.FlipToLockSensorController
-import com.aozijx.passly.presentation.feature.shell.AppShell
+import com.aozijx.passly.presentation.feature.shell.AppShellRoute
 import com.aozijx.passly.presentation.feature.shell.AppShellUiAction
 import com.aozijx.passly.presentation.feature.shell.AppShellViewModel
 import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
@@ -46,7 +46,7 @@ internal fun PasslyApp(
                 appCornerRadiusDp = shellState.appCornerRadiusDp,
             ) {
                 AuthenticationHost(activity, authenticationHostRegistry) {
-                    AppShell(
+                    AppShellRoute(
                         window = activity.window,
                         uiState = shellState,
                         effects = shellViewModel.effects,

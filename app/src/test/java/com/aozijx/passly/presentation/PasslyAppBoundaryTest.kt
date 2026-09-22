@@ -29,7 +29,7 @@ class PasslyAppBoundaryTest {
             "ProvideAppNoticePublisher",
             "AppTheme(",
             "AuthenticationHost(",
-            "AppShell(",
+            "AppShellRoute(",
         ).forEach { token -> assertTrue(app.contains(token)) }
     }
 
@@ -46,9 +46,9 @@ class PasslyAppBoundaryTest {
         assertFalse(detailList.contains("clickable("))
     }
     @Test
-    fun `shell depends on window and close intent instead of activity`() {
+    fun `shell route depends on window and close intent instead of activity`() {
         val shell = source(
-            "com/aozijx/passly/presentation/feature/shell/AppShell.kt",
+            "com/aozijx/passly/presentation/feature/shell/AppShellRoute.kt",
         )
 
         assertFalse(shell.contains("FragmentActivity"))
@@ -60,6 +60,22 @@ class PasslyAppBoundaryTest {
         assertFalse(navigation.contains("AppShellViewModel"))
         assertTrue(shell.contains("window: Window"))
         assertTrue(shell.contains("onCloseApp: () -> Unit"))
+        assertTrue(shell.contains("fun AppShellRoute("))
+
+        val sourceRoot = listOf(File("src/main/java"), File("app/src/main/java"))
+            .firstOrNull(File::isDirectory) ?: error("Cannot locate app source root")
+        assertFalse(
+            sourceRoot.resolve("com/aozijx/passly/presentation/feature/shell/AppShell.kt").exists(),
+        )
+        assertFalse(
+            sourceRoot.resolve("com/aozijx/passly/presentation/ui/shell")
+                .walkTopDown().any { it.isFile && it.extension == "kt" },
+        )
+        assertTrue(
+            sourceRoot.resolve(
+                "com/aozijx/passly/presentation/feature/shell/ui/DatabaseErrorDialog.kt",
+            ).isFile,
+        )
     }
 
     private fun source(relativePath: String): String {

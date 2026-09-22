@@ -19,11 +19,11 @@ import com.aozijx.passly.presentation.feature.recovery.RecoveryModeRoute
 import com.aozijx.passly.presentation.feature.recovery.RecoveryModeViewModel
 import com.aozijx.passly.presentation.feature.unlock.AuthenticationRoute
 import com.aozijx.passly.presentation.feature.unlock.UnlockViewModel
-import com.aozijx.passly.presentation.ui.shell.DatabaseErrorDialog
+import com.aozijx.passly.presentation.feature.shell.ui.DatabaseErrorDialog
 import kotlinx.coroutines.flow.Flow
 
 @Composable
-internal fun AppShell(
+internal fun AppShellRoute(
     window: Window,
     uiState: AppShellUiState,
     effects: Flow<AppShellEffect>,
