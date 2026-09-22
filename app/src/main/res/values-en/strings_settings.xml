@@ -273,14 +273,13 @@
     <string name="settings_log_clear_confirm_action">Clear</string>
     <string name="settings_log_clear_confirm_message">Clear all logs? This cannot be undone.</string>
     <string name="settings_log_empty">No logs</string>
-    <string name="settings_log_encrypted_subtitle">Keep diagnostic records for 24 hours</string>
-    <string name="settings_log_encrypted_title">Encrypted diagnostic logs</string>
     <string name="settings_log_export_action">Export logs</string>
     <string name="settings_log_export_action_subtitle">Create a temporary plaintext file after verification</string>
     <string name="settings_log_export_failed">Couldn’t export logs. Try again.</string>
     <string name="settings_log_loading">Loading logs…</string>
     <string name="settings_log_management_title">Logs</string>
     <string name="settings_log_view_title">View logs</string>
+    <string name="settings_log_view_subtitle">Always recorded and encrypted by day</string>
     <string name="settings_system_notification_settings">System notification access</string>
     <string name="settings_system_notification_settings_summary">Manage notification permission and channels in system settings</string>
 

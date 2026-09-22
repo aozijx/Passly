@@ -5,6 +5,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
+import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.crypto.CryptoConfig
 import java.security.KeyStore
 import javax.crypto.Cipher
@@ -27,7 +28,7 @@ internal object AndroidKeystoreKeyProvider {
             val secretKey = (ks.getEntry(alias, null) as KeyStore.SecretKeyEntry).secretKey
             val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
             cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-            TelemetryRuntime.i(TAG, "Cipher initialized in ENCRYPT mode")
+            TelemetryRuntime.i(EventCategory.SECURITY, "keystore.encrypt_cipher_initialized")
             cipher
         } catch (e: Exception) {
             TelemetryRuntime.logCryptoException(TAG, "Get encrypt cipher", e)
@@ -45,7 +46,7 @@ internal object AndroidKeystoreKeyProvider {
             val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
             val spec = GCMParameterSpec(CryptoConfig.GCM_TAG_BITS, iv)
             cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
-            TelemetryRuntime.i(TAG, "Cipher initialized in DECRYPT mode")
+            TelemetryRuntime.i(EventCategory.SECURITY, "keystore.decrypt_cipher_initialized")
             cipher
         } catch (e: KeyPermanentlyInvalidatedException) {
             TelemetryRuntime.logCryptoException(TAG, "Key invalidated", e)
@@ -65,7 +66,7 @@ internal object AndroidKeystoreKeyProvider {
         synchronized(keyGenLock) {
             val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
             if (!ks.containsAlias(alias)) {
-                TelemetryRuntime.i(TAG, "Generating new AndroidKeyStore key: $alias")
+                TelemetryRuntime.i(EventCategory.SECURITY, "keystore.master_key_generation_started")
                 generateMasterKey(alias, invalidateOnBiometricChange)
             }
         }
@@ -90,6 +91,6 @@ internal object AndroidKeystoreKeyProvider {
             .build()
         keyGenerator.init(spec)
         keyGenerator.generateKey()
-        TelemetryRuntime.i(TAG, "Master key generated: $alias")
+        TelemetryRuntime.i(EventCategory.SECURITY, "keystore.master_key_generated")
     }
 }

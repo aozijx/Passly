@@ -3,6 +3,7 @@ package com.aozijx.passly.presentation.feature.scanner
 import android.content.Context
 import android.net.Uri
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
+import com.aozijx.passly.core.telemetry.EventCategory
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 
@@ -35,7 +36,7 @@ object BarcodeImageDecoder {
                     scanner.close()
                 }
         } catch (e: Exception) {
-            TelemetryRuntime.e("BarcodeImageDecoder", "Error decoding image", e)
+            TelemetryRuntime.e(EventCategory.APPLICATION, "scanner.image_decode_failed", throwable = e)
             onFailure("解析图片出错")
         }
     }

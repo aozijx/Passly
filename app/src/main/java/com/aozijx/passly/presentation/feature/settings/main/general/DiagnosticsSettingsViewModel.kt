@@ -3,7 +3,6 @@ package com.aozijx.passly.presentation.feature.settings.main.general
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
-import com.aozijx.passly.core.telemetry.TelemetryPolicyController
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -15,12 +14,12 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
+import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportResult
 import com.aozijx.passly.feature.settings.diagnostics.ExportDiagnosticsUseCase
 
 @HiltViewModel
 class DiagnosticsSettingsViewModel @Inject constructor(
-    private val policies: TelemetryPolicyController,
     private val secureSessionAccessState: SecureSessionAccessState,
     private val logStore: DiagnosticsLogStore,
     private val exportDiagnostics: ExportDiagnosticsUseCase
@@ -31,22 +30,8 @@ class DiagnosticsSettingsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DiagnosticsSettingsUiState())
     val uiState: StateFlow<DiagnosticsSettingsUiState> = _uiState.asStateFlow()
 
-    init {
-        viewModelScope.launch {
-            policies.policies.collect { policy ->
-                mutate(
-                    DiagnosticsSettingsMutation.FileLoggingChanged(
-                        policy.isEncryptedFileEnabled()
-                    )
-                )
-            }
-        }
-    }
-
     fun onAction(action: DiagnosticsSettingsAction) {
         when (action) {
-            is DiagnosticsSettingsAction.SetFileLoggingEnabled ->
-                setFileLoggingEnabled(action.enabled)
             DiagnosticsSettingsAction.OpenViewer -> openViewer()
             DiagnosticsSettingsAction.CloseViewer ->
                 mutate(DiagnosticsSettingsMutation.ViewerClosed)
@@ -57,10 +42,6 @@ class DiagnosticsSettingsViewModel @Inject constructor(
             DiagnosticsSettingsAction.ConfirmClear -> clearLogs()
             DiagnosticsSettingsAction.Export -> authenticateAndExport()
         }
-    }
-
-    private fun setFileLoggingEnabled(enabled: Boolean) = viewModelScope.launch {
-        if (enabled) policies.enableEncryptedFile() else policies.disableEncryptedFile()
     }
 
     private fun openViewer() {
@@ -99,9 +80,9 @@ class DiagnosticsSettingsViewModel @Inject constructor(
                 -> eventChannel.trySend(DiagnosticsSettingsEffect.ExportFailed)
             is DiagnosticsExportResult.Failed -> {
                 TelemetryRuntime.e(
-                    "DiagnosticsExport",
-                    "Plaintext diagnostics export failed",
-                    result.cause,
+                    EventCategory.APPLICATION,
+                    "diagnostics.export_failed",
+                    throwable = result.cause,
                 )
                 eventChannel.trySend(DiagnosticsSettingsEffect.ExportFailed)
             }

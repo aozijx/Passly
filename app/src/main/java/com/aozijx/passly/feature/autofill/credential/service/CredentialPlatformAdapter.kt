@@ -6,6 +6,7 @@ import androidx.annotation.RequiresApi
 import androidx.credentials.provider.BeginGetPasswordOption
 import androidx.credentials.provider.PasswordCredentialEntry
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
+import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.autofill.model.AutofillField
 import com.aozijx.passly.domain.autofill.model.AutofillRequest
 import com.aozijx.passly.domain.autofill.model.AutofillResponse
@@ -58,7 +59,7 @@ class CredentialPlatformAdapter @Inject constructor(
                     (option.allowedUserIds.isEmpty() || it.entry.username in option.allowedUserIds)
         }
         if (candidates.isEmpty()) {
-            TelemetryRuntime.d(TAG, "No candidates for password entries")
+            TelemetryRuntime.d(EventCategory.AUTOFILL, "credential.password_candidates_empty")
             return emptyList()
         }
 

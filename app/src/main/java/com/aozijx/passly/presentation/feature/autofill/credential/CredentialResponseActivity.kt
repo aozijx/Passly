@@ -11,6 +11,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
+import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
 import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService
@@ -76,7 +77,7 @@ class CredentialResponseActivity : AppCompatActivity() {
             )
 
             else -> {
-                TelemetryRuntime.w(TAG, "Unknown action: $action")
+                TelemetryRuntime.w(EventCategory.AUTOFILL, "credential.response_action_unknown")
                 CredentialResponseLaunch(
                     action = CredentialResponseUiAction.UnknownAction,
                     closeSessionOnComplete = true,

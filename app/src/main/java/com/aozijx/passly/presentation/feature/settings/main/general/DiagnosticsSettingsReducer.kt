@@ -1,7 +1,6 @@
 package com.aozijx.passly.presentation.feature.settings.main.general
 
 internal sealed interface DiagnosticsSettingsMutation {
-    data class FileLoggingChanged(val enabled: Boolean) : DiagnosticsSettingsMutation
     data object ViewerOpened : DiagnosticsSettingsMutation
     data object ViewerClosed : DiagnosticsSettingsMutation
     data class LogPageLoaded(
@@ -18,9 +17,6 @@ internal object DiagnosticsSettingsReducer {
         state: DiagnosticsSettingsUiState,
         mutation: DiagnosticsSettingsMutation,
     ): DiagnosticsSettingsUiState = when (mutation) {
-        is DiagnosticsSettingsMutation.FileLoggingChanged -> state.copy(
-            fileLoggingEnabled = mutation.enabled,
-        )
         DiagnosticsSettingsMutation.ViewerOpened -> state.copy(
             isViewerOpen = true,
             logContent = null,

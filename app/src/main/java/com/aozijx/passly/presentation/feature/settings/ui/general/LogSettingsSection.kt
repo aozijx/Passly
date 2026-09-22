@@ -29,17 +29,14 @@ import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
-import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 
 @Composable
 fun LogSettingsSection(
-    fileLoggingEnabled: Boolean,
     isViewerOpen: Boolean,
     logContent: String?,
     logByteCount: Int,
     isClearConfirmationOpen: Boolean,
-    onFileLoggingEnabledChange: (Boolean) -> Unit,
     onOpenViewer: () -> Unit,
     onCloseViewer: () -> Unit,
     onExport: () -> Unit,
@@ -48,26 +45,19 @@ fun LogSettingsSection(
     onDismissClear: () -> Unit,
 ) {
     val logManagementTitle = stringResource(R.string.settings_log_management_title)
-    val encryptedLogTitle = stringResource(R.string.settings_log_encrypted_title)
-    val encryptedLogSubtitle = stringResource(R.string.settings_log_encrypted_subtitle)
     val viewLogsTitle = stringResource(R.string.settings_log_view_title)
+    val viewLogsSubtitle = stringResource(R.string.settings_log_view_subtitle)
     val exportLogsTitle = stringResource(R.string.settings_log_export_action)
     val exportLogsSubtitle = stringResource(R.string.settings_log_export_action_subtitle)
     val clearLogsTitle = stringResource(R.string.settings_log_clear_action)
     SettingsSectionTitle(text = logManagementTitle)
     SegmentedSettingsGroup(
         items = listOf(
-            switchSettingsGroupItem(
-                key = "logs.diagnostics",
-                icon = Icons.Default.BugReport,
-                title = encryptedLogTitle,
-                subtitle = encryptedLogSubtitle,
-                checked = fileLoggingEnabled,
-                onCheckedChange = onFileLoggingEnabledChange,
-            ),
             navigationSettingsGroupItem(
                 key = "logs.view",
+                icon = Icons.Default.BugReport,
                 title = viewLogsTitle,
+                subtitle = viewLogsSubtitle,
                 onClick = onOpenViewer,
             ),
             navigationSettingsGroupItem(

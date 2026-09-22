@@ -15,7 +15,6 @@ import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicLong
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -72,7 +71,6 @@ data class DiagnosticsPage(
  */
 internal class EncryptedLogStore(
     context: Context,
-    private val loggingEnabledUntil: AtomicLong,
     private val directory: File = File(context.noBackupFilesDir, DIRECTORY_NAME),
     private val emitEnabled: (TelemetryEvent) -> Boolean = { true }
 ) : TelemetryFileStore {
@@ -109,7 +107,7 @@ internal class EncryptedLogStore(
     // ============================== 写入 ==============================
 
     override fun write(event: TelemetryEvent) {
-        if (!emitEnabled(event) || loggingEnabledUntil.get() < System.currentTimeMillis()) return
+        if (!emitEnabled(event)) return
         try {
             writer.execute {
                 val plain = RecordCodec.encode(event)
@@ -410,9 +408,5 @@ internal class EncryptedLogStore(
 internal class EncryptedTelemetryFileStoreFactory @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) : TelemetryFileStoreFactory {
-    override fun create(loggingEnabledUntil: AtomicLong): TelemetryFileStore =
-        EncryptedLogStore(
-            context = context,
-            loggingEnabledUntil = loggingEnabledUntil
-        )
+    override fun create(): TelemetryFileStore = EncryptedLogStore(context = context)
 }

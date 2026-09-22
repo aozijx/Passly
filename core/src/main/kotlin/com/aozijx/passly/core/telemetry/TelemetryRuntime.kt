@@ -17,21 +17,6 @@ object TelemetryRuntime {
         reporter = value
     }
 
-    fun v(tag: String, message: String) =
-        emitLegacy(EventLevel.VERBOSE, tag, message)
-
-    fun d(tag: String, message: String) =
-        emitLegacy(EventLevel.DEBUG, tag, message)
-
-    fun i(tag: String, message: String) =
-        emitLegacy(EventLevel.INFO, tag, message)
-
-    fun w(tag: String, message: String, throwable: Throwable? = null) =
-        emitLegacy(EventLevel.WARN, tag, message, throwable)
-
-    fun e(tag: String, message: String, throwable: Throwable? = null) =
-        emitLegacy(EventLevel.ERROR, tag, message, throwable)
-
     fun d(
         category: EventCategory,
         name: String,
@@ -82,21 +67,6 @@ object TelemetryRuntime {
         )
     }
 
-    private fun emitLegacy(
-        level: EventLevel,
-        @Suppress("UNUSED_PARAMETER") tag: String,
-        @Suppress("UNUSED_PARAMETER") message: String,
-        throwable: Throwable? = null
-    ) {
-        emit(
-            level = level,
-            category = EventCategory.APPLICATION,
-            name = "legacy.framework",
-            fields = emptyMap(),
-            throwable = throwable
-        )
-    }
-
     private fun emit(
         level: EventLevel,
         category: EventCategory,
@@ -107,23 +77,15 @@ object TelemetryRuntime {
         val safeName = name.takeIf(EVENT_NAME::matches)
             ?: "legacy.${category.name.lowercase()}"
         val safeFields = fields.filterKeys(FIELD_NAME::matches)
-        val throwableType = throwable?.javaClass?.simpleName
-            ?.takeIf(ENUM_NAME::matches)
-        val frames = throwable?.stackTrace
-            ?.asSequence()
-            ?.filter { it.className.startsWith(APP_PACKAGE_PREFIX) }
-            ?.take(MAX_STACK_FRAMES)
-            ?.map { "${it.className}.${it.methodName}" }
-            ?.toList()
-            .orEmpty()
+        val throwableSnapshot = throwable?.toTelemetrySnapshot()
         reporter.emit(
             TelemetryEvent(
                 level = level,
                 category = category,
                 name = safeName,
                 fields = safeFields,
-                throwableType = throwableType,
-                appStackFrames = frames
+                throwableType = throwableSnapshot?.type,
+                appStackFrames = throwableSnapshot?.appStackFrames.orEmpty()
             )
         )
     }
@@ -148,7 +110,4 @@ object TelemetryRuntime {
 
     private val EVENT_NAME = Regex("[a-z][a-z0-9_.]{2,95}")
     private val FIELD_NAME = Regex("[a-z][a-z0-9_]{0,63}")
-    private val ENUM_NAME = Regex("[A-Z][A-Z0-9_]{0,63}")
-    private const val APP_PACKAGE_PREFIX = "com.aozijx.passly."
-    private const val MAX_STACK_FRAMES = 16
 }

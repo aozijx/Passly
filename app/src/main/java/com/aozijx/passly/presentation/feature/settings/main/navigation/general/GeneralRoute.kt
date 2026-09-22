@@ -93,16 +93,10 @@ internal fun GeneralRoute(
                 Spacer(Modifier.height(24.dp))
 
                 LogSettingsSection(
-                    fileLoggingEnabled = diagnosticsState.fileLoggingEnabled,
                     isViewerOpen = diagnosticsState.isViewerOpen,
                     logContent = diagnosticsState.logContent,
                     logByteCount = diagnosticsState.logByteCount,
                     isClearConfirmationOpen = diagnosticsState.isClearConfirmationOpen,
-                    onFileLoggingEnabledChange = {
-                        diagnosticsViewModel.onAction(
-                            DiagnosticsSettingsAction.SetFileLoggingEnabled(it),
-                        )
-                    },
                     onOpenViewer = {
                         diagnosticsViewModel.onAction(DiagnosticsSettingsAction.OpenViewer)
                     },

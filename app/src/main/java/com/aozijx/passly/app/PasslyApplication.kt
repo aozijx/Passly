@@ -65,7 +65,7 @@ class PasslyApplication : Application() {
         instance = this
 
         // 诊断与通知
-        diagnosticsRuntimeController.start(diagnosticsScope)
+        diagnosticsRuntimeController.start()
 
         // 生物识别轮换对账（后台执行）
         diagnosticsScope.launch { authenticationRuntimeMaintenance.reconcileStartupState() }

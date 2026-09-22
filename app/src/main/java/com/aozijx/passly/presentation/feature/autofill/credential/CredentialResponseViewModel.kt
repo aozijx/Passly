@@ -12,6 +12,7 @@ import androidx.credentials.provider.PendingIntentHandler
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
+import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.feature.autofill.credential.CreatePasswordCredentialResult
@@ -63,7 +64,7 @@ class CredentialResponseViewModel @Inject constructor(
     private fun handlePasswordGet(sourceIntent: Intent) {
         if (!requestStarted.compareAndSet(false, true)) return
         viewModelScope.launch {
-            TelemetryRuntime.i(TAG, "Password credential request received")
+            TelemetryRuntime.i(EventCategory.AUTOFILL, "credential.password_request_received")
 
             try {
                 val request = when (val parsed = CredentialRequestParser.parsePasswordGet(
@@ -89,16 +90,16 @@ class CredentialResponseViewModel @Inject constructor(
                             result.username, result.password
                         )
                         mutate(CredentialResponseMutation.Completed(intent))
-                        TelemetryRuntime.i(TAG, "Password credential resolved")
+                        TelemetryRuntime.i(EventCategory.AUTOFILL, "credential.password_resolved")
                     }
 
                     is PasswordCredentialResult.NotFound -> {
-                        TelemetryRuntime.w(TAG, "Password credential not found")
+                        TelemetryRuntime.w(EventCategory.AUTOFILL, "credential.password_not_found")
                         completeGetError(NoCredentialException("Credential is no longer available"))
                     }
 
                     is PasswordCredentialResult.NotAuthorized -> {
-                        TelemetryRuntime.i(TAG, "Password credential authorization did not complete")
+                        TelemetryRuntime.i(EventCategory.AUTOFILL, "credential.authorization_incomplete")
                         completeGetError(
                             CredentialAuthenticationExceptionMapper.toGetException(
                                 result.authentication
@@ -109,7 +110,7 @@ class CredentialResponseViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                TelemetryRuntime.e(TAG, "Password credential resolution failed", e)
+                TelemetryRuntime.e(EventCategory.AUTOFILL, "credential.password_resolution_failed", throwable = e)
                 completeGetError(GetCredentialUnknownException("Credential resolution failed"))
             }
         }
@@ -152,7 +153,7 @@ class CredentialResponseViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                TelemetryRuntime.e(TAG, "Credential unlock failed", e)
+                TelemetryRuntime.e(EventCategory.AUTOFILL, "credential.unlock_failed", throwable = e)
                 completeGetError(GetCredentialUnknownException("Credential unlock failed"))
             }
         }
@@ -185,7 +186,7 @@ class CredentialResponseViewModel @Inject constructor(
                                 CredentialResponseFactory.buildPasswordCreateResponse()
                             )
                         )
-                        TelemetryRuntime.i(TAG, "Password credential created")
+                        TelemetryRuntime.i(EventCategory.AUTOFILL, "credential.password_created")
                     }
 
                     CreatePasswordCredentialResult.NotSaved -> {
@@ -205,7 +206,7 @@ class CredentialResponseViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                TelemetryRuntime.e(TAG, "Password credential creation failed", e)
+                TelemetryRuntime.e(EventCategory.AUTOFILL, "credential.password_creation_failed", throwable = e)
                 completeCreateError(
                     CreateCredentialUnknownException("Credential creation failed")
                 )

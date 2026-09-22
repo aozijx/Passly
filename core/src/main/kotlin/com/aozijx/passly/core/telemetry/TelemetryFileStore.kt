@@ -1,7 +1,5 @@
 package com.aozijx.passly.core.telemetry
 
-import java.util.concurrent.atomic.AtomicLong
-
 interface TelemetryFileStore {
     fun write(event: TelemetryEvent)
     fun readEvents(limit: Int): List<TelemetryEvent>
@@ -12,5 +10,5 @@ interface TelemetryFileStore {
 }
 
 fun interface TelemetryFileStoreFactory {
-    fun create(loggingEnabledUntil: AtomicLong): TelemetryFileStore
+    fun create(): TelemetryFileStore
 }

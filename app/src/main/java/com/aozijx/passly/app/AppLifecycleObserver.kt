@@ -3,6 +3,7 @@ package com.aozijx.passly.app
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
+import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -46,7 +47,7 @@ class AppLifecycleObserver @Inject constructor(
             val lockOnBackground = idleTimeoutSettings.isLockOnBackground.first()
             val recoveryMode = secureSessionAccessState.isRecoveryMode()
             if (!lockOnBackground && !recoveryMode) {
-                TelemetryRuntime.i(tag, "Lock on background disabled by settings, skipping")
+                TelemetryRuntime.i(EventCategory.APPLICATION, "lifecycle.background_lock_skipped")
                 return@launch
             }
             // 封存会话：排干租约 → 关闭数据库 → 同步认证状态

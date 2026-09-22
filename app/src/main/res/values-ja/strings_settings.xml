@@ -273,14 +273,13 @@
     <string name="settings_log_clear_confirm_action">消去</string>
     <string name="settings_log_clear_confirm_message">すべてのログを消去しますか？元に戻せません。</string>
     <string name="settings_log_empty">ログはありません</string>
-    <string name="settings_log_encrypted_subtitle">有効にすると診断記録を24時間保持します</string>
-    <string name="settings_log_encrypted_title">暗号化診断ログ</string>
     <string name="settings_log_export_action">ログをエクスポート</string>
     <string name="settings_log_export_action_subtitle">確認後に一時的な平文ファイルを作成</string>
     <string name="settings_log_export_failed">ログをエクスポートできませんでした。もう一度お試しください</string>
     <string name="settings_log_loading">ログを読み込んでいます…</string>
     <string name="settings_log_management_title">ログ</string>
     <string name="settings_log_view_title">ログを表示</string>
+    <string name="settings_log_view_subtitle">常時記録し、日ごとに暗号化して保存します</string>
     <string name="settings_system_notification_settings">システム通知権限</string>
     <string name="settings_system_notification_settings_summary">システム設定で通知権限とチャンネルを管理します</string>
 

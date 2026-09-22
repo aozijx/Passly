@@ -15,6 +15,7 @@ import androidx.credentials.provider.BeginGetCredentialResponse
 import androidx.credentials.provider.CredentialProviderService
 import androidx.credentials.provider.ProviderClearCredentialStateRequest
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
+import com.aozijx.passly.core.telemetry.EventCategory
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -67,7 +68,7 @@ class ModernCredentialService : CredentialProviderService() {
                 // Android canceled the request; no callback is allowed after cancellation.
                 throw e
             } catch (e: Exception) {
-                TelemetryRuntime.e(TAG, "Credential request failed", e)
+                TelemetryRuntime.e(EventCategory.AUTOFILL, "credential.get_request_failed", throwable = e)
                 if (!cancellationSignal.isCanceled) {
                     callback.onError(GetCredentialUnknownException(e.message ?: "Unknown error"))
                 }
@@ -94,7 +95,7 @@ class ModernCredentialService : CredentialProviderService() {
                     callback.onError(e)
                 }
             } catch (e: Exception) {
-                TelemetryRuntime.e(TAG, "Credential create request failed", e)
+                TelemetryRuntime.e(EventCategory.AUTOFILL, "credential.create_request_failed", throwable = e)
                 if (!cancellationSignal.isCanceled) {
                     callback.onError(
                         CreateCredentialUnknownException(e.message ?: "Unknown error")

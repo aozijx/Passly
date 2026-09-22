@@ -7,6 +7,7 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
+import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -104,7 +105,7 @@ class VaultViewModel @Inject internal constructor(
             val draft = try {
                 config.toNewEntryDraft()
             } catch (error: IllegalArgumentException) {
-                TelemetryRuntime.e("SaveScannedOtp", "Invalid scanned OTP", error)
+                TelemetryRuntime.e(EventCategory.APPLICATION, "vault.scanned_otp_invalid", throwable = error)
                 emitError("OTP 数据无效")
                 return@launch
             }
