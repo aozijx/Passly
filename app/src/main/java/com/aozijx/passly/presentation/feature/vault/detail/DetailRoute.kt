@@ -63,6 +63,13 @@ fun DetailRoute(
     }
 
     val presentation = presentationState ?: return
+    val callbacks = DetailInteractionCallbacks(
+        model = presentation.content,
+        dispatch = viewModel::onAction,
+        openRelatedEntry = onOpenRelatedEntry,
+        dismissOtpQr = { otpQrUri = null },
+        uploadFavicon = { pickFaviconImage(ImageType.SCREEN) },
+    )
 
     DetailScreen(
         model = presentation.header,
@@ -75,16 +82,13 @@ fun DetailRoute(
         DetailContent(
             model = presentation.content,
             otpQrUri = otpQrUri,
-            onAction = viewModel::onAction,
-            onOpenRelatedEntry = onOpenRelatedEntry,
-            onOtpQrDismiss = { otpQrUri = null },
+            callbacks = callbacks,
             modifier = modifier,
         )
     }
 
     DetailEditorOverlays(
         model = presentation.overlays,
-        onAction = viewModel::onAction,
-        onUploadFavicon = { pickFaviconImage(ImageType.SCREEN) },
+        callbacks = callbacks,
     )
 }

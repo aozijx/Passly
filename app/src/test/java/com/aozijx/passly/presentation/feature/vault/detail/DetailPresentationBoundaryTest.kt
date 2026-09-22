@@ -23,7 +23,8 @@ class DetailPresentationBoundaryTest {
             assertFalse(source.contains("DetailUiState"))
             assertFalse(source.contains("rememberImagePicker"))
             assertFalse(source.contains("DetailViewModel"))
-            assertTrue(source.contains("onAction: (DetailUiAction) -> Unit"))
+            assertFalse(source.contains("DetailUiAction"))
+            assertTrue(source.contains("callbacks:"))
         }
     }
 

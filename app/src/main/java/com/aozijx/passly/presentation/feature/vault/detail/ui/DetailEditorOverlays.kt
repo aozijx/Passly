@@ -1,29 +1,28 @@
 package com.aozijx.passly.presentation.feature.vault.detail.ui
 
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.FaviconCropScreen
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.FaviconEditorSheet
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.TagEditorSheet
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailEditorOverlaysUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailEditorOverlayCallbacks
 
 @Composable
 fun DetailEditorOverlays(
     model: DetailEditorOverlaysUiModel,
-    onAction: (DetailUiAction) -> Unit,
-    onUploadFavicon: () -> Unit,
+    callbacks: DetailEditorOverlayCallbacks,
 ) {
     if (model.tagEditor.visible) {
         TagEditorSheet(
             state = model.tagEditor,
             isSaving = model.savingTags,
-            onInputChanged = { onAction(DetailUiAction.UpdateTagInput(it)) },
-            onSubmit = { onAction(DetailUiAction.SubmitTag(it)) },
-            onRemove = { onAction(DetailUiAction.RemoveTag(it)) },
-            onSave = { onAction(DetailUiAction.SaveTags) },
-            onDismiss = { onAction(DetailUiAction.DismissTagEditor) },
-            onConfirmDiscard = { onAction(DetailUiAction.ConfirmDiscardTags) },
-            onKeepEditing = { onAction(DetailUiAction.KeepEditingTags) },
+            onInputChanged = callbacks::onTagInputChanged,
+            onSubmit = callbacks::onTagSubmitted,
+            onRemove = callbacks::onTagRemoved,
+            onSave = callbacks::onTagsSaveRequested,
+            onDismiss = callbacks::onTagEditorDismissed,
+            onConfirmDiscard = callbacks::onTagDiscardConfirmed,
+            onKeepEditing = callbacks::onTagEditingContinued,
         )
     }
 
@@ -31,16 +30,16 @@ fun DetailEditorOverlays(
         FaviconEditorSheet(
             state = model.faviconEditor,
             isSaving = model.savingIcon,
-            onTabSelected = { onAction(DetailUiAction.SelectFaviconTab(it)) },
-            onSearchChanged = { onAction(DetailUiAction.UpdateFaviconSearch(it)) },
-            onSourceSelected = { onAction(DetailUiAction.SelectFaviconSource(it)) },
-            onUploadRequested = { onUploadFavicon() },
-            onImageUrlChanged = { onAction(DetailUiAction.UpdateFaviconImageUrl(it)) },
-            onDownloadRequested = { onAction(DetailUiAction.DownloadFaviconImage) },
-            onSave = { onAction(DetailUiAction.SaveFavicon) },
-            onDismiss = { onAction(DetailUiAction.DismissFaviconEditor) },
-            onConfirmDiscard = { onAction(DetailUiAction.ConfirmDiscardFavicon) },
-            onKeepEditing = { onAction(DetailUiAction.KeepEditingFavicon) },
+            onTabSelected = callbacks::onFaviconTabSelected,
+            onSearchChanged = callbacks::onFaviconSearchChanged,
+            onSourceSelected = callbacks::onFaviconSourceSelected,
+            onUploadRequested = callbacks::onFaviconUploadRequested,
+            onImageUrlChanged = callbacks::onFaviconImageUrlChanged,
+            onDownloadRequested = callbacks::onFaviconDownloadRequested,
+            onSave = callbacks::onFaviconSaveRequested,
+            onDismiss = callbacks::onFaviconEditorDismissed,
+            onConfirmDiscard = callbacks::onFaviconDiscardConfirmed,
+            onKeepEditing = callbacks::onFaviconEditingContinued,
         )
     }
 
@@ -49,10 +48,10 @@ fun DetailEditorOverlays(
             stagedPath = path,
             processing = model.faviconEditor.processing,
             onCrop = { zoom, x, y ->
-                onAction(DetailUiAction.CropFaviconImage(zoom, x, y))
+                callbacks.onFaviconCropRequested(zoom, x, y)
             },
-            onUseWithoutCrop = { onAction(DetailUiAction.UseFaviconWithoutCrop) },
-            onCancel = { onAction(DetailUiAction.CancelFaviconCrop) },
+            onUseWithoutCrop = callbacks::onFaviconUseWithoutCropRequested,
+            onCancel = callbacks::onFaviconCropCancelled,
         )
     }
 }

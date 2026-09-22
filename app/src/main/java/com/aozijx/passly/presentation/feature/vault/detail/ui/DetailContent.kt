@@ -11,7 +11,6 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.packageinfo.rememberInstalledAppIconBitmap
 import com.aozijx.passly.core.platform.qr.QrCodeEncoder
-import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerBottomSheet
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.ActivityTimelineSection
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.AssociatedInfoSection
@@ -35,6 +34,7 @@ import com.aozijx.passly.presentation.feature.vault.detail.ui.component.WifiSect
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.CredentialFieldUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.CredentialSectionEventHandler
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailBodyUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailContentCallbacks
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFieldUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailSectionUiModel
 import kotlinx.coroutines.Dispatchers
@@ -44,9 +44,7 @@ import kotlinx.coroutines.withContext
 fun DetailContent(
     model: DetailBodyUiModel,
     otpQrUri: String?,
-    onAction: (DetailUiAction) -> Unit,
-    onOpenRelatedEntry: (String) -> Unit,
-    onOtpQrDismiss: () -> Unit,
+    callbacks: DetailContentCallbacks,
     modifier: Modifier = Modifier,
 ) {
     var showPackagePicker by remember { mutableStateOf(false) }
@@ -64,14 +62,14 @@ fun DetailContent(
 
     DetailScrollableContent(modifier = modifier) {
         item {
-            DetailIconCard(model = model.icon, onEdit = { onAction(DetailUiAction.OpenFaviconEditor) })
+            DetailIconCard(model = model.icon, onEdit = callbacks::onIconEditRequested)
         }
         if (DetailSectionUiModel.CREDENTIAL in model.sections) {
             model.credential?.let { credential ->
                 item {
                     CredentialSection(
                         state = credential,
-                        eventHandler = credentialEvents(credential, onAction),
+                        eventHandler = credentialEvents(credential, callbacks),
                     )
                 }
             }
@@ -81,9 +79,9 @@ fun DetailContent(
                 TotpSection(
                     currentState = model.otp,
                     qrCode = qrCode,
-                    onQrClick = { onAction(DetailUiAction.ExportOtpQr) },
-                    onQrDismiss = onOtpQrDismiss,
-                    onCodeClick = { onAction(DetailUiAction.CopyOtpCode) },
+                    onQrClick = callbacks::onOtpQrRequested,
+                    onQrDismiss = callbacks::onOtpQrDismissed,
+                    onCodeClick = callbacks::onOtpCopyRequested,
                 )
             }
         }
@@ -93,27 +91,17 @@ fun DetailContent(
                     BankCardSection(
                         model = card,
                         onEditChanged = { field, value ->
-                            onAction(DetailUiAction.UpdateFieldDraft(field.toDetailField(), value))
+                            callbacks.onBankCardValueChanged(field, value)
                         },
                         onEditStarted = { field, value ->
-                            onAction(DetailUiAction.StartFieldEdit(field.toDetailField(), value))
+                            callbacks.onBankCardEditStarted(field, value)
                         },
                         onEditSaved = { field, value ->
-                            onAction(DetailUiAction.SaveField(field.toDetailField(), value))
+                            callbacks.onBankCardSaveRequested(field, value)
                         },
-                        onCopy = { onAction(DetailUiAction.CopyField(it.toDetailField())) },
-                        onReveal = {
-                            onAction(DetailUiAction.ToggleFieldVisibility(it.toDetailField()))
-                        },
-                        onRevealAll = {
-                            val fields = buildSet {
-                                if (card.hasCardNumber && !card.cardNumberRevealed) add(DetailFieldUiModel.CARD_NUMBER)
-                                if (card.hasCvv && !card.cvvRevealed) add(DetailFieldUiModel.CARD_CVV)
-                                if (card.hasPaymentPin && !card.paymentPinRevealed) add(DetailFieldUiModel.PAYMENT_PIN)
-                                if (!card.cardholderRevealed) add(DetailFieldUiModel.CARDHOLDER)
-                            }
-                            if (fields.isNotEmpty()) onAction(DetailUiAction.RevealFields(fields))
-                        },
+                        onCopy = callbacks::onBankCardCopyRequested,
+                        onReveal = callbacks::onBankCardRevealRequested,
+                        onRevealAll = callbacks::onBankCardRevealAllRequested,
                     )
                 }
             }
@@ -123,9 +111,9 @@ fun DetailContent(
                 item {
                     IdCardSection(
                         model = identity,
-                        onIdNumberCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.ID_NUMBER)) },
-                        onIdNumberReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailFieldUiModel.ID_NUMBER)) },
-                        onUsernameCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.USERNAME)) },
+                        onIdNumberCopy = { callbacks.onFieldCopyRequested(DetailFieldUiModel.ID_NUMBER) },
+                        onIdNumberReveal = { callbacks.onFieldRevealRequested(DetailFieldUiModel.ID_NUMBER) },
+                        onUsernameCopy = { callbacks.onFieldCopyRequested(DetailFieldUiModel.USERNAME) },
                     )
                 }
             }
@@ -135,12 +123,12 @@ fun DetailContent(
                 item {
                     WifiSection(
                         model = wifi,
-                        onSsidCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.WIFI_SSID)) },
-                        onPasswordCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.PASSWORD)) },
-                        onPasswordReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailFieldUiModel.PASSWORD)) },
-                        onPasswordEditStarted = { onAction(DetailUiAction.StartFieldEdit(DetailFieldUiModel.PASSWORD, wifi.password.orEmpty())) },
-                        onPasswordChanged = { onAction(DetailUiAction.UpdateFieldDraft(DetailFieldUiModel.PASSWORD, it)) },
-                        onPasswordSaved = { if (it != wifi.password) onAction(DetailUiAction.SaveField(DetailFieldUiModel.PASSWORD, it)) },
+                        onSsidCopy = { callbacks.onFieldCopyRequested(DetailFieldUiModel.WIFI_SSID) },
+                        onPasswordCopy = { callbacks.onFieldCopyRequested(DetailFieldUiModel.PASSWORD) },
+                        onPasswordReveal = { callbacks.onFieldRevealRequested(DetailFieldUiModel.PASSWORD) },
+                        onPasswordEditStarted = { callbacks.onFieldEditStarted(DetailFieldUiModel.PASSWORD, wifi.password.orEmpty()) },
+                        onPasswordChanged = { callbacks.onFieldValueChanged(DetailFieldUiModel.PASSWORD, it) },
+                        onPasswordSaved = { if (it != wifi.password) callbacks.onFieldSaveRequested(DetailFieldUiModel.PASSWORD, it) },
                     )
                 }
             }
@@ -150,25 +138,20 @@ fun DetailContent(
                 item {
                     SshKeySection(
                         model = ssh,
-                        onFingerprintCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.USERNAME)) },
-                        onPassphraseCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.SSH_PASSPHRASE)) },
-                        onPassphraseReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailFieldUiModel.SSH_PASSPHRASE)) },
-                        onPassphraseEditStarted = { onAction(DetailUiAction.StartFieldEdit(DetailFieldUiModel.SSH_PASSPHRASE, ssh.passphrase.orEmpty())) },
-                        onPassphraseChanged = { onAction(DetailUiAction.UpdateFieldDraft(DetailFieldUiModel.SSH_PASSPHRASE, it)) },
-                        onPassphraseSaved = { if (it != ssh.passphrase) onAction(DetailUiAction.SaveField(DetailFieldUiModel.SSH_PASSPHRASE, it)) },
+                        onFingerprintCopy = { callbacks.onFieldCopyRequested(DetailFieldUiModel.USERNAME) },
+                        onPassphraseCopy = { callbacks.onFieldCopyRequested(DetailFieldUiModel.SSH_PASSPHRASE) },
+                        onPassphraseReveal = { callbacks.onFieldRevealRequested(DetailFieldUiModel.SSH_PASSPHRASE) },
+                        onPassphraseEditStarted = { callbacks.onFieldEditStarted(DetailFieldUiModel.SSH_PASSPHRASE, ssh.passphrase.orEmpty()) },
+                        onPassphraseChanged = { callbacks.onFieldValueChanged(DetailFieldUiModel.SSH_PASSPHRASE, it) },
+                        onPassphraseSaved = { if (it != ssh.passphrase) callbacks.onFieldSaveRequested(DetailFieldUiModel.SSH_PASSPHRASE, it) },
                         onPrivateKeyClick = {
-                            onAction(
-                                if (ssh.privateKeyRevealed) DetailUiAction.CopyField(DetailFieldUiModel.SSH_PRIVATE_KEY)
-                                else DetailUiAction.ToggleFieldVisibility(DetailFieldUiModel.SSH_PRIVATE_KEY),
-                            )
-                        },
-                        onRevealAll = {
-                            val fields = buildSet {
-                                if (ssh.hasPrivateKey && !ssh.privateKeyRevealed) add(DetailFieldUiModel.SSH_PRIVATE_KEY)
-                                if (ssh.hasPassphrase && !ssh.passphraseRevealed) add(DetailFieldUiModel.SSH_PASSPHRASE)
+                            if (ssh.privateKeyRevealed) {
+                                callbacks.onFieldCopyRequested(DetailFieldUiModel.SSH_PRIVATE_KEY)
+                            } else {
+                                callbacks.onFieldRevealRequested(DetailFieldUiModel.SSH_PRIVATE_KEY)
                             }
-                            if (fields.isNotEmpty()) onAction(DetailUiAction.RevealFields(fields))
                         },
+                        onRevealAll = callbacks::onSshRevealAllRequested,
                     )
                 }
             }
@@ -179,8 +162,8 @@ fun DetailContent(
                     SeedPhraseSection(
                         hasSeedPhrase = seed.present,
                         revealedSeedPhrase = seed.revealedValue,
-                        onCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.SEED_PHRASE)) },
-                        onReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailFieldUiModel.SEED_PHRASE)) },
+                        onCopy = { callbacks.onFieldCopyRequested(DetailFieldUiModel.SEED_PHRASE) },
+                        onReveal = { callbacks.onFieldRevealRequested(DetailFieldUiModel.SEED_PHRASE) },
                     )
                 }
             }
@@ -192,9 +175,9 @@ fun DetailContent(
                         hasPasskeyData = passkey.present,
                         revealedPasskeyData = passkey.revealedValue,
                         hardwareKeyInfo = passkey.hardwareKeyInfo,
-                        onPasskeyCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.PASSKEY_DATA)) },
-                        onPasskeyReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailFieldUiModel.PASSKEY_DATA)) },
-                        onHardwareKeyCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.HARDWARE_INFO)) },
+                        onPasskeyCopy = { callbacks.onFieldCopyRequested(DetailFieldUiModel.PASSKEY_DATA) },
+                        onPasskeyReveal = { callbacks.onFieldRevealRequested(DetailFieldUiModel.PASSKEY_DATA) },
+                        onHardwareKeyCopy = { callbacks.onFieldCopyRequested(DetailFieldUiModel.HARDWARE_INFO) },
                     )
                 }
             }
@@ -203,13 +186,13 @@ fun DetailContent(
             item {
                 RelatedEntriesSection(
                     entries = model.relatedEntries,
-                    onOpenEntry = { onOpenRelatedEntry(it) },
+                    onOpenEntry = callbacks::onRelatedEntryRequested,
                 )
             }
         }
         item {
             InfoGroupCard(title = stringResource(R.string.vault_detail_tags_title)) {
-                EntryTagsItem(model.tags) { onAction(DetailUiAction.OpenTagEditor) }
+                EntryTagsItem(model.tags, callbacks::onTagEditorRequested)
             }
         }
         item {
@@ -217,21 +200,21 @@ fun DetailContent(
                 model = model.associations,
                 associatedApps = model.associatedApps,
                 appIcon = { rememberInstalledAppIconBitmap(it) },
-                onDomainEditStarted = { onAction(DetailUiAction.StartDomainEdit) },
-                onDomainChanged = { onAction(DetailUiAction.UpdateDomainDraft(it)) },
-                onDomainSaved = { onAction(DetailUiAction.SaveDomain) },
+                onDomainEditStarted = callbacks::onDomainEditStarted,
+                onDomainChanged = callbacks::onDomainChanged,
+                onDomainSaved = callbacks::onDomainSaveRequested,
                 onPackagePickerRequested = {
                     showPackagePicker = true
-                    onAction(DetailUiAction.LoadPackagePickerApps)
+                    callbacks.onPackagePickerRequested()
                 },
             )
         }
         item {
             NotesSection(
                 model = model.notes,
-                onEditStarted = { onAction(DetailUiAction.StartNotesEdit) },
-                onNotesChanged = { onAction(DetailUiAction.UpdateNotesDraft(it)) },
-                onNotesSaved = { onAction(DetailUiAction.SaveNotes) },
+                onEditStarted = callbacks::onNotesEditStarted,
+                onNotesChanged = callbacks::onNotesChanged,
+                onNotesSaved = callbacks::onNotesSaveRequested,
             )
         }
         item { MetadataSection(model.metadata) }
@@ -244,7 +227,7 @@ fun DetailContent(
             appIcon = { rememberInstalledAppIconBitmap(it) },
             onSelect = {
                 showPackagePicker = false
-                onAction(DetailUiAction.SelectAssociatedPackage(it.packageName))
+                callbacks.onPackageSelected(it.packageName)
             },
             onDismiss = { showPackagePicker = false },
         )
@@ -253,44 +236,33 @@ fun DetailContent(
 
 private fun credentialEvents(
     state: com.aozijx.passly.presentation.feature.vault.detail.ui.model.CredentialSectionUiState,
-    onAction: (DetailUiAction) -> Unit,
+    callbacks: DetailContentCallbacks,
 ): CredentialSectionEventHandler = object : CredentialSectionEventHandler {
     override fun onEditingChanged(field: CredentialFieldUiModel, editing: Boolean) {
-        val uiField = field.toDetailField()
-        onAction(
-            if (editing) DetailUiAction.StartFieldEdit(
-                uiField,
-                if (field == CredentialFieldUiModel.USERNAME) state.username.valueForEditing else state.password.valueForEditing,
-            )
-            else DetailUiAction.CancelFieldEdit(uiField),
+        callbacks.onCredentialEditingChanged(
+            field = field,
+            editing = editing,
+            initialValue = if (field == CredentialFieldUiModel.USERNAME) {
+                state.username.valueForEditing
+            } else {
+                state.password.valueForEditing
+            },
         )
     }
 
     override fun onValueChanged(field: CredentialFieldUiModel, value: String) {
-        onAction(DetailUiAction.UpdateFieldDraft(field.toDetailField(), value))
+        callbacks.onCredentialValueChanged(field, value)
     }
 
     override fun onRevealRequested(field: CredentialFieldUiModel) {
-        onAction(DetailUiAction.ToggleFieldVisibility(field.toDetailField()))
+        callbacks.onCredentialRevealRequested(field)
     }
 
     override fun onCopyRequested(field: CredentialFieldUiModel) {
-        onAction(DetailUiAction.CopyField(field.toDetailField()))
+        callbacks.onCredentialCopyRequested(field)
     }
 
     override fun onSaveRequested(field: CredentialFieldUiModel, value: String) {
-        onAction(DetailUiAction.SaveField(field.toDetailField(), value))
+        callbacks.onCredentialSaveRequested(field, value)
     }
-}
-
-private fun CredentialFieldUiModel.toDetailField(): DetailFieldUiModel = when (this) {
-    CredentialFieldUiModel.USERNAME -> DetailFieldUiModel.USERNAME
-    CredentialFieldUiModel.PASSWORD -> DetailFieldUiModel.PASSWORD
-}
-private fun DetailBankCardFieldUiModel.toDetailField(): DetailFieldUiModel = when (this) {
-    DetailBankCardFieldUiModel.CARDHOLDER -> DetailFieldUiModel.CARDHOLDER
-    DetailBankCardFieldUiModel.CARD_NUMBER -> DetailFieldUiModel.CARD_NUMBER
-    DetailBankCardFieldUiModel.CVV -> DetailFieldUiModel.CARD_CVV
-    DetailBankCardFieldUiModel.EXPIRATION -> DetailFieldUiModel.CARD_EXPIRATION
-    DetailBankCardFieldUiModel.PAYMENT_PIN -> DetailFieldUiModel.PAYMENT_PIN
 }

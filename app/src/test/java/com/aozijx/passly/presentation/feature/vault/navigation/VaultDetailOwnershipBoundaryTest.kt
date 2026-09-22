@@ -169,20 +169,20 @@ class VaultDetailOwnershipBoundaryTest {
     }
 
     @Test
-    fun `detail passive ui emits feature actions without a route bridge`() {
+    fun `detail passive ui exposes semantic callbacks without feature actions`() {
         val detailRoot = "com/aozijx/passly/presentation/feature/vault/detail/"
         val content = source("${detailRoot}ui/DetailContent.kt")
         val overlays = source("${detailRoot}ui/DetailEditorOverlays.kt")
-        val models = source("${detailRoot}ui/model/DetailPresentationModels.kt")
-        val bridge = sourceFile("${detailRoot}DetailPresentationEvents.kt")
+        val contracts = source("${detailRoot}ui/model/DetailInteractionContracts.kt")
 
-        assertFalse("Detail Route still needs a presentation event bridge", bridge.exists())
-        assertFalse(models.contains("sealed interface DetailContentEvent"))
-        assertFalse(models.contains("sealed interface DetailEditorOverlayEvent"))
-        assertTrue(content.contains("onAction: (DetailUiAction) -> Unit"))
-        assertTrue(content.contains("onOpenRelatedEntry: (String) -> Unit"))
-        assertTrue(overlays.contains("onAction: (DetailUiAction) -> Unit"))
-        assertTrue(overlays.contains("onUploadFavicon: () -> Unit"))
+        assertFalse(content.contains("DetailUiAction"))
+        assertFalse(overlays.contains("DetailUiAction"))
+        assertFalse(content.contains("toDetailField"))
+        assertFalse(content.contains("buildSet"))
+        assertTrue(content.contains("callbacks: DetailContentCallbacks"))
+        assertTrue(overlays.contains("callbacks: DetailEditorOverlayCallbacks"))
+        assertTrue(contracts.contains("interface DetailContentCallbacks"))
+        assertTrue(contracts.contains("interface DetailEditorOverlayCallbacks"))
     }
 
     private fun source(relativePath: String): String {
