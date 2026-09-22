@@ -11,6 +11,7 @@ import com.aozijx.passly.domain.autofill.port.AutofillCredentialRepository
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.query.CredentialCandidate
 import com.aozijx.passly.domain.entry.model.query.CredentialMatch
 import com.aozijx.passly.domain.entry.model.query.MatchType
@@ -64,7 +65,7 @@ internal class AutofillCredentialRepositoryImpl @Inject constructor(
                     val secret = if (includeSecrets) {
                         secrets[entity.entryId] ?: return@mapNotNull null
                     } else {
-                        EntrySecret()
+                        redactedSecretFor(entity.entryType)
                     }
                     EntryAssembler.assembleFromDatabase(
                         entity,
@@ -133,4 +134,9 @@ internal class AutofillCredentialRepositoryImpl @Inject constructor(
     private companion object {
         const val MAX_CANDIDATES = 10
     }
+}
+
+internal fun redactedSecretFor(type: EntryType): EntrySecret = when (type) {
+    EntryType.LOGIN -> EntrySecret(credential = LoginCredential())
+    else -> EntrySecret()
 }
