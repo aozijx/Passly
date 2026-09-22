@@ -65,7 +65,6 @@ internal object SourceBoundaryPolicy {
                 "/feature/autofill/platform/AutofillLaunchTargetFactoryTest.kt",
             ),
             forbiddenImportPrefixes = setOf(
-                "androidx.compose.",
                 "com.aozijx.passly.data.",
                 "com.aozijx.passly.presentation.",
             ),

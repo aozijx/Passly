@@ -15,8 +15,8 @@ import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.message.presentation.AppNoticeHostViewModel
 import com.aozijx.passly.app.shell.FlipToLockSensorController
-import com.aozijx.passly.presentation.feature.recovery.RecoveryModeRoute
-import com.aozijx.passly.presentation.feature.recovery.RecoveryModeViewModel
+import com.aozijx.passly.feature.recovery.RecoveryModeRoute
+import com.aozijx.passly.feature.recovery.RecoveryModeViewModel
 import com.aozijx.passly.presentation.feature.unlock.AuthenticationRoute
 import com.aozijx.passly.presentation.feature.unlock.UnlockViewModel
 import com.aozijx.passly.presentation.feature.shell.ui.DatabaseErrorDialog

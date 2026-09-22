@@ -22,7 +22,7 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
-    fun retiredUiPackagesRemainCoveredByCurrentOwnershipRules() {
+    fun verticalFeatureRootAllowsOwnedUiButPresentationRootStaysClassified() {
         val featureUi = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/feature/settings/SettingsScreen.kt",
             content = "import androidx.compose.runtime.Composable",
@@ -33,9 +33,8 @@ class SourceBoundaryPolicyTest {
         )
 
         assertEquals(
-            "LAYER_FEATURE",
-            SourceBoundaryVerifier.verify(listOf(featureUi), SourceBoundaryPolicy.layerRules)
-                .single().ruleId,
+            emptyList(),
+            SourceBoundaryVerifier.verify(listOf(featureUi), SourceBoundaryPolicy.layerRules),
         )
         assertEquals(
             "LAYER_PRESENTATION_ROOT",
@@ -85,7 +84,11 @@ class SourceBoundaryPolicyTest {
             LayerCase(
                 owner = "feature",
                 path = "app/src/main/java/com/aozijx/passly/feature/vault/VaultUseCase.kt",
-                allowed = listOf("com.aozijx.passly.domain.entry.model.Entry", "com.aozijx.passly.core.error.result.AppResult"),
+                allowed = listOf(
+                    "androidx.compose.runtime.Composable",
+                    "com.aozijx.passly.domain.entry.model.Entry",
+                    "com.aozijx.passly.core.error.result.AppResult",
+                ),
                 forbidden = listOf("com.aozijx.passly.presentation.feature.vault.VaultUiState"),
             ),
             LayerCase(

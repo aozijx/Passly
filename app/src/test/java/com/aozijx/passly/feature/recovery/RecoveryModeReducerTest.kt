@@ -1,7 +1,7 @@
-package com.aozijx.passly.presentation.feature.recovery
+package com.aozijx.passly.feature.recovery
 
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
-import com.aozijx.passly.presentation.feature.recovery.RecoveryModeUiState
+import com.aozijx.passly.feature.recovery.RecoveryModeUiState
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

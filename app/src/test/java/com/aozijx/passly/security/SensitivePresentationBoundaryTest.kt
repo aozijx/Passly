@@ -70,7 +70,7 @@ class SensitivePresentationBoundaryTest {
     @Test
     fun `recovery mode presentation exposes password reset only`() {
         val source = source(
-            "com/aozijx/passly/presentation/feature/recovery/RecoveryModeViewModel.kt"
+            "com/aozijx/passly/feature/recovery/RecoveryModeViewModel.kt"
         )
 
         listOf("Backup", "RecoveryScanner", "RecoveryImporter", "export(", "import(").forEach {

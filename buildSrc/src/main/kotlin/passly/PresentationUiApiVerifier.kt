@@ -15,7 +15,7 @@ internal object PresentationUiApiVerifier {
                 "/presentation/ui/" in source.path ||
                     "/presentation/shared/" in source.path ||
                     (
-                        "/presentation/feature/" in source.path &&
+                        "/feature/" in source.path &&
                             "/ui/" in source.path
                         )
             }

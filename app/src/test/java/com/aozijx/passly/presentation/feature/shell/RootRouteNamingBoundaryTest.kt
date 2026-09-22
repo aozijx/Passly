@@ -18,10 +18,10 @@ class RootRouteNamingBoundaryTest {
             "com/aozijx/passly/presentation/feature/unlock/ui/AuthenticationScreen.kt",
         )
         val recoveryRoute = sourceRoot.resolve(
-            "com/aozijx/passly/presentation/feature/recovery/RecoveryModeRoute.kt",
+            "com/aozijx/passly/feature/recovery/RecoveryModeRoute.kt",
         )
         val recoveryScreen = sourceRoot.resolve(
-            "com/aozijx/passly/presentation/feature/recovery/ui/RecoveryModeScreen.kt",
+            "com/aozijx/passly/feature/recovery/ui/RecoveryModeScreen.kt",
         )
 
         listOf(unlockRoute, unlockScreen, recoveryRoute, recoveryScreen).forEach { file ->

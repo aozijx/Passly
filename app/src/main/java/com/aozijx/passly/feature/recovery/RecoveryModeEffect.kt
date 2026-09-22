@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.recovery
+package com.aozijx.passly.feature.recovery
 
 sealed interface RecoveryModeEffect {
     data object ExitRecovery : RecoveryModeEffect

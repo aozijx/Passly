@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.recovery
+package com.aozijx.passly.feature.recovery
 
 sealed interface RecoveryModeUiAction {
     data object SetPasswordClicked : RecoveryModeUiAction

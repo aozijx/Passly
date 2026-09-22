@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.recovery
+package com.aozijx.passly.feature.recovery
 
 import android.widget.Toast
 import androidx.compose.runtime.Composable
@@ -12,10 +12,10 @@ import com.aozijx.passly.domain.entry.model.PasswordStrengthLevel
 import com.aozijx.passly.domain.entry.model.PasswordStrengthResult
 import com.aozijx.passly.domain.entry.policy.PasswordStrengthEvaluator
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.presentation.feature.recovery.ui.RecoveryModeScreen
-import com.aozijx.passly.presentation.feature.recovery.ui.RecoveryPasswordDialog
-import com.aozijx.passly.presentation.feature.recovery.ui.RecoveryPasswordStrengthTone
-import com.aozijx.passly.presentation.feature.recovery.ui.RecoveryPasswordStrengthUiModel
+import com.aozijx.passly.feature.recovery.ui.RecoveryModeScreen
+import com.aozijx.passly.feature.recovery.ui.RecoveryPasswordDialog
+import com.aozijx.passly.feature.recovery.ui.RecoveryPasswordStrengthTone
+import com.aozijx.passly.feature.recovery.ui.RecoveryPasswordStrengthUiModel
 
 @Composable
 fun RecoveryModeRoute(viewModel: RecoveryModeViewModel, onExit: () -> Unit) {

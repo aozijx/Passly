@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.recovery
+package com.aozijx.passly.feature.recovery
 
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue

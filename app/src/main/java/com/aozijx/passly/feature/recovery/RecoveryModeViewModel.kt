@@ -1,15 +1,15 @@
-package com.aozijx.passly.presentation.feature.recovery
+package com.aozijx.passly.feature.recovery
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.model.AuthenticationResult
-import com.aozijx.passly.presentation.feature.recovery.RecoveryModeEffect
-import com.aozijx.passly.presentation.feature.recovery.RecoveryModeUiAction
-import com.aozijx.passly.presentation.feature.recovery.RecoveryModeUiState
-import com.aozijx.passly.presentation.feature.recovery.RecoveryModeMutation
-import com.aozijx.passly.presentation.feature.recovery.RecoveryModeReducer
+import com.aozijx.passly.feature.recovery.RecoveryModeEffect
+import com.aozijx.passly.feature.recovery.RecoveryModeUiAction
+import com.aozijx.passly.feature.recovery.RecoveryModeUiState
+import com.aozijx.passly.feature.recovery.RecoveryModeMutation
+import com.aozijx.passly.feature.recovery.RecoveryModeReducer
 import com.aozijx.passly.core.crypto.MemoryCleaner
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import dagger.hilt.android.lifecycle.HiltViewModel
