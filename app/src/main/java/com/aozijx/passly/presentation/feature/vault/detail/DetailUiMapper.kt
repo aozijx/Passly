@@ -97,7 +97,7 @@ internal fun toDetailPresentationModel(
                 username = entry.username,
                 associatedDomain = entry.associatedDomain,
             ),
-            sections = state.sections.mapTo(linkedSetOf()) { DetailSectionUiModel.valueOf(it.name) },
+            sections = state.sections.mapNotNullTo(linkedSetOf(), DetailSectionKey::toUiModel),
             credential = if (DetailSectionKey.CREDENTIAL in state.sections) {
                 CredentialSectionUiState(
                     username = CredentialFieldUiState(
@@ -237,4 +237,20 @@ private fun SensitiveValue?.copyToString(): String? {
     } finally {
         chars.fill('\u0000')
     }
+}
+
+private fun DetailSectionKey.toUiModel(): DetailSectionUiModel? = when (this) {
+    DetailSectionKey.CREDENTIAL -> DetailSectionUiModel.CREDENTIAL
+    DetailSectionKey.OTP -> DetailSectionUiModel.OTP
+    DetailSectionKey.BANK_CARD -> DetailSectionUiModel.BANK_CARD
+    DetailSectionKey.IDENTITY -> DetailSectionUiModel.IDENTITY
+    DetailSectionKey.WIFI -> DetailSectionUiModel.WIFI
+    DetailSectionKey.SSH -> DetailSectionUiModel.SSH
+    DetailSectionKey.SEED_PHRASE -> DetailSectionUiModel.SEED_PHRASE
+    DetailSectionKey.PASSKEY -> DetailSectionUiModel.PASSKEY
+    DetailSectionKey.ENTRY_TYPE,
+    DetailSectionKey.ASSOCIATED_INFO,
+    DetailSectionKey.NOTES,
+    DetailSectionKey.METADATA,
+    DetailSectionKey.ACTIVITY -> null
 }

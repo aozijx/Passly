@@ -12,7 +12,9 @@ import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.vault.model.OtpCodeState
+import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailActivityTypeUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailSectionUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -117,6 +119,26 @@ class DetailUiMapperTest {
         assertTrue(presentation.overlays.savingTags)
         assertFalse(presentation.overlays.savingIcon)
     }
+
+    @Test
+    fun presentationMapperProjectsOnlyRenderableSections() {
+        val state = DetailUiState(
+            entry = noteEntry(),
+            sections = listOf(
+                DetailSectionKey.CREDENTIAL,
+                DetailSectionKey.ENTRY_TYPE,
+                DetailSectionKey.ASSOCIATED_INFO,
+                DetailSectionKey.NOTES,
+                DetailSectionKey.METADATA,
+                DetailSectionKey.ACTIVITY,
+            ),
+        )
+
+        val presentation = requireNotNull(toDetailPresentationModel(state, null))
+
+        assertEquals(setOf(DetailSectionUiModel.CREDENTIAL), presentation.content.sections)
+    }
+
     private fun noteEntry() = Entry(
         identity = EntryIdentity(
             id = EntryId("entry"),
