@@ -3,7 +3,7 @@ package com.aozijx.passly.presentation.feature.vault.list
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListEvent
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListEventHandler

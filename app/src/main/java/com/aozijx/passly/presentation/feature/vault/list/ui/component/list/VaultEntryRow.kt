@@ -21,7 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionContainer
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionSpec
-import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
+import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.cardstyle.CardStyleRegistry
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListContentUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemEventHandler

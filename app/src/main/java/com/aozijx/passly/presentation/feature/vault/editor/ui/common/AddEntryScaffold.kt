@@ -32,7 +32,7 @@ import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.topbar.PasslyNavigationTopBar
+import com.aozijx.passly.presentation.shared.components.topbar.PasslyNavigationTopBar
 
 /**
  * 新建条目页面的公共外壳。

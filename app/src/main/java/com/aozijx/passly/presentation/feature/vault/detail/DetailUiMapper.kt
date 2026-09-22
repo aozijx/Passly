@@ -6,7 +6,7 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
-import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerItemUiModel
+import com.aozijx.passly.presentation.shared.components.AppPackagePickerItemUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.CredentialFieldUiState
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.CredentialSectionUiState
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailActivityTypeUiModel

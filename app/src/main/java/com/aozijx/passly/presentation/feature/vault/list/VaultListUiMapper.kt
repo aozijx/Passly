@@ -9,8 +9,8 @@ import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
-import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
+import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultCardDensityUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultCardPresentationUiModel

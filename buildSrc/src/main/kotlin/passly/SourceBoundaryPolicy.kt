@@ -32,15 +32,29 @@ internal object SourceBoundaryPolicy {
             message = "imports a forbidden namespace",
         ),
         SourceBoundaryRule(
+            id = "LAYER_PRESENTATION_SHARED",
+            owner = "presentation.shared",
+            sourcePathContains = "/com/aozijx/passly/presentation/shared/",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.presentation.feature.",
+                "com.aozijx.passly.feature.",
+                "com.aozijx.passly.domain.",
+                "com.aozijx.passly.data.",
+                "com.aozijx.passly.security.",
+            ),
+            message = "imports a forbidden namespace",
+        ),
+        SourceBoundaryRule(
             id = "LAYER_PRESENTATION_ROOT",
             owner = "presentation",
             sourcePathContains = "/com/aozijx/passly/presentation/",
             allowedSourcePathContains = setOf(
                 "/presentation/feature/",
+                "/presentation/shared/",
                 "/presentation/ui/",
             ),
             forbiddenContentMarkers = setOf("package com.aozijx.passly.presentation."),
-            message = "presentation source must be classified as feature or ui",
+            message = "presentation source must be classified as feature, shared, or ui",
         ),
         SourceBoundaryRule(
             id = "LAYER_FEATURE",
@@ -157,6 +171,12 @@ internal object SourceBoundaryPolicy {
             sourcePathContains = "/presentation/ui/",
             forbiddenContentMarkers = setOf("ViewModel", "hiltViewModel", "viewModel("),
             message = "presentation UI cannot own or look up a ViewModel",
+        ),
+        SourceBoundaryRule(
+            id = "PRESENTATION_SHARED_VIEW_MODEL",
+            sourcePathContains = "/presentation/shared/",
+            forbiddenContentMarkers = setOf("ViewModel", "hiltViewModel", "viewModel("),
+            message = "shared presentation UI cannot own or look up a ViewModel",
         ),
         SourceBoundaryRule(
             id = "PRESENTATION_DI_MODULE",

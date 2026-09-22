@@ -23,11 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.group.SegmentedSettingsGroup
-import com.aozijx.passly.presentation.ui.shared.components.group.dropdownSettingsGroupItem
-import com.aozijx.passly.presentation.ui.shared.components.group.navigationSettingsGroupItem
-import com.aozijx.passly.presentation.ui.shared.components.group.sliderSettingsGroupItem
-import com.aozijx.passly.presentation.ui.shared.components.group.switchSettingsGroupItem
+import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
+import com.aozijx.passly.presentation.shared.components.group.dropdownSettingsGroupItem
+import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
+import com.aozijx.passly.presentation.shared.components.group.sliderSettingsGroupItem
+import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.core.ui.theme.AppThemeSchemes

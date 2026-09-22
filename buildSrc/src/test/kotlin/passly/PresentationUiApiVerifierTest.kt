@@ -5,6 +5,30 @@ import kotlin.test.assertEquals
 
 class PresentationUiApiVerifierTest {
     @Test
+    fun reportsSharedPresentationComposableWhenBusinessParametersExceedThreshold() {
+        val path = "app/src/main/java/com/example/presentation/shared/component/SharedCard.kt"
+        val signals = PresentationUiApiVerifier.inspect(
+            listOf(
+                EditorSource(
+                    path = path,
+                    content = """
+                        @Composable
+                        internal fun SharedCard(
+                            one: String, two: String, three: String, four: String, five: String,
+                            six: String, seven: String, eight: String, nine: String,
+                        ) = Unit
+                    """.trimIndent(),
+                ),
+            ),
+        )
+
+        assertEquals(
+            listOf("$path: SharedCard has 9 business parameters (threshold 8)"),
+            signals,
+        )
+    }
+
+    @Test
     fun reportsNamedPresentationUiComposableWhenBusinessParametersExceedThreshold() {
         val signals = PresentationUiApiVerifier.inspect(
             listOf(

@@ -12,8 +12,8 @@ import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.presentation.ui.shared.components.group.SegmentedSettingsGroup
-import com.aozijx.passly.presentation.ui.shared.components.group.sliderSettingsGroupItem
+import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
+import com.aozijx.passly.presentation.shared.components.group.sliderSettingsGroupItem
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test

@@ -27,8 +27,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.menu.MenuOptionText
-import com.aozijx.passly.presentation.ui.shared.components.menu.selectedMenuModifier
+import com.aozijx.passly.presentation.shared.components.menu.MenuOptionText
+import com.aozijx.passly.presentation.shared.components.menu.selectedMenuModifier
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultSortUiModel
 
 @Composable

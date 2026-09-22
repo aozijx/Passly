@@ -21,7 +21,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.apppassword.PasswordFields
+import com.aozijx.passly.presentation.shared.components.apppassword.PasswordFields
 
 data class AppPasswordChangeDialogState(
     val currentPassword: String,

@@ -26,7 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.aozijx.passly.R
 import androidx.compose.material3.OutlinedTextField
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailHeaderUiModel
-import com.aozijx.passly.presentation.ui.shared.components.topbar.passlyTopAppBarColors
+import com.aozijx.passly.presentation.shared.components.topbar.passlyTopAppBarColors
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

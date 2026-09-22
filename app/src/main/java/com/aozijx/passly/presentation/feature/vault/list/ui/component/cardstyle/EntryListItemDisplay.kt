@@ -3,10 +3,10 @@ package com.aozijx.passly.presentation.feature.vault.list.ui.component.cardstyle
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
-import com.aozijx.passly.presentation.ui.shared.components.VaultItemIcon
-import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.shared.components.VaultItemIcon
+import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemUiModel
-import com.aozijx.passly.presentation.ui.shared.entry.labelRes
+import com.aozijx.passly.presentation.shared.entry.labelRes
 
 @Composable
 internal fun VaultListItemUiModel.categoryOrTemplateLabel(): String =

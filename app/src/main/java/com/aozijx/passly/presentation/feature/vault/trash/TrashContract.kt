@@ -1,7 +1,7 @@
 package com.aozijx.passly.presentation.feature.vault.trash
 
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.trash.TrashEntryUiModel
 
 data class TrashUiState(

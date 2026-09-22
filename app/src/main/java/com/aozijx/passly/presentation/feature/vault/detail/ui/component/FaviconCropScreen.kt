@@ -32,7 +32,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.media.toLocalIconImageModel
+import com.aozijx.passly.presentation.shared.media.toLocalIconImageModel
 
 @Composable
 fun FaviconCropScreen(

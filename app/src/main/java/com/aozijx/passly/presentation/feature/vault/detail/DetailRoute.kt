@@ -14,8 +14,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.vault.list.action.CopyFieldLabelProvider
-import com.aozijx.passly.presentation.ui.shared.media.ImageType
-import com.aozijx.passly.presentation.ui.shared.media.rememberImagePicker
+import com.aozijx.passly.presentation.shared.media.ImageType
+import com.aozijx.passly.presentation.shared.media.rememberImagePicker
 import com.aozijx.passly.presentation.feature.vault.detail.ui.DetailContent
 import com.aozijx.passly.presentation.feature.vault.detail.ui.DetailEditorOverlays
 import com.aozijx.passly.presentation.feature.vault.detail.ui.DetailScreen

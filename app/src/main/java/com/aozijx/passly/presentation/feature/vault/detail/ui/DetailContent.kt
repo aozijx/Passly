@@ -11,7 +11,7 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.packageinfo.rememberInstalledAppIconBitmap
 import com.aozijx.passly.core.platform.qr.QrCodeEncoder
-import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerBottomSheet
+import com.aozijx.passly.presentation.shared.components.AppPackagePickerBottomSheet
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.ActivityTimelineSection
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.AssociatedInfoSection
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.BankCardSection

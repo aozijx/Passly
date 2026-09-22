@@ -16,7 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
-import com.aozijx.passly.presentation.ui.shared.components.topbar.PasslyNavigationTopBar
+import com.aozijx.passly.presentation.shared.components.topbar.PasslyNavigationTopBar
 
 @Composable
 internal fun SettingsSecondaryPage(

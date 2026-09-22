@@ -33,9 +33,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.aozijx.passly.presentation.ui.shared.media.rememberImagePaletteColors
-import com.aozijx.passly.presentation.ui.shared.media.toLocalIconImageModel
-import com.aozijx.passly.presentation.ui.shared.components.VaultItemIcon
+import com.aozijx.passly.presentation.shared.media.rememberImagePaletteColors
+import com.aozijx.passly.presentation.shared.media.toLocalIconImageModel
+import com.aozijx.passly.presentation.shared.components.VaultItemIcon
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpUiState
 

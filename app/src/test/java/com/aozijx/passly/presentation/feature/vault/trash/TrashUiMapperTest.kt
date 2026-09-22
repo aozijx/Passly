@@ -9,7 +9,7 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

@@ -40,7 +40,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.AppPackagePickerItemUiModel
+import com.aozijx.passly.presentation.shared.components.AppPackagePickerItemUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailAssociatedInfoUiModel
 
 @Composable

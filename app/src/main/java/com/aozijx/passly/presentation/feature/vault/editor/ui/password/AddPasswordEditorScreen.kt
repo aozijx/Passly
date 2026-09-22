@@ -22,7 +22,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.NextFocusTextField
+import com.aozijx.passly.presentation.shared.components.NextFocusTextField
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.EntryEditorSection
 

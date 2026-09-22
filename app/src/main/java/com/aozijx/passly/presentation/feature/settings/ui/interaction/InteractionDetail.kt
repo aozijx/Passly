@@ -2,7 +2,7 @@ package com.aozijx.passly.presentation.feature.settings.ui.interaction
 
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
-import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
+import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
 
 internal data class InteractionDetailUiModel(
     val isSwipeEnabled: Boolean,

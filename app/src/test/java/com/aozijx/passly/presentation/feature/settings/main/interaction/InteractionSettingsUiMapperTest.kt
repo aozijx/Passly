@@ -1,7 +1,7 @@
 package com.aozijx.passly.presentation.feature.settings.main.interaction
 
 import com.aozijx.passly.domain.settings.model.SwipeActionType
-import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
+import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

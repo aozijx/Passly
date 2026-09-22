@@ -46,8 +46,8 @@ import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListLayou
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListToolbarUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.search.VaultSearchPhase
 import com.aozijx.passly.presentation.feature.vault.list.ui.search.VaultSearchState
-import com.aozijx.passly.presentation.ui.shared.components.topbar.passlyCompactTopAppBarColors
-import com.aozijx.passly.presentation.ui.shared.components.topbar.topAppBarContainerColor
+import com.aozijx.passly.presentation.shared.components.topbar.passlyCompactTopAppBarColors
+import com.aozijx.passly.presentation.shared.components.topbar.topAppBarContainerColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

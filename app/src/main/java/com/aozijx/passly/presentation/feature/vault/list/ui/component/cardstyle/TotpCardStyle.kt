@@ -30,7 +30,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import com.aozijx.passly.presentation.ui.shared.components.VaultItemIcon
+import com.aozijx.passly.presentation.shared.components.VaultItemIcon
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpKindUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpUiState

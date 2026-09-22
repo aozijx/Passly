@@ -8,7 +8,7 @@ import com.aozijx.passly.presentation.feature.settings.ui.security.AppPasswordAc
 import com.aozijx.passly.presentation.feature.settings.ui.security.AppPasswordChangeDialog
 import com.aozijx.passly.presentation.feature.settings.ui.security.AppPasswordChangeDialogEventHandler
 import com.aozijx.passly.presentation.feature.settings.ui.security.AppPasswordChangeDialogState
-import com.aozijx.passly.presentation.ui.shared.components.apppassword.AppPasswordSetDialog
+import com.aozijx.passly.presentation.shared.components.apppassword.AppPasswordSetDialog
 
 @Composable
 internal fun AppPasswordDialogs(

@@ -30,8 +30,8 @@ import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupExportFormatUiModel
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheetEventHandler
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheetUiState
-import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
-import com.aozijx.passly.presentation.ui.shared.entry.labelRes
+import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.shared.entry.labelRes
 
 @Composable
 internal fun BackupExportOptionsContent(

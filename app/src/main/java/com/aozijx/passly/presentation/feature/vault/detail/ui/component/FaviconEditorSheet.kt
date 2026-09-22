@@ -55,15 +55,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.VaultIconColorToken
-import com.aozijx.passly.presentation.ui.shared.components.VaultIcons
-import com.aozijx.passly.presentation.ui.shared.components.iconColorForStorageToken
+import com.aozijx.passly.presentation.shared.components.VaultIconColorToken
+import com.aozijx.passly.presentation.shared.components.VaultIcons
+import com.aozijx.passly.presentation.shared.components.iconColorForStorageToken
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFaviconEditorUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconDraftSourceUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconEditorTabUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconProcessingErrorUiModel
 import coil.compose.AsyncImage
-import com.aozijx.passly.presentation.ui.shared.media.toLocalIconImageModel
+import com.aozijx.passly.presentation.shared.media.toLocalIconImageModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)

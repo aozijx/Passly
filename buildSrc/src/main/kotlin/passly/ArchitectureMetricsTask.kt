@@ -150,6 +150,7 @@ internal object ArchitectureMetrics {
     private fun appOwnershipOf(path: String): String? = when {
         "/com/aozijx/passly/core/" in path -> "app-local-core"
         "/presentation/feature/" in path -> "presentation.feature"
+        "/presentation/shared/" in path -> "presentation.shared"
         "/presentation/ui/" in path -> "presentation.ui"
         "/feature/" in path -> "feature"
         "/security/" in path -> "security"

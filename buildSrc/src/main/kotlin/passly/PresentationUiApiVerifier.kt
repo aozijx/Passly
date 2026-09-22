@@ -13,6 +13,7 @@ internal object PresentationUiApiVerifier {
             .map { source -> source.copy(path = source.path.replace('\\', '/')) }
             .filter { source ->
                 "/presentation/ui/" in source.path ||
+                    "/presentation/shared/" in source.path ||
                     (
                         "/presentation/feature/" in source.path &&
                             "/ui/" in source.path

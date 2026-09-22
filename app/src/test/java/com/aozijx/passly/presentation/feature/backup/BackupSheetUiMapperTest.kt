@@ -7,7 +7,7 @@ import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupExportFormatUiModel
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupImportModeUiModel
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupSheet
-import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test

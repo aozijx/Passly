@@ -68,6 +68,21 @@ class SourceBoundaryPolicyTest {
                 forbidden = listOf("com.aozijx.passly.data.repository.entry.RoomEntryQueryRepository"),
             ),
             LayerCase(
+                owner = "presentation.shared",
+                path = "app/src/main/java/com/aozijx/passly/presentation/shared/components/Card.kt",
+                allowed = listOf(
+                    "androidx.compose.runtime.Composable",
+                    "com.aozijx.passly.core.ui.theme.PasslyTheme",
+                ),
+                forbidden = listOf(
+                    "com.aozijx.passly.presentation.feature.vault.VaultUiState",
+                    "com.aozijx.passly.feature.vault.VaultEntryPageSource",
+                    "com.aozijx.passly.domain.entry.model.Entry",
+                    "com.aozijx.passly.data.repository.EntryRepositoryImpl",
+                    "com.aozijx.passly.security.dek.DekManager",
+                ),
+            ),
+            LayerCase(
                 owner = "feature",
                 path = "app/src/main/java/com/aozijx/passly/feature/vault/VaultUseCase.kt",
                 allowed = listOf("com.aozijx.passly.domain.entry.model.Entry", "com.aozijx.passly.core.error.result.AppResult"),

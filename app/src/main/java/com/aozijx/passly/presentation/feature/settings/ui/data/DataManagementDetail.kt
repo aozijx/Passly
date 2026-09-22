@@ -6,8 +6,8 @@ import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.shared.components.group.SegmentedSettingsGroup
-import com.aozijx.passly.presentation.ui.shared.components.group.navigationSettingsGroupItem
+import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
+import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.presentation.feature.settings.ui.data.model.DataManagementEventHandler

@@ -1,7 +1,7 @@
 package com.aozijx.passly.presentation.feature.vault.list.ui.component.cardstyle
 
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpKindUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpUiState

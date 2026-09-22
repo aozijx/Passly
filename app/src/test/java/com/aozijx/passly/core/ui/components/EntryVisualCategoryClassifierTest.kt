@@ -1,6 +1,6 @@
-package com.aozijx.passly.presentation.ui.shared.components
+package com.aozijx.passly.presentation.shared.components
 
-import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

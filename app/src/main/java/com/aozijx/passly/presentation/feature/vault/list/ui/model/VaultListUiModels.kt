@@ -1,8 +1,8 @@
 package com.aozijx.passly.presentation.feature.vault.list.ui.model
 
 import androidx.compose.runtime.Immutable
-import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
-import com.aozijx.passly.presentation.ui.shared.gesture.SwipeActionUiModel
+import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
 import kotlinx.coroutines.flow.Flow
 
 @Immutable

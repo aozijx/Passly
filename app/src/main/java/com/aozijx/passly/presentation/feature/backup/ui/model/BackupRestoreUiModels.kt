@@ -1,6 +1,6 @@
 package com.aozijx.passly.presentation.feature.backup.ui.model
 
-import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 
 internal enum class BackupExportFormatUiModel(
     val requiresPassword: Boolean,

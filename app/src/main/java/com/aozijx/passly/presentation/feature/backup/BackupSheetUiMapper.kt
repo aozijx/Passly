@@ -7,7 +7,7 @@ import com.aozijx.passly.presentation.feature.backup.ui.model.BackupExportFormat
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupImportModeUiModel
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheetUiState
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupSheet
-import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 
 internal fun BackupUiState.toSheetUiState(
     activeSheet: BackupSheet?,

@@ -2,7 +2,7 @@ package com.aozijx.passly.presentation.feature.vault.list.ui.component.cardstyle
 
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultCardDensityUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultCardPresentationUiModel
-import com.aozijx.passly.presentation.ui.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
