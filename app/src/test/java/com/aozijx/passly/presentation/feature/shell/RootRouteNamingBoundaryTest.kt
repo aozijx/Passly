@@ -21,7 +21,7 @@ class RootRouteNamingBoundaryTest {
             "com/aozijx/passly/presentation/feature/recovery/RecoveryModeRoute.kt",
         )
         val recoveryScreen = sourceRoot.resolve(
-            "com/aozijx/passly/presentation/ui/recovery/RecoveryModeScreen.kt",
+            "com/aozijx/passly/presentation/feature/recovery/ui/RecoveryModeScreen.kt",
         )
 
         listOf(unlockRoute, unlockScreen, recoveryRoute, recoveryScreen).forEach { file ->
@@ -33,6 +33,14 @@ class RootRouteNamingBoundaryTest {
         assertTrue(recoveryScreen.readText().contains("fun RecoveryModeScreen("))
         assertFalse(unlockScreen.readText().contains("ViewModel"))
         assertFalse(recoveryScreen.readText().contains("ViewModel"))
+
+        val legacyRecoveryUi = sourceRoot.resolve(
+            "com/aozijx/passly/presentation/ui/recovery",
+        )
+        assertFalse(
+            "Recovery UI still has a parallel global source root",
+            legacyRecoveryUi.walkTopDown().any { it.isFile && it.extension == "kt" },
+        )
 
         val obsoleteOnboarding = sourceRoot.resolve(
             "com/aozijx/passly/presentation/feature/onboarding",

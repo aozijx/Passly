@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.recovery
+package com.aozijx.passly.presentation.feature.recovery.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState

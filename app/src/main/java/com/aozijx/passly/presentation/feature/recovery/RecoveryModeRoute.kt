@@ -12,10 +12,10 @@ import com.aozijx.passly.domain.entry.model.PasswordStrengthLevel
 import com.aozijx.passly.domain.entry.model.PasswordStrengthResult
 import com.aozijx.passly.domain.entry.policy.PasswordStrengthEvaluator
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.presentation.ui.recovery.RecoveryModeScreen
-import com.aozijx.passly.presentation.ui.recovery.RecoveryPasswordDialog
-import com.aozijx.passly.presentation.ui.recovery.RecoveryPasswordStrengthTone
-import com.aozijx.passly.presentation.ui.recovery.RecoveryPasswordStrengthUiModel
+import com.aozijx.passly.presentation.feature.recovery.ui.RecoveryModeScreen
+import com.aozijx.passly.presentation.feature.recovery.ui.RecoveryPasswordDialog
+import com.aozijx.passly.presentation.feature.recovery.ui.RecoveryPasswordStrengthTone
+import com.aozijx.passly.presentation.feature.recovery.ui.RecoveryPasswordStrengthUiModel
 
 @Composable
 fun RecoveryModeRoute(viewModel: RecoveryModeViewModel, onExit: () -> Unit) {
