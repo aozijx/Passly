@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.ui.database.reset
+package com.aozijx.passly.presentation.feature.database.reset.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,18 +25,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.ui.database.reset.model.DatabaseResetEventHandler
-import com.aozijx.passly.presentation.ui.database.reset.model.DatabaseResetSheetState
+import com.aozijx.passly.presentation.feature.database.reset.DatabaseResetUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DatabaseResetSheet(
-    state: DatabaseResetSheetState,
-    eventHandler: DatabaseResetEventHandler,
+    state: DatabaseResetUiState,
+    onReset: () -> Unit,
+    onDismiss: () -> Unit,
 ) {
     var showConfirm by remember { mutableStateOf(false) }
     ModalBottomSheet(
-        onDismissRequest = eventHandler::onDismiss,
+        onDismissRequest = onDismiss,
     ) {
         Column(
             modifier = Modifier
@@ -95,7 +95,7 @@ internal fun DatabaseResetSheet(
                     enabled = !state.isResetting,
                     onClick = {
                         showConfirm = false
-                        eventHandler.onReset()
+                        onReset()
                     },
                 ) {
                     Text(
