@@ -26,7 +26,8 @@ sealed interface DetailUiAction {
     data class UpdateFieldDraft(val field: DetailFieldUiModel, val value: String) : DetailSensitiveAction
     data class CancelFieldEdit(val field: DetailFieldUiModel) : DetailSensitiveAction
     data class ToggleFieldVisibility(val field: DetailFieldUiModel) : DetailSensitiveAction
-    data class RevealFields(val fields: Set<DetailFieldUiModel>) : DetailSensitiveAction
+    data object RevealBankCardFields : DetailSensitiveAction
+    data object RevealSshFields : DetailSensitiveAction
     data class SaveField(val field: DetailFieldUiModel, val newValue: String) : DetailSensitiveAction
     data object OpenTagEditor : DetailTagAction
     data class UpdateTagInput(val value: String) : DetailTagAction

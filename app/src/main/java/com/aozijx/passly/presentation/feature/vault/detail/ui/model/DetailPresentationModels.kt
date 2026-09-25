@@ -1,7 +1,6 @@
 package com.aozijx.passly.presentation.feature.vault.detail.ui.model
 
 import com.aozijx.passly.presentation.shared.components.AppPackagePickerItemUiModel
-import com.aozijx.passly.presentation.feature.vault.detail.ui.component.DetailBankCardFieldUiModel
 
 data class DetailPresentationModel(
     val header: DetailHeaderUiModel,

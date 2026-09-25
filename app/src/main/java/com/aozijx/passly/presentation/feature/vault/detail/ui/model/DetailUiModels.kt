@@ -32,11 +32,6 @@ enum class DetailEntryTypeUiModel {
     API_KEY, CRYPTO_WALLET, SEED_PHRASE, RECOVERY_CODE,
 }
 
-enum class CredentialFieldUiModel {
-    USERNAME,
-    PASSWORD,
-}
-
 data class CredentialFieldUiState(
     val visible: Boolean,
     val revealedValue: ScopedSensitiveText?,
@@ -49,14 +44,6 @@ data class CredentialSectionUiState(
     val username: CredentialFieldUiState,
     val password: CredentialFieldUiState,
 )
-
-interface CredentialSectionEventHandler {
-    fun onEditingChanged(field: CredentialFieldUiModel, editing: Boolean)
-    fun onValueChanged(field: CredentialFieldUiModel, value: String)
-    fun onRevealRequested(field: CredentialFieldUiModel)
-    fun onCopyRequested(field: CredentialFieldUiModel)
-    fun onSaveRequested(field: CredentialFieldUiModel, value: String)
-}
 
 data class RelatedEntryUiModel(
     val id: String,

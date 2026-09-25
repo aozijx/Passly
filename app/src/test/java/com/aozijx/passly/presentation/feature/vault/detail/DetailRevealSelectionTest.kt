@@ -6,7 +6,7 @@ import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailSshUiM
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class DetailInteractionCallbacksTest {
+class DetailRevealSelectionTest {
     @Test
     fun `bank card reveal all selects only present hidden fields`() {
         val card = DetailBankCardUiModel(

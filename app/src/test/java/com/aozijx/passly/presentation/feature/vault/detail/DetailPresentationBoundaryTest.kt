@@ -23,9 +23,15 @@ class DetailPresentationBoundaryTest {
             assertFalse(source.contains("DetailUiState"))
             assertFalse(source.contains("rememberImagePicker"))
             assertFalse(source.contains("DetailViewModel"))
-            assertFalse(source.contains("DetailUiAction"))
-            assertTrue(source.contains("callbacks:"))
+            assertTrue(source.contains("onAction: (DetailUiAction) -> Unit"))
         }
+        val detailRoot = sourceRoot.resolve(
+            "com/aozijx/passly/presentation/feature/vault/detail",
+        )
+        assertFalse(detailRoot.resolve("DetailInteractionCallbacks.kt").exists())
+        assertFalse(
+            detailRoot.resolve("ui/model/DetailInteractionContracts.kt").exists(),
+        )
     }
 
     @Test
@@ -48,6 +54,8 @@ class DetailPresentationBoundaryTest {
         assertTrue(route.contains("viewModel.presentation"))
         assertTrue(viewModel.contains("toDetailPresentationModel"))
         assertTrue(route.contains("rememberImagePicker"))
+        assertTrue(route.contains("onAction = viewModel::onAction"))
+        assertFalse(route.contains("DetailInteractionCallbacks("))
         assertFalse(bindingRoot.resolve("DetailBodyBinding.kt").exists())
         assertFalse(bindingRoot.resolve("DetailEditorOverlayBinding.kt").exists())
     }

@@ -8,10 +8,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.vault.detail.ui.model.CredentialFieldUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.CredentialFieldUiState
-import com.aozijx.passly.presentation.feature.vault.detail.ui.model.CredentialSectionEventHandler
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.CredentialSectionUiState
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFieldUiModel
 
 /**
  * A purely stateless UI section for credentials (username and password).
@@ -20,22 +20,22 @@ import com.aozijx.passly.presentation.feature.vault.detail.ui.model.CredentialSe
 @Composable
 fun CredentialSection(
     state: CredentialSectionUiState,
-    eventHandler: CredentialSectionEventHandler,
+    onAction: (DetailUiAction) -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        CredentialField(state.username, CredentialFieldUiModel.USERNAME, eventHandler)
-        CredentialField(state.password, CredentialFieldUiModel.PASSWORD, eventHandler)
+        CredentialField(state.username, DetailFieldUiModel.USERNAME, onAction)
+        CredentialField(state.password, DetailFieldUiModel.PASSWORD, onAction)
     }
 }
 
 @Composable
 private fun CredentialField(
     state: CredentialFieldUiState,
-    field: CredentialFieldUiModel,
-    eventHandler: CredentialSectionEventHandler,
+    field: DetailFieldUiModel,
+    onAction: (DetailUiAction) -> Unit,
 ) {
     if (!state.visible) return
 
@@ -43,17 +43,23 @@ private fun CredentialField(
     SensitiveFieldCard(
         title = stringResource(
             when (field) {
-                CredentialFieldUiModel.USERNAME -> R.string.field_username
-                CredentialFieldUiModel.PASSWORD -> R.string.password_label
+                DetailFieldUiModel.USERNAME -> R.string.field_username
+                DetailFieldUiModel.PASSWORD -> R.string.password_label
+                else -> error("Unsupported credential field: $field")
             },
         ),
         isEditing = state.isEditing,
         editedValue = state.editedValue,
         revealedValue = revealedValue,
-        onEditToggle = { eventHandler.onEditingChanged(field, it) },
-        onValueChange = { eventHandler.onValueChanged(field, it) },
-        onReveal = { eventHandler.onRevealRequested(field) },
-        onCopy = { eventHandler.onCopyRequested(field) },
-        onSave = { eventHandler.onSaveRequested(field, it) },
+        onEditToggle = { editing ->
+            onAction(
+                if (editing) DetailUiAction.StartFieldEdit(field, state.valueForEditing)
+                else DetailUiAction.CancelFieldEdit(field),
+            )
+        },
+        onValueChange = { onAction(DetailUiAction.UpdateFieldDraft(field, it)) },
+        onReveal = { onAction(DetailUiAction.ToggleFieldVisibility(field)) },
+        onCopy = { onAction(DetailUiAction.CopyField(field)) },
+        onSave = { onAction(DetailUiAction.SaveField(field, it)) },
     )
 }

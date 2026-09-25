@@ -22,6 +22,7 @@ import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFieldUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailPresentationModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -199,16 +200,13 @@ class DetailViewModel @Inject internal constructor(
                 }
             }
 
-            is DetailUiAction.RevealFields -> {
-                val current = _uiState.value.entry ?: return
-                val hiddenKeys = event.fields.mapNotNullTo(linkedSetOf()) { it.revealedKey }.filterTo(linkedSetOf()) {
-                    _uiState.value.revealed(it) == null
-                }
-                if (hiddenKeys.isEmpty()) return
-                viewModelScope.launch {
-                    revealFields(current, hiddenKeys)
-                }
-            }
+            DetailUiAction.RevealBankCardFields -> revealFieldsFromPresentation(
+                presentation.value?.content?.bankCard?.fieldsToReveal().orEmpty(),
+            )
+
+            DetailUiAction.RevealSshFields -> revealFieldsFromPresentation(
+                presentation.value?.content?.ssh?.fieldsToReveal().orEmpty(),
+            )
 
             is DetailUiAction.SaveField -> {
                 if (_uiState.value.entry == null) return
@@ -376,6 +374,14 @@ class DetailViewModel @Inject internal constructor(
             clearRevealedFields()
             _effects.send(DetailEffect.ContentCopied(fieldKey))
         }
+    }
+
+    private fun revealFieldsFromPresentation(fields: Set<DetailFieldUiModel>) {
+        val current = _uiState.value.entry ?: return
+        val hiddenKeys = fields.mapNotNullTo(linkedSetOf()) { it.revealedKey }
+            .filterTo(linkedSetOf()) { _uiState.value.revealed(it) == null }
+        if (hiddenKeys.isEmpty()) return
+        viewModelScope.launch { revealFields(current, hiddenKeys) }
     }
 
     private fun copyOtpCode() {
