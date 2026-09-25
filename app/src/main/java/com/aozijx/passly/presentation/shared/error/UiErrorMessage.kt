@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.common.error
+package com.aozijx.passly.presentation.shared.error
 
 import com.aozijx.passly.core.error.mapping.fromThrowable
 import com.aozijx.passly.core.error.model.AppError

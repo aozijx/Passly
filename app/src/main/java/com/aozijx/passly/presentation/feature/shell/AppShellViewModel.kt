@@ -2,7 +2,7 @@ package com.aozijx.passly.presentation.feature.shell
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.presentation.feature.common.error.toUiMessage
+import com.aozijx.passly.presentation.shared.error.toUiMessage
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState

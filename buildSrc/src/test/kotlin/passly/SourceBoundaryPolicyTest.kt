@@ -88,6 +88,7 @@ class SourceBoundaryPolicyTest {
                     "androidx.compose.runtime.Composable",
                     "com.aozijx.passly.domain.entry.model.Entry",
                     "com.aozijx.passly.core.error.result.AppResult",
+                    "com.aozijx.passly.presentation.shared.error.toUiMessage",
                 ),
                 forbidden = listOf("com.aozijx.passly.presentation.feature.vault.VaultUiState"),
             ),

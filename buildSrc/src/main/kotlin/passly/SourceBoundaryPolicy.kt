@@ -68,6 +68,9 @@ internal object SourceBoundaryPolicy {
                 "com.aozijx.passly.data.",
                 "com.aozijx.passly.presentation.",
             ),
+            allowedImportPrefixes = setOf(
+                "com.aozijx.passly.presentation.shared.error.",
+            ),
             message = "imports a forbidden namespace",
         ),
         SourceBoundaryRule(
@@ -484,7 +487,7 @@ internal object SourceBoundaryPolicy {
             sourcePathContains = "/presentation/feature/settings/",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.app.database.DatabaseLifecycleGateway",
-                "com.aozijx.passly.presentation.feature.database.reset.DatabaseResetViewModel",
+                "com.aozijx.passly.feature.database.reset.DatabaseResetViewModel",
             ),
             message = "settings owns database lifecycle or reset capability",
         ),

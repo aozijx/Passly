@@ -1,10 +1,8 @@
-package com.aozijx.passly.presentation.feature.database.reset
+package com.aozijx.passly.feature.database.reset
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.presentation.feature.common.error.toUiMessage
-import com.aozijx.passly.feature.database.reset.DatabaseResetResult
-import com.aozijx.passly.feature.database.reset.ResetDatabaseUseCase
+import com.aozijx.passly.presentation.shared.error.toUiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

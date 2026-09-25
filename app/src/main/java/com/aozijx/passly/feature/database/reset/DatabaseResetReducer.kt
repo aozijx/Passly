@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.database.reset
+package com.aozijx.passly.feature.database.reset
 
 internal object DatabaseResetReducer {
     fun reduce(

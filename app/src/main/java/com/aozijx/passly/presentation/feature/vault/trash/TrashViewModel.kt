@@ -2,7 +2,7 @@ package com.aozijx.passly.presentation.feature.vault.trash
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.presentation.feature.common.error.toUiMessage
+import com.aozijx.passly.presentation.shared.error.toUiMessage
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryVersion

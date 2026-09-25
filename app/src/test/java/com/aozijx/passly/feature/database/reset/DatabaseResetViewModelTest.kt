@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.database.reset
+package com.aozijx.passly.feature.database.reset
 
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthInput
@@ -8,8 +8,6 @@ import com.aozijx.passly.domain.access.model.AuthorizationResult
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.feature.database.reset.DatabaseResetGateway
-import com.aozijx.passly.feature.database.reset.ResetDatabaseUseCase
 import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

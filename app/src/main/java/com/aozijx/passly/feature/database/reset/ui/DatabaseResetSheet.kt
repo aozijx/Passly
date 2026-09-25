@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.database.reset.ui
+package com.aozijx.passly.feature.database.reset.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,7 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.database.reset.DatabaseResetUiState
+import com.aozijx.passly.feature.database.reset.DatabaseResetUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

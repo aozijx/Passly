@@ -7,7 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
-import com.aozijx.passly.presentation.feature.database.reset.DatabaseResetRoute
+import com.aozijx.passly.feature.database.reset.DatabaseResetRoute
 import com.aozijx.passly.presentation.feature.settings.ui.data.DataManagementDetail
 import com.aozijx.passly.presentation.feature.settings.ui.data.model.DataManagementEventHandler
 import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
