@@ -44,8 +44,10 @@ class SensitivePresentationBoundaryTest {
         assertTrue(securitySettings.contains("AuthenticationMethodAvailability"))
         assertTrue(securitySettings.contains("SecureSessionAccessState"))
         assertFalse(mainSettings.contains("AuthenticationManager"))
-        assertTrue(mainSettings.contains("AuthenticationMethodAvailability"))
-        assertTrue(mainSettings.contains("authorizeAppPasswordManagement"))
+        assertFalse(mainSettings.contains("AuthenticationMethodAvailability"))
+        assertFalse(mainSettings.contains("AuthenticationMethodProvisioner"))
+        assertFalse(mainSettings.contains("AuthenticationResult"))
+        assertTrue(mainSettings.contains("AppPasswordSettingsInteractor"))
         assertFalse(mainSettings.contains("ClipboardCopyController"))
         assertFalse(mainSettings.contains("copySensitive"))
 

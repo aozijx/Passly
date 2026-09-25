@@ -2,10 +2,9 @@ package com.aozijx.passly.presentation.feature.settings.security
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.access.model.AuthenticationMethod
-import com.aozijx.passly.domain.access.model.AuthenticationResult
-import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
-import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
+import com.aozijx.passly.feature.settings.security.AppPasswordChangeResult
+import com.aozijx.passly.feature.settings.security.AppPasswordManagementAccess
+import com.aozijx.passly.feature.settings.security.AppPasswordSettingsInteractor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
@@ -18,8 +17,7 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class AppPasswordSettingsViewModel @Inject constructor(
-    private val authenticationMethodAvailability: AuthenticationMethodAvailability,
-    private val authenticationMethodProvisioner: AuthenticationMethodProvisioner,
+    private val appPasswordSettings: AppPasswordSettingsInteractor,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AppPasswordSettingsUiState())
@@ -35,63 +33,46 @@ class AppPasswordSettingsViewModel @Inject constructor(
     fun onAction(action: AppPasswordSettingsAction) {
         when (action) {
             AppPasswordSettingsAction.RequestAppPasswordEntry -> requestAppPasswordEntry()
-            is AppPasswordSettingsAction.SetAppPassword -> setAppPassword(action.password)
-            is AppPasswordSettingsAction.ChangeAppPassword -> changeAppPassword(
-                action.currentPassword,
-                action.newPassword,
+            is AppPasswordSettingsAction.SetAppPassword -> runChange(
+                successEffect = AppPasswordSettingsEffect.AppPasswordSet,
+            ) { appPasswordSettings.set(action.password) }
+            is AppPasswordSettingsAction.ChangeAppPassword -> runChange(
+                successEffect = AppPasswordSettingsEffect.AppPasswordChanged,
+            ) {
+                appPasswordSettings.change(action.currentPassword, action.newPassword)
+            }
+            AppPasswordSettingsAction.DisableAppPassword -> runChange(
+                successEffect = AppPasswordSettingsEffect.AppPasswordDisabled,
+                operation = appPasswordSettings::disable,
             )
-            AppPasswordSettingsAction.DisableAppPassword -> disableAppPassword()
         }
     }
 
-    private fun setAppPassword(password: CharArray) {
-        runPrimaryAuthMethodChange(
-            successEffect = AppPasswordSettingsEffect.AppPasswordSet,
-            operation = { authenticationMethodProvisioner.setAppPassword(password) },
-        )
-    }
-
-    private fun changeAppPassword(currentPassword: CharArray, newPassword: CharArray) {
-        runPrimaryAuthMethodChange(
-            successEffect = AppPasswordSettingsEffect.AppPasswordChanged,
-            operation = {
-                authenticationMethodProvisioner.changeAppPassword(currentPassword, newPassword)
-            },
-        )
-    }
-
-    private fun disableAppPassword() {
-        runPrimaryAuthMethodChange(
-            successEffect = AppPasswordSettingsEffect.AppPasswordDisabled,
-            operation = { authenticationMethodProvisioner.disableAppPassword() },
-        )
-    }
-
-    private fun runPrimaryAuthMethodChange(
+    private fun runChange(
         successEffect: AppPasswordSettingsEffect,
-        operation: suspend () -> AuthenticationResult,
+        operation: suspend () -> AppPasswordChangeResult,
     ) {
         viewModelScope.launch {
             when (operation()) {
-                is AuthenticationResult.Success -> _effects.trySend(successEffect)
-                is AuthenticationResult.Failure -> _effects.trySend(
+                AppPasswordChangeResult.Completed -> _effects.trySend(successEffect)
+                is AppPasswordChangeResult.Failed -> _effects.trySend(
                     AppPasswordSettingsEffect.AppPasswordError("操作失败"),
                 )
-                is AuthenticationResult.Cancelled -> Unit
+                AppPasswordChangeResult.Cancelled -> Unit
             }
         }
     }
 
     private fun requestAppPasswordEntry() {
         viewModelScope.launch {
-            when (val result = authenticationMethodProvisioner.authorizeAppPasswordManagement()) {
-                is AuthenticationResult.Success -> _effects.trySend(
+            when (val result = appPasswordSettings.authorizeManagement()) {
+                is AppPasswordManagementAccess.Authorized -> _effects.trySend(
                     AppPasswordSettingsEffect.AppPasswordEntryAuthorized(
-                        alreadyEnabled = _uiState.value.isAppPasswordEnabled,
+                        alreadyEnabled = result.alreadyEnabled,
                     ),
                 )
-                is AuthenticationResult.Cancelled -> Unit
-                is AuthenticationResult.Failure -> _effects.trySend(
+                AppPasswordManagementAccess.Cancelled -> Unit
+                is AppPasswordManagementAccess.Failed -> _effects.trySend(
                     AppPasswordSettingsEffect.AppPasswordEntryAuthenticationFailed(result.failure),
                 )
             }
@@ -100,9 +81,9 @@ class AppPasswordSettingsViewModel @Inject constructor(
 
     private fun observeAuthenticationMethods() {
         viewModelScope.launch {
-            authenticationMethodAvailability.methods.collect { methods ->
+            appPasswordSettings.isEnabled.collect { enabled ->
                 _uiState.update {
-                    it.copy(isAppPasswordEnabled = AuthenticationMethod.APP_PASSWORD in methods)
+                    it.copy(isAppPasswordEnabled = enabled)
                 }
             }
         }
