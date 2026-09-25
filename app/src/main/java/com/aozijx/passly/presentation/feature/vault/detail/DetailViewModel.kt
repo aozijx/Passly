@@ -48,7 +48,7 @@ class DetailViewModel @Inject internal constructor(
     private val copyEntryFieldUseCase: CopyEntryFieldUseCase,
     private val copyOtpCodeUseCase: CopyOtpCodeUseCase,
     private val faviconImageProcessor: FaviconImageProcessor,
-    private val sessionLoader: DetailSessionLoader,
+    private val presentationLoader: DetailPresentationLoader,
     otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
 ) : ViewModel() {
     private val revealStore = DetailRevealStore()
@@ -411,7 +411,7 @@ class DetailViewModel @Inject internal constructor(
         mutate(DetailMutation.StateCleared)
         entryLoadJob = viewModelScope.launch {
             if (!accessPolicy.hasFullAccess()) return@launch
-            val snapshot = sessionLoader.open(entryId) ?: return@launch
+            val snapshot = presentationLoader.open(entryId) ?: return@launch
             val latest = snapshot.presentation.entry
             mutate(DetailMutation.SessionOpened(snapshot))
             if (launchMode != DetailLaunchMode.VIEW) {
@@ -485,7 +485,7 @@ class DetailViewModel @Inject internal constructor(
                         _uiState.value.isEditingTitle
                 mutate(
                     DetailMutation.EntryPresented(
-                        presentation = sessionLoader.present(latest),
+                        presentation = presentationLoader.present(latest),
                         isEditingTitle = keepTitleEditing,
                         editedTitle = if (keepTitleEditing) _uiState.value.editedTitle else latest.title,
                     ),
@@ -551,7 +551,7 @@ class DetailViewModel @Inject internal constructor(
         val entryId = state.entry?.id ?: return
         if (state.packagePickerAppsLoaded || packagePickerLoadJob?.isActive == true) return
         packagePickerLoadJob = viewModelScope.launch {
-            val apps = sessionLoader.launchableApps()
+            val apps = presentationLoader.launchableApps()
             mutate(DetailMutation.PackagePickerAppsChanged(entryId, apps))
         }
     }

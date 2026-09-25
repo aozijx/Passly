@@ -26,6 +26,7 @@ import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
+import com.aozijx.passly.feature.vault.detail.DetailSessionQuery
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -33,7 +34,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-class DetailSessionLoaderTest {
+class DetailPresentationLoaderTest {
     @Test
     fun openBuildsOneCompleteDetailSession() = runTest {
         val account = entry("account", EntryType.ACCOUNT, setOf("com.unknown", "com.named"))
@@ -106,11 +107,13 @@ class DetailSessionLoaderTest {
             SensitiveFieldPresence(EntryId("unused"), emptySet()),
         ),
         links: List<EntryLink> = emptyList(),
-    ) = DetailSessionLoader(
-        entryQueryRepository = FakeEntryQueryRepository(entries),
-        sensitiveFieldRepository = sensitiveFields,
+    ) = DetailPresentationLoader(
+        sessionQuery = DetailSessionQuery(
+            entryQueryRepository = FakeEntryQueryRepository(entries),
+            sensitiveFieldRepository = sensitiveFields,
+            entryLinkRepository = FakeEntryLinkRepository(links),
+        ),
         installedAppDirectory = FakeInstalledAppDirectory(),
-        entryLinkRepository = FakeEntryLinkRepository(links),
         entryTypePolicy = FakeEntryTypePolicy(),
     )
 

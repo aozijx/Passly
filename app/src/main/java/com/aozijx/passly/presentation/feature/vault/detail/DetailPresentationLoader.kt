@@ -7,9 +7,8 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.policy.EntryValidation
-import com.aozijx.passly.domain.entry.port.EntryLinkRepository
-import com.aozijx.passly.domain.entry.port.EntryQueryRepository
-import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
+import com.aozijx.passly.feature.vault.detail.DetailEntryData
+import com.aozijx.passly.feature.vault.detail.DetailSessionQuery
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionResolver
 import javax.inject.Inject
@@ -36,40 +35,36 @@ internal data class DetailSessionSnapshot(
     val relatedEntries: List<Entry>,
 )
 
-internal class DetailSessionLoader @Inject constructor(
-    private val entryQueryRepository: EntryQueryRepository,
-    private val sensitiveFieldRepository: SensitiveFieldRepository,
+internal class DetailPresentationLoader @Inject constructor(
+    private val sessionQuery: DetailSessionQuery,
     private val installedAppDirectory: InstalledAppDirectory,
-    private val entryLinkRepository: EntryLinkRepository,
     private val entryTypePolicy: EntryTypePolicy,
 ) {
     suspend fun open(entryId: EntryId): DetailSessionSnapshot? {
-        val entry = entryQueryRepository.getById(entryId) ?: return null
-        return coroutineScope {
-            val presentation = async { present(entry) }
-            val relatedEntries = async { relatedEntries(entry) }
-            DetailSessionSnapshot(
-                presentation = presentation.await(),
-                relatedEntries = relatedEntries.await(),
-            )
-        }
-    }
-
-    suspend fun present(entry: Entry): DetailEntryPresentation = coroutineScope {
-        val apps = async { associatedApps(entry) }
-        val sensitiveFields = async { sensitiveFieldRepository.getPresence(entry.id).keys }
-        DetailEntryPresentation(
-            entry = entry,
-            analysis = analyze(entry),
-            associatedApps = apps.await(),
-            sensitiveFieldKeys = sensitiveFields.await(),
+        val session = sessionQuery.open(entryId) ?: return null
+        return DetailSessionSnapshot(
+            presentation = present(session.detail),
+            relatedEntries = session.relatedEntries,
         )
     }
+
+    suspend fun present(entry: Entry): DetailEntryPresentation =
+        present(sessionQuery.snapshot(entry))
 
     suspend fun launchableApps(): List<DetailInstalledApp> =
         installedAppDirectory.launchableApps().map { metadata ->
             DetailInstalledApp(metadata.label, metadata.packageName)
         }
+
+    private suspend fun present(detail: DetailEntryData): DetailEntryPresentation = coroutineScope {
+        val apps = async { associatedApps(detail.entry) }
+        DetailEntryPresentation(
+            entry = detail.entry,
+            analysis = analyze(detail.entry),
+            associatedApps = apps.await(),
+            sensitiveFieldKeys = detail.sensitiveFieldKeys,
+        )
+    }
 
     private fun analyze(entry: Entry): DetailEntryAnalysis = DetailEntryAnalysis(
         entryType = entry.type,
@@ -89,17 +84,4 @@ internal class DetailSessionLoader @Inject constructor(
                 packageName = packageName,
             )
         }
-
-    private suspend fun relatedEntries(entry: Entry): List<Entry> {
-        val relatedIds = DetailRelatedEntryIds.resolve(
-            entryId = entry.id,
-            entryType = entry.type,
-            links = entryLinkRepository.getAll(),
-        )
-        return buildList {
-            relatedIds.forEach { relatedId ->
-                entryQueryRepository.getById(relatedId)?.let(::add)
-            }
-        }
-    }
 }

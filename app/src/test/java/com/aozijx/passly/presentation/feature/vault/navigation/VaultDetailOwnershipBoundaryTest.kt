@@ -122,8 +122,8 @@ class VaultDetailOwnershipBoundaryTest {
         val viewModel = source(
             "com/aozijx/passly/presentation/feature/vault/detail/DetailViewModel.kt",
         )
-        val sessionLoader = source(
-            "com/aozijx/passly/presentation/feature/vault/detail/DetailSessionLoader.kt",
+        val presentationLoader = source(
+            "com/aozijx/passly/presentation/feature/vault/detail/DetailPresentationLoader.kt",
         )
 
         val signature = route.substringAfter("fun DetailRoute(").substringBefore(") {")
@@ -132,8 +132,8 @@ class VaultDetailOwnershipBoundaryTest {
         assertFalse(signature.contains("(Entry) -> Unit"))
         assertFalse(route.contains("initialEntry"))
         assertFalse(route.contains("onAutoUnlockTotp"))
-        assertTrue(viewModel.contains("sessionLoader.open(entryId)"))
-        assertTrue(sessionLoader.contains("entryQueryRepository.getById(entryId)"))
+        assertTrue(viewModel.contains("presentationLoader.open(entryId)"))
+        assertTrue(presentationLoader.contains("sessionQuery.open(entryId)"))
     }
 
     @Test
@@ -163,9 +163,29 @@ class VaultDetailOwnershipBoundaryTest {
         assertFalse(viewModel.contains("ActivityRecorder"))
         assertFalse(viewModel.contains("EntryQueryRepository"))
         assertFalse(viewModel.contains("userConfigExtras"))
-        assertTrue(viewModel.contains("private val sessionLoader: DetailSessionLoader"))
+        assertTrue(viewModel.contains("private val presentationLoader: DetailPresentationLoader"))
         assertTrue(viewModel.contains("private val editDetailEntry: EditDetailEntryUseCase"))
         assertTrue(viewModel.contains("private val entryTagQuery: EntryTagQuery"))
+    }
+
+    @Test
+    fun `detail repositories are owned by feature session query`() {
+        val detailRoot = "com/aozijx/passly/presentation/feature/vault/detail/"
+        val presentationLoader = source("${detailRoot}DetailPresentationLoader.kt")
+        val featureQuery = source(
+            "com/aozijx/passly/feature/vault/detail/DetailSessionQuery.kt",
+        )
+
+        listOf(
+            "EntryQueryRepository",
+            "SensitiveFieldRepository",
+            "EntryLinkRepository",
+        ).forEach { repository ->
+            assertFalse(presentationLoader.contains(repository))
+            assertTrue(featureQuery.contains(repository))
+        }
+        assertTrue(presentationLoader.contains("private val sessionQuery: DetailSessionQuery"))
+        assertFalse(sourceFile("${detailRoot}DetailSessionLoader.kt").exists())
     }
 
     @Test

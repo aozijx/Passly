@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.detail
+package com.aozijx.passly.feature.vault.detail
 
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -14,7 +14,7 @@ class DetailRelatedEntryIdsTest {
     fun `account resolves all members without including itself`() {
         assertEquals(
             setOf(EntryId("login"), EntryId("otp")),
-            DetailRelatedEntryIds.resolve(
+            resolveRelatedEntryIds(
                 entryId = EntryId("account"),
                 entryType = EntryType.ACCOUNT,
                 links = links(),
@@ -26,7 +26,7 @@ class DetailRelatedEntryIdsTest {
     fun `member resolves its account and sibling entries`() {
         assertEquals(
             setOf(EntryId("account"), EntryId("otp")),
-            DetailRelatedEntryIds.resolve(
+            resolveRelatedEntryIds(
                 entryId = EntryId("login"),
                 entryType = EntryType.LOGIN,
                 links = links(),
@@ -38,7 +38,7 @@ class DetailRelatedEntryIdsTest {
     fun `unlinked entry has no related entries`() {
         assertEquals(
             emptySet<EntryId>(),
-            DetailRelatedEntryIds.resolve(EntryId("note"), EntryType.NOTE, links()),
+            resolveRelatedEntryIds(EntryId("note"), EntryType.NOTE, links()),
         )
     }
 
