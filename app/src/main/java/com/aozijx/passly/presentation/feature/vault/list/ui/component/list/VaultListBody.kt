@@ -22,8 +22,7 @@ import androidx.paging.PagingData
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.topbar.VaultFilterBar
 import com.aozijx.passly.presentation.feature.vault.list.ui.gesture.rememberPullToSearchNestedScrollConnection
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListEvent
-import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListEventHandler
-import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemEventHandler
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemEvent
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpStateProvider
@@ -34,9 +33,9 @@ internal fun VaultListBody(
     state: VaultListScreenUiModel,
     scrollBehavior: TopAppBarScrollBehavior,
     entries: Flow<PagingData<VaultListItemUiModel>>,
-    itemEventHandler: VaultListItemEventHandler,
+    onItemEvent: (VaultListItemEvent) -> Unit,
     otpStateProvider: VaultOtpStateProvider,
-    eventHandler: VaultListEventHandler,
+    onEvent: (VaultListEvent) -> Unit,
     onPullSearchProgressChanged: (Float) -> Unit,
     onSearchRequested: () -> Unit,
     contentPadding: PaddingValues,
@@ -74,14 +73,14 @@ internal fun VaultListBody(
                 filters = state.navigation.filterOptions,
                 selectedFilters = state.navigation.selectedFilters,
                 onFilterToggled = { filter ->
-                    eventHandler.onEvent(VaultListEvent.FilterToggled(filter))
+                    onEvent(VaultListEvent.FilterToggled(filter))
                 },
             )
         }
         VaultEntryGrid(
             content = state.content,
             entries = entries,
-            itemEventHandler = itemEventHandler,
+            onItemEvent = onItemEvent,
             otpStateProvider = otpStateProvider,
             gridState = gridState,
             modifier = Modifier

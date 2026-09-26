@@ -22,6 +22,7 @@ import com.aozijx.passly.presentation.feature.vault.list.display.VaultDisplayVie
 import com.aozijx.passly.presentation.feature.vault.list.ui.VaultScreen
 import com.aozijx.passly.presentation.feature.vault.list.ui.VaultSystemBarsEffect
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListDisplayUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,39 +54,37 @@ internal fun VaultRoute(
         )
     }
     val renderState = uiState.toUiModel(display)
-    val itemEventHandler = rememberVaultListItemEventHandler(
-        onItemClick = { item -> navigation.onShowDetail(item.id) },
-        onItemSwipe = { item, action ->
-            handleSwipeAction(
-                actionType = action.toFeatureModel(),
-                item = item,
-                onQuickDelete = { entryId ->
-                    vaultViewModel.onAction(VaultUiAction.QuickDelete(entryId))
-                },
-                onShowDetail = navigation.onShowDetail,
-                onCopy = { fieldKey ->
-                    when (val request = resolveCopyRequest(item, fieldKey)) {
-                        is VaultCopyRequest.Field -> vaultViewModel.onAction(
-                            VaultUiAction.CopyField(
-                                entryId = request.entryId,
-                                entryType = request.entryType,
-                                fieldKey = request.fieldKey,
-                            ),
-                        )
+    val onItemEvent: (VaultListItemEvent) -> Unit = { event ->
+        when (event) {
+            is VaultListItemEvent.Clicked -> navigation.onShowDetail(event.item.id)
+            is VaultListItemEvent.Swiped -> {
+                val item = event.item
+                handleSwipeAction(
+                    actionType = event.action.toFeatureModel(),
+                    item = item,
+                    onQuickDelete = { entryId ->
+                        vaultViewModel.onAction(VaultUiAction.QuickDelete(entryId))
+                    },
+                    onShowDetail = navigation.onShowDetail,
+                    onCopy = { fieldKey ->
+                        when (val request = resolveCopyRequest(item, fieldKey)) {
+                            is VaultCopyRequest.Field -> vaultViewModel.onAction(
+                                VaultUiAction.CopyField(
+                                    entryId = request.entryId,
+                                    entryType = request.entryType,
+                                    fieldKey = request.fieldKey,
+                                ),
+                            )
 
-                        is VaultCopyRequest.Otp -> vaultViewModel.onAction(
-                            VaultUiAction.CopyOtp(request.entryId),
-                        )
-                    }
-                },
-            )
-        },
-    )
-    val eventHandler = rememberVaultListEventHandler(
-        onEvent = { event ->
-            dispatchVaultListEvent(event, vaultViewModel::onAction, navigation)
-        },
-    )
+                            is VaultCopyRequest.Otp -> vaultViewModel.onAction(
+                                VaultUiAction.CopyOtp(request.entryId),
+                            )
+                        }
+                    },
+                )
+            }
+        }
+    }
     val otpStateProvider = rememberVaultOtpStateProvider(
         states = vaultViewModel.totpStatesFlow,
         onSubscribe = vaultViewModel::subscribeVisibleOtp,
@@ -117,10 +116,12 @@ internal fun VaultRoute(
         state = renderState,
         scrollBehavior = scrollBehavior,
         entries = vaultViewModel.entries,
-        itemEventHandler = itemEventHandler,
+        onItemEvent = onItemEvent,
         otpStateProvider = otpStateProvider,
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
-        eventHandler = eventHandler,
+        onEvent = { event ->
+            dispatchVaultListEvent(event, vaultViewModel::onAction, navigation)
+        },
     )
 }

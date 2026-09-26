@@ -1,23 +1,7 @@
 package com.aozijx.passly.presentation.feature.vault.list
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListEvent
-import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListEventHandler
-
-@Composable
-internal fun rememberVaultListEventHandler(
-    onEvent: (VaultListEvent) -> Unit,
-): VaultListEventHandler {
-    val currentOnEvent = rememberUpdatedState(onEvent)
-    return remember {
-        object : VaultListEventHandler {
-            override fun onEvent(event: VaultListEvent) = currentOnEvent.value(event)
-        }
-    }
-}
 
 internal data class VaultNavigation(
     val onSettingsClick: () -> Unit,

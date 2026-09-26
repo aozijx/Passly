@@ -35,7 +35,7 @@ import androidx.paging.compose.itemKey
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListContentUiModel
-import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemEventHandler
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemEvent
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpStateProvider
 import kotlinx.coroutines.flow.Flow
@@ -44,7 +44,7 @@ import kotlinx.coroutines.flow.Flow
 internal fun VaultEntryGrid(
     content: VaultListContentUiModel,
     entries: Flow<PagingData<VaultListItemUiModel>>,
-    itemEventHandler: VaultListItemEventHandler,
+    onItemEvent: (VaultListItemEvent) -> Unit,
     otpStateProvider: VaultOtpStateProvider,
     gridState: LazyGridState,
     modifier: Modifier = Modifier,
@@ -92,7 +92,7 @@ internal fun VaultEntryGrid(
                     val item = pagingItems[index] ?: return@items
                     VaultEntryRow(
                         item = item,
-                        eventHandler = itemEventHandler,
+                        onEvent = onItemEvent,
                         content = content,
                         otpStateProvider = otpStateProvider,
                         animateInitialAppearance = playInitialEntryAnimation,

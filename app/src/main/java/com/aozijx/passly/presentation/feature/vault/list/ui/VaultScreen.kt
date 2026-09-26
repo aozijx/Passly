@@ -25,8 +25,7 @@ import com.aozijx.passly.presentation.feature.vault.list.ui.component.list.Vault
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.topbar.VaultTopBar
 import com.aozijx.passly.presentation.feature.vault.list.ui.gesture.rememberFabVisibilityNestedScrollConnection
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListEvent
-import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListEventHandler
-import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemEventHandler
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemEvent
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpStateProvider
@@ -40,11 +39,11 @@ fun VaultScreen(
     state: VaultListScreenUiModel,
     scrollBehavior: TopAppBarScrollBehavior,
     entries: Flow<PagingData<VaultListItemUiModel>>,
-    itemEventHandler: VaultListItemEventHandler,
+    onItemEvent: (VaultListItemEvent) -> Unit,
     otpStateProvider: VaultOtpStateProvider,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    eventHandler: VaultListEventHandler,
+    onEvent: (VaultListEvent) -> Unit,
 ) {
     var isFabVisible by rememberSaveable { mutableStateOf(true) }
     var searchState by remember {
@@ -81,19 +80,19 @@ fun VaultScreen(
         if (searchState.isEditing) {
             searchState = searchState.settle(state.toolbar.searchQuery)
             if (state.toolbar.searchQuery.isBlank()) {
-                eventHandler.onEvent(VaultListEvent.SearchToggled(false))
+                onEvent(VaultListEvent.SearchToggled(false))
             }
         } else {
             searchState = searchState.synchronize(false, state.toolbar.searchQuery)
             expandVaultBars()
-            eventHandler.onEvent(VaultListEvent.SearchToggled(false))
+            onEvent(VaultListEvent.SearchToggled(false))
         }
     }
     LifecycleResumeEffect(Unit) {
         onPauseOrDispose {
             searchState = searchState.onScreenPaused(currentSearchQuery)
             if (currentSearchActive && currentSearchQuery.isBlank()) {
-                eventHandler.onEvent(VaultListEvent.SearchToggled(false))
+                onEvent(VaultListEvent.SearchToggled(false))
             }
         }
     }
@@ -124,32 +123,32 @@ fun VaultScreen(
                     searchState = nextState
                     if (focused && !state.toolbar.isSearchActive) {
                         expandVaultBars()
-                        eventHandler.onEvent(VaultListEvent.SearchToggled(true))
+                        onEvent(VaultListEvent.SearchToggled(true))
                     } else if (!focused &&
                         nextState.phase == VaultSearchPhase.BROWSING &&
                         state.toolbar.isSearchActive
                     ) {
-                        eventHandler.onEvent(VaultListEvent.SearchToggled(false))
+                        onEvent(VaultListEvent.SearchToggled(false))
                     }
                 },
                 onSearchSubmitted = { query ->
                     searchState = searchState.settle(query)
                     if (query.isBlank()) {
-                        eventHandler.onEvent(VaultListEvent.SearchToggled(false))
+                        onEvent(VaultListEvent.SearchToggled(false))
                     }
                 },
                 onSearchExitRequested = {
                     searchState = searchState.synchronize(false, state.toolbar.searchQuery)
                     expandVaultBars()
-                    eventHandler.onEvent(VaultListEvent.SearchToggled(false))
+                    onEvent(VaultListEvent.SearchToggled(false))
                 },
-                eventHandler = eventHandler,
+                onEvent = onEvent,
             )
         },
         floatingActionButton = {
             VaultFab(
                 onAddTypeSelected = { type ->
-                    eventHandler.onEvent(VaultListEvent.AddTypeSelected(type))
+                    onEvent(VaultListEvent.AddTypeSelected(type))
                 },
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
@@ -162,16 +161,16 @@ fun VaultScreen(
             state = state,
             scrollBehavior = scrollBehavior,
             entries = entries,
-            itemEventHandler = itemEventHandler,
+            onItemEvent = onItemEvent,
             otpStateProvider = otpStateProvider,
-            eventHandler = eventHandler,
+            onEvent = onEvent,
             onPullSearchProgressChanged = { progress ->
                 searchState = searchState.onPullProgressChanged(progress)
             },
             onSearchRequested = {
                 searchState = searchState.startEditing()
                 expandVaultBars()
-                eventHandler.onEvent(VaultListEvent.SearchToggled(true))
+                onEvent(VaultListEvent.SearchToggled(true))
             },
             contentPadding = padding,
         )

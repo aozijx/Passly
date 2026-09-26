@@ -23,14 +23,12 @@ data class VaultListItemUiModel(
     val otpPreview: String?,
 )
 
-interface VaultListItemEventHandler {
-    fun onClick(item: VaultListItemUiModel)
-    fun onSwipe(item: VaultListItemUiModel, action: SwipeActionUiModel)
-
-    data object None : VaultListItemEventHandler {
-        override fun onClick(item: VaultListItemUiModel) = Unit
-        override fun onSwipe(item: VaultListItemUiModel, action: SwipeActionUiModel) = Unit
-    }
+sealed interface VaultListItemEvent {
+    data class Clicked(val item: VaultListItemUiModel) : VaultListItemEvent
+    data class Swiped(
+        val item: VaultListItemUiModel,
+        val action: SwipeActionUiModel,
+    ) : VaultListItemEvent
 }
 
 enum class VaultOtpKindUiModel { STANDARD, STEAM }
@@ -162,8 +160,4 @@ sealed interface VaultListEvent {
     data object DismissAddType : VaultListEvent
     data object ConfirmDelete : VaultListEvent
     data object DismissDelete : VaultListEvent
-}
-
-interface VaultListEventHandler {
-    fun onEvent(event: VaultListEvent)
 }

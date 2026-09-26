@@ -41,7 +41,6 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListContentUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListEvent
-import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListEventHandler
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListLayoutUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListToolbarUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.search.VaultSearchPhase
@@ -60,7 +59,7 @@ fun VaultTopBar(
     onSearchFocusChanged: (Boolean) -> Unit,
     onSearchSubmitted: (String) -> Unit,
     onSearchExitRequested: () -> Unit,
-    eventHandler: VaultListEventHandler,
+    onEvent: (VaultListEvent) -> Unit,
 ) {
     val density = LocalDensity.current
     val motionScheme = MaterialTheme.motionScheme
@@ -93,7 +92,7 @@ fun VaultTopBar(
     LaunchedEffect(navigateToSettingsAfterDismiss, isMoreMenuExpanded) {
         if (navigateToSettingsAfterDismiss && !isMoreMenuExpanded) {
             navigateToSettingsAfterDismiss = false
-            eventHandler.onEvent(VaultListEvent.SettingsClicked)
+            onEvent(VaultListEvent.SettingsClicked)
         }
     }
 
@@ -132,7 +131,7 @@ fun VaultTopBar(
                         query = uiState.searchQuery,
                         isEditing = searchState.isEditing,
                         onQueryChange = { query ->
-                            eventHandler.onEvent(VaultListEvent.SearchQueryChanged(query))
+                            onEvent(VaultListEvent.SearchQueryChanged(query))
                         },
                         onSearch = onSearchSubmitted,
                         onFocusChanged = onSearchFocusChanged,
@@ -162,7 +161,7 @@ fun VaultTopBar(
                                                 onDismissRequest = { isMoreMenuExpanded = false },
                                                 showTOTPCode = content.showTotpCode,
                                                 onToggleTotpVisibility = {
-                                                    eventHandler.onEvent(
+                                                    onEvent(
                                                         VaultListEvent.ToggleTotpVisibility,
                                                     )
                                                 },
@@ -172,13 +171,13 @@ fun VaultTopBar(
                                                 availableCategories = uiState.availableCategories,
                                                 selectedCategory = uiState.selectedCategory,
                                                 onCategorySelected = { category ->
-                                                    eventHandler.onEvent(
+                                                    onEvent(
                                                         VaultListEvent.CategorySelected(category),
                                                     )
                                                 },
                                                 selectedSort = uiState.selectedSort,
                                                 onSortSelected = { sort ->
-                                                    eventHandler.onEvent(
+                                                    onEvent(
                                                         VaultListEvent.SortSelected(sort),
                                                     )
                                                 },
@@ -188,7 +187,7 @@ fun VaultTopBar(
                                 } else if (uiState.searchQuery.isNotEmpty()) {
                                     IconButton(
                                         onClick = {
-                                            eventHandler.onEvent(
+                                            onEvent(
                                                 VaultListEvent.SearchQueryChanged(""),
                                             )
                                             if (phase == VaultSearchPhase.RESULTS) {
@@ -212,7 +211,7 @@ fun VaultTopBar(
         uiState.selectedCategory?.takeIf(String::isNotBlank)?.let { category ->
             InputChip(
                 selected = true,
-                onClick = { eventHandler.onEvent(VaultListEvent.ClearCategory) },
+                onClick = { onEvent(VaultListEvent.ClearCategory) },
                 label = { Text(category) },
                 trailingIcon = {
                     Icon(
