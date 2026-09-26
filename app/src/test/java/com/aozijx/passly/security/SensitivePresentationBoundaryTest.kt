@@ -41,8 +41,11 @@ class SensitivePresentationBoundaryTest {
         )
 
         assertFalse(securitySettings.contains("AuthenticationManager"))
-        assertTrue(securitySettings.contains("AuthenticationMethodAvailability"))
-        assertTrue(securitySettings.contains("SecureSessionAccessState"))
+        assertFalse(securitySettings.contains("AuthenticationMethodAvailability"))
+        assertFalse(securitySettings.contains("AuthenticationMethodProvisioner"))
+        assertFalse(securitySettings.contains("SecureSessionAccessState"))
+        assertFalse(securitySettings.contains("AuthenticationResult"))
+        assertTrue(securitySettings.contains("SecurityAuthenticationSettingsInteractor"))
         assertFalse(mainSettings.contains("AuthenticationManager"))
         assertFalse(mainSettings.contains("AuthenticationMethodAvailability"))
         assertFalse(mainSettings.contains("AuthenticationMethodProvisioner"))

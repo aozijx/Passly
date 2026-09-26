@@ -2,12 +2,8 @@ package com.aozijx.passly.presentation.feature.settings.security
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
-import com.aozijx.passly.domain.access.model.AuthenticationMethod
-import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
+import com.aozijx.passly.feature.settings.security.SecurityAuthenticationSettingsInteractor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,9 +14,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SecuritySettingsViewModel @Inject constructor(
-    private val authenticationMethodAvailability: AuthenticationMethodAvailability,
-    private val secureSessionAccessState: SecureSessionAccessState,
-    private val methodProvisioner: AuthenticationMethodProvisioner,
+    private val authenticationSettings: SecurityAuthenticationSettingsInteractor,
     private val settingsRepository: SecuritySettingsRepository
 ) : ViewModel() {
 
@@ -50,16 +44,8 @@ class SecuritySettingsViewModel @Inject constructor(
                 setKeyInvalidationPolicy(action.enabled)
 
             is SecuritySettingsAction.VerifyRecoveryCode -> viewModelScope.launch {
-                try {
-                    if (isRecoveryMode()) {
-                        _uiState.update { it.copy(recoveryCodeVerificationResult = false) }
-                        return@launch
-                    }
-                    val valid = methodProvisioner.checkRecoveryCode(action.code)
-                    _uiState.update { it.copy(recoveryCodeVerificationResult = valid) }
-                } finally {
-                    action.code.fill('\u0000')
-                }
+                val valid = authenticationSettings.verifyRecoveryCode(action.code)
+                _uiState.update { it.copy(recoveryCodeVerificationResult = valid) }
             }
 
             SecuritySettingsAction.ClearVerifyResult -> {
@@ -84,9 +70,9 @@ class SecuritySettingsViewModel @Inject constructor(
 
     private fun observeAuthenticationMethods() {
         viewModelScope.launch {
-            authenticationMethodAvailability.methods.collect { methods ->
+            authenticationSettings.isBiometricEnabled.collect { enabled ->
                 _uiState.update {
-                    it.copy(isBiometricEnabled = AuthenticationMethod.BIOMETRIC in methods)
+                    it.copy(isBiometricEnabled = enabled)
                 }
             }
         }
@@ -95,34 +81,23 @@ class SecuritySettingsViewModel @Inject constructor(
     private fun loadRecoveryEnvelopeAvailability() {
         viewModelScope.launch {
             _uiState.update {
-                it.copy(hasRecoveryEnvelope = methodProvisioner.hasRecoveryCode())
+                it.copy(hasRecoveryEnvelope = authenticationSettings.hasRecoveryCode())
             }
         }
     }
 
     private fun setKeyInvalidationPolicy(enabled: Boolean) {
         viewModelScope.launch {
-            if (isRecoveryMode()) return@launch
-            val result = methodProvisioner.rotateBiometricPolicy(enabled)
-            if (result is AuthenticationResult.Success) {
-                settingsRepository.setInvalidateBiometricKeyOnChange(enabled)
-            }
+            authenticationSettings.setKeyInvalidationPolicy(enabled)
         }
     }
 
     private fun setBiometricEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            if (isRecoveryMode()) return@launch
-            if (enabled) {
-                methodProvisioner.rotateBiometricPolicy(
-                    uiState.value.isInvalidateKeyOnBioChange
-                )
-            } else {
-                methodProvisioner.disableBiometric()
-            }
+            authenticationSettings.setBiometricEnabled(
+                enabled = enabled,
+                invalidateOnEnrollment = uiState.value.isInvalidateKeyOnBioChange,
+            )
         }
     }
-
-    private fun isRecoveryMode(): Boolean =
-        secureSessionAccessState.isRecoveryMode()
 }
