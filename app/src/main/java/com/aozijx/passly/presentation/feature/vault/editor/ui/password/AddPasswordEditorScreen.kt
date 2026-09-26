@@ -12,7 +12,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -22,82 +21,69 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import com.aozijx.passly.R
+import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordAction
+import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordUiState
 import com.aozijx.passly.presentation.shared.components.NextFocusTextField
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.EntryEditorSection
 
-@Immutable
-class PasswordEditorState(
-    val title: String,
-    val username: String,
-    val password: String,
-    val website: String,
-    val notes: String,
-    val tags: String,
-    val isPasswordVisible: Boolean,
-    val isFormValid: Boolean,
-    val canSave: Boolean,
-    val isSaving: Boolean,
-)
-
-data class PasswordEditorEventHandler(
-    val onBack: () -> Unit,
-    val onSave: () -> Unit,
-    val onTitleChange: (String) -> Unit,
-    val onUsernameChange: (String) -> Unit,
-    val onPasswordChange: (String) -> Unit,
-    val onPasswordVisibilityChange: (Boolean) -> Unit,
-    val onWebsiteChange: (String) -> Unit,
-    val onNotesChange: (String) -> Unit,
-    val onTagsChange: (String) -> Unit,
-)
-
 @Composable
 fun AddPasswordEditorScreen(
-    state: PasswordEditorState,
-    onEvent: PasswordEditorEventHandler,
+    state: AddPasswordUiState,
+    onAction: (AddPasswordAction) -> Unit,
+    onBack: () -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
     saveActionModifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val form = state.form
+
+    fun save() {
+        keyboardController?.hide()
+        onAction(AddPasswordAction.Save)
+    }
 
     AddEntryScaffold(
         title = stringResource(R.string.vault_add_password_title),
         canSave = state.canSave,
         isSaving = state.isSaving,
         snackbarHostState = snackbarHostState,
-        onBack = onEvent.onBack,
-        onSave = onEvent.onSave,
+        onBack = onBack,
+        onSave = ::save,
         modifier = modifier,
         saveActionModifier = saveActionModifier,
     ) {
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
             NextFocusTextField(
-                value = state.title,
-                onValueChange = onEvent.onTitleChange,
+                value = form.title,
+                onValueChange = { onAction(AddPasswordAction.TitleChanged(it)) },
                 label = stringResource(R.string.field_title),
             )
             NextFocusTextField(
-                value = state.username,
-                onValueChange = onEvent.onUsernameChange,
+                value = form.username,
+                onValueChange = { onAction(AddPasswordAction.UsernameChanged(it)) },
                 label = stringResource(R.string.field_username_hint),
             )
         }
 
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_credentials)) {
             NextFocusTextField(
-                value = state.password,
-                onValueChange = onEvent.onPasswordChange,
+                value = form.password,
+                onValueChange = { onAction(AddPasswordAction.PasswordChanged(it)) },
                 label = stringResource(R.string.password_label),
-                visualTransformation = if (state.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                visualTransformation = if (form.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardType = KeyboardType.Password,
                 trailingIcon = {
-                    IconButton(onClick = { onEvent.onPasswordVisibilityChange(!state.isPasswordVisible) }) {
+                    IconButton(
+                        onClick = {
+                            onAction(AddPasswordAction.PasswordVisibilityChanged(!form.isPasswordVisible))
+                        },
+                    ) {
                         Icon(
-                            imageVector = if (state.isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = if (state.isPasswordVisible) {
+                            imageVector = if (form.isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = if (form.isPasswordVisible) {
                                 stringResource(R.string.hide_password)
                             } else {
                                 stringResource(R.string.show_password)
@@ -110,30 +96,29 @@ fun AddPasswordEditorScreen(
 
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_details)) {
             NextFocusTextField(
-                value = state.tags,
-                onValueChange = onEvent.onTagsChange,
+                value = form.tags,
+                onValueChange = { onAction(AddPasswordAction.TagsChanged(it)) },
                 label = stringResource(R.string.field_category),
             )
             NextFocusTextField(
-                value = state.website,
-                onValueChange = onEvent.onWebsiteChange,
+                value = form.website,
+                onValueChange = { onAction(AddPasswordAction.WebsiteChanged(it)) },
                 label = stringResource(R.string.vault_add_password_website),
                 keyboardType = KeyboardType.Uri,
             )
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = state.notes,
-                onValueChange = onEvent.onNotesChange,
+                value = form.notes,
+                onValueChange = { onAction(AddPasswordAction.NotesChanged(it)) },
                 label = { Text(stringResource(R.string.field_notes)) },
                 singleLine = false,
                 minLines = 4,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        if (state.isFormValid) {
+                        if (form.isValid) {
                             focusManager.clearFocus(force = true)
-                            keyboardController?.hide()
-                            onEvent.onSave()
+                            save()
                         }
                     },
                 ),

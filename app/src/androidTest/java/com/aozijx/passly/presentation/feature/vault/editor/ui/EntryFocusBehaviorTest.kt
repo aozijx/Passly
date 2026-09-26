@@ -11,9 +11,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.platform.testTag
+import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordUiState
 import com.aozijx.passly.presentation.feature.vault.editor.ui.password.AddPasswordEditorScreen
-import com.aozijx.passly.presentation.feature.vault.editor.ui.password.PasswordEditorEventHandler
-import com.aozijx.passly.presentation.feature.vault.editor.ui.password.PasswordEditorState
 import org.junit.Rule
 import org.junit.Test
 
@@ -23,34 +22,15 @@ class EntryFocusBehaviorTest {
 
     @Test
     fun focusMovesThroughFieldsOnNextImeAction() {
-        val state = PasswordEditorState(
-            title = "",
-            username = "",
-            password = "",
-            website = "",
-            notes = "",
-            tags = "",
-            isPasswordVisible = false,
-            isFormValid = true,
+        val state = AddPasswordUiState(
             canSave = true,
-            isSaving = false
-        )
-        val eventHandler = PasswordEditorEventHandler(
-            onBack = {},
-            onSave = {},
-            onTitleChange = {},
-            onUsernameChange = {},
-            onPasswordChange = {},
-            onPasswordVisibilityChange = {},
-            onWebsiteChange = {},
-            onNotesChange = {},
-            onTagsChange = {}
         )
 
         composeRule.setContent {
             AddPasswordEditorScreen(
                 state = state,
-                onEvent = eventHandler,
+                onAction = {},
+                onBack = {},
                 snackbarHostState = remember { SnackbarHostState() },
                 modifier = Modifier,
             )
@@ -70,34 +50,15 @@ class EntryFocusBehaviorTest {
 
     @Test
     fun screenAndSaveActionModifiersHaveIndependentOwners() {
-        val state = PasswordEditorState(
-            title = "",
-            username = "",
-            password = "",
-            website = "",
-            notes = "",
-            tags = "",
-            isPasswordVisible = false,
-            isFormValid = true,
+        val state = AddPasswordUiState(
             canSave = true,
-            isSaving = false,
-        )
-        val eventHandler = PasswordEditorEventHandler(
-            onBack = {},
-            onSave = {},
-            onTitleChange = {},
-            onUsernameChange = {},
-            onPasswordChange = {},
-            onPasswordVisibilityChange = {},
-            onWebsiteChange = {},
-            onNotesChange = {},
-            onTagsChange = {},
         )
 
         composeRule.setContent {
             AddPasswordEditorScreen(
                 state = state,
-                onEvent = eventHandler,
+                onAction = {},
+                onBack = {},
                 snackbarHostState = remember { SnackbarHostState() },
                 modifier = Modifier.testTag("editor-screen"),
                 saveActionModifier = Modifier.testTag("editor-save-action"),
