@@ -16,11 +16,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffectHandler
+import com.aozijx.passly.presentation.feature.scanner.VaultScanner
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.rememberAddEntryFabTransitionModifier
 import com.aozijx.passly.presentation.feature.vault.editor.ui.otp.AddOtpEditorScreen
 import com.aozijx.passly.presentation.feature.vault.editor.ui.otp.OtpEditorAlgorithm
@@ -35,10 +35,6 @@ fun AddOtpEditorRoute(
     onSaved: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    scannerContent: @Composable (
-        onResult: (OtpConfig) -> Unit,
-        onDismiss: () -> Unit,
-    ) -> Unit,
     viewModel: AddOtpViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -116,11 +112,11 @@ fun AddOtpEditorRoute(
     )
 
     if (showScanner) {
-        scannerContent(
-            { config ->
+        VaultScanner(
+            onSaveOtp = { config ->
                 viewModel.onAction(AddOtpAction.ScannedConfigApplied(config))
             },
-            { showScanner = false },
+            onDismiss = { showScanner = false },
         )
     }
 }
