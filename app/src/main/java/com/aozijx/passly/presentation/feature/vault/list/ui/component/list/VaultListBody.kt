@@ -52,6 +52,7 @@ internal fun VaultListBody(
         onProgressChanged = onPullSearchProgressChanged,
         onTriggered = onSearchRequested,
     )
+    val hasActiveQuickFilters = state.navigation.selectedFilters.isNotEmpty()
 
     Column(
         modifier = modifier
@@ -61,7 +62,8 @@ internal fun VaultListBody(
         AnimatedVisibility(
             visible = !state.toolbar.isSearchActive &&
                     state.toolbar.selectedCategory == null &&
-                    (!state.layout.collapseQuickFilterBarOnScroll ||
+                    (hasActiveQuickFilters ||
+                            !state.layout.collapseQuickFilterBarOnScroll ||
                             scrollBehavior.state.collapsedFraction < 0.5f),
             enter = expandVertically(animationSpec = motionScheme.defaultSpatialSpec()) +
                     fadeIn(animationSpec = motionScheme.fastEffectsSpec()),
