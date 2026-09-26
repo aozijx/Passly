@@ -2,8 +2,10 @@ package com.aozijx.passly.feature.vault.detail
 
 import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.model.NotFound
+import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -35,6 +37,7 @@ internal sealed interface DetailEntryEdit {
 internal class EditDetailEntryUseCase @Inject constructor(
     private val entryQueryRepository: EntryQueryRepository,
     private val entryCommandRepository: EntryCommandRepository,
+    private val secureSessionAccessState: SecureSessionAccessState,
 ) {
     private val editMutex = Mutex()
 
@@ -42,6 +45,9 @@ internal class EditDetailEntryUseCase @Inject constructor(
         entryId: EntryId,
         edit: DetailEntryEdit,
     ): AppResult<Entry> = editMutex.withLock {
+        if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
+            return@withLock AppResult.Failure(SessionModeRestricted())
+        }
         var conflictRetries = 0
         while (true) {
             val latest = entryQueryRepository.getById(entryId)

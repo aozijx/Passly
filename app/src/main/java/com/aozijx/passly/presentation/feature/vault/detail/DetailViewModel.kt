@@ -17,6 +17,7 @@ import com.aozijx.passly.feature.vault.detail.DetailEntryEdit
 import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
 import com.aozijx.passly.feature.vault.detail.ExportOtpQrUseCase
 import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
+import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
@@ -41,7 +42,7 @@ import javax.inject.Inject
 class DetailViewModel @Inject internal constructor(
     private val entryTagQuery: EntryTagQuery,
     private val activityQueryRepository: ActivityQueryRepository,
-    private val accessPolicy: DetailAccessPolicy,
+    private val accessPolicy: SecureSessionAccessPolicy,
     private val exportOtpQr: ExportOtpQrUseCase,
     private val revealEntryFields: RevealEntryFieldsUseCase,
     private val editDetailEntry: EditDetailEntryUseCase,
@@ -82,7 +83,7 @@ class DetailViewModel @Inject internal constructor(
     }
 
     fun onAction(event: DetailUiAction) {
-        if (!accessPolicy.canHandle(event)) {
+        if (event !is DetailUiAction.ClearSensitiveState && !accessPolicy.hasFullAccess()) {
             clearSensitiveState()
             return
         }
@@ -466,7 +467,6 @@ class DetailViewModel @Inject internal constructor(
         edit: DetailEntryEdit,
         completion: DetailEditCompletion,
     ) {
-        if (edit !is DetailEntryEdit.SetTags && !accessPolicy.hasFullAccess()) return
         val entryId = _uiState.value.entry?.id ?: return
         if (_uiState.value.savingEdit != null) return
         mutate(DetailMutation.SaveStarted(completion))

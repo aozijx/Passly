@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.vault.detail
 
 import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.model.NotFound
+import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.entry.model.Entry
@@ -17,6 +18,7 @@ import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -30,6 +32,18 @@ import org.junit.Test
 class EditDetailEntryUseCaseTest {
 
     @Test
+    fun restrictedSessionIsRejectedAtTheEditUseCaseBoundary() = runTest {
+        val query = FakeQueryRepository(entry(version = 1))
+        val command = FakeCommandRepository(query)
+        val useCase = EditDetailEntryUseCase(query, command, RestrictedSessionAccessState)
+
+        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTags(emptySet()))
+
+        assertTrue((result as AppResult.Failure).error is SessionModeRestricted)
+        assertTrue(command.submittedChanges.isEmpty())
+    }
+
+    @Test
     fun tagEditDoesNotSubmitTheIncompleteSecretBundle() = runTest {
         val query = FakeQueryRepository(
             entry(version = 1).copy(
@@ -37,7 +51,7 @@ class EditDetailEntryUseCaseTest {
             ),
         )
         val command = FakeCommandRepository(query)
-        val useCase = EditDetailEntryUseCase(query, command)
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState)
 
         val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTags(emptySet()))
 
@@ -50,7 +64,7 @@ class EditDetailEntryUseCaseTest {
     fun updateAppliesPatchToLatestEntryAndReturnsReloadedVersion() = runTest {
         val query = FakeQueryRepository(entry(version = 7, notes = "latest notes"))
         val command = FakeCommandRepository(query)
-        val useCase = EditDetailEntryUseCase(query, command)
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState)
 
         val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
 
@@ -70,7 +84,7 @@ class EditDetailEntryUseCaseTest {
                 query.current = entry(version = 4, notes = "concurrent notes")
             }
         }
-        val useCase = EditDetailEntryUseCase(query, command)
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState)
 
         val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
 
@@ -88,7 +102,7 @@ class EditDetailEntryUseCaseTest {
             failures += Conflict(errorId = "first-conflict")
             failures += Conflict(errorId = "second-conflict")
         }
-        val useCase = EditDetailEntryUseCase(query, command)
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState)
 
         val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
 
@@ -102,7 +116,7 @@ class EditDetailEntryUseCaseTest {
         val command = FakeCommandRepository(query).apply {
             failures += ValidationError(errorId = "validation")
         }
-        val useCase = EditDetailEntryUseCase(query, command)
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState)
 
         val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
 
@@ -113,7 +127,11 @@ class EditDetailEntryUseCaseTest {
     @Test
     fun updateReturnsNotFoundWhenEntryDisappears() = runTest {
         val query = FakeQueryRepository(null)
-        val useCase = EditDetailEntryUseCase(query, FakeCommandRepository(query))
+        val useCase = EditDetailEntryUseCase(
+            query,
+            FakeCommandRepository(query),
+            FullSessionAccessState,
+        )
 
         val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
 
@@ -132,7 +150,7 @@ class EditDetailEntryUseCaseTest {
                 releaseFirst.await()
             }
         }
-        val useCase = EditDetailEntryUseCase(query, command)
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState)
 
         val first = async { useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("First")) }
         firstStarted.await()
@@ -159,7 +177,11 @@ class EditDetailEntryUseCaseTest {
                 applicationIds = setOf("com.example.latest"),
             ),
         )
-        val useCase = EditDetailEntryUseCase(query, FakeCommandRepository(query))
+        val useCase = EditDetailEntryUseCase(
+            query,
+            FakeCommandRepository(query),
+            FullSessionAccessState,
+        )
 
         val result = useCase.edit(
             ENTRY_ID,
@@ -180,7 +202,11 @@ class EditDetailEntryUseCaseTest {
                 applicationIds = setOf("com.example.old"),
             ),
         )
-        val useCase = EditDetailEntryUseCase(query, FakeCommandRepository(query))
+        val useCase = EditDetailEntryUseCase(
+            query,
+            FakeCommandRepository(query),
+            FullSessionAccessState,
+        )
 
         val result = useCase.edit(
             ENTRY_ID,
@@ -199,7 +225,7 @@ class EditDetailEntryUseCaseTest {
             failures += Conflict(errorId = "first-conflict")
             onFailure = { query.current = entry(version = 4, favorite = false) }
         }
-        val useCase = EditDetailEntryUseCase(query, command)
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState)
 
         val result = useCase.edit(ENTRY_ID, DetailEntryEdit.ToggleFavorite)
 
@@ -305,5 +331,19 @@ class EditDetailEntryUseCaseTest {
 
     private companion object {
         val ENTRY_ID = EntryId("entry-1")
+
+        val RestrictedSessionAccessState = object : SecureSessionAccessState {
+            override val authenticationState = kotlinx.coroutines.flow.MutableStateFlow(
+                com.aozijx.passly.domain.access.model.AuthenticationState.RecoveryMode(1),
+            )
+            override fun isUnlocked() = true
+        }
+
+        val FullSessionAccessState = object : SecureSessionAccessState {
+            override val authenticationState = kotlinx.coroutines.flow.MutableStateFlow(
+                com.aozijx.passly.domain.access.model.AuthenticationState.Authenticated(1),
+            )
+            override fun isUnlocked() = true
+        }
     }
 }

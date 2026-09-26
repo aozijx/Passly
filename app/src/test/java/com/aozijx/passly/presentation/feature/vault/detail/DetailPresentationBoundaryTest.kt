@@ -60,6 +60,21 @@ class DetailPresentationBoundaryTest {
         assertFalse(bindingRoot.resolve("DetailEditorOverlayBinding.kt").exists())
     }
 
+    @Test
+    fun `detail presentation does not own session authorization policy`() {
+        val sourceRoot = sourceRoot()
+        val detailRoot = sourceRoot.resolve(
+            "com/aozijx/passly/presentation/feature/vault/detail",
+        )
+        val viewModel = detailRoot.resolve("DetailViewModel.kt").readText()
+
+        assertFalse(detailRoot.resolve("DetailAccessPolicy.kt").exists())
+        assertFalse(viewModel.contains("DetailAccessPolicy"))
+        assertFalse(viewModel.contains("canHandle(event)"))
+        assertFalse(viewModel.contains("edit !is DetailEntryEdit.SetTags"))
+        assertTrue(viewModel.contains("feature.vault.SecureSessionAccessPolicy"))
+    }
+
     private fun sourceRoot(): File = listOf(File("src/main/java"), File("app/src/main/java"))
         .firstOrNull(File::isDirectory) ?: error("Cannot locate app source root")
 }
