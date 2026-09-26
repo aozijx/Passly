@@ -11,23 +11,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
-import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
-import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffectHandler
 import com.aozijx.passly.presentation.feature.scanner.VaultScanner
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.rememberAddEntryFabTransitionModifier
 import com.aozijx.passly.presentation.feature.vault.editor.ui.otp.AddOtpEditorScreen
-import com.aozijx.passly.presentation.feature.vault.editor.ui.otp.OtpEditorAlgorithm
-import com.aozijx.passly.presentation.feature.vault.editor.ui.otp.OtpEditorEncoding
-import com.aozijx.passly.presentation.feature.vault.editor.ui.otp.OtpEditorEventHandler
-import com.aozijx.passly.presentation.feature.vault.editor.ui.otp.OtpEditorState
-import com.aozijx.passly.presentation.feature.vault.editor.ui.otp.OtpEditorType
 
 @Composable
 fun AddOtpEditorRoute(
@@ -40,7 +31,6 @@ fun AddOtpEditorRoute(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val keyboardController = LocalSoftwareKeyboardController.current
     val saveFailedMessage = stringResource(R.string.vault_add_otp_save_failed)
     val uriParsedMessage = stringResource(R.string.vault_otp_uri_parsed)
     val uriParseFailedMessage = stringResource(R.string.vault_otp_uri_parse_failed)
@@ -68,45 +58,11 @@ fun AddOtpEditorRoute(
         }
     }
 
-    val form = uiState.form
-    fun updateForm(transform: (OtpFormState) -> OtpFormState) {
-        viewModel.onAction(AddOtpAction.FormChanged(transform(form)))
-    }
-    val save = {
-        keyboardController?.hide()
-        viewModel.onAction(AddOtpAction.Save)
-    }
     AddOtpEditorScreen(
-        state = form.toEditorState(uiState.canSave, uiState.isSaving),
-        onEvent = OtpEditorEventHandler(
-            onBack = onBack,
-            onSave = save,
-            onScan = {
-                keyboardController?.hide()
-                showScanner = true
-            },
-            onTitleChange = { updateForm { current -> current.copy(title = it) } },
-            onUriChange = {
-                viewModel.onAction(AddOtpAction.UriChanged(it))
-            },
-            onIssuerChange = { updateForm { current -> current.copy(issuer = it) } },
-            onAccountNameChange = {
-                updateForm { current -> current.copy(accountName = it) }
-            },
-            onSecretChange = { updateForm { current -> current.copy(secret = it) } },
-            onPeriodChange = { updateForm { current -> current.copy(period = it) } },
-            onDigitsChange = { updateForm { current -> current.copy(digits = it) } },
-            onTypeChange = {
-                viewModel.onAction(AddOtpAction.TypeChanged(it.toDomainType()))
-            },
-            onAlgorithmChange = {
-                updateForm { current -> current.copy(algorithm = it.name) }
-            },
-            onEncodingChange = {
-                updateForm { current -> current.copy(encoding = it.toDomainEncoding()) }
-            },
-            onCounterChange = { updateForm { current -> current.copy(counter = it) } },
-        ),
+        state = uiState,
+        onAction = viewModel::onAction,
+        onBack = onBack,
+        onScan = { showScanner = true },
         snackbarHostState = snackbarHostState,
         saveActionModifier = saveActionModifier,
     )
@@ -120,26 +76,3 @@ fun AddOtpEditorRoute(
         )
     }
 }
-
-private fun OtpFormState.toEditorState(canSave: Boolean, isSaving: Boolean) = OtpEditorState(
-    title = title,
-    issuer = issuer,
-    accountName = accountName,
-    secret = secret,
-    period = period,
-    digits = digits,
-    type = OtpEditorType.valueOf(type.name),
-    algorithm = OtpEditorAlgorithm.valueOf(
-        OtpHashAlgorithm.entries.firstOrNull { it.name == algorithm }?.name
-            ?: OtpHashAlgorithm.SHA1.name,
-    ),
-    encoding = OtpEditorEncoding.valueOf(encoding.name),
-    counter = counter,
-    uriText = uriText,
-    canSave = canSave,
-    isSaving = isSaving,
-)
-
-private fun OtpEditorType.toDomainType() = OtpType.valueOf(name)
-
-private fun OtpEditorEncoding.toDomainEncoding() = OtpSecretEncoding.valueOf(name)
