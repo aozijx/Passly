@@ -23,10 +23,28 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EditDetailEntryUseCaseTest {
+
+    @Test
+    fun tagEditDoesNotSubmitTheIncompleteSecretBundle() = runTest {
+        val query = FakeQueryRepository(
+            entry(version = 1).copy(
+                secret = EntrySecret(credential = LoginCredential(password = null)),
+            ),
+        )
+        val command = FakeCommandRepository(query)
+        val useCase = EditDetailEntryUseCase(query, command)
+
+        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTags(emptySet()))
+
+        assertTrue(result is AppResult.Success)
+        assertEquals(emptySet<String>(), command.submittedChanges.single().profile?.tags)
+        assertNull(command.submittedChanges.single().secret)
+    }
 
     @Test
     fun updateAppliesPatchToLatestEntryAndReturnsReloadedVersion() = runTest {
@@ -207,6 +225,7 @@ class EditDetailEntryUseCaseTest {
     ) : EntryCommandRepository {
         val failures = ArrayDeque<com.aozijx.passly.core.error.model.AppError>()
         val expectedVersions = mutableListOf<Int>()
+        val submittedChanges = mutableListOf<EntryUpdate>()
         var onFailure: (() -> Unit)? = null
         var beforeFirstSuccess: (suspend () -> Unit)? = null
 
@@ -216,6 +235,7 @@ class EditDetailEntryUseCaseTest {
             changes: EntryUpdate,
         ): AppResult<Unit> {
             expectedVersions += expectedVersion.value
+            submittedChanges += changes
             failures.removeFirstOrNull()?.let { error ->
                 onFailure?.invoke()
                 return AppResult.Failure(error)

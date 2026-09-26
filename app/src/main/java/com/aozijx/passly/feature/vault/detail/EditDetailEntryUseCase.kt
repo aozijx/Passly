@@ -48,14 +48,13 @@ internal class EditDetailEntryUseCase @Inject constructor(
                 ?: return@withLock AppResult.Failure(NotFound())
             val updated = edit.applyTo(latest)
                 ?: return@withLock AppResult.Failure(ValidationError())
+            val changes = updated.changesFrom(latest)
+                ?: return@withLock AppResult.Success(latest)
             when (
                 val result = entryCommandRepository.updateEntry(
                     id = entryId,
                     expectedVersion = latest.version,
-                    changes = EntryUpdate(
-                        profile = updated.profile,
-                        secret = updated.secret,
-                    ),
+                    changes = changes,
                 )
             ) {
                 is AppResult.Success -> {
@@ -75,6 +74,16 @@ internal class EditDetailEntryUseCase @Inject constructor(
         }
         error("Unreachable detail entry edit state")
     }
+}
+
+private fun Entry.changesFrom(previous: Entry): EntryUpdate? {
+    val changedProfile = profile.takeIf { it != previous.profile }
+    val changedSecret = secret.takeIf { it != previous.secret }
+    if (changedProfile == null && changedSecret == null) return null
+    return EntryUpdate(
+        profile = changedProfile,
+        secret = changedSecret,
+    )
 }
 
 internal fun DetailEntryEdit.applyTo(entry: Entry): Entry? = when (this) {
