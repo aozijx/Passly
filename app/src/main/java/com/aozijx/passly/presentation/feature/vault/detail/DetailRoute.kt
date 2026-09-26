@@ -16,8 +16,6 @@ import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.vault.list.action.CopyFieldLabelProvider
 import com.aozijx.passly.presentation.shared.media.ImageType
 import com.aozijx.passly.presentation.shared.media.rememberImagePicker
-import com.aozijx.passly.presentation.feature.vault.detail.ui.DetailContent
-import com.aozijx.passly.presentation.feature.vault.detail.ui.DetailEditorOverlays
 import com.aozijx.passly.presentation.feature.vault.detail.ui.DetailScreen
 import kotlinx.coroutines.flow.collectLatest
 
@@ -64,26 +62,12 @@ fun DetailRoute(
 
     val presentation = presentationState ?: return
     DetailScreen(
-        model = presentation.header,
+        model = presentation,
+        otpQrUri = otpQrUri,
         onBack = onBack,
-        onTitleChanged = { viewModel.onAction(DetailUiAction.UpdateEditedTitle(it)) },
-        onTitleEditStarted = { viewModel.onAction(DetailUiAction.StartTitleEdit) },
-        onTitleSaved = { viewModel.onAction(DetailUiAction.SaveTitle) },
-        onFavoriteToggled = { viewModel.onAction(DetailUiAction.ToggleFavorite) },
-    ) { modifier ->
-        DetailContent(
-            model = presentation.content,
-            otpQrUri = otpQrUri,
-            onAction = viewModel::onAction,
-            onOpenRelatedEntry = onOpenRelatedEntry,
-            onOtpQrDismissed = { otpQrUri = null },
-            modifier = modifier,
-        )
-    }
-
-    DetailEditorOverlays(
-        model = presentation.overlays,
         onAction = viewModel::onAction,
+        onOpenRelatedEntry = onOpenRelatedEntry,
+        onOtpQrDismissed = { otpQrUri = null },
         onFaviconUploadRequested = { pickFaviconImage(ImageType.SCREEN) },
     )
 }

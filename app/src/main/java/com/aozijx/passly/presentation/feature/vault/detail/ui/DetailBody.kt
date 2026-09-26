@@ -38,7 +38,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Composable
-fun DetailContent(
+fun DetailBody(
     model: DetailBodyUiModel,
     otpQrUri: String?,
     onAction: (DetailUiAction) -> Unit,

@@ -8,10 +8,10 @@ import org.junit.Test
 class AppPackagePickerBoundaryTest {
     @Test
     fun `installed app icon state comes from core platform ui`() {
-        val detailContent = source("presentation/feature/vault/detail/ui/DetailContent.kt")
+        val detailBody = source("presentation/feature/vault/detail/ui/DetailBody.kt")
         val vaultItemIcon = source("presentation/shared/components/VaultItemIcon.kt")
 
-        listOf(detailContent, vaultItemIcon).forEach { consumer ->
+        listOf(detailBody, vaultItemIcon).forEach { consumer ->
             assertFalse(consumer.contains("app.platform.packageinfo.rememberInstalledAppIconBitmap"))
             assertTrue(consumer.contains("core.platform.packageinfo.rememberInstalledAppIconBitmap"))
         }
@@ -21,7 +21,7 @@ class AppPackagePickerBoundaryTest {
     fun `package picker consumes mapped data and emits semantic ui events`() {
         val picker = source("presentation/shared/components/AppPackagePickerBottomSheet.kt")
         val associations = source("presentation/feature/vault/detail/ui/component/AssociatedInfoSection.kt")
-        val detailContent = source("presentation/feature/vault/detail/ui/DetailContent.kt")
+        val detailBody = source("presentation/feature/vault/detail/ui/DetailBody.kt")
 
         val forbiddenPlatformLoadingTokens = listOf(
             "EntryPointAccessors",
@@ -31,7 +31,7 @@ class AppPackagePickerBoundaryTest {
         mapOf(
             "picker" to picker,
             "associations" to associations,
-            "detailContent" to detailContent,
+            "detailBody" to detailBody,
         ).forEach { (name, source) ->
             forbiddenPlatformLoadingTokens.forEach { forbidden ->
                 assertFalse("$name UI must not reference $forbidden", source.contains(forbidden))
@@ -39,11 +39,11 @@ class AppPackagePickerBoundaryTest {
         }
         assertFalse(associations.contains("rememberAppIcon"))
         assertFalse(associations.contains("rememberAppMetadata"))
-        assertTrue(detailContent.contains("model.associatedApps"))
-        assertTrue(detailContent.contains("model.packagePickerApps"))
-        assertTrue(detailContent.contains("onAction(DetailUiAction.LoadPackagePickerApps)"))
+        assertTrue(detailBody.contains("model.associatedApps"))
+        assertTrue(detailBody.contains("model.packagePickerApps"))
+        assertTrue(detailBody.contains("onAction(DetailUiAction.LoadPackagePickerApps)"))
         assertTrue(
-            detailContent.contains(
+            detailBody.contains(
                 "onAction(DetailUiAction.SelectAssociatedPackage(it.packageName))",
             ),
         )

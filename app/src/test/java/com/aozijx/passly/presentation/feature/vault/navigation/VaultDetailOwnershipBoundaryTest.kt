@@ -191,14 +191,14 @@ class VaultDetailOwnershipBoundaryTest {
     @Test
     fun `detail passive ui uses one action sink without callback bridge`() {
         val detailRoot = "com/aozijx/passly/presentation/feature/vault/detail/"
-        val content = source("${detailRoot}ui/DetailContent.kt")
+        val body = source("${detailRoot}ui/DetailBody.kt")
         val overlays = source("${detailRoot}ui/DetailEditorOverlays.kt")
 
-        assertFalse(content.contains("toDetailField"))
-        assertFalse(content.contains("buildSet"))
-        assertTrue(content.contains("onAction: (DetailUiAction) -> Unit"))
+        assertFalse(body.contains("toDetailField"))
+        assertFalse(body.contains("buildSet"))
+        assertTrue(body.contains("onAction: (DetailUiAction) -> Unit"))
         assertTrue(overlays.contains("onAction: (DetailUiAction) -> Unit"))
-        assertFalse(content.contains("callbacks:"))
+        assertFalse(body.contains("callbacks:"))
         assertFalse(overlays.contains("callbacks:"))
         assertFalse(sourceFile("${detailRoot}DetailInteractionCallbacks.kt").exists())
         assertFalse(sourceFile("${detailRoot}ui/model/DetailInteractionContracts.kt").exists())

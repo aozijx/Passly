@@ -7,18 +7,18 @@ import org.junit.Test
 
 class DetailPresentationBoundaryTest {
     @Test
-    fun `detail content and overlays are passive ui`() {
+    fun `detail body and overlays are passive ui`() {
         val sourceRoot = sourceRoot()
-        val content = sourceRoot.resolve(
-            "com/aozijx/passly/presentation/feature/vault/detail/ui/DetailContent.kt",
+        val body = sourceRoot.resolve(
+            "com/aozijx/passly/presentation/feature/vault/detail/ui/DetailBody.kt",
         )
         val overlays = sourceRoot.resolve(
             "com/aozijx/passly/presentation/feature/vault/detail/ui/DetailEditorOverlays.kt",
         )
 
-        assertTrue(content.exists())
+        assertTrue(body.exists())
         assertTrue(overlays.exists())
-        listOf(content, overlays).forEach { file ->
+        listOf(body, overlays).forEach { file ->
             val source = file.readText()
             assertFalse(source.contains("DetailUiState"))
             assertFalse(source.contains("rememberImagePicker"))
@@ -73,6 +73,23 @@ class DetailPresentationBoundaryTest {
         assertFalse(viewModel.contains("canHandle(event)"))
         assertFalse(viewModel.contains("edit !is DetailEntryEdit.SetTags"))
         assertTrue(viewModel.contains("feature.vault.SecureSessionAccessPolicy"))
+    }
+
+    @Test
+    fun `detail screen owns the complete page composition`() {
+        val sourceRoot = sourceRoot()
+        val detailRoot = sourceRoot.resolve(
+            "com/aozijx/passly/presentation/feature/vault/detail",
+        )
+        val route = detailRoot.resolve("DetailRoute.kt").readText()
+        val screen = detailRoot.resolve("ui/DetailScreen.kt").readText()
+
+        assertFalse(route.contains("DetailContent"))
+        assertFalse(route.contains("DetailEditorOverlays"))
+        assertTrue(screen.contains("model: DetailPresentationModel"))
+        assertTrue(screen.contains("DetailBody("))
+        assertTrue(screen.contains("DetailEditorOverlays("))
+        assertFalse(screen.contains("content: @Composable"))
     }
 
     private fun sourceRoot(): File = listOf(File("src/main/java"), File("app/src/main/java"))
