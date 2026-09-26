@@ -37,90 +37,106 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.EntryEditorSection
+import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardAction
+import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardUiState
+import com.aozijx.passly.presentation.feature.vault.editor.bankcard.CardType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddBankCardEditorScreen(
-    state: BankCardEditorState,
-    onEvent: BankCardEditorEventHandler,
+    state: AddBankCardUiState,
+    onAction: (AddBankCardAction) -> Unit,
+    onBack: () -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
     saveActionModifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val form = state.form
+
+    fun save() {
+        keyboardController?.hide()
+        onAction(AddBankCardAction.Save)
+    }
 
     AddEntryScaffold(
         title = stringResource(R.string.vault_add_bank_card_title),
         canSave = state.canSave,
         isSaving = state.isSaving,
         snackbarHostState = snackbarHostState,
-        onBack = onEvent.onBack,
-        onSave = onEvent.onSave,
+        onBack = onBack,
+        onSave = ::save,
         modifier = modifier,
         saveActionModifier = saveActionModifier,
     ) {
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
             NextFocusTextField(
-                value = state.title,
-                onValueChange = onEvent.onTitleChange,
+                value = form.title,
+                onValueChange = { onAction(AddBankCardAction.TitleChanged(it)) },
                 label = stringResource(R.string.field_title),
             )
             CardTypeDropdown(
-                selected = state.cardType,
-                onSelected = onEvent.onCardTypeChange,
+                selected = form.cardType,
+                onSelected = { onAction(AddBankCardAction.CardTypeChanged(it)) },
                 label = stringResource(R.string.card_type),
             )
             NextFocusTextField(
-                value = state.cardholder,
-                onValueChange = onEvent.onCardholderChange,
+                value = form.cardholder,
+                onValueChange = { onAction(AddBankCardAction.CardholderChanged(it)) },
                 label = stringResource(R.string.cardholder),
             )
         }
 
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_credentials)) {
             NextFocusTextField(
-                value = state.cardNumber,
-                onValueChange = onEvent.onCardNumberChange,
+                value = form.cardNumber,
+                onValueChange = { onAction(AddBankCardAction.CardNumberChanged(it)) },
                 label = stringResource(R.string.card_number),
-                visualTransformation = if (state.isCardNumberVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                visualTransformation = if (form.isCardNumberVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardType = KeyboardType.Password,
-                isError = state.cardNumberError != null,
-                supportingText = state.cardNumberError?.let { { Text(it) } },
+                isError = form.cardNumberError != null,
+                supportingText = form.cardNumberError?.let { { Text(it) } },
                 trailingIcon = {
-                    IconButton(onClick = { onEvent.onCardNumberVisibilityChange(!state.isCardNumberVisible) }) {
+                    IconButton(onClick = {
+                        onAction(AddBankCardAction.CardNumberVisibilityChanged(!form.isCardNumberVisible))
+                    }) {
                         Icon(
-                            imageVector = if (state.isCardNumberVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            imageVector = if (form.isCardNumberVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                             contentDescription = null
                         )
                     }
                 }
             )
             NextFocusTextField(
-                value = state.paymentPin,
-                onValueChange = onEvent.onPaymentPinChange,
+                value = form.paymentPin,
+                onValueChange = { onAction(AddBankCardAction.PaymentPinChanged(it)) },
                 label = stringResource(R.string.payment_pin),
-                visualTransformation = if (state.isPinVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                visualTransformation = if (form.isPinVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardType = KeyboardType.Password,
                 trailingIcon = {
-                    IconButton(onClick = { onEvent.onPinVisibilityChange(!state.isPinVisible) }) {
+                    IconButton(onClick = {
+                        onAction(AddBankCardAction.PinVisibilityChanged(!form.isPinVisible))
+                    }) {
                         Icon(
-                            imageVector = if (state.isPinVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            imageVector = if (form.isPinVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                             contentDescription = null
                         )
                     }
                 }
             )
             NextFocusTextField(
-                value = state.cardCvv,
-                onValueChange = onEvent.onCvvChange,
+                value = form.cardCvv,
+                onValueChange = { onAction(AddBankCardAction.CvvChanged(it)) },
                 label = stringResource(R.string.card_cvv),
-                visualTransformation = if (state.isCvvVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                visualTransformation = if (form.isCvvVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardType = KeyboardType.Password,
                 trailingIcon = {
-                    IconButton(onClick = { onEvent.onCvvVisibilityChange(!state.isCvvVisible) }) {
+                    IconButton(onClick = {
+                        onAction(AddBankCardAction.CvvVisibilityChanged(!form.isCvvVisible))
+                    }) {
                         Icon(
-                            imageVector = if (state.isCvvVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            imageVector = if (form.isCvvVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                             contentDescription = null
                         )
                     }
@@ -131,15 +147,15 @@ fun AddBankCardEditorScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 NextFocusTextField(
-                    value = state.cardExpiryMonth,
-                    onValueChange = onEvent.onExpiryMonthChange,
+                    value = form.cardExpiryMonth,
+                    onValueChange = { onAction(AddBankCardAction.ExpiryMonthChanged(it)) },
                     label = stringResource(R.string.card_expiry_month),
                     keyboardType = KeyboardType.Number,
                     modifier = Modifier.weight(1f),
                 )
                 NextFocusTextField(
-                    value = state.cardExpiryYear,
-                    onValueChange = onEvent.onExpiryYearChange,
+                    value = form.cardExpiryYear,
+                    onValueChange = { onAction(AddBankCardAction.ExpiryYearChanged(it)) },
                     label = stringResource(R.string.card_expiry_year),
                     keyboardType = KeyboardType.Number,
                     modifier = Modifier.weight(1f),
@@ -149,28 +165,27 @@ fun AddBankCardEditorScreen(
 
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_details)) {
             NextFocusTextField(
-                value = state.tags,
-                onValueChange = onEvent.onTagsChange,
+                value = form.tags,
+                onValueChange = { onAction(AddBankCardAction.TagsChanged(it)) },
                 label = stringResource(R.string.field_category),
             )
             NextFocusTextField(
-                value = state.billingAddress,
-                onValueChange = onEvent.onBillingAddressChange,
+                value = form.billingAddress,
+                onValueChange = { onAction(AddBankCardAction.BillingAddressChanged(it)) },
                 label = stringResource(R.string.billing_address),
             )
             OutlinedTextField(
-                value = state.notes,
-                onValueChange = onEvent.onNotesChange,
+                value = form.notes,
+                onValueChange = { onAction(AddBankCardAction.NotesChanged(it)) },
                 label = { Text(stringResource(R.string.field_notes)) },
                 singleLine = false,
                 minLines = 4,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        if (state.isFormValid) {
+                        if (form.isValid) {
                             focusManager.clearFocus(force = true)
-                            keyboardController?.hide()
-                            onEvent.onSave()
+                            save()
                         }
                     },
                 ),
@@ -182,8 +197,8 @@ fun AddBankCardEditorScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CardTypeDropdown(
-    selected: BankCardTypeUi?,
-    onSelected: (BankCardTypeUi) -> Unit,
+    selected: CardType?,
+    onSelected: (CardType) -> Unit,
     label: String,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -205,7 +220,7 @@ private fun CardTypeDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false },
         ) {
-            BankCardTypeUi.entries.forEach { type ->
+            CardType.entries.forEach { type ->
                 DropdownMenuItem(
                     text = { Text(type.label()) },
                     onClick = {
@@ -220,9 +235,4 @@ private fun CardTypeDropdown(
 }
 
 @Composable
-private fun BankCardTypeUi.label(): String = stringResource(
-    when (this) {
-        BankCardTypeUi.DEBIT -> R.string.card_type_debit
-        BankCardTypeUi.CREDIT -> R.string.card_type_credit
-    },
-)
+private fun CardType.label(): String = stringResource(labelRes)
