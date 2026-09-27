@@ -55,4 +55,19 @@ class SettingsRouteOwnershipBoundaryTest {
         assertTrue(notificationsRoute.contains("NotificationSettingsViewModel"))
         assertTrue(notificationsRoute.contains("rememberPermissionRequestHost"))
     }
+
+    @Test
+    fun `data management section has no callback handler model layer`() {
+        val sourceRoot = listOf(
+            File("src/main/java"),
+            File("app/src/main/java"),
+        ).firstOrNull(File::isDirectory) ?: error("Cannot locate app source root")
+        val dataUiRoot = File(
+            sourceRoot,
+            "com/aozijx/passly/presentation/feature/settings/ui/data",
+        )
+
+        assertTrue(File(dataUiRoot, "DataManagementSection.kt").isFile)
+        assertFalse(File(dataUiRoot, "model/DataManagementUiModels.kt").exists())
+    }
 }

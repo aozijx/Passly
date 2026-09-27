@@ -8,8 +8,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.feature.database.reset.DatabaseResetRoute
-import com.aozijx.passly.presentation.feature.settings.ui.data.DataManagementDetail
-import com.aozijx.passly.presentation.feature.settings.ui.data.model.DataManagementEventHandler
+import com.aozijx.passly.presentation.feature.settings.ui.data.DataManagementSection
 import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
 
@@ -26,12 +25,10 @@ internal fun DataManagementRoute(
         onBack = onBack,
     ) {
         item {
-            DataManagementDetail(
-                eventHandler = object : DataManagementEventHandler {
-                    override fun onOpenTrash() = onOpenTrash()
-                    override fun onOpenDatabaseReset() {
-                        showDatabaseReset = true
-                    }
+            DataManagementSection(
+                onOpenTrash = onOpenTrash,
+                onOpenDatabaseReset = {
+                    showDatabaseReset = true
                 },
             )
         }

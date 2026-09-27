@@ -6,15 +6,15 @@ import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
-import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.presentation.feature.settings.ui.data.model.DataManagementEventHandler
+import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
+import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 
 @Composable
-internal fun DataManagementDetail(
-    eventHandler: DataManagementEventHandler,
+internal fun DataManagementSection(
+    onOpenTrash: () -> Unit,
+    onOpenDatabaseReset: () -> Unit,
 ) {
     SettingsSection {
         SettingsSectionTitle(text = stringResource(R.string.settings_data_storage))
@@ -25,16 +25,16 @@ internal fun DataManagementDetail(
                     icon = Icons.Default.DeleteSweep,
                     title = stringResource(R.string.settings_trash_title),
                     subtitle = stringResource(R.string.settings_trash_description),
-                    onClick = eventHandler::onOpenTrash,
+                    onClick = onOpenTrash,
                 ),
                 navigationSettingsGroupItem(
                     key = "data.database_reset",
                     icon = Icons.Default.DeleteForever,
                     title = stringResource(R.string.settings_database_reset_title),
                     subtitle = stringResource(R.string.settings_database_reset_summary),
-                    onClick = eventHandler::onOpenDatabaseReset,
-                )
-            )
+                    onClick = onOpenDatabaseReset,
+                ),
+            ),
         )
     }
 }
