@@ -5,6 +5,12 @@ data class DataManagementSettingsUiState(
 )
 
 sealed interface DataManagementSettingsUiAction {
-    data class SetBackupDirectoryUri(val uri: String) : DataManagementSettingsUiAction
+    data class BackupDirectoryPicked(val uri: String?) : DataManagementSettingsUiAction
     data object ClearBackupDirectory : DataManagementSettingsUiAction
+}
+
+enum class DataManagementSettingsEffect {
+    BackupDirectorySelectionCancelled,
+    BackupDirectoryPermissionDenied,
+    BackupDirectoryUnavailable,
 }

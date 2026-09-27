@@ -197,6 +197,9 @@
     <string name="settings_backup_confirm_overwrite_import">Confirm overwrite and import</string>
     <string name="settings_backup_content_scope">Content scope</string>
     <string name="settings_backup_default_directory">Default backup folder</string>
+    <string name="settings_backup_directory_selection_cancelled">No folder selected</string>
+    <string name="settings_backup_directory_permission_denied">Folder permission could not be retained. Please select it again.</string>
+    <string name="settings_backup_directory_unavailable">The backup folder could not be prepared</string>
     <string name="settings_backup_encrypted_options_title">Encrypted backup options</string>
     <string name="settings_backup_encrypted_security_notice">Encrypted with a random salt and nonce; supports full recovery.</string>
     <string name="settings_backup_entry_type_required">Select at least one entry type</string>

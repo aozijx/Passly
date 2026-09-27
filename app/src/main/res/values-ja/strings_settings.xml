@@ -197,6 +197,9 @@
     <string name="settings_backup_confirm_overwrite_import">上書きを確認してインポート</string>
     <string name="settings_backup_content_scope">対象内容</string>
     <string name="settings_backup_default_directory">既定のバックアップフォルダー</string>
+    <string name="settings_backup_directory_selection_cancelled">フォルダーが選択されていません</string>
+    <string name="settings_backup_directory_permission_denied">フォルダーの権限を保持できません。もう一度選択してください。</string>
+    <string name="settings_backup_directory_unavailable">バックアップフォルダーを準備できませんでした</string>
     <string name="settings_backup_encrypted_options_title">暗号化バックアップ設定</string>
     <string name="settings_backup_encrypted_security_notice">ランダムなソルトと nonce で暗号化され、完全復元に対応します。</string>
     <string name="settings_backup_entry_type_required">少なくとも1つのエントリ種別を選択してください</string>

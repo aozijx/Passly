@@ -197,6 +197,9 @@
     <string name="settings_backup_confirm_overwrite_import">确认覆盖并导入</string>
     <string name="settings_backup_content_scope">内容范围</string>
     <string name="settings_backup_default_directory">默认备份目录</string>
+    <string name="settings_backup_directory_selection_cancelled">未选择目录</string>
+    <string name="settings_backup_directory_permission_denied">无法持久化目录权限，请重新选择</string>
+    <string name="settings_backup_directory_unavailable">无法准备备份目录</string>
     <string name="settings_backup_encrypted_options_title">加密备份设置</string>
     <string name="settings_backup_encrypted_security_notice">使用随机盐和 nonce 加密，可完整恢复。</string>
     <string name="settings_backup_entry_type_required">至少选择一种条目类型</string>

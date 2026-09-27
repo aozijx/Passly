@@ -1,18 +1,18 @@
 package com.aozijx.passly.presentation.feature.settings.main.navigation.data
 
-import android.content.Intent
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
@@ -20,8 +20,8 @@ import com.aozijx.passly.core.platform.path.UriDisplayNameFormatter
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
 import com.aozijx.passly.presentation.feature.backup.BackupOperationRoute
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsUiAction
+import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsEffect
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.backup.handleBackupPathPicked
 import com.aozijx.passly.presentation.feature.settings.ui.data.BackupDirectoryClearDialog
 import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
@@ -36,16 +36,43 @@ internal fun BackupRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showClearDirectoryDialog by rememberSaveable { mutableStateOf(false) }
     val notSetText = stringResource(R.string.not_set)
+    val selectionCancelledMessage = stringResource(
+        R.string.settings_backup_directory_selection_cancelled,
+    )
+    val permissionDeniedMessage = stringResource(
+        R.string.settings_backup_directory_permission_denied,
+    )
+    val unavailableMessage = stringResource(
+        R.string.settings_backup_directory_unavailable,
+    )
     val pathLabel = remember(state.directoryUri) {
         UriDisplayNameFormatter.format(state.directoryUri) ?: notSetText
     }
     val backupPathPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
-        handleBackupPathPicked(context, uri) { resolvedUri ->
-            viewModel.onAction(
-                DataManagementSettingsUiAction.SetBackupDirectoryUri(resolvedUri)
-            )
+        viewModel.onAction(
+            DataManagementSettingsUiAction.BackupDirectoryPicked(uri?.toString()),
+        )
+    }
+
+    LaunchedEffect(
+        viewModel,
+        context,
+        selectionCancelledMessage,
+        permissionDeniedMessage,
+        unavailableMessage,
+    ) {
+        viewModel.effects.collect { effect ->
+            val message = when (effect) {
+                DataManagementSettingsEffect.BackupDirectorySelectionCancelled ->
+                    selectionCancelledMessage
+                DataManagementSettingsEffect.BackupDirectoryPermissionDenied ->
+                    permissionDeniedMessage
+                DataManagementSettingsEffect.BackupDirectoryUnavailable ->
+                    unavailableMessage
+            }
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -72,15 +99,6 @@ internal fun BackupRoute(
     if (showClearDirectoryDialog) {
         BackupDirectoryClearDialog(
             onConfirm = {
-                state.directoryUri?.takeIf(String::isNotBlank)?.let { directoryUri ->
-                    runCatching {
-                        context.contentResolver.releasePersistableUriPermission(
-                            directoryUri.toUri(),
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                                Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
-                        )
-                    }
-                }
                 viewModel.onAction(DataManagementSettingsUiAction.ClearBackupDirectory)
                 showClearDirectoryDialog = false
             },
