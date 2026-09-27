@@ -2,8 +2,6 @@ package com.aozijx.passly.presentation.feature.vault.list.ui.component.list
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -64,10 +62,8 @@ internal fun VaultListBody(
                     (hasActiveQuickFilters ||
                             !state.layout.collapseQuickFilterBarOnScroll ||
                             scrollBehavior.state.collapsedFraction < 0.5f),
-            enter = expandVertically(animationSpec = motionScheme.defaultSpatialSpec()) +
-                    fadeIn(animationSpec = motionScheme.fastEffectsSpec()),
-            exit = shrinkVertically(animationSpec = motionScheme.defaultSpatialSpec()) +
-                    fadeOut(animationSpec = motionScheme.fastEffectsSpec()),
+            enter = expandVertically(animationSpec = motionScheme.defaultSpatialSpec()),
+            exit = shrinkVertically(animationSpec = motionScheme.defaultSpatialSpec()),
         ) {
             VaultFilterBar(
                 filters = state.navigation.filterOptions,
