@@ -45,16 +45,29 @@ internal object SourceBoundaryPolicy {
             message = "imports a forbidden namespace",
         ),
         SourceBoundaryRule(
+            id = "LAYER_PRESENTATION_MAPPING",
+            owner = "presentation.mapping",
+            sourcePathContains = "/com/aozijx/passly/presentation/mapping/",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.presentation.feature.",
+                "com.aozijx.passly.feature.",
+                "com.aozijx.passly.data.",
+                "com.aozijx.passly.security.",
+            ),
+            message = "imports a forbidden namespace",
+        ),
+        SourceBoundaryRule(
             id = "LAYER_PRESENTATION_ROOT",
             owner = "presentation",
             sourcePathContains = "/com/aozijx/passly/presentation/",
             allowedSourcePathContains = setOf(
                 "/presentation/feature/",
+                "/presentation/mapping/",
                 "/presentation/shared/",
                 "/presentation/ui/",
             ),
             forbiddenContentMarkers = setOf("package com.aozijx.passly.presentation."),
-            message = "presentation source must be classified as feature, shared, or ui",
+            message = "presentation source must be classified as feature, mapping, shared, or ui",
         ),
         SourceBoundaryRule(
             id = "LAYER_FEATURE",

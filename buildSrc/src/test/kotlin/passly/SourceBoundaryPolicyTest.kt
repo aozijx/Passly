@@ -82,6 +82,20 @@ class SourceBoundaryPolicyTest {
                 ),
             ),
             LayerCase(
+                owner = "presentation.mapping",
+                path = "app/src/main/java/com/aozijx/passly/presentation/mapping/gesture/SwipeActionPresentationMapper.kt",
+                allowed = listOf(
+                    "com.aozijx.passly.domain.settings.model.SwipeActionType",
+                    "com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel",
+                ),
+                forbidden = listOf(
+                    "com.aozijx.passly.presentation.feature.vault.VaultUiState",
+                    "com.aozijx.passly.feature.vault.VaultEntryPageSource",
+                    "com.aozijx.passly.data.repository.EntryRepositoryImpl",
+                    "com.aozijx.passly.security.dek.DekManager",
+                ),
+            ),
+            LayerCase(
                 owner = "feature",
                 path = "app/src/main/java/com/aozijx/passly/feature/vault/VaultUseCase.kt",
                 allowed = listOf(

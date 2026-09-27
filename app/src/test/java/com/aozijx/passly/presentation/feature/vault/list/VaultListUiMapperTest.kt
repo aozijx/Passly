@@ -11,7 +11,6 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.domain.entry.model.query.EntryCapability
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListDisplayUiModel
@@ -104,12 +103,6 @@ class VaultListUiMapperTest {
             EntryType.SEED_PHRASE to EntryTypeUiModel.SEED_PHRASE,
             EntryType.RECOVERY_CODE to EntryTypeUiModel.RECOVERY_CODE,
         )
-        val swipeActions = listOf(
-            SwipeActionType.DELETE to SwipeActionUiModel.DELETE,
-            SwipeActionType.DETAIL to SwipeActionUiModel.DETAIL,
-            SwipeActionType.COPY_PASSWORD to SwipeActionUiModel.COPY_PASSWORD,
-            SwipeActionType.COPY_USERNAME to SwipeActionUiModel.COPY_USERNAME,
-        )
         val addTypes = listOf(
             AddType.PASSWORD to VaultAddTypeUiModel.PASSWORD,
             AddType.TOTP to VaultAddTypeUiModel.TOTP,
@@ -123,10 +116,6 @@ class VaultListUiMapperTest {
         )
 
         entryTypes.forEach { (domain, ui) -> assertEquals(ui, domain.toUiModel()) }
-        swipeActions.forEach { (domain, ui) ->
-            assertEquals(ui, domain.toUiModel())
-            assertEquals(domain, ui.toFeatureModel())
-        }
         addTypes.forEach { (feature, ui) ->
             assertEquals(ui, feature.toUiModel())
             assertEquals(feature, ui.toFeatureModel())

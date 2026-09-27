@@ -17,8 +17,5 @@ class InteractionSettingsUiMapperTest {
 
         assertEquals(SwipeActionUiModel.DELETE, result.swipeLeftAction)
         assertEquals(SwipeActionUiModel.COPY_USERNAME, result.swipeRightAction)
-        SwipeActionUiModel.entries.forEach {
-            assertEquals(SwipeActionType.valueOf(it.name), it.toFeatureModel())
-        }
     }
 }

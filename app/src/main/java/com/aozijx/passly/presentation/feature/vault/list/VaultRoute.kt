@@ -23,6 +23,8 @@ import com.aozijx.passly.presentation.feature.vault.list.ui.VaultScreen
 import com.aozijx.passly.presentation.feature.vault.list.ui.VaultSystemBarsEffect
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListDisplayUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemEvent
+import com.aozijx.passly.presentation.mapping.gesture.toDomainModel
+import com.aozijx.passly.presentation.mapping.gesture.toUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,7 +62,7 @@ internal fun VaultRoute(
             is VaultListItemEvent.Swiped -> {
                 val item = event.item
                 handleSwipeAction(
-                    actionType = event.action.toFeatureModel(),
+                    actionType = event.action.toDomainModel(),
                     item = item,
                     onQuickDelete = { entryId ->
                         vaultViewModel.onAction(VaultUiAction.QuickDelete(entryId))

@@ -2,6 +2,7 @@ package com.aozijx.passly.presentation.feature.settings.main.interaction
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.presentation.mapping.gesture.toDomainModel
 import com.aozijx.passly.presentation.shared.error.toUiMessage
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -42,10 +43,10 @@ class InteractionSettingsViewModel @Inject constructor(
                 settingsRepository.setSwipeEnabled(action.enabled)
             }
             is InteractionSettingsAction.SetSwipeLeftAction -> saveSwipeAction {
-                settingsRepository.setSwipeLeftAction(action.action.toFeatureModel())
+                settingsRepository.setSwipeLeftAction(action.action.toDomainModel())
             }
             is InteractionSettingsAction.SetSwipeRightAction -> saveSwipeAction {
-                settingsRepository.setSwipeRightAction(action.action.toFeatureModel())
+                settingsRepository.setSwipeRightAction(action.action.toDomainModel())
             }
         }
     }

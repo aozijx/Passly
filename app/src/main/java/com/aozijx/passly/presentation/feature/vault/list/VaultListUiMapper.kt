@@ -7,11 +7,9 @@ import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.settings.model.CardDensity
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
-import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
-import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultCardDensityUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultCardPresentationUiModel
@@ -96,20 +94,6 @@ internal fun EntryType.toUiModel(): EntryTypeUiModel = when (this) {
     EntryType.CRYPTO_WALLET -> EntryTypeUiModel.CRYPTO_WALLET
     EntryType.SEED_PHRASE -> EntryTypeUiModel.SEED_PHRASE
     EntryType.RECOVERY_CODE -> EntryTypeUiModel.RECOVERY_CODE
-}
-
-internal fun SwipeActionType.toUiModel(): SwipeActionUiModel = when (this) {
-    SwipeActionType.DELETE -> SwipeActionUiModel.DELETE
-    SwipeActionType.DETAIL -> SwipeActionUiModel.DETAIL
-    SwipeActionType.COPY_PASSWORD -> SwipeActionUiModel.COPY_PASSWORD
-    SwipeActionType.COPY_USERNAME -> SwipeActionUiModel.COPY_USERNAME
-}
-
-internal fun SwipeActionUiModel.toFeatureModel(): SwipeActionType = when (this) {
-    SwipeActionUiModel.DELETE -> SwipeActionType.DELETE
-    SwipeActionUiModel.DETAIL -> SwipeActionType.DETAIL
-    SwipeActionUiModel.COPY_PASSWORD -> SwipeActionType.COPY_PASSWORD
-    SwipeActionUiModel.COPY_USERNAME -> SwipeActionType.COPY_USERNAME
 }
 
 internal fun AddType.toUiModel(): VaultAddTypeUiModel = when (this) {
