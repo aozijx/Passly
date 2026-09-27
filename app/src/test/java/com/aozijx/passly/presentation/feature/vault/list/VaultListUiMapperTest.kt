@@ -16,6 +16,7 @@ import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListDisplayUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpKindUiModel
+import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -83,10 +84,52 @@ class VaultListUiMapperTest {
     }
 
     @Test
-    fun interactionEnumsRoundTripAcrossFeatureBoundary() {
-        SwipeActionType.entries.forEach { assertEquals(it, it.toUiModel().toFeatureModel()) }
-        AddType.entries.forEach { assertEquals(it, it.toUiModel().toFeatureModel()) }
-        assertEquals(SwipeActionUiModel.DELETE, SwipeActionType.DELETE.toUiModel())
-        assertEquals(VaultAddTypeUiModel.PASSWORD, AddType.PASSWORD.toUiModel())
+    fun enumMappingsPreserveExplicitFeatureMeaning() {
+        val entryTypes = listOf(
+            EntryType.ACCOUNT to EntryTypeUiModel.ACCOUNT,
+            EntryType.LOGIN to EntryTypeUiModel.LOGIN,
+            EntryType.NOTE to EntryTypeUiModel.NOTE,
+            EntryType.BANK_CARD to EntryTypeUiModel.BANK_CARD,
+            EntryType.ID_CARD to EntryTypeUiModel.ID_CARD,
+            EntryType.PASSPORT to EntryTypeUiModel.PASSPORT,
+            EntryType.DRIVER_LICENSE to EntryTypeUiModel.DRIVER_LICENSE,
+            EntryType.SSH_KEY to EntryTypeUiModel.SSH_KEY,
+            EntryType.WIFI to EntryTypeUiModel.WIFI,
+            EntryType.PASSKEY to EntryTypeUiModel.PASSKEY,
+            EntryType.OTP to EntryTypeUiModel.OTP,
+            EntryType.DATABASE_CREDENTIAL to EntryTypeUiModel.DATABASE_CREDENTIAL,
+            EntryType.SERVER_CREDENTIAL to EntryTypeUiModel.SERVER_CREDENTIAL,
+            EntryType.API_KEY to EntryTypeUiModel.API_KEY,
+            EntryType.CRYPTO_WALLET to EntryTypeUiModel.CRYPTO_WALLET,
+            EntryType.SEED_PHRASE to EntryTypeUiModel.SEED_PHRASE,
+            EntryType.RECOVERY_CODE to EntryTypeUiModel.RECOVERY_CODE,
+        )
+        val swipeActions = listOf(
+            SwipeActionType.DELETE to SwipeActionUiModel.DELETE,
+            SwipeActionType.DETAIL to SwipeActionUiModel.DETAIL,
+            SwipeActionType.COPY_PASSWORD to SwipeActionUiModel.COPY_PASSWORD,
+            SwipeActionType.COPY_USERNAME to SwipeActionUiModel.COPY_USERNAME,
+        )
+        val addTypes = listOf(
+            AddType.PASSWORD to VaultAddTypeUiModel.PASSWORD,
+            AddType.TOTP to VaultAddTypeUiModel.TOTP,
+            AddType.BANK_CARD to VaultAddTypeUiModel.BANK_CARD,
+            AddType.WIFI to VaultAddTypeUiModel.WIFI,
+            AddType.SSH_KEY to VaultAddTypeUiModel.SSH_KEY,
+            AddType.ID_CARD to VaultAddTypeUiModel.ID_CARD,
+            AddType.SEED_PHRASE to VaultAddTypeUiModel.SEED_PHRASE,
+            AddType.PASSKEY to VaultAddTypeUiModel.PASSKEY,
+            AddType.RECOVERY_CODE to VaultAddTypeUiModel.RECOVERY_CODE,
+        )
+
+        entryTypes.forEach { (domain, ui) -> assertEquals(ui, domain.toUiModel()) }
+        swipeActions.forEach { (domain, ui) ->
+            assertEquals(ui, domain.toUiModel())
+            assertEquals(domain, ui.toFeatureModel())
+        }
+        addTypes.forEach { (feature, ui) ->
+            assertEquals(ui, feature.toUiModel())
+            assertEquals(feature, ui.toFeatureModel())
+        }
     }
 }
