@@ -27,12 +27,20 @@ class UnlockViewModel @Inject constructor(
     private val methodProvisioner: AuthenticationMethodProvisioner,
 ) : ViewModel() {
 
-    val methodAvailability = authenticationManager.methods
-
-    private val _uiState = MutableStateFlow(UnlockUiState())
+    private val _uiState = MutableStateFlow(
+        UnlockUiState(availableMethods = authenticationManager.methods.value),
+    )
     val uiState: StateFlow<UnlockUiState> = _uiState.asStateFlow()
 
     private var recoveryRevealTapCount = 0
+
+    init {
+        viewModelScope.launch {
+            authenticationManager.methods.collect { methods ->
+                mutate(UnlockMutation.AvailableMethodsChanged(methods))
+            }
+        }
+    }
 
     fun onAction(action: UnlockUiAction) {
         when (action) {
@@ -72,7 +80,7 @@ class UnlockViewModel @Inject constructor(
     private fun setAppPassword() {
         val password = _uiState.value.newAppPassword.toCharArray()
         val confirm = _uiState.value.confirmAppPassword.toCharArray()
-        if (password.isEmpty() || !password.contentEquals(confirm)) {
+        if (!_uiState.value.canConfirmAppPassword) {
             MemoryCleaner.wipeCharArray(password)
             MemoryCleaner.wipeCharArray(confirm)
             return
@@ -99,7 +107,7 @@ class UnlockViewModel @Inject constructor(
 
     private fun revealRecoveryUnlock() {
         val state = _uiState.value
-        if (AuthenticationMethod.RECOVERY_CODE !in methodAvailability.value || state.recoveryUnlockVisible) return
+        if (AuthenticationMethod.RECOVERY_CODE !in state.availableMethods || state.recoveryUnlockVisible) return
         recoveryRevealTapCount += 1
         if (recoveryRevealTapCount >= RECOVERY_REVEAL_TAP_THRESHOLD) {
             recoveryRevealTapCount = 0

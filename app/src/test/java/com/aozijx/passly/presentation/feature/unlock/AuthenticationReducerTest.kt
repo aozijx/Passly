@@ -3,6 +3,7 @@ package com.aozijx.passly.presentation.feature.unlock
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationMethods
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import org.junit.Assert.assertEquals
@@ -13,6 +14,52 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AuthenticationReducerTest {
+
+    @Test
+    fun `available authentication methods are part of authoritative ui state`() {
+        val methods = AuthenticationMethods(
+            setOf(
+                AuthenticationMethod.BIOMETRIC,
+                AuthenticationMethod.APP_PASSWORD,
+            ),
+        )
+
+        val result = UnlockReducer.reduce(
+            UnlockUiState(),
+            UnlockMutation.AvailableMethodsChanged(methods),
+        )
+
+        assertEquals(methods, result.availableMethods)
+    }
+
+    @Test
+    fun `password confirmation follows one policy owned by the reducer`() {
+        val shortPassword = OwnedChars.fromString("short")
+        val validPassword = OwnedChars.fromString("long-enough-password")
+        val matchingConfirmation = OwnedChars.fromString("long-enough-password")
+        try {
+            val short = UnlockReducer.reduce(
+                UnlockUiState(),
+                UnlockMutation.NewAppPasswordChanged(shortPassword),
+            )
+            val withPassword = UnlockReducer.reduce(
+                short,
+                UnlockMutation.NewAppPasswordChanged(validPassword),
+            )
+            val matching = UnlockReducer.reduce(
+                withPassword,
+                UnlockMutation.ConfirmAppPasswordChanged(matchingConfirmation),
+            )
+
+            assertFalse(short.canConfirmAppPassword)
+            assertFalse(withPassword.canConfirmAppPassword)
+            assertTrue(matching.canConfirmAppPassword)
+        } finally {
+            shortPassword.wipe()
+            validPassword.wipe()
+            matchingConfirmation.wipe()
+        }
+    }
 
     @Test
     fun `authentication lifecycle preserves authoritative failure`() {
@@ -37,7 +84,10 @@ class AuthenticationReducerTest {
 
         assertEquals(AuthenticationMethod.APP_PASSWORD, started.activeMethod)
         assertNull(finished.activeMethod)
-        assertSame(failure, finished.verificationFailure?.failure)
+        assertEquals(
+            UnlockFailureMessage.IncorrectCredential(remainingAttempts = null),
+            finished.verificationFailure?.message,
+        )
     }
 
     @Test
