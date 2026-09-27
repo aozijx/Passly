@@ -22,7 +22,7 @@ class SettingsDestinationParameterBoundaryTest {
         assertNarrow(
             "autofill/AutofillRoute.kt",
             forbidden = listOf(
-                "SettingsDestination", "Context", "AppPasswordDialogStateHolder",
+                "SettingsDestination", "Context", "AppPasswordDialogCoordinator",
                 "InteractionSettingsViewModel", "DataManagementSettingsViewModel",
                 "AppPasswordSettingsViewModel", "AppPasswordSettingsUiState",
             ),
@@ -30,14 +30,14 @@ class SettingsDestinationParameterBoundaryTest {
         assertNarrow(
             "data/DataManagementRoute.kt",
             forbidden = listOf(
-                "SettingsDestination", "Context", "AppPasswordDialogStateHolder",
+                "SettingsDestination", "Context", "AppPasswordDialogCoordinator",
                 "InteractionSettingsViewModel",
             ),
         )
         assertNarrow(
             "interaction/InteractionRoute.kt",
             forbidden = listOf(
-                "SettingsDestination", "Context", "AppPasswordDialogStateHolder",
+                "SettingsDestination", "Context", "AppPasswordDialogCoordinator",
                 "DataManagementSettingsViewModel",
                 "InteractionSettingsViewModel", "AppPasswordSettingsViewModel", "AppPasswordSettingsUiState",
             ),
@@ -52,7 +52,7 @@ class SettingsDestinationParameterBoundaryTest {
         assertNarrow(
             "core/RecoveryCodeRoute.kt",
             forbidden = listOf(
-                "SettingsDestination", "Context", "AppPasswordDialogStateHolder",
+                "SettingsDestination", "Context", "AppPasswordDialogCoordinator",
                 "InteractionSettingsViewModel", "DataManagementSettingsViewModel",
                 "AppPasswordSettingsUiState",
             ),
@@ -61,7 +61,7 @@ class SettingsDestinationParameterBoundaryTest {
             assertNarrow(
                 path,
                 forbidden = listOf(
-                    "SettingsDestination", "Context", "AppPasswordDialogStateHolder",
+                    "SettingsDestination", "Context", "AppPasswordDialogCoordinator",
                     "InteractionSettingsViewModel", "DataManagementSettingsViewModel",
                     "AppPasswordSettingsViewModel", "AppPasswordSettingsUiState",
                 ),

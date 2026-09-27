@@ -11,10 +11,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.presentation.feature.settings.security.AppPasswordSettingsEffect
 import com.aozijx.passly.presentation.feature.settings.security.AppPasswordSettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.AppPasswordSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.security.buildAppPasswordDialogEventHandler
-import com.aozijx.passly.presentation.feature.settings.security.buildAppPasswordDialogsModel
 import com.aozijx.passly.presentation.feature.settings.security.toAppPasswordMessage
 import com.aozijx.passly.presentation.feature.settings.security.AppPasswordAction
+import com.aozijx.passly.presentation.feature.settings.security.rememberAppPasswordDialogCoordinator
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.toSecuritySettingsUiModel
@@ -22,7 +21,6 @@ import com.aozijx.passly.presentation.feature.settings.security.validateAndSendA
 import com.aozijx.passly.presentation.feature.settings.ui.main.AppPasswordDialogs
 import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
-import com.aozijx.passly.presentation.feature.settings.ui.main.rememberAppPasswordDialogStateHolder
 import com.aozijx.passly.presentation.feature.settings.ui.security.SecurityDetail
 
 @Composable
@@ -34,15 +32,16 @@ internal fun SecurityRoute(
     val appPasswordViewModel: AppPasswordSettingsViewModel = hiltViewModel()
     val securityState by securityViewModel.uiState.collectAsStateWithLifecycle()
     val appPasswordState by appPasswordViewModel.uiState.collectAsStateWithLifecycle()
-    val appPasswordDialogs = rememberAppPasswordDialogStateHolder()
+    val appPasswordDialogs = rememberAppPasswordDialogCoordinator()
 
     fun submitAppPasswordAction(action: AppPasswordAction) {
+        val dialogModel = appPasswordDialogs.model
         validateAndSendAppPasswordAction(
             context = context,
             action = action,
-            currentPassword = appPasswordDialogs.appPasswordCurrent,
-            newPassword = appPasswordDialogs.appPasswordNew,
-            confirmPassword = appPasswordDialogs.appPasswordConfirm,
+            currentPassword = dialogModel.appPasswordCurrent,
+            newPassword = dialogModel.appPasswordNew,
+            confirmPassword = dialogModel.appPasswordConfirm,
             settingsViewModel = appPasswordViewModel,
         )
     }
@@ -52,13 +51,10 @@ internal fun SecurityRoute(
             when (effect) {
                 AppPasswordSettingsEffect.AppPasswordSet,
                 AppPasswordSettingsEffect.AppPasswordChanged,
-                AppPasswordSettingsEffect.AppPasswordDisabled -> appPasswordDialogs.onAppPasswordSuccess()
+                AppPasswordSettingsEffect.AppPasswordDisabled ->
+                    appPasswordDialogs.onAppPasswordOperationSucceeded()
                 is AppPasswordSettingsEffect.AppPasswordEntryAuthorized -> {
-                    if (effect.alreadyEnabled) {
-                        appPasswordDialogs.openAppPasswordActionDialog()
-                    } else {
-                        appPasswordDialogs.openSetAppPasswordDialog()
-                    }
+                    appPasswordDialogs.onAppPasswordEntryAuthorized(effect.alreadyEnabled)
                 }
                 else -> Unit
             }
@@ -101,10 +97,9 @@ internal fun SecurityRoute(
     }
 
     AppPasswordDialogs(
-        state = buildAppPasswordDialogsModel(appPasswordDialogs),
-        onEvent = buildAppPasswordDialogEventHandler(
-            stateHolder = appPasswordDialogs,
-            submitAppPasswordAction = ::submitAppPasswordAction,
-        ),
+        state = appPasswordDialogs.model,
+        onEvent = { event ->
+            appPasswordDialogs.onEvent(event)?.let(::submitAppPasswordAction)
+        },
     )
 }
