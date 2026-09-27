@@ -2,9 +2,8 @@ package com.aozijx.passly.presentation.feature.settings.main.general
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.app.message.contract.SystemNotificationState
 import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
-import com.aozijx.passly.domain.settings.model.MessageLevel
-import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -43,38 +42,68 @@ class NotificationSettingsViewModel @Inject constructor(
             initialValue = NotificationSettingsUiState()
         )
 
-    fun refreshSystemNotificationState() {
-        readSystemNotificationState()
+    internal fun onAction(action: NotificationSettingsAction) {
+        when (action) {
+            is NotificationSettingsAction.SetSystemNotificationsEnabled -> {
+                if (action.enabled) requestSystemNotificationsEnabled()
+                else persistSystemNotificationsEnabled(false)
+            }
+
+            NotificationSettingsAction.RuntimePermissionGranted ->
+                completeRuntimePermissionRequest()
+
+            NotificationSettingsAction.RuntimePermissionDenied ->
+                emitEffect(NotificationSettingsEffect.ShowPermissionDenied)
+
+            NotificationSettingsAction.RefreshSystemNotificationState ->
+                readSystemNotificationState()
+
+            NotificationSettingsAction.OpenSystemNotificationSettings ->
+                emitEffect(NotificationSettingsEffect.OpenSystemNotificationSettings)
+
+            is NotificationSettingsAction.SetOptionalMessagesEnabled -> viewModelScope.launch {
+                settingsRepository.setOptionalMessagesEnabled(action.enabled)
+            }
+
+            is NotificationSettingsAction.SetTopicEnabled -> viewModelScope.launch {
+                settingsRepository.setTopicEnabled(action.topic, action.enabled)
+            }
+        }
     }
 
-    fun openSystemNotificationSettings() {
-        _effects.trySend(NotificationSettingsEffect.OpenSystemNotificationSettings)
-    }
-
-    fun systemNotificationsAvailableNow(): Boolean {
+    private fun requestSystemNotificationsEnabled() {
         val system = readSystemNotificationState()
-        return system.runtimePermissionGranted &&
-            system.notificationsEnabledBySystem &&
-            system.channelEnabled
+        when {
+            !system.runtimePermissionGranted ->
+                emitEffect(NotificationSettingsEffect.RequestRuntimeNotificationPermission)
+
+            system.isPlatformAvailable -> persistSystemNotificationsEnabled(true)
+            else -> reportPlatformUnavailable()
+        }
     }
 
-    fun setOptionalMessagesEnabled(enabled: Boolean) = viewModelScope.launch {
-        settingsRepository.setOptionalMessagesEnabled(enabled)
+    private fun completeRuntimePermissionRequest() {
+        val system = readSystemNotificationState()
+        if (system.isPlatformAvailable) persistSystemNotificationsEnabled(true)
+        else reportPlatformUnavailable()
     }
 
-    fun setSystemNotificationsEnabled(enabled: Boolean) = viewModelScope.launch {
+    private fun persistSystemNotificationsEnabled(enabled: Boolean) = viewModelScope.launch {
         settingsRepository.setSystemNotificationsEnabled(enabled)
     }
 
-    fun setMessageTopicEnabled(topic: MessageTopic, enabled: Boolean) = viewModelScope.launch {
-        settingsRepository.setTopicEnabled(topic, enabled)
+    private fun reportPlatformUnavailable() {
+        emitEffect(NotificationSettingsEffect.ShowPermissionDenied)
+        emitEffect(NotificationSettingsEffect.OpenSystemNotificationSettings)
     }
 
-    fun setMessageTopicMinimumLevel(topic: MessageTopic, level: MessageLevel) =
-        viewModelScope.launch {
-            settingsRepository.setTopicMinimumLevel(topic, level)
-        }
+    private fun emitEffect(effect: NotificationSettingsEffect) {
+        _effects.trySend(effect)
+    }
 
     private fun readSystemNotificationState() =
         systemNotificationStateProvider.current().also { systemNotificationState.value = it }
 }
+
+private val SystemNotificationState.isPlatformAvailable: Boolean
+    get() = runtimePermissionGranted && notificationsEnabledBySystem && channelEnabled

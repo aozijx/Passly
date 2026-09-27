@@ -20,16 +20,14 @@ import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.platform.permission.rememberPermissionRequestHost
 import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
 import com.aozijx.passly.core.permission.model.PermissionRequestStart
-import com.aozijx.passly.core.permission.model.PermissionStatus
 import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
+import com.aozijx.passly.presentation.feature.settings.main.general.NotificationSettingsAction
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationSettingsEffect
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.main.general.toFeatureModel
+import com.aozijx.passly.presentation.feature.settings.main.general.toAction
 import com.aozijx.passly.presentation.feature.settings.main.general.toUiModel
-import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationSettingsEventHandler
 import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationSettingsSection
-import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationTopic
 import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
 
@@ -44,20 +42,6 @@ internal fun NotificationsRoute(
     val lifecycleOwner = LocalLifecycleOwner.current
     val noticePublisher = LocalAppNoticePublisher.current
 
-    LaunchedEffect(viewModel) {
-        viewModel.effects.collect { effect ->
-            when (effect) {
-                NotificationSettingsEffect.OpenSystemNotificationSettings -> {
-                    context.startActivity(
-                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                        },
-                    )
-                }
-            }
-        }
-    }
-
     fun publishPermissionDeniedNotice() {
         noticePublisher.publish(newAppNotice(NoticeCode.NOTIFICATION_PERMISSION_DENIED))
     }
@@ -67,23 +51,50 @@ internal fun NotificationsRoute(
             return@rememberPermissionRequestHost
         }
         when (result) {
-            PermissionRequestOutcome.Granted -> {
-                if (viewModel.systemNotificationsAvailableNow()) {
-                    viewModel.setSystemNotificationsEnabled(true)
-                } else {
-                    publishPermissionDeniedNotice()
-                    viewModel.openSystemNotificationSettings()
-                }
-            }
+            PermissionRequestOutcome.Granted ->
+                viewModel.onAction(NotificationSettingsAction.RuntimePermissionGranted)
 
-            is PermissionRequestOutcome.Denied -> publishPermissionDeniedNotice()
+            is PermissionRequestOutcome.Denied ->
+                viewModel.onAction(NotificationSettingsAction.RuntimePermissionDenied)
+        }
+    }
+
+    LaunchedEffect(viewModel, permissionHost, context, noticePublisher) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                NotificationSettingsEffect.RequestRuntimeNotificationPermission -> {
+                    when (permissionHost.request(RuntimePermission.POST_NOTIFICATIONS)) {
+                        PermissionRequestStart.Launched -> Unit
+                        PermissionRequestStart.AlreadyGranted,
+                        PermissionRequestStart.NotApplicable -> viewModel.onAction(
+                            NotificationSettingsAction.RuntimePermissionGranted,
+                        )
+
+                        PermissionRequestStart.Busy,
+                        PermissionRequestStart.HostUnavailable -> viewModel.onAction(
+                            NotificationSettingsAction.RuntimePermissionDenied,
+                        )
+                    }
+                }
+
+                NotificationSettingsEffect.OpenSystemNotificationSettings -> {
+                    context.startActivity(
+                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        },
+                    )
+                }
+
+                NotificationSettingsEffect.ShowPermissionDenied ->
+                    publishPermissionDeniedNotice()
+            }
         }
     }
 
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refreshSystemNotificationState()
+                viewModel.onAction(NotificationSettingsAction.RefreshSystemNotificationState)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -98,58 +109,8 @@ internal fun NotificationsRoute(
             SettingsSection {
                 NotificationSettingsSection(
                     state = state.toUiModel(),
-                    eventHandler = object : NotificationSettingsEventHandler {
-                        override fun onSystemNotificationsEnabledChanged(enabled: Boolean) {
-                            if (!enabled) {
-                                viewModel.setSystemNotificationsEnabled(false)
-                                return
-                            }
-                            when (permissionHost.status(RuntimePermission.POST_NOTIFICATIONS)) {
-                                PermissionStatus.GRANTED,
-                                PermissionStatus.NOT_APPLICABLE -> {
-                                    if (viewModel.systemNotificationsAvailableNow()) {
-                                        viewModel.setSystemNotificationsEnabled(true)
-                                    } else {
-                                        publishPermissionDeniedNotice()
-                                        viewModel.openSystemNotificationSettings()
-                                    }
-                                }
-
-                                PermissionStatus.DENIED -> {
-                                    when (permissionHost.request(RuntimePermission.POST_NOTIFICATIONS)) {
-                                        PermissionRequestStart.Launched -> Unit
-                                        PermissionRequestStart.AlreadyGranted,
-                                        PermissionRequestStart.NotApplicable -> {
-                                            if (viewModel.systemNotificationsAvailableNow()) {
-                                                viewModel.setSystemNotificationsEnabled(true)
-                                            } else {
-                                                publishPermissionDeniedNotice()
-                                                viewModel.openSystemNotificationSettings()
-                                            }
-                                        }
-
-                                        PermissionRequestStart.Busy,
-                                        PermissionRequestStart.HostUnavailable ->
-                                            publishPermissionDeniedNotice()
-                                    }
-                                }
-                            }
-                        }
-
-                        override fun onOpenSystemNotificationSettings() {
-                            viewModel.openSystemNotificationSettings()
-                        }
-
-                        override fun onOptionalMessagesEnabledChanged(enabled: Boolean) {
-                            viewModel.setOptionalMessagesEnabled(enabled)
-                        }
-
-                        override fun onTopicEnabledChanged(
-                            topic: NotificationTopic,
-                            enabled: Boolean,
-                        ) {
-                            viewModel.setMessageTopicEnabled(topic.toFeatureModel(), enabled)
-                        }
+                    onEvent = { event ->
+                        viewModel.onAction(event.toAction())
                     },
                 )
             }

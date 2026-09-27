@@ -23,17 +23,22 @@ internal enum class NotificationTopic {
     CLIPBOARD, APP_LIFECYCLE, BACKUP, SECURITY, DATABASE,
 }
 
-internal interface NotificationSettingsEventHandler {
-    fun onSystemNotificationsEnabledChanged(enabled: Boolean)
-    fun onOpenSystemNotificationSettings()
-    fun onOptionalMessagesEnabledChanged(enabled: Boolean)
-    fun onTopicEnabledChanged(topic: NotificationTopic, enabled: Boolean)
+internal sealed interface NotificationSettingsEvent {
+    data class SystemNotificationsEnabledChanged(val enabled: Boolean) :
+        NotificationSettingsEvent
+
+    data object OpenSystemNotificationSettings : NotificationSettingsEvent
+    data class OptionalMessagesEnabledChanged(val enabled: Boolean) : NotificationSettingsEvent
+    data class TopicEnabledChanged(
+        val topic: NotificationTopic,
+        val enabled: Boolean,
+    ) : NotificationSettingsEvent
 }
 
 @Composable
 internal fun NotificationSettingsSection(
     state: NotificationSettingsUiModel,
-    eventHandler: NotificationSettingsEventHandler,
+    onEvent: (NotificationSettingsEvent) -> Unit,
 ) {
     val topicItems = state.topics.map { item ->
         val topic = item.topic
@@ -44,7 +49,7 @@ internal fun NotificationSettingsSection(
             subtitle = stringResource(topic.summaryRes),
             checked = item.enabled,
             onCheckedChange = { enabled ->
-                eventHandler.onTopicEnabledChanged(topic, enabled)
+                onEvent(NotificationSettingsEvent.TopicEnabledChanged(topic, enabled))
             },
         )
     }
@@ -58,7 +63,11 @@ internal fun NotificationSettingsSection(
                     title = stringResource(R.string.settings_system_notifications),
                     subtitle = stringResource(R.string.settings_system_notifications_summary),
                     checked = state.systemNotificationsEnabled,
-                    onCheckedChange = eventHandler::onSystemNotificationsEnabledChanged,
+                    onCheckedChange = { enabled ->
+                        onEvent(
+                            NotificationSettingsEvent.SystemNotificationsEnabledChanged(enabled),
+                        )
+                    },
                 ),
                 navigationSettingsGroupItem(
                     key = "notifications.system_settings",
@@ -66,14 +75,18 @@ internal fun NotificationSettingsSection(
                     subtitle = stringResource(
                         R.string.settings_system_notification_settings_summary
                     ),
-                    onClick = eventHandler::onOpenSystemNotificationSettings,
+                    onClick = {
+                        onEvent(NotificationSettingsEvent.OpenSystemNotificationSettings)
+                    },
                 ),
                 switchSettingsGroupItem(
                     key = "notifications.optional_messages",
                     title = stringResource(R.string.settings_optional_notices),
                     subtitle = stringResource(R.string.settings_optional_notices_summary),
                     checked = state.optionalMessagesEnabled,
-                    onCheckedChange = eventHandler::onOptionalMessagesEnabledChanged,
+                    onCheckedChange = { enabled ->
+                        onEvent(NotificationSettingsEvent.OptionalMessagesEnabledChanged(enabled))
+                    },
                 ),
             ) + topicItems,
     )
