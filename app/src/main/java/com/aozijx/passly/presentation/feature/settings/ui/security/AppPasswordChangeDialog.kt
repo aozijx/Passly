@@ -30,18 +30,18 @@ data class AppPasswordChangeDialogState(
     val confirmEnabled: Boolean,
 )
 
-interface AppPasswordChangeDialogEventHandler {
-    fun onCurrentPasswordChanged(password: String)
-    fun onNewPasswordChanged(password: String)
-    fun onConfirmPasswordChanged(password: String)
-    fun onConfirm()
-    fun onDismiss()
+sealed interface AppPasswordChangeDialogEvent {
+    data class CurrentPasswordChanged(val password: String) : AppPasswordChangeDialogEvent
+    data class NewPasswordChanged(val password: String) : AppPasswordChangeDialogEvent
+    data class ConfirmPasswordChanged(val password: String) : AppPasswordChangeDialogEvent
+    data object Confirmed : AppPasswordChangeDialogEvent
+    data object Dismissed : AppPasswordChangeDialogEvent
 }
 
 @Composable
 fun AppPasswordChangeDialog(
     state: AppPasswordChangeDialogState,
-    eventHandler: AppPasswordChangeDialogEventHandler,
+    onEvent: (AppPasswordChangeDialogEvent) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -52,12 +52,12 @@ fun AppPasswordChangeDialog(
     val submit = {
         if (state.confirmEnabled) {
             dismissInput()
-            eventHandler.onConfirm()
+            onEvent(AppPasswordChangeDialogEvent.Confirmed)
         }
     }
     val dismiss = {
         dismissInput()
-        eventHandler.onDismiss()
+        onEvent(AppPasswordChangeDialogEvent.Dismissed)
     }
     AlertDialog(
         onDismissRequest = dismiss,
@@ -66,7 +66,9 @@ fun AppPasswordChangeDialog(
             Column {
                 OutlinedTextField(
                     value = state.currentPassword,
-                    onValueChange = eventHandler::onCurrentPasswordChanged,
+                    onValueChange = {
+                        onEvent(AppPasswordChangeDialogEvent.CurrentPasswordChanged(it))
+                    },
                     label = { Text(stringResource(R.string.settings_auth_current_password)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
@@ -83,8 +85,12 @@ fun AppPasswordChangeDialog(
                 PasswordFields(
                     newPassword = state.newPassword,
                     confirmPassword = state.confirmPassword,
-                    onNewPasswordChange = eventHandler::onNewPasswordChanged,
-                    onConfirmPasswordChange = eventHandler::onConfirmPasswordChanged,
+                    onNewPasswordChange = {
+                        onEvent(AppPasswordChangeDialogEvent.NewPasswordChanged(it))
+                    },
+                    onConfirmPasswordChange = {
+                        onEvent(AppPasswordChangeDialogEvent.ConfirmPasswordChanged(it))
+                    },
                     onDone = submit,
                 )
             }

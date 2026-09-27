@@ -5,8 +5,8 @@ import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPassword
 import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPasswordDialogState
 import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPasswordDialogsModel
 import com.aozijx.passly.presentation.feature.settings.ui.security.AppPasswordActionDialog
+import com.aozijx.passly.presentation.feature.settings.ui.security.AppPasswordChangeDialogEvent
 import com.aozijx.passly.presentation.feature.settings.ui.security.AppPasswordChangeDialog
-import com.aozijx.passly.presentation.feature.settings.ui.security.AppPasswordChangeDialogEventHandler
 import com.aozijx.passly.presentation.feature.settings.ui.security.AppPasswordChangeDialogState
 import com.aozijx.passly.presentation.shared.components.apppassword.AppPasswordSetDialog
 
@@ -38,15 +38,19 @@ internal fun AppPasswordDialogs(
                 confirmPassword = state.appPasswordConfirm,
                 confirmEnabled = state.isChangePasswordConfirmEnabled,
             ),
-            eventHandler = object : AppPasswordChangeDialogEventHandler {
-                override fun onCurrentPasswordChanged(password: String) =
-                    onEvent(AppPasswordDialogEvent.CurrentChanged(password))
-                override fun onNewPasswordChanged(password: String) =
-                    onEvent(AppPasswordDialogEvent.NewChanged(password))
-                override fun onConfirmPasswordChanged(password: String) =
-                    onEvent(AppPasswordDialogEvent.ConfirmChanged(password))
-                override fun onConfirm() = onEvent(AppPasswordDialogEvent.ConfirmChange)
-                override fun onDismiss() = onEvent(AppPasswordDialogEvent.DismissChange)
+            onEvent = { event ->
+                when (event) {
+                    is AppPasswordChangeDialogEvent.CurrentPasswordChanged ->
+                        onEvent(AppPasswordDialogEvent.CurrentChanged(event.password))
+                    is AppPasswordChangeDialogEvent.NewPasswordChanged ->
+                        onEvent(AppPasswordDialogEvent.NewChanged(event.password))
+                    is AppPasswordChangeDialogEvent.ConfirmPasswordChanged ->
+                        onEvent(AppPasswordDialogEvent.ConfirmChanged(event.password))
+                    AppPasswordChangeDialogEvent.Confirmed ->
+                        onEvent(AppPasswordDialogEvent.ConfirmChange)
+                    AppPasswordChangeDialogEvent.Dismissed ->
+                        onEvent(AppPasswordDialogEvent.DismissChange)
+                }
             },
         )
     }
