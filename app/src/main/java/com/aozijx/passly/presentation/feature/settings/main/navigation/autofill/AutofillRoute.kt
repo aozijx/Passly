@@ -12,8 +12,7 @@ import com.aozijx.passly.presentation.feature.settings.autofill.AutofillSettings
 import com.aozijx.passly.presentation.feature.settings.autofill.toAutofillSettingsUiModel
 import com.aozijx.passly.presentation.feature.settings.autofill.toDomainModel
 import com.aozijx.passly.presentation.feature.settings.ui.autofill.AutofillDetail
-import com.aozijx.passly.presentation.feature.settings.ui.autofill.model.AutofillPresentationUiModel
-import com.aozijx.passly.presentation.feature.settings.ui.autofill.model.AutofillSettingsEventHandler
+import com.aozijx.passly.presentation.feature.settings.ui.autofill.model.AutofillSettingsEvent
 import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
 import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
 
@@ -34,38 +33,30 @@ internal fun AutofillRoute(
                     supportsCredentialManager =
                         Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
                 ),
-                eventHandler = object : AutofillSettingsEventHandler {
-                    override fun onOpenSystemSettings() = viewModel.onAction(
-                        AutofillSettingsAction.OpenSystemAutofillSettings,
-                    )
-                    override fun onEnabledChanged(enabled: Boolean) =
-                        viewModel.onAction(AutofillSettingsAction.SetEnabled(enabled))
-                    override fun onPresentationChanged(presentation: AutofillPresentationUiModel) =
-                        viewModel.onAction(
-                            AutofillSettingsAction.SetPresentation(presentation.toDomainModel()),
-                        )
-                    override fun onCredentialManagerEnabledChanged(enabled: Boolean) =
-                        viewModel.onAction(
-                            AutofillSettingsAction.SetCredentialManagerEnabled(enabled),
-                        )
-                    override fun onAuthenticationRequiredChanged(required: Boolean) =
-                        viewModel.onAction(
-                            AutofillSettingsAction.SetAuthenticationRequired(required),
-                        )
-                    override fun onOtpEnabledChanged(enabled: Boolean) =
-                        viewModel.onAction(AutofillSettingsAction.SetOtpEnabled(enabled))
-                    override fun onSavePromptsEnabledChanged(enabled: Boolean) =
-                        viewModel.onAction(
-                            AutofillSettingsAction.SetSavePromptsEnabled(enabled),
-                        )
-                    override fun onUnmatchedSuggestionsEnabledChanged(enabled: Boolean) =
-                        viewModel.onAction(
-                            AutofillSettingsAction.SetUnmatchedSuggestionsEnabled(enabled),
-                        )
-                    override fun onMaxSuggestionsChanged(maxSuggestions: Int) =
-                        viewModel.onAction(
-                            AutofillSettingsAction.SetMaxSuggestions(maxSuggestions),
-                        )
+                onEvent = { event ->
+                    val action = when (event) {
+                        AutofillSettingsEvent.OpenSystemSettings ->
+                            AutofillSettingsAction.OpenSystemAutofillSettings
+                        is AutofillSettingsEvent.EnabledChanged ->
+                            AutofillSettingsAction.SetEnabled(event.enabled)
+                        is AutofillSettingsEvent.PresentationChanged ->
+                            AutofillSettingsAction.SetPresentation(
+                                event.presentation.toDomainModel(),
+                            )
+                        is AutofillSettingsEvent.CredentialManagerEnabledChanged ->
+                            AutofillSettingsAction.SetCredentialManagerEnabled(event.enabled)
+                        is AutofillSettingsEvent.AuthenticationRequiredChanged ->
+                            AutofillSettingsAction.SetAuthenticationRequired(event.required)
+                        is AutofillSettingsEvent.OtpEnabledChanged ->
+                            AutofillSettingsAction.SetOtpEnabled(event.enabled)
+                        is AutofillSettingsEvent.SavePromptsEnabledChanged ->
+                            AutofillSettingsAction.SetSavePromptsEnabled(event.enabled)
+                        is AutofillSettingsEvent.UnmatchedSuggestionsEnabledChanged ->
+                            AutofillSettingsAction.SetUnmatchedSuggestionsEnabled(event.enabled)
+                        is AutofillSettingsEvent.MaxSuggestionsChanged ->
+                            AutofillSettingsAction.SetMaxSuggestions(event.maxSuggestions)
+                    }
+                    viewModel.onAction(action)
                 },
             )
         }

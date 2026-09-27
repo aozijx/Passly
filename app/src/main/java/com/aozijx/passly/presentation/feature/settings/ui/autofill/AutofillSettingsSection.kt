@@ -14,14 +14,14 @@ import com.aozijx.passly.presentation.shared.components.group.sliderSettingsGrou
 import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.presentation.feature.settings.ui.autofill.model.AutofillPresentationUiModel
-import com.aozijx.passly.presentation.feature.settings.ui.autofill.model.AutofillSettingsEventHandler
+import com.aozijx.passly.presentation.feature.settings.ui.autofill.model.AutofillSettingsEvent
 import com.aozijx.passly.presentation.feature.settings.ui.autofill.model.AutofillSettingsUiModel
 import kotlin.math.roundToInt
 
 @Composable
 internal fun AutofillSettingsSection(
     settings: AutofillSettingsUiModel,
-    eventHandler: AutofillSettingsEventHandler,
+    onEvent: (AutofillSettingsEvent) -> Unit,
 ) {
     var candidateLimit by remember {
         mutableFloatStateOf(settings.maxSuggestions.toFloat())
@@ -46,7 +46,7 @@ internal fun AutofillSettingsSection(
                             R.string.settings_autofill_system_disabled
                         }
                     ),
-                    onClick = eventHandler::onOpenSystemSettings,
+                    onClick = { onEvent(AutofillSettingsEvent.OpenSystemSettings) },
                 )
             )
             add(
@@ -55,7 +55,7 @@ internal fun AutofillSettingsSection(
                     title = stringResource(R.string.settings_autofill_enabled),
                     subtitle = stringResource(R.string.settings_autofill_enabled_summary),
                     checked = settings.enabled,
-                    onCheckedChange = eventHandler::onEnabledChanged,
+                    onCheckedChange = { onEvent(AutofillSettingsEvent.EnabledChanged(it)) },
                 )
             )
             add(
@@ -80,7 +80,7 @@ internal fun AutofillSettingsSection(
                             AutofillPresentationUiModel.BOTTOM_SHEET ->
                                 AutofillPresentationUiModel.SYSTEM_INLINE
                         }
-                        eventHandler.onPresentationChanged(next)
+                        onEvent(AutofillSettingsEvent.PresentationChanged(next))
                     },
                 )
             )
@@ -94,7 +94,9 @@ internal fun AutofillSettingsSection(
                         R.string.settings_autofill_credential_manager_summary
                     ),
                     checked = settings.credentialManagerEnabled,
-                    onCheckedChange = eventHandler::onCredentialManagerEnabledChanged,
+                    onCheckedChange = {
+                        onEvent(AutofillSettingsEvent.CredentialManagerEnabledChanged(it))
+                    },
                 )
             )
             add(
@@ -106,7 +108,9 @@ internal fun AutofillSettingsSection(
                         R.string.settings_autofill_require_authentication_summary
                     ),
                     checked = settings.requireAuthentication,
-                    onCheckedChange = eventHandler::onAuthenticationRequiredChanged,
+                    onCheckedChange = {
+                        onEvent(AutofillSettingsEvent.AuthenticationRequiredChanged(it))
+                    },
                 )
             )
             add(
@@ -116,7 +120,7 @@ internal fun AutofillSettingsSection(
                     title = stringResource(R.string.settings_autofill_include_otp),
                     subtitle = stringResource(R.string.settings_autofill_include_otp_summary),
                     checked = settings.includeOtp,
-                    onCheckedChange = eventHandler::onOtpEnabledChanged,
+                    onCheckedChange = { onEvent(AutofillSettingsEvent.OtpEnabledChanged(it)) },
                 )
             )
             add(
@@ -126,7 +130,9 @@ internal fun AutofillSettingsSection(
                     title = stringResource(R.string.settings_autofill_save_prompts),
                     subtitle = stringResource(R.string.settings_autofill_save_prompts_summary),
                     checked = settings.savePromptsEnabled,
-                    onCheckedChange = eventHandler::onSavePromptsEnabledChanged,
+                    onCheckedChange = {
+                        onEvent(AutofillSettingsEvent.SavePromptsEnabledChanged(it))
+                    },
                 )
             )
             add(
@@ -136,7 +142,9 @@ internal fun AutofillSettingsSection(
                     title = stringResource(R.string.settings_autofill_unmatched),
                     subtitle = stringResource(R.string.settings_autofill_unmatched_summary),
                     checked = settings.allowUnmatchedSuggestions,
-                    onCheckedChange = eventHandler::onUnmatchedSuggestionsEnabledChanged,
+                    onCheckedChange = {
+                        onEvent(AutofillSettingsEvent.UnmatchedSuggestionsEnabledChanged(it))
+                    },
                 )
             )
             add(
@@ -154,7 +162,11 @@ internal fun AutofillSettingsSection(
                     steps = settings.maxSuggestionsLimit - settings.minSuggestions - 1,
                     onValueChange = { candidateLimit = it },
                     onValueChangeFinished = {
-                        eventHandler.onMaxSuggestionsChanged(candidateLimit.roundToInt())
+                        onEvent(
+                            AutofillSettingsEvent.MaxSuggestionsChanged(
+                                candidateLimit.roundToInt(),
+                            ),
+                        )
                     },
                 )
             )
