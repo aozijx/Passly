@@ -24,14 +24,14 @@ import com.aozijx.passly.presentation.shared.components.group.switchSettingsGrou
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.EntryHierarchyDisplayModeUiModel
-import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.InterfaceEventHandler
+import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.InterfaceSettingsEvent
 import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.InterfaceUiModel
 import kotlin.math.roundToInt
 
 @Composable
 internal fun InterfaceDetail(
     state: InterfaceUiModel,
-    eventHandler: InterfaceEventHandler,
+    onEvent: (InterfaceSettingsEvent) -> Unit,
 ) {
     var appCornerRadius by remember(state.appCornerRadiusDp) {
         mutableFloatStateOf(state.appCornerRadiusDp)
@@ -48,7 +48,9 @@ internal fun InterfaceDetail(
                     title = stringResource(R.string.settings_interface_hide_status_bar),
                     subtitle = stringResource(R.string.settings_interface_hide_status_bar_description),
                     checked = state.hideSystemBars,
-                    onCheckedChange = eventHandler::onStatusBarAutoHideChanged,
+                    onCheckedChange = { enabled ->
+                        onEvent(InterfaceSettingsEvent.StatusBarAutoHideChanged(enabled))
+                    },
                 ),
                 switchSettingsGroupItem(
                     key = "interface.top_bar_collapsible",
@@ -56,7 +58,9 @@ internal fun InterfaceDetail(
                     title = stringResource(R.string.settings_interface_top_bar_collapsible),
                     subtitle = stringResource(R.string.settings_interface_top_bar_collapsible_description),
                     checked = state.collapseTopBarOnScroll,
-                    onCheckedChange = eventHandler::onTopBarCollapsibleChanged,
+                    onCheckedChange = { enabled ->
+                        onEvent(InterfaceSettingsEvent.TopBarCollapsibleChanged(enabled))
+                    },
                 ),
                 switchSettingsGroupItem(
                     key = "interface.quick_filter_bar_collapsible",
@@ -64,7 +68,9 @@ internal fun InterfaceDetail(
                     title = stringResource(R.string.settings_interface_quick_filter_bar_collapsible),
                     subtitle = stringResource(R.string.settings_interface_quick_filter_bar_collapsible_description),
                     checked = state.collapseQuickFilterBarOnScroll,
-                    onCheckedChange = eventHandler::onQuickFilterBarCollapsibleChanged,
+                    onCheckedChange = { enabled ->
+                        onEvent(InterfaceSettingsEvent.QuickFilterBarCollapsibleChanged(enabled))
+                    },
                 )
             )
         )
@@ -91,7 +97,9 @@ internal fun InterfaceDetail(
                     onValueChange = { appCornerRadius = it },
                     onValueChangeFinished = {
                         if (appCornerRadius != state.appCornerRadiusDp) {
-                            eventHandler.onAppCornerRadiusChanged(appCornerRadius)
+                            onEvent(
+                                InterfaceSettingsEvent.AppCornerRadiusChanged(appCornerRadius),
+                            )
                         }
                     }
                 )
@@ -120,7 +128,9 @@ internal fun InterfaceDetail(
                     },
                     expanded = showHierarchyModeMenu,
                     onExpandedChange = { showHierarchyModeMenu = it },
-                    onSelect = eventHandler::onEntryHierarchyDisplayModeChanged,
+                    onSelect = { mode ->
+                        onEvent(InterfaceSettingsEvent.EntryHierarchyDisplayModeChanged(mode))
+                    },
                 )
             )
         )

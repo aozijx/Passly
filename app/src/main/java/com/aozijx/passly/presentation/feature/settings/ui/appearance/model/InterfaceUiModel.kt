@@ -9,12 +9,14 @@ data class InterfaceUiModel(
     val entryHierarchyDisplayMode: EntryHierarchyDisplayModeUiModel,
 )
 
-interface InterfaceEventHandler {
-    fun onStatusBarAutoHideChanged(enabled: Boolean)
-    fun onTopBarCollapsibleChanged(enabled: Boolean)
-    fun onQuickFilterBarCollapsibleChanged(enabled: Boolean)
-    fun onAppCornerRadiusChanged(radiusDp: Float)
-    fun onEntryHierarchyDisplayModeChanged(mode: EntryHierarchyDisplayModeUiModel)
+sealed interface InterfaceSettingsEvent {
+    data class StatusBarAutoHideChanged(val enabled: Boolean) : InterfaceSettingsEvent
+    data class TopBarCollapsibleChanged(val enabled: Boolean) : InterfaceSettingsEvent
+    data class QuickFilterBarCollapsibleChanged(val enabled: Boolean) : InterfaceSettingsEvent
+    data class AppCornerRadiusChanged(val radiusDp: Float) : InterfaceSettingsEvent
+    data class EntryHierarchyDisplayModeChanged(
+        val mode: EntryHierarchyDisplayModeUiModel,
+    ) : InterfaceSettingsEvent
 }
 
 enum class EntryHierarchyDisplayModeUiModel {
