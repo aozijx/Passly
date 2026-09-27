@@ -22,11 +22,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.backup.ui.model.BackupExportFormatUiModel
+import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 
 @Composable
 internal fun BackupFormatPickerContent(
-    onFormatSelected: (BackupExportFormatUiModel) -> Unit,
+    onFormatSelected: (BackupExportFormat) -> Unit,
 ) {
     BackupSheetColumn {
         Text(
@@ -43,19 +43,19 @@ internal fun BackupFormatPickerContent(
             icon = Icons.Default.Lock,
             title = stringResource(R.string.settings_backup_format_encrypted),
             subtitle = stringResource(R.string.settings_backup_format_encrypted_description),
-            onClick = { onFormatSelected(BackupExportFormatUiModel.ENCRYPTED) },
+            onClick = { onFormatSelected(BackupExportFormat.ENCRYPTED) },
         )
         BackupFormatCard(
             icon = Icons.Default.Code,
             title = stringResource(R.string.settings_backup_format_json),
             subtitle = stringResource(R.string.settings_backup_format_json_description),
-            onClick = { onFormatSelected(BackupExportFormatUiModel.JSON) },
+            onClick = { onFormatSelected(BackupExportFormat.JSON) },
         )
         BackupFormatCard(
             icon = Icons.Default.Description,
             title = stringResource(R.string.settings_backup_format_text),
             subtitle = stringResource(R.string.settings_backup_format_text_description),
-            onClick = { onFormatSelected(BackupExportFormatUiModel.TEXT) },
+            onClick = { onFormatSelected(BackupExportFormat.TEXT) },
         )
     }
 }

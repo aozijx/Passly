@@ -19,11 +19,8 @@ import com.aozijx.passly.presentation.feature.backup.BackupUiAction
 import com.aozijx.passly.presentation.feature.backup.BackupViewModel
 import com.aozijx.passly.presentation.feature.backup.ui.BackupRestoreDetail
 import com.aozijx.passly.presentation.feature.backup.ui.BackupRestoreSheet
-import com.aozijx.passly.presentation.feature.backup.ui.model.BackupExportFormatUiModel
-import com.aozijx.passly.presentation.feature.backup.ui.model.BackupImportModeUiModel
-import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheetEventHandler
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupSheet
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.feature.backup.ui.model.BackupSheetEvent
 import com.aozijx.passly.domain.sensitive.OwnedChars
 
 /**
@@ -117,58 +114,51 @@ fun BackupOperationRoute(
             activeSheet = activeSheet,
             configuredDirectoryLabel = directoryLabel.takeIf { !directoryUri.isNullOrBlank() },
         ),
-        eventHandler = object : BackupRestoreSheetEventHandler {
-            override fun onDismiss() {
-                activeSheet = null
-                viewModel.onAction(BackupUiAction.CancelPendingOperation)
-            }
-
-            override fun onFormatSelected(format: BackupExportFormatUiModel) {
-                viewModel.onAction(BackupUiAction.PrepareExport(format.toFeatureModel()))
-                activeSheet = BackupSheet.EXPORT_OPTIONS
-            }
-
-            override fun onPasswordChanged(password: String) {
-                viewModel.onAction(BackupUiAction.UpdatePassword(OwnedChars.fromString(password)))
-            }
-
-            override fun onIncludeIconsChanged(include: Boolean) {
-                viewModel.onAction(BackupUiAction.UpdateIncludeIcons(include))
-            }
-
-            override fun onIncludeAttachmentsChanged(include: Boolean) {
-                viewModel.onAction(BackupUiAction.UpdateIncludeAttachments(include))
-            }
-
-            override fun onIncludeDeletedChanged(include: Boolean) {
-                viewModel.onAction(BackupUiAction.UpdateIncludeDeleted(include))
-            }
-
-            override fun onIncludedEntryTypesChanged(types: Set<EntryTypeUiModel>) {
-                viewModel.onAction(BackupUiAction.UpdateIncludedEntryTypes(types.toFeatureModels()))
-            }
-
-            override fun onImportModeChanged(mode: BackupImportModeUiModel) {
-                viewModel.onAction(BackupUiAction.UpdateImportMode(mode.toFeatureModel()))
-            }
-
-            override fun onExportRequested() {
-                activeSheet = null
-                if (!directoryUri.isNullOrBlank()) {
-                    viewModel.onAction(BackupUiAction.StartExportInConfiguredDirectory)
-                } else {
-                    val fileName = state.pendingExportFileName ?: return
-                    when (state.selectedExportFormat) {
-                        BackupExportFormat.ENCRYPTED -> encryptedExportPicker.launch(fileName)
-                        BackupExportFormat.JSON -> jsonExportPicker.launch(fileName)
-                        BackupExportFormat.TEXT -> textExportPicker.launch(fileName)
+        onEvent = { event ->
+            when (event) {
+                BackupSheetEvent.Dismissed -> {
+                    activeSheet = null
+                    viewModel.onAction(BackupUiAction.CancelPendingOperation)
+                }
+                is BackupSheetEvent.FormatSelected -> {
+                    viewModel.onAction(BackupUiAction.PrepareExport(event.format))
+                    activeSheet = BackupSheet.EXPORT_OPTIONS
+                }
+                is BackupSheetEvent.PasswordChanged -> viewModel.onAction(
+                    BackupUiAction.UpdatePassword(OwnedChars.fromString(event.password)),
+                )
+                is BackupSheetEvent.IncludeIconsChanged -> viewModel.onAction(
+                    BackupUiAction.UpdateIncludeIcons(event.include),
+                )
+                is BackupSheetEvent.IncludeAttachmentsChanged -> viewModel.onAction(
+                    BackupUiAction.UpdateIncludeAttachments(event.include),
+                )
+                is BackupSheetEvent.IncludeDeletedChanged -> viewModel.onAction(
+                    BackupUiAction.UpdateIncludeDeleted(event.include),
+                )
+                is BackupSheetEvent.IncludedEntryTypesChanged -> viewModel.onAction(
+                    BackupUiAction.UpdateIncludedEntryTypes(event.types.toFeatureModels()),
+                )
+                is BackupSheetEvent.ImportModeChanged -> viewModel.onAction(
+                    BackupUiAction.UpdateImportMode(event.mode),
+                )
+                BackupSheetEvent.ExportRequested -> {
+                    activeSheet = null
+                    if (!directoryUri.isNullOrBlank()) {
+                        viewModel.onAction(BackupUiAction.StartExportInConfiguredDirectory)
+                    } else {
+                        val fileName = state.pendingExportFileName ?: return@BackupRestoreSheet
+                        when (state.selectedExportFormat) {
+                            BackupExportFormat.ENCRYPTED -> encryptedExportPicker.launch(fileName)
+                            BackupExportFormat.JSON -> jsonExportPicker.launch(fileName)
+                            BackupExportFormat.TEXT -> textExportPicker.launch(fileName)
+                        }
                     }
                 }
-            }
-
-            override fun onImportRequested() {
-                activeSheet = null
-                viewModel.onAction(BackupUiAction.ProcessBackupAction)
+                BackupSheetEvent.ImportRequested -> {
+                    activeSheet = null
+                    viewModel.onAction(BackupUiAction.ProcessBackupAction)
+                }
             }
         },
     )

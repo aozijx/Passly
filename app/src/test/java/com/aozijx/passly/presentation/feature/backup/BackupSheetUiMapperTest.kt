@@ -4,8 +4,6 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
-import com.aozijx.passly.presentation.feature.backup.ui.model.BackupExportFormatUiModel
-import com.aozijx.passly.presentation.feature.backup.ui.model.BackupImportModeUiModel
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupSheet
 import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import org.junit.Assert.assertEquals
@@ -34,8 +32,8 @@ class BackupSheetUiMapperTest {
             assertEquals(BackupSheet.EXPORT_OPTIONS, result.activeSheet)
             assertEquals("Documents/Passly", result.configuredDirectoryLabel)
             assertEquals("temporary", result.password)
-            assertEquals(BackupImportModeUiModel.OVERWRITE, result.importMode)
-            assertEquals(BackupExportFormatUiModel.ENCRYPTED, result.selectedExportFormat)
+            assertEquals(ImportMode.OVERWRITE, result.importMode)
+            assertEquals(BackupExportFormat.ENCRYPTED, result.selectedExportFormat)
             assertEquals(
                 setOf(EntryTypeUiModel.LOGIN, EntryTypeUiModel.NOTE),
                 result.includedEntryTypes,
@@ -50,9 +48,7 @@ class BackupSheetUiMapperTest {
     }
 
     @Test
-    fun `ui choices map back to feature models`() {
-        assertEquals(BackupExportFormat.JSON, BackupExportFormatUiModel.JSON.toFeatureModel())
-        assertEquals(ImportMode.APPEND, BackupImportModeUiModel.APPEND.toFeatureModel())
+    fun `entry type ui choices map back to feature models`() {
         assertEquals(
             setOf(EntryType.WIFI, EntryType.SSH_KEY),
             setOf(EntryTypeUiModel.WIFI, EntryTypeUiModel.SSH_KEY).toFeatureModels(),

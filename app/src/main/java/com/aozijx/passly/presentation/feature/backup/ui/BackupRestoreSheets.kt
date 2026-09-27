@@ -5,25 +5,31 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheetEventHandler
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheetUiState
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupSheet
+import com.aozijx.passly.presentation.feature.backup.ui.model.BackupSheetEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun BackupRestoreSheet(
     state: BackupRestoreSheetUiState,
-    eventHandler: BackupRestoreSheetEventHandler,
+    onEvent: (BackupSheetEvent) -> Unit,
 ) {
     when (state.activeSheet ?: return) {
-        BackupSheet.FORMAT_PICKER -> BackupSheetFrame(eventHandler::onDismiss) {
-            BackupFormatPickerContent(eventHandler::onFormatSelected)
+        BackupSheet.FORMAT_PICKER -> BackupSheetFrame(
+            onDismiss = { onEvent(BackupSheetEvent.Dismissed) },
+        ) {
+            BackupFormatPickerContent { onEvent(BackupSheetEvent.FormatSelected(it)) }
         }
-        BackupSheet.EXPORT_OPTIONS -> BackupSheetFrame(eventHandler::onDismiss) {
-            BackupExportOptionsContent(state, eventHandler)
+        BackupSheet.EXPORT_OPTIONS -> BackupSheetFrame(
+            onDismiss = { onEvent(BackupSheetEvent.Dismissed) },
+        ) {
+            BackupExportOptionsContent(state, onEvent)
         }
-        BackupSheet.IMPORT_OPTIONS -> BackupSheetFrame(eventHandler::onDismiss) {
-            BackupImportOptionsContent(state, eventHandler)
+        BackupSheet.IMPORT_OPTIONS -> BackupSheetFrame(
+            onDismiss = { onEvent(BackupSheetEvent.Dismissed) },
+        ) {
+            BackupImportOptionsContent(state, onEvent)
         }
     }
 }

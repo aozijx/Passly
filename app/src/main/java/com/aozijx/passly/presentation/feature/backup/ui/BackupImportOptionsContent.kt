@@ -25,14 +25,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.backup.ui.model.BackupImportModeUiModel
-import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheetEventHandler
+import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheetUiState
+import com.aozijx.passly.presentation.feature.backup.ui.model.BackupSheetEvent
 
 @Composable
 internal fun BackupImportOptionsContent(
     state: BackupRestoreSheetUiState,
-    eventHandler: BackupRestoreSheetEventHandler,
+    onEvent: (BackupSheetEvent) -> Unit,
 ) {
     BackupSheetColumn(scrollable = true) {
         Text(
@@ -47,20 +47,20 @@ internal fun BackupImportOptionsContent(
         )
         Text(stringResource(R.string.settings_backup_import_mode), style = MaterialTheme.typography.titleMedium)
         ImportModeCard(
-            selected = state.importMode == BackupImportModeUiModel.APPEND,
+            selected = state.importMode == ImportMode.APPEND,
             title = stringResource(R.string.settings_backup_import_append),
             subtitle = stringResource(R.string.settings_backup_import_append_description),
-            onClick = { eventHandler.onImportModeChanged(BackupImportModeUiModel.APPEND) },
+            onClick = { onEvent(BackupSheetEvent.ImportModeChanged(ImportMode.APPEND)) },
         )
         ImportModeCard(
-            selected = state.importMode == BackupImportModeUiModel.OVERWRITE,
+            selected = state.importMode == ImportMode.OVERWRITE,
             title = stringResource(R.string.settings_backup_import_overwrite),
             subtitle = stringResource(R.string.settings_backup_import_overwrite_description),
-            onClick = { eventHandler.onImportModeChanged(BackupImportModeUiModel.OVERWRITE) },
+            onClick = { onEvent(BackupSheetEvent.ImportModeChanged(ImportMode.OVERWRITE)) },
         )
         OutlinedTextField(
             value = state.password,
-            onValueChange = eventHandler::onPasswordChanged,
+            onValueChange = { onEvent(BackupSheetEvent.PasswordChanged(it)) },
             modifier = Modifier.fillMaxWidth(),
             label = { Text(stringResource(R.string.settings_backup_import_password_label)) },
             visualTransformation = PasswordVisualTransformation(),
@@ -72,10 +72,13 @@ internal fun BackupImportOptionsContent(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Button(onClick = eventHandler::onImportRequested, modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = { onEvent(BackupSheetEvent.ImportRequested) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             Text(
                 stringResource(
-                    if (state.importMode == BackupImportModeUiModel.OVERWRITE) {
+                    if (state.importMode == ImportMode.OVERWRITE) {
                         R.string.settings_backup_confirm_overwrite_import
                     } else {
                         R.string.settings_backup_start_import
