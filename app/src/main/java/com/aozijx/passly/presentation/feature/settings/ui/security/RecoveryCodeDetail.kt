@@ -17,7 +17,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,30 +26,23 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.crypto.MemoryCleaner
 import com.aozijx.passly.core.ui.components.common.InputActionButton
 import com.aozijx.passly.core.ui.components.common.InputActionButtonConfig
 import com.aozijx.passly.core.ui.components.common.InputActionButtonState
+import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.presentation.feature.settings.security.RecoveryCodeDraftStatus
+import com.aozijx.passly.presentation.feature.settings.security.RecoveryCodeSettingsAction
+import com.aozijx.passly.presentation.feature.settings.security.RecoveryCodeSettingsUiState
 
 @Composable
 fun RecoveryCodeDetail(
-    hasRecoveryEnvelope: Boolean,
-    verifyResult: Boolean?,
-    onCreateRecoveryCode: () -> Unit,
-    onRegenerate: () -> Unit,
-    onVerifyCode: (CharArray) -> Unit,
-    onClearVerifyResult: () -> Unit
+    state: RecoveryCodeSettingsUiState,
+    onAction: (RecoveryCodeSettingsAction) -> Unit,
 ) {
     var showRegenerateConfirm by remember { mutableStateOf(false) }
-    var verifyInput by remember { mutableStateOf("") }
     var isExpanded by remember { mutableStateOf(false) }
-
-    // 显式追踪验证进度，不依赖 verifyInput/isExpanded 的同步状态推导
-    var isVerifying by remember { mutableStateOf(false) }
-    LaunchedEffect(verifyResult) {
-        if (verifyResult != null) {
-            isVerifying = false
-        }
-    }
+    val verifyInput = state.verificationInput.toUiString()
 
     Column(
         modifier = Modifier
@@ -77,7 +69,7 @@ fun RecoveryCodeDetail(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (hasRecoveryEnvelope) {
+        if (state.hasRecoveryCode) {
             Text(
                 text = stringResource(R.string.settings_recovery_code_saved),
                 style = MaterialTheme.typography.bodyLarge,
@@ -87,9 +79,10 @@ fun RecoveryCodeDetail(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        if (!hasRecoveryEnvelope) {
+        if (!state.hasRecoveryCode) {
             Button(
-                onClick = onCreateRecoveryCode,
+                onClick = { onAction(RecoveryCodeSettingsAction.Generate) },
+                enabled = state.draftStatus != RecoveryCodeDraftStatus.CREATING,
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large
             ) {
@@ -97,7 +90,7 @@ fun RecoveryCodeDetail(
             }
         }
 
-        if (hasRecoveryEnvelope) {
+        if (state.hasRecoveryCode) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // 验证恢复码
@@ -113,12 +106,12 @@ fun RecoveryCodeDetail(
                 state = InputActionButtonState(
                     value = verifyInput,
                     expanded = isExpanded,
-                    progress = isVerifying,
-                    result = verifyResult,
+                    progress = state.isVerifying,
+                    result = state.verificationResult,
                 ),
                 config = InputActionButtonConfig(
                     icon = Icons.Default.Restore,
-                    containerColor = when (verifyResult) {
+                    containerColor = when (state.verificationResult) {
                         true -> MaterialTheme.colorScheme.secondaryContainer
                         false -> MaterialTheme.colorScheme.errorContainer
                         else -> null
@@ -130,17 +123,15 @@ fun RecoveryCodeDetail(
                     errorText = stringResource(R.string.settings_recovery_code_verify_invalid),
                 ),
                 onValueChange = {
-                    verifyInput = it
-                    onClearVerifyResult()
+                    onAction(RecoveryCodeSettingsAction.VerificationInputChanged(it))
                 },
                 onExpandedChange = { isExpanded = it },
                 onAction = {
-                    if (verifyInput.isNotEmpty()) {
-                        isVerifying = true
-                        onVerifyCode(verifyInput.toCharArray())
-                    }
+                    onAction(RecoveryCodeSettingsAction.Verify)
                 },
-                onResultConsumed = onClearVerifyResult
+                onResultConsumed = {
+                    onAction(RecoveryCodeSettingsAction.ClearVerificationResult)
+                },
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -172,7 +163,7 @@ fun RecoveryCodeDetail(
             confirmButton = {
                 TextButton(onClick = {
                     showRegenerateConfirm = false
-                    onRegenerate()
+                    onAction(RecoveryCodeSettingsAction.Generate)
                 }) {
                     Text(
                         stringResource(R.string.settings_confirm),
@@ -186,5 +177,14 @@ fun RecoveryCodeDetail(
                 }
             }
         )
+    }
+}
+
+private fun SensitiveValue.toUiString(): String {
+    val chars = toCharArray()
+    return try {
+        String(chars)
+    } finally {
+        MemoryCleaner.wipeCharArray(chars)
     }
 }

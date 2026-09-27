@@ -292,4 +292,6 @@
     <string name="settings_value_percent">%1$d%%</string>
     <string name="settings_saved">设置已保存</string>
     <string name="database_reset_success">Passly 数据已永久清空</string>
+    <string name="settings_recovery_code_draft_expired">恢复码草稿已过期，请重新认证后生成。</string>
+    <string name="settings_recovery_code_operation_failed">恢复码操作失败，请重试。</string>
 </resources>

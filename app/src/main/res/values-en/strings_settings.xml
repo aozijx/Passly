@@ -292,4 +292,6 @@
     <string name="settings_value_percent">%1$d%%</string>
     <string name="settings_saved">Settings saved</string>
     <string name="database_reset_success">Passly data permanently cleared</string>
+    <string name="settings_recovery_code_draft_expired">The recovery code draft expired. Authenticate again to generate a new one.</string>
+    <string name="settings_recovery_code_operation_failed">The recovery code operation failed. Try again.</string>
 </resources>

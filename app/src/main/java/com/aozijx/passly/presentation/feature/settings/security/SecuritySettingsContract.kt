@@ -5,8 +5,6 @@ data class SecuritySettingsUiState(
     val isInvalidateKeyOnBioChange: Boolean = true,
     val isLockOnBackground: Boolean = false,
     val isBiometricEnabled: Boolean = false,
-    val hasRecoveryEnvelope: Boolean = false,
-    val recoveryCodeVerificationResult: Boolean? = null,
 )
 
 sealed interface SecuritySettingsAction {
@@ -14,6 +12,4 @@ sealed interface SecuritySettingsAction {
     data class ToggleLockOnBackground(val enabled: Boolean) : SecuritySettingsAction
     data class SetBiometricEnabled(val enabled: Boolean) : SecuritySettingsAction
     data class SetInvalidateKeyOnBiometricChange(val enabled: Boolean) : SecuritySettingsAction
-    data class VerifyRecoveryCode(val code: CharArray) : SecuritySettingsAction
-    data object ClearVerifyResult : SecuritySettingsAction
 }

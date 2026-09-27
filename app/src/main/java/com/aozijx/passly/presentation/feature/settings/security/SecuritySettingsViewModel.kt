@@ -24,7 +24,6 @@ class SecuritySettingsViewModel @Inject constructor(
     init {
         observeSettings()
         observeAuthenticationMethods()
-        loadRecoveryEnvelopeAvailability()
     }
 
     fun onAction(action: SecuritySettingsAction) {
@@ -43,14 +42,6 @@ class SecuritySettingsViewModel @Inject constructor(
             is SecuritySettingsAction.SetInvalidateKeyOnBiometricChange ->
                 setKeyInvalidationPolicy(action.enabled)
 
-            is SecuritySettingsAction.VerifyRecoveryCode -> viewModelScope.launch {
-                val valid = authenticationSettings.verifyRecoveryCode(action.code)
-                _uiState.update { it.copy(recoveryCodeVerificationResult = valid) }
-            }
-
-            SecuritySettingsAction.ClearVerifyResult -> {
-                _uiState.update { it.copy(recoveryCodeVerificationResult = null) }
-            }
         }
     }
 
@@ -74,14 +65,6 @@ class SecuritySettingsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(isBiometricEnabled = enabled)
                 }
-            }
-        }
-    }
-
-    private fun loadRecoveryEnvelopeAvailability() {
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(hasRecoveryEnvelope = authenticationSettings.hasRecoveryCode())
             }
         }
     }

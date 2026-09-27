@@ -292,4 +292,6 @@
     <string name="settings_value_percent">%1$d%%</string>
     <string name="settings_saved">設定を保存しました</string>
     <string name="database_reset_success">Passlyデータを完全に消去しました</string>
+    <string name="settings_recovery_code_draft_expired">復旧コードの下書きの有効期限が切れました。再認証して生成してください。</string>
+    <string name="settings_recovery_code_operation_failed">復旧コードの操作に失敗しました。もう一度お試しください。</string>
 </resources>

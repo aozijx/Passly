@@ -10,7 +10,7 @@ class SensitivePresentationBoundaryTest {
     @Test
     fun `saved state never persists recovery draft identifiers or plaintext`() {
         val source = source(
-            "com/aozijx/passly/presentation/feature/settings/security/RecoveryDraftViewModel.kt"
+            "com/aozijx/passly/presentation/feature/settings/security/RecoveryCodeSettingsViewModel.kt"
         )
 
         assertFalse(source.contains("recoveryDraftGenerationId"))
@@ -55,10 +55,15 @@ class SensitivePresentationBoundaryTest {
         assertFalse(mainSettings.contains("copySensitive"))
 
         val recoveryDraft = source(
-            "com/aozijx/passly/presentation/feature/settings/security/RecoveryDraftViewModel.kt"
+            "com/aozijx/passly/feature/settings/security/RecoveryCodeDraftInteractor.kt"
         )
         assertTrue(recoveryDraft.contains("SensitiveClipboardWriter"))
         assertTrue(recoveryDraft.contains("chars.fill"))
+        val recoveryPresentation = source(
+            "com/aozijx/passly/presentation/feature/settings/security/RecoveryCodeSettingsViewModel.kt"
+        )
+        assertFalse(recoveryPresentation.contains("SensitiveClipboardWriter"))
+        assertFalse(recoveryPresentation.contains("RecoveryCredentialDraft"))
         val scanner = source(
             "com/aozijx/passly/presentation/feature/scanner/ScannerViewModel.kt"
         )
