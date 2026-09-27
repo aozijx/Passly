@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.settings.security
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import javax.inject.Inject
@@ -20,6 +21,28 @@ sealed interface AppPasswordChangeResult {
     data object Completed : AppPasswordChangeResult
     data object Cancelled : AppPasswordChangeResult
     data class Failed(val failure: AuthenticationFailure) : AppPasswordChangeResult
+    data class InvalidInput(val reason: AppPasswordInputError) : AppPasswordChangeResult
+}
+
+enum class AppPasswordInputError {
+    REQUIRED_FIELDS,
+    PASSWORD_TOO_SHORT,
+    PASSWORD_MISMATCH,
+}
+
+sealed interface AppPasswordChangeRequest {
+    data class Set(
+        val password: CharArray,
+        val confirmation: CharArray,
+    ) : AppPasswordChangeRequest
+
+    data class Change(
+        val currentPassword: CharArray,
+        val newPassword: CharArray,
+        val confirmation: CharArray,
+    ) : AppPasswordChangeRequest
+
+    data object Disable : AppPasswordChangeRequest
 }
 
 class AppPasswordSettingsInteractor @Inject constructor(
@@ -40,19 +63,52 @@ class AppPasswordSettingsInteractor @Inject constructor(
             is AuthenticationResult.Failure -> AppPasswordManagementAccess.Failed(result.failure)
         }
 
-    suspend fun set(password: CharArray): AppPasswordChangeResult =
-        authenticationMethodProvisioner.setAppPassword(password).toChangeResult()
+    suspend fun execute(request: AppPasswordChangeRequest): AppPasswordChangeResult = try {
+        when (request) {
+            is AppPasswordChangeRequest.Set -> when {
+                !AppPasswordPolicy.DEFAULT.acceptsLength(request.password.size) ->
+                    AppPasswordChangeResult.InvalidInput(AppPasswordInputError.PASSWORD_TOO_SHORT)
+                !request.password.contentEquals(request.confirmation) ->
+                    AppPasswordChangeResult.InvalidInput(AppPasswordInputError.PASSWORD_MISMATCH)
+                else -> authenticationMethodProvisioner
+                    .setAppPassword(request.password)
+                    .toChangeResult()
+            }
+            is AppPasswordChangeRequest.Change -> when {
+                request.currentPassword.isEmpty() || request.newPassword.isEmpty() ->
+                    AppPasswordChangeResult.InvalidInput(AppPasswordInputError.REQUIRED_FIELDS)
+                !AppPasswordPolicy.DEFAULT.acceptsLength(request.newPassword.size) ->
+                    AppPasswordChangeResult.InvalidInput(AppPasswordInputError.PASSWORD_TOO_SHORT)
+                !request.newPassword.contentEquals(request.confirmation) ->
+                    AppPasswordChangeResult.InvalidInput(AppPasswordInputError.PASSWORD_MISMATCH)
+                else -> authenticationMethodProvisioner.changeAppPassword(
+                    request.currentPassword,
+                    request.newPassword,
+                ).toChangeResult()
+            }
+            AppPasswordChangeRequest.Disable -> authenticationMethodProvisioner
+                .disableAppPassword()
+                .toChangeResult()
+        }
+    } finally {
+        request.clearSensitiveInput()
+    }
 
-    suspend fun change(
-        currentPassword: CharArray,
-        newPassword: CharArray,
-    ): AppPasswordChangeResult = authenticationMethodProvisioner
-        .changeAppPassword(currentPassword, newPassword)
-        .toChangeResult()
+}
 
-    suspend fun disable(): AppPasswordChangeResult =
-        authenticationMethodProvisioner.disableAppPassword().toChangeResult()
-
+private fun AppPasswordChangeRequest.clearSensitiveInput() {
+    when (this) {
+        is AppPasswordChangeRequest.Set -> {
+            password.fill('\u0000')
+            confirmation.fill('\u0000')
+        }
+        is AppPasswordChangeRequest.Change -> {
+            currentPassword.fill('\u0000')
+            newPassword.fill('\u0000')
+            confirmation.fill('\u0000')
+        }
+        AppPasswordChangeRequest.Disable -> Unit
+    }
 }
 
 private fun AuthenticationResult.toChangeResult(): AppPasswordChangeResult = when (this) {

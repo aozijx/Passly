@@ -71,12 +71,87 @@ class AppPasswordSettingsInteractorTest {
         )
         val interactor = interactor(provisioner = provisioner)
 
-        assertEquals(AppPasswordChangeResult.Completed, interactor.set(charArrayOf('a')))
+        assertEquals(
+            AppPasswordChangeResult.Completed,
+            interactor.execute(
+                AppPasswordChangeRequest.Set(
+                    "long-enough-password".toCharArray(),
+                    "long-enough-password".toCharArray(),
+                ),
+            ),
+        )
         assertEquals(
             AppPasswordChangeResult.Failed(failure),
-            interactor.change(charArrayOf('a'), charArrayOf('b')),
+            interactor.execute(
+                AppPasswordChangeRequest.Change(
+                    "current".toCharArray(),
+                    "long-enough-password".toCharArray(),
+                    "long-enough-password".toCharArray(),
+                ),
+            ),
         )
-        assertEquals(AppPasswordChangeResult.Cancelled, interactor.disable())
+        assertEquals(
+            AppPasswordChangeResult.Cancelled,
+            interactor.execute(AppPasswordChangeRequest.Disable),
+        )
+    }
+
+    @Test
+    fun `change requests validate before provisioning and always clear sensitive arrays`() = runTest {
+        val provisioner = FakeProvisioner(
+            setResult = AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD),
+        )
+        val interactor = interactor(provisioner = provisioner)
+        val shortPassword = "short".toCharArray()
+        val shortConfirmation = "short".toCharArray()
+
+        assertEquals(
+            AppPasswordChangeResult.InvalidInput(AppPasswordInputError.PASSWORD_TOO_SHORT),
+            interactor.execute(
+                AppPasswordChangeRequest.Set(shortPassword, shortConfirmation),
+            ),
+        )
+        assertEquals(0, provisioner.setCalls)
+        assertTrue(shortPassword.all { it == '\u0000' })
+        assertTrue(shortConfirmation.all { it == '\u0000' })
+
+        val password = "long-enough-password".toCharArray()
+        val confirmation = "long-enough-password".toCharArray()
+        assertEquals(
+            AppPasswordChangeResult.Completed,
+            interactor.execute(AppPasswordChangeRequest.Set(password, confirmation)),
+        )
+        assertEquals(1, provisioner.setCalls)
+        assertTrue(password.all { it == '\u0000' })
+        assertTrue(confirmation.all { it == '\u0000' })
+    }
+
+    @Test
+    fun `change request reports required fields and mismatched confirmation`() = runTest {
+        val provisioner = FakeProvisioner()
+        val interactor = interactor(provisioner = provisioner)
+
+        assertEquals(
+            AppPasswordChangeResult.InvalidInput(AppPasswordInputError.REQUIRED_FIELDS),
+            interactor.execute(
+                AppPasswordChangeRequest.Change(
+                    currentPassword = charArrayOf(),
+                    newPassword = "long-enough-password".toCharArray(),
+                    confirmation = "long-enough-password".toCharArray(),
+                ),
+            ),
+        )
+        assertEquals(
+            AppPasswordChangeResult.InvalidInput(AppPasswordInputError.PASSWORD_MISMATCH),
+            interactor.execute(
+                AppPasswordChangeRequest.Change(
+                    currentPassword = "current".toCharArray(),
+                    newPassword = "long-enough-password".toCharArray(),
+                    confirmation = "different-password".toCharArray(),
+                ),
+            ),
+        )
+        assertEquals(0, provisioner.changeCalls)
     }
 
     private fun interactor(
@@ -96,12 +171,23 @@ class AppPasswordSettingsInteractorTest {
         private val changeResult: AuthenticationResult = authorizeResult,
         private val disableResult: AuthenticationResult = authorizeResult,
     ) : AuthenticationMethodProvisioner {
+        var setCalls: Int = 0
+            private set
+        var changeCalls: Int = 0
+            private set
+
         override suspend fun authorizeAppPasswordManagement() = authorizeResult
-        override suspend fun setAppPassword(password: CharArray) = setResult
+        override suspend fun setAppPassword(password: CharArray): AuthenticationResult {
+            setCalls += 1
+            return setResult
+        }
         override suspend fun changeAppPassword(
             currentPassword: CharArray,
             newPassword: CharArray,
-        ) = changeResult
+        ): AuthenticationResult {
+            changeCalls += 1
+            return changeResult
+        }
         override suspend fun disableAppPassword() = disableResult
         override suspend fun disableBiometric() = error("Not used")
         override suspend fun rotateBiometricPolicy(invalidateOnEnrollment: Boolean) =

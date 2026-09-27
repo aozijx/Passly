@@ -1,7 +1,9 @@
 package com.aozijx.passly.presentation.feature.settings.security
 
+import com.aozijx.passly.feature.settings.security.AppPasswordChangeRequest
 import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPasswordDialogEvent
 import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPasswordDialogState
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -23,10 +25,10 @@ class AppPasswordDialogCoordinatorTest {
             coordinator.onEvent(AppPasswordDialogEvent.ConfirmChanged("long-enough-password")),
         )
         assertTrue(coordinator.model.isSetPasswordConfirmEnabled)
-        assertEquals(
-            AppPasswordAction.SET,
-            coordinator.onEvent(AppPasswordDialogEvent.ConfirmSet),
-        )
+        val setRequest = coordinator.onEvent(AppPasswordDialogEvent.ConfirmSet)
+            as AppPasswordChangeRequest.Set
+        assertArrayEquals("long-enough-password".toCharArray(), setRequest.password)
+        assertArrayEquals("long-enough-password".toCharArray(), setRequest.confirmation)
 
         coordinator.onAppPasswordOperationSucceeded()
         assertEquals(AppPasswordDialogState.None, coordinator.model.activeAppPasswordDialog)
@@ -42,7 +44,7 @@ class AppPasswordDialogCoordinatorTest {
         assertNull(coordinator.onEvent(AppPasswordDialogEvent.ConfirmChanged("different")))
         assertFalse(coordinator.model.isChangePasswordConfirmEnabled)
         assertEquals(
-            AppPasswordAction.DISABLE,
+            AppPasswordChangeRequest.Disable,
             coordinator.onEvent(AppPasswordDialogEvent.ShowDisable),
         )
     }

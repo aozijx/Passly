@@ -4,12 +4,21 @@ import android.content.Context
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.feature.settings.security.AppPasswordInputError
 
 internal fun AppPasswordSettingsEffect.toAppPasswordMessage(context: Context): String? = when (this) {
     is AppPasswordSettingsEffect.AppPasswordSet -> context.getString(R.string.settings_auth_password_set_success)
     is AppPasswordSettingsEffect.AppPasswordChanged -> context.getString(R.string.settings_auth_password_change_success)
     is AppPasswordSettingsEffect.AppPasswordDisabled -> context.getString(R.string.settings_auth_password_disabled)
-    is AppPasswordSettingsEffect.AppPasswordError -> message
+    is AppPasswordSettingsEffect.AppPasswordInputInvalid -> when (reason) {
+        AppPasswordInputError.REQUIRED_FIELDS ->
+            context.getString(R.string.settings_auth_password_fields_required)
+        AppPasswordInputError.PASSWORD_TOO_SHORT ->
+            context.getString(R.string.auth_error_password_too_short)
+        AppPasswordInputError.PASSWORD_MISMATCH ->
+            context.getString(R.string.settings_auth_password_mismatch)
+    }
+    is AppPasswordSettingsEffect.AppPasswordOperationFailed -> failure.toMessage(context)
     is AppPasswordSettingsEffect.AppPasswordEntryAuthorized -> null
     is AppPasswordSettingsEffect.AppPasswordEntryAuthenticationFailed -> failure.toMessage(context)
 }

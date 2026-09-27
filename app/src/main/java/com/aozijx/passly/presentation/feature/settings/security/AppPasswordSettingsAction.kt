@@ -1,12 +1,10 @@
 package com.aozijx.passly.presentation.feature.settings.security
 
+import com.aozijx.passly.feature.settings.security.AppPasswordChangeRequest
+
 sealed interface AppPasswordSettingsAction {
     data object RequestAppPasswordEntry : AppPasswordSettingsAction
-    data class SetAppPassword(val password: CharArray) : AppPasswordSettingsAction
-    data class ChangeAppPassword(
-        val currentPassword: CharArray,
-        val newPassword: CharArray,
+    data class SubmitChange(
+        val request: AppPasswordChangeRequest,
     ) : AppPasswordSettingsAction
-
-    data object DisableAppPassword : AppPasswordSettingsAction
 }

@@ -12,12 +12,10 @@ import com.aozijx.passly.presentation.feature.settings.security.AppPasswordSetti
 import com.aozijx.passly.presentation.feature.settings.security.AppPasswordSettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.AppPasswordSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.toAppPasswordMessage
-import com.aozijx.passly.presentation.feature.settings.security.AppPasswordAction
 import com.aozijx.passly.presentation.feature.settings.security.rememberAppPasswordDialogCoordinator
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.toSecuritySettingsUiModel
-import com.aozijx.passly.presentation.feature.settings.security.validateAndSendAppPasswordAction
 import com.aozijx.passly.presentation.feature.settings.ui.main.AppPasswordDialogs
 import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
@@ -33,18 +31,6 @@ internal fun SecurityRoute(
     val securityState by securityViewModel.uiState.collectAsStateWithLifecycle()
     val appPasswordState by appPasswordViewModel.uiState.collectAsStateWithLifecycle()
     val appPasswordDialogs = rememberAppPasswordDialogCoordinator()
-
-    fun submitAppPasswordAction(action: AppPasswordAction) {
-        val dialogModel = appPasswordDialogs.model
-        validateAndSendAppPasswordAction(
-            context = context,
-            action = action,
-            currentPassword = dialogModel.appPasswordCurrent,
-            newPassword = dialogModel.appPasswordNew,
-            confirmPassword = dialogModel.appPasswordConfirm,
-            settingsViewModel = appPasswordViewModel,
-        )
-    }
 
     LaunchedEffect(appPasswordViewModel, context) {
         appPasswordViewModel.effects.collect { effect ->
@@ -99,7 +85,11 @@ internal fun SecurityRoute(
     AppPasswordDialogs(
         state = appPasswordDialogs.model,
         onEvent = { event ->
-            appPasswordDialogs.onEvent(event)?.let(::submitAppPasswordAction)
+            appPasswordDialogs.onEvent(event)?.let { request ->
+                appPasswordViewModel.onAction(
+                    AppPasswordSettingsAction.SubmitChange(request),
+                )
+            }
         },
     )
 }

@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
+import com.aozijx.passly.feature.settings.security.AppPasswordChangeRequest
 import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPasswordDialogEvent
 import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPasswordDialogState
 import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPasswordDialogsModel
@@ -41,7 +42,7 @@ internal class AppPasswordDialogCoordinator {
         closeAndClear()
     }
 
-    fun onEvent(event: AppPasswordDialogEvent): AppPasswordAction? = when (event) {
+    fun onEvent(event: AppPasswordDialogEvent): AppPasswordChangeRequest? = when (event) {
         AppPasswordDialogEvent.DismissAction -> {
             activeDialog = AppPasswordDialogState.None
             null
@@ -50,7 +51,7 @@ internal class AppPasswordDialogCoordinator {
             activeDialog = AppPasswordDialogState.Change
             null
         }
-        AppPasswordDialogEvent.ShowDisable -> AppPasswordAction.DISABLE
+        AppPasswordDialogEvent.ShowDisable -> AppPasswordChangeRequest.Disable
         AppPasswordDialogEvent.DismissSet,
         AppPasswordDialogEvent.DismissChange -> {
             closeAndClear()
@@ -68,8 +69,15 @@ internal class AppPasswordDialogCoordinator {
             confirmPassword = event.value
             null
         }
-        AppPasswordDialogEvent.ConfirmSet -> AppPasswordAction.SET
-        AppPasswordDialogEvent.ConfirmChange -> AppPasswordAction.CHANGE
+        AppPasswordDialogEvent.ConfirmSet -> AppPasswordChangeRequest.Set(
+            password = newPassword.toCharArray(),
+            confirmation = confirmPassword.toCharArray(),
+        )
+        AppPasswordDialogEvent.ConfirmChange -> AppPasswordChangeRequest.Change(
+            currentPassword = currentPassword.toCharArray(),
+            newPassword = newPassword.toCharArray(),
+            confirmation = confirmPassword.toCharArray(),
+        )
     }
 
     private fun passwordPolicyAcceptsNewPassword(): Boolean =

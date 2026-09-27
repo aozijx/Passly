@@ -3,6 +3,7 @@ package com.aozijx.passly.presentation.feature.settings.security
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.feature.settings.security.AppPasswordChangeResult
+import com.aozijx.passly.feature.settings.security.AppPasswordChangeRequest
 import com.aozijx.passly.feature.settings.security.AppPasswordManagementAccess
 import com.aozijx.passly.feature.settings.security.AppPasswordSettingsInteractor
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,30 +34,25 @@ class AppPasswordSettingsViewModel @Inject constructor(
     fun onAction(action: AppPasswordSettingsAction) {
         when (action) {
             AppPasswordSettingsAction.RequestAppPasswordEntry -> requestAppPasswordEntry()
-            is AppPasswordSettingsAction.SetAppPassword -> runChange(
-                successEffect = AppPasswordSettingsEffect.AppPasswordSet,
-            ) { appPasswordSettings.set(action.password) }
-            is AppPasswordSettingsAction.ChangeAppPassword -> runChange(
-                successEffect = AppPasswordSettingsEffect.AppPasswordChanged,
-            ) {
-                appPasswordSettings.change(action.currentPassword, action.newPassword)
-            }
-            AppPasswordSettingsAction.DisableAppPassword -> runChange(
-                successEffect = AppPasswordSettingsEffect.AppPasswordDisabled,
-                operation = appPasswordSettings::disable,
-            )
+            is AppPasswordSettingsAction.SubmitChange -> runChange(action.request)
         }
     }
 
-    private fun runChange(
-        successEffect: AppPasswordSettingsEffect,
-        operation: suspend () -> AppPasswordChangeResult,
-    ) {
+    private fun runChange(request: AppPasswordChangeRequest) {
         viewModelScope.launch {
-            when (operation()) {
-                AppPasswordChangeResult.Completed -> _effects.trySend(successEffect)
+            when (val result = appPasswordSettings.execute(request)) {
+                AppPasswordChangeResult.Completed -> _effects.trySend(
+                    when (request) {
+                        is AppPasswordChangeRequest.Set -> AppPasswordSettingsEffect.AppPasswordSet
+                        is AppPasswordChangeRequest.Change -> AppPasswordSettingsEffect.AppPasswordChanged
+                        AppPasswordChangeRequest.Disable -> AppPasswordSettingsEffect.AppPasswordDisabled
+                    },
+                )
+                is AppPasswordChangeResult.InvalidInput -> _effects.trySend(
+                    AppPasswordSettingsEffect.AppPasswordInputInvalid(result.reason),
+                )
                 is AppPasswordChangeResult.Failed -> _effects.trySend(
-                    AppPasswordSettingsEffect.AppPasswordError("操作失败"),
+                    AppPasswordSettingsEffect.AppPasswordOperationFailed(result.failure),
                 )
                 AppPasswordChangeResult.Cancelled -> Unit
             }
