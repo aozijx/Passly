@@ -2,8 +2,6 @@ package com.aozijx.passly.feature.autofill.platform
 
 import kotlinx.coroutines.flow.Flow
 
-interface AutofillPlatformGateway {
+fun interface AutofillServiceStatusSource {
     fun observeServiceEnabled(): Flow<Boolean>
-
-    fun openSystemSettings()
 }

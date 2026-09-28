@@ -2,7 +2,6 @@ package com.aozijx.passly.presentation.feature.settings.autofill
 
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
-import com.aozijx.passly.presentation.feature.settings.ui.autofill.model.AutofillPresentationUiModel
 import com.aozijx.passly.presentation.feature.settings.ui.autofill.model.AutofillSettingsUiModel
 
 fun AutofillSettingsUiState.toAutofillSettingsUiModel(

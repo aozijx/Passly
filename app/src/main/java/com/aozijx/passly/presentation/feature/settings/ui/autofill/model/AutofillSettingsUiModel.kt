@@ -1,5 +1,7 @@
 package com.aozijx.passly.presentation.feature.settings.ui.autofill.model
 
+import com.aozijx.passly.presentation.feature.settings.autofill.AutofillPresentationUiModel
+
 data class AutofillSettingsUiModel(
     val enabled: Boolean,
     val presentation: AutofillPresentationUiModel,
@@ -14,22 +16,3 @@ data class AutofillSettingsUiModel(
     val maxSuggestionsLimit: Int,
     val isSystemServiceEnabled: Boolean,
 )
-
-sealed interface AutofillSettingsEvent {
-    data object OpenSystemSettings : AutofillSettingsEvent
-    data class EnabledChanged(val enabled: Boolean) : AutofillSettingsEvent
-    data class PresentationChanged(
-        val presentation: AutofillPresentationUiModel,
-    ) : AutofillSettingsEvent
-    data class CredentialManagerEnabledChanged(val enabled: Boolean) : AutofillSettingsEvent
-    data class AuthenticationRequiredChanged(val required: Boolean) : AutofillSettingsEvent
-    data class OtpEnabledChanged(val enabled: Boolean) : AutofillSettingsEvent
-    data class SavePromptsEnabledChanged(val enabled: Boolean) : AutofillSettingsEvent
-    data class UnmatchedSuggestionsEnabledChanged(val enabled: Boolean) : AutofillSettingsEvent
-    data class MaxSuggestionsChanged(val maxSuggestions: Int) : AutofillSettingsEvent
-}
-
-enum class AutofillPresentationUiModel {
-    SYSTEM_INLINE,
-    BOTTOM_SHEET,
-}

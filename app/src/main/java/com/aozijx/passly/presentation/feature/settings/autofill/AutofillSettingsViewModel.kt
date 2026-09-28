@@ -2,12 +2,14 @@ package com.aozijx.passly.presentation.feature.settings.autofill
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.feature.autofill.platform.AutofillPlatformGateway
+import com.aozijx.passly.feature.autofill.platform.AutofillServiceStatusSource
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -15,12 +17,15 @@ import javax.inject.Inject
 @HiltViewModel
 class AutofillSettingsViewModel @Inject constructor(
     private val settingsRepository: InteractionSettingsRepository,
-    private val autofillPlatformGateway: AutofillPlatformGateway,
+    private val autofillServiceStatusSource: AutofillServiceStatusSource,
 ) : ViewModel() {
+
+    private val _effects = Channel<AutofillSettingsEffect>(Channel.BUFFERED)
+    val effects = _effects.receiveAsFlow()
 
     val uiState: StateFlow<AutofillSettingsUiState> = combine(
         settingsRepository.interaction,
-        autofillPlatformGateway.observeServiceEnabled(),
+        autofillServiceStatusSource.observeServiceEnabled(),
     ) { interaction, systemAutofillEnabled ->
         AutofillSettingsUiState(
             autofill = interaction.autofill,
@@ -39,7 +44,7 @@ class AutofillSettingsViewModel @Inject constructor(
                 settingsRepository.setAutofillEnabled(action.enabled)
             }
             is AutofillSettingsAction.SetPresentation -> viewModelScope.launch {
-                settingsRepository.setAutofillPresentation(action.presentation)
+                settingsRepository.setAutofillPresentation(action.presentation.toDomainModel())
             }
             is AutofillSettingsAction.SetCredentialManagerEnabled -> viewModelScope.launch {
                 settingsRepository.setCredentialManagerEnabled(action.enabled)
@@ -59,7 +64,8 @@ class AutofillSettingsViewModel @Inject constructor(
             is AutofillSettingsAction.SetMaxSuggestions -> viewModelScope.launch {
                 settingsRepository.setAutofillMaxSuggestions(action.count)
             }
-            AutofillSettingsAction.OpenSystemAutofillSettings -> autofillPlatformGateway.openSystemSettings()
+            AutofillSettingsAction.OpenSystemAutofillSettings ->
+                _effects.trySend(AutofillSettingsEffect.OpenSystemAutofillSettings)
         }
     }
 }

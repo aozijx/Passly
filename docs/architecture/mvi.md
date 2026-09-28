@@ -95,6 +95,9 @@ feature/<feature>/
 - 不传 Compose 类型；
 - 不传已经格式化的 UI 文案；
 - 可以传用户输入原始值、选中的枚举、返回手势等事件。
+- 同一 feature 的 Section/Screen 直接发送该页面的 `UiAction`；不要再定义字段完全对应的
+  `UiEvent` 并由 Route 逐项翻译。UI 专属枚举可以进入 Action，由 ViewModel 在调用 domain 端口前
+  做显式映射。
 
 `Effect` 只能表达"一次性外部动作"：
 
