@@ -11,6 +11,9 @@ interface AttachmentRefCommandDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertStrict(attachment: AttachmentRefEntity)
 
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertAllStrict(attachments: List<AttachmentRefEntity>)
+
     @Query("DELETE FROM attachment_refs WHERE attachmentId = :attachmentId")
     suspend fun deleteById(attachmentId: String): Int
 
@@ -19,4 +22,7 @@ interface AttachmentRefCommandDao {
 
     @Query("DELETE FROM attachment_refs WHERE stagingOwnerId = :stagingOwnerId AND status = 'PENDING'")
     suspend fun deletePendingByOwner(stagingOwnerId: String): Int
+
+    @Query("DELETE FROM attachment_refs WHERE entryId = :entryId AND status = 'COMMITTED'")
+    suspend fun deleteCommittedByEntryId(entryId: String): Int
 }

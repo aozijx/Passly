@@ -55,6 +55,7 @@ internal class CreateEntryExecutor @Inject constructor(
                 secret = entry.secret,
                 now = now,
             )
+            attachmentGarbageCollector.scheduleInTransaction(this)
             activityWriter.recordActivity(this, entryId, ActivityType.CREATE, now)
             if (entry.secret.toSensitiveFieldValues().isNotEmpty()) {
                 activityWriter.recordActivity(this, entryId, ActivityType.SENSITIVE_CHANGE, now)

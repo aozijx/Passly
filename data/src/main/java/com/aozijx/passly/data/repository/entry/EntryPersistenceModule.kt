@@ -16,6 +16,7 @@ import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
+import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
@@ -40,6 +41,12 @@ internal abstract class EntryPersistenceModule {
     @Binds
     @Singleton
     abstract fun bindEntryCommandRepository(impl: RoomEntryCommandRepository): EntryCommandRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindEntryRevisionRepository(
+        impl: RoomEntryRevisionRepository,
+    ): EntryRevisionRepository
 
     @Binds
     @Singleton

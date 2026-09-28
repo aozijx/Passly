@@ -28,6 +28,7 @@ internal class RoomEntryLinkRepository @Inject constructor(
     private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
     private val revisionHelper: EntryRevisionWriter,
+    private val secretFieldStore: SecretFieldStore,
     private val clock: DatabaseClock,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) : EntryLinkRepository {
@@ -106,8 +107,9 @@ internal class RoomEntryLinkRepository @Inject constructor(
             }
             val now = clock.now()
             affectedEntryIds.forEach {
-                revisionHelper.snapshotCurrent(this, it, now)
+                revisionHelper.snapshotCurrent(this, it, now, secretFieldStore)
             }
+            attachmentGarbageCollector.scheduleInTransaction(this)
         }
         result.onSuccessSuspend { attachmentGarbageCollector.drain() }
         return result
@@ -120,8 +122,9 @@ internal class RoomEntryLinkRepository @Inject constructor(
             if (link != null) {
                 val now = clock.now()
                 setOf(link.sourceEntryId, link.targetEntryId).forEach {
-                    revisionHelper.snapshotCurrent(this, it, now)
+                    revisionHelper.snapshotCurrent(this, it, now, secretFieldStore)
                 }
+                attachmentGarbageCollector.scheduleInTransaction(this)
             }
             Unit
         }

@@ -8,7 +8,6 @@ import com.aozijx.passly.data.mapper.entry.toBundleSecret
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.data.local.database.entity.RevisionAttachmentRefEntity
-import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -29,8 +28,6 @@ import javax.inject.Singleton
 internal class EntryRevisionWriter @Inject constructor(
     private val contentSnapshotCodec: EntryContentSnapshotCodec,
     private val sensitiveRevisionCodec: SensitiveRevisionSnapshotCodec,
-    private val secretFieldStore: SecretFieldStore,
-    private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
 
     /**
@@ -93,13 +90,13 @@ internal class EntryRevisionWriter @Inject constructor(
         }
         entryRevisionCommandDao().deleteOldVersions(entryId, REVISION_LIMIT)
         entryRevisionCommandDao().deleteOldestBeyondGlobalLimit(GLOBAL_REVISION_LIMIT)
-        attachmentGarbageCollector.scheduleInTransaction(this)
     }
 
     suspend fun snapshotCurrent(
         db: AppDatabase,
         entryId: String,
         now: Long,
+        secretFieldStore: SecretFieldStore,
         change: RevisionChange = RevisionChange.VALUE_CHANGED,
     ) = with(db) {
         val metadata = entryQueryDao().getById(entryId) ?: return@with

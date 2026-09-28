@@ -75,6 +75,7 @@ internal class UpdateEntryExecutor @Inject constructor(
                 secret = newSecret,
                 now = now,
             )
+            attachmentGarbageCollector.scheduleInTransaction(this)
             activityWriter.recordActivity(this, id, ActivityType.UPDATE, now)
             if (changes.secret != null) {
                 activityWriter.recordActivity(this, id, ActivityType.SENSITIVE_CHANGE, now)
