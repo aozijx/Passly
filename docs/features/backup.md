@@ -307,6 +307,12 @@ resources/<resource-id>
    子目录 URI 代替授权 URI；未配置目录时交给系统文件选择器；
 7. 导出和导入在真正访问 Vault 前都必须通过对应的身份验证用途。
 
+格式选择、导出选项和导入选项属于同一个 Backup 页面状态机：`BackupUiState` 保存唯一的
+选项阶段，Reducer 负责打开、推进和关闭阶段。BottomSheet 只渲染状态并直接发送
+`BackupUiAction`，不得在 Route 中用 `remember` 保存第二份 Sheet 状态或再定义一套 UI 事件做
+逐项翻译。系统文档选择器仍由 Route 托管，但只能由 typed `BackupEffect` 启动；选择结果再作为
+Action 返回状态机。这样配置变化、取消选择和页面销毁都走同一条清理路径。
+
 ## 8. 导入与恢复
 
 1. 限制输入最大 256 MiB；

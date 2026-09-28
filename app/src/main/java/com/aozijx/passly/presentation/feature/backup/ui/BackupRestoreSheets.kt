@@ -5,31 +5,31 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import com.aozijx.passly.presentation.feature.backup.BackupOptionsStage
+import com.aozijx.passly.presentation.feature.backup.BackupUiAction
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheetUiState
-import com.aozijx.passly.presentation.feature.backup.ui.model.BackupSheet
-import com.aozijx.passly.presentation.feature.backup.ui.model.BackupSheetEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun BackupRestoreSheet(
     state: BackupRestoreSheetUiState,
-    onEvent: (BackupSheetEvent) -> Unit,
+    onAction: (BackupUiAction) -> Unit,
 ) {
     when (state.activeSheet ?: return) {
-        BackupSheet.FORMAT_PICKER -> BackupSheetFrame(
-            onDismiss = { onEvent(BackupSheetEvent.Dismissed) },
+        BackupOptionsStage.FORMAT_PICKER -> BackupSheetFrame(
+            onDismiss = { onAction(BackupUiAction.DismissOptions) },
         ) {
-            BackupFormatPickerContent { onEvent(BackupSheetEvent.FormatSelected(it)) }
+            BackupFormatPickerContent { onAction(BackupUiAction.SelectExportFormat(it)) }
         }
-        BackupSheet.EXPORT_OPTIONS -> BackupSheetFrame(
-            onDismiss = { onEvent(BackupSheetEvent.Dismissed) },
+        BackupOptionsStage.EXPORT_OPTIONS -> BackupSheetFrame(
+            onDismiss = { onAction(BackupUiAction.DismissOptions) },
         ) {
-            BackupExportOptionsContent(state, onEvent)
+            BackupExportOptionsContent(state, onAction)
         }
-        BackupSheet.IMPORT_OPTIONS -> BackupSheetFrame(
-            onDismiss = { onEvent(BackupSheetEvent.Dismissed) },
+        BackupOptionsStage.IMPORT_OPTIONS -> BackupSheetFrame(
+            onDismiss = { onAction(BackupUiAction.DismissOptions) },
         ) {
-            BackupImportOptionsContent(state, onEvent)
+            BackupImportOptionsContent(state, onAction)
         }
     }
 }

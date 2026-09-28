@@ -2,17 +2,15 @@ package com.aozijx.passly.presentation.feature.backup
 
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheetUiState
-import com.aozijx.passly.presentation.feature.backup.ui.model.BackupSheet
 import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 
 internal fun BackupUiState.toSheetUiState(
-    activeSheet: BackupSheet?,
     configuredDirectoryLabel: String?,
 ): BackupRestoreSheetUiState {
     val passwordChars = backupPassword.toCharArray()
     return try {
         BackupRestoreSheetUiState(
-            activeSheet = activeSheet,
+            activeSheet = optionsStage,
             configuredDirectoryLabel = configuredDirectoryLabel,
             password = passwordChars.concatToString(),
             importMode = importMode,

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.backup.internal.operation.BackupExecutionResult
 import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
 import com.aozijx.passly.feature.backup.internal.operation.BackupOperationRequest
@@ -38,15 +39,19 @@ internal class BackupViewModel @Inject constructor(
     fun onAction(action: BackupUiAction) {
         when (action) {
             is BackupUiAction.CheckDirectoryPermission -> checkDirectoryPermission(action.uri)
-            is BackupUiAction.PrepareExport -> prepareExport(action.format)
-            is BackupUiAction.StartExport -> selectExportTarget(
-                uri = action.uri,
-                deleteOnFailure = action.deleteOnFailure,
-            )
-
-            BackupUiAction.StartExportInConfiguredDirectory -> exportToConfiguredDirectory()
+            BackupUiAction.OpenExportOptions -> mutate(BackupMutation.ExportOptionsOpened)
+            BackupUiAction.RequestImportDocument -> emitEffect(BackupEffect.SelectImportDocument)
+            is BackupUiAction.SelectExportFormat -> prepareExport(action.format)
+            is BackupUiAction.StartExport -> {
+                selectExportTarget(
+                    uri = action.uri,
+                    deleteOnFailure = action.deleteOnFailure,
+                )
+                processPendingOperation()
+            }
             is BackupUiAction.StartImport -> prepareImport(action.uri)
-            is BackupUiAction.UpdatePassword -> replacePassword(action.password)
+            is BackupUiAction.UpdatePassword ->
+                replacePassword(OwnedChars.fromString(action.password))
 
             is BackupUiAction.UpdateImportMode ->
                 mutate(BackupMutation.ImportModeUpdated(action.mode))
@@ -61,13 +66,13 @@ internal class BackupViewModel @Inject constructor(
                 mutate(BackupMutation.IncludeDeletedUpdated(action.include))
 
             is BackupUiAction.UpdateIncludedEntryTypes ->
-                mutate(BackupMutation.IncludedEntryTypesUpdated(action.types))
+                mutate(BackupMutation.IncludedEntryTypesUpdated(action.types.toFeatureModels()))
 
-            BackupUiAction.CancelPendingOperation -> clearPasswordAndMutate(
+            is BackupUiAction.SubmitExport -> submitExport(action.useConfiguredDirectory)
+            BackupUiAction.SubmitImport -> processPendingOperation()
+            BackupUiAction.DismissOptions -> clearPasswordAndMutate(
                 BackupMutation.PendingOperationCleared
             )
-
-            BackupUiAction.ProcessBackupAction -> processPendingOperation()
         }
     }
 
@@ -119,6 +124,23 @@ internal class BackupViewModel @Inject constructor(
         }
     }
 
+    private fun submitExport(useConfiguredDirectory: Boolean) {
+        val snapshot = _uiState.value
+        if (!snapshot.isExporting || !snapshot.canSubmitExport) return
+        if (useConfiguredDirectory) {
+            exportToConfiguredDirectory()
+            return
+        }
+        val fileName = snapshot.pendingExportFileName ?: return
+        mutate(BackupMutation.OptionsClosed)
+        emitEffect(
+            BackupEffect.SelectExportDocument(
+                format = snapshot.selectedExportFormat,
+                fileName = fileName,
+            ),
+        )
+    }
+
     private fun processPendingOperation() {
         val snapshot = _uiState.value
         if (snapshot.backupUri == null) return
@@ -142,7 +164,7 @@ internal class BackupViewModel @Inject constructor(
     ) {
         when (result) {
             BackupExecutionResult.Success -> {
-                emitEffect(BackupEffect.Succeeded(operation))
+                emitEffect(BackupNoticeEffect.Succeeded(operation))
                 mutate(BackupMutation.OperationSucceeded)
                 if (clearPendingFields) {
                     clearPasswordAndMutate(BackupMutation.PendingFieldsCleared)
@@ -153,7 +175,7 @@ internal class BackupViewModel @Inject constructor(
                 clearPasswordAndMutate(BackupMutation.PendingOperationCleared)
 
             is BackupExecutionResult.Failure -> {
-                emitEffect(BackupEffect.Failed(operation))
+                emitEffect(BackupNoticeEffect.Failed(operation))
                 mutate(BackupMutation.OperationFailed(result.error))
                 if (clearPendingFields) {
                     clearPasswordAndMutate(BackupMutation.PendingFieldsCleared)
@@ -176,7 +198,7 @@ internal class BackupViewModel @Inject constructor(
         operation: BackupOperation,
     ): Boolean {
         if (denial == null) return true
-        emitEffect(BackupEffect.Failed(operation))
+        emitEffect(BackupNoticeEffect.Failed(operation))
         mutate(BackupMutation.OperationFailed(BackupFailed()))
         return false
     }

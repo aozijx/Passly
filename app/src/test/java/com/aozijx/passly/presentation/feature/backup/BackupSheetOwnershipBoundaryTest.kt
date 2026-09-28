@@ -7,7 +7,7 @@ import org.junit.Test
 
 class BackupSheetOwnershipBoundaryTest {
     @Test
-    fun `backup sheet uses one typed event sink and feature option models`() {
+    fun `backup options use the view model action and state contracts directly`() {
         val sourceRoot = sourceRoot()
         val backupRoot = sourceRoot.resolve(
             "com/aozijx/passly/presentation/feature/backup",
@@ -20,9 +20,11 @@ class BackupSheetOwnershipBoundaryTest {
         assertFalse(models.contains("BackupRestoreSheetEventHandler"))
         assertFalse(models.contains("BackupExportFormatUiModel"))
         assertFalse(models.contains("BackupImportModeUiModel"))
-        assertTrue(models.contains("sealed interface BackupSheetEvent"))
-        assertTrue(sheets.contains("onEvent: (BackupSheetEvent) -> Unit"))
-        assertFalse(route.contains("object : BackupRestoreSheetEventHandler"))
+        assertFalse(models.contains("BackupSheetEvent"))
+        assertTrue(sheets.contains("onAction: (BackupUiAction) -> Unit"))
+        assertFalse(route.contains("activeSheet by remember"))
+        assertFalse(route.contains("when (event)"))
+        assertTrue(route.contains("state.toSheetUiState("))
         assertFalse(mapper.contains("valueOf("))
     }
 

@@ -26,13 +26,13 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
+import com.aozijx.passly.presentation.feature.backup.BackupUiAction
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheetUiState
-import com.aozijx.passly.presentation.feature.backup.ui.model.BackupSheetEvent
 
 @Composable
 internal fun BackupImportOptionsContent(
     state: BackupRestoreSheetUiState,
-    onEvent: (BackupSheetEvent) -> Unit,
+    onAction: (BackupUiAction) -> Unit,
 ) {
     BackupSheetColumn(scrollable = true) {
         Text(
@@ -50,17 +50,17 @@ internal fun BackupImportOptionsContent(
             selected = state.importMode == ImportMode.APPEND,
             title = stringResource(R.string.settings_backup_import_append),
             subtitle = stringResource(R.string.settings_backup_import_append_description),
-            onClick = { onEvent(BackupSheetEvent.ImportModeChanged(ImportMode.APPEND)) },
+            onClick = { onAction(BackupUiAction.UpdateImportMode(ImportMode.APPEND)) },
         )
         ImportModeCard(
             selected = state.importMode == ImportMode.OVERWRITE,
             title = stringResource(R.string.settings_backup_import_overwrite),
             subtitle = stringResource(R.string.settings_backup_import_overwrite_description),
-            onClick = { onEvent(BackupSheetEvent.ImportModeChanged(ImportMode.OVERWRITE)) },
+            onClick = { onAction(BackupUiAction.UpdateImportMode(ImportMode.OVERWRITE)) },
         )
         OutlinedTextField(
             value = state.password,
-            onValueChange = { onEvent(BackupSheetEvent.PasswordChanged(it)) },
+            onValueChange = { onAction(BackupUiAction.UpdatePassword(it)) },
             modifier = Modifier.fillMaxWidth(),
             label = { Text(stringResource(R.string.settings_backup_import_password_label)) },
             visualTransformation = PasswordVisualTransformation(),
@@ -73,7 +73,7 @@ internal fun BackupImportOptionsContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Button(
-            onClick = { onEvent(BackupSheetEvent.ImportRequested) },
+            onClick = { onAction(BackupUiAction.SubmitImport) },
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(

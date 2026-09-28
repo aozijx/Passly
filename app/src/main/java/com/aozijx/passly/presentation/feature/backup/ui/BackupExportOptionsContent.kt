@@ -28,15 +28,15 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
+import com.aozijx.passly.presentation.feature.backup.BackupUiAction
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheetUiState
-import com.aozijx.passly.presentation.feature.backup.ui.model.BackupSheetEvent
 import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.shared.entry.labelRes
 
 @Composable
 internal fun BackupExportOptionsContent(
     state: BackupRestoreSheetUiState,
-    onEvent: (BackupSheetEvent) -> Unit,
+    onAction: (BackupUiAction) -> Unit,
 ) {
     BackupSheetColumn(scrollable = true) {
         Text(
@@ -49,7 +49,7 @@ internal fun BackupExportOptionsContent(
         if (state.selectedExportFormat.requiresPassword) {
             OutlinedTextField(
                 value = state.password,
-                onValueChange = { onEvent(BackupSheetEvent.PasswordChanged(it)) },
+                onValueChange = { onAction(BackupUiAction.UpdatePassword(it)) },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(stringResource(R.string.settings_backup_password_label)) },
                 supportingText = { Text(stringResource(R.string.settings_backup_password_warning)) },
@@ -68,20 +68,20 @@ internal fun BackupExportOptionsContent(
                 stringResource(R.string.settings_backup_include_icons),
                 stringResource(R.string.settings_backup_include_icons_description),
                 state.includeIcons,
-                { onEvent(BackupSheetEvent.IncludeIconsChanged(it)) },
+                { onAction(BackupUiAction.UpdateIncludeIcons(it)) },
             )
             BackupSwitchRow(
                 stringResource(R.string.settings_backup_include_attachments),
                 stringResource(R.string.settings_backup_include_attachments_description),
                 state.includeAttachments,
-                { onEvent(BackupSheetEvent.IncludeAttachmentsChanged(it)) },
+                { onAction(BackupUiAction.UpdateIncludeAttachments(it)) },
             )
         }
         BackupSwitchRow(
             stringResource(R.string.settings_backup_include_deleted),
             stringResource(R.string.settings_backup_include_deleted_description),
             state.includeDeleted,
-            { onEvent(BackupSheetEvent.IncludeDeletedChanged(it)) },
+            { onAction(BackupUiAction.UpdateIncludeDeleted(it)) },
         )
 
         HorizontalDivider()
@@ -93,8 +93,8 @@ internal fun BackupExportOptionsContent(
             Text(stringResource(R.string.settings_backup_entry_types), style = MaterialTheme.typography.titleMedium)
             TextButton(
                 onClick = {
-                    onEvent(
-                        BackupSheetEvent.IncludedEntryTypesChanged(
+                    onAction(
+                        BackupUiAction.UpdateIncludedEntryTypes(
                             if (state.includedEntryTypes.size == EntryTypeUiModel.entries.size) {
                                 emptySet()
                             } else {
@@ -126,7 +126,7 @@ internal fun BackupExportOptionsContent(
                         val updated = state.includedEntryTypes.toMutableSet().apply {
                             if (!add(type)) remove(type)
                         }
-                        onEvent(BackupSheetEvent.IncludedEntryTypesChanged(updated))
+                        onAction(BackupUiAction.UpdateIncludedEntryTypes(updated))
                     },
                     label = { Text(stringResource(type.labelRes)) },
                 )
@@ -149,7 +149,13 @@ internal fun BackupExportOptionsContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Button(
-            onClick = { onEvent(BackupSheetEvent.ExportRequested) },
+            onClick = {
+                onAction(
+                    BackupUiAction.SubmitExport(
+                        useConfiguredDirectory = state.configuredDirectoryLabel != null,
+                    ),
+                )
+            },
             enabled = state.canSubmitExport,
             modifier = Modifier.fillMaxWidth(),
         ) {

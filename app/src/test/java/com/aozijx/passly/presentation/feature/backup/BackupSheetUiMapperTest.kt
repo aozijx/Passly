@@ -4,7 +4,6 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
-import com.aozijx.passly.presentation.feature.backup.ui.model.BackupSheet
 import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -17,6 +16,7 @@ class BackupSheetUiMapperTest {
         val password = OwnedChars.fromString("temporary")
         try {
             val result = BackupUiState(
+                optionsStage = BackupOptionsStage.EXPORT_OPTIONS,
                 backupPassword = password,
                 importMode = ImportMode.OVERWRITE,
                 selectedExportFormat = BackupExportFormat.ENCRYPTED,
@@ -25,11 +25,10 @@ class BackupSheetUiMapperTest {
                 includeDeleted = false,
                 includedEntryTypes = setOf(EntryType.LOGIN, EntryType.NOTE),
             ).toSheetUiState(
-                activeSheet = BackupSheet.EXPORT_OPTIONS,
                 configuredDirectoryLabel = "Documents/Passly",
             )
 
-            assertEquals(BackupSheet.EXPORT_OPTIONS, result.activeSheet)
+            assertEquals(BackupOptionsStage.EXPORT_OPTIONS, result.activeSheet)
             assertEquals("Documents/Passly", result.configuredDirectoryLabel)
             assertEquals("temporary", result.password)
             assertEquals(ImportMode.OVERWRITE, result.importMode)

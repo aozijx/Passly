@@ -9,7 +9,14 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 
+enum class BackupOptionsStage {
+    FORMAT_PICKER,
+    EXPORT_OPTIONS,
+    IMPORT_OPTIONS,
+}
+
 data class BackupUiState(
+    val optionsStage: BackupOptionsStage? = null,
     val status: BackupOperationStatus = BackupOperationStatus.Idle,
     val error: AppError? = null,
     val isExporting: Boolean = false,

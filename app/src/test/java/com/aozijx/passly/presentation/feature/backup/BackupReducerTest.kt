@@ -16,6 +16,29 @@ import org.junit.Test
 
 class BackupReducerTest {
     @Test
+    fun `backup option stage is owned by reducer transitions`() {
+        val opened = BackupReducer.reduce(
+            BackupUiState(),
+            BackupMutation.ExportOptionsOpened,
+        )
+        val prepared = BackupReducer.reduce(
+            opened,
+            BackupMutation.ExportPrepared(
+                format = BackupExportFormat.JSON,
+                fileName = "backup.json",
+            ),
+        )
+        val dismissed = BackupReducer.reduce(
+            prepared,
+            BackupMutation.PendingOperationCleared,
+        )
+
+        assertEquals(BackupOptionsStage.FORMAT_PICKER, opened.optionsStage)
+        assertEquals(BackupOptionsStage.EXPORT_OPTIONS, prepared.optionsStage)
+        assertNull(dismissed.optionsStage)
+    }
+
+    @Test
     fun exportPrepared_resetsTransientInputAndDerivesResourceOptions() {
         val initial = BackupUiState(
             status = BackupOperationStatus.Failure,

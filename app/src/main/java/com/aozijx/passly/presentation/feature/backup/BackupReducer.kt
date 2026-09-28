@@ -11,6 +11,8 @@ import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.presentation.feature.backup.BackupUiState
 
 internal sealed interface BackupMutation {
+    data object ExportOptionsOpened : BackupMutation
+    data object OptionsClosed : BackupMutation
     data object OperationStarted : BackupMutation
 
     data class ExportPrepared(
@@ -39,7 +41,13 @@ internal sealed interface BackupMutation {
 internal object BackupReducer {
     fun reduce(state: BackupUiState, mutation: BackupMutation): BackupUiState =
         when (mutation) {
+            BackupMutation.ExportOptionsOpened -> state.copy(
+                optionsStage = BackupOptionsStage.FORMAT_PICKER,
+                error = null,
+            )
+            BackupMutation.OptionsClosed -> state.copy(optionsStage = null)
             BackupMutation.OperationStarted -> state.copy(
+                optionsStage = null,
                 status = BackupOperationStatus.Loading,
                 error = null,
             )
@@ -47,6 +55,7 @@ internal object BackupReducer {
             is BackupMutation.ExportPrepared -> {
                 val includeResources = mutation.format.supportsResources
                 state.copy(
+                    optionsStage = BackupOptionsStage.EXPORT_OPTIONS,
                     isExporting = true,
                     selectedExportFormat = mutation.format,
                     backupUri = null,
@@ -69,6 +78,7 @@ internal object BackupReducer {
             )
 
             is BackupMutation.ImportPrepared -> state.copy(
+                optionsStage = BackupOptionsStage.IMPORT_OPTIONS,
                 isExporting = false,
                 backupUri = mutation.uri,
                 backupPassword = EmptySensitiveValue,
@@ -90,11 +100,13 @@ internal object BackupReducer {
                 state.copy(includedEntryTypes = mutation.types)
 
             BackupMutation.OperationSucceeded -> state.copy(
+                optionsStage = null,
                 status = BackupOperationStatus.Idle,
                 error = null,
             )
 
             is BackupMutation.OperationFailed -> state.copy(
+                optionsStage = null,
                 status = BackupOperationStatus.Failure,
                 error = mutation.error,
             )
@@ -109,6 +121,7 @@ internal object BackupReducer {
 }
 
 private fun BackupUiState.clearPendingFields(): BackupUiState = copy(
+    optionsStage = null,
     backupUri = null,
     backupPassword = EmptySensitiveValue,
     pendingExportFileName = null,
