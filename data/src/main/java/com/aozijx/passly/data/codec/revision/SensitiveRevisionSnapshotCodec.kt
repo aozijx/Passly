@@ -58,6 +58,10 @@ class SensitiveRevisionSnapshotCodec @Inject constructor() {
         return fields
     }
 
+    /** Returns field presence without exposing historical ciphertext bytes to ordinary queries. */
+    fun decodeKeys(blob: ByteArray): Set<SensitiveFieldKey> =
+        decode(blob).mapTo(linkedSetOf()) { it.key }
+
     private companion object {
         const val FORMAT_VERSION = 1
         const val MAX_FIELDS = 64

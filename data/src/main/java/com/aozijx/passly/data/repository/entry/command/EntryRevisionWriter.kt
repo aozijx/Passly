@@ -4,6 +4,7 @@ import com.aozijx.passly.data.codec.entry.SecretBundleCodec
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
 import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
+import com.aozijx.passly.data.mapper.entry.toBundleSecret
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.data.local.database.entity.RevisionAttachmentRefEntity
@@ -60,7 +61,7 @@ internal class EntryRevisionWriter @Inject constructor(
         }
         val entryContentCipher = contentSnapshotCodec.encrypt(
             summary = summary,
-            secret = secret,
+            bundleSecret = secret.toBundleSecret(),
             entryId = entryId,
             links = links,
         )

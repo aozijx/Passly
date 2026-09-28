@@ -37,4 +37,21 @@ class SensitiveRevisionSnapshotCodecTest {
         assertArrayEquals(byteArrayOf(3, 1, 4, 1, 5), decoded[0].valueCipher)
         assertEquals(2, decoded[0].keyVersion)
     }
+
+    @Test
+    fun `field presence can be decoded without returning ciphertext values`() {
+        val encoded = codec.encode(
+            listOf(
+                EntrySecretFieldEntity(
+                    entryId = "entry-1",
+                    fieldKey = SensitiveFieldKey.PASSWORD.name,
+                    valueCipher = byteArrayOf(1, 2, 3),
+                    keyVersion = 1,
+                    updatedAt = 10L,
+                ),
+            ),
+        )
+
+        assertEquals(setOf(SensitiveFieldKey.PASSWORD), codec.decodeKeys(encoded))
+    }
 }

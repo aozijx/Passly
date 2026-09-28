@@ -3,6 +3,7 @@ package com.aozijx.passly.data.codec.revision
 import com.aozijx.passly.data.codec.DatabaseRecordAad
 import com.aozijx.passly.data.mapper.entry.EntrySecretMapper
 import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
+import com.aozijx.passly.data.mapper.entry.toBundleSecret
 import com.aozijx.passly.data.codec.entry.payload.SecretPayload
 import com.aozijx.passly.data.codec.entry.payload.SummaryPayload
 import com.aozijx.passly.data.codec.json.AppJson
@@ -91,15 +92,18 @@ class EntryContentSnapshotCodec @Inject constructor(
 ) {
     suspend fun encrypt(
         summary: EntryProfile,
-        secret: EntrySecret,
+        bundleSecret: EntrySecret,
         entryId: String,
         links: List<EntryLink>,
     ): ByteArray {
+        // Enforce the storage boundary here as well as at the writer call site. A future caller
+        // cannot accidentally duplicate high-sensitivity values into the general content blob.
+        val redactedSecret = bundleSecret.toBundleSecret()
         val summaryJson = AppJson.encodeToString(
             SummaryPayload.serializer(), EntryProfileMapper.toPayload(summary)
         ).toByteArray()
         val secretJson = AppJson.encodeToString(
-            SecretPayload.serializer(), EntrySecretMapper.toPayload(secret)
+            SecretPayload.serializer(), EntrySecretMapper.toPayload(redactedSecret)
         ).toByteArray()
         val relationsJson = AppJson.encodeToString(
             EntryRelationsSnapshot.serializer(),
@@ -151,7 +155,7 @@ class EntryContentSnapshotCodec @Inject constructor(
     }
 
     private companion object {
-        const val FORMAT_PREFIX = "content1:"
+        const val FORMAT_PREFIX = "content2:"
         const val MAX_SNAPSHOT_BYTES = 8 * 1024 * 1024
     }
 }
