@@ -8,7 +8,10 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.PowerManager
 import androidx.core.content.ContextCompat
+import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionLockController
@@ -48,14 +51,13 @@ internal class DeviceLockHandler(
     private val securitySettings: StateFlow<SecuritySettings>,
 ) {
     suspend fun handle(trigger: DeviceLockTrigger): DeviceLockResult {
-        if (!sessionAccessState.isUnlocked() && !sessionAccessState.isRecoveryMode()) {
-            return DeviceLockResult(locked = false)
-        }
-
         val security = securitySettings.value
         val reason = when (trigger) {
             DeviceLockTrigger.SCREEN_OFF -> LockReason.BACKGROUND
             DeviceLockTrigger.FLIP -> {
+                if (!sessionAccessState.isUnlocked() && !sessionAccessState.isRecoveryMode()) {
+                    return DeviceLockResult(locked = false)
+                }
                 if (!security.isFlipToLockEnabled) return DeviceLockResult(locked = false)
                 LockReason.USER
             }
@@ -92,6 +94,7 @@ class DeviceLockController @Inject constructor(
     )
     private val clearTaskChannel = Channel<Unit>(Channel.BUFFERED)
     val clearTaskRequests: Flow<Unit> = clearTaskChannel.receiveAsFlow()
+    private val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
     private var receiverStarted = false
@@ -133,6 +136,9 @@ class DeviceLockController @Inject constructor(
     fun onAppBackground() {
         appInForeground = false
         sensorManager.unregisterListener(this)
+        if (!powerManager.isInteractive) {
+            dispatch(DeviceLockTrigger.SCREEN_OFF)
+        }
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
@@ -155,6 +161,10 @@ class DeviceLockController @Inject constructor(
             try {
                 triggerMutex.withLock {
                     val result = handler.handle(trigger)
+                    TelemetryRuntime.i(
+                        EventCategory.APPLICATION,
+                        "device_lock.completed trigger=${trigger.name} locked=${result.locked} clear_task=${result.shouldClearTask}",
+                    )
                     if (result.shouldClearTask) clearTaskChannel.send(Unit)
                 }
             } finally {

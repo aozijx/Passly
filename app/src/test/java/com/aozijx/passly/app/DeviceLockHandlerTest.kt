@@ -34,6 +34,21 @@ class DeviceLockHandlerTest {
     }
 
     @Test
+    fun `screen off reconciles the session even when the access snapshot already looks locked`() = runTest {
+        val lockController = RecordingLockController()
+        val handler = handler(
+            lockController = lockController,
+            security = SecuritySettings(),
+            initialState = AuthenticationState.Locked,
+        )
+
+        val result = handler.handle(DeviceLockTrigger.SCREEN_OFF)
+
+        assertTrue(result.locked)
+        assertEquals(LockReason.BACKGROUND, lockController.reason)
+    }
+
+    @Test
     fun `disabled flip trigger does not lock the session`() = runTest {
         val lockController = RecordingLockController()
         val handler = handler(
@@ -68,8 +83,9 @@ class DeviceLockHandlerTest {
     private fun handler(
         lockController: SessionLockController,
         security: SecuritySettings,
+        initialState: AuthenticationState = AuthenticationState.Authenticated(1L),
     ) = DeviceLockHandler(
-        sessionAccessState = FakeSessionState(AuthenticationState.Authenticated(1L)),
+        sessionAccessState = FakeSessionState(initialState),
         sessionLockController = lockController,
         securitySettings = MutableStateFlow(security),
     )
