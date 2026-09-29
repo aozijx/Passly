@@ -1,18 +1,21 @@
 package com.aozijx.passly
 
 import android.os.Bundle
-import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.platform.permission.PermissionServices
-import com.aozijx.passly.app.shell.FlipToLockSensorController
+import com.aozijx.passly.app.ScreenOffLockController
+import com.aozijx.passly.app.shell.FlipLockTriggerController
 import com.aozijx.passly.core.permission.contract.PermissionRequestHistory
 import com.aozijx.passly.core.permission.contract.PermissionStatusReader
 import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
@@ -21,8 +24,10 @@ import com.aozijx.passly.presentation.feature.shell.AppShellUiAction
 import com.aozijx.passly.presentation.feature.shell.AppShellViewModel
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.system.exitProcess
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -43,29 +48,23 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var permissionRequestHistory: PermissionRequestHistory
 
-    private val sensorController: FlipToLockSensorController by lazy {
-        FlipToLockSensorController(this) {
-            if (viewModel.uiState.value.isAuthorized) {
-                viewModel.onAction(AppShellUiAction.Lock)
-                if (sensorController.isFlipExitAndClearStackEnabled) {
-                    noticePublisher.publish(newAppNotice(NoticeCode.APP_CLOSE_REMINDER))
-                    window.decorView.postDelayed(
-                        {
-                            finishAndRemoveTask()
-                            exitProcess(0)
-                        },
-                        APP_CLOSE_MESSAGE_DELAY_MS,
-                    )
-                }
+    @Inject
+    lateinit var screenOffLockController: ScreenOffLockController
+
+    private val flipLockTriggerController: FlipLockTriggerController by lazy {
+        FlipLockTriggerController(this) {
+            val state = viewModel.uiState.value
+            if (!state.isAuthorized || !state.windowPolicy.isFlipToLockEnabled) {
+                return@FlipLockTriggerController
             }
+            viewModel.onAction(AppShellUiAction.LockFromFlip)
+            if (state.windowPolicy.isFlipExitAndClearStackEnabled) closeAndClearTask()
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppContentTheme)
         super.onCreate(savedInstanceState)
-        sensorController.initialize()
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         enableEdgeToEdge()
 
         WindowCompat.getInsetsController(window, window.decorView).systemBarsBehavior =
@@ -80,11 +79,24 @@ class MainActivity : AppCompatActivity() {
             PasslyApp(
                 activity = this,
                 shellViewModel = viewModel,
-                sensorController = sensorController,
                 authenticationHostRegistry = authenticationHostRegistry,
                 noticePublisher = noticePublisher,
                 permissionServices = permissionServices,
             )
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState
+                    .map { it.windowPolicy.isFlipToLockEnabled }
+                    .distinctUntilChanged()
+                    .collect(flipLockTriggerController::setEnabled)
+            }
+        }
+        lifecycleScope.launch {
+            screenOffLockController.clearTaskRequests.collect {
+                closeAndClearTask()
+            }
         }
     }
 
@@ -93,14 +105,19 @@ class MainActivity : AppCompatActivity() {
         viewModel.onAction(AppShellUiAction.UpdateInteraction)
     }
 
-    override fun onResume() {
-        super.onResume()
-        if (sensorController.isFlipLockEnabled) sensorController.register()
+    override fun onStart() {
+        super.onStart()
+        flipLockTriggerController.start()
     }
 
-    override fun onPause() {
-        super.onPause()
-        if (sensorController.isFlipLockEnabled) sensorController.unregister()
+    override fun onStop() {
+        flipLockTriggerController.stop()
+        super.onStop()
+    }
+
+    private fun closeAndClearTask() {
+        noticePublisher.publish(newAppNotice(NoticeCode.APP_CLOSE_REMINDER))
+        window.decorView.postDelayed(::finishAndRemoveTask, APP_CLOSE_MESSAGE_DELAY_MS)
     }
 
     private companion object {

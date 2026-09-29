@@ -3,20 +3,17 @@ package com.aozijx.passly.presentation.feature.shell
 import android.view.Window
 import android.view.WindowManager
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import com.aozijx.passly.app.shell.FlipToLockSensorController
 
 @Composable
 internal fun AppWindowPolicyEffects(
     window: Window,
-    settings: AppShellSettingsUiState,
-    sensorController: FlipToLockSensorController,
+    policy: AppWindowPolicy,
 ) {
     SideEffect {
-        if (settings.isSecureContentEnabled) {
+        if (policy.isSecureContentEnabled) {
             window.setFlags(
                 WindowManager.LayoutParams.FLAG_SECURE,
                 WindowManager.LayoutParams.FLAG_SECURE,
@@ -25,24 +22,11 @@ internal fun AppWindowPolicyEffects(
             window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         }
 
-        sensorController.isFlipExitAndClearStackEnabled =
-            settings.isFlipExitAndClearStackEnabled
-
         WindowCompat.getInsetsController(window, window.decorView).systemBarsBehavior =
-            if (settings.isStatusBarAutoHide) {
+            if (policy.isStatusBarAutoHide) {
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             } else {
                 WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
             }
-    }
-
-    DisposableEffect(sensorController, settings.isFlipToLockEnabled) {
-        sensorController.isFlipLockEnabled = settings.isFlipToLockEnabled
-        if (settings.isFlipToLockEnabled) {
-            sensorController.register()
-        } else {
-            sensorController.unregister()
-        }
-        onDispose(sensorController::unregister)
     }
 }

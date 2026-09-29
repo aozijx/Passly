@@ -2,22 +2,18 @@ package com.aozijx.passly.presentation.feature.shell
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.presentation.shared.error.toUiMessage
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.access.port.SessionLockController
+import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
 import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
 import com.aozijx.passly.domain.access.port.DatabaseSessionRetryResult
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
-import com.aozijx.passly.domain.access.model.AuthenticationState
-import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
-import com.aozijx.passly.presentation.feature.shell.AppShellEffect
-import com.aozijx.passly.presentation.feature.shell.AppShellUiAction
-import com.aozijx.passly.presentation.feature.shell.AppShellUiState
-import com.aozijx.passly.presentation.feature.shell.AppShellMutation
-import com.aozijx.passly.presentation.feature.shell.AppShellReducer
+import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
+import com.aozijx.passly.presentation.shared.error.toUiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +29,7 @@ import javax.inject.Inject
 class AppShellViewModel @Inject constructor(
     private val appearanceSettingsRepository: AppearanceSettingsRepository,
     private val interfaceSettingsRepository: InterfaceSettingsRepository,
+    private val securitySettingsSource: SecuritySettingsSource,
     private val secureSessionAccessState: SecureSessionAccessState,
     private val sessionLockController: SessionLockController,
     private val sessionActivityReporter: SessionActivityReporter,
@@ -55,7 +52,7 @@ class AppShellViewModel @Inject constructor(
 
     fun onAction(action: AppShellUiAction) {
         when (action) {
-            AppShellUiAction.Lock -> lock(LockReason.USER)
+            AppShellUiAction.LockFromFlip -> lock(LockReason.USER)
             AppShellUiAction.ExitRecovery -> lock(LockReason.RECOVERY_EXIT)
             AppShellUiAction.UpdateInteraction -> sessionActivityReporter.onUserInteraction()
             AppShellUiAction.RetryDatabaseSession -> retryDatabaseSession()
@@ -88,14 +85,19 @@ class AppShellViewModel @Inject constructor(
             combine(
                 appearanceSettingsRepository.appearance,
                 interfaceSettingsRepository.interfaceSettings,
-                ::Pair,
-            )
+                securitySettingsSource.security,
+            ) { appearance, interfaceSettings, securitySettings ->
+                AppShellMutation.SettingsChanged(
+                    appearance = appearance,
+                    interfaceSettings = interfaceSettings,
+                    securitySettings = securitySettings,
+                )
+            }
                 .distinctUntilChanged()
-                .collect { (appearance, interfacePrefs) ->
-                    mutate(AppShellMutation.SettingsChanged(appearance, interfacePrefs))
-                }
+                .collect(::mutate)
         }
     }
+
     private fun retryDatabaseSession() {
         viewModelScope.launch {
             mutate(AppShellMutation.DatabaseRetryStarted)

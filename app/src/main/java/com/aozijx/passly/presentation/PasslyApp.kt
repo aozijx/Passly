@@ -11,9 +11,7 @@ import com.aozijx.passly.app.message.compose.ProvideAppNoticePublisher
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.app.platform.permission.PermissionServices
 import com.aozijx.passly.app.platform.permission.ProvidePermissionServices
-import com.aozijx.passly.app.shell.FlipToLockSensorController
 import com.aozijx.passly.presentation.feature.shell.AppShellRoute
-import com.aozijx.passly.presentation.feature.shell.AppShellUiAction
 import com.aozijx.passly.presentation.feature.shell.AppShellViewModel
 import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
@@ -23,7 +21,6 @@ import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 internal fun PasslyApp(
     activity: FragmentActivity,
     shellViewModel: AppShellViewModel,
-    sensorController: FlipToLockSensorController,
     authenticationHostRegistry: AuthenticationHostRegistry,
     noticePublisher: AppNoticePublisher,
     permissionServices: PermissionServices,
@@ -52,7 +49,6 @@ internal fun PasslyApp(
                         effects = shellViewModel.effects,
                         onAction = shellViewModel::onAction,
                         onCloseApp = activity::finishAffinity,
-                        sensorController = sensorController,
                     )
                 }
             }

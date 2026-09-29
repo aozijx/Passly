@@ -4,6 +4,7 @@ import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
+import com.aozijx.passly.domain.settings.model.SecuritySettings
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.presentation.feature.shell.AppShellUiState
 import org.junit.Assert.assertEquals
@@ -47,7 +48,7 @@ class AppShellReducerTest {
     }
 
     @Test
-    fun `settings projection changes only shell appearance fields`() {
+    fun `settings projection changes shell appearance and window policy`() {
         val error = IllegalStateException("keep")
         val appearance = AppearanceSettings(
             themeMode = ThemeMode.DARK,
@@ -60,11 +61,19 @@ class AppShellReducerTest {
             AppShellMutation.SettingsChanged(
                 appearance = appearance,
                 interfaceSettings = InterfaceSettings(appCornerRadiusDp = 30f),
+                securitySettings = SecuritySettings(
+                    isSecureContentEnabled = false,
+                    isFlipToLockEnabled = true,
+                    isFlipExitAndClearStackEnabled = true,
+                ),
             ),
         )
 
         assertSame(appearance, result.appearance)
         assertEquals(30f, result.appCornerRadiusDp)
+        assertFalse(result.windowPolicy.isSecureContentEnabled)
+        assertTrue(result.windowPolicy.isFlipToLockEnabled)
+        assertTrue(result.windowPolicy.isFlipExitAndClearStackEnabled)
         assertTrue(result.isAuthorized)
         assertSame(error, result.databaseError)
     }

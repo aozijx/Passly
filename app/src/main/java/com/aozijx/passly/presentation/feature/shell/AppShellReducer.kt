@@ -2,6 +2,7 @@ package com.aozijx.passly.presentation.feature.shell
 
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
+import com.aozijx.passly.domain.settings.model.SecuritySettings
 
 internal sealed interface AppShellMutation {
     data object Authenticated : AppShellMutation
@@ -10,6 +11,7 @@ internal sealed interface AppShellMutation {
     data class SettingsChanged(
         val appearance: AppearanceSettings,
         val interfaceSettings: InterfaceSettings,
+        val securitySettings: SecuritySettings,
     ) : AppShellMutation
     data object DatabaseRetryStarted : AppShellMutation
     data class DatabaseRetryFinished(val error: Throwable?) : AppShellMutation
@@ -38,6 +40,13 @@ internal object AppShellReducer {
             is AppShellMutation.SettingsChanged -> state.copy(
                 appearance = mutation.appearance,
                 appCornerRadiusDp = mutation.interfaceSettings.appCornerRadiusDp,
+                windowPolicy = AppWindowPolicy(
+                    isSecureContentEnabled = mutation.securitySettings.isSecureContentEnabled,
+                    isFlipToLockEnabled = mutation.securitySettings.isFlipToLockEnabled,
+                    isFlipExitAndClearStackEnabled =
+                        mutation.securitySettings.isFlipExitAndClearStackEnabled,
+                    isStatusBarAutoHide = mutation.interfaceSettings.hideSystemBars,
+                ),
             )
             AppShellMutation.DatabaseRetryStarted -> state.copy(
                 isDatabaseRetrying = true,

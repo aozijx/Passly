@@ -460,7 +460,7 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "SECURITY_RUNTIME_NARROW_SOURCE",
-            sourcePathContains = "/presentation/feature/shell/AppShellSettingsViewModel.kt",
+            sourcePathContains = "/presentation/feature/shell/AppShellViewModel.kt",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
             ),

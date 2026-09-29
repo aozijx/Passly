@@ -6,18 +6,15 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.message.presentation.AppNoticeHostViewModel
-import com.aozijx.passly.app.shell.FlipToLockSensorController
 import com.aozijx.passly.feature.recovery.RecoveryModeRoute
-import com.aozijx.passly.presentation.feature.unlock.AuthenticationRoute
 import com.aozijx.passly.presentation.feature.shell.ui.DatabaseErrorDialog
+import com.aozijx.passly.presentation.feature.unlock.AuthenticationRoute
 import kotlinx.coroutines.flow.Flow
 
 @Composable
@@ -27,12 +24,9 @@ internal fun AppShellRoute(
     effects: Flow<AppShellEffect>,
     onAction: (AppShellUiAction) -> Unit,
     onCloseApp: () -> Unit,
-    sensorController: FlipToLockSensorController,
 ) {
     val context = LocalContext.current
     val noticePublisher = LocalAppNoticePublisher.current
-    val settingsViewModel: AppShellSettingsViewModel = hiltViewModel()
-    val settings by settingsViewModel.config.collectAsStateWithLifecycle()
     val messageHostViewModel: AppNoticeHostViewModel = hiltViewModel()
 
     LaunchedEffect(messageHostViewModel, context) {
@@ -92,7 +86,6 @@ internal fun AppShellRoute(
 
     AppWindowPolicyEffects(
         window = window,
-        settings = settings,
-        sensorController = sensorController,
+        policy = uiState.windowPolicy,
     )
 }
