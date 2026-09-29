@@ -10,9 +10,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.app.message.compose.ProvideAppNoticePublisher
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
+import com.aozijx.passly.app.message.presentation.AppNoticeEffects
 import com.aozijx.passly.app.platform.permission.PermissionServices
 import com.aozijx.passly.app.platform.permission.ProvidePermissionServices
-import com.aozijx.passly.presentation.feature.shell.AppShellRoute
+import com.aozijx.passly.presentation.feature.shell.AppShell
 import com.aozijx.passly.presentation.feature.shell.AppShellViewModel
 import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
@@ -39,12 +40,13 @@ internal fun PasslyApp(
 
     ProvidePermissionServices(permissionServices) {
         ProvideAppNoticePublisher(noticePublisher) {
+            AppNoticeEffects()
             AppTheme(
                 appearance = shellState.appearance,
                 appCornerRadiusDp = shellState.appCornerRadiusDp,
             ) {
                 AuthenticationHost(activity, authenticationHostRegistry) {
-                    AppShellRoute(
+                    AppShell(
                         window = activity.window,
                         uiState = shellState,
                         effects = shellViewModel.effects,

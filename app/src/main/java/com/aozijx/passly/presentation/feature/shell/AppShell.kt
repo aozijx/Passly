@@ -7,18 +7,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
-import com.aozijx.passly.app.message.presentation.AppNoticeHostViewModel
 import com.aozijx.passly.feature.recovery.RecoveryModeRoute
 import com.aozijx.passly.presentation.feature.shell.ui.DatabaseErrorDialog
 import com.aozijx.passly.presentation.feature.unlock.AuthenticationRoute
 import kotlinx.coroutines.flow.Flow
 
 @Composable
-internal fun AppShellRoute(
+internal fun AppShell(
     window: Window,
     uiState: AppShellUiState,
     effects: Flow<AppShellEffect>,
@@ -27,17 +25,6 @@ internal fun AppShellRoute(
 ) {
     val context = LocalContext.current
     val noticePublisher = LocalAppNoticePublisher.current
-    val messageHostViewModel: AppNoticeHostViewModel = hiltViewModel()
-
-    LaunchedEffect(messageHostViewModel, context) {
-        messageHostViewModel.toastMessages.collect { message ->
-            Toast.makeText(
-                context,
-                message.text,
-                if (message.longDuration) Toast.LENGTH_LONG else Toast.LENGTH_SHORT,
-            ).show()
-        }
-    }
 
     LaunchedEffect(effects, context) {
         effects.collect { effect ->
@@ -63,24 +50,17 @@ internal fun AppShellRoute(
                     onRetry = { onAction(AppShellUiAction.RetryDatabaseSession) },
                     onCloseApp = {
                         noticePublisher.publish(newAppNotice(NoticeCode.APP_CLOSE_REMINDER))
-                        window.decorView.postDelayed(onCloseApp, 1_000L)
+                        window.decorView.postDelayed(onCloseApp, APP_CLOSE_MESSAGE_DELAY_MS)
                     },
                 )
             }
 
-            AppShellDestination.VAULT -> {
-                PasslyAppNavigation()
-            }
+            AppShellDestination.VAULT -> PasslyAppNavigation()
+            AppShellDestination.RECOVERY -> RecoveryModeRoute(
+                onExit = { onAction(AppShellUiAction.ExitRecovery) },
+            )
 
-            AppShellDestination.RECOVERY -> {
-                RecoveryModeRoute(
-                    onExit = { onAction(AppShellUiAction.ExitRecovery) },
-                )
-            }
-
-            AppShellDestination.AUTHENTICATION -> {
-                AuthenticationRoute()
-            }
+            AppShellDestination.AUTHENTICATION -> AuthenticationRoute()
         }
     }
 
@@ -89,3 +69,5 @@ internal fun AppShellRoute(
         policy = uiState.windowPolicy,
     )
 }
+
+private const val APP_CLOSE_MESSAGE_DELAY_MS = 1_000L

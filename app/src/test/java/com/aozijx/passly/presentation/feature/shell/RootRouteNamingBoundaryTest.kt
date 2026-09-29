@@ -23,11 +23,11 @@ class RootRouteNamingBoundaryTest {
         val recoveryScreen = sourceRoot.resolve(
             "com/aozijx/passly/feature/recovery/ui/RecoveryModeScreen.kt",
         )
-        val shellRoute = sourceRoot.resolve(
-            "com/aozijx/passly/presentation/feature/shell/AppShellRoute.kt",
+        val shell = sourceRoot.resolve(
+            "com/aozijx/passly/presentation/feature/shell/AppShell.kt",
         )
 
-        listOf(unlockRoute, unlockScreen, recoveryRoute, recoveryScreen, shellRoute).forEach { file ->
+        listOf(unlockRoute, unlockScreen, recoveryRoute, recoveryScreen, shell).forEach { file ->
             assertTrue("Missing semantic route/screen file: ${file.path}", file.isFile)
         }
         assertTrue(unlockRoute.readText().contains("fun AuthenticationRoute("))
@@ -38,8 +38,8 @@ class RootRouteNamingBoundaryTest {
         assertFalse(recoveryScreen.readText().contains("ViewModel"))
         assertTrue(unlockRoute.readText().contains("hiltViewModel()"))
         assertTrue(recoveryRoute.readText().contains("hiltViewModel()"))
-        assertFalse(shellRoute.readText().contains("UnlockViewModel"))
-        assertFalse(shellRoute.readText().contains("RecoveryModeViewModel"))
+        assertFalse(shell.readText().contains("UnlockViewModel"))
+        assertFalse(shell.readText().contains("RecoveryModeViewModel"))
 
         val legacyRecoveryUi = sourceRoot.resolve(
             "com/aozijx/passly/presentation/ui/recovery",

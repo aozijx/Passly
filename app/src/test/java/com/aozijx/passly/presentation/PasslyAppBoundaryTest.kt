@@ -34,7 +34,8 @@ class PasslyAppBoundaryTest {
             "ProvideAppNoticePublisher",
             "AppTheme(",
             "AuthenticationHost(",
-            "AppShellRoute(",
+            "AppNoticeEffects(",
+            "AppShell(",
         ).forEach { token -> assertTrue(app.contains(token)) }
         assertFalse(app.contains("DeviceLockController"))
         assertTrue(app.contains("hiltViewModel<AppShellViewModel>()"))
@@ -65,9 +66,12 @@ class PasslyAppBoundaryTest {
         assertFalse(detailList.contains("clickable("))
     }
     @Test
-    fun `shell route depends on window and close intent instead of activity`() {
+    fun `shell owns root rendering while notice presentation owns its effect host`() {
         val shell = source(
-            "com/aozijx/passly/presentation/feature/shell/AppShellRoute.kt",
+            "com/aozijx/passly/presentation/feature/shell/AppShell.kt",
+        )
+        val noticeEffects = source(
+            "com/aozijx/passly/app/message/presentation/AppNoticeEffects.kt",
         )
 
         assertFalse(shell.contains("FragmentActivity"))
@@ -75,18 +79,22 @@ class PasslyAppBoundaryTest {
         assertFalse(shell.contains("AppShellViewModel"))
         assertFalse(shell.contains("DeviceLockController"))
         assertFalse(shell.contains("AppShellSettingsViewModel"))
+        assertFalse(shell.contains("AppNoticeHostViewModel"))
+        assertFalse(shell.contains("toastMessages"))
         val navigation = source(
             "com/aozijx/passly/presentation/feature/shell/PasslyAppNavigation.kt",
         )
         assertFalse(navigation.contains("AppShellViewModel"))
         assertTrue(shell.contains("window: Window"))
         assertTrue(shell.contains("onCloseApp: () -> Unit"))
-        assertTrue(shell.contains("fun AppShellRoute("))
+        assertTrue(shell.contains("fun AppShell("))
+        assertTrue(noticeEffects.contains("hiltViewModel<AppNoticeHostViewModel>()"))
+        assertTrue(noticeEffects.contains("toastMessages.collect"))
 
         val sourceRoot = listOf(File("src/main/java"), File("app/src/main/java"))
             .firstOrNull(File::isDirectory) ?: error("Cannot locate app source root")
         assertFalse(
-            sourceRoot.resolve("com/aozijx/passly/presentation/feature/shell/AppShell.kt").exists(),
+            sourceRoot.resolve("com/aozijx/passly/presentation/feature/shell/AppShellRoute.kt").exists(),
         )
         assertFalse(
             sourceRoot.resolve("com/aozijx/passly/presentation/ui/shell")
