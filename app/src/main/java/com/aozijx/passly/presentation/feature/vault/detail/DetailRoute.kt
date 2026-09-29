@@ -25,8 +25,8 @@ fun DetailRoute(
     onBack: () -> Unit,
     onOpenRelatedEntry: (String) -> Unit,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
-    viewModel: DetailViewModel = hiltViewModel(),
 ) {
+    val viewModel = hiltViewModel<DetailViewModel>()
     val context = LocalContext.current
     val presentationState by viewModel.presentation.collectAsStateWithLifecycle()
     val copiedMessageFormat = stringResource(R.string.field_copy_success_message)

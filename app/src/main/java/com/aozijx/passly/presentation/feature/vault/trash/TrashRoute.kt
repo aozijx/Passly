@@ -9,8 +9,8 @@ import com.aozijx.passly.presentation.feature.vault.list.ui.trash.TrashBottomShe
 @Composable
 internal fun TrashRoute(
     onDismiss: () -> Unit,
-    viewModel: TrashViewModel = hiltViewModel(),
 ) {
+    val viewModel = hiltViewModel<TrashViewModel>()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     TrashBottomSheet(
         visible = true,

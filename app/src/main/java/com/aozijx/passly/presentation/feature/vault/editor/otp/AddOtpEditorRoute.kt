@@ -26,8 +26,8 @@ fun AddOtpEditorRoute(
     onSaved: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    viewModel: AddOtpViewModel = hiltViewModel(),
 ) {
+    val viewModel = hiltViewModel<AddOtpViewModel>()
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }

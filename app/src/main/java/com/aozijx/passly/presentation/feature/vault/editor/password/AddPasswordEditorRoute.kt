@@ -20,8 +20,8 @@ fun AddPasswordEditorRoute(
     onSaved: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    viewModel: AddPasswordViewModel = hiltViewModel(),
 ) {
+    val viewModel = hiltViewModel<AddPasswordViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val saveFailedMessage = stringResource(R.string.vault_add_password_save_failed)

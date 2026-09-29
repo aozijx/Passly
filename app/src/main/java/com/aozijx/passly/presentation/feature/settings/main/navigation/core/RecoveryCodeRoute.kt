@@ -16,8 +16,8 @@ import com.aozijx.passly.presentation.feature.settings.ui.security.RecoveryCodeS
 @Composable
 internal fun RecoveryCodeRoute(
     onBack: (() -> Unit)?,
-    viewModel: RecoveryCodeSettingsViewModel = hiltViewModel(),
 ) {
+    val viewModel = hiltViewModel<RecoveryCodeSettingsViewModel>()
     val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val copySuccessMessage = stringResource(

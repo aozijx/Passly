@@ -20,8 +20,8 @@ fun AddBankCardEditorRoute(
     onSaved: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    viewModel: AddBankCardViewModel = hiltViewModel(),
 ) {
+    val viewModel = hiltViewModel<AddBankCardViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val saveFailedMessage = stringResource(R.string.vault_add_bank_card_save_failed)
