@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
@@ -18,7 +19,8 @@ import com.aozijx.passly.feature.recovery.ui.RecoveryPasswordStrengthTone
 import com.aozijx.passly.feature.recovery.ui.RecoveryPasswordStrengthUiModel
 
 @Composable
-fun RecoveryModeRoute(viewModel: RecoveryModeViewModel, onExit: () -> Unit) {
+fun RecoveryModeRoute(onExit: () -> Unit) {
+    val viewModel: RecoveryModeViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LaunchedEffect(viewModel) {
