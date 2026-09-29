@@ -55,7 +55,7 @@ class EntryContentSnapshotCodecTest {
 
             val encoded = encryptor.decrypt(encrypted, DatabaseRecordAad.revision(ENTRY_ID))
 
-            assertTrue(encoded.startsWith("content2:"))
+            assertTrue(encoded.startsWith("content1:"))
         }
     }
 

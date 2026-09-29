@@ -7,5 +7,7 @@ import javax.inject.Inject
 internal class ObserveEntryRevisionsUseCase @Inject constructor(
     private val repository: EntryRevisionRepository,
 ) {
+    suspend fun initialize() = repository.initializeHistory()
+
     operator fun invoke(entryId: EntryId) = repository.observeMetadata(entryId)
 }

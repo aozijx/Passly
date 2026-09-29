@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+option java_package = "com.aozijx.passly.data.maintenance.proto";
+option java_multiple_files = true;
+
+message RevisionHistoryMaintenance {
+  int32 completed_generation = 1;
+}

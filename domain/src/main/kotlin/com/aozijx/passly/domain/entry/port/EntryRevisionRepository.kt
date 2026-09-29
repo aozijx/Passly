@@ -12,6 +12,8 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import kotlinx.coroutines.flow.Flow
 
 interface EntryRevisionRepository {
+    suspend fun initializeHistory(): AppResult<Unit>
+
     fun observeMetadata(entryId: EntryId): Flow<List<EntryRevisionMetadata>>
 
     suspend fun loadRedacted(

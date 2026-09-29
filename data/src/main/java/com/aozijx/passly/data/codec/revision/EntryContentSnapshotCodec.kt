@@ -155,7 +155,7 @@ class EntryContentSnapshotCodec @Inject constructor(
     }
 
     private companion object {
-        const val FORMAT_PREFIX = "content2:"
+        const val FORMAT_PREFIX = "content1:"
         const val MAX_SNAPSHOT_BYTES = 8 * 1024 * 1024
     }
 }

@@ -37,6 +37,17 @@ import org.junit.Test
 
 class EntryRevisionUseCasesTest {
     @Test
+    fun `history initialization delegates once to the revision repository`() = runBlocking {
+        val repository = RecordingRevisionRepository()
+        val useCase = ObserveEntryRevisionsUseCase(repository)
+
+        val result = useCase.initialize()
+
+        assertEquals(AppResult.success(Unit), result)
+        assertEquals(1, repository.initializeCalls)
+    }
+
+    @Test
     fun `reveal authorizes and forwards exact revision key set`() = runBlocking {
         val repository = RecordingRevisionRepository()
         val gate = RecordingAuthorizationGate()
@@ -146,10 +157,16 @@ class EntryRevisionUseCasesTest {
         private val snapshot: RedactedEntryRevision? = null,
         private val restoreResult: AppResult<EntryVersion> = AppResult.success(EntryVersion(8)),
     ) : EntryRevisionRepository {
+        var initializeCalls: Int = 0
         var revealedKeys: Set<SensitiveFieldKey>? = null
         var restoredVersion: EntryVersion? = null
         var restorePermit: AuthorizationPermit? = null
         var restoreCalls: Int = 0
+
+        override suspend fun initializeHistory(): AppResult<Unit> {
+            initializeCalls += 1
+            return AppResult.success(Unit)
+        }
 
         override fun observeMetadata(entryId: EntryId): Flow<List<com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata>> = emptyFlow()
 

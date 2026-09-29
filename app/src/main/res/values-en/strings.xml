@@ -204,4 +204,12 @@
     <string name="revision_field_notes">Notes</string>
     <string name="revision_field_attachments">Attachments</string>
     <string name="revision_field_links">Related entries</string>
+    <string name="revision_field_primary_url">Primary URL</string>
+    <string name="revision_field_domains">Associated domains</string>
+    <string name="revision_field_applications">Associated apps</string>
+    <string name="revision_field_icon">Icon</string>
+    <string name="revision_field_favorite">Favorite status</string>
+    <string name="revision_field_expiration">Expiration</string>
+    <string name="revision_field_credential">Credential content</string>
+    <string name="revision_field_custom_fields">Custom fields</string>
 </resources>

@@ -512,6 +512,17 @@ class DetailViewModel @Inject internal constructor(
         clearRevisionReveals()
         mutate(DetailMutation.Revision(DetailRevisionMutation.Opened(entryId)))
         revisionObservationJob = viewModelScope.launch {
+            when (val initialization = observeEntryRevisions.initialize()) {
+                is AppResult.Failure -> {
+                    mutateRevisionFailure(
+                        entryId = entryId,
+                        revisionId = null,
+                        result = RevisionOperationResult.Failed(initialization.error),
+                    )
+                    return@launch
+                }
+                is AppResult.Success -> Unit
+            }
             observeEntryRevisions(entryId).collect { revisions ->
                 mutate(
                     DetailMutation.Revision(

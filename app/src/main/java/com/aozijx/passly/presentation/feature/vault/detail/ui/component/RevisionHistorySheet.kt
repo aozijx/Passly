@@ -21,8 +21,10 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -45,9 +47,13 @@ fun RevisionHistorySheet(
     onAction: (DetailUiAction) -> Unit,
 ) {
     if (!model.visible) return
+    val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
     ModalBottomSheet(
         onDismissRequest = { onAction(DetailUiAction.DismissRevisionHistory) },
         modifier = Modifier.fillMaxHeight(0.94f),
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = 0.dp,
     ) {
         when (model.destination) {
             DetailRevisionDestinationUiModel.LIST -> RevisionList(model, onAction)
@@ -79,7 +85,7 @@ private fun RevisionList(
     onAction: (DetailUiAction) -> Unit,
 ) {
     val formatter = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
-    Column(Modifier.fillMaxWidth()) {
+    Column(Modifier.fillMaxWidth().fillMaxHeight()) {
         Text(
             text = stringResource(R.string.revision_history_title),
             style = MaterialTheme.typography.headlineSmall,
@@ -118,7 +124,7 @@ private fun RevisionComparison(
     model: DetailRevisionSheetUiModel,
     onAction: (DetailUiAction) -> Unit,
 ) {
-    Column(Modifier.fillMaxWidth()) {
+    Column(Modifier.fillMaxWidth().fillMaxHeight()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -192,11 +198,42 @@ private fun RevisionDifferenceRow(
 private fun fieldLabel(field: RevisionFieldId): String = when (field) {
     RevisionFieldId.Title -> stringResource(R.string.revision_field_title)
     RevisionFieldId.Username -> stringResource(R.string.vault_detail_username)
+    RevisionFieldId.PrimaryUrl -> stringResource(R.string.revision_field_primary_url)
+    RevisionFieldId.Domains -> stringResource(R.string.revision_field_domains)
+    RevisionFieldId.ApplicationIds -> stringResource(R.string.revision_field_applications)
+    RevisionFieldId.Icon -> stringResource(R.string.revision_field_icon)
+    RevisionFieldId.Favorite -> stringResource(R.string.revision_field_favorite)
+    RevisionFieldId.Tags -> stringResource(R.string.vault_detail_tags_title)
+    RevisionFieldId.ExpiresAt -> stringResource(R.string.revision_field_expiration)
+    RevisionFieldId.Credential -> stringResource(R.string.revision_field_credential)
     RevisionFieldId.Notes -> stringResource(R.string.revision_field_notes)
+    RevisionFieldId.CustomFields -> stringResource(R.string.revision_field_custom_fields)
     RevisionFieldId.Attachments -> stringResource(R.string.revision_field_attachments)
     RevisionFieldId.Links -> stringResource(R.string.revision_field_links)
-    is RevisionFieldId.Sensitive -> field.key.name.replace('_', ' ')
-    else -> field.toString().substringAfterLast('.')
+    is RevisionFieldId.Sensitive -> when (field.key) {
+        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.PASSWORD ->
+            stringResource(R.string.password_label)
+        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.CARD_NUMBER ->
+            stringResource(R.string.card_number)
+        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.CARD_CVV ->
+            stringResource(R.string.card_cvv)
+        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.CARD_PAYMENT_PIN ->
+            stringResource(R.string.payment_pin)
+        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.IDENTITY_NUMBER ->
+            stringResource(R.string.id_number)
+        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.SEED_PHRASE ->
+            stringResource(R.string.seed_phrase)
+        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.RECOVERY_CODES ->
+            stringResource(R.string.recovery_code_label)
+        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.SSH_PRIVATE_KEY ->
+            stringResource(R.string.ssh_private_key)
+        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.SSH_PASSPHRASE ->
+            stringResource(R.string.passphrase)
+        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE ->
+            stringResource(R.string.passkey_data)
+        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.OTP_SECRET ->
+            stringResource(R.string.vault_detail_totp_label)
+    }
 }
 
 @Composable

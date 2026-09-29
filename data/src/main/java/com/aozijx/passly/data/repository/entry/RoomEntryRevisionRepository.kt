@@ -9,6 +9,7 @@ import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
+import com.aozijx.passly.data.repository.entry.command.InitializeEntryRevisionHistory
 import com.aozijx.passly.data.repository.entry.command.RestoreEntryRevisionExecutor
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -40,7 +41,10 @@ internal class RoomEntryRevisionRepository @Inject constructor(
     private val secretFieldCodec: SecretFieldCodec,
     private val permitConsumer: RevisionPermitConsumer,
     private val restoreExecutor: RestoreEntryRevisionExecutor,
+    private val historyInitializer: InitializeEntryRevisionHistory,
 ) : EntryRevisionRepository {
+    override suspend fun initializeHistory(): AppResult<Unit> = historyInitializer.execute()
+
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeMetadata(entryId: EntryId): Flow<List<EntryRevisionMetadata>> =
         sessionState.isAuthorized.flatMapLatest { authorized ->
@@ -54,23 +58,27 @@ internal class RoomEntryRevisionRepository @Inject constructor(
     override suspend fun loadRedacted(
         entryId: EntryId,
         revisionId: EntryRevisionId,
-    ): AppResult<RedactedEntryRevision> = databaseTransactions.read("entry_revision_load") {
-        val revision = entryRevisionQueryDao().getById(entryId.value, revisionId.value)
-            ?: throw NotFound()
-        val content = contentCodec.decrypt(revision.entryContentCipher, entryId.value)
-        val sensitiveFingerprints = sensitiveCodec.decodeFingerprints(
-            revision.sensitiveFieldCipherSet,
-        )
-        RedactedEntryRevision(
-            metadata = revision.toRevisionMetadata(),
-            profile = content.summary,
-            secret = content.secret,
-            links = content.links,
-            attachmentIds = revisionAttachmentRefDao().getByRevisionId(revisionId.value)
-                .mapTo(linkedSetOf()) { it.attachmentId },
-            sensitiveFieldKeys = sensitiveFingerprints.keys,
-            sensitiveFieldFingerprints = sensitiveFingerprints,
-        )
+    ): AppResult<RedactedEntryRevision> {
+        val initialized = historyInitializer.execute()
+        if (initialized is AppResult.Failure) return initialized
+        return databaseTransactions.read("entry_revision_load") {
+            val revision = entryRevisionQueryDao().getById(entryId.value, revisionId.value)
+                ?: throw NotFound()
+            val content = contentCodec.decrypt(revision.entryContentCipher, entryId.value)
+            val sensitiveFingerprints = sensitiveCodec.decodeFingerprints(
+                revision.sensitiveFieldCipherSet,
+            )
+            RedactedEntryRevision(
+                metadata = revision.toRevisionMetadata(),
+                profile = content.summary,
+                secret = content.secret,
+                links = content.links,
+                attachmentIds = revisionAttachmentRefDao().getByRevisionId(revisionId.value)
+                    .mapTo(linkedSetOf()) { it.attachmentId },
+                sensitiveFieldKeys = sensitiveFingerprints.keys,
+                sensitiveFieldFingerprints = sensitiveFingerprints,
+            )
+        }
     }
 
     override suspend fun reveal(
@@ -79,29 +87,32 @@ internal class RoomEntryRevisionRepository @Inject constructor(
         keys: Set<SensitiveFieldKey>,
         permit: AuthorizationPermit,
     ): AppResult<List<RevealedRevisionSensitiveField>> =
-        databaseTransactions.read("entry_revision_reveal") {
-            if (keys.isEmpty()) throw ValidationError()
-            val revision = entryRevisionQueryDao().getById(entryId.value, revisionId.value)
-                ?: throw NotFound()
-            val fields = sensitiveCodec.decode(revision.sensitiveFieldCipherSet)
-            val fieldsByKey = fields.associateBy { it.key }
-            if (!fieldsByKey.keys.containsAll(keys)) throw NotFound()
-            if (!permitConsumer.consumeReveal(permit, entryId, revisionId, keys)) {
-                throw ValidationError()
-            }
-            keys.map { key ->
-                RevealedRevisionSensitiveField(
-                    revisionId = revisionId.value,
-                    entryId = entryId,
-                    key = key,
-                    value = OwnedChars.fromString(
-                        secretFieldCodec.decrypt(
-                            entryId = entryId.value,
-                            key = key,
-                            cipher = fieldsByKey.getValue(key).valueCipher,
+        when (val initialized = historyInitializer.execute()) {
+            is AppResult.Failure -> initialized
+            is AppResult.Success -> databaseTransactions.read("entry_revision_reveal") {
+                if (keys.isEmpty()) throw ValidationError()
+                val revision = entryRevisionQueryDao().getById(entryId.value, revisionId.value)
+                    ?: throw NotFound()
+                val fields = sensitiveCodec.decode(revision.sensitiveFieldCipherSet)
+                val fieldsByKey = fields.associateBy { it.key }
+                if (!fieldsByKey.keys.containsAll(keys)) throw NotFound()
+                if (!permitConsumer.consumeReveal(permit, entryId, revisionId, keys)) {
+                    throw ValidationError()
+                }
+                keys.map { key ->
+                    RevealedRevisionSensitiveField(
+                        revisionId = revisionId.value,
+                        entryId = entryId,
+                        key = key,
+                        value = OwnedChars.fromString(
+                            secretFieldCodec.decrypt(
+                                entryId = entryId.value,
+                                key = key,
+                                cipher = fieldsByKey.getValue(key).valueCipher,
+                            ),
                         ),
-                    ),
-                )
+                    )
+                }
             }
         }
 
@@ -110,12 +121,15 @@ internal class RoomEntryRevisionRepository @Inject constructor(
         revisionId: EntryRevisionId,
         expectedVersion: EntryVersion,
         permit: AuthorizationPermit?,
-    ): AppResult<EntryVersion> = restoreExecutor.execute(
-        entryId = entryId,
-        revisionId = revisionId,
-        expectedVersion = expectedVersion,
-        permit = permit,
-    )
+    ): AppResult<EntryVersion> = when (val initialized = historyInitializer.execute()) {
+        is AppResult.Failure -> initialized
+        is AppResult.Success -> restoreExecutor.execute(
+            entryId = entryId,
+            revisionId = revisionId,
+            expectedVersion = expectedVersion,
+            permit = permit,
+        )
+    }
 }
 
 internal fun EntryRevisionEntity.toRevisionMetadata() = EntryRevisionMetadata(

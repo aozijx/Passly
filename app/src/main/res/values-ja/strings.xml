@@ -185,4 +185,27 @@
     <string name="related_entries">関連エントリ</string>
     <string name="app_package_picker_title">関連アプリを選択</string>
     <string name="app_package_picker_search">アプリまたはパッケージ名を検索</string>
+    <string name="revision_history_title">バージョン履歴</string>
+    <string name="revision_history_empty">利用可能なバージョンはありません</string>
+    <string name="revision_version_format">バージョン %1$d</string>
+    <string name="revision_compare_action">変更を表示</string>
+    <string name="revision_comparison_title">バージョンの変更</string>
+    <string name="revision_restore_title">このバージョンを復元しますか？</string>
+    <string name="revision_restore_message">選択したバージョンを復元する前に、現在の内容を新しいバージョンとして保存します。</string>
+    <string name="revision_restore_action">バージョンを復元</string>
+    <string name="revision_load_failed">このバージョンを読み込めませんでした。戻ってもう一度お試しください。</string>
+    <string name="revision_sensitive_masked">機密情報は非表示です</string>
+    <string name="revision_reveal_action">認証して表示</string>
+    <string name="revision_field_title">タイトル</string>
+    <string name="revision_field_notes">メモ</string>
+    <string name="revision_field_attachments">添付ファイル</string>
+    <string name="revision_field_links">関連エントリ</string>
+    <string name="revision_field_primary_url">メインURL</string>
+    <string name="revision_field_domains">関連ドメイン</string>
+    <string name="revision_field_applications">関連アプリ</string>
+    <string name="revision_field_icon">アイコン</string>
+    <string name="revision_field_favorite">お気に入り状態</string>
+    <string name="revision_field_expiration">有効期限</string>
+    <string name="revision_field_credential">認証情報</string>
+    <string name="revision_field_custom_fields">カスタムフィールド</string>
 </resources>

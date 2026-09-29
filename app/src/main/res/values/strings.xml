@@ -212,4 +212,12 @@
     <string name="revision_field_notes">备注</string>
     <string name="revision_field_attachments">附件</string>
     <string name="revision_field_links">关联条目</string>
+    <string name="revision_field_primary_url">主要网址</string>
+    <string name="revision_field_domains">关联域名</string>
+    <string name="revision_field_applications">关联应用</string>
+    <string name="revision_field_icon">图标</string>
+    <string name="revision_field_favorite">收藏状态</string>
+    <string name="revision_field_expiration">到期时间</string>
+    <string name="revision_field_credential">凭据内容</string>
+    <string name="revision_field_custom_fields">自定义字段</string>
 </resources>
