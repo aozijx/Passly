@@ -6,6 +6,8 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
+import java.nio.ByteBuffer
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -61,6 +63,16 @@ class SensitiveRevisionSnapshotCodec @Inject constructor() {
     /** Returns field presence without exposing historical ciphertext bytes to ordinary queries. */
     fun decodeKeys(blob: ByteArray): Set<SensitiveFieldKey> =
         decode(blob).mapTo(linkedSetOf()) { it.key }
+
+    /** Produces irreversible equality tokens without returning ciphertext to presentation layers. */
+    fun decodeFingerprints(blob: ByteArray): Map<SensitiveFieldKey, String> =
+        decode(blob).associate { field ->
+            val digest = MessageDigest.getInstance("SHA-256").apply {
+                update(ByteBuffer.allocate(Int.SIZE_BYTES).putInt(field.keyVersion).array())
+                update(field.valueCipher)
+            }.digest()
+            field.key to digest.joinToString(separator = "") { byte -> "%02x".format(byte) }
+        }
 
     private companion object {
         const val FORMAT_VERSION = 1

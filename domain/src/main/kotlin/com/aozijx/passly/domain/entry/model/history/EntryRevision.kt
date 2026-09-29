@@ -58,6 +58,14 @@ data class RedactedEntryRevision(
     val links: List<EntryLink> = emptyList(),
     val attachmentIds: Set<String> = emptySet(),
     val sensitiveFieldKeys: Set<SensitiveFieldKey> = emptySet(),
-)
+    /** Opaque ciphertext fingerprints used only to classify changed versus unchanged values. */
+    val sensitiveFieldFingerprints: Map<SensitiveFieldKey, String> = emptyMap(),
+) {
+    init {
+        require(sensitiveFieldKeys.containsAll(sensitiveFieldFingerprints.keys)) {
+            "Sensitive fingerprints must belong to present fields"
+        }
+    }
+}
 
 enum class RevisionChange { VALUE_CHANGED, VERSION_RESTORED }

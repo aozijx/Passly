@@ -4,6 +4,7 @@ import android.net.Uri
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFieldUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconDraftSourceUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconEditorTabUiModel
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 
 sealed interface DetailUiAction {
 
@@ -60,9 +61,18 @@ sealed interface DetailUiAction {
     data object ExportOtpQr : DetailSensitiveAction
     data class ToggleAccessHistoryRecording(val enabled: Boolean) : DetailSensitiveAction
     data object ClearSensitiveState : DetailSensitiveAction
+    data object OpenRevisionHistory : DetailRevisionAction
+    data object DismissRevisionHistory : DetailRevisionAction
+    data class SelectRevision(val revisionId: String) : DetailRevisionAction
+    data object RevisionBack : DetailRevisionAction
+    data class RevealRevisionField(val key: SensitiveFieldKey) : DetailRevisionAction
+    data object RequestRevisionRestore : DetailRevisionAction
+    data object CancelRevisionRestore : DetailRevisionAction
+    data object ConfirmRevisionRestore : DetailRevisionAction
 }
 
 sealed interface DetailEntryAction : DetailUiAction
 sealed interface DetailSensitiveAction : DetailUiAction
 sealed interface DetailTagAction : DetailUiAction
 sealed interface DetailFaviconAction : DetailUiAction
+sealed interface DetailRevisionAction : DetailUiAction

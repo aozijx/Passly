@@ -64,12 +64,34 @@ class EntryRevisionComparatorTest {
         }
     }
 
+    @Test
+    fun `opaque fingerprints classify changed sensitive values without exposing them`() {
+        val historical = revision(
+            id = "old",
+            sensitive = setOf(SensitiveFieldKey.PASSWORD),
+            fingerprints = mapOf(SensitiveFieldKey.PASSWORD to "old-token"),
+        )
+        val current = revision(
+            id = "current",
+            sensitive = setOf(SensitiveFieldKey.PASSWORD),
+            fingerprints = mapOf(SensitiveFieldKey.PASSWORD to "new-token"),
+        )
+
+        val difference = comparator.compare(historical, current)
+            .single { it.field == RevisionFieldId.Sensitive(SensitiveFieldKey.PASSWORD) }
+
+        assertEquals(RevisionDifferenceKind.CHANGED, difference.kind)
+        assertNull(difference.before)
+        assertNull(difference.after)
+    }
+
     private fun revision(
         id: String,
         title: String = "Title",
         notes: String? = null,
         attachments: Set<String> = emptySet(),
         sensitive: Set<SensitiveFieldKey> = emptySet(),
+        fingerprints: Map<SensitiveFieldKey, String> = emptyMap(),
     ) = RedactedEntryRevision(
         metadata = EntryRevisionMetadata(
             id = EntryRevisionId(id),
@@ -82,5 +104,6 @@ class EntryRevisionComparatorTest {
         secret = EntrySecret(credential = LoginCredential(), notes = notes),
         attachmentIds = attachments,
         sensitiveFieldKeys = sensitive,
+        sensitiveFieldFingerprints = fingerprints,
     )
 }

@@ -4,6 +4,8 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
+import com.aozijx.passly.domain.entry.model.history.RevisionFieldValue
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.shared.components.AppPackagePickerItemUiModel
@@ -26,6 +28,10 @@ import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailOtpUiM
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailPasskeyUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailPresentationModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailSectionUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionDestinationUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionDifferenceUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionItemUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionSheetUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailSeedPhraseUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailSshUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailTagEditorUiModel
@@ -68,6 +74,7 @@ internal fun detailOtpUiModel(otp: OtpCodeState?): DetailOtpUiModel? = otp?.let 
 internal fun toDetailPresentationModel(
     state: DetailUiState,
     otp: OtpCodeState?,
+    revisionReveals: Map<SensitiveFieldKey, SensitiveValue> = emptyMap(),
 ): DetailPresentationModel? {
     val entry = state.entry ?: return null
     val shared = detailContentUiModel(entry, state)
@@ -189,6 +196,41 @@ internal fun toDetailPresentationModel(
             faviconEditor = state.faviconEditor.toFaviconEditorUiModel(),
             savingTags = state.savingEdit == DetailEditCompletion.Tags,
             savingIcon = state.savingEdit == DetailEditCompletion.Icon,
+            revisionHistory = DetailRevisionSheetUiModel(
+                visible = state.revisions.visible,
+                destination = DetailRevisionDestinationUiModel.valueOf(
+                    state.revisions.destination.name,
+                ),
+                revisions = state.revisions.metadata.map {
+                    DetailRevisionItemUiModel(
+                        id = it.id.value,
+                        version = it.version.value,
+                        createdAtMs = it.createdAtMs,
+                        change = it.change,
+                    )
+                },
+                differences = state.revisions.differences
+                    .filter { it.kind.name != "UNCHANGED" }
+                    .map { difference ->
+                        val sensitiveKey = (difference.field as? RevisionFieldId.Sensitive)?.key
+                        DetailRevisionDifferenceUiModel(
+                            field = difference.field,
+                            kind = difference.kind,
+                            before = difference.before?.toDisplayText(),
+                            after = difference.after?.toDisplayText(),
+                            revealedValue = sensitiveKey?.let(revisionReveals::get)
+                                ?.asScopedSensitiveText(),
+                        )
+                    },
+                loading = state.revisions.loading,
+                restoring = state.revisions.restoring,
+                confirmRestore = state.revisions.confirmRestore,
+                failure = state.revisions.failure?.name,
+                selectedRevisionId = state.revisions.selectedRevisionId,
+                revealableKeys = state.revisions.differences.mapNotNullTo(linkedSetOf()) {
+                    (it.field as? RevisionFieldId.Sensitive)?.key
+                },
+            ),
         ),
     )
 }
@@ -253,4 +295,20 @@ private fun DetailSectionKey.toUiModel(): DetailSectionUiModel? = when (this) {
     DetailSectionKey.NOTES,
     DetailSectionKey.METADATA,
     DetailSectionKey.ACTIVITY -> null
+}
+
+private fun RevisionFieldValue.toDisplayText(): String = when (this) {
+    is RevisionFieldValue.Text -> value
+    is RevisionFieldValue.TextSet -> values.joinToString()
+    is RevisionFieldValue.Flag -> value.toString()
+    is RevisionFieldValue.EpochMillis -> value.toString()
+    is RevisionFieldValue.Icon -> listOfNotNull(
+        value.name,
+        value.customReference,
+        value.color,
+    ).joinToString()
+    is RevisionFieldValue.Credential -> value.toString()
+    is RevisionFieldValue.CustomFields -> values.joinToString { "${it.name}: ${it.value}" }
+    is RevisionFieldValue.Links -> values.joinToString { it.relationType.name }
+    is RevisionFieldValue.AttachmentIds -> values.joinToString()
 }

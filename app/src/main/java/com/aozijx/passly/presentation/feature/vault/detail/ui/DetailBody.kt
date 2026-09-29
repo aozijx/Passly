@@ -26,6 +26,7 @@ import com.aozijx.passly.presentation.feature.vault.detail.ui.component.Metadata
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.NotesSection
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.PasskeySection
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.RelatedEntriesSection
+import com.aozijx.passly.presentation.feature.vault.detail.ui.component.RevisionHistorySection
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.SeedPhraseSection
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.SshKeySection
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.TotpQrUiState
@@ -217,6 +218,11 @@ fun DetailBody(
             )
         }
         item { MetadataSection(model.metadata) }
+        item {
+            RevisionHistorySection {
+                onAction(DetailUiAction.OpenRevisionHistory)
+            }
+        }
         item { ActivityTimelineSection(model.activities) }
     }
 

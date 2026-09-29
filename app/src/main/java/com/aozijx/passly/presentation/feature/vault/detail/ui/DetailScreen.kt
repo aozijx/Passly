@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.DetailTopBar
+import com.aozijx.passly.presentation.feature.vault.detail.ui.component.RevisionHistorySheet
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailPresentationModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,5 +52,9 @@ fun DetailScreen(
         model = model.overlays,
         onAction = onAction,
         onFaviconUploadRequested = onFaviconUploadRequested,
+    )
+    RevisionHistorySheet(
+        model = model.overlays.revisionHistory,
+        onAction = onAction,
     )
 }

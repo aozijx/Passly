@@ -74,6 +74,10 @@ object EntryRevisionComparator {
             val kind = when {
                 key !in historical.sensitiveFieldKeys -> RevisionDifferenceKind.ADDED
                 key !in current.sensitiveFieldKeys -> RevisionDifferenceKind.REMOVED
+                historical.sensitiveFieldFingerprints[key] != null &&
+                    current.sensitiveFieldFingerprints[key] != null &&
+                    historical.sensitiveFieldFingerprints[key] !=
+                    current.sensitiveFieldFingerprints[key] -> RevisionDifferenceKind.CHANGED
                 else -> RevisionDifferenceKind.UNCHANGED
             }
             add(EntryRevisionDifference(RevisionFieldId.Sensitive(key), kind, null, null))

@@ -1,5 +1,9 @@
 package com.aozijx.passly.presentation.feature.vault.detail.ui.model
 
+import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
+import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
+import com.aozijx.passly.domain.entry.model.history.RevisionChange
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.presentation.shared.components.AppPackagePickerItemUiModel
 
 data class DetailPresentationModel(
@@ -45,6 +49,37 @@ data class DetailEditorOverlaysUiModel(
     val faviconEditor: DetailFaviconEditorUiModel,
     val savingTags: Boolean,
     val savingIcon: Boolean,
+    val revisionHistory: DetailRevisionSheetUiModel,
+)
+
+enum class DetailRevisionDestinationUiModel { LIST, COMPARISON }
+
+data class DetailRevisionItemUiModel(
+    val id: String,
+    val version: Int,
+    val createdAtMs: Long,
+    val change: RevisionChange,
+)
+
+data class DetailRevisionDifferenceUiModel(
+    val field: RevisionFieldId,
+    val kind: RevisionDifferenceKind,
+    val before: String?,
+    val after: String?,
+    val revealedValue: ScopedSensitiveText? = null,
+)
+
+data class DetailRevisionSheetUiModel(
+    val visible: Boolean = false,
+    val destination: DetailRevisionDestinationUiModel = DetailRevisionDestinationUiModel.LIST,
+    val revisions: List<DetailRevisionItemUiModel> = emptyList(),
+    val differences: List<DetailRevisionDifferenceUiModel> = emptyList(),
+    val loading: Boolean = false,
+    val restoring: Boolean = false,
+    val confirmRestore: Boolean = false,
+    val failure: String? = null,
+    val selectedRevisionId: String? = null,
+    val revealableKeys: Set<SensitiveFieldKey> = emptySet(),
 )
 
 enum class DetailSectionUiModel {

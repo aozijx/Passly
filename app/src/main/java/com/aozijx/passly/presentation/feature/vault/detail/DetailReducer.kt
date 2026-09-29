@@ -3,6 +3,8 @@ package com.aozijx.passly.presentation.feature.vault.detail
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionMutation
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionReducer
 
 internal sealed interface DetailTagEditorMutation : DetailMutation
 
@@ -39,6 +41,7 @@ internal sealed interface DetailMutation {
         val completion: DetailEditCompletion,
         val errorCode: String,
     ) : DetailMutation
+    data class Revision(val mutation: DetailRevisionMutation) : DetailMutation
 
     data class TagEditorOpened(
         val currentTags: Set<String>,
@@ -212,6 +215,10 @@ internal object DetailReducer {
                     )
                 }
             }
+
+            is DetailMutation.Revision -> state.copy(
+                revisions = DetailRevisionReducer.reduce(state.revisions, mutation.mutation),
+            )
 
             is DetailTagEditorMutation -> state.copy(
                 tagEditor = DetailTagEditorReducer.reduce(state.tagEditor, mutation),

@@ -22,9 +22,18 @@ import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.model.OtpCodeState
+import com.aozijx.passly.feature.vault.history.CompareEntryRevisionUseCase
+import com.aozijx.passly.feature.vault.history.ObserveEntryRevisionsUseCase
+import com.aozijx.passly.feature.vault.history.RestoreEntryRevisionUseCase
+import com.aozijx.passly.feature.vault.history.RevealRevisionFieldsUseCase
+import com.aozijx.passly.feature.vault.history.RevisionOperationResult
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFieldUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailPresentationModel
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionFailure
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionMutation
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionRevealStore
+import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -50,14 +59,21 @@ class DetailViewModel @Inject internal constructor(
     private val copyOtpCodeUseCase: CopyOtpCodeUseCase,
     private val faviconImageProcessor: FaviconImageProcessor,
     private val presentationLoader: DetailPresentationLoader,
+    private val observeEntryRevisions: ObserveEntryRevisionsUseCase,
+    private val compareEntryRevision: CompareEntryRevisionUseCase,
+    private val revealRevisionFields: RevealRevisionFieldsUseCase,
+    private val restoreEntryRevision: RestoreEntryRevisionUseCase,
     otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
 ) : ViewModel() {
     private val revealStore = DetailRevealStore()
+    private val revisionRevealStore = DetailRevisionRevealStore()
     private val faviconSession = DetailFaviconSession(faviconImageProcessor, viewModelScope)
     private val otpRuntime = otpCodeRuntimeFactory.create(viewModelScope)
     private var entryLoadJob: Job? = null
     private var historyJob: Job? = null
     private var packagePickerLoadJob: Job? = null
+    private var revisionObservationJob: Job? = null
+    private var revisionOperationJob: Job? = null
     private var loadedEntryId: EntryId? = null
 
     private val _uiState = MutableStateFlow(DetailUiState())
@@ -66,8 +82,13 @@ class DetailViewModel @Inject internal constructor(
     val effects = _effects.receiveAsFlow()
     private val _otpState = MutableStateFlow<OtpCodeState?>(null)
     val otpState: StateFlow<OtpCodeState?> = _otpState.asStateFlow()
-    val presentation: StateFlow<DetailPresentationModel?> = combine(_uiState, _otpState) { state, otp ->
-        toDetailPresentationModel(state, otp)
+    private val _revisionReveals = MutableStateFlow(emptyMap<SensitiveFieldKey, SensitiveValue>())
+    val presentation: StateFlow<DetailPresentationModel?> = combine(
+        _uiState,
+        _otpState,
+        _revisionReveals,
+    ) { state, otp, revisionReveals ->
+        toDetailPresentationModel(state, otp, revisionReveals)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -365,6 +386,21 @@ class DetailViewModel @Inject internal constructor(
             DetailUiAction.ClearSensitiveState -> {
                 clearSensitiveState()
             }
+
+            DetailUiAction.OpenRevisionHistory -> openRevisionHistory()
+            DetailUiAction.DismissRevisionHistory -> closeRevisionHistory()
+            is DetailUiAction.SelectRevision -> selectRevision(event.revisionId)
+            DetailUiAction.RevisionBack -> {
+                revisionOperationJob?.cancel()
+                clearRevisionReveals()
+                mutate(DetailMutation.Revision(DetailRevisionMutation.BackToList))
+            }
+            is DetailUiAction.RevealRevisionField -> revealRevisionField(event.key)
+            DetailUiAction.RequestRevisionRestore ->
+                mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreRequested))
+            DetailUiAction.CancelRevisionRestore ->
+                mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreCancelled))
+            DetailUiAction.ConfirmRevisionRestore -> restoreSelectedRevision()
         }
     }
 
@@ -406,9 +442,12 @@ class DetailViewModel @Inject internal constructor(
         entryLoadJob?.cancel()
         historyJob?.cancel()
         packagePickerLoadJob?.cancel()
+        revisionObservationJob?.cancel()
+        revisionOperationJob?.cancel()
         otpRuntime.clearAllSensitiveState()
         _otpState.value = null
         revealStore.clear()
+        clearRevisionReveals()
         mutate(DetailMutation.StateCleared)
         entryLoadJob = viewModelScope.launch {
             if (!accessPolicy.hasFullAccess()) return@launch
@@ -458,9 +497,124 @@ class DetailViewModel @Inject internal constructor(
 
     private fun clearSensitiveState() {
         revealStore.clear()
+        revisionObservationJob?.cancel()
+        revisionOperationJob?.cancel()
+        clearRevisionReveals()
         otpRuntime.clearAllSensitiveState()
         _otpState.value = null
         mutate(DetailMutation.StateCleared)
+    }
+
+    private fun openRevisionHistory() {
+        val entryId = _uiState.value.entry?.id ?: return
+        revisionObservationJob?.cancel()
+        revisionOperationJob?.cancel()
+        clearRevisionReveals()
+        mutate(DetailMutation.Revision(DetailRevisionMutation.Opened(entryId)))
+        revisionObservationJob = viewModelScope.launch {
+            observeEntryRevisions(entryId).collect { revisions ->
+                mutate(
+                    DetailMutation.Revision(
+                        DetailRevisionMutation.MetadataChanged(entryId.value, revisions),
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun closeRevisionHistory() {
+        revisionObservationJob?.cancel()
+        revisionOperationJob?.cancel()
+        clearRevisionReveals()
+        mutate(DetailMutation.Revision(DetailRevisionMutation.Closed))
+    }
+
+    private fun selectRevision(rawRevisionId: String) {
+        val entryId = _uiState.value.revisions.entryId ?: return
+        val revisionId = EntryRevisionId(rawRevisionId)
+        revisionOperationJob?.cancel()
+        clearRevisionReveals()
+        mutate(
+            DetailMutation.Revision(
+                DetailRevisionMutation.ComparisonStarted(entryId.value, rawRevisionId),
+            ),
+        )
+        revisionOperationJob = viewModelScope.launch {
+            when (val result = compareEntryRevision(entryId, revisionId)) {
+                is RevisionOperationResult.Succeeded -> mutate(
+                    DetailMutation.Revision(
+                        DetailRevisionMutation.ComparisonLoaded(
+                            entryId.value,
+                            rawRevisionId,
+                            result.value,
+                        ),
+                    ),
+                )
+                else -> mutateRevisionFailure(entryId, rawRevisionId, result)
+            }
+        }
+    }
+
+    private fun revealRevisionField(key: SensitiveFieldKey) {
+        val state = _uiState.value.revisions
+        val entryId = state.entryId ?: return
+        val revisionId = state.selectedRevisionId?.let(::EntryRevisionId) ?: return
+        revisionOperationJob = viewModelScope.launch {
+            when (val result = revealRevisionFields(entryId, revisionId, setOf(key))) {
+                is RevisionOperationResult.Succeeded -> {
+                    result.value.forEach { revisionRevealStore.replace(it.key, it.value) }
+                    _revisionReveals.value = revisionRevealStore.snapshot()
+                }
+                RevisionOperationResult.Cancelled -> Unit
+                else -> mutateRevisionFailure(entryId, revisionId.value, result)
+            }
+        }
+    }
+
+    private fun restoreSelectedRevision() {
+        val state = _uiState.value.revisions
+        val entryId = state.entryId ?: return
+        val revisionId = state.selectedRevisionId?.let(::EntryRevisionId) ?: return
+        revisionOperationJob?.cancel()
+        mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreStarted))
+        revisionOperationJob = viewModelScope.launch {
+            when (val result = restoreEntryRevision(entryId, revisionId)) {
+                is RevisionOperationResult.Succeeded -> {
+                    clearRevisionReveals()
+                    mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreSucceeded))
+                    presentationLoader.open(entryId)?.let {
+                        mutate(DetailMutation.SessionOpened(it))
+                    }
+                }
+                RevisionOperationResult.Cancelled ->
+                    mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreCancelled))
+                else -> mutateRevisionFailure(entryId, revisionId.value, result)
+            }
+        }
+    }
+
+    private fun mutateRevisionFailure(
+        entryId: EntryId,
+        revisionId: String?,
+        result: RevisionOperationResult<*>,
+    ) {
+        val failure = when (result) {
+            RevisionOperationResult.Missing -> DetailRevisionFailure.MISSING
+            RevisionOperationResult.Stale -> DetailRevisionFailure.STALE
+            RevisionOperationResult.InvalidSnapshot -> DetailRevisionFailure.INVALID
+            is RevisionOperationResult.AuthenticationDenied -> DetailRevisionFailure.AUTHENTICATION
+            else -> DetailRevisionFailure.UNEXPECTED
+        }
+        mutate(
+            DetailMutation.Revision(
+                DetailRevisionMutation.Failed(entryId.value, revisionId, failure),
+            ),
+        )
+    }
+
+    private fun clearRevisionReveals() {
+        revisionRevealStore.clear()
+        _revisionReveals.value = emptyMap()
     }
 
     private suspend fun persistEntryEdit(

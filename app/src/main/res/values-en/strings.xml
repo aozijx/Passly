@@ -189,4 +189,19 @@
     <string name="related_entries">Related entries</string>
     <string name="app_package_picker_title">Choose associated app</string>
     <string name="app_package_picker_search">Search apps or package names</string>
+    <string name="revision_history_title">Version history</string>
+    <string name="revision_history_empty">No versions available</string>
+    <string name="revision_version_format">Version %1$d</string>
+    <string name="revision_compare_action">View changes</string>
+    <string name="revision_comparison_title">Version changes</string>
+    <string name="revision_restore_title">Restore this version?</string>
+    <string name="revision_restore_message">The current content will be saved as a new version before restoring the selected version.</string>
+    <string name="revision_restore_action">Restore version</string>
+    <string name="revision_load_failed">This version could not be loaded. Go back and try again.</string>
+    <string name="revision_sensitive_masked">Sensitive content hidden</string>
+    <string name="revision_reveal_action">Verify and view</string>
+    <string name="revision_field_title">Title</string>
+    <string name="revision_field_notes">Notes</string>
+    <string name="revision_field_attachments">Attachments</string>
+    <string name="revision_field_links">Related entries</string>
 </resources>

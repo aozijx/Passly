@@ -58,6 +58,9 @@ internal class RoomEntryRevisionRepository @Inject constructor(
         val revision = entryRevisionQueryDao().getById(entryId.value, revisionId.value)
             ?: throw NotFound()
         val content = contentCodec.decrypt(revision.entryContentCipher, entryId.value)
+        val sensitiveFingerprints = sensitiveCodec.decodeFingerprints(
+            revision.sensitiveFieldCipherSet,
+        )
         RedactedEntryRevision(
             metadata = revision.toRevisionMetadata(),
             profile = content.summary,
@@ -65,7 +68,8 @@ internal class RoomEntryRevisionRepository @Inject constructor(
             links = content.links,
             attachmentIds = revisionAttachmentRefDao().getByRevisionId(revisionId.value)
                 .mapTo(linkedSetOf()) { it.attachmentId },
-            sensitiveFieldKeys = sensitiveCodec.decodeKeys(revision.sensitiveFieldCipherSet),
+            sensitiveFieldKeys = sensitiveFingerprints.keys,
+            sensitiveFieldFingerprints = sensitiveFingerprints,
         )
     }
 
