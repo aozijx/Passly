@@ -6,6 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.core.os.LocaleListCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.app.message.compose.ProvideAppNoticePublisher
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
@@ -20,11 +21,11 @@ import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 @Composable
 internal fun PasslyApp(
     activity: FragmentActivity,
-    shellViewModel: AppShellViewModel,
     authenticationHostRegistry: AuthenticationHostRegistry,
     noticePublisher: AppNoticePublisher,
     permissionServices: PermissionServices,
 ) {
+    val shellViewModel = hiltViewModel<AppShellViewModel>()
     val shellState by shellViewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(shellState.appearance.language) {

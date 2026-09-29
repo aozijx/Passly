@@ -1,0 +1,169 @@
+package com.aozijx.passly.app
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import androidx.core.content.ContextCompat
+import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.access.port.SessionLockController
+import com.aozijx.passly.domain.settings.model.SecuritySettings
+import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
+internal enum class DeviceLockTrigger {
+    SCREEN_OFF,
+    FLIP,
+}
+
+internal data class DeviceLockResult(
+    val locked: Boolean,
+    val shouldClearTask: Boolean = false,
+)
+
+internal class DeviceLockHandler(
+    private val sessionAccessState: SecureSessionAccessState,
+    private val sessionLockController: SessionLockController,
+    private val securitySettings: StateFlow<SecuritySettings>,
+) {
+    suspend fun handle(trigger: DeviceLockTrigger): DeviceLockResult {
+        if (!sessionAccessState.isUnlocked() && !sessionAccessState.isRecoveryMode()) {
+            return DeviceLockResult(locked = false)
+        }
+
+        val security = securitySettings.value
+        val reason = when (trigger) {
+            DeviceLockTrigger.SCREEN_OFF -> LockReason.BACKGROUND
+            DeviceLockTrigger.FLIP -> {
+                if (!security.isFlipToLockEnabled) return DeviceLockResult(locked = false)
+                LockReason.USER
+            }
+        }
+        sessionLockController.lock(reason)
+        return DeviceLockResult(
+            locked = true,
+            shouldClearTask = security.isFlipToLockEnabled &&
+                security.isFlipExitAndClearStackEnabled,
+        )
+    }
+}
+
+/** Owns process-level screen-off reception and foreground-only flip sensing. */
+@Singleton
+class DeviceLockController @Inject constructor(
+    @param:ApplicationContext private val context: Context,
+    sessionAccessState: SecureSessionAccessState,
+    sessionLockController: SessionLockController,
+    securitySettingsSource: SecuritySettingsSource,
+) : SensorEventListener {
+    private val lockScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val triggerMutex = Mutex()
+    private val securitySettings = securitySettingsSource.security.stateIn(
+        scope = mainScope,
+        started = SharingStarted.Eagerly,
+        initialValue = SecuritySettings(),
+    )
+    private val handler = DeviceLockHandler(
+        sessionAccessState = sessionAccessState,
+        sessionLockController = sessionLockController,
+        securitySettings = securitySettings,
+    )
+    private val clearTaskChannel = Channel<Unit>(Channel.BUFFERED)
+    val clearTaskRequests: Flow<Unit> = clearTaskChannel.receiveAsFlow()
+    private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    private val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    private var receiverStarted = false
+    private var appInForeground = false
+
+    private val screenOffReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action != Intent.ACTION_SCREEN_OFF) return
+            val pendingResult = goAsync()
+            dispatch(DeviceLockTrigger.SCREEN_OFF) { pendingResult.finish() }
+        }
+    }
+
+    init {
+        mainScope.launch {
+            securitySettings
+                .map { settings -> settings.isFlipToLockEnabled }
+                .distinctUntilChanged()
+                .collect { updateSensorRegistration() }
+        }
+    }
+
+    fun start() {
+        if (receiverStarted) return
+        receiverStarted = true
+        ContextCompat.registerReceiver(
+            context,
+            screenOffReceiver,
+            IntentFilter(Intent.ACTION_SCREEN_OFF),
+            ContextCompat.RECEIVER_EXPORTED,
+        )
+    }
+
+    fun onAppForeground() {
+        appInForeground = true
+        updateSensorRegistration()
+    }
+
+    fun onAppBackground() {
+        appInForeground = false
+        sensorManager.unregisterListener(this)
+    }
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (event?.sensor?.type != Sensor.TYPE_ACCELEROMETER) return
+        if (event.values[2] < FLIP_THRESHOLD) dispatch(DeviceLockTrigger.FLIP)
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+
+    private fun updateSensorRegistration() {
+        sensorManager.unregisterListener(this)
+        if (!appInForeground || !securitySettings.value.isFlipToLockEnabled) return
+        accelerometer?.let { sensor ->
+            sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+    }
+
+    private fun dispatch(trigger: DeviceLockTrigger, onComplete: () -> Unit = {}) {
+        lockScope.launch {
+            try {
+                triggerMutex.withLock {
+                    val result = handler.handle(trigger)
+                    if (result.shouldClearTask) clearTaskChannel.send(Unit)
+                }
+            } finally {
+                onComplete()
+            }
+        }
+    }
+
+    private companion object {
+        const val FLIP_THRESHOLD = -8.5f
+    }
+}

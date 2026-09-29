@@ -459,14 +459,6 @@ internal object SourceBoundaryPolicy {
             message = "security runtime consumer depends on the global settings snapshot",
         ),
         SourceBoundaryRule(
-            id = "SECURITY_RUNTIME_NARROW_SOURCE",
-            sourcePathContains = "/presentation/feature/shell/AppShellViewModel.kt",
-            forbiddenImportPrefixes = setOf(
-                "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
-            ),
-            message = "security runtime consumer depends on the global settings snapshot",
-        ),
-        SourceBoundaryRule(
             id = "RETIRED_DATABASE_RECOVERY",
             sourcePathContains = "/src/",
             forbiddenContentMarkers = setOf(

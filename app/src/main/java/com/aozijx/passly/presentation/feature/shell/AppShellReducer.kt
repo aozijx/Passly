@@ -42,9 +42,6 @@ internal object AppShellReducer {
                 appCornerRadiusDp = mutation.interfaceSettings.appCornerRadiusDp,
                 windowPolicy = AppWindowPolicy(
                     isSecureContentEnabled = mutation.securitySettings.isSecureContentEnabled,
-                    isFlipToLockEnabled = mutation.securitySettings.isFlipToLockEnabled,
-                    isFlipExitAndClearStackEnabled =
-                        mutation.securitySettings.isFlipExitAndClearStackEnabled,
                     isStatusBarAutoHide = mutation.interfaceSettings.hideSystemBars,
                 ),
             )

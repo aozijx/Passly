@@ -19,6 +19,10 @@ class PasslyAppBoundaryTest {
             "AuthenticationHost(",
         ).forEach { token -> assertFalse(activity.contains(token)) }
         assertFalse(activity.contains("Intent.ACTION_SCREEN_OFF"))
+        assertFalse(activity.contains("AppShellViewModel"))
+        assertFalse(activity.contains("AppShellUiAction"))
+        assertFalse(activity.contains("SensorManager"))
+        assertTrue(activity.contains("deviceLockController.clearTaskRequests"))
     }
 
     @Test
@@ -32,18 +36,20 @@ class PasslyAppBoundaryTest {
             "AuthenticationHost(",
             "AppShellRoute(",
         ).forEach { token -> assertTrue(app.contains(token)) }
-        assertFalse(app.contains("DeviceLockTriggerController"))
+        assertFalse(app.contains("DeviceLockController"))
+        assertTrue(app.contains("hiltViewModel<AppShellViewModel>()"))
     }
 
     @Test
     fun `screen off locking is process scoped instead of activity scoped`() {
         val application = source("com/aozijx/passly/app/PasslyApplication.kt")
-        val controller = source("com/aozijx/passly/app/ScreenOffLockController.kt")
+        val controller = source("com/aozijx/passly/app/DeviceLockController.kt")
 
-        assertTrue(application.contains("screenOffLockController.start()"))
+        assertTrue(application.contains("deviceLockController.start()"))
         assertTrue(controller.contains("Intent.ACTION_SCREEN_OFF"))
         assertTrue(controller.contains("ContextCompat.RECEIVER_EXPORTED"))
         assertTrue(controller.contains("goAsync()"))
+        assertTrue(controller.contains("DeviceLockTrigger.FLIP"))
     }
 
     @Test
@@ -67,7 +73,7 @@ class PasslyAppBoundaryTest {
         assertFalse(shell.contains("FragmentActivity"))
         assertFalse(shell.contains("finishAffinity"))
         assertFalse(shell.contains("AppShellViewModel"))
-        assertFalse(shell.contains("DeviceLockTriggerController"))
+        assertFalse(shell.contains("DeviceLockController"))
         assertFalse(shell.contains("AppShellSettingsViewModel"))
         val navigation = source(
             "com/aozijx/passly/presentation/feature/shell/PasslyAppNavigation.kt",

@@ -63,8 +63,6 @@ class AppShellReducerTest {
                 interfaceSettings = InterfaceSettings(appCornerRadiusDp = 30f),
                 securitySettings = SecuritySettings(
                     isSecureContentEnabled = false,
-                    isFlipToLockEnabled = true,
-                    isFlipExitAndClearStackEnabled = true,
                 ),
             ),
         )
@@ -72,8 +70,6 @@ class AppShellReducerTest {
         assertSame(appearance, result.appearance)
         assertEquals(30f, result.appCornerRadiusDp)
         assertFalse(result.windowPolicy.isSecureContentEnabled)
-        assertTrue(result.windowPolicy.isFlipToLockEnabled)
-        assertTrue(result.windowPolicy.isFlipExitAndClearStackEnabled)
         assertTrue(result.isAuthorized)
         assertSame(error, result.databaseError)
     }

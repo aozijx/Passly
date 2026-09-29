@@ -46,7 +46,7 @@ class PasslyApplication : Application() {
     lateinit var authenticationRuntimeMaintenance: AuthenticationRuntimeMaintenance
 
     @Inject
-    lateinit var screenOffLockController: ScreenOffLockController
+    lateinit var deviceLockController: DeviceLockController
 
     private val diagnosticsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -82,7 +82,7 @@ class PasslyApplication : Application() {
 
         // 生命周期与全局交互监听
         ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleObserver)
-        screenOffLockController.start()
+        deviceLockController.start()
         registerGlobalTouchListener()
     }
 

@@ -20,7 +20,8 @@ import javax.inject.Singleton
 /**
  * 监听 ProcessLifecycleOwner 的前后台切换，管理会话生命周期。
  *
- * - onStop：应用进入后台 → 恢复模式强制锁定，普通会话按 [com.aozijx.passly.domain.settings.port.IdleTimeoutSettings.isLockOnBackground] 设置决定
+ * - onStart/onStop：同步翻转传感器与应用前后台生命周期
+ * - onStop：恢复模式强制锁定，普通会话按 [com.aozijx.passly.domain.settings.port.IdleTimeoutSettings.isLockOnBackground] 设置决定
  * - onDestroy：应用销毁 → 封存会话
  *
  * 前台到后台的切换将触发完整的 [LockReason.BACKGROUND] 锁流程，
@@ -33,16 +34,16 @@ class AppLifecycleObserver @Inject constructor(
     private val sessionLockController: SessionLockController,
     private val diagnosticsRuntime: DiagnosticsRuntimeController,
     private val idleTimeoutSettings: IdleTimeoutSettings,
+    private val deviceLockController: DeviceLockController,
 ) : DefaultLifecycleObserver {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val tag = "AppLifecycleObserver"
-
     override fun onStart(owner: LifecycleOwner) {
-        // 前台无需额外操作，Auth page 会在认证状态为 Locked 时自动展示
+        deviceLockController.onAppForeground()
     }
 
     override fun onStop(owner: LifecycleOwner) {
+        deviceLockController.onAppBackground()
         scope.launch {
             val lockOnBackground = idleTimeoutSettings.isLockOnBackground.first()
             val recoveryMode = secureSessionAccessState.isRecoveryMode()

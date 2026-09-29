@@ -8,7 +8,6 @@ import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
 import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
 import com.aozijx.passly.domain.access.port.DatabaseSessionRetryResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.access.port.SessionActivityReporter
 import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
@@ -32,7 +31,6 @@ class AppShellViewModel @Inject constructor(
     private val securitySettingsSource: SecuritySettingsSource,
     private val secureSessionAccessState: SecureSessionAccessState,
     private val sessionLockController: SessionLockController,
-    private val sessionActivityReporter: SessionActivityReporter,
     private val databaseSessionFailureState: DatabaseSessionFailureState,
     private val databaseSessionRecovery: DatabaseSessionRecovery,
 ) : ViewModel() {
@@ -52,9 +50,7 @@ class AppShellViewModel @Inject constructor(
 
     fun onAction(action: AppShellUiAction) {
         when (action) {
-            AppShellUiAction.LockFromFlip -> lock(LockReason.USER)
             AppShellUiAction.ExitRecovery -> lock(LockReason.RECOVERY_EXIT)
-            AppShellUiAction.UpdateInteraction -> sessionActivityReporter.onUserInteraction()
             AppShellUiAction.RetryDatabaseSession -> retryDatabaseSession()
         }
     }
