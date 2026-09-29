@@ -1,6 +1,7 @@
 package com.aozijx.passly.presentation.feature.scanner
 
 import com.aozijx.passly.presentation.feature.scanner.ScannerUiState
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -10,35 +11,49 @@ import org.junit.Test
 class ScannerReducerTest {
 
     @Test
-    fun `starting a scan resets the previous error`() {
+    fun `starting a scan clears the previous result and error`() {
         val result = ScannerReducer.reduce(
-            ScannerUiState(isScanning = false, error = "old"),
+            ScannerUiState(
+                isScanning = false,
+                scanResult = "old result",
+                scannedOtp = OtpConfig(secret = "secret"),
+            ),
             ScannerMutation.Started,
         )
 
         assertTrue(result.isScanning)
-        assertNull(result.error)
+        assertEquals("", result.scanResult)
+        assertNull(result.scannedOtp)
     }
 
     @Test
-    fun `successful scan stops and clears stale error`() {
+    fun `successful scan owns the decoded result in state`() {
+        val otp = OtpConfig(secret = "secret")
         val result = ScannerReducer.reduce(
-            ScannerUiState(error = "old"),
-            ScannerMutation.ScanCompleted,
+            ScannerUiState(),
+            ScannerMutation.ScanCompleted(
+                result = "otpauth://totp/example",
+                otpConfig = otp,
+            ),
         )
 
         assertFalse(result.isScanning)
-        assertNull(result.error)
+        assertEquals("otpauth://totp/example", result.scanResult)
+        assertEquals(otp, result.scannedOtp)
     }
 
     @Test
-    fun `decode failure keeps scanner available for another image`() {
+    fun `stopping scanner clears sensitive result state`() {
         val result = ScannerReducer.reduce(
-            ScannerUiState(),
-            ScannerMutation.DecodeFailed("decode failed"),
+            ScannerUiState(
+                scanResult = "otpauth://totp/example?secret=secret",
+                scannedOtp = OtpConfig(secret = "secret"),
+            ),
+            ScannerMutation.Stopped,
         )
 
-        assertTrue(result.isScanning)
-        assertEquals("decode failed", result.error)
+        assertFalse(result.isScanning)
+        assertEquals("", result.scanResult)
+        assertNull(result.scannedOtp)
     }
 }

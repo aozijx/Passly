@@ -39,7 +39,7 @@ class ScannerViewModel @Inject constructor(
     // 防抖：缓存上次扫描结果
     private var lastScannedBarcode: String? = null
 
-    fun copySensitive(text: String) {
+    private fun copySensitive(text: String) {
         viewModelScope.launch { clipboardWriter.writeSensitive(text) }
     }
 
@@ -47,6 +47,7 @@ class ScannerViewModel @Inject constructor(
         when (action) {
             is ScannerUiAction.BarcodeDetected -> onBarcodeDetected(action.barcode)
             is ScannerUiAction.DecodeImage -> decodeImage(action.image)
+            ScannerUiAction.CopyResult -> copyResult()
             is ScannerUiAction.StartScanning -> resetAndStart()
             is ScannerUiAction.StopScanning -> stopScanning()
         }
@@ -56,13 +57,16 @@ class ScannerViewModel @Inject constructor(
         if (barcode.isBlank() || barcode == lastScannedBarcode) return
         lastScannedBarcode = barcode
         vibrate()
-        _effects.trySend(
-            ScannerEffect.ScanSuccess(
+        val otpConfig = OtpAuthUriCodec.parse(barcode)
+        if (otpConfig == null && !barcode.startsWith("otpauth://")) {
+            _effects.trySend(ScannerEffect.UnsupportedOtp)
+        }
+        mutate(
+            ScannerMutation.ScanCompleted(
                 result = barcode,
-                otpConfig = OtpAuthUriCodec.parse(barcode)
-            )
+                otpConfig = otpConfig,
+            ),
         )
-        mutate(ScannerMutation.ScanCompleted)
     }
 
     private fun resetAndStart() {
@@ -72,6 +76,11 @@ class ScannerViewModel @Inject constructor(
 
     private fun stopScanning() {
         mutate(ScannerMutation.Stopped)
+    }
+
+    private fun copyResult() {
+        val result = _uiState.value.scanResult
+        if (result.isNotBlank()) copySensitive(result)
     }
 
     private fun vibrate() {
@@ -87,7 +96,6 @@ class ScannerViewModel @Inject constructor(
             uri = uri,
             onSuccess = { onBarcodeDetected(it) },
             onFailure = { message ->
-                mutate(ScannerMutation.DecodeFailed(message))
                 _effects.trySend(ScannerEffect.ShowError(message))
             }
         )

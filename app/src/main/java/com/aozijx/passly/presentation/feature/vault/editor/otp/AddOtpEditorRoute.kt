@@ -16,7 +16,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffectHandler
-import com.aozijx.passly.presentation.feature.scanner.VaultScanner
+import com.aozijx.passly.presentation.feature.scanner.ScannerRoute
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.rememberAddEntryFabTransitionModifier
 import com.aozijx.passly.presentation.feature.vault.editor.ui.otp.AddOtpEditorScreen
 
@@ -68,7 +68,7 @@ fun AddOtpEditorRoute(
     )
 
     if (showScanner) {
-        VaultScanner(
+        ScannerRoute(
             onSaveOtp = { config ->
                 viewModel.onAction(AddOtpAction.ScannedConfigApplied(config))
             },

@@ -1,12 +1,6 @@
 package com.aozijx.passly.presentation.feature.scanner
 
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-
 sealed interface ScannerEffect {
-    data class ScanSuccess(
-        val result: String,
-        val otpConfig: OtpConfig?
-    ) : ScannerEffect
-
+    data object UnsupportedOtp : ScannerEffect
     data class ShowError(val message: String) : ScannerEffect
 }

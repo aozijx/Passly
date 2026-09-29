@@ -19,7 +19,8 @@ class OtpEditorOwnershipBoundaryTest {
             "com/aozijx/passly/presentation/feature/scanner/navigation/VaultOtpScannerRoute.kt",
         )
 
-        assertTrue(route.contains("VaultScanner("))
+        assertTrue(route.contains("ScannerRoute("))
+        assertFalse(route.contains("VaultScanner("))
         assertFalse(route.contains("scannerContent:"))
         assertFalse(graph.contains("scannerContent"))
         assertFalse(graph.contains("VaultOtpScannerRoute"))

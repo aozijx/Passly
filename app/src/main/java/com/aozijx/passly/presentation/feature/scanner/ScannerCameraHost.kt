@@ -51,7 +51,7 @@ private class ScannerCameraSession {
 @Composable
 internal fun ScannerCameraHost(
     onBarcodeDetected: (String) -> Unit,
-    onCopyResult: (String) -> Unit,
+    onCopyResult: () -> Unit,
     modifier: Modifier = Modifier,
     onPermissionDenied: () -> Unit = {},
     isScanning: Boolean = true,
@@ -188,7 +188,7 @@ internal fun ScannerCameraHost(
                     Toast.makeText(context, openLinkFailedText, Toast.LENGTH_SHORT).show()
                 }
             } else {
-                onCopyResult(scanResult)
+                onCopyResult()
                 Toast.makeText(context, copySucceededText, Toast.LENGTH_SHORT).show()
             }
         },

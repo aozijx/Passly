@@ -1,20 +1,25 @@
 package com.aozijx.passly.presentation.feature.scanner
 
-import com.aozijx.passly.presentation.feature.scanner.ScannerUiState
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 
 internal sealed interface ScannerMutation {
     data object Started : ScannerMutation
     data object Stopped : ScannerMutation
-    data object ScanCompleted : ScannerMutation
-    data class DecodeFailed(val message: String) : ScannerMutation
+    data class ScanCompleted(
+        val result: String,
+        val otpConfig: OtpConfig?,
+    ) : ScannerMutation
 }
 
 internal object ScannerReducer {
     fun reduce(state: ScannerUiState, mutation: ScannerMutation): ScannerUiState =
         when (mutation) {
             ScannerMutation.Started -> ScannerUiState()
-            ScannerMutation.Stopped -> state.copy(isScanning = false)
-            ScannerMutation.ScanCompleted -> state.copy(isScanning = false, error = null)
-            is ScannerMutation.DecodeFailed -> state.copy(error = mutation.message)
+            ScannerMutation.Stopped -> ScannerUiState(isScanning = false)
+            is ScannerMutation.ScanCompleted -> state.copy(
+                isScanning = false,
+                scanResult = mutation.result,
+                scannedOtp = mutation.otpConfig,
+            )
         }
 }
