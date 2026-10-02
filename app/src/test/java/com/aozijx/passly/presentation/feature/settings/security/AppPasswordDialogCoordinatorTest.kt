@@ -1,8 +1,6 @@
 package com.aozijx.passly.presentation.feature.settings.security
 
 import com.aozijx.passly.feature.settings.security.AppPasswordChangeRequest
-import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPasswordDialogEvent
-import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPasswordDialogState
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

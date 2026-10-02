@@ -7,9 +7,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.feature.settings.security.AppPasswordChangeRequest
-import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPasswordDialogEvent
-import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPasswordDialogState
-import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPasswordDialogsModel
 
 internal class AppPasswordDialogCoordinator {
     private var activeDialog by mutableStateOf<AppPasswordDialogState>(AppPasswordDialogState.None)

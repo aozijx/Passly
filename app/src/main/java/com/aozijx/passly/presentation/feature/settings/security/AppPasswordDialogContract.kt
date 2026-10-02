@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.ui.main.model
+package com.aozijx.passly.presentation.feature.settings.security
 
 internal sealed interface AppPasswordDialogState {
     data object None : AppPasswordDialogState

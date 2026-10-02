@@ -16,7 +16,7 @@ import com.aozijx.passly.presentation.feature.settings.security.rememberAppPassw
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.toSecuritySettingsUiModel
-import com.aozijx.passly.presentation.feature.settings.ui.main.AppPasswordDialogs
+import com.aozijx.passly.presentation.feature.settings.ui.security.AppPasswordDialogs
 import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
 import com.aozijx.passly.presentation.feature.settings.ui.security.SecurityDetail

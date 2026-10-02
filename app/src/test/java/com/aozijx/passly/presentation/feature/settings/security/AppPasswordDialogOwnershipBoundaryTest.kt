@@ -13,8 +13,14 @@ class AppPasswordDialogOwnershipBoundaryTest {
             "com/aozijx/passly/presentation/feature/settings",
         )
         val dialog = settingsRoot.resolve("ui/security/AppPasswordChangeDialog.kt").readText()
-        val dialogs = settingsRoot.resolve("ui/main/AppPasswordDialogs.kt").readText()
+        val dialogsFile = settingsRoot.resolve("ui/security/AppPasswordDialogs.kt")
+        val contractFile = settingsRoot.resolve("security/AppPasswordDialogContract.kt")
+        val dialogs = dialogsFile.readText()
 
+        assertTrue(dialogsFile.isFile)
+        assertTrue(contractFile.isFile)
+        assertFalse(settingsRoot.resolve("ui/main/AppPasswordDialogs.kt").exists())
+        assertFalse(settingsRoot.resolve("ui/main/model/AppPasswordDialogModels.kt").exists())
         assertFalse(dialog.contains("AppPasswordChangeDialogEventHandler"))
         assertTrue(dialog.contains("sealed interface AppPasswordChangeDialogEvent"))
         assertTrue(dialog.contains("onEvent: (AppPasswordChangeDialogEvent) -> Unit"))

@@ -1,13 +1,9 @@
-package com.aozijx.passly.presentation.feature.settings.ui.main
+package com.aozijx.passly.presentation.feature.settings.ui.security
 
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPasswordDialogEvent
-import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPasswordDialogState
-import com.aozijx.passly.presentation.feature.settings.ui.main.model.AppPasswordDialogsModel
-import com.aozijx.passly.presentation.feature.settings.ui.security.AppPasswordActionDialog
-import com.aozijx.passly.presentation.feature.settings.ui.security.AppPasswordChangeDialogEvent
-import com.aozijx.passly.presentation.feature.settings.ui.security.AppPasswordChangeDialog
-import com.aozijx.passly.presentation.feature.settings.ui.security.AppPasswordChangeDialogState
+import com.aozijx.passly.presentation.feature.settings.security.AppPasswordDialogEvent
+import com.aozijx.passly.presentation.feature.settings.security.AppPasswordDialogState
+import com.aozijx.passly.presentation.feature.settings.security.AppPasswordDialogsModel
 import com.aozijx.passly.presentation.shared.components.apppassword.AppPasswordSetDialog
 
 @Composable
