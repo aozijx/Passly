@@ -51,6 +51,8 @@ class PasslyAppBoundaryTest {
         assertTrue(controller.contains("ContextCompat.RECEIVER_EXPORTED"))
         assertTrue(controller.contains("goAsync()"))
         assertTrue(controller.contains("DeviceLockTrigger.FLIP"))
+        assertTrue(controller.contains("screenOffLockTracker.markScreenOff()"))
+        assertTrue(controller.contains("screenOffLockTracker.pendingGeneration()"))
     }
 
     @Test

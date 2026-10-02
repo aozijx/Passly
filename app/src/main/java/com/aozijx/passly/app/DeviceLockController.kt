@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.atomic.AtomicLong
 
 internal enum class DeviceLockTrigger {
     SCREEN_OFF,
@@ -44,6 +45,27 @@ internal data class DeviceLockResult(
     val locked: Boolean,
     val shouldClearTask: Boolean = false,
 )
+
+/**
+ * Tracks screen-off work across the suspend boundary used to seal the vault.
+ * A generation prevents an older completion from clearing a newer screen-off event.
+ */
+internal class ScreenOffLockTracker {
+    private val generationCounter = AtomicLong(NO_PENDING_GENERATION)
+    private val pendingGeneration = AtomicLong(NO_PENDING_GENERATION)
+
+    fun markScreenOff(): Long = generationCounter.incrementAndGet().also(pendingGeneration::set)
+
+    fun pendingGeneration(): Long? = pendingGeneration.get().takeIf { it != NO_PENDING_GENERATION }
+
+    fun complete(completedGeneration: Long) {
+        pendingGeneration.compareAndSet(completedGeneration, NO_PENDING_GENERATION)
+    }
+
+    private companion object {
+        const val NO_PENDING_GENERATION = 0L
+    }
+}
 
 internal class DeviceLockHandler(
     private val sessionAccessState: SecureSessionAccessState,
@@ -94,6 +116,7 @@ class DeviceLockController @Inject constructor(
     )
     private val clearTaskChannel = Channel<Unit>(Channel.BUFFERED)
     val clearTaskRequests: Flow<Unit> = clearTaskChannel.receiveAsFlow()
+    private val screenOffLockTracker = ScreenOffLockTracker()
     private val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -103,8 +126,13 @@ class DeviceLockController @Inject constructor(
     private val screenOffReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action != Intent.ACTION_SCREEN_OFF) return
+            val generation = screenOffLockTracker.markScreenOff()
             val pendingResult = goAsync()
-            dispatch(DeviceLockTrigger.SCREEN_OFF) { pendingResult.finish() }
+            dispatch(
+                trigger = DeviceLockTrigger.SCREEN_OFF,
+                screenOffGeneration = generation,
+                onComplete = pendingResult::finish,
+            )
         }
     }
 
@@ -130,6 +158,12 @@ class DeviceLockController @Inject constructor(
 
     fun onAppForeground() {
         appInForeground = true
+        screenOffLockTracker.pendingGeneration()?.let { generation ->
+            dispatch(
+                trigger = DeviceLockTrigger.SCREEN_OFF,
+                screenOffGeneration = generation,
+            )
+        }
         updateSensorRegistration()
     }
 
@@ -137,7 +171,11 @@ class DeviceLockController @Inject constructor(
         appInForeground = false
         sensorManager.unregisterListener(this)
         if (!powerManager.isInteractive) {
-            dispatch(DeviceLockTrigger.SCREEN_OFF)
+            val generation = screenOffLockTracker.markScreenOff()
+            dispatch(
+                trigger = DeviceLockTrigger.SCREEN_OFF,
+                screenOffGeneration = generation,
+            )
         }
     }
 
@@ -156,11 +194,16 @@ class DeviceLockController @Inject constructor(
         }
     }
 
-    private fun dispatch(trigger: DeviceLockTrigger, onComplete: () -> Unit = {}) {
+    private fun dispatch(
+        trigger: DeviceLockTrigger,
+        screenOffGeneration: Long? = null,
+        onComplete: () -> Unit = {},
+    ) {
         lockScope.launch {
             try {
                 triggerMutex.withLock {
                     val result = handler.handle(trigger)
+                    screenOffGeneration?.let(screenOffLockTracker::complete)
                     TelemetryRuntime.i(
                         EventCategory.APPLICATION,
                         "device_lock.completed trigger=${trigger.name} locked=${result.locked} clear_task=${result.shouldClearTask}",

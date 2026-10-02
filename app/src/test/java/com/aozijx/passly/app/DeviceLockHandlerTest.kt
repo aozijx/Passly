@@ -16,6 +16,42 @@ import org.junit.Test
 class DeviceLockHandlerTest {
 
     @Test
+    fun `screen off remains pending until its lock operation completes`() {
+        val tracker = ScreenOffLockTracker()
+
+        val generation = tracker.markScreenOff()
+
+        assertEquals(generation, tracker.pendingGeneration())
+
+        tracker.complete(generation)
+
+        assertNull(tracker.pendingGeneration())
+    }
+
+    @Test
+    fun `older lock completion cannot clear a newer screen off event`() {
+        val tracker = ScreenOffLockTracker()
+        val olderGeneration = tracker.markScreenOff()
+        val newerGeneration = tracker.markScreenOff()
+
+        tracker.complete(olderGeneration)
+
+        assertEquals(newerGeneration, tracker.pendingGeneration())
+    }
+
+    @Test
+    fun `completed generation is never reused by a later screen off event`() {
+        val tracker = ScreenOffLockTracker()
+        val completedGeneration = tracker.markScreenOff()
+        tracker.complete(completedGeneration)
+        val laterGeneration = tracker.markScreenOff()
+
+        tracker.complete(completedGeneration)
+
+        assertEquals(laterGeneration, tracker.pendingGeneration())
+    }
+
+    @Test
     fun `screen off seals an unlocked session independently of flip settings`() = runTest {
         val lockController = RecordingLockController()
         val handler = handler(
