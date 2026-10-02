@@ -69,9 +69,14 @@ feature/<feature>/
 | --- | --- | --- |
 | `contract` | 页面可观察状态、用户事件、一次性副作用类型 | ViewModel、Repository、DAO、Composable |
 | `presentation` | ViewModel、状态机、领域调用、effect 分发 | Compose UI、Android `Context`、数据库实现 |
+| `presentation/mapping` | 两个及以上 Feature 共用的 Domain ↔ UI 穷尽式适配 | `valueOf(name)`、页面状态机、资源读取 |
 | `ui` | Screen、Content、页面私有组件、资源映射 | DAO 调用、加密任务、跨页面业务编排 |
 | `ui/components` | 只服务当前 feature 的小组件 | 全局通用 UI token |
 | `core/ui/components` | 跨 feature 复用组件 | feature 专属文案和业务判断 |
+
+页面私有 UI 必须位于拥有该状态与行为的 Feature 下；不能因为入口来自另一个页面，就把完整的
+Sheet、Dialog 或 UiModel 放进调用方的 `ui` 目录。跨 Feature 复用稳定枚举时，在
+`presentation/mapping` 提供穷尽式转换并用测试覆盖双向全集，不按枚举名称反射转换。
 
 ### 命名规则
 

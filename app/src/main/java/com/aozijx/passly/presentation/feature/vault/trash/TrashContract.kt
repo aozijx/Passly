@@ -1,8 +1,8 @@
 package com.aozijx.passly.presentation.feature.vault.trash
 
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
-import com.aozijx.passly.presentation.feature.vault.list.ui.trash.TrashEntryUiModel
+import com.aozijx.passly.presentation.mapping.entry.toUiModel
+import com.aozijx.passly.presentation.feature.vault.trash.ui.TrashEntryUiModel
 
 data class TrashUiState(
     val entries: List<EntryListItem> = emptyList(),
@@ -19,7 +19,7 @@ internal fun TrashUiState.toUiModels(): List<TrashEntryUiModel> = entries.map { 
         id = entry.id.value,
         version = entry.identity.version.value,
         title = entry.title,
-        entryType = EntryTypeUiModel.valueOf(entry.entryType.name),
+        entryType = entry.entryType.toUiModel(),
         username = entry.username,
         deletedAtEpochMs = entry.deletedAt,
         associatedDomain = entry.associatedDomain,

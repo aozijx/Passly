@@ -1,7 +1,6 @@
 package com.aozijx.passly.presentation.feature.vault.list
 
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
@@ -9,7 +8,7 @@ import com.aozijx.passly.domain.settings.model.CardDensity
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.mapping.entry.toUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultCardDensityUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultCardPresentationUiModel
@@ -74,26 +73,6 @@ internal fun VaultSortUiModel.toFeatureModel(): EntrySort {
     }
     val wantsDescending = preset.direction.name == "DESC"
     return if (wantsDescending == descending) preset else preset.toggled()
-}
-
-internal fun EntryType.toUiModel(): EntryTypeUiModel = when (this) {
-    EntryType.ACCOUNT -> EntryTypeUiModel.ACCOUNT
-    EntryType.LOGIN -> EntryTypeUiModel.LOGIN
-    EntryType.NOTE -> EntryTypeUiModel.NOTE
-    EntryType.BANK_CARD -> EntryTypeUiModel.BANK_CARD
-    EntryType.ID_CARD -> EntryTypeUiModel.ID_CARD
-    EntryType.PASSPORT -> EntryTypeUiModel.PASSPORT
-    EntryType.DRIVER_LICENSE -> EntryTypeUiModel.DRIVER_LICENSE
-    EntryType.SSH_KEY -> EntryTypeUiModel.SSH_KEY
-    EntryType.WIFI -> EntryTypeUiModel.WIFI
-    EntryType.PASSKEY -> EntryTypeUiModel.PASSKEY
-    EntryType.OTP -> EntryTypeUiModel.OTP
-    EntryType.DATABASE_CREDENTIAL -> EntryTypeUiModel.DATABASE_CREDENTIAL
-    EntryType.SERVER_CREDENTIAL -> EntryTypeUiModel.SERVER_CREDENTIAL
-    EntryType.API_KEY -> EntryTypeUiModel.API_KEY
-    EntryType.CRYPTO_WALLET -> EntryTypeUiModel.CRYPTO_WALLET
-    EntryType.SEED_PHRASE -> EntryTypeUiModel.SEED_PHRASE
-    EntryType.RECOVERY_CODE -> EntryTypeUiModel.RECOVERY_CODE
 }
 
 internal fun AddType.toUiModel(): VaultAddTypeUiModel = when (this) {

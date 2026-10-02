@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.vault.list.ui.trash
+package com.aozijx.passly.presentation.feature.vault.trash.ui
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement

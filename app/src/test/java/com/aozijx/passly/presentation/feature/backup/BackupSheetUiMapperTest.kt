@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.mapping.entry.toDomainModels
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
@@ -50,7 +51,7 @@ class BackupSheetUiMapperTest {
     fun `entry type ui choices map back to feature models`() {
         assertEquals(
             setOf(EntryType.WIFI, EntryType.SSH_KEY),
-            setOf(EntryTypeUiModel.WIFI, EntryTypeUiModel.SSH_KEY).toFeatureModels(),
+            setOf(EntryTypeUiModel.WIFI, EntryTypeUiModel.SSH_KEY).toDomainModels(),
         )
     }
 }
