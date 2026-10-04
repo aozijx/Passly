@@ -3,6 +3,8 @@ package com.aozijx.passly.presentation.feature.backup
 import android.net.Uri
 import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
+import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
+import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.feature.backup.internal.model.BackupOperationStatus
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -28,6 +30,7 @@ internal sealed interface BackupMutation {
     data class ImportPrepared(val uri: Uri) : BackupMutation
     data class PasswordUpdated(val password: SensitiveValue) : BackupMutation
     data class ImportModeUpdated(val mode: ImportMode) : BackupMutation
+    data class ImportStrategyUpdated(val strategy: BackupImportStrategy) : BackupMutation
     data class IncludeIconsUpdated(val include: Boolean) : BackupMutation
     data class IncludeAttachmentsUpdated(val include: Boolean) : BackupMutation
     data class IncludeDeletedUpdated(val include: Boolean) : BackupMutation
@@ -63,7 +66,7 @@ internal object BackupReducer {
                     includeIcons = includeResources,
                     includeAttachments = includeResources,
                     includeDeleted = true,
-                    includedEntryTypes = EntryType.entries.toSet(),
+                    includedEntryTypes = BackupArchiveKeyRegistry.archiveEntryTypes,
                     pendingExportFileName = mutation.fileName,
                     deleteTargetOnFailure = false,
                     status = BackupOperationStatus.Idle,
@@ -83,6 +86,7 @@ internal object BackupReducer {
                 backupUri = mutation.uri,
                 backupPassword = EmptySensitiveValue,
                 importMode = ImportMode.APPEND,
+                importStrategy = BackupImportStrategy.COMPATIBLE,
                 pendingExportFileName = null,
                 deleteTargetOnFailure = false,
                 status = BackupOperationStatus.Idle,
@@ -91,6 +95,7 @@ internal object BackupReducer {
 
             is BackupMutation.PasswordUpdated -> state.copy(backupPassword = mutation.password)
             is BackupMutation.ImportModeUpdated -> state.copy(importMode = mutation.mode)
+            is BackupMutation.ImportStrategyUpdated -> state.copy(importStrategy = mutation.strategy)
             is BackupMutation.IncludeIconsUpdated -> state.copy(includeIcons = mutation.include)
             is BackupMutation.IncludeAttachmentsUpdated ->
                 state.copy(includeAttachments = mutation.include)

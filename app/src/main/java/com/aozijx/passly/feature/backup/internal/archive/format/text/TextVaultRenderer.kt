@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.backup.internal.archive.format.text
 
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupFieldValue
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceRecord
 import java.time.Instant
 import java.time.ZoneId
@@ -64,74 +65,19 @@ class TextVaultRenderer @Inject constructor() {
         entry: BackupEntryRecord,
         options: TextExportOptions
     ) {
-        appendField(sb, "标题", entry.summary.title)
+        val fields = entry.fields.associate { it.key to it.value }
+        appendField(sb, "标题", fields["title"]?.text)
         appendField(sb, "类型", entry.type)
-
-        // 登录字段
-        entry.secret.login?.let { login ->
-            appendField(sb, "用户名", entry.summary.username)
-            appendField(sb, "邮箱", login.email)
-            appendField(sb, "密码", login.password)
-        }
-
-        // 网址
-        entry.summary.website?.let { website ->
-            appendField(sb, "网址", website.primaryUrl)
-        }
-
-        // 标签
-        if (entry.summary.tags.isNotEmpty()) {
-            appendField(sb, "标签", entry.summary.tags.joinToString(", "))
-        }
-
-        // OTP
-        entry.secret.otp?.config?.let { otp ->
-            appendField(sb, "OTP 类型", otp.type.name)
-            appendField(sb, "OTP 密钥", otp.secret)
-            appendField(sb, "OTP 编码", otp.encoding.name)
-            if (otp.issuer != null) appendField(sb, "OTP 发行者", otp.issuer)
-            if (otp.accountName != null) appendField(sb, "OTP 账户", otp.accountName)
-        }
-
-        // 卡片字段
-        entry.secret.card?.let { card ->
-            appendField(sb, "卡号", card.cardNumber)
-            appendField(sb, "有效期", card.cardExpiry)
-            appendField(sb, "CVV", card.cardCvv)
-            appendField(sb, "持卡人", card.cardHolder)
-            card.paymentPlatform?.let { appendField(sb, "支付平台", it) }
-        }
-
-        // 身份字段
-        entry.secret.identity?.let { identity ->
-            appendField(sb, "身份证号", identity.idNumber)
-            appendField(sb, "安全问题", identity.securityQuestion)
-            appendField(sb, "安全答案", identity.securityAnswer)
-            appendField(sb, "种子短语", identity.seedPhrase)
-            if (identity.recoveryCodes.isNotEmpty()) {
-                appendField(sb, "恢复码", identity.recoveryCodes.joinToString(", "))
+        entry.fields.forEach { field ->
+            if (field.key == "title" || field.key == "notes" || field.key == "custom_fields") {
+                return@forEach
             }
+            appendField(sb, fieldLabel(field.key), field.value.toDisplayText())
         }
-
-        // SSH 字段
-        entry.secret.ssh?.let { ssh ->
-            if (ssh.publicKey != null) appendField(sb, "SSH 公钥", ssh.publicKey.take(64) + "...")
-            appendField(sb, "SSH 密码短语", ssh.passphrase)
-        }
-
-        // Wi-Fi 字段
-        entry.secret.wifi?.let { wifi ->
-            appendField(sb, "Wi-Fi 密码", wifi.password)
-            wifi.securityType?.let { appendField(sb, "安全类型", it) }
-        }
-
-        // 自定义字段
-        entry.secret.customFields.forEach { field ->
+        fields["custom_fields"]?.customFields.orEmpty().forEach { field ->
             appendField(sb, "自定义字段.${field.name}", field.value)
         }
-
-        // 备注
-        entry.secret.notes?.let { notes ->
+        fields["notes"]?.text?.let { notes ->
             val lines = notes.lines()
             if (lines.size == 1) {
                 appendField(sb, "备注", notes)
@@ -149,11 +95,23 @@ class TextVaultRenderer @Inject constructor() {
         // 技术信息（仅在显式开启时输出）
         if (options.includeTechnicalInfo) {
             appendField(sb, "条目 ID", entry.id)
-            appendField(sb, "版本", entry.version.toString())
+            appendField(sb, "版本", entry.revision.toString())
             appendField(sb, "创建时间", formatTimestamp(entry.createdAt))
             appendField(sb, "更新时间", formatTimestamp(entry.updatedAt))
         }
     }
+
+    private fun BackupFieldValue.toDisplayText(): String? = when (kind) {
+        BackupFieldValue.KIND_TEXT -> text
+        BackupFieldValue.KIND_TEXT_LIST -> texts?.joinToString(", ")
+        BackupFieldValue.KIND_BOOLEAN -> booleanValue?.toString()
+        BackupFieldValue.KIND_INTEGER -> integerValue?.toString()
+        BackupFieldValue.KIND_LONG -> longValue?.toString()
+        BackupFieldValue.KIND_CUSTOM_FIELDS -> null
+        else -> null
+    }
+
+    private fun fieldLabel(key: String): String = FIELD_LABELS[key] ?: key
 
     private fun appendField(sb: StringBuilder, label: String, value: String?) {
         if (value.isNullOrBlank()) return
@@ -167,5 +125,33 @@ class TextVaultRenderer @Inject constructor() {
         bytes < 1024 -> "$bytes B"
         bytes < 1024 * 1024 -> "${bytes / 1024} KB"
         else -> "${"%.1f".format(bytes.toDouble() / (1024 * 1024))} MB"
+    }
+
+    private companion object {
+        val FIELD_LABELS = mapOf(
+            "username" to "用户名",
+            "email" to "邮箱",
+            "password" to "密码",
+            "primary_url" to "网址",
+            "tags" to "标签",
+            "otp_type" to "OTP 类型",
+            "otp_secret" to "OTP 密钥",
+            "otp_encoding" to "OTP 编码",
+            "otp_issuer" to "OTP 发行者",
+            "otp_account_name" to "OTP 账户",
+            "card_number" to "卡号",
+            "card_expiration" to "有效期",
+            "card_cvv" to "CVV",
+            "card_holder" to "持卡人",
+            "payment_platform" to "支付平台",
+            "id_number" to "身份证号",
+            "security_question" to "安全问题",
+            "security_answer" to "安全答案",
+            "seed_phrase" to "种子短语",
+            "recovery_codes" to "恢复码",
+            "ssh_public_key" to "SSH 公钥",
+            "ssh_passphrase" to "SSH 密码短语",
+            "wifi_security" to "安全类型",
+        )
     }
 }

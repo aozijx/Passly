@@ -6,8 +6,13 @@ import com.aozijx.passly.feature.backup.internal.model.ImportMode
 
 internal interface BackupSnapshotGateway {
     suspend fun read(options: BackupSnapshotReadOptions): BackupBundle
-    suspend fun restore(bundle: BackupBundle, mode: ImportMode)
+    suspend fun restore(bundle: BackupBundle, mode: ImportMode): BackupRestoreResult
 }
+
+internal data class BackupRestoreResult(
+    val importedEntryCount: Int,
+    val existingEntryCount: Int,
+)
 
 internal data class BackupSnapshotReadOptions(
     val includeIcons: Boolean,

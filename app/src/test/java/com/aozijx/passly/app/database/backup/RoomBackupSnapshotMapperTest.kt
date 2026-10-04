@@ -16,10 +16,8 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpAlgorithm
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpEncoding
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpType
+import com.aozijx.passly.feature.backup.internal.archive.BackupJson
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -67,6 +65,52 @@ class RoomBackupSnapshotMapperTest {
     }
 
     @Test
+    fun serializedBankCardUsesStableKeyedFieldsAndRoundTrips() {
+        val entry = Entry(
+            identity = EntryIdentity(
+                id = EntryId("card-keyed"),
+                type = EntryType.BANK_CARD,
+                version = EntryVersion(7),
+                timestamps = EntryTimestamps(10L, 20L),
+            ),
+            profile = EntryProfile(
+                title = "Travel card",
+                username = "Ada",
+                favorite = true,
+                tags = linkedSetOf("travel", "finance"),
+                expiresAtMs = 99L,
+            ),
+            secret = EntrySecret(
+                credential = CardCredential(
+                    cardType = "credit",
+                    cardNumber = "4111111111111111",
+                    cardExpiry = "12/30",
+                    cardCvv = "123",
+                    cardHolder = "Ada",
+                    paymentPin = "9876",
+                    paymentPlatform = "visa",
+                    billingAddress = "1 Example Road",
+                ),
+                notes = "travel",
+                customFields = listOf(CustomField("support", "secret", CustomFieldKind.HIDDEN)),
+            ),
+        )
+
+        val record = mapper.toRecord(entry)
+        val serialized = BackupJson.encodeToString(record)
+        val decoded = BackupJson.decodeFromString<BackupEntryRecord>(serialized)
+
+        assertEquals("bank_card", record.type)
+        assertEquals(7, record.revision)
+        assertEquals(
+            "4111111111111111",
+            record.fields.single { it.key == "card_number" }.value.text,
+        )
+        assertEquals(true, record.fields.single { it.key == "favorite" }.value.booleanValue)
+        assertEquals(entry, mapper.toEntry(decoded))
+    }
+
+    @Test
     fun otpRoundTripPreservesSeparatedSecretAndConfiguration() {
         val entry = Entry(
             identity = EntryIdentity(
@@ -95,10 +139,9 @@ class RoomBackupSnapshotMapperTest {
 
         val record = mapper.toRecord(entry)
 
-        assertNull(record.secret.otp?.config?.secret)
         assertEquals(
             "JBSWY3DPEHPK3PXP",
-            record.sensitiveFields.single { it.key == SensitiveFieldKey.OTP_SECRET.name }.value,
+            record.fields.single { it.key == "otp_secret" }.value.text,
         )
         assertEquals(entry, mapper.toEntry(record))
     }
@@ -128,11 +171,9 @@ class RoomBackupSnapshotMapperTest {
                     )
 
                     val record = mapper.toRecord(entry)
-                    val backupConfig = requireNotNull(record.secret.otp?.config)
-
-                    assertEquals(type.toExpectedBackupType(), backupConfig.type)
-                    assertEquals(algorithm.toExpectedBackupAlgorithm(), backupConfig.algorithm)
-                    assertEquals(encoding.toExpectedBackupEncoding(), backupConfig.encoding)
+                    assertEquals(type.toArchiveKey(), record.fieldText("otp_type"))
+                    assertEquals(algorithm.toArchiveKey(), record.fieldText("otp_algorithm"))
+                    assertEquals(encoding.toArchiveKey(), record.fieldText("otp_encoding"))
                     assertEquals(entry, mapper.toEntry(record))
                 }
             }
@@ -144,33 +185,34 @@ class RoomBackupSnapshotMapperTest {
         val sourceRoot = listOf(File("src/main/java"), File("app/src/main/java"))
             .firstOrNull(File::isDirectory) ?: error("Cannot locate app source root")
         val source = sourceRoot.resolve(
-            "com/aozijx/passly/app/database/backup/RoomBackupSnapshotMapper.kt",
+            "com/aozijx/passly/app/database/backup/KeyedEntryArchiveMapper.kt",
         ).readText()
 
         listOf(
-            "BackupOtpType.valueOf",
-            "BackupOtpAlgorithm.valueOf",
-            "BackupOtpEncoding.valueOf",
             "OtpType.valueOf",
             "OtpHashAlgorithm.valueOf",
             "OtpSecretEncoding.valueOf",
         ).forEach { bridge -> assertFalse("Mapper still uses $bridge", source.contains(bridge)) }
     }
 
-    private fun OtpType.toExpectedBackupType(): BackupOtpType = when (this) {
-        OtpType.TOTP -> BackupOtpType.TOTP
-        OtpType.HOTP -> BackupOtpType.HOTP
-        OtpType.STEAM -> BackupOtpType.STEAM
+    private fun com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord.fieldText(
+        key: String,
+    ): String? = fields.single { it.key == key }.value.text
+
+    private fun OtpType.toArchiveKey(): String = when (this) {
+        OtpType.TOTP -> "totp"
+        OtpType.HOTP -> "hotp"
+        OtpType.STEAM -> "steam"
     }
 
-    private fun OtpHashAlgorithm.toExpectedBackupAlgorithm(): BackupOtpAlgorithm = when (this) {
-        OtpHashAlgorithm.SHA1 -> BackupOtpAlgorithm.SHA1
-        OtpHashAlgorithm.SHA256 -> BackupOtpAlgorithm.SHA256
-        OtpHashAlgorithm.SHA512 -> BackupOtpAlgorithm.SHA512
+    private fun OtpHashAlgorithm.toArchiveKey(): String = when (this) {
+        OtpHashAlgorithm.SHA1 -> "sha1"
+        OtpHashAlgorithm.SHA256 -> "sha256"
+        OtpHashAlgorithm.SHA512 -> "sha512"
     }
 
-    private fun OtpSecretEncoding.toExpectedBackupEncoding(): BackupOtpEncoding = when (this) {
-        OtpSecretEncoding.BASE32 -> BackupOtpEncoding.BASE32
-        OtpSecretEncoding.BASE64 -> BackupOtpEncoding.BASE64
+    private fun OtpSecretEncoding.toArchiveKey(): String = when (this) {
+        OtpSecretEncoding.BASE32 -> "base32"
+        OtpSecretEncoding.BASE64 -> "base64"
     }
 }

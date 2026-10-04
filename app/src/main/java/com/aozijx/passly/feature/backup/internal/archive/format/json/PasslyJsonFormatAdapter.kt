@@ -8,6 +8,7 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import com.aozijx.passly.feature.backup.internal.model.BackupFormatId
 import com.aozijx.passly.feature.backup.internal.model.BackupFormats
+import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,9 +32,13 @@ internal class PasslyJsonFormatAdapter @Inject constructor(
             payload.containsAscii("\"${BackupDocument.FORMAT}\"")
         ) 90 else 0
 
-    override fun decode(payload: ByteArray, password: CharArray?): BackupBundle =
+    override fun decode(
+        payload: ByteArray,
+        password: CharArray?,
+        strategy: BackupImportStrategy,
+    ): BackupBundle =
         try {
-            importer.import(payload)
+            importer.import(payload, strategy)
         } catch (error: BackupFailed) {
             throw error
         } catch (_: Exception) {

@@ -65,7 +65,9 @@ fun BackupOperationRoute(
         viewModel.effects.collect { effect ->
             when (effect) {
                 is BackupNoticeEffect ->
-                    noticePublisher.publish(newAppNotice(effect.toNoticeCode()))
+                    noticePublisher.publish(
+                        newAppNotice(effect.toNoticeCode(), effect.toNoticeArguments()),
+                    )
 
                 BackupEffect.SelectImportDocument -> importPicker.launch(
                     arrayOf(

@@ -223,6 +223,11 @@
     <string name="settings_backup_import_atomicity_notice">导入前验证完整文件；失败不会写入部分数据。</string>
     <string name="settings_backup_import_format_description">自动识别格式。加密 %1$s 备份需要密码。</string>
     <string name="settings_backup_import_mode">导入方式</string>
+    <string name="settings_backup_import_strategy">导入校验</string>
+    <string name="settings_backup_import_compatible">兼容导入</string>
+    <string name="settings_backup_import_compatible_description">忽略未知字段，并跳过当前版本不支持或无效的条目</string>
+    <string name="settings_backup_import_strict">严格校验</string>
+    <string name="settings_backup_import_strict_description">发现未知字段、不支持类型或无效条目时拒绝整个导入</string>
     <string name="settings_backup_import_options_title">导入与恢复</string>
     <string name="settings_backup_import_overwrite">覆盖</string>
     <string name="settings_backup_import_overwrite_description">清空现有数据后恢复备份，风险较高</string>

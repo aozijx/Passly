@@ -5,6 +5,7 @@ import com.aozijx.passly.feature.backup.internal.archive.format.BackupImportAdap
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.model.BackupFormatId
 import com.aozijx.passly.feature.backup.internal.model.BackupFormats
+import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,6 +25,13 @@ internal class PasslyEncryptedFormatAdapter @Inject constructor(
     override fun probe(payload: ByteArray): Int =
         if (EncryptedBackupContainerCodec.hasMagic(payload)) 100 else 0
 
-    override fun decode(payload: ByteArray, password: CharArray?): BackupBundle =
-        importer.import(payload, requireNotNull(password) { "加密备份需要密码" })
+    override fun decode(
+        payload: ByteArray,
+        password: CharArray?,
+        strategy: BackupImportStrategy,
+    ): BackupBundle = importer.import(
+        payload,
+        requireNotNull(password) { "加密备份需要密码" },
+        strategy,
+    )
 }

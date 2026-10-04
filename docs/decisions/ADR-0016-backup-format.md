@@ -1,6 +1,6 @@
 # ADR-0016: 独立版本化的 Vault Backup 与可插拔格式
 
-- 状态：Accepted
+- 状态：Superseded（typed document 由 ADR-0022 替代；加密容器决策继续有效）
 - 日期：未记录；2026-07-24 修订
 
 ## 背景
@@ -34,3 +34,5 @@ Registry 扩展，外部格式先映射到 canonical `BackupBundle`。
 ## 关联
 
 [Backup 功能与备份协议](../features/backup.md)
+
+[ADR-0022：稳定键值字段备份文档](ADR-0022-keyed-backup-document.md)

@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.backup.internal.archive.format.json
 
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
+import com.aozijx.passly.feature.backup.internal.archive.BackupImportPlanner
 import com.aozijx.passly.feature.backup.internal.archive.BackupJson
 import com.aozijx.passly.feature.backup.internal.archive.io.decodeStrictUtf8
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
@@ -8,6 +9,7 @@ import com.aozijx.passly.feature.backup.internal.archive.model.JsonBackupPackage
 import java.util.Base64
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
 
 /**
  * JSON 备份导入器。
@@ -17,7 +19,7 @@ import javax.inject.Singleton
 @Singleton
 class JsonBackupImporter @Inject constructor() {
 
-    private fun decode(json: String): BackupBundle {
+    private fun decode(json: String, strategy: BackupImportStrategy): BackupBundle {
         val backupPackage = BackupJson.decodeFromString<JsonBackupPackage>(json)
         val resourceData = linkedMapOf<String, ByteArray>()
         try {
@@ -37,19 +39,18 @@ class JsonBackupImporter @Inject constructor() {
         }
         val bundle = BackupBundle(backupPackage.document, resourceData)
         return try {
-            BackupBundleValidator.validate(
-                bundle,
-                requireResourceData = bundle.document.resources.isNotEmpty()
-            )
-            bundle
+            BackupImportPlanner.plan(bundle, strategy).bundle
         } catch (error: Throwable) {
             resourceData.values.forEach { it.fill(0) }
             throw error
         }
     }
 
-    fun import(bytes: ByteArray): BackupBundle {
-        return decode(bytes.decodeStrictUtf8("备份 JSON"))
+    fun import(
+        bytes: ByteArray,
+        strategy: BackupImportStrategy = BackupImportStrategy.STRICT,
+    ): BackupBundle {
+        return decode(bytes.decodeStrictUtf8("备份 JSON"), strategy)
     }
 
     private companion object {

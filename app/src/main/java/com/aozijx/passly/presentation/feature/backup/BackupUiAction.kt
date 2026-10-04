@@ -2,6 +2,7 @@ package com.aozijx.passly.presentation.feature.backup
 
 import android.net.Uri
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
+import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 
@@ -21,6 +22,7 @@ sealed interface BackupUiAction {
 
     data class UpdatePassword(val password: String) : BackupUiAction
     data class UpdateImportMode(val mode: ImportMode) : BackupUiAction
+    data class UpdateImportStrategy(val strategy: BackupImportStrategy) : BackupUiAction
     data class UpdateIncludeIcons(val include: Boolean) : BackupUiAction
     data class UpdateIncludeAttachments(val include: Boolean) : BackupUiAction
     data class UpdateIncludeDeleted(val include: Boolean) : BackupUiAction

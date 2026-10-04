@@ -93,6 +93,7 @@
     <string name="vault_delete_message">Are you sure you want to delete “%s”? This action cannot be undone.</string>
     <string name="backup_export_success">Export successful</string>
     <string name="backup_import_success">Import successful (icons will sync in background)</string>
+    <string name="backup_import_success_summary">Import complete: %1$d imported, %2$d existing, %3$d skipped, %4$d fields ignored, %5$d links pruned, %6$d resources pruned</string>
     <string name="backup_error_unknown">Operation failed: Unknown error</string>
     <string name="backup_directory_permission_ok">Backup directory write permission is available</string>
     <string name="backup_directory_permission_failed">Backup directory write test failed. Please reselect the directory.</string>

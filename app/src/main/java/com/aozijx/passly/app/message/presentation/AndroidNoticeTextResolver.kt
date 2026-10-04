@@ -4,6 +4,8 @@ import android.content.Context
 import com.aozijx.passly.R
 import com.aozijx.passly.app.message.model.AppNotice
 import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.ArgumentKey
+import com.aozijx.passly.app.message.model.ArgumentValue
 import com.aozijx.passly.app.message.contract.NoticeCodeRegistry
 import com.aozijx.passly.app.message.contract.NoticeTextResolver
 import com.aozijx.passly.app.message.contract.ResolvedNotice
@@ -21,10 +23,28 @@ class AndroidNoticeTextResolver @Inject constructor(
         return ResolvedNotice(
             eventId = notice.eventId,
             title = context.getString(R.string.app_name),
-            text = context.getString(notice.code.messageResource()),
+            text = notice.resolveText(),
             level = policy.level
         )
     }
+
+    private fun AppNotice.resolveText(): String {
+        if (code != NoticeCode.BACKUP_IMPORT_COMPLETED || arguments.isEmpty()) {
+            return context.getString(code.messageResource())
+        }
+        return context.getString(
+            R.string.backup_import_success_summary,
+            count(ArgumentKey.IMPORTED_ITEM_COUNT),
+            count(ArgumentKey.EXISTING_ITEM_COUNT),
+            count(ArgumentKey.SKIPPED_ITEM_COUNT),
+            count(ArgumentKey.IGNORED_FIELD_COUNT),
+            count(ArgumentKey.PRUNED_LINK_COUNT),
+            count(ArgumentKey.PRUNED_RESOURCE_COUNT),
+        )
+    }
+
+    private fun AppNotice.count(key: ArgumentKey): Long =
+        (arguments[key] as? ArgumentValue.Count)?.value ?: 0L
 
     private fun NoticeCode.messageResource(): Int = when (this) {
         NoticeCode.CLIPBOARD_CLEARED -> R.string.notice_clipboard_cleared

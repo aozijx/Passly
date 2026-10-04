@@ -16,6 +16,7 @@ import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupExportOptions
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
+import com.aozijx.passly.feature.backup.internal.model.BackupImportResult
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
@@ -32,7 +33,7 @@ internal class BackupOperationInteractor @Inject constructor(
     suspend fun checkDirectoryWritable(uri: String?): BackupExecutionResult {
         if (uri.isNullOrBlank()) return BackupExecutionResult.Failure(BackupFailed())
         return when (val result = backupService.checkDirectoryWritable(uri)) {
-            is AppResult.Success -> BackupExecutionResult.Success
+            is AppResult.Success -> BackupExecutionResult.Success()
             is AppResult.Failure -> BackupExecutionResult.Failure(result.error)
         }
     }
@@ -98,8 +99,8 @@ internal class BackupOperationInteractor @Inject constructor(
     ): BackupExecutionResult {
         val password = request.password.takeUnless { it.isEmpty }?.toCharArray()
         return try {
-            val result = if (request.operation == BackupOperation.EXPORT) {
-                backupService.export(
+            if (request.operation == BackupOperation.EXPORT) {
+                when (val result = backupService.export(
                     BackupExportRequest(
                         targetUri = targetUri.toString(),
                         format = request.exportFormat.formatId,
@@ -113,22 +114,25 @@ internal class BackupOperationInteractor @Inject constructor(
                             includedEntryTypes = request.includedEntryTypes,
                         ),
                     ),
-                )
+                )) {
+                    is AppResult.Success -> BackupExecutionResult.Success()
+                    is AppResult.Failure -> {
+                        deleteFailedExport(request, targetUri)
+                        BackupExecutionResult.Failure(result.error)
+                    }
+                }
             } else {
-                backupService.import(
+                when (val result = backupService.import(
                     BackupImportRequest(
                         sourceUri = targetUri.toString(),
                         mode = request.importMode,
+                        strategy = request.importStrategy,
                         format = null,
                         password = password,
                     ),
-                )
-            }
-            when (result) {
-                is AppResult.Success -> BackupExecutionResult.Success
-                is AppResult.Failure -> {
-                    deleteFailedExport(request, targetUri)
-                    BackupExecutionResult.Failure(result.error)
+                )) {
+                    is AppResult.Success -> BackupExecutionResult.Success(result.data)
+                    is AppResult.Failure -> BackupExecutionResult.Failure(result.error)
                 }
             }
         } catch (error: Exception) {
@@ -147,7 +151,9 @@ internal class BackupOperationInteractor @Inject constructor(
 }
 
 internal sealed interface BackupExecutionResult {
-    data object Success : BackupExecutionResult
+    data class Success(
+        val importResult: BackupImportResult? = null,
+    ) : BackupExecutionResult
     data object Cancelled : BackupExecutionResult
     data class Failure(val error: AppError) : BackupExecutionResult
 }

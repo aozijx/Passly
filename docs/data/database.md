@@ -68,8 +68,8 @@ reveal 单字段只读取并解密对应字段行，不触碰同条目其他字�
 与当前会话绑定且 scope 精确匹配的授权许可。
 
 列表优先读取 metadata，详情读取低敏 bundle；Repository 将两者聚合成不含字段级值的领域模型，
-需要完整凭据的批量流程（备份、恢复、自动填充点选后）才组装全部字段。搜索使用基于会话密钥的
-Blind Index，不能对明文敏感字段使用 SQLite `LIKE`。
+需要完整凭据的批量流程（备份、恢复、自动填充点选后）才组装全部字段。列表搜索只查询 entries 中
+可检索的摘要列及 JSON 集合，不查询敏感字段；当前实现直接使用参数化 SQLite `LIKE`。
 
 数据库历史与用户备份是不同边界：Revision 是库内 Entry 快照，用户备份是独立全量 Snapshot。
 数据库 Entity、备份 DTO 与 Domain model 必须由 Mapper 隔离。
@@ -101,8 +101,9 @@ stateDiagram-v2
 - 错误密钥或 Schema 不匹配必须返回明确错误，禁止自动删库。
 - 锁定顺序为：拒绝新操作 → 等待租约排空并关闭数据库 → 擦除 DEK 与会话密钥。
 - 导入的覆盖或合并操作必须在事务中完成，失败整体回滚。
-- 当前开发期 Room Schema、Secret Payload、Revision 和 Backup Document 均保持版本 `1`；不提供旧字段
-  转换或旧开发库迁移。安装已有开发版本时必须清除应用数据后再启动。
+- 当前开发期 Room Schema、Secret Payload 和 Revision 均保持版本 `1`。备份协议版本独立，当前身份为
+  `passly-field-archive v1`；切换该备份格式不升级 Room，也不要求清除现有数据库。Room/Secret 发生
+  破坏性变更时仍不提供旧开发库迁移，安装旧开发版本数据需按对应变更说明处理。
 - 数据库关闭超时不能制造“已关闭”的假象；详见[代码审查](../reviews/2026-07-code-review.md)。
 
 ## 初始化失败与数据重置

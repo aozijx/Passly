@@ -16,6 +16,7 @@ import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageS
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
+import com.aozijx.passly.feature.backup.internal.model.BackupImportResult
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
@@ -113,7 +114,7 @@ class BackupOperationInteractorTest {
         override suspend fun export(request: BackupExportRequest): AppResult<Unit> =
             error("Export should not run")
 
-        override suspend fun import(request: BackupImportRequest): AppResult<Unit> =
+        override suspend fun import(request: BackupImportRequest): AppResult<BackupImportResult> =
             error("Import should not run")
 
         override suspend fun checkDirectoryWritable(uri: String): AppResult<Unit> =

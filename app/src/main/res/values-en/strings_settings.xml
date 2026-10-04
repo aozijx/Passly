@@ -223,6 +223,11 @@
     <string name="settings_backup_import_atomicity_notice">The whole file is verified first. A failed import writes nothing.</string>
     <string name="settings_backup_import_format_description">The format is detected automatically. Encrypted %1$s backups require a password.</string>
     <string name="settings_backup_import_mode">Import mode</string>
+    <string name="settings_backup_import_strategy">Import validation</string>
+    <string name="settings_backup_import_compatible">Compatible import</string>
+    <string name="settings_backup_import_compatible_description">Ignore unknown fields and skip entries unsupported or invalid in this version</string>
+    <string name="settings_backup_import_strict">Strict validation</string>
+    <string name="settings_backup_import_strict_description">Reject the entire import when it contains unknown fields, unsupported types, or invalid entries</string>
     <string name="settings_backup_import_options_title">Import and restore</string>
     <string name="settings_backup_import_overwrite">Overwrite</string>
     <string name="settings_backup_import_overwrite_description">Clear existing data before restoration; this is high risk</string>

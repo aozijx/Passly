@@ -8,6 +8,7 @@ import com.aozijx.passly.core.telemetry.TelemetryReporter
 import com.aozijx.passly.core.telemetry.report
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
+import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
 import com.aozijx.passly.data.local.database.maintenance.DatabaseCleaner
@@ -19,6 +20,7 @@ import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.RestoreFileJournal
+import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupRestoreResult
 import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.data.mapper.entry.toDatabaseFlags
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
@@ -53,6 +55,11 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
 
     suspend fun restore(bundle: BackupBundle, mode: ImportMode) =
         attachmentGarbageCollector.withMutationLock {
+        require(
+            mode != ImportMode.OVERWRITE ||
+                bundle.sourceEntryCount == 0 ||
+                bundle.document.entries.isNotEmpty()
+        ) { "兼容导入未找到可恢复条目，已取消覆盖以保护现有数据" }
         BackupBundleValidator.validate(
             bundle,
             requireResourceData = bundle.document.resources.isNotEmpty()
@@ -60,6 +67,8 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
         val resourcesByEntry = bundle.document.resources.groupBy { it.entryId }
         val fileJournal = RestoreFileJournal()
         val restoredFiles = mutableSetOf<String>()
+        var importedEntryCount = 0
+        var existingEntryCount = 0
 
         try {
             databaseSession.transaction {
@@ -70,6 +79,7 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
                 bundle.document.entries.forEach { record ->
                     val entryId = record.id
                     if (mode == ImportMode.APPEND && entryQueryDao().exists(entryId)) {
+                        existingEntryCount++
                         return@forEach
                     }
                     val restoredEntry = documentMapper.toEntry(record)
@@ -103,8 +113,8 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
 
                     val metaEntity = EntryEntity(
                         entryId = entryId,
-                        entryType = com.aozijx.passly.domain.entry.model.EntryType.valueOf(record.type),
-                        version = record.version,
+                        entryType = restoredEntry.type,
+                        version = record.revision,
                         capabilityFlags = capabilityFlags,
                         otpType = otpType?.name,
                         title = profile.title,
@@ -170,6 +180,7 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
                             )
                         )
                     }
+                    importedEntryCount++
                 }
                 bundle.document.links.forEach { link ->
                     if (
@@ -181,7 +192,9 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
                                 linkId = link.id,
                                 sourceEntryId = link.sourceEntryId,
                                 targetEntryId = link.targetEntryId,
-                                relationType = EntryRelationType.valueOf(link.relationType),
+                                relationType = requireNotNull(
+                                    BackupArchiveKeyRegistry.relationType(link.relationType),
+                                ) { "未知关系类型: ${link.relationType}" },
                                 createdAt = link.createdAt,
                                 updatedAt = link.updatedAt
                             )
@@ -200,6 +213,10 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
                     report("backup.resource_cleanup_failed", error)
                 }
             }
+            BackupRestoreResult(
+                importedEntryCount = importedEntryCount,
+                existingEntryCount = existingEntryCount,
+            )
         } catch (error: Throwable) {
             fileJournal.rollback()
             throw error

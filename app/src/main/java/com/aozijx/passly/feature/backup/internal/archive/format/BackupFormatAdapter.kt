@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.backup.internal.archive.format
 
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.model.BackupFormatId
+import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
 
 /**
  * Encodes the canonical [BackupBundle] into one external format.
@@ -29,5 +30,9 @@ internal interface BackupImportAdapter {
 
     fun probe(payload: ByteArray): Int
 
-    fun decode(payload: ByteArray, password: CharArray?): BackupBundle
+    fun decode(
+        payload: ByteArray,
+        password: CharArray?,
+        strategy: BackupImportStrategy = BackupImportStrategy.STRICT,
+    ): BackupBundle
 }

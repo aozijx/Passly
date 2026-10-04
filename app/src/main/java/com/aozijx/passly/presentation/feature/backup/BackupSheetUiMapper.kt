@@ -13,6 +13,7 @@ internal fun BackupUiState.toSheetUiState(
             configuredDirectoryLabel = configuredDirectoryLabel,
             password = passwordChars.concatToString(),
             importMode = importMode,
+            importStrategy = importStrategy,
             selectedExportFormat = selectedExportFormat,
             includeIcons = includeIcons,
             includeAttachments = includeAttachments,

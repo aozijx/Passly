@@ -2,6 +2,7 @@ package com.aozijx.passly.presentation.feature.backup
 
 import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
+import com.aozijx.passly.feature.backup.internal.model.BackupImportResult
 
 internal sealed interface BackupEffect {
     data object SelectImportDocument : BackupEffect
@@ -16,6 +17,7 @@ internal sealed interface BackupNoticeEffect : BackupEffect {
 
     data class Succeeded(
         override val operation: BackupOperation,
+        val importResult: BackupImportResult? = null,
     ) : BackupNoticeEffect
 
     data class Failed(

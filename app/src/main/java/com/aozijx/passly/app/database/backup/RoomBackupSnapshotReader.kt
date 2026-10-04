@@ -4,6 +4,7 @@ import android.content.Context
 import com.aozijx.passly.core.platform.VaultResourcePaths
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
+import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupLinkRecord
@@ -45,7 +46,7 @@ internal class RoomBackupSnapshotReader @Inject constructor(
         includeIcons: Boolean = false,
         includeAttachments: Boolean = true,
         includeDeleted: Boolean = true,
-        includedEntryTypes: Set<EntryType> = EntryType.entries.toSet()
+        includedEntryTypes: Set<EntryType> = BackupArchiveKeyRegistry.archiveEntryTypes
     ): BackupBundle {
         require(includedEntryTypes.isNotEmpty()) {
             "At least one entry type must be selected"
@@ -145,7 +146,7 @@ internal class RoomBackupSnapshotReader @Inject constructor(
                         id = link.linkId,
                         sourceEntryId = link.sourceEntryId,
                         targetEntryId = link.targetEntryId,
-                        relationType = link.relationType.name,
+                        relationType = BackupArchiveKeyRegistry.relationTypeKey(link.relationType),
                         createdAt = link.createdAt,
                         updatedAt = link.updatedAt
                     )

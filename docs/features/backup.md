@@ -1,386 +1,153 @@
 # Backup 功能与 Passly 备份协议
 
 状态：正式格式 v1
-最后修订：2026-07-24
+最后修订：2026-10-05
 
-Backup 是 app 内的业务 feature，不是 `:data` 或独立 Gradle 模块。UI、流程编排、归档模型、格式适配、
-加密和文件 I/O 均位于 `app/feature/backup`；只有快照读写代码集中访问 Data 实现。
+Backup 是 app 内的业务 feature。UI 与流程编排位于 presentation/feature/backup，格式、协议、加密和文件 I/O 位于 feature/backup/internal，Room 快照适配位于 app/database/backup。备份是可恢复的 Vault 业务数据归档，不是 Room 数据库镜像。
 
-本文描述可恢复的 Vault 内容备份，不描述 Room 数据库镜像。正式 v1 使用新的
-magic，因此不兼容开发期间产生的任何 `PASSLYBK`、旧 Snapshot 或旧 ZIP 文件。
+## 1. 范围与版本边界
 
-## 1. 范围
+可恢复备份包含所选条目及其完整业务字段、条目关系、已提交附件和可选自定义图标。默认包含回收站条目和 archive registry 中所有数据库仍可读取的条目类型。
 
-默认的完整 Passly 备份包含：
+Draft、活动记录、修订历史、可重建索引、设置、会话、DEK、Bootstrap 密钥、认证材料、Room 密文结构、本机绝对路径和未提交附件不进入备份。
 
-- 所有 Vault 条目，包括回收站条目；
-- Entry Summary 和 Entry Secret 的业务字段；
-- 所有 `COMMITTED` 附件；
-- 可选的自定义图标；
-- 资源大小、SHA-256 和附件创建时间。
+Room Schema 与备份协议独立。本次格式替换不升级数据库，Room Schema 仍为 1；已有数据库内容可直接重新导出为新格式。
 
-以下内容有意不进入备份：
+## 2. 外部格式
 
-- Draft、Search Token 和可重建索引；
-- Activity、Revision 等本机历史；
-- 设置、会话、DEK、Bootstrap 密钥和认证材料；
-- Room 主键之外的数据库实现细节；
-- 本机绝对路径和未提交附件。
+| formatId | 方向 | 资源 | 保密性 |
+|---|---|---|---|
+| passly.encrypted | 导入、导出 | 附件与可选图标 | Argon2id + AES-256-GCM |
+| passly.json | 导入、导出 | Base64 内嵌 | 无 |
+| passly.text | 仅导出 | 无 | 无 |
+| bitwarden.json | 仅导入 | 不支持附件 ZIP | 仅接收明文 JSON |
 
-因此该格式叫 Vault Backup，不叫 Database Snapshot。导入后搜索索引按
-搜索直接读取条目摘要字段，不需要重建派生索引。
+TXT 是有损的人类可读报告，不可恢复。JSON 和 TXT 都可能包含明文敏感信息，UI 必须显示风险。
 
-## 2. 支持的外部格式
+原生 JSON 与加密容器内的 document.json 共用同一 canonical 文档：
 
-| formatId           | 方向    | 资源        | 保密性                    |
-|--------------------|-------|-----------|------------------------|
-| `passly.encrypted` | 导入、导出 | 附件；图标可选   | Argon2id + AES-256-GCM |
-| `passly.json`      | 导入、导出 | Base64 内嵌 | 无                      |
-| `passly.text`      | 仅导出   | 无         | 无                      |
-| `bitwarden.json`   | 仅导入   | 不支持附件 ZIP | 取决于源文件；当前只接收明文 JSON    |
-
-TXT 是给人阅读的有损报告，不是备份。明文 JSON 和 TXT 都包含敏感字段，调用方
-必须显示风险提示。
-
-## 3. 与 UI 解耦的处理流程
-
-```mermaid
-flowchart LR
-    UI["任意 UI / CLI"] --> Request["BackupExportRequest / BackupImportRequest"]
-    Request --> Service["BackupArchiveService"]
-    Service --> Registry["BackupFormatRegistry"]
-    Registry --> Adapter["格式 Adapter"]
-    ExportReader["DatabaseSnapshotReader"] --> Bundle["Canonical BackupBundle"]
-    Bundle --> Adapter
-    Adapter --> FileStore["BackupFileStore"]
-    FileStore --> Adapter
-    Adapter --> Bundle
-    Bundle --> Restorer["DatabaseSnapshotRestorer"]
-```
-
-`BackupArchiveService` 只有通用的 `export(request)` 和 `import(request)`。格式实现不读取
-数据库、不访问 Android URI，也不依赖 UI 状态。
-
-新增外部导入格式的步骤：
-
-1. 实现 `BackupImportAdapter`；
-2. 提供稳定的 `formatId`；
-3. 实现只读、低成本的 `probe(payload)`；
-4. 将源数据映射为 `BackupBundle`；
-5. 在 `BackupModule` 中增加一个 `@IntoSet` 绑定；
-6. 增加格式样例、拒绝场景和字段映射测试。
-
-不需要修改 `BackupArchiveService`、Reader、Restorer 或现有 UI。未指定导入格式时，
-Registry 按内容评分选择唯一适配器；无法识别或同分歧义时拒绝导入。
-
-## 4. Passly 文档 v1
-
-### 4.1 顶层文档
-
-| 字段           | 类型           | 必需 | 含义                 |
-|--------------|--------------|---:|--------------------|
-| `format`     | string       |  是 | 固定为 `passly-vault` |
-| `version`    | integer      |  是 | 当前为 `1`            |
-| `exportedAt` | epoch millis |  是 | 导出时间               |
-| `appVersion` | string       |  否 | 导出应用版本             |
-| `entries`    | array        |  是 | 条目列表               |
-| `resources`  | array        |  否 | 资源元数据；空时省略         |
-
-导出器不写 `null`、默认值和默认空集合。v1 的 wire model 位于
-`app/feature/backup/internal/archive/model/`，独立于 Room Payload 和 Domain Model，修改数据库 DTO 不会改变
-备份协议。
-
-### 4.2 Entry
-
-| 字段              | 类型           | 必需 | 约束                          |
-|-----------------|--------------|---:|-----------------------------|
-| `id`            | string       |  是 | `[A-Za-z0-9_-]{1,160}`，全局唯一 |
-| `vaultId`       | string       |  是 | 所属保险库；v1 当前为 `default`      |
-| `parentEntryId` | string       |  否 | 父 `ACCOUNT` 条目；省略表示独立条目    |
-| `type`          | string       |  是 | Passly `EntryType` 名称       |
-| `version`       | integer      |  是 | `>= 1`                      |
-| `createdAt`     | epoch millis |  是 | `>= 0`                      |
-| `updatedAt`     | epoch millis |  是 | `>= createdAt`              |
-| `deletedAt`     | epoch millis |  否 | 回收站时间                       |
-| `summary`       | object       |  是 | 非秘密展示字段                     |
-| `secret`        | object       |  是 | 凭据字段                        |
-| `attachmentIds` | string array |  否 | 与 ATTACHMENT 资源集合必须完全一致     |
-
-### 4.3 Summary
-
-`summary` 字段：
-
-- `title`、`username`；
-- `website.primaryUrl`；
-- `website.matchDomains`、`website.packageNames`；
-- `icon`：逻辑或远程图标标识；
-- `favorite`、`tags`、`color`、`expiresAt`。
-
-`iconCustomPath` 永远不序列化。本地图标通过 `resources` 中的 `ICON` 表达。
-
-### 4.4 Secret
-
-`secret` 是原子凭据对象。以下 typed payload 中每个 Entry 最多只能出现一个，并且必须与
-`type` 对应；`notes` 和 `customFields` 是该凭据的通用扩展：
-
-| 对象         | 字段                                                                                   |
-|------------|--------------------------------------------------------------------------------------|
-| `login`    | `email`, `password`                                                                  |
-| `card`     | `cardNumber`, `cardExpiry`, `cardCvv`, `cardHolder`, `paymentPin`, `paymentPlatform` |
-| `identity` | `idNumber`, `securityQuestion`, `securityAnswer`, `seedPhrase`, `recoveryCodes`      |
-| `ssh`      | `privateKey`, `publicKey`, `passphrase`                                              |
-| `wifi`     | `password`, `securityType`, `hidden`                                                 |
-| `passkey`  | `credentialId`, `rpId`, `userHandle`, `privateKeyReference`, `hardwareKeyInfo`       |
-| `otp`      | `config`                                                                             |
-| 根字段        | `notes`, `customFields[]`                                                            |
-
-`customFields[]` 包含 `name`、`value`、`type`。
-
-字段级敏感值不进入 `secret` 对象，而是放在 Entry 的 `sensitiveFields` 数组：每项为
-`{ "key": <SensitiveFieldKey 名称>, "value": <明文字符串> }`（如 `PASSWORD`、`CARD_NUMBER`、
-`CARD_CVV`），`secret` 中对应的凭据字段保持 `null`。导入时按 `key` 重组回对应字段。
-`key` 必须可识别且不重复，同一值不得同时出现在 `sensitiveFields` 与 `secret` 中。
-
-同一账户的 Login、OTP、Passkey 等能力必须导出为独立 Entry。它们通过
-`parentEntryId` 指向一个 `type = "ACCOUNT"`、`secret = {}` 的账户容器。父账户必须位于
-同一 `vaultId`，不能再拥有父账户。导入按 `ACCOUNT` 优先顺序恢复；无效引用、混合 payload
-或跨保险库引用会使整个导入失败，不会静默丢弃关系。
-
-OTP config：
-
-| 字段                      | 含义                         |
-|-------------------------|----------------------------|
-| `type`                  | `TOTP`, `HOTP`, `STEAM`    |
-| `secret`                | OTP Secret                 |
-| `algorithm`             | `SHA1`, `SHA256`, `SHA512` |
-| `digits`                | 5–10                       |
-| `periodSeconds`         | TOTP/Steam 周期，1–300        |
-| `counter`               | HOTP 非负计数器                 |
-| `encoding`              | `BASE32`, `BASE64`         |
-| `issuer`, `accountName` | 可选显示信息                     |
-
-### 4.5 Resource
-
-| 字段          | 类型           | 必需 | 含义                    |
-|-------------|--------------|---:|-----------------------|
-| `id`        | string       |  是 | 全局唯一资源 ID             |
-| `entryId`   | string       |  是 | 所属 Entry              |
-| `kind`      | enum         |  是 | `ICON` 或 `ATTACHMENT` |
-| `fileName`  | string       |  否 | 展示文件名，不作为磁盘路径         |
-| `mimeType`  | string       |  否 | MIME                  |
-| `size`      | integer      |  是 | 原文字节数                 |
-| `sha256`    | 64 hex chars |  是 | 原文 SHA-256            |
-| `createdAt` | epoch millis |  否 | 附件创建时间                |
-
-每个 Entry 最多一个 `ICON`。资源数据必须与元数据集合完全一致，不能多也不能少。
-
-## 5. 明文 JSON
-
-JSON 是一个单文件包：
-
-```json
+~~~json
 {
-  "document": {
-    "format": "passly-vault",
-    "version": 1,
-    "exportedAt": 0,
-    "entries": []
-  },
-  "resourcesBase64": {}
+  "format": "passly-field-archive",
+  "version": 1,
+  "exportedAt": 0,
+  "entries": [],
+  "links": [],
+  "resources": []
 }
-```
+~~~
 
-`resourcesBase64` 的 key 是 Resource ID，value 是资源原文的标准 Base64。读取时先限制
-Base64 字符数，再解码并核对 `size` 与 `sha256`。输入必须是严格 UTF-8。
+**passly-field-archive + version 1** 是完整协议身份。开发期旧标识 passly-vault、passly-archive 以及旧 typed payload 没有兼容 Decoder。格式标识已更换，因此新文档仍从版本 1 开始。
 
-## 6. 加密容器 v1
+## 3. Keyed Entry
 
-### 6.1 标识和端序
+Entry 不再按 login、card、identity 等 Kotlin 数据类分叉，而是由稳定类型键与字段数组表达：
 
-- magic：ASCII `PSLYBKP1`，8 字节；
-- container version：`1`；
-- 所有 `i32` 使用 Java `DataOutputStream` 的 big-endian；
-- 正式 v1 明确拒绝旧 `PASSLYBK` magic。
+~~~json
+{
+  "id": "entry-id",
+  "type": "login",
+  "revision": 1,
+  "createdAt": 0,
+  "updatedAt": 0,
+  "fields": [
+    { "key": "title", "value": { "kind": "text", "text": "GitHub" } },
+    { "key": "password", "value": { "kind": "text", "text": "secret" } },
+    { "key": "tags", "value": { "kind": "text_list", "texts": ["work"] } }
+  ]
+}
+~~~
 
-### 6.2 二进制头
+字段使用数组以检测重复 key，导入不依赖字段顺序。revision 必须大于等于 1，时间戳必须单调有效，attachmentIds 必须与该 Entry 的 attachment resources 完全一致。
 
-```text
-magic[8]
-formatVersion:i32
-headerLength:i32
-kdfId:i32
-cipherId:i32
-argon2Version:i32
-iterations:i32
-memoryKiB:i32
-parallelism:i32
-keyLengthBits:i32
-saltLength:i32
-nonceLength:i32
-tagLengthBits:i32
-ciphertextLength:i32
-salt[saltLength]
-nonce[nonceLength]
-ciphertext[ciphertextLength]
-```
+v1 字段值是封闭形状：
 
-固定头为 60 字节。默认 salt 为 16 字节、nonce 为 12 字节，因此默认完整头为
-88 字节。
+| kind | 唯一 payload |
+|---|---|
+| text | text |
+| text_list | texts |
+| boolean | boolean |
+| integer | integer |
+| long | long |
+| custom_fields | customFields |
 
-算法 ID：
+每个值只能携带与 kind 对应的一个 payload。自定义字段 kind 是 text 或 hidden。OTP 类型、算法和编码使用 totp、hotp、steam、sha1、sha256、sha512、base32、base64 等稳定小写值。
 
-- `kdfId = 1`：Argon2id v1.3；
-- `cipherId = 1`：AES-256-GCM；
-- `keyLengthBits = 256`；
-- `tagLengthBits = 128`。
+## 4. 稳定键与注册表
 
-当前导出参数：
+BackupArchiveKeyRegistry 是 wire key 与 Domain enum 之间的唯一映射边界：
 
-- iterations：3；
-- memory：65536 KiB；
-- parallelism：4。
+- Entry type、Field key、Relation type 使用显式小写稳定键；
+- Resource kind 使用显式序列名 icon 与 attachment；
+- 外部字符串不得交给 Enum.valueOf 或 enumValueOf，不得序列化 enum.name 或 ordinal；
+- 导出侧缺少映射是开发错误；导入侧未知键交给导入策略处理；
+- archiveEntryTypes 必须覆盖全部数据库可读取的 EntryType，完整导出不得因 UI 隐藏类型而漏数据。
 
-为防止恶意文件在认证前制造 KDF 资源耗尽，导入上限为：
+数据库字段的敏感度只信任本地 EntryTypeDefinition。备份文件不能声明、覆盖或降低字段访问等级。
 
-- iterations：10；
-- memory：262144 KiB；
-- parallelism：8。
+## 5. Link 与 Resource
 
-超出上限的文件在执行 Argon2 前拒绝。
+Link 使用 member_of_account、otp_for、recovery_for、related_to 等稳定关系键。导入会校验两端 Entry、关系方向、类型约束、重复关系和时间戳。
 
-### 6.3 Salt、nonce、AAD 和密钥生命周期
+Resource 元数据包含 id、entryId、kind、size、sha256 及可选文件名、MIME、创建时间。每个 Entry 最多一个 icon。资源元数据、内容和附件清单必须相互完整，大小与 SHA-256 必须匹配。
 
-- 每次导出生成独立的 128-bit random salt；
-- 每次导出生成独立的 96-bit random GCM nonce；
-- 两者都使用进程级 `SecureRandom`；
-- salt 和 nonce 是公开参数，会明文存放在容器头；
-- 随机 salt 令每次派生的 AES key 不同，随机 nonce 防止同 key 下 nonce 重用；
-- 从 magic 第一个字节到 nonce 最后一个字节的完整头部都是 AES-GCM AAD；
-- 算法 ID、版本、KDF 参数、所有长度、salt、nonce 被修改都会导致拒绝；
-- 密码错误与认证失败统一报告为“密码错误或文件损坏”，不提供判别 oracle；
-- UTF-8 密码字节、派生 key、ZIP 明文和读取到的输入缓冲在完成后尽力清零；
-- 调用者拥有 `CharArray`，必须在调用结束后清零。
+JSON 使用 resourcesBase64 保存资源；加密格式的 ZIP 使用 resources/<resource-id>。路径穿越、未知 ZIP 条目、重复条目、未声明资源、截断和尾随数据一律拒绝。
 
-JVM/JCE 内部可能复制 key 或字符串，无法承诺所有托管内存立即物理擦除；实现避免额外
-持久化和可控的长生命周期副本。
+## 6. 导出流程
 
-### 6.4 加密负载
+1. 已解锁且通过备份导出认证后，Room Snapshot Reader 读取所选条目、完整字段、关系和资源。
+2. KeyedEntryArchiveMapper 将 Domain Entry 映射为 keyed records。
+3. Validator 在写文件前校验协议键、必填字段、值形状、引用和资源完整性。
+4. Registry 选择格式 Adapter；Adapter 只负责 canonical bundle 与外部格式之间的编码。
+5. BackupFileStore 写入 SAF URI，完成后清零可控的密码、编码和资源缓冲。
 
-AES-GCM 明文是完整 ZIP：
+完整导出默认使用 archive registry。UI 的条目类型筛选只影响本次选择性导出，不修改 Vault 数据。数据库出现未注册类型时，映射必须失败，不能生成看似成功但缺条目的备份。
 
-```text
-document.json
-resources/<resource-id>
-```
+## 7. 导入策略与结果
 
-文档、密码、OTP Secret、资源元数据、附件和图标全部位于同一加密边界。ZIP 外不出现
-文件名、条目标题或资源内容。
+导入 Sheet 提供两种策略：
 
-## 7. 导出流程
+- **COMPATIBLE（默认）**：未知 Entry type 跳过；已知类型的未知字段忽略；值形状错误、重复字段、缺少必填字段或语义无效的 Entry 跳过；相关 Link 和 Resource 随之裁剪。
+- **STRICT**：遇到上述任一语义不兼容，写数据库前拒绝整个导入。
 
-1. `DatabaseSnapshotReader` 在已解锁会话中读取所选 Entry 和 Secret；
-2. `BackupExportOptions` 独立控制自定义图标、已提交附件、回收站条目和
-   `EntryType` 集合；至少必须选择一种条目类型；
-3. 图标 canonical path 必须位于 `filesDir/vault_images`，拒绝路径和符号链接逃逸；
-4. 将 Domain 映射到独立 v1 wire model；
-5. 校验 ID、引用、时间、OTP、资源大小和 SHA-256；
-6. Registry 选择 Export Adapter；
-7. Adapter 编码；
-8. `BackupFileStore` 写入目标 URI；
-9. 清理资源、归档和编码缓冲。
+两种策略都严格拒绝错误格式或版本、容器认证失败、危险 KDF 参数、重复顶层 ID、资源损坏、大小或哈希不匹配、ZIP 路径问题和超限输入。兼容模式只隔离单个 Entry 的语义不兼容，不降低文件完整性要求。
 
-“包含图标”和“包含附件”互不影响。格式 Adapter 的能力是最终上限：TXT 即使收到
-资源选项也不会携带资源；加密和 JSON 可以分别选择图标与附件。筛选只影响本次导出的
-内容，不修改 Vault 数据。
+规划完成后才进入恢复事务。APPEND 跳过数据库中已有 ID；OVERWRITE 在同一 Room 事务内清库并插入。若源文档原本有 Entry，但兼容过滤后没有任何可恢复 Entry，覆盖导入会在清库前终止。
 
-### 7.1 设置页交互
+成功通知显示写入、已存在、跳过、忽略字段、裁剪关系和裁剪资源数量。通知与日志只记录计数和稳定原因，不记录标题、字段值、用户名、URL、OTP 或文件名。
 
-备份入口只位于“设置 → 备份与恢复”，Vault TopBar 不承担文件导入导出职责：
+## 8. 加密容器 v1
 
-1. 点击导出后先显示格式 BottomSheet，以三个 outlined 选项选择加密、JSON 或 TXT；
-2. 再显示格式专属的导出控制 BottomSheet；
-3. 加密格式必须输入备份密码；JSON/TXT 必须显示明文风险；
-4. 加密和 JSON 可选择图标、附件/图片、回收站条目和条目类型；
-5. TXT 只保留可读字段，不显示资源开关；
-6. 配置默认目录时持久化系统授予的原始 SAF tree URI；每次导出从设置读取最新 URI，
-   再在授权树下查找或创建 `Passly` 子目录及带正确扩展名的新文件。不得持久化派生的
-   子目录 URI 代替授权 URI；未配置目录时交给系统文件选择器；
-7. 导出和导入在真正访问 Vault 前都必须通过对应的身份验证用途。
+- magic 为 ASCII PSLYBKP1；container version 为 1；整数为 big-endian；
+- KDF 为 Argon2id v1.3，当前参数 iterations 3、memory 65536 KiB、parallelism 4；
+- 加密为 AES-256-GCM，16-byte salt、12-byte nonce、128-bit tag；
+- 从 magic 到 nonce 的完整头部作为 AAD；每次导出生成独立随机 salt 和 nonce；
+- 导入在执行 KDF 前限制 iterations 不超过 10、memory 不超过 262144 KiB、parallelism 不超过 8；
+- 错误密码与认证失败统一作为密码错误或文件损坏处理。
 
-格式选择、导出选项和导入选项属于同一个 Backup 页面状态机：`BackupUiState` 保存唯一的
-选项阶段，Reducer 负责打开、推进和关闭阶段。BottomSheet 只渲染状态并直接发送
-`BackupUiAction`，不得在 Route 中用 `remember` 保存第二份 Sheet 状态或再定义一套 UI 事件做
-逐项翻译。系统文档选择器仍由 Route 托管，但只能由 typed `BackupEffect` 启动；选择结果再作为
-Action 返回状态机。这样配置变化、取消选择和页面销毁都走同一条清理路径。
+AES-GCM 明文是包含 document.json 与 resources/<resource-id> 的完整 ZIP，因此文档、凭据、附件和图标处于同一认证边界。
 
-## 8. 导入与恢复
+## 9. 限制与原子性
 
-1. 限制输入最大 256 MiB；
-2. 按 magic/JSON 结构自动探测格式；
-3. 在数据库写入前完成解密、解压、反序列化和全部校验；
-4. 外部格式 Adapter 映射为 canonical `BackupBundle`；
-5. `DatabaseSnapshotRestorer` 重新生成本机 Summary/Secret 密文；
-6. 附件内容使用新的 96-bit random nonce 加密，并以
-   `entry_attachments:<entryId>:<attachmentId>:content` 作为 AAD；
-7. 文件使用同目录临时文件和 Restore File Journal；
-8. Room 写入在单一事务中完成；
-9. 成功后提交文件，失败时恢复被替换的原文件；
-10. 清理输入和资源 ByteArray。
+- Entry 最多 100000，Resource 最多 100000；
+- 单资源最多 16 MiB，解压资源总量最多 128 MiB；
+- document.json 最多 16 MiB，外部输入最多 256 MiB；
+- 导入先完成探测、解密、解压、解析、规划和完整校验，再写数据库；
+- Room 写入处于单一事务；资源文件使用 Restore File Journal，失败时回滚替换；
+- Room 与文件系统无法提供真正的跨介质 ACID，进程在极短替换窗口被系统强杀仍是已知限制。
 
-导入模式：
+## 10. Bitwarden JSON
 
-- `APPEND`：保留已有 Entry ID，只插入缺失条目，不执行 Upsert；
-- `OVERWRITE`：在同一 Room 事务内清理 Vault 表后严格插入；提交成功后清理专用
-  附件/图标目录中未被新数据引用的文件。
+Bitwarden Adapter 直接生成 keyed records。Login、Secure Note、Card、Identity 和 OTP 映射到对应稳定字段。当前拒绝 encrypted/account-restricted JSON、SSH item、FIDO2 或 Passkey credential、附件 ZIP、附件描述和密码历史，避免静默丢失无法表达的数据。
 
-Room 与文件系统无法提供跨介质的真正 ACID。Journal 可以覆盖普通异常和事务回滚，但
-进程在极短的文件替换窗口被系统强杀仍可能需要启动时清理 `.importing/.previous`
-文件。SAF Provider 也不保证覆盖已有文档时原子替换；正常 UI 会创建新目标文件，截断
-文件会在长度或 GCM 认证阶段被拒绝。
+## 11. 演进与测试规则
 
-## 9. Bitwarden JSON 导入
+- document version、container version 和 Room Schema version 彼此独立；
+- passly-field-archive v1 已发布键和值语义不可原地改写；破坏性变化使用新格式身份或新文档版本；
+- 新增 Domain 类型或字段必须先添加稳定 archive key 和完整性测试；
+- golden JSON 验证小写稳定键，不能出现 Kotlin enum 名称；
+- compatible 与 strict 使用同一 fixture 测试；资源损坏在两种策略下都必须失败；
+- JSON 与加密格式解码后必须产生相同 canonical records；
+- wire model 不导入 Room DTO，Adapter 不访问数据库或 Android URI，Restorer 不解析 JSON。
 
-Adapter 依据 Bitwarden 官方明文 JSON 的 `items` 结构探测：
-
-- Login → `LOGIN`，映射 username/password/URI/TOTP；
-- Secure Note → `NOTE`；
-- Card → `CARD`；
-- Identity → `IDENTITY`，无法直接对应的身份字段保存在 Custom Fields；
-- Folder 名称映射为 Tag；
-- `otpauth://totp`、`otpauth://hotp`、raw secret 和 `steam://` 可转换。
-
-为了避免静默丢失数据，当前明确拒绝：
-
-- Bitwarden encrypted/account-restricted JSON；
-- SSH item type；
-- 含 FIDO2/Passkey credentials 的 Login；
-- 带附件 ZIP 或附件描述；
-- 含密码历史的条目。
-
-参考：[Bitwarden Vault Export](https://bitwarden.com/help/export-your-data/)、
-[Bitwarden JSON format](https://bitwarden.com/help/condition-bitwarden-import/)。
-
-## 10. 限制与拒绝策略
-
-- Entry 最多 100000；
-- Resource 最多 100000；
-- 单资源最多 16 MiB；
-- 解压后资源总量最多 128 MiB；
-- `document.json` 最多 16 MiB；
-- 加密容器和外部输入最多 256 MiB；
-- ZIP 拒绝目录、绝对路径、`..`、反斜杠、未知条目和重复条目；
-- 容器声明长度必须与实际长度完全一致，拒绝截断和尾随字节；
-- 未知文档版本、未知算法、非法 OTP 和资源引用全部拒绝；
-- 不做“尽量恢复”或静默字段丢弃。
-
-## 11. 版本演进规则
-
-- container v1 和 document v1 是两个独立版本；
-- v1 字段名和既有语义不可原地修改；
-- 可增加不改变既有含义的可选元数据，v1 Reader 忽略未知字段；
-- 破坏性文档变化必须增加 document version 并保留旧 Decoder；
-- 破坏性容器变化必须使用新 container version，必要时使用新 magic；
-- 外部格式变化由对应 Adapter 吸收，不修改 Passly v1 wire model；
-- 删除旧 Reader 前必须保留覆盖真实历史样例的兼容测试。
-
-相关决策见 [ADR-0016](../decisions/ADR-0016-backup-format.md)。
+相关决策见 [ADR-0022](../decisions/ADR-0022-keyed-backup-document.md)。ADR-0022 替代 ADR-0016 的 typed backup document 决策；加密容器 v1 的安全边界继续沿用。

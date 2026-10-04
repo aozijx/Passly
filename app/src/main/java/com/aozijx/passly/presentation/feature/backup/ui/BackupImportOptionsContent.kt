@@ -26,6 +26,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
+import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
 import com.aozijx.passly.presentation.feature.backup.BackupUiAction
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheetUiState
 
@@ -46,17 +47,37 @@ internal fun BackupImportOptionsContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(stringResource(R.string.settings_backup_import_mode), style = MaterialTheme.typography.titleMedium)
-        ImportModeCard(
+        ImportChoiceCard(
             selected = state.importMode == ImportMode.APPEND,
             title = stringResource(R.string.settings_backup_import_append),
             subtitle = stringResource(R.string.settings_backup_import_append_description),
             onClick = { onAction(BackupUiAction.UpdateImportMode(ImportMode.APPEND)) },
         )
-        ImportModeCard(
+        ImportChoiceCard(
             selected = state.importMode == ImportMode.OVERWRITE,
             title = stringResource(R.string.settings_backup_import_overwrite),
             subtitle = stringResource(R.string.settings_backup_import_overwrite_description),
             onClick = { onAction(BackupUiAction.UpdateImportMode(ImportMode.OVERWRITE)) },
+        )
+        Text(
+            stringResource(R.string.settings_backup_import_strategy),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        ImportChoiceCard(
+            selected = state.importStrategy == BackupImportStrategy.COMPATIBLE,
+            title = stringResource(R.string.settings_backup_import_compatible),
+            subtitle = stringResource(R.string.settings_backup_import_compatible_description),
+            onClick = {
+                onAction(BackupUiAction.UpdateImportStrategy(BackupImportStrategy.COMPATIBLE))
+            },
+        )
+        ImportChoiceCard(
+            selected = state.importStrategy == BackupImportStrategy.STRICT,
+            title = stringResource(R.string.settings_backup_import_strict),
+            subtitle = stringResource(R.string.settings_backup_import_strict_description),
+            onClick = {
+                onAction(BackupUiAction.UpdateImportStrategy(BackupImportStrategy.STRICT))
+            },
         )
         OutlinedTextField(
             value = state.password,
@@ -90,7 +111,7 @@ internal fun BackupImportOptionsContent(
 }
 
 @Composable
-private fun ImportModeCard(
+private fun ImportChoiceCard(
     selected: Boolean,
     title: String,
     subtitle: String,

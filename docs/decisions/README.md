@@ -26,9 +26,10 @@ ADR，并在双方状态中建立替代关系。
 | [0013](ADR-0013-vault-snapshot-model.md)                  | Superseded | Vault Snapshot 聚合模型（备份由 0016 替代） |
 | [0014](ADR-0014-blind-index-search.md)                    | Accepted   | Blind Index 检索                   |
 | [0015](ADR-0015-history-snapshot-strategy.md)             | Accepted   | 历史快照策略                           |
-| [0016](ADR-0016-backup-format.md)                         | Accepted   | 版本化加密备份                          |
+| [0016](ADR-0016-backup-format.md)                         | Superseded | 版本化加密备份（typed 文档由 0022 替代）       |
 | [0017](ADR-0017-recovery-code-envelope.md)                | Accepted   | 恢复码独立 Envelope                   |
 | [0018](ADR-0018-lookup-metadata-strategy.md)              | Accepted   | Metadata/Lookup/Credential 分离    |
 | [0019](ADR-0019-single-dek-derived-session-key.md)        | Accepted   | 单 DEK 与派生会话密钥                    |
 | [0020](ADR-0020-unified-lifecycle-safe-authentication.md) | Accepted   | 生命周期安全的统一认证系统                    |
 | [0021](ADR-0021-encrypted-diagnostics.md)                 | Accepted   | 可插拔加密诊断系统                        |
+| [0022](ADR-0022-keyed-backup-document.md)                | Accepted   | 稳定键值字段备份文档                       |

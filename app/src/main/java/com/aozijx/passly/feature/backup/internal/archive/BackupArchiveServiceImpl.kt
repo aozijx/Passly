@@ -15,6 +15,7 @@ import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupSnapshot
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupSnapshotReadOptions
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
+import com.aozijx.passly.feature.backup.internal.model.BackupImportResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -66,15 +67,23 @@ internal class BackupArchiveServiceImpl @Inject constructor(
 
     override suspend fun import(
         request: BackupImportRequest
-    ): AppResult<Unit> = withContext(ioDispatcher) {
+    ): AppResult<BackupImportResult> = withContext(ioDispatcher) {
         AppResult.runSuspendCatching {
             val payload = fileStore.readBytesSafely(request.sourceUri)
             try {
                 val adapter = formatRegistry.importer(request.format, payload)
                 validatePassword(adapter.requiresPassword, request.password)
-                val bundle = adapter.decode(payload, request.password)
+                val bundle = adapter.decode(payload, request.password, request.strategy)
                 try {
-                    snapshotGateway.restore(bundle, request.mode)
+                    val restore = snapshotGateway.restore(bundle, request.mode)
+                    BackupImportResult(
+                        importedEntryCount = restore.importedEntryCount,
+                        existingEntryCount = restore.existingEntryCount,
+                        skippedEntryCount = bundle.compatibilitySummary.skippedEntryCount,
+                        ignoredFieldCount = bundle.compatibilitySummary.ignoredFieldCount,
+                        prunedLinkCount = bundle.compatibilitySummary.prunedLinkCount,
+                        prunedResourceCount = bundle.compatibilitySummary.prunedResourceCount,
+                    )
                 } finally {
                     bundle.clearResourceData()
                 }

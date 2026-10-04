@@ -57,6 +57,9 @@ internal class BackupViewModel @Inject constructor(
             is BackupUiAction.UpdateImportMode ->
                 mutate(BackupMutation.ImportModeUpdated(action.mode))
 
+            is BackupUiAction.UpdateImportStrategy ->
+                mutate(BackupMutation.ImportStrategyUpdated(action.strategy))
+
             is BackupUiAction.UpdateIncludeIcons ->
                 mutate(BackupMutation.IncludeIconsUpdated(action.include))
 
@@ -164,8 +167,8 @@ internal class BackupViewModel @Inject constructor(
         clearPendingFields: Boolean,
     ) {
         when (result) {
-            BackupExecutionResult.Success -> {
-                emitEffect(BackupNoticeEffect.Succeeded(operation))
+            is BackupExecutionResult.Success -> {
+                emitEffect(BackupNoticeEffect.Succeeded(operation, result.importResult))
                 mutate(BackupMutation.OperationSucceeded)
                 if (clearPendingFields) {
                     clearPasswordAndMutate(BackupMutation.PendingFieldsCleared)
@@ -236,6 +239,7 @@ private fun BackupUiState.toRequest() = BackupOperationRequest(
     operation = operation(),
     exportFormat = selectedExportFormat,
     importMode = importMode,
+    importStrategy = importStrategy,
     includeIcons = includeIcons,
     includeAttachments = includeAttachments,
     includeDeleted = includeDeleted,

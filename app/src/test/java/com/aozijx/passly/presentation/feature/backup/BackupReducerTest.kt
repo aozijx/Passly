@@ -4,6 +4,8 @@ import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupOperationStatus
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
+import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
+import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.presentation.feature.backup.BackupUiState
 import com.aozijx.passly.domain.sensitive.OwnedChars
@@ -15,6 +17,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BackupReducerTest {
+    @Test
+    fun importDefaultsToCompatibleAndAllowsStrictSelection() {
+        val prepared = BackupUiState()
+        val strict = BackupReducer.reduce(
+            prepared,
+            BackupMutation.ImportStrategyUpdated(BackupImportStrategy.STRICT),
+        )
+
+        assertEquals(BackupImportStrategy.COMPATIBLE, prepared.importStrategy)
+        assertEquals(BackupImportStrategy.STRICT, strict.importStrategy)
+    }
+
     @Test
     fun `backup option stage is owned by reducer transitions`() {
         val opened = BackupReducer.reduce(
@@ -64,7 +78,7 @@ class BackupReducerTest {
         assertTrue(state.backupPassword.isEmpty)
         assertFalse(state.includeIcons)
         assertFalse(state.includeAttachments)
-        assertEquals(EntryType.entries.toSet(), state.includedEntryTypes)
+        assertEquals(BackupArchiveKeyRegistry.archiveEntryTypes, state.includedEntryTypes)
         assertSame(BackupOperationStatus.Idle, state.status)
         assertNull(state.error)
     }

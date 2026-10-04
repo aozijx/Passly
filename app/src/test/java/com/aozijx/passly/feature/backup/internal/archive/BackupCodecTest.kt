@@ -12,20 +12,15 @@ import com.aozijx.passly.feature.backup.internal.archive.format.json.JsonBackupI
 import com.aozijx.passly.feature.backup.internal.archive.format.json.PasslyJsonFormatAdapter
 import com.aozijx.passly.feature.backup.internal.archive.io.LimitedInputStream
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupCustomField
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupLoginCredential
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupFieldRecord
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupFieldValue
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupLinkRecord
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpConfig
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpCredential
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceRecord
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupSecretRecord
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupSummaryRecord
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupWebsiteRecord
 import com.aozijx.passly.feature.backup.internal.model.BackupFormats
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
+import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertArrayEquals
@@ -275,12 +270,13 @@ class BackupCodecTest {
             entries = listOf(
                 BackupEntryRecord(
                     id = "encrypted-entry",
-                    type = "LOGIN",
-                    version = 1,
+                    type = "login",
+                    revision = 1,
                     createdAt = 1,
                     updatedAt = 1,
-                    summary = BackupSummaryRecord(sensitiveTitle, ""),
-                    secret = BackupSecretRecord(),
+                    fields = listOf(
+                        BackupFieldRecord("title", BackupFieldValue.text(sensitiveTitle)),
+                    ),
                     attachmentIds = listOf(resourceId)
                 )
             ),
@@ -365,29 +361,28 @@ class BackupCodecTest {
 
         val detected = registry.importer(requestedFormat = null, payload = payload)
         val bundle = detected.decode(payload, password = null)
-        val account = bundle.document.entries.single { it.type == "ACCOUNT" }
-        val login = bundle.document.entries.single { it.type == "LOGIN" }
-        val otp = bundle.document.entries.single { it.type == "OTP" }
+        val account = bundle.document.entries.single { it.type == "account" }
+        val login = bundle.document.entries.single { it.type == "login" }
+        val otp = bundle.document.entries.single { it.type == "otp" }
 
         assertEquals(BackupFormats.BITWARDEN_JSON, detected.formatId)
-        assertEquals("Bank", account.summary.title)
-        assertEquals(BackupSecretRecord(), account.secret)
+        assertEquals("Bank", account.field("title").text)
         assertTrue(bundle.document.links.any {
             it.sourceEntryId == login.id &&
                 it.targetEntryId == account.id &&
-                it.relationType == EntryRelationType.MEMBER_OF_ACCOUNT.name
+                it.relationType == "member_of_account"
         })
         assertTrue(bundle.document.links.any {
             it.sourceEntryId == otp.id &&
                 it.targetEntryId == login.id &&
-                it.relationType == EntryRelationType.OTP_FOR.name
+                it.relationType == "otp_for"
         })
-        assertEquals("alice", login.summary.username)
-        assertEquals(listOf("Finance"), login.summary.tags)
-        assertEquals("secret", login.secret.login?.password)
-        assertEquals("1234", login.secret.customFields.single().value)
-        assertEquals("JBSWY3DPEHPK3PXP", otp.secret.otp?.config?.secret)
-        assertEquals("Bank", otp.secret.otp?.config?.issuer)
+        assertEquals("alice", login.field("username").text)
+        assertEquals(listOf("Finance"), login.field("tags").texts)
+        assertEquals("secret", login.field("password").text)
+        assertEquals("1234", login.field("custom_fields").customFields?.single()?.value)
+        assertEquals("JBSWY3DPEHPK3PXP", otp.field("otp_secret").text)
+        assertEquals("Bank", otp.field("otp_issuer").text)
     }
 
     @Test
@@ -410,12 +405,14 @@ class BackupCodecTest {
                     entries = listOf(
                         BackupEntryRecord(
                             id = "probe-entry",
-                            type = "NOTE",
-                            version = 1,
+                            type = "note",
+                            revision = 1,
                             createdAt = 1,
                             updatedAt = 1,
-                            summary = BackupSummaryRecord("Probe", ""),
-                            secret = BackupSecretRecord(notes = "\"items\"")
+                            fields = listOf(
+                                BackupFieldRecord("title", BackupFieldValue.text("Probe")),
+                                BackupFieldRecord("notes", BackupFieldValue.text("\"items\"")),
+                            ),
                         )
                     )
                 )
@@ -465,7 +462,7 @@ class BackupCodecTest {
     }
 
     @Test
-    fun documentV2_wireFieldNamesAreStableAndIndependentFromDatabasePayloads() {
+    fun fieldArchiveV1_wireFieldNamesAreStableAndIndependentFromDatabasePayloads() {
         val document = BackupDocument(
             format = BackupDocument.FORMAT,
             version = BackupDocument.CURRENT_VERSION,
@@ -473,19 +470,16 @@ class BackupCodecTest {
             entries = listOf(
                 BackupEntryRecord(
                     id = "wire-entry",
-                    type = "LOGIN",
-                    version = 1,
+                    type = "login",
+                    revision = 1,
                     createdAt = 1,
                     updatedAt = 2,
-                    summary = BackupSummaryRecord(
-                        title = "Title",
-                        username = "alice",
-                        website = BackupWebsiteRecord(primaryUrl = "https://example.com")
+                    fields = listOf(
+                        BackupFieldRecord("title", BackupFieldValue.text("Title")),
+                        BackupFieldRecord("username", BackupFieldValue.text("alice")),
+                        BackupFieldRecord("primary_url", BackupFieldValue.text("https://example.com")),
+                        BackupFieldRecord("password", BackupFieldValue.text("secret")),
                     ),
-                    secret = BackupSecretRecord(
-                        login = BackupLoginCredential(password = "secret"),
-                        customFields = listOf(BackupCustomField("PIN", "1234"))
-                    )
                 )
             )
         )
@@ -494,25 +488,21 @@ class BackupCodecTest {
             BackupJson.encodeToString(document)
         ).jsonObject
         val entry = root.getValue("entries").jsonArray.single().jsonObject
-        val summary = entry.getValue("summary").jsonObject
-        val secret = entry.getValue("secret").jsonObject
-
         assertEquals(
             setOf(
                 "id",
                 "type",
-                "version",
+                "revision",
                 "createdAt",
                 "updatedAt",
-                "summary",
-                "secret"
+                "fields",
             ),
             entry.keys
         )
-        assertEquals(setOf("title", "username", "website"), summary.keys)
-        assertEquals(setOf("login", "customFields"), secret.keys)
+        assertEquals(4, entry.getValue("fields").jsonArray.size)
         assertFalse(BackupJson.encodeToString(document).contains("schemaVersion"))
-        assertFalse(BackupJson.encodeToString(document).contains("iconCustomPath"))
+        assertFalse(BackupJson.encodeToString(document).contains("summary"))
+        assertFalse(BackupJson.encodeToString(document).contains("\"secret\":"))
     }
 
     @Test
@@ -535,23 +525,23 @@ class BackupCodecTest {
     fun documentValidator_acceptsAccountHierarchy_andRejectsMixedPayload() {
         val account = BackupEntryRecord(
             id = "account-1",
-            type = "ACCOUNT",
-            version = 1,
+            type = "account",
+            revision = 1,
             createdAt = 1,
             updatedAt = 1,
-            summary = BackupSummaryRecord("Example", ""),
-            secret = BackupSecretRecord()
+            fields = listOf(BackupFieldRecord("title", BackupFieldValue.text("Example"))),
         )
         val login = BackupEntryRecord(
             id = "login-1",
-            type = "LOGIN",
-            version = 1,
+            type = "login",
+            revision = 1,
             createdAt = 1,
             updatedAt = 1,
-            summary = BackupSummaryRecord("Example login", "alice"),
-            secret = BackupSecretRecord(
-                login = BackupLoginCredential(password = "secret")
-            )
+            fields = listOf(
+                BackupFieldRecord("title", BackupFieldValue.text("Example login")),
+                BackupFieldRecord("username", BackupFieldValue.text("alice")),
+                BackupFieldRecord("password", BackupFieldValue.text("secret")),
+            ),
         )
         val valid = BackupBundle(
             BackupDocument(
@@ -564,7 +554,7 @@ class BackupCodecTest {
                         id = "login-account-link",
                         sourceEntryId = login.id,
                         targetEntryId = account.id,
-                        relationType = EntryRelationType.MEMBER_OF_ACCOUNT.name,
+                        relationType = "member_of_account",
                         createdAt = 1,
                         updatedAt = 1
                     )
@@ -577,11 +567,10 @@ class BackupCodecTest {
         val restored = JsonBackupImporter().import(json.toByteArray())
         assertEquals(valid.document.links, restored.document.links)
 
-        val mixed = login.copy(
-            secret = login.secret.copy(
-                otp = BackupOtpCredential(BackupOtpConfig(secret = "JBSWY3DPEHPK3PXP"))
-            )
-        )
+        val mixed = login.copy(fields = login.fields + BackupFieldRecord(
+            "otp_secret",
+            BackupFieldValue.text("JBSWY3DPEHPK3PXP"),
+        ))
         assertThrows(IllegalArgumentException::class.java) {
             BackupBundleValidator.validate(
                 valid.copy(document = valid.document.copy(entries = listOf(account, mixed))),
@@ -619,12 +608,14 @@ class BackupCodecTest {
         )
         val entry = BackupEntryRecord(
             id = "json-test-id",
-            type = "LOGIN",
-            version = 2,
+            type = "login",
+            revision = 2,
             createdAt = 1000L,
             updatedAt = 2000L,
-            summary = BackupSummaryRecord(title = "JSON Test", username = ""),
-            secret = BackupSecretRecord(),
+            fields = listOf(
+                BackupFieldRecord("title", BackupFieldValue.text("JSON Test")),
+                BackupFieldRecord("password", BackupFieldValue.text("secret")),
+            ),
             attachmentIds = listOf(resource.id)
         )
         val bundle = BackupBundle(
@@ -664,12 +655,14 @@ class BackupCodecTest {
                 entries = listOf(
                     BackupEntryRecord(
                         id = "entry-1",
-                        type = "LOGIN",
-                        version = 1,
+                        type = "login",
+                        revision = 1,
                         createdAt = 1,
                         updatedAt = 1,
-                        summary = BackupSummaryRecord("Entry", ""),
-                        secret = BackupSecretRecord()
+                        fields = listOf(
+                            BackupFieldRecord("title", BackupFieldValue.text("Entry")),
+                            BackupFieldRecord("password", BackupFieldValue.text("secret")),
+                        ),
                     )
                 ),
                 resources = listOf(resource)
@@ -682,7 +675,16 @@ class BackupCodecTest {
         assertThrows(IllegalArgumentException::class.java) {
             JsonBackupImporter().import(json.toByteArray())
         }
+        assertThrows(IllegalArgumentException::class.java) {
+            JsonBackupImporter().import(
+                json.toByteArray(),
+                BackupImportStrategy.COMPATIBLE,
+            )
+        }
     }
+
+    private fun BackupEntryRecord.field(key: String): BackupFieldValue =
+        fields.single { it.key == key }.value
 
     private fun stubDeriveKey(
         password: CharArray,

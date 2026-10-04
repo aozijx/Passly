@@ -8,6 +8,12 @@ package com.aozijx.passly.app.message.model
 enum class ArgumentKey {
     SECONDS,
     ITEM_COUNT,
+    IMPORTED_ITEM_COUNT,
+    EXISTING_ITEM_COUNT,
+    SKIPPED_ITEM_COUNT,
+    IGNORED_FIELD_COUNT,
+    PRUNED_LINK_COUNT,
+    PRUNED_RESOURCE_COUNT,
     DURATION_MS,
     REASON_CODE,
     OPERATION_CODE

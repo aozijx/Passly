@@ -89,6 +89,7 @@
     <string name="vault_delete_message">「%s」を削除しますか？この操作は元に戻せません。</string>
     <string name="backup_export_success">エクスポートに成功しました</string>
     <string name="backup_import_success">インポートに成功しました（アイコンはバックグラウンドで同期されます）</string>
+    <string name="backup_import_success_summary">インポート完了：追加 %1$d、既存 %2$d、スキップ %3$d、無視したフィールド %4$d、除外した関連 %5$d、除外したリソース %6$d</string>
     <string name="backup_error_unknown">操作に失敗しました：不明なエラー</string>
     <string name="backup_directory_permission_ok">保存先ディレクトリへの書き込み権限は正常です</string>
     <string name="backup_directory_permission_failed">保存先ディレクトリの書き込みテストに失敗しました。再選択してください。</string>

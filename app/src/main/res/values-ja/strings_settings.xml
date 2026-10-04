@@ -223,6 +223,11 @@
     <string name="settings_backup_import_atomicity_notice">ファイル全体を先に検証します。失敗時は何も書き込みません。</string>
     <string name="settings_backup_import_format_description">形式は自動判定されます。暗号化 %1$s バックアップにはパスワードが必要です。</string>
     <string name="settings_backup_import_mode">インポート方式</string>
+    <string name="settings_backup_import_strategy">インポート検証</string>
+    <string name="settings_backup_import_compatible">互換インポート</string>
+    <string name="settings_backup_import_compatible_description">不明なフィールドを無視し、このバージョンで未対応または無効なエントリをスキップします</string>
+    <string name="settings_backup_import_strict">厳格な検証</string>
+    <string name="settings_backup_import_strict_description">不明なフィールド、未対応の種類、無効なエントリがある場合はインポート全体を拒否します</string>
     <string name="settings_backup_import_options_title">インポートと復元</string>
     <string name="settings_backup_import_overwrite">上書き</string>
     <string name="settings_backup_import_overwrite_description">既存のデータを消去してから復元します。危険性の高い操作です</string>

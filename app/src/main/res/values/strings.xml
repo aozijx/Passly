@@ -96,6 +96,7 @@
     <string name="vault_delete_message">确定要删除 “%s” 吗？此操作不可撤销。</string>
     <string name="backup_export_success">导出成功</string>
     <string name="backup_import_success">导入成功，图标后台同步中</string>
+    <string name="backup_import_success_summary">导入完成：写入 %1$d，已存在 %2$d，跳过 %3$d，忽略字段 %4$d，裁剪关联 %5$d，裁剪资源 %6$d</string>
     <string name="backup_error_unknown">操作失败：未知错误</string>
     <string name="backup_directory_permission_ok">目录写入权限正常</string>
     <string name="backup_directory_permission_failed">目录写入失败，请重新选择</string>

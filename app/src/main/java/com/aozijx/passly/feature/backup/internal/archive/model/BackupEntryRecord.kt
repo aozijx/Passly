@@ -6,13 +6,10 @@ import kotlinx.serialization.Serializable
 data class BackupEntryRecord(
     val id: String,
     val type: String,
-    val version: Int,
+    val revision: Int,
     val createdAt: Long,
     val updatedAt: Long,
     val deletedAt: Long? = null,
-    val summary: BackupSummaryRecord,
-    val secret: BackupSecretRecord,
+    val fields: List<BackupFieldRecord> = emptyList(),
     val attachmentIds: List<String> = emptyList(),
-    /** Field-level secret values kept out of the aggregated [secret] record. */
-    val sensitiveFields: List<BackupSensitiveField> = emptyList()
 )
