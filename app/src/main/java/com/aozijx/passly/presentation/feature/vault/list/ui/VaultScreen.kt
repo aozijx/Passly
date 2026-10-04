@@ -12,25 +12,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.paging.PagingData
+import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.fab.VaultFab
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.list.VaultListBody
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.topbar.VaultTopBar
+import com.aozijx.passly.presentation.feature.vault.list.ui.component.topbar.VaultTopBarUiState
 import com.aozijx.passly.presentation.feature.vault.list.ui.gesture.rememberFabVisibilityNestedScrollConnection
-import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListEvent
-import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemEvent
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultAddTypeUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemAction
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpStateProvider
-import com.aozijx.passly.presentation.feature.vault.list.ui.search.VaultSearchPhase
-import com.aozijx.passly.presentation.feature.vault.list.ui.search.VaultSearchState
+import com.aozijx.passly.presentation.feature.vault.list.ui.search.rememberVaultSearchStateHolder
 import kotlinx.coroutines.flow.Flow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,24 +38,15 @@ fun VaultScreen(
     state: VaultListScreenUiModel,
     scrollBehavior: TopAppBarScrollBehavior,
     entries: Flow<PagingData<VaultListItemUiModel>>,
-    onItemEvent: (VaultListItemEvent) -> Unit,
+    onItemAction: (VaultListItemAction) -> Unit,
     otpStateProvider: VaultOtpStateProvider,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onEvent: (VaultListEvent) -> Unit,
+    onAction: (VaultUiAction) -> Unit,
+    onSettingsClick: () -> Unit,
+    onAddTypeSelected: (VaultAddTypeUiModel) -> Unit,
 ) {
     var isFabVisible by rememberSaveable { mutableStateOf(true) }
-    var searchState by remember {
-        mutableStateOf(
-            VaultSearchState.initial(
-                isSearchActive = state.toolbar.isSearchActive,
-                query = state.toolbar.searchQuery,
-            ),
-        )
-    }
-    var wasSearchActive by remember { mutableStateOf(state.toolbar.isSearchActive) }
-    val currentSearchQuery by rememberUpdatedState(state.toolbar.searchQuery)
-    val currentSearchActive by rememberUpdatedState(state.toolbar.isSearchActive)
     val fabVisibilityConnection = rememberFabVisibilityNestedScrollConnection {
         isFabVisible = it
     }
@@ -66,35 +56,26 @@ fun VaultScreen(
         scrollBehavior.state.contentOffset = 0f
     }
 
+    val searchStateHolder = rememberVaultSearchStateHolder(
+        searchActive = state.toolbar.isSearchActive,
+        query = state.toolbar.searchQuery,
+        onQueryChange = { onAction(VaultUiAction.SearchQueryChanged(it)) },
+        onSearchActiveChange = { onAction(VaultUiAction.SearchToggled(it)) },
+        onExpandBars = ::expandVaultBars,
+    )
+
     LaunchedEffect(state.toolbar.isSearchActive, state.toolbar.searchQuery) {
-        val searchExited = wasSearchActive && !state.toolbar.isSearchActive
-        searchState = searchState.synchronize(
-            isSearchActive = state.toolbar.isSearchActive,
+        searchStateHolder.synchronize(
+            searchActive = state.toolbar.isSearchActive,
             query = state.toolbar.searchQuery,
         )
-        if (searchExited || searchState.isEditing) expandVaultBars()
-        wasSearchActive = state.toolbar.isSearchActive
     }
 
     BackHandler(enabled = state.toolbar.isSearchActive) {
-        if (searchState.isEditing) {
-            searchState = searchState.settle(state.toolbar.searchQuery)
-            if (state.toolbar.searchQuery.isBlank()) {
-                onEvent(VaultListEvent.SearchToggled(false))
-            }
-        } else {
-            searchState = searchState.synchronize(false, state.toolbar.searchQuery)
-            expandVaultBars()
-            onEvent(VaultListEvent.SearchToggled(false))
-        }
+        searchStateHolder.handleBack()
     }
     LifecycleResumeEffect(Unit) {
-        onPauseOrDispose {
-            searchState = searchState.onScreenPaused(currentSearchQuery)
-            if (currentSearchActive && currentSearchQuery.isBlank()) {
-                onEvent(VaultListEvent.SearchToggled(false))
-            }
-        }
+        onPauseOrDispose { searchStateHolder.pause() }
     }
 
     Scaffold(
@@ -110,45 +91,26 @@ fun VaultScreen(
             .nestedScroll(fabVisibilityConnection),
         topBar = {
             VaultTopBar(
-                uiState = state.toolbar,
-                content = state.content,
-                layout = state.layout,
+                uiState = VaultTopBarUiState(
+                    query = state.toolbar.searchQuery,
+                    showTotpCode = state.content.showTotpCode,
+                    selectedCategory = state.toolbar.selectedCategory,
+                    selectedSort = state.toolbar.selectedSort,
+                    availableCategories = state.toolbar.availableCategories,
+                    collapseOnScroll = state.layout.collapseTopBarOnScroll,
+                    collapseQuickFilterOnScroll = state.layout.collapseQuickFilterBarOnScroll,
+                    hideSystemBars = state.layout.hideSystemBars,
+                ),
+                searchStateHolder = searchStateHolder,
                 scrollBehavior = scrollBehavior,
-                searchState = searchState,
-                onSearchFocusChanged = { focused ->
-                    val nextState = searchState.onFocusChanged(
-                        focused = focused,
-                        query = state.toolbar.searchQuery,
-                    )
-                    searchState = nextState
-                    if (focused && !state.toolbar.isSearchActive) {
-                        expandVaultBars()
-                        onEvent(VaultListEvent.SearchToggled(true))
-                    } else if (!focused &&
-                        nextState.phase == VaultSearchPhase.BROWSING &&
-                        state.toolbar.isSearchActive
-                    ) {
-                        onEvent(VaultListEvent.SearchToggled(false))
-                    }
-                },
-                onSearchSubmitted = { query ->
-                    searchState = searchState.settle(query)
-                    if (query.isBlank()) {
-                        onEvent(VaultListEvent.SearchToggled(false))
-                    }
-                },
-                onSearchExitRequested = {
-                    searchState = searchState.synchronize(false, state.toolbar.searchQuery)
-                    expandVaultBars()
-                    onEvent(VaultListEvent.SearchToggled(false))
-                },
-                onEvent = onEvent,
+                onAction = onAction,
+                onSettingsClick = onSettingsClick,
             )
         },
         floatingActionButton = {
             VaultFab(
                 onAddTypeSelected = { type ->
-                    onEvent(VaultListEvent.AddTypeSelected(type))
+                    onAddTypeSelected(type)
                 },
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
@@ -161,17 +123,13 @@ fun VaultScreen(
             state = state,
             scrollBehavior = scrollBehavior,
             entries = entries,
-            onItemEvent = onItemEvent,
+            onItemAction = onItemAction,
             otpStateProvider = otpStateProvider,
-            onEvent = onEvent,
+            onAction = onAction,
             onPullSearchProgressChanged = { progress ->
-                searchState = searchState.onPullProgressChanged(progress)
+                searchStateHolder.updatePullProgress(progress)
             },
-            onSearchRequested = {
-                searchState = searchState.startEditing()
-                expandVaultBars()
-                onEvent(VaultListEvent.SearchToggled(true))
-            },
+            onSearchRequested = searchStateHolder::request,
             contentPadding = padding,
         )
     }

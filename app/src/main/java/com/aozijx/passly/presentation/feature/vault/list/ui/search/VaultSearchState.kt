@@ -1,5 +1,7 @@
 package com.aozijx.passly.presentation.feature.vault.list.ui.search
 
+import androidx.compose.runtime.Immutable
+
 enum class VaultSearchPhase {
     BROWSING,
     PULLING,
@@ -7,6 +9,7 @@ enum class VaultSearchPhase {
     RESULTS,
 }
 
+@Immutable
 data class VaultSearchState(
     val phase: VaultSearchPhase,
     val pullProgress: Float = 0f,

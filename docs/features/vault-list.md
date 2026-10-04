@@ -84,6 +84,17 @@ Compose 使用 `LazyPagingItems` 消费数据：首次加载显示全页进度�
 不得在同步的 PagingSource factory 中使用 `runBlocking` 获取数据库，也不得缓存跨会话的 DAO 或数据库实例，
 否则旧 PagingSource 可能在锁定后继续访问已关闭的 SQLCipher 数据库。
 
+### 搜索交互所有权
+
+搜索查询和“是否启用搜索”属于页面业务状态，由 `VaultViewModel` 通过 `VaultUiAction` 更新。搜索框焦点、
+下拉展开进度、返回键收起和页面暂停后的视觉阶段属于瞬时 Compose 状态，由
+`VaultSearchStateHolder` 单独持有。TopBar、筛选栏和列表 Section 直接发送页面级 Action，不再经过
+`VaultListEvent` 或 TopBar 专属 Action 的一对一翻译层。
+
+More 菜单的展开状态只属于稳定的搜索动作锚点；`DropdownMenu` 始终保留在该锚点下，仅由 `expanded`
+控制显示，避免 Popup 被 More/Clear 动画层反复创建。菜单页和查询状态以展开会话为 key，关闭后自然重置。
+设置和新增页面属于导航出口，由 `VaultRoute` 连接，不进入 ViewModel 的业务状态。
+
 ## 注意事项
 
 - SQL 的 `ORDER BY` 必须始终包含确定性的最终 Entry ID；新增排序字段时，要同时定义 SQL 表达式、
@@ -108,4 +119,5 @@ Compose 使用 `LazyPagingItems` 消费数据：首次加载显示全页进度�
 - [`EntryPagingQueryFactory`](../../data/src/main/java/com/aozijx/passly/data/local/database/query/EntryPagingQueryFactory.kt)
 - [`RoomEntryPagingStore`](../../data/src/main/java/com/aozijx/passly/data/repository/entry/paging/RoomEntryPagingStore.kt)
 - [`VaultViewModel`](../../app/src/main/java/com/aozijx/passly/presentation/feature/vault/list/VaultViewModel.kt)
-- [`VaultPagerContent`](../../app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/component/list/VaultPagerContent.kt)
+- [`VaultScreen`](../../app/src/main/java/com/aozijx/passly/presentation/feature/vault/list/ui/VaultScreen.kt)
+- [`VaultSearchStateHolder`](../../app/src/main/java/com/aozijx/passly/presentation/feature/vault/list/ui/search/VaultSearchStateHolder.kt)

@@ -27,6 +27,14 @@ internal class PullToSearchGestureState(
         return consumed
     }
 
+    fun onPostScroll(deltaY: Float, isAtTop: Boolean): Float {
+        val reverseConsumed = consumeReversePull(deltaY)
+        if (reverseConsumed != 0f) return reverseConsumed
+
+        onPull(deltaY = deltaY, isAtTop = isAtTop)
+        return 0f
+    }
+
     fun onRelease() {
         val shouldTrigger = distance >= thresholdPx
         reset()

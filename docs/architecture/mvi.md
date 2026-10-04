@@ -221,16 +221,22 @@ feature/auth/
     host/
 ```
 
-Vault 已迁移到 onIntent 统一入口：
+Vault 使用页面级 `VaultUiAction` 统一入口。Section 直接发送同一 Action，禁止再定义字段一一对应的
+`VaultListEvent` 并由 Route 翻译。焦点、菜单、动画和下拉搜索位移等瞬时交互由 Compose state holder
+持有，不进入 ViewModel：
 
 ```text
 feature/vault/
-  contract/
-    VaultIntent.kt
+  list/
+    VaultUiAction.kt
     VaultUiState.kt
     VaultEffect.kt
-  VaultViewModel.kt        # onIntent 统一入口
-  VaultScreen.kt
+    VaultViewModel.kt      # onAction 统一入口
+    VaultRoute.kt          # 收集状态/effect，连接语义导航
+    ui/
+      VaultScreen.kt       # 页面布局与 Compose state holder
+      search/
+        VaultSearchStateHolder.kt
 ```
 
 Settings 简单页面使用 UDF 模式（语义化方法 + UiState）：

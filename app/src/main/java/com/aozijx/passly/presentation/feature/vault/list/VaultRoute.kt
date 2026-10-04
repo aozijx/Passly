@@ -22,7 +22,7 @@ import com.aozijx.passly.presentation.feature.vault.list.display.VaultDisplayVie
 import com.aozijx.passly.presentation.feature.vault.list.ui.VaultScreen
 import com.aozijx.passly.presentation.feature.vault.list.ui.VaultSystemBarsEffect
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListDisplayUiModel
-import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemEvent
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemAction
 import com.aozijx.passly.presentation.mapping.gesture.toDomainModel
 import com.aozijx.passly.presentation.mapping.gesture.toUiModel
 
@@ -57,13 +57,13 @@ internal fun VaultRoute(
         )
     }
     val renderState = uiState.toUiModel(display)
-    val onItemEvent: (VaultListItemEvent) -> Unit = { event ->
-        when (event) {
-            is VaultListItemEvent.Clicked -> navigation.onShowDetail(event.item.id)
-            is VaultListItemEvent.Swiped -> {
-                val item = event.item
+    val onItemAction: (VaultListItemAction) -> Unit = { action ->
+        when (action) {
+            is VaultListItemAction.Clicked -> navigation.onShowDetail(action.item.id)
+            is VaultListItemAction.Swiped -> {
+                val item = action.item
                 handleSwipeAction(
-                    actionType = event.action.toDomainModel(),
+                    actionType = action.action.toDomainModel(),
                     item = item,
                     onQuickDelete = { entryId ->
                         vaultViewModel.onAction(VaultUiAction.QuickDelete(entryId))
@@ -119,12 +119,14 @@ internal fun VaultRoute(
         state = renderState,
         scrollBehavior = scrollBehavior,
         entries = vaultViewModel.entries,
-        onItemEvent = onItemEvent,
+        onItemAction = onItemAction,
         otpStateProvider = otpStateProvider,
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
-        onEvent = { event ->
-            dispatchVaultListEvent(event, vaultViewModel::onAction, navigation)
+        onAction = vaultViewModel::onAction,
+        onSettingsClick = navigation.onSettingsClick,
+        onAddTypeSelected = { type ->
+            routeAddTypeSelection(type, navigation, vaultViewModel::onAction)
         },
     )
 }

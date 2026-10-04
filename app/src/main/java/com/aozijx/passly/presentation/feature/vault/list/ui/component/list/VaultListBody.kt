@@ -17,10 +17,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.paging.PagingData
+import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
+import com.aozijx.passly.presentation.feature.vault.list.toFeatureModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.topbar.VaultFilterBar
 import com.aozijx.passly.presentation.feature.vault.list.ui.gesture.rememberPullToSearchNestedScrollConnection
-import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListEvent
-import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemEvent
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemAction
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListScreenUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpStateProvider
@@ -31,9 +32,9 @@ internal fun VaultListBody(
     state: VaultListScreenUiModel,
     scrollBehavior: TopAppBarScrollBehavior,
     entries: Flow<PagingData<VaultListItemUiModel>>,
-    onItemEvent: (VaultListItemEvent) -> Unit,
+    onItemAction: (VaultListItemAction) -> Unit,
     otpStateProvider: VaultOtpStateProvider,
-    onEvent: (VaultListEvent) -> Unit,
+    onAction: (VaultUiAction) -> Unit,
     onPullSearchProgressChanged: (Float) -> Unit,
     onSearchRequested: () -> Unit,
     contentPadding: PaddingValues,
@@ -69,14 +70,14 @@ internal fun VaultListBody(
                 filters = state.navigation.filterOptions,
                 selectedFilters = state.navigation.selectedFilters,
                 onFilterToggled = { filter ->
-                    onEvent(VaultListEvent.FilterToggled(filter))
+                    onAction(VaultUiAction.FilterToggled(filter?.toFeatureModel()))
                 },
             )
         }
         VaultEntryGrid(
             content = state.content,
             entries = entries,
-            onItemEvent = onItemEvent,
+            onItemAction = onItemAction,
             otpStateProvider = otpStateProvider,
             gridState = gridState,
             modifier = Modifier

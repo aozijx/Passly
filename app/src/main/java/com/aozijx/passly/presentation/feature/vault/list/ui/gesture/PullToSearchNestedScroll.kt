@@ -53,10 +53,11 @@ internal fun rememberPullToSearchNestedScrollConnection(
                 source: NestedScrollSource,
             ): Offset {
                 if (currentEnabled && source == NestedScrollSource.UserInput) {
-                    gestureState.onPull(
+                    val consumedY = gestureState.onPostScroll(
                         deltaY = available.y,
                         isAtTop = !gridState.canScrollBackward,
                     )
+                    return Offset(x = 0f, y = consumedY)
                 } else {
                     gestureState.reset()
                 }

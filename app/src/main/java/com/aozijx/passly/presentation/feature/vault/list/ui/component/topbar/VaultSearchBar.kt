@@ -2,7 +2,9 @@ package com.aozijx.passly.presentation.feature.vault.list.ui.component.topbar
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
@@ -22,6 +24,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -33,7 +36,6 @@ internal fun VaultSearchBar(
     onQueryChange: (String) -> Unit,
     onSearch: (String) -> Unit,
     onFocusChanged: (Boolean) -> Unit,
-    trailingIcon: @Composable (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val textFieldState = rememberTextFieldState(query)
@@ -80,7 +82,9 @@ internal fun VaultSearchBar(
                 contentDescription = stringResource(R.string.search),
             )
         },
-        trailingIcon = trailingIcon,
+        trailingIcon = { Spacer(Modifier.width(VaultSearchActionSize)) },
         interactionSource = interactionSource,
     )
 }
+
+internal val VaultSearchActionSize = 48.dp

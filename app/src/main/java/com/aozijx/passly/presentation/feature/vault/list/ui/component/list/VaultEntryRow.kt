@@ -24,7 +24,7 @@ import com.aozijx.passly.core.ui.components.widgets.SwipeActionSpec
 import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.cardstyle.CardStyleRegistry
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListContentUiModel
-import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemEvent
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemAction
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpStateProvider
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpUiState
@@ -33,7 +33,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 @Composable
 internal fun VaultEntryRow(
     item: VaultListItemUiModel,
-    onEvent: (VaultListItemEvent) -> Unit,
+    onAction: (VaultListItemAction) -> Unit,
     content: VaultListContentUiModel,
     otpStateProvider: VaultOtpStateProvider,
     animateInitialAppearance: Boolean,
@@ -62,11 +62,11 @@ internal fun VaultEntryRow(
         MutableTransitionState(!animateInitialAppearance).apply { targetState = true }
     }
     val currentItem by rememberUpdatedState(item)
-    val leftAction = remember(item.id, content.swipeLeftAction, onEvent, colorScheme) {
+    val leftAction = remember(item.id, content.swipeLeftAction, onAction, colorScheme) {
         createAppSwipeActionSpec(
             actionType = content.swipeLeftAction,
             onAction = {
-                onEvent(VaultListItemEvent.Swiped(currentItem, content.swipeLeftAction))
+                onAction(VaultListItemAction.Swiped(currentItem, content.swipeLeftAction))
             },
             backgroundColor = if (content.swipeLeftAction == SwipeActionUiModel.DELETE) {
                 colorScheme.error
@@ -76,11 +76,11 @@ internal fun VaultEntryRow(
             iconTint = Color.White,
         )
     }
-    val rightAction = remember(item.id, content.swipeRightAction, onEvent, colorScheme) {
+    val rightAction = remember(item.id, content.swipeRightAction, onAction, colorScheme) {
         createAppSwipeActionSpec(
             actionType = content.swipeRightAction,
             onAction = {
-                onEvent(VaultListItemEvent.Swiped(currentItem, content.swipeRightAction))
+                onAction(VaultListItemAction.Swiped(currentItem, content.swipeRightAction))
             },
             backgroundColor = if (content.swipeRightAction == SwipeActionUiModel.DELETE) {
                 colorScheme.error
@@ -110,7 +110,7 @@ internal fun VaultEntryRow(
                 entry = item,
                 totpState = totpState,
                 showTotpCode = content.showTotpCode,
-                onClick = { onEvent(VaultListItemEvent.Clicked(item)) },
+                onClick = { onAction(VaultListItemAction.Clicked(item)) },
             )
         }
     }

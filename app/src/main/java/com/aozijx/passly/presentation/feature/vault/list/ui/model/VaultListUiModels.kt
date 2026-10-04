@@ -23,14 +23,6 @@ data class VaultListItemUiModel(
     val otpPreview: String?,
 )
 
-sealed interface VaultListItemEvent {
-    data class Clicked(val item: VaultListItemUiModel) : VaultListItemEvent
-    data class Swiped(
-        val item: VaultListItemUiModel,
-        val action: SwipeActionUiModel,
-    ) : VaultListItemEvent
-}
-
 enum class VaultOtpKindUiModel { STANDARD, STEAM }
 
 @Immutable
@@ -148,18 +140,3 @@ data class VaultListDisplayUiModel(
     val collapseQuickFilterBarOnScroll: Boolean,
     val hideSystemBars: Boolean,
 )
-
-sealed interface VaultListEvent {
-    data object SettingsClicked : VaultListEvent
-    data class SearchQueryChanged(val query: String) : VaultListEvent
-    data class SearchToggled(val active: Boolean) : VaultListEvent
-    data object ClearCategory : VaultListEvent
-    data object ToggleTotpVisibility : VaultListEvent
-    data class CategorySelected(val category: String?) : VaultListEvent
-    data class SortSelected(val sort: VaultSortUiModel) : VaultListEvent
-    data class FilterToggled(val filter: VaultAddTypeUiModel?) : VaultListEvent
-    data class AddTypeSelected(val type: VaultAddTypeUiModel) : VaultListEvent
-    data object DismissAddType : VaultListEvent
-    data object ConfirmDelete : VaultListEvent
-    data object DismissDelete : VaultListEvent
-}

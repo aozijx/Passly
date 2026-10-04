@@ -100,4 +100,19 @@ class PullToSearchGestureStateTest {
         assertEquals(-40f, state.consumeReversePull(deltaY = -80f))
         assertEquals(listOf(0.7f, 0.4f, 0f), progress)
     }
+
+    @Test
+    fun `post scroll reverse delta also cancels outstanding pull`() {
+        val progress = mutableListOf<Float>()
+        val state = PullToSearchGestureState(
+            thresholdPx = 100f,
+            onProgressChanged = progress::add,
+            onTriggered = {},
+        )
+
+        state.onPostScroll(deltaY = 60f, isAtTop = true)
+
+        assertEquals(-25f, state.onPostScroll(deltaY = -25f, isAtTop = true))
+        assertEquals(listOf(0.6f, 0.35f), progress)
+    }
 }

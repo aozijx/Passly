@@ -1,13 +1,5 @@
 package com.aozijx.passly.presentation.feature.vault.list.ui.component.topbar
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
@@ -27,7 +19,8 @@ import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultSortUiMod
 private enum class MenuPage { MAIN, SORT, CATEGORY_FILTER }
 
 @Composable
-fun VaultDropdownMenu(
+internal fun VaultDropdownMenu(
+    expanded: Boolean,
     onDismissRequest: () -> Unit,
     showTOTPCode: Boolean,
     onToggleTotpVisibility: () -> Unit,
@@ -38,9 +31,9 @@ fun VaultDropdownMenu(
     selectedSort: VaultSortUiModel,
     onSortSelected: (VaultSortUiModel) -> Unit
 ) {
-    var currentPage by remember { mutableStateOf(MenuPage.MAIN) }
-    var categorySearchQuery by remember { mutableStateOf("") }
-    var categorySearchVisible by remember { mutableStateOf(false) }
+    var currentPage by remember(expanded) { mutableStateOf(MenuPage.MAIN) }
+    var categorySearchQuery by remember(expanded) { mutableStateOf("") }
+    var categorySearchVisible by remember(expanded) { mutableStateOf(false) }
     val categoryFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(categorySearchVisible) {
@@ -55,66 +48,49 @@ fun VaultDropdownMenu(
     }
 
     DropdownMenu(
-        expanded = true,
+        expanded = expanded,
         onDismissRequest = onDismissRequest,
-        modifier = Modifier
-            .widthIn(min = 150.dp)
-            .animateContentSize()
+        modifier = Modifier.widthIn(min = 150.dp)
     ) {
-        AnimatedContent(
-            targetState = currentPage,
-            transitionSpec = {
-                val transition = if (targetState == MenuPage.MAIN) {
-                    (slideInHorizontally { -it } + fadeIn()) togetherWith
-                        (slideOutHorizontally { it } + fadeOut())
-                } else {
-                    (slideInHorizontally { it } + fadeIn()) togetherWith
-                        (slideOutHorizontally { -it } + fadeOut())
-                }
-                transition.using(SizeTransform(clip = false))
-            },
-            label = "MenuPageTransition"
-        ) { page ->
-            Column(Modifier.fillMaxWidth()) {
-                when (page) {
-                    MenuPage.MAIN -> MainMenuContent(
-                        onSortClick = { currentPage = MenuPage.SORT },
-                        onCategoryFilterClick = { currentPage = MenuPage.CATEGORY_FILTER },
-                        showTOTPCode = showTOTPCode,
-                        onToggleTotpVisibility = onToggleTotpVisibility,
-                        onDismissRequest = onDismissRequest,
-                        onSettingsClick = onSettingsClick
-                    )
-                    MenuPage.SORT -> SortSubMenu(
-                        selectedSort = selectedSort,
-                        onSortSelected = onSortSelected,
-                        onBack = { currentPage = MenuPage.MAIN }
-                    )
-                    MenuPage.CATEGORY_FILTER -> FilterSubMenu(
-                        searchLabelRes = R.string.vault_search_category,
-                        searchHintRes = R.string.vault_search_category_hint,
-                        isSearchVisible = categorySearchVisible,
-                        onToggleSearch = { categorySearchVisible = it },
-                        searchQuery = categorySearchQuery,
-                        onSearchQueryChange = { categorySearchQuery = it },
-                        focusRequester = categoryFocusRequester,
-                        items = filteredCategories,
-                        selectedItem = selectedCategory,
-                        itemText = { it },
-                        onItemSelected = {
-                            onCategorySelected(it)
-                            onDismissRequest()
-                        },
-                        onBack = {
-                            if (categorySearchVisible) {
-                                categorySearchVisible = false
-                                categorySearchQuery = ""
-                            } else {
-                                currentPage = MenuPage.MAIN
-                            }
+        Column(Modifier.fillMaxWidth()) {
+            when (currentPage) {
+                MenuPage.MAIN -> MainMenuContent(
+                    onSortClick = { currentPage = MenuPage.SORT },
+                    onCategoryFilterClick = { currentPage = MenuPage.CATEGORY_FILTER },
+                    showTOTPCode = showTOTPCode,
+                    onToggleTotpVisibility = onToggleTotpVisibility,
+                    onDismissRequest = onDismissRequest,
+                    onSettingsClick = onSettingsClick
+                )
+                MenuPage.SORT -> SortSubMenu(
+                    selectedSort = selectedSort,
+                    onSortSelected = onSortSelected,
+                    onBack = { currentPage = MenuPage.MAIN }
+                )
+                MenuPage.CATEGORY_FILTER -> FilterSubMenu(
+                    searchLabelRes = R.string.vault_search_category,
+                    searchHintRes = R.string.vault_search_category_hint,
+                    isSearchVisible = categorySearchVisible,
+                    onToggleSearch = { categorySearchVisible = it },
+                    searchQuery = categorySearchQuery,
+                    onSearchQueryChange = { categorySearchQuery = it },
+                    focusRequester = categoryFocusRequester,
+                    items = filteredCategories,
+                    selectedItem = selectedCategory,
+                    itemText = { it },
+                    onItemSelected = {
+                        onCategorySelected(it)
+                        onDismissRequest()
+                    },
+                    onBack = {
+                        if (categorySearchVisible) {
+                            categorySearchVisible = false
+                            categorySearchQuery = ""
+                        } else {
+                            currentPage = MenuPage.MAIN
                         }
-                    )
-                }
+                    }
+                )
             }
         }
     }
