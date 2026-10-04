@@ -2,12 +2,16 @@ package com.aozijx.passly.presentation.feature.vault.detail
 
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldValue
 import com.aozijx.passly.feature.vault.model.OtpCodeState
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionDestination
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
+import com.aozijx.passly.presentation.mapping.entry.toUiModel
 import com.aozijx.passly.presentation.shared.components.AppPackagePickerItemUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.CredentialFieldUiState
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.CredentialSectionUiState
@@ -18,7 +22,6 @@ import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailBankCa
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailBodyUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailContentUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailEditorOverlaysUiModel
-import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailEntryTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailHeaderUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailIconCardUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailIdentityUiModel
@@ -55,12 +58,12 @@ internal fun detailContentUiModel(
     state: DetailUiState,
 ) = DetailContentUiModel(
     relatedEntries = state.relatedEntries.map {
-        RelatedEntryUiModel(it.id.value, it.title, DetailEntryTypeUiModel.valueOf(it.type.name))
+        RelatedEntryUiModel(it.id.value, it.title, it.type.toUiModel())
     },
     metadata = DetailMetadataUiModel(entry.createdAt, entry.updatedAt),
     activities = state.history.map {
         DetailActivityUiModel(
-            type = DetailActivityTypeUiModel.valueOf(it.activityType.name),
+            type = it.activityType.toUiModel(),
             source = it.source,
             createdAt = it.createdAt,
         )
@@ -198,9 +201,7 @@ internal fun toDetailPresentationModel(
             savingIcon = state.savingEdit == DetailEditCompletion.Icon,
             revisionHistory = DetailRevisionSheetUiModel(
                 visible = state.revisions.visible,
-                destination = DetailRevisionDestinationUiModel.valueOf(
-                    state.revisions.destination.name,
-                ),
+                destination = state.revisions.destination.toUiModel(),
                 revisions = state.revisions.metadata.map {
                     DetailRevisionItemUiModel(
                         id = it.id.value,
@@ -210,7 +211,7 @@ internal fun toDetailPresentationModel(
                     )
                 },
                 differences = state.revisions.differences
-                    .filter { it.kind.name != "UNCHANGED" }
+                    .filter { it.kind != RevisionDifferenceKind.UNCHANGED }
                     .map { difference ->
                         val sensitiveKey = (difference.field as? RevisionFieldId.Sensitive)?.key
                         DetailRevisionDifferenceUiModel(
@@ -247,9 +248,7 @@ internal fun DetailTagEditorState.toTagEditorUiModel() = DetailTagEditorUiModel(
     availableTags = availableTags,
     input = input,
     suggestions = suggestions,
-    validationError = validationError?.let {
-        TagEditorValidationErrorUiModel.valueOf(it.name)
-    },
+    validationError = validationError?.toUiModel(),
     confirmDiscard = confirmDiscard,
 )
 
@@ -295,6 +294,30 @@ private fun DetailSectionKey.toUiModel(): DetailSectionUiModel? = when (this) {
     DetailSectionKey.NOTES,
     DetailSectionKey.METADATA,
     DetailSectionKey.ACTIVITY -> null
+}
+
+private fun ActivityType.toUiModel(): DetailActivityTypeUiModel = when (this) {
+    ActivityType.VIEW -> DetailActivityTypeUiModel.VIEW
+    ActivityType.COPY_USERNAME -> DetailActivityTypeUiModel.COPY_USERNAME
+    ActivityType.COPY_PASSWORD -> DetailActivityTypeUiModel.COPY_PASSWORD
+    ActivityType.AUTOFILL -> DetailActivityTypeUiModel.AUTOFILL
+    ActivityType.EXPORT -> DetailActivityTypeUiModel.EXPORT
+    ActivityType.IMPORT -> DetailActivityTypeUiModel.IMPORT
+    ActivityType.CREATE -> DetailActivityTypeUiModel.CREATE
+    ActivityType.UPDATE -> DetailActivityTypeUiModel.UPDATE
+    ActivityType.SENSITIVE_CHANGE -> DetailActivityTypeUiModel.SENSITIVE_CHANGE
+    ActivityType.DELETE -> DetailActivityTypeUiModel.DELETE
+    ActivityType.RESTORE -> DetailActivityTypeUiModel.RESTORE
+}
+
+private fun DetailRevisionDestination.toUiModel(): DetailRevisionDestinationUiModel = when (this) {
+    DetailRevisionDestination.LIST -> DetailRevisionDestinationUiModel.LIST
+    DetailRevisionDestination.COMPARISON -> DetailRevisionDestinationUiModel.COMPARISON
+}
+
+private fun DetailTagValidationError.toUiModel(): TagEditorValidationErrorUiModel = when (this) {
+    DetailTagValidationError.TOO_MANY_TAGS -> TagEditorValidationErrorUiModel.TOO_MANY_TAGS
+    DetailTagValidationError.TAG_TOO_LONG -> TagEditorValidationErrorUiModel.TAG_TOO_LONG
 }
 
 private fun RevisionFieldValue.toDisplayText(): String = when (this) {

@@ -16,8 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailEntryTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.RelatedEntryUiModel
+import com.aozijx.passly.presentation.shared.entry.labelRes
 
 @Composable
 fun RelatedEntriesSection(
@@ -38,7 +38,7 @@ fun RelatedEntriesSection(
                         Icon(Icons.Default.ChevronRight, contentDescription = null)
                     },
                     overlineContent = null,
-                    supportingContent = { Text(entry.entryType.localizedName()) },
+                    supportingContent = { Text(stringResource(entry.entryType.labelRes)) },
                     colors = ListItemDefaults.colors(),
                     elevation = ListItemDefaults.elevation(),
                     content = { Text(entry.title) },
@@ -48,26 +48,3 @@ fun RelatedEntriesSection(
         }
     }
 }
-
-@Composable
-private fun DetailEntryTypeUiModel.localizedName(): String = stringResource(
-    when (this) {
-        DetailEntryTypeUiModel.ACCOUNT -> R.string.entry_type_account
-        DetailEntryTypeUiModel.LOGIN -> R.string.entry_type_login
-        DetailEntryTypeUiModel.NOTE -> R.string.entry_type_note
-        DetailEntryTypeUiModel.SSH_KEY -> R.string.entry_type_ssh_key
-        DetailEntryTypeUiModel.WIFI -> R.string.entry_type_wifi
-        DetailEntryTypeUiModel.PASSKEY -> R.string.entry_type_passkey
-        DetailEntryTypeUiModel.OTP -> R.string.entry_type_otp
-        DetailEntryTypeUiModel.PASSPORT -> R.string.entry_type_passport
-        DetailEntryTypeUiModel.DRIVER_LICENSE -> R.string.entry_type_driver_license
-        DetailEntryTypeUiModel.DATABASE_CREDENTIAL -> R.string.entry_type_database_credential
-        DetailEntryTypeUiModel.SERVER_CREDENTIAL -> R.string.entry_type_server_credential
-        DetailEntryTypeUiModel.API_KEY -> R.string.entry_type_api_key
-        DetailEntryTypeUiModel.CRYPTO_WALLET -> R.string.entry_type_crypto_wallet
-        DetailEntryTypeUiModel.BANK_CARD -> R.string.entry_type_bank_card
-        DetailEntryTypeUiModel.ID_CARD -> R.string.entry_type_id_card
-        DetailEntryTypeUiModel.SEED_PHRASE -> R.string.entry_type_seed_phrase
-        DetailEntryTypeUiModel.RECOVERY_CODE -> R.string.entry_type_recovery_code
-    }
-)

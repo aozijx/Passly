@@ -1,5 +1,7 @@
 package com.aozijx.passly.presentation.feature.vault.detail.ui.model
 
+import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+
 data class DetailHeaderUiModel(
     val title: String,
     val favorite: Boolean,
@@ -26,12 +28,6 @@ enum class DetailActivityTypeUiModel {
     CREATE, UPDATE, SENSITIVE_CHANGE, DELETE, RESTORE,
 }
 
-enum class DetailEntryTypeUiModel {
-    ACCOUNT, LOGIN, NOTE, BANK_CARD, ID_CARD, PASSPORT, DRIVER_LICENSE,
-    SSH_KEY, WIFI, PASSKEY, OTP, DATABASE_CREDENTIAL, SERVER_CREDENTIAL,
-    API_KEY, CRYPTO_WALLET, SEED_PHRASE, RECOVERY_CODE,
-}
-
 data class CredentialFieldUiState(
     val visible: Boolean,
     val revealedValue: ScopedSensitiveText?,
@@ -48,7 +44,7 @@ data class CredentialSectionUiState(
 data class RelatedEntryUiModel(
     val id: String,
     val title: String,
-    val entryType: DetailEntryTypeUiModel,
+    val entryType: EntryTypeUiModel,
 )
 
 data class DetailAssociatedInfoUiModel(

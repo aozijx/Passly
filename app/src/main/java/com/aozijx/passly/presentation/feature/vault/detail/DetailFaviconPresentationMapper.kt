@@ -9,15 +9,13 @@ internal fun DetailFaviconEditorState.toFaviconEditorUiModel() = DetailFaviconEd
     visible = visible,
     initialSource = initialSource.toUiModel(),
     source = source.toUiModel(),
-    selectedTab = FaviconEditorTabUiModel.valueOf(selectedTab.name),
+    selectedTab = selectedTab.toUiModel(),
     searchQuery = searchQuery,
     imageUrl = imageUrl,
     processing = processing,
     pendingInputPath = pendingInputPath,
     promotedCandidatePath = promotedCandidatePath,
-    processingError = processingError?.let {
-        FaviconProcessingErrorUiModel.valueOf(it.name)
-    },
+    processingError = processingError?.toUiModel(),
     confirmDiscard = confirmDiscard,
 )
 
@@ -27,11 +25,28 @@ internal fun FaviconDraftSourceUiModel.toDetailFaviconSource(): DetailFaviconSou
     is FaviconDraftSourceUiModel.PrivateImage -> DetailFaviconSource.PrivateImage(localPath)
 }
 
-internal fun FaviconEditorTabUiModel.toDetailFaviconTab(): DetailFaviconTab =
-    DetailFaviconTab.valueOf(name)
+internal fun FaviconEditorTabUiModel.toDetailFaviconTab(): DetailFaviconTab = when (this) {
+    FaviconEditorTabUiModel.ICON_LIBRARY -> DetailFaviconTab.ICON_LIBRARY
+    FaviconEditorTabUiModel.CUSTOM_IMAGE -> DetailFaviconTab.CUSTOM_IMAGE
+}
 
 private fun DetailFaviconSource.toUiModel(): FaviconDraftSourceUiModel = when (this) {
     DetailFaviconSource.InferredDefault -> FaviconDraftSourceUiModel.InferredDefault
     is DetailFaviconSource.BuiltIn -> FaviconDraftSourceUiModel.BuiltIn(key, colorToken)
     is DetailFaviconSource.PrivateImage -> FaviconDraftSourceUiModel.PrivateImage(localPath)
+}
+
+private fun DetailFaviconTab.toUiModel(): FaviconEditorTabUiModel = when (this) {
+    DetailFaviconTab.ICON_LIBRARY -> FaviconEditorTabUiModel.ICON_LIBRARY
+    DetailFaviconTab.CUSTOM_IMAGE -> FaviconEditorTabUiModel.CUSTOM_IMAGE
+}
+
+private fun DetailFaviconProcessingError.toUiModel(): FaviconProcessingErrorUiModel = when (this) {
+    DetailFaviconProcessingError.INVALID_URL -> FaviconProcessingErrorUiModel.INVALID_URL
+    DetailFaviconProcessingError.URL_NOT_ALLOWED -> FaviconProcessingErrorUiModel.URL_NOT_ALLOWED
+    DetailFaviconProcessingError.DOWNLOAD_FAILED -> FaviconProcessingErrorUiModel.DOWNLOAD_FAILED
+    DetailFaviconProcessingError.NOT_IMAGE -> FaviconProcessingErrorUiModel.NOT_IMAGE
+    DetailFaviconProcessingError.IMAGE_TOO_LARGE -> FaviconProcessingErrorUiModel.IMAGE_TOO_LARGE
+    DetailFaviconProcessingError.INVALID_IMAGE -> FaviconProcessingErrorUiModel.INVALID_IMAGE
+    DetailFaviconProcessingError.SAVE_FAILED -> FaviconProcessingErrorUiModel.SAVE_FAILED
 }
