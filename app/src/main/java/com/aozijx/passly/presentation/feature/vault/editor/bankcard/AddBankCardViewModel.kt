@@ -47,8 +47,15 @@ class AddBankCardViewModel @Inject constructor(
             is AddBankCardAction.PinVisibilityChanged -> mutateForm { it.copy(isPinVisible = action.visible) }
             is AddBankCardAction.CvvChanged -> mutateForm { it.copy(cardCvv = action.value) }
             is AddBankCardAction.CvvVisibilityChanged -> mutateForm { it.copy(isCvvVisible = action.visible) }
-            is AddBankCardAction.ExpiryMonthChanged -> mutateForm { it.copy(cardExpiryMonth = action.value) }
-            is AddBankCardAction.ExpiryYearChanged -> mutateForm { it.copy(cardExpiryYear = action.value) }
+            is AddBankCardAction.ExpiryChanged -> mutateForm {
+                if (action.month == null && action.year == null) {
+                    it.withoutCardExpiry()
+                } else {
+                    requireNotNull(action.month)
+                    requireNotNull(action.year)
+                    it.withCardExpiry(action.month, action.year)
+                }
+            }
             is AddBankCardAction.TagsChanged -> mutateForm { it.copy(tags = action.value) }
             is AddBankCardAction.BillingAddressChanged -> mutateForm { it.copy(billingAddress = action.value) }
             is AddBankCardAction.NotesChanged -> mutateForm { it.copy(notes = action.value) }

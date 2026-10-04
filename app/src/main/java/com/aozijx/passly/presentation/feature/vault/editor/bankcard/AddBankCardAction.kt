@@ -10,8 +10,7 @@ sealed interface AddBankCardAction {
     data class PinVisibilityChanged(val visible: Boolean) : AddBankCardAction
     data class CvvChanged(val value: String) : AddBankCardAction
     data class CvvVisibilityChanged(val visible: Boolean) : AddBankCardAction
-    data class ExpiryMonthChanged(val value: String) : AddBankCardAction
-    data class ExpiryYearChanged(val value: String) : AddBankCardAction
+    data class ExpiryChanged(val month: Int?, val year: Int?) : AddBankCardAction
     data class TagsChanged(val value: String) : AddBankCardAction
     data class BillingAddressChanged(val value: String) : AddBankCardAction
     data class NotesChanged(val value: String) : AddBankCardAction

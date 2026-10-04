@@ -45,6 +45,8 @@
     <string name="card_expiration">有効期限</string>
     <string name="card_expiry_month">月</string>
     <string name="card_expiry_year">年</string>
+    <string name="card_expiry_not_set">未設定</string>
+    <string name="card_expiry_clear">クリア</string>
     <string name="card_type">カード種別</string>
     <string name="card_type_debit">デビットカード</string>
     <string name="card_type_credit">クレジットカード</string>

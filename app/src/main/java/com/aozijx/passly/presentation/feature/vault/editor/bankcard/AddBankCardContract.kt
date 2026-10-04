@@ -36,3 +36,19 @@ data class AddBankCardUiState(
     val canSave: Boolean = false,
     val isSaving: Boolean = false,
 )
+
+internal fun cardExpiryYearRange(currentYear: Int): IntRange = 1900..currentYear
+
+internal fun AddBankCardFormState.withCardExpiry(month: Int, year: Int): AddBankCardFormState {
+    require(month in 1..12) { "Card expiry month must be between 1 and 12" }
+    require(year > 0) { "Card expiry year must be positive" }
+    return copy(
+        cardExpiryMonth = month.toString().padStart(2, '0'),
+        cardExpiryYear = year.toString(),
+    )
+}
+
+internal fun AddBankCardFormState.withoutCardExpiry(): AddBankCardFormState = copy(
+    cardExpiryMonth = "",
+    cardExpiryYear = "",
+)

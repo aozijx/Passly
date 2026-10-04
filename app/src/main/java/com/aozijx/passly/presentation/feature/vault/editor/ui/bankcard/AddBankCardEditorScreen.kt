@@ -1,7 +1,5 @@
 package com.aozijx.passly.presentation.feature.vault.editor.ui.bankcard
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -24,7 +22,6 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.shared.components.NextFocusTextField
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -142,25 +139,13 @@ fun AddBankCardEditorScreen(
                     }
                 }
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                NextFocusTextField(
-                    value = form.cardExpiryMonth,
-                    onValueChange = { onAction(AddBankCardAction.ExpiryMonthChanged(it)) },
-                    label = stringResource(R.string.card_expiry_month),
-                    keyboardType = KeyboardType.Number,
-                    modifier = Modifier.weight(1f),
-                )
-                NextFocusTextField(
-                    value = form.cardExpiryYear,
-                    onValueChange = { onAction(AddBankCardAction.ExpiryYearChanged(it)) },
-                    label = stringResource(R.string.card_expiry_year),
-                    keyboardType = KeyboardType.Number,
-                    modifier = Modifier.weight(1f),
-                )
-            }
+            CardExpiryField(
+                month = form.cardExpiryMonth.toIntOrNull(),
+                year = form.cardExpiryYear.toIntOrNull(),
+                onExpiryChanged = { month, year ->
+                    onAction(AddBankCardAction.ExpiryChanged(month, year))
+                },
+            )
         }
 
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_details)) {
