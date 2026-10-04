@@ -10,7 +10,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -32,6 +34,16 @@ fun sliderSettingsGroupItem(
     onValueChange: (Float) -> Unit,
     onValueChangeFinished: () -> Unit
 ): SegmentedSettingsItem = SegmentedSettingsItem(key = key) { shapes ->
+    val boundedValue = value.coerceIn(valueRange)
+    val sliderState = rememberSliderState(
+        value = boundedValue,
+        steps = steps,
+        trackRange = valueRange,
+    )
+    LaunchedEffect(boundedValue) {
+        sliderState.value = boundedValue
+    }
+
     SegmentedListItem(
         shapes = shapes,
         colors = settingsSegmentedColors(),
@@ -70,11 +82,12 @@ fun sliderSettingsGroupItem(
                     )
                 }
                 Slider(
-                    value = value.coerceIn(valueRange),
-                    onValueChange = onValueChange,
+                    state = sliderState,
+                    onValueChange = { updatedValue ->
+                        sliderState.value = updatedValue
+                        onValueChange(updatedValue)
+                    },
                     onValueChangeFinished = onValueChangeFinished,
-                    valueRange = valueRange,
-                    steps = steps,
                     enabled = enabled,
                     modifier = Modifier.fillMaxWidth(),
                 )

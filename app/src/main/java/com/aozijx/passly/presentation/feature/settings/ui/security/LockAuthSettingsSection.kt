@@ -13,9 +13,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -25,13 +26,13 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
+import com.aozijx.passly.presentation.feature.settings.ui.security.model.SecuritySettingsUiModel
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.model.SegmentedSettingsItem
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.settingsSegmentedColors
 import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
-import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.presentation.feature.settings.ui.security.model.SecuritySettingsUiModel
 import kotlin.math.roundToInt
 
 @Composable
@@ -46,7 +47,14 @@ fun LockAuthSettingsSection(
     var expanded by remember { mutableStateOf(false) }
     val currentSeconds = (state.lockTimeoutMs / 1000L).toFloat()
         .coerceIn(state.sliderMinSeconds, state.sliderMaxSeconds)
-    var sliderValue by remember(state.lockTimeoutMs) { mutableFloatStateOf(currentSeconds) }
+    val sliderState = rememberSliderState(
+        value = currentSeconds,
+        steps = 0,
+        trackRange = state.sliderMinSeconds..state.sliderMaxSeconds,
+    )
+    LaunchedEffect(currentSeconds) {
+        sliderState.value = currentSeconds
+    }
 
     SettingsSectionTitle(text = stringResource(R.string.authentication_label))
     SegmentedSettingsGroup(
@@ -86,7 +94,7 @@ fun LockAuthSettingsSection(
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                text = formatLockTimeoutText(sliderValue.toLong() * 1000L),
+                                text = formatLockTimeoutText(sliderState.value.toLong() * 1000L),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -95,21 +103,20 @@ fun LockAuthSettingsSection(
                     supportingContent = {
                         Column {
                             Slider(
-                                value = sliderValue,
-                                onValueChange = { sliderValue = it },
+                                state = sliderState,
+                                onValueChange = { sliderState.value = it },
+                                modifier = Modifier.fillMaxWidth(),
                                 onValueChangeFinished = {
                                     val rounded =
-                                        ((sliderValue / state.sliderStepSeconds).roundToInt() *
-                                            state.sliderStepSeconds)
+                                        ((sliderState.value / state.sliderStepSeconds).roundToInt() *
+                                                state.sliderStepSeconds)
                                             .coerceIn(
                                                 state.sliderMinSeconds,
                                                 state.sliderMaxSeconds
                                             )
-                                    sliderValue = rounded
+                                    sliderState.value = rounded
                                     onLockTimeoutChange(rounded.toLong() * 1000L)
                                 },
-                                valueRange = state.sliderMinSeconds..state.sliderMaxSeconds,
-                                modifier = Modifier.fillMaxWidth()
                             )
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -184,6 +191,7 @@ private fun formatLockTimeoutText(timeoutMs: Long): String {
             seconds.toInt(),
             seconds,
         )
+
         seconds % 60L == 0L ->
             pluralStringResource(
                 R.plurals.settings_duration_minutes,
