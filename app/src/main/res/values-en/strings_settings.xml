@@ -160,6 +160,8 @@
     <string name="settings_swipe_gesture_left_action">Left-swipe action</string>
     <string name="settings_swipe_gesture_right_action">Right-swipe action</string>
     <string name="settings_swipe_gesture_section">Quick gestures</string>
+    <string name="settings_pull_to_search_enabled">Pull to search</string>
+    <string name="settings_pull_to_search_enabled_description">Pull down at the top of the list and release to open search</string>
     <string name="settings_swipe_select_left_action">Choose left-swipe action</string>
     <string name="settings_swipe_select_right_action">Choose right-swipe action</string>
 

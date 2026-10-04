@@ -37,6 +37,7 @@ internal fun AutofillPresentation.toStorageKey(): String = when (this) {
 internal fun readInteraction(p: InteractionPreferences): InteractionSettings =
     InteractionSettings(
         isSwipeEnabled = p.swipeActionsEnabled,
+        isPullToSearchEnabled = p.pullToSearchEnabled,
         swipeLeftAction = p.swipeLeftAction.toSwipeActionDomain(),
         swipeRightAction = p.swipeRightAction.toSwipeActionDomain(),
         autofill = readAutofill(p.autofill),

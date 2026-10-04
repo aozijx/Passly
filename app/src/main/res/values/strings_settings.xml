@@ -160,6 +160,8 @@
     <string name="settings_swipe_gesture_left_action">左滑快捷动作</string>
     <string name="settings_swipe_gesture_right_action">右滑快捷动作</string>
     <string name="settings_swipe_gesture_section">快捷手势</string>
+    <string name="settings_pull_to_search_enabled">下拉打开搜索</string>
+    <string name="settings_pull_to_search_enabled_description">在列表顶部下拉并松手后打开搜索</string>
     <string name="settings_swipe_select_left_action">选择左滑动作</string>
     <string name="settings_swipe_select_right_action">选择右滑动作</string>
 

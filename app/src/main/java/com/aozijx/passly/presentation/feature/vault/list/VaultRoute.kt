@@ -49,6 +49,7 @@ internal fun VaultRoute(
             swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction.toUiModel(),
             swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction.toUiModel(),
             isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,
+            isPullToSearchEnabled = vaultDisplayConfig.interaction.isPullToSearchEnabled,
             collapseTopBarOnScroll = vaultDisplayConfig.layout.collapseTopBarOnScroll,
             collapseQuickFilterBarOnScroll =
                 vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll,

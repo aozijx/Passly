@@ -2,6 +2,7 @@ package com.aozijx.passly.presentation.feature.settings.ui.interaction
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Swipe
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
@@ -12,11 +13,13 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
 
 @Composable
-internal fun SwipeGestureSettingsSection(
+internal fun QuickGestureSettingsSection(
     isSwipeEnabled: Boolean,
+    isPullToSearchEnabled: Boolean,
     swipeLeftAction: SwipeActionUiModel,
     swipeRightAction: SwipeActionUiModel,
     onSwipeEnabledChange: (Boolean) -> Unit,
+    onPullToSearchEnabledChange: (Boolean) -> Unit,
     onLeftSwipeActionClick: () -> Unit,
     onRightSwipeActionClick: () -> Unit
 ) {
@@ -46,6 +49,14 @@ internal fun SwipeGestureSettingsSection(
                 title = stringResource(R.string.settings_swipe_gesture_right_action),
                 value = swipeRightAction.localizedLabel(),
                 onClick = onRightSwipeActionClick
+            ),
+            switchSettingsGroupItem(
+                key = "interaction.pull_to_search_enabled",
+                icon = Icons.Default.Search,
+                title = stringResource(R.string.settings_pull_to_search_enabled),
+                subtitle = stringResource(R.string.settings_pull_to_search_enabled_description),
+                checked = isPullToSearchEnabled,
+                onCheckedChange = onPullToSearchEnabledChange,
             )
         )
     )

@@ -56,6 +56,9 @@ internal fun InteractionRoute(
                 onSwipeEnabledChange = {
                     viewModel.onAction(InteractionSettingsAction.SetSwipeEnabled(it))
                 },
+                onPullToSearchEnabledChange = {
+                    viewModel.onAction(InteractionSettingsAction.SetPullToSearchEnabled(it))
+                },
                 onLeftSwipeActionClick = { activeDialog = SwipeActionDialog.Left },
                 onRightSwipeActionClick = { activeDialog = SwipeActionDialog.Right },
             )

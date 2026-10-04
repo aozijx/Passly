@@ -7,12 +7,14 @@ import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
 
 data class InteractionSettingsUiState(
     val isSwipeEnabled: Boolean = false,
+    val isPullToSearchEnabled: Boolean = true,
     val swipeLeftAction: SwipeActionType = SwipeActionType.COPY_PASSWORD,
     val swipeRightAction: SwipeActionType = SwipeActionType.DETAIL,
 )
 
 sealed interface InteractionSettingsAction {
     data class SetSwipeEnabled(val enabled: Boolean) : InteractionSettingsAction
+    data class SetPullToSearchEnabled(val enabled: Boolean) : InteractionSettingsAction
     data class SetSwipeLeftAction(val action: SwipeActionUiModel) : InteractionSettingsAction
     data class SetSwipeRightAction(val action: SwipeActionUiModel) : InteractionSettingsAction
 }
@@ -24,6 +26,7 @@ sealed interface InteractionSettingsEffect {
 
 internal fun InteractionSettingsUiState.toUiModel() = InteractionDetailUiModel(
     isSwipeEnabled = isSwipeEnabled,
+    isPullToSearchEnabled = isPullToSearchEnabled,
     swipeLeftAction = swipeLeftAction.toUiModel(),
     swipeRightAction = swipeRightAction.toUiModel(),
 )

@@ -160,6 +160,8 @@
     <string name="settings_swipe_gesture_left_action">左スワイプ操作</string>
     <string name="settings_swipe_gesture_right_action">右スワイプ操作</string>
     <string name="settings_swipe_gesture_section">クイックジェスチャー</string>
+    <string name="settings_pull_to_search_enabled">プルダウンで検索</string>
+    <string name="settings_pull_to_search_enabled_description">リストの先頭で下に引いて離すと検索を開きます</string>
     <string name="settings_swipe_select_left_action">左スワイプ操作を選択</string>
     <string name="settings_swipe_select_right_action">右スワイプ操作を選択</string>
 

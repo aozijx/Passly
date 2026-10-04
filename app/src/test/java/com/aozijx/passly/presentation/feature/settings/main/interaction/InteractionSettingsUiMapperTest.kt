@@ -11,11 +11,13 @@ class InteractionSettingsUiMapperTest {
     fun `maps swipe actions across feature and ui boundary`() {
         val result = InteractionSettingsUiState(
             isSwipeEnabled = true,
+            isPullToSearchEnabled = false,
             swipeLeftAction = SwipeActionType.DELETE,
             swipeRightAction = SwipeActionType.COPY_USERNAME,
         ).toUiModel()
 
         assertEquals(SwipeActionUiModel.DELETE, result.swipeLeftAction)
         assertEquals(SwipeActionUiModel.COPY_USERNAME, result.swipeRightAction)
+        assertEquals(false, result.isPullToSearchEnabled)
     }
 }

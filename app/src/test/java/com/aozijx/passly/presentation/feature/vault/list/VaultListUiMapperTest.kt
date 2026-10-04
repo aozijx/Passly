@@ -30,6 +30,7 @@ class VaultListUiMapperTest {
             swipeLeftAction = SwipeActionUiModel.DELETE,
             swipeRightAction = SwipeActionUiModel.DETAIL,
             isSwipeEnabled = true,
+            isPullToSearchEnabled = false,
             collapseTopBarOnScroll = false,
             collapseQuickFilterBarOnScroll = false,
             hideSystemBars = false,
@@ -43,6 +44,7 @@ class VaultListUiMapperTest {
         assertEquals(initial.content, withDialog.content)
         assertEquals(initial.layout, withDialog.layout)
         assertEquals(VaultAddTypeUiModel.BANK_CARD, withDialog.dialogs.addType)
+        assertEquals(false, initial.content.isPullToSearchEnabled)
     }
 
     @Test

@@ -19,6 +19,14 @@ internal class PullToSearchGestureState(
         onProgressChanged((distance / thresholdPx).coerceIn(0f, 1f))
     }
 
+    fun consumeReversePull(deltaY: Float): Float {
+        if (deltaY >= 0f || distance == 0f) return 0f
+        val consumed = deltaY.coerceAtLeast(-distance)
+        distance += consumed
+        onProgressChanged((distance / thresholdPx).coerceIn(0f, 1f))
+        return consumed
+    }
+
     fun onRelease() {
         val shouldTrigger = distance >= thresholdPx
         reset()

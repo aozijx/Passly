@@ -22,12 +22,13 @@ class ProtoSerializerTest {
     @Test
     fun interactionSettings_activeFieldsUseOnlySupportedPreferences() {
         assertEquals(
-            (1..4).toList(),
+            (1..5).toList(),
             listOf(
                 InteractionPreferences.SWIPE_ACTIONS_ENABLED_FIELD_NUMBER,
                 InteractionPreferences.SWIPE_LEFT_ACTION_FIELD_NUMBER,
                 InteractionPreferences.SWIPE_RIGHT_ACTION_FIELD_NUMBER,
                 InteractionPreferences.AUTOFILL_FIELD_NUMBER,
+                InteractionPreferences.PULL_TO_SEARCH_ENABLED_FIELD_NUMBER,
             ),
         )
     }
@@ -44,6 +45,7 @@ class ProtoSerializerTest {
         assertEquals(false, defaults.interaction.swipeActionsEnabled)
         assertEquals("copy_password", defaults.interaction.swipeLeftAction)
         assertEquals("detail", defaults.interaction.swipeRightAction)
+        assertTrue(defaults.interaction.pullToSearchEnabled)
         assertTrue(defaults.interaction.autofill.enabled)
         assertEquals("system_inline", defaults.interaction.autofill.presentation)
         assertTrue(defaults.interaction.autofill.credentialManagerEnabled)

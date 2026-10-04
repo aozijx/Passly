@@ -84,4 +84,20 @@ class PullToSearchGestureStateTest {
 
         assertEquals(listOf(0.6f, 0.4f), progress)
     }
+
+    @Test
+    fun `reverse drag consumes only the outstanding pull before list scrolling`() {
+        val progress = mutableListOf<Float>()
+        val state = PullToSearchGestureState(
+            thresholdPx = 100f,
+            onProgressChanged = progress::add,
+            onTriggered = {},
+        )
+
+        state.onPull(deltaY = 70f, isAtTop = true)
+
+        assertEquals(-30f, state.consumeReversePull(deltaY = -30f))
+        assertEquals(-40f, state.consumeReversePull(deltaY = -80f))
+        assertEquals(listOf(0.7f, 0.4f, 0f), progress)
+    }
 }

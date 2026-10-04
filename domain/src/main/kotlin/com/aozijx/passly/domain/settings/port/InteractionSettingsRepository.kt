@@ -11,6 +11,7 @@ interface InteractionSettingsSource {
 
 interface InteractionSettingsRepository : InteractionSettingsSource {
     suspend fun setSwipeEnabled(enabled: Boolean)
+    suspend fun setPullToSearchEnabled(enabled: Boolean)
     suspend fun setSwipeLeftAction(action: SwipeActionType)
     suspend fun setSwipeRightAction(action: SwipeActionType)
     suspend fun setAutofillEnabled(enabled: Boolean)

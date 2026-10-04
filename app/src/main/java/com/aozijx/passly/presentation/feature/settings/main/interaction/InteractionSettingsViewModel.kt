@@ -24,6 +24,7 @@ class InteractionSettingsViewModel @Inject constructor(
         .map { settings ->
             InteractionSettingsUiState(
                 isSwipeEnabled = settings.isSwipeEnabled,
+                isPullToSearchEnabled = settings.isPullToSearchEnabled,
                 swipeLeftAction = settings.swipeLeftAction,
                 swipeRightAction = settings.swipeRightAction,
             )
@@ -41,6 +42,9 @@ class InteractionSettingsViewModel @Inject constructor(
         when (action) {
             is InteractionSettingsAction.SetSwipeEnabled -> viewModelScope.launch {
                 settingsRepository.setSwipeEnabled(action.enabled)
+            }
+            is InteractionSettingsAction.SetPullToSearchEnabled -> viewModelScope.launch {
+                settingsRepository.setPullToSearchEnabled(action.enabled)
             }
             is InteractionSettingsAction.SetSwipeLeftAction -> saveSwipeAction {
                 settingsRepository.setSwipeLeftAction(action.action.toDomainModel())

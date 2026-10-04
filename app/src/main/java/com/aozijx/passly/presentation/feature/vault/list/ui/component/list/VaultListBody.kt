@@ -45,7 +45,7 @@ internal fun VaultListBody(
     val gridState = if (state.toolbar.isSearchActive) searchGridState else mainGridState
     val pullToSearchConnection = rememberPullToSearchNestedScrollConnection(
         gridState = gridState,
-        enabled = !state.toolbar.isSearchActive,
+        enabled = state.content.isPullToSearchEnabled && !state.toolbar.isSearchActive,
         onProgressChanged = onPullSearchProgressChanged,
         onTriggered = onSearchRequested,
     )

@@ -37,6 +37,7 @@ class VaultDisplayViewModel @Inject constructor(
                 ),
                 interaction = VaultInteractionConfig(
                     isSwipeEnabled = interactionSettings.isSwipeEnabled,
+                    isPullToSearchEnabled = interactionSettings.isPullToSearchEnabled,
                     swipeLeftAction = interactionSettings.swipeLeftAction,
                     swipeRightAction = interactionSettings.swipeRightAction
                 )

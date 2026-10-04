@@ -176,6 +176,10 @@ internal class ProtoSettingsStore @Inject constructor(
 
     override suspend fun setSwipeEnabled(enabled: Boolean) = updateInteraction { swipeActionsEnabled = enabled }
 
+    override suspend fun setPullToSearchEnabled(enabled: Boolean) = updateInteraction {
+        pullToSearchEnabled = enabled
+    }
+
     override suspend fun setSwipeLeftAction(action: SwipeActionType) = updateInteraction {
         swipeLeftAction = action.toSwipeActionString()
     }

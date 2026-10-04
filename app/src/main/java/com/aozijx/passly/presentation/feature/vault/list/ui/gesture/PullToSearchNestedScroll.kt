@@ -2,6 +2,7 @@ package com.aozijx.passly.presentation.feature.vault.list.ui.gesture
 
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -31,8 +32,21 @@ internal fun rememberPullToSearchNestedScrollConnection(
         )
     }
 
+    LaunchedEffect(enabled, gestureState) {
+        if (!enabled) gestureState.reset()
+    }
+
     return remember(gridState, gestureState) {
         object : NestedScrollConnection {
+            override fun onPreScroll(
+                available: Offset,
+                source: NestedScrollSource,
+            ): Offset {
+                if (!currentEnabled || source != NestedScrollSource.UserInput) return Offset.Zero
+                val consumedY = gestureState.consumeReversePull(available.y)
+                return Offset(x = 0f, y = consumedY)
+            }
+
             override fun onPostScroll(
                 consumed: Offset,
                 available: Offset,

@@ -47,6 +47,7 @@ class VaultListStateIsolationComposeTest {
         swipeLeftAction = SwipeActionUiModel.DELETE,
         swipeRightAction = SwipeActionUiModel.DETAIL,
         isSwipeEnabled = true,
+        isPullToSearchEnabled = true,
         collapseTopBarOnScroll = false,
         collapseQuickFilterBarOnScroll = false,
         hideSystemBars = false,

@@ -134,6 +134,7 @@ internal fun VaultUiState.toUiModel(
         swipeLeftAction = display.swipeLeftAction,
         swipeRightAction = display.swipeRightAction,
         isSwipeEnabled = display.isSwipeEnabled,
+        isPullToSearchEnabled = display.isPullToSearchEnabled,
     ),
     dialogs = VaultListDialogsUiModel(
         addType = addType?.toUiModel(),
