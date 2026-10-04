@@ -4,6 +4,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
+import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.domain.settings.model.CardDensity
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.feature.vault.model.AddType
@@ -53,7 +54,7 @@ internal fun EntrySort.toUiModel() = VaultSortUiModel(
         EntrySortField.USAGE_FREQUENCY -> VaultSortOptionUiModel.USAGE_FREQUENCY
         else -> VaultSortOptionUiModel.DEFAULT
     },
-    descending = direction.name == "DESC",
+    descending = direction == SortDirection.DESC,
 )
 
 internal fun VaultSortUiModel.toFeatureModel(): EntrySort {
@@ -71,7 +72,7 @@ internal fun VaultSortUiModel.toFeatureModel(): EntrySort {
         VaultSortOptionUiModel.USAGE_FREQUENCY -> EntrySort.presets()
             .first { it.field == EntrySortField.USAGE_FREQUENCY }
     }
-    val wantsDescending = preset.direction.name == "DESC"
+    val wantsDescending = preset.direction == SortDirection.DESC
     return if (wantsDescending == descending) preset else preset.toggled()
 }
 
