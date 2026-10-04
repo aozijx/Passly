@@ -164,13 +164,13 @@ private fun SecretPayload.toBackupRecord() = BackupSecretRecord(
         BackupOtpCredential(
             otpSecret.config?.let {
                 BackupOtpConfig(
-                    type = BackupOtpType.valueOf(it.type.name),
+                    type = it.type.toBackupModel(),
                     secret = it.secret,
-                    algorithm = BackupOtpAlgorithm.valueOf(it.algorithm.name),
+                    algorithm = it.algorithm.toBackupModel(),
                     digits = it.digits,
                     periodSeconds = it.periodSeconds,
                     counter = it.counter,
-                    encoding = BackupOtpEncoding.valueOf(it.encoding.name),
+                    encoding = it.encoding.toBackupModel(),
                     issuer = it.issuer,
                     accountName = it.accountName
                 )
@@ -226,13 +226,13 @@ private fun BackupSecretRecord.toPayload() = SecretPayload(
         OtpCredentialPayload(
             otpSecret.config?.let {
                 OtpConfigPayload(
-                    type = OtpType.valueOf(it.type.name),
+                    type = it.type.toDomainModel(),
                     secret = it.secret,
-                    algorithm = OtpHashAlgorithm.valueOf(it.algorithm.name),
+                    algorithm = it.algorithm.toDomainModel(),
                     digits = it.digits,
                     periodSeconds = it.periodSeconds,
                     counter = it.counter,
-                    encoding = OtpSecretEncoding.valueOf(it.encoding.name),
+                    encoding = it.encoding.toDomainModel(),
                     issuer = it.issuer,
                     accountName = it.accountName
                 )
@@ -241,3 +241,37 @@ private fun BackupSecretRecord.toPayload() = SecretPayload(
     },
     customFields = customFields.map { CustomFieldPayload(it.name, it.value, it.type) }
 )
+
+private fun OtpType.toBackupModel(): BackupOtpType = when (this) {
+    OtpType.TOTP -> BackupOtpType.TOTP
+    OtpType.HOTP -> BackupOtpType.HOTP
+    OtpType.STEAM -> BackupOtpType.STEAM
+}
+
+private fun BackupOtpType.toDomainModel(): OtpType = when (this) {
+    BackupOtpType.TOTP -> OtpType.TOTP
+    BackupOtpType.HOTP -> OtpType.HOTP
+    BackupOtpType.STEAM -> OtpType.STEAM
+}
+
+private fun OtpHashAlgorithm.toBackupModel(): BackupOtpAlgorithm = when (this) {
+    OtpHashAlgorithm.SHA1 -> BackupOtpAlgorithm.SHA1
+    OtpHashAlgorithm.SHA256 -> BackupOtpAlgorithm.SHA256
+    OtpHashAlgorithm.SHA512 -> BackupOtpAlgorithm.SHA512
+}
+
+private fun BackupOtpAlgorithm.toDomainModel(): OtpHashAlgorithm = when (this) {
+    BackupOtpAlgorithm.SHA1 -> OtpHashAlgorithm.SHA1
+    BackupOtpAlgorithm.SHA256 -> OtpHashAlgorithm.SHA256
+    BackupOtpAlgorithm.SHA512 -> OtpHashAlgorithm.SHA512
+}
+
+private fun OtpSecretEncoding.toBackupModel(): BackupOtpEncoding = when (this) {
+    OtpSecretEncoding.BASE32 -> BackupOtpEncoding.BASE32
+    OtpSecretEncoding.BASE64 -> BackupOtpEncoding.BASE64
+}
+
+private fun BackupOtpEncoding.toDomainModel(): OtpSecretEncoding = when (this) {
+    BackupOtpEncoding.BASE32 -> OtpSecretEncoding.BASE32
+    BackupOtpEncoding.BASE64 -> OtpSecretEncoding.BASE64
+}

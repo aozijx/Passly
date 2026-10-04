@@ -17,7 +17,12 @@ import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpAlgorithm
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpEncoding
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupOtpType
+import java.io.File
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -96,5 +101,76 @@ class RoomBackupSnapshotMapperTest {
             record.sensitiveFields.single { it.key == SensitiveFieldKey.OTP_SECRET.name }.value,
         )
         assertEquals(entry, mapper.toEntry(record))
+    }
+
+    @Test
+    fun otpRoundTripPreservesEveryTypeAlgorithmAndEncoding() {
+        OtpType.entries.forEach { type ->
+            OtpHashAlgorithm.entries.forEach { algorithm ->
+                OtpSecretEncoding.entries.forEach { encoding ->
+                    val config = OtpConfig(
+                        type = type,
+                        secret = "JBSWY3DPEHPK3PXP",
+                        algorithm = algorithm,
+                        digits = if (type == OtpType.STEAM) 5 else 6,
+                        periodSeconds = if (type == OtpType.HOTP) null else 30,
+                        counter = if (type == OtpType.HOTP) 7L else null,
+                        encoding = encoding,
+                    )
+                    val entry = Entry(
+                        identity = EntryIdentity(
+                            id = EntryId("otp-${type.ordinal}-${algorithm.ordinal}-${encoding.ordinal}"),
+                            type = EntryType.OTP,
+                            timestamps = EntryTimestamps(1L),
+                        ),
+                        profile = EntryProfile(title = "OTP"),
+                        secret = EntrySecret(credential = OtpCredential(config)),
+                    )
+
+                    val record = mapper.toRecord(entry)
+                    val backupConfig = requireNotNull(record.secret.otp?.config)
+
+                    assertEquals(type.toExpectedBackupType(), backupConfig.type)
+                    assertEquals(algorithm.toExpectedBackupAlgorithm(), backupConfig.algorithm)
+                    assertEquals(encoding.toExpectedBackupEncoding(), backupConfig.encoding)
+                    assertEquals(entry, mapper.toEntry(record))
+                }
+            }
+        }
+    }
+
+    @Test
+    fun otpMappingsDoNotDependOnEnumNames() {
+        val sourceRoot = listOf(File("src/main/java"), File("app/src/main/java"))
+            .firstOrNull(File::isDirectory) ?: error("Cannot locate app source root")
+        val source = sourceRoot.resolve(
+            "com/aozijx/passly/app/database/backup/RoomBackupSnapshotMapper.kt",
+        ).readText()
+
+        listOf(
+            "BackupOtpType.valueOf",
+            "BackupOtpAlgorithm.valueOf",
+            "BackupOtpEncoding.valueOf",
+            "OtpType.valueOf",
+            "OtpHashAlgorithm.valueOf",
+            "OtpSecretEncoding.valueOf",
+        ).forEach { bridge -> assertFalse("Mapper still uses $bridge", source.contains(bridge)) }
+    }
+
+    private fun OtpType.toExpectedBackupType(): BackupOtpType = when (this) {
+        OtpType.TOTP -> BackupOtpType.TOTP
+        OtpType.HOTP -> BackupOtpType.HOTP
+        OtpType.STEAM -> BackupOtpType.STEAM
+    }
+
+    private fun OtpHashAlgorithm.toExpectedBackupAlgorithm(): BackupOtpAlgorithm = when (this) {
+        OtpHashAlgorithm.SHA1 -> BackupOtpAlgorithm.SHA1
+        OtpHashAlgorithm.SHA256 -> BackupOtpAlgorithm.SHA256
+        OtpHashAlgorithm.SHA512 -> BackupOtpAlgorithm.SHA512
+    }
+
+    private fun OtpSecretEncoding.toExpectedBackupEncoding(): BackupOtpEncoding = when (this) {
+        OtpSecretEncoding.BASE32 -> BackupOtpEncoding.BASE32
+        OtpSecretEncoding.BASE64 -> BackupOtpEncoding.BASE64
     }
 }
