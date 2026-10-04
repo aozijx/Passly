@@ -22,8 +22,7 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }
 enum class AppLanguage(val locale: Locale?) {
     SYSTEM(null),
     ZH(Locale.SIMPLIFIED_CHINESE),
-    EN(Locale.ENGLISH),
-    JA(Locale.JAPANESE);
+    EN(Locale.ENGLISH);
 
     /** BCP-47 标签；跟随系统时 AppCompat 需要空标签。 */
     val applicationLocaleTags: String

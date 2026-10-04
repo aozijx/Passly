@@ -14,7 +14,7 @@ import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.Langu
 import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.ThemeModeUiModel
 
 /**
- * 语言选择器使用语言自称（中文 / English / 日本語），不会随当前界面语言二次翻译。
+ * 语言选择器使用语言自称（中文 / English），不会随当前界面语言二次翻译。
  */
 @Composable
 fun AppLanguage.localizedDisplayName(): String {

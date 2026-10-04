@@ -9,9 +9,8 @@ class AppLanguageTest {
     fun localeTags_roundTripSupportedLanguages() {
         assertEquals("zh-CN", AppLanguage.ZH.applicationLocaleTags)
         assertEquals("en", AppLanguage.EN.applicationLocaleTags)
-        assertEquals("ja", AppLanguage.JA.applicationLocaleTags)
 
-        listOf(AppLanguage.ZH, AppLanguage.EN, AppLanguage.JA).forEach { language ->
+        listOf(AppLanguage.ZH, AppLanguage.EN).forEach { language ->
             assertEquals(language, AppLanguage.fromLanguageTag(language.storageTag))
         }
     }
