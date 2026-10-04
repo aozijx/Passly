@@ -1,6 +1,6 @@
 [versions]
 # 构建与工具 (Build & Tooling)
-agp = "9.3.1"
+agp = "9.4.1"
 # Kotlin and KSP upgrades are validated together.
 kotlin = "2.3.20"
 ksp = "2.3.9"
