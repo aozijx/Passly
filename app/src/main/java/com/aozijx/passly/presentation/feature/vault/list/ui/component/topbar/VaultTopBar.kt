@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
@@ -27,7 +26,6 @@ import com.aozijx.passly.presentation.feature.vault.list.ui.search.VaultSearchSt
 import com.aozijx.passly.presentation.shared.components.topbar.passlyCompactTopAppBarColors
 import com.aozijx.passly.presentation.shared.components.topbar.topAppBarContainerColor
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultTopBar(
     uiState: VaultTopBarUiState,
@@ -80,7 +78,7 @@ fun VaultTopBar(
                 )
             },
         )
-        uiState.selectedCategory?.takeIf(String::isNotBlank)?.let { category ->
+        uiState.menu.selectedCategory?.takeIf(String::isNotBlank)?.let { category ->
             InputChip(
                 selected = true,
                 onClick = { onAction(VaultUiAction.ClearCategory) },

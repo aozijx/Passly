@@ -1,14 +1,7 @@
 package com.aozijx.passly.presentation.feature.vault.list.ui.component.topbar
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -19,26 +12,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultSortUiModel
-
-private enum class MenuPage { MAIN, SORT, CATEGORY_FILTER }
+import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
+import com.aozijx.passly.presentation.feature.vault.list.toFeatureModel
 
 @Composable
 internal fun VaultDropdownMenu(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
-    showTOTPCode: Boolean,
-    onToggleTotpVisibility: () -> Unit,
+    uiState: VaultMenuUiState,
+    onAction: (VaultUiAction) -> Unit,
     onSettingsClick: () -> Unit,
-    availableCategories: List<String>,
-    selectedCategory: String?,
-    onCategorySelected: (String?) -> Unit,
-    selectedSort: VaultSortUiModel,
-    onSortSelected: (VaultSortUiModel) -> Unit
 ) {
-    var currentPage by remember(expanded) { mutableStateOf(MenuPage.MAIN) }
+    var currentPage by remember(expanded) { mutableStateOf(VaultMenuPage.MAIN) }
     var categorySearchQuery by remember(expanded) { mutableStateOf("") }
     var categorySearchVisible by remember(expanded) { mutableStateOf(false) }
     val categoryFocusRequester = remember { FocusRequester() }
@@ -48,9 +34,9 @@ internal fun VaultDropdownMenu(
         if (categorySearchVisible) categoryFocusRequester.requestFocus()
     }
 
-    val filteredCategories = remember(availableCategories, categorySearchQuery) {
-        if (categorySearchQuery.isBlank()) availableCategories
-        else availableCategories.filter {
+    val filteredCategories = remember(uiState.availableCategories, categorySearchQuery) {
+        if (categorySearchQuery.isBlank()) uiState.availableCategories
+        else uiState.availableCategories.filter {
             it.contains(categorySearchQuery, ignoreCase = true)
         }
     }
@@ -58,42 +44,42 @@ internal fun VaultDropdownMenu(
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismissRequest,
-        modifier = Modifier.widthIn(min = 150.dp)
+        modifier = Modifier.animateContentSize(
+            animationSpec = motionScheme.defaultSpatialSpec(),
+        ),
     ) {
-        AnimatedContent(
-            targetState = currentPage,
-            transitionSpec = {
-                val navigatingBack = targetState == MenuPage.MAIN
-                ContentTransform(
-                    targetContentEnter = slideInHorizontally(
-                        animationSpec = motionScheme.defaultSpatialSpec(),
-                        initialOffsetX = { width -> if (navigatingBack) -width / 4 else width },
-                    ) + fadeIn(animationSpec = motionScheme.fastEffectsSpec()),
-                    initialContentExit = slideOutHorizontally(
-                        animationSpec = motionScheme.defaultSpatialSpec(),
-                        targetOffsetX = { width -> if (navigatingBack) width else -width / 4 },
-                    ) + fadeOut(animationSpec = motionScheme.fastEffectsSpec()),
-                    sizeTransform = null,
-                )
-            },
-            label = "VaultMenuPage",
-        ) { page ->
-            Column(Modifier.fillMaxWidth()) {
-                when (page) {
-                    MenuPage.MAIN -> MainMenuContent(
-                        onSortClick = { currentPage = MenuPage.SORT },
-                        onCategoryFilterClick = { currentPage = MenuPage.CATEGORY_FILTER },
-                        showTOTPCode = showTOTPCode,
-                        onToggleTotpVisibility = onToggleTotpVisibility,
+        VaultMenuPageTransition(
+            currentPage = currentPage,
+            mainContent = {
+                Column {
+                    MainMenuContent(
+                        onSortClick = { currentPage = VaultMenuPage.SORT },
+                        onCategoryFilterClick = {
+                            currentPage = VaultMenuPage.CATEGORY_FILTER
+                        },
+                        showTOTPCode = uiState.showTotpCode,
+                        onToggleTotpVisibility = {
+                            onAction(VaultUiAction.ToggleShowTotpCode)
+                        },
                         onDismissRequest = onDismissRequest,
-                        onSettingsClick = onSettingsClick
+                        onSettingsClick = onSettingsClick,
                     )
-                    MenuPage.SORT -> SortSubMenu(
-                        selectedSort = selectedSort,
-                        onSortSelected = onSortSelected,
-                        onBack = { currentPage = MenuPage.MAIN }
+                }
+            },
+            sortContent = {
+                Column {
+                    SortSubMenu(
+                        selectedSort = uiState.selectedSort,
+                        onSortSelected = {
+                            onAction(VaultUiAction.SortOptionSelected(it.toFeatureModel()))
+                        },
+                        onBack = { currentPage = VaultMenuPage.MAIN },
                     )
-                    MenuPage.CATEGORY_FILTER -> FilterSubMenu(
+                }
+            },
+            categoryFilterContent = {
+                Column {
+                    FilterSubMenu(
                         searchLabelRes = R.string.vault_search_category,
                         searchHintRes = R.string.vault_search_category_hint,
                         isSearchVisible = categorySearchVisible,
@@ -102,10 +88,10 @@ internal fun VaultDropdownMenu(
                         onSearchQueryChange = { categorySearchQuery = it },
                         focusRequester = categoryFocusRequester,
                         items = filteredCategories,
-                        selectedItem = selectedCategory,
+                        selectedItem = uiState.selectedCategory,
                         itemText = { it },
                         onItemSelected = {
-                            onCategorySelected(it)
+                            onAction(VaultUiAction.CategorySelected(it))
                             onDismissRequest()
                         },
                         onBack = {
@@ -113,12 +99,12 @@ internal fun VaultDropdownMenu(
                                 categorySearchVisible = false
                                 categorySearchQuery = ""
                             } else {
-                                currentPage = MenuPage.MAIN
+                                currentPage = VaultMenuPage.MAIN
                             }
-                        }
+                        },
                     )
                 }
-            }
-        }
+            },
+        )
     }
 }

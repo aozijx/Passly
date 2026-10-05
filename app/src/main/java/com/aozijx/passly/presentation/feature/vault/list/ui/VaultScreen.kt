@@ -21,6 +21,7 @@ import androidx.paging.PagingData
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.fab.VaultFab
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.list.VaultListBody
+import com.aozijx.passly.presentation.feature.vault.list.ui.component.topbar.VaultMenuUiState
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.topbar.VaultTopBar
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.topbar.VaultTopBarUiState
 import com.aozijx.passly.presentation.feature.vault.list.ui.gesture.rememberFabVisibilityNestedScrollConnection
@@ -93,10 +94,12 @@ fun VaultScreen(
             VaultTopBar(
                 uiState = VaultTopBarUiState(
                     query = state.toolbar.searchQuery,
-                    showTotpCode = state.content.showTotpCode,
-                    selectedCategory = state.toolbar.selectedCategory,
-                    selectedSort = state.toolbar.selectedSort,
-                    availableCategories = state.toolbar.availableCategories,
+                    menu = VaultMenuUiState(
+                        showTotpCode = state.content.showTotpCode,
+                        availableCategories = state.toolbar.availableCategories,
+                        selectedCategory = state.toolbar.selectedCategory,
+                        selectedSort = state.toolbar.selectedSort,
+                    ),
                     collapseOnScroll = state.layout.collapseTopBarOnScroll,
                     collapseQuickFilterOnScroll = state.layout.collapseQuickFilterBarOnScroll,
                     hideSystemBars = state.layout.hideSystemBars,

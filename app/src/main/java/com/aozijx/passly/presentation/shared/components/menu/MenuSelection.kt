@@ -19,12 +19,13 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun Modifier.selectedMenuModifier(selected: Boolean): Modifier =
-    this
-        .padding(horizontal = 8.dp, vertical = 2.dp)
-        .clip(MaterialTheme.shapes.small)
-        .background(
-            if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
-        )
+    if (selected) {
+        padding(horizontal = 8.dp, vertical = 2.dp)
+            .clip(MaterialTheme.shapes.small)
+            .background(MaterialTheme.colorScheme.primaryContainer)
+    } else {
+        this
+    }
 
 /**
  * 下拉菜单选项文本：选中时用主题色加粗，未选中用普通色。

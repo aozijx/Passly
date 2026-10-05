@@ -93,7 +93,10 @@ Compose 使用 `LazyPagingItems` 消费数据：首次加载显示全页进度�
 
 More 菜单的展开状态只属于稳定的搜索动作锚点；`DropdownMenu` 始终保留在该锚点下，仅由 `expanded`
 控制显示，避免 Popup 被 More/Clear 动画层反复创建。菜单页和查询状态以展开会话为 key，关闭后自然重置。
-主菜单与排序、筛选子页只在 Popup 内部使用 Material expressive 位移动画，且禁用尺寸变换；菜单外框和锚点不参与该动画。
+菜单渲染数据集中在 `VaultMenuUiState`，`VaultSearchAction` 直接连接 `VaultDropdownMenu`，不保留只拆参数和转发
+回调的中间组件。主菜单与排序、筛选子页使用 Material expressive 交叉淡化；目标页独立决定自然 intrinsic 尺寸，
+淡出的旧页不参与容器尺寸，外层仅对目标页自然尺寸变化做动画，因此不会被撑到 Material 最大宽度或留下多余右侧空白。
+固定锚点及 Popup 显隐不参与切页动画。
 设置和新增页面属于导航出口，由 `VaultRoute` 连接，不进入 ViewModel 的业务状态。
 
 ## 注意事项

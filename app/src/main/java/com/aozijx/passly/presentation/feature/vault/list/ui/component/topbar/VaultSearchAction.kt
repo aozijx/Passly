@@ -67,10 +67,10 @@ internal fun VaultSearchAction(
             }
             VaultSearchActionType.NONE -> Spacer(Modifier.size(VaultSearchActionSize))
         }
-        VaultMoreMenu(
+        VaultDropdownMenu(
             expanded = moreMenuExpanded,
             onDismissRequest = { moreMenuExpanded = false },
-            uiState = uiState,
+            uiState = uiState.menu,
             onAction = onAction,
             onSettingsClick = onSettingsClick,
         )
