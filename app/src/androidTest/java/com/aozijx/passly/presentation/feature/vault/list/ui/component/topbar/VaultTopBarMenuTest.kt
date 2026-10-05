@@ -23,7 +23,7 @@ class VaultTopBarMenuTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun moreButtonOpensMenuAndInvokesSettingsNavigation() {
+    fun moreButtonNavigatesSubmenuAndInvokesSettingsNavigation() {
         var settingsClicked = false
         val context = InstrumentationRegistry.getInstrumentation().targetContext
 
@@ -40,6 +40,12 @@ class VaultTopBarMenuTest {
         }
 
         composeRule.onNodeWithContentDescription(context.getString(R.string.more)).performClick()
+        composeRule.onNodeWithText(context.getString(R.string.vault_menu_sort)).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText(context.getString(R.string.sort_last_used))
+            .assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.back)).performClick()
+        composeRule.waitForIdle()
         composeRule.onNodeWithText(context.getString(R.string.settings_title))
             .assertIsDisplayed()
             .performClick()
