@@ -2,7 +2,6 @@ package com.aozijx.passly.presentation.feature.shell
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
 import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
@@ -20,7 +19,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -61,17 +62,10 @@ class AppShellViewModel @Inject constructor(
 
     private fun observeAuthStates() {
         viewModelScope.launch {
-            secureSessionAccessState.authenticationState.collect { state ->
-                val authorized = state is AuthenticationState.Authenticated
-                val recoveryMode = state is AuthenticationState.RecoveryMode
-                if (authorized) {
-                    mutate(AppShellMutation.Authenticated)
-                } else if (recoveryMode) {
-                    mutate(AppShellMutation.RecoveryModeEntered)
-                } else {
-                    mutate(AppShellMutation.SessionLocked)
-                }
-            }
+            secureSessionAccessState.authenticationState
+                .map { state -> state.toAppShellSessionMode() }
+                .distinctUntilChanged()
+                .collect { mode -> mutate(AppShellMutation.SessionChanged(mode)) }
         }
 
     }
@@ -98,12 +92,10 @@ class AppShellViewModel @Inject constructor(
         viewModelScope.launch {
             mutate(AppShellMutation.DatabaseRetryStarted)
             when (val result = databaseSessionRecovery.retry()) {
-                DatabaseSessionRetryResult.Ready -> Unit
-                DatabaseSessionRetryResult.Unavailable ->
-                    mutate(AppShellMutation.DatabaseRetryFinished(error = null))
+                DatabaseSessionRetryResult.Ready,
+                DatabaseSessionRetryResult.Unavailable -> Unit
 
                 is DatabaseSessionRetryResult.Failed -> {
-                    mutate(AppShellMutation.DatabaseRetryFinished(result.cause))
                     emitEffect(
                         AppShellEffect.ShowError(
                             "数据库错误: ${result.cause.toUiMessage("数据库重试失败")}",
@@ -111,15 +103,14 @@ class AppShellViewModel @Inject constructor(
                     )
                 }
             }
+            mutate(AppShellMutation.DatabaseRetryFinished)
         }
     }
 
     private fun observeDatabaseFailures() {
         viewModelScope.launch {
             databaseSessionFailureState.databaseFailure.collect { error ->
-                if (error != null) {
-                    mutate(AppShellMutation.DatabaseFailureObserved(error))
-                }
+                mutate(AppShellMutation.DatabaseFailureChanged(error))
             }
         }
     }
@@ -129,7 +120,7 @@ class AppShellViewModel @Inject constructor(
     }
 
     private fun mutate(mutation: AppShellMutation) {
-        _uiState.value = AppShellReducer.reduce(_uiState.value, mutation)
+        _uiState.update { state -> AppShellReducer.reduce(state, mutation) }
     }
 
 }

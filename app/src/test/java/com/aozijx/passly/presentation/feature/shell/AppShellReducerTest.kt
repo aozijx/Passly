@@ -9,7 +9,6 @@ import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.presentation.feature.shell.AppShellUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -17,24 +16,24 @@ import org.junit.Test
 class AppShellReducerTest {
 
     @Test
-    fun `recovery mode clears database failure and full authorization`() {
+    fun `session projection changes without overwriting database failure state`() {
+        val error = IllegalStateException("failure")
         val result = AppShellReducer.reduce(
             AppShellUiState(
-                isAuthorized = true,
+                sessionMode = AppShellSessionMode.VAULT,
                 isDatabaseRetrying = true,
-                databaseError = IllegalStateException("failure"),
+                databaseError = error,
             ),
-            AppShellMutation.RecoveryModeEntered,
+            AppShellMutation.SessionChanged(AppShellSessionMode.RECOVERY),
         )
 
-        assertFalse(result.isAuthorized)
-        assertTrue(result.isRecoveryMode)
-        assertFalse(result.isDatabaseRetrying)
-        assertNull(result.databaseError)
+        assertEquals(AppShellSessionMode.RECOVERY, result.sessionMode)
+        assertTrue(result.isDatabaseRetrying)
+        assertSame(error, result.databaseError)
     }
 
     @Test
-    fun `database retry clears stale error and marks retry in progress`() {
+    fun `database retry keeps authoritative error visible and marks retry in progress`() {
         val error = IllegalStateException("failure")
         val initial = AppShellUiState(databaseError = error)
 
@@ -44,7 +43,36 @@ class AppShellReducerTest {
         )
 
         assertTrue(retry.isDatabaseRetrying)
-        assertNull(retry.databaseError)
+        assertSame(error, retry.databaseError)
+    }
+
+    @Test
+    fun `database failure stream clears error and retry state together`() {
+        val result = AppShellReducer.reduce(
+            AppShellUiState(
+                isDatabaseRetrying = true,
+                databaseError = IllegalStateException("failure"),
+            ),
+            AppShellMutation.DatabaseFailureChanged(error = null),
+        )
+
+        assertFalse(result.isDatabaseRetrying)
+        assertEquals(null, result.databaseError)
+    }
+
+    @Test
+    fun `database retry completion only ends busy state`() {
+        val error = IllegalStateException("failure")
+        val result = AppShellReducer.reduce(
+            AppShellUiState(
+                isDatabaseRetrying = true,
+                databaseError = error,
+            ),
+            AppShellMutation.DatabaseRetryFinished,
+        )
+
+        assertFalse(result.isDatabaseRetrying)
+        assertSame(error, result.databaseError)
     }
 
     @Test
@@ -57,7 +85,10 @@ class AppShellReducerTest {
             fontFamily = FontFamilyMode.SYSTEM,
         )
         val result = AppShellReducer.reduce(
-            AppShellUiState(isAuthorized = true, databaseError = error),
+            AppShellUiState(
+                sessionMode = AppShellSessionMode.VAULT,
+                databaseError = error,
+            ),
             AppShellMutation.SettingsChanged(
                 appearance = appearance,
                 interfaceSettings = InterfaceSettings(appCornerRadiusDp = 30f),
@@ -70,7 +101,7 @@ class AppShellReducerTest {
         assertSame(appearance, result.appearance)
         assertEquals(30f, result.appCornerRadiusDp)
         assertFalse(result.windowPolicy.isSecureContentEnabled)
-        assertTrue(result.isAuthorized)
+        assertEquals(AppShellSessionMode.VAULT, result.sessionMode)
         assertSame(error, result.databaseError)
     }
 }

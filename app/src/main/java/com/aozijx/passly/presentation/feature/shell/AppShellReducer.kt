@@ -5,38 +5,21 @@ import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.domain.settings.model.SecuritySettings
 
 internal sealed interface AppShellMutation {
-    data object Authenticated : AppShellMutation
-    data object RecoveryModeEntered : AppShellMutation
-    data object SessionLocked : AppShellMutation
+    data class SessionChanged(val mode: AppShellSessionMode) : AppShellMutation
     data class SettingsChanged(
         val appearance: AppearanceSettings,
         val interfaceSettings: InterfaceSettings,
         val securitySettings: SecuritySettings,
     ) : AppShellMutation
     data object DatabaseRetryStarted : AppShellMutation
-    data class DatabaseRetryFinished(val error: Throwable?) : AppShellMutation
-    data class DatabaseFailureObserved(val error: Throwable) : AppShellMutation
+    data object DatabaseRetryFinished : AppShellMutation
+    data class DatabaseFailureChanged(val error: Throwable?) : AppShellMutation
 }
 
 internal object AppShellReducer {
     fun reduce(state: AppShellUiState, mutation: AppShellMutation): AppShellUiState =
         when (mutation) {
-            AppShellMutation.Authenticated -> state.copy(
-                isAuthorized = true,
-                isRecoveryMode = false,
-                isDatabaseRetrying = false,
-                databaseError = null,
-            )
-            AppShellMutation.RecoveryModeEntered -> state.copy(
-                isAuthorized = false,
-                isRecoveryMode = true,
-                isDatabaseRetrying = false,
-                databaseError = null,
-            )
-            AppShellMutation.SessionLocked -> state.copy(
-                isAuthorized = false,
-                isRecoveryMode = false,
-            )
+            is AppShellMutation.SessionChanged -> state.copy(sessionMode = mutation.mode)
             is AppShellMutation.SettingsChanged -> state.copy(
                 appearance = mutation.appearance,
                 appCornerRadiusDp = mutation.interfaceSettings.appCornerRadiusDp,
@@ -47,16 +30,13 @@ internal object AppShellReducer {
             )
             AppShellMutation.DatabaseRetryStarted -> state.copy(
                 isDatabaseRetrying = true,
-                databaseError = null,
             )
-            is AppShellMutation.DatabaseRetryFinished -> state.copy(
+            AppShellMutation.DatabaseRetryFinished -> state.copy(
+                isDatabaseRetrying = false,
+            )
+            is AppShellMutation.DatabaseFailureChanged -> state.copy(
                 isDatabaseRetrying = false,
                 databaseError = mutation.error,
-            )
-            is AppShellMutation.DatabaseFailureObserved -> state.copy(
-                isDatabaseRetrying = false,
-                databaseError = mutation.error,
-                isAuthorized = false,
             )
         }
 }

@@ -67,6 +67,31 @@ class PasslyAppBoundaryTest {
         assertFalse(navigationContext.contains("onUserInteraction"))
         assertFalse(detailList.contains("clickable("))
     }
+
+    @Test
+    fun `shell projects session and database state without duplicate owners`() {
+        val uiState = source(
+            "com/aozijx/passly/presentation/feature/shell/AppShellUiState.kt",
+        )
+        val reducer = source(
+            "com/aozijx/passly/presentation/feature/shell/AppShellReducer.kt",
+        )
+        val viewModel = source(
+            "com/aozijx/passly/presentation/feature/shell/AppShellViewModel.kt",
+        )
+
+        assertTrue(uiState.contains("sessionMode: AppShellSessionMode"))
+        assertFalse(uiState.contains("isAuthorized"))
+        assertFalse(uiState.contains("isRecoveryMode"))
+        assertFalse(reducer.contains("data object Authenticated"))
+        assertFalse(reducer.contains("data object SessionLocked"))
+        assertTrue(reducer.contains("DatabaseFailureChanged(val error: Throwable?)"))
+        assertTrue(viewModel.contains("state.toAppShellSessionMode()"))
+        assertTrue(viewModel.contains("DatabaseFailureChanged(error)"))
+        assertFalse(viewModel.contains("if (error != null)"))
+        assertTrue(viewModel.contains("_uiState.update"))
+    }
+
     @Test
     fun `shell owns root rendering while notice presentation owns its effect host`() {
         val shell = source(

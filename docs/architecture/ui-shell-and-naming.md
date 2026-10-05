@@ -31,20 +31,18 @@ Rail、全局 Snackbar 和认证遮罩属于 App Shell，不进入共享元素�
 每个目的地仍可使用自己的 Scaffold。目的地必须消费 App Shell 传入的 `PaddingValues`，并自行处理 IME；
 共享元素使用内容坐标，不负责窗口 Insets。
 
-## MainViewModel 的职责
+## AppShellViewModel 的职责
 
-`MainViewModel` 是应用会话宿主，不是条目列表或导航 ViewModel。当前职责为：
+`AppShellViewModel` 只组合应用根界面需要的稳定投影，不拥有认证或数据库会话状态机：
 
-- 观察认证状态，驱动数据库预热、故障恢复与锁定状态；
-- 向页面提供认证、重新认证和敏感访问入口；
-- 观察会影响应用根主题与自适应外观的设置；
-- 首次解锁后触发 Blind Index 重建；
-- 发布应用级数据库错误和恢复结果。
+- 将安全层发布的 `AuthenticationState` 穷尽映射为单一 `AppShellSessionMode`；不复制成多个布尔状态，也不保存认证 continuation；
+- 完整观察 `DatabaseSessionFailureState` 的错误与清除事件；重试状态只描述 UI 是否忙碌，不能提前清除安全层仍持有的错误；
+- 通过 `DatabaseSessionRecovery` 请求重试，真正的数据库解锁、故障清除和认证状态发布仍由安全会话协调；
+- 组合根主题、圆角和窗口安全策略等应用级显示设置。
 
-它直接耦合 `AuthenticationManager`、`DatabaseLifecycleUseCases` 和
-`AppSettingsRepository`，并被 `MainActivity`、`AppMainContent`、`PasslyNavHost` 使用。条目 CRUD、OTP、
-筛选和卡片展示属于 `VaultViewModel`，不应继续加入 `MainViewModel`。导航决策也应留在 Compose
-导航宿主，ViewModel 只发语义 effect。
+`PasslyApp` 创建该 ViewModel，`AppShell` 只根据不可变 `AppShellUiState` 选择数据库错误、认证、恢复模式或
+Vault 目的地。条目 CRUD、OTP、筛选、页面导航和敏感授权流程不得加入 Shell；这些职责分别留在 Feature、
+导航宿主和安全边界。
 
 ## Passly、Vault 与 Entry
 
