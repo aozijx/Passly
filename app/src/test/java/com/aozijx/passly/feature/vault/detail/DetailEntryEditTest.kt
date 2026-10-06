@@ -15,6 +15,7 @@ import com.aozijx.passly.domain.entry.model.credential.CardCredential
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
+import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -99,7 +100,7 @@ class DetailEntryEditTest {
         ).applyRequired(latest)
 
         assertEquals("new-wifi-password", actual.secret.wifi?.password)
-        assertEquals("WPA3", actual.secret.wifi?.securityType)
+        assertEquals(WifiSecurityType.WpaPersonal, actual.secret.wifi?.securityType)
         assertEquals(true, actual.secret.wifi?.isHidden)
         assertEquals(latest.profile, actual.profile)
     }
@@ -213,7 +214,7 @@ class DetailEntryEditTest {
             credential = WifiCredential(
                 ssid = "Latest Network",
                 password = "old-wifi-password",
-                securityType = "WPA3",
+                securityType = WifiSecurityType.WpaPersonal,
                 isHidden = true,
             ),
             notes = "latest notes",

@@ -84,6 +84,8 @@ class EntryTypeDefinitionsTest {
         assertTrue(card.supports(FieldKey.CARD_CVV))
         assertTrue(wifi.supports(FieldKey.WIFI_SSID))
         assertTrue(wifi.supports(FieldKey.PASSWORD))
+        assertTrue(FieldKey.WIFI_SSID in wifi.requiredFields)
+        assertFalse(FieldKey.PASSWORD in wifi.requiredFields)
         assertTrue(ssh.supports(FieldKey.SSH_KEY))
         assertTrue(ssh.supports(FieldKey.SSH_PASSPHRASE))
         assertFalse(card.supports(FieldKey.PASSWORD))
@@ -134,7 +136,6 @@ class EntryTypeDefinitionsTest {
         val draft = EntryDraft(EntryDraftTarget.New(EntryType.WIFI))
             .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text("Office"))
             .withValue(definition, FieldKey.WIFI_SSID, EntryDraftValue.Text("Passly"))
-            .withValue(definition, FieldKey.PASSWORD, EntryDraftValue.Text("secret123"))
 
         assertTrue(draft.missingRequiredFields(definition).isEmpty())
         assertThrows(IllegalArgumentException::class.java) {

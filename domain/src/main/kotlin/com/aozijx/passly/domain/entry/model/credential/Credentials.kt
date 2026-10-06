@@ -43,7 +43,7 @@ data class SshCredential(
 data class WifiCredential(
     val ssid: String,
     val password: String? = null,
-    val securityType: String? = null,
+    val securityType: WifiSecurityType = WifiSecurityType.WpaPersonal,
     val isHidden: Boolean = false
 ) : EntryCredential {
     init {

@@ -99,7 +99,7 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
     private fun getConnectivityFieldValue(entry: Entry, key: FieldKey): String? {
         val wifi = entry.secret.wifi
         return when (key) {
-            FieldKey.WIFI_SECURITY -> wifi?.securityType
+            FieldKey.WIFI_SECURITY -> wifi?.securityType?.storedValue
             FieldKey.WIFI_HIDDEN -> if (wifi?.isHidden == true) "\u662F" else "\u5426"
             else -> null
         }

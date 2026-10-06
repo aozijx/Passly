@@ -106,7 +106,7 @@ object EntryTypeDefinitions {
     private fun wifiFields() = listOf(
         title(),
         field(FieldKey.WIFI_SSID, required = true),
-        secret(FieldKey.PASSWORD, required = true),
+        secret(FieldKey.PASSWORD),
         field(FieldKey.WIFI_SECURITY),
         field(FieldKey.WIFI_HIDDEN, EntryFieldValueType.BOOLEAN),
         secret(FieldKey.NOTES),

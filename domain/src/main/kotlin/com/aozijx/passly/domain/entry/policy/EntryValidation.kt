@@ -73,9 +73,14 @@ object EntryValidation {
     }
 
     private fun MutableSet<EntryViolation>.validateWifi(entry: Entry) {
-        val password = entry.secret.wifi?.password
-        requireValue(password, FieldKey.PASSWORD)
-        if (!password.isNullOrEmpty() && password.length < 8) invalid(FieldKey.PASSWORD, EntryViolationCode.INVALID_LENGTH)
+        val wifi = entry.secret.wifi ?: return
+        addAll(
+            WifiCredentialValidation.validate(
+                ssid = wifi.ssid,
+                password = wifi.password,
+                securityType = wifi.securityType,
+            ),
+        )
     }
 
     private fun MutableSet<EntryViolation>.validateSeedPhrase(entry: Entry) {

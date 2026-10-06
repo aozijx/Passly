@@ -152,7 +152,7 @@ internal fun toDetailPresentationModel(
                 revealedPassword != null,
                 state.fieldEdits.isEditing(RevealedFieldKey.PASSWORD),
                 state.fieldEdits.draft(RevealedFieldKey.PASSWORD),
-                entry.secret.wifi?.securityType ?: "WPA",
+                entry.secret.wifi?.securityType?.storedValue ?: "WPA",
                 entry.secret.wifi?.isHidden ?: false,
             ) else null,
             ssh = if (DetailSectionKey.SSH in state.sections) DetailSshUiModel(

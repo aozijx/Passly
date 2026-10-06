@@ -21,6 +21,7 @@ import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.credential.PasskeyCredential
 import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
+import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 
 object EntrySecretMapper {
@@ -55,7 +56,12 @@ object EntrySecretMapper {
                 SshCredentialPayload(it.privateKey, it.publicKey, it.passphrase)
             },
             wifi = (credential as? WifiCredential)?.let {
-                WifiCredentialPayload(it.ssid, it.password, it.securityType, it.isHidden)
+                WifiCredentialPayload(
+                    it.ssid,
+                    it.password,
+                    it.securityType.storedValue,
+                    it.isHidden,
+                )
             },
             passkey = (credential as? PasskeyCredential)?.let {
                 PasskeyCredentialPayload(
@@ -113,7 +119,14 @@ object EntrySecretMapper {
                 )
             },
             ssh?.let { SshCredential(it.privateKey, it.publicKey, it.passphrase) },
-            wifi?.let { WifiCredential(it.ssid, it.password, it.securityType, it.isHidden) },
+            wifi?.let {
+                WifiCredential(
+                    it.ssid,
+                    it.password,
+                    WifiSecurityType.fromStoredValue(it.securityType),
+                    it.isHidden,
+                )
+            },
             passkey?.let {
                 PasskeyCredential(
                     it.credentialId,

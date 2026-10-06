@@ -62,7 +62,10 @@ class DefaultEntryTypePolicy @Inject constructor() : EntryTypePolicy {
             supportsAutofill = true,
             suggestedCategory = "网络",
             summaryExtractor = { entry ->
-                "加密类型 ${entry.secret.wifi?.securityType ?: "WPA/WPA2"}"
+                val security = entry.secret.wifi?.securityType
+                    ?.storedValue
+                    ?: "WPA"
+                "加密类型 $security"
             }
         ),
         EntryType.BANK_CARD to PolicyConfig(

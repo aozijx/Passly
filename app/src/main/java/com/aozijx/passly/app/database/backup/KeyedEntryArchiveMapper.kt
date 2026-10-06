@@ -21,6 +21,7 @@ import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.credential.PasskeyCredential
 import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
+import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
@@ -81,7 +82,7 @@ internal object KeyedEntryArchiveMapper {
                     "Wi-Fi archive entry is missing wifi_ssid"
                 },
                 password = fields.text(FieldKey.PASSWORD),
-                securityType = fields.text(FieldKey.WIFI_SECURITY),
+                securityType = WifiSecurityType.fromStoredValue(fields.text(FieldKey.WIFI_SECURITY)),
                 isHidden = fields.boolean(FieldKey.WIFI_HIDDEN) ?: false,
             )
             EntryCredentialKind.PASSKEY -> PasskeyCredential(
@@ -196,7 +197,7 @@ private fun Entry.toArchiveFields(): List<BackupFieldRecord> = buildList {
         is WifiCredential -> {
             put(FieldKey.WIFI_SSID, BackupFieldValue.text(credential.ssid))
             putText(FieldKey.PASSWORD, credential.password)
-            putText(FieldKey.WIFI_SECURITY, credential.securityType)
+            putText(FieldKey.WIFI_SECURITY, credential.securityType.storedValue)
             put(FieldKey.WIFI_HIDDEN, BackupFieldValue.boolean(credential.isHidden))
         }
         is PasskeyCredential -> {
