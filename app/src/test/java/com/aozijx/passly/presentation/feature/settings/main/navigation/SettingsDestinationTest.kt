@@ -26,18 +26,30 @@ class SettingsDestinationTest {
     fun everyDetailRouteIsRegisteredExactlyOnceWithStableKeys() {
         val routes = settingsDetailRoutes()
 
-        assertEquals(11, routes.size)
+        assertEquals(12, routes.size)
         assertEquals(routes.size, routes.distinct().size)
         assertEquals(routes.size, routes.map(SettingsDestination::route).distinct().size)
         assertTrue(SettingsDestination.Main !in routes)
         assertEquals(
             setOf(
-                "settings/security", "settings/privacy", "settings/appearance",
+                "settings/security", "settings/privacy", "settings/permissions", "settings/appearance",
                 "settings/interface", "settings/interaction", "settings/autofill",
                 "settings/data", "settings/backup_restore", "settings/notifications",
                 "settings/recovery_code", "settings/general",
             ),
             routes.map(SettingsDestination::route).toSet(),
+        )
+    }
+
+    @Test
+    fun permissionsFollowPrivacyInSecuritySection() {
+        val securityGroups = SettingsGroup.entries.filter {
+            it.sectionTitleRes == com.aozijx.passly.R.string.settings_section_security
+        }
+
+        assertEquals(
+            listOf(SettingsGroup.SECURITY, SettingsGroup.PRIVACY, SettingsGroup.PERMISSIONS),
+            securityGroups,
         )
     }
 }

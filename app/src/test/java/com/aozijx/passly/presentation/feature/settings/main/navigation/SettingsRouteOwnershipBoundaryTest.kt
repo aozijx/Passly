@@ -70,4 +70,18 @@ class SettingsRouteOwnershipBoundaryTest {
         assertTrue(File(dataUiRoot, "DataManagementSection.kt").isFile)
         assertFalse(File(dataUiRoot, "model/DataManagementUiModels.kt").exists())
     }
+
+    @Test
+    fun `permissions destination has one route owner`() {
+        val sourceRoot = listOf(File("src/main/java"), File("app/src/main/java"))
+            .firstOrNull(File::isDirectory) ?: error("Cannot locate app source root")
+        val route = sourceRoot.resolve(
+            "com/aozijx/passly/presentation/feature/settings/main/navigation/core/" +
+                "PermissionsRoute.kt",
+        ).readText()
+
+        assertTrue(route.contains("PermissionManagementViewModel"))
+        assertTrue(route.contains("PermissionManagementScreen"))
+        assertTrue(route.contains("rememberPermissionRequestHost"))
+    }
 }

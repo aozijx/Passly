@@ -5,6 +5,7 @@ import com.aozijx.passly.presentation.feature.settings.main.navigation.autofill.
 import com.aozijx.passly.presentation.feature.settings.main.navigation.core.AppearanceRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.core.InterfaceRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.core.PrivacyRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.core.PermissionsRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.core.RecoveryCodeRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.core.SecurityRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.data.BackupRoute
@@ -25,6 +26,7 @@ internal fun SettingsDetailRoute(
         SettingsDestination.Main -> SettingsDetailPlaceholder()
         SettingsDestination.Security -> SecurityRoute(onBack)
         SettingsDestination.Privacy -> PrivacyRoute(onBack)
+        SettingsDestination.Permissions -> PermissionsRoute(onBack)
         SettingsDestination.Appearance -> AppearanceRoute(onBack)
         SettingsDestination.Interface -> InterfaceRoute(onBack)
         SettingsDestination.Interaction -> InteractionRoute(onBack)

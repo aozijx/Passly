@@ -8,7 +8,7 @@ import java.io.Serializable
 sealed class SettingsDestination(val route: String) : Serializable {
     companion object {
         private val destinations by lazy {
-            listOf(Security, Privacy, Appearance, Interface, Interaction, Autofill,
+            listOf(Security, Privacy, Permissions, Appearance, Interface, Interaction, Autofill,
                 DataManagement, BackupRestore, Notifications, RecoveryCode, General)
                 .associateBy(SettingsDestination::route)
         }
@@ -25,6 +25,10 @@ sealed class SettingsDestination(val route: String) : Serializable {
 
     data object Privacy : SettingsDestination("settings/privacy") {
         private fun readResolve(): Any = Privacy
+    }
+
+    data object Permissions : SettingsDestination("settings/permissions") {
+        private fun readResolve(): Any = Permissions
     }
 
     data object Appearance : SettingsDestination("settings/appearance") {
@@ -67,6 +71,7 @@ sealed class SettingsDestination(val route: String) : Serializable {
 internal fun settingsDetailRoutes(): List<SettingsDestination> = listOf(
     SettingsDestination.Security,
     SettingsDestination.Privacy,
+    SettingsDestination.Permissions,
     SettingsDestination.Appearance,
     SettingsDestination.Interface,
     SettingsDestination.Interaction,

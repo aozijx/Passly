@@ -20,6 +20,8 @@
     <string name="settings_page_notifications_summary">系统通知、应用消息与分类</string>
     <string name="settings_page_privacy">隐私保护</string>
     <string name="settings_page_privacy_summary">防截屏、翻转锁定</string>
+    <string name="settings_page_permissions">权限管理</string>
+    <string name="settings_page_permissions_summary">相机、通知与备份文件夹访问</string>
     <string name="settings_page_recovery_code_summary">紧急解锁Passly</string>
     <string name="settings_page_security">解锁与锁定</string>
     <string name="settings_page_security_summary">密码、生物识别、自动锁定</string>
@@ -30,6 +32,40 @@
     <string name="settings_section_security">安全</string>
     <string name="settings_title">设置</string>
     <string name="settings_select_item_hint">选择设置项</string>
+
+    <!-- Permission management -->
+    <string name="settings_permissions_runtime_section">运行时权限</string>
+    <string name="settings_permissions_camera">相机</string>
+    <string name="settings_permissions_notifications">通知</string>
+    <string name="settings_permissions_status_granted">已授权；可前往系统设置撤销或管理</string>
+    <string name="settings_permissions_status_requestable">尚未授权，可由 Passly 请求</string>
+    <string name="settings_permissions_status_settings_required">需要在系统设置中重新授权</string>
+    <string name="settings_permissions_status_not_applicable">当前 Android 版本不需要此权限</string>
+    <string name="settings_permissions_action_request">授权</string>
+    <string name="settings_permissions_action_manage">管理</string>
+    <string name="settings_permissions_backup_section">文件夹访问</string>
+    <string name="settings_permissions_backup_directory">默认备份文件夹</string>
+    <string name="settings_permissions_backup_not_configured">尚未选择文件夹</string>
+    <string name="settings_permissions_backup_granted">已获得持久写入授权</string>
+    <string name="settings_permissions_backup_grant_missing">文件夹授权已失效，请重新选择</string>
+    <string name="settings_permissions_backup_unavailable">文件夹或文档提供方当前不可用</string>
+    <string name="settings_permissions_backup_select">选择</string>
+    <string name="settings_permissions_backup_change">更改</string>
+    <string name="settings_permissions_backup_reauthorize">重新授权</string>
+    <string name="settings_permissions_backup_clear">清除文件夹设置</string>
+    <string name="settings_permissions_capabilities_section">应用能力</string>
+    <string name="settings_permissions_capability_network">网络访问</string>
+    <string name="settings_permissions_capability_network_summary">加载网站图标及访问网络服务</string>
+    <string name="settings_permissions_capability_vibration">振动反馈</string>
+    <string name="settings_permissions_capability_vibration_summary">为重要操作提供触觉反馈</string>
+    <string name="settings_permissions_capability_biometric">生物识别</string>
+    <string name="settings_permissions_capability_biometric_summary">调用系统生物识别界面解锁</string>
+    <string name="settings_permissions_capability_app_visibility">应用识别</string>
+    <string name="settings_permissions_capability_app_visibility_summary">识别受支持的浏览器和应用以匹配自动填充</string>
+    <string name="settings_permissions_request_denied">权限未授予</string>
+    <string name="settings_permissions_request_busy">另一个权限请求正在进行</string>
+    <string name="settings_permissions_request_unavailable">当前无法请求此权限</string>
+    <string name="settings_permissions_system_settings_unavailable">无法打开系统应用设置</string>
 
     <!-- Appearance -->
     <string name="settings_dynamic_color">动态取色</string>

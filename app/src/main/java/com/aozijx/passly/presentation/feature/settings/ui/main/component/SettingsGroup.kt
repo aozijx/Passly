@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.SpaceDashboard
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.TouchApp
@@ -50,6 +51,13 @@ internal enum class SettingsGroup(
         titleRes = R.string.settings_page_privacy,
         subtitleRes = R.string.settings_page_privacy_summary,
         routeKey = "settings/privacy"
+    ),
+    PERMISSIONS(
+        sectionTitleRes = R.string.settings_section_security,
+        icon = Icons.Default.Security,
+        titleRes = R.string.settings_page_permissions,
+        subtitleRes = R.string.settings_page_permissions_summary,
+        routeKey = "settings/permissions"
     ),
     INTERACTION(
         sectionTitleRes = R.string.settings_section_features,
