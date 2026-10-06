@@ -19,6 +19,12 @@ class BackupDirectoryOwnershipBoundaryTest {
         val oldFlow = sourceRoot.resolve(
             "com/aozijx/passly/presentation/feature/settings/backup/BackupFlows.kt",
         )
+        val directoryAccess = sourceRoot.resolve(
+            "com/aozijx/passly/app/backup/AndroidBackupDirectoryAccess.kt",
+        ).readText()
+        val exportStorage = sourceRoot.resolve(
+            "com/aozijx/passly/feature/backup/internal/archive/platform/BackupExportStorageSupport.kt",
+        ).readText()
 
         assertFalse(route.contains("contentResolver"))
         assertFalse(route.contains("takePersistableUriPermission"))
@@ -27,5 +33,9 @@ class BackupDirectoryOwnershipBoundaryTest {
         assertTrue(viewModel.contains("BackupDirectorySettingsInteractor"))
         assertFalse(viewModel.contains("BackupDirectorySettingsRepository"))
         assertFalse(oldFlow.exists())
+        assertTrue(directoryAccess.contains("BackupDirectoryGrantInspector"))
+        assertTrue(exportStorage.contains("BackupDirectoryGrantInspector"))
+        assertFalse(directoryAccess.contains("persistedUriPermissions"))
+        assertFalse(exportStorage.contains("persistedUriPermissions"))
     }
 }

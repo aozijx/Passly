@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.core.net.toUri
+import com.aozijx.passly.app.backup.BackupDirectoryGrantInspector
+import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport.ExportTarget
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,7 +22,8 @@ import javax.inject.Singleton
  */
 @Singleton
 internal class BackupExportStorageSupport @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    private val grantInspector: BackupDirectoryGrantInspector,
 ) : BackupStorageSupport {
 
     override fun buildBackupFileName(
@@ -39,7 +42,9 @@ internal class BackupExportStorageSupport @Inject constructor(
     ): Result<ExportTarget> = runCatching {
         val grantedTreeUri = directoryTreeUri.toUri()
         val resolver = context.contentResolver
-        require(hasTreeUriPermission(context, grantedTreeUri)) {
+        require(
+            grantInspector.inspect(directoryTreeUri) == PersistedDirectoryAccessStatus.GRANTED
+        ) {
             "目录访问权限已失效，请重新选择备份目录"
         }
         val treeUri =
@@ -62,11 +67,4 @@ internal class BackupExportStorageSupport @Inject constructor(
     override fun deleteDocument(uri: Uri): Boolean = runCatching {
         DocumentsContract.deleteDocument(context.contentResolver, uri)
     }.getOrDefault(false)
-
-    companion object {
-        private fun hasTreeUriPermission(context: Context, treeUri: Uri): Boolean =
-            context.contentResolver.persistedUriPermissions.any {
-                it.uri == treeUri && it.isWritePermission
-            }
-    }
 }

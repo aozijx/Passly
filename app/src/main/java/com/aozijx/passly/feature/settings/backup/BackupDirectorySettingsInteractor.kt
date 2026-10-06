@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.settings.backup
 
+import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -7,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 
 interface BackupDirectoryAccess {
+    fun inspect(treeUri: String?): PersistedDirectoryAccessStatus
     suspend fun acquire(treeUri: String): BackupDirectoryGrantResult
     suspend fun release(treeUri: String)
 }
@@ -29,6 +31,9 @@ class BackupDirectorySettingsInteractor @Inject constructor(
     private val directoryAccess: BackupDirectoryAccess,
 ) {
     val directoryUri: Flow<String?> = settingsRepository.backupDirectoryUri
+
+    fun inspect(treeUri: String?): PersistedDirectoryAccessStatus =
+        directoryAccess.inspect(treeUri)
 
     suspend fun select(treeUri: String?): BackupDirectorySelectionResult {
         if (treeUri == null) return BackupDirectorySelectionResult.Cancelled
