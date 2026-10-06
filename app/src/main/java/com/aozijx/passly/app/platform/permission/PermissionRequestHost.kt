@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
+import com.aozijx.passly.core.permission.access.RuntimePermissionAccessResolver
 import com.aozijx.passly.core.permission.catalog.RuntimePermissionCatalog
 import com.aozijx.passly.core.permission.contract.PermissionRequestHistory
 import com.aozijx.passly.core.permission.contract.PermissionStatusReader
@@ -21,6 +22,7 @@ import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
 import com.aozijx.passly.core.permission.model.PermissionRequestStart
 import com.aozijx.passly.core.permission.model.PermissionStatus
 import com.aozijx.passly.core.permission.model.RuntimePermission
+import com.aozijx.passly.core.permission.model.RuntimePermissionAccess
 import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
 import com.aozijx.passly.core.permission.request.PermissionRequestLease
 
@@ -45,6 +47,7 @@ fun ProvidePermissionServices(
 @Stable
 interface PermissionRequestHost {
     fun status(permission: RuntimePermission): PermissionStatus
+    fun access(permission: RuntimePermission): RuntimePermissionAccess
     fun shouldShowRationale(permission: RuntimePermission): Boolean
     fun request(permission: RuntimePermission): PermissionRequestStart
 }
@@ -94,6 +97,13 @@ fun rememberPermissionRequestHost(
         object : PermissionRequestHost {
             override fun status(permission: RuntimePermission): PermissionStatus =
                 services.statusReader.status(permission)
+
+            override fun access(permission: RuntimePermission): RuntimePermissionAccess =
+                RuntimePermissionAccessResolver.resolve(
+                    status = status(permission),
+                    requestedBefore = services.requestHistory.wasRequested(permission),
+                    shouldShowRationale = shouldShowRationale(permission)
+                )
 
             override fun shouldShowRationale(permission: RuntimePermission): Boolean {
                 val host = activity ?: return false
