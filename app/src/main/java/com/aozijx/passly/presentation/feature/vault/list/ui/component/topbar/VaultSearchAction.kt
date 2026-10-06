@@ -20,6 +20,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
+import com.aozijx.passly.presentation.feature.vault.list.VaultRouteRequest
 import com.aozijx.passly.presentation.feature.vault.list.ui.search.VaultSearchPhase
 import com.aozijx.passly.presentation.feature.vault.list.ui.search.VaultSearchStateHolder
 
@@ -30,7 +31,7 @@ internal fun VaultSearchAction(
     uiState: VaultTopBarUiState,
     searchStateHolder: VaultSearchStateHolder,
     onAction: (VaultUiAction) -> Unit,
-    onSettingsClick: () -> Unit,
+    onRouteRequest: (VaultRouteRequest) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var moreMenuExpanded by remember { mutableStateOf(false) }
@@ -72,7 +73,7 @@ internal fun VaultSearchAction(
             onDismissRequest = { moreMenuExpanded = false },
             uiState = uiState.menu,
             onAction = onAction,
-            onSettingsClick = onSettingsClick,
+            onRouteRequest = onRouteRequest,
         )
     }
 }

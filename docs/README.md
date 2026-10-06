@@ -38,6 +38,8 @@
 
 ## 功能
 
+- [保险箱列表](features/vault-list.md)
+- [二维码扫描](features/scanner.md)
 - [权限与消息](features/permissions-and-messages.md)
 - [Credential Manager Provider](features/credential-manager.md)
 

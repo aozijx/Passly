@@ -8,6 +8,14 @@ import org.junit.Test
 
 class VaultNavigationTest {
     @Test
+    fun `vault route request exposes only scanner and settings exits`() {
+        assertEquals(
+            setOf("OpenScanner", "OpenSettings"),
+            VaultRouteRequest::class.java.declaredClasses.map { it.simpleName }.toSet(),
+        )
+    }
+
+    @Test
     fun `built in editor type opens its navigation destination`() {
         var otpOpened = false
         val actions = mutableListOf<VaultUiAction>()

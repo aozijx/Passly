@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
+import com.aozijx.passly.presentation.feature.vault.list.VaultRouteRequest
 import com.aozijx.passly.presentation.feature.vault.list.ui.search.VaultSearchStateHolder
 
 @Composable
@@ -17,7 +18,7 @@ internal fun VaultSearchHeader(
     uiState: VaultTopBarUiState,
     searchStateHolder: VaultSearchStateHolder,
     onAction: (VaultUiAction) -> Unit,
-    onSettingsClick: () -> Unit,
+    onRouteRequest: (VaultRouteRequest) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val motionScheme = MaterialTheme.motionScheme
@@ -49,7 +50,7 @@ internal fun VaultSearchHeader(
                 uiState = uiState,
                 searchStateHolder = searchStateHolder,
                 onAction = onAction,
-                onSettingsClick = onSettingsClick,
+                onRouteRequest = onRouteRequest,
                 modifier = Modifier.align(Alignment.CenterEnd),
             )
         }

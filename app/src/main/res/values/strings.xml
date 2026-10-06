@@ -76,6 +76,7 @@
     <string name="vault_clear_filter">清除筛选</string>
     <string name="vault_menu_filter">分类筛选</string>
     <string name="vault_menu_hide_totp">隐藏动态口令</string>
+    <string name="vault_menu_scan_qr">扫描二维码</string>
     <string name="vault_menu_show_totp">显示动态口令</string>
     <string name="tab_all">全部</string>
 

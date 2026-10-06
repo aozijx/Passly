@@ -13,6 +13,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
+import com.aozijx.passly.presentation.feature.vault.list.VaultRouteRequest
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultSortUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.search.VaultSearchState
 import com.aozijx.passly.presentation.feature.vault.list.ui.search.VaultSearchStateHolder
@@ -26,8 +27,8 @@ class VaultTopBarMenuTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun moreButtonNavigatesSubmenuAndInvokesSettingsNavigation() {
-        var settingsClicked = false
+    fun moreMenuDispatchesScannerAndSettingsRequestsAfterDismissing() {
+        val requests = mutableListOf<VaultRouteRequest>()
         val context = InstrumentationRegistry.getInstrumentation().targetContext
 
         composeRule.setContent {
@@ -37,23 +38,34 @@ class VaultTopBarMenuTest {
                     searchStateHolder = searchStateHolder(),
                     scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(),
                     onAction = {},
-                    onSettingsClick = { settingsClicked = true },
+                    onRouteRequest = requests::add,
                 )
             }
         }
 
         composeRule.onNodeWithContentDescription(context.getString(R.string.more)).performClick()
-        composeRule.onNodeWithText(context.getString(R.string.vault_menu_sort)).performClick()
-        composeRule.waitForIdle()
-        composeRule.onNodeWithText(context.getString(R.string.sort_last_used))
+        composeRule.onNodeWithText(context.getString(R.string.vault_menu_scan_qr))
             .assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.back)).performClick()
+            .performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText(context.getString(R.string.vault_menu_scan_qr))
+            .assertDoesNotExist()
+        composeRule.runOnIdle {
+            assertTrue(requests == listOf(VaultRouteRequest.OpenScanner))
+        }
+
+        composeRule.onNodeWithContentDescription(context.getString(R.string.more)).performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithText(context.getString(R.string.settings_title))
             .assertIsDisplayed()
             .performClick()
         composeRule.runOnIdle {
-            assertTrue(settingsClicked)
+            assertTrue(
+                requests == listOf(
+                    VaultRouteRequest.OpenScanner,
+                    VaultRouteRequest.OpenSettings,
+                ),
+            )
         }
     }
 
@@ -68,7 +80,7 @@ class VaultTopBarMenuTest {
                     searchStateHolder = searchStateHolder(),
                     scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(),
                     onAction = {},
-                    onSettingsClick = {},
+                    onRouteRequest = {},
                 )
             }
         }
@@ -98,7 +110,7 @@ class VaultTopBarMenuTest {
                     searchStateHolder = searchStateHolder(),
                     scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(),
                     onAction = {},
-                    onSettingsClick = {},
+                    onRouteRequest = {},
                 )
             }
         }

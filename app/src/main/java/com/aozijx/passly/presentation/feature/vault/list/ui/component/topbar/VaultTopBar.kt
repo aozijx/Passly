@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
+import com.aozijx.passly.presentation.feature.vault.list.VaultRouteRequest
 import com.aozijx.passly.presentation.feature.vault.list.ui.search.VaultSearchStateHolder
 import com.aozijx.passly.presentation.shared.components.topbar.passlyCompactTopAppBarColors
 import com.aozijx.passly.presentation.shared.components.topbar.topAppBarContainerColor
@@ -32,7 +33,7 @@ fun VaultTopBar(
     searchStateHolder: VaultSearchStateHolder,
     scrollBehavior: TopAppBarScrollBehavior,
     onAction: (VaultUiAction) -> Unit,
-    onSettingsClick: () -> Unit,
+    onRouteRequest: (VaultRouteRequest) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
@@ -74,7 +75,7 @@ fun VaultTopBar(
                     uiState = uiState,
                     searchStateHolder = searchStateHolder,
                     onAction = onAction,
-                    onSettingsClick = onSettingsClick,
+                    onRouteRequest = onRouteRequest,
                 )
             },
         )

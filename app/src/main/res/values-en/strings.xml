@@ -73,6 +73,7 @@
     <string name="vault_clear_filter">Clear filter</string>
     <string name="vault_menu_filter">Filter by category</string>
     <string name="vault_menu_hide_totp">Hide codes</string>
+    <string name="vault_menu_scan_qr">Scan QR code</string>
     <string name="vault_menu_show_totp">Show codes</string>
     <string name="tab_all">All</string>
 

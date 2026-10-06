@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
+import com.aozijx.passly.presentation.feature.vault.list.VaultRouteRequest
 import com.aozijx.passly.presentation.feature.vault.list.toFeatureModel
 
 @Composable
@@ -22,7 +23,7 @@ internal fun VaultDropdownMenu(
     onDismissRequest: () -> Unit,
     uiState: VaultMenuUiState,
     onAction: (VaultUiAction) -> Unit,
-    onSettingsClick: () -> Unit,
+    onRouteRequest: (VaultRouteRequest) -> Unit,
 ) {
     var currentPage by remember(expanded) { mutableStateOf(VaultMenuPage.MAIN) }
     var categorySearchQuery by remember(expanded) { mutableStateOf("") }
@@ -62,7 +63,7 @@ internal fun VaultDropdownMenu(
                             onAction(VaultUiAction.ToggleShowTotpCode)
                         },
                         onDismissRequest = onDismissRequest,
-                        onSettingsClick = onSettingsClick,
+                        onRouteRequest = onRouteRequest,
                     )
                 }
             },

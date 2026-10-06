@@ -10,6 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -27,6 +28,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.presentation.feature.vault.list.VaultRouteRequest
 import com.aozijx.passly.presentation.shared.components.menu.MenuOptionText
 import com.aozijx.passly.presentation.shared.components.menu.selectedMenuModifier
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultSortUiModel
@@ -38,7 +40,7 @@ internal fun MainMenuContent(
     showTOTPCode: Boolean,
     onToggleTotpVisibility: () -> Unit,
     onDismissRequest: () -> Unit,
-    onSettingsClick: () -> Unit
+    onRouteRequest: (VaultRouteRequest) -> Unit,
 ) {
     DropdownMenuItem(
         text = { Text(stringResource(R.string.vault_menu_sort)) },
@@ -72,10 +74,18 @@ internal fun MainMenuContent(
     )
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
     DropdownMenuItem(
+        text = { Text(stringResource(R.string.vault_menu_scan_qr)) },
+        onClick = {
+            onDismissRequest()
+            onRouteRequest(VaultRouteRequest.OpenScanner)
+        },
+        leadingIcon = { Icon(Icons.Default.QrCodeScanner, null) },
+    )
+    DropdownMenuItem(
         text = { Text(stringResource(R.string.settings_title)) },
         onClick = {
             onDismissRequest()
-            onSettingsClick()
+            onRouteRequest(VaultRouteRequest.OpenSettings)
         },
         leadingIcon = { Icon(Icons.Default.Settings, null) }
     )

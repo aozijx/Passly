@@ -1,6 +1,7 @@
 package com.aozijx.passly.presentation.feature.vault.list
 
 import java.io.File
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -13,7 +14,9 @@ class VaultListActionOwnershipBoundaryTest {
             "com/aozijx/passly/presentation/feature/vault/list",
         )
         val route = listRoot.resolve("VaultRoute.kt").readText()
+        val routeRequest = listRoot.resolve("VaultRouteRequest.kt").readText()
         val pageActions = listRoot.resolve("VaultUiAction.kt").readText()
+        val viewModel = listRoot.resolve("VaultViewModel.kt").readText()
         val screen = listRoot.resolve("ui/VaultScreen.kt").readText()
         val models = listRoot.resolve("ui/model/VaultListUiModels.kt").readText()
         val itemActions = listRoot.resolve("ui/model/VaultListItemAction.kt")
@@ -38,6 +41,14 @@ class VaultListActionOwnershipBoundaryTest {
         assertFalse(models.contains("VaultListEvent"))
         assertFalse(models.contains("VaultListItemEvent"))
         assertTrue(pageActions.contains("sealed interface VaultUiAction"))
+        assertTrue(routeRequest.contains("data object OpenScanner"))
+        assertTrue(routeRequest.contains("data object OpenSettings"))
+        assertEquals(2, Regex("data object").findAll(routeRequest).count())
+        assertFalse(pageActions.contains("Scanner"))
+        assertFalse(viewModel.contains("showScanner"))
+        assertTrue(route.contains("var showScanner by rememberSaveable"))
+        assertTrue(route.contains("ScannerRoute("))
+        assertTrue(route.contains("VaultUiAction.AddScannedOtp"))
         assertFalse(models.contains("sealed interface VaultListItemAction"))
         assertFalse(listRoot.resolve("ui/component/topbar/VaultMoreMenu.kt").exists())
         assertTrue(menuState.exists())
@@ -45,12 +56,18 @@ class VaultListActionOwnershipBoundaryTest {
         assertTrue(itemActions.readText().contains("sealed interface VaultListItemAction"))
         assertTrue(screen.contains("onAction: (VaultUiAction) -> Unit"))
         assertTrue(screen.contains("onItemAction: (VaultListItemAction) -> Unit"))
+        assertTrue(screen.contains("onRouteRequest: (VaultRouteRequest) -> Unit"))
+        assertFalse(screen.contains("onSettingsClick"))
         assertFalse(screen.contains("handleTopBarAction"))
         assertFalse(topBarState.contains("VaultTopBarAction"))
         assertTrue(topBarState.contains("val menu: VaultMenuUiState"))
         assertFalse(searchAction.contains("VaultMoreAction("))
         assertFalse(searchAction.contains("VaultMoreMenu("))
         assertTrue(searchAction.contains("VaultDropdownMenu("))
+        assertTrue(searchAction.contains("onRouteRequest: (VaultRouteRequest) -> Unit"))
+        assertFalse(searchAction.contains("onSettingsClick"))
+        assertTrue(dropdownMenu.contains("onRouteRequest: (VaultRouteRequest) -> Unit"))
+        assertFalse(dropdownMenu.contains("onSettingsClick"))
         assertFalse(searchAction.contains("AnimatedContent"))
         assertTrue(dropdownMenu.contains("expanded: Boolean"))
         assertTrue(dropdownMenu.contains("uiState: VaultMenuUiState"))

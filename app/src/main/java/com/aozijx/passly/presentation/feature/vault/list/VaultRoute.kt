@@ -8,12 +8,17 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.presentation.feature.scanner.ScannerOtpConfirmation
+import com.aozijx.passly.presentation.feature.scanner.ScannerRoute
 import com.aozijx.passly.presentation.feature.vault.list.action.CopyFieldLabelProvider
 import com.aozijx.passly.presentation.feature.vault.list.action.VaultCopyRequest
 import com.aozijx.passly.presentation.feature.vault.list.action.handleSwipeAction
@@ -37,6 +42,7 @@ internal fun VaultRoute(
     val context = LocalContext.current
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    var showScanner by rememberSaveable { mutableStateOf(false) }
 
     val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
     val vaultDisplayConfig by vaultDisplayViewModel.config.collectAsStateWithLifecycle()
@@ -124,9 +130,24 @@ internal fun VaultRoute(
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
         onAction = vaultViewModel::onAction,
-        onSettingsClick = navigation.onSettingsClick,
+        onRouteRequest = { request ->
+            when (request) {
+                VaultRouteRequest.OpenScanner -> showScanner = true
+                VaultRouteRequest.OpenSettings -> navigation.onSettingsClick()
+            }
+        },
         onAddTypeSelected = { type ->
             routeAddTypeSelection(type, navigation, vaultViewModel::onAction)
         },
     )
+
+    if (showScanner) {
+        ScannerRoute(
+            otpConfirmation = ScannerOtpConfirmation.ADD_TO_VAULT,
+            onOtpConfirmed = { config ->
+                vaultViewModel.onAction(VaultUiAction.AddScannedOtp(config))
+            },
+            onDismiss = { showScanner = false },
+        )
+    }
 }

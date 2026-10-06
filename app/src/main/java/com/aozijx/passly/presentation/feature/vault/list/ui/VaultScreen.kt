@@ -19,6 +19,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.paging.PagingData
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
+import com.aozijx.passly.presentation.feature.vault.list.VaultRouteRequest
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.fab.VaultFab
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.list.VaultListBody
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.topbar.VaultMenuUiState
@@ -44,7 +45,7 @@ fun VaultScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onAction: (VaultUiAction) -> Unit,
-    onSettingsClick: () -> Unit,
+    onRouteRequest: (VaultRouteRequest) -> Unit,
     onAddTypeSelected: (VaultAddTypeUiModel) -> Unit,
 ) {
     var isFabVisible by rememberSaveable { mutableStateOf(true) }
@@ -107,7 +108,7 @@ fun VaultScreen(
                 searchStateHolder = searchStateHolder,
                 scrollBehavior = scrollBehavior,
                 onAction = onAction,
-                onSettingsClick = onSettingsClick,
+                onRouteRequest = onRouteRequest,
             )
         },
         floatingActionButton = {
