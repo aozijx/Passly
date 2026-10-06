@@ -14,7 +14,7 @@ internal class PullToSearchGestureState(
         }
         if (deltaY == 0f) return
         val previousDistance = distance
-        distance = (distance + deltaY).coerceAtLeast(0f)
+        distance = (distance + deltaY).coerceIn(0f, thresholdPx)
         if (distance == previousDistance) return
         onProgressChanged((distance / thresholdPx).coerceIn(0f, 1f))
     }

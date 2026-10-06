@@ -78,4 +78,4 @@ internal fun rememberPullToSearchNestedScrollConnection(
     }
 }
 
-private val PullToSearchThreshold = 88.dp
+private val PullToSearchThreshold = 160.dp

@@ -22,6 +22,24 @@ class PullToSearchGestureStateTest {
     }
 
     @Test
+    fun `reverse drag cancels an armed pull without hidden overshoot`() {
+        var triggers = 0
+        val progress = mutableListOf<Float>()
+        val state = PullToSearchGestureState(
+            thresholdPx = 160f,
+            onProgressChanged = progress::add,
+            onTriggered = { triggers++ },
+        )
+
+        state.onPull(deltaY = 300f, isAtTop = true)
+        state.consumeReversePull(deltaY = -20f)
+        state.onRelease()
+
+        assertEquals(0, triggers)
+        assertEquals(listOf(1f, 0.875f, 0f), progress)
+    }
+
+    @Test
     fun `release below threshold does not trigger search`() {
         var triggers = 0
         val progress = mutableListOf<Float>()
