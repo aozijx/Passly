@@ -5,29 +5,23 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.aozijx.passly.core.permission.model.RuntimePermissionAccess
 import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
-import com.aozijx.passly.feature.settings.backup.BackupDirectorySelectionResult
-import com.aozijx.passly.feature.settings.backup.BackupDirectorySettingsInteractor
+import com.aozijx.passly.feature.settings.backup.BackupDirectoryStatusInteractor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class PermissionManagementViewModel @Inject constructor(
-    private val directorySettings: BackupDirectorySettingsInteractor,
+    private val directoryAccessStatus: BackupDirectoryStatusInteractor,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(PermissionManagementUiState())
     val uiState: StateFlow<PermissionManagementUiState> = _uiState.asStateFlow()
-
-    private val _effects = Channel<PermissionManagementEffect>(Channel.BUFFERED)
-    val effects = _effects.receiveAsFlow()
 
     private var runtimeAccess: Map<RuntimePermission, RuntimePermissionAccess> = emptyMap()
     private var directoryUri: String? = null
@@ -35,7 +29,7 @@ class PermissionManagementViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            directorySettings.directoryUri.collectLatest { uri ->
+            directoryAccessStatus.directoryUri.collectLatest { uri ->
                 directoryUri = uri
                 directoryStatus = inspectDirectory(uri)
                 publishState()
@@ -59,31 +53,8 @@ class PermissionManagementViewModel @Inject constructor(
         }
     }
 
-    fun directoryPicked(uri: String?) {
-        viewModelScope.launch {
-            when (directorySettings.select(uri)) {
-                BackupDirectorySelectionResult.Saved -> refreshDirectoryAccess()
-                BackupDirectorySelectionResult.Cancelled -> _effects.send(
-                    PermissionManagementEffect.BackupDirectorySelectionCancelled,
-                )
-                BackupDirectorySelectionResult.PermissionDenied -> _effects.send(
-                    PermissionManagementEffect.BackupDirectoryPermissionDenied,
-                )
-                BackupDirectorySelectionResult.Unavailable -> _effects.send(
-                    PermissionManagementEffect.BackupDirectoryUnavailable,
-                )
-            }
-        }
-    }
-
-    fun clearDirectory() {
-        viewModelScope.launch {
-            directorySettings.clear(directoryUri)
-        }
-    }
-
     private suspend fun inspectDirectory(uri: String?): PersistedDirectoryAccessStatus =
-        withContext(Dispatchers.IO) { directorySettings.inspect(uri) }
+        withContext(Dispatchers.IO) { directoryAccessStatus.inspect(uri) }
 
     private fun publishState() {
         _uiState.value = PermissionManagementUiMapper.map(

@@ -16,7 +16,6 @@ class PermissionManagementUiMapperTest {
             RuntimePermissionAccess.GRANTED to RuntimePermissionUiAction.OPEN_SETTINGS,
             RuntimePermissionAccess.REQUESTABLE to RuntimePermissionUiAction.REQUEST,
             RuntimePermissionAccess.SETTINGS_REQUIRED to RuntimePermissionUiAction.OPEN_SETTINGS,
-            RuntimePermissionAccess.NOT_APPLICABLE to RuntimePermissionUiAction.NONE,
         )
 
         expectedActions.forEach { (access, expectedAction) ->
@@ -33,19 +32,22 @@ class PermissionManagementUiMapperTest {
     }
 
     @Test
-    fun `directory states expose select change and recovery actions`() {
-        val expected = mapOf(
-            PersistedDirectoryAccessStatus.NOT_CONFIGURED to
-                (BackupDirectoryUiAction.SELECT to false),
-            PersistedDirectoryAccessStatus.GRANTED to
-                (BackupDirectoryUiAction.CHANGE to true),
-            PersistedDirectoryAccessStatus.GRANT_MISSING to
-                (BackupDirectoryUiAction.REAUTHORIZE to true),
-            PersistedDirectoryAccessStatus.UNAVAILABLE to
-                (BackupDirectoryUiAction.REAUTHORIZE to true),
+    fun `runtime permissions that do not apply to this Android version are omitted`() {
+        val state = PermissionManagementUiMapper.map(
+            runtimeAccess = mapOf(
+                RuntimePermission.CAMERA to RuntimePermissionAccess.GRANTED,
+                RuntimePermission.POST_NOTIFICATIONS to RuntimePermissionAccess.NOT_APPLICABLE,
+            ),
+            directoryUri = null,
+            directoryStatus = PersistedDirectoryAccessStatus.NOT_CONFIGURED,
         )
 
-        expected.forEach { (status, expectation) ->
+        assertEquals(listOf(RuntimePermission.CAMERA), state.runtimePermissions.map { it.permission })
+    }
+
+    @Test
+    fun `directory states remain informational`() {
+        PersistedDirectoryAccessStatus.entries.forEach { status ->
             val state = PermissionManagementUiMapper.map(
                 runtimeAccess = emptyMap(),
                 directoryUri = "content://tree/backup".takeUnless {
@@ -55,9 +57,18 @@ class PermissionManagementUiMapperTest {
             )
 
             assertEquals(status, state.backupDirectory.status)
-            assertEquals(expectation.first, state.backupDirectory.action)
-            assertEquals(expectation.second, state.backupDirectory.canClear)
         }
+    }
+
+    @Test
+    fun `configured directory exposes a readable label without leaking the full uri`() {
+        val state = PermissionManagementUiMapper.map(
+            runtimeAccess = emptyMap(),
+            directoryUri = "content://provider/tree/primary%3ABackups",
+            directoryStatus = PersistedDirectoryAccessStatus.GRANTED,
+        )
+
+        assertEquals("Backups", state.backupDirectory.label)
     }
 
     @Test

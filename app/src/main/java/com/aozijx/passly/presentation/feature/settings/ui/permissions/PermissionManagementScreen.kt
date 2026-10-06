@@ -1,14 +1,16 @@
 package com.aozijx.passly.presentation.feature.settings.ui.permissions
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.permission.catalog.ManifestCapability
 import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.aozijx.passly.core.permission.model.RuntimePermissionAccess
 import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.presentation.feature.settings.permissions.BackupDirectoryUiAction
 import com.aozijx.passly.presentation.feature.settings.permissions.PermissionManagementScreenAction
 import com.aozijx.passly.presentation.feature.settings.permissions.PermissionManagementUiState
 import com.aozijx.passly.presentation.feature.settings.permissions.RuntimePermissionUiAction
@@ -36,12 +38,6 @@ internal fun PermissionManagementScreen(
                     val title = stringResource(item.permission.titleRes)
                     val subtitle = stringResource(item.access.summaryRes)
                     when (item.action) {
-                        RuntimePermissionUiAction.NONE -> settingsGroupItem(
-                            key = "permissions.runtime.${item.permission.name}",
-                            title = title,
-                            subtitle = subtitle,
-                            enabled = false,
-                        )
                         RuntimePermissionUiAction.REQUEST,
                         RuntimePermissionUiAction.OPEN_SETTINGS -> navigationSettingsGroupItem(
                             key = "permissions.runtime.${item.permission.name}",
@@ -62,49 +58,37 @@ internal fun PermissionManagementScreen(
         }
 
         item {
+            val directoryStatus = stringResource(state.backupDirectory.status.summaryRes)
+            val directorySummary = state.backupDirectory.label?.let { label ->
+                stringResource(
+                    R.string.settings_permissions_backup_status_with_name,
+                    label,
+                    directoryStatus,
+                )
+            } ?: directoryStatus
             SettingsSectionTitle(
                 text = stringResource(R.string.settings_permissions_backup_section),
+                modifier = Modifier.padding(top = 24.dp),
             )
             SegmentedSettingsGroup(
-                items = buildList {
-                    add(
-                        navigationSettingsGroupItem(
-                            key = "permissions.backup.directory",
-                            title = stringResource(R.string.settings_permissions_backup_directory),
-                            subtitle = stringResource(state.backupDirectory.status.summaryRes),
-                            value = stringResource(state.backupDirectory.action.labelRes),
-                            onClick = {
-                                onAction(
-                                    PermissionManagementScreenAction.SelectBackupDirectory,
-                                )
-                            },
-                        ),
-                    )
-                    if (state.backupDirectory.canClear) {
-                        add(
-                            navigationSettingsGroupItem(
-                                key = "permissions.backup.clear",
-                                title = stringResource(
-                                    R.string.settings_permissions_backup_clear,
-                                ),
-                                subtitle = stringResource(
-                                    R.string.settings_backup_clear_directory_message,
-                                ),
-                                onClick = {
-                                    onAction(
-                                        PermissionManagementScreenAction.ClearBackupDirectory,
-                                    )
-                                },
-                            ),
-                        )
-                    }
-                },
+                items = listOf(
+                    navigationSettingsGroupItem(
+                        key = "permissions.backup.directory",
+                        title = stringResource(R.string.settings_permissions_backup_directory),
+                        subtitle = directorySummary,
+                        value = stringResource(R.string.settings_permissions_backup_manage),
+                        onClick = {
+                            onAction(PermissionManagementScreenAction.OpenBackupSettings)
+                        },
+                    ),
+                ),
             )
         }
 
         item {
             SettingsSectionTitle(
                 text = stringResource(R.string.settings_permissions_capabilities_section),
+                modifier = Modifier.padding(top = 24.dp),
             )
             SegmentedSettingsGroup(
                 items = state.manifestCapabilities.map { item ->
@@ -132,14 +116,13 @@ private val RuntimePermissionAccess.summaryRes: Int
         RuntimePermissionAccess.SETTINGS_REQUIRED ->
             R.string.settings_permissions_status_settings_required
         RuntimePermissionAccess.NOT_APPLICABLE ->
-            R.string.settings_permissions_status_not_applicable
+            error("Not-applicable permissions are not displayed")
     }
 
 private val RuntimePermissionUiAction.labelRes: Int
     get() = when (this) {
         RuntimePermissionUiAction.REQUEST -> R.string.settings_permissions_action_request
         RuntimePermissionUiAction.OPEN_SETTINGS -> R.string.settings_permissions_action_manage
-        RuntimePermissionUiAction.NONE -> error("Non-interactive permissions have no action label")
     }
 
 private val PersistedDirectoryAccessStatus.summaryRes: Int
@@ -152,14 +135,6 @@ private val PersistedDirectoryAccessStatus.summaryRes: Int
             R.string.settings_permissions_backup_grant_missing
         PersistedDirectoryAccessStatus.UNAVAILABLE ->
             R.string.settings_permissions_backup_unavailable
-    }
-
-private val BackupDirectoryUiAction.labelRes: Int
-    get() = when (this) {
-        BackupDirectoryUiAction.SELECT -> R.string.settings_permissions_backup_select
-        BackupDirectoryUiAction.CHANGE -> R.string.settings_permissions_backup_change
-        BackupDirectoryUiAction.REAUTHORIZE ->
-            R.string.settings_permissions_backup_reauthorize
     }
 
 private val ManifestCapability.titleRes: Int

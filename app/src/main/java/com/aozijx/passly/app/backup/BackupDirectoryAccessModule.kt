@@ -1,6 +1,7 @@
 package com.aozijx.passly.app.backup
 
 import com.aozijx.passly.feature.settings.backup.BackupDirectoryAccess
+import com.aozijx.passly.feature.settings.backup.BackupDirectoryStatusReader
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -13,4 +14,9 @@ internal abstract class BackupDirectoryAccessModule {
     abstract fun bindBackupDirectoryAccess(
         implementation: AndroidBackupDirectoryAccess,
     ): BackupDirectoryAccess
+
+    @Binds
+    abstract fun bindBackupDirectoryStatusReader(
+        implementation: AndroidBackupDirectoryAccess,
+    ): BackupDirectoryStatusReader
 }

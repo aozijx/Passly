@@ -61,6 +61,16 @@ fun SettingsRoute(
     val navigateBack: () -> Unit = {
         scope.launch { navigator.navigateBack(backBehavior) }
     }
+    val navigateToDetail: (SettingsDestination) -> Unit = { route ->
+        if (navigator.currentDestination?.contentKey != route) {
+            scope.launch {
+                navigator.navigateTo(
+                    pane = ListDetailPaneScaffoldRole.Detail,
+                    contentKey = route,
+                )
+            }
+        }
+    }
 
 
     if (isSinglePane) {
@@ -77,14 +87,7 @@ fun SettingsRoute(
                     onBack = onOuterBack,
                     onGroupClick = { routeKey ->
                         val route = SettingsDestination.fromRouteKey(routeKey) ?: return@SettingsMainPage
-                        if (navigator.currentDestination?.contentKey != route) {
-                            scope.launch {
-                                navigator.navigateTo(
-                                    pane = ListDetailPaneScaffoldRole.Detail,
-                                    contentKey = route
-                                )
-                            }
-                        }
+                        navigateToDetail(route)
                     },
                     selectedRouteKey = null,
                     listState = mainListState,
@@ -94,6 +97,7 @@ fun SettingsRoute(
                 SettingsDetailRoute(
                     route = renderedDetailRoute,
                     onOpenTrash = onOpenTrash,
+                    onNavigateTo = navigateToDetail,
                     onBack = navigateBack,
                 )
             },
@@ -112,14 +116,7 @@ fun SettingsRoute(
                         onGroupClick = { routeKey ->
                             val route = SettingsDestination.fromRouteKey(routeKey)
                                 ?: return@SettingsMainPage
-                            if (navigator.currentDestination?.contentKey != route) {
-                                scope.launch {
-                                    navigator.navigateTo(
-                                        pane = ListDetailPaneScaffoldRole.Detail,
-                                        contentKey = route,
-                                    )
-                                }
-                            }
+                            navigateToDetail(route)
                         },
                         selectedRouteKey = selectedRoute?.route,
                         listState = mainListState,
@@ -156,6 +153,7 @@ fun SettingsRoute(
                         SettingsDetailRoute(
                             route = route,
                             onOpenTrash = onOpenTrash,
+                            onNavigateTo = navigateToDetail,
                             onBack = null,
                         )
                     }

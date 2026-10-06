@@ -4,6 +4,7 @@ import com.aozijx.passly.core.permission.catalog.ManifestCapability
 import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.aozijx.passly.core.permission.model.RuntimePermissionAccess
 import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
+import com.aozijx.passly.core.platform.path.UriDisplayNameFormatter
 
 object PermissionManagementUiMapper {
     fun map(
@@ -11,8 +12,9 @@ object PermissionManagementUiMapper {
         directoryUri: String?,
         directoryStatus: PersistedDirectoryAccessStatus,
     ): PermissionManagementUiState = PermissionManagementUiState(
-        runtimePermissions = RuntimePermission.entries.map { permission ->
+        runtimePermissions = RuntimePermission.entries.mapNotNull { permission ->
             val access = runtimeAccess[permission] ?: RuntimePermissionAccess.NOT_APPLICABLE
+            if (access == RuntimePermissionAccess.NOT_APPLICABLE) return@mapNotNull null
             RuntimePermissionUiModel(
                 permission = permission,
                 access = access,
@@ -20,10 +22,8 @@ object PermissionManagementUiMapper {
             )
         },
         backupDirectory = BackupDirectoryUiModel(
-            uri = directoryUri,
+            label = UriDisplayNameFormatter.format(directoryUri),
             status = directoryStatus,
-            action = directoryStatus.toUiAction(),
-            canClear = !directoryUri.isNullOrBlank(),
         ),
         manifestCapabilities = ManifestCapability.entries.map { capability ->
             ManifestCapabilityUiModel(capability = capability)
@@ -35,12 +35,6 @@ private fun RuntimePermissionAccess.toUiAction(): RuntimePermissionUiAction = wh
     RuntimePermissionAccess.GRANTED,
     RuntimePermissionAccess.SETTINGS_REQUIRED -> RuntimePermissionUiAction.OPEN_SETTINGS
     RuntimePermissionAccess.REQUESTABLE -> RuntimePermissionUiAction.REQUEST
-    RuntimePermissionAccess.NOT_APPLICABLE -> RuntimePermissionUiAction.NONE
-}
-
-private fun PersistedDirectoryAccessStatus.toUiAction(): BackupDirectoryUiAction = when (this) {
-    PersistedDirectoryAccessStatus.NOT_CONFIGURED -> BackupDirectoryUiAction.SELECT
-    PersistedDirectoryAccessStatus.GRANTED -> BackupDirectoryUiAction.CHANGE
-    PersistedDirectoryAccessStatus.GRANT_MISSING,
-    PersistedDirectoryAccessStatus.UNAVAILABLE -> BackupDirectoryUiAction.REAUTHORIZE
+    RuntimePermissionAccess.NOT_APPLICABLE ->
+        error("Not-applicable permissions must be filtered before UI mapping")
 }

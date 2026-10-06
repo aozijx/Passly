@@ -42,20 +42,24 @@ flowchart LR
 - 产品开关与授权状态分离；永久拒绝后由 UI 引导系统设置，中心不自动循环请求。
 - `PermissionRequestHost.access()` 每次从系统状态、请求历史和 rationale 计算
   `GRANTED`、`REQUESTABLE`、`SETTINGS_REQUIRED` 或 `NOT_APPLICABLE`，不缓存授权真值。
-- `PermissionsRoute` 拥有 Activity Result launcher、应用详情设置 Intent、生命周期刷新与用户反馈；
+- `PermissionsRoute` 只拥有运行时权限的 Activity Result launcher、应用详情设置 Intent、生命周期刷新与用户反馈；
   `PermissionManagementScreen` 只渲染不可变状态并发送语义动作。
 - 权限管理页进入和恢复到前台时重新读取运行时权限；请求结果返回后也立即刷新，因而能反映用户在
   系统设置中的授权或撤销。
+- 页面只展示当前 Android 版本适用的运行时权限。`POST_NOTIFICATIONS` 在 API 33 以下不显示，
+  不用无关的新权限替代不适用项。
 
 ## 备份目录访问
 
 备份目录通过 `OpenDocumentTree` 和 persisted URI grant 管理，不声明也不请求
 `READ_EXTERNAL_STORAGE`、`WRITE_EXTERNAL_STORAGE` 或 `MANAGE_EXTERNAL_STORAGE`。
 
-`BackupDirectoryGrantInspector` 是目录授权状态的唯一 Android 读取者。设置页和实际导出共用它，
-统一得到 `NOT_CONFIGURED`、`GRANTED`、`GRANT_MISSING` 或 `UNAVAILABLE`。权限管理页提供选择、
-更换、重新授权和清除目录设置；清除只释放 grant 与设置，不删除已导出的文件。检查只验证 URI、
-persisted write grant 及 provider/tree 可用性，不创建、截断或删除文档。
+`BackupDirectoryGrantInspector` 是目录授权状态的唯一 Android 读取者。权限管理页、备份页和实际导出
+共用它，统一得到 `NOT_CONFIGURED`、`GRANTED`、`GRANT_MISSING` 或 `UNAVAILABLE`。权限管理页只展示
+目录名与授权状态，并导航到备份设置；备份页是选择、更换、重新授权和清除目录设置的唯一 UI 所有者。
+权限 ViewModel 只依赖 `BackupDirectoryStatusInteractor`，不能访问选择或清除操作。
+清除只释放 grant 与设置，不删除已导出的文件。检查只验证 URI、persisted write grant 及
+provider/tree 可用性，不创建、截断或删除文档。
 
 新增运行时权限必须更新枚举、Catalog、Manifest、请求所有者、状态/拒绝测试和本表。Hilt EntryPoint
 service locator、Boolean requester、旧 `AppPermission` 混合模型不得恢复。

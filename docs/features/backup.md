@@ -98,8 +98,9 @@ JSON 使用 resourcesBase64 保存资源；加密格式的 ZIP 使用 resources/
 默认备份目录使用 Storage Access Framework 的 tree URI 与 persisted write grant，不使用传统存储权限。
 应用不声明或请求 `READ_EXTERNAL_STORAGE`、`WRITE_EXTERNAL_STORAGE`、`MANAGE_EXTERNAL_STORAGE`。
 `BackupDirectoryGrantInspector` 是设置页和导出链路共享的唯一授权检查器，区分未配置、授权有效、授权
-丢失和 provider/tree 不可用。用户可在“权限管理”中选择、更换、重新授权或清除目录；清除目录设置不会
-删除任何已经导出的文件。检查访问状态不得创建、覆盖、截断或删除测试文件。
+丢失和 provider/tree 不可用。“权限管理”只展示目录授权状态并导航到“备份与恢复”；选择、更换、
+重新授权和清除目录只在“备份与恢复”中执行。清除目录设置不会删除任何已经导出的文件。检查访问状态
+不得创建、覆盖、截断或删除测试文件。
 
 1. 已解锁且通过备份导出认证后，Room Snapshot Reader 读取所选条目、完整字段、关系和资源。
 2. KeyedEntryArchiveMapper 将 Domain Entry 映射为 keyed records。

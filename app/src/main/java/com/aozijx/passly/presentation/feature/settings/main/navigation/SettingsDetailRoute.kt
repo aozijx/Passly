@@ -19,6 +19,7 @@ import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsDetailPla
 internal fun SettingsDetailRoute(
     route: SettingsDestination?,
     onOpenTrash: () -> Unit,
+    onNavigateTo: (SettingsDestination) -> Unit,
     onBack: (() -> Unit)?,
 ) {
     when (route) {
@@ -26,7 +27,12 @@ internal fun SettingsDetailRoute(
         SettingsDestination.Main -> SettingsDetailPlaceholder()
         SettingsDestination.Security -> SecurityRoute(onBack)
         SettingsDestination.Privacy -> PrivacyRoute(onBack)
-        SettingsDestination.Permissions -> PermissionsRoute(onBack)
+        SettingsDestination.Permissions -> PermissionsRoute(
+            onOpenBackupSettings = {
+                onNavigateTo(SettingsDestination.BackupRestore)
+            },
+            onBack = onBack,
+        )
         SettingsDestination.Appearance -> AppearanceRoute(onBack)
         SettingsDestination.Interface -> InterfaceRoute(onBack)
         SettingsDestination.Interaction -> InteractionRoute(onBack)

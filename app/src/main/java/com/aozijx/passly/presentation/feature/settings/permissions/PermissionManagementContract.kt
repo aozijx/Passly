@@ -20,22 +20,13 @@ data class RuntimePermissionUiModel(
 enum class RuntimePermissionUiAction {
     REQUEST,
     OPEN_SETTINGS,
-    NONE,
 }
 
 data class BackupDirectoryUiModel(
-    val uri: String? = null,
+    val label: String? = null,
     val status: PersistedDirectoryAccessStatus =
         PersistedDirectoryAccessStatus.NOT_CONFIGURED,
-    val action: BackupDirectoryUiAction = BackupDirectoryUiAction.SELECT,
-    val canClear: Boolean = false,
 )
-
-enum class BackupDirectoryUiAction {
-    SELECT,
-    CHANGE,
-    REAUTHORIZE,
-}
 
 data class ManifestCapabilityUiModel(
     val capability: ManifestCapability,
@@ -47,12 +38,5 @@ sealed interface PermissionManagementScreenAction {
         val permission: RuntimePermission,
     ) : PermissionManagementScreenAction
 
-    data object SelectBackupDirectory : PermissionManagementScreenAction
-    data object ClearBackupDirectory : PermissionManagementScreenAction
-}
-
-enum class PermissionManagementEffect {
-    BackupDirectorySelectionCancelled,
-    BackupDirectoryPermissionDenied,
-    BackupDirectoryUnavailable,
+    data object OpenBackupSettings : PermissionManagementScreenAction
 }

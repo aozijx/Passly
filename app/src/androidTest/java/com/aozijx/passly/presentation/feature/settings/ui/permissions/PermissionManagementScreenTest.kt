@@ -11,7 +11,6 @@ import com.aozijx.passly.core.permission.catalog.ManifestCapability
 import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.aozijx.passly.core.permission.model.RuntimePermissionAccess
 import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
-import com.aozijx.passly.presentation.feature.settings.permissions.BackupDirectoryUiAction
 import com.aozijx.passly.presentation.feature.settings.permissions.BackupDirectoryUiModel
 import com.aozijx.passly.presentation.feature.settings.permissions.ManifestCapabilityUiModel
 import com.aozijx.passly.presentation.feature.settings.permissions.PermissionManagementScreenAction
@@ -42,71 +41,23 @@ class PermissionManagementScreenTest {
     }
 
     @Test
-    fun configuredDirectoryEmitsChangeAndClear() {
+    fun directoryRowOpensBackupSettings() {
         val actions = mutableListOf<PermissionManagementScreenAction>()
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         setContent(
             actions = actions,
             directory = BackupDirectoryUiModel(
-                uri = "content://tree/backup",
+                label = "backup",
                 status = PersistedDirectoryAccessStatus.GRANTED,
-                action = BackupDirectoryUiAction.CHANGE,
-                canClear = true,
             ),
         )
 
         composeRule.onNodeWithText(
-            context.getString(R.string.settings_permissions_backup_change),
-        ).performClick()
-        composeRule.onNodeWithText(
-            context.getString(R.string.settings_permissions_backup_clear),
+            context.getString(R.string.settings_permissions_backup_manage),
         ).performClick()
 
         assertEquals(
-            listOf(
-                PermissionManagementScreenAction.SelectBackupDirectory,
-                PermissionManagementScreenAction.ClearBackupDirectory,
-            ),
-            actions,
-        )
-    }
-
-    @Test
-    fun unconfiguredDirectoryEmitsSelect() {
-        val actions = mutableListOf<PermissionManagementScreenAction>()
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        setContent(actions)
-
-        composeRule.onNodeWithText(
-            context.getString(R.string.settings_permissions_backup_select),
-        ).performClick()
-
-        assertEquals(
-            listOf(PermissionManagementScreenAction.SelectBackupDirectory),
-            actions,
-        )
-    }
-
-    @Test
-    fun missingDirectoryGrantEmitsReauthorize() {
-        val actions = mutableListOf<PermissionManagementScreenAction>()
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        setContent(
-            actions = actions,
-            directory = BackupDirectoryUiModel(
-                uri = "content://tree/backup",
-                status = PersistedDirectoryAccessStatus.GRANT_MISSING,
-                action = BackupDirectoryUiAction.REAUTHORIZE,
-                canClear = true,
-            ),
-        )
-
-        composeRule.onNodeWithText(
-            context.getString(R.string.settings_permissions_backup_reauthorize),
-        ).performClick()
-
-        assertEquals(
-            listOf(PermissionManagementScreenAction.SelectBackupDirectory),
+            listOf(PermissionManagementScreenAction.OpenBackupSettings),
             actions,
         )
     }
@@ -124,10 +75,7 @@ class PermissionManagementScreenTest {
     private fun setContent(
         actions: MutableList<PermissionManagementScreenAction>,
         directory: BackupDirectoryUiModel = BackupDirectoryUiModel(
-            uri = null,
             status = PersistedDirectoryAccessStatus.NOT_CONFIGURED,
-            action = BackupDirectoryUiAction.SELECT,
-            canClear = false,
         ),
     ) {
         composeRule.setContent {

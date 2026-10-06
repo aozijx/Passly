@@ -12,10 +12,11 @@
 
 设置中的“权限管理”页是用户查看和管理系统访问能力的统一入口，但不是新的权限真值存储：
 
-- Camera 与 Notifications 展示当前 Runtime permission snapshot；页面恢复前台或请求结束后重读系统状态；
-- 备份文件夹展示 SAF persisted URI grant，并可直接选择、更换、重新授权或清除；
+- Camera 与 Notifications 展示当前版本适用的 Runtime permission snapshot；页面恢复前台或请求结束后
+  重读系统状态，API 33 以下不显示不适用的 Notifications 行；
+- 备份文件夹展示 SAF persisted URI grant，点击后进入唯一负责选择、更换、重新授权和清除的备份设置页；
 - Network、Vibration、Biometric 与 Package visibility 仅说明 Manifest capability，不提供伪开关。
 
-Route 负责 Activity Result、系统设置 Intent、生命周期与一次性反馈；Screen 只接收不可变模型并发送
-语义动作。功能页仍可在真正需要权限的时刻请求，但必须复用 `PermissionRequestHost`，不得各自读取
-Android permission 或复制永久拒绝判断。
+权限 Route 负责运行时权限 Activity Result、系统设置 Intent、生命周期与一次性反馈；备份 Route 独立
+负责 SAF 目录选择。Screen 只接收不可变模型并发送语义动作。功能页仍可在真正需要权限的时刻请求，
+但必须复用 `PermissionRequestHost`，不得各自读取 Android permission 或复制永久拒绝判断。

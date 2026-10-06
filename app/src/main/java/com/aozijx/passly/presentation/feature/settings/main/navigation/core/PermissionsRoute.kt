@@ -5,15 +5,11 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -26,22 +22,19 @@ import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
 import com.aozijx.passly.core.permission.model.PermissionRequestStart
 import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.aozijx.passly.core.permission.model.RuntimePermissionAccess
-import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
-import com.aozijx.passly.presentation.feature.settings.permissions.PermissionManagementEffect
 import com.aozijx.passly.presentation.feature.settings.permissions.PermissionManagementScreenAction
 import com.aozijx.passly.presentation.feature.settings.permissions.PermissionManagementViewModel
-import com.aozijx.passly.presentation.feature.settings.ui.data.BackupDirectoryClearDialog
 import com.aozijx.passly.presentation.feature.settings.ui.permissions.PermissionManagementScreen
 
 @Composable
 internal fun PermissionsRoute(
+    onOpenBackupSettings: () -> Unit,
     onBack: (() -> Unit)?,
 ) {
     val context = LocalContext.current
     val viewModel: PermissionManagementViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var permissionResultGeneration by remember { mutableIntStateOf(0) }
-    var showClearDirectoryDialog by rememberSaveable { mutableStateOf(false) }
 
     val permissionDeniedMessage = stringResource(R.string.settings_permissions_request_denied)
     val permissionBusyMessage = stringResource(R.string.settings_permissions_request_busy)
@@ -50,15 +43,6 @@ internal fun PermissionsRoute(
     )
     val settingsUnavailableMessage = stringResource(
         R.string.settings_permissions_system_settings_unavailable,
-    )
-    val selectionCancelledMessage = stringResource(
-        R.string.settings_backup_directory_selection_cancelled,
-    )
-    val directoryPermissionDeniedMessage = stringResource(
-        R.string.settings_backup_directory_permission_denied,
-    )
-    val directoryUnavailableMessage = stringResource(
-        R.string.settings_backup_directory_unavailable,
     )
 
     fun showMessage(message: String) {
@@ -111,12 +95,6 @@ internal fun PermissionsRoute(
         }
     }
 
-    val backupPathPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocumentTree(),
-    ) { uri ->
-        viewModel.directoryPicked(uri?.toString())
-    }
-
     LaunchedEffect(permissionHost, permissionResultGeneration) {
         refreshRuntimeAccess()
     }
@@ -127,26 +105,6 @@ internal fun PermissionsRoute(
         onPauseOrDispose { }
     }
 
-    LaunchedEffect(
-        viewModel,
-        selectionCancelledMessage,
-        directoryPermissionDeniedMessage,
-        directoryUnavailableMessage,
-    ) {
-        viewModel.effects.collect { effect ->
-            showMessage(
-                when (effect) {
-                    PermissionManagementEffect.BackupDirectorySelectionCancelled ->
-                        selectionCancelledMessage
-                    PermissionManagementEffect.BackupDirectoryPermissionDenied ->
-                        directoryPermissionDeniedMessage
-                    PermissionManagementEffect.BackupDirectoryUnavailable ->
-                        directoryUnavailableMessage
-                },
-            )
-        }
-    }
-
     PermissionManagementScreen(
         state = state,
         onBack = onBack,
@@ -154,21 +112,9 @@ internal fun PermissionsRoute(
             when (action) {
                 is PermissionManagementScreenAction.RuntimePermissionSelected ->
                     handleRuntimePermission(action.permission)
-                PermissionManagementScreenAction.SelectBackupDirectory ->
-                    backupPathPicker.launch(BackupStorageSupport.defaultDocumentsTreeUri())
-                PermissionManagementScreenAction.ClearBackupDirectory ->
-                    showClearDirectoryDialog = true
+                PermissionManagementScreenAction.OpenBackupSettings ->
+                    onOpenBackupSettings()
             }
         },
     )
-
-    if (showClearDirectoryDialog) {
-        BackupDirectoryClearDialog(
-            onConfirm = {
-                viewModel.clearDirectory()
-                showClearDirectoryDialog = false
-            },
-            onDismiss = { showClearDirectoryDialog = false },
-        )
-    }
 }

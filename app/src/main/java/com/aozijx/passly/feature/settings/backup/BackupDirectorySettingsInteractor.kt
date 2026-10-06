@@ -7,8 +7,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 
-interface BackupDirectoryAccess {
+fun interface BackupDirectoryStatusReader {
     fun inspect(treeUri: String?): PersistedDirectoryAccessStatus
+}
+
+interface BackupDirectoryAccess : BackupDirectoryStatusReader {
     suspend fun acquire(treeUri: String): BackupDirectoryGrantResult
     suspend fun release(treeUri: String)
 }
