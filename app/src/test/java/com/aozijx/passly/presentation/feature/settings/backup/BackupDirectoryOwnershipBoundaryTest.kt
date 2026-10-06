@@ -25,6 +25,9 @@ class BackupDirectoryOwnershipBoundaryTest {
         val exportStorage = sourceRoot.resolve(
             "com/aozijx/passly/feature/backup/internal/archive/platform/BackupExportStorageSupport.kt",
         ).readText()
+        val fileStore = sourceRoot.resolve(
+            "com/aozijx/passly/feature/backup/internal/archive/AndroidBackupFileStore.kt",
+        ).readText()
 
         assertFalse(route.contains("contentResolver"))
         assertFalse(route.contains("takePersistableUriPermission"))
@@ -37,5 +40,7 @@ class BackupDirectoryOwnershipBoundaryTest {
         assertTrue(exportStorage.contains("BackupDirectoryGrantInspector"))
         assertFalse(directoryAccess.contains("persistedUriPermissions"))
         assertFalse(exportStorage.contains("persistedUriPermissions"))
+        assertFalse(fileStore.contains("persistedUriPermissions"))
+        assertTrue(fileStore.contains("openFileDescriptor(parsed, \"rw\")"))
     }
 }

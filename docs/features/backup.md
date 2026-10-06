@@ -1,7 +1,7 @@
 # Backup 功能与 Passly 备份协议
 
 状态：正式格式 v1
-最后修订：2026-10-05
+最后修订：2026-10-06
 
 Backup 是 app 内的业务 feature。UI 与流程编排位于 presentation/feature/backup，格式、协议、加密和文件 I/O 位于 feature/backup/internal，Room 快照适配位于 app/database/backup。备份是可恢复的 Vault 业务数据归档，不是 Room 数据库镜像。
 
@@ -94,6 +94,12 @@ Resource 元数据包含 id、entryId、kind、size、sha256 及可选文件名�
 JSON 使用 resourcesBase64 保存资源；加密格式的 ZIP 使用 resources/<resource-id>。路径穿越、未知 ZIP 条目、重复条目、未声明资源、截断和尾随数据一律拒绝。
 
 ## 6. 导出流程
+
+默认备份目录使用 Storage Access Framework 的 tree URI 与 persisted write grant，不使用传统存储权限。
+应用不声明或请求 `READ_EXTERNAL_STORAGE`、`WRITE_EXTERNAL_STORAGE`、`MANAGE_EXTERNAL_STORAGE`。
+`BackupDirectoryGrantInspector` 是设置页和导出链路共享的唯一授权检查器，区分未配置、授权有效、授权
+丢失和 provider/tree 不可用。用户可在“权限管理”中选择、更换、重新授权或清除目录；清除目录设置不会
+删除任何已经导出的文件。检查访问状态不得创建、覆盖、截断或删除测试文件。
 
 1. 已解锁且通过备份导出认证后，Room Snapshot Reader 读取所选条目、完整字段、关系和资源。
 2. KeyedEntryArchiveMapper 将 Domain Entry 映射为 keyed records。

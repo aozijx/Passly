@@ -56,13 +56,8 @@ internal class AndroidBackupFileStore @Inject constructor(
     override suspend fun checkWritable(uri: String): AppResult<Unit> =
         AppResult.runSuspendCatching {
             val parsed = uri.toUri()
-            val persistedWritable = context.contentResolver.persistedUriPermissions.any {
-                it.uri == parsed && it.isWritePermission
-            }
-            if (!persistedWritable) {
-                context.contentResolver.openFileDescriptor(parsed, "rw")
-                    ?.use { /* 打开但不写入，避免截断现有文件。 */ }
-                    ?: throw BackupFailed()
-            }
+            context.contentResolver.openFileDescriptor(parsed, "rw")
+                ?.use { /* 打开但不写入，避免截断现有文件。 */ }
+                ?: throw BackupFailed()
         }
 }
