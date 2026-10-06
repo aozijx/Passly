@@ -91,6 +91,11 @@ Compose 使用 `LazyPagingItems` 消费数据：首次加载显示全页进度�
 `VaultSearchStateHolder` 单独持有。TopBar、筛选栏和列表 Section 直接发送页面级 Action，不再经过
 `VaultListEvent` 或 TopBar 专属 Action 的一对一翻译层。
 
+搜索焦点采用单向控制：点击搜索框或下拉手势先向 `VaultSearchStateHolder` 发送显式编辑请求，状态机进入
+`EDITING` 后输入框才允许获得焦点并由唯一的焦点 Effect 请求键盘。浏览或结果阶段禁止输入框接受系统焦点
+恢复；焦点回调只确认已请求的焦点或处理焦点丢失，不能反向启用搜索。这样重新进入应用时不会把残留焦点
+解释成新的搜索操作。
+
 More 菜单的展开状态只属于稳定的搜索动作锚点；`DropdownMenu` 始终保留在该锚点下，仅由 `expanded`
 控制显示，避免 Popup 被 More/Clear 动画层反复创建。菜单页和查询状态以展开会话为 key，关闭后自然重置。
 菜单渲染数据集中在 `VaultMenuUiState`，`VaultSearchAction` 直接连接 `VaultDropdownMenu`，不保留只拆参数和转发

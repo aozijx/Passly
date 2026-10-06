@@ -52,12 +52,13 @@ data class VaultSearchState(
     )
 
     fun onFocusChanged(focused: Boolean, query: String): VaultSearchState = when {
-        focused -> copy(
+        focused && phase == VaultSearchPhase.EDITING -> copy(
             phase = VaultSearchPhase.EDITING,
             pullProgress = 0f,
             focusAcquired = true,
         )
 
+        focused -> this
         phase == VaultSearchPhase.EDITING && focusAcquired -> settle(query)
         else -> this
     }

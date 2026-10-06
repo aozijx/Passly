@@ -33,6 +33,15 @@ class VaultSearchStateTest {
     }
 
     @Test
+    fun `restored focus cannot start editing without an explicit request`() {
+        val state = VaultSearchState.initial(isSearchActive = false, query = "")
+            .onFocusChanged(focused = true, query = "")
+
+        assertEquals(VaultSearchPhase.BROWSING, state.phase)
+        assertFalse(state.focusAcquired)
+    }
+
+    @Test
     fun `gesture reset cannot cancel editing after pull threshold`() {
         val state = VaultSearchState.initial(isSearchActive = false, query = "")
             .onPullProgressChanged(0.9f)

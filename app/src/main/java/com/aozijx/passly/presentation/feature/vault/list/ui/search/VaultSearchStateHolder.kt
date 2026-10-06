@@ -35,14 +35,11 @@ class VaultSearchStateHolder internal constructor(
     fun focusChanged(focused: Boolean) {
         val nextState = uiState.onFocusChanged(focused, currentQuery())
         uiState = nextState
-        when {
-            focused && !currentSearchActive() -> {
-                onExpandBars()
-                onSearchActiveChange(true)
-            }
-            !focused &&
-                nextState.phase == VaultSearchPhase.BROWSING &&
-                currentSearchActive() -> onSearchActiveChange(false)
+        if (!focused &&
+            nextState.phase == VaultSearchPhase.BROWSING &&
+            currentSearchActive()
+        ) {
+            onSearchActiveChange(false)
         }
     }
 

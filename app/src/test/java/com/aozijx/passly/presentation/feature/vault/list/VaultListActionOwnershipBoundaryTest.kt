@@ -8,6 +8,23 @@ import org.junit.Test
 
 class VaultListActionOwnershipBoundaryTest {
     @Test
+    fun `search field accepts focus only after an explicit edit request`() {
+        val listRoot = sourceRoot().resolve(
+            "com/aozijx/passly/presentation/feature/vault/list",
+        )
+        val searchBar = listRoot.resolve(
+            "ui/component/topbar/VaultSearchBar.kt",
+        ).readText()
+        val searchHeader = listRoot.resolve(
+            "ui/component/topbar/VaultSearchHeader.kt",
+        ).readText()
+
+        assertTrue(searchBar.contains("focusProperties"))
+        assertTrue(searchBar.contains("canFocus = isEditing"))
+        assertTrue(searchHeader.contains("onClick = searchStateHolder::request"))
+    }
+
+    @Test
     fun `vault sections send the page action without event translation bridges`() {
         val sourceRoot = sourceRoot()
         val listRoot = sourceRoot.resolve(

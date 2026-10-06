@@ -7,6 +7,25 @@ import org.junit.Test
 
 class VaultSearchStateHolderTest {
     @Test
+    fun `unexpected platform focus does not activate search`() {
+        var searchActive = false
+        val holder = VaultSearchStateHolder(
+            initialState = VaultSearchState.initial(searchActive, ""),
+            initialSearchActive = searchActive,
+            currentQuery = { "" },
+            currentSearchActive = { searchActive },
+            onQueryChange = {},
+            onSearchActiveChange = { searchActive = it },
+            onExpandBars = {},
+        )
+
+        holder.focusChanged(true)
+
+        assertFalse(searchActive)
+        assertEquals(VaultSearchPhase.BROWSING, holder.uiState.phase)
+    }
+
+    @Test
     fun `clearing results clears query exits search and expands bars`() {
         var query = "mail"
         var searchActive = true

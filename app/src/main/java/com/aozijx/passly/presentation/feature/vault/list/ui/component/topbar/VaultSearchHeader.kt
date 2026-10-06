@@ -2,11 +2,15 @@ package com.aozijx.passly.presentation.feature.vault.list.ui.component.topbar
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
@@ -32,6 +36,7 @@ internal fun VaultSearchHeader(
         label = "VaultSearchExpansion",
     )
     val widthFraction = 0.94f + (0.06f * expansionProgress.coerceIn(0f, 1f))
+    val searchRequestInteractionSource = remember { MutableInteractionSource() }
 
     Box(
         modifier = modifier.fillMaxWidth(),
@@ -46,6 +51,17 @@ internal fun VaultSearchHeader(
                 onFocusChanged = searchStateHolder::focusChanged,
                 modifier = Modifier.fillMaxWidth(),
             )
+            if (!searchStateHolder.uiState.isEditing) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = searchRequestInteractionSource,
+                            indication = null,
+                            onClick = searchStateHolder::request,
+                        ),
+                )
+            }
             VaultSearchAction(
                 uiState = uiState,
                 searchStateHolder = searchStateHolder,
