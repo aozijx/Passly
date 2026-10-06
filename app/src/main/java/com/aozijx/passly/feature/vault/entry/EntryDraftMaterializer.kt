@@ -12,6 +12,8 @@ import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.CardCredential
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
+import com.aozijx.passly.domain.entry.model.credential.WifiCredential
+import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
@@ -25,6 +27,7 @@ class EntryDraftMaterializer @Inject constructor() {
             EntryType.LOGIN -> materializeLogin(draft, identity)
             EntryType.OTP -> materializeOtp(draft, identity)
             EntryType.BANK_CARD -> materializeBankCard(draft, identity)
+            EntryType.WIFI -> materializeWifi(draft, identity)
             else -> throw IllegalArgumentException("Entry creation is not supported for ${identity.type}")
         }
     }
@@ -89,6 +92,20 @@ class EntryDraftMaterializer @Inject constructor() {
         ),
     )
 
+    private fun materializeWifi(draft: EntryDraft, identity: EntryIdentity) = Entry(
+        identity = identity,
+        profile = draft.profile(),
+        secret = EntrySecret(
+            credential = WifiCredential(
+                ssid = requireNotNull(draft.text(FieldKey.WIFI_SSID)),
+                password = draft.text(FieldKey.PASSWORD),
+                securityType = WifiSecurityType.fromStoredValue(draft.text(FieldKey.WIFI_SECURITY)),
+                isHidden = draft.toggle(FieldKey.WIFI_HIDDEN),
+            ),
+            notes = draft.text(FieldKey.NOTES),
+        ),
+    )
+
     private fun EntryDraft.profile(
         username: String = "",
         associations: EntryAssociations = EntryAssociations(),
@@ -110,6 +127,9 @@ class EntryDraftMaterializer @Inject constructor() {
 
     private fun EntryDraft.longNumber(key: FieldKey): Long? =
         (this[key] as? EntryDraftValue.LongNumber)?.value
+
+    private fun EntryDraft.toggle(key: FieldKey): Boolean =
+        (this[key] as? EntryDraftValue.Toggle)?.enabled ?: false
 
     private inline fun <reified T : Enum<T>> EntryDraft.enumValue(key: FieldKey, default: T): T {
         val raw = text(key) ?: return default

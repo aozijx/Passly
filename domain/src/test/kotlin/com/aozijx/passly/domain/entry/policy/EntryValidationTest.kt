@@ -18,7 +18,7 @@ import org.junit.Test
 
 class EntryValidationTest {
     @Test
-    fun `validation returns stable codes rather than presentation text`() {
+    fun `login validation keeps optional username and returns stable password code`() {
         val violations = EntryValidation.validate(
             entry(
                 type = EntryType.LOGIN,
@@ -28,10 +28,7 @@ class EntryValidationTest {
         )
 
         assertEquals(
-            setOf(
-                EntryViolation(FieldKey.USERNAME, EntryViolationCode.REQUIRED),
-                EntryViolation(FieldKey.PASSWORD, EntryViolationCode.REQUIRED),
-            ),
+            setOf(EntryViolation(FieldKey.PASSWORD, EntryViolationCode.REQUIRED)),
             violations,
         )
     }

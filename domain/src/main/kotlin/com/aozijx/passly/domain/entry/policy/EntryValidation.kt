@@ -42,7 +42,6 @@ object EntryValidation {
     }
 
     private fun MutableSet<EntryViolation>.validateLogin(entry: Entry) {
-        requireValue(entry.profile.username, FieldKey.USERNAME)
         requireValue(entry.secret.login?.password, FieldKey.PASSWORD)
     }
 

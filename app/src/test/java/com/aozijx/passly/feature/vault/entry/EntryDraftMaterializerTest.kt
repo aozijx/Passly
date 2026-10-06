@@ -8,6 +8,7 @@ import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
@@ -96,6 +97,31 @@ class EntryDraftMaterializerTest {
         assertEquals("1 2 3 4", card.paymentPin)
         assertEquals("London", card.billingAddress)
         assertEquals("primary", entry.secret.notes)
+    }
+
+    @Test
+    fun materializeWifi_preservesCredentialAndMetadata() {
+        val entry = materializer.materialize(
+            draft = draft(EntryType.WIFI,
+                FieldKey.TITLE to EntryDraftValue.Text("Office network"),
+                FieldKey.WIFI_SSID to EntryDraftValue.Text("Passly"),
+                FieldKey.PASSWORD to EntryDraftValue.Text("abcde"),
+                FieldKey.WIFI_SECURITY to EntryDraftValue.Text("WEP"),
+                FieldKey.WIFI_HIDDEN to EntryDraftValue.Toggle(true),
+                FieldKey.TAGS to EntryDraftValue.TextList(listOf("work", "network")),
+                FieldKey.NOTES to EntryDraftValue.Text("legacy device"),
+            ),
+            identity = identity(EntryType.WIFI),
+        )
+
+        val wifi = requireNotNull(entry.secret.wifi)
+        assertEquals("Office network", entry.title)
+        assertEquals("Passly", wifi.ssid)
+        assertEquals("abcde", wifi.password)
+        assertEquals(WifiSecurityType.Wep, wifi.securityType)
+        assertEquals(true, wifi.isHidden)
+        assertEquals(linkedSetOf("work", "network"), entry.tags)
+        assertEquals("legacy device", entry.secret.notes)
     }
 
     private fun draft(type: EntryType, vararg values: Pair<FieldKey, EntryDraftValue>): EntryDraft {

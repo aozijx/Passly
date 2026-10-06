@@ -15,6 +15,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -100,6 +101,45 @@ class CreateEntryUseCaseTest {
 
         assertSame(failure, result)
         assertEquals(1, fixture.repository.createCalls)
+    }
+
+    @Test
+    fun invalidProtectedWifiPasswords_areRejectedBeforeRepositoryAccess() = runBlocking {
+        listOf(
+            "WPA" to "short",
+            "WEP" to "12345678",
+        ).forEach { (security, password) ->
+            val fixture = fixture(AuthenticationState.Authenticated(1L))
+            val definition = EntryTypeDefinitions[EntryType.WIFI]
+            val draft = EntryDraft(EntryDraftTarget.New(EntryType.WIFI))
+                .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text("Office"))
+                .withValue(definition, FieldKey.WIFI_SSID, EntryDraftValue.Text("Passly"))
+                .withValue(definition, FieldKey.WIFI_SECURITY, EntryDraftValue.Text(security))
+                .withValue(definition, FieldKey.PASSWORD, EntryDraftValue.Text(password))
+
+            val result = fixture.useCase(draft)
+
+            assertTrue((result as AppResult.Failure).error is ValidationError)
+            assertEquals(0, fixture.repository.createCalls)
+        }
+    }
+
+    @Test
+    fun validOpenWifi_persistsWithoutPassword() = runBlocking {
+        val fixture = fixture(AuthenticationState.Authenticated(1L))
+        val definition = EntryTypeDefinitions[EntryType.WIFI]
+        val draft = EntryDraft(EntryDraftTarget.New(EntryType.WIFI))
+            .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text("Guest"))
+            .withValue(definition, FieldKey.WIFI_SSID, EntryDraftValue.Text("Guest Wi-Fi"))
+            .withValue(definition, FieldKey.WIFI_SECURITY, EntryDraftValue.Text("OPEN"))
+
+        val result = fixture.useCase(draft)
+
+        assertEquals(AppResult.Success(EntryId("generated-id")), result)
+        assertEquals(1, fixture.repository.createCalls)
+        val wifi = requireNotNull(fixture.repository.createdEntry?.secret?.wifi)
+        assertEquals(WifiSecurityType.Open, wifi.securityType)
+        assertEquals(null, wifi.password)
     }
 
     private fun validLoginDraft(): EntryDraft {
