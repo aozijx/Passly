@@ -34,7 +34,7 @@ class VaultListActionOwnershipBoundaryTest {
         ).readText()
         val menuPageTransition = listRoot.resolve(
             "ui/component/topbar/VaultMenuPageTransition.kt",
-        ).readText()
+        )
 
         assertFalse(listRoot.resolve("VaultListEventRouting.kt").exists())
         assertFalse(listRoot.resolve("VaultListItemEventHandler.kt").exists())
@@ -74,16 +74,14 @@ class VaultListActionOwnershipBoundaryTest {
         assertFalse(dropdownMenu.contains("showTOTPCode: Boolean"))
         assertFalse(dropdownMenu.contains("availableCategories: List<String>"))
         assertTrue(dropdownMenu.contains("expanded = expanded"))
-        assertTrue(menuPageTransition.contains("AnimatedVisibility"))
+        assertFalse(menuPageTransition.exists())
         assertFalse(dropdownMenu.contains("AnimatedContent"))
-        assertFalse(menuPageTransition.contains("AnimatedContent"))
-        assertFalse(menuPageTransition.contains("wrapContentWidth"))
-        assertFalse(menuPageTransition.contains("animatedPageWidthPx"))
+        assertFalse(dropdownMenu.contains("AnimatedVisibility"))
         assertFalse(dropdownMenu.contains("Crossfade"))
         assertFalse(dropdownMenu.contains("slideInHorizontally"))
         assertFalse(dropdownMenu.contains("slideOutHorizontally"))
         assertFalse(dropdownMenu.contains("widthIn"))
-        assertTrue(dropdownMenu.contains("animateContentSize"))
+        assertFalse(dropdownMenu.contains("animateContentSize"))
         assertTrue(route.contains("onAction = vaultViewModel::onAction"))
         assertFalse(route.contains("rememberVaultListItemEventHandler"))
     }

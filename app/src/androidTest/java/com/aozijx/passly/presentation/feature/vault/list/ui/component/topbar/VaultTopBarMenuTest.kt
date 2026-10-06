@@ -70,37 +70,7 @@ class VaultTopBarMenuTest {
     }
 
     @Test
-    fun submenuTransitionKeepsOutgoingAndIncomingPagesDuringMotion() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-
-        composeRule.setContent {
-            MaterialTheme {
-                VaultTopBar(
-                    uiState = topBarState(),
-                    searchStateHolder = searchStateHolder(),
-                    scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(),
-                    onAction = {},
-                    onRouteRequest = {},
-                )
-            }
-        }
-
-        composeRule.onNodeWithContentDescription(context.getString(R.string.more)).performClick()
-        composeRule.waitForIdle()
-        composeRule.mainClock.autoAdvance = false
-        try {
-            composeRule.onNodeWithText(context.getString(R.string.vault_menu_sort)).performClick()
-            composeRule.mainClock.advanceTimeBy(100L)
-
-            composeRule.onNodeWithText(context.getString(R.string.vault_menu_sort)).assertExists()
-            composeRule.onNodeWithText(context.getString(R.string.sort_last_used)).assertExists()
-        } finally {
-            composeRule.mainClock.autoAdvance = true
-        }
-    }
-
-    @Test
-    fun submenuTransitionAnimatesPopupWidthBetweenSettledPages() {
+    fun menuAndSubmenusKeepNonZeroPopupBounds() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
 
         composeRule.setContent {
@@ -118,32 +88,44 @@ class VaultTopBarMenuTest {
         composeRule.onNodeWithContentDescription(context.getString(R.string.more)).performClick()
         composeRule.waitForIdle()
         val mainBounds = composeRule.onNode(isPopup()).getUnclippedBoundsInRoot()
-        val mainWidth = mainBounds.right - mainBounds.left
+        assertTrue(mainBounds.right - mainBounds.left > 0.dp)
+        assertTrue(mainBounds.bottom - mainBounds.top > 0.dp)
 
         composeRule.onNodeWithText(context.getString(R.string.vault_menu_sort)).performClick()
         composeRule.waitForIdle()
         val sortBounds = composeRule.onNode(isPopup()).getUnclippedBoundsInRoot()
-        val sortWidth = sortBounds.right - sortBounds.left
+        assertTrue(sortBounds.right - sortBounds.left > 0.dp)
+        assertTrue(sortBounds.bottom - sortBounds.top > 0.dp)
+        composeRule.onNodeWithText(context.getString(R.string.sort_last_used)).assertIsDisplayed()
+    }
 
-        assertTrue("Main menu must keep its natural width", mainWidth < 280.dp)
-        assertTrue("Sort menu must keep its natural width", sortWidth < 280.dp)
+    @Test
+    fun reopenedMenuIsMeasuredBeforeAnimationClockAdvances() {
+        val requests = mutableListOf<VaultRouteRequest>()
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
 
-        composeRule.onNodeWithText(context.getString(R.string.back)).performClick()
+        composeRule.setContent {
+            MaterialTheme {
+                VaultTopBar(
+                    uiState = topBarState(),
+                    searchStateHolder = searchStateHolder(),
+                    scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(),
+                    onAction = {},
+                    onRouteRequest = requests::add,
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription(context.getString(R.string.more)).performClick()
+        composeRule.onNodeWithText(context.getString(R.string.vault_menu_scan_qr)).performClick()
         composeRule.waitForIdle()
         composeRule.mainClock.autoAdvance = false
         try {
-            composeRule.onNodeWithText(context.getString(R.string.vault_menu_sort)).performClick()
+            composeRule.onNodeWithContentDescription(context.getString(R.string.more)).performClick()
             composeRule.mainClock.advanceTimeByFrame()
-            composeRule.mainClock.advanceTimeBy(100L)
-            val animatedBounds = composeRule.onNode(isPopup()).getUnclippedBoundsInRoot()
-            val animatedWidth = animatedBounds.right - animatedBounds.left
-            val widthRange = minOf(mainWidth, sortWidth)..maxOf(mainWidth, sortWidth)
-
-            assertTrue("The settled menu pages must have different widths", mainWidth != sortWidth)
-            assertTrue(
-                "Popup width $animatedWidth must be between $mainWidth and $sortWidth",
-                animatedWidth > widthRange.start && animatedWidth < widthRange.endInclusive,
-            )
+            val reopenedBounds = composeRule.onNode(isPopup()).getUnclippedBoundsInRoot()
+            assertTrue(reopenedBounds.right - reopenedBounds.left > 0.dp)
+            assertTrue(reopenedBounds.bottom - reopenedBounds.top > 0.dp)
         } finally {
             composeRule.mainClock.autoAdvance = true
         }
