@@ -83,14 +83,20 @@
     <string name="vault_empty_placeholder">你的保险箱空空如也</string>
     <string name="vault_load_failed">无法加载保险箱内容</string>
     <string name="retry">重试</string>
-    <string name="vault_scanner_error_not_otp">二维码中没有有效的 OTP 信息</string>
-    <string name="vault_scanner_action_album">相册导入</string>
-    <string name="vault_scanner_result_title">发现密钥</string>
-    <string name="scanner_waiting_for_permission">等待相机权限…</string>
+    <string name="scanner_title">扫描二维码</string>
+    <string name="scanner_action_album">从相册选择</string>
+    <string name="scanner_supported_formats">支持动态验证码、链接和文本</string>
+    <string name="scanner_result_otp">动态验证码</string>
+    <string name="scanner_result_link">网页链接</string>
+    <string name="scanner_result_text">文本内容</string>
+    <string name="scanner_scan_again">重新扫描</string>
+    <string name="scanner_add_to_vault">添加到保险库</string>
+    <string name="scanner_apply_to_editor">填入</string>
+    <string name="scanner_open_link">打开链接</string>
+    <string name="scanner_copy_text">复制文本</string>
+    <string name="scanner_otp_fallback_label">动态验证码</string>
     <string name="scanner_open_link_failed">无法打开链接</string>
     <string name="scanner_copy_succeeded">已安全复制到剪贴板</string>
-    <string name="scanner_open_link_action">点击打开链接</string>
-    <string name="scanner_copy_result_action">点击复制结果</string>
 
     <string name="vault_delete_title">确认删除</string>
     <string name="vault_delete_message">确定要删除 “%s” 吗？此操作不可撤销。</string>

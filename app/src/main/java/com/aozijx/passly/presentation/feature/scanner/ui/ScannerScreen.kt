@@ -1,34 +1,27 @@
 package com.aozijx.passly.presentation.feature.scanner.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.Save
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,30 +29,29 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.presentation.feature.scanner.ScannerCameraHost
-import com.aozijx.passly.presentation.feature.scanner.ScannerUiAction
+import com.aozijx.passly.presentation.feature.scanner.ScannerOtpConfirmation
+import com.aozijx.passly.presentation.feature.scanner.ScannerScreenAction
 import com.aozijx.passly.presentation.feature.scanner.ScannerUiState
 
 @Composable
 internal fun ScannerScreen(
     state: ScannerUiState,
-    onAction: (ScannerUiAction) -> Unit,
-    onPickPhoto: () -> Unit,
-    onSaveOtp: (OtpConfig) -> Unit,
-    onDismiss: () -> Unit,
+    otpConfirmation: ScannerOtpConfirmation,
+    onAction: (ScannerScreenAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val adaptiveLayout = LocalPasslyAdaptiveLayout.current
-    BackHandler(onBack = onDismiss)
+    val motionScheme = MaterialTheme.motionScheme
+    BackHandler { onAction(ScannerScreenAction.Dismiss) }
 
     Box(
         modifier = modifier
@@ -67,45 +59,53 @@ internal fun ScannerScreen(
             .background(Color.Black),
     ) {
         ScannerCameraHost(
-            scanResult = state.scanResult,
-            onCopyResult = { onAction(ScannerUiAction.CopyResult) },
+            onBarcodeDetected = {
+                onAction(ScannerScreenAction.BarcodeDetected(it))
+            },
+            onPermissionDenied = {
+                onAction(ScannerScreenAction.CameraPermissionDenied)
+            },
             isScanning = state.isScanning,
-            showResultCard = state.scannedOtp == null,
-            onBarcodeDetected = { barcode ->
-                if (state.scannedOtp == null) {
-                    onAction(ScannerUiAction.BarcodeDetected(barcode))
-                }
-            },
-            onPermissionDenied = onDismiss,
+        )
+        ScannerViewfinder(isScanning = state.isScanning)
+        ScannerTopBar(
+            onDismiss = { onAction(ScannerScreenAction.Dismiss) },
+            onPickPhoto = { onAction(ScannerScreenAction.PickPhoto) },
         )
 
-        ScannerToolbar(
-            onPickPhoto = {
-                onAction(ScannerUiAction.StartScanning)
-                onPickPhoto()
+        AnimatedContent(
+            targetState = state.result,
+            transitionSpec = {
+                (fadeIn(animationSpec = motionScheme.fastEffectsSpec()) +
+                    slideInVertically(
+                        animationSpec = motionScheme.defaultSpatialSpec(),
+                        initialOffsetY = { it / 3 },
+                    )).togetherWith(
+                    fadeOut(animationSpec = motionScheme.fastEffectsSpec()) +
+                        slideOutVertically(
+                            animationSpec = motionScheme.defaultSpatialSpec(),
+                            targetOffsetY = { it / 3 },
+                        ),
+                )
             },
-            onDismiss = onDismiss,
-        )
-
-        AnimatedVisibility(
-            visible = state.scannedOtp != null,
-            enter = fadeIn() + slideInVertically { it },
-            exit = fadeOut() + slideOutHorizontally { it },
+            contentKey = { result -> result?.javaClass },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(horizontal = if (adaptiveLayout.isAtLeastMedium) 24.dp else 12.dp)
-                .padding(bottom = if (adaptiveLayout.isAtLeastMedium) 20.dp else 12.dp),
-        ) {
-            state.scannedOtp?.let { otp ->
-                OtpScanResultCard(
-                    otp = otp,
+                .padding(
+                    horizontal = if (adaptiveLayout.isAtLeastMedium) 24.dp else 12.dp,
+                    vertical = if (adaptiveLayout.isAtLeastMedium) 20.dp else 12.dp,
+                )
+                .widthIn(max = 560.dp),
+            label = "scanner-result",
+        ) { result ->
+            if (result != null) {
+                ScannerResultCard(
+                    result = result,
+                    otpConfirmation = otpConfirmation,
                     compact = !adaptiveLayout.isAtLeastMedium,
-                    onScanAgain = { onAction(ScannerUiAction.StartScanning) },
-                    onSave = {
-                        onSaveOtp(otp)
-                        onDismiss()
-                    },
+                    onScanAgain = { onAction(ScannerScreenAction.ScanAgain) },
+                    onConfirm = { onAction(ScannerScreenAction.ConfirmResult) },
                 )
             }
         }
@@ -113,117 +113,57 @@ internal fun ScannerScreen(
 }
 
 @Composable
-private fun ScannerToolbar(
-    onPickPhoto: () -> Unit,
+private fun ScannerTopBar(
     onDismiss: () -> Unit,
+    onPickPhoto: () -> Unit,
 ) {
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
+            .height(136.dp)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color.Black.copy(alpha = 0.78f), Color.Transparent),
+                ),
+            )
             .statusBarsPadding()
-            .padding(32.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        ScannerToolbarButton(
-            icon = Icons.Default.PhotoLibrary,
-            contentDescription = stringResource(R.string.vault_scanner_action_album),
-            onClick = onPickPhoto,
-        )
-        ScannerToolbarButton(
+        ScannerTopBarButton(
             icon = Icons.Default.Close,
             contentDescription = stringResource(R.string.close),
             onClick = onDismiss,
+            modifier = Modifier.align(Alignment.TopStart),
+        )
+        Text(
+            text = stringResource(R.string.scanner_title),
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 12.dp),
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        ScannerTopBarButton(
+            icon = Icons.Default.PhotoLibrary,
+            contentDescription = stringResource(R.string.scanner_action_album),
+            onClick = onPickPhoto,
+            modifier = Modifier.align(Alignment.TopEnd),
         )
     }
 }
 
 @Composable
-private fun ScannerToolbarButton(
+private fun ScannerTopBarButton(
     icon: ImageVector,
     contentDescription: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     IconButton(
         onClick = onClick,
-        modifier = Modifier
-            .size(56.dp)
-            .background(Color.Black.copy(alpha = 0.5f), CircleShape),
+        modifier = modifier
+            .size(48.dp)
+            .background(Color.Black.copy(alpha = 0.42f), CircleShape),
     ) {
         Icon(icon, contentDescription = contentDescription, tint = Color.White)
     }
-}
-
-@Composable
-private fun OtpScanResultCard(
-    otp: OtpConfig,
-    compact: Boolean,
-    onScanAgain: () -> Unit,
-    onSave: () -> Unit,
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .widthIn(max = 560.dp),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
-        ),
-    ) {
-        Column(
-            modifier = Modifier.padding(
-                horizontal = if (compact) 12.dp else 20.dp,
-                vertical = if (compact) 12.dp else 16.dp,
-            ),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.vault_scanner_result_title),
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Text(
-                text = otp.displayLabel(),
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Button(
-                    onClick = onScanAgain,
-                    modifier = Modifier.weight(1f),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = ButtonDefaults.filledTonalButtonColors(),
-                ) {
-                    Text(stringResource(R.string.vault_scan))
-                }
-                Button(
-                    onClick = onSave,
-                    modifier = Modifier.weight(2f),
-                    shape = MaterialTheme.shapes.medium,
-                ) {
-                    Icon(
-                        Icons.Default.Save,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.save))
-                }
-            }
-        }
-    }
-}
-
-private fun OtpConfig.displayLabel(): String = buildString {
-    if (!issuer.isNullOrBlank()) append(issuer)
-    if (!accountName.isNullOrBlank()) {
-        if (isNotEmpty()) append(": ")
-        append(accountName)
-    }
-    if (isEmpty()) append("TOTP")
 }

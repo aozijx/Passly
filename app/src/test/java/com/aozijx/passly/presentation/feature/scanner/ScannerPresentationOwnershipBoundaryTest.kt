@@ -36,10 +36,16 @@ class ScannerPresentationOwnershipBoundaryTest {
         val feature = root.resolve("com/aozijx/passly/presentation/feature/scanner")
         val state = feature.resolve("ScannerUiState.kt").readText()
         val effect = feature.resolve("ScannerEffect.kt").readText()
+        val viewModel = feature.resolve("ScannerViewModel.kt").readText()
 
-        assertTrue(state.contains("val scanResult: String"))
-        assertTrue(state.contains("val scannedOtp: OtpConfig?"))
+        assertTrue(state.contains("val result: ScannerResult?"))
+        assertFalse(state.contains("val scanResult:"))
+        assertFalse(state.contains("val scannedOtp:"))
         assertFalse(effect.contains("ScanSuccess"))
+        assertFalse(effect.contains("UnsupportedOtp"))
+        assertTrue(effect.contains("CopySucceeded"))
+        assertTrue(viewModel.contains("ScannerScanSession()"))
+        assertTrue(viewModel.contains("scanSession.reset()"))
     }
 
     private fun sourceRoot(): File = listOf(File("src/main/java"), File("app/src/main/java"))

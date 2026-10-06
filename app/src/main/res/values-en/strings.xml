@@ -80,14 +80,20 @@
     <string name="vault_empty_placeholder">No items yet, tap + to add one</string>
     <string name="vault_load_failed">Could not load vault items</string>
     <string name="retry">Retry</string>
-    <string name="vault_scanner_error_not_otp">This QR code doesn’t contain valid OTP information</string>
-    <string name="vault_scanner_action_album">Import from album</string>
-    <string name="vault_scanner_result_title">Secret Found</string>
-    <string name="scanner_waiting_for_permission">Waiting for camera permission…</string>
+    <string name="scanner_title">Scan QR code</string>
+    <string name="scanner_action_album">Choose from gallery</string>
+    <string name="scanner_supported_formats">Supports authenticator codes, links, and text</string>
+    <string name="scanner_result_otp">Authenticator code</string>
+    <string name="scanner_result_link">Web link</string>
+    <string name="scanner_result_text">Text</string>
+    <string name="scanner_scan_again">Scan again</string>
+    <string name="scanner_add_to_vault">Add to vault</string>
+    <string name="scanner_apply_to_editor">Use</string>
+    <string name="scanner_open_link">Open link</string>
+    <string name="scanner_copy_text">Copy text</string>
+    <string name="scanner_otp_fallback_label">Authenticator code</string>
     <string name="scanner_open_link_failed">Unable to open link</string>
     <string name="scanner_copy_succeeded">Copied securely to clipboard</string>
-    <string name="scanner_open_link_action">Tap to open link</string>
-    <string name="scanner_copy_result_action">Tap to copy result</string>
 
     <string name="vault_delete_title">Confirm deletion</string>
     <string name="vault_delete_message">Are you sure you want to delete “%s”? This action cannot be undone.</string>

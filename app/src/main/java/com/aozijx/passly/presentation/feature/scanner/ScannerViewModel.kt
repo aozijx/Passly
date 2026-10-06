@@ -7,13 +7,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.core.net.toUri
 import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
-import com.aozijx.passly.feature.vault.otp.OtpAuthUriCodec
-import com.aozijx.passly.presentation.feature.scanner.ImageRef
-import com.aozijx.passly.presentation.feature.scanner.ScannerEffect
-import com.aozijx.passly.presentation.feature.scanner.ScannerUiAction
-import com.aozijx.passly.presentation.feature.scanner.ScannerUiState
-import com.aozijx.passly.presentation.feature.scanner.ScannerMutation
-import com.aozijx.passly.presentation.feature.scanner.ScannerReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
@@ -36,51 +29,41 @@ class ScannerViewModel @Inject constructor(
     private val _effects = Channel<ScannerEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
-    // 防抖：缓存上次扫描结果
-    private var lastScannedBarcode: String? = null
-
-    private fun copySensitive(text: String) {
-        viewModelScope.launch { clipboardWriter.writeSensitive(text) }
-    }
+    private val scanSession = ScannerScanSession()
 
     fun onAction(action: ScannerUiAction) {
         when (action) {
             is ScannerUiAction.BarcodeDetected -> onBarcodeDetected(action.barcode)
             is ScannerUiAction.DecodeImage -> decodeImage(action.image)
-            ScannerUiAction.CopyResult -> copyResult()
+            ScannerUiAction.CopyText -> copyText()
             is ScannerUiAction.StartScanning -> resetAndStart()
             is ScannerUiAction.StopScanning -> stopScanning()
         }
     }
 
     private fun onBarcodeDetected(barcode: String) {
-        if (barcode.isBlank() || barcode == lastScannedBarcode) return
-        lastScannedBarcode = barcode
+        if (!scanSession.accept(barcode)) return
+        val result = ScannerResultClassifier.classify(barcode) ?: return
         vibrate()
-        val otpConfig = OtpAuthUriCodec.parse(barcode)
-        if (otpConfig == null && !barcode.startsWith("otpauth://")) {
-            _effects.trySend(ScannerEffect.UnsupportedOtp)
-        }
-        mutate(
-            ScannerMutation.ScanCompleted(
-                result = barcode,
-                otpConfig = otpConfig,
-            ),
-        )
+        mutate(ScannerMutation.ScanCompleted(result))
     }
 
     private fun resetAndStart() {
-        lastScannedBarcode = null
+        scanSession.reset()
         mutate(ScannerMutation.Started)
     }
 
     private fun stopScanning() {
+        scanSession.reset()
         mutate(ScannerMutation.Stopped)
     }
 
-    private fun copyResult() {
-        val result = _uiState.value.scanResult
-        if (result.isNotBlank()) copySensitive(result)
+    private fun copyText() {
+        val text = (_uiState.value.result as? ScannerResult.PlainText)?.rawValue ?: return
+        viewModelScope.launch {
+            clipboardWriter.writeSensitive(text)
+            _effects.send(ScannerEffect.CopySucceeded)
+        }
     }
 
     private fun vibrate() {

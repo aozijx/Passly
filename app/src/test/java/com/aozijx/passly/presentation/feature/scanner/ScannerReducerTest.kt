@@ -1,6 +1,5 @@
 package com.aozijx.passly.presentation.feature.scanner
 
-import com.aozijx.passly.presentation.feature.scanner.ScannerUiState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -11,49 +10,47 @@ import org.junit.Test
 class ScannerReducerTest {
 
     @Test
-    fun `starting a scan clears the previous result and error`() {
+    fun `starting a scan clears the previous typed result`() {
         val result = ScannerReducer.reduce(
             ScannerUiState(
                 isScanning = false,
-                scanResult = "old result",
-                scannedOtp = OtpConfig(secret = "secret"),
+                result = ScannerResult.PlainText("old result"),
             ),
             ScannerMutation.Started,
         )
 
         assertTrue(result.isScanning)
-        assertEquals("", result.scanResult)
-        assertNull(result.scannedOtp)
+        assertNull(result.result)
     }
 
     @Test
-    fun `successful scan owns the decoded result in state`() {
-        val otp = OtpConfig(secret = "secret")
+    fun `completed scan owns one typed result and stops analysis`() {
+        val scanResult = ScannerResult.Otp(
+            rawValue = "otpauth://totp/example",
+            config = OtpConfig(secret = "secret"),
+        )
         val result = ScannerReducer.reduce(
             ScannerUiState(),
-            ScannerMutation.ScanCompleted(
-                result = "otpauth://totp/example",
-                otpConfig = otp,
-            ),
+            ScannerMutation.ScanCompleted(scanResult),
         )
 
         assertFalse(result.isScanning)
-        assertEquals("otpauth://totp/example", result.scanResult)
-        assertEquals(otp, result.scannedOtp)
+        assertEquals(scanResult, result.result)
     }
 
     @Test
     fun `stopping scanner clears sensitive result state`() {
         val result = ScannerReducer.reduce(
             ScannerUiState(
-                scanResult = "otpauth://totp/example?secret=secret",
-                scannedOtp = OtpConfig(secret = "secret"),
+                result = ScannerResult.Otp(
+                    rawValue = "otpauth://totp/example?secret=secret",
+                    config = OtpConfig(secret = "secret"),
+                ),
             ),
             ScannerMutation.Stopped,
         )
 
         assertFalse(result.isScanning)
-        assertEquals("", result.scanResult)
-        assertNull(result.scannedOtp)
+        assertNull(result.result)
     }
 }

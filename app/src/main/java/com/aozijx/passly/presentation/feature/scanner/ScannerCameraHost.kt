@@ -1,7 +1,5 @@
 package com.aozijx.passly.presentation.feature.scanner
 
-import android.content.Intent
-import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
@@ -19,19 +17,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.aozijx.passly.R
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.app.platform.permission.rememberPermissionRequestHost
 import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
 import com.aozijx.passly.core.permission.model.PermissionStatus
 import com.aozijx.passly.core.permission.model.RuntimePermission
-import com.aozijx.passly.presentation.feature.scanner.ui.ScannerContent
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
@@ -51,18 +45,12 @@ private class ScannerCameraSession {
 @Composable
 internal fun ScannerCameraHost(
     onBarcodeDetected: (String) -> Unit,
-    onCopyResult: () -> Unit,
+    onPermissionDenied: () -> Unit,
+    isScanning: Boolean,
     modifier: Modifier = Modifier,
-    onPermissionDenied: () -> Unit = {},
-    isScanning: Boolean = true,
-    scanResult: String = "",
-    showResultCard: Boolean = true,
-    autoHandleLinks: Boolean = true,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val openLinkFailedText = stringResource(R.string.scanner_open_link_failed)
-    val copySucceededText = stringResource(R.string.scanner_copy_succeeded)
     val previewView = remember {
         PreviewView(context).apply {
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
@@ -174,32 +162,8 @@ internal fun ScannerCameraHost(
         }
     }
 
-    val isLinkResult = autoHandleLinks && scanResult.isWebLink()
-    ScannerContent(
-        hasPermission = hasPermission.value,
-        scanResult = scanResult,
-        showResultCard = showResultCard,
-        isLinkResult = isLinkResult,
-        onResultClick = {
-            if (isLinkResult) {
-                try {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, scanResult.toUri()))
-                } catch (_: Exception) {
-                    Toast.makeText(context, openLinkFailedText, Toast.LENGTH_SHORT).show()
-                }
-            } else {
-                onCopyResult()
-                Toast.makeText(context, copySucceededText, Toast.LENGTH_SHORT).show()
-            }
-        },
-        cameraPreview = {
-            AndroidView(
-                factory = { previewView },
-                modifier = Modifier.fillMaxSize(),
-            )
-        },
-        modifier = modifier,
+    AndroidView(
+        factory = { previewView },
+        modifier = modifier.fillMaxSize(),
     )
 }
-
-private fun String.isWebLink(): Boolean = startsWith("http://") || startsWith("https://")

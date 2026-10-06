@@ -15,6 +15,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.presentation.feature.scanner.ScannerOtpConfirmation
 import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffectHandler
 import com.aozijx.passly.presentation.feature.scanner.ScannerRoute
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.rememberAddEntryFabTransitionModifier
@@ -69,7 +70,8 @@ fun AddOtpEditorRoute(
 
     if (showScanner) {
         ScannerRoute(
-            onSaveOtp = { config ->
+            otpConfirmation = ScannerOtpConfirmation.APPLY_TO_EDITOR,
+            onOtpConfirmed = { config ->
                 viewModel.onAction(AddOtpAction.ScannedConfigApplied(config))
             },
             onDismiss = { showScanner = false },
