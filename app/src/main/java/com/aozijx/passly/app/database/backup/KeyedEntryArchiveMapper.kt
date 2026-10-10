@@ -22,6 +22,7 @@ import com.aozijx.passly.domain.entry.model.credential.PasskeyCredential
 import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
+import com.aozijx.passly.domain.entry.model.credential.WifiSecurityTypeParseResult
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
@@ -82,7 +83,7 @@ internal object KeyedEntryArchiveMapper {
                     "Wi-Fi archive entry is missing wifi_ssid"
                 },
                 password = fields.text(FieldKey.PASSWORD),
-                securityType = WifiSecurityType.fromStoredValue(fields.text(FieldKey.WIFI_SECURITY)),
+                securityType = fields.text(FieldKey.WIFI_SECURITY).requireWifiSecurityType(),
                 isHidden = fields.boolean(FieldKey.WIFI_HIDDEN) ?: false,
             )
             EntryCredentialKind.PASSKEY -> PasskeyCredential(
@@ -321,6 +322,17 @@ private fun String?.toOtpEncoding(): OtpSecretEncoding = when (this) {
     "base64" -> OtpSecretEncoding.BASE64
     else -> throw IllegalArgumentException("Unknown OTP encoding: $this")
 }
+
+private fun String?.requireWifiSecurityType(): WifiSecurityType =
+    when (val result = WifiSecurityType.parseStoredValue(this)) {
+        is WifiSecurityTypeParseResult.Supported -> result.value
+        WifiSecurityTypeParseResult.Missing ->
+            throw IllegalArgumentException("Wi-Fi archive entry is missing wifi_security")
+        is WifiSecurityTypeParseResult.Unsupported ->
+            throw IllegalArgumentException(
+                "Unsupported Wi-Fi archive security type: ${result.storedValue}",
+            )
+    }
 
 private const val ICON_NAME_KEY = "icon_name"
 private const val ICON_COLOR_KEY = "icon_color"

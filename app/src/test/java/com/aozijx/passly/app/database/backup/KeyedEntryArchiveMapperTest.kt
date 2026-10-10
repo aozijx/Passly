@@ -13,6 +13,7 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupFieldRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupFieldValue
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class KeyedEntryArchiveMapperTest {
@@ -30,26 +31,17 @@ class KeyedEntryArchiveMapperTest {
     }
 
     @Test
-    fun `legacy archive without security keeps wpa personal semantics`() {
-        val restored = KeyedEntryArchiveMapper.toEntry(
-            wifiRecord(security = null),
-        )
-
-        assertEquals(WifiSecurityType.WpaPersonal, restored.secret.wifi?.securityType)
+    fun `archive without wifi security is rejected`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            KeyedEntryArchiveMapper.toEntry(wifiRecord(security = null))
+        }
     }
 
     @Test
-    fun `unknown archive security normalizes before the next export`() {
-        val restored = KeyedEntryArchiveMapper.toEntry(
-            wifiRecord(security = "vendor-private"),
-        )
-        val exported = KeyedEntryArchiveMapper.toRecord(restored, attachmentIds = emptyList())
-
-        assertEquals(
-            WifiSecurityType.WpaPersonal,
-            restored.secret.wifi?.securityType,
-        )
-        assertEquals("WPA", exported.text("wifi_security"))
+    fun `archive with unsupported wifi security is rejected`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            KeyedEntryArchiveMapper.toEntry(wifiRecord(security = "vendor-private"))
+        }
     }
 
     private fun wifiEntry(securityType: WifiSecurityType) = Entry(

@@ -9,11 +9,25 @@ enum class WifiSecurityType(
     ;
 
     companion object {
-        fun fromStoredValue(value: String?): WifiSecurityType =
-            when (value?.trim()?.uppercase()) {
-                "NOPASS", "OPEN" -> Open
-                "WEP" -> Wep
-                else -> WpaPersonal
+        fun parseStoredValue(value: String?): WifiSecurityTypeParseResult {
+            val normalized = value?.trim().orEmpty()
+            if (normalized.isEmpty()) return WifiSecurityTypeParseResult.Missing
+
+            return when (normalized.uppercase()) {
+                "NOPASS", "OPEN" -> WifiSecurityTypeParseResult.Supported(Open)
+                "WEP" -> WifiSecurityTypeParseResult.Supported(Wep)
+                "WPA", "WPA2", "WPA3", "SAE" ->
+                    WifiSecurityTypeParseResult.Supported(WpaPersonal)
+                else -> WifiSecurityTypeParseResult.Unsupported(normalized)
             }
+        }
     }
+}
+
+sealed interface WifiSecurityTypeParseResult {
+    data class Supported(val value: WifiSecurityType) : WifiSecurityTypeParseResult
+
+    data object Missing : WifiSecurityTypeParseResult
+
+    data class Unsupported(val storedValue: String) : WifiSecurityTypeParseResult
 }

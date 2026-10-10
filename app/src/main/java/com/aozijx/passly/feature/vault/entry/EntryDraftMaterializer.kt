@@ -14,6 +14,7 @@ import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
+import com.aozijx.passly.domain.entry.model.credential.WifiSecurityTypeParseResult
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
@@ -99,7 +100,7 @@ class EntryDraftMaterializer @Inject constructor() {
             credential = WifiCredential(
                 ssid = requireNotNull(draft.text(FieldKey.WIFI_SSID)),
                 password = draft.text(FieldKey.PASSWORD),
-                securityType = WifiSecurityType.fromStoredValue(draft.text(FieldKey.WIFI_SECURITY)),
+                securityType = draft.text(FieldKey.WIFI_SECURITY).requireWifiSecurityType(),
                 isHidden = draft.toggle(FieldKey.WIFI_HIDDEN),
             ),
             notes = draft.text(FieldKey.NOTES),
@@ -135,4 +136,15 @@ class EntryDraftMaterializer @Inject constructor() {
         val raw = text(key) ?: return default
         return enumValues<T>().firstOrNull { it.name.equals(raw, ignoreCase = true) } ?: default
     }
+
+    private fun String?.requireWifiSecurityType(): WifiSecurityType =
+        when (val result = WifiSecurityType.parseStoredValue(this)) {
+            is WifiSecurityTypeParseResult.Supported -> result.value
+            WifiSecurityTypeParseResult.Missing ->
+                throw IllegalArgumentException("Wi-Fi draft security type is missing")
+            is WifiSecurityTypeParseResult.Unsupported ->
+                throw IllegalArgumentException(
+                    "Unsupported Wi-Fi draft security type: ${result.storedValue}",
+                )
+        }
 }

@@ -5,9 +5,12 @@ import org.junit.Test
 
 class WifiSecurityTypeTest {
     @Test
-    fun `legacy blank storage keeps wpa personal semantics`() {
+    fun `missing stored security is explicit`() {
         listOf(null, "", "   ").forEach { rawValue ->
-            assertEquals(WifiSecurityType.WpaPersonal, WifiSecurityType.fromStoredValue(rawValue))
+            assertEquals(
+                WifiSecurityTypeParseResult.Missing,
+                WifiSecurityType.parseStoredValue(rawValue),
+            )
         }
     }
 
@@ -22,15 +25,18 @@ class WifiSecurityTypeTest {
             "WPA3" to WifiSecurityType.WpaPersonal,
             "SAE" to WifiSecurityType.WpaPersonal,
         ).forEach { (rawValue, expected) ->
-            assertEquals(expected, WifiSecurityType.fromStoredValue(rawValue))
+            assertEquals(
+                WifiSecurityTypeParseResult.Supported(expected),
+                WifiSecurityType.parseStoredValue(rawValue),
+            )
         }
     }
 
     @Test
-    fun `unknown storage values use the supported default`() {
+    fun `unsupported stored security preserves the rejected value`() {
         assertEquals(
-            WifiSecurityType.WpaPersonal,
-            WifiSecurityType.fromStoredValue("vendor-private"),
+            WifiSecurityTypeParseResult.Unsupported("vendor-private"),
+            WifiSecurityType.parseStoredValue(" vendor-private "),
         )
     }
 

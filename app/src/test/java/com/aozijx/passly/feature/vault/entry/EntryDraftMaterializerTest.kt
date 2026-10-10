@@ -15,6 +15,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class EntryDraftMaterializerTest {
@@ -122,6 +123,20 @@ class EntryDraftMaterializerTest {
         assertEquals(true, wifi.isHidden)
         assertEquals(linkedSetOf("work", "network"), entry.tags)
         assertEquals("legacy device", entry.secret.notes)
+    }
+
+    @Test
+    fun materializeWifi_rejectsUnsupportedSecurity() {
+        assertThrows(IllegalArgumentException::class.java) {
+            materializer.materialize(
+                draft = draft(EntryType.WIFI,
+                    FieldKey.TITLE to EntryDraftValue.Text("Office network"),
+                    FieldKey.WIFI_SSID to EntryDraftValue.Text("Passly"),
+                    FieldKey.WIFI_SECURITY to EntryDraftValue.Text("vendor-private"),
+                ),
+                identity = identity(EntryType.WIFI),
+            )
+        }
     }
 
     private fun draft(type: EntryType, vararg values: Pair<FieldKey, EntryDraftValue>): EntryDraft {

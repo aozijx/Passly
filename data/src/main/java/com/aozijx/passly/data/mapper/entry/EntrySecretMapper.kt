@@ -22,6 +22,7 @@ import com.aozijx.passly.domain.entry.model.credential.PasskeyCredential
 import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
+import com.aozijx.passly.domain.entry.model.credential.WifiSecurityTypeParseResult
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 
 object EntrySecretMapper {
@@ -123,7 +124,7 @@ object EntrySecretMapper {
                 WifiCredential(
                     it.ssid,
                     it.password,
-                    WifiSecurityType.fromStoredValue(it.securityType),
+                    it.securityType.requireWifiSecurityType(),
                     it.isHidden,
                 )
             },
@@ -165,4 +166,15 @@ object EntrySecretMapper {
         issuer = issuer,
         accountName = accountName,
     )
+
+    private fun String?.requireWifiSecurityType(): WifiSecurityType =
+        when (val result = WifiSecurityType.parseStoredValue(this)) {
+            is WifiSecurityTypeParseResult.Supported -> result.value
+            WifiSecurityTypeParseResult.Missing ->
+                throw IllegalArgumentException("Wi-Fi security type is missing")
+            is WifiSecurityTypeParseResult.Unsupported ->
+                throw IllegalArgumentException(
+                    "Unsupported Wi-Fi security type: ${result.storedValue}",
+                )
+        }
 }
