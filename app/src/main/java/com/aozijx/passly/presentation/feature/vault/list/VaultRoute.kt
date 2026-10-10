@@ -28,6 +28,8 @@ import com.aozijx.passly.presentation.feature.vault.list.ui.VaultScreen
 import com.aozijx.passly.presentation.feature.vault.list.ui.VaultSystemBarsEffect
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListDisplayUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemAction
+import com.aozijx.passly.presentation.feature.vault.navigation.VaultDestinationRequest
+import com.aozijx.passly.presentation.feature.vault.navigation.VaultNavigation
 import com.aozijx.passly.presentation.mapping.gesture.toDomainModel
 import com.aozijx.passly.presentation.mapping.gesture.toUiModel
 
@@ -65,7 +67,9 @@ internal fun VaultRoute(
     val renderState = uiState.toUiModel(display)
     val onItemAction: (VaultListItemAction) -> Unit = { action ->
         when (action) {
-            is VaultListItemAction.Clicked -> navigation.onShowDetail(action.item.id)
+            is VaultListItemAction.Clicked -> navigation.navigate(
+                VaultDestinationRequest.OpenDetail(action.item.id),
+            )
             is VaultListItemAction.Swiped -> {
                 val item = action.item
                 handleSwipeAction(
@@ -74,7 +78,9 @@ internal fun VaultRoute(
                     onQuickDelete = { entryId ->
                         vaultViewModel.onAction(VaultUiAction.QuickDelete(entryId))
                     },
-                    onShowDetail = navigation.onShowDetail,
+                    onShowDetail = { entryId ->
+                        navigation.navigate(VaultDestinationRequest.OpenDetail(entryId))
+                    },
                     onCopy = { fieldKey ->
                         when (val request = resolveCopyRequest(item, fieldKey)) {
                             is VaultCopyRequest.Field -> vaultViewModel.onAction(
@@ -133,11 +139,16 @@ internal fun VaultRoute(
         onRouteRequest = { request ->
             when (request) {
                 VaultRouteRequest.OpenScanner -> showScanner = true
-                VaultRouteRequest.OpenSettings -> navigation.onSettingsClick()
+                VaultRouteRequest.OpenSettings -> {
+                    navigation.navigate(VaultDestinationRequest.OpenSettings)
+                }
             }
         },
         onAddTypeSelected = { type ->
-            routeAddTypeSelection(type, navigation, vaultViewModel::onAction)
+            val handled = navigation.navigate(VaultDestinationRequest.OpenEditor(type))
+            if (!handled) {
+                vaultViewModel.onAction(VaultUiAction.AddTypeSelected(type.toFeatureModel()))
+            }
         },
     )
 

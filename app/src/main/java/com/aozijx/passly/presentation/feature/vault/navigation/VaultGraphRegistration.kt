@@ -17,7 +17,7 @@ import com.aozijx.passly.presentation.feature.vault.detail.DetailRoute
 import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardEditorRoute
 import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpEditorRoute
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordEditorRoute
-import com.aozijx.passly.presentation.feature.vault.list.VaultNavigation
+import com.aozijx.passly.presentation.feature.vault.editor.wifi.AddWifiEditorRoute
 import com.aozijx.passly.presentation.feature.vault.list.VaultRoute
 import com.aozijx.passly.presentation.feature.vault.list.VaultViewModel
 import com.aozijx.passly.presentation.feature.vault.trash.TrashRoute
@@ -78,6 +78,15 @@ internal fun NavGraphBuilder.registerVaultGraph(
         )
     }
 
+    composable(AppRoute.AddWifi.route) {
+        AddWifiEditorRoute(
+            onBack = context.navigateBack,
+            onSaved = context.navigateBack,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = this,
+        )
+    }
+
     composable(
         route = AppRoute.Detail.route,
         arguments = listOf(
@@ -109,9 +118,6 @@ private fun vaultGraphViewModel(
 }
 
 private fun ShellNavigationContext.toVaultNavigation() = VaultNavigation(
-    onSettingsClick = { navigateToRoute(AppRoute.Settings.route) },
-    onAddPassword = { navigateToSingleTopRoute(AppRoute.AddPassword.route) },
-    onAddOtp = { navigateToSingleTopRoute(AppRoute.AddOtp.route) },
-    onAddBankCard = { navigateToSingleTopRoute(AppRoute.AddBankCard.route) },
-    onShowDetail = { entryId -> navigateToRoute(AppRoute.Detail.createRoute(entryId)) },
+    navigateToRoute = navigateToRoute,
+    navigateToSingleTopRoute = navigateToSingleTopRoute,
 )

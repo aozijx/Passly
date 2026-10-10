@@ -1,55 +1,65 @@
 package com.aozijx.passly.presentation.feature.vault.list
 
-import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultAddTypeUiModel
+import com.aozijx.passly.presentation.feature.vault.navigation.VaultDestinationRequest
+import com.aozijx.passly.presentation.feature.vault.navigation.VaultNavigation
+import com.aozijx.passly.presentation.feature.shell.navigation.AppRoute
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VaultNavigationTest {
     @Test
-    fun `vault route request exposes only scanner and settings exits`() {
+    fun `registered editor types resolve through one single top navigation path`() {
+        val routes = mutableListOf<String>()
+        val navigation = navigation(singleTopRoutes = routes)
+
+        val handled = mapOf(
+            VaultAddTypeUiModel.PASSWORD to AppRoute.AddPassword.route,
+            VaultAddTypeUiModel.TOTP to AppRoute.AddOtp.route,
+            VaultAddTypeUiModel.BANK_CARD to AppRoute.AddBankCard.route,
+            VaultAddTypeUiModel.WIFI to AppRoute.AddWifi.route,
+        ).map { (type, expectedRoute) ->
+            navigation.navigate(VaultDestinationRequest.OpenEditor(type)) to expectedRoute
+        }
+
+        assertTrue(handled.all { it.first })
+        assertEquals(handled.map { it.second }, routes)
+    }
+
+    @Test
+    fun `unregistered editor type remains available to the existing fallback owner`() {
+        val routes = mutableListOf<String>()
+        val navigation = navigation(singleTopRoutes = routes)
+
+        val handled = navigation.navigate(
+            VaultDestinationRequest.OpenEditor(VaultAddTypeUiModel.SSH_KEY),
+        )
+
+        assertFalse(handled)
+        assertTrue(routes.isEmpty())
+    }
+
+    @Test
+    fun `settings and detail use regular navigation`() {
+        val routes = mutableListOf<String>()
+        val navigation = navigation(routes = routes)
+
+        assertTrue(navigation.navigate(VaultDestinationRequest.OpenSettings))
+        assertTrue(navigation.navigate(VaultDestinationRequest.OpenDetail("entry-1")))
+
         assertEquals(
-            setOf("OpenScanner", "OpenSettings"),
-            VaultRouteRequest::class.java.declaredClasses.map { it.simpleName }.toSet(),
+            listOf(AppRoute.Settings.route, AppRoute.Detail.createRoute("entry-1")),
+            routes,
         )
-    }
-
-    @Test
-    fun `built in editor type opens its navigation destination`() {
-        var otpOpened = false
-        val actions = mutableListOf<VaultUiAction>()
-
-        routeAddTypeSelection(
-            type = VaultAddTypeUiModel.TOTP,
-            navigation = navigation(onAddOtp = { otpOpened = true }),
-            onAction = actions::add,
-        )
-
-        assertTrue(otpOpened)
-        assertTrue(actions.isEmpty())
-    }
-
-    @Test
-    fun `registry driven type is sent to the page action owner`() {
-        val actions = mutableListOf<VaultUiAction>()
-
-        routeAddTypeSelection(
-            type = VaultAddTypeUiModel.WIFI,
-            navigation = navigation(),
-            onAction = actions::add,
-        )
-
-        assertEquals(listOf(VaultUiAction.AddTypeSelected(AddType.WIFI)), actions)
     }
 
     private fun navigation(
-        onAddOtp: () -> Unit = {},
+        routes: MutableList<String> = mutableListOf(),
+        singleTopRoutes: MutableList<String> = mutableListOf(),
     ) = VaultNavigation(
-        onSettingsClick = {},
-        onAddPassword = {},
-        onAddOtp = onAddOtp,
-        onAddBankCard = {},
-        onShowDetail = {},
+        navigateToRoute = routes::add,
+        navigateToSingleTopRoute = singleTopRoutes::add,
     )
 }

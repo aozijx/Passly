@@ -122,6 +122,8 @@
     <string name="vault_add_password_save_failed">保存密码项失败</string>
     <string name="vault_add_bank_card_title">添加银行卡</string>
     <string name="vault_add_bank_card_save_failed">保存银行卡失败</string>
+    <string name="vault_add_wifi_title">添加 Wi-Fi</string>
+    <string name="vault_add_wifi_save_failed">保存 Wi-Fi 失败</string>
     <string name="vault_reveal_info">验证并显示详情</string>
     <string name="vault_edit_modified_hint">已修改，别忘了保存</string>
     <string name="vault_detail_associated_domain">关联域名</string>
