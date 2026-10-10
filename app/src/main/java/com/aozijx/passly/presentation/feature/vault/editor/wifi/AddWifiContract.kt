@@ -23,12 +23,19 @@ data class AddWifiFormState(
     val tags: String = "",
 )
 
+sealed interface AddWifiSavePhase {
+    data object Idle : AddWifiSavePhase
+    data object Saving : AddWifiSavePhase
+}
+
 data class AddWifiUiState(
     val form: AddWifiFormState = AddWifiFormState(),
-    val fieldErrors: Map<FieldKey, EntryViolationCode> = emptyMap(),
-    val canSave: Boolean = false,
-    val isSaving: Boolean = false,
-)
+    val fieldErrors: Map<FieldKey, EntryViolationCode> = form.fieldErrors(),
+    val savePhase: AddWifiSavePhase = AddWifiSavePhase.Idle,
+) {
+    val canSave: Boolean
+        get() = fieldErrors.isEmpty() && savePhase == AddWifiSavePhase.Idle
+}
 
 internal fun AddWifiFormState.fieldErrors(): Map<FieldKey, EntryViolationCode> = buildMap {
     if (title.isBlank()) put(FieldKey.TITLE, EntryViolationCode.REQUIRED)
@@ -40,10 +47,8 @@ internal fun AddWifiFormState.fieldErrors(): Map<FieldKey, EntryViolationCode> =
 }
 
 internal fun AddWifiUiState.withForm(form: AddWifiFormState): AddWifiUiState {
-    val errors = form.fieldErrors()
     return copy(
         form = form,
-        fieldErrors = errors,
-        canSave = errors.isEmpty(),
+        fieldErrors = form.fieldErrors(),
     )
 }

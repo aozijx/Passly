@@ -17,6 +17,7 @@ import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.EntryEditorSection
 import com.aozijx.passly.presentation.feature.vault.editor.wifi.AddWifiAction
+import com.aozijx.passly.presentation.feature.vault.editor.wifi.AddWifiSavePhase
 import com.aozijx.passly.presentation.feature.vault.editor.wifi.AddWifiUiState
 import com.aozijx.passly.presentation.shared.components.NextFocusTextField
 
@@ -41,7 +42,7 @@ fun AddWifiEditorScreen(
     AddEntryScaffold(
         title = stringResource(R.string.vault_add_wifi_title),
         canSave = state.canSave,
-        isSaving = state.isSaving,
+        isSaving = state.savePhase == AddWifiSavePhase.Saving,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
         onSave = ::save,

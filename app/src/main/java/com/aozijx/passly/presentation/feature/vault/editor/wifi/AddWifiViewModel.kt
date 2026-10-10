@@ -53,14 +53,14 @@ class AddWifiViewModel @Inject constructor(
 
     private fun mutateForm(transform: (AddWifiFormState) -> AddWifiFormState) {
         val current = _uiState.value
-        if (current.isSaving) return
+        if (current.savePhase == AddWifiSavePhase.Saving) return
         _uiState.value = current.withForm(transform(current.form))
     }
 
     private fun save() {
         val current = _uiState.value
-        if (!current.canSave || current.isSaving) return
-        _uiState.value = current.copy(canSave = false, isSaving = true)
+        if (!current.canSave) return
+        _uiState.value = current.copy(savePhase = AddWifiSavePhase.Saving)
         viewModelScope.launch {
             try {
                 when (val result = createEntryUseCase(current.form.toEntryDraft())) {
@@ -80,7 +80,7 @@ class AddWifiViewModel @Inject constructor(
 
     private suspend fun restoreAfterFailure(message: String?) {
         val current = _uiState.value
-        _uiState.value = current.withForm(current.form).copy(isSaving = false)
+        _uiState.value = current.withForm(current.form).copy(savePhase = AddWifiSavePhase.Idle)
         _effects.send(EditorSaveEffect.Failed(message))
     }
 
