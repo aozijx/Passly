@@ -58,7 +58,7 @@ internal class UpdateEntryExecutor @Inject constructor(
                 newProfile.icon.color,
                 newProfile.expiresAtMs,
                 flags,
-                newSecret.otp?.config?.type?.name,
+                newSecret.otp?.config?.type,
                 now,
             )
             databaseTransactions.checkAffectedRows(affected)

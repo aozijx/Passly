@@ -127,7 +127,7 @@ internal class EntryRevisionRestoreTransaction @Inject constructor(
             iconColor = content.summary.icon.color,
             expiresAt = content.summary.expiresAtMs,
             capabilityFlags = capabilityFlags,
-            otpType = content.secret.otp?.config?.type?.name,
+            otpType = content.secret.otp?.config?.type,
             updatedAt = now,
         )
         if (affected != 1) throw Conflict()

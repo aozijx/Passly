@@ -116,7 +116,7 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
                         entryType = restoredEntry.type,
                         version = record.revision,
                         capabilityFlags = capabilityFlags,
-                        otpType = otpType?.name,
+                        otpType = otpType,
                         title = profile.title,
                         username = profile.username,
                         primaryUrl = profile.associations.primaryUrl,

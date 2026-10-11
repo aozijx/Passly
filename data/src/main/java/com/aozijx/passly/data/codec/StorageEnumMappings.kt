@@ -4,6 +4,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 
@@ -141,6 +142,19 @@ internal fun revisionChangeFromStorageKey(key: String): RevisionChange = when (k
     "VALUE_CHANGED" -> RevisionChange.VALUE_CHANGED
     "VERSION_RESTORED" -> RevisionChange.VERSION_RESTORED
     else -> invalidStorageKey("revision change", key)
+}
+
+internal fun OtpType.toStorageKey(): String = when (this) {
+    OtpType.TOTP -> "TOTP"
+    OtpType.HOTP -> "HOTP"
+    OtpType.STEAM -> "STEAM"
+}
+
+internal fun otpTypeFromStorageKey(key: String): OtpType = when (key) {
+    "TOTP" -> OtpType.TOTP
+    "HOTP" -> OtpType.HOTP
+    "STEAM" -> OtpType.STEAM
+    else -> invalidStorageKey("OTP type", key)
 }
 
 private fun invalidStorageKey(kind: String, key: String): Nothing =

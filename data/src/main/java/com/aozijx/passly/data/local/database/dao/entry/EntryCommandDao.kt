@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.aozijx.passly.data.local.database.entity.EntryEntity
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 
 @Dao
 interface EntryCommandDao {
@@ -50,7 +51,7 @@ interface EntryCommandDao {
         iconColor: String?,
         expiresAt: Long?,
         capabilityFlags: Int,
-        otpType: String?,
+        otpType: OtpType?,
         updatedAt: Long
     ): Int
 

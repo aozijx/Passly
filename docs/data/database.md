@@ -62,6 +62,9 @@ Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `data/schemas`�
 持久化键必须在 Data 边界明确失败，不能静默替换成另一个合法默认值。新增枚举成员时必须同步补齐
 双向映射，并由全量 round-trip 测试覆盖。
 
+Room Entity 和 DAO 在进程内保留领域类型；例如 `entries.otpType` 由 `OtpTypeConverter` 在 SQL 边界
+转换，列表 Mapper 不再重新解析字符串。`null` 只表示该条目确实没有 OTP 元数据。
+
 当前稳定键与既有 Schema v1 中保存的字符串逐字节一致，因此这次收紧映射不升级 Room 数据库版本。
 
 ## Blob 与读取边界

@@ -7,6 +7,7 @@ import com.aozijx.passly.data.BuildConfig
 import com.aozijx.passly.data.local.database.converter.ActivityTypeConverter
 import com.aozijx.passly.data.local.database.converter.EntryRelationTypeConverter
 import com.aozijx.passly.data.local.database.converter.EntryTypeConverter
+import com.aozijx.passly.data.local.database.converter.OtpTypeConverter
 import com.aozijx.passly.data.local.database.converter.StringSetConverter
 import com.aozijx.passly.data.local.database.dao.activity.EntryActivityAnalyticsDao
 import com.aozijx.passly.data.local.database.dao.activity.EntryActivityCommandDao
@@ -51,6 +52,7 @@ import com.aozijx.passly.data.local.database.entity.RevisionAttachmentRefEntity
     EntryTypeConverter::class,
     EntryRelationTypeConverter::class,
     ActivityTypeConverter::class,
+    OtpTypeConverter::class,
     StringSetConverter::class,
 )
 abstract class AppDatabase : RoomDatabase() {

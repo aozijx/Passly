@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 
 @Entity(
     tableName = "entries",
@@ -23,7 +24,7 @@ data class EntryEntity(
     val version: Int = 1,
     val capabilityFlags: Int = 0,
     /** 条目有 OTP 时的类型（TOTP/HOTP/STEAM），null 表示无 OTP */
-    val otpType: String? = null,
+    val otpType: OtpType? = null,
     val title: String,
     val username: String = "",
     val primaryUrl: String? = null,

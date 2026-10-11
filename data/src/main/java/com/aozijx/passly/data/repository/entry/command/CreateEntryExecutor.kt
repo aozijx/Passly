@@ -30,7 +30,7 @@ internal class CreateEntryExecutor @Inject constructor(
                 entryId = entryId,
                 entryType = entry.type,
                 capabilityFlags = EntryCapabilities.from(entry.secret).toDatabaseFlags(),
-                otpType = entry.secret.otp?.config?.type?.name,
+                otpType = entry.secret.otp?.config?.type,
                 title = entry.profile.title,
                 username = entry.profile.username,
                 primaryUrl = entry.profile.associations.primaryUrl,
