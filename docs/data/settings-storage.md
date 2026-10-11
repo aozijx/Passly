@@ -32,6 +32,9 @@ Google Tink（见 [ADR-0009](../decisions/ADR-0009-no-google-tink.md)）。
 - 不用逗号或分号拼接集合。
 - 删除字段时保留 `reserved` 字段号，禁止复用。
 - Serializer 遇到损坏输入抛出 `CorruptionException`，不静默恢复为默认值。
+- 尚未升级为 Proto enum 的固定字符串值必须由 Domain 提供稳定 key 和显式
+  `Supported / Missing / Unsupported` 解析结果；Data Mapper 穷尽处理结果，未知键不能回退成另一个
+  合法设置。Vault 的排序字段和层级展示模式当前遵循这一规则，写回值与现有 Proto v1 字符串保持一致。
 
 ## 设置与会话状态
 

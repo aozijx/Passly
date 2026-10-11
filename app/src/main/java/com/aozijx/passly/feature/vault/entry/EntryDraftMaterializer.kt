@@ -134,7 +134,8 @@ class EntryDraftMaterializer @Inject constructor() {
 
     private inline fun <reified T : Enum<T>> EntryDraft.enumValue(key: FieldKey, default: T): T {
         val raw = text(key) ?: return default
-        return enumValues<T>().firstOrNull { it.name.equals(raw, ignoreCase = true) } ?: default
+        return enumValues<T>().firstOrNull { it.name.equals(raw, ignoreCase = true) }
+            ?: throw IllegalArgumentException("Unsupported ${key.name} draft value: $raw")
     }
 
     private fun String?.requireWifiSecurityType(): WifiSecurityType =

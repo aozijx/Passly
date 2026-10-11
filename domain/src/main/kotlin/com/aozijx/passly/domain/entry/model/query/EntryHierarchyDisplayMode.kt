@@ -7,7 +7,26 @@ enum class EntryHierarchyDisplayMode(val key: String) {
     SEPARATE("separate");
 
     companion object {
-        fun fromKey(key: String?): EntryHierarchyDisplayMode =
-            entries.firstOrNull { it.key == key } ?: COLLAPSED
+        fun parseStoredKey(key: String?): EntryHierarchyDisplayModeParseResult {
+            if (key.isNullOrBlank()) return EntryHierarchyDisplayModeParseResult.Missing
+            val value = entries.firstOrNull { it.key == key }
+            return if (value == null) {
+                EntryHierarchyDisplayModeParseResult.Unsupported(key)
+            } else {
+                EntryHierarchyDisplayModeParseResult.Supported(value)
+            }
+        }
     }
+}
+
+sealed interface EntryHierarchyDisplayModeParseResult {
+    data class Supported(
+        val value: EntryHierarchyDisplayMode,
+    ) : EntryHierarchyDisplayModeParseResult
+
+    data object Missing : EntryHierarchyDisplayModeParseResult
+
+    data class Unsupported(
+        val storedValue: String,
+    ) : EntryHierarchyDisplayModeParseResult
 }

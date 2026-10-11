@@ -1,13 +1,13 @@
 package com.aozijx.passly.domain.entry.model.query
 
-enum class EntrySortField {
-    TITLE,
-    CREATED_AT,
-    UPDATED_AT,
-    LAST_USED_AT,
-    USAGE_FREQUENCY,
-    ENTRY_TYPE,
-    ID;
+enum class EntrySortField(val key: String) {
+    TITLE("TITLE"),
+    CREATED_AT("CREATED_AT"),
+    UPDATED_AT("UPDATED_AT"),
+    LAST_USED_AT("LAST_USED_AT"),
+    USAGE_FREQUENCY("USAGE_FREQUENCY"),
+    ENTRY_TYPE("ENTRY_TYPE"),
+    ID("ID");
 
     /** Canonical tie-breaker direction shared by in-memory and database sorting. */
     val stableDirection: SortDirection
@@ -15,6 +15,24 @@ enum class EntrySortField {
             TITLE, ENTRY_TYPE, ID -> SortDirection.ASC
             CREATED_AT, UPDATED_AT, LAST_USED_AT, USAGE_FREQUENCY -> SortDirection.DESC
         }
+
+    companion object {
+        fun parseStoredKey(key: String?): EntrySortFieldParseResult {
+            if (key.isNullOrBlank()) return EntrySortFieldParseResult.Missing
+            val value = entries.firstOrNull { it.key == key }
+            return if (value == null) {
+                EntrySortFieldParseResult.Unsupported(key)
+            } else {
+                EntrySortFieldParseResult.Supported(value)
+            }
+        }
+    }
+}
+
+sealed interface EntrySortFieldParseResult {
+    data class Supported(val value: EntrySortField) : EntrySortFieldParseResult
+    data object Missing : EntrySortFieldParseResult
+    data class Unsupported(val storedValue: String) : EntrySortFieldParseResult
 }
 
 enum class SortDirection { ASC, DESC }

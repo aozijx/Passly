@@ -73,6 +73,20 @@ class EntryDraftMaterializerTest {
     }
 
     @Test
+    fun materializeOtp_rejectsUnsupportedAlgorithmInsteadOfUsingSha1() {
+        assertThrows(IllegalArgumentException::class.java) {
+            materializer.materialize(
+                draft = draft(EntryType.OTP,
+                    FieldKey.TITLE to EntryDraftValue.Text("Token"),
+                    FieldKey.OTP_SECRET to EntryDraftValue.Text("ABC123"),
+                    FieldKey.OTP_ALGORITHM to EntryDraftValue.Text("MD5"),
+                ),
+                identity = identity(EntryType.OTP),
+            )
+        }
+    }
+
+    @Test
     fun materializeBankCard_preservesAllCardFields() {
         val entry = materializer.materialize(
             draft = draft(EntryType.BANK_CARD,

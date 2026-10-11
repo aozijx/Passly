@@ -7,8 +7,10 @@ import com.aozijx.passly.data.local.datastore.settings.VaultViewPreferences
 import com.aozijx.passly.domain.settings.model.CardDensity
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayModeParseResult
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
+import com.aozijx.passly.domain.entry.model.query.EntrySortFieldParseResult
 import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.domain.settings.model.LibraryViewSettings
 
@@ -28,20 +30,19 @@ internal fun CardDensity.toProto(): ProtoCardDensity = when (this) {
 
 // -- VaultSortPreference ↔ EntrySort --
 internal fun VaultSortPreference.toDomain(): EntrySort {
-    val sortField = EntrySortField.entries.find { it.name == field }
-        ?: EntrySortField.LAST_USED_AT
+    val sortField = EntrySortField.parseStoredKey(field).requireSupported("sort field")
     val direction = if (descending) SortDirection.DESC else SortDirection.ASC
-    val tieBreaker = EntrySortField.entries.find { it.name == tieBreakerField }
-        ?: EntrySortField.ID
+    val tieBreaker = EntrySortField.parseStoredKey(tieBreakerField)
+        .requireSupported("sort tie-breaker field")
     return EntrySort(sortField, direction, pinFavorites, tieBreaker)
 }
 
 internal fun EntrySort.toProtoSort(): VaultSortPreference =
     VaultSortPreference.newBuilder()
-        .setField(field.name)
+        .setField(field.key)
         .setDescending(direction == SortDirection.DESC)
         .setPinFavorites(pinFavorites)
-        .setTieBreakerField(tieBreaker.name)
+        .setTieBreakerField(tieBreaker.key)
         .build()
 
 // -- EntryCardPresentation --
@@ -71,6 +72,27 @@ internal fun readVault(p: VaultViewPreferences): LibraryViewSettings =
     LibraryViewSettings(
         sort = if (p.hasSort()) p.sort.toDomain() else EntrySort.DEFAULT,
         entryCardPresentations = p.entryCardPresentationsList.map { it.toDomain() },
-        entryHierarchyDisplayMode =
-            EntryHierarchyDisplayMode.fromKey(p.entryHierarchyDisplayMode)
+        entryHierarchyDisplayMode = EntryHierarchyDisplayMode
+            .parseStoredKey(p.entryHierarchyDisplayMode)
+            .requireSupported()
     )
+
+private fun EntrySortFieldParseResult.requireSupported(fieldName: String): EntrySortField =
+    when (this) {
+        is EntrySortFieldParseResult.Supported -> value
+        EntrySortFieldParseResult.Missing ->
+            throw IllegalArgumentException("Stored $fieldName is missing")
+        is EntrySortFieldParseResult.Unsupported ->
+            throw IllegalArgumentException("Unsupported stored $fieldName: $storedValue")
+    }
+
+private fun EntryHierarchyDisplayModeParseResult.requireSupported(): EntryHierarchyDisplayMode =
+    when (this) {
+        is EntryHierarchyDisplayModeParseResult.Supported -> value
+        EntryHierarchyDisplayModeParseResult.Missing ->
+            throw IllegalArgumentException("Stored entry hierarchy display mode is missing")
+        is EntryHierarchyDisplayModeParseResult.Unsupported ->
+            throw IllegalArgumentException(
+                "Unsupported stored entry hierarchy display mode: $storedValue",
+            )
+    }
