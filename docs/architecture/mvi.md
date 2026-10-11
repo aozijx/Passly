@@ -263,3 +263,5 @@ Settings 中的异步或弹层流程仍必须使用页面语义状态，而不�
 - 恢复码草稿与验证分别使用封闭状态，Ready 独占 disclosure，验证的
   `Editing / Verifying / Accepted / Rejected / Failed` 都携带同一个受控输入；
 - interactor 的复制、提交结果使用业务结果类型，不用 `Boolean?` 表示“没有草稿 / 失败 / 成功”。
+- 共用操作控件同样接收 `Idle / InProgress / Succeeded / Failed` 这类显式阶段，不能再把
+  `progress: Boolean` 与 `result: Boolean?` 组合成一套隐藏状态机；页面负责把自身业务状态穷尽映射到控件阶段。

@@ -25,8 +25,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun ActionButton(
     modifier: Modifier = Modifier,
-    progress: Boolean = false,
-    result: Boolean? = null,
+    phase: ActionButtonPhase = ActionButtonPhase.Idle,
     icon: ImageVector? = null,
     containerColor: Color? = null,
     text: String = "Unknown",
@@ -40,7 +39,7 @@ fun ActionButton(
             .fillMaxWidth()
             .height(46.dp),
         onClick = onClick,
-        enabled = enabled && !progress && result == null,
+        enabled = enabled && phase == ActionButtonPhase.Idle,
         shape = MaterialTheme.shapes.extraLarge,
         colors = if (containerColor != null) {
             ButtonDefaults.filledTonalButtonColors(containerColor = containerColor)
@@ -50,16 +49,21 @@ fun ActionButton(
     ) {
         AnimatedContent(
             targetState = ActionButtonVisualState(
-                progress = progress,
-                result = result,
+                phase = phase,
                 icon = icon,
-                text = if (result == null) text else resultText
+                text = if (phase == ActionButtonPhase.Succeeded ||
+                    phase == ActionButtonPhase.Failed
+                ) {
+                    resultText
+                } else {
+                    text
+                },
             ),
             transitionSpec = { fadeIn() togetherWith fadeOut() },
             label = "ActionButtonContent"
         ) { state ->
-            when {
-                state.progress -> {
+            when (state.phase) {
+                ActionButtonPhase.InProgress -> {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp,
@@ -67,34 +71,46 @@ fun ActionButton(
                     )
                 }
 
-                content != null && state.result == null -> {
+                ActionButtonPhase.Idle -> if (content != null) {
                     content()
+                } else {
+                    ActionButtonLabel(state.icon, state.text)
                 }
 
-                else -> {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (state.icon != null) {
-                            Icon(
-                                imageVector = state.icon,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.size(8.dp))
-                        }
-                        Text(
-                            text = state.text,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
-                }
+                ActionButtonPhase.Succeeded,
+                ActionButtonPhase.Failed -> ActionButtonLabel(state.icon, state.text)
             }
         }
     }
 }
 
+@Composable
+private fun ActionButtonLabel(icon: ImageVector?, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        icon?.let {
+            Icon(
+                imageVector = it,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+        )
+    }
+}
+
 private data class ActionButtonVisualState(
-    val progress: Boolean,
-    val result: Boolean?,
+    val phase: ActionButtonPhase,
     val icon: ImageVector?,
     val text: String
 )
+
+enum class ActionButtonPhase {
+    Idle,
+    InProgress,
+    Succeeded,
+    Failed,
+}

@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.crypto.MemoryCleaner
 import com.aozijx.passly.core.ui.components.common.ActionButton
+import com.aozijx.passly.core.ui.components.common.ActionButtonPhase
 import com.aozijx.passly.core.ui.components.common.InputActionButton
 import com.aozijx.passly.core.ui.components.common.InputActionButtonConfig
 import com.aozijx.passly.core.ui.components.common.InputActionButtonState
@@ -132,7 +133,11 @@ fun AuthenticationScreen(
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.Fingerprint,
                     text = stringResource(R.string.auth_biometric_unlock),
-                    progress = activeMethod == AuthenticationMethod.BIOMETRIC,
+                    phase = if (activeMethod == AuthenticationMethod.BIOMETRIC) {
+                        ActionButtonPhase.InProgress
+                    } else {
+                        ActionButtonPhase.Idle
+                    },
                     enabled = activeMethod == null || activeMethod == AuthenticationMethod.BIOMETRIC,
                     onClick = { onAction(UnlockUiAction.BiometricClicked) },
                 )
@@ -145,8 +150,12 @@ fun AuthenticationScreen(
                         value = appPassword,
                         expanded = state.inputExpansion ==
                             UnlockInputExpansion.Expanded(AuthenticationMethod.APP_PASSWORD),
-                        progress = activeMethod == AuthenticationMethod.APP_PASSWORD,
-                        result = appPasswordFailureMessage?.let { false },
+                        phase = when {
+                            activeMethod == AuthenticationMethod.APP_PASSWORD ->
+                                ActionButtonPhase.InProgress
+                            appPasswordFailureMessage != null -> ActionButtonPhase.Failed
+                            else -> ActionButtonPhase.Idle
+                        },
                     ),
                     config = InputActionButtonConfig(
                         collapsedText = stringResource(R.string.auth_password_unlock),
@@ -171,7 +180,11 @@ fun AuthenticationScreen(
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.Password,
                     text = stringResource(R.string.auth_set_app_password),
-                    progress = setup?.phase == UnlockPasswordSetupPhase.Saving,
+                    phase = if (setup?.phase == UnlockPasswordSetupPhase.Saving) {
+                        ActionButtonPhase.InProgress
+                    } else {
+                        ActionButtonPhase.Idle
+                    },
                     enabled = activeMethod == null && setup?.phase != UnlockPasswordSetupPhase.Saving,
                     onClick = { onAction(UnlockUiAction.SetPasswordClicked) },
                 )
@@ -192,8 +205,12 @@ fun AuthenticationScreen(
                         value = recoveryCode,
                         expanded = state.inputExpansion ==
                             UnlockInputExpansion.Expanded(AuthenticationMethod.RECOVERY_CODE),
-                        progress = activeMethod == AuthenticationMethod.RECOVERY_CODE,
-                        result = recoveryCodeFailureMessage?.let { false },
+                        phase = when {
+                            activeMethod == AuthenticationMethod.RECOVERY_CODE ->
+                                ActionButtonPhase.InProgress
+                            recoveryCodeFailureMessage != null -> ActionButtonPhase.Failed
+                            else -> ActionButtonPhase.Idle
+                        },
                     ),
                     config = InputActionButtonConfig(
                         icon = Icons.Default.Restore,

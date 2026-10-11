@@ -70,7 +70,7 @@ fun InputActionButton(
     val submit = {
         performInputActionSubmit(
             enabled = enabled,
-            progress = state.progress,
+            phase = state.phase,
             hasInput = state.value.isNotEmpty(),
             onAction = onAction,
             dismissInput = dismissInput,
@@ -89,8 +89,10 @@ fun InputActionButton(
         }
     }
 
-    LaunchedEffect(state.result) {
-        if (state.result != null) {
+    LaunchedEffect(state.phase) {
+        if (state.phase == ActionButtonPhase.Succeeded ||
+            state.phase == ActionButtonPhase.Failed
+        ) {
             delay(RESULT_DISPLAY_DURATION_MS)
             onResultConsumed()
         }
@@ -114,7 +116,7 @@ fun InputActionButton(
                         imeAction = ImeAction.Done,
                     ),
                     keyboardActions = KeyboardActions(onDone = { submit() }),
-                    enabled = enabled && !state.progress,
+                    enabled = enabled && state.phase != ActionButtonPhase.InProgress,
                     modifier = Modifier
                         .bringIntoViewRequester(bringIntoViewRequester)
                         .focusRequester(focusRequester)
@@ -127,16 +129,21 @@ fun InputActionButton(
 
         ActionButton(
             modifier = Modifier.fillMaxWidth(),
-            progress = state.progress,
-            result = state.result,
-            icon = when (state.result) {
-                true -> config.successIcon
-                false -> config.errorIcon
-                else -> config.icon
+            phase = state.phase,
+            icon = when (state.phase) {
+                ActionButtonPhase.Succeeded -> config.successIcon
+                ActionButtonPhase.Failed -> config.errorIcon
+                ActionButtonPhase.Idle,
+                ActionButtonPhase.InProgress -> config.icon
             },
             containerColor = config.containerColor,
             text = if (state.expanded) config.expandedText else config.collapsedText,
-            resultText = if (state.result == true) config.successText else config.errorText,
+            resultText = when (state.phase) {
+                ActionButtonPhase.Succeeded -> config.successText
+                ActionButtonPhase.Failed -> config.errorText
+                ActionButtonPhase.Idle,
+                ActionButtonPhase.InProgress -> ""
+            },
             enabled = enabled && (!state.expanded || state.value.isNotEmpty()),
             onClick = {
                 if (state.expanded) submit() else onExpandedChange(true)
@@ -148,8 +155,7 @@ fun InputActionButton(
 data class InputActionButtonState(
     val value: String = "",
     val expanded: Boolean = false,
-    val progress: Boolean = false,
-    val result: Boolean? = null,
+    val phase: ActionButtonPhase = ActionButtonPhase.Idle,
 )
 
 data class InputActionButtonConfig(
@@ -166,12 +172,12 @@ data class InputActionButtonConfig(
 
 internal fun performInputActionSubmit(
     enabled: Boolean,
-    progress: Boolean,
+    phase: ActionButtonPhase,
     hasInput: Boolean,
     onAction: () -> Unit,
     dismissInput: () -> Unit,
 ) {
-    if (enabled && !progress && hasInput) {
+    if (enabled && phase == ActionButtonPhase.Idle && hasInput) {
         onAction()
         dismissInput()
     }

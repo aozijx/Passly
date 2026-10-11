@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.crypto.MemoryCleaner
 import com.aozijx.passly.core.ui.components.common.InputActionButton
+import com.aozijx.passly.core.ui.components.common.ActionButtonPhase
 import com.aozijx.passly.core.ui.components.common.InputActionButtonConfig
 import com.aozijx.passly.core.ui.components.common.InputActionButtonState
 import com.aozijx.passly.domain.sensitive.SensitiveValue
@@ -45,12 +46,12 @@ fun RecoveryCodeDetail(
     var isExpanded by remember { mutableStateOf(false) }
     val verification = state.verification
     val verifyInput = verification.input.toUiString()
-    val verificationResult = when (verification) {
-        is RecoveryCodeVerificationUiState.Accepted -> true
+    val verificationPhase = when (verification) {
+        is RecoveryCodeVerificationUiState.Accepted -> ActionButtonPhase.Succeeded
         is RecoveryCodeVerificationUiState.Rejected,
-        is RecoveryCodeVerificationUiState.Failed -> false
-        is RecoveryCodeVerificationUiState.Editing,
-        is RecoveryCodeVerificationUiState.Verifying -> null
+        is RecoveryCodeVerificationUiState.Failed -> ActionButtonPhase.Failed
+        is RecoveryCodeVerificationUiState.Editing -> ActionButtonPhase.Idle
+        is RecoveryCodeVerificationUiState.Verifying -> ActionButtonPhase.InProgress
     }
 
     Column(
@@ -115,15 +116,15 @@ fun RecoveryCodeDetail(
                 state = InputActionButtonState(
                     value = verifyInput,
                     expanded = isExpanded,
-                    progress = verification is RecoveryCodeVerificationUiState.Verifying,
-                    result = verificationResult,
+                    phase = verificationPhase,
                 ),
                 config = InputActionButtonConfig(
                     icon = Icons.Default.Restore,
-                    containerColor = when (verificationResult) {
-                        true -> MaterialTheme.colorScheme.secondaryContainer
-                        false -> MaterialTheme.colorScheme.errorContainer
-                        else -> null
+                    containerColor = when (verificationPhase) {
+                        ActionButtonPhase.Succeeded -> MaterialTheme.colorScheme.secondaryContainer
+                        ActionButtonPhase.Failed -> MaterialTheme.colorScheme.errorContainer
+                        ActionButtonPhase.Idle,
+                        ActionButtonPhase.InProgress -> null
                     },
                     collapsedText = stringResource(R.string.restore_access),
                     expandedText = stringResource(R.string.recovery_code_verify),

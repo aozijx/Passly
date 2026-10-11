@@ -11,7 +11,7 @@ class InputActionButtonTest {
 
         performInputActionSubmit(
             enabled = true,
-            progress = false,
+            phase = ActionButtonPhase.Idle,
             hasInput = true,
             onAction = { submittedInput = input },
             dismissInput = { input = "" },
@@ -19,5 +19,20 @@ class InputActionButtonTest {
 
         assertEquals("correct-password", submittedInput)
         assertEquals("", input)
+    }
+
+    @Test
+    fun resultPhaseCannotSubmitAgainBeforeItIsConsumed() {
+        var submissions = 0
+
+        performInputActionSubmit(
+            enabled = true,
+            phase = ActionButtonPhase.Succeeded,
+            hasInput = true,
+            onAction = { submissions++ },
+            dismissInput = {},
+        )
+
+        assertEquals(0, submissions)
     }
 }
