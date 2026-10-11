@@ -1,6 +1,7 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
 import com.aozijx.passly.core.platform.media.FaviconProcessingException
+import com.aozijx.passly.core.platform.media.FaviconProcessingFailure
 import com.aozijx.passly.domain.entry.model.EntryIcon
 internal fun EntryIcon.toDetailFaviconSource(): DetailFaviconSource {
     val privatePath = customReference
@@ -22,8 +23,20 @@ internal fun DetailFaviconEditorState.privateImagePath(): String? =
     (source as? DetailFaviconSource.PrivateImage)?.localPath
 
 internal fun Throwable.toFaviconProcessingError(): DetailFaviconProcessingError =
-    (this as? FaviconProcessingException)
-        ?.failure
-        ?.name
-        ?.let(DetailFaviconProcessingError::valueOf)
-        ?: DetailFaviconProcessingError.INVALID_IMAGE
+    when ((this as? FaviconProcessingException)?.failure) {
+        FaviconProcessingFailure.INVALID_URL ->
+            DetailFaviconProcessingError.INVALID_URL
+        FaviconProcessingFailure.URL_NOT_ALLOWED ->
+            DetailFaviconProcessingError.URL_NOT_ALLOWED
+        FaviconProcessingFailure.DOWNLOAD_FAILED ->
+            DetailFaviconProcessingError.DOWNLOAD_FAILED
+        FaviconProcessingFailure.NOT_IMAGE ->
+            DetailFaviconProcessingError.NOT_IMAGE
+        FaviconProcessingFailure.IMAGE_TOO_LARGE ->
+            DetailFaviconProcessingError.IMAGE_TOO_LARGE
+        FaviconProcessingFailure.INVALID_IMAGE ->
+            DetailFaviconProcessingError.INVALID_IMAGE
+        FaviconProcessingFailure.SAVE_FAILED ->
+            DetailFaviconProcessingError.SAVE_FAILED
+        null -> DetailFaviconProcessingError.INVALID_IMAGE
+    }

@@ -53,15 +53,15 @@ class EntryDraftMaterializer @Inject constructor() {
     )
 
     private fun materializeOtp(draft: EntryDraft, identity: EntryIdentity): Entry {
-        val type = draft.enumValue(FieldKey.OTP_TYPE, OtpType.TOTP)
+        val type = draft.otpType()
         val config = OtpConfig(
             type = type,
             secret = draft.text(FieldKey.OTP_SECRET),
-            algorithm = draft.enumValue(FieldKey.OTP_ALGORITHM, OtpHashAlgorithm.SHA1),
+            algorithm = draft.otpAlgorithm(),
             digits = draft.number(FieldKey.OTP_DIGITS) ?: if (type == OtpType.STEAM) 5 else 6,
             periodSeconds = if (type == OtpType.HOTP) null else draft.number(FieldKey.OTP_PERIOD) ?: 30,
             counter = if (type == OtpType.HOTP) draft.longNumber(FieldKey.OTP_COUNTER) ?: 0L else null,
-            encoding = draft.enumValue(FieldKey.OTP_ENCODING, OtpSecretEncoding.BASE32),
+            encoding = draft.otpEncoding(),
             issuer = draft.text(FieldKey.OTP_ISSUER),
             accountName = draft.text(FieldKey.OTP_ACCOUNT_NAME),
         )
@@ -132,11 +132,30 @@ class EntryDraftMaterializer @Inject constructor() {
     private fun EntryDraft.toggle(key: FieldKey): Boolean =
         (this[key] as? EntryDraftValue.Toggle)?.enabled ?: false
 
-    private inline fun <reified T : Enum<T>> EntryDraft.enumValue(key: FieldKey, default: T): T {
-        val raw = text(key) ?: return default
-        return enumValues<T>().firstOrNull { it.name.equals(raw, ignoreCase = true) }
-            ?: throw IllegalArgumentException("Unsupported ${key.name} draft value: $raw")
+    private fun EntryDraft.otpType(): OtpType = when (val raw = text(FieldKey.OTP_TYPE)) {
+        null -> OtpType.TOTP
+        "TOTP" -> OtpType.TOTP
+        "HOTP" -> OtpType.HOTP
+        "STEAM" -> OtpType.STEAM
+        else -> throw IllegalArgumentException("Unsupported OTP_TYPE draft value: $raw")
     }
+
+    private fun EntryDraft.otpAlgorithm(): OtpHashAlgorithm =
+        when (val raw = text(FieldKey.OTP_ALGORITHM)) {
+            null -> OtpHashAlgorithm.SHA1
+            "SHA1" -> OtpHashAlgorithm.SHA1
+            "SHA256" -> OtpHashAlgorithm.SHA256
+            "SHA512" -> OtpHashAlgorithm.SHA512
+            else -> throw IllegalArgumentException("Unsupported OTP_ALGORITHM draft value: $raw")
+        }
+
+    private fun EntryDraft.otpEncoding(): OtpSecretEncoding =
+        when (val raw = text(FieldKey.OTP_ENCODING)) {
+            null -> OtpSecretEncoding.BASE32
+            "BASE32" -> OtpSecretEncoding.BASE32
+            "BASE64" -> OtpSecretEncoding.BASE64
+            else -> throw IllegalArgumentException("Unsupported OTP_ENCODING draft value: $raw")
+        }
 
     private fun String?.requireWifiSecurityType(): WifiSecurityType =
         when (val result = WifiSecurityType.parseStoredValue(this)) {
