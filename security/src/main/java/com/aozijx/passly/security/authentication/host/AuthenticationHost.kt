@@ -74,13 +74,22 @@ fun AuthenticationHost(
 
 private fun AuthenticationDialogRequest?.toUiState(): AuthenticationDialogUiState? = when (this) {
     is AuthenticationDialogRequest.ChooseMethod -> AuthenticationDialogUiState.ChooseMethod(
-        methods.map { AuthenticationMethodUiModel.valueOf(it.name) },
+        methods.map(AuthenticationMethod::toUiModel),
     )
     is AuthenticationDialogRequest.Secret -> AuthenticationDialogUiState.Secret(
-        AuthenticationMethodUiModel.valueOf(method.name),
+        method.toUiModel(),
     )
     null -> null
 }
 
-private fun AuthenticationMethodUiModel.toDomainModel(): AuthenticationMethod =
-    AuthenticationMethod.valueOf(name)
+private fun AuthenticationMethod.toUiModel(): AuthenticationMethodUiModel = when (this) {
+    AuthenticationMethod.BIOMETRIC -> AuthenticationMethodUiModel.BIOMETRIC
+    AuthenticationMethod.APP_PASSWORD -> AuthenticationMethodUiModel.APP_PASSWORD
+    AuthenticationMethod.RECOVERY_CODE -> AuthenticationMethodUiModel.RECOVERY_CODE
+}
+
+private fun AuthenticationMethodUiModel.toDomainModel(): AuthenticationMethod = when (this) {
+    AuthenticationMethodUiModel.BIOMETRIC -> AuthenticationMethod.BIOMETRIC
+    AuthenticationMethodUiModel.APP_PASSWORD -> AuthenticationMethod.APP_PASSWORD
+    AuthenticationMethodUiModel.RECOVERY_CODE -> AuthenticationMethod.RECOVERY_CODE
+}

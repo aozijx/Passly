@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.local.database.query
 
 import androidx.sqlite.db.SimpleSQLiteQuery
+import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
@@ -25,12 +26,12 @@ internal fun buildEntryPagingQuery(query: EntryListQuery): SimpleSQLiteQuery {
     val args = mutableListOf<Any>()
     val usageTypes = ActivityType.USAGE_TYPES
     val usagePlaceholders = usageTypes.joinToString(",") { "?" }
-    args.addAll(usageTypes.map(ActivityType::name))
+    args.addAll(usageTypes.map(ActivityType::toStorageKey))
 
     val predicates = mutableListOf("entry.deletedAt IS NULL")
     if (query.entryTypes.isNotEmpty()) {
         predicates += "entry.entryType IN (${query.entryTypes.joinToString(",") { "?" }})"
-        args.addAll(query.entryTypes.map(EntryType::name))
+        args.addAll(query.entryTypes.map(EntryType::toStorageKey))
     }
 
     if (query.normalizedSearchText.isNotEmpty()) {
@@ -61,7 +62,7 @@ internal fun buildEntryPagingQuery(query: EntryListQuery): SimpleSQLiteQuery {
         }
         EntryHierarchyDisplayMode.SEPARATE -> {
             predicates += "entry.entryType != ?"
-            args += EntryType.ACCOUNT.name
+            args += EntryType.ACCOUNT.toStorageKey()
         }
         EntryHierarchyDisplayMode.EXPANDED,
         null,
@@ -108,7 +109,7 @@ internal fun buildEntryPagingQuery(query: EntryListQuery): SimpleSQLiteQuery {
                           ON direct_target.entryId = direct.targetEntryId
                          AND direct_target.deletedAt IS NULL
                         WHERE direct.sourceEntryId = mapped.entryId
-                          AND direct.relationType = '${EntryRelationType.MEMBER_OF_ACCOUNT.name}'
+                          AND direct.relationType = '${EntryRelationType.MEMBER_OF_ACCOUNT.toStorageKey()}'
                         ORDER BY direct.createdAt DESC, direct.linkId DESC
                         LIMIT 1
                     ),
@@ -119,7 +120,7 @@ internal fun buildEntryPagingQuery(query: EntryListQuery): SimpleSQLiteQuery {
                           ON recovery_target.entryId = recovery.targetEntryId
                          AND recovery_target.deletedAt IS NULL
                         WHERE recovery.sourceEntryId = mapped.entryId
-                          AND recovery.relationType = '${EntryRelationType.RECOVERY_FOR.name}'
+                          AND recovery.relationType = '${EntryRelationType.RECOVERY_FOR.toStorageKey()}'
                         ORDER BY recovery.createdAt DESC, recovery.linkId DESC
                         LIMIT 1
                     ),
@@ -131,8 +132,8 @@ internal fun buildEntryPagingQuery(query: EntryListQuery): SimpleSQLiteQuery {
                           ON account_target.entryId = member.targetEntryId
                          AND account_target.deletedAt IS NULL
                         WHERE otp.sourceEntryId = mapped.entryId
-                          AND otp.relationType = '${EntryRelationType.OTP_FOR.name}'
-                          AND member.relationType = '${EntryRelationType.MEMBER_OF_ACCOUNT.name}'
+                          AND otp.relationType = '${EntryRelationType.OTP_FOR.toStorageKey()}'
+                          AND member.relationType = '${EntryRelationType.MEMBER_OF_ACCOUNT.toStorageKey()}'
                         ORDER BY otp.createdAt DESC, member.createdAt DESC, member.linkId DESC
                         LIMIT 1
                     )
@@ -200,7 +201,7 @@ private fun EntrySortField.sqlExpression(entryAlias: String, usageAlias: String)
         EntrySortField.LAST_USED_AT -> "$usageAlias.lastUsedAt"
         EntrySortField.USAGE_FREQUENCY -> "COALESCE($usageAlias.usageCount, 0)"
         EntrySortField.ENTRY_TYPE -> EntryType.entries.mapIndexed { index, type ->
-            "WHEN '${type.name}' THEN $index"
+            "WHEN '${type.toStorageKey()}' THEN $index"
         }.joinToString(
             prefix = "CASE $entryAlias.entryType ",
             postfix = " ELSE ${EntryType.entries.size} END",

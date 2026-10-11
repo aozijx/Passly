@@ -6,6 +6,7 @@ import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.feature.vault.otp.OtpAuthUriCodec
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffect
@@ -111,7 +112,7 @@ class AddOtpViewModel @Inject constructor(
             OtpType.TOTP -> period.ifBlank { "30" }
             OtpType.HOTP -> period
         },
-        algorithm = if (type == OtpType.STEAM) "SHA1" else algorithm,
+        algorithm = if (type == OtpType.STEAM) OtpHashAlgorithm.SHA1 else algorithm,
         counter = if (type == OtpType.HOTP) counter.ifBlank { "0" } else counter,
     )
 
@@ -129,7 +130,7 @@ class AddOtpViewModel @Inject constructor(
             digits = config.digits.toString(),
             period = (config.periodSeconds ?: 30).toString(),
             counter = (config.counter ?: 0L).toString(),
-            algorithm = config.algorithm.name,
+            algorithm = config.algorithm,
             encoding = config.encoding,
         ).withTypeDefaults(config.type)
     }

@@ -2,25 +2,28 @@ package com.aozijx.passly.data.local.database.converter
 
 import androidx.room.TypeConverter
 import com.aozijx.passly.data.codec.json.AppJson
+import com.aozijx.passly.data.codec.activityTypeFromStorageKey
+import com.aozijx.passly.data.codec.entryRelationTypeFromStorageKey
+import com.aozijx.passly.data.codec.entryTypeFromStorageKey
+import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 
 object EntryTypeConverter {
     @TypeConverter
-    fun fromEntryType(value: EntryType): String = value.name
+    fun fromEntryType(value: EntryType): String = value.toStorageKey()
 
     @TypeConverter
-    fun toEntryType(value: String): EntryType = EntryType.valueOf(value)
+    fun toEntryType(value: String): EntryType = entryTypeFromStorageKey(value)
 }
 
 object ActivityTypeConverter {
     @TypeConverter
-    fun fromActivityType(value: ActivityType): String = value.name
+    fun fromActivityType(value: ActivityType): String = value.toStorageKey()
 
     @TypeConverter
-    fun toActivityType(value: String): ActivityType =
-        ActivityType.entries.find { it.name == value } ?: ActivityType.VIEW
+    fun toActivityType(value: String): ActivityType = activityTypeFromStorageKey(value)
 }
 
 object StringSetConverter {
@@ -34,9 +37,9 @@ object StringSetConverter {
 
 object EntryRelationTypeConverter {
     @TypeConverter
-    fun fromEntryRelationType(value: EntryRelationType): String = value.name
+    fun fromEntryRelationType(value: EntryRelationType): String = value.toStorageKey()
 
     @TypeConverter
     fun toEntryRelationType(value: String): EntryRelationType =
-        EntryRelationType.valueOf(value)
+        entryRelationTypeFromStorageKey(value)
 }

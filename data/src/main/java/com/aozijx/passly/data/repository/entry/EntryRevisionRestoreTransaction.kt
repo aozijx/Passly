@@ -4,6 +4,8 @@ import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.data.codec.entry.SecretBundleCodec
+import com.aozijx.passly.data.codec.sensitiveFieldKeyFromStorageKey
+import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
 import com.aozijx.passly.data.local.database.AppDatabase
@@ -26,6 +28,7 @@ import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.domain.entry.model.query.EntryCapability
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.domain.entry.model.sensitive.SecretFieldKeys
 import com.aozijx.passly.domain.entry.policy.SensitiveRevisionRestorePolicy
 import javax.inject.Inject
 
@@ -79,7 +82,8 @@ internal class EntryRevisionRestoreTransaction @Inject constructor(
         val historicalSensitive = sensitiveCodec.decode(revision.sensitiveFieldCipherSet)
         val currentSensitiveKeys = secretFieldQueryDao().getKeys(entryId.value)
             .mapNotNullTo(linkedSetOf()) { name ->
-                SensitiveFieldKey.entries.firstOrNull { it.name == name }
+                if (name == SecretFieldKeys.STRUCT_BUNDLE) null
+                else sensitiveFieldKeyFromStorageKey(name)
             }
         val historicalSensitiveKeys = historicalSensitive.mapTo(linkedSetOf()) { it.key }
         val affectedSensitiveKeys = SensitiveRevisionRestorePolicy.affectedFields(
@@ -176,7 +180,7 @@ internal class EntryRevisionRestoreTransaction @Inject constructor(
         val rows = sensitiveFields.map { field ->
             EntrySecretFieldEntity(
                 entryId = entryId,
-                fieldKey = field.key.name,
+                fieldKey = field.key.toStorageKey(),
                 valueCipher = field.valueCipher,
                 keyVersion = field.keyVersion,
                 updatedAt = now,
@@ -242,7 +246,7 @@ internal class EntryRevisionRestoreTransaction @Inject constructor(
         fileName = fileName,
         mimeType = mimeType,
         displayOrder = displayOrder,
-        status = AttachmentStatus.COMMITTED.name,
+        status = AttachmentStatus.COMMITTED.toStorageKey(),
         createdAt = createdAt,
     )
 

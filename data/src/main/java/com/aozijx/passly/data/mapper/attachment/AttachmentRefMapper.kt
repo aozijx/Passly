@@ -1,6 +1,8 @@
 package com.aozijx.passly.data.mapper.attachment
 
 import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
+import com.aozijx.passly.data.codec.attachmentStatusFromStorageKey
+import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.attachment.EntryAttachment
 
@@ -11,7 +13,7 @@ object AttachmentRefMapper {
         fileName = entity.fileName,
         fileSize = fileSize,
         mimeType = entity.mimeType,
-        status = AttachmentStatus.valueOf(entity.status),
+        status = attachmentStatusFromStorageKey(entity.status),
         stagingOwnerId = entity.stagingOwnerId,
         displayOrder = entity.displayOrder,
         createdAt = entity.createdAt,
@@ -26,7 +28,7 @@ object AttachmentRefMapper {
             fileName = domain.fileName,
             mimeType = domain.mimeType,
             displayOrder = domain.displayOrder,
-            status = domain.status.name,
+            status = domain.status.toStorageKey(),
             createdAt = domain.createdAt,
         )
 }

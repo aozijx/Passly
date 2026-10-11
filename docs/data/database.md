@@ -55,6 +55,15 @@ Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `data/schemas`�
 - `capabilityFlags` 表示一个原子条目实际具有的能力，用于列表和详情快速判断；它不表示跨条目的
   账户组合，也不能替代 `entryType` 或 `entry_links`。
 
+### 持久化枚举键
+
+数据库列、密文字段键和 Revision 快照中的枚举值统一由 `StorageEnumMappings` 显式映射为稳定键。
+编码与解码必须穷举每个领域值，不能依赖 `Enum.name`、`Enum.valueOf` 或 ordinal；遇到未知或损坏的
+持久化键必须在 Data 边界明确失败，不能静默替换成另一个合法默认值。新增枚举成员时必须同步补齐
+双向映射，并由全量 round-trip 测试覆盖。
+
+当前稳定键与既有 Schema v1 中保存的字符串逐字节一致，因此这次收紧映射不升级 Room 数据库版本。
+
 ## Blob 与读取边界
 
 `summaryBlob` 是 AES-GCM 密文，解密后为 `SummaryPayload`。其中的 `color` 是可选展示元数据，

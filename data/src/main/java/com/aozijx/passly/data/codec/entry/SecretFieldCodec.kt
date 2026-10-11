@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.codec.entry
 
 import com.aozijx.passly.data.codec.DatabaseRecordAad
+import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.security.dek.SensitiveFieldEncryptor
 import javax.inject.Inject
@@ -13,10 +14,10 @@ class SecretFieldCodec @Inject constructor(
     private val fieldEncryptor: SensitiveFieldEncryptor
 ) {
     suspend fun encrypt(entryId: String, key: SensitiveFieldKey, value: String): ByteArray =
-        fieldEncryptor.encrypt(value, DatabaseRecordAad.secretField(entryId, key.name))
+        fieldEncryptor.encrypt(value, DatabaseRecordAad.secretField(entryId, key.toStorageKey()))
 
     suspend fun decrypt(entryId: String, key: SensitiveFieldKey, cipher: ByteArray): String =
-        fieldEncryptor.decrypt(cipher, DatabaseRecordAad.secretField(entryId, key.name))
+        fieldEncryptor.decrypt(cipher, DatabaseRecordAad.secretField(entryId, key.toStorageKey()))
 
     suspend fun decryptProvisioned(
         entryId: String,
@@ -24,6 +25,6 @@ class SecretFieldCodec @Inject constructor(
         cipher: ByteArray
     ): String = fieldEncryptor.decryptProvisioned(
         cipher,
-        DatabaseRecordAad.secretField(entryId, key.name)
+        DatabaseRecordAad.secretField(entryId, key.toStorageKey())
     )
 }

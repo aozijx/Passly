@@ -5,6 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
+import com.aozijx.passly.data.codec.toStorageKey
 
 /** Semantic metadata referencing immutable content. Pending refs survive process death. */
 @Entity(
@@ -39,6 +40,6 @@ data class AttachmentRefEntity(
     val fileName: String,
     val mimeType: String?,
     val displayOrder: Int = 0,
-    val status: String = AttachmentStatus.PENDING.name,
+    val status: String = AttachmentStatus.PENDING.toStorageKey(),
     val createdAt: Long = System.currentTimeMillis(),
 )

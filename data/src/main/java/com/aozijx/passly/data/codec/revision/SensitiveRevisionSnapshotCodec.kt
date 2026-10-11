@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.codec.revision
 
 import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
+import com.aozijx.passly.data.codec.sensitiveFieldKeyFromStorageKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -41,7 +42,7 @@ class SensitiveRevisionSnapshotCodec @Inject constructor() {
         require(count in 0..MAX_FIELDS) { "Invalid sensitive revision field count" }
         val fields = buildList(count) {
             repeat(count) {
-                val key = SensitiveFieldKey.valueOf(input.readUTF())
+                val key = sensitiveFieldKeyFromStorageKey(input.readUTF())
                 val keyVersion = input.readInt()
                 val cipherSize = input.readInt()
                 require(cipherSize in 1..MAX_CIPHER_BYTES && cipherSize <= input.available()) {

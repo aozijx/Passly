@@ -4,6 +4,7 @@ import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.codec.entry.SecretFieldCodec
+import com.aozijx.passly.data.codec.revisionChangeFromStorageKey
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
@@ -137,5 +138,5 @@ internal fun EntryRevisionEntity.toRevisionMetadata() = EntryRevisionMetadata(
     entryId = EntryId(entryId),
     version = EntryVersion(version),
     createdAtMs = createdAt,
-    change = RevisionChange.valueOf(changeType),
+    change = revisionChangeFromStorageKey(changeType),
 )

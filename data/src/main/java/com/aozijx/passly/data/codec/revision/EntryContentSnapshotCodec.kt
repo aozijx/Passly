@@ -1,6 +1,8 @@
 package com.aozijx.passly.data.codec.revision
 
 import com.aozijx.passly.data.codec.DatabaseRecordAad
+import com.aozijx.passly.data.codec.entryRelationTypeFromStorageKey
+import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.data.mapper.entry.EntrySecretMapper
 import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.data.mapper.entry.toBundleSecret
@@ -161,14 +163,14 @@ class EntryContentSnapshotCodec @Inject constructor(
 }
 
 private fun EntryLink.toSnapshot() = EntryLinkSnapshot(
-    id.value, sourceEntryId.value, targetEntryId.value, relationType.name, createdAt, updatedAt
+    id.value, sourceEntryId.value, targetEntryId.value, relationType.toStorageKey(), createdAt, updatedAt
 )
 
 private fun EntryLinkSnapshot.toDomain(): EntryLink = EntryLink.create(
     id = EntryLinkId(id),
     sourceEntryId = EntryId(sourceEntryId),
     targetEntryId = EntryId(targetEntryId),
-    relationType = EntryRelationType.valueOf(relationType),
+    relationType = entryRelationTypeFromStorageKey(relationType),
     createdAt = createdAt,
     updatedAt = updatedAt,
 )

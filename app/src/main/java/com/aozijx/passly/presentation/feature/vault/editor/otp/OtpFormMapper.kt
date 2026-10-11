@@ -13,12 +13,7 @@ import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 fun OtpFormState.toEntryDraft(): EntryDraft {
     val definition = EntryTypeDefinitions[EntryType.OTP]
     val digitsValue = if (type == OtpType.STEAM) 5 else digits.trim().toIntOrNull() ?: 6
-    val algorithmValue = if (type == OtpType.STEAM) {
-        OtpHashAlgorithm.SHA1
-    } else {
-        OtpHashAlgorithm.entries.firstOrNull { it.name.equals(algorithm.trim(), ignoreCase = true) }
-            ?: OtpHashAlgorithm.SHA1
-    }
+    val algorithmValue = if (type == OtpType.STEAM) OtpHashAlgorithm.SHA1 else algorithm
     var draft = EntryDraft(EntryDraftTarget.New(EntryType.OTP))
         .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text(title.trim()))
         .withValue(definition, FieldKey.OTP_SECRET, EntryDraftValue.Text(secret.trim()))

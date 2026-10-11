@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.repository.entry.command
 
 import com.aozijx.passly.data.codec.entry.SecretBundleCodec
+import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
 import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
@@ -70,7 +71,7 @@ internal class EntryRevisionWriter @Inject constructor(
                 entryId = entryId,
                 entryContentCipher = entryContentCipher,
                 sensitiveFieldCipherSet = sensitiveRevisionCodec.encode(sensitiveFields),
-                changeType = change.name,
+                changeType = change.toStorageKey(),
                 createdAt = now
             )
         )

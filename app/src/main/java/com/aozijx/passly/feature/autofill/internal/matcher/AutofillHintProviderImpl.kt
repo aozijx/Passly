@@ -23,10 +23,12 @@ class AutofillHintProviderImpl @Inject constructor(
     private val hintRoleMapLazy by lazy {
         val mappings = context.resources.getStringArray(R.array.autofill_hint_role_mappings)
         mappings.associate { mapping ->
-            val parts = mapping.split(":")
-            val hint = parts[0]
-            val roleName = parts[1]
-            hint to FieldRole.valueOf(roleName)
+            val (hint, roleKey) = mapping.split(":", limit = 2).also { parts ->
+                require(parts.size == 2 && parts.all(String::isNotBlank)) {
+                    "Invalid autofill hint mapping"
+                }
+            }
+            hint to fieldRoleFromResourceKey(roleKey)
         }
     }
 
@@ -43,4 +45,12 @@ class AutofillHintProviderImpl @Inject constructor(
         val pattern = keywords.joinToString("|") { "(?:$it)" }
         return Regex(pattern, RegexOption.IGNORE_CASE)
     }
+}
+
+private fun fieldRoleFromResourceKey(key: String): FieldRole = when (key) {
+    "USERNAME" -> FieldRole.USERNAME
+    "PASSWORD" -> FieldRole.PASSWORD
+    "OTP" -> FieldRole.OTP
+    "UNKNOWN" -> FieldRole.UNKNOWN
+    else -> throw IllegalArgumentException("Unknown autofill field role resource key: $key")
 }

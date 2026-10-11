@@ -4,6 +4,7 @@ import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import org.junit.Assert.assertEquals
@@ -21,7 +22,7 @@ class OtpFormMapperTest {
             secret = " AB C ",
             period = "60",
             digits = "8",
-            algorithm = "sha256",
+            algorithm = OtpHashAlgorithm.SHA256,
             encoding = OtpSecretEncoding.BASE64,
             counter = "99",
             tags = " work, otp ",
@@ -62,7 +63,7 @@ class OtpFormMapperTest {
             title = "Steam",
             secret = "secret",
             type = OtpType.STEAM,
-            algorithm = "SHA512",
+            algorithm = OtpHashAlgorithm.SHA512,
             digits = "8",
         ).toEntryDraft()
 

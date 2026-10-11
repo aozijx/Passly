@@ -32,7 +32,12 @@ fun languagePickerOptions(): List<LanguageOptionUiModel> = AppLanguage.entries.m
     LanguageOptionUiModel(language.name, language.localizedDisplayName())
 }
 
-fun appLanguageFromKey(key: String): AppLanguage = AppLanguage.valueOf(key)
+fun appLanguageFromKey(key: String): AppLanguage = when (key) {
+    "SYSTEM" -> AppLanguage.SYSTEM
+    "ZH" -> AppLanguage.ZH
+    "EN" -> AppLanguage.EN
+    else -> throw IllegalArgumentException("Unknown app language UI key: $key")
+}
 
 @Composable
 fun AppearanceSettings.toAppearanceUiModel(): AppearanceUiModel = AppearanceUiModel(

@@ -54,10 +54,9 @@ fun OtpConfigForm(
             label = stringResource(R.string.otp_account_name),
         )
         DropdownSelector(
-            value = OtpHashAlgorithm.entries.firstOrNull { it.name == state.algorithm }
-                ?: OtpHashAlgorithm.SHA1,
+            value = state.algorithm,
             onValueChange = {
-                onAction(AddOtpAction.FormChanged(state.copy(algorithm = it.name)))
+                onAction(AddOtpAction.FormChanged(state.copy(algorithm = it)))
             },
             options = OtpHashAlgorithm.entries,
             label = stringResource(R.string.totp_algorithm),

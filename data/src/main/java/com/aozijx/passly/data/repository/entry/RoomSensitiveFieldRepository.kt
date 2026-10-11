@@ -2,6 +2,9 @@ package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.codec.entry.SecretFieldCodec
+import com.aozijx.passly.data.codec.sensitiveFieldKeyFromStorageKey
+import com.aozijx.passly.data.codec.toStorageKey
+import com.aozijx.passly.domain.entry.model.sensitive.SecretFieldKeys
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationPermitVerifier
@@ -32,7 +35,8 @@ internal class RoomSensitiveFieldRepository @Inject constructor(
                 entryId,
                 secretFieldQueryDao().getKeys(entryId.value)
                     .mapNotNull { keyName ->
-                        SensitiveFieldKey.entries.firstOrNull { it.name == keyName }
+                        if (keyName == SecretFieldKeys.STRUCT_BUNDLE) null
+                        else sensitiveFieldKeyFromStorageKey(keyName)
                     }
                     .toSet()
             )
@@ -63,7 +67,7 @@ internal class RoomSensitiveFieldRepository @Inject constructor(
     ) emptyList() else {
         databaseSession.query {
             keys.mapNotNull { key ->
-                val entity = secretFieldQueryDao().getField(entryId.value, key.name)
+                val entity = secretFieldQueryDao().getField(entryId.value, key.toStorageKey())
                     ?: return@mapNotNull null
                 RevealedSensitiveField(
                     entryId = entryId,

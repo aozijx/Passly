@@ -8,6 +8,8 @@ import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
 import com.aozijx.passly.data.mapper.entry.mergeSensitiveFields
 import com.aozijx.passly.data.mapper.entry.toBundleSecret
 import com.aozijx.passly.data.mapper.entry.toSensitiveFieldValues
+import com.aozijx.passly.data.codec.sensitiveFieldKeyFromStorageKey
+import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import javax.inject.Inject
@@ -35,7 +37,7 @@ class SecretFieldStore @Inject internal constructor(
         secret.toSensitiveFieldValues().forEach { (key, value) ->
             rows += EntrySecretFieldEntity(
                 entryId = entryId,
-                fieldKey = key.name,
+                fieldKey = key.toStorageKey(),
                 valueCipher = fieldCodec.encrypt(entryId, key, value),
                 keyVersion = 1,
                 updatedAt = now,
@@ -66,8 +68,7 @@ class SecretFieldStore @Inject internal constructor(
             ?: EntrySecret()
         val fields = rows.mapNotNull { row ->
             if (row.fieldKey == SecretBundleCodec.FIELD_KEY) return@mapNotNull null
-            val key = SensitiveFieldKey.entries.firstOrNull { it.name == row.fieldKey }
-                ?: return@mapNotNull null
+            val key = sensitiveFieldKeyFromStorageKey(row.fieldKey)
             key to fieldCodec.decrypt(entryId, key, row.valueCipher)
         }.toMap()
         return bundle.mergeSensitiveFields(fields)
@@ -75,7 +76,7 @@ class SecretFieldStore @Inject internal constructor(
 
     /** Decrypts a single field-level value without materializing the others. */
     suspend fun readField(db: AppDatabase, entryId: String, key: SensitiveFieldKey): String? {
-        val row = db.secretFieldQueryDao().getField(entryId, key.name) ?: return null
+        val row = db.secretFieldQueryDao().getField(entryId, key.toStorageKey()) ?: return null
         return fieldCodec.decrypt(entryId, key, row.valueCipher)
     }
 }
