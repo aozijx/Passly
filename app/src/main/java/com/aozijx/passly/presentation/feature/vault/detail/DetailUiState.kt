@@ -1,6 +1,5 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -10,12 +9,8 @@ import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisio
 
 data class DetailUiState(
     val entry: Entry? = null,
-    val entryType: EntryType = EntryType.LOGIN,
-    val strategySummary: String = "",
-    val validationError: String? = null,
     val isEditingTitle: Boolean = false,
     val editedTitle: String = "",
-    val strategyReady: Boolean = false,
     val isAccessHistoryEnabled: Boolean = false,
     val revealedFields: Map<String, SensitiveValue> = emptyMap(),
     val sensitiveFieldKeys: Set<SensitiveFieldKey> = emptySet(),

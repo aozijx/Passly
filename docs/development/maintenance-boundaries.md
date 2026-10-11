@@ -17,6 +17,7 @@
 - Repository 聚合领域数据并隔离持久化模型；UseCase 表达跨 Repository 的业务动作；Policy 负责可复用判断；Gateway 只用于真实的外部能力边界。
 - 不为单次 Repository 调用机械增加 UseCase，也不把数据库、认证、导航和错误展示混入同一个对象。
 - 页面根 Reducer 只组合子状态。标签、favicon 等拥有独立状态语义的能力由各自 Reducer 处理。
+- Presentation Loader 只返回页面实际消费的投影；不得为未使用的摘要、就绪标记或未来策略预留状态，也不得为无复用消费者的 Policy 保留 DI 抽象。
 - Credential 与 OTP 分离；BankCard、Wi-Fi、SSH、Identity、Seed 和 Passkey 保持各自业务边界，不放进“可容纳一切”的 section。
 
 ## 敏感数据与认证

@@ -185,13 +185,7 @@ class DetailReducerTest {
         associatedApps: List<DetailInstalledApp>,
     ) = DetailEntryPresentation(
         entry = entry,
-        analysis = DetailEntryAnalysis(
-            entryType = EntryType.LOGIN,
-            strategySummary = "ready",
-            validationError = null,
-            strategyReady = true,
-            sections = listOf(DetailSectionKey.CREDENTIAL, DetailSectionKey.NOTES),
-        ),
+        sections = listOf(DetailSectionKey.CREDENTIAL, DetailSectionKey.NOTES),
         associatedApps = associatedApps,
         sensitiveFieldKeys = emptySet(),
     )

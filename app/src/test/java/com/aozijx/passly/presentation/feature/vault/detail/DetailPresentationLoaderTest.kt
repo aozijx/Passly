@@ -14,7 +14,6 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
@@ -22,11 +21,11 @@ import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
-import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.feature.vault.detail.DetailSessionQuery
+import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionResolver
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -51,7 +50,7 @@ class DetailPresentationLoaderTest {
         val session = requireNotNull(loader.open(account.id))
 
         assertEquals(account, session.presentation.entry)
-        assertEquals("summary:ACCOUNT", session.presentation.analysis.strategySummary)
+        assertEquals(DetailSectionResolver.resolve(account), session.presentation.sections)
         assertEquals(
             listOf(
                 DetailInstalledApp("Named", "com.named"),
@@ -83,7 +82,7 @@ class DetailPresentationLoaderTest {
         val presentation = loader.present(updated)
 
         assertEquals(updated, presentation.entry)
-        assertEquals("summary:LOGIN", presentation.analysis.strategySummary)
+        assertEquals(DetailSectionResolver.resolve(updated), presentation.sections)
         assertEquals(
             listOf(DetailInstalledApp("Named", "com.named")),
             presentation.associatedApps,
@@ -114,7 +113,6 @@ class DetailPresentationLoaderTest {
             entryLinkRepository = FakeEntryLinkRepository(links),
         ),
         installedAppDirectory = FakeInstalledAppDirectory(),
-        entryTypePolicy = FakeEntryTypePolicy(),
     )
 
     private fun entry(
@@ -203,10 +201,4 @@ class DetailPresentationLoaderTest {
         override suspend fun delete(linkId: EntryLinkId) = AppResult.Success(Unit)
     }
 
-    private class FakeEntryTypePolicy : EntryTypePolicy {
-        override fun supportsAutofill(type: EntryType) = false
-        override fun suggestedCategory(type: EntryType) = ""
-        override fun sensitiveFields(type: EntryType) = emptySet<FieldKey>()
-        override fun extractSummary(type: EntryType, entry: Entry) = "summary:${type.name}"
-    }
 }

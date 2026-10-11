@@ -78,14 +78,9 @@ internal object DetailReducer {
 
             is DetailMutation.SessionOpened -> mutation.snapshot.let { snapshot ->
                 val presentation = snapshot.presentation
-                val analysis = presentation.analysis
                 state.copy(
                     entry = presentation.entry,
-                    entryType = analysis.entryType,
-                    strategySummary = analysis.strategySummary,
-                    validationError = analysis.validationError,
-                    strategyReady = analysis.strategyReady,
-                    sections = analysis.sections,
+                    sections = presentation.sections,
                     associatedApps = presentation.associatedApps,
                     sensitiveFieldKeys = presentation.sensitiveFieldKeys,
                     relatedEntries = snapshot.relatedEntries,
@@ -95,14 +90,9 @@ internal object DetailReducer {
             }
 
             is DetailMutation.EntryPresented -> mutation.presentation.let { presentation ->
-                val analysis = presentation.analysis
                 state.copy(
                 entry = presentation.entry,
-                entryType = analysis.entryType,
-                strategySummary = analysis.strategySummary,
-                validationError = analysis.validationError,
-                strategyReady = analysis.strategyReady,
-                sections = analysis.sections,
+                sections = presentation.sections,
                 associatedApps = presentation.associatedApps,
                 sensitiveFieldKeys = presentation.sensitiveFieldKeys,
                 isEditingTitle = mutation.isEditingTitle,

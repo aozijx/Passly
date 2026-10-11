@@ -3,10 +3,7 @@ package com.aozijx.passly.presentation.feature.vault.detail
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppDirectory
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
-import com.aozijx.passly.domain.entry.policy.EntryValidation
 import com.aozijx.passly.feature.vault.detail.DetailEntryData
 import com.aozijx.passly.feature.vault.detail.DetailSessionQuery
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
@@ -15,17 +12,9 @@ import javax.inject.Inject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
-internal data class DetailEntryAnalysis(
-    val entryType: EntryType,
-    val strategySummary: String,
-    val validationError: String?,
-    val strategyReady: Boolean,
-    val sections: List<DetailSectionKey>,
-)
-
 internal data class DetailEntryPresentation(
     val entry: Entry,
-    val analysis: DetailEntryAnalysis,
+    val sections: List<DetailSectionKey>,
     val associatedApps: List<DetailInstalledApp>,
     val sensitiveFieldKeys: Set<SensitiveFieldKey>,
 )
@@ -38,7 +27,6 @@ internal data class DetailSessionSnapshot(
 internal class DetailPresentationLoader @Inject constructor(
     private val sessionQuery: DetailSessionQuery,
     private val installedAppDirectory: InstalledAppDirectory,
-    private val entryTypePolicy: EntryTypePolicy,
 ) {
     suspend fun open(entryId: EntryId): DetailSessionSnapshot? {
         val session = sessionQuery.open(entryId) ?: return null
@@ -60,21 +48,11 @@ internal class DetailPresentationLoader @Inject constructor(
         val apps = async { associatedApps(detail.entry) }
         DetailEntryPresentation(
             entry = detail.entry,
-            analysis = analyze(detail.entry),
+            sections = DetailSectionResolver.resolve(detail.entry),
             associatedApps = apps.await(),
             sensitiveFieldKeys = detail.sensitiveFieldKeys,
         )
     }
-
-    private fun analyze(entry: Entry): DetailEntryAnalysis = DetailEntryAnalysis(
-        entryType = entry.type,
-        strategySummary = entryTypePolicy.extractSummary(entry.type, entry),
-        validationError = EntryValidation.validate(entry).firstOrNull()?.let {
-            "${it.field.name}:${it.code.name}"
-        },
-        strategyReady = true,
-        sections = DetailSectionResolver.resolve(entry),
-    )
 
     private suspend fun associatedApps(entry: Entry): List<DetailInstalledApp> =
         entry.associations.applicationIds.sorted().map { packageName ->

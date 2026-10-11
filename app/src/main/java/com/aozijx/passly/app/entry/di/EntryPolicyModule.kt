@@ -1,9 +1,7 @@
 package com.aozijx.passly.app.entry.di
 
 import com.aozijx.passly.app.entry.policy.DefaultEntryFieldReader
-import com.aozijx.passly.app.entry.policy.DefaultEntryTypePolicy
 import com.aozijx.passly.domain.entry.policy.EntryFieldReader
-import com.aozijx.passly.domain.entry.policy.EntryTypePolicy
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -16,10 +14,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class EntryPolicyModule {
-
-    @Binds
-    @Singleton
-    abstract fun bindEntryTypePolicy(impl: DefaultEntryTypePolicy): EntryTypePolicy
 
     @Binds
     @Singleton
