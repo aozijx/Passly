@@ -191,7 +191,7 @@ internal object DetailReducer {
                             else -> state.fieldEdits
                         },
                         tagEditor = if (mutation.completion == DetailEditCompletion.Tags) {
-                            DetailTagEditorState()
+                            DetailTagEditorState.Closed
                         } else {
                             state.tagEditor
                         },

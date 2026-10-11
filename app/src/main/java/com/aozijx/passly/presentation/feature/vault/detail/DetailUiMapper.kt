@@ -48,6 +48,7 @@ import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailWifiUi
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.RelatedEntryUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.ScopedSensitiveText
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.TagEditorValidationErrorUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.TagEditorOverlayUiState
 
 internal fun detailHeaderUiModel(
     entry: Entry,
@@ -277,16 +278,21 @@ internal fun DetailInstalledApp.toPackagePickerItemUiModel() = AppPackagePickerI
     packageName = packageName,
 )
 
-internal fun DetailTagEditorState.toTagEditorUiModel() = DetailTagEditorUiModel(
-    visible = visible,
-    initialTags = initialTags,
-    draftTags = draftTags,
-    availableTags = availableTags,
-    input = input,
-    suggestions = suggestions,
-    validationError = validationError?.toUiModel(),
-    confirmDiscard = confirmDiscard,
-)
+internal fun DetailTagEditorState.toTagEditorUiModel(): DetailTagEditorUiModel = when (this) {
+    DetailTagEditorState.Closed -> DetailTagEditorUiModel.Hidden
+    is DetailTagEditorState.Open -> DetailTagEditorUiModel.Visible(
+        initialTags = initialTags,
+        draftTags = draftTags,
+        availableTags = availableTags,
+        input = input,
+        suggestions = suggestions,
+        validationError = validationError?.toUiModel(),
+        overlay = when (overlay) {
+            DetailTagEditorOverlay.None -> TagEditorOverlayUiState.None
+            DetailTagEditorOverlay.ConfirmDiscard -> TagEditorOverlayUiState.ConfirmDiscard
+        },
+    )
+}
 
 internal fun SensitiveValue?.asScopedSensitiveText(): ScopedSensitiveText {
     val source = this ?: return ScopedSensitiveText.Empty

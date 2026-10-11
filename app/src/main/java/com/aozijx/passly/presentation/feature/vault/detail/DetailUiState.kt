@@ -27,7 +27,7 @@ data class DetailUiState(
     val sections: List<DetailSectionKey> = emptyList(),
     val fieldEdits: DetailFieldEditState = DetailFieldEditState(),
     val saveState: DetailSaveState = DetailSaveState.Idle,
-    val tagEditor: DetailTagEditorState = DetailTagEditorState(),
+    val tagEditor: DetailTagEditorState = DetailTagEditorState.Closed,
     val faviconEditor: DetailFaviconEditorState = DetailFaviconEditorState.Closed,
     val revisions: DetailRevisionState = DetailRevisionState.Closed,
 ) {

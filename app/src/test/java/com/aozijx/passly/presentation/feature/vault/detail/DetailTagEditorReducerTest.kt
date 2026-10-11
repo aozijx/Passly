@@ -18,23 +18,24 @@ class DetailTagEditorReducerTest {
             ),
         )
 
-        assertTrue(actual.tagEditor.visible)
-        assertEquals(linkedSetOf("Personal", "Work"), actual.tagEditor.initialTags)
-        assertEquals(linkedSetOf("Personal", "Work"), actual.tagEditor.draftTags)
-        assertEquals(setOf("Password", "Finance"), actual.tagEditor.availableTags)
-        assertFalse(actual.tagEditor.dirty)
+        val editor = actual.tagEditor as DetailTagEditorState.Open
+        assertEquals(linkedSetOf("Personal", "Work"), editor.initialTags)
+        assertEquals(linkedSetOf("Personal", "Work"), editor.draftTags)
+        assertEquals(setOf("Password", "Finance"), editor.availableTags)
+        assertFalse(editor.dirty)
     }
 
     @Test
     fun inputChangeFiltersSuggestionsIgnoringSelectedTags() {
-        val opened = DetailTagEditorState(
-            visible = true,
+        val opened = DetailTagEditorState.Open(
             initialTags = setOf("Passkey"),
-            draftTags = setOf("Passkey"),
             availableTags = setOf("Passkey", "Password", "Personal"),
         )
 
-        val actual = DetailTagEditorReducer.reduce(opened, DetailMutation.TagInputChanged("pas"))
+        val actual = DetailTagEditorReducer.reduce(
+            opened,
+            DetailMutation.TagInputChanged("pas"),
+        ) as DetailTagEditorState.Open
 
         assertEquals("pas", actual.input)
         assertEquals(listOf("Password"), actual.suggestions)
@@ -42,14 +43,18 @@ class DetailTagEditorReducerTest {
 
     @Test
     fun addingAndRemovingTagsUpdatesDirtyDraft() {
-        val opened = DetailTagEditorState(
-            visible = true,
+        val opened = DetailTagEditorState.Open(
             initialTags = linkedSetOf("Work"),
-            draftTags = linkedSetOf("Work"),
         )
 
-        val added = DetailTagEditorReducer.reduce(opened, DetailMutation.TagSubmitted("Personal"))
-        val removed = DetailTagEditorReducer.reduce(added, DetailMutation.TagRemoved("work"))
+        val added = DetailTagEditorReducer.reduce(
+            opened,
+            DetailMutation.TagSubmitted("Personal"),
+        )
+        val removed = DetailTagEditorReducer.reduce(
+            added,
+            DetailMutation.TagRemoved("work"),
+        ) as DetailTagEditorState.Open
 
         assertEquals(linkedSetOf("Personal"), removed.draftTags)
         assertTrue(removed.dirty)
@@ -58,17 +63,15 @@ class DetailTagEditorReducerTest {
 
     @Test
     fun invalidTagPreservesInputAndDraft() {
-        val opened = DetailTagEditorState(
-            visible = true,
+        val opened = DetailTagEditorState.Open(
             initialTags = emptySet(),
-            draftTags = emptySet(),
             input = "x".repeat(33),
         )
 
         val actual = DetailTagEditorReducer.reduce(
             opened,
             DetailMutation.TagSubmitted(opened.input),
-        )
+        ) as DetailTagEditorState.Open
 
         assertEquals(emptySet<String>(), actual.draftTags)
         assertEquals("x".repeat(33), actual.input)
@@ -80,26 +83,26 @@ class DetailTagEditorReducerTest {
 
     @Test
     fun dirtyDismissRequestsConfirmationAndConfirmedDiscardClosesSheet() {
-        val dirty = DetailTagEditorState(
-            visible = true,
+        val dirty = DetailTagEditorState.Open(
             initialTags = setOf("Work"),
             draftTags = setOf("Personal"),
         )
 
-        val requested = DetailTagEditorReducer.reduce(dirty, DetailMutation.TagEditorDismissRequested)
+        val requested = DetailTagEditorReducer.reduce(
+            dirty,
+            DetailMutation.TagEditorDismissRequested,
+        ) as DetailTagEditorState.Open
         val discarded = DetailTagEditorReducer.reduce(requested, DetailMutation.TagEditorDiscardConfirmed)
 
-        assertTrue(requested.visible)
-        assertTrue(requested.confirmDiscard)
-        assertEquals(DetailTagEditorState(), discarded)
+        assertEquals(DetailTagEditorOverlay.ConfirmDiscard, requested.overlay)
+        assertEquals(DetailTagEditorState.Closed, discarded)
     }
 
     @Test
     fun successfulTagSaveClosesSheetButFailurePreservesDraft() {
         val saving = DetailUiState(
             saveState = DetailSaveState.Saving(DetailEditCompletion.Tags),
-            tagEditor = DetailTagEditorState(
-                visible = true,
+            tagEditor = DetailTagEditorState.Open(
                 initialTags = setOf("Work"),
                 draftTags = setOf("Personal"),
             ),
@@ -114,8 +117,10 @@ class DetailTagEditorReducerTest {
             DetailMutation.SaveSucceeded(DetailEditCompletion.Tags),
         )
 
-        assertTrue(failed.tagEditor.visible)
-        assertEquals(setOf("Personal"), failed.tagEditor.draftTags)
-        assertEquals(DetailTagEditorState(), succeeded.tagEditor)
+        assertEquals(
+            setOf("Personal"),
+            (failed.tagEditor as DetailTagEditorState.Open).draftTags,
+        )
+        assertEquals(DetailTagEditorState.Closed, succeeded.tagEditor)
     }
 }

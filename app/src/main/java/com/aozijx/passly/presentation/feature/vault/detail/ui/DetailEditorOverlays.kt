@@ -7,6 +7,7 @@ import com.aozijx.passly.presentation.feature.vault.detail.ui.component.TagEdito
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailEditorOverlaysUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFaviconEditorUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailTagEditorUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconWorkUiState
 
 @Composable
@@ -15,9 +16,10 @@ fun DetailEditorOverlays(
     onAction: (DetailUiAction) -> Unit,
     onFaviconUploadRequested: () -> Unit,
 ) {
-    if (model.tagEditor.visible) {
-        TagEditorSheet(
-            state = model.tagEditor,
+    when (val tagEditor = model.tagEditor) {
+        DetailTagEditorUiModel.Hidden -> Unit
+        is DetailTagEditorUiModel.Visible -> TagEditorSheet(
+            state = tagEditor,
             isSaving = model.savingTags,
             onInputChanged = { onAction(DetailUiAction.UpdateTagInput(it)) },
             onSubmit = { onAction(DetailUiAction.SubmitTag(it)) },

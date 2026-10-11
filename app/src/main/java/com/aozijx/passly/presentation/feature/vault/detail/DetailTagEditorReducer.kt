@@ -10,13 +10,23 @@ internal object DetailTagEditorReducer {
                 is TagNormalizationResult.Valid -> normalized.tags
                 else -> mutation.currentTags
             }
-            DetailTagEditorState(
-                visible = true,
+            DetailTagEditorState.Open(
                 initialTags = tags,
-                draftTags = tags,
                 availableTags = mutation.availableTags,
             )
         }
+
+        else -> when (state) {
+            DetailTagEditorState.Closed -> state
+            is DetailTagEditorState.Open -> reduceOpen(state, mutation)
+        }
+    }
+
+    private fun reduceOpen(
+        state: DetailTagEditorState.Open,
+        mutation: DetailTagEditorMutation,
+    ): DetailTagEditorState = when (mutation) {
+        is DetailMutation.TagEditorOpened -> state
 
         is DetailMutation.TagInputChanged -> state.copy(
             input = mutation.value,
@@ -26,6 +36,7 @@ internal object DetailTagEditorReducer {
                 selectedTags = state.draftTags,
             ),
             validationError = null,
+            overlay = DetailTagEditorOverlay.None,
         )
 
         is DetailMutation.TagSubmitted -> when (
@@ -55,10 +66,16 @@ internal object DetailTagEditorReducer {
         )
 
         DetailMutation.TagEditorDismissRequested -> {
-            if (state.dirty) state.copy(confirmDiscard = true) else DetailTagEditorState()
+            if (state.dirty) {
+                state.copy(overlay = DetailTagEditorOverlay.ConfirmDiscard)
+            } else {
+                DetailTagEditorState.Closed
+            }
         }
 
-        DetailMutation.TagEditorDiscardConfirmed -> DetailTagEditorState()
-        DetailMutation.TagEditorDiscardCancelled -> state.copy(confirmDiscard = false)
+        DetailMutation.TagEditorDiscardConfirmed -> DetailTagEditorState.Closed
+        DetailMutation.TagEditorDiscardCancelled -> state.copy(
+            overlay = DetailTagEditorOverlay.None,
+        )
     }
 }

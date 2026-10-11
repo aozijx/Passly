@@ -274,7 +274,7 @@ class DetailViewModel @Inject internal constructor(
                 mutate(DetailMutation.TagRemoved(event.value))
 
             DetailUiAction.SaveTags -> {
-                val editor = _uiState.value.tagEditor
+                val editor = _uiState.value.tagEditor as? DetailTagEditorState.Open ?: return
                 when (
                     val normalized = DetailTagNormalizer.normalize(
                         editor.draftTags + editor.input,

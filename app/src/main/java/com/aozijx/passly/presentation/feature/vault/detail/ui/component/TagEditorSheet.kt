@@ -37,12 +37,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailTagEditorUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.TagEditorOverlayUiState
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.TagEditorValidationErrorUiModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun TagEditorSheet(
-    state: DetailTagEditorUiModel,
+    state: DetailTagEditorUiModel.Visible,
     isSaving: Boolean,
     onInputChanged: (String) -> Unit,
     onSubmit: (String) -> Unit,
@@ -175,7 +176,7 @@ fun TagEditorSheet(
         }
     }
 
-    if (state.confirmDiscard) {
+    if (state.overlay == TagEditorOverlayUiState.ConfirmDiscard) {
         AlertDialog(
             onDismissRequest = onKeepEditing,
             title = { Text(stringResource(R.string.vault_detail_tag_discard_title)) },

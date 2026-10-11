@@ -1,16 +1,24 @@
 package com.aozijx.passly.presentation.feature.vault.detail.ui.model
 
-data class DetailTagEditorUiModel(
-    val visible: Boolean = false,
-    val initialTags: Set<String> = emptySet(),
-    val draftTags: Set<String> = emptySet(),
-    val availableTags: Set<String> = emptySet(),
-    val input: String = "",
-    val suggestions: List<String> = emptyList(),
-    val validationError: TagEditorValidationErrorUiModel? = null,
-    val confirmDiscard: Boolean = false,
-) {
-    val dirty: Boolean get() = draftTags != initialTags || input.isNotBlank()
+sealed interface DetailTagEditorUiModel {
+    data object Hidden : DetailTagEditorUiModel
+
+    data class Visible(
+        val initialTags: Set<String>,
+        val draftTags: Set<String>,
+        val availableTags: Set<String>,
+        val input: String,
+        val suggestions: List<String>,
+        val validationError: TagEditorValidationErrorUiModel?,
+        val overlay: TagEditorOverlayUiState,
+    ) : DetailTagEditorUiModel {
+        val dirty: Boolean get() = draftTags != initialTags || input.isNotBlank()
+    }
+}
+
+sealed interface TagEditorOverlayUiState {
+    data object None : TagEditorOverlayUiState
+    data object ConfirmDiscard : TagEditorOverlayUiState
 }
 
 enum class TagEditorValidationErrorUiModel {
