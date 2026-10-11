@@ -43,7 +43,11 @@ internal fun EntryListItem.toUiModel() = VaultListItemUiModel(
     otpPreview = otpPreview,
 )
 
-internal fun OtpCodeState.toUiModel() = VaultOtpUiState(code, progress, isLoading, error != null)
+internal fun OtpCodeState.toUiModel(): VaultOtpUiState = when (this) {
+    OtpCodeState.Pending -> VaultOtpUiState.Pending
+    is OtpCodeState.Ready -> VaultOtpUiState.Ready(code, progress)
+    is OtpCodeState.Failed -> VaultOtpUiState.Failed
+}
 
 
 internal fun EntrySort.toUiModel() = VaultSortUiModel(

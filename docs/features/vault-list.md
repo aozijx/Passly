@@ -112,6 +112,11 @@ More 菜单的展开状态只属于稳定的搜索动作锚点；`DropdownMenu` 
 `VaultNavigation`，由 Vault 图作用域的一次性 seed 协调器生成不含敏感内容的 token，再进入 Wi-Fi 编辑页。
 Scanner 状态和值不进入 `VaultViewModel`，设置仍由 `VaultNavigation` 连接。新增页面同样属于 Route 负责连接的导航出口。
 
+列表与详情共用的 OTP runtime 只发布 `Pending / Ready / Failed` 三种状态；验证码和倒计时只存在于
+`Ready`，错误只存在于 `Failed`。Presentation 对其做穷尽映射，不再用 `code == null`、`isLoading`
+和 `error != null` 组合猜测阶段。回收站同样把内容加载状态与恢复/永久删除/清空操作状态分开，避免同一条目
+同时处于多种操作或“加载完成但仍 loading”的非法组合。
+
 ## 注意事项
 
 - SQL 的 `ORDER BY` 必须始终包含确定性的最终 Entry ID；新增排序字段时，要同时定义 SQL 表达式、

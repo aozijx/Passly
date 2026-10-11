@@ -9,11 +9,11 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
-import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailActivityTypeUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailOtpUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailSectionUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -67,19 +67,15 @@ class DetailUiMapperTest {
     @Test
     fun otpMapperPreservesVolatileOtpState() {
         val ui = detailOtpUiModel(
-            OtpCodeState(
+            OtpCodeState.Ready(
                 code = "123456",
                 progress = 0.25f,
-                isLoading = true,
-                error = OtpGenerationError.InvalidSecret,
             )
         )
 
-        requireNotNull(ui)
+        require(ui is DetailOtpUiModel.Ready)
         assertEquals("123456", ui.code)
         assertEquals(0.25f, ui.progress)
-        assertTrue(ui.isLoading)
-        assertTrue(ui.hasError)
     }
 
     @Test

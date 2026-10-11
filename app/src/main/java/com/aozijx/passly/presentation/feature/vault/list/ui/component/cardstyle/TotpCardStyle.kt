@@ -54,16 +54,17 @@ fun TotpStyleVaultItem(
 ) {
     val cardShape = MaterialTheme.shapes.extraLarge
     val currentState =
-        previewCode?.let { VaultOtpUiState(code = it, progress = previewProgress ?: 0f) } ?: totpState
+        previewCode?.let { VaultOtpUiState.Ready(it, previewProgress ?: 0f) } ?: totpState
     val isSteam = remember(entry.otpKind) {
         entry.otpKind == VaultOtpKindUiModel.STEAM
     }
 
-    val targetProgress = previewProgress ?: (currentState?.progress ?: 0f)
+    val readyState = currentState as? VaultOtpUiState.Ready
+    val targetProgress = previewProgress ?: readyState?.progress ?: 0f
     val progress by animateFloatAsState(targetValue = targetProgress, label = "TotpProgress")
 
     val shownCode = previewCode ?: run {
-        val rawCode = currentState?.code
+        val rawCode = readyState?.code
         if (rawCode == null) TotpBehaviorTokens.FALLBACK_CODE
         else if (isSteam) rawCode
         else {

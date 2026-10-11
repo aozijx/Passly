@@ -95,7 +95,7 @@ internal class OtpCodeRuntime(
                 if (config == null || config.secret.isNullOrBlank()) {
                     _states.update { states ->
                         if (isCurrent(entryId, token)) {
-                            states + (entryId to OtpCodeState(error = OtpGenerationError.InvalidSecret))
+                            states + (entryId to OtpCodeState.Failed(OtpGenerationError.InvalidSecret))
                         } else {
                             states
                         }
@@ -109,7 +109,7 @@ internal class OtpCodeRuntime(
                     if (
                         isCurrent(entryId, token) &&
                         schedules[entryId] == schedule &&
-                        existing != null
+                        existing is OtpCodeState.Ready
                     ) {
                         states + (entryId to existing.copy(
                             progress = computeProgress(nowSeconds, schedule.periodSeconds)
@@ -127,16 +127,12 @@ internal class OtpCodeRuntime(
         nowSeconds: Long,
         period: Int
     ): OtpCodeState = when (val genResult = codeGenerator(config)) {
-        is OtpResult.Success -> OtpCodeState(
+        is OtpResult.Success -> OtpCodeState.Ready(
             code = genResult.code,
             progress = computeProgress(nowSeconds, period)
         )
 
-        is OtpResult.Failure -> OtpCodeState(
-            code = null,
-            progress = computeProgress(nowSeconds, period),
-            error = genResult.error
-        )
+        is OtpResult.Failure -> OtpCodeState.Failed(genResult.error)
     }
 
     /**
@@ -163,9 +159,11 @@ internal class OtpCodeRuntime(
         if (!isCurrent(entryId, token)) return result
 
         if (result is OtpResult.Success) {
-            _states.update { it + (entryId to OtpCodeState(code = result.code)) }
+            _states.update { it + (entryId to OtpCodeState.Ready(result.code, progress = 0f)) }
         } else {
-            _states.update { it + (entryId to OtpCodeState(error = (result as OtpResult.Failure).error)) }
+            _states.update {
+                it + (entryId to OtpCodeState.Failed((result as OtpResult.Failure).error))
+            }
         }
         return result
     }
@@ -200,7 +198,9 @@ internal class OtpCodeRuntime(
         if (!isCurrent(entryId, token)) return
         if (config == null || config.secret.isNullOrBlank()) {
             TelemetryRuntime.w(EventCategory.APPLICATION, "otp.activation_config_missing")
-            _states.update { it + (entryId to OtpCodeState(error = OtpGenerationError.InvalidSecret)) }
+            _states.update {
+                it + (entryId to OtpCodeState.Failed(OtpGenerationError.InvalidSecret))
+            }
             return
         }
         val nowSeconds = System.currentTimeMillis() / 1000
@@ -216,7 +216,7 @@ internal class OtpCodeRuntime(
         if (config.type == OtpType.HOTP) {
             if (!isCurrent(entryId, token)) return
             schedules[entryId] = OtpSchedule(OtpType.HOTP, 1, 0)
-            _states.update { it + (entryId to OtpCodeState()) }
+            _states.update { it + (entryId to OtpCodeState.Pending) }
             return
         }
 

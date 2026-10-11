@@ -9,7 +9,11 @@ import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldValue
 import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionDestination
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionComparisonPhase
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionListState
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionPage
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionRestorePhase
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionState
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.mapping.entry.toUiModel
 import com.aozijx.passly.presentation.shared.components.AppPackagePickerItemUiModel
@@ -31,9 +35,11 @@ import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailOtpUiM
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailPasskeyUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailPresentationModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailSectionUiModel
-import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionDestinationUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionComparisonUiState
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionDifferenceUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionItemUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionListUiState
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionRestoreUiState
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionSheetUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailSeedPhraseUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailSshUiModel
@@ -70,8 +76,11 @@ internal fun detailContentUiModel(
     },
 )
 
-internal fun detailOtpUiModel(otp: OtpCodeState?): DetailOtpUiModel? = otp?.let {
-    DetailOtpUiModel(it.code, it.progress, it.isLoading, it.error != null)
+internal fun detailOtpUiModel(otp: OtpCodeState?): DetailOtpUiModel? = when (otp) {
+    null -> null
+    OtpCodeState.Pending -> DetailOtpUiModel.Pending
+    is OtpCodeState.Ready -> DetailOtpUiModel.Ready(otp.code, otp.progress)
+    is OtpCodeState.Failed -> DetailOtpUiModel.Failed
 }
 
 internal fun toDetailPresentationModel(
@@ -199,40 +208,67 @@ internal fun toDetailPresentationModel(
             faviconEditor = state.faviconEditor.toFaviconEditorUiModel(),
             savingTags = state.savingEdit == DetailEditCompletion.Tags,
             savingIcon = state.savingEdit == DetailEditCompletion.Icon,
-            revisionHistory = DetailRevisionSheetUiModel(
-                visible = state.revisions.visible,
-                destination = state.revisions.destination.toUiModel(),
-                revisions = state.revisions.metadata.map {
-                    DetailRevisionItemUiModel(
-                        id = it.id.value,
-                        version = it.version.value,
-                        createdAtMs = it.createdAtMs,
-                        change = it.change,
-                    )
-                },
-                differences = state.revisions.differences
-                    .filter { it.kind != RevisionDifferenceKind.UNCHANGED }
-                    .map { difference ->
-                        val sensitiveKey = (difference.field as? RevisionFieldId.Sensitive)?.key
-                        DetailRevisionDifferenceUiModel(
-                            field = difference.field,
-                            kind = difference.kind,
-                            before = difference.before?.toDisplayText(),
-                            after = difference.after?.toDisplayText(),
-                            revealedValue = sensitiveKey?.let(revisionReveals::get)
-                                ?.asScopedSensitiveText(),
-                        )
-                    },
-                loading = state.revisions.loading,
-                restoring = state.revisions.restoring,
-                confirmRestore = state.revisions.confirmRestore,
-                failure = state.revisions.failure?.name,
-                selectedRevisionId = state.revisions.selectedRevisionId,
-                revealableKeys = state.revisions.differences.mapNotNullTo(linkedSetOf()) {
-                    (it.field as? RevisionFieldId.Sensitive)?.key
-                },
-            ),
+            revisionHistory = state.revisions.toUiModel(revisionReveals),
         ),
+    )
+}
+
+private fun DetailRevisionState.toUiModel(
+    reveals: Map<SensitiveFieldKey, SensitiveValue>,
+): DetailRevisionSheetUiModel = when (this) {
+    DetailRevisionState.Closed -> DetailRevisionSheetUiModel.Hidden
+    is DetailRevisionState.Open -> when (val currentPage = page) {
+        DetailRevisionPage.List -> DetailRevisionSheetUiModel.ListPage(
+            content = revisions.toUiModel(),
+        )
+        is DetailRevisionPage.Comparison -> DetailRevisionSheetUiModel.ComparisonPage(
+            revisionId = currentPage.revisionId,
+            content = currentPage.phase.toUiModel(reveals),
+        )
+    }
+}
+
+private fun DetailRevisionListState.toUiModel(): DetailRevisionListUiState = when (this) {
+    DetailRevisionListState.Loading -> DetailRevisionListUiState.Loading
+    is DetailRevisionListState.Failed -> DetailRevisionListUiState.Failed
+    is DetailRevisionListState.Ready -> DetailRevisionListUiState.Ready(
+        revisions = revisions.map {
+            DetailRevisionItemUiModel(
+                id = it.id.value,
+                version = it.version.value,
+                createdAtMs = it.createdAtMs,
+                change = it.change,
+            )
+        },
+    )
+}
+
+private fun DetailRevisionComparisonPhase.toUiModel(
+    reveals: Map<SensitiveFieldKey, SensitiveValue>,
+): DetailRevisionComparisonUiState = when (this) {
+    DetailRevisionComparisonPhase.Loading -> DetailRevisionComparisonUiState.Loading
+    is DetailRevisionComparisonPhase.Failed -> DetailRevisionComparisonUiState.Failed
+    is DetailRevisionComparisonPhase.Ready -> DetailRevisionComparisonUiState.Ready(
+        differences = differences
+            .filter { it.kind != RevisionDifferenceKind.UNCHANGED }
+            .map { difference ->
+                val sensitiveKey = (difference.field as? RevisionFieldId.Sensitive)?.key
+                DetailRevisionDifferenceUiModel(
+                    field = difference.field,
+                    kind = difference.kind,
+                    before = difference.before?.toDisplayText(),
+                    after = difference.after?.toDisplayText(),
+                    revealedValue = sensitiveKey?.let(reveals::get)?.asScopedSensitiveText(),
+                )
+            },
+        revealableKeys = differences.mapNotNullTo(linkedSetOf()) {
+            (it.field as? RevisionFieldId.Sensitive)?.key
+        },
+        restore = when (restore) {
+            DetailRevisionRestorePhase.Idle -> DetailRevisionRestoreUiState.Idle
+            DetailRevisionRestorePhase.Confirming -> DetailRevisionRestoreUiState.Confirming
+            DetailRevisionRestorePhase.Restoring -> DetailRevisionRestoreUiState.Restoring
+        },
     )
 }
 
@@ -308,11 +344,6 @@ private fun ActivityType.toUiModel(): DetailActivityTypeUiModel = when (this) {
     ActivityType.SENSITIVE_CHANGE -> DetailActivityTypeUiModel.SENSITIVE_CHANGE
     ActivityType.DELETE -> DetailActivityTypeUiModel.DELETE
     ActivityType.RESTORE -> DetailActivityTypeUiModel.RESTORE
-}
-
-private fun DetailRevisionDestination.toUiModel(): DetailRevisionDestinationUiModel = when (this) {
-    DetailRevisionDestination.LIST -> DetailRevisionDestinationUiModel.LIST
-    DetailRevisionDestination.COMPARISON -> DetailRevisionDestinationUiModel.COMPARISON
 }
 
 private fun DetailTagValidationError.toUiModel(): TagEditorValidationErrorUiModel = when (this) {

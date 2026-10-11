@@ -31,6 +31,8 @@ import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFieldUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailPresentationModel
 import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionFailure
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionPage
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionState
 import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionMutation
 import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionRevealStore
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
@@ -424,7 +426,11 @@ class DetailViewModel @Inject internal constructor(
     private fun copyOtpCode() {
         val entry = _uiState.value.entry ?: return
         viewModelScope.launch {
-            if (copyOtpCodeUseCase(entry.id) { otpState.value?.code } != CopyEntryFieldResult.Copied) return@launch
+            if (
+                copyOtpCodeUseCase(entry.id) {
+                    (otpState.value as? OtpCodeState.Ready)?.code
+                } != CopyEntryFieldResult.Copied
+            ) return@launch
             clearRevealedFields()
             _effects.send(DetailEffect.ContentCopied(null))
         }
@@ -541,7 +547,8 @@ class DetailViewModel @Inject internal constructor(
     }
 
     private fun selectRevision(rawRevisionId: String) {
-        val entryId = _uiState.value.revisions.entryId ?: return
+        val revisionState = _uiState.value.revisions as? DetailRevisionState.Open ?: return
+        val entryId = revisionState.entryId
         val revisionId = EntryRevisionId(rawRevisionId)
         revisionOperationJob?.cancel()
         clearRevisionReveals()
@@ -567,9 +574,10 @@ class DetailViewModel @Inject internal constructor(
     }
 
     private fun revealRevisionField(key: SensitiveFieldKey) {
-        val state = _uiState.value.revisions
-        val entryId = state.entryId ?: return
-        val revisionId = state.selectedRevisionId?.let(::EntryRevisionId) ?: return
+        val state = _uiState.value.revisions as? DetailRevisionState.Open ?: return
+        val comparison = state.page as? DetailRevisionPage.Comparison ?: return
+        val entryId = state.entryId
+        val revisionId = EntryRevisionId(comparison.revisionId)
         revisionOperationJob = viewModelScope.launch {
             when (val result = revealRevisionFields(entryId, revisionId, setOf(key))) {
                 is RevisionOperationResult.Succeeded -> {
@@ -583,9 +591,10 @@ class DetailViewModel @Inject internal constructor(
     }
 
     private fun restoreSelectedRevision() {
-        val state = _uiState.value.revisions
-        val entryId = state.entryId ?: return
-        val revisionId = state.selectedRevisionId?.let(::EntryRevisionId) ?: return
+        val state = _uiState.value.revisions as? DetailRevisionState.Open ?: return
+        val comparison = state.page as? DetailRevisionPage.Comparison ?: return
+        val entryId = state.entryId
+        val revisionId = EntryRevisionId(comparison.revisionId)
         revisionOperationJob?.cancel()
         mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreStarted))
         revisionOperationJob = viewModelScope.launch {

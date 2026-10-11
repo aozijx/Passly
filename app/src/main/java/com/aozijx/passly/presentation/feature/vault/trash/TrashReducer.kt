@@ -15,13 +15,36 @@ internal sealed interface TrashMutation {
 
 internal object TrashReducer {
     fun reduce(state: TrashUiState, mutation: TrashMutation): TrashUiState = when (mutation) {
-        is TrashMutation.Loaded -> state.copy(entries = mutation.entries, isLoading = false)
-        is TrashMutation.LoadFailed -> state.copy(isLoading = false, error = mutation.message)
-        TrashMutation.ErrorCleared -> state.copy(error = null)
-        is TrashMutation.EntryActionStarted -> state.copy(activeEntryId = mutation.entryId, error = null)
-        TrashMutation.EntryActionFinished -> state.copy(activeEntryId = null)
-        TrashMutation.EmptyStarted -> state.copy(isEmptying = true, error = null)
-        TrashMutation.EmptyFinished -> state.copy(isEmptying = false)
-        is TrashMutation.ActionFailed -> state.copy(error = mutation.message)
+        is TrashMutation.Loaded -> state.copy(content = TrashContentState.Loaded(mutation.entries))
+        is TrashMutation.LoadFailed -> state.copy(content = TrashContentState.Failed(mutation.message))
+        TrashMutation.ErrorCleared -> state.copy(
+            content = when (state.content) {
+                is TrashContentState.Failed -> TrashContentState.Loaded(emptyList())
+                is TrashContentState.Loaded,
+                TrashContentState.Loading -> state.content
+            },
+            operation = when (state.operation) {
+                is TrashOperationState.Failed -> TrashOperationState.Idle
+                TrashOperationState.Emptying,
+                is TrashOperationState.Entry,
+                TrashOperationState.Idle -> state.operation
+            },
+        )
+        is TrashMutation.EntryActionStarted -> state.copy(
+            operation = TrashOperationState.Entry(mutation.entryId),
+        )
+        TrashMutation.EntryActionFinished -> state.finishOperation()
+        TrashMutation.EmptyStarted -> state.copy(operation = TrashOperationState.Emptying)
+        TrashMutation.EmptyFinished -> state.finishOperation()
+        is TrashMutation.ActionFailed -> state.copy(
+            operation = TrashOperationState.Failed(mutation.message),
+        )
     }
+}
+
+private fun TrashUiState.finishOperation(): TrashUiState = when (operation) {
+    TrashOperationState.Emptying,
+    is TrashOperationState.Entry -> copy(operation = TrashOperationState.Idle)
+    is TrashOperationState.Failed,
+    TrashOperationState.Idle -> this
 }

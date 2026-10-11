@@ -79,7 +79,7 @@ fun DefaultOtpItem(
     onClick: () -> Unit
 ) {
     val currentState =
-        previewCode?.let { VaultOtpUiState(code = it, progress = previewProgress ?: 0f) } ?: totpState
+        previewCode?.let { VaultOtpUiState.Ready(it, previewProgress ?: 0f) } ?: totpState
 
     val isSteam = remember(entry.otpKind) {
         entry.otpKind == VaultOtpKindUiModel.STEAM
@@ -120,10 +120,14 @@ fun DefaultOtpItem(
             }
 
             CircularProgressIndicator(
-                progress = { previewProgress ?: currentState?.progress ?: 0f },
+                progress = {
+                    previewProgress ?: (currentState as? VaultOtpUiState.Ready)?.progress ?: 0f
+                },
                 modifier = Modifier.size(24.dp),
                 strokeWidth = 3.dp,
-                color = if ((previewProgress ?: currentState?.progress ?: 1f) < 0.2f) {
+                color = if (
+                    (previewProgress ?: (currentState as? VaultOtpUiState.Ready)?.progress ?: 1f) < 0.2f
+                ) {
                     MaterialTheme.colorScheme.error
                 } else {
                     MaterialTheme.colorScheme.primary
@@ -134,9 +138,13 @@ fun DefaultOtpItem(
             if (showCode) {
                 Text(
                     text = if (isSteam) {
-                        previewCode ?: currentState?.code ?: "------"
+                        previewCode ?: (currentState as? VaultOtpUiState.Ready)?.code ?: "------"
                     } else {
-                        previewCode ?: currentState?.code?.chunked(3)?.joinToString(" ") ?: "------"
+                        previewCode
+                            ?: (currentState as? VaultOtpUiState.Ready)?.code
+                                ?.chunked(3)
+                                ?.joinToString(" ")
+                            ?: "------"
                     },
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontFamily = FontFamily.Monospace,

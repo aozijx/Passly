@@ -26,12 +26,11 @@ data class VaultListItemUiModel(
 enum class VaultOtpKindUiModel { STANDARD, STEAM }
 
 @Immutable
-data class VaultOtpUiState(
-    val code: String? = null,
-    val progress: Float = 0f,
-    val isLoading: Boolean = false,
-    val hasError: Boolean = false,
-)
+sealed interface VaultOtpUiState {
+    data object Pending : VaultOtpUiState
+    data class Ready(val code: String, val progress: Float) : VaultOtpUiState
+    data object Failed : VaultOtpUiState
+}
 
 interface VaultOtpStateProvider {
     fun state(entryId: String): Flow<VaultOtpUiState?>

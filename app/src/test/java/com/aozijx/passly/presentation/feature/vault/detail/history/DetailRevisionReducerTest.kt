@@ -6,15 +6,14 @@ import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class DetailRevisionReducerTest {
     @Test
     fun `open select back and close form one sheet state machine`() {
         val opened = DetailRevisionReducer.reduce(
-            DetailRevisionState(),
+            DetailRevisionState.Closed,
             DetailRevisionMutation.Opened(EntryId("entry")),
         )
         val listed = DetailRevisionReducer.reduce(opened, DetailRevisionMutation.MetadataChanged("entry", listOf(metadata())))
@@ -22,17 +21,21 @@ class DetailRevisionReducerTest {
         val backed = DetailRevisionReducer.reduce(selected, DetailRevisionMutation.BackToList)
         val closed = DetailRevisionReducer.reduce(backed, DetailRevisionMutation.Closed)
 
-        assertTrue(opened.visible)
-        assertEquals(DetailRevisionDestination.COMPARISON, selected.destination)
-        assertEquals(DetailRevisionDestination.LIST, backed.destination)
-        assertFalse(closed.visible)
-        assertEquals(null, closed.entryId)
+        require(opened is DetailRevisionState.Open)
+        require(selected is DetailRevisionState.Open)
+        assertEquals(
+            DetailRevisionPage.Comparison("revision"),
+            selected.page,
+        )
+        require(backed is DetailRevisionState.Open)
+        assertSame(DetailRevisionPage.List, backed.page)
+        assertSame(DetailRevisionState.Closed, closed)
     }
 
     @Test
     fun `stale async result for another entry is ignored`() {
         val state = DetailRevisionReducer.reduce(
-            DetailRevisionState(),
+            DetailRevisionState.Closed,
             DetailRevisionMutation.Opened(EntryId("entry")),
         )
 

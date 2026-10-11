@@ -93,9 +93,8 @@ data class DetailSshUiModel(
     val canRevealMore: Boolean,
 )
 
-data class DetailOtpUiModel(
-    val code: String?,
-    val progress: Float,
-    val isLoading: Boolean,
-    val hasError: Boolean,
-)
+sealed interface DetailOtpUiModel {
+    data object Pending : DetailOtpUiModel
+    data class Ready(val code: String, val progress: Float) : DetailOtpUiModel
+    data object Failed : DetailOtpUiModel
+}

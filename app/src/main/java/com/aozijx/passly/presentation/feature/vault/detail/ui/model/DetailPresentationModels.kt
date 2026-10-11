@@ -52,8 +52,6 @@ data class DetailEditorOverlaysUiModel(
     val revisionHistory: DetailRevisionSheetUiModel,
 )
 
-enum class DetailRevisionDestinationUiModel { LIST, COMPARISON }
-
 data class DetailRevisionItemUiModel(
     val id: String,
     val version: Int,
@@ -69,18 +67,36 @@ data class DetailRevisionDifferenceUiModel(
     val revealedValue: ScopedSensitiveText? = null,
 )
 
-data class DetailRevisionSheetUiModel(
-    val visible: Boolean = false,
-    val destination: DetailRevisionDestinationUiModel = DetailRevisionDestinationUiModel.LIST,
-    val revisions: List<DetailRevisionItemUiModel> = emptyList(),
-    val differences: List<DetailRevisionDifferenceUiModel> = emptyList(),
-    val loading: Boolean = false,
-    val restoring: Boolean = false,
-    val confirmRestore: Boolean = false,
-    val failure: String? = null,
-    val selectedRevisionId: String? = null,
-    val revealableKeys: Set<SensitiveFieldKey> = emptySet(),
-)
+sealed interface DetailRevisionSheetUiModel {
+    data object Hidden : DetailRevisionSheetUiModel
+    data class ListPage(val content: DetailRevisionListUiState) : DetailRevisionSheetUiModel
+    data class ComparisonPage(
+        val revisionId: String,
+        val content: DetailRevisionComparisonUiState,
+    ) : DetailRevisionSheetUiModel
+}
+
+sealed interface DetailRevisionListUiState {
+    data object Loading : DetailRevisionListUiState
+    data class Ready(val revisions: List<DetailRevisionItemUiModel>) : DetailRevisionListUiState
+    data object Failed : DetailRevisionListUiState
+}
+
+sealed interface DetailRevisionComparisonUiState {
+    data object Loading : DetailRevisionComparisonUiState
+    data class Ready(
+        val differences: List<DetailRevisionDifferenceUiModel>,
+        val revealableKeys: Set<SensitiveFieldKey>,
+        val restore: DetailRevisionRestoreUiState,
+    ) : DetailRevisionComparisonUiState
+    data object Failed : DetailRevisionComparisonUiState
+}
+
+enum class DetailRevisionRestoreUiState {
+    Idle,
+    Confirming,
+    Restoring,
+}
 
 enum class DetailSectionUiModel {
     CREDENTIAL,

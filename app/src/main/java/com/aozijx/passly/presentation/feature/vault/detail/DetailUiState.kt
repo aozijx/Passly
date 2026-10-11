@@ -30,7 +30,7 @@ data class DetailUiState(
     val saveErrorCode: String? = null,
     val tagEditor: DetailTagEditorState = DetailTagEditorState(),
     val faviconEditor: DetailFaviconEditorState = DetailFaviconEditorState(),
-    val revisions: DetailRevisionState = DetailRevisionState(),
+    val revisions: DetailRevisionState = DetailRevisionState.Closed,
 ) {
     fun revealed(key: String): SensitiveValue? = revealedFields[key]
 }

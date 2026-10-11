@@ -206,7 +206,11 @@ class VaultViewModel @Inject internal constructor(
     private fun copyOtp(entryId: String) {
         if (!ensureFullSecureSessionAccess("当前会话不能复制动态验证码")) return
         viewModelScope.launch {
-            when (copyOtpCode(EntryId(entryId)) { totp.states.value[entryId]?.code }) {
+            when (
+                copyOtpCode(EntryId(entryId)) {
+                    (totp.states.value[entryId] as? OtpCodeState.Ready)?.code
+                }
+            ) {
                 CopyEntryFieldResult.Copied -> _effects.send(VaultEffect.OtpCopied)
                 CopyEntryFieldResult.NotAuthorized,
                 CopyEntryFieldResult.Unavailable,

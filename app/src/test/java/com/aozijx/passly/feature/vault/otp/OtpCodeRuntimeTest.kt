@@ -6,6 +6,7 @@ import com.aozijx.passly.runtime.session.SessionLockedException
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.feature.vault.model.OtpCodeState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -81,7 +82,7 @@ class OtpCodeRuntimeTest {
         coordinator.onFreshAuthentication()
         yield()
 
-        assertEquals("654321", coordinator.states.value["still-visible-entry"]?.code)
+        assertEquals("654321", coordinator.readyCode("still-visible-entry"))
         scope.cancel()
     }
 
@@ -108,10 +109,10 @@ class OtpCodeRuntimeTest {
         coordinator.subscribe("visible-entry")
 
         assertEquals(1, loadCount)
-        assertEquals("123456", coordinator.states.value["visible-entry"]?.code)
+        assertEquals("123456", coordinator.readyCode("visible-entry"))
 
         coordinator.unsubscribe("visible-entry")
-        assertEquals("123456", coordinator.states.value["visible-entry"]?.code)
+        assertEquals("123456", coordinator.readyCode("visible-entry"))
 
         coordinator.unsubscribe("visible-entry")
         assertEquals(null, coordinator.states.value["visible-entry"])
@@ -139,7 +140,7 @@ class OtpCodeRuntimeTest {
         coordinator.subscribe("shared-entry")
         coordinator.unsubscribe("shared-entry")
 
-        assertEquals("654321", coordinator.states.value["shared-entry"]?.code)
+        assertEquals("654321", coordinator.readyCode("shared-entry"))
         scope.cancel()
     }
 
@@ -246,12 +247,12 @@ class OtpCodeRuntimeTest {
         oldGenerationStarted.await()
         coordinator.onSessionStateChanged(unlocked = false)
         coordinator.onSessionStateChanged(unlocked = true)
-        assertEquals("222222", coordinator.states.value["lock-cycle-entry"]?.code)
+        assertEquals("222222", coordinator.readyCode("lock-cycle-entry"))
 
         oldGenerationGate.complete(Unit)
         yield()
 
-        assertEquals("222222", coordinator.states.value["lock-cycle-entry"]?.code)
+        assertEquals("222222", coordinator.readyCode("lock-cycle-entry"))
         scope.cancel()
     }
 
@@ -280,12 +281,12 @@ class OtpCodeRuntimeTest {
         oldGenerationStarted.await()
         coordinator.unsubscribe("resubscribed-entry")
         coordinator.subscribe("resubscribed-entry")
-        assertEquals("222222", coordinator.states.value["resubscribed-entry"]?.code)
+        assertEquals("222222", coordinator.readyCode("resubscribed-entry"))
 
         oldGenerationGate.complete(Unit)
         yield()
 
-        assertEquals("222222", coordinator.states.value["resubscribed-entry"]?.code)
+        assertEquals("222222", coordinator.readyCode("resubscribed-entry"))
         scope.cancel()
     }
 
@@ -321,7 +322,7 @@ class OtpCodeRuntimeTest {
         assertEquals(OtpType.STEAM, generatedConfig?.type)
         assertEquals(OtpSecretEncoding.BASE32, generatedConfig?.encoding)
         assertEquals("JBSWY3DPEHPK3PXP", generatedConfig?.secret)
-        assertEquals("38CTQ", coordinator.states.value["steam-entry"]?.code)
+        assertEquals("38CTQ", coordinator.readyCode("steam-entry"))
         scope.cancel()
     }
 
@@ -369,9 +370,12 @@ class OtpCodeRuntimeTest {
         coordinator.onSessionStateChanged(unlocked = true)
 
         assertEquals(1, loadCount)
-        assertEquals("123456", coordinator.states.value["pending-entry"]?.code)
+        assertEquals("123456", coordinator.readyCode("pending-entry"))
         scope.cancel()
     }
+
+    private fun OtpCodeRuntime.readyCode(entryId: String): String? =
+        (states.value[entryId] as? OtpCodeState.Ready)?.code
 
     private fun validTotpConfig() = OtpConfig(
         type = OtpType.TOTP,

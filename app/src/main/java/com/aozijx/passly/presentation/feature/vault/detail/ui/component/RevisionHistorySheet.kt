@@ -34,8 +34,10 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
-import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionDestinationUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionComparisonUiState
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionDifferenceUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionListUiState
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionRestoreUiState
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionSheetUiModel
 import java.text.DateFormat
 import java.util.Date
@@ -46,7 +48,7 @@ fun RevisionHistorySheet(
     model: DetailRevisionSheetUiModel,
     onAction: (DetailUiAction) -> Unit,
 ) {
-    if (!model.visible) return
+    if (model == DetailRevisionSheetUiModel.Hidden) return
     val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
     ModalBottomSheet(
         onDismissRequest = { onAction(DetailUiAction.DismissRevisionHistory) },
@@ -55,12 +57,16 @@ fun RevisionHistorySheet(
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         tonalElevation = 0.dp,
     ) {
-        when (model.destination) {
-            DetailRevisionDestinationUiModel.LIST -> RevisionList(model, onAction)
-            DetailRevisionDestinationUiModel.COMPARISON -> RevisionComparison(model, onAction)
+        when (model) {
+            DetailRevisionSheetUiModel.Hidden -> Unit
+            is DetailRevisionSheetUiModel.ListPage -> RevisionList(model.content, onAction)
+            is DetailRevisionSheetUiModel.ComparisonPage ->
+                RevisionComparison(model.content, onAction)
         }
     }
-    if (model.confirmRestore) {
+    val comparison = (model as? DetailRevisionSheetUiModel.ComparisonPage)?.content
+    val restore = (comparison as? DetailRevisionComparisonUiState.Ready)?.restore
+    if (restore == DetailRevisionRestoreUiState.Confirming) {
         AlertDialog(
             onDismissRequest = { onAction(DetailUiAction.CancelRevisionRestore) },
             title = { Text(stringResource(R.string.revision_restore_title)) },
@@ -81,7 +87,7 @@ fun RevisionHistorySheet(
 
 @Composable
 private fun RevisionList(
-    model: DetailRevisionSheetUiModel,
+    content: DetailRevisionListUiState,
     onAction: (DetailUiAction) -> Unit,
 ) {
     val formatter = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
@@ -91,28 +97,39 @@ private fun RevisionList(
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
         )
-        when {
-            model.loading -> Loading()
-            model.revisions.isEmpty() -> Text(
-                text = stringResource(R.string.revision_history_empty),
+        when (content) {
+            DetailRevisionListUiState.Loading -> Loading()
+            DetailRevisionListUiState.Failed -> Text(
+                text = stringResource(R.string.revision_load_failed),
+                color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(24.dp),
             )
-            else -> LazyColumn {
-                items(model.revisions, key = { it.id }) { revision ->
-                    ListItem(
-                        supportingContent = { Text(formatter.format(Date(revision.createdAtMs))) },
-                        modifier = Modifier.fillMaxWidth(),
-                        leadingContent = null,
-                        trailingContent = null,
-                        overlineContent = null,
-                        colors = ListItemDefaults.colors(),
-                        elevation = ListItemDefaults.elevation(),
-                    ) { Text(stringResource(R.string.revision_version_format, revision.version)) }
-                    TextButton(
-                        onClick = { onAction(DetailUiAction.SelectRevision(revision.id)) },
-                        modifier = Modifier.padding(horizontal = 12.dp),
-                    ) { Text(stringResource(R.string.revision_compare_action)) }
-                    HorizontalDivider()
+            is DetailRevisionListUiState.Ready -> {
+                if (content.revisions.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.revision_history_empty),
+                        modifier = Modifier.padding(24.dp),
+                    )
+                } else {
+                    LazyColumn {
+                        items(content.revisions, key = { it.id }) { revision ->
+                            ListItem(
+                                supportingContent = {
+                                    Text(formatter.format(Date(revision.createdAtMs)))
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ListItemDefaults.colors(),
+                                elevation = ListItemDefaults.elevation(),
+                            ) {
+                                Text(stringResource(R.string.revision_version_format, revision.version))
+                            }
+                            TextButton(
+                                onClick = { onAction(DetailUiAction.SelectRevision(revision.id)) },
+                                modifier = Modifier.padding(horizontal = 12.dp),
+                            ) { Text(stringResource(R.string.revision_compare_action)) }
+                            HorizontalDivider()
+                        }
+                    }
                 }
             }
         }
@@ -121,7 +138,7 @@ private fun RevisionList(
 
 @Composable
 private fun RevisionComparison(
-    model: DetailRevisionSheetUiModel,
+    content: DetailRevisionComparisonUiState,
     onAction: (DetailUiAction) -> Unit,
 ) {
     Column(Modifier.fillMaxWidth().fillMaxHeight()) {
@@ -138,29 +155,34 @@ private fun RevisionComparison(
                 modifier = Modifier.weight(1f),
             )
         }
-        when {
-            model.loading -> Loading()
-            model.failure != null -> Text(
+        when (content) {
+            DetailRevisionComparisonUiState.Loading -> Loading()
+            DetailRevisionComparisonUiState.Failed -> Text(
                 text = stringResource(R.string.revision_load_failed),
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(24.dp),
             )
-            else -> LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(model.differences, key = { it.field.toString() }) { difference ->
-                    RevisionDifferenceRow(difference, onAction)
+            is DetailRevisionComparisonUiState.Ready -> {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(content.differences, key = { it.field.toString() }) { difference ->
+                        RevisionDifferenceRow(difference, onAction)
+                    }
+                }
+                Button(
+                    onClick = { onAction(DetailUiAction.RequestRevisionRestore) },
+                    enabled = content.restore == DetailRevisionRestoreUiState.Idle,
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                ) {
+                    if (content.restore == DetailRevisionRestoreUiState.Restoring) {
+                        CircularProgressIndicator()
+                    } else {
+                        Text(stringResource(R.string.revision_restore_action))
+                    }
                 }
             }
-        }
-        Button(
-            onClick = { onAction(DetailUiAction.RequestRevisionRestore) },
-            enabled = !model.loading && !model.restoring && model.failure == null,
-            modifier = Modifier.fillMaxWidth().padding(24.dp),
-        ) {
-            if (model.restoring) CircularProgressIndicator()
-            else Text(stringResource(R.string.revision_restore_action))
         }
     }
 }

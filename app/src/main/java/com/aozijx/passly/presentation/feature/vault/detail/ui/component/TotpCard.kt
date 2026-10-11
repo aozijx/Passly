@@ -108,8 +108,9 @@ fun TotpCard(
             shape = MaterialTheme.shapes.large,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
         ) {
-            val code = currentState?.code
-            val progress = currentState?.progress ?: 0f
+            val readyState = currentState as? DetailOtpUiModel.Ready
+            val code = readyState?.code
+            val progress = readyState?.progress ?: 0f
 
             val displayText = remember(code) {
                 code?.chunked(3)?.joinToString(" ") ?: "------"

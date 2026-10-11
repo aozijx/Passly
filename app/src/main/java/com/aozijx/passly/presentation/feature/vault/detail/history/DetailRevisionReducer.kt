@@ -34,59 +34,70 @@ internal object DetailRevisionReducer {
         state: DetailRevisionState,
         mutation: DetailRevisionMutation,
     ): DetailRevisionState = when (mutation) {
-        is DetailRevisionMutation.Opened -> DetailRevisionState(
-            visible = true,
+        is DetailRevisionMutation.Opened -> DetailRevisionState.Open(mutation.entryId)
+        DetailRevisionMutation.Closed -> DetailRevisionState.Closed
+        is DetailRevisionMutation.MetadataChanged -> state.updateOpen(mutation.entryId) {
+            copy(revisions = DetailRevisionListState.Ready(mutation.revisions))
+        }
+        is DetailRevisionMutation.ComparisonStarted -> state.updateOpen(mutation.entryId) {
+            copy(page = DetailRevisionPage.Comparison(mutation.revisionId))
+        }
+        is DetailRevisionMutation.ComparisonLoaded -> state.updateComparison(
             entryId = mutation.entryId,
-            loading = true,
-        )
-        DetailRevisionMutation.Closed -> DetailRevisionState()
-        is DetailRevisionMutation.MetadataChanged -> if (state.matches(mutation.entryId)) {
-            state.copy(metadata = mutation.revisions, loading = false, failure = null)
-        } else state
-        is DetailRevisionMutation.ComparisonStarted -> if (state.matches(mutation.entryId)) {
-            state.copy(
-                destination = DetailRevisionDestination.COMPARISON,
-                selectedRevisionId = mutation.revisionId,
-                differences = emptyList(),
-                loading = true,
-                failure = null,
-            )
-        } else state
-        is DetailRevisionMutation.ComparisonLoaded -> if (
-            state.matches(mutation.entryId) && state.selectedRevisionId == mutation.revisionId
+            revisionId = mutation.revisionId,
         ) {
-            state.copy(differences = mutation.differences, loading = false, failure = null)
-        } else state
-        is DetailRevisionMutation.Failed -> if (
-            state.matches(mutation.entryId) &&
-            (mutation.revisionId == null || state.selectedRevisionId == mutation.revisionId)
-        ) {
-            state.copy(loading = false, restoring = false, failure = mutation.failure)
-        } else state
-        DetailRevisionMutation.BackToList -> state.copy(
-            destination = DetailRevisionDestination.LIST,
-            selectedRevisionId = null,
-            differences = emptyList(),
-            loading = false,
-            confirmRestore = false,
-            failure = null,
-        )
-        DetailRevisionMutation.RestoreRequested -> state.copy(confirmRestore = true)
-        DetailRevisionMutation.RestoreCancelled -> state.copy(confirmRestore = false)
-        DetailRevisionMutation.RestoreStarted -> state.copy(
-            confirmRestore = false,
-            restoring = true,
-            failure = null,
-        )
-        DetailRevisionMutation.RestoreSucceeded -> state.copy(
-            destination = DetailRevisionDestination.LIST,
-            selectedRevisionId = null,
-            differences = emptyList(),
-            restoring = false,
-            failure = null,
-        )
+            copy(phase = DetailRevisionComparisonPhase.Ready(mutation.differences))
+        }
+        is DetailRevisionMutation.Failed -> {
+            if (mutation.revisionId == null) {
+                state.updateOpen(mutation.entryId) {
+                    copy(revisions = DetailRevisionListState.Failed(mutation.failure))
+                }
+            } else {
+                state.updateComparison(mutation.entryId, mutation.revisionId) {
+                    copy(phase = DetailRevisionComparisonPhase.Failed(mutation.failure))
+                }
+            }
+        }
+        DetailRevisionMutation.BackToList -> state.updateOpen { copy(page = DetailRevisionPage.List) }
+        DetailRevisionMutation.RestoreRequested -> state.updateReadyComparison {
+            copy(restore = DetailRevisionRestorePhase.Confirming)
+        }
+        DetailRevisionMutation.RestoreCancelled -> state.updateReadyComparison {
+            copy(restore = DetailRevisionRestorePhase.Idle)
+        }
+        DetailRevisionMutation.RestoreStarted -> state.updateReadyComparison {
+            copy(restore = DetailRevisionRestorePhase.Restoring)
+        }
+        DetailRevisionMutation.RestoreSucceeded -> state.updateOpen {
+            copy(page = DetailRevisionPage.List)
+        }
     }
+}
 
-    private fun DetailRevisionState.matches(rawEntryId: String): Boolean =
-        entryId?.value == rawEntryId
+private inline fun DetailRevisionState.updateOpen(
+    entryId: String? = null,
+    transform: DetailRevisionState.Open.() -> DetailRevisionState.Open,
+): DetailRevisionState {
+    val open = this as? DetailRevisionState.Open ?: return this
+    if (entryId != null && open.entryId.value != entryId) return this
+    return open.transform()
+}
+
+private inline fun DetailRevisionState.updateComparison(
+    entryId: String,
+    revisionId: String,
+    transform: DetailRevisionPage.Comparison.() -> DetailRevisionPage.Comparison,
+): DetailRevisionState = updateOpen(entryId) {
+    val comparison = page as? DetailRevisionPage.Comparison ?: return@updateOpen this
+    if (comparison.revisionId != revisionId) return@updateOpen this
+    copy(page = comparison.transform())
+}
+
+private inline fun DetailRevisionState.updateReadyComparison(
+    transform: DetailRevisionComparisonPhase.Ready.() -> DetailRevisionComparisonPhase.Ready,
+): DetailRevisionState = updateOpen {
+    val comparison = page as? DetailRevisionPage.Comparison ?: return@updateOpen this
+    val ready = comparison.phase as? DetailRevisionComparisonPhase.Ready ?: return@updateOpen this
+    copy(page = comparison.copy(phase = ready.transform()))
 }

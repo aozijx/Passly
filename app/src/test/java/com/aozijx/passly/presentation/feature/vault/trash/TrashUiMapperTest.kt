@@ -35,7 +35,7 @@ class TrashUiMapperTest {
             ),
         )
 
-        val result = TrashUiState(entries = listOf(entry)).toUiModels().single()
+        val result = TrashContentState.Loaded(listOf(entry)).toUiModels().single()
 
         assertEquals("entry-1", result.id)
         assertEquals(3, result.version)

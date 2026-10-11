@@ -1,26 +1,26 @@
 package com.aozijx.passly.presentation.feature.vault.trash
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class TrashReducerTest {
     @Test
     fun `entry operation clears error and owns busy entry`() {
-        val started = TrashReducer.reduce(TrashUiState(error = "old"), TrashMutation.EntryActionStarted("entry-1"))
+        val started = TrashReducer.reduce(
+            TrashUiState(operation = TrashOperationState.Failed("old")),
+            TrashMutation.EntryActionStarted("entry-1"),
+        )
         val finished = TrashReducer.reduce(started, TrashMutation.EntryActionFinished)
 
-        assertEquals("entry-1", started.activeEntryId)
-        assertNull(started.error)
-        assertNull(finished.activeEntryId)
+        assertEquals(TrashOperationState.Entry("entry-1"), started.operation)
+        assertSame(TrashOperationState.Idle, finished.operation)
     }
 
     @Test
     fun `load failure keeps current entries`() {
-        val result = TrashReducer.reduce(TrashUiState(isLoading = true), TrashMutation.LoadFailed("failed"))
+        val result = TrashReducer.reduce(TrashUiState(), TrashMutation.LoadFailed("failed"))
 
-        assertFalse(result.isLoading)
-        assertEquals("failed", result.error)
+        assertEquals(TrashContentState.Failed("failed"), result.content)
     }
 }

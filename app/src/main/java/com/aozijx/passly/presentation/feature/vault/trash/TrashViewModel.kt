@@ -68,7 +68,8 @@ internal class TrashViewModel @Inject constructor(
     }
 
     private fun emptyTrash() {
-        if (_uiState.value.isBusy || _uiState.value.entries.isEmpty()) return
+        val entries = (_uiState.value.content as? TrashContentState.Loaded)?.entries.orEmpty()
+        if (_uiState.value.isBusy || entries.isEmpty()) return
         viewModelScope.launch {
             mutate(TrashMutation.EmptyStarted)
             try {

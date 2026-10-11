@@ -12,13 +12,21 @@ internal fun TrashRoute(
 ) {
     val viewModel = hiltViewModel<TrashViewModel>()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val operation = state.operation
+    val content = state.content
+    val activeEntryId = (operation as? TrashOperationState.Entry)?.entryId
+    val error = when {
+        operation is TrashOperationState.Failed -> operation.message
+        content is TrashContentState.Failed -> content.message
+        else -> null
+    }
     TrashBottomSheet(
         visible = true,
-        entries = state.toUiModels(),
-        isLoading = state.isLoading,
-        activeEntryId = state.activeEntryId,
-        isEmptying = state.isEmptying,
-        error = state.error,
+        entries = content.toUiModels(),
+        isLoading = content == TrashContentState.Loading,
+        activeEntryId = activeEntryId,
+        isEmptying = operation == TrashOperationState.Emptying,
+        error = error,
         onDismiss = onDismiss,
         onRestore = { viewModel.onAction(TrashUiAction.Restore(it.id, it.version)) },
         onDelete = { viewModel.onAction(TrashUiAction.DeletePermanently(it.id, it.version)) },
