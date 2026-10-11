@@ -4,6 +4,8 @@
     <string name="recovery_mode_description">恢复模式只能设置新的应用密码，不能读取或导出密码数据。设置成功后应用会立即锁定，请使用新密码重新解锁。</string>
     <string name="recovery_mode_set_password">重设应用密码</string>
     <string name="recovery_mode_password_reset_success">应用密码已重设，请使用新密码重新解锁。</string>
+    <string name="recovery_mode_password_mismatch_or_empty">密码不能为空且两次输入必须一致</string>
+    <string name="recovery_mode_password_setup_failed">设置密码失败</string>
     <string name="recovery_mode_exit">退出并锁定</string>
     <string name="recovery_mode_locked_description">Passly已锁定</string>
     <string name="recovery_mode_password_dialog_title">设置应用密码</string>

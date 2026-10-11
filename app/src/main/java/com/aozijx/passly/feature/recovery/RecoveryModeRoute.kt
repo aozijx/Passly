@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
@@ -35,14 +36,17 @@ fun RecoveryModeRoute(onExit: () -> Unit) {
             }
         }
     }
+    val passwordSetup = state.passwordSetup
     RecoveryModeScreen(
-        isSettingPassword = state.isSettingPassword,
+        isSettingPassword = passwordSetup is RecoveryPasswordSetup.Editing &&
+            passwordSetup.phase == RecoveryPasswordSetupPhase.Saving,
         onSetPassword = { viewModel.onAction(RecoveryModeUiAction.SetPasswordClicked) },
         onExit = { viewModel.onAction(RecoveryModeUiAction.ExitClicked) },
     )
-    if (state.showSetPasswordDialog) {
-        val newPassword = state.newPassword.toUiString()
-        val confirmPassword = state.confirmPassword.toUiString()
+    if (passwordSetup is RecoveryPasswordSetup.Editing) {
+        val newPassword = passwordSetup.newPassword.toUiString()
+        val confirmPassword = passwordSetup.confirmPassword.toUiString()
+        val isSaving = passwordSetup.phase == RecoveryPasswordSetupPhase.Saving
         RecoveryPasswordDialog(
             newPassword = newPassword,
             confirmPassword = confirmPassword,
@@ -53,10 +57,20 @@ fun RecoveryModeRoute(onExit: () -> Unit) {
             onConfirmPasswordChange = { viewModel.onAction(RecoveryModeUiAction.ConfirmPasswordChanged(it)) },
             onConfirm = { viewModel.onAction(RecoveryModeUiAction.SubmitNewPassword) },
             onDismiss = { viewModel.onAction(RecoveryModeUiAction.DismissPasswordDialog) },
-            isBusy = state.isSettingPassword,
-            errorMessage = state.passwordSetupError,
+            isBusy = isSaving,
+            errorMessage = (passwordSetup.phase as? RecoveryPasswordSetupPhase.Failed)
+                ?.reason
+                ?.message(),
         )
     }
+}
+
+@Composable
+private fun RecoveryPasswordSetupFailure.message(): String = when (this) {
+    RecoveryPasswordSetupFailure.PasswordMismatchOrEmpty ->
+        stringResource(R.string.recovery_mode_password_mismatch_or_empty)
+    RecoveryPasswordSetupFailure.SetupFailed ->
+        stringResource(R.string.recovery_mode_password_setup_failed)
 }
 
 private fun PasswordStrengthResult.toUiModel() = RecoveryPasswordStrengthUiModel(

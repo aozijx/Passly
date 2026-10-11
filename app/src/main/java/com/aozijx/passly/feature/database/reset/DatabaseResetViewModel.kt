@@ -24,21 +24,23 @@ class DatabaseResetViewModel @Inject constructor(
     }
 
     private fun reset() {
-        if (_uiState.value.isResetting) return
+        if (_uiState.value.phase == DatabaseResetPhase.Resetting) return
         mutate(DatabaseResetMutation.ResetStarted)
         viewModelScope.launch {
             when (val result = resetDatabase()) {
                 DatabaseResetResult.Completed -> mutate(DatabaseResetMutation.ResetCompleted)
                 DatabaseResetResult.Cancelled -> mutate(DatabaseResetMutation.ResetCancelled)
                 DatabaseResetResult.SessionRestricted -> mutate(
-                    DatabaseResetMutation.ResetFailed("当前会话不能清空 Passly 数据"),
+                    DatabaseResetMutation.ResetFailed(DatabaseResetFailure.SessionRestricted),
                 )
                 DatabaseResetResult.AuthorizationDenied -> mutate(
-                    DatabaseResetMutation.ResetFailed("身份验证失败，未清空 Passly 数据"),
+                    DatabaseResetMutation.ResetFailed(DatabaseResetFailure.AuthorizationDenied),
                 )
                 is DatabaseResetResult.Failed -> mutate(
                     DatabaseResetMutation.ResetFailed(
-                        result.error.toUiMessage("清空 Passly 数据失败"),
+                        DatabaseResetFailure.Unexpected(
+                            result.error.toUiMessage("清空 Passly 数据失败"),
+                        ),
                     ),
                 )
             }

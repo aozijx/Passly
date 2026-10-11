@@ -13,8 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Rule
 import org.junit.Test
 
@@ -28,9 +28,9 @@ class DatabaseResetViewModelTest {
         val viewModel = viewModel(AuthorizationResult.Cancelled, gateway)
 
         viewModel.onAction(DatabaseResetUiAction.Reset)
-        val settled = viewModel.uiState.first { !it.isResetting }
+        val settled = viewModel.uiState.first { it.phase != DatabaseResetPhase.Resetting }
 
-        assertFalse(settled.isResetComplete)
+        assertSame(DatabaseResetPhase.Idle, settled.phase)
         assertEquals(0, gateway.resetCount)
     }
 
@@ -40,9 +40,9 @@ class DatabaseResetViewModelTest {
         val viewModel = viewModel(null, gateway)
 
         viewModel.onAction(DatabaseResetUiAction.Reset)
-        val completed = viewModel.uiState.first { it.isResetComplete }
+        val completed = viewModel.uiState.first { it.phase == DatabaseResetPhase.Completed }
 
-        assertFalse(completed.isResetting)
+        assertSame(DatabaseResetPhase.Completed, completed.phase)
         assertEquals(1, gateway.resetCount)
     }
 

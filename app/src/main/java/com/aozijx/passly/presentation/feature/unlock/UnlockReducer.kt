@@ -1,22 +1,18 @@
 package com.aozijx.passly.presentation.feature.unlock
 
-import com.aozijx.passly.core.crypto.MemoryCleaner
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
-import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.presentation.feature.unlock.UnlockUiState
-import com.aozijx.passly.presentation.feature.unlock.UnlockVerificationFailure
 
 internal sealed interface UnlockMutation {
     data class AvailableMethodsChanged(val methods: AuthenticationMethods) : UnlockMutation
     data class RecoveryUnlockVisibilityChanged(val visible: Boolean) : UnlockMutation
     data class AppPasswordChanged(val value: SensitiveValue) : UnlockMutation
     data class RecoveryCodeChanged(val value: SensitiveValue) : UnlockMutation
-    data class ExpandedMethodChanged(val method: AuthenticationMethod?) : UnlockMutation
+    data class InputExpansionChanged(val expansion: UnlockInputExpansion) : UnlockMutation
     data class AuthenticationStarted(val method: AuthenticationMethod) : UnlockMutation
     data class AuthenticationFailed(
         val method: AuthenticationMethod,
@@ -25,9 +21,10 @@ internal sealed interface UnlockMutation {
     data object AuthenticationFinished : UnlockMutation
     data object VerificationFailureCleared : UnlockMutation
     data object UnlockInputsReset : UnlockMutation
+    data object PasswordSetupOpened : UnlockMutation
+    data object PasswordSetupClosed : UnlockMutation
     data class NewAppPasswordChanged(val value: SensitiveValue) : UnlockMutation
     data class ConfirmAppPasswordChanged(val value: SensitiveValue) : UnlockMutation
-    data class SetPasswordDialogVisibilityChanged(val visible: Boolean) : UnlockMutation
     data object PasswordSetupStarted : UnlockMutation
     data class PasswordSetupFailed(val failure: AuthenticationFailure) : UnlockMutation
     data object PasswordSetupFinished : UnlockMutation
@@ -39,97 +36,80 @@ internal object UnlockReducer {
         state: UnlockUiState,
         mutation: UnlockMutation,
     ): UnlockUiState = when (mutation) {
-        is UnlockMutation.AvailableMethodsChanged -> state.copy(
-            availableMethods = mutation.methods,
-        )
+        is UnlockMutation.AvailableMethodsChanged -> state.copy(availableMethods = mutation.methods)
         is UnlockMutation.RecoveryUnlockVisibilityChanged ->
             state.copy(recoveryUnlockVisible = mutation.visible)
         is UnlockMutation.AppPasswordChanged -> state.copy(
             appPassword = mutation.value,
-            verificationFailure = null,
+            verificationPhase = state.verificationPhase.withFailureCleared(),
         )
         is UnlockMutation.RecoveryCodeChanged -> state.copy(
             recoveryCode = mutation.value,
-            verificationFailure = null,
+            verificationPhase = state.verificationPhase.withFailureCleared(),
         )
-        is UnlockMutation.ExpandedMethodChanged -> state.copy(
-            expandedMethod = mutation.method,
-            verificationFailure = null,
+        is UnlockMutation.InputExpansionChanged -> state.copy(
+            inputExpansion = mutation.expansion,
+            verificationPhase = state.verificationPhase.withFailureCleared(),
         )
         is UnlockMutation.AuthenticationStarted -> state.copy(
-            activeMethod = mutation.method,
-            verificationFailure = null,
+            verificationPhase = UnlockVerificationPhase.Authenticating(mutation.method),
         )
         is UnlockMutation.AuthenticationFailed -> state.copy(
-            verificationFailure = UnlockVerificationFailure(
-                method = mutation.method,
-                message = mutation.failure.toVerificationMessage(),
+            verificationPhase = UnlockVerificationPhase.Failed(
+                UnlockVerificationFailure(
+                    method = mutation.method,
+                    message = mutation.failure.toVerificationMessage(),
+                ),
             ),
         )
-        UnlockMutation.AuthenticationFinished -> state.copy(activeMethod = null)
-        UnlockMutation.VerificationFailureCleared ->
-            state.copy(verificationFailure = null)
+        UnlockMutation.AuthenticationFinished -> state.copy(
+            verificationPhase = when (state.verificationPhase) {
+                is UnlockVerificationPhase.Authenticating -> UnlockVerificationPhase.Idle
+                is UnlockVerificationPhase.Failed,
+                UnlockVerificationPhase.Idle -> state.verificationPhase
+            },
+        )
+        UnlockMutation.VerificationFailureCleared -> state.copy(
+            verificationPhase = state.verificationPhase.withFailureCleared(),
+        )
         UnlockMutation.UnlockInputsReset -> state.copy(
             appPassword = EmptySensitiveValue,
             recoveryCode = EmptySensitiveValue,
             recoveryUnlockVisible = false,
-            expandedMethod = null,
-            verificationFailure = null,
+            inputExpansion = UnlockInputExpansion.Collapsed,
+            verificationPhase = UnlockVerificationPhase.Idle,
         )
-        is UnlockMutation.NewAppPasswordChanged -> state.withSetupPasswords(
-            newPassword = mutation.value,
-            confirmPassword = state.confirmAppPassword,
+        UnlockMutation.PasswordSetupOpened -> state.copy(
+            passwordSetup = UnlockPasswordSetup.Editing(),
         )
-        is UnlockMutation.ConfirmAppPasswordChanged -> state.withSetupPasswords(
-            newPassword = state.newAppPassword,
-            confirmPassword = mutation.value,
-        )
-        is UnlockMutation.SetPasswordDialogVisibilityChanged -> state.copy(
-            showSetPasswordDialog = mutation.visible,
-            newAppPassword = if (mutation.visible) state.newAppPassword else EmptySensitiveValue,
-            confirmAppPassword = if (mutation.visible) state.confirmAppPassword else EmptySensitiveValue,
-            canConfirmAppPassword = false,
-            setupFailure = null,
-        )
-        UnlockMutation.PasswordSetupStarted -> state.copy(
-            isSettingAppPassword = true,
-            setupFailure = null,
-        )
-        is UnlockMutation.PasswordSetupFailed -> state.copy(
-            setupFailure = mutation.failure.toSetupMessage(),
-        )
-        UnlockMutation.PasswordSetupFinished -> state.copy(isSettingAppPassword = false)
+        UnlockMutation.PasswordSetupClosed,
         UnlockMutation.PasswordSetupCompleted -> state.copy(
-            showSetPasswordDialog = false,
-            newAppPassword = EmptySensitiveValue,
-            confirmAppPassword = EmptySensitiveValue,
-            canConfirmAppPassword = false,
-            setupFailure = null,
+            passwordSetup = UnlockPasswordSetup.Closed,
         )
-    }
-
-    private fun UnlockUiState.withSetupPasswords(
-        newPassword: SensitiveValue,
-        confirmPassword: SensitiveValue,
-    ): UnlockUiState = copy(
-        newAppPassword = newPassword,
-        confirmAppPassword = confirmPassword,
-        canConfirmAppPassword = passwordsCanBeConfirmed(newPassword, confirmPassword),
-        setupFailure = null,
-    )
-
-    private fun passwordsCanBeConfirmed(
-        password: SensitiveValue,
-        confirmation: SensitiveValue,
-    ): Boolean {
-        val passwordChars = password.toCharArray()
-        val confirmationChars = confirmation.toCharArray()
-        return try {
-            AppPasswordPolicy.DEFAULT.acceptsLength(passwordChars.size) &&
-                passwordChars.contentEquals(confirmationChars)
-        } finally {
-            MemoryCleaner.wipeCharArray(passwordChars)
-            MemoryCleaner.wipeCharArray(confirmationChars)
+        is UnlockMutation.NewAppPasswordChanged -> state.updatePasswordSetup {
+            copy(
+                newPassword = mutation.value,
+                phase = UnlockPasswordSetupPhase.Idle,
+            )
+        }
+        is UnlockMutation.ConfirmAppPasswordChanged -> state.updatePasswordSetup {
+            copy(
+                confirmPassword = mutation.value,
+                phase = UnlockPasswordSetupPhase.Idle,
+            )
+        }
+        UnlockMutation.PasswordSetupStarted -> state.updatePasswordSetup {
+            copy(phase = UnlockPasswordSetupPhase.Saving)
+        }
+        is UnlockMutation.PasswordSetupFailed -> state.updatePasswordSetup {
+            copy(phase = UnlockPasswordSetupPhase.Failed(mutation.failure.toSetupMessage()))
+        }
+        UnlockMutation.PasswordSetupFinished -> state.updatePasswordSetup {
+            if (phase == UnlockPasswordSetupPhase.Saving) {
+                copy(phase = UnlockPasswordSetupPhase.Idle)
+            } else {
+                this
+            }
         }
     }
 
@@ -143,11 +123,23 @@ internal object UnlockReducer {
     }
 
     private fun AuthenticationFailure.toSetupMessage(): UnlockFailureMessage = when (code) {
-        AuthenticationFailureCode.PASSWORD_POLICY_VIOLATION ->
-            UnlockFailureMessage.PasswordTooShort
+        AuthenticationFailureCode.PASSWORD_POLICY_VIOLATION -> UnlockFailureMessage.PasswordTooShort
         AuthenticationFailureCode.RATE_LIMITED -> UnlockFailureMessage.RateLimited(
             retryAfterSeconds = (((retryAfterMs ?: 0L) + 999L) / 1000L).coerceAtLeast(1L),
         )
         else -> UnlockFailureMessage.AppPasswordSetupFailed
     }
+}
+
+private fun UnlockVerificationPhase.withFailureCleared(): UnlockVerificationPhase = when (this) {
+    is UnlockVerificationPhase.Failed -> UnlockVerificationPhase.Idle
+    is UnlockVerificationPhase.Authenticating,
+    UnlockVerificationPhase.Idle -> this
+}
+
+private inline fun UnlockUiState.updatePasswordSetup(
+    transform: UnlockPasswordSetup.Editing.() -> UnlockPasswordSetup.Editing,
+): UnlockUiState {
+    val editing = passwordSetup as? UnlockPasswordSetup.Editing ?: return this
+    return copy(passwordSetup = editing.transform())
 }

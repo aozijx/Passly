@@ -13,7 +13,8 @@ internal sealed interface AppShellMutation {
     ) : AppShellMutation
     data object DatabaseRetryStarted : AppShellMutation
     data object DatabaseRetryFinished : AppShellMutation
-    data class DatabaseFailureChanged(val error: Throwable?) : AppShellMutation
+    data object DatabaseAvailable : AppShellMutation
+    data class DatabaseFailed(val cause: Throwable) : AppShellMutation
 }
 
 internal object AppShellReducer {
@@ -28,15 +29,24 @@ internal object AppShellReducer {
                     isStatusBarAutoHide = mutation.interfaceSettings.hideSystemBars,
                 ),
             )
-            AppShellMutation.DatabaseRetryStarted -> state.copy(
-                isDatabaseRetrying = true,
+            AppShellMutation.DatabaseRetryStarted -> state.updateDatabaseFailure {
+                copy(retryPhase = DatabaseRetryPhase.Retrying)
+            }
+            AppShellMutation.DatabaseRetryFinished -> state.updateDatabaseFailure {
+                copy(retryPhase = DatabaseRetryPhase.Idle)
+            }
+            AppShellMutation.DatabaseAvailable -> state.copy(
+                databaseState = AppShellDatabaseState.Available,
             )
-            AppShellMutation.DatabaseRetryFinished -> state.copy(
-                isDatabaseRetrying = false,
-            )
-            is AppShellMutation.DatabaseFailureChanged -> state.copy(
-                isDatabaseRetrying = false,
-                databaseError = mutation.error,
+            is AppShellMutation.DatabaseFailed -> state.copy(
+                databaseState = AppShellDatabaseState.Failed(mutation.cause),
             )
         }
+}
+
+private inline fun AppShellUiState.updateDatabaseFailure(
+    transform: AppShellDatabaseState.Failed.() -> AppShellDatabaseState.Failed,
+): AppShellUiState {
+    val failure = databaseState as? AppShellDatabaseState.Failed ?: return this
+    return copy(databaseState = failure.transform())
 }

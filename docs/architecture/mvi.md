@@ -91,6 +91,13 @@ Sheet、Dialog 或 UiModel 放进调用方的 `ui` 目录。跨 Feature 复用�
 `UiState` 只能表达"当前 UI 如何渲染"：
 
 - 可以包含页面 loading、展开项、错误类型、当前输入值和选择项；
+- 一个业务流程必须由该流程自己的 sealed interface / enum 完整表达，例如
+  `Idle / Loading / Completed / Failed`。不得用 nullable、默认枚举值或多个互斥 Boolean 拼装
+  `loading + error + success`，因为这种写法会产生无法解释的组合；
+- 弹窗编辑、认证和保存等复合流程应把输入与 phase 放进同一个状态分支。关闭分支不携带输入，
+  使敏感值残留、关闭同时提交等非法状态在类型层不可表示；
+- 真正可选的内容仍可 nullable，天然二值的产品开关仍使用 Boolean；不要为了形式统一引入通用
+  `AsyncState<T>`，各功能使用能表达自身语义的状态类型；
 - 不包含 `Context`、`NavController`、`ViewModel`、DAO、Repository；
 - 不保存长期敏感明文。
 

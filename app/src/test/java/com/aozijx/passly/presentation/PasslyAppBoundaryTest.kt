@@ -85,10 +85,12 @@ class PasslyAppBoundaryTest {
         assertFalse(uiState.contains("isRecoveryMode"))
         assertFalse(reducer.contains("data object Authenticated"))
         assertFalse(reducer.contains("data object SessionLocked"))
-        assertTrue(reducer.contains("DatabaseFailureChanged(val error: Throwable?)"))
+        assertTrue(uiState.contains("databaseState: AppShellDatabaseState"))
+        assertTrue(reducer.contains("data object DatabaseAvailable"))
+        assertTrue(reducer.contains("data class DatabaseFailed(val cause: Throwable)"))
         assertTrue(viewModel.contains("state.toAppShellSessionMode()"))
-        assertTrue(viewModel.contains("DatabaseFailureChanged(error)"))
-        assertFalse(viewModel.contains("if (error != null)"))
+        assertTrue(viewModel.contains("AppShellMutation.DatabaseAvailable"))
+        assertTrue(viewModel.contains("AppShellMutation.DatabaseFailed(error)"))
         assertTrue(viewModel.contains("_uiState.update"))
     }
 

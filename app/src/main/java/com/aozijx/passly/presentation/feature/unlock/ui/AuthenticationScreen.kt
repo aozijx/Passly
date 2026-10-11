@@ -37,8 +37,13 @@ import com.aozijx.passly.core.ui.components.common.InputActionButtonState
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.presentation.feature.unlock.UnlockFailureMessage
+import com.aozijx.passly.presentation.feature.unlock.UnlockInputExpansion
+import com.aozijx.passly.presentation.feature.unlock.UnlockPasswordSetup
+import com.aozijx.passly.presentation.feature.unlock.UnlockPasswordSetupPhase
 import com.aozijx.passly.presentation.feature.unlock.UnlockUiAction
 import com.aozijx.passly.presentation.feature.unlock.UnlockUiState
+import com.aozijx.passly.presentation.feature.unlock.UnlockVerificationPhase
+import com.aozijx.passly.presentation.feature.unlock.canSubmit
 import com.aozijx.passly.presentation.shared.components.apppassword.AppPasswordSetDialog
 
 @Composable
@@ -52,15 +57,17 @@ fun AuthenticationScreen(
     val recoveryCodeLabel = stringResource(R.string.recovery_code_label)
     val appPassword = state.appPassword.toUiString()
     val recoveryCode = state.recoveryCode.toUiString()
-    val biometricFailureMessage = state.verificationFailure
+    val activeMethod = (state.verificationPhase as? UnlockVerificationPhase.Authenticating)?.method
+    val verificationFailure = (state.verificationPhase as? UnlockVerificationPhase.Failed)?.failure
+    val biometricFailureMessage = verificationFailure
         ?.takeIf { it.method == AuthenticationMethod.BIOMETRIC }
         ?.message
         ?.localized()
-    val appPasswordFailureMessage = state.verificationFailure
+    val appPasswordFailureMessage = verificationFailure
         ?.takeIf { it.method == AuthenticationMethod.APP_PASSWORD }
         ?.message
         ?.localized(appPasswordLabel)
-    val recoveryCodeFailureMessage = state.verificationFailure
+    val recoveryCodeFailureMessage = verificationFailure
         ?.takeIf { it.method == AuthenticationMethod.RECOVERY_CODE }
         ?.message
         ?.localized(recoveryCodeLabel)
@@ -125,9 +132,8 @@ fun AuthenticationScreen(
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.Fingerprint,
                     text = stringResource(R.string.auth_biometric_unlock),
-                    progress = state.activeMethod == AuthenticationMethod.BIOMETRIC,
-                    enabled = state.activeMethod == null ||
-                        state.activeMethod == AuthenticationMethod.BIOMETRIC,
+                    progress = activeMethod == AuthenticationMethod.BIOMETRIC,
+                    enabled = activeMethod == null || activeMethod == AuthenticationMethod.BIOMETRIC,
                     onClick = { onAction(UnlockUiAction.BiometricClicked) },
                 )
             }
@@ -137,8 +143,9 @@ fun AuthenticationScreen(
                 InputActionButton(
                     state = InputActionButtonState(
                         value = appPassword,
-                        expanded = state.expandedMethod == AuthenticationMethod.APP_PASSWORD,
-                        progress = state.activeMethod == AuthenticationMethod.APP_PASSWORD,
+                        expanded = state.inputExpansion ==
+                            UnlockInputExpansion.Expanded(AuthenticationMethod.APP_PASSWORD),
+                        progress = activeMethod == AuthenticationMethod.APP_PASSWORD,
                         result = appPasswordFailureMessage?.let { false },
                     ),
                     config = InputActionButtonConfig(
@@ -148,8 +155,7 @@ fun AuthenticationScreen(
                         errorText = appPasswordFailureMessage
                             ?: stringResource(R.string.auth_error_failed),
                     ),
-                    enabled = state.activeMethod == null ||
-                        state.activeMethod == AuthenticationMethod.APP_PASSWORD,
+                    enabled = activeMethod == null || activeMethod == AuthenticationMethod.APP_PASSWORD,
                     onValueChange = { onAction(UnlockUiAction.AppPasswordChanged(it)) },
                     onExpandedChange = {
                         onAction(UnlockUiAction.InputExpanded(AuthenticationMethod.APP_PASSWORD, it))
@@ -160,12 +166,13 @@ fun AuthenticationScreen(
             }
 
             if (state.availableMethods.available.isEmpty()) {
+                val setup = state.passwordSetup as? UnlockPasswordSetup.Editing
                 ActionButton(
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.Password,
                     text = stringResource(R.string.auth_set_app_password),
-                    progress = state.isSettingAppPassword,
-                    enabled = state.activeMethod == null && !state.isSettingAppPassword,
+                    progress = setup?.phase == UnlockPasswordSetupPhase.Saving,
+                    enabled = activeMethod == null && setup?.phase != UnlockPasswordSetupPhase.Saving,
                     onClick = { onAction(UnlockUiAction.SetPasswordClicked) },
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -183,8 +190,9 @@ fun AuthenticationScreen(
                 InputActionButton(
                     state = InputActionButtonState(
                         value = recoveryCode,
-                        expanded = state.expandedMethod == AuthenticationMethod.RECOVERY_CODE,
-                        progress = state.activeMethod == AuthenticationMethod.RECOVERY_CODE,
+                        expanded = state.inputExpansion ==
+                            UnlockInputExpansion.Expanded(AuthenticationMethod.RECOVERY_CODE),
+                        progress = activeMethod == AuthenticationMethod.RECOVERY_CODE,
                         result = recoveryCodeFailureMessage?.let { false },
                     ),
                     config = InputActionButtonConfig(
@@ -195,8 +203,7 @@ fun AuthenticationScreen(
                         errorText = recoveryCodeFailureMessage
                             ?: stringResource(R.string.auth_error_failed),
                     ),
-                    enabled = state.activeMethod == null ||
-                        state.activeMethod == AuthenticationMethod.RECOVERY_CODE,
+                    enabled = activeMethod == null || activeMethod == AuthenticationMethod.RECOVERY_CODE,
                     onValueChange = { onAction(UnlockUiAction.RecoveryCodeChanged(it)) },
                     onExpandedChange = {
                         onAction(UnlockUiAction.InputExpanded(AuthenticationMethod.RECOVERY_CODE, it))
@@ -209,17 +216,20 @@ fun AuthenticationScreen(
         }
     }
 
-    if (state.showSetPasswordDialog) {
+    val passwordSetup = state.passwordSetup
+    if (passwordSetup is UnlockPasswordSetup.Editing) {
         AppPasswordSetDialog(
-            newPassword = state.newAppPassword.toUiString(),
-            confirmPassword = state.confirmAppPassword.toUiString(),
-            confirmEnabled = state.canConfirmAppPassword,
+            newPassword = passwordSetup.newPassword.toUiString(),
+            confirmPassword = passwordSetup.confirmPassword.toUiString(),
+            confirmEnabled = passwordSetup.canSubmit(),
             onNewPasswordChange = { onAction(UnlockUiAction.NewAppPasswordChanged(it)) },
             onConfirmPasswordChange = { onAction(UnlockUiAction.ConfirmAppPasswordChanged(it)) },
             onConfirm = { onAction(UnlockUiAction.SetPasswordConfirmed) },
             onDismiss = { onAction(UnlockUiAction.DismissSetPasswordDialog) },
-            isBusy = state.isSettingAppPassword,
-            errorMessage = state.setupFailure?.localized(),
+            isBusy = passwordSetup.phase == UnlockPasswordSetupPhase.Saving,
+            errorMessage = (passwordSetup.phase as? UnlockPasswordSetupPhase.Failed)
+                ?.message
+                ?.localized(),
         )
     }
 }

@@ -1,20 +1,18 @@
 package com.aozijx.passly.feature.recovery
 
-import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.feature.recovery.RecoveryModeUiState
 
 internal sealed interface RecoveryModeMutation {
     data object PasswordDialogOpened : RecoveryModeMutation
     data class NewPasswordChanged(val value: SensitiveValue) : RecoveryModeMutation
     data class ConfirmPasswordChanged(val value: SensitiveValue) : RecoveryModeMutation
-    data class ValidationFailed(val message: String) : RecoveryModeMutation
+    data class ValidationFailed(val reason: RecoveryPasswordSetupFailure) : RecoveryModeMutation
     data object PasswordSetupStarted : RecoveryModeMutation
-    data class PasswordSetupFailed(val message: String) : RecoveryModeMutation
+    data class PasswordSetupFailed(val reason: RecoveryPasswordSetupFailure) : RecoveryModeMutation
     data object PasswordSetupStopped : RecoveryModeMutation
     data object PasswordSetupCompleted : RecoveryModeMutation
     data object PasswordDialogDismissed : RecoveryModeMutation
-    data class RecoveryModeRejected(val message: String) : RecoveryModeMutation
+    data object RecoveryModeRejected : RecoveryModeMutation
 }
 
 internal object RecoveryModeReducer {
@@ -23,47 +21,43 @@ internal object RecoveryModeReducer {
         mutation: RecoveryModeMutation,
     ): RecoveryModeUiState = when (mutation) {
         RecoveryModeMutation.PasswordDialogOpened -> state.copy(
-            showSetPasswordDialog = true,
-            passwordSetupError = null,
+            passwordSetup = RecoveryPasswordSetup.Editing(),
         )
-        is RecoveryModeMutation.NewPasswordChanged -> state.copy(
-            newPassword = mutation.value,
-            passwordSetupError = null,
-        )
-        is RecoveryModeMutation.ConfirmPasswordChanged -> state.copy(
-            confirmPassword = mutation.value,
-            passwordSetupError = null,
-        )
-        is RecoveryModeMutation.ValidationFailed ->
-            state.copy(passwordSetupError = mutation.message)
-        RecoveryModeMutation.PasswordSetupStarted -> state.copy(
-            isSettingPassword = true,
-            passwordSetupError = null,
-        )
-        is RecoveryModeMutation.PasswordSetupFailed -> state.copy(
-            isSettingPassword = false,
-            passwordSetupError = mutation.message,
-        )
-        RecoveryModeMutation.PasswordSetupStopped -> state.copy(isSettingPassword = false)
-        RecoveryModeMutation.PasswordSetupCompleted -> state.copy(
-            showSetPasswordDialog = false,
-            newPassword = EmptySensitiveValue,
-            confirmPassword = EmptySensitiveValue,
-            isSettingPassword = false,
-            passwordSetupError = null,
-        )
-        RecoveryModeMutation.PasswordDialogDismissed -> state.copy(
-            showSetPasswordDialog = false,
-            newPassword = EmptySensitiveValue,
-            confirmPassword = EmptySensitiveValue,
-            passwordSetupError = null,
-        )
-        is RecoveryModeMutation.RecoveryModeRejected -> state.copy(
-            showSetPasswordDialog = false,
-            newPassword = EmptySensitiveValue,
-            confirmPassword = EmptySensitiveValue,
-            isSettingPassword = false,
-            passwordSetupError = mutation.message,
+        is RecoveryModeMutation.NewPasswordChanged -> state.updatePasswordSetup {
+            copy(
+                newPassword = mutation.value,
+                phase = RecoveryPasswordSetupPhase.Idle,
+            )
+        }
+        is RecoveryModeMutation.ConfirmPasswordChanged -> state.updatePasswordSetup {
+            copy(
+                confirmPassword = mutation.value,
+                phase = RecoveryPasswordSetupPhase.Idle,
+            )
+        }
+        is RecoveryModeMutation.ValidationFailed -> state.updatePasswordSetup {
+            copy(phase = RecoveryPasswordSetupPhase.Failed(mutation.reason))
+        }
+        RecoveryModeMutation.PasswordSetupStarted -> state.updatePasswordSetup {
+            copy(phase = RecoveryPasswordSetupPhase.Saving)
+        }
+        is RecoveryModeMutation.PasswordSetupFailed -> state.updatePasswordSetup {
+            copy(phase = RecoveryPasswordSetupPhase.Failed(mutation.reason))
+        }
+        RecoveryModeMutation.PasswordSetupStopped -> state.updatePasswordSetup {
+            copy(phase = RecoveryPasswordSetupPhase.Idle)
+        }
+        RecoveryModeMutation.PasswordSetupCompleted,
+        RecoveryModeMutation.PasswordDialogDismissed,
+        RecoveryModeMutation.RecoveryModeRejected -> state.copy(
+            passwordSetup = RecoveryPasswordSetup.Closed,
         )
     }
+}
+
+private inline fun RecoveryModeUiState.updatePasswordSetup(
+    transform: RecoveryPasswordSetup.Editing.() -> RecoveryPasswordSetup.Editing,
+): RecoveryModeUiState {
+    val editing = passwordSetup as? RecoveryPasswordSetup.Editing ?: return this
+    return copy(passwordSetup = editing.transform())
 }

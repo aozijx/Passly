@@ -54,7 +54,7 @@ class UnlockViewModel @Inject constructor(
             is UnlockUiAction.InputExpanded -> onInputExpanded(action.method, action.expanded)
             UnlockUiAction.ClearVerificationFailure -> clearVerificationFailure()
             UnlockUiAction.SetPasswordClicked ->
-                mutate(UnlockMutation.SetPasswordDialogVisibilityChanged(true))
+                mutate(UnlockMutation.PasswordSetupOpened)
             is UnlockUiAction.NewAppPasswordChanged -> updateNewAppPassword(action.value)
             is UnlockUiAction.ConfirmAppPasswordChanged -> updateConfirmAppPassword(action.value)
             UnlockUiAction.SetPasswordConfirmed -> setAppPassword()
@@ -63,24 +63,27 @@ class UnlockViewModel @Inject constructor(
     }
 
     private fun updateNewAppPassword(value: String) {
-        _uiState.value.newAppPassword.wipe()
+        val setup = _uiState.value.passwordSetup as? UnlockPasswordSetup.Editing ?: return
+        setup.newPassword.wipe()
         mutate(UnlockMutation.NewAppPasswordChanged(OwnedChars.fromString(value)))
     }
 
     private fun updateConfirmAppPassword(value: String) {
-        _uiState.value.confirmAppPassword.wipe()
+        val setup = _uiState.value.passwordSetup as? UnlockPasswordSetup.Editing ?: return
+        setup.confirmPassword.wipe()
         mutate(UnlockMutation.ConfirmAppPasswordChanged(OwnedChars.fromString(value)))
     }
 
     private fun dismissSetPasswordDialog() {
         wipeSetupPasswords()
-        mutate(UnlockMutation.SetPasswordDialogVisibilityChanged(false))
+        mutate(UnlockMutation.PasswordSetupClosed)
     }
 
     private fun setAppPassword() {
-        val password = _uiState.value.newAppPassword.toCharArray()
-        val confirm = _uiState.value.confirmAppPassword.toCharArray()
-        if (!_uiState.value.canConfirmAppPassword) {
+        val setup = _uiState.value.passwordSetup as? UnlockPasswordSetup.Editing ?: return
+        val password = setup.newPassword.toCharArray()
+        val confirm = setup.confirmPassword.toCharArray()
+        if (!setup.canSubmit()) {
             MemoryCleaner.wipeCharArray(password)
             MemoryCleaner.wipeCharArray(confirm)
             return
@@ -116,12 +119,10 @@ class UnlockViewModel @Inject constructor(
     }
 
     private fun onBackPressed() {
-        when (val expandedMethod = _uiState.value.expandedMethod) {
-            AuthenticationMethod.APP_PASSWORD,
-            AuthenticationMethod.RECOVERY_CODE -> onInputExpanded(expandedMethod, false)
+        when (val expansion = _uiState.value.inputExpansion) {
+            is UnlockInputExpansion.Expanded -> onInputExpanded(expansion.method, false)
 
-            AuthenticationMethod.BIOMETRIC,
-            null -> {
+            UnlockInputExpansion.Collapsed -> {
                 recoveryRevealTapCount = 0
                 mutate(UnlockMutation.RecoveryUnlockVisibilityChanged(false))
             }
@@ -145,14 +146,14 @@ class UnlockViewModel @Inject constructor(
 
     private fun onInputExpanded(method: AuthenticationMethod, expanded: Boolean) {
         if (expanded) {
-            _uiState.value.expandedMethod
-                ?.takeUnless { it == method }
-                ?.let(::clearCredential)
-            mutate(UnlockMutation.ExpandedMethodChanged(method))
+            val current = _uiState.value.inputExpansion as? UnlockInputExpansion.Expanded
+            current?.method?.takeUnless { it == method }?.let(::clearCredential)
+            mutate(UnlockMutation.InputExpansionChanged(UnlockInputExpansion.Expanded(method)))
         } else {
             clearCredential(method)
-            if (_uiState.value.expandedMethod == method) {
-                mutate(UnlockMutation.ExpandedMethodChanged(null))
+            val current = _uiState.value.inputExpansion as? UnlockInputExpansion.Expanded
+            if (current?.method == method) {
+                mutate(UnlockMutation.InputExpansionChanged(UnlockInputExpansion.Collapsed))
             }
         }
     }
@@ -181,7 +182,7 @@ class UnlockViewModel @Inject constructor(
         credential: CharArray? = null,
         purpose: AuthenticationPurpose = AuthenticationPurpose.UNLOCK_VAULT
     ) {
-        if (_uiState.value.activeMethod != null) {
+        if (_uiState.value.verificationPhase is UnlockVerificationPhase.Authenticating) {
             credential?.let(MemoryCleaner::wipeCharArray)
             return
         }
@@ -253,8 +254,9 @@ class UnlockViewModel @Inject constructor(
     }
 
     private fun wipeSetupPasswords() {
-        _uiState.value.newAppPassword.wipe()
-        _uiState.value.confirmAppPassword.wipe()
+        val setup = _uiState.value.passwordSetup as? UnlockPasswordSetup.Editing ?: return
+        setup.newPassword.wipe()
+        setup.confirmPassword.wipe()
     }
 
     private companion object {

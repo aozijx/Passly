@@ -8,7 +8,6 @@ import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -33,13 +32,13 @@ class AuthenticationReducerTest {
     }
 
     @Test
-    fun `password confirmation follows one policy owned by the reducer`() {
+    fun `password confirmation follows one derived policy`() {
         val shortPassword = OwnedChars.fromString("short")
         val validPassword = OwnedChars.fromString("long-enough-password")
         val matchingConfirmation = OwnedChars.fromString("long-enough-password")
         try {
             val short = UnlockReducer.reduce(
-                UnlockUiState(),
+                UnlockUiState(passwordSetup = UnlockPasswordSetup.Editing()),
                 UnlockMutation.NewAppPasswordChanged(shortPassword),
             )
             val withPassword = UnlockReducer.reduce(
@@ -51,9 +50,9 @@ class AuthenticationReducerTest {
                 UnlockMutation.ConfirmAppPasswordChanged(matchingConfirmation),
             )
 
-            assertFalse(short.canConfirmAppPassword)
-            assertFalse(withPassword.canConfirmAppPassword)
-            assertTrue(matching.canConfirmAppPassword)
+            assertFalse((short.passwordSetup as UnlockPasswordSetup.Editing).canSubmit())
+            assertFalse((withPassword.passwordSetup as UnlockPasswordSetup.Editing).canSubmit())
+            assertTrue((matching.passwordSetup as UnlockPasswordSetup.Editing).canSubmit())
         } finally {
             shortPassword.wipe()
             validPassword.wipe()
@@ -82,11 +81,14 @@ class AuthenticationReducerTest {
             UnlockMutation.AuthenticationFinished,
         )
 
-        assertEquals(AuthenticationMethod.APP_PASSWORD, started.activeMethod)
-        assertNull(finished.activeMethod)
+        assertEquals(
+            UnlockVerificationPhase.Authenticating(AuthenticationMethod.APP_PASSWORD),
+            started.verificationPhase,
+        )
+        val finalFailure = finished.verificationPhase as UnlockVerificationPhase.Failed
         assertEquals(
             UnlockFailureMessage.IncorrectCredential(remainingAttempts = null),
-            finished.verificationFailure?.message,
+            finalFailure.failure.message,
         )
     }
 
@@ -94,7 +96,7 @@ class AuthenticationReducerTest {
     fun `resetting unlock inputs clears only unlock state`() {
         val initial = UnlockUiState(
             recoveryUnlockVisible = true,
-            expandedMethod = AuthenticationMethod.RECOVERY_CODE,
+            inputExpansion = UnlockInputExpansion.Expanded(AuthenticationMethod.RECOVERY_CODE),
         )
 
         val result = UnlockReducer.reduce(
@@ -103,7 +105,7 @@ class AuthenticationReducerTest {
         )
 
         assertFalse(result.recoveryUnlockVisible)
-        assertNull(result.expandedMethod)
+        assertSame(UnlockInputExpansion.Collapsed, result.inputExpansion)
         assertSame(EmptySensitiveValue, result.appPassword)
         assertSame(EmptySensitiveValue, result.recoveryCode)
     }
@@ -115,16 +117,15 @@ class AuthenticationReducerTest {
         try {
             val result = UnlockReducer.reduce(
                 UnlockUiState(
-                    showSetPasswordDialog = true,
-                    newAppPassword = password,
-                    confirmAppPassword = confirm,
+                    passwordSetup = UnlockPasswordSetup.Editing(
+                        newPassword = password,
+                        confirmPassword = confirm,
+                    ),
                 ),
-                UnlockMutation.SetPasswordDialogVisibilityChanged(false),
+                UnlockMutation.PasswordSetupClosed,
             )
 
-            assertFalse(result.showSetPasswordDialog)
-            assertSame(EmptySensitiveValue, result.newAppPassword)
-            assertSame(EmptySensitiveValue, result.confirmAppPassword)
+            assertSame(UnlockPasswordSetup.Closed, result.passwordSetup)
         } finally {
             password.wipe()
             confirm.wipe()

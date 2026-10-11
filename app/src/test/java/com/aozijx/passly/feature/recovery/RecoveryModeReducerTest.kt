@@ -3,10 +3,7 @@ package com.aozijx.passly.feature.recovery
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.feature.recovery.RecoveryModeUiState
 import com.aozijx.passly.domain.sensitive.OwnedChars
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RecoveryModeReducerTest {
@@ -18,18 +15,16 @@ class RecoveryModeReducerTest {
         try {
             val result = RecoveryModeReducer.reduce(
                 RecoveryModeUiState(
-                    showSetPasswordDialog = true,
-                    newPassword = password,
-                    confirmPassword = confirm,
-                    isSettingPassword = true,
+                    passwordSetup = RecoveryPasswordSetup.Editing(
+                        newPassword = password,
+                        confirmPassword = confirm,
+                        phase = RecoveryPasswordSetupPhase.Saving,
+                    ),
                 ),
                 RecoveryModeMutation.PasswordSetupCompleted,
             )
 
-            assertFalse(result.showSetPasswordDialog)
-            assertFalse(result.isSettingPassword)
-            assertSame(EmptySensitiveValue, result.newPassword)
-            assertSame(EmptySensitiveValue, result.confirmPassword)
+            assertSame(RecoveryPasswordSetup.Closed, result.passwordSetup)
         } finally {
             password.wipe()
             confirm.wipe()
@@ -37,18 +32,17 @@ class RecoveryModeReducerTest {
     }
 
     @Test
-    fun `rejected recovery mode closes setup and exposes error`() {
+    fun `rejected recovery mode closes setup`() {
         val result = RecoveryModeReducer.reduce(
             RecoveryModeUiState(
-                showSetPasswordDialog = true,
-                isSettingPassword = true,
+                passwordSetup = RecoveryPasswordSetup.Editing(
+                    phase = RecoveryPasswordSetupPhase.Saving,
+                ),
             ),
-            RecoveryModeMutation.RecoveryModeRejected("当前不在恢复模式"),
+            RecoveryModeMutation.RecoveryModeRejected,
         )
 
-        assertFalse(result.showSetPasswordDialog)
-        assertFalse(result.isSettingPassword)
-        assertEquals("当前不在恢复模式", result.passwordSetupError)
+        assertSame(RecoveryPasswordSetup.Closed, result.passwordSetup)
     }
 
     @Test
@@ -58,6 +52,9 @@ class RecoveryModeReducerTest {
             RecoveryModeMutation.PasswordDialogOpened,
         )
 
-        assertTrue(result.showSetPasswordDialog)
+        val setup = result.passwordSetup as RecoveryPasswordSetup.Editing
+        assertSame(EmptySensitiveValue, setup.newPassword)
+        assertSame(EmptySensitiveValue, setup.confirmPassword)
+        assertSame(RecoveryPasswordSetupPhase.Idle, setup.phase)
     }
 }

@@ -45,8 +45,9 @@ internal fun AppShell(
     ) { destination ->
         when (destination) {
             AppShellDestination.DATABASE_ERROR -> {
+                val databaseState = uiState.databaseState as AppShellDatabaseState.Failed
                 DatabaseErrorDialog(
-                    isBusy = uiState.isDatabaseRetrying,
+                    isBusy = databaseState.retryPhase == DatabaseRetryPhase.Retrying,
                     onRetry = { onAction(AppShellUiAction.RetryDatabaseSession) },
                     onCloseApp = {
                         noticePublisher.publish(newAppNotice(NoticeCode.APP_CLOSE_REMINDER))

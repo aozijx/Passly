@@ -4,6 +4,8 @@
     <string name="recovery_mode_description">Recovery mode can only set a new app password. It cannot read or export password data. Passly locks immediately afterward so you can unlock with the new password.</string>
     <string name="recovery_mode_set_password">Set a new app password</string>
     <string name="recovery_mode_password_reset_success">App password reset. Unlock Passly with the new password.</string>
+    <string name="recovery_mode_password_mismatch_or_empty">Passwords must be non-empty and match</string>
+    <string name="recovery_mode_password_setup_failed">Failed to set the password</string>
     <string name="recovery_mode_exit">Exit and lock</string>
     <string name="recovery_mode_locked_description">Passly locked</string>
     <string name="recovery_mode_password_dialog_title">Set app password</string>

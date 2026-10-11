@@ -110,7 +110,13 @@ class AppShellViewModel @Inject constructor(
     private fun observeDatabaseFailures() {
         viewModelScope.launch {
             databaseSessionFailureState.databaseFailure.collect { error ->
-                mutate(AppShellMutation.DatabaseFailureChanged(error))
+                mutate(
+                    if (error == null) {
+                        AppShellMutation.DatabaseAvailable
+                    } else {
+                        AppShellMutation.DatabaseFailed(error)
+                    },
+                )
             }
         }
     }

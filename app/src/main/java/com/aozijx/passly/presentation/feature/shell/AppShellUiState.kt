@@ -9,9 +9,21 @@ data class AppShellUiState(
     val appearance: AppearanceSettings = AppearanceSettings(),
     val appCornerRadiusDp: Float = AppCornerRadiusConstraints.DEFAULT_DP,
     val windowPolicy: AppWindowPolicy = AppWindowPolicy(),
-    val isDatabaseRetrying: Boolean = false,
-    val databaseError: Throwable? = null
+    val databaseState: AppShellDatabaseState = AppShellDatabaseState.Available,
 )
+
+sealed interface AppShellDatabaseState {
+    data object Available : AppShellDatabaseState
+    data class Failed(
+        val cause: Throwable,
+        val retryPhase: DatabaseRetryPhase = DatabaseRetryPhase.Idle,
+    ) : AppShellDatabaseState
+}
+
+enum class DatabaseRetryPhase {
+    Idle,
+    Retrying,
+}
 
 enum class AppShellSessionMode {
     AUTHENTICATION,
@@ -28,7 +40,7 @@ internal enum class AppShellDestination {
 
 internal val AppShellUiState.destination: AppShellDestination
     get() = when {
-        databaseError != null -> AppShellDestination.DATABASE_ERROR
+        databaseState is AppShellDatabaseState.Failed -> AppShellDestination.DATABASE_ERROR
         sessionMode == AppShellSessionMode.VAULT -> AppShellDestination.VAULT
         sessionMode == AppShellSessionMode.RECOVERY -> AppShellDestination.RECOVERY
         else -> AppShellDestination.AUTHENTICATION

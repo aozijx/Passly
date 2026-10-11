@@ -20,11 +20,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.feature.database.reset.DatabaseResetFailure
+import com.aozijx.passly.feature.database.reset.DatabaseResetPhase
 import com.aozijx.passly.feature.database.reset.DatabaseResetUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,9 +36,10 @@ internal fun DatabaseResetSheet(
     onDismiss: () -> Unit,
 ) {
     var showConfirm by remember { mutableStateOf(false) }
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-    ) {
+    val isResetting = state.phase == DatabaseResetPhase.Resetting
+    val isCompleted = state.phase == DatabaseResetPhase.Completed
+
+    ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -53,26 +55,26 @@ internal fun DatabaseResetSheet(
                 text = stringResource(R.string.database_reset_description),
                 style = MaterialTheme.typography.bodyMedium,
             )
-            state.error?.let {
-                Text(it, color = MaterialTheme.colorScheme.error)
-            }
-            if (state.isResetComplete) {
-                Text(
-                    stringResource(R.string.database_reset_success),
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-            if (state.isResetting) {
-                Row(
+            when (val phase = state.phase) {
+                DatabaseResetPhase.Idle -> Unit
+                DatabaseResetPhase.Resetting -> Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
                 ) {
                     CircularProgressIndicator()
                 }
+                DatabaseResetPhase.Completed -> Text(
+                    stringResource(R.string.database_reset_success),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                is DatabaseResetPhase.Failed -> Text(
+                    text = phase.reason.message(),
+                    color = MaterialTheme.colorScheme.error,
+                )
             }
             OutlinedButton(
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !state.isResetting && !state.isResetComplete,
+                enabled = !isResetting && !isCompleted,
                 onClick = { showConfirm = true },
             ) {
                 Text(
@@ -86,13 +88,13 @@ internal fun DatabaseResetSheet(
     if (showConfirm) {
         AlertDialog(
             onDismissRequest = {
-                if (!state.isResetting) showConfirm = false
+                if (!isResetting) showConfirm = false
             },
             title = { Text(stringResource(R.string.database_reset_confirm_title)) },
             text = { Text(stringResource(R.string.database_reset_confirm_message)) },
             confirmButton = {
                 TextButton(
-                    enabled = !state.isResetting,
+                    enabled = !isResetting,
                     onClick = {
                         showConfirm = false
                         onReset()
@@ -106,10 +108,19 @@ internal fun DatabaseResetSheet(
             },
             dismissButton = {
                 TextButton(
-                    enabled = !state.isResetting,
+                    enabled = !isResetting,
                     onClick = { showConfirm = false },
                 ) { Text(stringResource(R.string.cancel)) }
             },
         )
     }
+}
+
+@Composable
+private fun DatabaseResetFailure.message(): String = when (this) {
+    DatabaseResetFailure.SessionRestricted ->
+        stringResource(R.string.database_reset_error_session_restricted)
+    DatabaseResetFailure.AuthorizationDenied ->
+        stringResource(R.string.database_reset_error_authorization_denied)
+    is DatabaseResetFailure.Unexpected -> message
 }

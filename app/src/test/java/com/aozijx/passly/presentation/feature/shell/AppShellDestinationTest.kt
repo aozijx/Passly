@@ -13,7 +13,7 @@ class AppShellDestinationTest {
     fun `database failure takes precedence over session destinations`() {
         val state = AppShellUiState(
             sessionMode = AppShellSessionMode.VAULT,
-            databaseError = IllegalStateException("broken"),
+            databaseState = AppShellDatabaseState.Failed(IllegalStateException("broken")),
         )
 
         assertEquals(AppShellDestination.DATABASE_ERROR, state.destination)

@@ -12,7 +12,7 @@ fun AuthenticationRoute() {
     val viewModel: UnlockViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    BackHandler(enabled = !state.showSetPasswordDialog) {
+    BackHandler(enabled = state.passwordSetup == UnlockPasswordSetup.Closed) {
         viewModel.onAction(UnlockUiAction.BackPressed)
     }
 

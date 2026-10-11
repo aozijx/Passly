@@ -10,7 +10,6 @@ import com.aozijx.passly.presentation.feature.shell.AppShellUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AppShellReducerTest {
@@ -21,43 +20,50 @@ class AppShellReducerTest {
         val result = AppShellReducer.reduce(
             AppShellUiState(
                 sessionMode = AppShellSessionMode.VAULT,
-                isDatabaseRetrying = true,
-                databaseError = error,
+                databaseState = AppShellDatabaseState.Failed(
+                    cause = error,
+                    retryPhase = DatabaseRetryPhase.Retrying,
+                ),
             ),
             AppShellMutation.SessionChanged(AppShellSessionMode.RECOVERY),
         )
 
         assertEquals(AppShellSessionMode.RECOVERY, result.sessionMode)
-        assertTrue(result.isDatabaseRetrying)
-        assertSame(error, result.databaseError)
+        val databaseState = result.databaseState as AppShellDatabaseState.Failed
+        assertEquals(DatabaseRetryPhase.Retrying, databaseState.retryPhase)
+        assertSame(error, databaseState.cause)
     }
 
     @Test
     fun `database retry keeps authoritative error visible and marks retry in progress`() {
         val error = IllegalStateException("failure")
-        val initial = AppShellUiState(databaseError = error)
+        val initial = AppShellUiState(
+            databaseState = AppShellDatabaseState.Failed(error),
+        )
 
         val retry = AppShellReducer.reduce(
             initial,
             AppShellMutation.DatabaseRetryStarted,
         )
 
-        assertTrue(retry.isDatabaseRetrying)
-        assertSame(error, retry.databaseError)
+        val databaseState = retry.databaseState as AppShellDatabaseState.Failed
+        assertEquals(DatabaseRetryPhase.Retrying, databaseState.retryPhase)
+        assertSame(error, databaseState.cause)
     }
 
     @Test
     fun `database failure stream clears error and retry state together`() {
         val result = AppShellReducer.reduce(
             AppShellUiState(
-                isDatabaseRetrying = true,
-                databaseError = IllegalStateException("failure"),
+                databaseState = AppShellDatabaseState.Failed(
+                    cause = IllegalStateException("failure"),
+                    retryPhase = DatabaseRetryPhase.Retrying,
+                ),
             ),
-            AppShellMutation.DatabaseFailureChanged(error = null),
+            AppShellMutation.DatabaseAvailable,
         )
 
-        assertFalse(result.isDatabaseRetrying)
-        assertEquals(null, result.databaseError)
+        assertSame(AppShellDatabaseState.Available, result.databaseState)
     }
 
     @Test
@@ -65,14 +71,17 @@ class AppShellReducerTest {
         val error = IllegalStateException("failure")
         val result = AppShellReducer.reduce(
             AppShellUiState(
-                isDatabaseRetrying = true,
-                databaseError = error,
+                databaseState = AppShellDatabaseState.Failed(
+                    cause = error,
+                    retryPhase = DatabaseRetryPhase.Retrying,
+                ),
             ),
             AppShellMutation.DatabaseRetryFinished,
         )
 
-        assertFalse(result.isDatabaseRetrying)
-        assertSame(error, result.databaseError)
+        val databaseState = result.databaseState as AppShellDatabaseState.Failed
+        assertEquals(DatabaseRetryPhase.Idle, databaseState.retryPhase)
+        assertSame(error, databaseState.cause)
     }
 
     @Test
@@ -87,7 +96,7 @@ class AppShellReducerTest {
         val result = AppShellReducer.reduce(
             AppShellUiState(
                 sessionMode = AppShellSessionMode.VAULT,
-                databaseError = error,
+                databaseState = AppShellDatabaseState.Failed(error),
             ),
             AppShellMutation.SettingsChanged(
                 appearance = appearance,
@@ -102,6 +111,6 @@ class AppShellReducerTest {
         assertEquals(30f, result.appCornerRadiusDp)
         assertFalse(result.windowPolicy.isSecureContentEnabled)
         assertEquals(AppShellSessionMode.VAULT, result.sessionMode)
-        assertSame(error, result.databaseError)
+        assertSame(error, (result.databaseState as AppShellDatabaseState.Failed).cause)
     }
 }

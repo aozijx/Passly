@@ -50,25 +50,33 @@ class RecoveryModeViewModel @Inject constructor(
     }
 
     private fun updateNewPassword(value: String) {
-        _uiState.value.newPassword.wipe()
+        val setup = _uiState.value.passwordSetup as? RecoveryPasswordSetup.Editing ?: return
+        setup.newPassword.wipe()
         mutate(RecoveryModeMutation.NewPasswordChanged(OwnedChars.fromString(value)))
     }
 
     private fun updateConfirmPassword(value: String) {
-        _uiState.value.confirmPassword.wipe()
+        val setup = _uiState.value.passwordSetup as? RecoveryPasswordSetup.Editing ?: return
+        setup.confirmPassword.wipe()
         mutate(RecoveryModeMutation.ConfirmPasswordChanged(OwnedChars.fromString(value)))
     }
 
     private fun submitNewPassword() {
         val state = _uiState.value
         if (!ensureRecoveryMode()) return
-        val password = state.newPassword.toCharArray()
-        val confirm = state.confirmPassword.toCharArray()
+        val setup = state.passwordSetup as? RecoveryPasswordSetup.Editing ?: return
+        if (setup.phase == RecoveryPasswordSetupPhase.Saving) return
+        val password = setup.newPassword.toCharArray()
+        val confirm = setup.confirmPassword.toCharArray()
 
         if (password.isEmpty() || !password.contentEquals(confirm)) {
             MemoryCleaner.wipeCharArray(password)
             MemoryCleaner.wipeCharArray(confirm)
-            mutate(RecoveryModeMutation.ValidationFailed("密码不匹配或为空"))
+            mutate(
+                RecoveryModeMutation.ValidationFailed(
+                    RecoveryPasswordSetupFailure.PasswordMismatchOrEmpty,
+                ),
+            )
             return
         }
 
@@ -86,7 +94,11 @@ class RecoveryModeViewModel @Inject constructor(
                         mutate(RecoveryModeMutation.PasswordSetupStopped)
 
                     is AuthenticationResult.Failure ->
-                        mutate(RecoveryModeMutation.PasswordSetupFailed("设置密码失败"))
+                        mutate(
+                            RecoveryModeMutation.PasswordSetupFailed(
+                                RecoveryPasswordSetupFailure.SetupFailed,
+                            ),
+                        )
                 }
             } finally {
                 MemoryCleaner.wipeCharArray(password)
@@ -110,7 +122,7 @@ class RecoveryModeViewModel @Inject constructor(
         val recoveryMode = secureSessionAccessState.isRecoveryMode()
         if (recoveryMode) return true
         wipePasswords()
-        mutate(RecoveryModeMutation.RecoveryModeRejected("当前不在恢复模式"))
+        mutate(RecoveryModeMutation.RecoveryModeRejected)
         return false
     }
 
@@ -119,8 +131,9 @@ class RecoveryModeViewModel @Inject constructor(
     }
 
     private fun wipePasswords() {
-        _uiState.value.newPassword.wipe()
-        _uiState.value.confirmPassword.wipe()
+        val setup = _uiState.value.passwordSetup as? RecoveryPasswordSetup.Editing ?: return
+        setup.newPassword.wipe()
+        setup.confirmPassword.wipe()
     }
 
     override fun onCleared() {

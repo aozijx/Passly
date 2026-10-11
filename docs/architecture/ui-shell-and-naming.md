@@ -36,7 +36,9 @@ Rail、全局 Snackbar 和认证遮罩属于 App Shell，不进入共享元素�
 `AppShellViewModel` 只组合应用根界面需要的稳定投影，不拥有认证或数据库会话状态机：
 
 - 将安全层发布的 `AuthenticationState` 穷尽映射为单一 `AppShellSessionMode`；不复制成多个布尔状态，也不保存认证 continuation；
-- 完整观察 `DatabaseSessionFailureState` 的错误与清除事件；重试状态只描述 UI 是否忙碌，不能提前清除安全层仍持有的错误；
+- 完整观察 `DatabaseSessionFailureState` 的错误与清除事件，并投影为
+  `AppShellDatabaseState.Available / Failed`；重试阶段只存在于 `Failed` 分支，不能与“数据库可用”
+  同时出现，也不能提前清除安全层仍持有的错误；
 - 通过 `DatabaseSessionRecovery` 请求重试，真正的数据库解锁、故障清除和认证状态发布仍由安全会话协调；
 - 组合根主题、圆角和窗口安全策略等应用级显示设置。
 
