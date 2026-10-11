@@ -28,7 +28,7 @@ data class DetailUiState(
     val fieldEdits: DetailFieldEditState = DetailFieldEditState(),
     val saveState: DetailSaveState = DetailSaveState.Idle,
     val tagEditor: DetailTagEditorState = DetailTagEditorState(),
-    val faviconEditor: DetailFaviconEditorState = DetailFaviconEditorState(),
+    val faviconEditor: DetailFaviconEditorState = DetailFaviconEditorState.Closed,
     val revisions: DetailRevisionState = DetailRevisionState.Closed,
 ) {
     fun revealed(key: String): SensitiveValue? = revealedFields[key]

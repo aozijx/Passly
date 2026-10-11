@@ -6,6 +6,8 @@ import com.aozijx.passly.presentation.feature.vault.detail.ui.component.FaviconE
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.TagEditorSheet
 import com.aozijx.passly.presentation.feature.vault.detail.DetailUiAction
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailEditorOverlaysUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFaviconEditorUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconWorkUiState
 
 @Composable
 fun DetailEditorOverlays(
@@ -27,32 +29,34 @@ fun DetailEditorOverlays(
         )
     }
 
-    if (model.faviconEditor.visible) {
-        FaviconEditorSheet(
-            state = model.faviconEditor,
-            isSaving = model.savingIcon,
-            onTabSelected = { onAction(DetailUiAction.SelectFaviconTab(it)) },
-            onSearchChanged = { onAction(DetailUiAction.UpdateFaviconSearch(it)) },
-            onSourceSelected = { onAction(DetailUiAction.SelectFaviconSource(it)) },
-            onUploadRequested = onFaviconUploadRequested,
-            onImageUrlChanged = { onAction(DetailUiAction.UpdateFaviconImageUrl(it)) },
-            onDownloadRequested = { onAction(DetailUiAction.DownloadFaviconImage) },
-            onSave = { onAction(DetailUiAction.SaveFavicon) },
-            onDismiss = { onAction(DetailUiAction.DismissFaviconEditor) },
-            onConfirmDiscard = { onAction(DetailUiAction.ConfirmDiscardFavicon) },
-            onKeepEditing = { onAction(DetailUiAction.KeepEditingFavicon) },
-        )
-    }
-
-    model.faviconEditor.pendingInputPath?.let { path ->
-        FaviconCropScreen(
-            stagedPath = path,
-            processing = model.faviconEditor.processing,
-            onCrop = { zoom, x, y ->
-                onAction(DetailUiAction.CropFaviconImage(zoom, x, y))
-            },
-            onUseWithoutCrop = { onAction(DetailUiAction.UseFaviconWithoutCrop) },
-            onCancel = { onAction(DetailUiAction.CancelFaviconCrop) },
-        )
+    when (val faviconEditor = model.faviconEditor) {
+        DetailFaviconEditorUiModel.Hidden -> Unit
+        is DetailFaviconEditorUiModel.Visible -> {
+            FaviconEditorSheet(
+                state = faviconEditor,
+                isSaving = model.savingIcon,
+                onTabSelected = { onAction(DetailUiAction.SelectFaviconTab(it)) },
+                onSearchChanged = { onAction(DetailUiAction.UpdateFaviconSearch(it)) },
+                onSourceSelected = { onAction(DetailUiAction.SelectFaviconSource(it)) },
+                onUploadRequested = onFaviconUploadRequested,
+                onImageUrlChanged = { onAction(DetailUiAction.UpdateFaviconImageUrl(it)) },
+                onDownloadRequested = { onAction(DetailUiAction.DownloadFaviconImage) },
+                onSave = { onAction(DetailUiAction.SaveFavicon) },
+                onDismiss = { onAction(DetailUiAction.DismissFaviconEditor) },
+                onConfirmDiscard = { onAction(DetailUiAction.ConfirmDiscardFavicon) },
+                onKeepEditing = { onAction(DetailUiAction.KeepEditingFavicon) },
+            )
+            faviconEditor.pendingInputPath?.let { path ->
+                FaviconCropScreen(
+                    stagedPath = path,
+                    processing = faviconEditor.work == FaviconWorkUiState.Processing,
+                    onCrop = { zoom, x, y ->
+                        onAction(DetailUiAction.CropFaviconImage(zoom, x, y))
+                    },
+                    onUseWithoutCrop = { onAction(DetailUiAction.UseFaviconWithoutCrop) },
+                    onCancel = { onAction(DetailUiAction.CancelFaviconCrop) },
+                )
+            }
+        }
     }
 }

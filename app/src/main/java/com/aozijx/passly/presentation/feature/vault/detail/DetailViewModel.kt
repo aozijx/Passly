@@ -8,34 +8,34 @@ import com.aozijx.passly.core.platform.media.FaviconImageProcessor
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
 import com.aozijx.passly.feature.vault.detail.DetailEntryEdit
 import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
 import com.aozijx.passly.feature.vault.detail.ExportOtpQrUseCase
 import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
-import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
-import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.history.CompareEntryRevisionUseCase
 import com.aozijx.passly.feature.vault.history.ObserveEntryRevisionsUseCase
 import com.aozijx.passly.feature.vault.history.RestoreEntryRevisionUseCase
 import com.aozijx.passly.feature.vault.history.RevealRevisionFieldsUseCase
 import com.aozijx.passly.feature.vault.history.RevisionOperationResult
+import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionFailure
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionMutation
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionPage
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionRevealStore
+import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionState
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFieldUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailPresentationModel
-import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionFailure
-import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionPage
-import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionState
-import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionMutation
-import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionRevealStore
-import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -160,6 +160,7 @@ class DetailViewModel @Inject internal constructor(
                     )
                 }
             }
+
             DetailUiAction.StartNotesEdit -> {
                 val notes = _uiState.value.entry?.secret?.notes.orEmpty()
                 mutate(DetailMutation.FieldEditingStarted(DetailEditKey.NOTES, notes))
@@ -197,6 +198,7 @@ class DetailViewModel @Inject internal constructor(
                     )
                 }
             }
+
             is DetailUiAction.StartFieldEdit ->
                 event.field.revealedKey?.let {
                     mutate(DetailMutation.FieldEditingStarted(it, event.initialValue))
@@ -304,8 +306,10 @@ class DetailViewModel @Inject internal constructor(
             }
 
             is DetailUiAction.SelectFaviconSource -> {
+                val editor = _uiState.value.faviconEditor as? DetailFaviconEditorState.Open
+                    ?: return
                 val source = event.source.toDetailFaviconSource()
-                faviconSession.discardReplacedSource(_uiState.value.faviconEditor, source)
+                faviconSession.discardReplacedSource(editor, source)
                 mutate(DetailMutation.FaviconSourceChanged(source))
             }
 
@@ -325,7 +329,9 @@ class DetailViewModel @Inject internal constructor(
             }
 
             DetailUiAction.DownloadFaviconImage -> {
-                val url = _uiState.value.faviconEditor.imageUrl
+                val editor = _uiState.value.faviconEditor as? DetailFaviconEditorState.Open
+                    ?: return
+                val url = editor.imageUrl
                 faviconSession.launchPreparation {
                     stageFaviconInput { faviconImageProcessor.stageHttpsUrl(url) }
                 }
@@ -344,24 +350,28 @@ class DetailViewModel @Inject internal constructor(
             }
 
             DetailUiAction.CancelFaviconCrop -> {
-                if (_uiState.value.faviconEditor.processing) return
-                faviconSession.cancelCrop(_uiState.value.faviconEditor.pendingInputPath)
+                val editor = _uiState.value.faviconEditor as? DetailFaviconEditorState.Open
+                    ?: return
+                if (editor.work == DetailFaviconWorkState.Processing) return
+                faviconSession.cancelCrop(editor.pendingInputPath)
                 mutate(DetailMutation.FaviconCropCancelled)
             }
 
             DetailUiAction.SaveFavicon -> saveFavicon()
 
             DetailUiAction.DismissFaviconEditor -> {
-                if (_uiState.value.faviconEditor.processing) return
-                val editor = _uiState.value.faviconEditor
+                val editor = _uiState.value.faviconEditor as? DetailFaviconEditorState.Open
+                    ?: return
+                if (editor.work == DetailFaviconWorkState.Processing) return
                 mutate(DetailMutation.FaviconEditorDismissRequested)
-                if (!_uiState.value.faviconEditor.visible) {
+                if (_uiState.value.faviconEditor == DetailFaviconEditorState.Closed) {
                     faviconSession.close(editor)
                 }
             }
 
             DetailUiAction.ConfirmDiscardFavicon -> {
-                val editor = _uiState.value.faviconEditor
+                val editor = _uiState.value.faviconEditor as? DetailFaviconEditorState.Open
+                    ?: return
                 faviconSession.close(editor)
                 mutate(DetailMutation.FaviconEditorDiscardConfirmed)
             }
@@ -397,11 +407,14 @@ class DetailViewModel @Inject internal constructor(
                 clearRevisionReveals()
                 mutate(DetailMutation.Revision(DetailRevisionMutation.BackToList))
             }
+
             is DetailUiAction.RevealRevisionField -> revealRevisionField(event.key)
             DetailUiAction.RequestRevisionRestore ->
                 mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreRequested))
+
             DetailUiAction.CancelRevisionRestore ->
                 mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreCancelled))
+
             DetailUiAction.ConfirmRevisionRestore -> restoreSelectedRevision()
         }
     }
@@ -409,7 +422,12 @@ class DetailViewModel @Inject internal constructor(
     private fun copyField(fieldKey: FieldKey) {
         val entry = _uiState.value.entry ?: return
         viewModelScope.launch {
-            if (copyEntryFieldUseCase(entry.id, entry.type, fieldKey) != CopyEntryFieldResult.Copied) return@launch
+            if (copyEntryFieldUseCase(
+                    entry.id,
+                    entry.type,
+                    fieldKey
+                ) != CopyEntryFieldResult.Copied
+            ) return@launch
             clearRevealedFields()
             _effects.send(DetailEffect.ContentCopied(fieldKey))
         }
@@ -463,8 +481,12 @@ class DetailViewModel @Inject internal constructor(
             if (launchMode != DetailLaunchMode.VIEW) {
                 when {
                     latest.username.isNotEmpty() -> mutate(
-                        DetailMutation.FieldEditingStarted(RevealedFieldKey.USERNAME, latest.username),
+                        DetailMutation.FieldEditingStarted(
+                            RevealedFieldKey.USERNAME,
+                            latest.username
+                        ),
                     )
+
                     SensitiveFieldKey.PASSWORD in snapshot.presentation.sensitiveFieldKeys -> mutate(
                         DetailMutation.FieldEditingStarted(RevealedFieldKey.PASSWORD, ""),
                     )
@@ -527,6 +549,7 @@ class DetailViewModel @Inject internal constructor(
                     )
                     return@launch
                 }
+
                 is AppResult.Success -> Unit
             }
             observeEntryRevisions(entryId).collect { revisions ->
@@ -568,6 +591,7 @@ class DetailViewModel @Inject internal constructor(
                         ),
                     ),
                 )
+
                 else -> mutateRevisionFailure(entryId, rawRevisionId, result)
             }
         }
@@ -584,6 +608,7 @@ class DetailViewModel @Inject internal constructor(
                     result.value.forEach { revisionRevealStore.replace(it.key, it.value) }
                     _revisionReveals.value = revisionRevealStore.snapshot()
                 }
+
                 RevisionOperationResult.Cancelled -> Unit
                 else -> mutateRevisionFailure(entryId, revisionId.value, result)
             }
@@ -606,8 +631,10 @@ class DetailViewModel @Inject internal constructor(
                         mutate(DetailMutation.SessionOpened(it))
                     }
                 }
+
                 RevisionOperationResult.Cancelled ->
                     mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreCancelled))
+
                 else -> mutateRevisionFailure(entryId, revisionId.value, result)
             }
         }
@@ -681,10 +708,10 @@ class DetailViewModel @Inject internal constructor(
 
     private fun saveFavicon() {
         val state = _uiState.value
-        val editor = state.faviconEditor
+        val editor = state.faviconEditor as? DetailFaviconEditorState.Open ?: return
         val entryId = state.entry?.id ?: return
         if (
-            editor.processing ||
+            editor.work == DetailFaviconWorkState.Processing ||
             !editor.dirty ||
             state.saveState is DetailSaveState.Saving ||
             !accessPolicy.hasFullAccess()
@@ -694,7 +721,8 @@ class DetailViewModel @Inject internal constructor(
 
         mutate(DetailMutation.SaveStarted(DetailEditCompletion.Icon))
         faviconSession.launchSave {
-            val source = _uiState.value.faviconEditor.source
+            val source = (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)
+                ?.source ?: return@launchSave
             val persistedSource = if (
                 source is DetailFaviconSource.PrivateImage &&
                 faviconImageProcessor.isStaged(source.localPath)
@@ -703,7 +731,12 @@ class DetailViewModel @Inject internal constructor(
                     .getOrElse { error ->
                         val processingError = error.toFaviconProcessingError()
                         mutate(DetailMutation.FaviconProcessingFailed(processingError))
-                        mutate(DetailMutation.SaveFailed(DetailEditCompletion.Icon, processingError.name))
+                        mutate(
+                            DetailMutation.SaveFailed(
+                                DetailEditCompletion.Icon,
+                                processingError.name
+                            )
+                        )
                         return@launchSave
                     }
                 DetailFaviconSource.PrivateImage(promoted).also {
@@ -735,15 +768,17 @@ class DetailViewModel @Inject internal constructor(
     }
 
     override fun onCleared() {
-        val editor = _uiState.value.faviconEditor
-        faviconSession.close(editor)
+        (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let(
+            faviconSession::close,
+        )
         clearSensitiveState()
     }
 
     private suspend fun stageFaviconInput(
         stage: suspend () -> Result<String>,
     ) {
-        if (_uiState.value.faviconEditor.processing) return
+        val editor = _uiState.value.faviconEditor as? DetailFaviconEditorState.Open ?: return
+        if (editor.work == DetailFaviconWorkState.Processing) return
         mutate(DetailMutation.FaviconProcessingStarted)
         stage().fold(
             onSuccess = { mutate(DetailMutation.FaviconInputStaged(it)) },
@@ -752,8 +787,9 @@ class DetailViewModel @Inject internal constructor(
     }
 
     private suspend fun processPendingFavicon(crop: FaviconCropRequest?) {
-        val path = _uiState.value.faviconEditor.pendingInputPath ?: return
-        if (_uiState.value.faviconEditor.processing) return
+        val editor = _uiState.value.faviconEditor as? DetailFaviconEditorState.Open ?: return
+        val path = editor.pendingInputPath ?: return
+        if (editor.work == DetailFaviconWorkState.Processing) return
         mutate(DetailMutation.FaviconProcessingStarted)
         faviconImageProcessor.process(path, crop).fold(
             onSuccess = {

@@ -155,7 +155,16 @@ internal object DetailReducer {
             is DetailMutation.SaveStarted -> state.copy(
                 saveState = DetailSaveState.Saving(mutation.completion),
                 faviconEditor = if (mutation.completion == DetailEditCompletion.Icon) {
-                    state.faviconEditor.copy(processingError = null)
+                    when (val editor = state.faviconEditor) {
+                        DetailFaviconEditorState.Closed -> editor
+                        is DetailFaviconEditorState.Open -> editor.copy(
+                            work = if (editor.work is DetailFaviconWorkState.Failed) {
+                                DetailFaviconWorkState.Idle
+                            } else {
+                                editor.work
+                            },
+                        )
+                    }
                 } else {
                     state.faviconEditor
                 },
@@ -187,7 +196,7 @@ internal object DetailReducer {
                             state.tagEditor
                         },
                         faviconEditor = if (mutation.completion == DetailEditCompletion.Icon) {
-                            DetailFaviconEditorState()
+                            DetailFaviconEditorState.Closed
                         } else {
                             state.faviconEditor
                         },
@@ -205,10 +214,18 @@ internal object DetailReducer {
                             mutation.errorCode,
                         ),
                         faviconEditor = if (mutation.completion == DetailEditCompletion.Icon) {
-                            state.faviconEditor.copy(
-                                processingError = state.faviconEditor.processingError
-                                    ?: DetailFaviconProcessingError.SAVE_FAILED,
-                            )
+                            when (val editor = state.faviconEditor) {
+                                DetailFaviconEditorState.Closed -> editor
+                                is DetailFaviconEditorState.Open -> editor.copy(
+                                    work = if (editor.work is DetailFaviconWorkState.Failed) {
+                                        editor.work
+                                    } else {
+                                        DetailFaviconWorkState.Failed(
+                                            DetailFaviconProcessingError.SAVE_FAILED,
+                                        )
+                                    },
+                                )
+                            }
                         } else {
                             state.faviconEditor
                         },

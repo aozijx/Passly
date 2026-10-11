@@ -23,7 +23,7 @@ internal class DetailFaviconSession(
     }
 
     fun discardReplacedSource(
-        editor: DetailFaviconEditorState,
+        editor: DetailFaviconEditorState.Open,
         replacement: DetailFaviconSource,
     ) {
         val previous = editor.source
@@ -40,7 +40,7 @@ internal class DetailFaviconSession(
         scope.launch { files.discard(pendingInputPath) }
     }
 
-    fun close(editor: DetailFaviconEditorState) {
+    fun close(editor: DetailFaviconEditorState.Open) {
         cancelAll()
         files.discardEditorResources(
             stagedPath = editor.privateImagePath(),

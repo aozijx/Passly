@@ -24,18 +24,31 @@ enum class DetailFaviconProcessingError {
     SAVE_FAILED,
 }
 
-data class DetailFaviconEditorState(
-    val visible: Boolean = false,
-    val initialSource: DetailFaviconSource = DetailFaviconSource.InferredDefault,
-    val source: DetailFaviconSource = DetailFaviconSource.InferredDefault,
-    val selectedTab: DetailFaviconTab = DetailFaviconTab.ICON_LIBRARY,
-    val searchQuery: String = "",
-    val imageUrl: String = "",
-    val processing: Boolean = false,
-    val pendingInputPath: String? = null,
-    val promotedCandidatePath: String? = null,
-    val processingError: DetailFaviconProcessingError? = null,
-    val confirmDiscard: Boolean = false,
-) {
-    val dirty: Boolean get() = source != initialSource || pendingInputPath != null
+sealed interface DetailFaviconEditorState {
+    data object Closed : DetailFaviconEditorState
+
+    data class Open(
+        val initialSource: DetailFaviconSource,
+        val source: DetailFaviconSource = initialSource,
+        val selectedTab: DetailFaviconTab = DetailFaviconTab.ICON_LIBRARY,
+        val searchQuery: String = "",
+        val imageUrl: String = "",
+        val work: DetailFaviconWorkState = DetailFaviconWorkState.Idle,
+        val pendingInputPath: String? = null,
+        val promotedCandidatePath: String? = null,
+        val overlay: DetailFaviconOverlay = DetailFaviconOverlay.None,
+    ) : DetailFaviconEditorState {
+        val dirty: Boolean get() = source != initialSource || pendingInputPath != null
+    }
+}
+
+sealed interface DetailFaviconWorkState {
+    data object Idle : DetailFaviconWorkState
+    data object Processing : DetailFaviconWorkState
+    data class Failed(val error: DetailFaviconProcessingError) : DetailFaviconWorkState
+}
+
+sealed interface DetailFaviconOverlay {
+    data object None : DetailFaviconOverlay
+    data object ConfirmDiscard : DetailFaviconOverlay
 }

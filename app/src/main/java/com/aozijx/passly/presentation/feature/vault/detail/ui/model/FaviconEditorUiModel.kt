@@ -26,20 +26,33 @@ enum class FaviconProcessingErrorUiModel {
     SAVE_FAILED,
 }
 
-data class DetailFaviconEditorUiModel(
-    val visible: Boolean = false,
-    val initialSource: FaviconDraftSourceUiModel = FaviconDraftSourceUiModel.InferredDefault,
-    val source: FaviconDraftSourceUiModel = FaviconDraftSourceUiModel.InferredDefault,
-    val selectedTab: FaviconEditorTabUiModel = FaviconEditorTabUiModel.ICON_LIBRARY,
-    val searchQuery: String = "",
-    val imageUrl: String = "",
-    val processing: Boolean = false,
-    val pendingInputPath: String? = null,
-    val promotedCandidatePath: String? = null,
-    val processingError: FaviconProcessingErrorUiModel? = null,
-    val confirmDiscard: Boolean = false,
-) {
-    val dirty: Boolean get() = source != initialSource || pendingInputPath != null
+sealed interface DetailFaviconEditorUiModel {
+    data object Hidden : DetailFaviconEditorUiModel
+
+    data class Visible(
+        val initialSource: FaviconDraftSourceUiModel,
+        val source: FaviconDraftSourceUiModel,
+        val selectedTab: FaviconEditorTabUiModel,
+        val searchQuery: String,
+        val imageUrl: String,
+        val work: FaviconWorkUiState,
+        val pendingInputPath: String?,
+        val promotedCandidatePath: String?,
+        val overlay: FaviconOverlayUiState,
+    ) : DetailFaviconEditorUiModel {
+        val dirty: Boolean get() = source != initialSource || pendingInputPath != null
+    }
+}
+
+sealed interface FaviconWorkUiState {
+    data object Idle : FaviconWorkUiState
+    data object Processing : FaviconWorkUiState
+    data class Failed(val error: FaviconProcessingErrorUiModel) : FaviconWorkUiState
+}
+
+sealed interface FaviconOverlayUiState {
+    data object None : FaviconOverlayUiState
+    data object ConfirmDiscard : FaviconOverlayUiState
 }
 
 data class DetailIconCardUiModel(

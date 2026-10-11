@@ -68,7 +68,8 @@ class DetailFaviconSessionTest {
     fun `closing editor cancels work and discards every owned path`() = runTest {
         val files = FakeFiles()
         val session = DetailFaviconSession(files, backgroundScope)
-        val editor = DetailFaviconEditorState(
+        val editor = DetailFaviconEditorState.Open(
+            initialSource = DetailFaviconSource.InferredDefault,
             source = DetailFaviconSource.PrivateImage("staged"),
             pendingInputPath = "pending",
             promotedCandidatePath = "promoted",

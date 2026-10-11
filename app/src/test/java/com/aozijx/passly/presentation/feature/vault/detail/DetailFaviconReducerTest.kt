@@ -16,26 +16,24 @@ class DetailFaviconReducerTest {
             ),
         )
 
-        assertTrue(actual.faviconEditor.visible)
+        val editor = actual.faviconEditor as DetailFaviconEditorState.Open
         assertEquals(
             DetailFaviconSource.BuiltIn("security.key", "primary"),
-            actual.faviconEditor.source,
+            editor.source,
         )
-        assertFalse(actual.faviconEditor.dirty)
+        assertFalse(editor.dirty)
     }
 
     @Test
     fun selectingDefaultMakesBuiltInDraftDirty() {
-        val opened = DetailFaviconEditorState(
-            visible = true,
+        val opened = DetailFaviconEditorState.Open(
             initialSource = DetailFaviconSource.BuiltIn("security.key", null),
-            source = DetailFaviconSource.BuiltIn("security.key", null),
         )
 
         val actual = DetailFaviconEditorReducer.reduce(
             opened,
             DetailMutation.FaviconSourceChanged(DetailFaviconSource.InferredDefault),
-        )
+        ) as DetailFaviconEditorState.Open
 
         assertEquals(DetailFaviconSource.InferredDefault, actual.source)
         assertTrue(actual.dirty)
@@ -43,15 +41,14 @@ class DetailFaviconReducerTest {
 
     @Test
     fun dirtyDismissConfirmsAndFailurePreservesDraftWhileSuccessCloses() {
-        val editor = DetailFaviconEditorState(
-            visible = true,
+        val editor = DetailFaviconEditorState.Open(
             initialSource = DetailFaviconSource.InferredDefault,
             source = DetailFaviconSource.BuiltIn("finance.bank", "secondary"),
         )
         val requested = DetailFaviconEditorReducer.reduce(
             editor,
             DetailMutation.FaviconEditorDismissRequested,
-        )
+        ) as DetailFaviconEditorState.Open
         val saving = DetailUiState(
             saveState = DetailSaveState.Saving(DetailEditCompletion.Icon),
             faviconEditor = requested,
@@ -66,35 +63,44 @@ class DetailFaviconReducerTest {
             DetailMutation.SaveSucceeded(DetailEditCompletion.Icon),
         )
 
-        assertTrue(requested.confirmDiscard)
-        assertEquals(editor.source, failed.faviconEditor.source)
-        assertEquals(DetailFaviconProcessingError.SAVE_FAILED, failed.faviconEditor.processingError)
-        assertEquals(DetailFaviconEditorState(), succeeded.faviconEditor)
+        val failedEditor = failed.faviconEditor as DetailFaviconEditorState.Open
+        assertEquals(DetailFaviconOverlay.ConfirmDiscard, requested.overlay)
+        assertEquals(editor.source, failedEditor.source)
+        assertEquals(
+            DetailFaviconWorkState.Failed(DetailFaviconProcessingError.SAVE_FAILED),
+            failedEditor.work,
+        )
+        assertEquals(DetailFaviconEditorState.Closed, succeeded.faviconEditor)
     }
 
     @Test
     fun processingFailurePreservesPendingCropInput() {
-        val state = DetailFaviconEditorState(
-            visible = true,
-            processing = true,
+        val state = DetailFaviconEditorState.Open(
+            initialSource = DetailFaviconSource.InferredDefault,
+            work = DetailFaviconWorkState.Processing,
             pendingInputPath = "/private/staging/input",
         )
 
         val actual = DetailFaviconEditorReducer.reduce(
             state,
             DetailMutation.FaviconProcessingFailed(DetailFaviconProcessingError.INVALID_IMAGE),
-        )
+        ) as DetailFaviconEditorState.Open
 
         assertEquals("/private/staging/input", actual.pendingInputPath)
-        assertFalse(actual.processing)
+        assertEquals(
+            DetailFaviconWorkState.Failed(DetailFaviconProcessingError.INVALID_IMAGE),
+            actual.work,
+        )
     }
 
     @Test
     fun iconSaveStartClearsPreviousEditorError() {
         val state = DetailUiState(
-            faviconEditor = DetailFaviconEditorState(
-                visible = true,
-                processingError = DetailFaviconProcessingError.SAVE_FAILED,
+            faviconEditor = DetailFaviconEditorState.Open(
+                initialSource = DetailFaviconSource.InferredDefault,
+                work = DetailFaviconWorkState.Failed(
+                    DetailFaviconProcessingError.SAVE_FAILED,
+                ),
             ),
         )
 
@@ -107,14 +113,16 @@ class DetailFaviconReducerTest {
             DetailSaveState.Saving(DetailEditCompletion.Icon),
             actual.saveState,
         )
-        assertEquals(null, actual.faviconEditor.processingError)
+        assertEquals(
+            DetailFaviconWorkState.Idle,
+            (actual.faviconEditor as DetailFaviconEditorState.Open).work,
+        )
     }
 
     @Test
     fun processedPrivateImageEndsProcessingSoSaveCanRun() {
-        val state = DetailFaviconEditorState(
-            visible = true,
-            processing = true,
+        val state = DetailFaviconEditorState.Open(
+            work = DetailFaviconWorkState.Processing,
             initialSource = DetailFaviconSource.InferredDefault,
             source = DetailFaviconSource.InferredDefault,
         )
@@ -124,35 +132,38 @@ class DetailFaviconReducerTest {
             DetailMutation.FaviconSourceChanged(
                 DetailFaviconSource.PrivateImage("/private/staging/icon.webp"),
             ),
-        )
+        ) as DetailFaviconEditorState.Open
 
-        assertFalse(actual.processing)
+        assertEquals(DetailFaviconWorkState.Idle, actual.work)
         assertTrue(actual.dirty)
     }
 
     @Test
     fun openingPrivateImageStartsInCustomImageMode() {
         val actual = DetailFaviconEditorReducer.reduce(
-            DetailFaviconEditorState(),
+            DetailFaviconEditorState.Closed,
             DetailMutation.FaviconEditorOpened(
                 DetailFaviconSource.PrivateImage("/private/images/favicon.webp"),
             ),
         )
 
-        assertEquals("CUSTOM_IMAGE", actual.selectedTab.name)
+        assertEquals(
+            DetailFaviconTab.CUSTOM_IMAGE,
+            (actual as DetailFaviconEditorState.Open).selectedTab,
+        )
     }
 
     @Test
     fun promotedPrivateImageKeepsCandidatePathUntilSaveCompletes() {
-        val state = DetailFaviconEditorState(
-            visible = true,
+        val state = DetailFaviconEditorState.Open(
+            initialSource = DetailFaviconSource.InferredDefault,
             source = DetailFaviconSource.PrivateImage("/private/staging/icon.webp"),
         )
 
         val promoted = DetailFaviconEditorReducer.reduce(
             state,
             DetailMutation.FaviconSourcePromoted("/private/images/favicon.webp"),
-        )
+        ) as DetailFaviconEditorState.Open
 
         assertEquals(
             DetailFaviconSource.PrivateImage("/private/images/favicon.webp"),
@@ -171,14 +182,14 @@ class DetailFaviconReducerTest {
             DetailMutation.SaveSucceeded(DetailEditCompletion.Icon),
         )
 
-        assertEquals(DetailFaviconEditorState(), saved.faviconEditor)
+        assertEquals(DetailFaviconEditorState.Closed, saved.faviconEditor)
     }
 
     @Test
     fun keepEditingOnlyClearsDiscardConfirmation() {
-        val state = DetailFaviconEditorState(
-            visible = true,
-            confirmDiscard = true,
+        val state = DetailFaviconEditorState.Open(
+            initialSource = DetailFaviconSource.InferredDefault,
+            overlay = DetailFaviconOverlay.ConfirmDiscard,
         )
 
         val actual = DetailFaviconEditorReducer.reduce(
@@ -186,7 +197,7 @@ class DetailFaviconReducerTest {
             DetailMutation.FaviconEditorDiscardCancelled,
         )
 
-        assertEquals(state.copy(confirmDiscard = false), actual)
+        assertEquals(state.copy(overlay = DetailFaviconOverlay.None), actual)
     }
 
     @Test

@@ -42,6 +42,9 @@
 - 条目保存必须以同一个编辑快照更新主体、敏感字段、标签和 favicon，避免 UI 显示成功但子资源未持久化。
 - 标签是条目配套数据，不因通用 sensitive 规则额外要求认证；只有实际读取或修改高敏感值的动作才进入相应认证边界。
 - favicon URL 只用于下载。下载完成后条目保存应用私有目录中的本地文件路径，展示时不得再次请求外部服务器。
+- favicon 编辑器使用 `Closed / Open` 表达会话生命周期；打开后再用独立的 `Idle / Processing / Failed`
+  工作状态和 `None / ConfirmDiscard` 浮层状态表达合法组合。UI 只接收对应的密封投影，不再用
+  `visible`、`processing`、nullable error 和 `confirmDiscard` 拼接出矛盾状态。
 - favicon 裁剪基于实际测量的视口和图片几何，并遵守 ContentScale.Crop 的溢出范围；不能依赖固定屏幕常量。
 - 图片处理协程必须重新抛出 CancellationException；取消或替换任务后，在 NonCancellable 清理阶段删除无主暂存文件。
 

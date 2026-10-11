@@ -3,21 +3,25 @@ package com.aozijx.passly.presentation.feature.vault.detail
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFaviconEditorUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconDraftSourceUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconEditorTabUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconOverlayUiState
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconProcessingErrorUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconWorkUiState
 
-internal fun DetailFaviconEditorState.toFaviconEditorUiModel() = DetailFaviconEditorUiModel(
-    visible = visible,
-    initialSource = initialSource.toUiModel(),
-    source = source.toUiModel(),
-    selectedTab = selectedTab.toUiModel(),
-    searchQuery = searchQuery,
-    imageUrl = imageUrl,
-    processing = processing,
-    pendingInputPath = pendingInputPath,
-    promotedCandidatePath = promotedCandidatePath,
-    processingError = processingError?.toUiModel(),
-    confirmDiscard = confirmDiscard,
-)
+internal fun DetailFaviconEditorState.toFaviconEditorUiModel(): DetailFaviconEditorUiModel =
+    when (this) {
+        DetailFaviconEditorState.Closed -> DetailFaviconEditorUiModel.Hidden
+        is DetailFaviconEditorState.Open -> DetailFaviconEditorUiModel.Visible(
+            initialSource = initialSource.toUiModel(),
+            source = source.toUiModel(),
+            selectedTab = selectedTab.toUiModel(),
+            searchQuery = searchQuery,
+            imageUrl = imageUrl,
+            work = work.toUiModel(),
+            pendingInputPath = pendingInputPath,
+            promotedCandidatePath = promotedCandidatePath,
+            overlay = overlay.toUiModel(),
+        )
+    }
 
 internal fun FaviconDraftSourceUiModel.toDetailFaviconSource(): DetailFaviconSource = when (this) {
     FaviconDraftSourceUiModel.InferredDefault -> DetailFaviconSource.InferredDefault
@@ -49,4 +53,15 @@ private fun DetailFaviconProcessingError.toUiModel(): FaviconProcessingErrorUiMo
     DetailFaviconProcessingError.IMAGE_TOO_LARGE -> FaviconProcessingErrorUiModel.IMAGE_TOO_LARGE
     DetailFaviconProcessingError.INVALID_IMAGE -> FaviconProcessingErrorUiModel.INVALID_IMAGE
     DetailFaviconProcessingError.SAVE_FAILED -> FaviconProcessingErrorUiModel.SAVE_FAILED
+}
+
+private fun DetailFaviconWorkState.toUiModel(): FaviconWorkUiState = when (this) {
+    DetailFaviconWorkState.Idle -> FaviconWorkUiState.Idle
+    DetailFaviconWorkState.Processing -> FaviconWorkUiState.Processing
+    is DetailFaviconWorkState.Failed -> FaviconWorkUiState.Failed(error.toUiModel())
+}
+
+private fun DetailFaviconOverlay.toUiModel(): FaviconOverlayUiState = when (this) {
+    DetailFaviconOverlay.None -> FaviconOverlayUiState.None
+    DetailFaviconOverlay.ConfirmDiscard -> FaviconOverlayUiState.ConfirmDiscard
 }

@@ -61,7 +61,9 @@ import com.aozijx.passly.presentation.shared.components.iconColorForStorageToken
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFaviconEditorUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconDraftSourceUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconEditorTabUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconOverlayUiState
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconProcessingErrorUiModel
+import com.aozijx.passly.presentation.feature.vault.detail.ui.model.FaviconWorkUiState
 import coil.compose.AsyncImage
 import com.aozijx.passly.presentation.shared.media.toLocalIconImageModel
 import kotlinx.coroutines.launch
@@ -69,7 +71,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FaviconEditorSheet(
-    state: DetailFaviconEditorUiModel,
+    state: DetailFaviconEditorUiModel.Visible,
     isSaving: Boolean,
     onTabSelected: (FaviconEditorTabUiModel) -> Unit,
     onSearchChanged: (String) -> Unit,
@@ -82,7 +84,8 @@ fun FaviconEditorSheet(
     onConfirmDiscard: () -> Unit,
     onKeepEditing: () -> Unit,
 ) {
-    val dismissAllowed by rememberUpdatedState(!isSaving && !state.processing)
+    val processing = state.work == FaviconWorkUiState.Processing
+    val dismissAllowed by rememberUpdatedState(!isSaving && !processing)
     val sheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
         enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
@@ -146,7 +149,7 @@ fun FaviconEditorSheet(
                     )
                 }
             }
-            state.processingError?.let { error ->
+            (state.work as? FaviconWorkUiState.Failed)?.error?.let { error ->
                 Text(
                     text = stringResource(error.messageRes()),
                     color = MaterialTheme.colorScheme.error,
@@ -181,7 +184,7 @@ fun FaviconEditorSheet(
             }
         }
     }
-    if (state.confirmDiscard) {
+    if (state.overlay == FaviconOverlayUiState.ConfirmDiscard) {
         AlertDialog(
             onDismissRequest = keepEditing,
             title = { Text(stringResource(R.string.vault_detail_favicon_discard_title)) },
@@ -200,12 +203,13 @@ fun FaviconEditorSheet(
 
 @Composable
 private fun FaviconCustomImage(
-    state: DetailFaviconEditorUiModel,
+    state: DetailFaviconEditorUiModel.Visible,
     onUploadRequested: () -> Unit,
     onImageUrlChanged: (String) -> Unit,
     onDownloadRequested: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val processing = state.work == FaviconWorkUiState.Processing
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -214,7 +218,7 @@ private fun FaviconCustomImage(
     ) {
         FilledTonalButton(
             onClick = onUploadRequested,
-            enabled = !state.processing,
+            enabled = !processing,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(Icons.Default.Image, contentDescription = null)
@@ -227,7 +231,7 @@ private fun FaviconCustomImage(
         OutlinedTextField(
             value = state.imageUrl,
             onValueChange = onImageUrlChanged,
-            enabled = !state.processing,
+            enabled = !processing,
             modifier = Modifier.fillMaxWidth(),
             label = { Text(stringResource(R.string.vault_detail_favicon_image_url)) },
             leadingIcon = { Icon(Icons.Default.Link, contentDescription = null) },
@@ -235,10 +239,10 @@ private fun FaviconCustomImage(
         )
         Button(
             onClick = onDownloadRequested,
-            enabled = state.imageUrl.trim().startsWith("https://") && !state.processing,
+            enabled = state.imageUrl.trim().startsWith("https://") && !processing,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            if (state.processing) {
+            if (processing) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
             } else {
                 Icon(Icons.Default.CloudDownload, contentDescription = null)
@@ -314,7 +318,7 @@ private fun FaviconEditorHeader(source: FaviconDraftSourceUiModel) {
 
 @Composable
 private fun FaviconIconLibrary(
-    state: DetailFaviconEditorUiModel,
+    state: DetailFaviconEditorUiModel.Visible,
     onSearchChanged: (String) -> Unit,
     onSourceSelected: (FaviconDraftSourceUiModel) -> Unit,
     modifier: Modifier = Modifier,

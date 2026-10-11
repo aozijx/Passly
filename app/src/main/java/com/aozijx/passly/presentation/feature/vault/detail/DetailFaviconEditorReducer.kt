@@ -5,10 +5,8 @@ internal object DetailFaviconEditorReducer {
         state: DetailFaviconEditorState,
         mutation: DetailFaviconEditorMutation,
     ): DetailFaviconEditorState = when (mutation) {
-        is DetailMutation.FaviconEditorOpened -> DetailFaviconEditorState(
-            visible = true,
+        is DetailMutation.FaviconEditorOpened -> DetailFaviconEditorState.Open(
             initialSource = mutation.source,
-            source = mutation.source,
             selectedTab = when (mutation.source) {
                 is DetailFaviconSource.PrivateImage ->
                     DetailFaviconTab.CUSTOM_IMAGE
@@ -17,53 +15,65 @@ internal object DetailFaviconEditorReducer {
             },
         )
 
+        else -> when (state) {
+            DetailFaviconEditorState.Closed -> state
+            is DetailFaviconEditorState.Open -> reduceOpen(state, mutation)
+        }
+    }
+
+    private fun reduceOpen(
+        state: DetailFaviconEditorState.Open,
+        mutation: DetailFaviconEditorMutation,
+    ): DetailFaviconEditorState = when (mutation) {
+        is DetailMutation.FaviconEditorOpened -> state
         is DetailMutation.FaviconSourceChanged -> state.copy(
             source = mutation.source,
-            processing = false,
+            work = DetailFaviconWorkState.Idle,
             pendingInputPath = null,
             promotedCandidatePath = null,
-            confirmDiscard = false,
+            overlay = DetailFaviconOverlay.None,
         )
 
         is DetailMutation.FaviconTabChanged -> state.copy(selectedTab = mutation.tab)
         is DetailMutation.FaviconSearchChanged -> state.copy(searchQuery = mutation.value)
         is DetailMutation.FaviconImageUrlChanged -> state.copy(
             imageUrl = mutation.value,
-            processingError = null,
+            work = DetailFaviconWorkState.Idle,
         )
 
         DetailMutation.FaviconProcessingStarted -> state.copy(
-            processing = true,
-            processingError = null,
+            work = DetailFaviconWorkState.Processing,
         )
 
         is DetailMutation.FaviconInputStaged -> state.copy(
-            processing = false,
+            work = DetailFaviconWorkState.Idle,
             pendingInputPath = mutation.path,
-            processingError = null,
         )
 
         is DetailMutation.FaviconSourcePromoted -> state.copy(
             source = DetailFaviconSource.PrivateImage(mutation.path),
-            processing = false,
+            work = DetailFaviconWorkState.Idle,
             pendingInputPath = null,
             promotedCandidatePath = mutation.path,
-            confirmDiscard = false,
+            overlay = DetailFaviconOverlay.None,
         )
 
         is DetailMutation.FaviconProcessingFailed -> state.copy(
-            processing = false,
-            processingError = mutation.error,
+            work = DetailFaviconWorkState.Failed(mutation.error),
         )
 
         DetailMutation.FaviconCropCancelled -> state.copy(pendingInputPath = null)
         DetailMutation.FaviconEditorDismissRequested -> {
-            if (state.dirty) state.copy(confirmDiscard = true) else DetailFaviconEditorState()
+            if (state.dirty) {
+                state.copy(overlay = DetailFaviconOverlay.ConfirmDiscard)
+            } else {
+                DetailFaviconEditorState.Closed
+            }
         }
 
-        DetailMutation.FaviconEditorDiscardConfirmed -> DetailFaviconEditorState()
+        DetailMutation.FaviconEditorDiscardConfirmed -> DetailFaviconEditorState.Closed
         DetailMutation.FaviconEditorDiscardCancelled -> state.copy(
-            confirmDiscard = false,
+            overlay = DetailFaviconOverlay.None,
         )
     }
 }
