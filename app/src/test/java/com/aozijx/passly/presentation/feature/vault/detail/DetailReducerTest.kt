@@ -143,7 +143,7 @@ class DetailReducerTest {
                 DetailUiState(
                     entry = entry("Secret"),
                     revealedFields = mapOf("password" to password),
-                    savingEdit = DetailEditCompletion.Notes,
+                    saveState = DetailSaveState.Saving(DetailEditCompletion.Notes),
                 ),
                 DetailMutation.StateCleared,
             )

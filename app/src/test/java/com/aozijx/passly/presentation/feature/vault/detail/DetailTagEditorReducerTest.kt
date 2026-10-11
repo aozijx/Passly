@@ -97,7 +97,7 @@ class DetailTagEditorReducerTest {
     @Test
     fun successfulTagSaveClosesSheetButFailurePreservesDraft() {
         val saving = DetailUiState(
-            savingEdit = DetailEditCompletion.Tags,
+            saveState = DetailSaveState.Saving(DetailEditCompletion.Tags),
             tagEditor = DetailTagEditorState(
                 visible = true,
                 initialTags = setOf("Work"),

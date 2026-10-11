@@ -62,6 +62,10 @@ Passly 是产品名；`vault` 是安全领域概念，不应再作为界面品�
 `EntryType` 是结构契约，决定 payload、验证器、详情组件和自动填充能力。详情页现在只读显示它，新增页也不再
 提供没有落库能力的“自定义分类”下拉框。
 
+详情页保存流程由 `DetailSaveState.Idle / Saving / Failed` 单独拥有当前编辑目标和失败码。Reducer 只接受
+与当前 `Saving` 目标匹配的完成回调，过期回调不能关闭其他编辑器；UI 的保存进度由该状态派生，不再组合
+nullable 的 `savingEdit` 与 `saveErrorCode`。
+
 用户自定义分类尚未实现。实现时应新增独立 `categoryId` 或 Entry-Category 关联表；`tags` 继续表示多值标签。
 同一账户下的 LOGIN、OTP、PASSKEY 等仍是多个原子 Entry，通过 `parentEntryId` 指向 `ACCOUNT`，不使用
 `entryType`、`vaultId` 或 category 来组合。

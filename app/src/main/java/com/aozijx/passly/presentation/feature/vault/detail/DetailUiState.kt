@@ -26,8 +26,7 @@ data class DetailUiState(
     val packagePickerAppsLoaded: Boolean = false,
     val sections: List<DetailSectionKey> = emptyList(),
     val fieldEdits: DetailFieldEditState = DetailFieldEditState(),
-    val savingEdit: DetailEditCompletion? = null,
-    val saveErrorCode: String? = null,
+    val saveState: DetailSaveState = DetailSaveState.Idle,
     val tagEditor: DetailTagEditorState = DetailTagEditorState(),
     val faviconEditor: DetailFaviconEditorState = DetailFaviconEditorState(),
     val revisions: DetailRevisionState = DetailRevisionState.Closed,
@@ -60,6 +59,15 @@ sealed interface DetailEditCompletion {
     data object Tags : DetailEditCompletion
     data object Icon : DetailEditCompletion
     data class SensitiveField(val key: String) : DetailEditCompletion
+}
+
+sealed interface DetailSaveState {
+    data object Idle : DetailSaveState
+    data class Saving(val completion: DetailEditCompletion) : DetailSaveState
+    data class Failed(
+        val completion: DetailEditCompletion,
+        val errorCode: String,
+    ) : DetailSaveState
 }
 
 object DetailEditKey {

@@ -53,7 +53,7 @@ class DetailFaviconReducerTest {
             DetailMutation.FaviconEditorDismissRequested,
         )
         val saving = DetailUiState(
-            savingEdit = DetailEditCompletion.Icon,
+            saveState = DetailSaveState.Saving(DetailEditCompletion.Icon),
             faviconEditor = requested,
         )
 
@@ -103,7 +103,10 @@ class DetailFaviconReducerTest {
             DetailMutation.SaveStarted(DetailEditCompletion.Icon),
         )
 
-        assertEquals(DetailEditCompletion.Icon, actual.savingEdit)
+        assertEquals(
+            DetailSaveState.Saving(DetailEditCompletion.Icon),
+            actual.saveState,
+        )
         assertEquals(null, actual.faviconEditor.processingError)
     }
 
@@ -162,7 +165,7 @@ class DetailFaviconReducerTest {
 
         val saved = DetailReducer.reduce(
             DetailUiState(
-                savingEdit = DetailEditCompletion.Icon,
+                saveState = DetailSaveState.Saving(DetailEditCompletion.Icon),
                 faviconEditor = promoted,
             ),
             DetailMutation.SaveSucceeded(DetailEditCompletion.Icon),

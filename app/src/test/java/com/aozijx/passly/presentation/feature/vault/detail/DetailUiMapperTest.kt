@@ -103,7 +103,7 @@ class DetailUiMapperTest {
         val state = DetailUiState(
             entry = entry,
             fieldEdits = DetailFieldEditState().start(DetailEditKey.NOTES, "draft"),
-            savingEdit = DetailEditCompletion.Tags,
+            saveState = DetailSaveState.Saving(DetailEditCompletion.Tags),
         )
 
         val presentation = requireNotNull(

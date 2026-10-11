@@ -153,8 +153,7 @@ internal object DetailReducer {
                 state
             }
             is DetailMutation.SaveStarted -> state.copy(
-                savingEdit = mutation.completion,
-                saveErrorCode = null,
+                saveState = DetailSaveState.Saving(mutation.completion),
                 faviconEditor = if (mutation.completion == DetailEditCompletion.Icon) {
                     state.faviconEditor.copy(processingError = null)
                 } else {
@@ -163,7 +162,7 @@ internal object DetailReducer {
             )
 
             is DetailMutation.SaveSucceeded -> {
-                if (state.savingEdit != mutation.completion) {
+                if (state.saveState != DetailSaveState.Saving(mutation.completion)) {
                     state
                 } else {
                     state.copy(
@@ -172,7 +171,7 @@ internal object DetailReducer {
                         } else {
                             state.isEditingTitle
                         },
-                        savingEdit = null,
+                        saveState = DetailSaveState.Idle,
                         fieldEdits = when (mutation.completion) {
                             is DetailEditCompletion.SensitiveField ->
                                 state.fieldEdits.finish(mutation.completion.key)
@@ -182,7 +181,6 @@ internal object DetailReducer {
                                 state.fieldEdits.finish(DetailEditKey.DOMAIN)
                             else -> state.fieldEdits
                         },
-                        saveErrorCode = null,
                         tagEditor = if (mutation.completion == DetailEditCompletion.Tags) {
                             DetailTagEditorState()
                         } else {
@@ -198,12 +196,14 @@ internal object DetailReducer {
             }
 
             is DetailMutation.SaveFailed -> {
-                if (state.savingEdit != mutation.completion) {
+                if (state.saveState != DetailSaveState.Saving(mutation.completion)) {
                     state
                 } else {
                     state.copy(
-                        savingEdit = null,
-                        saveErrorCode = mutation.errorCode,
+                        saveState = DetailSaveState.Failed(
+                            mutation.completion,
+                            mutation.errorCode,
+                        ),
                         faviconEditor = if (mutation.completion == DetailEditCompletion.Icon) {
                             state.faviconEditor.copy(
                                 processingError = state.faviconEditor.processingError

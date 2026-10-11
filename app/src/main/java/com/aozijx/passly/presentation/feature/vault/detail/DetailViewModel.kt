@@ -642,7 +642,7 @@ class DetailViewModel @Inject internal constructor(
         completion: DetailEditCompletion,
     ) {
         val entryId = _uiState.value.entry?.id ?: return
-        if (_uiState.value.savingEdit != null) return
+        if (_uiState.value.saveState is DetailSaveState.Saving) return
         mutate(DetailMutation.SaveStarted(completion))
         persistStartedEntryEdit(entryId, edit, completion)
     }
@@ -686,7 +686,7 @@ class DetailViewModel @Inject internal constructor(
         if (
             editor.processing ||
             !editor.dirty ||
-            state.savingEdit != null ||
+            state.saveState is DetailSaveState.Saving ||
             !accessPolicy.hasFullAccess()
         ) {
             return
