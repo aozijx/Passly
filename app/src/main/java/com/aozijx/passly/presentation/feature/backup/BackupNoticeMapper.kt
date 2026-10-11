@@ -6,12 +6,9 @@ import com.aozijx.passly.app.message.model.ArgumentValue
 import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
 
 internal fun BackupNoticeEffect.toNoticeCode(): NoticeCode = when (this) {
-    is BackupNoticeEffect.Succeeded -> when (operation) {
-        BackupOperation.EXPORT -> NoticeCode.BACKUP_EXPORT_COMPLETED
-        BackupOperation.IMPORT -> NoticeCode.BACKUP_IMPORT_COMPLETED
-        BackupOperation.DIRECTORY_CHECK -> NoticeCode.BACKUP_DIRECTORY_CHECK_COMPLETED
-    }
-
+    BackupNoticeEffect.DirectoryWritable -> NoticeCode.BACKUP_DIRECTORY_CHECK_COMPLETED
+    BackupNoticeEffect.ExportSucceeded -> NoticeCode.BACKUP_EXPORT_COMPLETED
+    is BackupNoticeEffect.ImportSucceeded -> NoticeCode.BACKUP_IMPORT_COMPLETED
     is BackupNoticeEffect.Failed -> when (operation) {
         BackupOperation.EXPORT -> NoticeCode.BACKUP_EXPORT_FAILED
         BackupOperation.IMPORT -> NoticeCode.BACKUP_IMPORT_FAILED
@@ -20,7 +17,7 @@ internal fun BackupNoticeEffect.toNoticeCode(): NoticeCode = when (this) {
 }
 
 internal fun BackupNoticeEffect.toNoticeArguments(): Map<ArgumentKey, ArgumentValue> {
-    val result = (this as? BackupNoticeEffect.Succeeded)?.importResult ?: return emptyMap()
+    val result = (this as? BackupNoticeEffect.ImportSucceeded)?.result ?: return emptyMap()
     return mapOf(
         ArgumentKey.IMPORTED_ITEM_COUNT to ArgumentValue.Count(result.importedEntryCount.toLong()),
         ArgumentKey.EXISTING_ITEM_COUNT to ArgumentValue.Count(result.existingEntryCount.toLong()),

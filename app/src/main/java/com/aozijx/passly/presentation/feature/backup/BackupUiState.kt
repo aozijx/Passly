@@ -2,39 +2,59 @@ package com.aozijx.passly.presentation.feature.backup
 
 import android.net.Uri
 import com.aozijx.passly.core.error.model.AppError
-import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
-import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
-import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
-import com.aozijx.passly.feature.backup.internal.model.BackupOperationStatus
-import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
+import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
+import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
+import com.aozijx.passly.feature.backup.internal.model.ImportMode
+import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
 
-enum class BackupOptionsStage {
-    FORMAT_PICKER,
-    EXPORT_OPTIONS,
-    IMPORT_OPTIONS,
+internal data class BackupUiState(
+    val workflow: BackupWorkflow = BackupWorkflow.Idle,
+)
+
+internal sealed interface BackupWorkflow {
+    data object Idle : BackupWorkflow
+    data object FormatPicker : BackupWorkflow
+    data class ConfigureExport(val options: BackupExportOptions) : BackupWorkflow
+    data class AwaitingExportTarget(val options: BackupExportOptions) : BackupWorkflow
+    data class ConfigureImport(val options: BackupImportOptions) : BackupWorkflow
+    data class Executing(val operation: BackupOperation) : BackupWorkflow
+    data class Failed(
+        val operation: BackupOperation,
+        val error: AppError,
+    ) : BackupWorkflow
 }
 
-data class BackupUiState(
-    val optionsStage: BackupOptionsStage? = null,
-    val status: BackupOperationStatus = BackupOperationStatus.Idle,
-    val error: AppError? = null,
-    val isExporting: Boolean = false,
-    val backupUri: Uri? = null,
-    val backupPassword: SensitiveValue = EmptySensitiveValue,
-    val importMode: ImportMode = ImportMode.APPEND,
-    val importStrategy: BackupImportStrategy = BackupImportStrategy.COMPATIBLE,
-    val selectedExportFormat: BackupExportFormat = BackupExportFormat.ENCRYPTED,
-    val includeIcons: Boolean = true,
-    val includeAttachments: Boolean = true,
+internal data class BackupExportOptions(
+    val format: BackupExportFormat,
+    val fileName: String,
+    val password: SensitiveValue = EmptySensitiveValue,
+    val includeIcons: Boolean = format.supportsResources,
+    val includeAttachments: Boolean = format.supportsResources,
     val includeDeleted: Boolean = true,
     val includedEntryTypes: Set<EntryType> = BackupArchiveKeyRegistry.archiveEntryTypes,
-    val pendingExportFileName: String? = null,
-    val deleteTargetOnFailure: Boolean = false
 ) {
-    val canSubmitExport: Boolean
+    val canSubmit: Boolean
         get() = includedEntryTypes.isNotEmpty() &&
-                (!selectedExportFormat.requiresPassword || !backupPassword.isEmpty)
+            (!format.requiresPassword || !password.isEmpty)
+}
+
+internal data class BackupImportOptions(
+    val uri: Uri,
+    val password: SensitiveValue = EmptySensitiveValue,
+    val mode: ImportMode = ImportMode.APPEND,
+    val strategy: BackupImportStrategy = BackupImportStrategy.COMPATIBLE,
+)
+
+internal fun BackupWorkflow.password(): SensitiveValue = when (this) {
+    is BackupWorkflow.ConfigureExport -> options.password
+    is BackupWorkflow.AwaitingExportTarget -> options.password
+    is BackupWorkflow.ConfigureImport -> options.password
+    BackupWorkflow.Idle,
+    BackupWorkflow.FormatPicker,
+    is BackupWorkflow.Executing,
+    is BackupWorkflow.Failed -> EmptySensitiveValue
 }

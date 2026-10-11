@@ -35,18 +35,18 @@ import com.aozijx.passly.presentation.shared.entry.labelRes
 
 @Composable
 internal fun BackupExportOptionsContent(
-    state: BackupRestoreSheetUiState,
+    state: BackupRestoreSheetUiState.ExportOptions,
     onAction: (BackupUiAction) -> Unit,
 ) {
     BackupSheetColumn(scrollable = true) {
         Text(
-            text = stringResource(exportTitleResource(state.selectedExportFormat)),
+            text = stringResource(exportTitleResource(state.format)),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
         )
-        ExportSecurityNotice(state.selectedExportFormat)
+        ExportSecurityNotice(state.format)
 
-        if (state.selectedExportFormat.requiresPassword) {
+        if (state.format.requiresPassword) {
             OutlinedTextField(
                 value = state.password,
                 onValueChange = { onAction(BackupUiAction.UpdatePassword(it)) },
@@ -63,7 +63,7 @@ internal fun BackupExportOptionsContent(
         }
 
         Text(stringResource(R.string.settings_backup_content_scope), style = MaterialTheme.typography.titleMedium)
-        if (state.selectedExportFormat.supportsResources) {
+        if (state.format.supportsResources) {
             BackupSwitchRow(
                 stringResource(R.string.settings_backup_include_icons),
                 stringResource(R.string.settings_backup_include_icons_description),
@@ -156,7 +156,7 @@ internal fun BackupExportOptionsContent(
                     ),
                 )
             },
-            enabled = state.canSubmitExport,
+            enabled = state.canSubmit,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.settings_backup_start_export))

@@ -17,7 +17,6 @@ import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupImportResult
-import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -29,8 +28,7 @@ class BackupOperationInteractorTest {
     fun `operation request is independent from presentation state`() {
         val request = exportRequest()
 
-        assertEquals(BackupOperation.EXPORT, request.operation)
-        assertEquals(BackupExportFormat.JSON, request.exportFormat)
+        assertEquals(BackupExportFormat.JSON, request.format)
         assertEquals(setOf(EntryType.LOGIN), request.includedEntryTypes)
     }
 
@@ -47,7 +45,7 @@ class BackupOperationInteractorTest {
             authorizationGate = gate,
         )
 
-        val result = interactor.exportToConfiguredDirectory(exportRequest(targetUri = null))
+        val result = interactor.exportToConfiguredDirectory(exportRequest())
 
         assertTrue(result is BackupExecutionResult.Failure)
         assertEquals(
@@ -57,18 +55,14 @@ class BackupOperationInteractorTest {
         assertTrue(storage.createdInsideAuthorization)
     }
 
-    private fun exportRequest(targetUri: String? = "content://backup") = BackupOperationRequest(
-        operation = BackupOperation.EXPORT,
-        exportFormat = BackupExportFormat.JSON,
-        importMode = ImportMode.APPEND,
+    private fun exportRequest() = BackupExportOperationRequest(
+        format = BackupExportFormat.JSON,
         includeIcons = true,
         includeAttachments = false,
         includeDeleted = true,
         includedEntryTypes = setOf(EntryType.LOGIN),
-        targetUri = targetUri,
         password = EmptySensitiveValue,
-        pendingExportFileName = "backup.json",
-        deleteTargetOnFailure = true,
+        fileName = "backup.json",
     )
 
     private class RecordingAuthorizationGate : AuthorizationGate {

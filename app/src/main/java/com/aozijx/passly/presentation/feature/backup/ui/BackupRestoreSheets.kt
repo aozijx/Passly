@@ -5,7 +5,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.presentation.feature.backup.BackupOptionsStage
 import com.aozijx.passly.presentation.feature.backup.BackupUiAction
 import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheetUiState
 
@@ -15,18 +14,19 @@ internal fun BackupRestoreSheet(
     state: BackupRestoreSheetUiState,
     onAction: (BackupUiAction) -> Unit,
 ) {
-    when (state.activeSheet ?: return) {
-        BackupOptionsStage.FORMAT_PICKER -> BackupSheetFrame(
+    when (state) {
+        BackupRestoreSheetUiState.Hidden -> return
+        BackupRestoreSheetUiState.FormatPicker -> BackupSheetFrame(
             onDismiss = { onAction(BackupUiAction.DismissOptions) },
         ) {
             BackupFormatPickerContent { onAction(BackupUiAction.SelectExportFormat(it)) }
         }
-        BackupOptionsStage.EXPORT_OPTIONS -> BackupSheetFrame(
+        is BackupRestoreSheetUiState.ExportOptions -> BackupSheetFrame(
             onDismiss = { onAction(BackupUiAction.DismissOptions) },
         ) {
             BackupExportOptionsContent(state, onAction)
         }
-        BackupOptionsStage.IMPORT_OPTIONS -> BackupSheetFrame(
+        is BackupRestoreSheetUiState.ImportOptions -> BackupSheetFrame(
             onDismiss = { onAction(BackupUiAction.DismissOptions) },
         ) {
             BackupImportOptionsContent(state, onAction)

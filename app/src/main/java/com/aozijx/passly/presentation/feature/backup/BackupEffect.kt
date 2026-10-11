@@ -13,14 +13,11 @@ internal sealed interface BackupEffect {
 }
 
 internal sealed interface BackupNoticeEffect : BackupEffect {
-    val operation: BackupOperation
-
-    data class Succeeded(
-        override val operation: BackupOperation,
-        val importResult: BackupImportResult? = null,
-    ) : BackupNoticeEffect
+    data object DirectoryWritable : BackupNoticeEffect
+    data object ExportSucceeded : BackupNoticeEffect
+    data class ImportSucceeded(val result: BackupImportResult) : BackupNoticeEffect
 
     data class Failed(
-        override val operation: BackupOperation,
+        val operation: BackupOperation,
     ) : BackupNoticeEffect
 }

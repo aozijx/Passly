@@ -33,51 +33,39 @@ internal class BackupOperationInteractor @Inject constructor(
     suspend fun checkDirectoryWritable(uri: String?): BackupExecutionResult {
         if (uri.isNullOrBlank()) return BackupExecutionResult.Failure(BackupFailed())
         return when (val result = backupService.checkDirectoryWritable(uri)) {
-            is AppResult.Success -> BackupExecutionResult.Success()
+            is AppResult.Success -> BackupExecutionResult.DirectoryWritable
             is AppResult.Failure -> BackupExecutionResult.Failure(result.error)
         }
     }
 
     suspend fun exportToConfiguredDirectory(
-        request: BackupOperationRequest,
+        request: BackupExportOperationRequest,
     ): BackupExecutionResult = authorizeOperation(AuthenticationPurpose.BACKUP_EXPORT) {
         val directoryUri = settingsSource.backupDirectoryUri.first()
+            ?.takeUnless(String::isBlank)
             ?: return@authorizeOperation BackupExecutionResult.Failure(BackupFailed())
-        if (directoryUri.isBlank()) {
-            return@authorizeOperation BackupExecutionResult.Failure(BackupFailed())
-        }
-
-        val fileName = request.pendingExportFileName
-            ?: buildExportFileName(request.exportFormat)
         val target = storageSupport.createNamedExportTarget(
             directoryTreeUri = directoryUri,
-            fileName = fileName,
-            mimeType = request.exportFormat.mimeType,
+            fileName = request.fileName,
+            mimeType = request.format.mimeType,
         ).getOrElse { error ->
             return@authorizeOperation BackupExecutionResult.Failure(AppError.fromThrowable(error))
         }
-        performOperation(
-            request = request.copy(
-                targetUri = target.fileUri.toString(),
-                pendingExportFileName = target.fileName,
-                deleteTargetOnFailure = true,
-            ),
-            targetUri = target.fileUri,
-        )
+        performExport(request, target.fileUri, deleteOnFailure = true)
     }
 
-    suspend fun executePending(request: BackupOperationRequest): BackupExecutionResult {
-        val purpose = when (request.operation) {
-            BackupOperation.EXPORT -> AuthenticationPurpose.BACKUP_EXPORT
-            BackupOperation.IMPORT -> AuthenticationPurpose.BACKUP_IMPORT
-            BackupOperation.DIRECTORY_CHECK ->
-                return BackupExecutionResult.Failure(BackupFailed())
-        }
-        return authorizeOperation(purpose) {
-            val targetUri = request.targetUri?.let(Uri::parse)
-                ?: return@authorizeOperation BackupExecutionResult.Failure(BackupFailed())
-            performOperation(request, targetUri)
-        }
+    suspend fun exportToUri(
+        request: BackupExportOperationRequest,
+        targetUri: Uri,
+        deleteOnFailure: Boolean,
+    ): BackupExecutionResult = authorizeOperation(AuthenticationPurpose.BACKUP_EXPORT) {
+        performExport(request, targetUri, deleteOnFailure)
+    }
+
+    suspend fun import(
+        request: BackupImportOperationRequest,
+    ): BackupExecutionResult = authorizeOperation(AuthenticationPurpose.BACKUP_IMPORT) {
+        performImport(request)
     }
 
     private suspend fun authorizeOperation(
@@ -93,67 +81,73 @@ internal class BackupOperationInteractor @Inject constructor(
         is AuthorizationResult.Denied -> BackupExecutionResult.Failure(BackupFailed())
     }
 
-    private suspend fun performOperation(
-        request: BackupOperationRequest,
+    private suspend fun performExport(
+        request: BackupExportOperationRequest,
         targetUri: Uri,
+        deleteOnFailure: Boolean,
     ): BackupExecutionResult {
         val password = request.password.takeUnless { it.isEmpty }?.toCharArray()
         return try {
-            if (request.operation == BackupOperation.EXPORT) {
-                when (val result = backupService.export(
-                    BackupExportRequest(
-                        targetUri = targetUri.toString(),
-                        format = request.exportFormat.formatId,
-                        password = password,
-                        options = BackupExportOptions(
-                            includeIcons =
-                                request.includeIcons && request.exportFormat.supportsResources,
-                            includeAttachments =
-                                request.includeAttachments && request.exportFormat.supportsResources,
-                            includeDeleted = request.includeDeleted,
-                            includedEntryTypes = request.includedEntryTypes,
-                        ),
+            when (val result = backupService.export(
+                BackupExportRequest(
+                    targetUri = targetUri.toString(),
+                    format = request.format.formatId,
+                    password = password,
+                    options = BackupExportOptions(
+                        includeIcons = request.includeIcons && request.format.supportsResources,
+                        includeAttachments = request.includeAttachments && request.format.supportsResources,
+                        includeDeleted = request.includeDeleted,
+                        includedEntryTypes = request.includedEntryTypes,
                     ),
-                )) {
-                    is AppResult.Success -> BackupExecutionResult.Success()
-                    is AppResult.Failure -> {
-                        deleteFailedExport(request, targetUri)
-                        BackupExecutionResult.Failure(result.error)
-                    }
-                }
-            } else {
-                when (val result = backupService.import(
-                    BackupImportRequest(
-                        sourceUri = targetUri.toString(),
-                        mode = request.importMode,
-                        strategy = request.importStrategy,
-                        format = null,
-                        password = password,
-                    ),
-                )) {
-                    is AppResult.Success -> BackupExecutionResult.Success(result.data)
-                    is AppResult.Failure -> BackupExecutionResult.Failure(result.error)
+                ),
+            )) {
+                is AppResult.Success -> BackupExecutionResult.ExportSucceeded
+                is AppResult.Failure -> {
+                    deleteFailedExport(targetUri, deleteOnFailure)
+                    BackupExecutionResult.Failure(result.error)
                 }
             }
         } catch (error: Exception) {
-            deleteFailedExport(request, targetUri)
+            deleteFailedExport(targetUri, deleteOnFailure)
             BackupExecutionResult.Failure(AppError.fromThrowable(error))
         } finally {
             password?.fill('\u0000')
         }
     }
 
-    private fun deleteFailedExport(request: BackupOperationRequest, targetUri: Uri) {
-        if (request.operation == BackupOperation.EXPORT && request.deleteTargetOnFailure) {
-            storageSupport.deleteDocument(targetUri)
+    private suspend fun performImport(
+        request: BackupImportOperationRequest,
+    ): BackupExecutionResult {
+        val password = request.password.takeUnless { it.isEmpty }?.toCharArray()
+        return try {
+            when (val result = backupService.import(
+                BackupImportRequest(
+                    sourceUri = request.sourceUri,
+                    mode = request.mode,
+                    strategy = request.strategy,
+                    format = null,
+                    password = password,
+                ),
+            )) {
+                is AppResult.Success -> BackupExecutionResult.ImportSucceeded(result.data)
+                is AppResult.Failure -> BackupExecutionResult.Failure(result.error)
+            }
+        } catch (error: Exception) {
+            BackupExecutionResult.Failure(AppError.fromThrowable(error))
+        } finally {
+            password?.fill('\u0000')
         }
+    }
+
+    private fun deleteFailedExport(targetUri: Uri, deleteOnFailure: Boolean) {
+        if (deleteOnFailure) storageSupport.deleteDocument(targetUri)
     }
 }
 
 internal sealed interface BackupExecutionResult {
-    data class Success(
-        val importResult: BackupImportResult? = null,
-    ) : BackupExecutionResult
+    data object DirectoryWritable : BackupExecutionResult
+    data object ExportSucceeded : BackupExecutionResult
+    data class ImportSucceeded(val result: BackupImportResult) : BackupExecutionResult
     data object Cancelled : BackupExecutionResult
     data class Failure(val error: AppError) : BackupExecutionResult
 }

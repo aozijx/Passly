@@ -1,19 +1,20 @@
 package com.aozijx.passly.presentation.feature.backup
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.model.BackupFailed
-import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
-import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
+import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.operation.BackupExecutionResult
+import com.aozijx.passly.feature.backup.internal.operation.BackupExportOperationRequest
+import com.aozijx.passly.feature.backup.internal.operation.BackupImportOperationRequest
 import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
-import com.aozijx.passly.feature.backup.internal.operation.BackupOperationRequest
 import com.aozijx.passly.feature.backup.internal.operation.BackupOperationInteractor
 import com.aozijx.passly.feature.backup.internal.presentation.BackupSessionDenial
 import com.aozijx.passly.feature.backup.internal.presentation.BackupSessionPolicy
-import com.aozijx.passly.presentation.feature.backup.BackupUiAction
-import com.aozijx.passly.presentation.feature.backup.BackupUiState
 import com.aozijx.passly.presentation.mapping.entry.toDomainModels
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -43,57 +44,46 @@ internal class BackupViewModel @Inject constructor(
             BackupUiAction.OpenExportOptions -> mutate(BackupMutation.ExportOptionsOpened)
             BackupUiAction.RequestImportDocument -> emitEffect(BackupEffect.SelectImportDocument)
             is BackupUiAction.SelectExportFormat -> prepareExport(action.format)
-            is BackupUiAction.StartExport -> {
-                selectExportTarget(
-                    uri = action.uri,
-                    deleteOnFailure = action.deleteOnFailure,
-                )
-                processPendingOperation()
-            }
+            is BackupUiAction.StartExport -> startManualExport(
+                uri = action.uri,
+                deleteOnFailure = action.deleteOnFailure,
+            )
             is BackupUiAction.StartImport -> prepareImport(action.uri)
-            is BackupUiAction.UpdatePassword ->
-                replacePassword(OwnedChars.fromString(action.password))
-
+            is BackupUiAction.UpdatePassword -> replacePassword(
+                OwnedChars.fromString(action.password),
+            )
             is BackupUiAction.UpdateImportMode ->
                 mutate(BackupMutation.ImportModeUpdated(action.mode))
-
             is BackupUiAction.UpdateImportStrategy ->
                 mutate(BackupMutation.ImportStrategyUpdated(action.strategy))
-
             is BackupUiAction.UpdateIncludeIcons ->
                 mutate(BackupMutation.IncludeIconsUpdated(action.include))
-
             is BackupUiAction.UpdateIncludeAttachments ->
                 mutate(BackupMutation.IncludeAttachmentsUpdated(action.include))
-
             is BackupUiAction.UpdateIncludeDeleted ->
                 mutate(BackupMutation.IncludeDeletedUpdated(action.include))
-
-            is BackupUiAction.UpdateIncludedEntryTypes ->
-                mutate(BackupMutation.IncludedEntryTypesUpdated(action.types.toDomainModels()))
-
-            is BackupUiAction.SubmitExport -> submitExport(action.useConfiguredDirectory)
-            BackupUiAction.SubmitImport -> processPendingOperation()
-            BackupUiAction.DismissOptions -> clearPasswordAndMutate(
-                BackupMutation.PendingOperationCleared
+            is BackupUiAction.UpdateIncludedEntryTypes -> mutate(
+                BackupMutation.IncludedEntryTypesUpdated(action.types.toDomainModels()),
             )
+            is BackupUiAction.SubmitExport -> submitExport(action.useConfiguredDirectory)
+            BackupUiAction.SubmitImport -> submitImport()
+            BackupUiAction.DismissOptions -> closeWorkflow()
         }
     }
 
     private fun checkDirectoryPermission(uri: String?) {
-        viewModelScope.launch {
-            mutate(BackupMutation.OperationStarted)
-            applyResult(
-                result = backupOperationInteractor.checkDirectoryWritable(uri),
-                operation = BackupOperation.DIRECTORY_CHECK,
-                clearPendingFields = false,
-            )
+        if (_uiState.value.workflow is BackupWorkflow.Executing) return
+        execute(
+            operation = BackupOperation.DIRECTORY_CHECK,
+            password = EmptySensitiveValue,
+        ) {
+            backupOperationInteractor.checkDirectoryWritable(uri)
         }
     }
 
     private fun prepareExport(format: BackupExportFormat) {
         if (!requireSession(sessionPolicy.regularExportDenial(), BackupOperation.EXPORT)) return
-        clearPasswordAndMutate(
+        replaceWorkflow(
             BackupMutation.ExportPrepared(
                 format = format,
                 fileName = backupOperationInteractor.buildExportFileName(format),
@@ -101,99 +91,101 @@ internal class BackupViewModel @Inject constructor(
         )
     }
 
-    private fun selectExportTarget(
-        uri: android.net.Uri,
-        deleteOnFailure: Boolean,
-    ) {
-        if (!canUseCurrentMode(BackupOperation.EXPORT)) return
-        mutate(BackupMutation.ExportTargetSelected(uri, deleteOnFailure))
-    }
-
-    private fun prepareImport(uri: android.net.Uri) {
+    private fun prepareImport(uri: Uri) {
         if (!requireSession(sessionPolicy.importDenial(), BackupOperation.IMPORT)) return
-        clearPasswordAndMutate(BackupMutation.ImportPrepared(uri))
-    }
-
-    private fun exportToConfiguredDirectory() {
-        val snapshot = _uiState.value
-        if (!snapshot.isExporting || !snapshot.canSubmitExport) return
-        if (!canUseMode(snapshot, BackupOperation.EXPORT)) return
-        viewModelScope.launch {
-            mutate(BackupMutation.OperationStarted)
-            applyResult(
-                result = backupOperationInteractor.exportToConfiguredDirectory(snapshot.toRequest()),
-                operation = BackupOperation.EXPORT,
-                clearPendingFields = true,
-            )
-        }
+        replaceWorkflow(BackupMutation.ImportPrepared(uri))
     }
 
     private fun submitExport(useConfiguredDirectory: Boolean) {
-        val snapshot = _uiState.value
-        if (!snapshot.isExporting || !snapshot.canSubmitExport) return
+        val workflow = _uiState.value.workflow as? BackupWorkflow.ConfigureExport ?: return
+        val options = workflow.options
+        if (!options.canSubmit) return
+        if (!canExecutePending(BackupOperation.EXPORT)) return
         if (useConfiguredDirectory) {
-            exportToConfiguredDirectory()
-            return
-        }
-        val fileName = snapshot.pendingExportFileName ?: return
-        mutate(BackupMutation.OptionsClosed)
-        emitEffect(
-            BackupEffect.SelectExportDocument(
-                format = snapshot.selectedExportFormat,
-                fileName = fileName,
-            ),
-        )
-    }
-
-    private fun processPendingOperation() {
-        val snapshot = _uiState.value
-        if (snapshot.backupUri == null) return
-        if (snapshot.isExporting && !snapshot.canSubmitExport) return
-        val operation = snapshot.operation()
-        if (!canUseMode(snapshot, operation)) return
-        viewModelScope.launch {
-            mutate(BackupMutation.OperationStarted)
-            applyResult(
-                result = backupOperationInteractor.executePending(snapshot.toRequest()),
-                operation = operation,
-                clearPendingFields = true,
+            execute(
+                operation = BackupOperation.EXPORT,
+                password = options.password,
+            ) {
+                backupOperationInteractor.exportToConfiguredDirectory(options.toRequest())
+            }
+        } else {
+            mutate(BackupMutation.ExportTargetRequested)
+            emitEffect(
+                BackupEffect.SelectExportDocument(
+                    format = options.format,
+                    fileName = options.fileName,
+                ),
             )
         }
     }
 
-    private fun applyResult(
-        result: BackupExecutionResult,
+    private fun startManualExport(uri: Uri, deleteOnFailure: Boolean) {
+        val workflow = _uiState.value.workflow as? BackupWorkflow.AwaitingExportTarget ?: return
+        val options = workflow.options
+        if (!options.canSubmit || !canExecutePending(BackupOperation.EXPORT)) return
+        execute(
+            operation = BackupOperation.EXPORT,
+            password = options.password,
+        ) {
+            backupOperationInteractor.exportToUri(
+                request = options.toRequest(),
+                targetUri = uri,
+                deleteOnFailure = deleteOnFailure,
+            )
+        }
+    }
+
+    private fun submitImport() {
+        val workflow = _uiState.value.workflow as? BackupWorkflow.ConfigureImport ?: return
+        if (!canExecutePending(BackupOperation.IMPORT)) return
+        val options = workflow.options
+        execute(
+            operation = BackupOperation.IMPORT,
+            password = options.password,
+        ) {
+            backupOperationInteractor.import(options.toRequest())
+        }
+    }
+
+    private fun execute(
         operation: BackupOperation,
-        clearPendingFields: Boolean,
+        password: SensitiveValue,
+        block: suspend () -> BackupExecutionResult,
     ) {
-        when (result) {
-            is BackupExecutionResult.Success -> {
-                emitEffect(BackupNoticeEffect.Succeeded(operation, result.importResult))
-                mutate(BackupMutation.OperationSucceeded)
-                if (clearPendingFields) {
-                    clearPasswordAndMutate(BackupMutation.PendingFieldsCleared)
-                }
-            }
-
-            BackupExecutionResult.Cancelled ->
-                clearPasswordAndMutate(BackupMutation.PendingOperationCleared)
-
-            is BackupExecutionResult.Failure -> {
-                emitEffect(BackupNoticeEffect.Failed(operation))
-                mutate(BackupMutation.OperationFailed(result.error))
-                if (clearPendingFields) {
-                    clearPasswordAndMutate(BackupMutation.PendingFieldsCleared)
-                }
+        mutate(BackupMutation.OperationStarted(operation))
+        viewModelScope.launch {
+            try {
+                applyResult(block(), operation)
+            } finally {
+                password.wipe()
             }
         }
     }
 
-    private fun canUseCurrentMode(operation: BackupOperation): Boolean =
-        canUseMode(_uiState.value, operation)
+    private fun applyResult(result: BackupExecutionResult, operation: BackupOperation) {
+        when (result) {
+            BackupExecutionResult.DirectoryWritable -> {
+                emitEffect(BackupNoticeEffect.DirectoryWritable)
+                mutate(BackupMutation.OperationSucceeded)
+            }
+            BackupExecutionResult.ExportSucceeded -> {
+                emitEffect(BackupNoticeEffect.ExportSucceeded)
+                mutate(BackupMutation.OperationSucceeded)
+            }
+            is BackupExecutionResult.ImportSucceeded -> {
+                emitEffect(BackupNoticeEffect.ImportSucceeded(result.result))
+                mutate(BackupMutation.OperationSucceeded)
+            }
+            BackupExecutionResult.Cancelled -> mutate(BackupMutation.WorkflowClosed)
+            is BackupExecutionResult.Failure -> {
+                emitEffect(BackupNoticeEffect.Failed(operation))
+                mutate(BackupMutation.OperationFailed(operation, result.error))
+            }
+        }
+    }
 
-    private fun canUseMode(state: BackupUiState, operation: BackupOperation): Boolean {
+    private fun canExecutePending(operation: BackupOperation): Boolean {
         if (requireSession(sessionPolicy.pendingOperationDenial(), operation)) return true
-        clearPasswordAndMutate(BackupMutation.PendingFieldsCleared)
         return false
     }
 
@@ -203,8 +195,27 @@ internal class BackupViewModel @Inject constructor(
     ): Boolean {
         if (denial == null) return true
         emitEffect(BackupNoticeEffect.Failed(operation))
-        mutate(BackupMutation.OperationFailed(BackupFailed()))
+        replaceWorkflow(BackupMutation.OperationFailed(operation, BackupFailed()))
         return false
+    }
+
+    private fun replacePassword(password: SensitiveValue) {
+        val previous = _uiState.value.workflow.password()
+        mutate(BackupMutation.PasswordUpdated(password))
+        val accepted = _uiState.value.workflow.password()
+        if (accepted !== password) password.wipe()
+        if (previous !== accepted) previous.wipe()
+    }
+
+    private fun replaceWorkflow(mutation: BackupMutation) {
+        val previous = _uiState.value.workflow.password()
+        mutate(mutation)
+        val current = _uiState.value.workflow.password()
+        if (previous !== current) previous.wipe()
+    }
+
+    private fun closeWorkflow() {
+        replaceWorkflow(BackupMutation.WorkflowClosed)
     }
 
     private fun emitEffect(effect: BackupEffect) {
@@ -215,37 +226,24 @@ internal class BackupViewModel @Inject constructor(
         _uiState.update { state -> BackupReducer.reduce(state, mutation) }
     }
 
-    private fun replacePassword(password: SensitiveValue) {
-        val previous = _uiState.value.backupPassword
-        mutate(BackupMutation.PasswordUpdated(password))
-        if (previous !== password) previous.wipe()
-    }
-
-    private fun clearPasswordAndMutate(mutation: BackupMutation) {
-        val password = _uiState.value.backupPassword
-        mutate(mutation)
-        password.wipe()
-    }
-
     override fun onCleared() {
-        _uiState.value.backupPassword.wipe()
+        _uiState.value.workflow.password().wipe()
     }
 }
 
-private fun BackupUiState.operation(): BackupOperation =
-    if (isExporting) BackupOperation.EXPORT else BackupOperation.IMPORT
-
-private fun BackupUiState.toRequest() = BackupOperationRequest(
-    operation = operation(),
-    exportFormat = selectedExportFormat,
-    importMode = importMode,
-    importStrategy = importStrategy,
+private fun BackupExportOptions.toRequest() = BackupExportOperationRequest(
+    format = format,
     includeIcons = includeIcons,
     includeAttachments = includeAttachments,
     includeDeleted = includeDeleted,
     includedEntryTypes = includedEntryTypes,
-    targetUri = backupUri?.toString(),
-    password = backupPassword,
-    pendingExportFileName = pendingExportFileName,
-    deleteTargetOnFailure = deleteTargetOnFailure,
+    password = password,
+    fileName = fileName,
+)
+
+private fun BackupImportOptions.toRequest() = BackupImportOperationRequest(
+    mode = mode,
+    strategy = strategy,
+    sourceUri = uri.toString(),
+    password = password,
 )

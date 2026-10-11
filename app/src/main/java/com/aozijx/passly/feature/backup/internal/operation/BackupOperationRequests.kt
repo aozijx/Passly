@@ -6,17 +6,19 @@ import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
 
-internal data class BackupOperationRequest(
-    val operation: BackupOperation,
-    val exportFormat: BackupExportFormat,
-    val importMode: ImportMode,
-    val importStrategy: BackupImportStrategy = BackupImportStrategy.COMPATIBLE,
+internal data class BackupExportOperationRequest(
+    val format: BackupExportFormat,
     val includeIcons: Boolean,
     val includeAttachments: Boolean,
     val includeDeleted: Boolean,
     val includedEntryTypes: Set<EntryType>,
-    val targetUri: String?,
     val password: SensitiveValue,
-    val pendingExportFileName: String?,
-    val deleteTargetOnFailure: Boolean,
+    val fileName: String,
+)
+
+internal data class BackupImportOperationRequest(
+    val sourceUri: String,
+    val password: SensitiveValue,
+    val mode: ImportMode,
+    val strategy: BackupImportStrategy,
 )

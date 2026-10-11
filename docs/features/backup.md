@@ -1,7 +1,7 @@
 # Backup 功能与 Passly 备份协议
 
 状态：正式格式 v1
-最后修订：2026-10-06
+最后修订：2026-10-11
 
 Backup 是 app 内的业务 feature。UI 与流程编排位于 presentation/feature/backup，格式、协议、加密和文件 I/O 位于 feature/backup/internal，Room 快照适配位于 app/database/backup。备份是可恢复的 Vault 业务数据归档，不是 Room 数据库镜像。
 
@@ -109,6 +109,21 @@ JSON 使用 resourcesBase64 保存资源；加密格式的 ZIP 使用 resources/
 5. BackupFileStore 写入 SAF URI，完成后清零可控的密码、编码和资源缓冲。
 
 完整导出默认使用 archive registry。UI 的条目类型筛选只影响本次选择性导出，不修改 Vault 数据。数据库出现未注册类型时，映射必须失败，不能生成看似成功但缺条目的备份。
+
+### 6.1 交互状态与操作边界
+
+备份界面使用封闭工作流状态：Idle、FormatPicker、ConfigureExport、AwaitingExportTarget、
+ConfigureImport、Executing 和 Failed。导出配置只存在于导出分支，导入 URI、模式与策略只存在于
+导入分支；执行中和失败状态都显式携带对应操作。不得再用 nullable stage、isExporting、共享 error
+或待处理文件名拼装流程状态。
+
+应用层操作同样按语义拆分为导出请求和导入请求。导出目标由“配置目录导出”或“指定 URI 导出”
+方法表达，导入请求始终携带来源 URI；交互器不再通过 operation enum 加一组无关默认字段判断实际操作。
+成功结果分别表示目录可写、导出成功或带汇总的导入成功，导入汇总不得用 nullable payload 表示。
+
+密码只属于 ConfigureExport、AwaitingExportTarget 或 ConfigureImport。状态切换、关闭 Sheet、操作完成、
+取消以及 ViewModel 清理时必须清零其可控缓冲；UI 只获得一次性的字符串快照，底层归档服务只获得
+操作期间的字符副本并在 finally 中清零。
 
 ## 7. 导入策略与结果
 

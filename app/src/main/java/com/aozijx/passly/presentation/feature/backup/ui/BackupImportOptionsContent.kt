@@ -32,7 +32,7 @@ import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheet
 
 @Composable
 internal fun BackupImportOptionsContent(
-    state: BackupRestoreSheetUiState,
+    state: BackupRestoreSheetUiState.ImportOptions,
     onAction: (BackupUiAction) -> Unit,
 ) {
     BackupSheetColumn(scrollable = true) {
@@ -48,13 +48,13 @@ internal fun BackupImportOptionsContent(
         )
         Text(stringResource(R.string.settings_backup_import_mode), style = MaterialTheme.typography.titleMedium)
         ImportChoiceCard(
-            selected = state.importMode == ImportMode.APPEND,
+            selected = state.mode == ImportMode.APPEND,
             title = stringResource(R.string.settings_backup_import_append),
             subtitle = stringResource(R.string.settings_backup_import_append_description),
             onClick = { onAction(BackupUiAction.UpdateImportMode(ImportMode.APPEND)) },
         )
         ImportChoiceCard(
-            selected = state.importMode == ImportMode.OVERWRITE,
+            selected = state.mode == ImportMode.OVERWRITE,
             title = stringResource(R.string.settings_backup_import_overwrite),
             subtitle = stringResource(R.string.settings_backup_import_overwrite_description),
             onClick = { onAction(BackupUiAction.UpdateImportMode(ImportMode.OVERWRITE)) },
@@ -64,7 +64,7 @@ internal fun BackupImportOptionsContent(
             style = MaterialTheme.typography.titleMedium,
         )
         ImportChoiceCard(
-            selected = state.importStrategy == BackupImportStrategy.COMPATIBLE,
+            selected = state.strategy == BackupImportStrategy.COMPATIBLE,
             title = stringResource(R.string.settings_backup_import_compatible),
             subtitle = stringResource(R.string.settings_backup_import_compatible_description),
             onClick = {
@@ -72,7 +72,7 @@ internal fun BackupImportOptionsContent(
             },
         )
         ImportChoiceCard(
-            selected = state.importStrategy == BackupImportStrategy.STRICT,
+            selected = state.strategy == BackupImportStrategy.STRICT,
             title = stringResource(R.string.settings_backup_import_strict),
             subtitle = stringResource(R.string.settings_backup_import_strict_description),
             onClick = {
@@ -99,7 +99,7 @@ internal fun BackupImportOptionsContent(
         ) {
             Text(
                 stringResource(
-                    if (state.importMode == ImportMode.OVERWRITE) {
+                    if (state.mode == ImportMode.OVERWRITE) {
                         R.string.settings_backup_confirm_overwrite_import
                     } else {
                         R.string.settings_backup_start_import

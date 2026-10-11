@@ -1,125 +1,83 @@
 package com.aozijx.passly.presentation.feature.backup
 
 import com.aozijx.passly.core.error.model.BackupFailed
-import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
-import com.aozijx.passly.feature.backup.internal.model.BackupOperationStatus
-import com.aozijx.passly.feature.backup.internal.model.ImportMode
-import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
-import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.presentation.feature.backup.BackupUiState
-import com.aozijx.passly.domain.sensitive.OwnedChars
+import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
+import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
+import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BackupReducerTest {
     @Test
-    fun importDefaultsToCompatibleAndAllowsStrictSelection() {
-        val prepared = BackupUiState()
-        val strict = BackupReducer.reduce(
-            prepared,
-            BackupMutation.ImportStrategyUpdated(BackupImportStrategy.STRICT),
-        )
-
-        assertEquals(BackupImportStrategy.COMPATIBLE, prepared.importStrategy)
-        assertEquals(BackupImportStrategy.STRICT, strict.importStrategy)
-    }
-
-    @Test
-    fun `backup option stage is owned by reducer transitions`() {
-        val opened = BackupReducer.reduce(
-            BackupUiState(),
-            BackupMutation.ExportOptionsOpened,
-        )
+    fun `reducer owns the complete options workflow`() {
+        val opened = BackupReducer.reduce(BackupUiState(), BackupMutation.ExportOptionsOpened)
         val prepared = BackupReducer.reduce(
             opened,
-            BackupMutation.ExportPrepared(
-                format = BackupExportFormat.JSON,
-                fileName = "backup.json",
-            ),
+            BackupMutation.ExportPrepared(BackupExportFormat.JSON, "backup.json"),
         )
-        val dismissed = BackupReducer.reduce(
-            prepared,
-            BackupMutation.PendingOperationCleared,
-        )
+        val awaitingTarget = BackupReducer.reduce(prepared, BackupMutation.ExportTargetRequested)
+        val dismissed = BackupReducer.reduce(awaitingTarget, BackupMutation.WorkflowClosed)
 
-        assertEquals(BackupOptionsStage.FORMAT_PICKER, opened.optionsStage)
-        assertEquals(BackupOptionsStage.EXPORT_OPTIONS, prepared.optionsStage)
-        assertNull(dismissed.optionsStage)
+        assertSame(BackupWorkflow.FormatPicker, opened.workflow)
+        assertEquals(
+            BackupExportFormat.JSON,
+            (prepared.workflow as BackupWorkflow.ConfigureExport).options.format,
+        )
+        assertEquals(
+            "backup.json",
+            (awaitingTarget.workflow as BackupWorkflow.AwaitingExportTarget).options.fileName,
+        )
+        assertSame(BackupWorkflow.Idle, dismissed.workflow)
     }
 
     @Test
-    fun exportPrepared_resetsTransientInputAndDerivesResourceOptions() {
-        val initial = BackupUiState(
-            status = BackupOperationStatus.Failure,
-            error = BackupFailed(),
-            backupPassword = OwnedChars.fromString("stale password"),
-            importMode = ImportMode.OVERWRITE,
-            includeIcons = true,
-            includeAttachments = true,
-            includedEntryTypes = emptySet(),
-        )
-
+    fun `preparing text export derives a clean format-specific configuration`() {
         val state = BackupReducer.reduce(
-            initial,
-            BackupMutation.ExportPrepared(
-                format = BackupExportFormat.TEXT,
-                fileName = "backup.txt",
+            BackupUiState(
+                workflow = BackupWorkflow.Failed(
+                    operation = BackupOperation.IMPORT,
+                    error = BackupFailed(),
+                ),
             ),
+            BackupMutation.ExportPrepared(BackupExportFormat.TEXT, "backup.txt"),
         )
 
-        assertTrue(state.isExporting)
-        assertEquals(BackupExportFormat.TEXT, state.selectedExportFormat)
-        assertEquals("backup.txt", state.pendingExportFileName)
-        assertTrue(state.backupPassword.isEmpty)
-        assertFalse(state.includeIcons)
-        assertFalse(state.includeAttachments)
-        assertEquals(BackupArchiveKeyRegistry.archiveEntryTypes, state.includedEntryTypes)
-        assertSame(BackupOperationStatus.Idle, state.status)
-        assertNull(state.error)
+        val options = (state.workflow as BackupWorkflow.ConfigureExport).options
+        assertEquals(BackupExportFormat.TEXT, options.format)
+        assertEquals("backup.txt", options.fileName)
+        assertFalse(options.includeIcons)
+        assertFalse(options.includeAttachments)
+        assertEquals(BackupArchiveKeyRegistry.archiveEntryTypes, options.includedEntryTypes)
     }
 
     @Test
-    fun clearingPendingFields_afterFailure_preservesFailureForRendering() {
+    fun `failure is represented by one complete workflow state`() {
         val error = BackupFailed()
-        val failed = BackupReducer.reduce(
+        val state = BackupReducer.reduce(
             BackupUiState(
-                isExporting = true,
-                backupPassword = OwnedChars.fromString("temporary"),
-                pendingExportFileName = "recovery.passly",
-                deleteTargetOnFailure = true,
+                workflow = BackupWorkflow.ConfigureExport(
+                    BackupExportOptions(BackupExportFormat.ENCRYPTED, "backup.passly"),
+                ),
             ),
-            BackupMutation.OperationFailed(error),
+            BackupMutation.OperationFailed(BackupOperation.EXPORT, error),
         )
 
-        val cleared = BackupReducer.reduce(failed, BackupMutation.PendingFieldsCleared)
-
-        assertSame(BackupOperationStatus.Failure, cleared.status)
-        assertSame(error, cleared.error)
-        assertTrue(cleared.backupPassword.isEmpty)
-        assertNull(cleared.pendingExportFileName)
-        assertFalse(cleared.deleteTargetOnFailure)
+        val failed = state.workflow as BackupWorkflow.Failed
+        assertSame(BackupOperation.EXPORT, failed.operation)
+        assertSame(error, failed.error)
     }
 
     @Test
-    fun cancellingPendingOperation_returnsToIdleAndClearsFailure() {
-        val state = BackupReducer.reduce(
-            BackupUiState(
-                status = BackupOperationStatus.Failure,
-                error = BackupFailed(),
-                backupPassword = OwnedChars.fromString("temporary"),
-                pendingExportFileName = "backup.passly",
-            ),
-            BackupMutation.PendingOperationCleared,
+    fun `updates for another workflow are ignored`() {
+        val initial = BackupUiState(workflow = BackupWorkflow.FormatPicker)
+        val updated = BackupReducer.reduce(
+            initial,
+            BackupMutation.IncludedEntryTypesUpdated(setOf(EntryType.LOGIN)),
         )
 
-        assertSame(BackupOperationStatus.Idle, state.status)
-        assertNull(state.error)
-        assertTrue(state.backupPassword.isEmpty)
-        assertNull(state.pendingExportFileName)
+        assertSame(initial, updated)
     }
 }

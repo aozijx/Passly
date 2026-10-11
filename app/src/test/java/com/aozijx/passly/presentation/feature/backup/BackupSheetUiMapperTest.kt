@@ -3,37 +3,36 @@ package com.aozijx.passly.presentation.feature.backup
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
-import com.aozijx.passly.feature.backup.internal.model.ImportMode
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.presentation.feature.backup.ui.model.BackupRestoreSheetUiState
 import com.aozijx.passly.presentation.mapping.entry.toDomainModels
+import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class BackupSheetUiMapperTest {
-
     @Test
-    fun `maps feature backup options to ui-only snapshot`() {
+    fun `maps export configuration to its dedicated sheet state`() {
         val password = OwnedChars.fromString("temporary")
         try {
             val result = BackupUiState(
-                optionsStage = BackupOptionsStage.EXPORT_OPTIONS,
-                backupPassword = password,
-                importMode = ImportMode.OVERWRITE,
-                selectedExportFormat = BackupExportFormat.ENCRYPTED,
-                includeIcons = false,
-                includeAttachments = true,
-                includeDeleted = false,
-                includedEntryTypes = setOf(EntryType.LOGIN, EntryType.NOTE),
-            ).toSheetUiState(
-                configuredDirectoryLabel = "Documents/Passly",
-            )
+                workflow = BackupWorkflow.ConfigureExport(
+                    BackupExportOptions(
+                        format = BackupExportFormat.ENCRYPTED,
+                        fileName = "backup.passly",
+                        password = password,
+                        includeIcons = false,
+                        includeAttachments = true,
+                        includeDeleted = false,
+                        includedEntryTypes = setOf(EntryType.LOGIN, EntryType.NOTE),
+                    ),
+                ),
+            ).toSheetUiState(configuredDirectoryLabel = "Documents/Passly")
+                as BackupRestoreSheetUiState.ExportOptions
 
-            assertEquals(BackupOptionsStage.EXPORT_OPTIONS, result.activeSheet)
             assertEquals("Documents/Passly", result.configuredDirectoryLabel)
             assertEquals("temporary", result.password)
-            assertEquals(ImportMode.OVERWRITE, result.importMode)
-            assertEquals(BackupExportFormat.ENCRYPTED, result.selectedExportFormat)
+            assertEquals(BackupExportFormat.ENCRYPTED, result.format)
             assertEquals(
                 setOf(EntryTypeUiModel.LOGIN, EntryTypeUiModel.NOTE),
                 result.includedEntryTypes,
@@ -41,7 +40,7 @@ class BackupSheetUiMapperTest {
             assertFalse(result.includeIcons)
             assertEquals(true, result.includeAttachments)
             assertEquals(false, result.includeDeleted)
-            assertEquals(true, result.canSubmitExport)
+            assertEquals(true, result.canSubmit)
         } finally {
             password.close()
         }

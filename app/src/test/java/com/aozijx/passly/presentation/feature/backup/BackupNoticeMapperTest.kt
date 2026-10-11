@@ -12,9 +12,10 @@ class BackupNoticeMapperTest {
     @Test
     fun operationEffectsMapToGlobalNoticeCodesAtPresentationBoundary() {
         val expected = mapOf(
-            BackupNoticeEffect.Succeeded(BackupOperation.EXPORT) to NoticeCode.BACKUP_EXPORT_COMPLETED,
-            BackupNoticeEffect.Succeeded(BackupOperation.IMPORT) to NoticeCode.BACKUP_IMPORT_COMPLETED,
-            BackupNoticeEffect.Succeeded(BackupOperation.DIRECTORY_CHECK) to
+            BackupNoticeEffect.ExportSucceeded to NoticeCode.BACKUP_EXPORT_COMPLETED,
+            BackupNoticeEffect.ImportSucceeded(BackupImportResult(0, 0, 0, 0, 0, 0)) to
+                NoticeCode.BACKUP_IMPORT_COMPLETED,
+            BackupNoticeEffect.DirectoryWritable to
                 NoticeCode.BACKUP_DIRECTORY_CHECK_COMPLETED,
             BackupNoticeEffect.Failed(BackupOperation.EXPORT) to NoticeCode.BACKUP_EXPORT_FAILED,
             BackupNoticeEffect.Failed(BackupOperation.IMPORT) to NoticeCode.BACKUP_IMPORT_FAILED,
@@ -29,10 +30,7 @@ class BackupNoticeMapperTest {
 
     @Test
     fun successfulImportMapsAllSummaryCountsToSafeNoticeArguments() {
-        val effect = BackupNoticeEffect.Succeeded(
-            operation = BackupOperation.IMPORT,
-            importResult = BackupImportResult(4, 1, 2, 3, 5, 6),
-        )
+        val effect = BackupNoticeEffect.ImportSucceeded(BackupImportResult(4, 1, 2, 3, 5, 6))
 
         assertEquals(
             ArgumentValue.Count(4),

@@ -2,31 +2,21 @@ package com.aozijx.passly.presentation.feature.backup
 
 import android.net.Uri
 import com.aozijx.passly.core.error.model.AppError
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
-import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
-import com.aozijx.passly.feature.backup.internal.model.BackupOperationStatus
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
-import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
-import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.presentation.feature.backup.BackupUiState
+import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
 
 internal sealed interface BackupMutation {
     data object ExportOptionsOpened : BackupMutation
-    data object OptionsClosed : BackupMutation
-    data object OperationStarted : BackupMutation
-
+    data object WorkflowClosed : BackupMutation
     data class ExportPrepared(
         val format: BackupExportFormat,
         val fileName: String,
     ) : BackupMutation
-
-    data class ExportTargetSelected(
-        val uri: Uri,
-        val deleteOnFailure: Boolean,
-    ) : BackupMutation
-
+    data object ExportTargetRequested : BackupMutation
     data class ImportPrepared(val uri: Uri) : BackupMutation
     data class PasswordUpdated(val password: SensitiveValue) : BackupMutation
     data class ImportModeUpdated(val mode: ImportMode) : BackupMutation
@@ -35,100 +25,91 @@ internal sealed interface BackupMutation {
     data class IncludeAttachmentsUpdated(val include: Boolean) : BackupMutation
     data class IncludeDeletedUpdated(val include: Boolean) : BackupMutation
     data class IncludedEntryTypesUpdated(val types: Set<EntryType>) : BackupMutation
+    data class OperationStarted(val operation: BackupOperation) : BackupMutation
     data object OperationSucceeded : BackupMutation
-    data class OperationFailed(val error: AppError) : BackupMutation
-    data object PendingOperationCleared : BackupMutation
-    data object PendingFieldsCleared : BackupMutation
+    data class OperationFailed(
+        val operation: BackupOperation,
+        val error: AppError,
+    ) : BackupMutation
 }
 
 internal object BackupReducer {
-    fun reduce(state: BackupUiState, mutation: BackupMutation): BackupUiState =
-        when (mutation) {
-            BackupMutation.ExportOptionsOpened -> state.copy(
-                optionsStage = BackupOptionsStage.FORMAT_PICKER,
-                error = null,
-            )
-            BackupMutation.OptionsClosed -> state.copy(optionsStage = null)
-            BackupMutation.OperationStarted -> state.copy(
-                optionsStage = null,
-                status = BackupOperationStatus.Loading,
-                error = null,
-            )
-
-            is BackupMutation.ExportPrepared -> {
-                val includeResources = mutation.format.supportsResources
-                state.copy(
-                    optionsStage = BackupOptionsStage.EXPORT_OPTIONS,
-                    isExporting = true,
-                    selectedExportFormat = mutation.format,
-                    backupUri = null,
-                    backupPassword = EmptySensitiveValue,
-                    includeIcons = includeResources,
-                    includeAttachments = includeResources,
-                    includeDeleted = true,
-                    includedEntryTypes = BackupArchiveKeyRegistry.archiveEntryTypes,
-                    pendingExportFileName = mutation.fileName,
-                    deleteTargetOnFailure = false,
-                    status = BackupOperationStatus.Idle,
-                    error = null,
-                )
-            }
-
-            is BackupMutation.ExportTargetSelected -> state.copy(
-                isExporting = true,
-                backupUri = mutation.uri,
-                deleteTargetOnFailure = mutation.deleteOnFailure,
-            )
-
-            is BackupMutation.ImportPrepared -> state.copy(
-                optionsStage = BackupOptionsStage.IMPORT_OPTIONS,
-                isExporting = false,
-                backupUri = mutation.uri,
-                backupPassword = EmptySensitiveValue,
-                importMode = ImportMode.APPEND,
-                importStrategy = BackupImportStrategy.COMPATIBLE,
-                pendingExportFileName = null,
-                deleteTargetOnFailure = false,
-                status = BackupOperationStatus.Idle,
-                error = null,
-            )
-
-            is BackupMutation.PasswordUpdated -> state.copy(backupPassword = mutation.password)
-            is BackupMutation.ImportModeUpdated -> state.copy(importMode = mutation.mode)
-            is BackupMutation.ImportStrategyUpdated -> state.copy(importStrategy = mutation.strategy)
-            is BackupMutation.IncludeIconsUpdated -> state.copy(includeIcons = mutation.include)
-            is BackupMutation.IncludeAttachmentsUpdated ->
-                state.copy(includeAttachments = mutation.include)
-
-            is BackupMutation.IncludeDeletedUpdated -> state.copy(includeDeleted = mutation.include)
-            is BackupMutation.IncludedEntryTypesUpdated ->
-                state.copy(includedEntryTypes = mutation.types)
-
-            BackupMutation.OperationSucceeded -> state.copy(
-                optionsStage = null,
-                status = BackupOperationStatus.Idle,
-                error = null,
-            )
-
-            is BackupMutation.OperationFailed -> state.copy(
-                optionsStage = null,
-                status = BackupOperationStatus.Failure,
-                error = mutation.error,
-            )
-
-            BackupMutation.PendingOperationCleared -> state.clearPendingFields().copy(
-                status = BackupOperationStatus.Idle,
-                error = null,
-            )
-
-            BackupMutation.PendingFieldsCleared -> state.clearPendingFields()
+    fun reduce(state: BackupUiState, mutation: BackupMutation): BackupUiState = when (mutation) {
+        BackupMutation.ExportOptionsOpened -> state.copy(
+            workflow = BackupWorkflow.FormatPicker,
+        )
+        BackupMutation.WorkflowClosed,
+        BackupMutation.OperationSucceeded -> state.copy(workflow = BackupWorkflow.Idle)
+        is BackupMutation.ExportPrepared -> state.copy(
+            workflow = BackupWorkflow.ConfigureExport(
+                BackupExportOptions(
+                    format = mutation.format,
+                    fileName = mutation.fileName,
+                ),
+            ),
+        )
+        BackupMutation.ExportTargetRequested -> state.updateExportOptions { options ->
+            BackupWorkflow.AwaitingExportTarget(options)
         }
+        is BackupMutation.ImportPrepared -> state.copy(
+            workflow = BackupWorkflow.ConfigureImport(BackupImportOptions(mutation.uri)),
+        )
+        is BackupMutation.PasswordUpdated -> state.updateOptionsPassword(mutation.password)
+        is BackupMutation.ImportModeUpdated -> state.updateImportOptions {
+            copy(mode = mutation.mode)
+        }
+        is BackupMutation.ImportStrategyUpdated -> state.updateImportOptions {
+            copy(strategy = mutation.strategy)
+        }
+        is BackupMutation.IncludeIconsUpdated -> state.updateExportOptions { options ->
+            BackupWorkflow.ConfigureExport(options.copy(includeIcons = mutation.include))
+        }
+        is BackupMutation.IncludeAttachmentsUpdated -> state.updateExportOptions { options ->
+            BackupWorkflow.ConfigureExport(options.copy(includeAttachments = mutation.include))
+        }
+        is BackupMutation.IncludeDeletedUpdated -> state.updateExportOptions { options ->
+            BackupWorkflow.ConfigureExport(options.copy(includeDeleted = mutation.include))
+        }
+        is BackupMutation.IncludedEntryTypesUpdated -> state.updateExportOptions { options ->
+            BackupWorkflow.ConfigureExport(options.copy(includedEntryTypes = mutation.types))
+        }
+        is BackupMutation.OperationStarted -> state.copy(
+            workflow = BackupWorkflow.Executing(mutation.operation),
+        )
+        is BackupMutation.OperationFailed -> state.copy(
+            workflow = BackupWorkflow.Failed(mutation.operation, mutation.error),
+        )
+    }
 }
 
-private fun BackupUiState.clearPendingFields(): BackupUiState = copy(
-    optionsStage = null,
-    backupUri = null,
-    backupPassword = EmptySensitiveValue,
-    pendingExportFileName = null,
-    deleteTargetOnFailure = false,
-)
+private inline fun BackupUiState.updateExportOptions(
+    transform: (BackupExportOptions) -> BackupWorkflow,
+): BackupUiState {
+    val options = when (val current = workflow) {
+        is BackupWorkflow.ConfigureExport -> current.options
+        is BackupWorkflow.AwaitingExportTarget -> current.options
+        else -> return this
+    }
+    return copy(workflow = transform(options))
+}
+
+private inline fun BackupUiState.updateImportOptions(
+    transform: BackupImportOptions.() -> BackupImportOptions,
+): BackupUiState {
+    val current = workflow as? BackupWorkflow.ConfigureImport ?: return this
+    return copy(workflow = current.copy(options = current.options.transform()))
+}
+
+private fun BackupUiState.updateOptionsPassword(password: SensitiveValue): BackupUiState =
+    when (val current = workflow) {
+        is BackupWorkflow.ConfigureExport -> copy(
+            workflow = current.copy(options = current.options.copy(password = password)),
+        )
+        is BackupWorkflow.ConfigureImport -> copy(
+            workflow = current.copy(options = current.options.copy(password = password)),
+        )
+        is BackupWorkflow.AwaitingExportTarget -> copy(
+            workflow = current.copy(options = current.options.copy(password = password)),
+        )
+        else -> this
+    }
