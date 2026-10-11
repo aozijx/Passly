@@ -77,7 +77,7 @@ internal fun TrashEntryCard(
                             iconName = entry.iconName,
                             iconCustomPath = entry.iconCustomPath,
                             associatedAppPackage = entry.associatedAppPackage,
-                            entryTypeKey = entry.entryType.name,
+                            entryType = entry.entryType,
                             title = entry.title,
                             username = entry.username,
                             associatedDomain = entry.associatedDomain,

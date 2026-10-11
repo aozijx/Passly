@@ -31,13 +31,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
+import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 
 data class AutofillCandidateItem(
     val id: String,
     val iconName: String?,
     val iconCustomPath: String?,
     val associatedAppPackage: String?,
-    val entryTypeKey: String,
+    val entryType: EntryTypeUiModel,
     val title: String,
     val username: String,
     val associatedDomain: String?,
@@ -121,7 +122,7 @@ private fun CandidateItem(
                 iconName = candidate.iconName,
                 iconCustomPath = candidate.iconCustomPath,
                 associatedAppPackage = candidate.associatedAppPackage,
-                entryTypeKey = candidate.entryTypeKey,
+                entryType = candidate.entryType,
                 title = candidate.title,
                 username = candidate.username,
                 associatedDomain = candidate.associatedDomain,

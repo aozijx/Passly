@@ -28,7 +28,7 @@ fun VaultItemIcon(
     iconName: String?,
     iconCustomPath: String?,
     associatedAppPackage: String?,
-    entryTypeKey: String,
+    entryType: EntryTypeUiModel,
     title: String,
     username: String,
     associatedDomain: String?,
@@ -39,9 +39,7 @@ fun VaultItemIcon(
     iconCustomPath = iconCustomPath,
     associatedAppPackage = associatedAppPackage,
     classificationInput = EntryClassificationInput(
-        entryType = enumValues<EntryTypeUiModel>()
-            .firstOrNull { it.name == entryTypeKey }
-            ?: EntryTypeUiModel.LOGIN,
+        entryType = entryType,
         title = title,
         username = username,
         urls = setOfNotNull(associatedDomain),

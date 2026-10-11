@@ -50,7 +50,7 @@ fun DetailIconCard(
                 iconName = model.iconName,
                 iconCustomPath = model.iconCustomPath,
                 associatedAppPackage = model.associatedAppPackage,
-                entryTypeKey = model.entryTypeKey,
+                entryType = model.entryType,
                 title = model.title,
                 username = model.username,
                 associatedDomain = model.associatedDomain,

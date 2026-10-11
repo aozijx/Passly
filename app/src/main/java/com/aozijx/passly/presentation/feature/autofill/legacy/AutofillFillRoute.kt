@@ -7,6 +7,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
 import com.aozijx.passly.presentation.feature.autofill.legacy.ui.AutofillCandidateBottomSheet
 import com.aozijx.passly.presentation.feature.autofill.legacy.ui.AutofillCandidateItem
+import com.aozijx.passly.presentation.mapping.entry.toUiModel
 
 @Composable
 internal fun AutofillFillRoute(
@@ -47,7 +48,7 @@ private fun ResolvedCandidate.toUiItem() = AutofillCandidateItem(
     iconName = entry.profile.icon.name,
     iconCustomPath = entry.profile.icon.customReference,
     associatedAppPackage = entry.profile.associations.applicationIds.firstOrNull(),
-    entryTypeKey = entry.entryType.name,
+    entryType = entry.entryType.toUiModel(),
     title = entry.title,
     username = entry.username,
     associatedDomain = entry.associatedDomain,

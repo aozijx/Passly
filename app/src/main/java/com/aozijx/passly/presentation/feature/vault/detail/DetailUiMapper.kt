@@ -111,7 +111,7 @@ internal fun toDetailPresentationModel(
                 iconCustomPath = entry.icon.customReference,
                 iconColor = entry.icon.color,
                 associatedAppPackage = entry.associations.applicationIds.firstOrNull(),
-                entryTypeKey = entry.type.name,
+                entryType = entry.type.toUiModel(),
                 title = entry.title,
                 username = entry.username,
                 associatedDomain = entry.associatedDomain,
