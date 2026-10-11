@@ -22,6 +22,8 @@ class VaultListActionOwnershipBoundaryTest {
         assertTrue(searchBar.contains("focusProperties"))
         assertTrue(searchBar.contains("canFocus = isEditing"))
         assertTrue(searchHeader.contains("onClick = searchStateHolder::request"))
+        assertTrue(searchHeader.contains("matchParentSize()"))
+        assertFalse(searchHeader.contains("fillMaxSize()"))
     }
 
     @Test

@@ -5,7 +5,6 @@ import androidx.compose.animation.core.snap
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -54,7 +53,7 @@ internal fun VaultSearchHeader(
             if (!searchStateHolder.uiState.isEditing) {
                 Box(
                     Modifier
-                        .fillMaxSize()
+                        .matchParentSize()
                         .clickable(
                             interactionSource = searchRequestInteractionSource,
                             indication = null,
