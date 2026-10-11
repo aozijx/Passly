@@ -17,22 +17,23 @@ object CardNumberValidator {
         NetworkRule(CardNetwork.JCB, Regex("^35(2[89]|[3-8]\\d)\\d{12}$"))
     )
 
-    fun validate(cardNumber: String): ValidationResult {
+    fun validate(cardNumber: String): CardNumberValidationResult {
         val digits = cardNumber.filter { it.isDigit() }
-        if (digits.isEmpty()) return ValidationResult.Valid
+        if (digits.isEmpty()) return CardNumberValidationResult.Empty
         if (digits.length !in 13..19) {
-            return ValidationResult.Invalid("卡号位数不正确")
+            return CardNumberValidationResult.Invalid(CardNumberInvalidReason.InvalidLength)
         }
         if (!luhn(digits)) {
-            return ValidationResult.Invalid("卡号校验失败")
+            return CardNumberValidationResult.Invalid(CardNumberInvalidReason.ChecksumFailed)
         }
-        return ValidationResult.Valid
+        return CardNumberValidationResult.Valid(inferNetwork(digits))
     }
 
-    fun inferNetwork(cardNumber: String): CardNetwork? {
+    private fun inferNetwork(cardNumber: String): CardNetworkMatch {
         val digits = cardNumber.filter { it.isDigit() }
-        if (digits.length < 6) return null
-        return NETWORK_RULES.firstOrNull { it.pattern.matches(digits) }?.network
+        val network = NETWORK_RULES.firstOrNull { it.pattern.matches(digits) }?.network
+        return if (network == null) CardNetworkMatch.Unknown
+        else CardNetworkMatch.Matched(network)
     }
 
     private fun luhn(digits: String): Boolean {
@@ -60,7 +61,18 @@ enum class CardNetwork {
     VISA, MASTERCARD, AMEX, DISCOVER, UNIONPAY, JCB
 }
 
-sealed class ValidationResult {
-    data object Valid : ValidationResult()
-    data class Invalid(val message: String) : ValidationResult()
+sealed interface CardNumberValidationResult {
+    data object Empty : CardNumberValidationResult
+    data class Valid(val network: CardNetworkMatch) : CardNumberValidationResult
+    data class Invalid(val reason: CardNumberInvalidReason) : CardNumberValidationResult
+}
+
+sealed interface CardNetworkMatch {
+    data class Matched(val network: CardNetwork) : CardNetworkMatch
+    data object Unknown : CardNetworkMatch
+}
+
+enum class CardNumberInvalidReason {
+    InvalidLength,
+    ChecksumFailed,
 }

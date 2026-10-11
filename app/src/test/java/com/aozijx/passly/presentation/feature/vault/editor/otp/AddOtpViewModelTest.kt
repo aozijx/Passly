@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.Rule
 
@@ -65,6 +66,17 @@ class AddOtpViewModelTest {
         assertEquals(config.encoding, roundTripped.encoding)
         assertEquals(config.issuer, roundTripped.issuer)
         assertEquals(config.accountName, roundTripped.accountName)
+        assertEquals(AddOtpSavePhase.Idle, state.savePhase)
+    }
+
+    @Test
+    fun saveCapabilityIsDerivedFromFormAndSavePhase() {
+        val form = OtpFormState(title = "Mail", secret = "ABC123")
+
+        assertTrue(AddOtpCodeState(form = form).canSave)
+        assertTrue(
+            !AddOtpCodeState(form = form, savePhase = AddOtpSavePhase.Saving).canSave,
+        )
     }
 
     private fun createEntryUseCase() = CreateEntryUseCase(

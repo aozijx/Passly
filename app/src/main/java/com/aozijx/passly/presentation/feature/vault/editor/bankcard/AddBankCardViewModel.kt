@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.feature.vault.editor.bankcard.CardNumberValidator
-import com.aozijx.passly.feature.vault.editor.bankcard.ValidationResult
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffect
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -39,7 +38,9 @@ class AddBankCardViewModel @Inject constructor(
     fun onAction(action: AddBankCardAction) {
         when (action) {
             is AddBankCardAction.TitleChanged -> mutateForm { it.copy(title = action.value) }
-            is AddBankCardAction.CardTypeChanged -> mutateForm { it.copy(cardType = action.value) }
+            is AddBankCardAction.CardTypeChanged -> mutateForm {
+                it.copy(cardType = CardTypeSelection.Selected(action.value))
+            }
             is AddBankCardAction.CardholderChanged -> mutateForm { it.copy(cardholder = action.value) }
             is AddBankCardAction.CardNumberChanged -> updateCardNumber(action.value)
             is AddBankCardAction.CardNumberVisibilityChanged -> mutateForm { it.copy(isCardNumberVisible = action.visible) }
@@ -48,13 +49,7 @@ class AddBankCardViewModel @Inject constructor(
             is AddBankCardAction.CvvChanged -> mutateForm { it.copy(cardCvv = action.value) }
             is AddBankCardAction.CvvVisibilityChanged -> mutateForm { it.copy(isCvvVisible = action.visible) }
             is AddBankCardAction.ExpiryChanged -> mutateForm {
-                if (action.month == null && action.year == null) {
-                    it.withoutCardExpiry()
-                } else {
-                    requireNotNull(action.month)
-                    requireNotNull(action.year)
-                    it.withCardExpiry(action.month, action.year)
-                }
+                it.copy(cardExpiry = action.value)
             }
             is AddBankCardAction.TagsChanged -> mutateForm { it.copy(tags = action.value) }
             is AddBankCardAction.BillingAddressChanged -> mutateForm { it.copy(billingAddress = action.value) }
@@ -65,29 +60,25 @@ class AddBankCardViewModel @Inject constructor(
 
     private fun mutateForm(transform: (AddBankCardFormState) -> AddBankCardFormState) {
         val current = _uiState.value
-        if (current.isSaving) return
+        if (current.savePhase == AddBankCardSavePhase.Saving) return
         val form = transform(current.form)
-        _uiState.value = current.copy(form = form, canSave = form.isValid)
+        _uiState.value = current.copy(form = form)
     }
 
     private fun updateCardNumber(value: String) {
         val digits = value.filter(Char::isDigit)
-        val validationResult = CardNumberValidator.validate(digits)
         mutateForm {
             it.copy(
                 cardNumber = value,
-                cardNumberError = (validationResult as? ValidationResult.Invalid)?.message,
-                inferredNetwork = if (validationResult is ValidationResult.Valid) {
-                    CardNumberValidator.inferNetwork(digits)
-                } else null,
+                cardNumberValidation = CardNumberValidator.validate(digits),
             )
         }
     }
 
     private fun save() {
         val current = _uiState.value
-        if (!current.canSave || current.isSaving) return
-        _uiState.value = current.copy(canSave = false, isSaving = true)
+        if (!current.canSave) return
+        _uiState.value = current.copy(savePhase = AddBankCardSavePhase.Saving)
         viewModelScope.launch {
             try {
                 when (val result = createEntryUseCase(current.form.toEntryDraft())) {
@@ -106,8 +97,7 @@ class AddBankCardViewModel @Inject constructor(
     }
 
     private suspend fun restoreAfterFailure(message: String?) {
-        val form = _uiState.value.form
-        _uiState.value = _uiState.value.copy(canSave = form.isValid, isSaving = false)
+        _uiState.value = _uiState.value.copy(savePhase = AddBankCardSavePhase.Idle)
         _effects.send(EditorSaveEffect.Failed(message))
     }
 

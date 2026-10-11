@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpAction
 import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpCodeState
+import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpSavePhase
 import com.aozijx.passly.presentation.shared.components.NextFocusTextField
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.EntryEditorSection
@@ -34,7 +35,7 @@ fun AddOtpEditorScreen(
     AddEntryScaffold(
         title = stringResource(R.string.vault_add_otp_title),
         canSave = state.canSave,
-        isSaving = state.isSaving,
+        isSaving = state.savePhase == AddOtpSavePhase.Saving,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
         onSave = {

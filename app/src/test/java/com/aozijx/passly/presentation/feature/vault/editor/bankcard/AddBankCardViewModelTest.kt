@@ -9,13 +9,14 @@ import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.feature.vault.editor.bankcard.CardNetwork
+import com.aozijx.passly.feature.vault.editor.bankcard.CardNetworkMatch
+import com.aozijx.passly.feature.vault.editor.bankcard.CardNumberValidationResult
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryDraftMaterializer
 import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.Rule
@@ -33,9 +34,31 @@ class AddBankCardViewModelTest {
 
         val state: AddBankCardUiState = viewModel.uiState.value
         assertTrue(state.canSave)
-        assertNull(state.form.cardNumberError)
-        assertEquals(CardNetwork.VISA, state.form.inferredNetwork)
+        assertEquals(
+            CardNumberValidationResult.Valid(CardNetworkMatch.Matched(CardNetwork.VISA)),
+            state.form.cardNumberValidation,
+        )
         assertEquals("4111 1111 1111 1111", state.form.cardNumber)
+        assertEquals(AddBankCardSavePhase.Idle, state.savePhase)
+    }
+
+    @Test
+    fun saveCapabilityIsDerivedFromValidationAndSavePhase() {
+        val form = AddBankCardFormState(
+            title = "Visa",
+            cardNumber = "4111111111111111",
+            cardNumberValidation = CardNumberValidationResult.Valid(
+                CardNetworkMatch.Matched(CardNetwork.VISA),
+            ),
+        )
+
+        assertTrue(AddBankCardUiState(form = form).canSave)
+        assertTrue(
+            !AddBankCardUiState(
+                form = form,
+                savePhase = AddBankCardSavePhase.Saving,
+            ).canSave,
+        )
     }
 
     private fun createEntryUseCase() = CreateEntryUseCase(

@@ -54,6 +54,15 @@
 - nullable 只表达真实的“不存在”，不要用作多状态 flag。
 - 对安全相关失败保留结构化错误码，UI 再映射文案。
 
+必须：
+
+- 加载、保存、验证、导入等互斥阶段由所属 Feature 的 `sealed interface` 或有限枚举穷尽表达，
+  不用 `isLoading/isSaving + error? + result?` 组合推断。
+- `canSave`、`canSubmit`、`isValid` 等能力值从当前输入和操作阶段派生，不作为可独立写入的第二状态源。
+- 成对或成组选择必须原子建模，例如银行卡有效期使用 `NotSet / Selected(month, year)`，不得允许只存在月份或年份。
+- 固定校验失败使用 enum/sealed reason，Android 文案只在 UI 层通过资源映射；业务层不得返回硬编码展示字符串。
+- nullable 仍用于真实可选内容；设置开关、密码可见性等天然二值事实继续使用 Boolean，不做无意义包装。
+
 ## 敏感数据和内存规则
 
 必须：

@@ -14,13 +14,12 @@ class BankCardFormMapperTest {
     fun toEntryDraft_mapsCardFieldsAndNormalizesExpiry() {
         val draft = AddBankCardFormState(
             title = " Personal Visa ",
-            cardType = CardType.CREDIT,
+            cardType = CardTypeSelection.Selected(CardType.CREDIT),
             cardholder = " Ada Lovelace ",
             cardNumber = " 4111 1111 1111 1111 ",
             cardCvv = " 1 23 ",
             paymentPin = " 1 2 3 4 ",
-            cardExpiryMonth = " 03 ",
-            cardExpiryYear = " 2030 ",
+            cardExpiry = CardExpirySelection.Selected(month = 3, year = 2030),
             billingAddress = " London ",
             tags = " personal, card ",
             notes = " primary ",
@@ -44,8 +43,7 @@ class BankCardFormMapperTest {
         val draft = AddBankCardFormState(
             title = "Card",
             cardNumber = "4111",
-            cardExpiryMonth = " ",
-            cardExpiryYear = " ",
+            cardExpiry = CardExpirySelection.NotSet,
         ).toEntryDraft()
 
         assertNull(draft[FieldKey.CARD_EXPIRATION])

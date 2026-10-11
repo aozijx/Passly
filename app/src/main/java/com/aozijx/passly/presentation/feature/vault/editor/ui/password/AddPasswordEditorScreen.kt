@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordAction
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordUiState
+import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordSavePhase
 import com.aozijx.passly.presentation.shared.components.NextFocusTextField
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.EntryEditorSection
@@ -48,7 +49,7 @@ fun AddPasswordEditorScreen(
     AddEntryScaffold(
         title = stringResource(R.string.vault_add_password_title),
         canSave = state.canSave,
-        isSaving = state.isSaving,
+        isSaving = state.savePhase == AddPasswordSavePhase.Saving,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
         onSave = ::save,
@@ -116,7 +117,7 @@ fun AddPasswordEditorScreen(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        if (form.isValid) {
+                        if (state.canSave) {
                             focusManager.clearFocus(force = true)
                             save()
                         }

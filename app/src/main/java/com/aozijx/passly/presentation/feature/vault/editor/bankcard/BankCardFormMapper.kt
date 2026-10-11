@@ -14,25 +14,30 @@ fun AddBankCardFormState.toEntryDraft(): EntryDraft {
         .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text(title.trim()))
         .withValue(definition, FieldKey.CARD_NUMBER, EntryDraftValue.Text(cardNumber.trim()))
 
-    draft = cardType?.let {
-        draft.withValue(definition, FieldKey.CARD_TYPE, EntryDraftValue.Text(it.name))
-    } ?: draft
+    draft = when (val selection = cardType) {
+        CardTypeSelection.Unselected -> draft
+        is CardTypeSelection.Selected -> draft.withValue(
+            definition,
+            FieldKey.CARD_TYPE,
+            EntryDraftValue.Text(selection.type.name),
+        )
+    }
     draft = draft.withOptionalText(definition, FieldKey.CARD_HOLDER, cardholder)
     draft = draft.withOptionalText(definition, FieldKey.CARD_CVV, cardCvv)
     draft = draft.withOptionalText(definition, FieldKey.PAYMENT_PIN, paymentPin)
     draft = draft.withOptionalText(definition, FieldKey.BILLING_ADDRESS, billingAddress)
     draft = draft.withOptionalText(definition, FieldKey.NOTES, notes)
-    normalizedCardExpiry(cardExpiryMonth, cardExpiryYear)?.let {
-        draft = draft.withValue(definition, FieldKey.CARD_EXPIRATION, EntryDraftValue.Text(it))
+    when (val selection = cardExpiry) {
+        CardExpirySelection.NotSet -> Unit
+        is CardExpirySelection.Selected -> {
+            draft = draft.withValue(
+                definition,
+                FieldKey.CARD_EXPIRATION,
+                EntryDraftValue.Text(selection.storageValue),
+            )
+        }
     }
     return draft.withTags(definition, tags)
-}
-
-internal fun normalizedCardExpiry(month: String, year: String): String? {
-    val normalizedMonth = month.trim()
-    val normalizedYear = year.trim()
-    if (normalizedMonth.isEmpty() && normalizedYear.isEmpty()) return null
-    return "$normalizedMonth/$normalizedYear"
 }
 
 private fun EntryDraft.withOptionalText(

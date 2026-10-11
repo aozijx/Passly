@@ -54,6 +54,8 @@
     <string name="card_type">Card type</string>
     <string name="card_type_debit">Debit card</string>
     <string name="card_type_credit">Credit card</string>
+    <string name="card_number_invalid_length">Card number length is invalid</string>
+    <string name="card_number_checksum_failed">Card number checksum failed</string>
     <string name="payment_pin">Payment PIN</string>
     <string name="billing_address">Billing address</string>
 

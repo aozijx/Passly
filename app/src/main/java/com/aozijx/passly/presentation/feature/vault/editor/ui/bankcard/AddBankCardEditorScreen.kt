@@ -36,7 +36,11 @@ import com.aozijx.passly.presentation.feature.vault.editor.ui.common.AddEntrySca
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.EntryEditorSection
 import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardAction
 import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardUiState
+import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardSavePhase
 import com.aozijx.passly.presentation.feature.vault.editor.bankcard.CardType
+import com.aozijx.passly.presentation.feature.vault.editor.bankcard.CardTypeSelection
+import com.aozijx.passly.feature.vault.editor.bankcard.CardNumberInvalidReason
+import com.aozijx.passly.feature.vault.editor.bankcard.CardNumberValidationResult
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,7 +64,7 @@ fun AddBankCardEditorScreen(
     AddEntryScaffold(
         title = stringResource(R.string.vault_add_bank_card_title),
         canSave = state.canSave,
-        isSaving = state.isSaving,
+        isSaving = state.savePhase == AddBankCardSavePhase.Saving,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
         onSave = ::save,
@@ -92,8 +96,15 @@ fun AddBankCardEditorScreen(
                 label = stringResource(R.string.card_number),
                 visualTransformation = if (form.isCardNumberVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardType = KeyboardType.Password,
-                isError = form.cardNumberError != null,
-                supportingText = form.cardNumberError?.let { { Text(it) } },
+                isError = form.cardNumberValidation is CardNumberValidationResult.Invalid,
+                supportingText = when (val validation = form.cardNumberValidation) {
+                    is CardNumberValidationResult.Invalid -> {
+                        { Text(validation.reason.label()) }
+                    }
+                    CardNumberValidationResult.Empty,
+                    is CardNumberValidationResult.Valid,
+                    -> null
+                },
                 trailingIcon = {
                     IconButton(onClick = {
                         onAction(AddBankCardAction.CardNumberVisibilityChanged(!form.isCardNumberVisible))
@@ -140,10 +151,9 @@ fun AddBankCardEditorScreen(
                 }
             )
             CardExpiryField(
-                month = form.cardExpiryMonth.toIntOrNull(),
-                year = form.cardExpiryYear.toIntOrNull(),
-                onExpiryChanged = { month, year ->
-                    onAction(AddBankCardAction.ExpiryChanged(month, year))
+                selection = form.cardExpiry,
+                onExpiryChanged = { selection ->
+                    onAction(AddBankCardAction.ExpiryChanged(selection))
                 },
             )
         }
@@ -168,7 +178,7 @@ fun AddBankCardEditorScreen(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        if (form.isValid) {
+                        if (state.canSave) {
                             focusManager.clearFocus(force = true)
                             save()
                         }
@@ -182,7 +192,7 @@ fun AddBankCardEditorScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CardTypeDropdown(
-    selected: CardType?,
+    selected: CardTypeSelection,
     onSelected: (CardType) -> Unit,
     label: String,
 ) {
@@ -192,7 +202,10 @@ private fun CardTypeDropdown(
         onExpandedChange = { expanded = it },
     ) {
         OutlinedTextField(
-            value = selected?.label().orEmpty(),
+            value = when (selected) {
+                CardTypeSelection.Unselected -> ""
+                is CardTypeSelection.Selected -> selected.type.label()
+            },
             onValueChange = {},
             label = { Text(label) },
             readOnly = true,
@@ -221,3 +234,11 @@ private fun CardTypeDropdown(
 
 @Composable
 private fun CardType.label(): String = stringResource(labelRes)
+
+@Composable
+private fun CardNumberInvalidReason.label(): String = stringResource(
+    when (this) {
+        CardNumberInvalidReason.InvalidLength -> R.string.card_number_invalid_length
+        CardNumberInvalidReason.ChecksumFailed -> R.string.card_number_checksum_failed
+    },
+)

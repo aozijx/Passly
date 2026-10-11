@@ -22,7 +22,8 @@ class BankCardEditorOwnershipBoundaryTest {
         assertFalse(route.contains("fun submit"))
         assertTrue(screen.contains("state: AddBankCardUiState"))
         assertTrue(screen.contains("onAction: (AddBankCardAction) -> Unit"))
-        assertTrue(screen.contains("selected: CardType?"))
+        assertTrue(screen.contains("selected: CardTypeSelection"))
+        assertFalse(screen.contains("selected: CardType?"))
         assertFalse(uiRoot.resolve("BankCardEditorContract.kt").exists())
     }
 

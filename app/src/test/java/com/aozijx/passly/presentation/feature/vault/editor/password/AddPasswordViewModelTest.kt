@@ -32,8 +32,22 @@ class AddPasswordViewModelTest {
 
         val state: AddPasswordUiState = viewModel.uiState.value
         assertTrue(state.canSave)
+        assertEquals(AddPasswordSavePhase.Idle, state.savePhase)
         assertEquals("", state.form.username)
         assertEquals(" secret ", state.form.password)
+    }
+
+    @Test
+    fun saveCapabilityIsDerivedFromFormAndSavePhase() {
+        val form = AddPasswordFormState(title = "Mail", password = "secret")
+
+        assertTrue(AddPasswordUiState(form = form).canSave)
+        assertTrue(
+            !AddPasswordUiState(
+                form = form,
+                savePhase = AddPasswordSavePhase.Saving,
+            ).canSave,
+        )
     }
 
     @Test

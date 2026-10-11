@@ -15,6 +15,13 @@ data class AddPasswordFormState(
 
 data class AddPasswordUiState(
     val form: AddPasswordFormState = AddPasswordFormState(),
-    val canSave: Boolean = false,
-    val isSaving: Boolean = false,
-)
+    val savePhase: AddPasswordSavePhase = AddPasswordSavePhase.Idle,
+) {
+    val canSave: Boolean
+        get() = form.isValid && savePhase == AddPasswordSavePhase.Idle
+}
+
+sealed interface AddPasswordSavePhase {
+    data object Idle : AddPasswordSavePhase
+    data object Saving : AddPasswordSavePhase
+}

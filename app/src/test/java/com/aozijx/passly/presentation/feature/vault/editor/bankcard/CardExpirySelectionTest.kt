@@ -20,16 +20,14 @@ class CardExpirySelectionTest {
     }
 
     @Test
-    fun withCardExpiry_updatesMonthAndYearAtomically() {
-        val form = AddBankCardFormState().withCardExpiry(month = 3, year = 1998)
+    fun selectedExpiryKeepsMonthAndYearAtomic() {
+        val expiry = CardExpirySelection.Selected(month = 3, year = 1998)
 
-        assertEquals("03", form.cardExpiryMonth)
-        assertEquals("1998", form.cardExpiryYear)
-        assertEquals(AddBankCardFormState(), form.withoutCardExpiry())
+        assertEquals("03/1998", expiry.storageValue)
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun withCardExpiry_rejectsInvalidMonth() {
-        AddBankCardFormState().withCardExpiry(month = 13, year = 2026)
+    fun selectedExpiryRejectsInvalidMonth() {
+        CardExpirySelection.Selected(month = 13, year = 2026)
     }
 }

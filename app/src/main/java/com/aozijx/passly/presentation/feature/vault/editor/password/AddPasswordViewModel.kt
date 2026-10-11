@@ -49,15 +49,15 @@ class AddPasswordViewModel @Inject constructor(
 
     private fun mutateForm(transform: (AddPasswordFormState) -> AddPasswordFormState) {
         val current = _uiState.value
-        if (current.isSaving) return
+        if (current.savePhase == AddPasswordSavePhase.Saving) return
         val form = transform(current.form)
-        _uiState.value = current.copy(form = form, canSave = form.isValid)
+        _uiState.value = current.copy(form = form)
     }
 
     private fun save() {
         val current = _uiState.value
-        if (!current.canSave || current.isSaving) return
-        _uiState.value = current.copy(canSave = false, isSaving = true)
+        if (!current.canSave) return
+        _uiState.value = current.copy(savePhase = AddPasswordSavePhase.Saving)
         viewModelScope.launch {
             try {
                 when (val result = createEntryUseCase(current.form.toEntryDraft())) {
@@ -76,8 +76,7 @@ class AddPasswordViewModel @Inject constructor(
     }
 
     private suspend fun restoreAfterFailure(message: String?) {
-        val form = _uiState.value.form
-        _uiState.value = _uiState.value.copy(canSave = form.isValid, isSaving = false)
+        _uiState.value = _uiState.value.copy(savePhase = AddPasswordSavePhase.Idle)
         _effects.send(EditorSaveEffect.Failed(message))
     }
 
