@@ -31,7 +31,8 @@ import com.aozijx.passly.core.ui.components.common.InputActionButton
 import com.aozijx.passly.core.ui.components.common.InputActionButtonConfig
 import com.aozijx.passly.core.ui.components.common.InputActionButtonState
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.presentation.feature.settings.security.RecoveryCodeDraftStatus
+import com.aozijx.passly.presentation.feature.settings.security.RecoveryCodeDraftUiState
+import com.aozijx.passly.presentation.feature.settings.security.RecoveryCodeVerificationUiState
 import com.aozijx.passly.presentation.feature.settings.security.RecoveryCodeSettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.RecoveryCodeSettingsUiState
 
@@ -42,7 +43,15 @@ fun RecoveryCodeDetail(
 ) {
     var showRegenerateConfirm by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
-    val verifyInput = state.verificationInput.toUiString()
+    val verification = state.verification
+    val verifyInput = verification.input.toUiString()
+    val verificationResult = when (verification) {
+        is RecoveryCodeVerificationUiState.Accepted -> true
+        is RecoveryCodeVerificationUiState.Rejected,
+        is RecoveryCodeVerificationUiState.Failed -> false
+        is RecoveryCodeVerificationUiState.Editing,
+        is RecoveryCodeVerificationUiState.Verifying -> null
+    }
 
     Column(
         modifier = Modifier
@@ -82,7 +91,7 @@ fun RecoveryCodeDetail(
         if (!state.hasRecoveryCode) {
             Button(
                 onClick = { onAction(RecoveryCodeSettingsAction.Generate) },
-                enabled = state.draftStatus != RecoveryCodeDraftStatus.CREATING,
+                enabled = state.draft !is RecoveryCodeDraftUiState.Creating,
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large
             ) {
@@ -106,12 +115,12 @@ fun RecoveryCodeDetail(
                 state = InputActionButtonState(
                     value = verifyInput,
                     expanded = isExpanded,
-                    progress = state.isVerifying,
-                    result = state.verificationResult,
+                    progress = verification is RecoveryCodeVerificationUiState.Verifying,
+                    result = verificationResult,
                 ),
                 config = InputActionButtonConfig(
                     icon = Icons.Default.Restore,
-                    containerColor = when (state.verificationResult) {
+                    containerColor = when (verificationResult) {
                         true -> MaterialTheme.colorScheme.secondaryContainer
                         false -> MaterialTheme.colorScheme.errorContainer
                         else -> null

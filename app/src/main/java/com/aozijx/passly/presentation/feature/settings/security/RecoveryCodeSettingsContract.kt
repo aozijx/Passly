@@ -3,22 +3,30 @@ package com.aozijx.passly.presentation.feature.settings.security
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 
-enum class RecoveryCodeDraftStatus {
-    EMPTY,
-    CREATING,
-    READY,
-    EXPIRED,
-    COMMITTED,
-    FAILED,
+sealed interface RecoveryCodeDraftUiState {
+    data object Empty : RecoveryCodeDraftUiState
+    data object Creating : RecoveryCodeDraftUiState
+    data class Ready(val disclosure: SensitiveValue) : RecoveryCodeDraftUiState
+    data object Expired : RecoveryCodeDraftUiState
+    data object Committed : RecoveryCodeDraftUiState
+    data object Failed : RecoveryCodeDraftUiState
+}
+
+sealed interface RecoveryCodeVerificationUiState {
+    val input: SensitiveValue
+
+    data class Editing(override val input: SensitiveValue) : RecoveryCodeVerificationUiState
+    data class Verifying(override val input: SensitiveValue) : RecoveryCodeVerificationUiState
+    data class Accepted(override val input: SensitiveValue) : RecoveryCodeVerificationUiState
+    data class Rejected(override val input: SensitiveValue) : RecoveryCodeVerificationUiState
+    data class Failed(override val input: SensitiveValue) : RecoveryCodeVerificationUiState
 }
 
 data class RecoveryCodeSettingsUiState(
     val hasRecoveryCode: Boolean = false,
-    val draftStatus: RecoveryCodeDraftStatus = RecoveryCodeDraftStatus.EMPTY,
-    val disclosure: SensitiveValue = EmptySensitiveValue,
-    val verificationInput: SensitiveValue = EmptySensitiveValue,
-    val isVerifying: Boolean = false,
-    val verificationResult: Boolean? = null,
+    val draft: RecoveryCodeDraftUiState = RecoveryCodeDraftUiState.Empty,
+    val verification: RecoveryCodeVerificationUiState =
+        RecoveryCodeVerificationUiState.Editing(EmptySensitiveValue),
 )
 
 sealed interface RecoveryCodeSettingsAction {

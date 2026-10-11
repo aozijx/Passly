@@ -3,10 +3,11 @@ package com.aozijx.passly.presentation.feature.settings.security
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.settings.security.RecoveryCodeDraftInteractor
 import com.aozijx.passly.feature.settings.security.RecoveryCodeDraftResult
+import com.aozijx.passly.feature.settings.security.RecoveryCodeCommitResult
+import com.aozijx.passly.feature.settings.security.RecoveryCodeCopyResult
 import com.aozijx.passly.feature.settings.security.SecurityAuthenticationSettingsInteractor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -27,10 +28,10 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(
         RecoveryCodeSettingsUiState(
-            draftStatus = if (savedStateHandle.get<Boolean>(WAS_DISCLOSURE_OPEN) == true) {
-                RecoveryCodeDraftStatus.EXPIRED
+            draft = if (savedStateHandle.get<Boolean>(WAS_DISCLOSURE_OPEN) == true) {
+                RecoveryCodeDraftUiState.Expired
             } else {
-                RecoveryCodeDraftStatus.EMPTY
+                RecoveryCodeDraftUiState.Empty
             },
         ),
     )
@@ -53,109 +54,132 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
             is RecoveryCodeSettingsAction.VerificationInputChanged ->
                 updateVerificationInput(action.value)
             RecoveryCodeSettingsAction.Verify -> verify()
-            RecoveryCodeSettingsAction.ClearVerificationResult ->
-                _uiState.update { it.copy(verificationResult = null) }
+            RecoveryCodeSettingsAction.ClearVerificationResult -> clearVerificationResult()
         }
     }
 
     private fun generate() {
-        if (_uiState.value.draftStatus == RecoveryCodeDraftStatus.CREATING) return
+        if (_uiState.value.draft is RecoveryCodeDraftUiState.Creating) return
         viewModelScope.launch {
-            clearDisclosure()
+            replaceDraft(RecoveryCodeDraftUiState.Creating)
             savedStateHandle[WAS_DISCLOSURE_OPEN] = false
-            _uiState.update { it.copy(draftStatus = RecoveryCodeDraftStatus.CREATING) }
             try {
                 when (val result = draftInteractor.generate()) {
                     is RecoveryCodeDraftResult.Ready -> {
                         savedStateHandle[WAS_DISCLOSURE_OPEN] = true
-                        _uiState.update {
-                            it.copy(
-                                draftStatus = RecoveryCodeDraftStatus.READY,
-                                disclosure = result.disclosure,
-                            )
-                        }
+                        replaceDraft(RecoveryCodeDraftUiState.Ready(result.disclosure))
                     }
-                    RecoveryCodeDraftResult.Cancelled -> _uiState.update {
-                        it.copy(draftStatus = RecoveryCodeDraftStatus.EMPTY)
-                    }
-                    RecoveryCodeDraftResult.Failed -> _uiState.update {
-                        it.copy(draftStatus = RecoveryCodeDraftStatus.FAILED)
-                    }
+                    RecoveryCodeDraftResult.Cancelled ->
+                        replaceDraft(RecoveryCodeDraftUiState.Empty)
+                    RecoveryCodeDraftResult.Failed ->
+                        replaceDraft(RecoveryCodeDraftUiState.Failed)
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Throwable) {
-                _uiState.update { it.copy(draftStatus = RecoveryCodeDraftStatus.FAILED) }
+                replaceDraft(RecoveryCodeDraftUiState.Failed)
             }
         }
     }
 
     private fun copy() {
         viewModelScope.launch {
-            if (draftInteractor.copy()) _effects.send(RecoveryCodeSettingsEffect.Copied)
+            when (draftInteractor.copy()) {
+                RecoveryCodeCopyResult.Copied ->
+                    _effects.send(RecoveryCodeSettingsEffect.Copied)
+                RecoveryCodeCopyResult.NoActiveDraft -> Unit
+            }
         }
     }
 
     private fun confirmAndEnable() {
         viewModelScope.launch {
-            if (draftInteractor.commit() == true) {
-                clearDisclosure()
-                savedStateHandle[WAS_DISCLOSURE_OPEN] = false
-                _uiState.update {
-                    it.copy(
-                        hasRecoveryCode = true,
-                        draftStatus = RecoveryCodeDraftStatus.COMMITTED,
-                    )
+            when (draftInteractor.commit()) {
+                RecoveryCodeCommitResult.Committed -> {
+                    savedStateHandle[WAS_DISCLOSURE_OPEN] = false
+                    replaceDraft(RecoveryCodeDraftUiState.Committed)
+                    _uiState.update { it.copy(hasRecoveryCode = true) }
                 }
-            } else {
-                draftInteractor.dismiss()
-                clearDisclosure()
-                savedStateHandle[WAS_DISCLOSURE_OPEN] = false
-                _uiState.update { it.copy(draftStatus = RecoveryCodeDraftStatus.FAILED) }
+                RecoveryCodeCommitResult.Failed,
+                RecoveryCodeCommitResult.NoActiveDraft -> {
+                    draftInteractor.dismiss()
+                    savedStateHandle[WAS_DISCLOSURE_OPEN] = false
+                    replaceDraft(RecoveryCodeDraftUiState.Failed)
+                }
             }
         }
     }
 
     private fun dismissDisclosure() {
         draftInteractor.dismiss()
-        clearDisclosure()
         savedStateHandle[WAS_DISCLOSURE_OPEN] = false
-        _uiState.update { it.copy(draftStatus = RecoveryCodeDraftStatus.EMPTY) }
+        replaceDraft(RecoveryCodeDraftUiState.Empty)
     }
 
     private fun updateVerificationInput(value: String) {
-        _uiState.value.verificationInput.wipe()
+        val previous = _uiState.value.verification.input
+        val replacement = OwnedChars.fromString(value)
         _uiState.update {
-            it.copy(
-                verificationInput = OwnedChars.fromString(value),
-                verificationResult = null,
-            )
+            it.copy(verification = RecoveryCodeVerificationUiState.Editing(replacement))
         }
+        previous.wipe()
     }
 
     private fun verify() {
-        if (_uiState.value.isVerifying || _uiState.value.verificationInput.isEmpty) return
+        val current = _uiState.value.verification
+        if (current is RecoveryCodeVerificationUiState.Verifying || current.input.isEmpty) return
         viewModelScope.launch {
-            val code = _uiState.value.verificationInput.toCharArray()
-            _uiState.update { it.copy(isVerifying = true, verificationResult = null) }
+            val input = _uiState.value.verification.input
+            val code = input.toCharArray()
+            _uiState.update {
+                it.copy(verification = RecoveryCodeVerificationUiState.Verifying(input))
+            }
             try {
                 val valid = authenticationSettings.verifyRecoveryCode(code)
-                _uiState.update { it.copy(verificationResult = valid) }
+                _uiState.update {
+                    it.copy(
+                        verification = if (valid) {
+                            RecoveryCodeVerificationUiState.Accepted(input)
+                        } else {
+                            RecoveryCodeVerificationUiState.Rejected(input)
+                        },
+                    )
+                }
+            } catch (cancelled: CancellationException) {
+                _uiState.update {
+                    it.copy(verification = RecoveryCodeVerificationUiState.Editing(input))
+                }
+                throw cancelled
+            } catch (_: Exception) {
+                _uiState.update {
+                    it.copy(verification = RecoveryCodeVerificationUiState.Failed(input))
+                }
             } finally {
                 code.fill('\u0000')
-                _uiState.update { it.copy(isVerifying = false) }
             }
         }
     }
 
-    private fun clearDisclosure() {
-        _uiState.value.disclosure.wipe()
-        _uiState.update { it.copy(disclosure = EmptySensitiveValue) }
+    private fun clearVerificationResult() {
+        val current = _uiState.value.verification
+        if (current is RecoveryCodeVerificationUiState.Verifying ||
+            current is RecoveryCodeVerificationUiState.Editing
+        ) return
+        _uiState.update {
+            it.copy(verification = RecoveryCodeVerificationUiState.Editing(current.input))
+        }
+    }
+
+    private fun replaceDraft(draft: RecoveryCodeDraftUiState) {
+        val previous = (_uiState.value.draft as? RecoveryCodeDraftUiState.Ready)?.disclosure
+        _uiState.update { it.copy(draft = draft) }
+        val current = (draft as? RecoveryCodeDraftUiState.Ready)?.disclosure
+        if (previous !== current) previous?.wipe()
     }
 
     override fun onCleared() {
-        _uiState.value.disclosure.wipe()
-        _uiState.value.verificationInput.wipe()
+        (_uiState.value.draft as? RecoveryCodeDraftUiState.Ready)?.disclosure?.wipe()
+        _uiState.value.verification.input.wipe()
         draftInteractor.close()
     }
 

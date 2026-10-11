@@ -9,11 +9,11 @@ import com.aozijx.passly.R
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
+import com.aozijx.passly.presentation.feature.settings.main.general.CacheSizeUiState
 
 @Composable
 fun CacheSettingsSection(
-    cacheSize: String?,
-    isLoading: Boolean,
+    state: CacheSizeUiState,
     onClearCache: () -> Unit
 ) {
     SettingsSectionTitle(text = stringResource(R.string.settings_general_cache_section))
@@ -23,8 +23,8 @@ fun CacheSettingsSection(
                 key = "general.clear_cache",
                 icon = Icons.Default.DeleteSweep,
                 title = stringResource(R.string.settings_general_clear_cache),
-                value = cacheSize,
-                isLoading = isLoading,
+                value = (state as? CacheSizeUiState.Available)?.formattedSize,
+                isLoading = state is CacheSizeUiState.Loading,
                 onClick = onClearCache
             )
         )

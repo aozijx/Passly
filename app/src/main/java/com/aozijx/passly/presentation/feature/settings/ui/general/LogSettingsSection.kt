@@ -30,13 +30,13 @@ import com.aozijx.passly.R
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
+import com.aozijx.passly.presentation.feature.settings.main.general.DiagnosticsLogPageUiState
+import com.aozijx.passly.presentation.feature.settings.main.general.DiagnosticsOverlayUiState
+import com.aozijx.passly.presentation.feature.settings.main.general.DiagnosticsSettingsUiState
 
 @Composable
 fun LogSettingsSection(
-    isViewerOpen: Boolean,
-    logContent: String?,
-    logByteCount: Int,
-    isClearConfirmationOpen: Boolean,
+    state: DiagnosticsSettingsUiState,
     onOpenViewer: () -> Unit,
     onCloseViewer: () -> Unit,
     onExport: () -> Unit,
@@ -71,21 +71,19 @@ fun LogSettingsSection(
                 key = "logs.clear",
                 icon = Icons.Default.DeleteSweep,
                 title = clearLogsTitle,
-                value = formatLogSize(logByteCount),
+                value = formatLogSize(state.logByteCount),
                 onClick = onRequestClear,
             )
         )
     )
 
-    if (isViewerOpen) {
-        LogViewerSheet(
-            content = logContent,
+    when (val overlay = state.overlay) {
+        DiagnosticsOverlayUiState.Closed -> Unit
+        is DiagnosticsOverlayUiState.Viewer -> LogViewerSheet(
+            page = overlay.page,
             onDismiss = onCloseViewer,
         )
-    }
-
-    if (isClearConfirmationOpen) {
-        ClearLogsConfirmDialog(
+        DiagnosticsOverlayUiState.ClearConfirmation -> ClearLogsConfirmDialog(
             onConfirm = onConfirmClear,
             onDismiss = onDismissClear,
         )
@@ -94,11 +92,14 @@ fun LogSettingsSection(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun LogViewerSheet(content: String?, onDismiss: () -> Unit) {
-    val displayText = when {
-        content == null -> stringResource(R.string.settings_log_loading)
-        content.isBlank() -> stringResource(R.string.settings_log_empty)
-        else -> content
+private fun LogViewerSheet(page: DiagnosticsLogPageUiState, onDismiss: () -> Unit) {
+    val displayText = when (page) {
+        DiagnosticsLogPageUiState.Loading -> stringResource(R.string.settings_log_loading)
+        is DiagnosticsLogPageUiState.Content -> if (page.text.isBlank()) {
+            stringResource(R.string.settings_log_empty)
+        } else {
+            page.text
+        }
     }
     ModalBottomSheet(
         onDismissRequest = onDismiss,

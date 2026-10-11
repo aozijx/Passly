@@ -18,31 +18,32 @@ internal object DiagnosticsSettingsReducer {
         mutation: DiagnosticsSettingsMutation,
     ): DiagnosticsSettingsUiState = when (mutation) {
         DiagnosticsSettingsMutation.ViewerOpened -> state.copy(
-            isViewerOpen = true,
-            logContent = null,
+            overlay = DiagnosticsOverlayUiState.Viewer(DiagnosticsLogPageUiState.Loading),
         )
         DiagnosticsSettingsMutation.ViewerClosed -> state.copy(
-            isViewerOpen = false,
-            logContent = null,
+            overlay = DiagnosticsOverlayUiState.Closed,
         )
-        is DiagnosticsSettingsMutation.LogPageLoaded -> if (state.isViewerOpen) {
+        is DiagnosticsSettingsMutation.LogPageLoaded -> if (
+            state.overlay is DiagnosticsOverlayUiState.Viewer
+        ) {
             state.copy(
-                logContent = mutation.content,
+                overlay = DiagnosticsOverlayUiState.Viewer(
+                    DiagnosticsLogPageUiState.Content(mutation.content),
+                ),
                 logByteCount = mutation.byteCount,
             )
         } else {
             state
         }
         DiagnosticsSettingsMutation.ClearRequested -> state.copy(
-            isClearConfirmationOpen = true,
+            overlay = DiagnosticsOverlayUiState.ClearConfirmation,
         )
         DiagnosticsSettingsMutation.ClearDismissed -> state.copy(
-            isClearConfirmationOpen = false,
+            overlay = DiagnosticsOverlayUiState.Closed,
         )
         DiagnosticsSettingsMutation.LogsCleared -> state.copy(
-            logContent = null,
             logByteCount = 0,
-            isClearConfirmationOpen = false,
+            overlay = DiagnosticsOverlayUiState.Closed,
         )
     }
 }

@@ -83,8 +83,7 @@ internal fun GeneralRoute(
         item {
             SettingsSection {
                 CacheSettingsSection(
-                    cacheSize = generalState.cacheSize,
-                    isLoading = generalState.isCalculating,
+                    state = generalState.cache,
                     onClearCache = {
                         generalViewModel.onAction(GeneralSettingsAction.ClearCache)
                     },
@@ -93,10 +92,7 @@ internal fun GeneralRoute(
                 Spacer(Modifier.height(24.dp))
 
                 LogSettingsSection(
-                    isViewerOpen = diagnosticsState.isViewerOpen,
-                    logContent = diagnosticsState.logContent,
-                    logByteCount = diagnosticsState.logByteCount,
-                    isClearConfirmationOpen = diagnosticsState.isClearConfirmationOpen,
+                    state = diagnosticsState,
                     onOpenViewer = {
                         diagnosticsViewModel.onAction(DiagnosticsSettingsAction.OpenViewer)
                     },

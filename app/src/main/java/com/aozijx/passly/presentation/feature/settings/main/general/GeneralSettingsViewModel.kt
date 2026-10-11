@@ -6,6 +6,7 @@ import com.aozijx.passly.core.platform.cache.ByteSizeFormatter
 import com.aozijx.passly.feature.settings.general.AppCacheStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -63,20 +64,32 @@ class GeneralSettingsViewModel @Inject constructor(
     private fun refreshCacheSize() {
         cacheOperationJob?.cancel()
         cacheOperationJob = viewModelScope.launch {
-            _uiState.update { it.copy(isCalculating = true) }
-            val size = ByteSizeFormatter.format(cacheStore.sizeBytes())
-            _uiState.update { it.copy(cacheSize = size, isCalculating = false) }
+            _uiState.update { it.copy(cache = CacheSizeUiState.Loading) }
+            _uiState.update { it.copy(cache = readCacheSize()) }
         }
     }
 
     private fun clearCache() {
         cacheOperationJob?.cancel()
         cacheOperationJob = viewModelScope.launch {
-            _uiState.update { it.copy(isCalculating = true) }
-            cacheStore.clear()
-            val size = ByteSizeFormatter.format(cacheStore.sizeBytes())
-            _uiState.update { it.copy(cacheSize = size, isCalculating = false) }
-            _effects.trySend(GeneralSettingsEffect.CacheCleared)
+            _uiState.update { it.copy(cache = CacheSizeUiState.Loading) }
+            try {
+                cacheStore.clear()
+                _uiState.update { it.copy(cache = readCacheSize()) }
+                _effects.trySend(GeneralSettingsEffect.CacheCleared)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                _uiState.update { it.copy(cache = CacheSizeUiState.Unavailable) }
+            }
         }
+    }
+
+    private suspend fun readCacheSize(): CacheSizeUiState = try {
+        CacheSizeUiState.Available(ByteSizeFormatter.format(cacheStore.sizeBytes()))
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (_: Exception) {
+        CacheSizeUiState.Unavailable
     }
 }

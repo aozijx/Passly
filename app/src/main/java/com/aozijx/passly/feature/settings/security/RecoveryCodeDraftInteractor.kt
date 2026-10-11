@@ -15,6 +15,17 @@ sealed interface RecoveryCodeDraftResult {
     data object Failed : RecoveryCodeDraftResult
 }
 
+sealed interface RecoveryCodeCopyResult {
+    data object Copied : RecoveryCodeCopyResult
+    data object NoActiveDraft : RecoveryCodeCopyResult
+}
+
+sealed interface RecoveryCodeCommitResult {
+    data object Committed : RecoveryCodeCommitResult
+    data object Failed : RecoveryCodeCommitResult
+    data object NoActiveDraft : RecoveryCodeCommitResult
+}
+
 class RecoveryCodeDraftInteractor @Inject constructor(
     private val draftFactory: RecoveryCredentialFactory,
     private val clipboardWriter: SensitiveClipboardWriter,
@@ -30,23 +41,23 @@ class RecoveryCodeDraftInteractor @Inject constructor(
         }
     }
 
-    suspend fun copy(): Boolean {
-        val chars = activeDraft?.reveal() ?: return false
+    suspend fun copy(): RecoveryCodeCopyResult {
+        val chars = activeDraft?.reveal() ?: return RecoveryCodeCopyResult.NoActiveDraft
         return try {
             clipboardWriter.writeSensitive(String(chars))
-            true
+            RecoveryCodeCopyResult.Copied
         } finally {
             chars.fill('\u0000')
         }
     }
 
-    suspend fun commit(): Boolean? {
-        val draft = activeDraft ?: return null
+    suspend fun commit(): RecoveryCodeCommitResult {
+        val draft = activeDraft ?: return RecoveryCodeCommitResult.NoActiveDraft
         return if (draft.commit() is AuthenticationResult.Success) {
             activeDraft = null
-            true
+            RecoveryCodeCommitResult.Committed
         } else {
-            false
+            RecoveryCodeCommitResult.Failed
         }
     }
 

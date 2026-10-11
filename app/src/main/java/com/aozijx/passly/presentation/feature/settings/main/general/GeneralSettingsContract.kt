@@ -2,9 +2,14 @@ package com.aozijx.passly.presentation.feature.settings.main.general
 
 /** 通用设置页的页面级状态（MVI）。 */
 data class GeneralSettingsUiState(
-    val cacheSize: String? = null,
-    val isCalculating: Boolean = true,
+    val cache: CacheSizeUiState = CacheSizeUiState.Loading,
 )
+
+sealed interface CacheSizeUiState {
+    data object Loading : CacheSizeUiState
+    data class Available(val formattedSize: String) : CacheSizeUiState
+    data object Unavailable : CacheSizeUiState
+}
 
 /** 通用设置页的页面级动作（MVI）：状态变更类交互。 */
 sealed interface GeneralSettingsAction {

@@ -59,7 +59,9 @@ stateDiagram-v2
 ```
 
 - 旧 Recovery Envelope 在用户确认前保持有效；确认提交后旧码才失效。
-- 明文由 Activity-retained `RecoveryCodeDraft` 持有，不进入 StateFlow、SavedStateHandle、Bundle 或磁盘。
+- 可提交草稿由 Activity-retained `RecoveryCodeDraft` 持有；展示期间 presentation 只在
+  `RecoveryCodeDraftUiState.Ready` 分支持有独立的可擦除 disclosure。该副本不进入 SavedStateHandle、
+  Bundle 或磁盘，并在关闭、提交、替换及 ViewModel 清理时擦除。
 - SavedStateHandle 只保存 disclosure 标记和 generation ID。进程恢复但草稿不存在时显示
   “恢复码草稿已过期，请重新认证后生成”。
 - 恢复码不再产生普通 `Authenticated` 会话。验证成功后进入受限 `RecoveryMode`：数据库可以为恢复任务打开，

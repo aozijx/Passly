@@ -10,7 +10,7 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.core.crypto.MemoryCleaner
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.presentation.feature.settings.security.RecoveryCodeDraftStatus
+import com.aozijx.passly.presentation.feature.settings.security.RecoveryCodeDraftUiState
 import com.aozijx.passly.presentation.feature.settings.security.RecoveryCodeSettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.RecoveryCodeSettingsUiState
 import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
@@ -24,10 +24,10 @@ fun RecoveryCodeScreen(
     onBack: (() -> Unit)?,
 ) {
     val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
-    val errorMessage = when (state.draftStatus) {
-        RecoveryCodeDraftStatus.EXPIRED ->
+    val errorMessage = when (state.draft) {
+        RecoveryCodeDraftUiState.Expired ->
             stringResource(R.string.settings_recovery_code_draft_expired)
-        RecoveryCodeDraftStatus.FAILED ->
+        RecoveryCodeDraftUiState.Failed ->
             stringResource(R.string.settings_recovery_code_operation_failed)
         else -> null
     }
@@ -50,9 +50,9 @@ fun RecoveryCodeScreen(
         }
     }
 
-    if (state.draftStatus == RecoveryCodeDraftStatus.READY) {
+    (state.draft as? RecoveryCodeDraftUiState.Ready)?.let { ready ->
         RecoveryCodeSheet(
-            recoveryCode = state.disclosure.toUiString(),
+            recoveryCode = ready.disclosure.toUiString(),
             sheetState = sheetState,
             onCopy = { onAction(RecoveryCodeSettingsAction.Copy) },
             onConfirm = { onAction(RecoveryCodeSettingsAction.ConfirmAndEnable) },

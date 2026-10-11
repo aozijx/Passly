@@ -255,3 +255,11 @@ feature/settings/general/
   NotificationDetail.kt                # UI
   NotificationSettingsSection.kt       # UI 组件
 ```
+
+Settings 中的异步或弹层流程仍必须使用页面语义状态，而不是因为页面较小就退回多个标记：
+
+- 缓存大小使用 `Loading / Available / Unavailable`，不再组合 nullable size 与 `isCalculating`；
+- 诊断日志只允许 `Closed / Viewer(Loading|Content) / ClearConfirmation` 中的一个 overlay；
+- 恢复码草稿与验证分别使用封闭状态，Ready 独占 disclosure，验证的
+  `Editing / Verifying / Accepted / Rejected / Failed` 都携带同一个受控输入；
+- interactor 的复制、提交结果使用业务结果类型，不用 `Boolean?` 表示“没有草稿 / 失败 / 成功”。

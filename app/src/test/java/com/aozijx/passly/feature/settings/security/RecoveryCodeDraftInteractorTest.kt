@@ -9,7 +9,7 @@ import com.aozijx.passly.domain.access.model.RecoveryCredentialId
 import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -46,12 +46,12 @@ class RecoveryCodeDraftInteractorTest {
         val result = interactor.generate() as RecoveryCodeDraftResult.Ready
         result.disclosure.wipe()
 
-        assertTrue(interactor.copy())
+        assertSame(RecoveryCodeCopyResult.Copied, interactor.copy())
         assertEquals("recovery-code", clipboard.lastValue)
 
         interactor.dismiss()
         assertTrue(draft.closed)
-        assertNull(interactor.commit())
+        assertSame(RecoveryCodeCommitResult.NoActiveDraft, interactor.commit())
     }
 
     private class FakeDraft(private val value: String) : RecoveryCredentialDraft {
