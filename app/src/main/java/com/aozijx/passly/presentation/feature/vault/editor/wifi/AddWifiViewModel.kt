@@ -21,6 +21,12 @@ class AddWifiViewModel @Inject constructor(
     private val createEntryUseCase: CreateEntryUseCase,
     private val secureSessionAccessState: SecureSessionAccessState,
 ) : ViewModel() {
+    private sealed interface InitializationPhase {
+        data object Pending : InitializationPhase
+        data object Complete : InitializationPhase
+    }
+
+    private var initializationPhase: InitializationPhase = InitializationPhase.Pending
     private val _uiState = MutableStateFlow(AddWifiUiState())
     val uiState = _uiState.asStateFlow()
     private val _effects = Channel<EditorSaveEffect>(Channel.BUFFERED)
@@ -48,6 +54,17 @@ class AddWifiViewModel @Inject constructor(
             is AddWifiAction.TagsChanged -> mutateForm { it.copy(tags = action.value) }
             is AddWifiAction.ApplyScannedWifi -> mutateForm { it.applyScanned(action.payload) }
             AddWifiAction.Save -> save()
+        }
+    }
+
+    fun initialize(content: AddWifiInitialContent) {
+        if (initializationPhase == InitializationPhase.Complete) return
+        initializationPhase = InitializationPhase.Complete
+        when (content) {
+            AddWifiInitialContent.Blank,
+            AddWifiInitialContent.SeedUnavailable,
+            -> Unit
+            is AddWifiInitialContent.Scanned -> mutateForm { it.applyScanned(content.payload) }
         }
     }
 

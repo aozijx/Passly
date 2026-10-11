@@ -4,6 +4,7 @@ import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.policy.EntryViolationCode
 import com.aozijx.passly.domain.entry.policy.WifiCredentialValidation
+import com.aozijx.passly.feature.vault.wifi.WifiQrPayload
 
 enum class WifiTitleOrigin {
     EMPTY,
@@ -26,6 +27,12 @@ data class AddWifiFormState(
 sealed interface AddWifiSavePhase {
     data object Idle : AddWifiSavePhase
     data object Saving : AddWifiSavePhase
+}
+
+sealed interface AddWifiInitialContent {
+    data object Blank : AddWifiInitialContent
+    data class Scanned(val payload: WifiQrPayload) : AddWifiInitialContent
+    data object SeedUnavailable : AddWifiInitialContent
 }
 
 data class AddWifiUiState(

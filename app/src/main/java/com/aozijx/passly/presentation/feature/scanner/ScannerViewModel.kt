@@ -23,7 +23,7 @@ class ScannerViewModel @Inject constructor(
     private val clipboardWriter: SensitiveClipboardWriter,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ScannerUiState())
+    private val _uiState = MutableStateFlow<ScannerUiState>(ScannerUiState.Scanning)
     val uiState: StateFlow<ScannerUiState> = _uiState.asStateFlow()
 
     private val _effects = Channel<ScannerEffect>(Channel.BUFFERED)
@@ -43,9 +43,13 @@ class ScannerViewModel @Inject constructor(
 
     private fun onBarcodeDetected(barcode: String) {
         if (!scanSession.accept(barcode)) return
-        val result = ScannerResultClassifier.classify(barcode) ?: return
-        vibrate()
-        mutate(ScannerMutation.ScanCompleted(result))
+        when (val classification = ScannerResultClassifier.classify(barcode)) {
+            ScannerClassification.Empty -> Unit
+            is ScannerClassification.Classified -> {
+                vibrate()
+                mutate(ScannerMutation.ScanCompleted(classification.result))
+            }
+        }
     }
 
     private fun resetAndStart() {
@@ -59,7 +63,8 @@ class ScannerViewModel @Inject constructor(
     }
 
     private fun copyText() {
-        val text = (_uiState.value.result as? ScannerResult.PlainText)?.rawValue ?: return
+        val shownResult = _uiState.value as? ScannerUiState.ShowingResult ?: return
+        val text = (shownResult.result as? ScannerResult.PlainText)?.rawValue ?: return
         viewModelScope.launch {
             clipboardWriter.writeSensitive(text)
             _effects.send(ScannerEffect.CopySucceeded)
@@ -73,12 +78,14 @@ class ScannerViewModel @Inject constructor(
     }
 
     private fun decodeImage(image: ImageRef) {
+        mutate(ScannerMutation.ImageProcessingStarted)
         val uri = image.value.toUri()
         BarcodeImageDecoder.decodeFromUri(
             context = appContext,
             uri = uri,
             onSuccess = { onBarcodeDetected(it) },
             onFailure = { message ->
+                mutate(ScannerMutation.ImageProcessingFailed)
                 _effects.trySend(ScannerEffect.ShowError(message))
             }
         )

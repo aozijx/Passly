@@ -22,9 +22,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -38,19 +40,20 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
 import com.aozijx.passly.presentation.feature.scanner.ScannerCameraHost
-import com.aozijx.passly.presentation.feature.scanner.ScannerOtpConfirmation
+import com.aozijx.passly.presentation.feature.scanner.ScannerPurpose
 import com.aozijx.passly.presentation.feature.scanner.ScannerScreenAction
 import com.aozijx.passly.presentation.feature.scanner.ScannerUiState
 
 @Composable
 internal fun ScannerScreen(
     state: ScannerUiState,
-    otpConfirmation: ScannerOtpConfirmation,
+    purpose: ScannerPurpose,
     onAction: (ScannerScreenAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val adaptiveLayout = LocalPasslyAdaptiveLayout.current
     val motionScheme = MaterialTheme.motionScheme
+    val isScanning = state == ScannerUiState.Scanning
     BackHandler { onAction(ScannerScreenAction.Dismiss) }
 
     Box(
@@ -65,16 +68,16 @@ internal fun ScannerScreen(
             onPermissionDenied = {
                 onAction(ScannerScreenAction.CameraPermissionDenied)
             },
-            isScanning = state.isScanning,
+            isScanning = isScanning,
         )
-        ScannerViewfinder(isScanning = state.isScanning)
+        ScannerViewfinder(isScanning = isScanning)
         ScannerTopBar(
             onDismiss = { onAction(ScannerScreenAction.Dismiss) },
             onPickPhoto = { onAction(ScannerScreenAction.PickPhoto) },
         )
 
         AnimatedContent(
-            targetState = state.result,
+            targetState = state,
             transitionSpec = {
                 (fadeIn(animationSpec = motionScheme.fastEffectsSpec()) +
                     slideInVertically(
@@ -88,7 +91,7 @@ internal fun ScannerScreen(
                         ),
                 )
             },
-            contentKey = { result -> result?.javaClass },
+            contentKey = { scannerState -> scannerState::class },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
@@ -98,15 +101,36 @@ internal fun ScannerScreen(
                 )
                 .widthIn(max = 560.dp),
             label = "scanner-result",
-        ) { result ->
-            if (result != null) {
-                ScannerResultCard(
-                    result = result,
-                    otpConfirmation = otpConfirmation,
+        ) { scannerState ->
+            when (scannerState) {
+                is ScannerUiState.ShowingResult -> ScannerResultCard(
+                    result = scannerState.result,
+                    purpose = purpose,
                     compact = !adaptiveLayout.isAtLeastMedium,
                     onScanAgain = { onAction(ScannerScreenAction.ScanAgain) },
                     onConfirm = { onAction(ScannerScreenAction.ConfirmResult) },
                 )
+
+                ScannerUiState.ProcessingImage -> Surface(
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        Text(
+                            text = stringResource(R.string.scanner_processing_image),
+                            modifier = Modifier.padding(start = 12.dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                }
+
+                ScannerUiState.Scanning,
+                ScannerUiState.Stopped,
+                -> Unit
             }
         }
     }

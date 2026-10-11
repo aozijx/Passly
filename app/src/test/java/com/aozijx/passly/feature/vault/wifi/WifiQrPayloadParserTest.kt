@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.vault.wifi
 
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WifiQrPayloadParserTest {
@@ -15,7 +15,7 @@ class WifiQrPayloadParserTest {
             "WIFI:S:Office;T:WPA3;P:password;;" to WifiSecurityType.WpaPersonal,
             "WIFI:T:SAE;S:Office;P:password;;" to WifiSecurityType.WpaPersonal,
         ).forEach { (rawValue, expectedSecurity) ->
-            val payload = requireNotNull(WifiQrPayloadParser.parse(rawValue))
+            val payload = parsed(rawValue)
 
             assertEquals("Office", payload.ssid)
             assertEquals("password", payload.password)
@@ -30,7 +30,7 @@ class WifiQrPayloadParserTest {
             "WIFI:T:nopass;S:Guest;P:ignored;;",
             "WIFI:S:Guest;T:OPEN;P:ignored;;",
         ).forEach { rawValue ->
-            val payload = requireNotNull(WifiQrPayloadParser.parse(rawValue))
+            val payload = parsed(rawValue)
 
             assertEquals(WifiSecurityType.Open, payload.securityType)
             assertEquals("", payload.password)
@@ -40,10 +40,8 @@ class WifiQrPayloadParserTest {
 
     @Test
     fun `escaped delimiters and backslash are restored exactly once`() {
-        val payload = requireNotNull(
-            WifiQrPayloadParser.parse(
-                "WIFI:P:p\\;a\\\\s\\,s\\\"w\\:d;H:TrUe;S:Office\\; East;T:WPA;;",
-            ),
+        val payload = parsed(
+            "WIFI:P:p\\;a\\\\s\\,s\\\"w\\:d;H:TrUe;S:Office\\; East;T:WPA;;",
         )
 
         assertEquals("Office; East", payload.ssid)
@@ -52,17 +50,10 @@ class WifiQrPayloadParserTest {
     }
 
     @Test
-    fun `malformed or unsupported wifi values never expose a partial payload`() {
+    fun `malformed wifi values are explicit and never expose a partial payload`() {
         listOf(
             "WIFI:T:WPA;P:password;;",
             "WIFI:S:   ;T:WPA;P:password;;",
-            "WIFI:S:Office;T:vendor-private;P:password;;",
-            "WIFI:S:Office;T:WPA2-EAP;P:password;;",
-            "WIFI:S:Office;T:WPA3-EAP;P:password;;",
-            "WIFI:S:Office;T:WPA;E:TTLS;P:password;;",
-            "WIFI:S:Office;T:WPA;PH2:MSCHAPV2;P:password;;",
-            "WIFI:S:Office;T:WPA;A:anon;P:password;;",
-            "WIFI:S:Office;T:WPA;I:user;P:password;;",
             "WIFI:S:Office;T:WPA;H:yes;P:password;;",
             "WIFI:S:Office;T:WPA;P:password;",
             "WIFI:S:Office;T:WPA;P:password;;;",
@@ -72,9 +63,37 @@ class WifiQrPayloadParserTest {
             "WIFI:S:Office;T:WPA;P:first;P:second;;",
             "WIFI:S:Office;T:WPA;H:true;H:false;P:password;;",
             "WIFI:S:Office;broken;;",
-            "not-wifi:S:Office;;",
         ).forEach { rawValue ->
-            assertNull(rawValue, WifiQrPayloadParser.parse(rawValue))
+            assertEquals(rawValue, WifiQrParseResult.Malformed, WifiQrPayloadParser.parse(rawValue))
         }
+    }
+
+    @Test
+    fun `unsupported wifi security is distinct from malformed input`() {
+        listOf(
+            "WIFI:S:Office;T:vendor-private;P:password;;",
+            "WIFI:S:Office;T:WPA2-EAP;P:password;;",
+            "WIFI:S:Office;T:WPA3-EAP;P:password;;",
+            "WIFI:S:Office;T:WPA;E:TTLS;P:password;;",
+            "WIFI:S:Office;T:WPA;PH2:MSCHAPV2;P:password;;",
+            "WIFI:S:Office;T:WPA;A:anon;P:password;;",
+            "WIFI:S:Office;T:WPA;I:user;P:password;;",
+        ).forEach { rawValue ->
+            assertEquals(rawValue, WifiQrParseResult.Unsupported, WifiQrPayloadParser.parse(rawValue))
+        }
+    }
+
+    @Test
+    fun `non wifi text is explicitly not wifi`() {
+        assertEquals(
+            WifiQrParseResult.NotWifi,
+            WifiQrPayloadParser.parse("not-wifi:S:Office;;"),
+        )
+    }
+
+    private fun parsed(rawValue: String): WifiQrPayload {
+        val result = WifiQrPayloadParser.parse(rawValue)
+        assertTrue(rawValue, result is WifiQrParseResult.Parsed)
+        return (result as WifiQrParseResult.Parsed).payload
     }
 }

@@ -2,9 +2,6 @@ package com.aozijx.passly.presentation.feature.scanner
 
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ScannerReducerTest {
@@ -12,15 +9,11 @@ class ScannerReducerTest {
     @Test
     fun `starting a scan clears the previous typed result`() {
         val result = ScannerReducer.reduce(
-            ScannerUiState(
-                isScanning = false,
-                result = ScannerResult.PlainText("old result"),
-            ),
+            ScannerUiState.ShowingResult(ScannerResult.PlainText("old result")),
             ScannerMutation.Started,
         )
 
-        assertTrue(result.isScanning)
-        assertNull(result.result)
+        assertEquals(ScannerUiState.Scanning, result)
     }
 
     @Test
@@ -30,19 +23,18 @@ class ScannerReducerTest {
             config = OtpConfig(secret = "secret"),
         )
         val result = ScannerReducer.reduce(
-            ScannerUiState(),
+            ScannerUiState.Scanning,
             ScannerMutation.ScanCompleted(scanResult),
         )
 
-        assertFalse(result.isScanning)
-        assertEquals(scanResult, result.result)
+        assertEquals(ScannerUiState.ShowingResult(scanResult), result)
     }
 
     @Test
     fun `stopping scanner clears sensitive result state`() {
         val result = ScannerReducer.reduce(
-            ScannerUiState(
-                result = ScannerResult.Otp(
+            ScannerUiState.ShowingResult(
+                ScannerResult.Otp(
                     rawValue = "otpauth://totp/example?secret=secret",
                     config = OtpConfig(secret = "secret"),
                 ),
@@ -50,7 +42,29 @@ class ScannerReducerTest {
             ScannerMutation.Stopped,
         )
 
-        assertFalse(result.isScanning)
-        assertNull(result.result)
+        assertEquals(ScannerUiState.Stopped, result)
+    }
+
+    @Test
+    fun `image processing is an explicit phase`() {
+        val result = ScannerReducer.reduce(
+            ScannerUiState.Scanning,
+            ScannerMutation.ImageProcessingStarted,
+        )
+
+        assertEquals(ScannerUiState.ProcessingImage, result)
+    }
+
+    @Test
+    fun `late image result cannot revive a stopped scanner`() {
+        val lateResult = ScannerResult.PlainText("late")
+
+        assertEquals(
+            ScannerUiState.Stopped,
+            ScannerReducer.reduce(
+                ScannerUiState.Stopped,
+                ScannerMutation.ScanCompleted(lateResult),
+            ),
+        )
     }
 }

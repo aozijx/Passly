@@ -26,6 +26,11 @@ sealed class AppRoute(val route: String) {
 
     data object AddWifi : AppRoute("vault/add/wifi")
 
+    data object AddWifiFromSeed : AppRoute("vault/add/wifi/from-seed/{seedToken}") {
+        const val ARG_SEED_TOKEN = "seedToken"
+        fun createRoute(token: String) = "vault/add/wifi/from-seed/$token"
+    }
+
     data object Settings : AppRoute("settings")
 
     data object Detail : AppRoute("detail/{entryId}") {

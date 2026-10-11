@@ -18,6 +18,11 @@ import com.aozijx.passly.presentation.feature.vault.editor.bankcard.AddBankCardE
 import com.aozijx.passly.presentation.feature.vault.editor.otp.AddOtpEditorRoute
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordEditorRoute
 import com.aozijx.passly.presentation.feature.vault.editor.wifi.AddWifiEditorRoute
+import com.aozijx.passly.presentation.feature.vault.editor.wifi.AddWifiInitialContent
+import com.aozijx.passly.feature.vault.entry.EditorSeedToken
+import com.aozijx.passly.feature.vault.entry.EditorSeedTokenParseResult
+import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
+import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.presentation.feature.vault.list.VaultRoute
 import com.aozijx.passly.presentation.feature.vault.list.VaultViewModel
 import com.aozijx.passly.presentation.feature.vault.trash.TrashRoute
@@ -32,8 +37,9 @@ internal fun NavGraphBuilder.registerVaultGraph(
         route = AppRoute.VaultGraph.route,
     ) {
         composable(AppRoute.Vault.route) { backStackEntry ->
+            val seedCoordinator = vaultGraphSeedCoordinator(navController, backStackEntry)
             VaultRoute(
-                navigation = context.toVaultNavigation(),
+                navigation = context.toVaultNavigation(seedCoordinator),
                 vaultViewModel = vaultGraphViewModel(navController, backStackEntry),
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = this,
@@ -41,8 +47,9 @@ internal fun NavGraphBuilder.registerVaultGraph(
         }
 
         composable(AppRoute.Trash.route) { backStackEntry ->
+            val seedCoordinator = vaultGraphSeedCoordinator(navController, backStackEntry)
             VaultRoute(
-                navigation = context.toVaultNavigation(),
+                navigation = context.toVaultNavigation(seedCoordinator),
                 vaultViewModel = vaultGraphViewModel(navController, backStackEntry),
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = this,
@@ -84,6 +91,44 @@ internal fun NavGraphBuilder.registerVaultGraph(
             onSaved = context.navigateBack,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = this,
+            initialContent = AddWifiInitialContent.Blank,
+        )
+    }
+
+    composable(
+        route = AppRoute.AddWifiFromSeed.route,
+        arguments = listOf(
+            navArgument(AppRoute.AddWifiFromSeed.ARG_SEED_TOKEN) { type = NavType.StringType },
+        ),
+    ) { backStackEntry ->
+        val seedCoordinator = vaultGraphSeedCoordinator(navController, backStackEntry)
+        val initialContent = remember(backStackEntry, seedCoordinator) {
+            when (
+                val parsed = EditorSeedToken.parse(
+                    backStackEntry.arguments
+                        ?.getString(AppRoute.AddWifiFromSeed.ARG_SEED_TOKEN)
+                        .orEmpty(),
+                )
+            ) {
+                is EditorSeedTokenParseResult.Valid -> when (
+                    val consumed = seedCoordinator.consume(parsed.token)
+                ) {
+                    is EntryEditorSeedConsumeResult.Consumed -> when (val seed = consumed.seed) {
+                        is EntryEditorSeed.Wifi -> AddWifiInitialContent.Scanned(seed.payload)
+                    }
+                    EntryEditorSeedConsumeResult.Missing,
+                    EntryEditorSeedConsumeResult.AccessDenied,
+                    -> AddWifiInitialContent.SeedUnavailable
+                }
+                EditorSeedTokenParseResult.Invalid -> AddWifiInitialContent.SeedUnavailable
+            }
+        }
+        AddWifiEditorRoute(
+            onBack = context.navigateBack,
+            onSaved = context.navigateBack,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = this,
+            initialContent = initialContent,
         )
     }
 
@@ -117,7 +162,21 @@ private fun vaultGraphViewModel(
     return hiltViewModel<VaultViewModel>(owner)
 }
 
-private fun ShellNavigationContext.toVaultNavigation() = VaultNavigation(
+@Composable
+private fun vaultGraphSeedCoordinator(
+    navController: NavHostController,
+    backStackEntry: NavBackStackEntry,
+): EntryEditorSeedCoordinator {
+    val owner = remember(backStackEntry) {
+        navController.getBackStackEntry(AppRoute.VaultGraph.route)
+    }
+    return hiltViewModel<EntryEditorSeedCoordinator>(owner)
+}
+
+private fun ShellNavigationContext.toVaultNavigation(
+    seedCoordinator: EntryEditorSeedCoordinator,
+) = VaultNavigation(
     navigateToRoute = navigateToRoute,
     navigateToSingleTopRoute = navigateToSingleTopRoute,
+    seedStager = seedCoordinator,
 )

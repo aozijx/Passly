@@ -1,6 +1,7 @@
 package com.aozijx.passly.presentation.feature.scanner
 
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.feature.vault.wifi.WifiQrPayload
 import java.net.URI
 
 sealed interface ScannerResult {
@@ -9,6 +10,11 @@ sealed interface ScannerResult {
     data class Otp(
         override val rawValue: String,
         val config: OtpConfig,
+    ) : ScannerResult
+
+    data class Wifi(
+        override val rawValue: String,
+        val payload: WifiQrPayload,
     ) : ScannerResult
 
     data class WebLink(

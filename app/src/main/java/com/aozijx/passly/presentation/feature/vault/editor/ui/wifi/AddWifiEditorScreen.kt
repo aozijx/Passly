@@ -1,17 +1,23 @@
 package com.aozijx.passly.presentation.feature.vault.editor.ui.wifi
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.AddEntryScaffold
@@ -26,6 +32,7 @@ fun AddWifiEditorScreen(
     state: AddWifiUiState,
     onAction: (AddWifiAction) -> Unit,
     onBack: () -> Unit,
+    onScan: () -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
     saveActionModifier: Modifier = Modifier,
@@ -65,6 +72,21 @@ fun AddWifiEditorScreen(
                     { Text(stringResource(R.string.wifi_ssid_required)) }
                 } else {
                     null
+                },
+                trailingIcon = {
+                    TextButton(
+                        onClick = {
+                            keyboardController?.hide()
+                            onScan()
+                        },
+                    ) {
+                        Icon(
+                            Icons.Default.QrCodeScanner,
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 4.dp),
+                        )
+                        Text(stringResource(R.string.vault_scan))
+                    }
                 },
             )
         }

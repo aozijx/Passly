@@ -12,15 +12,14 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.presentation.feature.scanner.ui.ScannerScreen
 import com.aozijx.passly.presentation.shared.media.ImageType
 import com.aozijx.passly.presentation.shared.media.rememberImagePicker
 
 @Composable
 internal fun ScannerRoute(
-    otpConfirmation: ScannerOtpConfirmation,
-    onOtpConfirmed: (OtpConfig) -> Unit,
+    purpose: ScannerPurpose,
+    onImport: (ScannerImport) -> ScannerImportHandlingResult,
     onDismiss: () -> Unit,
 ) {
     val viewModel = hiltViewModel<ScannerViewModel>()
@@ -28,6 +27,7 @@ internal fun ScannerRoute(
     val context = LocalContext.current
     val copySucceededMessage = stringResource(R.string.scanner_copy_succeeded)
     val openLinkFailedMessage = stringResource(R.string.scanner_open_link_failed)
+    val importUnavailableMessage = stringResource(R.string.scanner_import_unavailable)
     val pickPhoto = rememberImagePicker { uri, _ ->
         viewModel.onAction(ScannerUiAction.DecodeImage(ImageRef(uri.toString())))
     }
@@ -49,7 +49,7 @@ internal fun ScannerRoute(
 
     ScannerScreen(
         state = state,
-        otpConfirmation = otpConfirmation,
+        purpose = purpose,
         onAction = { action ->
             when (action) {
                 ScannerScreenAction.Dismiss,
@@ -67,28 +67,41 @@ internal fun ScannerRoute(
                 is ScannerScreenAction.BarcodeDetected ->
                     viewModel.onAction(ScannerUiAction.BarcodeDetected(action.rawValue))
 
-                ScannerScreenAction.ConfirmResult -> when (val result = state.result) {
-                    is ScannerResult.Otp -> {
-                        onOtpConfirmed(result.config)
-                        onDismiss()
+                ScannerScreenAction.ConfirmResult -> {
+                    val result = (state as? ScannerUiState.ShowingResult)?.result ?: return@ScannerScreen
+                    when (result) {
+                        is ScannerResult.Otp,
+                        is ScannerResult.Wifi,
+                        -> when (val resolution = purpose.resolveImport(result)) {
+                            is ScannerImportResolution.Available -> {
+                                when (onImport(resolution.value)) {
+                                    ScannerImportHandlingResult.Applied -> onDismiss()
+                                    ScannerImportHandlingResult.Rejected -> Toast.makeText(
+                                            context,
+                                            importUnavailableMessage,
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
+                                }
+                            }
+
+                            ScannerImportResolution.Unavailable -> Unit
+                        }
+
+                        is ScannerResult.WebLink -> try {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, result.uri.toString().toUri()),
+                            )
+                        } catch (_: Exception) {
+                            Toast.makeText(
+                                context,
+                                openLinkFailedMessage,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+
+                        is ScannerResult.PlainText ->
+                            viewModel.onAction(ScannerUiAction.CopyText)
                     }
-
-                    is ScannerResult.WebLink -> try {
-                        context.startActivity(
-                            Intent(Intent.ACTION_VIEW, result.uri.toString().toUri()),
-                        )
-                    } catch (_: Exception) {
-                        Toast.makeText(
-                            context,
-                            openLinkFailedMessage,
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                    }
-
-                    is ScannerResult.PlainText ->
-                        viewModel.onAction(ScannerUiAction.CopyText)
-
-                    null -> Unit
                 }
             }
         },

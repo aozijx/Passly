@@ -7,30 +7,42 @@ object WifiQrPayloadParser {
     private val uniqueKeys = setOf("S", "P", "T", "H")
     private val enterpriseKeys = setOf("E", "PH2", "A", "I")
 
-    fun parse(rawValue: String): WifiQrPayload? {
+    fun parse(rawValue: String): WifiQrParseResult {
         if (!rawValue.regionMatches(0, PREFIX, 0, PREFIX.length, ignoreCase = true)) {
-            return null
+            return WifiQrParseResult.NotWifi
         }
-        val fields = parseFields(rawValue.substring(PREFIX.length)) ?: return null
-        if (fields.keys.any(enterpriseKeys::contains)) return null
+        val fields = when (val result = parseFields(rawValue.substring(PREFIX.length))) {
+            is FieldParseResult.Parsed -> result.fields
+            FieldParseResult.Malformed -> return WifiQrParseResult.Malformed
+        }
+        if (fields.keys.any(enterpriseKeys::contains)) return WifiQrParseResult.Unsupported
 
-        val ssid = fields["S"]?.takeUnless(String::isBlank) ?: return null
-        val securityType = parseSecurityType(fields["T"]) ?: return null
-        val isHidden = parseHidden(fields["H"]) ?: return null
+        val ssid = fields["S"]?.takeUnless(String::isBlank)
+            ?: return WifiQrParseResult.Malformed
+        val securityType = when (val result = parseSecurityType(fields["T"])) {
+            is SecurityParseResult.Supported -> result.value
+            SecurityParseResult.Unsupported -> return WifiQrParseResult.Unsupported
+        }
+        val isHidden = when (val result = parseHidden(fields["H"])) {
+            is HiddenParseResult.Supported -> result.value
+            HiddenParseResult.Malformed -> return WifiQrParseResult.Malformed
+        }
         val password = if (securityType == WifiSecurityType.Open) {
             ""
         } else {
             fields["P"].orEmpty()
         }
-        return WifiQrPayload(
-            ssid = ssid,
-            password = password,
-            securityType = securityType,
-            isHidden = isHidden,
+        return WifiQrParseResult.Parsed(
+            WifiQrPayload(
+                ssid = ssid,
+                password = password,
+                securityType = securityType,
+                isHidden = isHidden,
+            ),
         )
     }
 
-    private fun parseFields(body: String): Map<String, String>? {
+    private fun parseFields(body: String): FieldParseResult {
         val fields = linkedMapOf<String, String>()
         val key = StringBuilder()
         val value = StringBuilder()
@@ -51,16 +63,22 @@ object WifiQrPayloadParser {
                 character == ';' -> {
                     val nextIsTerminal = index + 1 < body.length && body[index + 1] == ';'
                     if (readingKey && key.isEmpty() && nextIsTerminal && index + 1 == body.lastIndex) {
-                        return fields
+                        return FieldParseResult.Parsed(fields)
                     }
-                    if (readingKey || key.isEmpty()) return null
+                    if (readingKey || key.isEmpty()) return FieldParseResult.Malformed
 
                     val normalizedKey = key.toString().uppercase()
-                    if (normalizedKey in uniqueKeys && normalizedKey in fields) return null
+                    if (normalizedKey in uniqueKeys && normalizedKey in fields) {
+                        return FieldParseResult.Malformed
+                    }
                     fields[normalizedKey] = value.toString()
 
                     if (nextIsTerminal) {
-                        return fields.takeIf { index + 1 == body.lastIndex }
+                        return if (index + 1 == body.lastIndex) {
+                            FieldParseResult.Parsed(fields)
+                        } else {
+                            FieldParseResult.Malformed
+                        }
                     }
                     key.clear()
                     value.clear()
@@ -71,7 +89,7 @@ object WifiQrPayloadParser {
             }
             index++
         }
-        return null
+        return FieldParseResult.Malformed
     }
 
     private fun target(
@@ -80,18 +98,34 @@ object WifiQrPayloadParser {
         value: StringBuilder,
     ): StringBuilder = if (readingKey) key else value
 
-    private fun parseSecurityType(rawValue: String?): WifiSecurityType? =
+    private fun parseSecurityType(rawValue: String?): SecurityParseResult =
         when (rawValue?.trim()?.uppercase()) {
-            null, "NOPASS", "OPEN" -> WifiSecurityType.Open
-            "WEP" -> WifiSecurityType.Wep
-            "WPA", "WPA2", "WPA3", "SAE" -> WifiSecurityType.WpaPersonal
-            else -> null
+            null, "NOPASS", "OPEN" -> SecurityParseResult.Supported(WifiSecurityType.Open)
+            "WEP" -> SecurityParseResult.Supported(WifiSecurityType.Wep)
+            "WPA", "WPA2", "WPA3", "SAE" ->
+                SecurityParseResult.Supported(WifiSecurityType.WpaPersonal)
+            else -> SecurityParseResult.Unsupported
         }
 
-    private fun parseHidden(rawValue: String?): Boolean? =
+    private fun parseHidden(rawValue: String?): HiddenParseResult =
         when (rawValue?.trim()?.lowercase()) {
-            null, "false" -> false
-            "true" -> true
-            else -> null
+            null, "false" -> HiddenParseResult.Supported(false)
+            "true" -> HiddenParseResult.Supported(true)
+            else -> HiddenParseResult.Malformed
         }
+
+    private sealed interface FieldParseResult {
+        data class Parsed(val fields: Map<String, String>) : FieldParseResult
+        data object Malformed : FieldParseResult
+    }
+
+    private sealed interface SecurityParseResult {
+        data class Supported(val value: WifiSecurityType) : SecurityParseResult
+        data object Unsupported : SecurityParseResult
+    }
+
+    private sealed interface HiddenParseResult {
+        data class Supported(val value: Boolean) : HiddenParseResult
+        data object Malformed : HiddenParseResult
+    }
 }

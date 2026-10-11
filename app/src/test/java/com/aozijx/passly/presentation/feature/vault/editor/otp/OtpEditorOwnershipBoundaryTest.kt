@@ -20,7 +20,8 @@ class OtpEditorOwnershipBoundaryTest {
         )
 
         assertTrue(route.contains("ScannerRoute("))
-        assertTrue(route.contains("ScannerOtpConfirmation.APPLY_TO_EDITOR"))
+        assertTrue(route.contains("ScannerPurpose.ApplyToOtpEditor"))
+        assertTrue(route.contains("OtpEditorOverlay.Scanner"))
         assertFalse(route.contains("VaultScanner("))
         assertFalse(route.contains("scannerContent:"))
         assertFalse(graph.contains("scannerContent"))

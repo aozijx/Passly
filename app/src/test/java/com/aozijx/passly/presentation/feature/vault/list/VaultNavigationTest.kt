@@ -3,7 +3,13 @@ package com.aozijx.passly.presentation.feature.vault.list
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.navigation.VaultDestinationRequest
 import com.aozijx.passly.presentation.feature.vault.navigation.VaultNavigation
+import com.aozijx.passly.presentation.feature.vault.navigation.VaultNavigationResult
 import com.aozijx.passly.presentation.feature.shell.navigation.AppRoute
+import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
+import com.aozijx.passly.feature.vault.entry.EditorSeedToken
+import com.aozijx.passly.feature.vault.wifi.WifiQrPayload
+import com.aozijx.passly.presentation.feature.vault.navigation.EntryEditorSeedStageResult
+import com.aozijx.passly.presentation.feature.vault.navigation.EntryEditorSeedStager
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -24,7 +30,7 @@ class VaultNavigationTest {
             navigation.navigate(VaultDestinationRequest.OpenEditor(type)) to expectedRoute
         }
 
-        assertTrue(handled.all { it.first })
+        assertTrue(handled.all { it.first == VaultNavigationResult.Navigated })
         assertEquals(handled.map { it.second }, routes)
     }
 
@@ -37,7 +43,7 @@ class VaultNavigationTest {
             VaultDestinationRequest.OpenEditor(VaultAddTypeUiModel.SSH_KEY),
         )
 
-        assertFalse(handled)
+        assertEquals(VaultNavigationResult.UnsupportedDestination, handled)
         assertTrue(routes.isEmpty())
     }
 
@@ -46,13 +52,43 @@ class VaultNavigationTest {
         val routes = mutableListOf<String>()
         val navigation = navigation(routes = routes)
 
-        assertTrue(navigation.navigate(VaultDestinationRequest.OpenSettings))
-        assertTrue(navigation.navigate(VaultDestinationRequest.OpenDetail("entry-1")))
+        assertEquals(
+            VaultNavigationResult.Navigated,
+            navigation.navigate(VaultDestinationRequest.OpenSettings),
+        )
+        assertEquals(
+            VaultNavigationResult.Navigated,
+            navigation.navigate(VaultDestinationRequest.OpenDetail("entry-1")),
+        )
 
         assertEquals(
             listOf(AppRoute.Settings.route, AppRoute.Detail.createRoute("entry-1")),
             routes,
         )
+    }
+
+    @Test
+    fun `scanned wifi navigates with an opaque one time token`() {
+        val routes = mutableListOf<String>()
+        val navigation = navigation(singleTopRoutes = routes)
+
+        assertEquals(
+            VaultNavigationResult.Navigated,
+            navigation.navigate(
+                VaultDestinationRequest.EditScannedWifi(
+                    WifiQrPayload(
+                        "Office",
+                        "secret-password",
+                        WifiSecurityType.WpaPersonal,
+                        false,
+                    ),
+                ),
+            ),
+        )
+        assertEquals(1, routes.size)
+        assertTrue(routes.single().startsWith("vault/add/wifi/from-seed/"))
+        assertFalse(routes.single().contains("Office"))
+        assertFalse(routes.single().contains("secret-password"))
     }
 
     private fun navigation(
@@ -61,5 +97,8 @@ class VaultNavigationTest {
     ) = VaultNavigation(
         navigateToRoute = routes::add,
         navigateToSingleTopRoute = singleTopRoutes::add,
+        seedStager = EntryEditorSeedStager {
+            EntryEditorSeedStageResult.Staged(EditorSeedToken("token-1"))
+        },
     )
 }

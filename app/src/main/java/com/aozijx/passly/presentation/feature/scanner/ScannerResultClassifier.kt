@@ -2,21 +2,36 @@ package com.aozijx.passly.presentation.feature.scanner
 
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.feature.vault.otp.OtpAuthUriCodec
+import com.aozijx.passly.feature.vault.wifi.WifiQrParseResult
+import com.aozijx.passly.feature.vault.wifi.WifiQrPayloadParser
 import java.net.URI
 
 internal object ScannerResultClassifier {
-    fun classify(rawValue: String): ScannerResult? =
+    fun classify(rawValue: String): ScannerClassification =
         classify(rawValue, OtpAuthUriCodec::parse)
 
     fun classify(
         rawValue: String,
         otpParser: (String) -> OtpConfig?,
-    ): ScannerResult? {
-        if (rawValue.isBlank()) return null
+    ): ScannerClassification {
+        if (rawValue.isBlank()) return ScannerClassification.Empty
 
         runCatching { otpParser(rawValue) }
             .getOrNull()
-            ?.let { return ScannerResult.Otp(rawValue, it) }
+            ?.let {
+                return ScannerClassification.Classified(ScannerResult.Otp(rawValue, it))
+            }
+
+        when (val wifi = WifiQrPayloadParser.parse(rawValue)) {
+            is WifiQrParseResult.Parsed ->
+                return ScannerClassification.Classified(
+                    ScannerResult.Wifi(rawValue, wifi.payload),
+                )
+            WifiQrParseResult.NotWifi,
+            WifiQrParseResult.Malformed,
+            WifiQrParseResult.Unsupported,
+            -> Unit
+        }
 
         val uri = runCatching { URI(rawValue) }.getOrNull()
         if (
@@ -25,9 +40,14 @@ internal object ScannerResultClassifier {
                 uri.scheme.equals("https", ignoreCase = true)) &&
             !uri.host.isNullOrBlank()
         ) {
-            return ScannerResult.WebLink(rawValue, uri)
+            return ScannerClassification.Classified(ScannerResult.WebLink(rawValue, uri))
         }
 
-        return ScannerResult.PlainText(rawValue)
+        return ScannerClassification.Classified(ScannerResult.PlainText(rawValue))
     }
+}
+
+internal sealed interface ScannerClassification {
+    data object Empty : ScannerClassification
+    data class Classified(val result: ScannerResult) : ScannerClassification
 }

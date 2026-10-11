@@ -17,7 +17,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.scanner.ScannerOtpConfirmation
+import com.aozijx.passly.presentation.feature.scanner.ScannerImport
+import com.aozijx.passly.presentation.feature.scanner.ScannerImportHandlingResult
+import com.aozijx.passly.presentation.feature.scanner.ScannerPurpose
 import com.aozijx.passly.presentation.feature.scanner.ScannerRoute
 import com.aozijx.passly.presentation.feature.vault.list.action.CopyFieldLabelProvider
 import com.aozijx.passly.presentation.feature.vault.list.action.VaultCopyRequest
@@ -30,6 +32,7 @@ import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListDispl
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemAction
 import com.aozijx.passly.presentation.feature.vault.navigation.VaultDestinationRequest
 import com.aozijx.passly.presentation.feature.vault.navigation.VaultNavigation
+import com.aozijx.passly.presentation.feature.vault.navigation.VaultNavigationResult
 import com.aozijx.passly.presentation.mapping.gesture.toDomainModel
 import com.aozijx.passly.presentation.mapping.gesture.toUiModel
 
@@ -44,7 +47,7 @@ internal fun VaultRoute(
     val context = LocalContext.current
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    var showScanner by rememberSaveable { mutableStateOf(false) }
+    var overlay by rememberSaveable { mutableStateOf(VaultOverlay.None) }
 
     val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
     val vaultDisplayConfig by vaultDisplayViewModel.config.collectAsStateWithLifecycle()
@@ -138,27 +141,50 @@ internal fun VaultRoute(
         onAction = vaultViewModel::onAction,
         onRouteRequest = { request ->
             when (request) {
-                VaultRouteRequest.OpenScanner -> showScanner = true
+                VaultRouteRequest.OpenScanner -> overlay = VaultOverlay.Scanner
                 VaultRouteRequest.OpenSettings -> {
                     navigation.navigate(VaultDestinationRequest.OpenSettings)
                 }
             }
         },
         onAddTypeSelected = { type ->
-            val handled = navigation.navigate(VaultDestinationRequest.OpenEditor(type))
-            if (!handled) {
-                vaultViewModel.onAction(VaultUiAction.AddTypeSelected(type.toFeatureModel()))
+            when (navigation.navigate(VaultDestinationRequest.OpenEditor(type))) {
+                VaultNavigationResult.Navigated -> Unit
+                VaultNavigationResult.UnsupportedDestination ->
+                    vaultViewModel.onAction(VaultUiAction.AddTypeSelected(type.toFeatureModel()))
+                VaultNavigationResult.AccessDenied -> Unit
             }
         },
     )
 
-    if (showScanner) {
-        ScannerRoute(
-            otpConfirmation = ScannerOtpConfirmation.ADD_TO_VAULT,
-            onOtpConfirmed = { config ->
-                vaultViewModel.onAction(VaultUiAction.AddScannedOtp(config))
+    when (overlay) {
+        VaultOverlay.None -> Unit
+        VaultOverlay.Scanner -> ScannerRoute(
+            purpose = ScannerPurpose.General,
+            onImport = { scannerImport ->
+                when (scannerImport) {
+                    is ScannerImport.Otp -> {
+                        vaultViewModel.onAction(VaultUiAction.AddScannedOtp(scannerImport.config))
+                        ScannerImportHandlingResult.Applied
+                    }
+                    is ScannerImport.Wifi -> when (
+                        navigation.navigate(
+                            VaultDestinationRequest.EditScannedWifi(scannerImport.payload),
+                        )
+                    ) {
+                        VaultNavigationResult.Navigated -> ScannerImportHandlingResult.Applied
+                        VaultNavigationResult.UnsupportedDestination,
+                        VaultNavigationResult.AccessDenied,
+                        -> ScannerImportHandlingResult.Rejected
+                    }
+                }
             },
-            onDismiss = { showScanner = false },
+            onDismiss = { overlay = VaultOverlay.None },
         )
     }
+}
+
+private enum class VaultOverlay {
+    None,
+    Scanner,
 }

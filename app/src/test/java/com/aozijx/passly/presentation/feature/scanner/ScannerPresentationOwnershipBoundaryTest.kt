@@ -38,7 +38,11 @@ class ScannerPresentationOwnershipBoundaryTest {
         val effect = feature.resolve("ScannerEffect.kt").readText()
         val viewModel = feature.resolve("ScannerViewModel.kt").readText()
 
-        assertTrue(state.contains("val result: ScannerResult?"))
+        assertTrue(state.contains("data object Scanning"))
+        assertTrue(state.contains("data object ProcessingImage"))
+        assertTrue(state.contains("data class ShowingResult"))
+        assertTrue(state.contains("data object Stopped"))
+        assertFalse(state.contains("ScannerResult?"))
         assertFalse(state.contains("val scanResult:"))
         assertFalse(state.contains("val scannedOtp:"))
         assertFalse(effect.contains("ScanSuccess"))

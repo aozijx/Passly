@@ -15,7 +15,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.scanner.ScannerOtpConfirmation
+import com.aozijx.passly.presentation.feature.scanner.ScannerImport
+import com.aozijx.passly.presentation.feature.scanner.ScannerImportHandlingResult
+import com.aozijx.passly.presentation.feature.scanner.ScannerPurpose
 import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffectHandler
 import com.aozijx.passly.presentation.feature.scanner.ScannerRoute
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.rememberAddEntryFabTransitionModifier
@@ -38,7 +40,7 @@ fun AddOtpEditorRoute(
     val saveActionModifier = with(sharedTransitionScope) {
         rememberAddEntryFabTransitionModifier(animatedVisibilityScope)
     }
-    var showScanner by remember { mutableStateOf(false) }
+    var overlay by remember { mutableStateOf<OtpEditorOverlay>(OtpEditorOverlay.None) }
 
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
     LaunchedEffect(
@@ -63,18 +65,30 @@ fun AddOtpEditorRoute(
         state = uiState,
         onAction = viewModel::onAction,
         onBack = onBack,
-        onScan = { showScanner = true },
+        onScan = { overlay = OtpEditorOverlay.Scanner },
         snackbarHostState = snackbarHostState,
         saveActionModifier = saveActionModifier,
     )
 
-    if (showScanner) {
-        ScannerRoute(
-            otpConfirmation = ScannerOtpConfirmation.APPLY_TO_EDITOR,
-            onOtpConfirmed = { config ->
-                viewModel.onAction(AddOtpAction.ScannedConfigApplied(config))
+    when (overlay) {
+        OtpEditorOverlay.None -> Unit
+        OtpEditorOverlay.Scanner -> ScannerRoute(
+            purpose = ScannerPurpose.ApplyToOtpEditor,
+            onImport = { scannerImport ->
+                when (scannerImport) {
+                    is ScannerImport.Otp -> {
+                        viewModel.onAction(AddOtpAction.ScannedConfigApplied(scannerImport.config))
+                        ScannerImportHandlingResult.Applied
+                    }
+                    is ScannerImport.Wifi -> ScannerImportHandlingResult.Rejected
+                }
             },
-            onDismiss = { showScanner = false },
+            onDismiss = { overlay = OtpEditorOverlay.None },
         )
     }
+}
+
+private sealed interface OtpEditorOverlay {
+    data object None : OtpEditorOverlay
+    data object Scanner : OtpEditorOverlay
 }

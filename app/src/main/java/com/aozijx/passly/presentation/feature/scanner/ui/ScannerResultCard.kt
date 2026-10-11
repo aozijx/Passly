@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -27,13 +28,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.presentation.feature.scanner.ScannerOtpConfirmation
+import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
+import com.aozijx.passly.presentation.feature.scanner.ScannerPurpose
 import com.aozijx.passly.presentation.feature.scanner.ScannerResult
 
 @Composable
 internal fun ScannerResultCard(
     result: ScannerResult,
-    otpConfirmation: ScannerOtpConfirmation,
+    purpose: ScannerPurpose,
     compact: Boolean,
     onScanAgain: () -> Unit,
     onConfirm: () -> Unit,
@@ -46,12 +48,34 @@ internal fun ScannerResultCard(
             title = stringResource(R.string.scanner_result_otp),
             detail = result.config.displayLabel(fallbackOtpLabel),
             preview = null,
-            primaryLabel = stringResource(
-                when (otpConfirmation) {
-                    ScannerOtpConfirmation.ADD_TO_VAULT -> R.string.scanner_add_to_vault
-                    ScannerOtpConfirmation.APPLY_TO_EDITOR -> R.string.scanner_apply_to_editor
-                },
-            ),
+            primaryAction = when (purpose) {
+                ScannerPurpose.General -> ScannerPrimaryActionPresentation.Available(
+                    stringResource(R.string.scanner_add_to_vault),
+                )
+                ScannerPurpose.ApplyToOtpEditor -> ScannerPrimaryActionPresentation.Available(
+                    stringResource(R.string.scanner_apply_to_editor),
+                )
+                ScannerPurpose.ApplyToWifiEditor -> ScannerPrimaryActionPresentation.Unavailable
+            },
+        )
+
+        is ScannerResult.Wifi -> ScannerResultPresentation(
+            icon = Icons.Default.Wifi,
+            title = stringResource(R.string.scanner_result_wifi),
+            detail = result.payload.ssid,
+            preview = buildList {
+                add(result.payload.securityType.displayName())
+                if (result.payload.isHidden) add(stringResource(R.string.wifi_hidden))
+            }.joinToString(" · "),
+            primaryAction = when (purpose) {
+                ScannerPurpose.General -> ScannerPrimaryActionPresentation.Available(
+                    stringResource(R.string.scanner_edit_wifi),
+                )
+                ScannerPurpose.ApplyToWifiEditor -> ScannerPrimaryActionPresentation.Available(
+                    stringResource(R.string.scanner_apply_to_editor),
+                )
+                ScannerPurpose.ApplyToOtpEditor -> ScannerPrimaryActionPresentation.Unavailable
+            },
         )
 
         is ScannerResult.WebLink -> ScannerResultPresentation(
@@ -59,7 +83,9 @@ internal fun ScannerResultCard(
             title = stringResource(R.string.scanner_result_link),
             detail = result.uri.host,
             preview = result.rawValue,
-            primaryLabel = stringResource(R.string.scanner_open_link),
+            primaryAction = ScannerPrimaryActionPresentation.Available(
+                stringResource(R.string.scanner_open_link),
+            ),
         )
 
         is ScannerResult.PlainText -> ScannerResultPresentation(
@@ -67,7 +93,9 @@ internal fun ScannerResultCard(
             title = stringResource(R.string.scanner_result_text),
             detail = result.rawValue,
             preview = null,
-            primaryLabel = stringResource(R.string.scanner_copy_text),
+            primaryAction = ScannerPrimaryActionPresentation.Available(
+                stringResource(R.string.scanner_copy_text),
+            ),
         )
     }
     val motionScheme = MaterialTheme.motionScheme
@@ -128,11 +156,14 @@ internal fun ScannerResultCard(
                 ) {
                     Text(stringResource(R.string.scanner_scan_again))
                 }
-                Button(
-                    onClick = onConfirm,
-                    modifier = Modifier.weight(1.35f),
-                ) {
-                    Text(presentation.primaryLabel)
+                when (val action = presentation.primaryAction) {
+                    is ScannerPrimaryActionPresentation.Available -> Button(
+                        onClick = onConfirm,
+                        modifier = Modifier.weight(1.35f),
+                    ) {
+                        Text(action.label)
+                    }
+                    ScannerPrimaryActionPresentation.Unavailable -> Unit
                 }
             }
         }
@@ -144,7 +175,21 @@ private data class ScannerResultPresentation(
     val title: String,
     val detail: String,
     val preview: String?,
-    val primaryLabel: String,
+    val primaryAction: ScannerPrimaryActionPresentation,
+)
+
+private sealed interface ScannerPrimaryActionPresentation {
+    data class Available(val label: String) : ScannerPrimaryActionPresentation
+    data object Unavailable : ScannerPrimaryActionPresentation
+}
+
+@Composable
+private fun WifiSecurityType.displayName(): String = stringResource(
+    when (this) {
+        WifiSecurityType.Open -> R.string.wifi_security_open
+        WifiSecurityType.Wep -> R.string.wifi_security_wep
+        WifiSecurityType.WpaPersonal -> R.string.wifi_security_wpa_personal
+    },
 )
 
 private fun OtpConfig.displayLabel(fallback: String): String = buildString {

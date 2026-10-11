@@ -107,9 +107,10 @@ More 菜单的展开状态只属于稳定的搜索动作锚点；`DropdownMenu` 
 淡出的旧页不参与容器尺寸，外层仅对目标页自然尺寸变化做动画，因此不会被撑到 Material 最大宽度或留下多余右侧空白。
 固定锚点及 Popup 显隐不参与切页动画。
 主菜单依次提供排序、筛选、TOTP 显隐、分隔线、扫描二维码和设置。扫描与设置都通过单一
-`VaultRouteRequest` 离开 UI 回调链；菜单先关闭 Popup 再发出请求。`VaultRoute` 持有 Scanner overlay 的
-瞬时显隐状态，并把首页确认的 OTP 转成 `VaultUiAction.AddScannedOtp`。Scanner 状态和值不进入
-`VaultViewModel`，设置仍由 `VaultNavigation` 连接。新增页面同样属于 Route 负责连接的导航出口。
+`VaultRouteRequest` 离开 UI 回调链；菜单先关闭 Popup 再发出请求。`VaultRoute` 用显式 `VaultOverlay`
+持有 Scanner overlay 状态，并把首页确认的 OTP 转成 `VaultUiAction.AddScannedOtp`。Wi-Fi 扫码结果交给
+`VaultNavigation`，由 Vault 图作用域的一次性 seed 协调器生成不含敏感内容的 token，再进入 Wi-Fi 编辑页。
+Scanner 状态和值不进入 `VaultViewModel`，设置仍由 `VaultNavigation` 连接。新增页面同样属于 Route 负责连接的导航出口。
 
 ## 注意事项
 

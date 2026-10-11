@@ -125,6 +125,26 @@ class AddWifiViewModelTest {
         assertEquals("", viewModel.uiState.value.form.ssid)
     }
 
+    @Test
+    fun `scanned initial content is applied only once`() {
+        val viewModel = viewModel(RecordingRepository())
+        val scanned = AddWifiInitialContent.Scanned(
+            com.aozijx.passly.feature.vault.wifi.WifiQrPayload(
+                "Office",
+                "password",
+                WifiSecurityType.WpaPersonal,
+                false,
+            ),
+        )
+
+        viewModel.initialize(scanned)
+        viewModel.onAction(AddWifiAction.SsidChanged("Edited"))
+        viewModel.initialize(AddWifiInitialContent.Blank)
+
+        assertEquals("Edited", viewModel.uiState.value.form.ssid)
+        assertEquals("password", viewModel.uiState.value.form.password)
+    }
+
     private fun enterValidWpa(viewModel: AddWifiViewModel) {
         viewModel.onAction(AddWifiAction.SsidChanged("Office"))
         viewModel.onAction(AddWifiAction.SecurityTypeChanged(WifiSecurityType.WpaPersonal))
