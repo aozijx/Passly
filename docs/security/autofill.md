@@ -122,6 +122,6 @@ PendingIntent。
 - [HeuristicMatchStrategy](../../app/src/main/java/com/aozijx/passly/feature/autofill/internal/HeuristicMatchStrategy.kt)
 - [LegacyAutofillService](../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/LegacyAutofillService.kt)
 - [ModernCredentialService](../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/ModernCredentialService.kt)
-- [AutofillCandidateBottomSheet](../../app/src/main/java/com/aozijx/passly/presentation/ui/autofill/AutofillCandidateBottomSheet.kt)
+- [AutofillCandidateBottomSheet](../../app/src/main/java/com/aozijx/passly/presentation/feature/autofill/legacy/ui/AutofillCandidateBottomSheet.kt)
 - [autofill_hints.xml](../../app/src/main/res/values/autofill_hints.xml)
 - [ConstantTime](../../core/common/src/main/kotlin/com/aozijx/passly/core/common/crypto/ConstantTime.kt)

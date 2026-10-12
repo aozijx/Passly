@@ -29,6 +29,21 @@ OTP 与 Wi-Fi 编辑器分别使用 `ApplyToOtpEditor`、`ApplyToWifiEditor`，�
 只可消费一次的临时内容，导航只携带随机 token；锁定、恢复模式、消费完成或作用域销毁都会清空该内容。
 Wi-Fi 结果卡和无障碍文本不显示密码，编辑页可重新扫码，只替换 Wi-Fi 专属字段。
 
+## Wi-Fi 解析与编辑边界
+
+`WifiQrPayloadParser` 以纯 Kotlin 解析 `WIFI:` 载荷并正确处理反斜杠转义；SSID 是必需字段。支持开放网络、
+WEP，以及 WPA/WPA2/WPA3/SAE Personal。企业认证字段、未知安全类型、缺失 SSID 或损坏转义不会生成半成品
+凭据，而是保留原始内容并降级为普通文本。
+
+Domain 只接受 `WifiSecurityType.Open / Wep / WpaPersonal`。数据库与备份边界使用稳定的 `nopass`、`WEP`、
+`WPA` 字符串，并通过 `Supported / Missing / Unsupported` 解析结果穷尽处理；不得使用 `valueOf()`、nullable
+或默认 WPA 掩盖未知存储值。开放网络保存前必须清空密码，WEP 和 WPA 密码由同一 Domain 校验器约束，手动
+添加与扫码预填共用同一 `EntryDraft` 创建链路。
+
+首页扫码不会直接保存 Wi-Fi。用户确认后通过一次性 seed token 进入独立 Wi-Fi 编辑页；seed 只存在于 Vault
+图作用域内存，消费、锁定或作用域销毁后清除。编辑页重新扫码只替换 SSID、安全类型、密码和隐藏网络，不覆盖
+备注、标签或用户已经修改的标题。
+
 ## 扩展规则
 
 新增二维码类型时，应先为 `ScannerResult` 增加明确的数据类型和分类测试，再为结果卡、`ScannerPurpose`

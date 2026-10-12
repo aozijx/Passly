@@ -5,13 +5,15 @@ Passly 只按稳定、可复用的技术边界拆分 Gradle 模块。业务 feat
 
 当前模块：
 
-- `:domain`：纯领域模型、端口与规则；当前只保留 `access`、`entry` 及共享敏感值语义；
+- `:domain`：纯领域模型、端口与规则；当前包含 `access`、`entry`、`autofill`、`settings` 及共享敏感值语义；
 - `:core:common`：Domain 可依赖的纯 Kotlin 错误与通用能力；
 - `:core`：统一的 Android Core library，包含遥测、平台能力、共享 Compose UI 及密码学安全编排；因
   Argon2 为 AAR，此模块是 Android library，但源码不反向依赖 Data 或 App。包内用 `core.crypto` 承载
   无状态 AES/KDF/字段加密，用 `security.dek`、`security.envelope`、`security.search` 承载密钥生命周期与
   加密搜索；
 - `:runtime:session`：资源无关的安全会话状态机与租约管理；
+- `:security`：认证方式执行、授权、Android Keystore 适配与安全会话编排；只依赖稳定的 Domain/Core/Runtime
+  契约，不依赖 Data 实现或 Feature UI；
 - `:data`：Room、Proto DataStore、Repository、Mapper 与加密诊断存储实现；
 - `:app`：应用壳、导航、平台入口、Notice 运行时和全部业务 feature。Backup 的协议、格式、文件 I/O、
   数据库快照编排也归 `app/feature/backup`，不属于 `:data`。
@@ -22,8 +24,12 @@ Passly 只按稳定、可复用的技术边界拆分 Gradle 模块。业务 feat
 flowchart LR
     APP[":app · Shell / feature / navigation / DI"] --> FEATURE["app 内 feature 包"]
     APP --> DATA[":data · 数据与持久化实现"]
+    APP --> SECURITY[":security · 认证与安全会话实现"]
     FEATURE --> CORE[":core"]
     FEATURE --> D[":domain"]
+    SECURITY --> SESSION
+    SECURITY --> CORE
+    SECURITY --> D
     DATA --> SESSION[":runtime:session"]
     DATA --> CORE
     DATA --> D
@@ -36,8 +42,9 @@ flowchart LR
 Data 自己拥有 Repository、存储与数据策略的 Hilt binding。App 负责业务流程和 Android 入口；Backup 的
 数据库快照代码是一个明确、局部的数据集成点，其他 feature 继续通过 Domain 契约使用 Data。
 
-Domain 不按应用功能镜像目录。`backup`、`autofill`、通知和数据库生命周期属于 App/Data/Runtime
-边界，不在 Domain 中建立同名“模块包”。**设置契约例外**：应用偏好（`AppSettingsSnapshot`、
+Domain 不按 UI 页面镜像目录，但可为跨平台入口共享的稳定业务契约建立能力包。`autofill` 的候选、作用域和
+Repository 端口属于这种契约；Android Autofill/Credential Manager 编排仍属于 App。`backup`、通知和数据库
+生命周期属于 App/Data/Runtime 边界，不在 Domain 中建立同名协议实现。应用偏好（`AppSettingsSnapshot`、
 `SettingsCommand` 与 `domain/settings` 的模型和端口）在 Domain 统一表达，Data 只负责其 Proto
 存储与实现（`data/local/datastore` + `data/repository/settings`）。领域内部只使用 `model`、
 `policy`、`port` 等少量稳定职责目录；只有关系、查询、凭据等确有独立不变量的 Entry 子概念才

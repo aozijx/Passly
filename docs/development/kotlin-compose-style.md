@@ -115,13 +115,14 @@ core/*           与业务无关的基础设施
 
 ## MVI 约定
 
-每个具备业务状态的页面优先使用 MVI：
+复杂页面使用完整 MVI；简单 Repository 投影页面使用轻量 UDF。完整 MVI 的命名统一为 `UiState / UiAction /
+Effect`：
 
 ```text
 feature/example/
   contract/
     ExampleUiState.kt
-    ExampleIntent.kt
+    ExampleUiAction.kt
     ExampleEffect.kt
   presentation/
     ExampleViewModel.kt
@@ -135,21 +136,22 @@ feature/example/
 必须：
 
 - `UiState` 是页面可渲染状态，不包含 Android `Context`、`NavController`、`ViewModel`。
-- `Intent` 表示用户动作或生命周期输入。
+- `UiAction` 表示用户动作或生命周期输入，避免与 Android `Intent` 混淆。
 - `Effect` 表示一次性事件，例如导航、文件选择、Toast、Snackbar。
 - ViewModel 暴露 `StateFlow<UiState>` 和 `SharedFlow<Effect>`。
-- ViewModel 提供一个入口处理事件：`onIntent(intent)` 或项目内已统一的等价命名。
+- ViewModel 提供一个入口处理事件：`onAction(action)`。
 
 推荐：
 
 ```kotlin
-data class ExampleUiState(
-    val isLoading: Boolean = false,
-    val error: ExampleError? = null,
-)
+sealed interface ExampleUiState {
+    data object Loading : ExampleUiState
+    data class Content(val value: String) : ExampleUiState
+    data class Failed(val error: ExampleError) : ExampleUiState
+}
 
-sealed interface ExampleIntent {
-    data object RetryClicked : ExampleIntent
+sealed interface ExampleUiAction {
+    data object RetryClicked : ExampleUiAction
 }
 
 sealed interface ExampleEffect {
@@ -184,7 +186,7 @@ fun ExampleScreen(
 @Composable
 fun ExampleContent(
     state: ExampleUiState,
-    onIntent: (ExampleIntent) -> Unit,
+    onAction: (ExampleUiAction) -> Unit,
     modifier: Modifier = Modifier,
 )
 ```

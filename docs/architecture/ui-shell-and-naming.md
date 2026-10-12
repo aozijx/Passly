@@ -31,6 +31,24 @@ Rail、全局 Snackbar 和认证遮罩属于 App Shell，不进入共享元素�
 每个目的地仍可使用自己的 Scaffold。目的地必须消费 App Shell 传入的 `PaddingValues`，并自行处理 IME；
 共享元素使用内容坐标，不负责窗口 Insets。
 
+## 页面层级与状态所有权
+
+页面默认采用能表达职责的最短链路：`Route → Screen → Section/Component/Overlay`。
+
+- `Route` 创建目的地作用域 ViewModel、收集状态与 Effect，并连接语义导航或平台副作用；
+- `Screen` 负责页面 Scaffold、布局和只影响视觉的短期状态；
+- `Section` 只消费自己的不可变 UiModel，并把同一 Feature 的语义 Action 直接向上发送；
+- `Overlay` 只渲染 Sheet/Dialog/Snackbar，不自行保存、认证或导航；
+- `Host` 只用于 Camera、认证 UI、权限请求等真实外部宿主或资源生命周期。
+
+`Content` 只有在形成可独立预览、测试、复用或明确正文布局边界时才保留。若 `Host`、`Content`、包装函数或
+Route 只原样转发参数、逐项改名回调或复制 UiState，应删除该层，让生产者提供最终模型、消费者直接发送业务
+Action。不要用巨大 `Callbacks`、`Dependencies` 或 Context 对象把参数数量隐藏起来。
+
+业务查询、筛选、编辑草稿、校验和保存结果由 ViewModel/UseCase 拥有；焦点、动画进度、菜单、滚动位置和临时
+展开由最低共同使用者的 Compose state holder 拥有。一个状态不能同时由 Flow、`remember` 和回调同步。
+SharedTransition/AnimatedVisibility 等框架 Scope 只传给真实消费者，不贯穿整棵页面树。
+
 ## AppShellViewModel 的职责
 
 `AppShellViewModel` 只组合应用根界面需要的稳定投影，不拥有认证或数据库会话状态机：

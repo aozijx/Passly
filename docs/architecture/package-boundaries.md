@@ -14,7 +14,7 @@
 
 真实模块还要求源码命名空间与职责一致：`:data` 只包含 `com.aozijx.passly.data.*`。`:core:common` 保持为
 Domain 可依赖的纯 Kotlin 错误与通用能力；密码学、遥测、共享 Android 与 Compose 能力合并在 `:core`。
-Android Keystore、锁状态和认证编排归 `:app/security`，应用消息调度与全局框架桥归 `:app`。
+Android Keystore、锁状态和认证编排归独立的 `:security`；应用消息调度与全局框架桥归 `:app`。
 
 ## 强制规则
 
@@ -25,6 +25,10 @@ feature-X-> entity | dao
 security-X-> data implementation
 app feature -X-> 任意散落的 data implementation import
 ```
+
+`:security` 可以依赖 Domain 的认证/会话端口、`:core` 的密码学能力和 `:runtime:session` 的资源无关状态机，
+但不能依赖 Room、Data Repository 实现、Compose 页面或 Feature 状态。Feature 只能通过 Domain 端口请求认证、
+授权和锁定，不直接导入 `security.authentication`、Keystore 或密钥实现。
 
 App 通过 Gradle 依赖 `:data` 让 Hilt 聚合实现。普通 feature 只消费 Domain/Core 契约；Backup 因为需要生成和
 恢复全量数据库快照，允许在 `feature/backup/internal/archive/snapshot` 内集中访问 Data 类型。该例外必须保持
