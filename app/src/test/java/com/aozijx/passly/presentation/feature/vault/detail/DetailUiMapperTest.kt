@@ -10,7 +10,6 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
-import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
@@ -146,12 +145,13 @@ class DetailUiMapperTest {
                 timestamps = EntryTimestamps(1L),
             ),
             profile = EntryProfile(title = "Legacy title"),
-            secret = EntrySecret(credential = WifiCredential(ssid = "Office", password = null)),
+            secret = EntrySecret(
+                credential = WifiCredential(ssid = "Office", password = "wifi-secret"),
+            ),
         )
         val state = DetailUiState(
             entry = entry,
             sections = listOf(DetailSectionKey.CREDENTIAL),
-            sensitiveFieldKeys = setOf(SensitiveFieldKey.PASSWORD),
         )
 
         val presentation = requireNotNull(toDetailPresentationModel(state, null))

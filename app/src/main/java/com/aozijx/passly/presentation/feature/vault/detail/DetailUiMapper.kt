@@ -131,7 +131,7 @@ internal fun toDetailPresentationModel(
                     ),
                     password = CredentialFieldUiState(
                         visible = if (entry.type == EntryType.WIFI) {
-                            SensitiveFieldKey.PASSWORD in state.sensitiveFieldKeys
+                            !entry.secret.wifi?.password.isNullOrBlank()
                         } else {
                             SensitiveFieldKey.PASSWORD in state.sensitiveFieldKeys || entry.type != EntryType.LOGIN
                         },
