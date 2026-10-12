@@ -1,5 +1,6 @@
-package com.aozijx.passly.feature.autofill.shared
+package com.aozijx.passly.feature.autofill.core
 
+import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.port.ApplicationLabelResolver
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.FieldKey
@@ -7,15 +8,16 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class AutofillCredentialTitleResolverTest {
-
     @Test
     fun draftNormalizesLookupAssociationsAndPreservesCredentialValues() {
         val draft = buildAutofillCredentialDraft(
-            packageName = " COM.Example.Mail ",
-            webDomain = "https://Login.Example.com/path",
-            pageTitle = "Example Login",
-            usernameValue = " alice ",
-            passwordValue = " secret ",
+            draft = AutofillSaveDraft(
+                packageName = " COM.Example.Mail ",
+                webDomain = "https://Login.Example.com/path",
+                pageTitle = "Example Login",
+                username = " alice ",
+                password = " secret ",
+            ),
             applicationLabelResolver = ApplicationLabelResolver { "Example Mail" },
         )
 

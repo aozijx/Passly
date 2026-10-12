@@ -9,13 +9,16 @@ import android.service.autofill.SaveRequest
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.autofill.port.FieldMatchStrategy
+import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
+import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
+import com.aozijx.passly.domain.autofill.model.AutofillSaveSource
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.autofill.internal.FillRequestDispatcher
 import com.aozijx.passly.feature.autofill.internal.di.Heuristic
 import com.aozijx.passly.feature.autofill.internal.save.SaveRequestAnalyzer
 import com.aozijx.passly.feature.autofill.legacy.service.adapter.LegacyPlatformAdapter
 import com.aozijx.passly.feature.autofill.legacy.service.parser.AutofillStructureParser
-import com.aozijx.passly.feature.autofill.shared.SaveAutofillCredentialUseCase
+import com.aozijx.passly.feature.autofill.core.SaveAutofillCredential
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -44,7 +47,7 @@ class LegacyAutofillService : AutofillService() {
     lateinit var adapter: LegacyPlatformAdapter
 
     @Inject
-    lateinit var saveCredential: SaveAutofillCredentialUseCase
+    lateinit var saveCredential: SaveAutofillCredential
 
     @Inject
     lateinit var saveAnalyzer: SaveRequestAnalyzer
@@ -108,13 +111,20 @@ class LegacyAutofillService : AutofillService() {
                     return@launch
                 }
 
-                saveCredential(
-                    packageName = pending.packageName,
-                    webDomain = pending.webDomain,
-                    pageTitle = pending.pageTitle,
-                    usernameValue = pending.username,
-                    passwordValue = pending.password,
-                ).getOrThrow()
+                val saveOutcome = saveCredential(
+                    draft = AutofillSaveDraft(
+                        packageName = pending.packageName.orEmpty(),
+                        webDomain = pending.webDomain,
+                        pageTitle = pending.pageTitle,
+                        username = pending.username,
+                        password = pending.password,
+                    ),
+                    source = AutofillSaveSource.LEGACY_PROMPT,
+                )
+                if (saveOutcome !is AutofillSaveOutcome.Saved) {
+                    callback.onFailure("Credential could not be saved")
+                    return@launch
+                }
 
                 TelemetryRuntime.i(EventCategory.AUTOFILL, "legacy.credential_saved")
                 callback.onSuccess()

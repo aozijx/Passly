@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.autofill.credential
 
-import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
@@ -8,12 +7,14 @@ import com.aozijx.passly.domain.access.port.AuthenticationRequester
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.AutofillScope
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
+import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
+import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
+import com.aozijx.passly.domain.autofill.model.AutofillSaveSource
 import com.aozijx.passly.domain.autofill.port.AutofillCredentialRepository
 import com.aozijx.passly.domain.autofill.port.AutofillGrantStore
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
-import com.aozijx.passly.feature.autofill.shared.AutofillSaveSource
 import com.aozijx.passly.feature.autofill.shared.RecordAutofillUsageUseCase
-import com.aozijx.passly.feature.autofill.shared.SaveAutofillCredentialUseCase
+import com.aozijx.passly.feature.autofill.core.SaveAutofillCredential
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
@@ -49,7 +50,7 @@ class CredentialResponseInteractor @Inject constructor(
     private val authenticationRequester: AuthenticationRequester,
     private val vaultAccessState: SecureSessionAccessState,
     private val recordAutofillUsage: RecordAutofillUsageUseCase,
-    private val saveAutofillCredential: SaveAutofillCredentialUseCase,
+    private val saveAutofillCredential: SaveAutofillCredential,
     private val grantStore: AutofillGrantStore,
 ) {
     suspend fun resolvePasswordCredential(
@@ -129,16 +130,20 @@ class CredentialResponseInteractor @Inject constructor(
             }
         }
 
-        return when (saveAutofillCredential(
-            packageName = packageName,
-            webDomain = null,
-            pageTitle = null,
-            usernameValue = username,
-            passwordValue = password,
-            source = AutofillSaveSource.CREDENTIAL_MANAGER,
-        )) {
-            is AppResult.Success -> CreatePasswordCredentialResult.Success
-            is AppResult.Failure -> CreatePasswordCredentialResult.NotSaved
+        return when (
+            saveAutofillCredential(
+                draft = AutofillSaveDraft(
+                    packageName = packageName,
+                    webDomain = null,
+                    pageTitle = null,
+                    username = username,
+                    password = password,
+                ),
+                source = AutofillSaveSource.CREDENTIAL_MANAGER,
+            )
+        ) {
+            is AutofillSaveOutcome.Saved -> CreatePasswordCredentialResult.Success
+            else -> CreatePasswordCredentialResult.NotSaved
         }
     }
 }
