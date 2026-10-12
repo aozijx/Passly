@@ -5,7 +5,6 @@ import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.local.database.DatabaseClock
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.mapper.entry.hasEntryCapability
-import com.aozijx.passly.data.mapper.entry.mergePreservedFields
 import com.aozijx.passly.data.mapper.entry.toDatabaseFlags
 import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
@@ -31,11 +30,10 @@ internal class UpdateEntryExecutor @Inject constructor(
         val result = databaseTransactions.write("entry_update") {
             val entity = entryQueryDao().getById(id) ?: throw NotFound()
             val oldProfile = EntryProfileMapper.fromEntity(entity)
-            val oldSecret = secretFieldStore.readAll(this, id)
             val newProfile = changes.profile ?: oldProfile
             replacedIconPath = oldProfile.icon.customReference
             currentIconPath = newProfile.icon.customReference
-            val newSecret = changes.secret?.mergePreservedFields(oldSecret) ?: oldSecret
+            val newSecret = changes.secret ?: secretFieldStore.readBundle(this, id)
             require(newSecret.credential.kind == entity.entryType.credentialKind) {
                 "${entity.entryType} cannot contain ${newSecret.credential.kind} credentials"
             }
@@ -64,7 +62,7 @@ internal class UpdateEntryExecutor @Inject constructor(
             databaseTransactions.checkAffectedRows(affected)
 
             if (changes.secret != null) {
-                secretFieldStore.replaceAll(this, id, newSecret)
+                secretFieldStore.updateExisting(this, id, newSecret)
             }
 
             revisionWriter.snapshotChanges(

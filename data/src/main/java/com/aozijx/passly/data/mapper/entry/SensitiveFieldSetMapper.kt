@@ -9,6 +9,12 @@ import com.aozijx.passly.domain.entry.model.credential.PasskeyCredential
 import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 
+internal sealed interface SensitiveFieldUpdate {
+    data object Preserve : SensitiveFieldUpdate
+    data object Clear : SensitiveFieldUpdate
+    data class Replace(val value: String) : SensitiveFieldUpdate
+}
+
 /**
  * Splits an [EntrySecret] into field-level values (stored as per-key ciphertext rows) and the
  * low-sensitivity aggregate (stored as the `STRUCT_BUNDLE` row), and merges them back.
@@ -35,6 +41,54 @@ fun EntrySecret.toSensitiveFieldValues(): Map<SensitiveFieldKey, String> = build
     putText(SensitiveFieldKey.OTP_SECRET, otp?.config?.secret)
 }
 
+/**
+ * Describes the high-sensitivity rows explicitly submitted by an entry edit.
+ *
+ * A missing value means the editor never loaded that secret and must preserve the stored row;
+ * a blank value is an intentional clear. This lets ordinary updates avoid decrypting every
+ * sensitive row just to write the low-sensitivity bundle.
+ */
+internal fun EntrySecret.toSensitiveFieldUpdates(): Map<SensitiveFieldKey, SensitiveFieldUpdate> =
+    buildMap {
+        fun putText(key: SensitiveFieldKey, value: String?) {
+            put(
+                key,
+                when {
+                    value == null -> SensitiveFieldUpdate.Preserve
+                    value.isBlank() -> SensitiveFieldUpdate.Clear
+                    else -> SensitiveFieldUpdate.Replace(value)
+                },
+            )
+        }
+
+        when (val value = credential) {
+            is LoginCredential -> putText(SensitiveFieldKey.PASSWORD, value.password)
+            is CardCredential -> {
+                putText(SensitiveFieldKey.CARD_NUMBER, value.cardNumber)
+                putText(SensitiveFieldKey.CARD_CVV, value.cardCvv)
+                putText(SensitiveFieldKey.CARD_PAYMENT_PIN, value.paymentPin)
+            }
+            is IdentityCredential -> {
+                putText(SensitiveFieldKey.IDENTITY_NUMBER, value.idNumber)
+                putText(SensitiveFieldKey.SEED_PHRASE, value.seedPhrase)
+                putText(
+                    SensitiveFieldKey.RECOVERY_CODES,
+                    value.recoveryCodes.takeIf(List<String>::isNotEmpty)?.joinToString("\n"),
+                )
+            }
+            is SshCredential -> {
+                putText(SensitiveFieldKey.SSH_PRIVATE_KEY, value.privateKey)
+                putText(SensitiveFieldKey.SSH_PASSPHRASE, value.passphrase)
+            }
+            is PasskeyCredential -> putText(
+                SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE,
+                value.privateKeyReference,
+            )
+            is OtpCredential -> putText(SensitiveFieldKey.OTP_SECRET, value.config.secret)
+            else -> Unit
+        }
+    }
+
 /** The aggregate payload without any field-level value. Sensitive fields become `null`. */
 fun EntrySecret.toBundleSecret(): EntrySecret {
     val credential = when (val value = credential) {
@@ -48,7 +102,6 @@ fun EntrySecret.toBundleSecret(): EntrySecret {
     }
     return copy(credential = credential)
 }
-
 /** Reassembles a complete secret from the bundle and decrypted field-level values. */
 fun EntrySecret.mergeSensitiveFields(fields: Map<SensitiveFieldKey, String>): EntrySecret {
     val credential = when (val value = credential) {
@@ -73,50 +126,6 @@ fun EntrySecret.mergeSensitiveFields(fields: Map<SensitiveFieldKey, String>): En
         is OtpCredential -> fields[SensitiveFieldKey.OTP_SECRET]?.let {
             value.copy(config = value.config.copy(secret = it))
         } ?: value
-        else -> value
-    }
-    return copy(credential = credential)
-}
-
-/**
- * Applies a UI-submitted secret on top of the currently stored one. A `null` field-level value
- * in `this` means "not loaded into the edit form", so the stored value is preserved; a non-null
- * value (including blank, which clears the field) is taken from `this`.
- */
-internal fun EntrySecret.mergePreservedFields(current: EntrySecret): EntrySecret {
-    val credential = when (val value = credential) {
-        is LoginCredential -> if (value.password == null) {
-            value.copy(password = current.login?.password)
-        } else {
-            value
-        }
-
-        is CardCredential -> value.copy(
-            cardNumber = value.cardNumber ?: current.card?.cardNumber,
-            cardCvv = value.cardCvv ?: current.card?.cardCvv,
-            paymentPin = value.paymentPin ?: current.card?.paymentPin,
-        )
-        is IdentityCredential -> value.copy(
-            idNumber = value.idNumber ?: current.identity?.idNumber,
-            seedPhrase = value.seedPhrase ?: current.identity?.seedPhrase,
-            recoveryCodes = value.recoveryCodes.ifEmpty { current.identity?.recoveryCodes.orEmpty() },
-        )
-        is SshCredential -> value.copy(
-            privateKey = value.privateKey ?: current.ssh?.privateKey,
-            passphrase = value.passphrase ?: current.ssh?.passphrase,
-        )
-        is PasskeyCredential -> if (value.privateKeyReference == null) {
-            value.copy(privateKeyReference = current.passkey?.privateKeyReference)
-        } else {
-            value
-        }
-
-        is OtpCredential -> if (value.config.secret == null) {
-            value.copy(config = value.config.copy(secret = current.otp?.config?.secret))
-        } else {
-            value
-        }
-
         else -> value
     }
     return copy(credential = credential)

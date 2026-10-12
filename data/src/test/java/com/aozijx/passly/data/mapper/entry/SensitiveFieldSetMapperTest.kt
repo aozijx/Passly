@@ -3,12 +3,57 @@ package com.aozijx.passly.data.mapper.entry
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.credential.CardCredential
 import com.aozijx.passly.domain.entry.model.credential.IdentityCredential
+import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
 class SensitiveFieldSetMapperTest {
+    @Test
+    fun `missing sensitive value is preserved during an entry update`() {
+        val updates = EntrySecret(
+            credential = LoginCredential(password = null),
+        ).toSensitiveFieldUpdates()
+
+        assertEquals(
+            SensitiveFieldUpdate.Preserve,
+            updates[SensitiveFieldKey.PASSWORD],
+        )
+    }
+
+    @Test
+    fun `blank sensitive value is cleared during an entry update`() {
+        val updates = EntrySecret(
+            credential = CardCredential(cardCvv = ""),
+        ).toSensitiveFieldUpdates()
+
+        assertEquals(
+            SensitiveFieldUpdate.Clear,
+            updates[SensitiveFieldKey.CARD_CVV],
+        )
+    }
+
+    @Test
+    fun `provided sensitive value replaces only that field during an entry update`() {
+        val updates = EntrySecret(
+            credential = CardCredential(cardNumber = "4111"),
+        ).toSensitiveFieldUpdates()
+
+        assertEquals(
+            SensitiveFieldUpdate.Replace("4111"),
+            updates[SensitiveFieldKey.CARD_NUMBER],
+        )
+        assertEquals(
+            SensitiveFieldUpdate.Preserve,
+            updates[SensitiveFieldKey.CARD_CVV],
+        )
+        assertEquals(
+            SensitiveFieldUpdate.Preserve,
+            updates[SensitiveFieldKey.CARD_PAYMENT_PIN],
+        )
+    }
+
     @Test
     fun `card credential splits into independent field values`() {
         val fields = EntrySecret(

@@ -6,8 +6,10 @@ import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.DatabaseClock
 import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
 import com.aozijx.passly.data.mapper.entry.mergeSensitiveFields
+import com.aozijx.passly.data.mapper.entry.SensitiveFieldUpdate
 import com.aozijx.passly.data.mapper.entry.toBundleSecret
 import com.aozijx.passly.data.mapper.entry.toSensitiveFieldValues
+import com.aozijx.passly.data.mapper.entry.toSensitiveFieldUpdates
 import com.aozijx.passly.data.codec.sensitiveFieldKeyFromStorageKey
 import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.domain.entry.model.EntrySecret
@@ -51,6 +53,40 @@ class SecretFieldStore @Inject internal constructor(
             updatedAt = now,
         )
         rows.forEach { db.secretFieldCommandDao().upsert(it) }
+    }
+
+    /**
+     * Updates an existing entry without reading or rewriting untouched high-sensitivity rows.
+     */
+    suspend fun updateExisting(db: AppDatabase, entryId: String, secret: EntrySecret) {
+        val now = clock.now()
+        secret.toSensitiveFieldUpdates().forEach { (key, update) ->
+            when (update) {
+                SensitiveFieldUpdate.Preserve -> Unit
+                SensitiveFieldUpdate.Clear -> db.secretFieldCommandDao().delete(
+                    entryId,
+                    key.toStorageKey(),
+                )
+                is SensitiveFieldUpdate.Replace -> db.secretFieldCommandDao().upsert(
+                    EntrySecretFieldEntity(
+                        entryId = entryId,
+                        fieldKey = key.toStorageKey(),
+                        valueCipher = fieldCodec.encrypt(entryId, key, update.value),
+                        keyVersion = 1,
+                        updatedAt = now,
+                    ),
+                )
+            }
+        }
+        db.secretFieldCommandDao().upsert(
+            EntrySecretFieldEntity(
+                entryId = entryId,
+                fieldKey = SecretBundleCodec.FIELD_KEY,
+                valueCipher = bundleCodec.encrypt(secret.toBundleSecret(), entryId),
+                keyVersion = 1,
+                updatedAt = now,
+            ),
+        )
     }
 
     /** Low-sensitivity aggregate; every field-level value is `null`. */
