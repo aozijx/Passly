@@ -1,7 +1,6 @@
 package com.aozijx.passly.presentation.feature.autofill.legacy
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Test
 
@@ -18,14 +17,14 @@ class AutofillFillReducerTest {
     }
 
     @Test
-    fun `authentication cancellation completes with a null payload`() {
+    fun `authentication cancellation completes explicitly`() {
         val result = AutofillFillReducer.reduce(
             AutofillFillUiState.Loading,
-            AutofillFillMutation.Completed(null),
+            AutofillFillMutation.Completed(AutofillFillResult.Cancelled),
         )
 
         val completed = result as AutofillFillUiState.Result
-        assertNull(completed.payload)
+        assertSame(AutofillFillResult.Cancelled, completed.result)
     }
 
     @Test

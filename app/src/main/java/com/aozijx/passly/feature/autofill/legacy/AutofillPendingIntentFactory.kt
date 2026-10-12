@@ -4,69 +4,76 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.view.autofill.AutofillId
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.autofill.model.FieldRole
-import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
+import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
-import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
+import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
 import com.aozijx.passly.feature.autofill.platform.AutofillPendingIntentPolicy
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Unified PendingIntent Factory for Autofill.
- */
 @Singleton
 class AutofillPendingIntentFactory @Inject constructor(
     private val launchTarget: AutofillLaunchTarget,
 ) {
-
-    fun createFillIntent(
+    fun createCandidateIntent(
         context: Context,
-        candidate: ResolvedCandidate,
+        interactionId: AutofillInteractionId,
+        entryId: EntryId,
         parsed: ParsedStructure,
         uiMode: AutofillPresentation,
-        roleIds: Map<FieldRole, List<AutofillId>> = emptyMap(),
+        roleIds: Map<FieldRole, List<AutofillId>>,
+        savePromptsEnabled: Boolean,
     ): Intent {
-        val requestId = AutofillPendingIntentPolicy.legacyFillRequestId(candidate.entry.id.value)
+        val requestId = AutofillPendingIntentPolicy.legacyFillRequestId(
+            interactionId.value,
+            entryId.value,
+        )
         return launchTarget.legacyFillIntent(context, requestId).apply {
             setIdentifier(requestId)
-            putExtra("vault_item_id", candidate.entry.id.value)
-            putExtra("autofill_ui_mode", uiMode.name)
-            putExtra("package_name", parsed.packageName)
-            putExtra("web_domain", parsed.webDomain)
-            putExtra("editable_ids", parsed.allIds.toTypedArray())
-            putRoleIds(this, roleIds)
+            putExtra(AutofillLaunchExtras.ENTRY_ID, entryId.value)
             putExtra(AutofillLaunchExtras.RETURN_DATASET, true)
+            putCommonExtras(interactionId, parsed, uiMode, roleIds, savePromptsEnabled)
         }
     }
 
-    fun createBaseIntent(
+    fun createInteractionIntent(
         context: Context,
+        interactionId: AutofillInteractionId,
         parsed: ParsedStructure,
         uiMode: AutofillPresentation,
-        roleIds: Map<FieldRole, List<AutofillId>> = emptyMap(),
+        roleIds: Map<FieldRole, List<AutofillId>>,
+        savePromptsEnabled: Boolean,
     ): Intent {
-        val requestId = AutofillPendingIntentPolicy.legacyBaseRequestId(parsed.packageName)
+        val requestId = AutofillPendingIntentPolicy.legacyInteractionRequestId(interactionId.value)
         return launchTarget.legacyFillIntent(context, requestId).apply {
             setIdentifier(requestId)
-            putExtra("autofill_ui_mode", uiMode.name)
-            putExtra("package_name", parsed.packageName)
-            putExtra("web_domain", parsed.webDomain)
-            putExtra("editable_ids", parsed.allIds.toTypedArray())
-            putRoleIds(this, roleIds)
+            putCommonExtras(interactionId, parsed, uiMode, roleIds, savePromptsEnabled)
         }
     }
 
-    private fun putRoleIds(intent: Intent, roleIds: Map<FieldRole, List<AutofillId>>) {
-        if (roleIds.isEmpty()) return
+    private fun Intent.putCommonExtras(
+        interactionId: AutofillInteractionId,
+        parsed: ParsedStructure,
+        uiMode: AutofillPresentation,
+        roleIds: Map<FieldRole, List<AutofillId>>,
+        savePromptsEnabled: Boolean,
+    ) {
+        putExtra(AutofillLaunchExtras.INTERACTION_ID, interactionId.value)
+        putExtra(AutofillLaunchExtras.UI_MODE, uiMode.name)
+        putExtra(AutofillLaunchExtras.PACKAGE_NAME, parsed.packageName)
+        putExtra(AutofillLaunchExtras.WEB_DOMAIN, parsed.webDomain)
+        putExtra(AutofillLaunchExtras.EDITABLE_IDS, parsed.allIds.toTypedArray())
+        putExtra(AutofillLaunchExtras.SAVE_PROMPTS_ENABLED, savePromptsEnabled)
         roleIds[FieldRole.USERNAME]?.takeIf(List<AutofillId>::isNotEmpty)
-            ?.let { intent.putExtra("username_ids", ArrayList(it)) }
+            ?.let { putExtra(AutofillLaunchExtras.USERNAME_IDS, ArrayList(it)) }
         roleIds[FieldRole.PASSWORD]?.takeIf(List<AutofillId>::isNotEmpty)
-            ?.let { intent.putExtra("password_ids", ArrayList(it)) }
+            ?.let { putExtra(AutofillLaunchExtras.PASSWORD_IDS, ArrayList(it)) }
         roleIds[FieldRole.OTP]?.takeIf(List<AutofillId>::isNotEmpty)
-            ?.let { intent.putExtra("otp_ids", ArrayList(it)) }
+            ?.let { putExtra(AutofillLaunchExtras.OTP_IDS, ArrayList(it)) }
     }
 
     fun getActivityPendingIntent(

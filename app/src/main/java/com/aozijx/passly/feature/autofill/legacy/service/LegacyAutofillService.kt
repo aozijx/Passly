@@ -13,7 +13,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillSaveSource
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
-import com.aozijx.passly.feature.autofill.internal.FillRequestDispatcher
+import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.internal.di.Heuristic
 import com.aozijx.passly.feature.autofill.internal.save.SaveRequestAnalyzer
 import com.aozijx.passly.feature.autofill.legacy.service.adapter.LegacyPlatformAdapter
@@ -36,8 +36,7 @@ import javax.inject.Inject
 class LegacyAutofillService : AutofillService() {
 
     @Inject
-    @Heuristic
-    lateinit var dispatcher: FillRequestDispatcher
+    lateinit var discoverCandidates: DiscoverAutofillCandidates
 
     @Inject
     @Heuristic
@@ -72,11 +71,10 @@ class LegacyAutofillService : AutofillService() {
 
         val job = serviceScope.launch {
             try {
-                val response = dispatcher.dispatch(internalRequest)
+                val outcome = discoverCandidates(internalRequest)
                 val fillResponse = adapter.buildResponse(
-                    response = response,
+                    outcome = outcome,
                     parsed = parsed,
-                    uiMode = response.presentation,
                     context = this@LegacyAutofillService,
                 )
                 callback.onSuccess(fillResponse)

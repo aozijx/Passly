@@ -10,14 +10,14 @@ import androidx.core.content.IntentCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
+import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
@@ -33,7 +33,10 @@ class AutofillFillActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setResult(RESULT_CANCELED)
-        val request = parseIntent(intent)
+        val request = parseIntent(intent) ?: run {
+            finish()
+            return
+        }
 
         setContent {
             AppTheme {
@@ -48,41 +51,66 @@ class AutofillFillActivity : FragmentActivity() {
         }
     }
 
-    private fun parseIntent(intent: Intent?): AutofillFillRequest {
-        val raw = intent?.getStringExtra("autofill_ui_mode")
+    private fun parseIntent(intent: Intent?): AutofillFillRequest? {
+        val interactionId = intent?.getStringExtra(AutofillLaunchExtras.INTERACTION_ID)
+            ?.takeIf(String::isNotBlank)
+            ?.let(::AutofillInteractionId)
+            ?: return null
+        val packageName = intent.getStringExtra(AutofillLaunchExtras.PACKAGE_NAME)
+            ?.takeIf(String::isNotBlank)
+            ?: return null
+        val raw = intent.getStringExtra(AutofillLaunchExtras.UI_MODE)
         val uiMode = AutofillPresentation.entries
             .firstOrNull { it.name == raw }
             ?: AutofillPresentation.SYSTEM_INLINE
 
-        val isUnlockOnly = intent?.getBooleanExtra("unlock_only", false) ?: false
-        val packageName = intent?.getStringExtra("package_name")
-        val webDomain = intent?.getStringExtra("web_domain")
-        val directEntryId = intent?.getStringExtra("vault_item_id")
-        val candidateEntryIds = intent?.getStringArrayExtra("vault_item_ids")?.toList().orEmpty()
-        val returnsDataset = intent?.getBooleanExtra(AutofillLaunchExtras.RETURN_DATASET, false)
-            ?: false
+        val webDomain = intent.getStringExtra(AutofillLaunchExtras.WEB_DOMAIN)
+        val directEntryId = intent.getStringExtra(AutofillLaunchExtras.ENTRY_ID)
+            ?.takeIf(String::isNotBlank)
+            ?.let(::EntryId)
+        val returnsDataset = intent.getBooleanExtra(AutofillLaunchExtras.RETURN_DATASET, false)
+        val savePromptsEnabled = intent.getBooleanExtra(
+            AutofillLaunchExtras.SAVE_PROMPTS_ENABLED,
+            false,
+        )
 
-        val editableIds = intent?.let {
-            IntentCompat.getParcelableArrayExtra(it, "editable_ids", AutofillId::class.java)?.filterIsInstance<AutofillId>().orEmpty()
+        val editableIds = intent.let {
+            IntentCompat.getParcelableArrayExtra(
+                it,
+                AutofillLaunchExtras.EDITABLE_IDS,
+                AutofillId::class.java,
+            )?.filterIsInstance<AutofillId>().orEmpty()
         }.orEmpty()
-        val usernameIds = intent?.let {
-            IntentCompat.getParcelableArrayListExtra(it, "username_ids", AutofillId::class.java).orEmpty()
+        val usernameIds = intent.let {
+            IntentCompat.getParcelableArrayListExtra(
+                it,
+                AutofillLaunchExtras.USERNAME_IDS,
+                AutofillId::class.java,
+            ).orEmpty()
         }.orEmpty()
-        val passwordIds = intent?.let {
-            IntentCompat.getParcelableArrayListExtra(it, "password_ids", AutofillId::class.java).orEmpty()
+        val passwordIds = intent.let {
+            IntentCompat.getParcelableArrayListExtra(
+                it,
+                AutofillLaunchExtras.PASSWORD_IDS,
+                AutofillId::class.java,
+            ).orEmpty()
         }.orEmpty()
-        val otpIds = intent?.let {
-            IntentCompat.getParcelableArrayListExtra(it, "otp_ids", AutofillId::class.java).orEmpty()
+        val otpIds = intent.let {
+            IntentCompat.getParcelableArrayListExtra(
+                it,
+                AutofillLaunchExtras.OTP_IDS,
+                AutofillId::class.java,
+            ).orEmpty()
         }.orEmpty()
 
         return AutofillFillRequest(
+            interactionId = interactionId,
             uiMode = uiMode,
-            isUnlockOnly = isUnlockOnly,
             packageName = packageName,
             webDomain = webDomain,
             directEntryId = directEntryId,
-            candidateEntryIds = candidateEntryIds,
             returnsDataset = returnsDataset,
+            savePromptsEnabled = savePromptsEnabled,
             editableIds = editableIds,
             usernameIds = usernameIds,
             passwordIds = passwordIds,
@@ -90,23 +118,21 @@ class AutofillFillActivity : FragmentActivity() {
         )
     }
 
-    private fun finishWithResult(payload: AutofillAuthenticationPayload?) {
+    private fun finishWithResult(result: AutofillFillResult) {
         if (!resultFinishing.compareAndSet(false, true)) return
-        val resultIntent = when (payload) {
-            is AutofillAuthenticationPayload.Response -> Intent().apply {
-                putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, payload.value)
+        val resultIntent = when (result) {
+            is AutofillFillResult.Response -> Intent().apply {
+                putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, result.value)
             }
-            is AutofillAuthenticationPayload.DatasetResult -> Intent().apply {
-                putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, payload.value)
+            is AutofillFillResult.DatasetResult -> Intent().apply {
+                putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, result.value)
                 putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT_EPHEMERAL_DATASET, true)
             }
-            null -> null
+            AutofillFillResult.Cancelled -> null
         }
 
         if (resultIntent == null) {
-            // No result but we finished normally (e.g. unlock with no matches).
-            // Return OK with no data to keep the session alive for SaveInfo.
-            setResult(RESULT_OK)
+            setResult(RESULT_CANCELED)
         } else {
             setResult(RESULT_OK, resultIntent)
         }
@@ -115,16 +141,12 @@ class AutofillFillActivity : FragmentActivity() {
         WindowCompat.getInsetsController(window, window.decorView)
             .hide(WindowInsetsCompat.Type.ime())
 
-        val shouldCloseSession = payload == null || payload is AutofillAuthenticationPayload.DatasetResult
-        lifecycleScope.launch {
-            if (shouldCloseSession) viewModel.closeRequestSession()
-            finish()
-        }
+        finish()
     }
 
     override fun onDestroy() {
         if (!resultFinishing.get() && isFinishing) {
-            lifecycleScope.launch { viewModel.closeRequestSession() }
+            viewModel.onAction(AutofillFillUiAction.Cancel)
         }
         super.onDestroy()
     }

@@ -119,6 +119,7 @@ class DiscoverAutofillCandidatesTest {
                 credentialFieldMatchStrategy = fieldMatchStrategy,
                 startInteraction = StartAutofillInteraction(store, lease, vault),
                 interactionStore = store,
+                finishInteraction = FinishAutofillInteraction(store, lease),
             ),
             repository = repository,
         )

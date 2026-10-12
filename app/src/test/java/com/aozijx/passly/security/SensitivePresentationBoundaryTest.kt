@@ -20,15 +20,20 @@ class SensitivePresentationBoundaryTest {
 
     @Test
     fun `sensitive view model cleanup does not launch on cancelled view model scope`() {
-        listOf(
-            "com/aozijx/passly/presentation/feature/autofill/legacy/AutofillFillViewModel.kt",
-            "com/aozijx/passly/presentation/feature/autofill/credential/CredentialResponseViewModel.kt",
-        ).forEach { path ->
-            val onCleared = source(path).substringAfter("override fun onCleared()")
-                .substringBefore("\n    }")
-            assertFalse("Cleanup must not launch in viewModelScope: $path", onCleared.contains("viewModelScope.launch"))
-            assertTrue("Cleanup owner missing: $path", onCleared.contains("closeOnOwnerCleared"))
-        }
+        val legacyFill = source(
+            "com/aozijx/passly/presentation/feature/autofill/legacy/AutofillFillViewModel.kt"
+        )
+        assertFalse(legacyFill.contains("AutofillRequestSession"))
+        assertFalse(legacyFill.contains("closeOnOwnerCleared"))
+        assertFalse(legacyFill.contains("override fun onCleared()"))
+
+        val credentialResponse = source(
+            "com/aozijx/passly/presentation/feature/autofill/credential/CredentialResponseViewModel.kt"
+        )
+        val onCleared = credentialResponse.substringAfter("override fun onCleared()")
+            .substringBefore("\n    }")
+        assertFalse("Cleanup must not launch in viewModelScope", onCleared.contains("viewModelScope.launch"))
+        assertTrue("Cleanup owner missing", onCleared.contains("closeOnOwnerCleared"))
     }
 
     @Test

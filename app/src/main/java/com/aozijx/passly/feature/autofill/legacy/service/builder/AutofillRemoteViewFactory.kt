@@ -4,13 +4,13 @@ import android.content.Context
 import android.view.View
 import android.widget.RemoteViews
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
+import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
 
 object AutofillRemoteViewFactory {
 
     fun createDatasetItem(
         context: Context,
-        candidate: ResolvedCandidate,
+        candidate: AutofillCandidateSummary,
         badge: String
     ): RemoteViews {
         val subtitle = candidate.entry.username.trim()

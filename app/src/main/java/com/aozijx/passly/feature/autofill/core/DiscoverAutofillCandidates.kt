@@ -12,8 +12,10 @@ import com.aozijx.passly.domain.autofill.model.AutofillInteractionUpdate
 import com.aozijx.passly.domain.autofill.model.AutofillOperationFailure
 import com.aozijx.passly.domain.autofill.model.AutofillRequest
 import com.aozijx.passly.domain.autofill.model.AutofillSource
+import com.aozijx.passly.domain.autofill.model.FieldRole
 import com.aozijx.passly.domain.autofill.port.AutofillCandidateRepository
 import com.aozijx.passly.domain.autofill.port.FieldMatchStrategy
+import com.aozijx.passly.domain.autofill.port.MatchResult
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.autofill.internal.di.Heuristic
@@ -32,17 +34,26 @@ class DiscoverAutofillCandidates @Inject constructor(
     @param:Strict private val credentialFieldMatchStrategy: FieldMatchStrategy,
     private val startInteraction: StartAutofillInteraction,
     private val interactionStore: AutofillInteractionStore,
+    private val finishInteraction: FinishAutofillInteraction,
 ) {
     suspend operator fun invoke(
         request: AutofillRequest,
         interactionId: AutofillInteractionId? = null,
+        classifiedRoles: Map<String, FieldRole>? = null,
     ): AutofillDiscoveryOutcome {
         val policy = settingsSource.interaction.first().autofill
         if (!policy.enabled || !policy.supports(request.source)) {
             return AutofillDiscoveryOutcome.Disabled
         }
 
-        val match = request.source.fieldMatchStrategy().match(request)
+        val match = classifiedRoles?.let { roles ->
+            MatchResult(
+                roleMap = roles,
+                hasCredentials = roles.values.any {
+                    it == FieldRole.USERNAME || it == FieldRole.PASSWORD || it == FieldRole.OTP
+                },
+            )
+        } ?: request.source.fieldMatchStrategy().match(request)
         if (!match.hasCredentials) return AutofillDiscoveryOutcome.UnsupportedFields
 
         val scope = AutofillGrantContext(request.packageName, request.domain).normalized()
@@ -78,8 +89,10 @@ class DiscoverAutofillCandidates @Inject constructor(
                 ),
             )
         } catch (cancelled: CancellationException) {
+            finishInteraction.cancel(snapshot.id)
             throw cancelled
         } catch (_: Exception) {
+            finishInteraction.cancel(snapshot.id)
             return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.CANDIDATE_QUERY_FAILED)
         }
 

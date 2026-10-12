@@ -17,8 +17,14 @@ class AutofillPendingIntentPolicyTest {
 
     @Test
     fun `request identities preserve legacy and credential cancellation keys`() {
-        assertEquals("autofill-fill:entry-1", AutofillPendingIntentPolicy.legacyFillRequestId("entry-1"))
-        assertEquals("autofill-base:unknown", AutofillPendingIntentPolicy.legacyBaseRequestId(null))
+        assertEquals(
+            "autofill-fill:interaction-1:entry-1",
+            AutofillPendingIntentPolicy.legacyFillRequestId("interaction-1", "entry-1"),
+        )
+        assertEquals(
+            "autofill-interaction:interaction-1",
+            AutofillPendingIntentPolicy.legacyInteractionRequestId("interaction-1"),
+        )
         assertEquals("password-get:entry-1", AutofillPendingIntentPolicy.credentialGetRequestId("entry-1"))
         assertEquals("entry-1".hashCode(), AutofillPendingIntentPolicy.credentialGetRequestCode("entry-1"))
         assertNotEquals(

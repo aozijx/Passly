@@ -4,7 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
+import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
+import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.presentation.feature.autofill.legacy.ui.AutofillCandidateBottomSheet
 import com.aozijx.passly.presentation.feature.autofill.legacy.ui.AutofillCandidateItem
 import com.aozijx.passly.presentation.mapping.entry.toUiModel
@@ -13,7 +14,7 @@ import com.aozijx.passly.presentation.mapping.entry.toUiModel
 internal fun AutofillFillRoute(
     request: AutofillFillRequest,
     viewModel: AutofillFillViewModel,
-    onResult: (AutofillAuthenticationPayload?) -> Unit,
+    onResult: (AutofillFillResult) -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -22,8 +23,8 @@ internal fun AutofillFillRoute(
     }
     LaunchedEffect(state) {
         when (val current = state) {
-            is AutofillFillUiState.Result -> onResult(current.payload)
-            is AutofillFillUiState.Error -> onResult(null)
+            is AutofillFillUiState.Result -> onResult(current.result)
+            is AutofillFillUiState.Error -> onResult(AutofillFillResult.Cancelled)
             AutofillFillUiState.Initial,
             AutofillFillUiState.Loading,
             is AutofillFillUiState.ShowCandidates -> Unit
@@ -31,19 +32,16 @@ internal fun AutofillFillRoute(
     }
 
     val candidates = (state as? AutofillFillUiState.ShowCandidates)?.candidates ?: return
-    val candidatesById = candidates.associateBy { it.entry.id.value }
     AutofillCandidateBottomSheet(
-        candidates = candidates.map(ResolvedCandidate::toUiItem),
+        candidates = candidates.map(AutofillCandidateSummary::toUiItem),
         onCandidateSelected = { candidateId ->
-            candidatesById[candidateId]?.let { candidate ->
-                viewModel.onAction(AutofillFillUiAction.CandidateSelected(candidate))
-            }
+            viewModel.onAction(AutofillFillUiAction.CandidateSelected(EntryId(candidateId)))
         },
-        onCancel = { onResult(null) },
+        onCancel = { viewModel.onAction(AutofillFillUiAction.Cancel) },
     )
 }
 
-private fun ResolvedCandidate.toUiItem() = AutofillCandidateItem(
+private fun AutofillCandidateSummary.toUiItem() = AutofillCandidateItem(
     id = entry.id.value,
     iconName = entry.profile.icon.name,
     iconCustomPath = entry.profile.icon.customReference,
