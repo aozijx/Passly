@@ -1,85 +1,47 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.domain.autofill.model.AutofillField
-import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
-import com.aozijx.passly.domain.autofill.model.AutofillRequest
-import com.aozijx.passly.domain.autofill.model.AutofillSource
-import com.aozijx.passly.domain.autofill.model.AutofillStatus
-import com.aozijx.passly.domain.autofill.port.AutofillGrantStore
-import com.aozijx.passly.domain.autofill.port.FieldMatchStrategy
-import com.aozijx.passly.domain.autofill.port.MatchResult
-import com.aozijx.passly.feature.autofill.internal.CandidateRetriever
-import com.aozijx.passly.feature.autofill.internal.FillRequestDispatcher
+import com.aozijx.passly.domain.access.model.AuthInput
+import com.aozijx.passly.domain.access.model.AuthenticationRequest
+import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.port.AuthenticationRequester
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.autofill.port.AutofillCredentialRepository
-import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.domain.entry.model.query.CredentialCandidate
-import com.aozijx.passly.domain.settings.model.InteractionSettings
-import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
-import kotlinx.coroutines.flow.Flow
+import com.aozijx.passly.domain.access.port.SessionLockController
+import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionState
+import com.aozijx.passly.feature.autofill.core.StartAutofillInteraction
+import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
+import com.aozijx.passly.feature.autofill.runtime.AutofillUnlockLease
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/**
- * 恢复模式行为边界测试。
- *
- * 验证恢复模式下的访问控制、autofill 拒绝、以及认证方式可用性判断。
- */
+/** Security boundary tests for the limited Recovery Mode session. */
 class RecoveryModeBoundaryTest {
-
-    // ==================== 恢复模式下 autofill 被拒绝 ====================
-
     @Test
-    fun `recovery mode rejects autofill`() = runBlocking {
+    fun `recovery mode requires authorization before autofill`() = runBlocking {
         val sessionState = RecoverySecureSessionAccessState()
-        val dispatcher = FillRequestDispatcher(
-            sessionState = sessionState,
-            candidateRetriever = CandidateRetriever(EmptyCredentialRepository),
-            settingsSource = DefaultSettingsSource,
-            grantStore = object : AutofillGrantStore {
-                override fun grant(context: AutofillGrantContext) = Unit
-                override fun isGranted(context: AutofillGrantContext) = false
-                override fun clear() = Unit
-            },
-            fieldMatchStrategy = object : FieldMatchStrategy {
-                override fun match(request: AutofillRequest) =
-                    MatchResult(hasCredentials = true)
-            },
+        val interaction = StartAutofillInteraction(
+            store = AutofillInteractionStore(),
+            unlockLease = AutofillUnlockLease(NoOpAuthenticationController),
+            vaultAccessState = sessionState,
+        )(
+            source = AutofillInteractionSource.LEGACY,
+            scope = AutofillGrantContext("com.example"),
+            requireAuthentication = false,
         )
 
-        val response = dispatcher.dispatch(
-            AutofillRequest(
-                packageName = "com.example",
-                domain = null,
-                fields = listOf(
-                    AutofillField(
-                        id = "id/field",
-                        hints = setOf("USERNAME"),
-                        inputType = null,
-                        isFocused = true,
-                    )
-                ),
-                source = AutofillSource.AUTOFILL_SERVICE,
-            )
-        )
-
-        // Recovery mode has isDatabaseOpen() == true but hasFullSecureSessionAccess() == false,
-        // so autofill must be rejected.
-        assertEquals(AutofillStatus.LOCKED, response.status)
+        assertEquals(AutofillInteractionState.RequiresUnlock, interaction.state)
     }
 
     @Test
     fun `recovery mode hasFullSecureSessionAccess returns false`() {
         val state = RecoverySecureSessionAccessState()
-        // isDatabaseOpen is true (database is accessible in recovery mode)
         assertEquals(true, state.isDatabaseOpen())
-        // hasFullSecureSessionAccess must be false (limited access)
         assertEquals(false, state.hasFullSecureSessionAccess())
-        // isRecoveryMode must be true
         assertEquals(true, state.isRecoveryMode())
     }
 
@@ -99,85 +61,33 @@ class RecoveryModeBoundaryTest {
         assertEquals(false, state.isRecoveryMode())
     }
 
-    // ==================== 恢复模式下不能查看/复制密码 ====================
-
-    @Test
-    fun `recovery mode credential search returns empty`() = runBlocking {
-        // The AutofillCredentialRepositoryImpl checks hasFullSecureSessionAccess() before searching.
-        // In recovery mode, it should return empty results.
-        val repository = RecoveryModeCredentialRepository()
-        val results = repository.search(
-            packageName = "com.example",
-            webDomain = null,
-            allowUnmatched = false,
-            includeSecrets = true,
-            limit = 10
-        )
-        assertEquals(emptyList<Entry>(), results)
-    }
-
-    // ==================== SecureSessionAccessState 三层语义 ====================
-
     private class RecoverySecureSessionAccessState : SecureSessionAccessState {
-        override val authenticationState =
-            MutableStateFlow<AuthenticationState>(
-                AuthenticationState.RecoveryMode(authenticatedAtMs = 0L)
-            )
-
+        override val authenticationState = MutableStateFlow<AuthenticationState>(
+            AuthenticationState.RecoveryMode(authenticatedAtMs = 0L),
+        )
         override fun isUnlocked(): Boolean = true
     }
 
     private class AuthenticatedSecureSessionAccessState : SecureSessionAccessState {
-        override val authenticationState =
-            MutableStateFlow<AuthenticationState>(
-                AuthenticationState.Authenticated(authenticatedAtMs = 0L)
-            )
-
+        override val authenticationState = MutableStateFlow<AuthenticationState>(
+            AuthenticationState.Authenticated(authenticatedAtMs = 0L),
+        )
         override fun isUnlocked(): Boolean = true
     }
 
     private class LockedSecureSessionAccessState : SecureSessionAccessState {
-        override val authenticationState =
-            MutableStateFlow<AuthenticationState>(AuthenticationState.Locked)
-
+        override val authenticationState = MutableStateFlow<AuthenticationState>(
+            AuthenticationState.Locked,
+        )
         override fun isUnlocked(): Boolean = false
     }
 
-    private class RecoveryModeCredentialRepository : AutofillCredentialRepository {
-        override suspend fun search(
-            packageName: String?,
-            webDomain: String?,
-            allowUnmatched: Boolean,
-            includeSecrets: Boolean,
-            limit: Int,
-        ): List<CredentialCandidate> = emptyList()
+    private object NoOpAuthenticationController : AuthenticationRequester, SessionLockController {
+        override suspend fun authenticate(
+            request: AuthenticationRequest,
+            input: AuthInput,
+        ): AuthenticationResult = error("Recovery-mode Autofill must not authenticate during discovery")
 
-        override suspend fun getById(entryId: String): Entry? = null
-        override suspend fun getByIds(
-            entryIds: List<String>,
-            includeSecrets: Boolean
-        ): List<Entry> = emptyList()
-
-    }
-
-    private object EmptyCredentialRepository : AutofillCredentialRepository {
-        override suspend fun search(
-            packageName: String?,
-            webDomain: String?,
-            allowUnmatched: Boolean,
-            includeSecrets: Boolean,
-            limit: Int,
-        ): List<CredentialCandidate> = emptyList()
-
-        override suspend fun getById(entryId: String): Entry? = null
-        override suspend fun getByIds(
-            entryIds: List<String>,
-            includeSecrets: Boolean
-        ): List<Entry> = emptyList()
-
-    }
-
-    private object DefaultSettingsSource : InteractionSettingsSource {
-        override val interaction: Flow<InteractionSettings> = flowOf(InteractionSettings())
+        override suspend fun lock(reason: LockReason) = Unit
     }
 }

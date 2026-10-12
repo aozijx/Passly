@@ -2,126 +2,92 @@
 
 状态：当前实现。
 
-Passly 采用双框架并行的自动填充系统：针对 API 31-33 的 **Legacy Autofill** 和针对 API 34+ 的 **Modern Credential Manager**。
-系统通过分层架构将平台差异屏蔽在适配层，核心业务逻辑（检索、匹配、策略）在 `feature.autofill.internal` 中实现共享。
+代码核对日期：2026-10-13。
 
-## 架构概览
+Passly 同时支持传统 Autofill Service 与 Android 14+ Credential Manager。两套 Android 入口只负责解析系统请求和构造平台响应；候选发现、交互授权、单条秘密解析、保存与结束由同一组共享操作负责。
+
+## 当前架构
 
 ```mermaid
 flowchart TD
-    subgraph Legacy_Framework ["Legacy Autofill (API 31-33)"]
-        LAS["LegacyAutofillService"] --> ASP["AutofillStructureParser"]
-        ASP --> LPA["LegacyPlatformAdapter"]
-    end
-
-    subgraph Modern_Framework ["Modern Credential Manager (API 34+)"]
-        MCS["ModernCredentialService"] --> BGH["BeginGetHandler"]
-        BGH --> MPA["CredentialPlatformAdapter"]
-    end
-
-    subgraph Internal_Core ["Internal Core (feature.autofill.internal)"]
-        LPA --> FRD["FillRequestDispatcher"]
-        MPA --> FRD
-        FRD --> HMS["HeuristicMatchStrategy"]
-        HMS --> AHP["AutofillHintProvider (XML-Driven)"]
-        FRD --> CR["CandidateRetriever"]
-        CR --> Repository["AutofillCredentialRepository"]
-    end
-
-    Repository --> DB[(Vault Database)]
+    Legacy[LegacyAutofillService] --> Parse[AssistStructure parser]
+    Credential[ModernCredentialService] --> CredentialAdapter[Credential handlers]
+    Parse --> Discover[DiscoverAutofillCandidates]
+    CredentialAdapter --> Discover
+    Discover --> CandidateRepository[AutofillCandidateRepository]
+    CandidateRepository --> Metadata[(entries metadata)]
+    Discover --> Store[AutofillInteractionStore]
+    Store --> Authorize[AuthorizeAutofillInteraction]
+    Authorize --> Auth[AuthenticationRequester]
+    Store --> Resolve[ResolveAutofillSelection]
+    Resolve --> Resolver[AutofillCredentialResolver]
+    Resolver --> Secret[(selected secret field)]
+    Store --> Finish[FinishAutofillInteraction]
+    Finish --> Lease[AutofillUnlockLease]
 ```
 
-### 核心层 (Internal Core)
-- **`FillRequestDispatcher`**：核心调度员，负责编排锁定检查、候选检索、字段匹配和响应组装。
-- **`HeuristicMatchStrategy`**：启发式匹配器。通过多层过滤（Hint -> InputType -> ID -> 文本正则）识别字段角色。
-- **`AutofillHintProvider`**：配置源。从 `autofill_hints.xml` 加载匹配规则，支持多语言扩展且无需修改代码。
+共享操作的职责如下：
 
-### 适配层 (Platform Adapters)
-- **Legacy**：负责解析 `AssistStructure` 视图树，并构建 `RemoteViews` 渲染的下拉/内联候选。
-- **Modern**：深度集成系统底部选择器，通过安全通道传递 `PasswordCredentialEntry`。
+- `DiscoverAutofillCandidates`：读取当前设置、识别字段、建立或恢复 interaction，并只查询候选元数据。
+- `AuthorizeAutofillInteraction`：以 `AuthenticationPurpose.AUTOFILL` 完成一次交互授权；并发授权会合并为同一次认证。
+- `ResolveAutofillSelection`：验证 interaction、规范化作用域和“确实展示过”的 entry ID 后，才读取该条目的秘密。
+- `SaveAutofillCredential` / `SaveAutofillInteraction`：使用正式 Entry 写事务保存捕获到的密码。
+- `FinishAutofillInteraction`：统一完成、取消或过期 interaction，并释放 Autofill 持有的临时解锁。
 
----
+`HeuristicMatchStrategy` 仅供传统 Autofill 解析非标准表单；Credential Manager 使用严格字段策略。平台适配器不得直接依赖 Entry repository 或认证端口，这一依赖方向由 `SourceBoundaryPolicy` 验证。
 
-## 匹配逻辑优化：猜测与规避
+## 信任边界
 
-为了解决“非标准页面填不上”和“错填”问题，Passly 实施了以下增强策略：
+Autofill 跨越目标应用、Android 系统、Passly Service、认证 Activity 和 Vault：
 
-### 1. 强化“猜密码”与弱目标放行
-当页面未提供标准 `autofillHints` 时，`HeuristicMatchStrategy` 会通过以下方式“盲猜”：
-- **文本术语识别**：扫描 Hint 和 ContentDescription 是否包含“密码”、“口令”、“passwd”等关键字。
-- **弱目标合成**：如果页面识别到了密码术语，即便账号框无法明确识别，也会在用户点击输入框时，自动将当前**聚焦的可编辑字段**识别为账号/密码，确保填充入口弹出。
+- Credential Manager 的调用方身份只能来自系统注入的 `ProviderGetCredentialRequest`、`ProviderCreateCredentialRequest` 或原始 `BeginGetCredentialRequest`。
+- PendingIntent 自定义 extras 只携带 Passly 生成的 `interactionId` 与不透明 `entryId`，不能携带或重建调用方授权。
+- 传统 Autofill 的包名、域名和字段来自当前 `AssistStructure`；返回 Dataset 前仍需通过 interaction 中记录的规范化作用域。
+- 进程死亡会丢失 process-local interaction。旧选择因此被拒绝并由 Android 重新发起查询；Passly 不从 extras 恢复授权。
 
-### 2. 确认框智能规避
-在注册和改密页面，系统会自动识别“确认密码”、“再次输入”等字段（通过 `autofill_confirmation_keywords`）。
-- **策略**：确认类字段会被赋予高优先级排除，防止主密码被填入确认框而导致填充失败或表单提交错误。
+返回秘密前必须同时满足：
 
-### 3. 保存提示的启发式兜底
-在 `LegacyAutofillService.onSaveRequest` 中，如果角色匹配器未能 100% 确定字段：
-- **盲猜保存**：系统会扫描页面上所有包含有效内容的编辑框。
-- **优先级推断**：通常将最后一个符合密码特征（掩码、密码类型或 ID 命中）的字段作为密码，将其之前的字段作为账号。这极大提升了在复杂 WebView 页面上的账号捕获成功率。
+1. 当前入口与设置仍然启用；
+2. interaction 已授权且未结束；
+3. 最终系统请求的包名/域名与 interaction 作用域一致；
+4. entry ID 属于本次实际展示的候选集合；
+5. Credential Manager 的 `allowedUserIds` 在展示与最终选择阶段均通过；
+6. 解析结果包含可填充的非空密码。
 
----
+## 一次认证与临时解锁
 
-## 安全防御：防范时序攻击
+认证绑定 `AutofillInteractionId`，不是按包名授予的时间窗口，也不能跨 interaction 复用。
 
-自动填充系统涉及大量敏感字符串（域名、包名、Hash）的匹配。Passly 实施了**恒定时间比较（Constant-time comparison）**来防范时序攻击（Timing Attacks）：
+- Vault 锁定或设置要求填充前验证时，interaction 进入 `RequiresUnlock`。
+- 成功认证后，同一个 interaction 进入 `Authorized`；解锁后重新发现和最终选择不会再次认证。
+- 如果 Autofill 的认证动作实际解锁了 Vault，`AutofillUnlockLease` 记录所有借用该解锁的活跃 interaction。最后一个借用者结束后才执行 `AUTOFILL_REQUEST_FINISHED` 锁定。
+- 每个 interaction 创建时安排 60 秒 process-local 超时。Android 选择器被放弃、Activity 未返回或调用方未清理状态时，超时会把 interaction 标记为 `Expired` 并释放临时解锁。
+- 应用原本已经解锁时，Autofill 结束不会额外锁定用户会话。
 
-- **哈希校验**：在 Blind Index 检索后的二次校验阶段，使用 `ConstantTime.isEqual`（封装了 `MessageDigest.isEqual`）对比摘要。这确保了比较耗时与匹配程度无关，攻击者无法通过观察响应时间推断内部数据的部分内容。
-- **持久化结果复核**：Blind Index 预筛选后的包名与域名复核使用恒定时间比较；选中条目的内存作用域检查使用统一规范化规则。
-- **DEK 验证**：Vault 解锁时的 DEK 完整性检查（Verification Tag）也采用了相同的防时序攻击逻辑。
+## 数据最小化
 
----
+- 候选阶段只使用 `AutofillCandidateSummary`，其中只有 `EntryListItem` 元数据和匹配原因，不允许出现 `Entry` 聚合、`EntrySecret` 或 credential secret 类型。
+- `AutofillCredentialResolver` 只在最终选择后读取单个条目的密码字段。
+- 密码不会进入候选列表、PendingIntent extras、SavedStateHandle 或 interaction snapshot。
+- 传统 Autofill 的认证结果使用临时 Dataset 标志，减少系统长期缓存。
 
-## 威胁边界
+## 取消与清理
 
-自动填充跨越目标应用、Android 系统、Passly Service、认证 Activity 和 Vault。系统提供的
-`AssistStructure`、`AutofillId` 与调用包信息只描述当前填充上下文；Intent 中由 Passly 写入的 entry ID、
-包名和域名也只是查询线索，不能单独作为授权依据。Credential Manager 的调用方身份必须来自系统注入的
-`ProviderGetCredentialRequest` 或 `ProviderCreateCredentialRequest`，不得由 Passly 自己写入
-PendingIntent。
-
-在任何返回凭据的路径上都必须满足：
-
-1. 当前设置允许该入口和该类候选。
-2. Vault 已解锁；需要复验时取得 `AuthenticationPurpose.AUTOFILL` 的成功结果。
-3. 候选仍与当前包名或规范化域名匹配。
-4. 返回值只包含当前表单存在的字段，不携带无关秘密。
-
----
-
-## 一次验证的作用域
-
-“一次验证”表示**当前一次 Autofill 交互流程**中的一次新鲜身份验证，不是时间窗口，也不是可跨请求复用的令牌。
-
-- `AuthenticationPurpose.AUTOFILL` 受认证中心的新鲜认证策略控制。即使主界面 Vault 已解锁，
-  `requireAuthentication = true` 时仍需重新验证。
-- **短期会话授权（`AutofillSessionGrantStore`）**：为了避免“解锁 Vault -> 选择同一流程候选”连续弹出两次认证，系统在认证成功后对当前包名/域名授予 30 秒 TTL 的单槽授权。
-- **会话回收时机**：`AutofillRequestSession` 只在**最终步骤**（取消，或交付可立即填充的响应）关闭并 SEAL vault。同时包含 60 秒**非活动自动锁定**机制。
-
----
-
-## 数据与展示最小化
-
-- **包名/域名 Blind Index**：查询候选时不做明文扫描。
-- **按需加载秘密**：候选列表阶段只解密摘要（标题、用户名），不查询密码密文；只有在认证通过并用户点选后，才解密单条凭据。
-- **临时 Dataset (API 31+)**：设置 `EXTRA_AUTHENTICATION_RESULT_EPHEMERAL_DATASET = true`，确保凭据不在系统缓存中长期驻留，且清空字段后不会自动重新展示。
-
----
-
-## 官方文档参考
-
-- [Autofill framework](https://developer.android.com/identity/autofill)
-- [Integrate Credential Manager with a credential provider](https://developer.android.com/identity/sign-in/credential-provider)
-- [AutofillManager](https://developer.android.com/reference/android/view/autofill/AutofillManager)
-
----
+- 成功、失败、用户取消和协程取消都必须进入统一终态，并在不可取消的收尾区释放 lease。
+- Credential Manager 的 `onClearCredentialStateRequest()` 会过期所有该来源的活跃 interaction，但不会删除密码或锁定原本由用户打开的 Vault。
+- 对已经完成的 interaction 重复结束是幂等操作。
 
 ## 相关实现
 
-- [AutofillHintProvider](../../domain/src/main/kotlin/com/aozijx/passly/domain/autofill/port/AutofillHintProvider.kt)
-- [HeuristicMatchStrategy](../../app/src/main/java/com/aozijx/passly/feature/autofill/internal/HeuristicMatchStrategy.kt)
+- [AutofillInteractionStore](../../app/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillInteractionStore.kt)
+- [AutofillInteractionTimeout](../../app/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillInteractionTimeout.kt)
+- [DiscoverAutofillCandidates](../../app/src/main/java/com/aozijx/passly/feature/autofill/core/DiscoverAutofillCandidates.kt)
+- [AuthorizeAutofillInteraction](../../app/src/main/java/com/aozijx/passly/feature/autofill/core/AuthorizeAutofillInteraction.kt)
+- [ResolveAutofillSelection](../../app/src/main/java/com/aozijx/passly/feature/autofill/core/ResolveAutofillSelection.kt)
 - [LegacyAutofillService](../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/LegacyAutofillService.kt)
 - [ModernCredentialService](../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/ModernCredentialService.kt)
-- [AutofillCandidateBottomSheet](../../app/src/main/java/com/aozijx/passly/presentation/feature/autofill/legacy/ui/AutofillCandidateBottomSheet.kt)
-- [autofill_hints.xml](../../app/src/main/res/values/autofill_hints.xml)
-- [ConstantTime](../../core/common/src/main/kotlin/com/aozijx/passly/core/common/crypto/ConstantTime.kt)
+
+## 官方文档
+
+- [Autofill framework](https://developer.android.com/identity/autofill)
+- [Integrate Credential Manager with a credential provider](https://developer.android.com/identity/sign-in/credential-provider)

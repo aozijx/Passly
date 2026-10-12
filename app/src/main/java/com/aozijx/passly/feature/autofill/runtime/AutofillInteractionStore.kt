@@ -133,11 +133,40 @@ class AutofillInteractionStore @Inject constructor() {
                 .map(AutofillInteractionSnapshot::id)
         }
 
+    suspend fun removeTerminal(id: AutofillInteractionId) {
+        mutex.withLock {
+            if (interactions[id]?.state?.isTerminal() == true) {
+                interactions.remove(id)
+            }
+        }
+    }
+
     suspend fun finish(
         id: AutofillInteractionId,
         terminalState: AutofillInteractionState,
     ): AutofillFinishResult = mutex.withLock {
         require(terminalState.isTerminal()) { "Autofill finish state must be terminal" }
+        finishLocked(id, terminalState)
+    }
+
+    /**
+     * Expires an abandoned interaction unless secret resolution or saving is still active.
+     * A null result asks the timeout owner to defer cleanup and try again later.
+     */
+    suspend fun expireIfIdle(id: AutofillInteractionId): AutofillFinishResult? = mutex.withLock {
+        when (interactions[id]?.state) {
+            is AutofillInteractionState.ResolvingSelection,
+            AutofillInteractionState.Saving,
+            -> null
+
+            else -> finishLocked(id, AutofillInteractionState.Expired)
+        }
+    }
+
+    private fun finishLocked(
+        id: AutofillInteractionId,
+        terminalState: AutofillInteractionState,
+    ): AutofillFinishResult {
         val snapshot = interactions[id]
             ?: return AutofillFinishResult(
                 AutofillInteractionUpdate.Rejected(
@@ -154,7 +183,10 @@ class AutofillInteractionStore @Inject constructor() {
 
         val updated = snapshot.copy(state = terminalState)
         interactions[id] = updated
-        AutofillFinishResult(AutofillInteractionUpdate.Updated(updated), transitioned = true)
+        return AutofillFinishResult(
+            AutofillInteractionUpdate.Updated(updated),
+            transitioned = true,
+        )
     }
 
     suspend fun fail(

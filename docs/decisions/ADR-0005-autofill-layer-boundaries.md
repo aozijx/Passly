@@ -1,6 +1,6 @@
 # ADR-0005: Autofill Pipeline 分层边界
 
-- 状态：Accepted
+- 状态：Superseded（由 ADR-0023 替代）
 - 日期：未记录
 
 ## 背景
@@ -20,6 +20,8 @@ Autofill 同时涉及 Android Service、候选检索、Vault 解锁和系统响�
 
 Android 类型留在系统/Feature 边界，候选解析可单测，Service 不依赖 Entity/DAO。
 传统 Autofill 与 Credential Manager 可以在 Android 14+ 同时启用；Passkey 在完整实现前不发布。
+
+后续实现发现 `FillRequestDispatcher` 同时承担设置、认证、检索与响应状态，两个平台入口仍会形成重复授权路径。ADR-0023 保留平台边界原则，但用类型化 interaction 操作替代该 dispatcher。
 
 ## 备选方案
 

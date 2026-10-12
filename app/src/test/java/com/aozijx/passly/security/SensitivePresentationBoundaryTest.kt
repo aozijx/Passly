@@ -23,15 +23,11 @@ class SensitivePresentationBoundaryTest {
         val legacyFill = source(
             "com/aozijx/passly/presentation/feature/autofill/legacy/AutofillFillViewModel.kt"
         )
-        assertFalse(legacyFill.contains("AutofillRequestSession"))
-        assertFalse(legacyFill.contains("closeOnOwnerCleared"))
         assertFalse(legacyFill.contains("override fun onCleared()"))
 
         val credentialResponse = source(
             "com/aozijx/passly/presentation/feature/autofill/credential/CredentialResponseViewModel.kt"
         )
-        assertFalse(credentialResponse.contains("AutofillRequestSession"))
-        assertFalse(credentialResponse.contains("closeOnOwnerCleared"))
         assertFalse(credentialResponse.contains("override fun onCleared()"))
         assertTrue(credentialResponse.contains("CredentialManagerFlow"))
     }

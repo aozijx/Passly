@@ -16,8 +16,6 @@ class LegacyAutofillFlowTest {
         assertTrue(source.contains("DiscoverAutofillCandidates"))
         assertTrue(source.contains("ResolveAutofillSelection"))
         assertTrue(source.contains("markFilledAwaitingSave"))
-        assertFalse(source.contains("CandidateRetriever"))
-        assertFalse(source.contains("AutofillRequestSession"))
         assertFalse(source.contains("InteractionSettingsSource"))
         assertFalse(source.contains("SecureSessionAccessState"))
     }

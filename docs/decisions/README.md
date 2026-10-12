@@ -15,8 +15,8 @@ ADR，并在双方状态中建立替代关系。
 | [0002](ADR-0002-envelope-encryption.md)                   | Accepted   | 信封加密                             |
 | [0003](ADR-0003-dual-dek.md)                              | Superseded | 双 DEK（由 0019 替代）                 |
 | [0004](ADR-0004-repository-is-decryption-boundary.md)     | Accepted   | Repository 是解密边界                 |
-| [0005](ADR-0005-autofill-layer-boundaries.md)             | Accepted   | Autofill 分层边界                    |
-| [0006](ADR-0006-resolvedcandidate-dto.md)                 | Accepted   | ResolvedCandidate 隔离             |
+| [0005](ADR-0005-autofill-layer-boundaries.md)             | Superseded | Autofill 分层边界（由 0023 替代）         |
+| [0006](ADR-0006-resolvedcandidate-dto.md)                 | Superseded | ResolvedCandidate 隔离（由 0023 替代）  |
 | [0007](ADR-0007-usecase-is-optional.md)                   | Accepted   | UseCase 可选                       |
 | [0008](ADR-0008-runtime-threat-boundary.md)               | Accepted   | 运行时威胁边界                          |
 | [0009](ADR-0009-no-google-tink.md)                        | Accepted   | 暂不引入 Google Tink                 |
@@ -33,3 +33,4 @@ ADR，并在双方状态中建立替代关系。
 | [0020](ADR-0020-unified-lifecycle-safe-authentication.md) | Accepted   | 生命周期安全的统一认证系统                    |
 | [0021](ADR-0021-encrypted-diagnostics.md)                 | Accepted   | 可插拔加密诊断系统                        |
 | [0022](ADR-0022-keyed-backup-document.md)                | Accepted   | 稳定键值字段备份文档                       |
+| [0023](ADR-0023-typed-autofill-interactions.md)           | Accepted   | 类型化 Autofill interaction           |

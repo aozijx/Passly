@@ -414,7 +414,7 @@ class SourceBoundaryPolicyTest {
     @Test
     fun autofillCannotImportFullAuthenticationManager() {
         val source = EditorSource(
-            path = "app/src/main/java/com/aozijx/passly/feature/autofill/shared/AutofillRequestSession.kt",
+            path = "app/src/main/java/com/aozijx/passly/feature/autofill/core/AuthorizeAutofillInteraction.kt",
             content = "import com.aozijx.passly.domain.access.port.AuthenticationManager",
         )
 
@@ -424,6 +424,60 @@ class SourceBoundaryPolicyTest {
                 listOf(source),
                 SourceBoundaryPolicy.generalRules,
             ).single().ruleId,
+        )
+    }
+
+    @Test
+    fun autofillPlatformAdaptersCannotImportRepositoriesOrAuthenticationPorts() {
+        val sources = listOf(
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/Forbidden.kt",
+                content = "import com.aozijx.passly.domain.entry.port.EntryQueryRepository",
+            ),
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/Forbidden.kt",
+                content = "import com.aozijx.passly.domain.access.port.AuthenticationRequester",
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                "AUTOFILL_CREDENTIAL_ADAPTER_DOMAIN_PORT",
+                "AUTOFILL_LEGACY_ADAPTER_DOMAIN_PORT",
+            ),
+            SourceBoundaryVerifier.verify(sources, SourceBoundaryPolicy.generalRules)
+                .map { it.ruleId },
+        )
+    }
+
+    @Test
+    fun autofillCandidateSummaryCannotContainAggregateOrSecretTypes() {
+        val allowed = EditorSource(
+            path = "domain/src/main/kotlin/com/aozijx/passly/domain/autofill/model/AutofillCandidateSummary.kt",
+            content = "import com.aozijx.passly.domain.entry.model.query.EntryListItem",
+        )
+        val forbidden = listOf(
+            "com.aozijx.passly.domain.entry.model.Entry",
+            "com.aozijx.passly.domain.entry.model.EntrySecret",
+            "com.aozijx.passly.domain.entry.model.credential.EntryCredential",
+        ).map { importedType ->
+            EditorSource(
+                path = "domain/src/main/kotlin/com/aozijx/passly/domain/autofill/model/AutofillCandidateSummary.kt",
+                content = "import $importedType",
+            )
+        }
+
+        assertTrue(
+            SourceBoundaryVerifier.verify(listOf(allowed), SourceBoundaryPolicy.generalRules).isEmpty(),
+        )
+        assertEquals(
+            listOf(
+                "AUTOFILL_CANDIDATE_SECRET_BOUNDARY",
+                "AUTOFILL_CANDIDATE_SECRET_BOUNDARY",
+                "AUTOFILL_CANDIDATE_SECRET_BOUNDARY",
+            ),
+            SourceBoundaryVerifier.verify(forbidden, SourceBoundaryPolicy.generalRules)
+                .map { it.ruleId },
         )
     }
 
@@ -724,7 +778,7 @@ class SourceBoundaryPolicyTest {
                 content = "import com.aozijx.passly.domain.settings.model.SettingsCommand",
             ),
             EditorSource(
-                path = "app/src/main/java/com/aozijx/passly/feature/autofill/internal/FillRequestDispatcher.kt",
+                path = "app/src/main/java/com/aozijx/passly/feature/autofill/core/DiscoverAutofillCandidates.kt",
                 content = "import com.aozijx.passly.domain.settings.port.AppSettingsRepository",
             ),
             EditorSource(

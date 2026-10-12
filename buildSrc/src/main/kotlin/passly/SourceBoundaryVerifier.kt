@@ -16,7 +16,8 @@ internal object SourceBoundaryVerifier {
                 source.content.lineSequence().forEach { rawLine ->
                     val evidence = rawLine.trim()
                     parseImport(evidence)?.let { importedType ->
-                        if (rule.forbiddenImportPrefixes.any(importedType::startsWith) &&
+                        if ((importedType in rule.forbiddenImports ||
+                            rule.forbiddenImportPrefixes.any(importedType::startsWith)) &&
                             rule.allowedImportPrefixes.none(importedType::startsWith)
                         ) {
                             add(rule.violation(source.path, evidence))

@@ -18,18 +18,74 @@ import com.aozijx.passly.domain.autofill.model.AutofillInteractionState
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionUpdate
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
+import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionTimeout
 import com.aozijx.passly.feature.autofill.runtime.AutofillUnlockLease
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AutofillInteractionLifecycleTest {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun interactionTimeoutExpiresStateAndReleasesOwnedUnlock() = runTest {
+        val vault = FakeVault(AuthenticationState.Locked)
+        val authentication = FakeAuthenticationController(
+            vault,
+            ArrayDeque(listOf(AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD))),
+        )
+        val store = AutofillInteractionStore()
+        val lease = AutofillUnlockLease(authentication)
+        val timeout = AutofillInteractionTimeout(
+            store = store,
+            unlockLease = lease,
+            scope = this,
+            timeoutMillis = 60_000L,
+        )
+        val start = StartAutofillInteraction(store, lease, vault, timeout)
+        val authorize = AuthorizeAutofillInteraction(authentication, vault, store, lease)
+        val interaction = start(AutofillInteractionSource.LEGACY, scope(), false)
+        authorize(interaction.id)
+
+        advanceTimeBy(60_000L)
+        runCurrent()
+
+        assertNull(store.snapshot(interaction.id))
+        assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, authentication.lastLockReason)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun interactionTimeoutDefersWhileSecretResolutionIsActive() = runTest {
+        val vault = FakeVault(AuthenticationState.Authenticated(1L))
+        val authentication = FakeAuthenticationController(vault, ArrayDeque())
+        val store = AutofillInteractionStore()
+        val lease = AutofillUnlockLease(authentication)
+        val timeout = AutofillInteractionTimeout(store, lease, backgroundScope, 60_000L)
+        val start = StartAutofillInteraction(store, lease, vault, timeout)
+        val interaction = start(AutofillInteractionSource.LEGACY, scope(), false)
+        val entryId = EntryId("entry-1")
+        store.recordCandidates(interaction.id, setOf(entryId))
+        store.beginSelection(interaction.id, entryId)
+
+        advanceTimeBy(60_000L)
+        runCurrent()
+
+        assertEquals(
+            AutofillInteractionState.ResolvingSelection(entryId),
+            store.snapshot(interaction.id)?.state,
+        )
+    }
+
     @Test
     fun lockedInteractionAuthenticatesOnceAndReusesAuthorizationForSelection() = runBlocking {
         val fixture = fixture(AuthenticationState.Locked)

@@ -96,7 +96,7 @@ class DefaultAuthenticationManager @Inject constructor(
         val opensSession = request.purpose == AuthenticationPurpose.UNLOCK_VAULT ||
             request.purpose == AuthenticationPurpose.RECOVER_AUTH_METHODS ||
             // 自动填充需要临时解锁 vault 才能检索并解密候选凭据；
-            // AutofillRequestSession 会在请求结束后以 SOFT_LOCKED 收回解锁。
+            // Autofill interaction lease 会在最后一个交互结束后收回解锁。
             request.purpose == AuthenticationPurpose.AUTOFILL
         try {
             if (wasRecoveryMode && request.purpose !in AuthenticationMethodPolicy.RECOVERY_MODE_PURPOSES) {

@@ -232,6 +232,38 @@ internal object SourceBoundaryPolicy {
             message = "autofill imports the full authentication manager",
         ),
         SourceBoundaryRule(
+            id = "AUTOFILL_CREDENTIAL_ADAPTER_DOMAIN_PORT",
+            sourcePathContains = "/feature/autofill/credential/",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.access.port.",
+                "com.aozijx.passly.domain.entry.port.",
+            ),
+            allowedSourcePathContains = setOf("/src/test/"),
+            message = "Credential Manager adapter imports authentication or entry repository ports",
+        ),
+        SourceBoundaryRule(
+            id = "AUTOFILL_LEGACY_ADAPTER_DOMAIN_PORT",
+            sourcePathContains = "/feature/autofill/legacy/",
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.access.port.",
+                "com.aozijx.passly.domain.entry.port.",
+            ),
+            allowedSourcePathContains = setOf("/src/test/"),
+            message = "legacy Autofill adapter imports authentication or entry repository ports",
+        ),
+        SourceBoundaryRule(
+            id = "AUTOFILL_CANDIDATE_SECRET_BOUNDARY",
+            sourcePathContains = "/domain/autofill/model/AutofillCandidateSummary.kt",
+            forbiddenImports = setOf(
+                "com.aozijx.passly.domain.entry.model.Entry",
+                "com.aozijx.passly.domain.entry.model.EntrySecret",
+            ),
+            forbiddenImportPrefixes = setOf(
+                "com.aozijx.passly.domain.entry.model.credential.",
+            ),
+            message = "Autofill candidate metadata imports aggregate or secret-bearing entry types",
+        ),
+        SourceBoundaryRule(
             id = "APPLICATION_AUTH_MANAGER_IMPORT",
             sourcePathContains = "/app/AppLifecycleObserver.kt",
             forbiddenImportPrefixes = setOf(

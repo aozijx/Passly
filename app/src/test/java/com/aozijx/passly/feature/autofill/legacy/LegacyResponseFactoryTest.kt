@@ -15,7 +15,6 @@ class LegacyResponseFactoryTest {
         assertTrue(source.contains("AutofillDiscoveryOutcome"))
         assertTrue(source.contains("AutofillCandidateSummary"))
         assertTrue(source.contains("AutofillInteractionId"))
-        assertFalse(source.contains("ResolvedCandidate"))
         assertFalse(source.contains("password.isNotBlank"))
     }
 

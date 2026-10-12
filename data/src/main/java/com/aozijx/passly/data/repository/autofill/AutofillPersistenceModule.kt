@@ -1,6 +1,5 @@
 package com.aozijx.passly.data.repository.autofill
 
-import com.aozijx.passly.domain.autofill.port.AutofillCredentialRepository
 import com.aozijx.passly.domain.autofill.port.AutofillCandidateRepository
 import com.aozijx.passly.domain.autofill.port.AutofillCredentialResolver
 import dagger.Binds
@@ -24,10 +23,4 @@ internal abstract class AutofillPersistenceModule {
     abstract fun bindAutofillCredentialResolver(
         impl: RoomAutofillCredentialResolver,
     ): AutofillCredentialResolver
-
-    @Binds
-    @Singleton
-    abstract fun bindAutofillCredentialRepository(
-        impl: AutofillCredentialRepositoryImpl,
-    ): AutofillCredentialRepository
 }

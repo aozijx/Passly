@@ -1,7 +1,6 @@
 package com.aozijx.passly.domain.autofill.model
 
 import com.aozijx.passly.domain.autofill.AutofillScope
-import com.aozijx.passly.domain.settings.model.AutofillPresentation
 
 /**
  * Field roles: identifies the type of an autofill field.
@@ -20,17 +19,6 @@ enum class FieldRole {
 enum class AutofillSource {
     AUTOFILL_SERVICE,
     CREDENTIAL_MANAGER,
-}
-
-/**
- * Status of the fill response.
- */
-enum class AutofillStatus {
-    READY,
-    LOCKED,
-    DISABLED,
-    NO_MATCH,
-    UNSUPPORTED_FIELDS,
 }
 
 /**
@@ -62,19 +50,7 @@ data class AutofillRequest(
 )
 
 /**
- * Platform-agnostic autofill response.
- */
-data class AutofillResponse(
-    val candidates: List<ResolvedCandidate> = emptyList(),
-    val status: AutofillStatus = AutofillStatus.READY,
-    val roleMap: Map<String, FieldRole> = emptyMap(),
-    val requireAuthentication: Boolean = true,
-    val savePromptsEnabled: Boolean = false,
-    val presentation: AutofillPresentation = AutofillPresentation.SYSTEM_INLINE
-)
-
-/**
- * Autofill grant context: used for scope matching for short-term session authorization.
+ * Normalized calling-app and web-origin scope owned by an Autofill interaction.
  */
 data class AutofillGrantContext(
     val packageName: String,
