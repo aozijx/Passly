@@ -165,11 +165,7 @@ internal object DetailReducer {
                     state
                 } else {
                     state.copy(
-                        isEditingTitle = if (mutation.completion == DetailEditCompletion.Title) {
-                            false
-                        } else {
-                            state.isEditingTitle
-                        },
+                        isEditingTitle = mutation.completion != DetailEditCompletion.Title && state.isEditingTitle,
                         saveState = DetailSaveState.Idle,
                         fieldEdits = when (mutation.completion) {
                             is DetailEditCompletion.SensitiveField ->
@@ -207,13 +203,10 @@ internal object DetailReducer {
                             when (val editor = state.faviconEditor) {
                                 DetailFaviconEditorState.Closed -> editor
                                 is DetailFaviconEditorState.Open -> editor.copy(
-                                    work = if (editor.work is DetailFaviconWorkState.Failed) {
-                                        editor.work
-                                    } else {
-                                        DetailFaviconWorkState.Failed(
+                                    work = editor.work as? DetailFaviconWorkState.Failed
+                                        ?: DetailFaviconWorkState.Failed(
                                             DetailFaviconProcessingError.SAVE_FAILED,
-                                        )
-                                    },
+                                        ),
                                 )
                             }
                         } else {

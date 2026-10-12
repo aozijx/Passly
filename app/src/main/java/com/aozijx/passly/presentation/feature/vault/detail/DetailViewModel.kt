@@ -802,5 +802,4 @@ class DetailViewModel @Inject internal constructor(
             onFailure = { mutate(DetailMutation.FaviconProcessingFailed(it.toFaviconProcessingError())) },
         )
     }
-
 }
