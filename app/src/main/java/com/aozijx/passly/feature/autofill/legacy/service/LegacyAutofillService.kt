@@ -8,24 +8,20 @@ import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.domain.autofill.port.FieldMatchStrategy
-import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
-import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.domain.autofill.model.AutofillSaveSource
-import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
-import com.aozijx.passly.feature.autofill.internal.di.Heuristic
-import com.aozijx.passly.feature.autofill.internal.save.SaveRequestAnalyzer
+import com.aozijx.passly.feature.autofill.core.AutofillSaveInteractionOutcome
+import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
+import com.aozijx.passly.feature.autofill.core.SaveAutofillInteraction
 import com.aozijx.passly.feature.autofill.legacy.service.adapter.LegacyPlatformAdapter
 import com.aozijx.passly.feature.autofill.legacy.service.parser.AutofillStructureParser
-import com.aozijx.passly.feature.autofill.core.SaveAutofillCredential
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -39,20 +35,13 @@ class LegacyAutofillService : AutofillService() {
     lateinit var discoverCandidates: DiscoverAutofillCandidates
 
     @Inject
-    @Heuristic
-    lateinit var strategy: FieldMatchStrategy
-
-    @Inject
     lateinit var adapter: LegacyPlatformAdapter
 
     @Inject
-    lateinit var saveCredential: SaveAutofillCredential
+    lateinit var saveInteraction: SaveAutofillInteraction
 
     @Inject
-    lateinit var saveAnalyzer: SaveRequestAnalyzer
-
-    @Inject
-    lateinit var settingsSource: InteractionSettingsSource
+    lateinit var finishInteraction: FinishAutofillInteraction
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -96,43 +85,36 @@ class LegacyAutofillService : AutofillService() {
         val internalRequest = adapter.buildRequest(parsed)
 
         serviceScope.launch {
-            try {
-                val settings = settingsSource.interaction.first().autofill
-                val pending = saveAnalyzer.buildCandidate(
-                    parsed = parsed,
+            val outcome = try {
+                saveInteraction(
                     request = internalRequest,
-                    strategy = strategy,
-                    settings = settings,
+                    interactionSource = AutofillInteractionSource.LEGACY,
+                    saveSource = AutofillSaveSource.LEGACY_PROMPT,
                 )
-                if (pending == null) {
-                    callback.onSuccess()
-                    return@launch
-                }
-
-                val saveOutcome = saveCredential(
-                    draft = AutofillSaveDraft(
-                        packageName = pending.packageName.orEmpty(),
-                        webDomain = pending.webDomain,
-                        pageTitle = pending.pageTitle,
-                        username = pending.username,
-                        password = pending.password,
-                    ),
-                    source = AutofillSaveSource.LEGACY_PROMPT,
-                )
-                if (saveOutcome !is AutofillSaveOutcome.Saved) {
-                    callback.onFailure("Credential could not be saved")
-                    return@launch
-                }
-
-                TelemetryRuntime.i(EventCategory.AUTOFILL, "legacy.credential_saved")
-                callback.onSuccess()
             } catch (e: CancellationException) {
+                callback.onFailure("Save request cancelled")
                 throw e
             } catch (e: Exception) {
                 TelemetryRuntime.e(EventCategory.AUTOFILL, "legacy.save_request_failed", throwable = e)
                 callback.onFailure(e.message ?: "Save request failed")
+                return@launch
+            }
+            when (outcome) {
+                is AutofillSaveInteractionOutcome.Saved -> {
+                    TelemetryRuntime.i(EventCategory.AUTOFILL, "legacy.credential_saved")
+                    callback.onSuccess()
+                }
+
+                else -> callback.onFailure("Credential could not be saved")
             }
         }
+    }
+
+    override fun onDisconnected() {
+        serviceScope.launch {
+            finishInteraction.expireAll(AutofillInteractionSource.LEGACY)
+        }
+        super.onDisconnected()
     }
 
     override fun onDestroy() {

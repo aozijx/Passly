@@ -42,6 +42,7 @@ data class AutofillInteractionSnapshot(
     val scope: AutofillGrantContext,
     val state: AutofillInteractionState,
     val presentedCandidateIds: Set<EntryId> = emptySet(),
+    val savePromptsEnabled: Boolean = false,
 )
 
 enum class AutofillInteractionRejection {

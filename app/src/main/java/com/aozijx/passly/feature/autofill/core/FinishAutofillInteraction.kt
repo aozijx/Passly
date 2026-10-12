@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.autofill.core
 
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionState
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionUpdate
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillUnlockLease
@@ -19,6 +20,10 @@ class FinishAutofillInteraction @Inject constructor(
 
     suspend fun expire(id: AutofillInteractionId): AutofillInteractionUpdate =
         finish(id, AutofillInteractionState.Expired)
+
+    suspend fun expireAll(source: AutofillInteractionSource) {
+        store.activeIds(source).forEach { expire(it) }
+    }
 
     private suspend fun finish(
         id: AutofillInteractionId,

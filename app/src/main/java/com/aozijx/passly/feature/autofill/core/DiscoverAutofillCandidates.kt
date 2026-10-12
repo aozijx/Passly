@@ -99,6 +99,7 @@ class DiscoverAutofillCandidates @Inject constructor(
         val recorded = interactionStore.recordCandidates(
             snapshot.id,
             candidates.mapTo(linkedSetOf()) { it.entry.id },
+            savePromptsEnabled = context.savePromptsEnabled,
         )
         val recordedSnapshot = when (recorded) {
             is AutofillInteractionUpdate.Updated -> recorded.snapshot

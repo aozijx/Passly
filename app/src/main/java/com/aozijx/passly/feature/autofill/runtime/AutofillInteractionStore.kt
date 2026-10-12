@@ -58,6 +58,7 @@ class AutofillInteractionStore @Inject constructor() {
     suspend fun recordCandidates(
         id: AutofillInteractionId,
         candidateIds: Set<EntryId>,
+        savePromptsEnabled: Boolean = false,
     ): AutofillInteractionUpdate = update(id) { snapshot ->
         if (snapshot.state != AutofillInteractionState.Authorized &&
             snapshot.state != AutofillInteractionState.CandidatesReady
@@ -70,6 +71,7 @@ class AutofillInteractionStore @Inject constructor() {
             snapshot.copy(
                 state = AutofillInteractionState.CandidatesReady,
                 presentedCandidateIds = candidateIds.toSet(),
+                savePromptsEnabled = savePromptsEnabled,
             ),
         )
     }
@@ -101,19 +103,34 @@ class AutofillInteractionStore @Inject constructor() {
         )
 
     suspend fun beginSave(id: AutofillInteractionId): AutofillInteractionUpdate =
-        transition(
-            id = id,
-            allowed = { it == AutofillInteractionState.FilledAwaitingSave },
-            next = AutofillInteractionState.Saving,
-        )
+        update(id) { snapshot ->
+            if (!snapshot.canSave()) {
+                AutofillInteractionUpdate.Rejected(AutofillInteractionRejection.INVALID_STATE)
+            } else {
+                AutofillInteractionUpdate.Updated(
+                    snapshot.copy(state = AutofillInteractionState.Saving),
+                )
+            }
+        }
 
-    suspend fun findAwaitingSave(scope: AutofillGrantContext): AutofillInteractionSnapshot? =
+    suspend fun findSaveable(
+        scope: AutofillGrantContext,
+        source: AutofillInteractionSource,
+    ): AutofillInteractionSnapshot? =
         mutex.withLock {
             val normalizedScope = scope.normalized()
             interactions.values.lastOrNull {
                 it.scope == normalizedScope &&
-                    it.state == AutofillInteractionState.FilledAwaitingSave
+                    it.source == source &&
+                    it.canSave()
             }
+        }
+
+    suspend fun activeIds(source: AutofillInteractionSource): List<AutofillInteractionId> =
+        mutex.withLock {
+            interactions.values
+                .filter { it.source == source && !it.state.isTerminal() }
+                .map(AutofillInteractionSnapshot::id)
         }
 
     suspend fun finish(
@@ -179,4 +196,8 @@ class AutofillInteractionStore @Inject constructor() {
 
         else -> false
     }
+
+    private fun AutofillInteractionSnapshot.canSave(): Boolean =
+        state == AutofillInteractionState.FilledAwaitingSave ||
+            (state == AutofillInteractionState.CandidatesReady && savePromptsEnabled)
 }
