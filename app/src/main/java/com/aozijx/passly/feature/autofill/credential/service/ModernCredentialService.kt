@@ -16,6 +16,8 @@ import androidx.credentials.provider.CredentialProviderService
 import androidx.credentials.provider.ProviderClearCredentialStateRequest
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
+import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -42,6 +44,9 @@ class ModernCredentialService : CredentialProviderService() {
     @Inject
     lateinit var beginCreateHandler: CredentialBeginCreateHandler
 
+    @Inject
+    lateinit var finishInteraction: FinishAutofillInteraction
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     companion object {
@@ -49,8 +54,6 @@ class ModernCredentialService : CredentialProviderService() {
         const val ACTION_GET_PASSWORD = "com.aozijx.passly.ACTION_GET_PASSWORD"
         const val ACTION_UNLOCK = "com.aozijx.passly.ACTION_CREDENTIAL_UNLOCK"
         const val ACTION_CREATE_PASSWORD = "com.aozijx.passly.ACTION_CREATE_PASSWORD"
-
-        const val EXTRA_ENTRY_ID = "entry_id"
     }
 
     override fun onBeginGetCredentialRequest(
@@ -111,10 +114,13 @@ class ModernCredentialService : CredentialProviderService() {
         cancellationSignal: CancellationSignal,
         callback: OutcomeReceiver<Void?, androidx.credentials.exceptions.ClearCredentialException>
     ) {
-        // Passly does not keep a per-calling-app or sticky credential-selection session.
-        if (!cancellationSignal.isCanceled) {
-            callback.onResult(null)
+        val job = scope.launch {
+            finishInteraction.expireAll(AutofillInteractionSource.CREDENTIAL_MANAGER)
+            if (!cancellationSignal.isCanceled) {
+                callback.onResult(null)
+            }
         }
+        cancellationSignal.setOnCancelListener(job::cancel)
     }
 
     override fun onDestroy() {

@@ -9,7 +9,6 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
@@ -17,7 +16,6 @@ import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
 import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
@@ -49,7 +47,6 @@ class CredentialResponseActivity : AppCompatActivity() {
                         onComplete = { resultIntent ->
                             finishWithResult(
                                 resultIntent = resultIntent,
-                                closeSession = launch.closeSessionOnComplete,
                             )
                         },
                         onUnrecoverable = ::finishWithError,
@@ -63,57 +60,48 @@ class CredentialResponseActivity : AppCompatActivity() {
         when (val action = sourceIntent.action) {
             ModernCredentialService.ACTION_GET_PASSWORD -> CredentialResponseLaunch(
                 action = CredentialResponseUiAction.PasswordGet(sourceIntent),
-                closeSessionOnComplete = true,
             )
 
             ModernCredentialService.ACTION_UNLOCK -> CredentialResponseLaunch(
                 action = CredentialResponseUiAction.Unlock(sourceIntent),
-                closeSessionOnComplete = false,
             )
 
             ModernCredentialService.ACTION_CREATE_PASSWORD -> CredentialResponseLaunch(
                 action = CredentialResponseUiAction.PasswordCreate(sourceIntent),
-                closeSessionOnComplete = true,
             )
 
             else -> {
                 TelemetryRuntime.w(EventCategory.AUTOFILL, "credential.response_action_unknown")
                 CredentialResponseLaunch(
                     action = CredentialResponseUiAction.UnknownAction,
-                    closeSessionOnComplete = true,
                 )
             }
         }
 
     private fun finishWithResult(
         resultIntent: Intent,
-        closeSession: Boolean,
     ) {
         if (!resultFinishing.compareAndSet(false, true)) return
         // PendingIntentHandler requires RESULT_OK for both valid responses and
         // valid Credential Manager exceptions.
         setResult(RESULT_OK, resultIntent)
         hideIme()
-        // Unlock is an intermediate step. Closing its request session would seal
-        // the vault before the subsequent password request and force authentication again.
-        lifecycleScope.launch {
-            if (closeSession) viewModel.closeRequestSession()
-            finish()
-        }
+        finish()
     }
 
     private fun finishWithError() {
+        if (!resultFinishing.compareAndSet(false, true)) return
         setResult(RESULT_CANCELED)
         hideIme()
-        lifecycleScope.launch { viewModel.closeRequestSession() }
+        viewModel.cancelActiveInteraction()
         finish()
     }
 
     override fun onDestroy() {
-        // 返回键/系统回收路径没有走 Complete/Error（resultFinishing=false），
-        // 兜底回收会话，避免临时解锁泄漏。配置变更销毁（isFinishing=false）不回收。
+        // Back/system-finish paths did not deliver a response. Configuration
+        // changes keep the same ViewModel and must not cancel the interaction.
         if (!resultFinishing.get() && isFinishing) {
-            lifecycleScope.launch { viewModel.closeRequestSession() }
+            viewModel.cancelActiveInteraction()
         }
         super.onDestroy()
     }
@@ -126,6 +114,5 @@ class CredentialResponseActivity : AppCompatActivity() {
 
     private data class CredentialResponseLaunch(
         val action: CredentialResponseUiAction,
-        val closeSessionOnComplete: Boolean,
     )
 }

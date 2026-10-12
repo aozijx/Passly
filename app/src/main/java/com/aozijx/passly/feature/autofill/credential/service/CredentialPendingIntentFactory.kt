@@ -4,6 +4,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
 import com.aozijx.passly.feature.autofill.platform.AutofillPendingIntentPolicy
 import javax.inject.Inject
@@ -17,9 +20,13 @@ class CredentialPendingIntentFactory @Inject constructor(
 
     fun createPasswordGetPendingIntent(
         context: Context,
-        entryId: String,
+        interactionId: AutofillInteractionId,
+        entryId: EntryId,
     ): PendingIntent {
-        val requestId = AutofillPendingIntentPolicy.credentialGetRequestId(entryId)
+        val requestId = AutofillPendingIntentPolicy.credentialGetRequestId(
+            interactionId.value,
+            entryId.value,
+        )
         val intent = launchTarget.credentialResponseIntent(context, requestId)
             .setAction(ModernCredentialService.ACTION_GET_PASSWORD)
             // PendingIntent identity ignores extras. Identifier keeps two UUIDs
@@ -27,39 +34,49 @@ class CredentialPendingIntentFactory @Inject constructor(
             .setIdentifier(requestId)
             // The entry id is only an opaque candidate pointer. Calling-app
             // identity always comes from the system-injected final request.
-            .putExtra(ModernCredentialService.EXTRA_ENTRY_ID, entryId)
+            .putExtra(AutofillLaunchExtras.INTERACTION_ID, interactionId.value)
+            .putExtra(AutofillLaunchExtras.ENTRY_ID, entryId.value)
 
         return PendingIntent.getActivity(
             context,
-            AutofillPendingIntentPolicy.credentialGetRequestCode(entryId),
+            AutofillPendingIntentPolicy.credentialGetRequestCode(
+                interactionId.value,
+                entryId.value,
+            ),
             intent,
             AutofillPendingIntentPolicy.ACTIVITY_FLAGS,
         )
     }
 
-    fun createPasswordCreatePendingIntent(context: Context): PendingIntent {
-        val intent = launchTarget.credentialResponseIntent(
-            context,
-            ModernCredentialService.ACTION_CREATE_PASSWORD,
-        )
+    fun createPasswordCreatePendingIntent(
+        context: Context,
+        interactionId: AutofillInteractionId,
+    ): PendingIntent {
+        val requestId = AutofillPendingIntentPolicy.credentialCreateRequestId(interactionId.value)
+        val intent = launchTarget.credentialResponseIntent(context, requestId)
             .setAction(ModernCredentialService.ACTION_CREATE_PASSWORD)
+            .setIdentifier(requestId)
+            .putExtra(AutofillLaunchExtras.INTERACTION_ID, interactionId.value)
         return PendingIntent.getActivity(
             context,
-            AutofillPendingIntentPolicy.CREDENTIAL_CREATE_REQUEST_CODE,
+            requestId.hashCode(),
             intent,
             AutofillPendingIntentPolicy.ACTIVITY_FLAGS,
         )
     }
 
-    fun createUnlockPendingIntent(context: Context): PendingIntent {
-        val intent = launchTarget.credentialResponseIntent(
-            context,
-            ModernCredentialService.ACTION_UNLOCK,
-        )
+    fun createUnlockPendingIntent(
+        context: Context,
+        interactionId: AutofillInteractionId,
+    ): PendingIntent {
+        val requestId = AutofillPendingIntentPolicy.credentialUnlockRequestId(interactionId.value)
+        val intent = launchTarget.credentialResponseIntent(context, requestId)
             .setAction(ModernCredentialService.ACTION_UNLOCK)
+            .setIdentifier(requestId)
+            .putExtra(AutofillLaunchExtras.INTERACTION_ID, interactionId.value)
         return PendingIntent.getActivity(
             context,
-            AutofillPendingIntentPolicy.CREDENTIAL_UNLOCK_REQUEST_CODE,
+            requestId.hashCode(),
             intent,
             AutofillPendingIntentPolicy.ACTIVITY_FLAGS,
         )

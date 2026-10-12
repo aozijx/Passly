@@ -25,11 +25,17 @@ class AutofillPendingIntentPolicyTest {
             "autofill-interaction:interaction-1",
             AutofillPendingIntentPolicy.legacyInteractionRequestId("interaction-1"),
         )
-        assertEquals("password-get:entry-1", AutofillPendingIntentPolicy.credentialGetRequestId("entry-1"))
-        assertEquals("entry-1".hashCode(), AutofillPendingIntentPolicy.credentialGetRequestCode("entry-1"))
+        assertEquals(
+            "password-get:interaction-1:entry-1",
+            AutofillPendingIntentPolicy.credentialGetRequestId("interaction-1", "entry-1"),
+        )
+        assertEquals(
+            "password-get:interaction-1:entry-1".hashCode(),
+            AutofillPendingIntentPolicy.credentialGetRequestCode("interaction-1", "entry-1"),
+        )
         assertNotEquals(
-            AutofillPendingIntentPolicy.CREDENTIAL_CREATE_REQUEST_CODE,
-            AutofillPendingIntentPolicy.CREDENTIAL_UNLOCK_REQUEST_CODE,
+            AutofillPendingIntentPolicy.credentialCreateRequestId("interaction-1"),
+            AutofillPendingIntentPolicy.credentialUnlockRequestId("interaction-1"),
         )
     }
 }

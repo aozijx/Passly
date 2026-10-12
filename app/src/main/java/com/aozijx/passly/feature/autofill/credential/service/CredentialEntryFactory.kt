@@ -6,7 +6,8 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.credentials.provider.BeginGetPasswordOption
 import androidx.credentials.provider.PasswordCredentialEntry
-import com.aozijx.passly.domain.autofill.model.ResolvedCandidate
+import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,14 +22,16 @@ class CredentialEntryFactory @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     fun buildPasswordEntry(
         context: Context,
-        candidate: ResolvedCandidate,
+        interactionId: AutofillInteractionId,
+        candidate: AutofillCandidateSummary,
         option: BeginGetPasswordOption,
     ): PasswordCredentialEntry = PasswordCredentialEntry.Builder(
         context = context,
         username = candidate.entry.username,
         pendingIntent = pendingIntentFactory.createPasswordGetPendingIntent(
             context = context,
-            entryId = candidate.entry.id.value,
+            interactionId = interactionId,
+            entryId = candidate.entry.id,
         ),
         beginGetPasswordOption = option,
     )

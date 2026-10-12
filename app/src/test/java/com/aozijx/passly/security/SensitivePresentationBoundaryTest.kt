@@ -30,10 +30,10 @@ class SensitivePresentationBoundaryTest {
         val credentialResponse = source(
             "com/aozijx/passly/presentation/feature/autofill/credential/CredentialResponseViewModel.kt"
         )
-        val onCleared = credentialResponse.substringAfter("override fun onCleared()")
-            .substringBefore("\n    }")
-        assertFalse("Cleanup must not launch in viewModelScope", onCleared.contains("viewModelScope.launch"))
-        assertTrue("Cleanup owner missing", onCleared.contains("closeOnOwnerCleared"))
+        assertFalse(credentialResponse.contains("AutofillRequestSession"))
+        assertFalse(credentialResponse.contains("closeOnOwnerCleared"))
+        assertFalse(credentialResponse.contains("override fun onCleared()"))
+        assertTrue(credentialResponse.contains("CredentialManagerFlow"))
     }
 
     @Test

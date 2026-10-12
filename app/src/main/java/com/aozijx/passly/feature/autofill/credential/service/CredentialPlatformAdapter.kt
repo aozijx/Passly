@@ -9,7 +9,8 @@ import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.autofill.model.AutofillField
 import com.aozijx.passly.domain.autofill.model.AutofillRequest
-import com.aozijx.passly.domain.autofill.model.AutofillResponse
+import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.autofill.model.AutofillSource
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -50,22 +51,24 @@ class CredentialPlatformAdapter @Inject constructor(
     }
 
     fun buildPasswordEntries(
-        response: AutofillResponse,
+        interactionId: AutofillInteractionId,
+        candidates: List<AutofillCandidateSummary>,
         context: Context,
         option: BeginGetPasswordOption,
     ): List<PasswordCredentialEntry> {
-        val candidates = response.candidates.filter {
+        val eligibleCandidates = candidates.filter {
             it.entry.username.isNotBlank() &&
                     (option.allowedUserIds.isEmpty() || it.entry.username in option.allowedUserIds)
         }
-        if (candidates.isEmpty()) {
+        if (eligibleCandidates.isEmpty()) {
             TelemetryRuntime.d(EventCategory.AUTOFILL, "credential.password_candidates_empty")
             return emptyList()
         }
 
-        return candidates.map { candidate ->
+        return eligibleCandidates.map { candidate ->
             entryFactory.buildPasswordEntry(
                 context = context,
+                interactionId = interactionId,
                 candidate = candidate,
                 option = option,
             )

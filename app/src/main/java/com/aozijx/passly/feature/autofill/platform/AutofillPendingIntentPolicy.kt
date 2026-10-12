@@ -11,10 +11,15 @@ object AutofillPendingIntentPolicy {
     fun legacyInteractionRequestId(interactionId: String): String =
         "autofill-interaction:$interactionId"
 
-    fun credentialGetRequestId(entryId: String): String = "password-get:$entryId"
+    fun credentialGetRequestId(interactionId: String, entryId: String): String =
+        "password-get:$interactionId:$entryId"
 
-    fun credentialGetRequestCode(entryId: String): Int = entryId.hashCode()
+    fun credentialGetRequestCode(interactionId: String, entryId: String): Int =
+        credentialGetRequestId(interactionId, entryId).hashCode()
 
-    const val CREDENTIAL_CREATE_REQUEST_CODE: Int = 0x30000
-    const val CREDENTIAL_UNLOCK_REQUEST_CODE: Int = 0x20000
+    fun credentialCreateRequestId(interactionId: String): String =
+        "password-create:$interactionId"
+
+    fun credentialUnlockRequestId(interactionId: String): String =
+        "password-unlock:$interactionId"
 }

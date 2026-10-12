@@ -11,46 +11,47 @@ import androidx.credentials.exceptions.NoCredentialException
 import androidx.credentials.provider.PendingIntentHandler
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
-import com.aozijx.passly.feature.autofill.credential.CreatePasswordCredentialResult
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.feature.autofill.credential.CredentialAuthenticationExceptionMapper
+import com.aozijx.passly.feature.autofill.credential.CredentialManagerCreateResult
+import com.aozijx.passly.feature.autofill.credential.CredentialManagerFlow
+import com.aozijx.passly.feature.autofill.credential.CredentialManagerPasswordResult
 import com.aozijx.passly.feature.autofill.credential.CredentialRequestParser
-import com.aozijx.passly.feature.autofill.credential.CredentialResponseInteractor
 import com.aozijx.passly.feature.autofill.credential.PasswordCreateParseResult
-import com.aozijx.passly.feature.autofill.credential.PasswordCredentialResult
 import com.aozijx.passly.feature.autofill.credential.PasswordGetParseResult
 import com.aozijx.passly.feature.autofill.credential.UnlockParseResult
 import com.aozijx.passly.feature.autofill.credential.service.CredentialBeginGetHandler
-import com.aozijx.passly.feature.autofill.credential.service.CredentialCallingAppResolver
 import com.aozijx.passly.feature.autofill.credential.service.CredentialResponseFactory
-import com.aozijx.passly.feature.autofill.shared.AutofillRequestSession
+import com.aozijx.passly.feature.autofill.credential.service.CredentialUnlockResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicBoolean
-import javax.inject.Inject
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 class CredentialResponseViewModel @Inject constructor(
-    private val interactor: CredentialResponseInteractor,
+    private val flow: CredentialManagerFlow,
     private val beginGetHandler: CredentialBeginGetHandler,
-    private val requestSession: AutofillRequestSession,
     @param:ApplicationContext private val appContext: android.content.Context,
 ) : ViewModel() {
-
-    private val _state = MutableStateFlow<CredentialResponseUiState>(
-        CredentialResponseUiState.Loading
+    private val mutableState = MutableStateFlow<CredentialResponseUiState>(
+        CredentialResponseUiState.Loading,
     )
-    val state: StateFlow<CredentialResponseUiState> = _state.asStateFlow()
+    val state: StateFlow<CredentialResponseUiState> = mutableState.asStateFlow()
+
     private val requestStarted = AtomicBoolean(false)
+    private var activeInteractionId: AutofillInteractionId? = null
 
     fun onAction(action: CredentialResponseUiAction) {
         when (action) {
@@ -61,196 +62,205 @@ class CredentialResponseViewModel @Inject constructor(
         }
     }
 
-    private fun handlePasswordGet(sourceIntent: Intent) {
-        if (!requestStarted.compareAndSet(false, true)) return
+    fun cancelActiveInteraction() {
+        val interactionId = activeInteractionId ?: return
+        activeInteractionId = null
         viewModelScope.launch {
-            TelemetryRuntime.i(EventCategory.AUTOFILL, "credential.password_request_received")
+            withContext(NonCancellable) { flow.cancel(interactionId) }
+        }
+    }
 
-            try {
-                val request = when (val parsed = CredentialRequestParser.parsePasswordGet(
-                    sourceIntent
-                )) {
-                    is PasswordGetParseResult.Ready -> parsed
-                    is PasswordGetParseResult.Failed -> {
-                        completeGetError(parsed.exception)
-                        return@launch
-                    }
-                }
-
-                when (val result = requestSession.trackUnlock {
-                    interactor.resolvePasswordCredential(
-                        request.entryId,
-                        request.packageName,
-                        null,
-                        request.option.allowedUserIds,
+    private fun handlePasswordGet(sourceIntent: Intent) = launchOnce(
+        sourceIntent = sourceIntent,
+        failureIntent = {
+            CredentialResponseFactory.buildGetException(
+                GetCredentialUnknownException("Credential resolution failed"),
+            )
+        },
+    ) {
+        TelemetryRuntime.i(EventCategory.AUTOFILL, "credential.password_request_received")
+        when (val request = CredentialRequestParser.parsePasswordGet(sourceIntent)) {
+            is PasswordGetParseResult.Failed -> {
+                cancelTrackedInteraction()
+                completeGetError(request.exception)
+            }
+            is PasswordGetParseResult.Ready -> {
+                activeInteractionId = request.interactionId
+                when (
+                    val result = flow.selectPassword(
+                        interactionId = request.interactionId,
+                        scope = AutofillGrantContext(request.packageName, null),
+                        entryId = request.entryId,
+                        allowedUserIds = request.option.allowedUserIds,
                     )
-                }) {
-                    is PasswordCredentialResult.Success -> {
-                        val intent = CredentialResponseFactory.buildPasswordResponse(
-                            result.username, result.password
+                ) {
+                    is CredentialManagerPasswordResult.Success -> {
+                        activeInteractionId = null
+                        complete(
+                            CredentialResponseFactory.buildPasswordResponse(
+                                result.username,
+                                result.password,
+                            ),
                         )
-                        mutate(CredentialResponseMutation.Completed(intent))
                         TelemetryRuntime.i(EventCategory.AUTOFILL, "credential.password_resolved")
                     }
 
-                    is PasswordCredentialResult.NotFound -> {
-                        TelemetryRuntime.w(EventCategory.AUTOFILL, "credential.password_not_found")
+                    CredentialManagerPasswordResult.NotAvailable -> {
+                        activeInteractionId = null
                         completeGetError(NoCredentialException("Credential is no longer available"))
                     }
+                }
+            }
+        }
+    }
 
-                    is PasswordCredentialResult.NotAuthorized -> {
-                        TelemetryRuntime.i(EventCategory.AUTOFILL, "credential.authorization_incomplete")
+    private fun handleUnlock(sourceIntent: Intent) = launchOnce(
+        sourceIntent = sourceIntent,
+        failureIntent = {
+            CredentialResponseFactory.buildGetException(
+                GetCredentialUnknownException("Credential unlock failed"),
+            )
+        },
+    ) {
+        when (val request = CredentialRequestParser.parseUnlock(sourceIntent)) {
+            is UnlockParseResult.Failed -> {
+                cancelTrackedInteraction()
+                completeGetError(request.exception)
+            }
+            is UnlockParseResult.Ready -> {
+                activeInteractionId = request.interactionId
+                when (
+                    val result = beginGetHandler.resolveAfterUnlock(
+                        request = request.request,
+                        interactionId = request.interactionId,
+                        context = appContext,
+                    )
+                ) {
+                    is CredentialUnlockResponse.Ready -> {
+                        val intent = Intent()
+                        PendingIntentHandler.setBeginGetCredentialResponse(intent, result.response)
+                        // The same interaction remains active for the picker selection.
+                        activeInteractionId = null
+                        complete(intent)
+                    }
+
+                    is CredentialUnlockResponse.NotAuthorized -> {
+                        activeInteractionId = null
                         completeGetError(
                             CredentialAuthenticationExceptionMapper.toGetException(
-                                result.authentication
-                            )
+                                result.result.authorization,
+                            ),
                         )
                     }
+
+                    CredentialUnlockResponse.Unavailable -> {
+                        flow.cancel(request.interactionId)
+                        activeInteractionId = null
+                        completeGetError(NoCredentialException("Credential is no longer available"))
+                    }
                 }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                TelemetryRuntime.e(EventCategory.AUTOFILL, "credential.password_resolution_failed", throwable = e)
-                completeGetError(GetCredentialUnknownException("Credential resolution failed"))
             }
         }
     }
 
-    private fun handleUnlock(intent: Intent) {
-        if (!requestStarted.compareAndSet(false, true)) return
-        viewModelScope.launch {
-            try {
-                val request = when (val parsed = CredentialRequestParser.parseUnlock(intent)) {
-                    is UnlockParseResult.Ready -> parsed.request
-                    is UnlockParseResult.Failed -> {
-                        completeGetError(parsed.exception)
-                        return@launch
-                    }
-                }
-                val authentication = requestSession.authenticate()
-                if (authentication !is AuthenticationResult.Success) {
-                    completeGetError(
-                        CredentialAuthenticationExceptionMapper.toGetException(authentication)
-                    )
-                    return@launch
-                }
-                // 解锁动作成功后授予短期会话授权，用户随即选择条目进入
-                // ACTION_GET_PASSWORD 时不再重复弹认证。
-                CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo)
-                    ?.let { packageName ->
-                        requestSession.grant(
-                            AutofillGrantContext(packageName = packageName, webDomain = null)
-                        )
-                    }
-                val response = beginGetHandler.resolve(
-                    request = request,
-                    context = appContext,
-                    includeUnlockAction = false,
-                )
-                val result = Intent()
-                PendingIntentHandler.setBeginGetCredentialResponse(result, response)
-                mutate(CredentialResponseMutation.Completed(result))
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                TelemetryRuntime.e(EventCategory.AUTOFILL, "credential.unlock_failed", throwable = e)
-                completeGetError(GetCredentialUnknownException("Credential unlock failed"))
+    private fun handlePasswordCreate(sourceIntent: Intent) = launchOnce(
+        sourceIntent = sourceIntent,
+        failureIntent = {
+            CredentialResponseFactory.buildCreateException(
+                CreateCredentialUnknownException("Credential creation failed"),
+            )
+        },
+    ) {
+        when (val request = CredentialRequestParser.parsePasswordCreate(sourceIntent)) {
+            is PasswordCreateParseResult.Failed -> {
+                cancelTrackedInteraction()
+                completeCreateError(request.exception)
             }
-        }
-    }
-
-    private fun handlePasswordCreate(sourceIntent: Intent) {
-        if (!requestStarted.compareAndSet(false, true)) return
-        viewModelScope.launch {
-            try {
-                val request = when (val parsed = CredentialRequestParser.parsePasswordCreate(
-                    sourceIntent
-                )) {
-                    is PasswordCreateParseResult.Ready -> parsed
-                    is PasswordCreateParseResult.Failed -> {
-                        completeCreateError(parsed.exception)
-                        return@launch
-                    }
-                }
-
-                when (val result = requestSession.trackUnlock {
-                    interactor.createPasswordCredential(
-                        packageName = request.packageName,
+            is PasswordCreateParseResult.Ready -> {
+                activeInteractionId = request.interactionId
+                when (
+                    val result = flow.createPassword(
+                        interactionId = request.interactionId,
+                        scope = AutofillGrantContext(request.packageName, null),
                         username = request.username,
                         password = request.password,
                     )
-                }) {
-                    CreatePasswordCredentialResult.Success -> {
-                        mutate(
-                            CredentialResponseMutation.Completed(
-                                CredentialResponseFactory.buildPasswordCreateResponse()
-                            )
-                        )
+                ) {
+                    CredentialManagerCreateResult.Saved -> {
+                        activeInteractionId = null
+                        complete(CredentialResponseFactory.buildPasswordCreateResponse())
                         TelemetryRuntime.i(EventCategory.AUTOFILL, "credential.password_created")
                     }
 
-                    CreatePasswordCredentialResult.NotSaved -> {
-                        completeCreateError(
-                            CreateCredentialUnknownException("Credential was not saved")
-                        )
+                    CredentialManagerCreateResult.NotSaved -> {
+                        activeInteractionId = null
+                        completeCreateError(CreateCredentialUnknownException("Credential was not saved"))
                     }
 
-                    is CreatePasswordCredentialResult.NotAuthorized -> {
+                    is CredentialManagerCreateResult.NotAuthorized -> {
+                        activeInteractionId = null
                         completeCreateError(
                             CredentialAuthenticationExceptionMapper.toCreateException(
-                                result.authentication
-                            )
+                                result.authorization,
+                            ),
                         )
                     }
                 }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                TelemetryRuntime.e(EventCategory.AUTOFILL, "credential.password_creation_failed", throwable = e)
-                completeCreateError(
-                    CreateCredentialUnknownException("Credential creation failed")
+            }
+        }
+    }
+
+    private fun launchOnce(
+        sourceIntent: Intent,
+        failureIntent: (Exception) -> Intent,
+        block: suspend () -> Unit,
+    ) {
+        if (!requestStarted.compareAndSet(false, true)) return
+        activeInteractionId = CredentialRequestParser.parseInteractionId(sourceIntent)
+        viewModelScope.launch {
+            try {
+                block()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                TelemetryRuntime.e(
+                    EventCategory.AUTOFILL,
+                    "credential.response_failed",
+                    throwable = error,
                 )
+                cancelTrackedInteraction()
+                complete(failureIntent(error))
             }
         }
     }
 
     private fun rejectUnknownAction() {
         if (requestStarted.compareAndSet(false, true)) {
-            mutate(CredentialResponseMutation.Unrecoverable)
+            mutableState.value = CredentialResponseReducer.reduce(
+                mutableState.value,
+                CredentialResponseMutation.Unrecoverable,
+            )
         }
     }
 
-    suspend fun closeRequestSession() {
-        requestSession.close()
-    }
-
-    override fun onCleared() {
-        requestSession.closeOnOwnerCleared()
+    private fun complete(resultIntent: Intent) {
+        mutableState.value = CredentialResponseReducer.reduce(
+            mutableState.value,
+            CredentialResponseMutation.Completed(resultIntent),
+        )
     }
 
     private fun completeGetError(exception: GetCredentialException) {
-        mutate(
-            CredentialResponseMutation.Completed(
-                CredentialResponseFactory.buildGetException(exception)
-            )
-        )
+        complete(CredentialResponseFactory.buildGetException(exception))
     }
 
-    private fun completeCreateError(
-        exception: CreateCredentialException,
-    ) {
-        mutate(
-            CredentialResponseMutation.Completed(
-                CredentialResponseFactory.buildCreateException(exception)
-            )
-        )
+    private fun completeCreateError(exception: CreateCredentialException) {
+        complete(CredentialResponseFactory.buildCreateException(exception))
     }
 
-    private fun mutate(mutation: CredentialResponseMutation) {
-        _state.value = CredentialResponseReducer.reduce(_state.value, mutation)
-    }
-
-    companion object {
-        private const val TAG = "CredResponse"
+    private suspend fun cancelTrackedInteraction() {
+        val interactionId = activeInteractionId ?: return
+        activeInteractionId = null
+        flow.cancel(interactionId)
     }
 }

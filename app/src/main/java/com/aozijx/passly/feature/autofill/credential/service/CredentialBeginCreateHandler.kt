@@ -10,7 +10,9 @@ import androidx.credentials.provider.BeginCreateCredentialResponse
 import androidx.credentials.provider.BeginCreatePasswordCredentialRequest
 import androidx.credentials.provider.CreateEntry
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
+import com.aozijx.passly.feature.autofill.credential.CredentialManagerFlow
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,6 +27,7 @@ import javax.inject.Singleton
 @Singleton
 class CredentialBeginCreateHandler @Inject constructor(
     private val settingsSource: InteractionSettingsSource,
+    private val flow: CredentialManagerFlow,
     private val pendingIntentFactory: CredentialPendingIntentFactory,
 ) {
     suspend fun resolve(
@@ -47,13 +50,15 @@ class CredentialBeginCreateHandler @Inject constructor(
             return BeginCreateCredentialResponse()
         }
 
-        if (CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo) == null) {
+        val packageName = CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo)
+        if (packageName == null) {
             return BeginCreateCredentialResponse()
         }
+        val interaction = flow.beginCreate(AutofillGrantContext(packageName, null))
 
         val entry = CreateEntry.Builder(
             context.getString(R.string.app_name),
-            pendingIntentFactory.createPasswordCreatePendingIntent(context),
+            pendingIntentFactory.createPasswordCreatePendingIntent(context, interaction.id),
         )
             .setDescription(context.getString(R.string.credential_create_password_description))
             .setIcon(Icon.createWithResource(context, R.mipmap.launcher_logo))
