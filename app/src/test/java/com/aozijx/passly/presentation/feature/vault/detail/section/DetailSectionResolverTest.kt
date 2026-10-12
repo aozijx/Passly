@@ -12,6 +12,7 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.credential.IdentityCredential
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.credential.PasskeyCredential
+import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -68,6 +69,19 @@ class DetailSectionResolverTest {
 
         assertFalse(DetailSectionKey.CREDENTIAL in sections)
         assertTrue(DetailSectionKey.NOTES in sections)
+    }
+
+    @Test
+    fun `wifi entry reuses credential section instead of a wifi specific section`() {
+        val sections = DetailSectionResolver.resolve(
+            entry(
+                type = EntryType.WIFI,
+                secret = EntrySecret(credential = WifiCredential(ssid = "Office", password = "secret")),
+            ),
+        )
+
+        assertTrue(DetailSectionKey.CREDENTIAL in sections)
+        assertFalse(sections.any { it.name == "WIFI" })
     }
 
     private fun entry(type: EntryType, secret: EntrySecret) = Entry(

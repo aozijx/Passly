@@ -36,7 +36,6 @@
     <string name="wifi_password">Wi-Fi password</string>
     <string name="wifi_encryption">Security type</string>
     <string name="wifi_hidden">Hidden network</string>
-    <string name="wifi_settings">Wi-Fi settings</string>
     <string name="wifi_security_open">Open network</string>
     <string name="wifi_ssid_required">Enter a Wi-Fi name</string>
     <string name="wifi_password_required">Enter a Wi-Fi password</string>

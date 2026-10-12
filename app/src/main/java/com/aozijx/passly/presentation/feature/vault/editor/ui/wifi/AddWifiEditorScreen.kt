@@ -58,12 +58,6 @@ fun AddWifiEditorScreen(
     ) {
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
             NextFocusTextField(
-                value = form.title,
-                onValueChange = { onAction(AddWifiAction.TitleChanged(it)) },
-                label = stringResource(R.string.field_title),
-                isError = FieldKey.TITLE in state.fieldErrors,
-            )
-            NextFocusTextField(
                 value = form.ssid,
                 onValueChange = { onAction(AddWifiAction.SsidChanged(it)) },
                 label = stringResource(R.string.wifi_ssid),

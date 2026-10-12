@@ -13,8 +13,6 @@ class WifiFormMapperTest {
     @Test
     fun `form maps every wifi and shared field into a typed draft`() {
         val draft = AddWifiFormState(
-            title = "  Office network  ",
-            titleOrigin = WifiTitleOrigin.USER_EDITED,
             ssid = "  Passly  ",
             securityType = WifiSecurityType.Wep,
             password = "abcde",
@@ -24,7 +22,7 @@ class WifiFormMapperTest {
         ).toEntryDraft()
 
         assertEquals(EntryDraftTarget.New(EntryType.WIFI), draft.target)
-        assertEquals(EntryDraftValue.Text("Office network"), draft[FieldKey.TITLE])
+        assertEquals(EntryDraftValue.Text("Passly"), draft[FieldKey.TITLE])
         assertEquals(EntryDraftValue.Text("Passly"), draft[FieldKey.WIFI_SSID])
         assertEquals(EntryDraftValue.Text("WEP"), draft[FieldKey.WIFI_SECURITY])
         assertEquals(EntryDraftValue.Text("abcde"), draft[FieldKey.PASSWORD])
@@ -48,23 +46,16 @@ class WifiFormMapperTest {
     }
 
     @Test
-    fun `ssid drives only empty or generated titles`() {
-        val generated = AddWifiFormState().withSsid("Office")
-        val regenerated = generated.withSsid("Office 2")
-        val userEdited = regenerated.withTitle("My network").withSsid("Office 3")
+    fun `ssid is the single source for wifi title`() {
+        val draft = AddWifiFormState(ssid = "  Office  ").toEntryDraft()
 
-        assertEquals("Office", generated.title)
-        assertEquals(WifiTitleOrigin.SSID_GENERATED, generated.titleOrigin)
-        assertEquals("Office 2", regenerated.title)
-        assertEquals("My network", userEdited.title)
-        assertEquals(WifiTitleOrigin.USER_EDITED, userEdited.titleOrigin)
+        assertEquals(EntryDraftValue.Text("Office"), draft[FieldKey.TITLE])
+        assertEquals(EntryDraftValue.Text("Office"), draft[FieldKey.WIFI_SSID])
     }
 
     @Test
     fun `scanned wifi replaces wifi fields but preserves user metadata`() {
         val original = AddWifiFormState(
-            title = "My network",
-            titleOrigin = WifiTitleOrigin.USER_EDITED,
             ssid = "Old",
             password = "old-password",
             notes = "keep note",
@@ -80,7 +71,6 @@ class WifiFormMapperTest {
             ),
         )
 
-        assertEquals("My network", updated.title)
         assertEquals("Guest", updated.ssid)
         assertEquals("", updated.password)
         assertEquals(WifiSecurityType.Open, updated.securityType)

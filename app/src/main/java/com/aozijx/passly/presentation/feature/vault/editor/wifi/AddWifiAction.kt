@@ -4,7 +4,6 @@ import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.feature.vault.wifi.WifiQrPayload
 
 sealed interface AddWifiAction {
-    data class TitleChanged(val value: String) : AddWifiAction
     data class SsidChanged(val value: String) : AddWifiAction
     data class SecurityTypeChanged(val value: WifiSecurityType) : AddWifiAction
     data class PasswordChanged(val value: String) : AddWifiAction

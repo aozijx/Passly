@@ -38,7 +38,6 @@
     <string name="wifi_password">Wi-Fi 密码</string>
     <string name="wifi_encryption">安全类型</string>
     <string name="wifi_hidden">隐藏网络</string>
-    <string name="wifi_settings">Wi-Fi 设置</string>
     <string name="wifi_security_open">开放网络</string>
     <string name="wifi_security_wep" translatable="false">WEP</string>
     <string name="wifi_security_wpa_personal" translatable="false">WPA/WPA2/WPA3</string>

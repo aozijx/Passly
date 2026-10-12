@@ -33,6 +33,17 @@ class DetailEntryEditTest {
     }
 
     @Test
+    fun wifiTitleEditKeepsStoredTitleAndSsidAligned() {
+        val latest = wifiEntry()
+
+        val actual = DetailEntryEdit.SetTitle("Guest Network").applyRequired(latest)
+
+        assertEquals("Guest Network", actual.title)
+        assertEquals("Guest Network", actual.secret.wifi?.ssid)
+        assertEquals(latest.secret.wifi?.password, actual.secret.wifi?.password)
+    }
+
+    @Test
     fun favoriteEditPreservesLatestUnrelatedFields() {
         val latest = loginEntry()
 

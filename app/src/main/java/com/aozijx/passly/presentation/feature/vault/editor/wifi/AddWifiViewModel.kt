@@ -42,7 +42,6 @@ class AddWifiViewModel @Inject constructor(
 
     fun onAction(action: AddWifiAction) {
         when (action) {
-            is AddWifiAction.TitleChanged -> mutateForm { it.withTitle(action.value) }
             is AddWifiAction.SsidChanged -> mutateForm { it.withSsid(action.value) }
             is AddWifiAction.SecurityTypeChanged -> mutateForm { it.withSecurityType(action.value) }
             is AddWifiAction.PasswordChanged -> mutateForm { it.copy(password = action.value) }

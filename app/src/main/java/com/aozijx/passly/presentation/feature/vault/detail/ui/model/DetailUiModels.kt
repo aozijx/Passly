@@ -78,12 +78,6 @@ data class DetailIdentityUiModel(
     val username: String,
 )
 
-data class DetailWifiUiModel(
-    val ssid: String, val password: String?, val passwordRevealed: Boolean,
-    val isEditingPassword: Boolean, val editedPassword: String,
-    val securityType: String, val isHidden: Boolean,
-)
-
 data class DetailSshUiModel(
     val fingerprint: String,
     val hasPassphrase: Boolean, val hasPrivateKey: Boolean,

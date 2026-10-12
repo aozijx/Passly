@@ -13,7 +13,7 @@ import com.aozijx.passly.feature.vault.wifi.WifiQrPayload
 fun AddWifiFormState.toEntryDraft(): EntryDraft {
     val definition = EntryTypeDefinitions[EntryType.WIFI]
     var draft = EntryDraft(EntryDraftTarget.New(EntryType.WIFI))
-        .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text(title.trim()))
+        .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text(ssid.trim()))
         .withValue(definition, FieldKey.WIFI_SSID, EntryDraftValue.Text(ssid.trim()))
         .withValue(
             definition,
@@ -29,23 +29,7 @@ fun AddWifiFormState.toEntryDraft(): EntryDraft {
     return draft.withTags(definition, tags)
 }
 
-internal fun AddWifiFormState.withTitle(value: String): AddWifiFormState = copy(
-    title = value,
-    titleOrigin = if (value.isBlank()) WifiTitleOrigin.EMPTY else WifiTitleOrigin.USER_EDITED,
-)
-
-internal fun AddWifiFormState.withSsid(value: String): AddWifiFormState {
-    val followsSsid = titleOrigin != WifiTitleOrigin.USER_EDITED
-    return copy(
-        ssid = value,
-        title = if (followsSsid) value.trim() else title,
-        titleOrigin = when {
-            !followsSsid -> WifiTitleOrigin.USER_EDITED
-            value.isBlank() -> WifiTitleOrigin.EMPTY
-            else -> WifiTitleOrigin.SSID_GENERATED
-        },
-    )
-}
+internal fun AddWifiFormState.withSsid(value: String): AddWifiFormState = copy(ssid = value)
 
 internal fun AddWifiFormState.withSecurityType(value: WifiSecurityType): AddWifiFormState = copy(
     securityType = value,
@@ -54,10 +38,7 @@ internal fun AddWifiFormState.withSecurityType(value: WifiSecurityType): AddWifi
 )
 
 internal fun AddWifiFormState.applyScanned(payload: WifiQrPayload): AddWifiFormState {
-    val followsSsid = titleOrigin != WifiTitleOrigin.USER_EDITED
     return copy(
-        title = if (followsSsid) payload.ssid.trim() else title,
-        titleOrigin = if (followsSsid) WifiTitleOrigin.SSID_GENERATED else titleOrigin,
         ssid = payload.ssid,
         securityType = payload.securityType,
         password = payload.password.takeUnless {

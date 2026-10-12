@@ -6,15 +6,7 @@ import com.aozijx.passly.domain.entry.policy.EntryViolationCode
 import com.aozijx.passly.domain.entry.policy.WifiCredentialValidation
 import com.aozijx.passly.feature.vault.wifi.WifiQrPayload
 
-enum class WifiTitleOrigin {
-    EMPTY,
-    SSID_GENERATED,
-    USER_EDITED,
-}
-
 data class AddWifiFormState(
-    val title: String = "",
-    val titleOrigin: WifiTitleOrigin = WifiTitleOrigin.EMPTY,
     val ssid: String = "",
     val securityType: WifiSecurityType = WifiSecurityType.WpaPersonal,
     val password: String = "",
@@ -45,7 +37,6 @@ data class AddWifiUiState(
 }
 
 internal fun AddWifiFormState.fieldErrors(): Map<FieldKey, EntryViolationCode> = buildMap {
-    if (title.isBlank()) put(FieldKey.TITLE, EntryViolationCode.REQUIRED)
     WifiCredentialValidation.validate(
         ssid = ssid,
         password = password.takeIf(String::isNotEmpty),

@@ -31,7 +31,6 @@ import com.aozijx.passly.presentation.feature.vault.detail.ui.component.SeedPhra
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.SshKeySection
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.TotpQrUiState
 import com.aozijx.passly.presentation.feature.vault.detail.ui.component.TotpSection
-import com.aozijx.passly.presentation.feature.vault.detail.ui.component.WifiSection
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailBodyUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFieldUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailSectionUiModel
@@ -106,25 +105,6 @@ fun DetailBody(
                         onIdNumberCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.ID_NUMBER)) },
                         onIdNumberReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailFieldUiModel.ID_NUMBER)) },
                         onUsernameCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.USERNAME)) },
-                    )
-                }
-            }
-        }
-        if (DetailSectionUiModel.WIFI in model.sections) {
-            model.wifi?.let { wifi ->
-                item {
-                    WifiSection(
-                        model = wifi,
-                        onSsidCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.WIFI_SSID)) },
-                        onPasswordCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.PASSWORD)) },
-                        onPasswordReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailFieldUiModel.PASSWORD)) },
-                        onPasswordEditStarted = {
-                            onAction(DetailUiAction.StartFieldEdit(DetailFieldUiModel.PASSWORD, wifi.password.orEmpty()))
-                        },
-                        onPasswordChanged = { onAction(DetailUiAction.UpdateFieldDraft(DetailFieldUiModel.PASSWORD, it)) },
-                        onPasswordSaved = {
-                            if (it != wifi.password) onAction(DetailUiAction.SaveField(DetailFieldUiModel.PASSWORD, it))
-                        },
                     )
                 }
             }

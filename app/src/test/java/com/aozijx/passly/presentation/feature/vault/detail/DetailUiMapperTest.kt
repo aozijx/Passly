@@ -7,8 +7,10 @@ import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
@@ -133,6 +135,30 @@ class DetailUiMapperTest {
         val presentation = requireNotNull(toDetailPresentationModel(state, null))
 
         assertEquals(setOf(DetailSectionUiModel.CREDENTIAL), presentation.content.sections)
+    }
+
+    @Test
+    fun `wifi presentation uses ssid as common title and common password field`() {
+        val entry = Entry(
+            identity = EntryIdentity(
+                id = EntryId("wifi"),
+                type = EntryType.WIFI,
+                timestamps = EntryTimestamps(1L),
+            ),
+            profile = EntryProfile(title = "Legacy title"),
+            secret = EntrySecret(credential = WifiCredential(ssid = "Office", password = null)),
+        )
+        val state = DetailUiState(
+            entry = entry,
+            sections = listOf(DetailSectionKey.CREDENTIAL),
+            sensitiveFieldKeys = setOf(SensitiveFieldKey.PASSWORD),
+        )
+
+        val presentation = requireNotNull(toDetailPresentationModel(state, null))
+
+        assertEquals("Office", presentation.header.title)
+        assertFalse(requireNotNull(presentation.content.credential).username.visible)
+        assertTrue(requireNotNull(presentation.content.credential).password.visible)
     }
 
     private fun noteEntry() = Entry(

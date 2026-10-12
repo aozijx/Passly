@@ -8,7 +8,6 @@ enum class DetailSectionKey {
     OTP,
     BANK_CARD,
     IDENTITY,
-    WIFI,
     SSH,
     SEED_PHRASE,
     PASSKEY,
@@ -36,7 +35,7 @@ object DetailSectionResolver {
         EntryType.PASSPORT to setOf(DetailSectionKey.IDENTITY),
         EntryType.DRIVER_LICENSE to setOf(DetailSectionKey.IDENTITY),
         EntryType.SSH_KEY to setOf(DetailSectionKey.SSH),
-        EntryType.WIFI to setOf(DetailSectionKey.WIFI),
+        EntryType.WIFI to setOf(DetailSectionKey.CREDENTIAL),
         EntryType.SEED_PHRASE to setOf(DetailSectionKey.SEED_PHRASE),
         EntryType.PASSKEY to setOf(DetailSectionKey.PASSKEY),
         EntryType.RECOVERY_CODE to setOf(DetailSectionKey.CREDENTIAL),
@@ -62,7 +61,7 @@ object DetailSectionResolver {
             }
             if (otp != null) selected += DetailSectionKey.OTP
             if (card != null) selected += DetailSectionKey.BANK_CARD
-            if (wifi != null) selected += DetailSectionKey.WIFI
+            if (wifi != null) selected += DetailSectionKey.CREDENTIAL
             if (ssh != null) selected += DetailSectionKey.SSH
             if (passkey != null) selected += DetailSectionKey.PASSKEY
             if (!identity?.seedPhrase.isNullOrBlank()) {

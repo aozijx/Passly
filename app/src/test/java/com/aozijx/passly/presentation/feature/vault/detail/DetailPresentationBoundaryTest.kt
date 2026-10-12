@@ -92,6 +92,18 @@ class DetailPresentationBoundaryTest {
         assertFalse(screen.contains("content: @Composable"))
     }
 
+    @Test
+    fun `wifi detail reuses common title and credential components`() {
+        val detailRoot = sourceRoot().resolve(
+            "com/aozijx/passly/presentation/feature/vault/detail",
+        )
+        val body = detailRoot.resolve("ui/DetailBody.kt").readText()
+
+        assertFalse(detailRoot.resolve("ui/component/WifiSection.kt").exists())
+        assertFalse(body.contains("WifiSection"))
+        assertFalse(body.contains("DetailSectionUiModel.WIFI"))
+    }
+
     private fun sourceRoot(): File = listOf(File("src/main/java"), File("app/src/main/java"))
         .firstOrNull(File::isDirectory) ?: error("Cannot locate app source root")
 }

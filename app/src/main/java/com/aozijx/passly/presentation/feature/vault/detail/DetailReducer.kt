@@ -85,7 +85,7 @@ internal object DetailReducer {
                     sensitiveFieldKeys = presentation.sensitiveFieldKeys,
                     relatedEntries = snapshot.relatedEntries,
                     isEditingTitle = false,
-                    editedTitle = presentation.entry.title,
+                    editedTitle = presentation.entry.detailDisplayTitle,
                 )
             }
 
@@ -102,12 +102,12 @@ internal object DetailReducer {
 
             DetailMutation.TitleEditingStarted -> state.copy(
                 isEditingTitle = true,
-                editedTitle = state.entry?.title.orEmpty(),
+                editedTitle = state.entry?.detailDisplayTitle.orEmpty(),
             )
 
             DetailMutation.TitleEditingCancelled -> state.copy(
                 isEditingTitle = false,
-                editedTitle = state.entry?.title.orEmpty(),
+                editedTitle = state.entry?.detailDisplayTitle.orEmpty(),
             )
 
             is DetailMutation.EditedTitleChanged -> state.copy(editedTitle = mutation.value)

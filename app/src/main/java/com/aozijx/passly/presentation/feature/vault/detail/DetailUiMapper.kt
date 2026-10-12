@@ -44,7 +44,6 @@ import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisi
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailSeedPhraseUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailSshUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailTagEditorUiModel
-import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailWifiUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.RelatedEntryUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.ScopedSensitiveText
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.TagEditorValidationErrorUiModel
@@ -54,7 +53,7 @@ internal fun detailHeaderUiModel(
     entry: Entry,
     state: DetailUiState,
 ) = DetailHeaderUiModel(
-    title = entry.title,
+    title = entry.detailDisplayTitle,
     favorite = entry.favorite,
     editedTitle = state.editedTitle,
     isEditingTitle = state.isEditingTitle,
@@ -113,7 +112,7 @@ internal fun toDetailPresentationModel(
                 iconColor = entry.icon.color,
                 associatedAppPackage = entry.associations.applicationIds.firstOrNull(),
                 entryType = entry.type.toUiModel(),
-                title = entry.title,
+                title = entry.detailDisplayTitle,
                 username = entry.username,
                 associatedDomain = entry.associatedDomain,
             ),
@@ -121,14 +120,21 @@ internal fun toDetailPresentationModel(
             credential = if (DetailSectionKey.CREDENTIAL in state.sections) {
                 CredentialSectionUiState(
                     username = CredentialFieldUiState(
-                        visible = entry.username.isNotBlank() || SensitiveFieldKey.PASSWORD !in state.sensitiveFieldKeys,
+                        visible = entry.type != EntryType.WIFI && (
+                            entry.username.isNotBlank() ||
+                                SensitiveFieldKey.PASSWORD !in state.sensitiveFieldKeys
+                            ),
                         revealedValue = revealedUsername?.asScopedSensitiveText(),
                         isEditing = state.fieldEdits.isEditing(RevealedFieldKey.USERNAME),
                         editedValue = state.fieldEdits.draft(RevealedFieldKey.USERNAME),
                         valueForEditing = revealedUsername.copyToString() ?: entry.username,
                     ),
                     password = CredentialFieldUiState(
-                        visible = SensitiveFieldKey.PASSWORD in state.sensitiveFieldKeys || entry.type != EntryType.LOGIN,
+                        visible = if (entry.type == EntryType.WIFI) {
+                            SensitiveFieldKey.PASSWORD in state.sensitiveFieldKeys
+                        } else {
+                            SensitiveFieldKey.PASSWORD in state.sensitiveFieldKeys || entry.type != EntryType.LOGIN
+                        },
                         revealedValue = revealedPassword?.asScopedSensitiveText(),
                         isEditing = state.fieldEdits.isEditing(RevealedFieldKey.PASSWORD),
                         editedValue = state.fieldEdits.draft(RevealedFieldKey.PASSWORD),
@@ -155,15 +161,6 @@ internal fun toDetailPresentationModel(
                 state.revealed(RevealedFieldKey.ID_NUMBER).copyToString(),
                 state.revealed(RevealedFieldKey.ID_NUMBER) != null,
                 entry.username,
-            ) else null,
-            wifi = if (DetailSectionKey.WIFI in state.sections) DetailWifiUiModel(
-                entry.username,
-                revealedPassword.copyToString(),
-                revealedPassword != null,
-                state.fieldEdits.isEditing(RevealedFieldKey.PASSWORD),
-                state.fieldEdits.draft(RevealedFieldKey.PASSWORD),
-                entry.secret.wifi?.securityType?.storedValue ?: "WPA",
-                entry.secret.wifi?.isHidden ?: false,
             ) else null,
             ssh = if (DetailSectionKey.SSH in state.sections) DetailSshUiModel(
                 entry.username,
@@ -327,7 +324,6 @@ private fun DetailSectionKey.toUiModel(): DetailSectionUiModel? = when (this) {
     DetailSectionKey.OTP -> DetailSectionUiModel.OTP
     DetailSectionKey.BANK_CARD -> DetailSectionUiModel.BANK_CARD
     DetailSectionKey.IDENTITY -> DetailSectionUiModel.IDENTITY
-    DetailSectionKey.WIFI -> DetailSectionUiModel.WIFI
     DetailSectionKey.SSH -> DetailSectionUiModel.SSH
     DetailSectionKey.SEED_PHRASE -> DetailSectionUiModel.SEED_PHRASE
     DetailSectionKey.PASSKEY -> DetailSectionUiModel.PASSKEY

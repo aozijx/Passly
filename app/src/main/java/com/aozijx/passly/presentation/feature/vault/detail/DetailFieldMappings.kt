@@ -17,7 +17,6 @@ internal val DetailFieldUiModel.revealedKey: String?
         DetailFieldUiModel.PASSKEY_DATA -> RevealedFieldKey.PASSKEY_DATA
         DetailFieldUiModel.ID_NUMBER -> RevealedFieldKey.ID_NUMBER
         DetailFieldUiModel.CARD_EXPIRATION,
-        DetailFieldUiModel.WIFI_SSID,
         DetailFieldUiModel.HARDWARE_INFO,
             -> null
     }
@@ -31,7 +30,6 @@ internal val DetailFieldUiModel.copyKey: FieldKey?
         DetailFieldUiModel.CARD_CVV -> FieldKey.CARD_CVV
         DetailFieldUiModel.PAYMENT_PIN -> FieldKey.PAYMENT_PIN
         DetailFieldUiModel.CARD_EXPIRATION -> FieldKey.CARD_EXPIRATION
-        DetailFieldUiModel.WIFI_SSID -> FieldKey.WIFI_SSID
         DetailFieldUiModel.SSH_PASSPHRASE -> FieldKey.SSH_PASSPHRASE
         DetailFieldUiModel.SSH_PRIVATE_KEY -> FieldKey.SSH_KEY
         DetailFieldUiModel.SEED_PHRASE -> FieldKey.SEED_PHRASE

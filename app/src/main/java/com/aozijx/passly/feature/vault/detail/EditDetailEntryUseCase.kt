@@ -93,9 +93,16 @@ private fun Entry.changesFrom(previous: Entry): EntryUpdate? {
 }
 
 internal fun DetailEntryEdit.applyTo(entry: Entry): Entry? = when (this) {
-    is DetailEntryEdit.SetTitle -> entry.copy(
-        profile = entry.profile.copy(title = value),
-    )
+    is DetailEntryEdit.SetTitle -> if (entry.type == EntryType.WIFI) {
+        entry.secret.wifi?.let { wifi ->
+            entry.copy(
+                profile = entry.profile.copy(title = value),
+                secret = entry.secret.copy(credential = wifi.copy(ssid = value)),
+            )
+        }
+    } else {
+        entry.copy(profile = entry.profile.copy(title = value))
+    }
     DetailEntryEdit.ToggleFavorite -> entry.copy(
         profile = entry.profile.copy(favorite = !entry.favorite),
     )
