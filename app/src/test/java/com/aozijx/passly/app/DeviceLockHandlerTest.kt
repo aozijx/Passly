@@ -5,7 +5,11 @@ import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.settings.model.SecuritySettings
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -14,6 +18,27 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DeviceLockHandlerTest {
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `task clear request is delivered only to an active task collector`() = runTest {
+        val requests = ActiveTaskClearRequests()
+        val received = mutableListOf<Unit>()
+
+        requests.requestClear()
+        val collection = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            requests.events.collect { received += it }
+        }
+        runCurrent()
+
+        assertTrue(received.isEmpty())
+
+        requests.requestClear()
+        runCurrent()
+
+        assertEquals(1, received.size)
+        collection.cancel()
+    }
 
     @Test
     fun `screen off remains pending until its lock operation completes`() {
@@ -67,6 +92,22 @@ class DeviceLockHandlerTest {
         assertTrue(result.locked)
         assertFalse(result.shouldClearTask)
         assertEquals(LockReason.BACKGROUND, lockController.reason)
+    }
+
+    @Test
+    fun `screen off follows enabled clear task setting`() = runTest {
+        val handler = handler(
+            lockController = RecordingLockController(),
+            security = SecuritySettings(
+                isFlipToLockEnabled = true,
+                isFlipExitAndClearStackEnabled = true,
+            ),
+        )
+
+        val result = handler.handle(DeviceLockTrigger.SCREEN_OFF)
+
+        assertTrue(result.locked)
+        assertTrue(result.shouldClearTask)
     }
 
     @Test

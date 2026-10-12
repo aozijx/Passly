@@ -23,13 +23,11 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -114,8 +112,8 @@ class DeviceLockController @Inject constructor(
         sessionLockController = sessionLockController,
         securitySettings = securitySettings,
     )
-    private val clearTaskChannel = Channel<Unit>(Channel.BUFFERED)
-    val clearTaskRequests: Flow<Unit> = clearTaskChannel.receiveAsFlow()
+    private val activeTaskClearRequests = ActiveTaskClearRequests()
+    val clearTaskRequests: Flow<Unit> = activeTaskClearRequests.events
     private val screenOffLockTracker = ScreenOffLockTracker()
     private val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -208,7 +206,7 @@ class DeviceLockController @Inject constructor(
                         EventCategory.APPLICATION,
                         "device_lock.completed trigger=${trigger.name} locked=${result.locked} clear_task=${result.shouldClearTask}",
                     )
-                    if (result.shouldClearTask) clearTaskChannel.send(Unit)
+                    if (result.shouldClearTask) activeTaskClearRequests.requestClear()
                 }
             } finally {
                 onComplete()
