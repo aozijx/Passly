@@ -76,6 +76,7 @@ object AuthenticationMethodPolicy {
 
     fun unlocksSensitiveDataKey(purpose: AuthenticationPurpose): Boolean = purpose in setOf(
         AuthenticationPurpose.UNLOCK_VAULT,
+        AuthenticationPurpose.AUTOFILL,
         AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET,
         AuthenticationPurpose.BACKUP_EXPORT,
     )

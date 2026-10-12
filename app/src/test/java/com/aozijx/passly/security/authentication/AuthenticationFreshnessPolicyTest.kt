@@ -18,6 +18,13 @@ class AuthenticationFreshnessPolicyTest {
     }
 
     @Test
+    fun autofillAuthenticationEstablishesHighSensitivityKeyWindow() {
+        assertTrue(
+            AuthenticationMethodPolicy.unlocksSensitiveDataKey(AuthenticationPurpose.AUTOFILL)
+        )
+    }
+
+    @Test
     fun highSensitivityRevealAlwaysRequiresFreshAuthentication() {
         assertTrue(
             AuthenticationMethodPolicy.requiresFreshAuthentication(
