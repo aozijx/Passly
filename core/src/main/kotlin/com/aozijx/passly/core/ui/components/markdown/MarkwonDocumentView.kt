@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Color
 import android.text.method.LinkMovementMethod
 import android.util.TypedValue
-import android.widget.TextView
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -13,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import com.google.android.material.textview.MaterialTextView
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.strikethrough.StrikethroughPlugin
 import io.noties.markwon.ext.tables.TablePlugin
@@ -60,7 +60,7 @@ private fun createMarkwon(context: Context): Markwon =
         .usePlugin(TaskListPlugin.create(context))
         .build()
 
-private class PasslyMarkdownTextView(context: Context) : TextView(context) {
+private class PasslyMarkdownTextView(context: Context) : MaterialTextView(context) {
     var renderedSource: String? = null
 
     init {
