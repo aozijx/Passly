@@ -48,10 +48,17 @@ class AutofillInteractionStore @Inject constructor() {
     suspend fun snapshot(id: AutofillInteractionId): AutofillInteractionSnapshot? =
         mutex.withLock { interactions[id] }
 
-    suspend fun markAuthorized(id: AutofillInteractionId): AutofillInteractionUpdate =
+    suspend fun beginAuthorization(id: AutofillInteractionId): AutofillInteractionUpdate =
         transition(
             id = id,
             allowed = { it == AutofillInteractionState.RequiresUnlock },
+            next = AutofillInteractionState.Authenticating,
+        )
+
+    suspend fun markAuthorized(id: AutofillInteractionId): AutofillInteractionUpdate =
+        transition(
+            id = id,
+            allowed = { it == AutofillInteractionState.Authenticating },
             next = AutofillInteractionState.Authorized,
         )
 
@@ -155,6 +162,7 @@ class AutofillInteractionStore @Inject constructor() {
      */
     suspend fun expireIfIdle(id: AutofillInteractionId): AutofillFinishResult? = mutex.withLock {
         when (interactions[id]?.state) {
+            AutofillInteractionState.Authenticating,
             is AutofillInteractionState.ResolvingSelection,
             AutofillInteractionState.Saving,
             -> null

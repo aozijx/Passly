@@ -1,8 +1,11 @@
 package com.aozijx.passly.data.repository.autofill
 
 import com.aozijx.passly.data.local.database.entity.EntryEntity
+import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialResolution
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
@@ -63,6 +66,41 @@ class AutofillCredentialResolutionTest {
         )
     }
 
+    @Test
+    fun linkedOtpIsSelectedOnlyWhenItTargetsTheLogin() {
+        val links = listOf(
+            link("unrelated", "otp-1", "other-login"),
+            link("expected", "otp-2", "entry-1"),
+        )
+
+        assertEquals("otp-2", findLinkedOtpEntryId("entry-1", links))
+        assertEquals(null, findLinkedOtpEntryId("missing", links))
+    }
+
+    @Test
+    fun otpCodeIsGeneratedOnlyWhenRequested() {
+        val config = OtpConfig(secret = null)
+
+        assertEquals(
+            "282760",
+            generateAutofillOtpCode(
+                includeOtp = true,
+                config = config,
+                secret = "JBSWY3DPEHPK3PXP",
+                timestampSeconds = 0L,
+            ),
+        )
+        assertEquals(
+            null,
+            generateAutofillOtpCode(
+                includeOtp = false,
+                config = config,
+                secret = "JBSWY3DPEHPK3PXP",
+                timestampSeconds = 0L,
+            ),
+        )
+    }
+
     private fun loginEntity(): EntryEntity = EntryEntity(
         entryId = "entry-1",
         entryType = EntryType.LOGIN,
@@ -70,5 +108,18 @@ class AutofillCredentialResolutionTest {
         username = "person@example.com",
         createdAt = 10L,
         updatedAt = 20L,
+    )
+
+    private fun link(
+        id: String,
+        source: String,
+        target: String,
+    ): EntryLinkEntity = EntryLinkEntity(
+        linkId = id,
+        sourceEntryId = source,
+        targetEntryId = target,
+        relationType = EntryRelationType.OTP_FOR,
+        createdAt = 10L,
+        updatedAt = 10L,
     )
 }

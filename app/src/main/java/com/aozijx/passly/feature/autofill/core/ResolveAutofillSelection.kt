@@ -33,7 +33,9 @@ class ResolveAutofillSelection @Inject constructor(
             )
         if (snapshot.scope != scope.normalized()) return AutofillSelectionOutcome.ScopeMismatch
         when (snapshot.state) {
-            AutofillInteractionState.RequiresUnlock -> return AutofillSelectionOutcome.Unauthorized
+            AutofillInteractionState.RequiresUnlock,
+            AutofillInteractionState.Authenticating,
+            -> return AutofillSelectionOutcome.Unauthorized
             AutofillInteractionState.Cancelled -> return AutofillSelectionOutcome.Cancelled
             else -> Unit
         }

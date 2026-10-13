@@ -25,6 +25,7 @@ enum class AutofillInteractionSource {
 sealed interface AutofillInteractionState {
     data object Created : AutofillInteractionState
     data object RequiresUnlock : AutofillInteractionState
+    data object Authenticating : AutofillInteractionState
     data object Authorized : AutofillInteractionState
     data object CandidatesReady : AutofillInteractionState
     data class ResolvingSelection(val entryId: EntryId) : AutofillInteractionState

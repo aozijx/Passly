@@ -30,7 +30,7 @@ flowchart TD
 
 - `DiscoverAutofillCandidates`：读取当前设置、识别字段、建立或恢复 interaction，并只查询候选元数据。
 - `AuthorizeAutofillInteraction`：以 `AuthenticationPurpose.AUTOFILL` 完成一次交互授权；并发授权会合并为同一次认证。
-- `ResolveAutofillSelection`：验证 interaction、规范化作用域和“确实展示过”的 entry ID 后，才读取该条目的秘密。
+- `ResolveAutofillSelection`：验证 interaction、规范化作用域和“确实展示过”的 entry ID 后，才读取该条目的密码；只有请求包含 OTP 字段时，才沿 `OTP_FOR` 关系读取关联 OTP 条目的配置与独立加密 secret 并生成验证码。
 - `SaveAutofillCredential` / `SaveAutofillInteraction`：使用正式 Entry 写事务保存捕获到的密码。
 - `FinishAutofillInteraction`：统一完成、取消或过期 interaction，并释放 Autofill 持有的临时解锁。
 
@@ -58,10 +58,10 @@ Autofill 跨越目标应用、Android 系统、Passly Service、认证 Activity 
 
 认证绑定 `AutofillInteractionId`，不是按包名授予的时间窗口，也不能跨 interaction 复用。
 
-- Vault 锁定或设置要求填充前验证时，interaction 进入 `RequiresUnlock`。
+- Vault 锁定或设置要求填充前验证时，interaction 进入 `RequiresUnlock`；系统认证进行中显式进入 `Authenticating`。
 - 成功认证后，同一个 interaction 进入 `Authorized`；解锁后重新发现和最终选择不会再次认证。
 - 如果 Autofill 的认证动作实际解锁了 Vault，`AutofillUnlockLease` 记录所有借用该解锁的活跃 interaction。最后一个借用者结束后才执行 `AUTOFILL_REQUEST_FINISHED` 锁定。
-- 每个 interaction 创建时安排 60 秒 process-local 超时。Android 选择器被放弃、Activity 未返回或调用方未清理状态时，超时会把 interaction 标记为 `Expired` 并释放临时解锁。
+- 每个 interaction 创建时安排 60 秒 process-local 超时。Android 选择器被放弃、Activity 未返回或调用方未清理状态时，超时会把 interaction 标记为 `Expired` 并释放临时解锁；正在认证、解析秘密或保存时会延后一轮，避免回收活跃操作。
 - 应用原本已经解锁时，Autofill 结束不会额外锁定用户会话。
 
 ## 数据最小化

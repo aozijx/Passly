@@ -39,7 +39,7 @@ class AuthorizeAutofillInteraction @Inject constructor(
     private val attempts = mutableMapOf<AutofillInteractionId, CompletableDeferred<AutofillAuthorizationOutcome>>()
 
     suspend operator fun invoke(id: AutofillInteractionId): AutofillAuthorizationOutcome {
-        val attempt = prepare(id) ?: return existingOutcome(id)
+        val attempt = withContext(NonCancellable) { prepare(id) } ?: return existingOutcome(id)
         if (!attempt.owner) return attempt.result.await()
 
         return try {
@@ -54,9 +54,10 @@ class AuthorizeAutofillInteraction @Inject constructor(
     }
 
     private suspend fun prepare(id: AutofillInteractionId): Attempt? = mutex.withLock {
+        attempts[id]?.let { return Attempt(it, owner = false, hadFullAccess = false) }
         val snapshot = store.snapshot(id) ?: return null
         if (snapshot.state != AutofillInteractionState.RequiresUnlock) return null
-        attempts[id]?.let { return Attempt(it, owner = false, hadFullAccess = false) }
+        if (store.beginAuthorization(id) !is AutofillInteractionUpdate.Updated) return null
         val deferred = CompletableDeferred<AutofillAuthorizationOutcome>()
         attempts[id] = deferred
         Attempt(deferred, owner = true, hadFullAccess = vaultAccessState.hasFullSecureSessionAccess())
@@ -73,6 +74,9 @@ class AuthorizeAutofillInteraction @Inject constructor(
             AutofillInteractionState.Expired,
             is AutofillInteractionState.Failed,
             -> AutofillAuthorizationOutcome.Rejected(AutofillInteractionRejection.TERMINAL)
+
+            AutofillInteractionState.Authenticating ->
+                AutofillAuthorizationOutcome.Rejected(AutofillInteractionRejection.INVALID_STATE)
 
             else -> AutofillAuthorizationOutcome.Authorized(snapshot)
         }

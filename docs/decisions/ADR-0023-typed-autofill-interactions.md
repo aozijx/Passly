@@ -19,7 +19,7 @@
 3. `AutofillInteractionStore` 保存来源、规范化作用域、状态和已展示 entry ID；PendingIntent 只传 interaction/entry ID。
 4. `DiscoverAutofillCandidates`、`AuthorizeAutofillInteraction`、`ResolveAutofillSelection`、保存操作和 `FinishAutofillInteraction` 是两种 Android 入口共享的唯一业务链路。
 5. Autofill 自己触发的 Vault 解锁由 `AutofillUnlockLease` 按活跃 interaction 借用计数；最后一个借用者结束后回收。
-6. interaction 创建后 60 秒自动过期。进程死亡时不从 Intent extras 恢复授权，而是拒绝旧选择并要求系统重新查询。
+6. interaction 创建后 60 秒自动过期；正在认证、解析秘密或保存时延后回收。进程死亡时不从 Intent extras 恢复授权，而是拒绝旧选择并要求系统重新查询。
 7. 平台适配器不得直接依赖 Entry repository 或认证端口；构建期边界规则负责阻止回归。
 
 ## 后果

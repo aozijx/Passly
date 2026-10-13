@@ -86,6 +86,33 @@ class AutofillInteractionLifecycleTest {
         )
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun interactionTimeoutDoesNotExpireAnActiveAuthenticationPrompt() = runTest {
+        val vault = FakeVault(AuthenticationState.Locked)
+        val authentication = DeferredAuthenticationController(vault)
+        val store = AutofillInteractionStore()
+        val lease = AutofillUnlockLease(authentication)
+        val timeout = AutofillInteractionTimeout(store, lease, backgroundScope, 60_000L)
+        val start = StartAutofillInteraction(store, lease, vault, timeout)
+        val authorize = AuthorizeAutofillInteraction(authentication, vault, store, lease)
+        val interaction = start(AutofillInteractionSource.LEGACY, scope(), false)
+        val authorization = async { authorize(interaction.id) }
+        authentication.started.await()
+
+        advanceTimeBy(60_000L)
+        runCurrent()
+
+        assertEquals(
+            AutofillInteractionState.Authenticating,
+            store.snapshot(interaction.id)?.state,
+        )
+        authentication.result.complete(
+            AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD),
+        )
+        assertTrue(authorization.await() is AutofillAuthorizationOutcome.Authorized)
+    }
+
     @Test
     fun lockedInteractionAuthenticatesOnceAndReusesAuthorizationForSelection() = runBlocking {
         val fixture = fixture(AuthenticationState.Locked)

@@ -112,7 +112,7 @@ interaction 只存在于当前进程。进程死亡后，旧 PendingIntent 不�
 
 - 普通选择和创建是终态；解锁返回候选是中间态，不会提前释放 interaction。
 - Activity 返回、返回键、协程取消和异常路径均调用统一结束操作。
-- 每个 interaction 有 60 秒 process-local 超时，用于回收被系统选择器遗弃的请求。
+- 每个 interaction 有 60 秒 process-local 超时，用于回收被系统选择器遗弃的请求；认证、解析秘密或保存中的活跃操作会延后回收。
 - `onClearCredentialStateRequest()` 会过期所有 Credential Manager interaction；它不会删除条目，也不会锁定本来就由用户解锁的 Vault。
 
 ## 回归要求
