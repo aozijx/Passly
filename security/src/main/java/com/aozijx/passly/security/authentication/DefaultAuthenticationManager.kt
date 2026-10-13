@@ -33,6 +33,14 @@ import kotlinx.coroutines.sync.Mutex
 import javax.inject.Inject
 import javax.inject.Singleton
 
+internal fun canReuseFullSession(
+    state: AuthenticationState,
+    storageUnlocked: Boolean,
+    requiresFreshAuthentication: Boolean,
+): Boolean = state is AuthenticationState.Authenticated &&
+    storageUnlocked &&
+    !requiresFreshAuthentication
+
 @Singleton
 class DefaultAuthenticationManager @Inject constructor(
     private val hostRegistry: AuthenticationHostRegistry,
@@ -120,8 +128,12 @@ class DefaultAuthenticationManager @Inject constructor(
                 )
             }
             // 策略决策：是否可复用会话
-            if (wasUnlocked && !wasRecoveryMode &&
-                !requiresFreshAuthentication(request.purpose)
+            if (
+                canReuseFullSession(
+                    state = previousState,
+                    storageUnlocked = wasUnlocked,
+                    requiresFreshAuthentication = requiresFreshAuthentication(request.purpose),
+                )
             ) {
                 session.onUserInteraction()
                 // 返回上一次认证方式，而非硬编码 BIOMETRIC
