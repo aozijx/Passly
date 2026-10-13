@@ -1,11 +1,14 @@
 plugins {
     `kotlin-dsl`
-    `java-gradle-plugin`
 }
 
 repositories {
-    gradlePluginPortal()
     mavenCentral()
+    gradlePluginPortal {
+        content {
+            excludeGroup("org.jetbrains.kotlin")
+        }
+    }
 }
 
 dependencies {

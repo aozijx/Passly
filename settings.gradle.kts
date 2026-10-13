@@ -8,7 +8,11 @@ pluginManagement {
             }
         }
         mavenCentral()
-        gradlePluginPortal()
+        gradlePluginPortal {
+            content {
+                excludeGroup("org.jetbrains.kotlin")
+            }
+        }
     }
 }
 plugins {
