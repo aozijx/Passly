@@ -35,6 +35,7 @@ fun handleSwipeAction(
     onCopy: (FieldKey) -> Unit,
 ) {
     when (actionType) {
+        SwipeActionType.DISABLED -> Unit
         SwipeActionType.COPY_PASSWORD -> onCopy(FieldKey.PASSWORD)
         SwipeActionType.COPY_USERNAME -> onCopy(FieldKey.USERNAME)
         SwipeActionType.DELETE -> onQuickDelete(item.id)

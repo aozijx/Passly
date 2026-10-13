@@ -186,6 +186,7 @@
     <string name="settings_autofill_candidate_limit_summary">Maximum matched entries decrypted and shown per request</string>
     <string name="settings_swipe_action_copy_password">Copy password</string>
     <string name="settings_swipe_action_copy_username">Copy username</string>
+    <string name="settings_swipe_action_disabled">Disabled</string>
     <string name="settings_swipe_action_delete">Delete</string>
     <string name="settings_swipe_action_detail">Details</string>
     <string name="settings_swipe_gesture_enabled">List swipe gestures</string>

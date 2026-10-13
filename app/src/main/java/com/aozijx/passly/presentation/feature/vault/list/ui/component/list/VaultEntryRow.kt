@@ -139,14 +139,18 @@ private fun createAppSwipeActionSpec(
     onAction: () -> Unit,
     backgroundColor: Color,
     iconTint: Color,
-) = SwipeActionSpec(
-    icon = when (actionType) {
+): SwipeActionSpec? {
+    val icon = when (actionType) {
+        SwipeActionUiModel.DISABLED -> return null
         SwipeActionUiModel.DELETE -> Icons.Default.Delete
         SwipeActionUiModel.DETAIL -> Icons.Default.Info
         SwipeActionUiModel.COPY_PASSWORD -> Icons.Default.ContentCopy
         SwipeActionUiModel.COPY_USERNAME -> Icons.Default.Person
-    },
-    backgroundColor = backgroundColor,
-    iconTint = iconTint,
-    onAction = onAction,
-)
+    }
+    return SwipeActionSpec(
+        icon = icon,
+        backgroundColor = backgroundColor,
+        iconTint = iconTint,
+        onAction = onAction,
+    )
+}

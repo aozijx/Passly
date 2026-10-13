@@ -9,6 +9,7 @@ class SwipeActionPresentationMapperTest {
     @Test
     fun mapsEverySwipeActionInBothDirections() {
         val pairs = listOf(
+            SwipeActionType.DISABLED to SwipeActionUiModel.DISABLED,
             SwipeActionType.DELETE to SwipeActionUiModel.DELETE,
             SwipeActionType.DETAIL to SwipeActionUiModel.DETAIL,
             SwipeActionType.COPY_PASSWORD to SwipeActionUiModel.COPY_PASSWORD,

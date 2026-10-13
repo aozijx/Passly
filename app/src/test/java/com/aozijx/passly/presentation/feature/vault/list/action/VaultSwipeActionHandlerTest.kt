@@ -51,6 +51,21 @@ class VaultSwipeActionHandlerTest {
     }
 
     @Test
+    fun disabledDirectionDispatchesNoAction() {
+        val events = mutableListOf<String>()
+
+        handleSwipeAction(
+            actionType = SwipeActionType.DISABLED,
+            item = item,
+            onQuickDelete = { events += "delete" },
+            onShowDetail = { events += "detail" },
+            onCopy = { events += "copy" },
+        )
+
+        assertEquals(emptyList<String>(), events)
+    }
+
+    @Test
     fun fieldCopyCarriesTheDomainEntryType() {
         assertEquals(
             VaultCopyRequest.Field(

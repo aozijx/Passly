@@ -9,6 +9,7 @@ import com.aozijx.passly.domain.settings.model.SwipeActionType
 
 // -- SwipeActionType --
 internal fun String.toSwipeActionDomain(): SwipeActionType = when (this) {
+    "disabled" -> SwipeActionType.DISABLED
     "delete" -> SwipeActionType.DELETE
     "detail" -> SwipeActionType.DETAIL
     "copy_username" -> SwipeActionType.COPY_USERNAME
@@ -17,6 +18,7 @@ internal fun String.toSwipeActionDomain(): SwipeActionType = when (this) {
 }
 
 internal fun SwipeActionType.toSwipeActionString(): String = when (this) {
+    SwipeActionType.DISABLED -> "disabled"
     SwipeActionType.DELETE -> "delete"
     SwipeActionType.DETAIL -> "detail"
     SwipeActionType.COPY_PASSWORD -> "copy_password"

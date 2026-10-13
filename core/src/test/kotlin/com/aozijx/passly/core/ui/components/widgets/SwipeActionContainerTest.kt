@@ -57,14 +57,33 @@ class SwipeActionContainerTest {
     }
 
     @Test
-    fun visualOffset_resistsUnavailableDirections() {
+    fun visualOffset_blocksUnavailableDirections() {
         val visualOffset = calculateSwipeVisualOffset(
             rawOffset = -100f,
             minOffset = 0f,
             maxOffset = 96f
         )
 
-        assertEquals(-12f, visualOffset, 0.001f)
+        assertEquals(0f, visualOffset, 0.001f)
+    }
+
+    @Test
+    fun rawOffset_doesNotAccumulateInAnUnavailableDirection() {
+        val blocked = accumulateSwipeRawOffset(
+            currentRawOffset = 0f,
+            dragAmount = -100f,
+            minOffset = 0f,
+            maxOffset = 96f,
+        )
+        val reversed = accumulateSwipeRawOffset(
+            currentRawOffset = blocked,
+            dragAmount = 20f,
+            minOffset = 0f,
+            maxOffset = 96f,
+        )
+
+        assertEquals(0f, blocked, 0.001f)
+        assertEquals(20f, reversed, 0.001f)
     }
 
     @Test

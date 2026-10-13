@@ -53,7 +53,6 @@ data class SwipeActionSpec(
 private const val SwipeRevealWidthFraction = 0.28f
 private const val SwipeTriggerWidthFraction = 0.22f
 private const val SwipeTriggerRevealFraction = 0.9f
-private const val SwipeUnavailableDirectionResistance = 0.12f
 private const val SwipeOverflowResistance = 0.22f
 private const val SwipeOverflowCap = 1.35f
 private const val SwipeResistancePower = 0.82f
@@ -154,11 +153,18 @@ fun SwipeActionContainer(
             },
             onHorizontalDrag = { change, dragAmount ->
                 change.consume()
-                rawDragOffset += dragAmount
+                val minOffset = if (currentLeftAction.value != null) -maxSwipePx else 0f
+                val maxOffset = if (currentRightAction.value != null) maxSwipePx else 0f
+                rawDragOffset = accumulateSwipeRawOffset(
+                    currentRawOffset = rawDragOffset,
+                    dragAmount = dragAmount,
+                    minOffset = minOffset,
+                    maxOffset = maxOffset,
+                )
                 swipeOffset = calculateSwipeVisualOffset(
                     rawOffset = rawDragOffset,
-                    minOffset = if (currentLeftAction.value != null) -maxSwipePx else 0f,
-                    maxOffset = if (currentRightAction.value != null) maxSwipePx else 0f
+                    minOffset = minOffset,
+                    maxOffset = maxOffset,
                 )
 
                 val thresholdReached = abs(swipeOffset) >= triggerThresholdPx
@@ -265,7 +271,7 @@ internal fun calculateSwipeVisualOffset(
     if (rawOffset == 0f) return 0f
 
     val directionLimit = if (rawOffset > 0f) maxOffset else -minOffset
-    if (directionLimit <= 0f) return rawOffset * SwipeUnavailableDirectionResistance
+    if (directionLimit <= 0f) return 0f
 
     val sign = if (rawOffset > 0f) 1f else -1f
     val absoluteRaw = abs(rawOffset)
@@ -280,6 +286,16 @@ internal fun calculateSwipeVisualOffset(
 
     return sign * capped
 }
+
+internal fun accumulateSwipeRawOffset(
+    currentRawOffset: Float,
+    dragAmount: Float,
+    minOffset: Float,
+    maxOffset: Float,
+): Float = (currentRawOffset + dragAmount).coerceIn(
+    minimumValue = if (minOffset < 0f) Float.NEGATIVE_INFINITY else 0f,
+    maximumValue = if (maxOffset > 0f) Float.POSITIVE_INFINITY else 0f,
+)
 
 internal fun calculateSwipeProgress(
     offset: Float,

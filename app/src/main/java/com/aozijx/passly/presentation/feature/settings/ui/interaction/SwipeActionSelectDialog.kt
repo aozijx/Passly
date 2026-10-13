@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
@@ -33,13 +34,15 @@ import com.aozijx.passly.presentation.shared.components.menu.MenuOptionText
 import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
 
 private val SWIPE_ACTIONS = listOf(
+    SwipeActionUiModel.DISABLED,
     SwipeActionUiModel.DELETE,
     SwipeActionUiModel.DETAIL,
     SwipeActionUiModel.COPY_PASSWORD,
     SwipeActionUiModel.COPY_USERNAME
 )
 
-private fun SwipeActionUiModel.icon(): ImageVector? = when (this) {
+private fun SwipeActionUiModel.icon(): ImageVector = when (this) {
+    SwipeActionUiModel.DISABLED -> Icons.Default.Block
     SwipeActionUiModel.DELETE -> Icons.Default.Delete
     SwipeActionUiModel.DETAIL -> Icons.Default.Info
     SwipeActionUiModel.COPY_PASSWORD -> Icons.Default.ContentCopy
@@ -62,11 +65,13 @@ internal fun SwipeActionSelectDialog(
                 SWIPE_ACTIONS.forEach { action ->
                     val isSelected = action == currentAction
                     val selectedBackground = when (action) {
+                        SwipeActionUiModel.DISABLED -> MaterialTheme.colorScheme.surfaceVariant
                         SwipeActionUiModel.DELETE -> MaterialTheme.colorScheme.errorContainer
                         SwipeActionUiModel.COPY_PASSWORD, SwipeActionUiModel.COPY_USERNAME -> MaterialTheme.colorScheme.secondaryContainer
                         SwipeActionUiModel.DETAIL -> MaterialTheme.colorScheme.primaryContainer
                     }
                     val selectedContentColor = when (action) {
+                        SwipeActionUiModel.DISABLED -> MaterialTheme.colorScheme.onSurfaceVariant
                         SwipeActionUiModel.DELETE -> MaterialTheme.colorScheme.onErrorContainer
                         SwipeActionUiModel.COPY_PASSWORD, SwipeActionUiModel.COPY_USERNAME -> MaterialTheme.colorScheme.onSecondaryContainer
                         SwipeActionUiModel.DETAIL -> MaterialTheme.colorScheme.onPrimaryContainer
@@ -83,15 +88,13 @@ internal fun SwipeActionSelectDialog(
                         verticalAlignment = Alignment.CenterVertically) {
                         RadioButton(selected = isSelected, onClick = { onActionSelected(action) })
                         Spacer(modifier = Modifier.width(8.dp))
-                        action.icon()?.let { icon ->
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = null,
-                                tint = if (isSelected) selectedContentColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                        }
+                        Icon(
+                            imageVector = action.icon(),
+                            contentDescription = null,
+                            tint = if (isSelected) selectedContentColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
                         MenuOptionText(
                             text = action.localizedLabel(),
                             selected = isSelected,
