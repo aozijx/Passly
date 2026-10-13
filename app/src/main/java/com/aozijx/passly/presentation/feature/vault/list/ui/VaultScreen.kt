@@ -5,6 +5,8 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBarScrollBehavior
@@ -12,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -25,7 +28,9 @@ import com.aozijx.passly.presentation.feature.vault.list.ui.component.list.Vault
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.topbar.VaultMenuUiState
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.topbar.VaultTopBar
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.topbar.VaultTopBarUiState
+import com.aozijx.passly.presentation.feature.vault.list.ui.gesture.PrioritizedNestedScrollConnection
 import com.aozijx.passly.presentation.feature.vault.list.ui.gesture.rememberFabVisibilityNestedScrollConnection
+import com.aozijx.passly.presentation.feature.vault.list.ui.gesture.rememberPullToSearchNestedScrollConnection
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemAction
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemUiModel
@@ -65,6 +70,27 @@ fun VaultScreen(
         onSearchActiveChange = { onAction(VaultUiAction.SearchToggled(it)) },
         onExpandBars = ::expandVaultBars,
     )
+    val mainGridState = rememberLazyGridState()
+    val searchGridState = remember(state.toolbar.isSearchActive) { LazyGridState() }
+    val gridState = if (state.toolbar.isSearchActive) searchGridState else mainGridState
+    val pullToSearchConnection = rememberPullToSearchNestedScrollConnection(
+        gridState = gridState,
+        enabled = state.content.isPullToSearchEnabled && !state.toolbar.isSearchActive,
+        onProgressChanged = searchStateHolder::updatePullProgress,
+        onTriggered = searchStateHolder::request,
+    )
+    val appBarConsumesScroll = state.layout.collapseTopBarOnScroll ||
+        state.layout.collapseQuickFilterBarOnScroll || state.layout.hideSystemBars
+    val vaultScrollConnection = if (appBarConsumesScroll) {
+        remember(pullToSearchConnection, scrollBehavior.nestedScrollConnection) {
+            PrioritizedNestedScrollConnection(
+                priority = pullToSearchConnection,
+                secondary = scrollBehavior.nestedScrollConnection,
+            )
+        }
+    } else {
+        pullToSearchConnection
+    }
 
     LaunchedEffect(state.toolbar.isSearchActive, state.toolbar.searchQuery) {
         searchStateHolder.synchronize(
@@ -83,13 +109,7 @@ fun VaultScreen(
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
-            .then(
-                if (state.layout.collapseTopBarOnScroll ||
-                    state.layout.collapseQuickFilterBarOnScroll || state.layout.hideSystemBars
-                ) {
-                    Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-                } else Modifier
-            )
+            .nestedScroll(vaultScrollConnection)
             .nestedScroll(fabVisibilityConnection),
         topBar = {
             VaultTopBar(
@@ -125,15 +145,12 @@ fun VaultScreen(
     ) { padding ->
         VaultListBody(
             state = state,
+            gridState = gridState,
             scrollBehavior = scrollBehavior,
             entries = entries,
             onItemAction = onItemAction,
             otpStateProvider = otpStateProvider,
             onAction = onAction,
-            onPullSearchProgressChanged = { progress ->
-                searchStateHolder.updatePullProgress(progress)
-            },
-            onSearchRequested = searchStateHolder::request,
             contentPadding = padding,
         )
     }

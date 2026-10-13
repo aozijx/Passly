@@ -9,18 +9,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.LazyGridState
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.paging.PagingData
 import com.aozijx.passly.presentation.feature.vault.list.VaultUiAction
 import com.aozijx.passly.presentation.feature.vault.list.toFeatureModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.topbar.VaultFilterBar
-import com.aozijx.passly.presentation.feature.vault.list.ui.gesture.rememberPullToSearchNestedScrollConnection
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemAction
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListScreenUiModel
@@ -30,26 +26,16 @@ import kotlinx.coroutines.flow.Flow
 @Composable
 internal fun VaultListBody(
     state: VaultListScreenUiModel,
+    gridState: LazyGridState,
     scrollBehavior: TopAppBarScrollBehavior,
     entries: Flow<PagingData<VaultListItemUiModel>>,
     onItemAction: (VaultListItemAction) -> Unit,
     otpStateProvider: VaultOtpStateProvider,
     onAction: (VaultUiAction) -> Unit,
-    onPullSearchProgressChanged: (Float) -> Unit,
-    onSearchRequested: () -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
     val motionScheme = MaterialTheme.motionScheme
-    val mainGridState = rememberLazyGridState()
-    val searchGridState = remember(state.toolbar.isSearchActive) { LazyGridState() }
-    val gridState = if (state.toolbar.isSearchActive) searchGridState else mainGridState
-    val pullToSearchConnection = rememberPullToSearchNestedScrollConnection(
-        gridState = gridState,
-        enabled = state.content.isPullToSearchEnabled && !state.toolbar.isSearchActive,
-        onProgressChanged = onPullSearchProgressChanged,
-        onTriggered = onSearchRequested,
-    )
     val hasActiveQuickFilters = state.navigation.selectedFilters.isNotEmpty()
 
     Column(
@@ -82,8 +68,7 @@ internal fun VaultListBody(
             gridState = gridState,
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth()
-                .nestedScroll(pullToSearchConnection),
+                .fillMaxWidth(),
         )
     }
 }
