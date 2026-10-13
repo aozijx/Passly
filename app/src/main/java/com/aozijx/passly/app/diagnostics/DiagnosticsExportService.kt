@@ -34,7 +34,7 @@ class DiagnosticsExportService @Inject constructor(
             "$EXPORT_PREFIX${System.currentTimeMillis()}.txt"
         )
         target.outputStream().bufferedWriter(Charsets.UTF_8).use { writer ->
-            runtime.readLines(EXPORT_LINE_LIMIT).forEach(writer::appendLine)
+            runtime.readCurrentDayLines(EXPORT_LINE_LIMIT).forEach(writer::appendLine)
         }
         return target
     }

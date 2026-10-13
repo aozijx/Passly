@@ -16,6 +16,7 @@ import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -45,6 +46,14 @@ class DiagnosticsRuntimeController @Inject constructor(
 
     override suspend fun readLines(limit: Int): List<String> = withContext(Dispatchers.IO) {
         fileStore.readEvents(limit).map(::formatEvent)
+    }
+
+    suspend fun readCurrentDayLines(limit: Int): List<String> = withContext(Dispatchers.IO) {
+        val zoneId = ZoneId.systemDefault()
+        val today = LocalDate.now(zoneId)
+        val startTimestampMs = today.atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val endTimestampMs = today.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        fileStore.readEventsBetween(startTimestampMs, endTimestampMs, limit).map(::formatEvent)
     }
 
     override suspend fun clear() = withContext(Dispatchers.IO) {

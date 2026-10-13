@@ -3,6 +3,11 @@ package com.aozijx.passly.core.telemetry
 interface TelemetryFileStore {
     fun write(event: TelemetryEvent)
     fun readEvents(limit: Int): List<TelemetryEvent>
+    fun readEventsBetween(
+        startTimestampMs: Long,
+        endTimestampMs: Long,
+        limit: Int,
+    ): List<TelemetryEvent>
     fun flush(timeoutMs: Long = 300L): Boolean
     fun clear()
     fun close()

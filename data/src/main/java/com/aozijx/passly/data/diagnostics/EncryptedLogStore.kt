@@ -64,6 +64,26 @@ data class DiagnosticsPage(
     val nextCursor: LogCursor?
 )
 
+internal fun readMatchingEventsByPage(
+    limit: Int,
+    maxPageSize: Int,
+    include: (TelemetryEvent) -> Boolean,
+    readPage: (cursor: LogCursor?, limit: Int) -> DiagnosticsPage,
+): List<TelemetryEvent> {
+    require(limit > 0) { "Event limit must be positive" }
+    require(maxPageSize > 0) { "Page size must be positive" }
+
+    val events = ArrayList<TelemetryEvent>(limit)
+    var cursor: LogCursor? = null
+    do {
+        val remaining = limit - events.size
+        val page = readPage(cursor, minOf(remaining, maxPageSize))
+        events += page.events.asSequence().filter(include).take(remaining)
+        cursor = page.nextCursor
+    } while (cursor != null && events.size < limit)
+    return events
+}
+
 // ============================== 加密日志存储 ==============================
 
 /**
@@ -289,6 +309,20 @@ internal class EncryptedLogStore(
 
     override fun readEvents(limit: Int): List<TelemetryEvent> =
         readPage(cursor = null, limit = limit).events
+
+    override fun readEventsBetween(
+        startTimestampMs: Long,
+        endTimestampMs: Long,
+        limit: Int,
+    ): List<TelemetryEvent> {
+        require(startTimestampMs < endTimestampMs) { "Invalid diagnostics time range" }
+        return readMatchingEventsByPage(
+            limit = limit,
+            maxPageSize = MAX_PAGE_RECORDS,
+            include = { event -> event.timestampMs in startTimestampMs until endTimestampMs },
+            readPage = ::readPage,
+        )
+    }
 
     // ============================== 生命周期 ==============================
 

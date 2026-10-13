@@ -32,7 +32,8 @@ Android sink 有独立开关。
 运行时预生成 emergency 数据密钥。崩溃时先 flush 普通队列 300 ms；失败后 emergency writer 最多等待
 200 ms，且不调用 Keystore、不等待普通 writer lock。队列溢出只为 ERROR/FATAL 尝试一次独立 fallback。
 
-查看最多读取 500 条。明文导出必须先完成 `EXPORT_DIAGNOSTICS` 新鲜认证，文件只写入 `cacheDir`，
+查看最多读取 500 条。明文导出仅包含本地当天最多 5000 条日志，并在存储层以最多 500 条一页跨文件读取；
+导出必须先完成 `EXPORT_DIAGNOSTICS` 新鲜认证，文件只写入 `cacheDir`，
 通过 FileProvider 只读分享，10 分钟后删除；新导出前会清理旧临时文件。明文导出不属于备份内容。
 
 禁止恢复旧 `core/diagnostics`、`AppLog`、Sanitizer、旧 Runtime/Sink/CrashHandler，也禁止直接
