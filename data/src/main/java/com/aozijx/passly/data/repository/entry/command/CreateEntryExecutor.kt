@@ -3,6 +3,7 @@ package com.aozijx.passly.data.repository.entry.command
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.local.database.DatabaseClock
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
+import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.mapper.entry.toDatabaseFlags
 import com.aozijx.passly.data.mapper.entry.toSensitiveFieldValues
@@ -23,7 +24,21 @@ internal class CreateEntryExecutor @Inject constructor(
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) {
     suspend fun execute(entry: Entry): AppResult<EntryId> {
-        val result = databaseTransactions.write("entry_create") {
+        return execute(entry, databaseTransactions::write)
+    }
+
+    suspend fun executeForAutofill(entry: Entry): AppResult<EntryId> {
+        return execute(entry, databaseTransactions::writeForAutofill)
+    }
+
+    private suspend fun execute(
+        entry: Entry,
+        write: suspend (
+            String,
+            suspend AppDatabase.() -> EntryId,
+        ) -> AppResult<EntryId>,
+    ): AppResult<EntryId> {
+        val result = write("entry_create") {
             val now = clock.now()
             val entryId = entry.id.value
             val entity = EntryEntity(

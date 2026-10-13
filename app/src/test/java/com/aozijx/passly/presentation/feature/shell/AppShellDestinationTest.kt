@@ -44,6 +44,7 @@ class AppShellDestinationTest {
             AuthenticationState.Authenticating(requestId, AuthenticationMethod.APP_PASSWORD),
             AuthenticationState.Unlocking(requestId),
             AuthenticationState.Locking(LockReason.USER),
+            AuthenticationState.AutofillAuthenticated(authenticatedAtMs = 1L),
         )
 
         authenticationStates.forEach { state ->

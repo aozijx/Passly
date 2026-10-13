@@ -4,6 +4,8 @@ import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.autofill.port.AutofillEntryWriter
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryDraftTarget
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -20,6 +22,7 @@ class CreateEntryUseCase internal constructor(
     private val entryCommandRepository: EntryCommandRepository,
     private val secureSessionAccessState: SecureSessionAccessState,
     private val materializer: EntryDraftMaterializer,
+    private val autofillEntryWriter: AutofillEntryWriter = UnavailableAutofillEntryWriter,
     private val idFactory: () -> EntryId,
     private val clock: () -> Long,
 ) {
@@ -28,10 +31,25 @@ class CreateEntryUseCase internal constructor(
         entryCommandRepository: EntryCommandRepository,
         secureSessionAccessState: SecureSessionAccessState,
         materializer: EntryDraftMaterializer,
+        autofillEntryWriter: AutofillEntryWriter,
     ) : this(
         entryCommandRepository = entryCommandRepository,
         secureSessionAccessState = secureSessionAccessState,
         materializer = materializer,
+        autofillEntryWriter = autofillEntryWriter,
+        idFactory = { EntryId(UuidCreator.getTimeOrderedEpoch().toString()) },
+        clock = System::currentTimeMillis,
+    )
+
+    internal constructor(
+        entryCommandRepository: EntryCommandRepository,
+        secureSessionAccessState: SecureSessionAccessState,
+        materializer: EntryDraftMaterializer,
+    ) : this(
+        entryCommandRepository = entryCommandRepository,
+        secureSessionAccessState = secureSessionAccessState,
+        materializer = materializer,
+        autofillEntryWriter = UnavailableAutofillEntryWriter,
         idFactory = { EntryId(UuidCreator.getTimeOrderedEpoch().toString()) },
         clock = System::currentTimeMillis,
     )
@@ -40,6 +58,20 @@ class CreateEntryUseCase internal constructor(
         if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
             return AppResult.Failure(SessionModeRestricted())
         }
+        return create(draft, entryCommandRepository::createEntry)
+    }
+
+    internal suspend fun createFromAutofill(draft: EntryDraft): AppResult<EntryId> {
+        if (!secureSessionAccessState.hasAutofillSessionAccess()) {
+            return AppResult.Failure(SessionModeRestricted())
+        }
+        return create(draft, autofillEntryWriter::create)
+    }
+
+    private suspend fun create(
+        draft: EntryDraft,
+        persist: suspend (Entry) -> AppResult<EntryId>,
+    ): AppResult<EntryId> {
         if (draft.target !is EntryDraftTarget.New) {
             return AppResult.Failure(ValidationError())
         }
@@ -59,6 +91,12 @@ class CreateEntryUseCase internal constructor(
         if (EntryValidation.validate(entry).isNotEmpty()) {
             return AppResult.Failure(ValidationError())
         }
-        return entryCommandRepository.createEntry(entry)
+        return persist(entry)
     }
+}
+
+private object UnavailableAutofillEntryWriter : AutofillEntryWriter {
+    override suspend fun create(
+        entry: Entry,
+    ): AppResult<EntryId> = AppResult.Failure(SessionModeRestricted())
 }

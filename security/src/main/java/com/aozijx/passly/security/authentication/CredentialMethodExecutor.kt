@@ -66,7 +66,13 @@ class CredentialMethodExecutor @Inject constructor(
                         AuthenticationPurpose.AUTOFILL -> {
                             // 自动填充与完整解锁一样：验证密码并临时解锁 vault 会话，
                             // 供候选检索与凭据解密使用（Autofill interaction lease 负责回收）。
-                            if (session.commitUnlock(type, ownedDek, request.id.value)) {
+                            if (session.commitUnlock(
+                                    type = type,
+                                    ownedDek = ownedDek,
+                                    correlationId = request.id.value,
+                                    purpose = request.purpose,
+                                )
+                            ) {
                                 attemptLimiter.recordSuccess(method)
                                 MethodExecutionResult.Success(method)
                             } else {

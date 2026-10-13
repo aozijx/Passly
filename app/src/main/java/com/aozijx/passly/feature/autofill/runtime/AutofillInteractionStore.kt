@@ -55,6 +55,14 @@ class AutofillInteractionStore @Inject constructor() {
             next = AutofillInteractionState.Authenticating,
         )
 
+    suspend fun authorizeFromExistingSession(
+        id: AutofillInteractionId,
+    ): AutofillInteractionUpdate = transition(
+        id = id,
+        allowed = { it == AutofillInteractionState.RequiresUnlock },
+        next = AutofillInteractionState.Authorized,
+    )
+
     suspend fun markAuthorized(id: AutofillInteractionId): AutofillInteractionUpdate =
         transition(
             id = id,

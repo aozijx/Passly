@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillSaveSource
 import com.aozijx.passly.domain.autofill.port.ApplicationLabelResolver
+import com.aozijx.passly.domain.autofill.port.AutofillEntryWriter
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -66,6 +67,7 @@ class SaveAutofillCredentialTest {
             entryCommandRepository = repository,
             secureSessionAccessState = session,
             materializer = EntryDraftMaterializer(),
+            autofillEntryWriter = repository,
             idFactory = { EntryId("saved-entry") },
             clock = { 1L },
         )
@@ -105,12 +107,12 @@ class SaveAutofillCredentialTest {
 
     private class UnlockedSession : SecureSessionAccessState {
         override val authenticationState: StateFlow<AuthenticationState> =
-            MutableStateFlow(AuthenticationState.Authenticated(1L))
+            MutableStateFlow(AuthenticationState.AutofillAuthenticated(1L))
 
         override fun isUnlocked(): Boolean = true
     }
 
-    private class RecordingEntryCommandRepository : EntryCommandRepository {
+    private class RecordingEntryCommandRepository : EntryCommandRepository, AutofillEntryWriter {
         var createCalls = 0
         var createdEntry: Entry? = null
 
@@ -119,6 +121,8 @@ class SaveAutofillCredentialTest {
             createdEntry = entry
             return AppResult.Success(EntryId("saved-entry"))
         }
+
+        override suspend fun create(entry: Entry): AppResult<EntryId> = createEntry(entry)
 
         override suspend fun updateEntry(id: EntryId, expectedVersion: EntryVersion, changes: EntryUpdate) =
             AppResult.Success(Unit)

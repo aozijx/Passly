@@ -14,6 +14,10 @@ stateDiagram-v2
     AwaitingHost --> Authenticating: Host 可用
     Authenticating --> Unlocking: 凭据成功且需解封
     Unlocking --> Authenticated: DEK 与数据库会话就绪
+    Unlocking --> AutofillAuthenticated: Autofill 临时解锁
+    AutofillAuthenticated --> Locked: 最后一个 Autofill lease 释放
+    AutofillAuthenticated --> Authenticating: 用户打开主应用并认证
+    Authenticating --> Authenticated: 主应用认证成功并接管会话
     Unlocking --> RecoveryMode: 恢复码验证成功
     RecoveryMode --> Authenticated: 新应用密码设置成功
     RecoveryMode --> Locking: 退出 / 超时 / 后台
@@ -22,8 +26,10 @@ stateDiagram-v2
     Locking --> Locked: 拒绝 lease、关库、擦除密钥
 ```
 
-同一时间只允许一个活跃请求。普通解锁仅在公开状态为 `Authenticated` 且底层存储仍解锁时复用会话；
-`Locking`（包括 Autofill 临时解锁回收）即使尚未完成存储封存也不得复用。复验、安全设置、备份和诊断导出必须重新认证。用户主动取消
+同一时间只允许一个活跃请求。`Authenticated` 表示主应用完整会话；`AutofillAuthenticated` 只允许 Autofill
+候选、单条秘密读取、使用记录和已确认的凭据保存，不会挂载主 Vault。普通解锁只复用 `Authenticated`；Autofill
+可以复用这两种已打开会话。`Locking` 即使底层存储尚未封存也不得复用。主应用在 Autofill 临时会话上认证成功后会
+把会话提升为 `Authenticated`，之后延迟到达的 Autofill 释放不能再锁掉该会话。复验、安全设置、备份和诊断导出必须重新认证。用户主动取消
 返回 `Cancelled(byUser = true)` 且不显示错误；其他情况由认证中心返回结构化 `AuthenticationFailure`
 。调用方只能
 转发失败，不能重新判断认证结果；页面按失败码和发起认证的方式生成本地化反馈。
@@ -78,6 +84,7 @@ stateDiagram-v2
 | 目的                              | 生物识别 / 应用密码 | 恢复码                             |
 |---------------------------------|-------------|---------------------------------|
 | `UNLOCK_VAULT`                  | 允许          | 拒绝；恢复码改走 `RECOVER_AUTH_METHODS` |
+| `AUTOFILL`                      | 允许；只建立 Autofill 临时会话 | 拒绝                              |
 | `REVEAL_SECRET` / `COPY_SECRET` | 允许          | 拒绝                              |
 | `BACKUP_EXPORT`                 | 允许          | 拒绝                              |
 | `RECOVERY_EXPORT`               | 拒绝          | 允许，仅恢复模式内的加密导出                  |

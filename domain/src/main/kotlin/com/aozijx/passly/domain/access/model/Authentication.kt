@@ -68,6 +68,9 @@ sealed interface AuthenticationState {
 
     data class Authenticated(val authenticatedAtMs: Long) : AuthenticationState
 
+    /** Database access owned only by active Autofill interactions. */
+    data class AutofillAuthenticated(val authenticatedAtMs: Long) : AuthenticationState
+
     /** Database access is restricted to rebuilding primary authentication methods. */
     data class RecoveryMode(val authenticatedAtMs: Long) : AuthenticationState
 

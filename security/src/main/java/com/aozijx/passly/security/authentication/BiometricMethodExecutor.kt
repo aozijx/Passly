@@ -57,7 +57,7 @@ class BiometricMethodExecutor @Inject constructor(
                 }
                 when (unlockResult) {
                     DekUnlockResult.Success -> {
-                        if (session.markAuthenticated()) {
+                        if (session.markAuthenticated(request.purpose)) {
                             MethodExecutionResult.Success(AuthenticationMethod.BIOMETRIC)
                         } else {
                             failure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED, request)

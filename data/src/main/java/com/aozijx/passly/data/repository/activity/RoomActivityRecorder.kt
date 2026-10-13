@@ -3,6 +3,7 @@ package com.aozijx.passly.data.repository.activity
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
+import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.entity.EntryActivityEntity
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -22,11 +23,18 @@ internal class RoomActivityRecorder @Inject constructor(
     override suspend fun recordUsage(
         entryId: String,
         type: ActivityType
-    ): AppResult<Unit> = databaseTransactions.write("activity_record_usage") {
-        val now = System.currentTimeMillis()
-        entryActivityCommandDao().insertIdempotent(
-            EntryActivity(entryId = entryId, activityType = type).toEntity(now)
-        )
+    ): AppResult<Unit> {
+        val persist: suspend AppDatabase.() -> Unit = {
+            val now = System.currentTimeMillis()
+            entryActivityCommandDao().insertIdempotent(
+                EntryActivity(entryId = entryId, activityType = type).toEntity(now)
+            )
+        }
+        return if (type == ActivityType.AUTOFILL) {
+            databaseTransactions.writeForAutofill("activity_record_usage", persist)
+        } else {
+            databaseTransactions.write("activity_record_usage", persist)
+        }
     }
 
     override suspend fun deleteByEntryId(entryId: String) {

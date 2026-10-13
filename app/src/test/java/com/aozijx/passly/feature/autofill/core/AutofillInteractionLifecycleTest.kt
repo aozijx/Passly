@@ -259,10 +259,14 @@ class AutofillInteractionLifecycleTest {
     private class FakeVault(initialState: AuthenticationState) : SecureSessionAccessState {
         private val mutableState = MutableStateFlow(initialState)
         override val authenticationState: StateFlow<AuthenticationState> = mutableState
-        override fun isUnlocked(): Boolean = mutableState.value is AuthenticationState.Authenticated
+        override fun isUnlocked(): Boolean = when (mutableState.value) {
+            is AuthenticationState.Authenticated,
+            is AuthenticationState.AutofillAuthenticated -> true
+            else -> false
+        }
 
         fun authenticate() {
-            mutableState.value = AuthenticationState.Authenticated(1L)
+            mutableState.value = AuthenticationState.AutofillAuthenticated(1L)
         }
 
         fun lock() {

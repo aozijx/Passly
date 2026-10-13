@@ -11,6 +11,7 @@ import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
 import com.aozijx.passly.domain.access.port.DatabaseSessionRetryResult
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
 import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequestId
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -73,7 +74,8 @@ class VaultSessionController @Inject constructor(
     suspend fun commitUnlock(
         type: EnvelopeType,
         ownedDek: OwnedBytes,
-        correlationId: String
+        correlationId: String,
+        purpose: AuthenticationPurpose,
     ): Boolean = mutex.withLock {
         val dek = ownedDek.consume()
         return try {
@@ -109,7 +111,7 @@ class VaultSessionController @Inject constructor(
                 }
             }
 
-            markAuthenticatedInternal()
+            publishAuthenticatedInternal(purpose)
             true
         } finally {
             dek.fill(0)
@@ -180,7 +182,7 @@ class VaultSessionController @Inject constructor(
      * 用于生物识别路径。冷启动时 DEK 已由 BiometricMethodExecutor 写入，
      * 但仍必须在发布 Authenticated 前真正打开数据库。
      */
-    suspend fun markAuthenticated(): Boolean = mutex.withLock {
+    suspend fun markAuthenticated(purpose: AuthenticationPurpose): Boolean = mutex.withLock {
         if (lockStateManager.state == SecureSessionState.UNLOCKED) {
             if (_state.value is AuthenticationState.RecoveryMode) {
                 // Recovery mode must not be promoted by a generic session marker.
@@ -188,7 +190,7 @@ class VaultSessionController @Inject constructor(
                 // the recovery flow with a sealed lock and a normal re-unlock.
                 resetIdleTimer()
             } else {
-                resetIdleTimer()
+                publishAuthenticatedInternal(purpose)
             }
             return@withLock true
         }
@@ -213,7 +215,7 @@ class VaultSessionController @Inject constructor(
             _databaseFailure.value = null
             lockStateManager.mark(SecureSessionState.UNLOCKED)
         }
-        markAuthenticatedInternal()
+        publishAuthenticatedInternal(purpose)
         true
     }
 
@@ -228,6 +230,16 @@ class VaultSessionController @Inject constructor(
         _state.value = AuthenticationState.Authenticated(System.currentTimeMillis())
         resetIdleTimer()
     }
+
+    private suspend fun publishAuthenticatedInternal(purpose: AuthenticationPurpose) =
+        withContext(Dispatchers.Main.immediate) {
+            if (purpose != AuthenticationPurpose.AUTOFILL ||
+                _state.value !is AuthenticationState.Authenticated
+            ) {
+                _state.value = authenticatedStateFor(purpose, System.currentTimeMillis())
+            }
+            resetIdleTimer()
+        }
 
     private suspend fun markRecoveryModeInternal() = withContext(Dispatchers.Main.immediate) {
         _state.value = AuthenticationState.RecoveryMode(System.currentTimeMillis())
@@ -279,6 +291,7 @@ class VaultSessionController @Inject constructor(
      */
     suspend fun lock(reason: LockReason) {
         mutex.withLock {
+            if (!shouldApplyLock(_state.value, reason)) return@withLock
             authorizationPermitRevoker.revokeAll()
             sensitiveDataKeyManager.clear()
             // A recovery session never degrades to a soft lock: closing it must wipe its DEK.
@@ -351,3 +364,20 @@ class VaultSessionController @Inject constructor(
         LockReason.APP_EXIT -> SecureSessionState.SEALED
     }
 }
+
+internal fun authenticatedStateFor(
+    purpose: AuthenticationPurpose,
+    authenticatedAtMs: Long,
+): AuthenticationState = when (purpose) {
+    AuthenticationPurpose.AUTOFILL ->
+        AuthenticationState.AutofillAuthenticated(authenticatedAtMs)
+    AuthenticationPurpose.UNLOCK_VAULT ->
+        AuthenticationState.Authenticated(authenticatedAtMs)
+    else -> error("Purpose $purpose does not open a normal Vault session")
+}
+
+internal fun shouldApplyLock(
+    state: AuthenticationState,
+    reason: LockReason,
+): Boolean = reason != LockReason.AUTOFILL_REQUEST_FINISHED ||
+    state !is AuthenticationState.Authenticated

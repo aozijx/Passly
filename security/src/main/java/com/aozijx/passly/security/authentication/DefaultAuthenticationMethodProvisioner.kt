@@ -84,7 +84,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
                     )
                 } else {
                     authenticationManager.refreshAvailability()
-                    session.markAuthenticated()
+                    session.markAuthenticated(AuthenticationPurpose.UNLOCK_VAULT)
                 }
                 AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
             } finally {

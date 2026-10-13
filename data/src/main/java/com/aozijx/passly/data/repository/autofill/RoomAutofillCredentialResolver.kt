@@ -28,7 +28,7 @@ internal class RoomAutofillCredentialResolver @Inject constructor(
     override suspend fun resolve(
         selection: AutofillCredentialSelection,
     ): AutofillCredentialResolution {
-        if (!sessionState.hasFullSecureSessionAccess()) {
+        if (!sessionState.hasAutofillSessionAccess()) {
             return AutofillCredentialResolution.NotFound
         }
         return databaseSession.query {

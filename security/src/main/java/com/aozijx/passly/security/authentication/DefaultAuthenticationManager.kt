@@ -33,13 +33,19 @@ import kotlinx.coroutines.sync.Mutex
 import javax.inject.Inject
 import javax.inject.Singleton
 
-internal fun canReuseFullSession(
+internal fun canReuseSession(
     state: AuthenticationState,
     storageUnlocked: Boolean,
     requiresFreshAuthentication: Boolean,
-): Boolean = state is AuthenticationState.Authenticated &&
-    storageUnlocked &&
-    !requiresFreshAuthentication
+    purpose: AuthenticationPurpose,
+): Boolean {
+    if (!storageUnlocked || requiresFreshAuthentication) return false
+    return when (state) {
+        is AuthenticationState.Authenticated -> true
+        is AuthenticationState.AutofillAuthenticated -> purpose == AuthenticationPurpose.AUTOFILL
+        else -> false
+    }
+}
 
 @Singleton
 class DefaultAuthenticationManager @Inject constructor(
@@ -129,10 +135,11 @@ class DefaultAuthenticationManager @Inject constructor(
             }
             // 策略决策：是否可复用会话
             if (
-                canReuseFullSession(
+                canReuseSession(
                     state = previousState,
                     storageUnlocked = wasUnlocked,
                     requiresFreshAuthentication = requiresFreshAuthentication(request.purpose),
+                    purpose = request.purpose,
                 )
             ) {
                 session.onUserInteraction()
@@ -291,7 +298,10 @@ class DefaultAuthenticationManager @Inject constructor(
 
     private suspend fun restoreState(previousState: AuthenticationState) {
         when (previousState) {
-            is AuthenticationState.Authenticated -> session.markAuthenticated()
+            is AuthenticationState.Authenticated ->
+                session.markAuthenticated(AuthenticationPurpose.UNLOCK_VAULT)
+            is AuthenticationState.AutofillAuthenticated ->
+                session.markAuthenticated(AuthenticationPurpose.AUTOFILL)
             is AuthenticationState.RecoveryMode -> session.markRecoveryMode()
             else -> session.transition(AuthenticationState.Locked)
         }

@@ -53,5 +53,6 @@ internal fun AuthenticationState.toAppShellSessionMode(): AppShellSessionMode = 
     is AuthenticationState.AwaitingHost,
     is AuthenticationState.Authenticating,
     is AuthenticationState.Unlocking,
-    is AuthenticationState.Locking -> AppShellSessionMode.AUTHENTICATION
+    is AuthenticationState.Locking,
+    is AuthenticationState.AutofillAuthenticated -> AppShellSessionMode.AUTHENTICATION
 }

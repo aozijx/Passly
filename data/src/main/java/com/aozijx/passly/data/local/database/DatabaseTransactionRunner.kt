@@ -40,8 +40,21 @@ internal class DatabaseTransactionRunner @Inject constructor(
         operation: String,
         block: suspend AppDatabase.() -> T
     ): AppResult<T> {
+        return writeWithAccess(operation, sessionState::hasFullSecureSessionAccess, block)
+    }
+
+    suspend fun <T> writeForAutofill(
+        operation: String,
+        block: suspend AppDatabase.() -> T,
+    ): AppResult<T> = writeWithAccess(operation, sessionState::hasAutofillSessionAccess, block)
+
+    private suspend fun <T> writeWithAccess(
+        operation: String,
+        isAuthorized: () -> Boolean,
+        block: suspend AppDatabase.() -> T,
+    ): AppResult<T> {
         val result = AppResult.runSuspendCatching {
-            requireFullSecureSessionAccess()
+            if (!isAuthorized()) throw SessionModeRestricted()
             databaseSession.transaction {
                 block()
             }

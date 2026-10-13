@@ -38,7 +38,7 @@ class SaveAutofillCredential @Inject constructor(
         if (draft.password.isBlank()) return AutofillSaveOutcome.InvalidDraft
 
         return when (
-            val result = createEntry(
+            val result = createEntry.createFromAutofill(
                 buildAutofillCredentialDraft(draft, applicationLabelResolver),
             )
         ) {

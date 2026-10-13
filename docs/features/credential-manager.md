@@ -91,7 +91,8 @@ interaction 只存在于当前进程。进程死亡后，旧 PendingIntent 不�
 
 1. 用 `retrieveProviderCreateCredentialRequest()` 取得系统注入的调用方和 `CreatePasswordRequest`；
 2. 校验 interaction 作用域；Vault 锁定时只认证一次，已解锁时不做多余认证；
-3. `SaveAutofillCredential` 构造类型化 `EntryDraft`，通过 `CreateEntryUseCase` 正式写入；
+3. `SaveAutofillCredential` 构造类型化 `EntryDraft`，复用正式条目校验与物化流程，再通过仅接受 Autofill
+   临时会话的 `AutofillEntryWriter` 窄入口写入；
 4. 保存成功完成 interaction，失败或取消则取消 interaction 并释放 Autofill 解锁 lease。
 
 创建当前始终是新增登录条目，不执行去重或 upsert。

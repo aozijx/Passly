@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSnapshot
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionState
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionUpdate
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionTimeout
 import com.aozijx.passly.feature.autofill.runtime.AutofillUnlockLease
@@ -32,18 +33,33 @@ class StartAutofillInteraction @Inject constructor(
         scope: AutofillGrantContext,
         requireAuthentication: Boolean,
     ): AutofillInteractionSnapshot {
-        val authorized = vaultAccessState.hasFullSecureSessionAccess() && !requireAuthentication
+        val hasFullAccess = vaultAccessState.hasFullSecureSessionAccess()
         val snapshot = store.create(
             source = source,
             scope = scope,
-            initialState = if (authorized) {
+            initialState = if (hasFullAccess && !requireAuthentication) {
                 AutofillInteractionState.Authorized
             } else {
                 AutofillInteractionState.RequiresUnlock
             },
         )
-        if (authorized) unlockLease.borrowIfOwned(snapshot.id)
+        val authorized = if (
+            !requireAuthentication &&
+            !hasFullAccess &&
+            vaultAccessState.hasAutofillSessionAccess() &&
+            unlockLease.borrowIfOwned(snapshot.id)
+        ) {
+            when (val update = store.authorizeFromExistingSession(snapshot.id)) {
+                is AutofillInteractionUpdate.Updated -> update.snapshot
+                is AutofillInteractionUpdate.Rejected -> {
+                    unlockLease.release(snapshot.id)
+                    snapshot
+                }
+            }
+        } else {
+            snapshot
+        }
         interactionTimeout.schedule(snapshot.id)
-        return snapshot
+        return authorized
     }
 }

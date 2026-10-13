@@ -25,6 +25,7 @@ import com.aozijx.passly.domain.autofill.model.FieldRole
 import com.aozijx.passly.domain.autofill.port.ApplicationLabelResolver
 import com.aozijx.passly.domain.autofill.port.AutofillCandidateRepository
 import com.aozijx.passly.domain.autofill.port.AutofillCredentialResolver
+import com.aozijx.passly.domain.autofill.port.AutofillEntryWriter
 import com.aozijx.passly.domain.autofill.port.FieldMatchStrategy
 import com.aozijx.passly.domain.autofill.port.MatchResult
 import com.aozijx.passly.domain.entry.model.Entry
@@ -191,6 +192,7 @@ class CredentialManagerFlowTest {
                 entryCommandRepository = commandRepository,
                 secureSessionAccessState = vault,
                 materializer = EntryDraftMaterializer(),
+                autofillEntryWriter = commandRepository,
                 idFactory = { EntryId("saved-entry") },
                 clock = { 1L },
             ),
@@ -277,10 +279,14 @@ class CredentialManagerFlowTest {
     private class FakeVault(initialState: AuthenticationState) : SecureSessionAccessState {
         private val mutableState = MutableStateFlow(initialState)
         override val authenticationState: StateFlow<AuthenticationState> = mutableState
-        override fun isUnlocked(): Boolean = mutableState.value is AuthenticationState.Authenticated
+        override fun isUnlocked(): Boolean = when (mutableState.value) {
+            is AuthenticationState.Authenticated,
+            is AuthenticationState.AutofillAuthenticated -> true
+            else -> false
+        }
 
         fun unlock() {
-            mutableState.value = AuthenticationState.Authenticated(1L)
+            mutableState.value = AuthenticationState.AutofillAuthenticated(1L)
         }
 
         fun lock() {
@@ -329,13 +335,15 @@ class CredentialManagerFlowTest {
         }
     }
 
-    private class RecordingEntryCommandRepository : EntryCommandRepository {
+    private class RecordingEntryCommandRepository : EntryCommandRepository, AutofillEntryWriter {
         var createCalls = 0
 
         override suspend fun createEntry(entry: Entry): AppResult<EntryId> {
             createCalls++
             return AppResult.Success(EntryId("saved-entry"))
         }
+
+        override suspend fun create(entry: Entry): AppResult<EntryId> = createEntry(entry)
 
         override suspend fun updateEntry(id: EntryId, expectedVersion: EntryVersion, changes: EntryUpdate) =
             AppResult.Success(Unit)

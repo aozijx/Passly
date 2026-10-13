@@ -21,7 +21,7 @@ internal class RoomAutofillCandidateRepository @Inject constructor(
     private val sessionState: SecureSessionAccessState,
 ) : AutofillCandidateRepository {
     override suspend fun search(query: AutofillCandidateQuery): List<AutofillCandidateSummary> {
-        if (!sessionState.hasFullSecureSessionAccess()) return emptyList()
+        if (!sessionState.hasAutofillSessionAccess()) return emptyList()
         val applicationId = AutofillScope.normalizeApplicationId(query.packageName)
         val domain = AutofillScope.normalizeDomain(query.webDomain)
         val boundedLimit = query.limit.coerceIn(1, MAX_CANDIDATES)
