@@ -6,8 +6,6 @@ import android.app.Application
 import android.content.Context
 import android.os.Bundle
 import android.os.StrictMode
-import android.view.MotionEvent
-import android.view.ViewGroup
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
@@ -86,12 +84,12 @@ class PasslyApplication : Application() {
         registerGlobalTouchListener()
     }
 
-    /** 监听所有 Activity 创建，注入全局触摸监听，用于重置空闲计时器 */
+    /** 监听所有 Activity 创建，在 Window 分发入口观察用户触摸。 */
     private fun registerGlobalTouchListener() {
         registerActivityLifecycleCallbacks(
             object : ActivityLifecycleCallbacks {
                 override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-                    setupIdleTouchListener(activity)
+                    installSessionActivityWindowCallback(activity)
                 }
 
                 override fun onActivityStarted(activity: Activity) = Unit
@@ -106,15 +104,12 @@ class PasslyApplication : Application() {
         )
     }
 
-    /** 为 Activity 注入触摸监听，仅重置空闲计时器（不触发 click） */
-    private fun setupIdleTouchListener(activity: Activity) {
-        val content = activity.findViewById<ViewGroup>(android.R.id.content) ?: return
-        content.setOnTouchListener { v, event ->
-            if (event.action == MotionEvent.ACTION_DOWN) {
-                v.performClick()
-                sessionActivityReporter.onUserInteraction()
-            }
-            false // 不消费事件，继续分发
-        }
+    private fun installSessionActivityWindowCallback(activity: Activity) {
+        val currentCallback = activity.window.callback ?: return
+        if (currentCallback is SessionActivityWindowCallback) return
+        activity.window.callback = SessionActivityWindowCallback(
+            delegate = currentCallback,
+            sessionActivityReporter = sessionActivityReporter,
+        )
     }
 }
