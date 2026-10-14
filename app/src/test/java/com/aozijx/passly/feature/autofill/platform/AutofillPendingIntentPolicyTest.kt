@@ -26,6 +26,14 @@ class AutofillPendingIntentPolicyTest {
             AutofillPendingIntentPolicy.legacyInteractionRequestId("interaction-1"),
         )
         assertEquals(
+            "autofill-save:opaque-token",
+            AutofillPendingIntentPolicy.legacySaveRequestId("opaque-token"),
+        )
+        assertNotEquals(
+            AutofillPendingIntentPolicy.legacySaveRequestId("interaction-1"),
+            AutofillPendingIntentPolicy.legacyInteractionRequestId("interaction-1"),
+        )
+        assertEquals(
             "password-get:interaction-1:entry-1",
             AutofillPendingIntentPolicy.credentialGetRequestId("interaction-1", "entry-1"),
         )
@@ -36,6 +44,10 @@ class AutofillPendingIntentPolicyTest {
         assertNotEquals(
             AutofillPendingIntentPolicy.credentialCreateRequestId("interaction-1"),
             AutofillPendingIntentPolicy.credentialUnlockRequestId("interaction-1"),
+        )
+        assertNotEquals(
+            AutofillPendingIntentPolicy.legacySaveRequestId("interaction-1"),
+            AutofillPendingIntentPolicy.credentialCreateRequestId("interaction-1"),
         )
     }
 }

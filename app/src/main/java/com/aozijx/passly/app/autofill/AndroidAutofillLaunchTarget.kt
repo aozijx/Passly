@@ -6,6 +6,7 @@ import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
 import com.aozijx.passly.presentation.feature.autofill.credential.CredentialResponseActivity
 import com.aozijx.passly.presentation.feature.autofill.legacy.AutofillFillActivity
+import com.aozijx.passly.presentation.feature.autofill.legacy.save.LegacySaveActivity
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,6 +19,11 @@ class AndroidAutofillLaunchTarget @Inject constructor() : AutofillLaunchTarget {
 
     override fun credentialResponseIntent(context: Context, requestId: String): Intent =
         Intent(context, CredentialResponseActivity::class.java)
+            .setPackage(context.packageName)
+            .putExtra(AutofillLaunchExtras.REQUEST_ID, requestId)
+
+    override fun legacySaveIntent(context: Context, requestId: String): Intent =
+        Intent(context, LegacySaveActivity::class.java)
             .setPackage(context.packageName)
             .putExtra(AutofillLaunchExtras.REQUEST_ID, requestId)
 }

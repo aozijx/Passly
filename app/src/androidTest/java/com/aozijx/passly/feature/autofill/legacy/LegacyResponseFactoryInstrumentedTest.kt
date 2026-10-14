@@ -34,6 +34,8 @@ class LegacyResponseFactoryInstrumentedTest {
             object : AutofillLaunchTarget {
                 override fun legacyFillIntent(context: Context, requestId: String) = Intent()
 
+                override fun legacySaveIntent(context: Context, requestId: String) = Intent()
+
                 override fun credentialResponseIntent(context: Context, requestId: String) = Intent()
             },
         ),

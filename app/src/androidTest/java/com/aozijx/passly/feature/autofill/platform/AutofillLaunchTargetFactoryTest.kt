@@ -11,9 +11,12 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.credential.service.CredentialPendingIntentFactory
 import com.aozijx.passly.feature.autofill.legacy.AutofillPendingIntentFactory
+import com.aozijx.passly.feature.autofill.legacy.LegacySavePendingIntentFactory
+import com.aozijx.passly.feature.autofill.legacy.runtime.LegacySaveToken
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 import com.aozijx.passly.presentation.feature.autofill.credential.CredentialResponseActivity
 import com.aozijx.passly.presentation.feature.autofill.legacy.AutofillFillActivity
+import com.aozijx.passly.presentation.feature.autofill.legacy.save.LegacySaveActivity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -57,12 +60,34 @@ class AutofillLaunchTargetFactoryTest {
         val target = AndroidAutofillLaunchTarget()
 
         val legacy = target.legacyFillIntent(context, "legacy")
+        val legacySave = target.legacySaveIntent(context, "legacy-save")
         val credential = target.credentialResponseIntent(context, "credential")
 
         assertEquals(context.packageName, legacy.`package`)
         assertEquals(AutofillFillActivity::class.java.name, legacy.component?.className)
+        assertEquals(context.packageName, legacySave.`package`)
+        assertEquals(LegacySaveActivity::class.java.name, legacySave.component?.className)
         assertEquals(context.packageName, credential.`package`)
         assertEquals(CredentialResponseActivity::class.java.name, credential.component?.className)
+    }
+
+    @Test
+    fun legacySavePendingIntentContainsOnlyOpaqueIdentity() {
+        val target = RecordingLaunchTarget(context)
+        val pendingIntent = LegacySavePendingIntentFactory(target).create(
+            context,
+            LegacySaveToken("opaque-token"),
+        )
+
+        assertFalse(pendingIntent.isImmutable)
+        assertEquals(
+            setOf(AutofillLaunchExtras.REQUEST_ID, AutofillLaunchExtras.LEGACY_SAVE_TOKEN),
+            target.lastLegacySaveIntent?.extras?.keySet(),
+        )
+        assertEquals(
+            "opaque-token",
+            target.lastLegacySaveIntent?.getStringExtra(AutofillLaunchExtras.LEGACY_SAVE_TOKEN),
+        )
     }
 
     @Test
@@ -94,6 +119,7 @@ class AutofillLaunchTargetFactoryTest {
 
     private class RecordingLaunchTarget(private val context: Context) : AutofillLaunchTarget {
         val requestIds = mutableListOf<String>()
+        var lastLegacySaveIntent: Intent? = null
 
         override fun legacyFillIntent(context: Context, requestId: String): Intent {
             requestIds += requestId
@@ -103,6 +129,11 @@ class AutofillLaunchTargetFactoryTest {
         override fun credentialResponseIntent(context: Context, requestId: String): Intent {
             requestIds += requestId
             return Intent().setPackage(this.context.packageName)
+        }
+
+        override fun legacySaveIntent(context: Context, requestId: String): Intent {
+            requestIds += requestId
+            return Intent().setPackage(this.context.packageName).also { lastLegacySaveIntent = it }
         }
     }
 }

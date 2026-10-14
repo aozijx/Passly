@@ -11,6 +11,9 @@ import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
+import com.aozijx.passly.feature.autofill.legacy.LegacySaveFlow
+import com.aozijx.passly.feature.autofill.legacy.LegacySavePendingIntentFactory
+import com.aozijx.passly.feature.autofill.legacy.LegacySavePreparation
 import com.aozijx.passly.feature.autofill.legacy.service.adapter.LegacyPlatformAdapter
 import com.aozijx.passly.feature.autofill.legacy.service.parser.AutofillStructureParser
 import dagger.hilt.android.AndroidEntryPoint
@@ -21,6 +24,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Legacy AutofillService Thin Adapter (API 31-33 fallback).
@@ -36,6 +40,12 @@ class LegacyAutofillService : AutofillService() {
 
     @Inject
     lateinit var finishInteraction: FinishAutofillInteraction
+
+    @Inject
+    lateinit var legacySaveFlow: LegacySaveFlow
+
+    @Inject
+    lateinit var legacySavePendingIntentFactory: LegacySavePendingIntentFactory
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -72,7 +82,59 @@ class LegacyAutofillService : AutofillService() {
     }
 
     override fun onSaveRequest(request: SaveRequest, callback: SaveCallback) {
-        callback.onFailure("Legacy Autofill save is disabled")
+        val completion = AtomicBoolean(false)
+        serviceScope.launch {
+            try {
+                val parsed = AutofillStructureParser.parse(request.fillContexts)
+                when (val result = legacySaveFlow.prepare(adapter.buildRequest(parsed))) {
+                    LegacySavePreparation.Saved -> {
+                        if (completion.compareAndSet(false, true)) callback.onSuccess()
+                    }
+
+                    is LegacySavePreparation.Staged -> {
+                        val pendingIntent = legacySavePendingIntentFactory.create(
+                            this@LegacyAutofillService,
+                            result.token,
+                        )
+                        if (completion.compareAndSet(false, true)) {
+                            callback.onSuccess(pendingIntent.intentSender)
+                        }
+                    }
+
+                    LegacySavePreparation.Disabled -> failSave(
+                        callback,
+                        completion,
+                        "Credential saving is disabled",
+                    )
+
+                    LegacySavePreparation.InvalidDraft -> failSave(
+                        callback,
+                        completion,
+                        "No password was available to save",
+                    )
+
+                    LegacySavePreparation.Failed -> failSave(
+                        callback,
+                        completion,
+                        "Credential could not be saved",
+                    )
+                }
+            } catch (cancelled: CancellationException) {
+                failSave(callback, completion, "Credential saving was cancelled")
+                throw cancelled
+            } catch (_: Exception) {
+                TelemetryRuntime.e(EventCategory.AUTOFILL, "legacy.save_request_failed")
+                failSave(callback, completion, "Credential could not be saved")
+            }
+        }
+    }
+
+    private fun failSave(
+        callback: SaveCallback,
+        completion: AtomicBoolean,
+        message: String,
+    ) {
+        if (completion.compareAndSet(false, true)) callback.onFailure(message)
     }
 
     override fun onDisconnected() {

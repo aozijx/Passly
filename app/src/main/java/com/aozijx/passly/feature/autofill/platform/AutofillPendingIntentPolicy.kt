@@ -11,6 +11,9 @@ object AutofillPendingIntentPolicy {
     fun legacyInteractionRequestId(interactionId: String): String =
         "autofill-interaction:$interactionId"
 
+    fun legacySaveRequestId(token: String): String =
+        "autofill-save:$token"
+
     fun credentialGetRequestId(interactionId: String, entryId: String): String =
         "password-get:$interactionId:$entryId"
 
