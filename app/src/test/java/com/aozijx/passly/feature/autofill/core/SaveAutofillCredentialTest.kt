@@ -14,15 +14,10 @@ import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
-import com.aozijx.passly.domain.settings.model.AutofillSettings
-import com.aozijx.passly.domain.settings.model.InteractionSettings
-import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryDraftMaterializer
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -70,7 +65,6 @@ class SaveAutofillCredentialTest {
         )
         return Fixture(
             operation = SaveAutofillCredential(
-                settingsSource = FixedSettingsSource(),
                 applicationLabelResolver = ApplicationLabelResolver { "Example" },
                 createEntry = createEntry,
             ),
@@ -93,14 +87,6 @@ class SaveAutofillCredentialTest {
         val operation: SaveAutofillCredential,
         val repository: RecordingEntryCommandRepository,
     )
-
-    private class FixedSettingsSource : InteractionSettingsSource {
-        override val interaction: Flow<InteractionSettings> = flowOf(
-            InteractionSettings(
-                autofill = AutofillSettings(enabled = true, credentialManagerEnabled = true),
-            ),
-        )
-    }
 
     private class UnlockedSession : SecureSessionAccessState {
         override val authenticationState: StateFlow<AuthenticationState> =

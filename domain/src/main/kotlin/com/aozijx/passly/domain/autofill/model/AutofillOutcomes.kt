@@ -54,7 +54,6 @@ sealed interface AutofillSelectionOutcome {
 
 sealed interface AutofillSaveOutcome {
     data class Saved(val entryId: EntryId) : AutofillSaveOutcome
-    data object Disabled : AutofillSaveOutcome
     data object InvalidDraft : AutofillSaveOutcome
     data class Failed(val failure: AutofillOperationFailure) : AutofillSaveOutcome
 }

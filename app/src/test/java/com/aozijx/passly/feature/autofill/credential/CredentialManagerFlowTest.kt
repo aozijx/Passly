@@ -170,8 +170,59 @@ class CredentialManagerFlowTest {
         assertEquals(0, fixture.commandRepository.createCalls)
     }
 
-    private fun fixture(initialState: AuthenticationState): Fixture {
-        val settings = FixedSettingsSource()
+    @Test
+    fun `create rechecks credential manager policy before persistence`() = runBlocking {
+        listOf(
+            AutofillSettings(enabled = false, credentialManagerEnabled = true),
+            AutofillSettings(enabled = true, credentialManagerEnabled = false),
+        ).forEach { policy ->
+            val fixture = fixture(AuthenticationState.Authenticated(1L), policy)
+            val interaction = fixture.flow.beginCreate(scope())
+
+            val result = fixture.flow.createPassword(
+                interactionId = interaction.id,
+                scope = scope(),
+                username = "alice",
+                password = "secret",
+            )
+
+            assertEquals(CredentialManagerCreateResult.NotSaved, result)
+            assertEquals(0, fixture.commandRepository.createCalls)
+        }
+    }
+
+    @Test
+    fun `legacy save setting does not disable credential manager creation`() = runBlocking {
+        val fixture = fixture(
+            AuthenticationState.Authenticated(1L),
+            AutofillSettings(
+                enabled = true,
+                credentialManagerEnabled = true,
+                savePromptsEnabled = false,
+            ),
+        )
+        val interaction = fixture.flow.beginCreate(scope())
+
+        val result = fixture.flow.createPassword(
+            interactionId = interaction.id,
+            scope = scope(),
+            username = "alice",
+            password = "secret",
+        )
+
+        assertEquals(CredentialManagerCreateResult.Saved, result)
+        assertEquals(1, fixture.commandRepository.createCalls)
+    }
+
+    private fun fixture(
+        initialState: AuthenticationState,
+        policy: AutofillSettings = AutofillSettings(
+            enabled = true,
+            credentialManagerEnabled = true,
+            requireAuthentication = false,
+        ),
+    ): Fixture {
+        val settings = FixedSettingsSource(policy)
         val vault = FakeVault(initialState)
         val authentication = FakeAuthenticationController(vault)
         val store = AutofillInteractionStore()
@@ -192,7 +243,6 @@ class CredentialManagerFlowTest {
         )
         val commandRepository = RecordingEntryCommandRepository()
         val saveCredential = SaveAutofillCredential(
-            settingsSource = settings,
             applicationLabelResolver = ApplicationLabelResolver { "Example" },
             createEntry = CreateEntryUseCase(
                 entryCommandRepository = commandRepository,
@@ -225,6 +275,7 @@ class CredentialManagerFlowTest {
                 saveCredential = saveCredential,
                 finishInteraction = finish,
                 interactionStore = store,
+                settingsSource = settings,
             ),
             store = store,
             authentication = authentication,
@@ -267,15 +318,9 @@ class CredentialManagerFlowTest {
         val commandRepository: RecordingEntryCommandRepository,
     )
 
-    private class FixedSettingsSource : InteractionSettingsSource {
+    private class FixedSettingsSource(settings: AutofillSettings) : InteractionSettingsSource {
         override val interaction: Flow<InteractionSettings> = flowOf(
-            InteractionSettings(
-                autofill = AutofillSettings(
-                    enabled = true,
-                    credentialManagerEnabled = true,
-                    requireAuthentication = false,
-                ),
-            ),
+            InteractionSettings(autofill = settings),
         )
     }
 

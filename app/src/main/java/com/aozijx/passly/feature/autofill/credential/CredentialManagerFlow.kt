@@ -11,6 +11,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillSelectionOutcome
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.autofill.core.AuthorizeAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
@@ -22,6 +23,7 @@ import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 sealed interface CredentialManagerUnlockResult {
@@ -68,6 +70,7 @@ class CredentialManagerFlow @Inject constructor(
     private val saveCredential: SaveAutofillCredential,
     private val finishInteraction: FinishAutofillInteraction,
     private val interactionStore: AutofillInteractionStore,
+    private val settingsSource: InteractionSettingsSource,
 ) {
     suspend fun beginGet(request: AutofillRequest): AutofillDiscoveryOutcome =
         discoverCandidates(request)
@@ -154,6 +157,11 @@ class CredentialManagerFlow @Inject constructor(
         username: String,
         password: String,
     ): CredentialManagerCreateResult {
+        val policy = settingsSource.interaction.first().autofill
+        if (!policy.enabled || !policy.credentialManagerEnabled) {
+            finishInteraction.cancel(interactionId)
+            return CredentialManagerCreateResult.NotSaved
+        }
         val snapshot = interactionStore.snapshot(interactionId)
         if (
             snapshot == null ||
@@ -184,7 +192,6 @@ class CredentialManagerFlow @Inject constructor(
             ) {
                 is AutofillSaveOutcome.Saved -> CredentialManagerCreateResult.Saved
                     .also { completed = true }
-                AutofillSaveOutcome.Disabled,
                 AutofillSaveOutcome.InvalidDraft,
                 is AutofillSaveOutcome.Failed,
                 -> CredentialManagerCreateResult.NotSaved

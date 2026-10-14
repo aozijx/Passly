@@ -12,23 +12,18 @@ import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
-import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.flow.first
 
 @Singleton
 class SaveAutofillCredential @Inject constructor(
-    private val settingsSource: InteractionSettingsSource,
     private val applicationLabelResolver: ApplicationLabelResolver,
     private val createEntry: CreateEntryUseCase,
 ) {
     suspend operator fun invoke(
         draft: AutofillSaveDraft,
     ): AutofillSaveOutcome {
-        val policy = settingsSource.interaction.first().autofill
-        if (!policy.enabled || !policy.credentialManagerEnabled) return AutofillSaveOutcome.Disabled
         if (draft.password.isBlank()) return AutofillSaveOutcome.InvalidDraft
 
         return when (
