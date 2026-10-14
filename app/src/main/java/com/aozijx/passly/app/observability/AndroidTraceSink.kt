@@ -59,6 +59,7 @@ class AndroidTraceSink internal constructor(
     private companion object {
         val TRACE_NAMES: Map<OperationCode, String> = mapOf(
             Operations.ApplicationStartup to "Passly/AppStartup",
+            Operations.ApplicationLifecycle to "Passly/AppLifecycle",
             Operations.DatabaseSession to "Passly/DatabaseSession",
             Operations.SecurityAuthentication to "Passly/Authentication",
             Operations.SecurityLock to "Passly/SecurityLock",

@@ -33,6 +33,14 @@ interface Logger {
         fields: LogFields = LogFields.Empty,
     ): DiagnosticId
 
+    fun fatal(
+        event: EventKey,
+        errorCode: ErrorCode,
+        reason: ReasonCode,
+        throwable: Throwable,
+        fields: LogFields = LogFields.Empty,
+    ): DiagnosticId
+
     suspend fun <T> withRootTrace(
         operation: OperationCode,
         block: suspend TraceScope.() -> T,

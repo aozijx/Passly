@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin、Coroutines/CoroutineContext、Android `Log`、`Trace`、`ApplicationExitInfo`、Android Keystore HMAC-SHA256、AES-256-GCM、Hilt、JUnit、Kotlin Serialization（仅导出 JSONL）。
 
-**Spec:** `docs/superpowers/specs/2026-10-14-observability-logger-v1-design.md`
+**Spec:** `docs/superpowers/specs/2026-10-14-observability-logger-design.md`
 
 ## Global Constraints
 
@@ -373,13 +373,13 @@ git commit -m "feat(observability): persist encrypted log records"
 - Modify: `app/src/main/java/com/aozijx/passly/feature/settings/diagnostics/ExportDiagnosticsUseCase.kt`
 - Test: `app/src/test/java/com/aozijx/passly/app/observability/ObservabilityRuntimeControllerTest.kt`
 - Test: `app/src/test/java/com/aozijx/passly/app/observability/ObservabilityExportServiceTest.kt`
-- Create: `app/src/test/resources/observability-v1.schema.json`
+- Create: `app/src/test/resources/observability.schema.json`
 
 **Interfaces:**
 - Consumes: Logger core, Android sinks, record store, previous exit reader.
 - Produces: application-scoped `Logger`, framework-only `LoggerRuntime`, authenticated JSONL export with manifest first.
 
-- [ ] **Step 1: Write failing runtime/export tests**
+- [x] **Step 1: Write failing runtime/export tests**
 
 Assert startup ordering, single crash-handler installation, handler delegation, 300-ms flush/200-ms emergency fallback, reentrant crash suppression, lifecycle flush, and shutdown idempotence.
 
@@ -390,29 +390,29 @@ fun `first JSONL record is schema v1 manifest and every following line validates
 fun `manifest contains app device and autofill capability context once`()
 fun `manifest never exposes Android ID fingerprint serial or package names`()
 fun `export requires existing fresh authorization flow and deletes temporary file`()
-fun `legacy and v1 records are time ordered without duplicate event ids`()
+fun `current records are time ordered without duplicate event ids`()
 ```
 
-- [ ] **Step 2: Run tests and confirm failure**
+- [x] **Step 2: Run tests and confirm failure**
 
 Run: `./gradlew.bat :app:testDebugUnitTest --tests "*ObservabilityRuntimeControllerTest" --tests "*ObservabilityExportServiceTest"`
 
 Expected: FAIL because runtime/export v1 is absent.
 
-- [ ] **Step 3: Implement runtime and export**
+- [x] **Step 3: Implement runtime and export**
 
 Device header may contain manufacturer/model/SDK/release/locale/timezone/app version, but not Build fingerprint, Android ID, serial or raw installed-package list. Register previous exit after Logger/store initialization. `LoggerRuntime` must default to a no-op before installation and accept only typed APIs.
 
-- [ ] **Step 4: Run runtime/export tests**
+- [x] **Step 4: Run runtime/export tests**
 
 Run: `./gradlew.bat :app:testDebugUnitTest --tests "*ObservabilityRuntimeControllerTest" --tests "*ObservabilityExportServiceTest"`
 
 Expected: PASS and schema validation succeeds.
 
-- [ ] **Step 5: Commit runtime/export**
+- [x] **Step 5: Commit runtime/export**
 
 ```powershell
-git add -- app/src/main/java/com/aozijx/passly/app/observability app/src/main/java/com/aozijx/passly/app/PasslyApplication.kt app/src/main/java/com/aozijx/passly/app/AppLifecycleObserver.kt app/src/main/java/com/aozijx/passly/feature/settings/diagnostics app/src/test/java/com/aozijx/passly/app/observability app/src/test/resources/observability-v1.schema.json
+git add -- app/src/main/java/com/aozijx/passly/app/observability app/src/main/java/com/aozijx/passly/app/PasslyApplication.kt app/src/main/java/com/aozijx/passly/app/AppLifecycleObserver.kt app/src/main/java/com/aozijx/passly/feature/settings/diagnostics app/src/test/java/com/aozijx/passly/app/observability app/src/test/resources/observability.schema.json
 git commit -m "feat(observability): assemble logger and secure export"
 ```
 
@@ -649,7 +649,7 @@ Commit: `git commit -m "refactor(observability): unify application errors"`
 - Delete: `data/src/main/java/com/aozijx/passly/data/diagnostics/TelemetryRecordCodec.kt`
 - Delete: `data/src/main/java/com/aozijx/passly/data/diagnostics/di/TelemetryPersistenceModule.kt`
 - Create: `app/src/test/java/com/aozijx/passly/architecture/ObservabilityBoundaryTest.kt`
-- Create: `docs/decisions/ADR-0024-structured-observability-logger-v1.md`
+- Create: `docs/decisions/ADR-0024-structured-observability-logger.md`
 - Modify: `docs/architecture/telemetry.md`
 - Modify: `docs/security/diagnostics.md`
 - Modify: `docs/architecture/error-handling.md`

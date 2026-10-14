@@ -217,6 +217,7 @@ class PrivacyPolicy(
             LogFieldKeys.Result to FieldKind.ENUM,
             LogFieldKeys.AuthenticationMethod to FieldKind.ENUM,
             LogFieldKeys.ExitStatus to FieldKind.COUNT,
+            LogFieldKeys.ExitReason to FieldKind.ENUM,
             LogFieldKeys.Importance to FieldKind.ENUM,
             LogFieldKeys.PssKb to FieldKind.COUNT,
             LogFieldKeys.RssKb to FieldKind.COUNT,

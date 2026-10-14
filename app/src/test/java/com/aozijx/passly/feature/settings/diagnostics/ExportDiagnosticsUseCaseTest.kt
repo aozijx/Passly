@@ -48,7 +48,7 @@ class ExportDiagnosticsUseCaseTest {
     private class RecordingGateway(private val gate: RecordingGate) : DiagnosticsExportGateway {
         var calls = 0
         var calledInsideAuthorization = false
-        override suspend fun exportAndShare(): Result<Unit> {
+        override suspend fun exportAndShare(permit: AuthorizationPermit): Result<Unit> {
             calls++
             calledInsideAuthorization = gate.inside
             return Result.success(Unit)

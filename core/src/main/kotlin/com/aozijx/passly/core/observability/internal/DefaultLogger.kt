@@ -105,6 +105,14 @@ class DefaultLogger(
         fields: LogFields,
     ): DiagnosticId = emitFailure(LogLevel.ERROR, event, errorCode, reason, throwable, fields)
 
+    override fun fatal(
+        event: EventKey,
+        errorCode: ErrorCode,
+        reason: ReasonCode,
+        throwable: Throwable,
+        fields: LogFields,
+    ): DiagnosticId = emitFailure(LogLevel.FATAL, event, errorCode, reason, throwable, fields)
+
     override suspend fun <T> withRootTrace(
         operation: OperationCode,
         block: suspend TraceScope.() -> T,

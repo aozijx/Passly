@@ -2,15 +2,17 @@ package com.aozijx.passly.app
 
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import com.aozijx.passly.core.telemetry.TelemetryRuntime
-import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
+import com.aozijx.passly.app.observability.LoggerRuntime
+import com.aozijx.passly.app.observability.ObservabilityRuntimeController
+import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -32,36 +34,58 @@ import javax.inject.Singleton
 class AppLifecycleObserver @Inject constructor(
     private val secureSessionAccessState: SecureSessionAccessState,
     private val sessionLockController: SessionLockController,
-    private val diagnosticsRuntime: DiagnosticsRuntimeController,
+    private val observabilityRuntime: ObservabilityRuntimeController,
     private val idleTimeoutSettings: IdleTimeoutSettings,
     private val deviceLockController: DeviceLockController,
 ) : DefaultLifecycleObserver {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val lifecycleQueueLock = Any()
+    private var lastLifecycleJob: Job? = null
+
     override fun onStart(owner: LifecycleOwner) {
         deviceLockController.onAppForeground()
     }
 
     override fun onStop(owner: LifecycleOwner) {
         deviceLockController.onAppBackground()
-        scope.launch {
-            val lockOnBackground = idleTimeoutSettings.isLockOnBackground.first()
-            val recoveryMode = secureSessionAccessState.isRecoveryMode()
-            if (!lockOnBackground && !recoveryMode) {
-                TelemetryRuntime.i(EventCategory.APPLICATION, "lifecycle.background_lock_skipped")
-                return@launch
+        enqueueLifecycleOperation {
+            try {
+                val lockOnBackground = idleTimeoutSettings.isLockOnBackground.first()
+                val recoveryMode = secureSessionAccessState.isRecoveryMode()
+                if (!lockOnBackground && !recoveryMode) {
+                    LoggerRuntime.debug(
+                        operation = Operations.ApplicationLifecycle,
+                        event = Events.Application.BackgroundLockSkipped,
+                    )
+                } else {
+                    // 封存会话：排干租约 → 关闭数据库 → 同步认证状态
+                    sessionLockController.lock(LockReason.BACKGROUND)
+                }
+            } finally {
+                // 等待锁流程结束再排干日志，避免生命周期尾部事件丢失。
+                observabilityRuntime.flush()
             }
-            // 封存会话：排干租约 → 关闭数据库 → 同步认证状态
-            sessionLockController.lock(LockReason.BACKGROUND)
         }
-        // 确保应用进入后台时，所有待写入的日志落盘
-        diagnosticsRuntime.flush()
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
-        scope.launch {
-            sessionLockController.lock(LockReason.APP_EXIT)
+        enqueueLifecycleOperation {
+            try {
+                sessionLockController.lock(LockReason.APP_EXIT)
+            } finally {
+                observabilityRuntime.shutdown()
+            }
         }
-        diagnosticsRuntime.shutdown()
+    }
+
+    private fun enqueueLifecycleOperation(operation: suspend () -> Unit) {
+        synchronized(lifecycleQueueLock) {
+            val predecessor = lastLifecycleJob
+            lastLifecycleJob = scope.launch {
+                predecessor?.join()
+                operation()
+            }
+        }
     }
 }

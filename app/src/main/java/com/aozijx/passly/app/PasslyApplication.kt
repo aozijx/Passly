@@ -8,9 +8,12 @@ import android.os.Bundle
 import android.os.StrictMode
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.aozijx.passly.BuildConfig
-import com.aozijx.passly.core.telemetry.TelemetryRuntime
-import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
-import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.app.observability.LoggerRuntime
+import com.aozijx.passly.app.observability.ObservabilityRuntimeController
+import com.aozijx.passly.core.observability.ErrorCodes
+import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenance
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
 import dagger.hilt.android.HiltAndroidApp
@@ -38,7 +41,7 @@ class PasslyApplication : Application() {
     lateinit var sessionActivityReporter: SessionActivityReporter
 
     @Inject
-    lateinit var diagnosticsRuntimeController: DiagnosticsRuntimeController
+    lateinit var observabilityRuntimeController: ObservabilityRuntimeController
 
     @Inject
     lateinit var authenticationRuntimeMaintenance: AuthenticationRuntimeMaintenance
@@ -66,7 +69,7 @@ class PasslyApplication : Application() {
         instance = this
 
         // 诊断与通知
-        diagnosticsRuntimeController.start()
+        observabilityRuntimeController.start()
 
         // 生物识别轮换对账（后台执行）
         diagnosticsScope.launch { authenticationRuntimeMaintenance.reconcileStartupState() }
@@ -75,7 +78,13 @@ class PasslyApplication : Application() {
         try {
             System.loadLibrary("sqlcipher")
         } catch (e: UnsatisfiedLinkError) {
-            TelemetryRuntime.e(EventCategory.DATABASE, "sqlcipher.load_failed", throwable = e)
+            LoggerRuntime.error(
+                operation = Operations.ApplicationStartup,
+                event = Events.Application.NativeLibraryLoadFailed,
+                errorCode = ErrorCodes.NativeLibraryLoadFailed,
+                reason = Reasons.NativeLibraryUnavailable,
+                throwable = e,
+            )
         }
 
         // 生命周期与全局交互监听

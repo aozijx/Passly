@@ -54,6 +54,7 @@ object Events {
         val TraceResumeUnavailable = EventKey("application.trace_resume_unavailable")
         val BackgroundLockSkipped = EventKey("application.background_lock_skipped")
         val UnhandledException = EventKey("application.unhandled_exception")
+        val NativeLibraryLoadFailed = EventKey("application.native_library_load_failed")
     }
 
     object Database {
@@ -92,6 +93,7 @@ object Events {
         Application.TraceResumeUnavailable,
         Application.BackgroundLockSkipped,
         Application.UnhandledException,
+        Application.NativeLibraryLoadFailed,
         Database.SessionTransition,
         Database.SessionTransitionFailed,
         Security.LockStarted,
@@ -127,6 +129,7 @@ object ErrorCodes {
     val AuthenticationFailed = ErrorCode("AUTHENTICATION_FAILED")
     val DiagnosticsExportFailed = ErrorCode("DIAGNOSTICS_EXPORT_FAILED")
     val ApplicationUnhandledException = ErrorCode("APPLICATION_UNHANDLED_EXCEPTION")
+    val NativeLibraryLoadFailed = ErrorCode("NATIVE_LIBRARY_LOAD_FAILED")
 }
 
 object Reasons {
@@ -139,10 +142,12 @@ object Reasons {
     val AuthenticationRejected = ReasonCode("AUTHENTICATION_REJECTED")
     val StorageFailure = ReasonCode("STORAGE_FAILURE")
     val UnknownFailure = ReasonCode("UNKNOWN_FAILURE")
+    val NativeLibraryUnavailable = ReasonCode("NATIVE_LIBRARY_UNAVAILABLE")
 }
 
 object Operations {
     val ApplicationStartup = OperationCode("application_startup")
+    val ApplicationLifecycle = OperationCode("application_lifecycle")
     val DatabaseSession = OperationCode("database_session")
     val SecurityAuthentication = OperationCode("security_authentication")
     val SecurityLock = OperationCode("security_lock")
@@ -170,6 +175,7 @@ object LogFieldKeys {
     val Result = LogFieldKey("result")
     val AuthenticationMethod = LogFieldKey("authentication_method")
     val ExitStatus = LogFieldKey("exit_status")
+    val ExitReason = LogFieldKey("exit_reason")
     val Importance = LogFieldKey("importance")
     val PssKb = LogFieldKey("pss_kb")
     val RssKb = LogFieldKey("rss_kb")

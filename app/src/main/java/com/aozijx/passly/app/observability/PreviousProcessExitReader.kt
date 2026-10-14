@@ -3,6 +3,7 @@ package com.aozijx.passly.app.observability
 import android.app.ActivityManager
 import android.app.ApplicationExitInfo
 import android.content.Context
+import android.os.Build
 
 enum class PreviousExitReason {
     EXIT_SELF,
@@ -59,14 +60,18 @@ internal interface PreviousExitCursor {
     fun writeTimestampMs(timestampMs: Long)
 }
 
+fun interface PreviousExitSource {
+    fun readUnrecorded(): PreviousExit?
+}
+
 class PreviousProcessExitReader internal constructor(
     private val gateway: PreviousProcessExitGateway,
     private val cursor: PreviousExitCursor,
-) {
+) : PreviousExitSource {
     private var inMemoryTimestampMs = 0L
 
     @Synchronized
-    fun readUnrecorded(): PreviousExit? {
+    override fun readUnrecorded(): PreviousExit? {
         val recordedTimestamp = try {
             cursor.readTimestampMs()
         } catch (_: Exception) {
@@ -104,8 +109,9 @@ internal class AndroidPreviousProcessExitGateway(
 ) : PreviousProcessExitGateway {
     private val activityManager = context.getSystemService(ActivityManager::class.java)
 
-    override fun historicalExits(): List<PlatformPreviousExit> =
-        activityManager.getHistoricalProcessExitReasons(null, 0, MAX_EXIT_RECORDS).map { exit ->
+    override fun historicalExits(): List<PlatformPreviousExit> {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return emptyList()
+        return activityManager.getHistoricalProcessExitReasons(null, 0, MAX_EXIT_RECORDS).map { exit ->
             PlatformPreviousExit(
                 timestampMs = exit.timestamp,
                 reason = exit.reason.toSafeReason(),
@@ -115,6 +121,7 @@ internal class AndroidPreviousProcessExitGateway(
                 rssKb = exit.rss,
             )
         }
+    }
 
     private fun Int.toSafeReason(): PreviousExitReason = when (this) {
         ApplicationExitInfo.REASON_EXIT_SELF -> PreviousExitReason.EXIT_SELF
@@ -162,7 +169,7 @@ internal class SharedPreferencesPreviousExitCursor(context: Context) : PreviousE
     }
 
     private companion object {
-        const val PREFERENCES_NAME = "observability_v1_state"
+        const val PREFERENCES_NAME = "observability_state"
         const val KEY_TIMESTAMP_MS = "previous_exit_timestamp_ms"
     }
 }

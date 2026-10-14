@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://passly.local/schema/observability-v1.json",
+  "title": "Passly Observability Export",
+  "oneOf": [
+    { "$ref": "#/$defs/manifest" },
+    { "$ref": "#/$defs/event" }
+  ],
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{8,64}$" },
+    "eventName": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:\\.[a-z][a-z0-9_]*)+$" },
+    "safeValue": {
+      "oneOf": [
+        { "type": "integer" },
+        { "type": "number" },
+        { "type": "boolean" },
+        { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,63}$" },
+        { "type": "string", "pattern": "^[a-z][a-z0-9_]{2,126}$" },
+        { "type": "string", "pattern": "^h[0-9]+_[A-Za-z0-9_-]{16,64}$" }
+      ]
+    },
+    "trace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trace_id", "span_id", "parent_span_id"],
+      "properties": {
+        "trace_id": { "$ref": "#/$defs/id" },
+        "span_id": { "$ref": "#/$defs/id" },
+        "parent_span_id": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["error_code", "reason", "diag_id", "exception_type", "stack_trace", "cause_types", "foreign_frame_count"],
+      "properties": {
+        "error_code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,63}$" },
+        "reason": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,63}$" },
+        "diag_id": { "type": "string", "pattern": "^DGN-[A-Z2-9]{4}-[A-Z2-9]{4}$" },
+        "exception_type": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_$]{0,63}$" },
+        "stack_trace": { "type": "array", "maxItems": 24, "items": { "type": "string", "maxLength": 256 } },
+        "cause_types": { "type": "array", "maxItems": 3, "items": { "type": "string", "maxLength": 64 } },
+        "foreign_frame_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["record_type", "schema_version", "export", "app", "device", "autofill"],
+      "properties": {
+        "record_type": { "const": "manifest" },
+        "schema_version": { "const": 1 },
+        "export": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["generated_at_ms", "record_count"],
+          "properties": {
+            "generated_at_ms": { "type": "integer", "minimum": 0 },
+            "record_count": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "app": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "version_name", "version_code"],
+          "properties": {
+            "name": { "const": "Passly" },
+            "version_name": { "type": "string", "maxLength": 64 },
+            "version_code": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "device": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["manufacturer", "model", "sdk_int", "os_release", "locales", "timezone"],
+          "properties": {
+            "manufacturer": { "type": "string", "maxLength": 128 },
+            "model": { "type": "string", "maxLength": 128 },
+            "sdk_int": { "type": "integer", "minimum": 21 },
+            "os_release": { "type": "string", "maxLength": 128 },
+            "locales": { "type": "array", "maxItems": 8, "items": { "type": "string", "maxLength": 128 } },
+            "timezone": { "type": "string", "maxLength": 128 }
+          }
+        },
+        "autofill": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["legacy_service_enabled", "credential_provider_available", "inline_suggestions_supported"],
+          "properties": {
+            "legacy_service_enabled": { "type": "boolean" },
+            "credential_provider_available": { "type": "boolean" },
+            "inline_suggestions_supported": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["record_type", "schema_version", "event_id", "timestamp_ms", "elapsed_realtime_ms", "level", "category", "name", "process_session_id", "secure_session_id", "trace", "fields"],
+      "properties": {
+        "record_type": { "const": "event" },
+        "schema_version": { "const": 1 },
+        "event_id": { "$ref": "#/$defs/id" },
+        "timestamp_ms": { "type": "integer", "minimum": 0 },
+        "elapsed_realtime_ms": { "type": "integer", "minimum": 0 },
+        "level": { "enum": ["DEBUG", "INFO", "WARN", "ERROR", "FATAL"] },
+        "category": { "enum": ["APPLICATION", "DATABASE", "SECURITY", "AUTOFILL", "BACKUP"] },
+        "name": { "$ref": "#/$defs/eventName" },
+        "process_session_id": { "$ref": "#/$defs/id" },
+        "secure_session_id": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+        "trace": { "$ref": "#/$defs/trace" },
+        "fields": { "type": "object", "maxProperties": 64, "additionalProperties": { "$ref": "#/$defs/safeValue" } },
+        "error": { "$ref": "#/$defs/error" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "level": { "enum": ["WARN", "ERROR", "FATAL"] } } },
+          "then": { "required": ["error"] }
+        }
+      ]
+    }
+  }
+}

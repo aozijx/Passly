@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.settings.diagnostics
 
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationResult
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationGate
@@ -8,7 +9,7 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import javax.inject.Inject
 
 fun interface DiagnosticsExportGateway {
-    suspend fun exportAndShare(): Result<Unit>
+    suspend fun exportAndShare(permit: AuthorizationPermit): Result<Unit>
 }
 
 class ExportDiagnosticsUseCase @Inject constructor(
@@ -23,7 +24,7 @@ class ExportDiagnosticsUseCase @Inject constructor(
         return when (
             val authorization = authorizationGate.authorize(
                 AuthorizationScope.Global(AuthenticationPurpose.EXPORT_DIAGNOSTICS),
-            ) { gateway.exportAndShare() }
+            ) { permit -> gateway.exportAndShare(permit) }
         ) {
             is AuthorizationResult.Allowed -> authorization.value.fold(
                 onSuccess = { DiagnosticsExportResult.Completed },

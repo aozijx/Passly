@@ -1,10 +1,10 @@
 # 安全诊断
 
-当前实现和加密文件 v1 规范统一维护在
+当前实现和加密文件规范统一维护在
 [Telemetry 与诊断日志](../architecture/telemetry.md)。安全评审、格式变更和导出策略必须同步更新该文档与 codec 测试。
 
 正式 Logger v1 的隐私模型、Keystore HMAC、异常安全快照、Trace、设备导出 manifest 和分阶段迁移见
-[Passly Logger v1 与可观测性系统设计](../superpowers/specs/2026-10-14-observability-logger-v1-design.md)。
+[Passly Logger v1 与可观测性系统设计](../superpowers/specs/2026-10-14-observability-logger-design.md)。
 
 安全底线：任何 Sink 均不得接收 Throwable message、密码、密钥、OTP、Token、URL、文件路径或目标应用明文包名。
 Android Logcat 与加密文件必须经过同一验证和脱敏管线，不得把 Logcat 作为绕过隐私策略的调试入口。
@@ -58,3 +58,16 @@ Android API 依据：[Log](https://developer.android.com/reference/android/util/
   写日志或替换原始崩溃。
 - codec 只接受 `SanitizedLogRecord`，并重新校验事件目录、category、level/error 契约、严格 UTF-8、长度、
   枚举、trace/error 结构和尾随字节。未 HMAC 的标识符无法构造为可持久化字段。
+
+## 运行时与导出边界
+
+- `PasslyApplication` 只启动 `ObservabilityRuntimeController`。Logger、store 和 framework bridge 安装完成后才注册
+  uncaught-exception handler 并读取上次进程退出；重复启动、flush、shutdown 均不能重复安装或关闭资源。
+- FATAL 事件与普通 Sink 共享同一份已脱敏 record。崩溃路径先等待正常队列 300 ms，失败时再用同一 record 尝试
+  200 ms emergency write，最后始终委托原 handler；重入时不再写日志，避免递归崩溃。
+- 后台与退出操作按回调顺序串行执行：后台生命周期先完成会话锁定再 flush；应用退出先等待前序操作、完成
+  `APP_EXIT` 锁定再 shutdown，防止数据库/认证关闭事件被提前截断。无需后台锁定的重复生命周期事件降为 DEBUG。
+- JSONL 导出必须持有 `EXPORT_DIAGNOSTICS` 的 fresh `AuthorizationPermit`。第一行是唯一 manifest，包含有界的
+  App/设备/系统/Autofill 能力上下文；其余行为按时间排序、按 `event_id` 去重的当前 `.log` 记录。禁止 Android
+  ID、fingerprint、serial、明文包名和 legacy `.elog1` 内容。
+- 明文临时文件仅位于 `cacheDir`：分享失败立即删除，分享成功后 10 分钟删除，下一次导出前清理陈旧文件。
