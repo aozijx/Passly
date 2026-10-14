@@ -25,7 +25,7 @@ import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseF
 import com.aozijx.passly.feature.autofill.legacy.service.parser.EditableFieldInfo
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
-import com.aozijx.passly.feature.autofill.shared.RecordAutofillUsageUseCase
+import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -42,7 +42,6 @@ class AutofillFillViewModel @Inject constructor(
     private val resolveSelection: ResolveAutofillSelection,
     private val finishInteraction: FinishAutofillInteraction,
     private val interactionStore: AutofillInteractionStore,
-    private val recordAutofillUsage: RecordAutofillUsageUseCase,
     private val responseFactory: LegacyResponseFactory,
     @param:ApplicationContext private val appContext: Context,
 ) : ViewModel() {
@@ -177,16 +176,14 @@ class AutofillFillViewModel @Inject constructor(
             return
         }
 
-        recordAutofillUsage(outcome.payload.entryId.value)
-        if (request.savePromptsEnabled) {
-            interactionStore.markFilledAwaitingSave(request.interactionId)
-        } else {
-            finishInteraction.complete(request.interactionId)
-        }
+        val receipt = AutofillSelectionReceipt(request.interactionId, outcome.payload.entryId)
         val result = if (request.returnsDataset) {
-            AutofillFillResult.DatasetResult(dataset)
+            AutofillFillResult.DatasetResult(dataset, receipt)
         } else {
-            AutofillFillResult.Response(FillResponse.Builder().addDataset(dataset).build())
+            AutofillFillResult.Response(
+                value = FillResponse.Builder().addDataset(dataset).build(),
+                receipt = receipt,
+            )
         }
         mutate(AutofillFillMutation.Completed(result))
     }

@@ -1,6 +1,5 @@
 package com.aozijx.passly.presentation.feature.autofill.credential
 
-import android.content.Intent
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
@@ -13,7 +12,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 internal fun CredentialResponseRoute(
     action: CredentialResponseUiAction,
     viewModel: CredentialResponseViewModel,
-    onComplete: (Intent) -> Unit,
+    onComplete: (CredentialResponseCompletion) -> Unit,
     onUnrecoverable: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -23,7 +22,7 @@ internal fun CredentialResponseRoute(
     }
     LaunchedEffect(state) {
         when (val current = state) {
-            is CredentialResponseUiState.Complete -> onComplete(current.resultIntent)
+            is CredentialResponseUiState.Complete -> onComplete(current.completion)
             CredentialResponseUiState.Unrecoverable -> onUnrecoverable()
             CredentialResponseUiState.Loading -> Unit
         }

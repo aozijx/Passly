@@ -43,9 +43,7 @@ class CredentialBeginCreateHandler @Inject constructor(
         val policy = settingsSource.interaction.first().autofill
         if (
             !policy.enabled ||
-            !policy.credentialManagerEnabled ||
-            // 与 Legacy 保存一致：关闭"保存登录信息"后不再弹出保存提示。
-            !policy.savePromptsEnabled
+            !policy.credentialManagerEnabled
         ) {
             return BeginCreateCredentialResponse()
         }

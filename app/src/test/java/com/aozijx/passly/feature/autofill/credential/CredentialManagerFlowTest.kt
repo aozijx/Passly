@@ -36,11 +36,9 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.query.CredentialMatch
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.MatchType
-import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.model.InteractionSettings
@@ -52,8 +50,8 @@ import com.aozijx.passly.feature.autofill.core.ResolveAutofillSelection
 import com.aozijx.passly.feature.autofill.core.SaveAutofillCredential
 import com.aozijx.passly.feature.autofill.core.StartAutofillInteraction
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
+import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import com.aozijx.passly.feature.autofill.runtime.AutofillUnlockLease
-import com.aozijx.passly.feature.autofill.shared.RecordAutofillUsageUseCase
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryDraftMaterializer
 import kotlinx.coroutines.flow.Flow
@@ -96,12 +94,20 @@ class CredentialManagerFlowTest {
             allowedUserIds = setOf("alice"),
         )
 
+        assertTrue(selected is CredentialManagerPasswordResult.Success)
+        selected as CredentialManagerPasswordResult.Success
+        assertEquals("alice", selected.username)
+        assertEquals("secret", selected.password)
         assertEquals(
-            CredentialManagerPasswordResult.Success("alice", "secret"),
-            selected,
+            AutofillSelectionReceipt(locked.snapshot.id, candidate.entry.id),
+            selected.receipt,
         )
         assertEquals(1, fixture.authentication.authenticationCount)
-        assertEquals(AutofillInteractionState.Completed, fixture.store.snapshot(locked.snapshot.id)?.state)
+        assertEquals(
+            AutofillInteractionState.ResolvingSelection(candidate.entry.id),
+            fixture.store.snapshot(locked.snapshot.id)?.state,
+        )
+        assertEquals(null, fixture.authentication.lastLockReason)
     }
 
     @Test
@@ -197,7 +203,6 @@ class CredentialManagerFlowTest {
                 clock = { 1L },
             ),
         )
-        val activityRecorder = RecordingActivityRecorder()
         return Fixture(
             flow = CredentialManagerFlow(
                 discoverCandidates = DiscoverAutofillCandidates(
@@ -220,7 +225,6 @@ class CredentialManagerFlowTest {
                 saveCredential = saveCredential,
                 finishInteraction = finish,
                 interactionStore = store,
-                recordAutofillUsage = RecordAutofillUsageUseCase(activityRecorder),
             ),
             store = store,
             authentication = authentication,
@@ -270,7 +274,6 @@ class CredentialManagerFlowTest {
                     enabled = true,
                     credentialManagerEnabled = true,
                     requireAuthentication = false,
-                    savePromptsEnabled = true,
                 ),
             ),
         )
@@ -298,6 +301,7 @@ class CredentialManagerFlowTest {
         private val vault: FakeVault,
     ) : AuthenticationRequester, SessionLockController {
         var authenticationCount = 0
+        var lastLockReason: LockReason? = null
 
         override suspend fun authenticate(
             request: AuthenticationRequest,
@@ -308,7 +312,10 @@ class CredentialManagerFlowTest {
             return AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
         }
 
-        override suspend fun lock(reason: LockReason) = vault.lock()
+        override suspend fun lock(reason: LockReason) {
+            lastLockReason = reason
+            vault.lock()
+        }
     }
 
     private class RecordingCandidateRepository(
@@ -354,9 +361,4 @@ class CredentialManagerFlowTest {
         override suspend fun emptyTrash() = AppResult.Success(0)
     }
 
-    private class RecordingActivityRecorder : ActivityRecorder {
-        override suspend fun recordUsage(entryId: String, type: ActivityType) = AppResult.Success(Unit)
-        override suspend fun deleteByEntryId(entryId: String) = Unit
-        override suspend fun deleteBefore(timestamp: Long) = Unit
-    }
 }

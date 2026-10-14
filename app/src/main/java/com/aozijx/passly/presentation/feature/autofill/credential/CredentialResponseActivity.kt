@@ -14,6 +14,7 @@ import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
 import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService
+import com.aozijx.passly.feature.autofill.runtime.AutofillResultDelivery
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.atomic.AtomicBoolean
@@ -25,6 +26,9 @@ class CredentialResponseActivity : AppCompatActivity() {
 
     @Inject
     lateinit var authenticationHostRegistry: AuthenticationHostRegistry
+
+    @Inject
+    lateinit var resultDelivery: AutofillResultDelivery
 
     private val viewModel: CredentialResponseViewModel by viewModels()
     private val resultFinishing = AtomicBoolean(false)
@@ -44,11 +48,7 @@ class CredentialResponseActivity : AppCompatActivity() {
                     CredentialResponseRoute(
                         action = launch.action,
                         viewModel = viewModel,
-                        onComplete = { resultIntent ->
-                            finishWithResult(
-                                resultIntent = resultIntent,
-                            )
-                        },
+                        onComplete = ::finishWithResult,
                         onUnrecoverable = ::finishWithError,
                     )
                 }
@@ -79,12 +79,19 @@ class CredentialResponseActivity : AppCompatActivity() {
         }
 
     private fun finishWithResult(
-        resultIntent: Intent,
+        completion: CredentialResponseCompletion,
     ) {
         if (!resultFinishing.compareAndSet(false, true)) return
         // PendingIntentHandler requires RESULT_OK for both valid responses and
         // valid Credential Manager exceptions.
-        setResult(RESULT_OK, resultIntent)
+        val receipt = completion.receipt
+        if (receipt == null) {
+            setResult(RESULT_OK, completion.resultIntent)
+        } else {
+            resultDelivery.deliverResult(receipt) {
+                setResult(RESULT_OK, completion.resultIntent)
+            }
+        }
         hideIme()
         finish()
     }

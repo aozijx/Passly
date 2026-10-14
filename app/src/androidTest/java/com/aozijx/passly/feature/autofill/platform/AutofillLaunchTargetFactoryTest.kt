@@ -6,6 +6,9 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SdkSuppress
 import com.aozijx.passly.app.autofill.AndroidAutofillLaunchTarget
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.credential.service.CredentialPendingIntentFactory
 import com.aozijx.passly.feature.autofill.legacy.AutofillPendingIntentFactory
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
@@ -22,18 +25,29 @@ class AutofillLaunchTargetFactoryTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
 
     @Test
+    @SdkSuppress(minSdkVersion = 34)
     fun factoriesForwardStableRequestIdsToLaunchTarget() {
         val target = RecordingLaunchTarget(context)
+        val interactionId = AutofillInteractionId("interaction-1")
 
-        AutofillPendingIntentFactory(target).createBaseIntent(
+        AutofillPendingIntentFactory(target).createInteractionIntent(
             context = context,
+            interactionId = interactionId,
             parsed = ParsedStructure(packageName = "com.example"),
-            uiMode = com.aozijx.passly.domain.settings.model.AutofillPresentation.SYSTEM_INLINE,
+            uiMode = AutofillPresentation.SYSTEM_INLINE,
+            roleIds = emptyMap(),
         )
-        CredentialPendingIntentFactory(target).createPasswordGetPendingIntent(context, "entry-1")
+        CredentialPendingIntentFactory(target).createPasswordGetPendingIntent(
+            context = context,
+            interactionId = interactionId,
+            entryId = EntryId("entry-1"),
+        )
 
         assertEquals(
-            listOf("autofill-base:com.example", "password-get:entry-1"),
+            listOf(
+                "autofill-interaction:interaction-1",
+                "password-get:interaction-1:entry-1",
+            ),
             target.requestIds,
         )
     }
@@ -55,10 +69,23 @@ class AutofillLaunchTargetFactoryTest {
     @SdkSuppress(minSdkVersion = 31)
     fun credentialPendingIntentIdentityAndMutabilityRemainStable() {
         val factory = CredentialPendingIntentFactory(AndroidAutofillLaunchTarget())
+        val interactionId = AutofillInteractionId("interaction-1")
 
-        val first = factory.createPasswordGetPendingIntent(context, "entry-1")
-        val same = factory.createPasswordGetPendingIntent(context, "entry-1")
-        val other = factory.createPasswordGetPendingIntent(context, "entry-2")
+        val first = factory.createPasswordGetPendingIntent(
+            context,
+            interactionId,
+            EntryId("entry-1"),
+        )
+        val same = factory.createPasswordGetPendingIntent(
+            context,
+            interactionId,
+            EntryId("entry-1"),
+        )
+        val other = factory.createPasswordGetPendingIntent(
+            context,
+            interactionId,
+            EntryId("entry-2"),
+        )
 
         assertEquals(first, same)
         assertNotEquals(first, other)

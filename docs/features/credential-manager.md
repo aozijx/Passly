@@ -70,7 +70,7 @@ sequenceDiagram
 2. 调用包只取自该请求；extras 中的 interaction/entry ID 只是 Passly 内部指针。
 3. `ResolveAutofillSelection` 检查 interaction 存在、作用域相同、状态已授权且 entry ID 确实展示过。
 4. 只在检查后由 `AutofillCredentialResolver` 读取单条密码，并再次验证 `allowedUserIds`。
-5. 成功后记录 Autofill 使用活动，完成 interaction，并以 `Activity.RESULT_OK` 返回 `GetCredentialResponse`。
+5. 成功后生成带 interaction/entry 收据的 Credential Manager 响应；Activity 先以 `RESULT_OK` 发布 `GetCredentialResponse`，随后把平台无关收据交给 `AutofillResultDelivery`。它不会复用或转换 Legacy `Dataset`/`FillResponse`。
 
 ## 解锁与重发现
 
@@ -112,8 +112,8 @@ interaction 只存在于当前进程。进程死亡后，旧 PendingIntent 不�
 ## 生命周期与 clear state
 
 - 普通选择和创建是终态；解锁返回候选是中间态，不会提前释放 interaction。
-- Activity 返回、返回键、协程取消和异常路径均调用统一结束操作。
-- 每个 interaction 有 60 秒 process-local 超时，用于回收被系统选择器遗弃的请求；认证、解析秘密或保存中的活跃操作会延后回收。
+- 成功响应由 Credential Manager Activity 在 `setResult(RESULT_OK, ...)` 后调用共享的 session 收尾操作；返回键、协程取消和异常路径统一取消 interaction。该 Activity 的结果合同与 Legacy Autofill 保持独立。
+- 每个 interaction 有 60 秒 process-local 超时，用于回收被系统选择器遗弃的请求；认证或解析秘密中的活跃操作会延后回收。
 - `onClearCredentialStateRequest()` 会过期所有 Credential Manager interaction；它不会删除条目，也不会锁定本来就由用户解锁的 Vault。
 
 ## 回归要求

@@ -68,7 +68,6 @@ class DiscoverAutofillCandidates @Inject constructor(
             presentation = policy.presentation,
             requireAuthentication = policy.requireAuthentication,
             includeOtp = policy.includeOtp,
-            savePromptsEnabled = policy.savePromptsEnabled,
         )
         if (snapshot.state == AutofillInteractionState.RequiresUnlock) {
             return AutofillDiscoveryOutcome.RequiresUnlock(snapshot, context)
@@ -99,7 +98,6 @@ class DiscoverAutofillCandidates @Inject constructor(
         val recorded = interactionStore.recordCandidates(
             snapshot.id,
             candidates.mapTo(linkedSetOf()) { it.entry.id },
-            savePromptsEnabled = context.savePromptsEnabled,
         )
         val recordedSnapshot = when (recorded) {
             is AutofillInteractionUpdate.Updated -> recorded.snapshot

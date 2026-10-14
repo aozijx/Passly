@@ -1,14 +1,37 @@
 package com.aozijx.passly.presentation.feature.autofill.credential
 
-import com.aozijx.passly.feature.autofill.credential.CredentialAuthenticationExceptionMapper
+import android.content.Intent
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.CancellationReason
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.feature.autofill.credential.CredentialAuthenticationExceptionMapper
+import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CredentialResponseReducerTest {
+
+    @Test
+    fun `successful password response retains its delivery receipt`() {
+        val intent = Intent()
+        val receipt = AutofillSelectionReceipt(
+            AutofillInteractionId("interaction-1"),
+            EntryId("entry-1"),
+        )
+
+        val result = CredentialResponseReducer.reduce(
+            CredentialResponseUiState.Loading,
+            CredentialResponseMutation.Completed(intent, receipt),
+        ) as CredentialResponseUiState.Complete
+
+        assertSame(intent, result.completion.resultIntent)
+        assertEquals(receipt, result.completion.receipt)
+    }
 
     @Test
     fun `unknown action becomes unrecoverable`() {

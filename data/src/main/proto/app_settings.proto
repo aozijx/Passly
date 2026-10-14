@@ -81,7 +81,7 @@ message AutofillPreferences {
     optional bool credential_manager_enabled = 3 [default = true];
     optional bool require_authentication = 4 [default = true];
     optional bool include_otp = 5 [default = true];
-    optional bool save_prompts_enabled = 6 [default = true];
+    reserved 6;
     optional bool allow_unmatched_suggestions = 7 [default = false];
     optional int32 max_suggestions = 8 [default = 5];
 }

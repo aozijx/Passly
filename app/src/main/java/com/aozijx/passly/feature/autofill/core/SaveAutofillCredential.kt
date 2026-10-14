@@ -5,7 +5,6 @@ import com.aozijx.passly.domain.autofill.AutofillScope
 import com.aozijx.passly.domain.autofill.model.AutofillOperationFailure
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
-import com.aozijx.passly.domain.autofill.model.AutofillSaveSource
 import com.aozijx.passly.domain.autofill.port.ApplicationLabelResolver
 import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryDraftTarget
@@ -27,14 +26,9 @@ class SaveAutofillCredential @Inject constructor(
 ) {
     suspend operator fun invoke(
         draft: AutofillSaveDraft,
-        source: AutofillSaveSource,
     ): AutofillSaveOutcome {
         val policy = settingsSource.interaction.first().autofill
-        val sourceEnabled = when (source) {
-            AutofillSaveSource.LEGACY_PROMPT -> policy.savePromptsEnabled
-            AutofillSaveSource.CREDENTIAL_MANAGER -> policy.credentialManagerEnabled
-        }
-        if (!policy.enabled || !sourceEnabled) return AutofillSaveOutcome.Disabled
+        if (!policy.enabled || !policy.credentialManagerEnabled) return AutofillSaveOutcome.Disabled
         if (draft.password.isBlank()) return AutofillSaveOutcome.InvalidDraft
 
         return when (

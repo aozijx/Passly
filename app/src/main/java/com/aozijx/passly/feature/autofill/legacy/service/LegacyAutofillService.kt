@@ -9,11 +9,8 @@ import android.service.autofill.SaveRequest
 import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
-import com.aozijx.passly.domain.autofill.model.AutofillSaveSource
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
-import com.aozijx.passly.feature.autofill.core.AutofillSaveInteractionOutcome
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
-import com.aozijx.passly.feature.autofill.core.SaveAutofillInteraction
 import com.aozijx.passly.feature.autofill.legacy.service.adapter.LegacyPlatformAdapter
 import com.aozijx.passly.feature.autofill.legacy.service.parser.AutofillStructureParser
 import dagger.hilt.android.AndroidEntryPoint
@@ -36,9 +33,6 @@ class LegacyAutofillService : AutofillService() {
 
     @Inject
     lateinit var adapter: LegacyPlatformAdapter
-
-    @Inject
-    lateinit var saveInteraction: SaveAutofillInteraction
 
     @Inject
     lateinit var finishInteraction: FinishAutofillInteraction
@@ -77,37 +71,8 @@ class LegacyAutofillService : AutofillService() {
         cancellationSignal.setOnCancelListener { job.cancel() }
     }
 
-    override fun onSaveRequest(
-        request: SaveRequest,
-        callback: SaveCallback,
-    ) {
-        val parsed = AutofillStructureParser.parse(request.fillContexts)
-        val internalRequest = adapter.buildRequest(parsed)
-
-        serviceScope.launch {
-            val outcome = try {
-                saveInteraction(
-                    request = internalRequest,
-                    interactionSource = AutofillInteractionSource.LEGACY,
-                    saveSource = AutofillSaveSource.LEGACY_PROMPT,
-                )
-            } catch (e: CancellationException) {
-                callback.onFailure("Save request cancelled")
-                throw e
-            } catch (e: Exception) {
-                TelemetryRuntime.e(EventCategory.AUTOFILL, "legacy.save_request_failed", throwable = e)
-                callback.onFailure(e.message ?: "Save request failed")
-                return@launch
-            }
-            when (outcome) {
-                is AutofillSaveInteractionOutcome.Saved -> {
-                    TelemetryRuntime.i(EventCategory.AUTOFILL, "legacy.credential_saved")
-                    callback.onSuccess()
-                }
-
-                else -> callback.onFailure("Credential could not be saved")
-            }
-        }
+    override fun onSaveRequest(request: SaveRequest, callback: SaveCallback) {
+        callback.onFailure("Legacy Autofill save is disabled")
     }
 
     override fun onDisconnected() {

@@ -8,7 +8,6 @@ data class AutofillDiscoveryContext(
     val presentation: AutofillPresentation,
     val requireAuthentication: Boolean,
     val includeOtp: Boolean,
-    val savePromptsEnabled: Boolean,
 )
 
 enum class AutofillOperationFailure {
@@ -51,11 +50,6 @@ sealed interface AutofillSelectionOutcome {
     data object ScopeMismatch : AutofillSelectionOutcome
     data class Rejected(val reason: AutofillInteractionRejection) : AutofillSelectionOutcome
     data class Failed(val failure: AutofillOperationFailure) : AutofillSelectionOutcome
-}
-
-enum class AutofillSaveSource {
-    LEGACY_PROMPT,
-    CREDENTIAL_MANAGER,
 }
 
 sealed interface AutofillSaveOutcome {

@@ -29,8 +29,6 @@ sealed interface AutofillInteractionState {
     data object Authorized : AutofillInteractionState
     data object CandidatesReady : AutofillInteractionState
     data class ResolvingSelection(val entryId: EntryId) : AutofillInteractionState
-    data object FilledAwaitingSave : AutofillInteractionState
-    data object Saving : AutofillInteractionState
     data object Completed : AutofillInteractionState
     data object Cancelled : AutofillInteractionState
     data object Expired : AutofillInteractionState
@@ -43,7 +41,6 @@ data class AutofillInteractionSnapshot(
     val scope: AutofillGrantContext,
     val state: AutofillInteractionState,
     val presentedCandidateIds: Set<EntryId> = emptySet(),
-    val savePromptsEnabled: Boolean = false,
 )
 
 enum class AutofillInteractionRejection {

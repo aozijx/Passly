@@ -55,9 +55,6 @@ class AutofillSettingsViewModel @Inject constructor(
             is AutofillSettingsAction.SetOtpEnabled -> viewModelScope.launch {
                 settingsRepository.setAutofillOtpEnabled(action.enabled)
             }
-            is AutofillSettingsAction.SetSavePromptsEnabled -> viewModelScope.launch {
-                settingsRepository.setAutofillSavePromptsEnabled(action.enabled)
-            }
             is AutofillSettingsAction.SetUnmatchedSuggestionsEnabled -> viewModelScope.launch {
                 settingsRepository.setUnmatchedAutofillSuggestionsEnabled(action.enabled)
             }

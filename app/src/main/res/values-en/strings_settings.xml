@@ -175,11 +175,9 @@
     <string name="settings_autofill_credential_manager">Credential Manager</string>
     <string name="settings_autofill_credential_manager_summary">Offer login credentials on Android 14 and later</string>
     <string name="settings_autofill_require_authentication">Verify before filling</string>
-    <string name="settings_autofill_require_authentication_summary">Verify after selecting a credential; recommended</string>
+    <string name="settings_autofill_require_authentication_summary">Verify again after every selection, even while the app is unlocked</string>
     <string name="settings_autofill_include_otp">Fill verification codes</string>
     <string name="settings_autofill_include_otp_summary">Offer the current OTP when the page has a code field</string>
-    <string name="settings_autofill_save_prompts">Save sign-ins</string>
-    <string name="settings_autofill_save_prompts_summary">Ask to save after submitting a new username or password</string>
     <string name="settings_autofill_unmatched">Show unlinked entries</string>
     <string name="settings_autofill_unmatched_summary">Show recent entries when no app or domain matches; titles may be exposed</string>
     <string name="settings_autofill_candidate_limit">Suggestion limit</string>

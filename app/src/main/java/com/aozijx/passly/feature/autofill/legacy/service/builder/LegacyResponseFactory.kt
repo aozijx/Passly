@@ -3,7 +3,6 @@ package com.aozijx.passly.feature.autofill.legacy.service.builder
 import android.content.Context
 import android.service.autofill.Dataset
 import android.service.autofill.FillResponse
-import android.service.autofill.SaveInfo
 import android.view.autofill.AutofillId
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
@@ -86,7 +85,6 @@ class LegacyResponseFactory @Inject constructor(
             parsed = parsed,
             uiMode = discoveryContext.presentation,
             roleIds = roleIds,
-            savePromptsEnabled = discoveryContext.savePromptsEnabled,
         )
         val pendingIntent = pendingIntentFactory.getActivityPendingIntent(
             context,
@@ -110,7 +108,7 @@ class LegacyResponseFactory @Inject constructor(
         parsed: ParsedStructure,
     ): FillResponse? {
         if (parsed.allIds.isEmpty()) return null
-        if (candidates.isEmpty() && !discoveryContext.savePromptsEnabled) return null
+        if (candidates.isEmpty()) return null
 
         val builder = FillResponse.Builder()
         val roleIds = resolveRoleIds(discoveryContext.roleMap, parsed)
@@ -139,7 +137,6 @@ class LegacyResponseFactory @Inject constructor(
                 )
             }
         }
-        if (discoveryContext.savePromptsEnabled) addSaveInfo(builder, parsed, roleIds)
         return builder.build()
     }
 
@@ -164,7 +161,6 @@ class LegacyResponseFactory @Inject constructor(
             parsed = parsed,
             uiMode = discoveryContext.presentation,
             roleIds = roleIds,
-            savePromptsEnabled = discoveryContext.savePromptsEnabled,
         )
         val requestCode = "${interactionId.value}:${candidate.entry.id.value}".hashCode()
         val pendingIntent = pendingIntentFactory.getActivityPendingIntent(context, requestCode, intent)
@@ -188,7 +184,6 @@ class LegacyResponseFactory @Inject constructor(
             parsed = parsed,
             uiMode = discoveryContext.presentation,
             roleIds = roleIds,
-            savePromptsEnabled = discoveryContext.savePromptsEnabled,
         )
         val pendingIntent = pendingIntentFactory.getActivityPendingIntent(
             context,
@@ -221,24 +216,4 @@ class LegacyResponseFactory @Inject constructor(
             else -> ""
         }
 
-    private fun addSaveInfo(
-        builder: FillResponse.Builder,
-        parsed: ParsedStructure,
-        roleIds: Map<FieldRole, List<AutofillId>>,
-    ) {
-        val usernameIds = roleIds[FieldRole.USERNAME].orEmpty()
-        val passwordIds = roleIds[FieldRole.PASSWORD].orEmpty()
-        val requiredIds = (usernameIds + passwordIds).ifEmpty { parsed.allIds }
-        if (requiredIds.isEmpty()) return
-
-        var dataType = 0
-        if (usernameIds.isNotEmpty()) dataType = dataType or SaveInfo.SAVE_DATA_TYPE_USERNAME
-        if (passwordIds.isNotEmpty()) dataType = dataType or SaveInfo.SAVE_DATA_TYPE_PASSWORD
-        if (dataType == 0) dataType = SaveInfo.SAVE_DATA_TYPE_PASSWORD
-        builder.setSaveInfo(
-            SaveInfo.Builder(dataType, requiredIds.toTypedArray())
-                .setFlags(SaveInfo.FLAG_SAVE_ON_ALL_VIEWS_INVISIBLE)
-                .build(),
-        )
-    }
 }

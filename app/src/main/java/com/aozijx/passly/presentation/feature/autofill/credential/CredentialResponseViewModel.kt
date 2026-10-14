@@ -26,6 +26,7 @@ import com.aozijx.passly.feature.autofill.credential.UnlockParseResult
 import com.aozijx.passly.feature.autofill.credential.service.CredentialBeginGetHandler
 import com.aozijx.passly.feature.autofill.credential.service.CredentialResponseFactory
 import com.aozijx.passly.feature.autofill.credential.service.CredentialUnlockResponse
+import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.atomic.AtomicBoolean
@@ -101,6 +102,7 @@ class CredentialResponseViewModel @Inject constructor(
                                 result.username,
                                 result.password,
                             ),
+                            receipt = result.receipt,
                         )
                         TelemetryRuntime.i(EventCategory.AUTOFILL, "credential.password_resolved")
                     }
@@ -243,10 +245,13 @@ class CredentialResponseViewModel @Inject constructor(
         }
     }
 
-    private fun complete(resultIntent: Intent) {
+    private fun complete(
+        resultIntent: Intent,
+        receipt: AutofillSelectionReceipt? = null,
+    ) {
         mutableState.value = CredentialResponseReducer.reduce(
             mutableState.value,
-            CredentialResponseMutation.Completed(resultIntent),
+            CredentialResponseMutation.Completed(resultIntent, receipt),
         )
     }
 

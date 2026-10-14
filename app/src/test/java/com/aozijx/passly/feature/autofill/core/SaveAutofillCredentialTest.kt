@@ -5,7 +5,6 @@ import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
-import com.aozijx.passly.domain.autofill.model.AutofillSaveSource
 import com.aozijx.passly.domain.autofill.port.ApplicationLabelResolver
 import com.aozijx.passly.domain.autofill.port.AutofillEntryWriter
 import com.aozijx.passly.domain.entry.model.Entry
@@ -36,7 +35,6 @@ class SaveAutofillCredentialTest {
 
         val outcome = fixture.operation(
             draft(password = "  "),
-            AutofillSaveSource.LEGACY_PROMPT,
         )
 
         assertEquals(AutofillSaveOutcome.InvalidDraft, outcome)
@@ -49,7 +47,6 @@ class SaveAutofillCredentialTest {
 
         val outcome = fixture.operation(
             draft(username = "", password = "secret"),
-            AutofillSaveSource.LEGACY_PROMPT,
         )
 
         assertEquals(AutofillSaveOutcome.Saved(EntryId("saved-entry")), outcome)
@@ -100,7 +97,7 @@ class SaveAutofillCredentialTest {
     private class FixedSettingsSource : InteractionSettingsSource {
         override val interaction: Flow<InteractionSettings> = flowOf(
             InteractionSettings(
-                autofill = AutofillSettings(enabled = true, savePromptsEnabled = true),
+                autofill = AutofillSettings(enabled = true, credentialManagerEnabled = true),
             ),
         )
     }

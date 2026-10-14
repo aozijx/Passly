@@ -16,6 +16,7 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
+import com.aozijx.passly.feature.autofill.runtime.AutofillResultDelivery
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.atomic.AtomicBoolean
@@ -26,6 +27,9 @@ class AutofillFillActivity : FragmentActivity() {
 
     @Inject
     lateinit var authenticationHostRegistry: AuthenticationHostRegistry
+
+    @Inject
+    lateinit var resultDelivery: AutofillResultDelivery
 
     private val viewModel: AutofillFillViewModel by viewModels()
     private val resultFinishing = AtomicBoolean(false)
@@ -69,11 +73,6 @@ class AutofillFillActivity : FragmentActivity() {
             ?.takeIf(String::isNotBlank)
             ?.let(::EntryId)
         val returnsDataset = intent.getBooleanExtra(AutofillLaunchExtras.RETURN_DATASET, false)
-        val savePromptsEnabled = intent.getBooleanExtra(
-            AutofillLaunchExtras.SAVE_PROMPTS_ENABLED,
-            false,
-        )
-
         val editableIds = intent.let {
             IntentCompat.getParcelableArrayExtra(
                 it,
@@ -110,7 +109,6 @@ class AutofillFillActivity : FragmentActivity() {
             webDomain = webDomain,
             directEntryId = directEntryId,
             returnsDataset = returnsDataset,
-            savePromptsEnabled = savePromptsEnabled,
             editableIds = editableIds,
             usernameIds = usernameIds,
             passwordIds = passwordIds,
@@ -131,10 +129,13 @@ class AutofillFillActivity : FragmentActivity() {
             AutofillFillResult.Cancelled -> null
         }
 
-        if (resultIntent == null) {
-            setResult(RESULT_CANCELED)
-        } else {
-            setResult(RESULT_OK, resultIntent)
+        val receipt = result.receipt
+        when {
+            resultIntent == null -> setResult(RESULT_CANCELED)
+            receipt == null -> setResult(RESULT_OK, resultIntent)
+            else -> resultDelivery.deliverResult(receipt) {
+                setResult(RESULT_OK, resultIntent)
+            }
         }
 
         currentFocus?.clearFocus()

@@ -20,5 +20,4 @@ object AutofillLaunchExtras {
     const val USERNAME_IDS = "autofill_username_ids"
     const val PASSWORD_IDS = "autofill_password_ids"
     const val OTP_IDS = "autofill_otp_ids"
-    const val SAVE_PROMPTS_ENABLED = "autofill_save_prompts_enabled"
 }

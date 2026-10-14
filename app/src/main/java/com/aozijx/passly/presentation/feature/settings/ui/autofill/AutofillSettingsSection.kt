@@ -125,18 +125,6 @@ internal fun AutofillSettingsSection(
             )
             add(
                 switchSettingsGroupItem(
-                    key = "autofill.save",
-                    enabled = enabled,
-                    title = stringResource(R.string.settings_autofill_save_prompts),
-                    subtitle = stringResource(R.string.settings_autofill_save_prompts_summary),
-                    checked = settings.savePromptsEnabled,
-                    onCheckedChange = {
-                        onAction(AutofillSettingsAction.SetSavePromptsEnabled(it))
-                    },
-                )
-            )
-            add(
-                switchSettingsGroupItem(
                     key = "autofill.unmatched",
                     enabled = enabled,
                     title = stringResource(R.string.settings_autofill_unmatched),

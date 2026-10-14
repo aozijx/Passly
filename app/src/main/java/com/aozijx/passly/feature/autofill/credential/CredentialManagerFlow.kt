@@ -9,7 +9,6 @@ import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.domain.autofill.model.AutofillRequest
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
-import com.aozijx.passly.domain.autofill.model.AutofillSaveSource
 import com.aozijx.passly.domain.autofill.model.AutofillSelectionOutcome
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.feature.autofill.core.AuthorizeAutofillInteraction
@@ -19,7 +18,7 @@ import com.aozijx.passly.feature.autofill.core.ResolveAutofillSelection
 import com.aozijx.passly.feature.autofill.core.SaveAutofillCredential
 import com.aozijx.passly.feature.autofill.core.StartAutofillInteraction
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
-import com.aozijx.passly.feature.autofill.shared.RecordAutofillUsageUseCase
+import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.NonCancellable
@@ -39,6 +38,7 @@ sealed interface CredentialManagerPasswordResult {
     data class Success(
         val username: String,
         val password: String,
+        val receipt: AutofillSelectionReceipt,
     ) : CredentialManagerPasswordResult
 
     data object NotAvailable : CredentialManagerPasswordResult
@@ -68,7 +68,6 @@ class CredentialManagerFlow @Inject constructor(
     private val saveCredential: SaveAutofillCredential,
     private val finishInteraction: FinishAutofillInteraction,
     private val interactionStore: AutofillInteractionStore,
-    private val recordAutofillUsage: RecordAutofillUsageUseCase,
 ) {
     suspend fun beginGet(request: AutofillRequest): AutofillDiscoveryOutcome =
         discoverCandidates(request)
@@ -114,8 +113,11 @@ class CredentialManagerFlow @Inject constructor(
                     ) {
                         CredentialManagerPasswordResult.NotAvailable
                     } else {
-                        recordAutofillUsage(payload.entryId.value)
-                        CredentialManagerPasswordResult.Success(payload.username, payload.password)
+                        CredentialManagerPasswordResult.Success(
+                            username = payload.username,
+                            password = payload.password,
+                            receipt = AutofillSelectionReceipt(interactionId, payload.entryId),
+                        )
                             .also { completed = true }
                     }
                 }
@@ -130,9 +132,7 @@ class CredentialManagerFlow @Inject constructor(
             }
         } finally {
             withContext(NonCancellable) {
-                if (completed) {
-                    finishInteraction.complete(interactionId)
-                } else {
+                if (!completed) {
                     finishInteraction.cancel(interactionId)
                 }
             }
@@ -173,14 +173,13 @@ class CredentialManagerFlow @Inject constructor(
         return try {
             when (
                 saveCredential(
-                    draft = AutofillSaveDraft(
+                    AutofillSaveDraft(
                         packageName = scope.packageName,
                         webDomain = scope.webDomain,
                         pageTitle = null,
                         username = username,
                         password = password,
                     ),
-                    source = AutofillSaveSource.CREDENTIAL_MANAGER,
                 )
             ) {
                 is AutofillSaveOutcome.Saved -> CredentialManagerCreateResult.Saved

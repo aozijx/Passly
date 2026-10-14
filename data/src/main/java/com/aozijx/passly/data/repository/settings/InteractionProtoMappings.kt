@@ -52,7 +52,6 @@ internal fun readAutofill(p: AutofillPreferences): AutofillSettings =
         credentialManagerEnabled = p.credentialManagerEnabled,
         requireAuthentication = p.requireAuthentication,
         includeOtp = p.includeOtp,
-        savePromptsEnabled = p.savePromptsEnabled,
         allowUnmatchedSuggestions = p.allowUnmatchedSuggestions,
         maxSuggestions = p.maxSuggestions.coerceIn(
             AutofillSettings.MIN_SUGGESTIONS,

@@ -47,16 +47,17 @@ authenticate again based on another combination of vault state, settings, and gr
 The grant store is process-scoped while request-session ownership is Activity/ViewModel-scoped.
 This makes cleanup and ownership dependent on which UI path happened to finish first.
 
-### Successful fill closes the session before Legacy save
+### Successful fill can close the session before Android receives the result
 
-`AutofillFillActivity` closes its request session after returning a dataset. A session that acquired
-the unlock then seals the database with `AUTOFILL_REQUEST_FINISHED`. If Android later invokes
-`onSaveRequest`, `LegacyAutofillService` calls `SaveAutofillCredentialUseCase` directly, but the
-database is no longer writable and the save fails.
+Authentication and credential resolution run before the Activity publishes its result. If the
+shared operation also completes the interaction, an Autofill-owned session can enter
+`AUTOFILL_REQUEST_FINISHED` before `setResult(RESULT_OK, ...)` hands the Dataset or Credential to
+Android. The result object already exists, but its delivery boundary and session cleanup have the
+wrong owner and ordering.
 
-The save callback cannot safely reconstruct an unlock by itself. The successful fill interaction
-must retain ownership until the platform save opportunity is consumed, cancelled, disconnected, or
-expired.
+Successful resolution therefore returns a platform-independent receipt. The Activity publishes the
+platform result first, then hands the receipt to the process-scoped result delivery component for
+usage recording and idempotent interaction cleanup.
 
 ### Legacy and Credential Manager implement parallel business flows
 
@@ -154,8 +155,6 @@ RequiresUnlock
 Authorized
 CandidatesReady
 ResolvingSelection
-FilledAwaitingSave
-Saving
 Completed
 Cancelled
 Expired
@@ -169,7 +168,7 @@ The coordinator owns:
 - its one-use authorization grant;
 - candidate IDs that were actually presented;
 - terminal cleanup and timeout;
-- the Legacy transition from successful fill to a possible save callback.
+- immediate terminal cleanup after a successful fill.
 
 It does not own Android `Intent`, `PendingIntent`, `FillResponse`, `Dataset`, or Credential Manager
 types.
@@ -221,7 +220,14 @@ Failed
 ```
 
 Legacy response factories and Credential Manager response factories map those outcomes to platform
-objects. They do not inspect passwords to choose a branch.
+objects. They do not inspect passwords to choose a branch. Their platform result contracts remain
+separate: Legacy owns `FillResponse`/`Dataset`, while Credential Manager owns credential-provider
+response `Intent` values. Neither contract wraps, converts, or reuses the other.
+
+Successful Legacy Dataset and Credential Manager password results also carry an
+`AutofillSelectionReceipt`. The Activity calls `setResult(RESULT_OK, ...)` before handing that
+receipt to `AutofillResultDelivery`; only the delivery component records usage and completes the
+interaction. The receipt contains no platform result object, and duplicate delivery is idempotent.
 
 ### Save flow
 
@@ -229,24 +235,10 @@ Credential Manager password creation is an explicit PendingIntent operation. It 
 interaction, authenticates once if the Vault is locked, builds `AutofillSaveDraft`, saves it, and
 then terminates the interaction.
 
-Legacy save has a different lifecycle:
-
-1. A successful dataset result transitions the existing interaction to `FilledAwaitingSave` instead
-   of immediately sealing an unlock owned by Autofill.
-2. `onSaveRequest` extracts a typed draft from the final structure and associates it with the active
-   interaction scope.
-3. If the interaction still owns a writable Vault session, saving transitions through `Saving` to
-   `Completed`, then cleanup seals an Autofill-owned unlock.
-4. If Android never requests a save, service disconnection, cancellation, or timeout terminates the
-   interaction and seals an Autofill-owned unlock.
-5. If the interaction already expired and the Vault is sealed, the service returns a clear save
-   failure and records a diagnostic event. It does not attempt a background authentication UI or
-   retain plaintext credentials for later replay.
-
-Save extraction requires a nonblank password. Username may be blank because password-only forms are
-valid; title resolution falls back through page title, domain, application label, and `Login`.
-Every saved draft explicitly targets `EntryType.LOGIN`, preventing `EntryCredential.None` from
-reaching persistence.
+Legacy Autofill does not advertise `SaveInfo` and does not retain a temporary unlock while waiting
+for a possible `onSaveRequest`. A successful Dataset becomes terminal after the Activity publishes
+the result and dispatches its receipt. This keeps one fill request from blocking or authorizing a
+later request.
 
 ### Lifecycle and cleanup
 
@@ -255,9 +247,8 @@ do not decide whether the Vault should be sealed.
 
 - Unlock cancellation: revoke and terminate immediately.
 - Candidate UI cancellation: revoke and terminate immediately.
-- Credential Manager fill completion: terminate after returning the credential.
-- Legacy fill completion: retain only `FilledAwaitingSave` interactions.
-- Legacy save completion/failure: terminate.
+- Credential Manager fill completion: publish the credential result, then record usage and terminate.
+- Legacy fill completion: publish the Dataset result, then record usage and terminate.
 - Service disconnection/process timeout: terminate all owned Legacy interactions.
 - App-wide lock or integrity failure: invalidate every Autofill interaction.
 
@@ -290,8 +281,8 @@ app/feature/autofill/core/
   AutofillInteractionCoordinator.kt
   DiscoverAutofillCandidates.kt
   ResolveAutofillSelection.kt
+  CompleteAutofillSelection.kt
   SaveAutofillCredential.kt
-  AutofillSaveDraftExtractor.kt
 
 app/feature/autofill/legacy/
   service/                 Android service adapter only
@@ -342,14 +333,13 @@ Tests are written before each production phase.
 - Successful unlock followed by selection performs no second authentication.
 - Cancelled authentication leaves no grant or owned unlock.
 - An already-unlocked Vault is never sealed by Autofill cleanup.
-- Legacy successful fill remains writable until save, disconnect, or timeout.
+- Successful selection remains open through platform result publication and closes immediately afterward.
 - Cleanup is idempotent and multiple interactions do not steal each other's ownership.
 
 ### Platform adapter tests
 
 - Legacy and Credential Manager map every shared outcome correctly.
 - Dataset/credential responses are built from typed payloads, not blank-secret sentinels.
-- Save extraction handles role-mapped username/password fields and password-only forms.
 - Each callback/result is completed once on success, cancellation, and failure.
 
 ### Regression acceptance
@@ -358,8 +348,7 @@ Tests are written before each production phase.
 - Unlocked fill with authentication disabled: no authentication, successful fill.
 - Unlocked fill with authentication enabled: one authentication, successful fill.
 - Cancel authentication: no fill and the next request starts cleanly.
-- Legacy fill followed by Android save prompt: credential is persisted before the owned session is
-  sealed.
+- Legacy and Credential Manager publish their successful platform result before the owned session is sealed.
 - Credential Manager password creation: one authentication when locked and successful save.
 - Full unit tests, Android lint, Debug APK assembly, and `verifyModuleBoundaries` pass at the final
   revision.
