@@ -13,6 +13,7 @@ fun AutofillSettingsUiState.toAutofillSettingsUiModel(
     supportsCredentialManager = supportsCredentialManager,
     requireAuthentication = autofill.requireAuthentication,
     includeOtp = autofill.includeOtp,
+    savePromptsEnabled = autofill.savePromptsEnabled,
     allowUnmatchedSuggestions = autofill.allowUnmatchedSuggestions,
     maxSuggestions = autofill.normalizedMaxSuggestions,
     minSuggestions = AutofillSettings.MIN_SUGGESTIONS,

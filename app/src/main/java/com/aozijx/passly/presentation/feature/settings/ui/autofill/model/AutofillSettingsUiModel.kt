@@ -9,6 +9,7 @@ data class AutofillSettingsUiModel(
     val supportsCredentialManager: Boolean,
     val requireAuthentication: Boolean,
     val includeOtp: Boolean,
+    val savePromptsEnabled: Boolean,
     val allowUnmatchedSuggestions: Boolean,
     val maxSuggestions: Int,
     val minSuggestions: Int,

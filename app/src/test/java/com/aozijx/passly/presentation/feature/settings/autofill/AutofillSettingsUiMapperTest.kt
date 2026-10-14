@@ -14,6 +14,7 @@ class AutofillSettingsUiMapperTest {
             autofill = AutofillSettings(
                 enabled = false,
                 presentation = AutofillPresentation.BOTTOM_SHEET,
+                savePromptsEnabled = false,
                 maxSuggestions = AutofillSettings.MAX_SUGGESTIONS + 5,
             ),
             isSystemAutofillEnabled = true,
@@ -24,6 +25,7 @@ class AutofillSettingsUiMapperTest {
         assertFalse(model.enabled)
         assertTrue(model.isSystemServiceEnabled)
         assertFalse(model.supportsCredentialManager)
+        assertFalse(model.savePromptsEnabled)
         assertEquals(AutofillPresentationUiModel.BOTTOM_SHEET, model.presentation)
         assertEquals(AutofillSettings.MAX_SUGGESTIONS, model.maxSuggestions)
         assertEquals(AutofillSettings.MIN_SUGGESTIONS, model.minSuggestions)

@@ -178,6 +178,8 @@
     <string name="settings_autofill_require_authentication_summary">Verify again after every selection, even while the app is unlocked</string>
     <string name="settings_autofill_include_otp">Fill verification codes</string>
     <string name="settings_autofill_include_otp_summary">Offer the current OTP when the page has a code field</string>
+    <string name="settings_autofill_save_prompts">Save new usernames and passwords</string>
+    <string name="settings_autofill_save_prompts_summary">Let Android ask to save new login credentials to Passly after sign-in</string>
     <string name="settings_autofill_unmatched">Show unlinked entries</string>
     <string name="settings_autofill_unmatched_summary">Show recent entries when no app or domain matches; titles may be exposed</string>
     <string name="settings_autofill_candidate_limit">Suggestion limit</string>

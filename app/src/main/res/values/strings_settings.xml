@@ -178,6 +178,8 @@
     <string name="settings_autofill_require_authentication_summary">即使应用已解锁，每次选择凭据后仍再次验证</string>
     <string name="settings_autofill_include_otp">填充验证码</string>
     <string name="settings_autofill_include_otp_summary">目标页面包含验证码输入框时提供当前 OTP</string>
+    <string name="settings_autofill_save_prompts">保存新的用户名和密码</string>
+    <string name="settings_autofill_save_prompts_summary">登录后允许 Android 询问是否将新凭据保存到 Passly</string>
     <string name="settings_autofill_unmatched">显示未关联条目</string>
     <string name="settings_autofill_unmatched_summary">没有包名或域名匹配时显示最近条目，可能暴露条目名称</string>
     <string name="settings_autofill_candidate_limit">候选数量</string>
