@@ -20,7 +20,7 @@ class VaultOtpSubscriptionEffectTest {
         val events = mutableListOf<String>()
         val provider = object : VaultOtpStateProvider {
             override fun state(entryId: String): Flow<VaultOtpUiState?> =
-                flowOf(VaultOtpUiState(code = "123456"))
+                flowOf(VaultOtpUiState.Ready(code = "123456", progress = 0.5f))
 
             override fun subscribe(entryId: String) {
                 events += "subscribe:$entryId"

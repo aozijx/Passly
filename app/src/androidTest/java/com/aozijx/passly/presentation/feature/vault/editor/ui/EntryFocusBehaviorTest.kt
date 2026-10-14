@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.platform.testTag
+import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordFormState
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordUiState
 import com.aozijx.passly.presentation.feature.vault.editor.ui.password.AddPasswordEditorScreen
 import org.junit.Rule
@@ -23,7 +24,7 @@ class EntryFocusBehaviorTest {
     @Test
     fun focusMovesThroughFieldsOnNextImeAction() {
         val state = AddPasswordUiState(
-            canSave = true,
+            form = AddPasswordFormState(title = "Example", password = "secret"),
         )
 
         composeRule.setContent {
@@ -51,7 +52,7 @@ class EntryFocusBehaviorTest {
     @Test
     fun screenAndSaveActionModifiersHaveIndependentOwners() {
         val state = AddPasswordUiState(
-            canSave = true,
+            form = AddPasswordFormState(title = "Example", password = "secret"),
         )
 
         composeRule.setContent {
