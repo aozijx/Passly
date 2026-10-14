@@ -3,6 +3,7 @@ package com.aozijx.passly.core.observability.privacy
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.ErrorPayload
 import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.IdentifierNamespace
 import com.aozijx.passly.core.observability.LogFieldKey
 import com.aozijx.passly.core.observability.LogFieldKeys
 import com.aozijx.passly.core.observability.LogFields
@@ -96,6 +97,9 @@ class PrivacyPolicy(
                     safeFields[key] = value
                 }
                 is LogValue.HashedIdentifierInput -> {
+                    if (value.namespace != expectedKind.identifierNamespace) {
+                        return violation(ContractViolation.FIELD_TYPE_MISMATCH)
+                    }
                     if (!isValidIdentifierInput(value.rawValue)) {
                         return violation(ContractViolation.INVALID_IDENTIFIER_VALUE)
                     }
@@ -168,14 +172,17 @@ class PrivacyPolicy(
         is LogValue.ErrorCodeValue -> FieldKind.ERROR_CODE
         is LogValue.ReasonCodeValue -> FieldKind.REASON
         is LogValue.OperationCodeValue -> FieldKind.OPERATION
-        is LogValue.HashedIdentifierInput -> FieldKind.HASHED_IDENTIFIER
+        is LogValue.HashedIdentifierInput -> when (value.namespace) {
+            IdentifierNamespace.TARGET_PACKAGE -> FieldKind.HASHED_TARGET_PACKAGE
+            IdentifierNamespace.BROWSER_PACKAGE -> FieldKind.HASHED_BROWSER_PACKAGE
+        }
         is LogValue.HashedIdentifierValue -> FieldKind.PREHASHED_IDENTIFIER
     }
 
     private fun isValidIdentifierInput(value: String): Boolean =
         value.length <= 255 && TARGET_PACKAGE_PATTERN.matches(value)
 
-    private enum class FieldKind {
+    private enum class FieldKind(val identifierNamespace: IdentifierNamespace? = null) {
         COUNT,
         DURATION,
         RATIO,
@@ -184,7 +191,8 @@ class PrivacyPolicy(
         ERROR_CODE,
         REASON,
         OPERATION,
-        HASHED_IDENTIFIER,
+        HASHED_TARGET_PACKAGE(IdentifierNamespace.TARGET_PACKAGE),
+        HASHED_BROWSER_PACKAGE(IdentifierNamespace.BROWSER_PACKAGE),
         PREHASHED_IDENTIFIER,
     }
 
@@ -195,7 +203,8 @@ class PrivacyPolicy(
         val SAFE_FIELD_CATALOG = mapOf(
             LogFieldKeys.RetryCount to FieldKind.COUNT,
             LogFieldKeys.ElapsedMs to FieldKind.DURATION,
-            LogFieldKeys.TargetPackage to FieldKind.HASHED_IDENTIFIER,
+            LogFieldKeys.TargetPackage to FieldKind.HASHED_TARGET_PACKAGE,
+            LogFieldKeys.BrowserPackage to FieldKind.HASHED_BROWSER_PACKAGE,
             LogFieldKeys.FromState to FieldKind.ENUM,
             LogFieldKeys.ToState to FieldKind.ENUM,
             LogFieldKeys.LockType to FieldKind.ENUM,

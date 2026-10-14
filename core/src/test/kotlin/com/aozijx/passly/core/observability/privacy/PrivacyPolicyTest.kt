@@ -99,6 +99,33 @@ class PrivacyPolicyTest {
     }
 
     @Test
+    fun `identifier namespace must match its registered field`() {
+        val policy = PrivacyPolicy(
+            IdentifierHasher { _, _ -> error("Mismatched namespace must not reach HMAC") },
+            ContractViolationBehavior.REJECT,
+        )
+        val result = policy.sanitize(
+            PendingLogEvent(
+                level = LogLevel.INFO,
+                event = Events.Autofill.DiscoveryStarted,
+                fields = fields {
+                    hashedIdentifier(
+                        LogFieldKeys.TargetPackage,
+                        IdentifierNamespace.BROWSER_PACKAGE,
+                        "com.example.browser",
+                    )
+                },
+            ),
+            context(),
+        )
+
+        assertEquals(
+            ContractViolation.FIELD_TYPE_MISMATCH,
+            (result as SanitizationResult.Rejected).violation,
+        )
+    }
+
+    @Test
     fun `hasher failure drops hashed field and never falls back to raw or digest`() {
         val rawPackage = "com.example.secret"
         val policy = PrivacyPolicy(IdentifierHasher { _, _ -> null }, ContractViolationBehavior.REJECT)

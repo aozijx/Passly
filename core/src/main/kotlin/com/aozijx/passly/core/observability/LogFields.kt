@@ -1,7 +1,8 @@
 package com.aozijx.passly.core.observability
 
-enum class IdentifierNamespace {
-    TARGET_PACKAGE,
+enum class IdentifierNamespace(val wireName: String) {
+    TARGET_PACKAGE("target_package"),
+    BROWSER_PACKAGE("browser_package"),
 }
 
 sealed interface LogValue {

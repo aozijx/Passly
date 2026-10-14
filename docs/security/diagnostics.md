@@ -21,3 +21,23 @@ Sink 只接受经过该策略生成的不可变 `SanitizedLogRecord`。
 遵循 Android 官方 Log 信息泄露指导，Release 默认关闭 Logcat Sink；用户开启诊断窗口只启用内部加密记录。
 Logger 不把 Throwable 直接交给 Android Log API。Perfetto 只接收固定操作名与匿名 counter；`ApplicationExitInfo`
 只读取稳定枚举/数值，不导出 description、processName 或原始 ANR trace。
+
+## Android 原生诊断边界
+
+- HMAC-SHA256 密钥由 Android Keystore 在本机生成，别名为
+  `com.aozijx.passly.observability.hmac.v1`，仅授权 `PURPOSE_SIGN`，不要求用户认证且不可导出。输入按
+  `passly-observability-v1\0<namespace>\0<value>` 域分离，输出只保留 128 bit 并编码为 `h1_` 前缀；异常时返回
+  `null`，不得回退到明文或普通 SHA 摘要。
+- Logcat 只在 Debug 构建启用，先调用 `Log.isLoggable` 再格式化；只使用固定 Tag 和单行有界摘要。Release 构建
+  在所有等级（包括 FATAL）都不会调用 Logcat。`LogcatSink.kt` 是 observability 目录中唯一允许导入
+  `android.util.Log` 的文件。
+- 系统 Trace 只使用 `OperationCode` 到固定 section name 的映射，并以同一 name/cookie 成对调用异步 begin/end；
+  重复完成和平台异常都被隔离，不能改变业务结果。
+- `ApplicationExitInfo` 只读取 timestamp、受控 reason、status、importance、PSS/RSS。禁止读取或导出
+  description、processName、UID/PID 和 ANR trace；timestamp 游标保证同一退出记录最多上报一次，游标持久化失败
+  也不能阻断应用启动。
+
+Android API 依据：[Log](https://developer.android.com/reference/android/util/Log)、
+[Trace](https://developer.android.com/reference/android/os/Trace)、
+[KeyGenParameterSpec](https://developer.android.com/reference/android/security/keystore/KeyGenParameterSpec) 与
+[ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo)。

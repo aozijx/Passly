@@ -157,6 +157,7 @@ object LogFieldKeys {
     val RetryCount = LogFieldKey("retry_count")
     val ElapsedMs = LogFieldKey("elapsed_ms")
     val TargetPackage = LogFieldKey("target_package")
+    val BrowserPackage = LogFieldKey("browser_package")
     val FromState = LogFieldKey("from_state")
     val ToState = LogFieldKey("to_state")
     val LockType = LogFieldKey("lock_type")
