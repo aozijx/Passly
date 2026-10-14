@@ -49,12 +49,16 @@ sealed interface SanitizationResult {
     data class Rejected(val violation: ContractViolation) : SanitizationResult
 }
 
+fun interface LogSanitizer {
+    fun sanitize(event: PendingLogEvent, context: SanitizationContext): SanitizationResult
+}
+
 class PrivacyPolicy(
     private val identifierHasher: IdentifierHasher,
     private val violationBehavior: ContractViolationBehavior,
     private val exceptionSnapshotFactory: ExceptionSnapshotFactory = ExceptionSnapshotFactory(),
-) {
-    fun sanitize(
+) : LogSanitizer {
+    override fun sanitize(
         event: PendingLogEvent,
         context: SanitizationContext,
     ): SanitizationResult {

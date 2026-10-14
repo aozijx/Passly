@@ -13,7 +13,13 @@
 
 业务调用不能构造 `SanitizedLogRecord` 或直接调用 Sink。后续隐私层必须把 pending 标识符替换为 HMAC、把
 Throwable 转换为不含 message/path 的安全快照后，才能将不可变记录交给 `LogSink`。Trace API 已固定在 Logger
-契约中，具体协程传播和 Android/加密 Sink 在后续迁移任务接入。
+契约中。`TraceContextElement` 通过 `CoroutineContext` 与线程上下文共同传播同一个 Trace；根操作创建 Trace，
+每个子操作只创建 Span 并指向直接父 Span。跨系统回调只传递最长 10 分钟、默认单次消费、最多 128 个的 opaque
+`TraceToken`，且 token 与 `process_session_id` 绑定，进程或会话不匹配时立即失效。
+
+`DefaultLogger` 对每个事件只执行一次隐私策略，再把同一个不可变记录分发给所有 Sink。一次根 Trace 内首次可上报
+失败创建 `diag_id`，后续子 Span 复用；新根 Trace 创建新的 ID。Span 生命周期独立输出固定操作码、结果和单调时钟
+耗时，平台 Trace 或日志 Sink 的异常不会改变业务控制流；业务异常和取消仍按原实例向上传播。
 
 ## 分层
 
