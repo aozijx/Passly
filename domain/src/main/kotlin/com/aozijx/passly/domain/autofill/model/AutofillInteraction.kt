@@ -19,6 +19,7 @@ value class AutofillInteractionId(val value: String) {
 
 enum class AutofillInteractionSource {
     LEGACY,
+    LEGACY_SAVE,
     CREDENTIAL_MANAGER,
 }
 

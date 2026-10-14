@@ -204,6 +204,18 @@ class AutofillInteractionLifecycleTest {
     }
 
     @Test
+    fun legacyFillAndLegacySaveHaveIndependentExpiryOwnership() = runBlocking {
+        val fixture = fixture(AuthenticationState.Authenticated(1L))
+        val fill = fixture.start(AutofillInteractionSource.LEGACY, scope(), false)
+        val save = fixture.start(AutofillInteractionSource.LEGACY_SAVE, scope(), false)
+
+        fixture.finish.expireAll(AutofillInteractionSource.LEGACY)
+
+        assertEquals(AutofillInteractionState.Expired, fixture.store.snapshot(fill.id)?.state)
+        assertEquals(AutofillInteractionState.Authorized, fixture.store.snapshot(save.id)?.state)
+    }
+
+    @Test
     fun finishingDuringAuthenticationClosesLateSuccessfulUnlock() = runBlocking {
         val vault = FakeVault(AuthenticationState.Locked)
         val authentication = DeferredAuthenticationController(vault)
