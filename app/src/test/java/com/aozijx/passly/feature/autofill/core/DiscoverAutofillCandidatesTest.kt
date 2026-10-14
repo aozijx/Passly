@@ -82,6 +82,24 @@ class DiscoverAutofillCandidatesTest {
     }
 
     @Test
+    fun legacyDiscoveryCarriesSavePreferenceIndependentlyFromCredentialManager() = runBlocking {
+        val fixture = fixture(
+            settings = AutofillSettings(
+                requireAuthentication = false,
+                savePromptsEnabled = false,
+                credentialManagerEnabled = false,
+            ),
+        )
+
+        val outcome = fixture.operation(request())
+
+        assertTrue(outcome is AutofillDiscoveryOutcome.NoCandidates)
+        outcome as AutofillDiscoveryOutcome.NoCandidates
+        assertEquals(false, outcome.context.savePromptsEnabled)
+        assertEquals(1, fixture.repository.searchCalls)
+    }
+
+    @Test
     fun unlockedVaultRecordsAndReturnsMetadataCandidates() = runBlocking {
         val candidate = candidate("entry-1")
         val fixture = fixture(candidates = listOf(candidate))

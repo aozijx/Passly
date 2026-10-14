@@ -68,6 +68,7 @@ class DiscoverAutofillCandidates @Inject constructor(
             presentation = policy.presentation,
             requireAuthentication = policy.requireAuthentication,
             includeOtp = policy.includeOtp,
+            savePromptsEnabled = policy.savePromptsEnabled,
         )
         if (snapshot.state == AutofillInteractionState.RequiresUnlock) {
             return AutofillDiscoveryOutcome.RequiresUnlock(snapshot, context)

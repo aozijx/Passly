@@ -8,6 +8,7 @@ data class AutofillDiscoveryContext(
     val presentation: AutofillPresentation,
     val requireAuthentication: Boolean,
     val includeOtp: Boolean,
+    val savePromptsEnabled: Boolean,
 )
 
 enum class AutofillOperationFailure {

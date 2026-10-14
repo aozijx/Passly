@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.autofill.legacy.service.builder
 import android.content.Context
 import android.service.autofill.Dataset
 import android.service.autofill.FillResponse
+import android.service.autofill.SaveInfo
 import android.view.autofill.AutofillId
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
@@ -97,6 +98,7 @@ class LegacyResponseFactory @Inject constructor(
             pendingIntent.intentSender,
             AutofillRemoteViewFactory.createUnlockTrigger(context),
         )
+        addSaveInfo(builder, discoveryContext, parsed)
         return builder.build()
     }
 
@@ -108,7 +110,6 @@ class LegacyResponseFactory @Inject constructor(
         parsed: ParsedStructure,
     ): FillResponse? {
         if (parsed.allIds.isEmpty()) return null
-        if (candidates.isEmpty()) return null
 
         val builder = FillResponse.Builder()
         val roleIds = resolveRoleIds(discoveryContext.roleMap, parsed)
@@ -137,7 +138,32 @@ class LegacyResponseFactory @Inject constructor(
                 )
             }
         }
+        val hasSaveInfo = addSaveInfo(builder, discoveryContext, parsed)
+        if (candidates.isEmpty() && !hasSaveInfo) return null
         return builder.build()
+    }
+
+    private fun addSaveInfo(
+        builder: FillResponse.Builder,
+        discoveryContext: AutofillDiscoveryContext,
+        parsed: ParsedStructure,
+    ): Boolean {
+        if (!discoveryContext.savePromptsEnabled) return false
+        val plan = LegacySaveInfoPolicy.plan(discoveryContext.roleMap) ?: return false
+        val idByString = parsed.editableFields.associate { it.autofillId.toString() to it.autofillId }
+        val requiredPasswordIds = plan.requiredPasswordFieldIds.mapNotNull(idByString::get)
+        if (requiredPasswordIds.isEmpty()) return false
+        val optionalUsernameIds = plan.optionalUsernameFieldIds.mapNotNull(idByString::get)
+        val dataTypes = SaveInfo.SAVE_DATA_TYPE_PASSWORD or
+            if (optionalUsernameIds.isNotEmpty()) SaveInfo.SAVE_DATA_TYPE_USERNAME else 0
+        val saveInfo = SaveInfo.Builder(dataTypes, requiredPasswordIds.toTypedArray()).apply {
+            if (optionalUsernameIds.isNotEmpty()) {
+                setOptionalIds(optionalUsernameIds.toTypedArray())
+            }
+            setFlags(SaveInfo.FLAG_SAVE_ON_ALL_VIEWS_INVISIBLE)
+        }.build()
+        builder.setSaveInfo(saveInfo)
+        return true
     }
 
     private fun addCandidateAuthentication(
