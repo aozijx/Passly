@@ -14,26 +14,51 @@ class AutofillUnlockLease @Inject constructor(
     private val sessionLockController: SessionLockController,
 ) {
     private val mutex = Mutex()
+    private val stateMonitor = Any()
     private val borrowers = mutableSetOf<AutofillInteractionId>()
     private var owned = false
+    private var acceptingNewBorrowers = true
 
     suspend fun acquireOrBorrow(
         interactionId: AutofillInteractionId,
         acquiredUnlock: Boolean,
     ) = mutex.withLock {
-        if (acquiredUnlock) owned = true
-        if (owned) borrowers += interactionId
+        synchronized(stateMonitor) {
+            if (acquiredUnlock) {
+                owned = true
+                acceptingNewBorrowers = true
+            }
+            if (owned) borrowers += interactionId
+        }
     }
 
     suspend fun borrowIfOwned(interactionId: AutofillInteractionId): Boolean = mutex.withLock {
-        if (owned) borrowers += interactionId
-        owned
+        synchronized(stateMonitor) {
+            val accepted = owned && acceptingNewBorrowers
+            if (accepted) borrowers += interactionId
+            accepted
+        }
+    }
+
+    /** Prevents later Autofill requests from inheriting a session whose result was delivered. */
+    fun stopAcceptingNewBorrowers(interactionId: AutofillInteractionId) {
+        synchronized(stateMonitor) {
+            if (owned && interactionId in borrowers) acceptingNewBorrowers = false
+        }
     }
 
     suspend fun release(interactionId: AutofillInteractionId) = mutex.withLock {
-        borrowers -= interactionId
-        if (owned && borrowers.isEmpty()) {
-            owned = false
+        val shouldLock = synchronized(stateMonitor) {
+            borrowers -= interactionId
+            if (owned && borrowers.isEmpty()) {
+                owned = false
+                acceptingNewBorrowers = true
+                true
+            } else {
+                false
+            }
+        }
+        if (shouldLock) {
             sessionLockController.lock(LockReason.AUTOFILL_REQUEST_FINISHED)
         }
     }

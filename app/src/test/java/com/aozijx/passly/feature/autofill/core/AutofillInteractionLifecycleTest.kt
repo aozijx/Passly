@@ -238,6 +238,60 @@ class AutofillInteractionLifecycleTest {
         assertEquals(AutofillInteractionState.Cancelled, store.snapshot(interaction.id)?.state)
     }
 
+    @Test
+    fun freshAuthenticationAfterDeliveredResultOwnsTheReplacementAutofillSession() = runBlocking {
+        val vault = FakeVault(AuthenticationState.AutofillAuthenticated(1L))
+        val authentication = DeferredAuthenticationController(vault)
+        val store = AutofillInteractionStore()
+        val lease = AutofillUnlockLease(authentication)
+        val start = StartAutofillInteraction(store, lease, vault)
+        val authorize = AuthorizeAutofillInteraction(authentication, vault, store, lease)
+        val finish = FinishAutofillInteraction(store, lease)
+        val delivered = store.create(
+            AutofillInteractionSource.LEGACY,
+            scope(),
+            AutofillInteractionState.Authorized,
+        )
+        lease.acquireOrBorrow(delivered.id, acquiredUnlock = true)
+        lease.stopAcceptingNewBorrowers(delivered.id)
+        val next = start(AutofillInteractionSource.LEGACY, scope(), false)
+
+        val authorization = async { authorize(next.id) }
+        authentication.started.await()
+        finish.complete(delivered.id)
+        authentication.result.complete(
+            AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD),
+        )
+        assertTrue(authorization.await() is AutofillAuthorizationOutcome.Authorized)
+        finish.complete(next.id)
+
+        assertEquals(2, authentication.lockCount)
+        assertEquals(AuthenticationState.Locked, vault.authenticationState.value)
+    }
+
+    @Test
+    fun freshAuthenticationAfterDeliveredResultStartsANewBorrowingWindow() = runBlocking {
+        val fixture = fixture(AuthenticationState.AutofillAuthenticated(1L))
+        val delivered = fixture.store.create(
+            AutofillInteractionSource.LEGACY,
+            scope(),
+            AutofillInteractionState.Authorized,
+        )
+        fixture.lease.acquireOrBorrow(delivered.id, acquiredUnlock = true)
+        fixture.lease.stopAcceptingNewBorrowers(delivered.id)
+        val authenticated = fixture.start(AutofillInteractionSource.LEGACY, scope(), false)
+        assertEquals(AutofillInteractionState.RequiresUnlock, authenticated.state)
+
+        assertTrue(fixture.authorize(authenticated.id) is AutofillAuthorizationOutcome.Authorized)
+        val sibling = fixture.start(
+            AutofillInteractionSource.CREDENTIAL_MANAGER,
+            scope("com.example.second"),
+            false,
+        )
+
+        assertEquals(AutofillInteractionState.Authorized, sibling.state)
+    }
+
     private fun fixture(
         initialState: AuthenticationState,
         results: ArrayDeque<AuthenticationResult> = ArrayDeque(
@@ -251,6 +305,7 @@ class AutofillInteractionLifecycleTest {
         return Fixture(
             store = store,
             authentication = authentication,
+            lease = lease,
             start = StartAutofillInteraction(store, lease, vault),
             authorize = AuthorizeAutofillInteraction(authentication, vault, store, lease),
             finish = FinishAutofillInteraction(store, lease),
@@ -263,6 +318,7 @@ class AutofillInteractionLifecycleTest {
     private data class Fixture(
         val store: AutofillInteractionStore,
         val authentication: FakeAuthenticationController,
+        val lease: AutofillUnlockLease,
         val start: StartAutofillInteraction,
         val authorize: AuthorizeAutofillInteraction,
         val finish: FinishAutofillInteraction,
@@ -316,6 +372,7 @@ class AutofillInteractionLifecycleTest {
         val started = CompletableDeferred<Unit>()
         val result = CompletableDeferred<AuthenticationResult>()
         var lastLockReason: LockReason? = null
+        var lockCount: Int = 0
 
         override suspend fun authenticate(
             request: AuthenticationRequest,
@@ -329,6 +386,7 @@ class AutofillInteractionLifecycleTest {
 
         override suspend fun lock(reason: LockReason) {
             lastLockReason = reason
+            lockCount++
             vault.lock()
         }
     }

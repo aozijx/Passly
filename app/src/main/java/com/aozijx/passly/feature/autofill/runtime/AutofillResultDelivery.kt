@@ -22,11 +22,16 @@ data class AutofillSelectionReceipt(
 @Singleton
 class AutofillResultDelivery internal constructor(
     private val completeSelection: CompleteAutofillSelection,
+    private val unlockLease: AutofillUnlockLease,
     private val scope: CoroutineScope,
 ) {
     @Inject
-    constructor(completeSelection: CompleteAutofillSelection) : this(
+    constructor(
+        completeSelection: CompleteAutofillSelection,
+        unlockLease: AutofillUnlockLease,
+    ) : this(
         completeSelection = completeSelection,
+        unlockLease = unlockLease,
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
     )
 
@@ -36,6 +41,7 @@ class AutofillResultDelivery internal constructor(
         deliverToPlatform: () -> Unit,
     ) {
         deliverToPlatform()
+        unlockLease.stopAcceptingNewBorrowers(receipt.interactionId)
         delivered(receipt)
     }
 

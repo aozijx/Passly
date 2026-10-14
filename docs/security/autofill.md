@@ -38,7 +38,7 @@ flowchart TD
 - `DiscoverAutofillCandidates`：读取当前设置、识别字段、建立或恢复 interaction，并只查询候选元数据。
 - `AuthorizeAutofillInteraction`：以 `AuthenticationPurpose.AUTOFILL` 完成一次交互授权；并发授权会合并为同一次认证。
 - `ResolveAutofillSelection`：验证 interaction、规范化作用域和“确实展示过”的 entry ID 后，才读取该条目的密码；只有请求包含 OTP 字段时，才沿 `OTP_FOR` 关系读取关联 OTP 条目的配置与独立加密 secret 并生成验证码。
-- `AutofillResultDelivery`：只接收平台无关的成功收据；Legacy Activity 与 Credential Manager Activity 各自发布自己的结果，再启动不可取消的成功收尾。两套 Android 结果协议不合并、不互相转换。
+- `AutofillResultDelivery`：只接收平台无关的成功收据；Legacy Activity 与 Credential Manager Activity 各自先发布自己的结果，随后立即封闭本轮 lease 的新借用入口，再启动不可取消的成功收尾。两套 Android 结果协议不合并、不互相转换。
 - `CompleteAutofillSelection`：结果发布后以 interaction 终态转换作为幂等门；首次转换仍持有 lease 完成使用记录，并在 `finally` 中释放临时会话，重复回调不再重复产生副作用。
 - `SaveAutofillCredential`：接收已经由所属平台流程校验的类型化草稿，并使用正式 Entry 写事务；它本身不读取 Legacy 或 Credential Manager 开关。
 - `FinishAutofillInteraction`：统一完成、取消或过期 interaction，并释放 Autofill 持有的临时解锁。
@@ -88,7 +88,8 @@ Autofill 跨越目标应用、Android 系统、Passly Service、认证 Activity 
   `Authenticated`。如果提升已完成，迟到的 `AUTOFILL_REQUEST_FINISHED` 不得锁定主应用。
 - `AutofillUnlockLease` 记录所有借用临时解锁的活跃 interaction。临时状态只有成功借到 lease 才能直接授权；回收中的
   orphan 状态会回到 `RequiresUnlock`，不会产生已授权但数据库已关闭的请求。
-- 成功构造 Dataset 或 Credential 后，Activity 先通过 `setResult(RESULT_OK, ...)` 发布结果，再完成 interaction；Legacy 保存提示不再延长临时解锁。下一次填充建立新的 interaction 并按当时状态重新认证。
+- `hasFullSecureSessionAccess()` 在 Autofill 授权中只用于识别进入流程前已由主 App 拥有的完整会话，避免收尾误锁该会话；它不授予权限。Autofill 自己打开的仍只能是 `AutofillAuthenticated`，不能进入普通 Vault 查询、编辑、备份或设置路径。
+- 成功构造 Dataset 或 Credential 后，Activity 先通过 `setResult(RESULT_OK, ...)` 发布结果，再同步禁止后续请求借用本轮 lease，最后异步完成 interaction 并关库/擦除 DEK。这样既不会在 Android 收到结果前提前关库，也不会让用户填充完成后的再次点击沿用上一轮临时权限；Legacy 保存提示同样不延长临时解锁。
 - Legacy 保存 continuation 与填充 interaction 分属 `LEGACY_SAVE` 和 `LEGACY`，各自取消、完成和过期。保存借用或取得的临时解锁在终态释放；用户原本持有的完整会话不会被关闭。
 - 每个 interaction 创建时安排 60 秒 process-local 超时。Android 选择器被放弃、Activity 未返回或调用方未清理状态时，超时会把 interaction 标记为 `Expired` 并释放临时解锁；正在认证或解析秘密时会延后一轮，避免回收活跃操作。
 - 应用原本已经解锁时，Autofill 结束不会额外锁定用户会话。
@@ -104,7 +105,7 @@ Autofill 跨越目标应用、Android 系统、Passly Service、认证 Activity 
 
 ## 取消与清理
 
-- 成功、失败、用户取消和协程取消都必须进入统一终态；成功路径必须先发布平台结果，再在不可取消的收尾区释放 lease。
+- 成功、失败、用户取消和协程取消都必须进入统一终态；成功路径必须先发布平台结果，立即封闭 lease 的新借用入口，再在不可取消的收尾区释放已有持有者。
 - Credential Manager 的 `onClearCredentialStateRequest()` 会过期所有该来源的活跃 interaction，但不会删除密码或锁定原本由用户打开的 Vault。
 - 对已经完成的 interaction 重复结束是幂等操作。
 - Legacy 保存 token 只能成功消费一次；重复 continuation 至多执行一次写入。认证取消、持久化失败、返回键和协程取消只终止该 `LEGACY_SAVE` interaction。

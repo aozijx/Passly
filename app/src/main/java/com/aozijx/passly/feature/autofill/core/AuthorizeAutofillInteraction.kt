@@ -32,7 +32,7 @@ class AuthorizeAutofillInteraction @Inject constructor(
     private data class Attempt(
         val result: CompletableDeferred<AutofillAuthorizationOutcome>,
         val owner: Boolean,
-        val hadAutofillAccess: Boolean,
+        val hadUserOwnedVaultSession: Boolean,
     )
 
     private val mutex = Mutex()
@@ -54,7 +54,7 @@ class AuthorizeAutofillInteraction @Inject constructor(
     }
 
     private suspend fun prepare(id: AutofillInteractionId): Attempt? = mutex.withLock {
-        attempts[id]?.let { return Attempt(it, owner = false, hadAutofillAccess = false) }
+        attempts[id]?.let { return Attempt(it, owner = false, hadUserOwnedVaultSession = false) }
         val snapshot = store.snapshot(id) ?: return null
         if (snapshot.state != AutofillInteractionState.RequiresUnlock) return null
         if (store.beginAuthorization(id) !is AutofillInteractionUpdate.Updated) return null
@@ -63,7 +63,7 @@ class AuthorizeAutofillInteraction @Inject constructor(
         Attempt(
             result = deferred,
             owner = true,
-            hadAutofillAccess = vaultAccessState.hasAutofillSessionAccess(),
+            hadUserOwnedVaultSession = vaultAccessState.hasFullSecureSessionAccess(),
         )
     }
 
@@ -92,7 +92,7 @@ class AuthorizeAutofillInteraction @Inject constructor(
         authentication: AuthenticationResult,
     ): AutofillAuthorizationOutcome {
         val outcome = when (authentication) {
-            is AuthenticationResult.Success -> authorize(id, attempt.hadAutofillAccess)
+            is AuthenticationResult.Success -> authorize(id, attempt.hadUserOwnedVaultSession)
             is AuthenticationResult.Cancelled -> {
                 val result = store.finish(id, AutofillInteractionState.Cancelled).update
                 val snapshot = (result as? AutofillInteractionUpdate.Updated)?.snapshot
@@ -113,9 +113,10 @@ class AuthorizeAutofillInteraction @Inject constructor(
 
     private suspend fun authorize(
         id: AutofillInteractionId,
-        hadAutofillAccess: Boolean,
+        hadUserOwnedVaultSession: Boolean,
     ): AutofillAuthorizationOutcome {
-        val acquiredUnlock = !hadAutofillAccess && vaultAccessState.hasAutofillSessionAccess()
+        val acquiredUnlock =
+            !hadUserOwnedVaultSession && vaultAccessState.hasAutofillSessionAccess()
         val update = store.markAuthorized(id)
         val snapshot = (update as? AutofillInteractionUpdate.Updated)?.snapshot
         if (snapshot == null) {
