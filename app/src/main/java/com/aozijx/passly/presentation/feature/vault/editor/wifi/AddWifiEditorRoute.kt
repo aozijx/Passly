@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -34,9 +35,10 @@ fun AddWifiEditorRoute(
     val snackbarHostState = remember { SnackbarHostState() }
     val saveFailedMessage = stringResource(R.string.vault_add_wifi_save_failed)
     val seedUnavailableMessage = stringResource(R.string.wifi_scanned_seed_unavailable)
-    val saveActionModifier = with(sharedTransitionScope) {
-        rememberAddEntryFabTransitionModifier(animatedVisibilityScope)
-    }
+    val saveActionModifier = Modifier.rememberAddEntryFabTransitionModifier(
+        sharedTransitionScope = sharedTransitionScope,
+        animatedVisibilityScope = animatedVisibilityScope,
+    )
     var overlay by remember { mutableStateOf<WifiEditorOverlay>(WifiEditorOverlay.None) }
 
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)

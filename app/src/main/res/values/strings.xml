@@ -66,11 +66,9 @@
     <string name="notification_permission_denied_message">通知权限未开启，后台同步进度将不会显示</string>
     <string name="vault_locked_title">Passly 已锁定</string>
     <string name="credential_create_password_description">将密码安全地保存到 Passly</string>
-    <string name="vault_auth_decrypt_subtitle_generic">验证以继续操作</string>
 
     <!-- 保险库浏览 -->
     <string name="vault_search_placeholder">搜索密码项…</string>
-    <string name="vault_title_category">分类：%s</string>
     <string name="vault_search_category">搜索分类</string>
     <string name="vault_search_category_hint">搜索分类…</string>
     <string name="vault_clear_filter">清除筛选</string>
@@ -104,8 +102,6 @@
     <string name="scanner_import_unavailable">当前页面不能使用此二维码</string>
     <string name="wifi_scanned_seed_unavailable">扫码内容已失效，请重新扫描</string>
 
-    <string name="vault_delete_title">确认删除</string>
-    <string name="vault_delete_message">确定要删除 “%s” 吗？此操作不可撤销。</string>
     <string name="backup_export_success">导出成功</string>
     <string name="backup_import_success">导入成功，图标后台同步中</string>
     <string name="backup_import_success_summary">导入完成：写入 %1$d，已存在 %2$d，跳过 %3$d，忽略字段 %4$d，裁剪关联 %5$d，裁剪资源 %6$d</string>
@@ -198,17 +194,6 @@
     <string name="notice_database_operation_failed">数据库操作失败</string>
 
     <!-- 身份认证与关联信息 -->
-    <string name="continue_action">继续</string>
-    <string name="auth_verify_identity">验证身份</string>
-    <string name="auth_method_biometric">生物识别</string>
-    <string name="auth_biometric_subtitle">请验证身份以继续</string>
-    <string name="auth_purpose_unlock_vault">解锁 Passly</string>
-    <string name="auth_purpose_autofill">验证后自动填充</string>
-    <string name="auth_purpose_backup_export">验证后导出备份</string>
-    <string name="auth_purpose_backup_import">验证后导入备份</string>
-    <string name="auth_purpose_export_diagnostics">验证后导出诊断</string>
-    <string name="auth_purpose_recover_auth_methods">使用恢复码恢复认证方式</string>
-    <string name="auth_purpose_clear_database">验证后清除 Passly 数据</string>
     <string name="related_entries">关联条目</string>
     <string name="app_package_picker_title">选择关联应用</string>
     <string name="app_package_picker_search">搜索应用或包名</string>

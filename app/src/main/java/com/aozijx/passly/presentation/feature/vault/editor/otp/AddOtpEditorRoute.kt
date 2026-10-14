@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -37,9 +38,10 @@ fun AddOtpEditorRoute(
     val saveFailedMessage = stringResource(R.string.vault_add_otp_save_failed)
     val uriParsedMessage = stringResource(R.string.vault_otp_uri_parsed)
     val uriParseFailedMessage = stringResource(R.string.vault_otp_uri_parse_failed)
-    val saveActionModifier = with(sharedTransitionScope) {
-        rememberAddEntryFabTransitionModifier(animatedVisibilityScope)
-    }
+    val saveActionModifier = Modifier.rememberAddEntryFabTransitionModifier(
+        sharedTransitionScope = sharedTransitionScope,
+        animatedVisibilityScope = animatedVisibilityScope,
+    )
     var overlay by remember { mutableStateOf<OtpEditorOverlay>(OtpEditorOverlay.None) }
 
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)

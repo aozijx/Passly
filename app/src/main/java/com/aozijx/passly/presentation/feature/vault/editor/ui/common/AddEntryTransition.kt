@@ -11,16 +11,19 @@ import com.aozijx.passly.presentation.feature.vault.ui.ADD_ENTRY_FAB_SHARED_KEY
 import com.aozijx.passly.presentation.feature.vault.ui.AddEntryFabVisualOverflow
 
 @Composable
-fun SharedTransitionScope.rememberAddEntryFabTransitionModifier(
+fun Modifier.rememberAddEntryFabTransitionModifier(
+    sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ): Modifier {
-    val sharedModifier = Modifier.sharedBounds(
-        sharedContentState = rememberSharedContentState(ADD_ENTRY_FAB_SHARED_KEY),
-        animatedVisibilityScope = animatedVisibilityScope,
-        resizeMode = RemeasureToBounds,
-        clipInOverlayDuringTransition = SharedTransitionOverlayClip.None,
-    )
-    return Modifier.withSharedTransitionVisualOverflow(
+    val sharedModifier = with(sharedTransitionScope) {
+        Modifier.sharedBounds(
+            sharedContentState = rememberSharedContentState(ADD_ENTRY_FAB_SHARED_KEY),
+            animatedVisibilityScope = animatedVisibilityScope,
+            resizeMode = RemeasureToBounds,
+            clipInOverlayDuringTransition = SharedTransitionOverlayClip.None,
+        )
+    }
+    return withSharedTransitionVisualOverflow(
         sharedModifier = sharedModifier,
         visualOverflow = AddEntryFabVisualOverflow,
     )

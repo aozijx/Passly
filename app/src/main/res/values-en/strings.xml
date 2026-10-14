@@ -63,11 +63,9 @@
     <string name="notification_permission_denied_message">Notification permission is disabled, so background sync progress won’t be shown.</string>
     <string name="vault_locked_title">Passly is locked</string>
     <string name="credential_create_password_description">Save the password securely in Passly</string>
-    <string name="vault_auth_decrypt_subtitle_generic">Please verify to continue</string>
 
     <!-- Vault browsing -->
     <string name="vault_search_placeholder">Search items…</string>
-    <string name="vault_title_category">Category: %s</string>
     <string name="vault_search_category">Search categories</string>
     <string name="vault_search_category_hint">Search categories…</string>
     <string name="vault_clear_filter">Clear filter</string>
@@ -101,11 +99,9 @@
     <string name="scanner_import_unavailable">This QR code cannot be used here</string>
     <string name="wifi_scanned_seed_unavailable">Scanned content expired. Scan it again.</string>
 
-    <string name="vault_delete_title">Confirm deletion</string>
-    <string name="vault_delete_message">Are you sure you want to delete “%s”? This action cannot be undone.</string>
     <string name="backup_export_success">Export successful</string>
     <string name="backup_import_success">Import successful (icons will sync in background)</string>
-    <string name="backup_import_success_summary">Import complete: %1$d imported, %2$d existing, %3$d skipped, %4$d fields ignored, %5$d links pruned, %6$d resources pruned</string>
+    <string name="backup_import_success_summary" tools:ignore="PluralsCandidate">Import complete: %1$d imported, %2$d existing, %3$d skipped, %4$d fields ignored, %5$d links pruned, %6$d resources pruned</string>
     <string name="backup_error_unknown">Operation failed: Unknown error</string>
     <string name="backup_directory_permission_ok">Backup directory write permission is available</string>
     <string name="backup_directory_permission_failed">Backup directory write test failed. Please reselect the directory.</string>
@@ -190,17 +186,6 @@
     <string name="otp_account_name">Account name</string>
     <string name="metadata_created_at">Created: %1$s</string>
     <string name="metadata_last_modified">Last modified: %1$s</string>
-    <string name="continue_action">Continue</string>
-    <string name="auth_verify_identity">Verify identity</string>
-    <string name="auth_method_biometric">Biometrics</string>
-    <string name="auth_biometric_subtitle">Verify your identity to continue</string>
-    <string name="auth_purpose_unlock_vault">Unlock Passly</string>
-    <string name="auth_purpose_autofill">Verify to autofill</string>
-    <string name="auth_purpose_backup_export">Verify to export backup</string>
-    <string name="auth_purpose_backup_import">Verify to import backup</string>
-    <string name="auth_purpose_export_diagnostics">Verify to export diagnostics</string>
-    <string name="auth_purpose_recover_auth_methods">Use recovery code to recover authentication methods</string>
-    <string name="auth_purpose_clear_database">Verify to clear Passly data</string>
     <string name="related_entries">Related entries</string>
     <string name="app_package_picker_title">Choose associated app</string>
     <string name="app_package_picker_search">Search apps or package names</string>
