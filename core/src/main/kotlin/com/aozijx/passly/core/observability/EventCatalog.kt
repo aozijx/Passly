@@ -86,6 +86,35 @@ object Events {
         val SaveCompleted = EventKey("autofill.save.completed")
         val SaveFailed = EventKey("autofill.save.failed")
     }
+
+    val All: Set<EventKey> = setOf(
+        Application.PreviousProcessExit,
+        Application.TraceResumeUnavailable,
+        Application.BackgroundLockSkipped,
+        Application.UnhandledException,
+        Database.SessionTransition,
+        Database.SessionTransitionFailed,
+        Security.LockStarted,
+        Security.LockCompleted,
+        Security.UnlockStarted,
+        Security.UnlockCompleted,
+        Security.AuthenticationFailed,
+        Autofill.DiscoveryStarted,
+        Autofill.DiscoveryCompleted,
+        Autofill.DiscoveryUnavailable,
+        Autofill.AuthenticationStarted,
+        Autofill.AuthenticationCompleted,
+        Autofill.ResultDeliveryStarted,
+        Autofill.ResultDelivered,
+        Autofill.ResultDeliveryFailed,
+        Autofill.SessionCloseStarted,
+        Autofill.SessionClosed,
+        Autofill.SessionCloseFailed,
+        Autofill.SaveStarted,
+        Autofill.SaveStaged,
+        Autofill.SaveCompleted,
+        Autofill.SaveFailed,
+    )
 }
 
 object ErrorCodes {
@@ -122,4 +151,26 @@ object Operations {
     val AutofillResultDelivery = OperationCode("autofill_result_delivery")
     val AutofillSessionClose = OperationCode("autofill_session_close")
     val DiagnosticsExport = OperationCode("diagnostics_export")
+}
+
+object LogFieldKeys {
+    val RetryCount = LogFieldKey("retry_count")
+    val ElapsedMs = LogFieldKey("elapsed_ms")
+    val TargetPackage = LogFieldKey("target_package")
+    val FromState = LogFieldKey("from_state")
+    val ToState = LogFieldKey("to_state")
+    val LockType = LogFieldKey("lock_type")
+    val Reason = LogFieldKey("reason")
+    val Owner = LogFieldKey("owner")
+    val TimeoutMs = LogFieldKey("timeout_ms")
+    val ActiveLeaseCount = LogFieldKey("active_lease_count")
+    val LockReason = LogFieldKey("lock_reason")
+    val Trigger = LogFieldKey("trigger")
+    val Result = LogFieldKey("result")
+    val AuthenticationMethod = LogFieldKey("authentication_method")
+    val ExitStatus = LogFieldKey("exit_status")
+    val Importance = LogFieldKey("importance")
+    val PssKb = LogFieldKey("pss_kb")
+    val RssKb = LogFieldKey("rss_kb")
+    val Source = LogFieldKey("source")
 }

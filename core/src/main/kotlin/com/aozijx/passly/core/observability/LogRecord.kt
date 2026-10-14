@@ -73,7 +73,7 @@ data class TraceSnapshot(
 @JvmInline
 value class ExceptionType(val value: String) {
     init {
-        require(value.matches(Regex("^[A-Za-z][A-Za-z0-9_$]{0,127}$"))) {
+        require(value.matches(Regex("^[A-Za-z][A-Za-z0-9_$]{0,63}$"))) {
             "Invalid exception type"
         }
     }
@@ -106,7 +106,11 @@ data class PendingError(
     val reason: ReasonCode,
     val throwable: Throwable?,
     val diagnosticId: DiagnosticId,
-)
+) {
+    override fun toString(): String =
+        "PendingError(errorCode=$errorCode, reason=$reason, " +
+            "throwableType=${throwable?.javaClass?.simpleName}, diagnosticId=$diagnosticId)"
+}
 
 data class ErrorPayload(
     val errorCode: ErrorCode,

@@ -23,6 +23,8 @@ sealed interface LogValue {
         init {
             require(rawValue.isNotBlank()) { "Identifier input cannot be blank" }
         }
+
+        override fun toString(): String = "HashedIdentifierInput(namespace=$namespace)"
     }
 }
 
