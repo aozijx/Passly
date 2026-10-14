@@ -83,7 +83,7 @@ Logger v1 直接覆盖现有业务日志入口，替换 `TelemetryEvent`、`corr
 - crash emergency writer；
 - 新鲜认证后的 `cacheDir` 临时明文导出与定时删除。
 
-新日志使用 `noBackupFilesDir/observability_v1` 和 `.olog1`，其 record schema 从 1 开始计数。当前
+新日志使用 `noBackupFilesDir/observability_v1` 和 `.log`，其内部文件头记录 magic、schema version 与加密参数，record schema 从 1 开始计数。扩展名不绑定格式版本。当前
 `diagnostics_v1/.elog1` 是 legacy 存储格式，不代表 Logger v1；迁移期只读旧记录，新写入全部进入
 `observability_v1`。最长保留窗口结束后删除 legacy reader 和旧目录，避免两个写入系统长期并存。
 

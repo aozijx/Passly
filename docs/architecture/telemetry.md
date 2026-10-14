@@ -1,9 +1,19 @@
-# Telemetry 与诊断日志
+# Logger v1 与诊断日志
 
 > 正式 Logger v1 的目标设计与迁移边界见
 > [Passly Logger v1 与可观测性系统设计](../superpowers/specs/2026-10-14-observability-logger-v1-design.md)。
-> 本文在迁移完成前描述 legacy Telemetry 实现；当前 `.elog1` 文件格式不代表正式 Logger API 版本，业务代码
-> 不得继续扩展 per-event `correlationId` 模型。
+> Logger v1 正在按模块迁移；当前 `.elog1` 文件格式不代表正式 Logger API 版本，业务代码不得继续扩展
+> per-event `correlationId` 模型。
+
+## Logger v1 契约
+
+`core/observability` 已定义唯一业务 API：事件、错误码、原因码、操作码和字段名均为验证后的值类型；字段只允许
+计数、时长、比率、布尔、枚举、受控代码和待 HMAC 的标识符。`Logger.warn/error` 的签名强制要求
+`ErrorCode + ReasonCode + Throwable`，已知但没有异常对象的降级使用 `degraded`。
+
+业务调用不能构造 `SanitizedLogRecord` 或直接调用 Sink。后续隐私层必须把 pending 标识符替换为 HMAC、把
+Throwable 转换为不含 message/path 的安全快照后，才能将不可变记录交给 `LogSink`。Trace API 已固定在 Logger
+契约中，具体协程传播和 Android/加密 Sink 在后续迁移任务接入。
 
 ## 分层
 

@@ -4,7 +4,7 @@
 
 **Goal:** 用正式 Logger v1 覆盖 legacy Telemetry，使数据库、安全认证及两套 Autofill 具备安全结构化日志、统一 Trace、Android 原生诊断能力和认证导出。
 
-**Architecture:** `core/observability` 提供强类型事件、隐私校验、Trace 和 Sink 契约；`app/observability` 装配 Debug-only Logcat、Perfetto、进程退出读取和导出；`data/observability` 复用现有 AES-GCM 文件基础设施并写入 v1 record。迁移期间只读 legacy `.elog1`，所有新事件只写 `observability_v1/.olog1`，最终删除旧 API 和写入路径。
+**Architecture:** `core/observability` 提供强类型事件、隐私校验、Trace 和 Sink 契约；`app/observability` 装配 Debug-only Logcat、Perfetto、进程退出读取和导出；`data/observability` 复用现有 AES-GCM 文件基础设施并写入 v1 record。迁移期间只读 legacy `.elog1`，所有新事件只写 `observability_v1/*.log`，最终删除旧 API 和写入路径。内部格式版本由文件头承载，不编码进扩展名。
 
 **Tech Stack:** Kotlin、Coroutines/CoroutineContext、Android `Log`、`Trace`、`ApplicationExitInfo`、Android Keystore HMAC-SHA256、AES-256-GCM、Hilt、JUnit、Kotlin Serialization（仅导出 JSONL）。
 
@@ -20,7 +20,7 @@
 - WARN/ERROR 通过方法签名强制 `errorCode + reason + Throwable`；无 Throwable 的预期降级使用 `degraded`。
 - 一个用户操作/系统回调创建一个 trace；子操作继承 trace ID 并创建 span ID，禁止逐事件创建 trace。
 - 两套 Autofill 平台实现全部保留，只统一事件和 Trace，不合并业务结果系统。
-- 新文件写入 `noBackupFilesDir/observability_v1/*.olog1`；legacy `diagnostics_v1/*.elog1` 迁移期只读。
+- 新文件写入 `noBackupFilesDir/observability_v1/*.log`；legacy `diagnostics_v1/*.elog1` 迁移期只读。`.log` 是内部加密容器，文件头包含 magic、schema version 与加密参数；扩展名不承担版本协商。
 - 所有提交使用精确路径，禁止 `git add .`，不得暂存或修改用户现有的 `gradle/libs.versions.toml` 变更。
 - 每个迁移任务同时更新相应正式文档，不能只提交代码。
 
