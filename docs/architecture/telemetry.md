@@ -1,5 +1,10 @@
 # Telemetry 与诊断日志
 
+> 正式 Logger v1 的目标设计与迁移边界见
+> [Passly Logger v1 与可观测性系统设计](../superpowers/specs/2026-10-14-observability-logger-v1-design.md)。
+> 本文在迁移完成前描述 legacy Telemetry 实现；当前 `.elog1` 文件格式不代表正式 Logger API 版本，业务代码
+> 不得继续扩展 per-event `correlationId` 模型。
+
 ## 分层
 
 - `core/telemetry`：纯事件、安全字段、等级、类别、Emitter 与 Policy 契约。
@@ -38,6 +43,21 @@ Android sink 有独立开关。
 
 禁止恢复旧 `core/diagnostics`、`AppLog`、Sanitizer、旧 Runtime/Sink/CrashHandler，也禁止直接
 `printStackTrace` 或在其他文件使用 `android.util.Log`。
+
+## Android 系统日志边界
+
+当前 legacy 实现及正式 Logger v1 都只允许单一 Android Sink 调用 `android.util.Log`。Logcat 用于 adb、
+Android Studio 和系统
+时间线中的即时诊断，不替代加密持久化日志。事件必须先完成字段校验、异常快照和脱敏，再按 Android 原生
+DEBUG/INFO/WARN/ERROR 优先级输出；业务层不得直接打印异常或敏感字段。
+
+Logger v1 将使用有限稳定 Tag 和有界单行摘要，并与加密记录共享 `event_id/trace_id/diag_id`。根据 Android 官方
+关于 Log 信息泄露的建议，Release 默认完全关闭 Logcat Sink；显式诊断窗口只启用内部加密日志，不提升 Logcat。
+Debug Sink 在格式化前使用 `Log.isLoggable`，且永远不把原始 Throwable 交给 Android Log API。
+
+Logger v1 还会把受控 Span 名称和匿名计数接入 `android.os.Trace`，用于 Perfetto 性能分析；并在下次启动时从
+`ApplicationExitInfo` 读取稳定的退出 reason/status/importance/内存数值。系统提供的 description、进程名和原始
+ANR trace 不进入标准日志或导出。
 
 ## 错误接入规范
 
