@@ -88,6 +88,16 @@ class LegacySaveFlowTest {
     }
 
     @Test
+    fun discardedContinuationCannotBeConsumed() = runBlocking {
+        val fixture = fixture(AuthenticationState.Locked)
+        val staged = fixture.flow.prepare(request()) as LegacySavePreparation.Staged
+
+        fixture.flow.discard(staged.token)
+
+        assertEquals(LegacySaveBeginResult.Unavailable, fixture.flow.beginContinuation(staged.token))
+    }
+
+    @Test
     fun lockedContinuationAuthenticatesOnceAndPersistsOnce() = runBlocking {
         val fixture = fixture(AuthenticationState.Locked)
         val continuation = fixture.stageAndBegin()

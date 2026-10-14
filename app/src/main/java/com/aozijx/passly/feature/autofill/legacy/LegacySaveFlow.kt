@@ -157,6 +157,10 @@ class LegacySaveFlow internal constructor(
         withContext(NonCancellable) { finishInteraction.cancel(interactionId) }
     }
 
+    suspend fun discard(token: LegacySaveToken) {
+        withContext(NonCancellable) { draftStore.remove(token) }
+    }
+
     private suspend fun legacySaveEnabled(): Boolean =
         settingsSource.interaction.first().autofill.let { it.enabled && it.savePromptsEnabled }
 

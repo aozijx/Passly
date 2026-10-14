@@ -92,12 +92,17 @@ class LegacyAutofillService : AutofillService() {
                     }
 
                     is LegacySavePreparation.Staged -> {
-                        val pendingIntent = legacySavePendingIntentFactory.create(
-                            this@LegacyAutofillService,
-                            result.token,
-                        )
-                        if (completion.compareAndSet(false, true)) {
-                            callback.onSuccess(pendingIntent.intentSender)
+                        try {
+                            val pendingIntent = legacySavePendingIntentFactory.create(
+                                this@LegacyAutofillService,
+                                result.token,
+                            )
+                            if (completion.compareAndSet(false, true)) {
+                                callback.onSuccess(pendingIntent.intentSender)
+                            }
+                        } catch (error: Exception) {
+                            legacySaveFlow.discard(result.token)
+                            throw error
                         }
                     }
 
