@@ -133,7 +133,7 @@ Expected: compilation fails because the interaction model and coordinator do not
 
 - [ ] **Step 3: Define explicit interaction state**
 
-Define `AutofillInteractionId`, `AutofillInteractionSource`, and sealed states `Created`, `RequiresUnlock`, `Authorized`, `CandidatesReady`, `ResolvingSelection`, `Completed`, `Cancelled`, `Expired`, and `Failed`. Snapshots contain scope and candidate IDs but no plaintext credential.
+Define `AutofillInteractionId`, `AutofillInteractionSource`, and sealed states `RequiresUnlock`, `Authenticating`, `Authorized`, `CandidatesReady`, `ResolvingSelection`, `Completed`, `Cancelled`, `Expired`, and `Failed`. Interaction creation enters `RequiresUnlock` or `Authorized` directly, so there is no unused pre-start `Created` state. Snapshots contain scope and candidate IDs but no plaintext credential.
 
 - [ ] **Step 4: Implement coordinator ownership and cleanup**
 

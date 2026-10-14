@@ -39,7 +39,6 @@ class LegacyPlatformAdapter @Inject constructor(
             domain = parsed.webDomain,
             fields = fields,
             source = AutofillSource.AUTOFILL_SERVICE,
-            activityTitle = parsed.pageTitle
         )
     }
 

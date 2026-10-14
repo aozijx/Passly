@@ -23,7 +23,6 @@ enum class AutofillInteractionSource {
 }
 
 sealed interface AutofillInteractionState {
-    data object Created : AutofillInteractionState
     data object RequiresUnlock : AutofillInteractionState
     data object Authenticating : AutofillInteractionState
     data object Authorized : AutofillInteractionState
@@ -47,7 +46,6 @@ enum class AutofillInteractionRejection {
     INTERACTION_NOT_FOUND,
     INVALID_STATE,
     CANDIDATE_NOT_PRESENTED,
-    SCOPE_MISMATCH,
     TERMINAL,
 }
 

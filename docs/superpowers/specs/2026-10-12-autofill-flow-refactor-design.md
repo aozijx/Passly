@@ -150,8 +150,8 @@ with a process-scoped `AutofillInteractionCoordinator`.
 Each interaction has a generated identifier and an explicit state:
 
 ```text
-Created
 RequiresUnlock
+Authenticating
 Authorized
 CandidatesReady
 ResolvingSelection

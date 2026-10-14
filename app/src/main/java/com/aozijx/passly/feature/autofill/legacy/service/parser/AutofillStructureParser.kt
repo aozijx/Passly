@@ -16,14 +16,13 @@ data class EditableFieldInfo(
     val autofillHints: List<String> = emptyList(),
     /** Current focus state. */
     val isFocused: Boolean = false,
-    /** Current value (used during SaveRequest). */
+    /** Current text used by field-role matching. */
     val value: String? = null,
 )
 
 data class ParsedStructure(
     val packageName: String? = null,
     val webDomain: String? = null,
-    val pageTitle: String? = null,
     /** All editable input fields on the page. */
     val editableFields: List<EditableFieldInfo> = emptyList(),
 ) {
@@ -41,7 +40,6 @@ object AutofillStructureParser {
             packageName = parser.packageName,
             webDomain = parser.webDomain
                 ?.takeUnless { it == "127.0.0.1" || it == "localhost" },
-            pageTitle = parser.pageTitle,
             editableFields = parser.editableFields,
         )
     }
@@ -49,14 +47,12 @@ object AutofillStructureParser {
     private class ParserImpl(structure: AssistStructure) {
         var packageName: String? = structure.activityComponent?.packageName
         var webDomain: String? = null
-        var pageTitle: String? = null
         val editableFields = mutableListOf<EditableFieldInfo>()
 
         init {
             val windowCount = structure.windowNodeCount
             for (i in 0 until windowCount) {
                 val window = structure.getWindowNodeAt(i)
-                if (pageTitle == null) pageTitle = window.title?.toString()
                 parseNode(window.rootViewNode)
             }
         }

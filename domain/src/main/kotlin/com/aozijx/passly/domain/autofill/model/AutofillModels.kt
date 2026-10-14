@@ -45,8 +45,6 @@ data class AutofillRequest(
     val domain: String?,
     val fields: List<AutofillField>,
     val source: AutofillSource,
-    val activityTitle: String? = null,
-    val isInlineRequest: Boolean = false
 )
 
 /**
