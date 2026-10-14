@@ -83,9 +83,9 @@ Logger v1 直接覆盖现有业务日志入口，替换 `TelemetryEvent`、`corr
 - crash emergency writer；
 - 新鲜认证后的 `cacheDir` 临时明文导出与定时删除。
 
-新日志使用 `noBackupFilesDir/observability_v1` 和 `.log`，其内部文件头记录 magic、schema version 与加密参数，record schema 从 1 开始计数。扩展名不绑定格式版本。当前
-`diagnostics_v1/.elog1` 是 legacy 存储格式，不代表 Logger v1；迁移期只读旧记录，新写入全部进入
-`observability_v1`。最长保留窗口结束后删除 legacy reader 和旧目录，避免两个写入系统长期并存。
+新日志使用 `noBackupFilesDir/logs` 和 `.log`，其内部文件头记录 magic、schema version 与加密参数，record schema 从 1 开始计数。目录和文件名不绑定格式版本。当前
+`diagnostics_v1/.elog1` 是不兼容的 legacy 存储格式，不代表 Logger v1；新系统不扫描、不读取、不迁移旧记录，新写入全部进入
+`logs`。旧 writer、codec 和目录引用在调用迁移完成后直接删除，不保留 legacy reader。
 
 ### 2.3 local-first
 
@@ -108,7 +108,7 @@ app/observability
   LogcatSink, ExportManifestFactory, CrashHandler
 
 data/observability
-  EncryptedFileSink, LogRecordCodecV1, RetentionPolicy
+  EncryptedFileSink, LogRecordCodec, RetentionPolicy
 ```
 
 依赖规则：
@@ -534,7 +534,7 @@ Release：
 
 ### 阶段 2：Android 与持久化 Sink
 
-实现唯一 `LogcatSink`，实现 `LogRecordCodecV1`，对 legacy diagnostics codec 只读兼容，并接入轮换、保留期、
+实现唯一 `LogcatSink`，实现 `LogRecordCodec`，不接入 legacy diagnostics codec，并接入轮换、保留期、
 队列背压和 crash writer。同时实现受控 `TraceSink` 和 `PreviousProcessExitReader`；二者失败不得阻断主 Logger。
 
 ### 阶段 3：关键链路迁移
@@ -548,8 +548,8 @@ Release：
 
 ### 阶段 5：删除旧实现
 
-确认无旧调用后删除 `TelemetryRuntime`、旧 `TelemetryEvent`/formatter、legacy codec 写入路径和兼容桥；旧
-diagnostics reader 只保留到 3 天日志窗口结束，再连同 `diagnostics_v1` 目录迁移清理逻辑一起删除。
+确认无旧调用后删除 `TelemetryRuntime`、旧 `TelemetryEvent`/formatter、legacy codec 写入路径和兼容桥。
+Logger v1 不提供旧 diagnostics reader 或目录迁移逻辑。
 
 最终验收：
 

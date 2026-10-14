@@ -41,3 +41,20 @@ Android API 依据：[Log](https://developer.android.com/reference/android/util/
 [Trace](https://developer.android.com/reference/android/os/Trace)、
 [KeyGenParameterSpec](https://developer.android.com/reference/android/security/keystore/KeyGenParameterSpec) 与
 [ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo)。
+
+## Logger v1 本地加密容器
+
+- 新记录只进入应用内部 `noBackupFilesDir/logs/*.log`。`.log` 是 Passly 私有二进制加密容器，
+  不是明文 Logcat 导出；格式协商由文件头 magic 和 schema version 完成，扩展名不带版本号。
+- Logger v1 与旧 `diagnostics_v1/*.elog1` 不兼容：不扫描、不读取、不迁移也不删除旧文件。最终移除旧日志调用时
+  一并删除旧 writer/codec，避免长期维护两套协议。
+- 每个文件使用随机 256-bit AES 数据密钥和 AES-GCM；数据密钥由独立 Android Keystore wrapping key
+  `com.aozijx.passly.observability.wrap.v1` 加密。文件头和每条记录的 sequence、level、file id 均进入 AAD，
+  篡改、乱序和跨文件复制会读取失败。
+- 单文件上限 1 MiB，最多保留 3 个文件、总计 3 MiB、最长 3 天。轮换和删除只匹配新目录中的 `.log`，
+  不触碰其他文件。
+- 正常写入使用容量 256 的单线程队列；队列满时优先淘汰待写 DEBUG。ERROR/FATAL 只能进行一次预初始化
+  emergency write。紧急路径不访问 Keystore、不获取正常 writer 锁；所有存储异常被 Sink 边界吞掉，不允许递归
+  写日志或替换原始崩溃。
+- codec 只接受 `SanitizedLogRecord`，并重新校验事件目录、category、level/error 契约、严格 UTF-8、长度、
+  枚举、trace/error 结构和尾随字节。未 HMAC 的标识符无法构造为可持久化字段。

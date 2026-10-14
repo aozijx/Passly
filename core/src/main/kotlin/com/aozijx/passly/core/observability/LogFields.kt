@@ -41,6 +41,10 @@ value class HashedIdentifier(val value: String) {
 class LogFields private constructor(
     val values: Map<LogFieldKey, LogValue>,
 ) {
+    override fun equals(other: Any?): Boolean = other is LogFields && values == other.values
+    override fun hashCode(): Int = values.hashCode()
+    override fun toString(): String = "LogFields(keys=${values.keys.map(LogFieldKey::value)})"
+
     class Builder internal constructor() {
         private val values = linkedMapOf<LogFieldKey, LogValue>()
 
@@ -75,6 +79,15 @@ class LogFields private constructor(
         fun build(block: Builder.() -> Unit): LogFields = Builder().apply(block).build()
 
         internal fun sanitized(values: Map<LogFieldKey, LogValue>): LogFields = LogFields(values.toMap())
+
+        /** Rehydrates values that have already crossed the privacy boundary. */
+        fun fromSanitized(values: Map<LogFieldKey, LogValue>): LogFields {
+            require(values.size <= MAX_FIELDS) { "Too many log fields" }
+            require(values.values.none { it is LogValue.HashedIdentifierInput }) {
+                "Pending identifier input cannot enter a sanitized record"
+            }
+            return LogFields(values.toMap())
+        }
     }
 }
 

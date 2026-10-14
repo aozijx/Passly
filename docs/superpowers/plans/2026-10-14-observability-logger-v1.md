@@ -4,7 +4,7 @@
 
 **Goal:** 用正式 Logger v1 覆盖 legacy Telemetry，使数据库、安全认证及两套 Autofill 具备安全结构化日志、统一 Trace、Android 原生诊断能力和认证导出。
 
-**Architecture:** `core/observability` 提供强类型事件、隐私校验、Trace 和 Sink 契约；`app/observability` 装配 Debug-only Logcat、Perfetto、进程退出读取和导出；`data/observability` 复用现有 AES-GCM 文件基础设施并写入 v1 record。迁移期间只读 legacy `.elog1`，所有新事件只写 `observability_v1/*.log`，最终删除旧 API 和写入路径。内部格式版本由文件头承载，不编码进扩展名。
+**Architecture:** `core/observability` 提供强类型事件、隐私校验、Trace 和 Sink 契约；`app/observability` 装配 Debug-only Logcat、Perfetto、进程退出读取和导出；`data/observability` 复用现有 AES-GCM 文件基础设施并写入结构化 record。Logger v1 不兼容、不扫描也不迁移 legacy `.elog1`；所有新事件只写 `logs/*.log`，最终删除旧 API 和写入路径。内部格式版本由文件头承载，不编码进路径或文件名。
 
 **Tech Stack:** Kotlin、Coroutines/CoroutineContext、Android `Log`、`Trace`、`ApplicationExitInfo`、Android Keystore HMAC-SHA256、AES-256-GCM、Hilt、JUnit、Kotlin Serialization（仅导出 JSONL）。
 
@@ -20,7 +20,7 @@
 - WARN/ERROR 通过方法签名强制 `errorCode + reason + Throwable`；无 Throwable 的预期降级使用 `degraded`。
 - 一个用户操作/系统回调创建一个 trace；子操作继承 trace ID 并创建 span ID，禁止逐事件创建 trace。
 - 两套 Autofill 平台实现全部保留，只统一事件和 Trace，不合并业务结果系统。
-- 新文件写入 `noBackupFilesDir/observability_v1/*.log`；legacy `diagnostics_v1/*.elog1` 迁移期只读。`.log` 是内部加密容器，文件头包含 magic、schema version 与加密参数；扩展名不承担版本协商。
+- 新文件只写入和读取 `noBackupFilesDir/logs/*.log`；Logger v1 不访问 legacy `diagnostics_v1/*.elog1`。`.log` 是内部加密容器，文件头包含 magic、schema version 与加密参数；目录名和文件名均不承担版本协商。
 - 所有提交使用精确路径，禁止 `git add .`，不得暂存或修改用户现有的 `gradle/libs.versions.toml` 变更。
 - 每个迁移任务同时更新相应正式文档，不能只提交代码。
 
@@ -66,10 +66,9 @@ app/src/main/java/com/aozijx/passly/app/observability/
   di/ObservabilityModule.kt
 
 data/src/main/java/com/aozijx/passly/data/observability/
-  LogRecordCodecV1.kt
+  LogRecordCodec.kt
   EncryptedLogRecordStore.kt
-  EncryptedLogFileManagerV1.kt
-  LegacyDiagnosticsReader.kt
+  EncryptedLogFileManager.kt
   di/ObservabilityPersistenceModule.kt
 ```
 
@@ -308,26 +307,26 @@ git add -- app/src/main/java/com/aozijx/passly/app/observability app/src/test/ja
 git commit -m "feat(observability): add Android diagnostic sinks"
 ```
 
-### Task 5: 加密 Record v1、轮换与 legacy 只读迁移
+### Task 5: 加密 Record v1 与轮换
 
 **Files:**
 - Create: `core/src/main/kotlin/com/aozijx/passly/core/observability/sink/LogRecordStore.kt`
-- Create: `data/src/main/java/com/aozijx/passly/data/observability/LogRecordCodecV1.kt`
-- Create: `data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogFileManagerV1.kt`
+- Create: `data/src/main/java/com/aozijx/passly/data/observability/LogRecordCodec.kt`
+- Create: `data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogFileManager.kt`
 - Create: `data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogRecordStore.kt`
-- Create: `data/src/main/java/com/aozijx/passly/data/observability/LegacyDiagnosticsReader.kt`
 - Create: `data/src/main/java/com/aozijx/passly/data/observability/di/ObservabilityPersistenceModule.kt`
-- Test: `data/src/test/java/com/aozijx/passly/data/observability/LogRecordCodecV1Test.kt`
+- Test: `data/src/test/java/com/aozijx/passly/data/observability/LogRecordCodecTest.kt`
 - Test: `data/src/test/java/com/aozijx/passly/data/observability/EncryptedLogRecordStoreTest.kt`
+- Test: `data/src/androidTest/java/com/aozijx/passly/data/observability/AndroidKeystoreLogKeyWrapperTest.kt`
 - Modify: `docs/security/diagnostics.md`
 
 **Interfaces:**
-- Consumes: `SanitizedLogRecord`, existing encrypted file primitives and legacy `TelemetryRecordCodec` for read-only migration.
+- Consumes: `SanitizedLogRecord` and only the proven encryption/rotation mechanics of the old implementation; it does not consume the legacy codec or format.
 - Produces: `LogRecordStore.write/readPage/readBetween/flush/clear/close/crashEmergencyWrite` and factory binding.
 
 - [ ] **Step 1: Write failing codec/store tests**
 
-Cover round-trip of every safe value, trace hierarchy, error snapshot, strict UTF-8/length/enum validation, trailing-byte rejection, ciphertext tamper failure, monotonic sequence enforcement, date/size rotation, 3-day/3-file/3-MiB retention, and legacy records returned before expiry without entering the new writer.
+Cover round-trip of every safe value, trace hierarchy, error snapshot, strict UTF-8/length/enum validation, trailing-byte rejection, ciphertext tamper failure, monotonic sequence enforcement, date/size rotation, and 3-day/3-file/3-MiB retention. Assert legacy `.elog1` files are never scanned or returned.
 
 Add overload tests:
 
@@ -339,17 +338,17 @@ fun `crash writer does not access keystore or normal writer lock`()
 
 - [ ] **Step 2: Run and confirm failure**
 
-Run: `./gradlew.bat :data:testDebugUnitTest --tests "*LogRecordCodecV1Test" --tests "*EncryptedLogRecordStoreTest"`
+Run: `./gradlew.bat :data:testDebugUnitTest --tests "*LogRecordCodecTest" --tests "*EncryptedLogRecordStoreTest"`
 
 Expected: FAIL because v1 store is absent.
 
 - [ ] **Step 3: Implement codec and store by extracting proven crypto mechanics**
 
-Copy behavior, not legacy event semantics, from `EncryptedLogStore`/`EncryptedLogFileManager`. New directory/magic/version are independent. Do not edit or delete legacy files in this task; `LegacyDiagnosticsReader` is read-only and bounded by the existing three-day retention horizon.
+Copy only proven encryption and retention mechanics, not legacy event semantics or parser code, from `EncryptedLogStore`/`EncryptedLogFileManager`. New directory/magic/version are independent. Do not scan, edit, migrate, or delete legacy files in this task.
 
 - [ ] **Step 4: Run storage tests**
 
-Run: `./gradlew.bat :data:testDebugUnitTest --tests "*LogRecordCodecV1Test" --tests "*EncryptedLogRecordStoreTest"`
+Run: `./gradlew.bat :data:testDebugUnitTest --tests "*LogRecordCodecTest" --tests "*EncryptedLogRecordStoreTest"`
 
 Expected: PASS.
 
@@ -663,7 +662,7 @@ Commit: `git commit -m "refactor(observability): unify application errors"`
 
 - [ ] **Step 1: Write failing architecture guards**
 
-Read production source roots and fail if any file except `LogcatSink.kt` imports `android.util.Log`, or if any production file contains `printStackTrace`, `Log.getStackTraceString`, `TelemetryRuntime`, `TelemetryReporter`, or `TelemetryEvent`. Assert no source references `diagnostics_v1` except `LegacyDiagnosticsReader` and its expiry cleanup.
+Read production source roots and fail if any file except `LogcatSink.kt` imports `android.util.Log`, or if any production file contains `printStackTrace`, `Log.getStackTraceString`, `TelemetryRuntime`, `TelemetryReporter`, or `TelemetryEvent`. Assert no Logger v1 production source references `diagnostics_v1` or `.elog1`.
 
 - [ ] **Step 2: Run guard and confirm it fails before deletion**
 
@@ -673,9 +672,9 @@ Expected: FAIL and list remaining legacy files/imports.
 
 - [ ] **Step 3: Delete the exact legacy files identified by the guard**
 
-`LegacyDiagnosticsReader` created in Task 5 owns the minimum read-only `.elog1` parser needed for the three-day window，so the
-old data diagnostics classes above must be removed rather than kept as a second subsystem. Do not delete the new read-only reader
-until its bounded compatibility window expires in a later dedicated cleanup commit.
+Logger v1 intentionally has no `.elog1` reader or migration path, so the
+old data diagnostics classes above must be removed rather than kept as a second subsystem. No compatibility reader remains after
+this deletion.
 
 - [ ] **Step 4: Update ADR and formal docs to describe implemented code**
 

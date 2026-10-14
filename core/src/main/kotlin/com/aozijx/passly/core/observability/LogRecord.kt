@@ -80,7 +80,7 @@ value class ExceptionType(val value: String) {
 }
 
 @JvmInline
-value class AppStackFrame internal constructor(val value: String) {
+value class AppStackFrame(val value: String) {
     init {
         require(value.length <= 256 && value.matches(APP_STACK_FRAME_PATTERN)) {
             "Invalid application stack frame"
