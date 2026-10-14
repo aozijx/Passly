@@ -2,6 +2,8 @@
 
 状态：当前实现。
 
+代码核对日期：2026-10-14。
+
 ## 契约与状态机
 
 `AuthenticationManager` 是唯一认证编排入口。请求只包含目的、允许方式、新鲜认证要求和 correlation ID；不得携带
@@ -36,9 +38,11 @@ stateDiagram-v2
 
 ## Host 与生物识别
 
-Main、Autofill 和 Credential Response Activity 都在根 Compose 安装 `AuthenticationHost`。Registry 只保存 Host
+Main、Autofill Fill、Legacy Save 和 Credential Response Activity 都在根 Compose 安装 `AuthenticationHost`。Registry 只保存 Host
 弱引用、owner ID 和注册 token；取得 lease 与实际展示前都会检查 resumed、finishing、destroyed 和 token。无 Host
 时最多等待 500 ms，Activity 销毁会取消所属请求，Autofill 请求不会转交 MainActivity。
+
+传统 Autofill 保存认证由内部 `LegacySaveActivity` 持有独立的 `LEGACY_SAVE` interaction。保存草稿由一次性进程内 token 交接，明文只保留在非 saveable 的 ViewModel continuation 中；配置变更复用同一 ViewModel，进程死亡则拒绝恢复。成功、认证取消、持久化失败或返回退出都会结束该 interaction。只有 Autofill 自己取得或借用的临时 lease 会在最后一个借用者结束后关闭；已存在的完整 `Authenticated` 会话不受影响。
 
 PromptInfo 与 CryptoObject 分离。Enroll/Rotate 使用新的 ENCRYPT Cipher，Unlock 使用最新 alias 和 Envelope nonce
 创建新的 DECRYPT Cipher，VerifyIdentity 不携带 CryptoObject。Cipher 不缓存，也不进入 Bundle、Intent、

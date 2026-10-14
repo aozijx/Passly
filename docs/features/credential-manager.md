@@ -2,7 +2,7 @@
 
 状态：当前实现。
 
-代码核对日期：2026-10-13。
+代码核对日期：2026-10-14。
 
 适用范围：Android 14（API 34）及以上；传统 Autofill 见[自动填充安全](../security/autofill.md)。
 
@@ -87,6 +87,8 @@ interaction 只存在于当前进程。进程死亡后，旧 PendingIntent 不�
 
 `CredentialBeginCreateHandler` 只接受 `BeginCreatePasswordCredentialRequest`。设置允许且调用方有效时，它建立一个 Credential Manager interaction，并返回禁止 auto-select 的 `CreateEntry`。
 
+Credential Manager 创建只受 Autofill 总开关和 Credential Manager 开关控制，不读取传统 Autofill 的“保存新登录”开关。反方向也相同：Credential Manager 开关不控制 Legacy `SaveInfo` 或 `SaveCallback`。两者只复用类型化草稿持久化和认证/lease 基础设施，不复用 Android 结果对象。
+
 最终阶段：
 
 1. 用 `retrieveProviderCreateCredentialRequest()` 取得系统注入的调用方和 `CreatePasswordRequest`；
@@ -113,6 +115,7 @@ interaction 只存在于当前进程。进程死亡后，旧 PendingIntent 不�
 
 - 普通选择和创建是终态；解锁返回候选是中间态，不会提前释放 interaction。
 - 成功响应由 Credential Manager Activity 在 `setResult(RESULT_OK, ...)` 后调用共享的 session 收尾操作；返回键、协程取消和异常路径统一取消 interaction。该 Activity 的结果合同与 Legacy Autofill 保持独立。
+- Credential Manager 创建始终返回 Credential Provider response 或异常；它不构造 Legacy `SaveInfo`、`SaveCallback` continuation 或 `Dataset`。
 - 每个 interaction 有 60 秒 process-local 超时，用于回收被系统选择器遗弃的请求；认证或解析秘密中的活跃操作会延后回收。
 - `onClearCredentialStateRequest()` 会过期所有 Credential Manager interaction；它不会删除条目，也不会锁定本来就由用户解锁的 Vault。
 
