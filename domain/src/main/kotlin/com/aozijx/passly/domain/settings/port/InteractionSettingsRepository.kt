@@ -19,6 +19,7 @@ interface InteractionSettingsRepository : InteractionSettingsSource {
     suspend fun setCredentialManagerEnabled(enabled: Boolean)
     suspend fun setAutofillAuthenticationRequired(required: Boolean)
     suspend fun setAutofillOtpEnabled(enabled: Boolean)
+    suspend fun setAutofillSavePromptsEnabled(enabled: Boolean)
     suspend fun setUnmatchedAutofillSuggestionsEnabled(enabled: Boolean)
     suspend fun setAutofillMaxSuggestions(count: Int)
 }

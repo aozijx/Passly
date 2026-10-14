@@ -198,6 +198,9 @@ internal class ProtoSettingsStore @Inject constructor(
         requireAuthentication = required
     }
     override suspend fun setAutofillOtpEnabled(enabled: Boolean) = updateAutofill { includeOtp = enabled }
+    override suspend fun setAutofillSavePromptsEnabled(enabled: Boolean) = updateAutofill {
+        savePromptsEnabled = enabled
+    }
 
     override suspend fun setUnmatchedAutofillSuggestionsEnabled(enabled: Boolean) = updateAutofill {
         allowUnmatchedSuggestions = enabled

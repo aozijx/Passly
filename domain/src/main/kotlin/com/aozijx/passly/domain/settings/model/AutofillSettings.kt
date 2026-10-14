@@ -12,6 +12,7 @@ data class AutofillSettings(
     val credentialManagerEnabled: Boolean = true,
     val requireAuthentication: Boolean = true,
     val includeOtp: Boolean = true,
+    val savePromptsEnabled: Boolean = true,
     val allowUnmatchedSuggestions: Boolean = false,
     val maxSuggestions: Int = DEFAULT_MAX_SUGGESTIONS,
 ) {
