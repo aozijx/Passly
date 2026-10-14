@@ -171,7 +171,7 @@ class LegacySaveFlowTest {
             settingsSource = object : InteractionSettingsSource {
                 override val interaction = settings
             },
-            vaultAccessState = vault,
+            canPersistImmediately = vault::hasFullSecureSessionAccess,
             draftStore = draftStore,
             startInteraction = StartAutofillInteraction(store, lease, vault),
             authorizeInteraction = AuthorizeAutofillInteraction(authentication, vault, store, lease),

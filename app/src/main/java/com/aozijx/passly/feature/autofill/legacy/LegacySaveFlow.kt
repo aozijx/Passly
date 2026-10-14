@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.autofill.legacy
 
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.model.AutofillAuthorizationOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
@@ -12,6 +11,7 @@ import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.autofill.core.AuthorizeAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.AutofillSaveDraftExtraction
 import com.aozijx.passly.feature.autofill.core.AutofillSaveDraftExtractor
+import com.aozijx.passly.feature.autofill.core.AutofillSaveAccessPolicy
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.SaveAutofillCredential
 import com.aozijx.passly.feature.autofill.core.StartAutofillInteraction
@@ -56,7 +56,7 @@ enum class LegacySaveCompletion {
 @Singleton
 class LegacySaveFlow internal constructor(
     private val settingsSource: InteractionSettingsSource,
-    private val vaultAccessState: SecureSessionAccessState,
+    private val canPersistImmediately: () -> Boolean,
     private val draftStore: LegacySaveDraftStore,
     private val startInteraction: StartAutofillInteraction,
     private val authorizeInteraction: AuthorizeAutofillInteraction,
@@ -68,7 +68,7 @@ class LegacySaveFlow internal constructor(
     @Inject
     constructor(
         settingsSource: InteractionSettingsSource,
-        vaultAccessState: SecureSessionAccessState,
+        saveAccessPolicy: AutofillSaveAccessPolicy,
         draftStore: LegacySaveDraftStore,
         startInteraction: StartAutofillInteraction,
         authorizeInteraction: AuthorizeAutofillInteraction,
@@ -78,7 +78,7 @@ class LegacySaveFlow internal constructor(
         saveCredential: SaveAutofillCredential,
     ) : this(
         settingsSource,
-        vaultAccessState,
+        saveAccessPolicy::canPersistImmediately,
         draftStore,
         startInteraction,
         authorizeInteraction,
@@ -97,7 +97,7 @@ class LegacySaveFlow internal constructor(
             is AutofillSaveDraftExtraction.Ready -> extraction.draft
             is AutofillSaveDraftExtraction.Rejected -> return LegacySavePreparation.InvalidDraft
         }
-        if (vaultAccessState.hasFullSecureSessionAccess()) {
+        if (canPersistImmediately()) {
             return persistImmediately(draft)
         }
         val scope = AutofillGrantContext(draft.packageName, draft.webDomain).normalized()
