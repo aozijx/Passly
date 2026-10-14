@@ -56,12 +56,12 @@ class RuntimeSessionManagerTest {
     @Test
     fun `seal cancels long lived observers before closing resource`() = runBlocking {
         val started = CompletableDeferred<Unit>()
-        val events = mutableListOf<SessionRuntimeEvent>()
+        val events = mutableListOf<SessionTransitionEvent>()
         val resource = FakeResource()
         val manager = RuntimeSessionManager(
             resource = resource,
             keySource = SessionKeySource { byteArrayOf(9) },
-            eventSink = SessionEventSink { event, _ -> events += event },
+            eventSink = SessionEventSink(events::add),
         )
         manager.unlock()
 
@@ -80,7 +80,15 @@ class RuntimeSessionManagerTest {
 
         assertTrue(observer.isCancelled)
         assertTrue(resource.closed)
-        assertTrue(SessionRuntimeEvent.SEAL_DRAIN_TIMEOUT in events)
+        val timeout = events.single { it.reason == SessionTransitionReason.DRAIN_TIMEOUT }
+        assertEquals(SecureSessionState.UNLOCKED, timeout.fromState)
+        assertEquals(SecureSessionState.SEALED, timeout.toState)
+        assertEquals(SessionTransitionOwner.SESSION_RUNTIME, timeout.owner)
+        assertEquals(SessionLockType.SEALED, timeout.lockType)
+        assertEquals(1L, timeout.timeoutMs)
+        assertEquals(1, timeout.activeLeaseCount)
+        assertEquals(null, timeout.error)
+        assertTrue(timeout.elapsedMs >= 0)
         assertEquals(SecureSessionState.SEALED, manager.lockState)
         runCatching { manager.read { value } }
             .onSuccess { error("sealed session accepted a read") }
@@ -121,25 +129,56 @@ class RuntimeSessionManagerTest {
     @Test
     fun `close failure is reported and handle is still discarded`() = runBlocking {
         val failure = IllegalStateException("close failed")
-        val failures = mutableListOf<Throwable?>()
+        val events = mutableListOf<SessionTransitionEvent>()
         val resource = FakeResource(closeFailure = failure)
         val manager = RuntimeSessionManager(
             resource = resource,
             keySource = SessionKeySource { byteArrayOf(9) },
-            eventSink = SessionEventSink { event, error ->
-                if (event == SessionRuntimeEvent.CLOSE_FAILED) failures += error
-            },
+            eventSink = SessionEventSink(events::add),
         )
         manager.unlock()
 
         manager.seal()
 
-        assertEquals(listOf(failure), failures)
+        val closeFailure = events.single { it.reason == SessionTransitionReason.CLOSE_FAILED }
+        assertEquals(SecureSessionState.SEALED, closeFailure.fromState)
+        assertEquals(SecureSessionState.SEALED, closeFailure.toState)
+        assertEquals(SessionLockType.SEALED, closeFailure.lockType)
+        assertEquals(failure, closeFailure.error)
         assertEquals(SecureSessionState.SEALED, manager.lockState)
         runCatching { manager.read { value } }
             .onSuccess { error("failed close retained a readable handle") }
             .onFailure { assertTrue(it is SessionLockedException) }
         Unit
+    }
+
+    @Test
+    fun `open resume and soft lock emit complete typed transitions`() = runBlocking {
+        val events = mutableListOf<SessionTransitionEvent>()
+        val manager = RuntimeSessionManager(
+            resource = FakeResource(),
+            keySource = SessionKeySource { byteArrayOf(9) },
+            eventSink = SessionEventSink(events::add),
+        )
+
+        manager.unlock()
+        manager.softLock()
+        manager.unlock()
+
+        assertEquals(
+            listOf(
+                Triple(SecureSessionState.SEALED, SecureSessionState.UNLOCKED, SessionTransitionReason.OPEN),
+                Triple(SecureSessionState.UNLOCKED, SecureSessionState.SOFT_LOCKED, SessionTransitionReason.SOFT_LOCK),
+                Triple(SecureSessionState.SOFT_LOCKED, SecureSessionState.UNLOCKED, SessionTransitionReason.RESUME),
+            ),
+            events.map { Triple(it.fromState, it.toState, it.reason) },
+        )
+        assertTrue(events.all { it.owner == SessionTransitionOwner.SESSION_RUNTIME })
+        assertEquals(
+            listOf(SessionLockType.NONE, SessionLockType.SOFT, SessionLockType.NONE),
+            events.map(SessionTransitionEvent::lockType),
+        )
+        assertTrue(events.all { it.elapsedMs >= 0 && it.timeoutMs == null && it.error == null })
     }
 
     private class FakeResource(

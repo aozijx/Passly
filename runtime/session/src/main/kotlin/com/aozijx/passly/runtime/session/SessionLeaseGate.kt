@@ -21,11 +21,6 @@ internal class SessionLeaseGate<Handle : Any>(
     private val resource: SessionResource<Handle>,
     private val eventSink: SessionEventSink,
 ) {
-    private companion object {
-        const val DRAIN_POLL_MS = 50L
-        const val POST_CANCEL_DELAY_MS = 100L
-    }
-
     private val mutableLockState = MutableStateFlow(SecureSessionState.SEALED)
     val lockState: StateFlow<SecureSessionState> = mutableLockState.asStateFlow()
 
@@ -72,52 +67,111 @@ internal class SessionLeaseGate<Handle : Any>(
 
     suspend fun resumeIfOpen(): Boolean = resourceMutex.withLock {
         if (handle == null) return false
+        val startedAt = elapsedRealtimeMs()
+        val fromState = mutableLockState.value
         leaseMutex.withLock { mutableLockState.value = SecureSessionState.UNLOCKED }
-        eventSink.emit(SessionRuntimeEvent.RESUMED, null)
+        emitTransition(
+            startedAt = startedAt,
+            fromState = fromState,
+            toState = SecureSessionState.UNLOCKED,
+            reason = SessionTransitionReason.RESUME,
+            lockType = SessionLockType.NONE,
+        )
         true
     }
 
-    suspend fun open(key: ByteArray): SessionUnlockResult = try {
-        val opened = resource.open(key)
-        resourceMutex.withLock { handle = opened }
-        leaseMutex.withLock { mutableLockState.value = SecureSessionState.UNLOCKED }
-        eventSink.emit(SessionRuntimeEvent.OPENED, null)
-        SessionUnlockResult.Success
-    } catch (error: Throwable) {
-        resourceMutex.withLock { handle = null }
-        leaseMutex.withLock { mutableLockState.value = SecureSessionState.SEALED }
-        eventSink.emit(SessionRuntimeEvent.OPEN_FAILED, error)
-        SessionUnlockResult.OpenFailed(error)
+    suspend fun open(key: ByteArray): SessionUnlockResult {
+        val startedAt = elapsedRealtimeMs()
+        val fromState = mutableLockState.value
+        return try {
+            val opened = resource.open(key)
+            resourceMutex.withLock { handle = opened }
+            leaseMutex.withLock { mutableLockState.value = SecureSessionState.UNLOCKED }
+            emitTransition(
+                startedAt,
+                fromState,
+                SecureSessionState.UNLOCKED,
+                SessionTransitionReason.OPEN,
+                SessionLockType.NONE,
+            )
+            SessionUnlockResult.Success
+        } catch (error: Throwable) {
+            resourceMutex.withLock { handle = null }
+            leaseMutex.withLock { mutableLockState.value = SecureSessionState.SEALED }
+            emitTransition(
+                startedAt,
+                fromState,
+                SecureSessionState.SEALED,
+                SessionTransitionReason.OPEN_FAILED,
+                SessionLockType.NONE,
+                error = error,
+            )
+            SessionUnlockResult.OpenFailed(error)
+        }
     }
 
     suspend fun softLock() {
+        val startedAt = elapsedRealtimeMs()
+        val fromState = mutableLockState.value
         leaseMutex.withLock { mutableLockState.value = SecureSessionState.SOFT_LOCKED }
-        eventSink.emit(SessionRuntimeEvent.SOFT_LOCKED, null)
+        emitTransition(
+            startedAt,
+            fromState,
+            SecureSessionState.SOFT_LOCKED,
+            SessionTransitionReason.SOFT_LOCK,
+            SessionLockType.SOFT,
+        )
     }
 
     suspend fun seal(timeout: Duration) {
+        val startedAt = elapsedRealtimeMs()
+        val fromState = mutableLockState.value
         leaseMutex.withLock { mutableLockState.value = SecureSessionState.SEALED }
 
         val drained = withTimeoutOrNull(timeout) {
             while (activeLeases.get() > 0) delay(DRAIN_POLL_MS)
         }
         if (drained == null) {
-            eventSink.emit(SessionRuntimeEvent.SEAL_DRAIN_TIMEOUT, null)
+            emitTransition(
+                startedAt,
+                fromState,
+                SecureSessionState.SEALED,
+                SessionTransitionReason.DRAIN_TIMEOUT,
+                SessionLockType.SEALED,
+                timeoutMs = timeout.inWholeMilliseconds,
+                activeLeaseCount = activeLeases.get(),
+            )
             observerJobs.forEach(Job::cancel)
             delay(POST_CANCEL_DELAY_MS)
         }
 
         close()
-        eventSink.emit(SessionRuntimeEvent.SEALED, null)
+        emitTransition(
+            startedAt,
+            fromState,
+            SecureSessionState.SEALED,
+            SessionTransitionReason.SEAL,
+            SessionLockType.SEALED,
+            timeoutMs = timeout.inWholeMilliseconds,
+        )
     }
 
     suspend fun close() {
+        val startedAt = elapsedRealtimeMs()
         resourceMutex.withLock {
             val current = handle ?: return
             try {
                 resource.close(current)
             } catch (error: Throwable) {
-                eventSink.emit(SessionRuntimeEvent.CLOSE_FAILED, error)
+                val state = mutableLockState.value
+                emitTransition(
+                    startedAt,
+                    state,
+                    state,
+                    SessionTransitionReason.CLOSE_FAILED,
+                    if (state == SecureSessionState.SEALED) SessionLockType.SEALED else SessionLockType.NONE,
+                    error = error,
+                )
             } finally {
                 handle = null
             }
@@ -144,5 +198,38 @@ internal class SessionLeaseGate<Handle : Any>(
 
     private suspend fun resolveHandle(): Handle = resourceMutex.withLock {
         handle ?: throw SessionLockedException("Session resource is not open")
+    }
+
+    private suspend fun emitTransition(
+        startedAt: Long,
+        fromState: SecureSessionState,
+        toState: SecureSessionState,
+        reason: SessionTransitionReason,
+        lockType: SessionLockType,
+        timeoutMs: Long? = null,
+        activeLeaseCount: Int = 0,
+        error: Throwable? = null,
+    ) {
+        eventSink.emit(
+            SessionTransitionEvent(
+                fromState = fromState,
+                toState = toState,
+                owner = SessionTransitionOwner.SESSION_RUNTIME,
+                reason = reason,
+                lockType = lockType,
+                elapsedMs = (elapsedRealtimeMs() - startedAt).coerceAtLeast(0),
+                timeoutMs = timeoutMs,
+                activeLeaseCount = activeLeaseCount,
+                error = error,
+            ),
+        )
+    }
+
+    private fun elapsedRealtimeMs(): Long = System.nanoTime() / NANOS_PER_MILLISECOND
+
+    private companion object {
+        const val DRAIN_POLL_MS = 50L
+        const val POST_CANCEL_DELAY_MS = 100L
+        const val NANOS_PER_MILLISECOND = 1_000_000L
     }
 }

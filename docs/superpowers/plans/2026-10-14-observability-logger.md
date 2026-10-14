@@ -433,25 +433,25 @@ git commit -m "feat(observability): assemble logger and secure export"
 - Consumes: injected `Logger`, catalog constants and Trace API.
 - Produces: one database/security trace with required state, owner, reason, trigger, timeout and elapsed fields.
 
-- [ ] **Step 1: Extend runtime event tests before changing event shape**
+- [x] **Step 1: Extend runtime event tests before changing event shape**
 
 Replace enum-only callback with typed `SessionTransitionEvent(fromState, toState, owner, reason, lockType, elapsedMs, timeoutMs, error)` and assert transitions for open, resume, soft lock, seal timeout and close failure.
 
-- [ ] **Step 2: Run runtime tests and confirm failure**
+- [x] **Step 2: Run runtime tests and confirm failure**
 
 Run: `./gradlew.bat :runtime:session:test --tests "*RuntimeSessionManagerTest"`
 
 Expected: FAIL until typed transition events are emitted.
 
-- [ ] **Step 3: Implement typed runtime transitions without depending on Logger**
+- [x] **Step 3: Implement typed runtime transitions without depending on Logger**
 
 Keep `runtime:session` platform-neutral. `AppDatabaseSession` adapts typed runtime events to Logger; runtime does not import observability packages.
 
-- [ ] **Step 4: Add failing integration tests for database/security logging**
+- [x] **Step 4: Add failing integration tests for database/security logging**
 
 Assert `database.session.transition`, `security.lock.started/completed`, authentication method enum, same trace across start/completion, DEBUG for skipped background lock, and ERROR with safe exception snapshot on failure.
 
-- [ ] **Step 5: Implement adapters and run focused tests**
+- [x] **Step 5: Implement adapters and run focused tests**
 
 Run:
 
@@ -463,7 +463,7 @@ Run:
 
 Expected: all PASS.
 
-- [ ] **Step 6: Commit database/security migration**
+- [x] **Step 6: Commit database/security migration**
 
 ```powershell
 git add -- runtime/session/src/main runtime/session/src/test data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSession.kt data/src/test/java/com/aozijx/passly/data/local/database/session/AppDatabaseSessionObservabilityTest.kt security/src/main/java/com/aozijx/passly/security/authentication security/src/test/java/com/aozijx/passly/security/authentication/VaultSessionObservabilityTest.kt docs/security/authentication.md

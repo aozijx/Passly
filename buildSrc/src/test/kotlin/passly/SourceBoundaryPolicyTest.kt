@@ -880,6 +880,7 @@ class SourceBoundaryPolicyTest {
         val allowedImports = listOf(
             "com.aozijx.passly.core.crypto.FieldEncryptor",
             "com.aozijx.passly.core.error.result.AppResult",
+            "com.aozijx.passly.core.observability.Logger",
             "com.aozijx.passly.core.platform.VaultResourcePaths",
             "com.aozijx.passly.core.telemetry.TelemetryReporter",
             "com.aozijx.passly.security.dek.FieldKeyManager",

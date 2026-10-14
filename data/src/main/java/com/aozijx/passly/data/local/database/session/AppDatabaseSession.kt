@@ -1,18 +1,23 @@
 package com.aozijx.passly.data.local.database.session
 
 import com.aozijx.passly.core.error.model.DatabaseInitFailed
-import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.core.telemetry.EventLevel
-import com.aozijx.passly.core.telemetry.TelemetryEvent
-import com.aozijx.passly.core.telemetry.TelemetryReporter
+import com.aozijx.passly.core.observability.ErrorCodes
+import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.LogFieldKeys
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.core.observability.ReasonCode
+import com.aozijx.passly.core.observability.Reasons
+import com.aozijx.passly.core.observability.fields
 import com.aozijx.passly.data.local.database.AppDatabase
-import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
-import com.aozijx.passly.runtime.session.SessionStateProvider
 import com.aozijx.passly.runtime.session.RuntimeSessionManager
+import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.runtime.session.SessionEventSink
 import com.aozijx.passly.runtime.session.SessionKeySource
-import com.aozijx.passly.runtime.session.SessionRuntimeEvent
+import com.aozijx.passly.runtime.session.SessionStateProvider
+import com.aozijx.passly.runtime.session.SessionTransitionEvent
+import com.aozijx.passly.runtime.session.SessionTransitionReason
 import com.aozijx.passly.runtime.session.SessionUnlockResult
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -25,12 +30,12 @@ import kotlin.time.Duration.Companion.seconds
 class AppDatabaseSession @Inject internal constructor(
     resource: AppDatabaseSessionResource,
     keySource: SessionKeySource,
-    private val telemetry: TelemetryReporter,
+    eventLogger: DatabaseSessionEventLogger,
 ) : SessionStateProvider, DatabaseSessionLifecycle {
     private val runtime = RuntimeSessionManager(
         resource = resource,
         keySource = keySource,
-        eventSink = SessionEventSink(::recordRuntimeEvent),
+        eventSink = SessionEventSink(eventLogger::record),
     )
 
     override val lockState: SecureSessionState
@@ -61,29 +66,59 @@ class AppDatabaseSession @Inject internal constructor(
 
     suspend fun closeDatabase() = runtime.closeResource()
 
-    private fun recordRuntimeEvent(event: SessionRuntimeEvent, error: Throwable?) {
-        when (event) {
-            SessionRuntimeEvent.OPEN_FAILED,
-            SessionRuntimeEvent.CLOSE_FAILED,
-            -> emitRuntimeEvent(EventLevel.ERROR, event, error)
+}
 
-            SessionRuntimeEvent.SEAL_DRAIN_TIMEOUT -> emitRuntimeEvent(EventLevel.WARN, event)
-            else -> emitRuntimeEvent(EventLevel.INFO, event)
+internal class DatabaseSessionEventLogger @Inject constructor(
+    private val logger: Logger,
+) {
+    suspend fun record(event: SessionTransitionEvent) {
+        logger.inSpan(Operations.DatabaseSession) {
+            val reason = event.reason.toReasonCode()
+            val logFields = fields {
+                enum(LogFieldKeys.FromState, event.fromState)
+                enum(LogFieldKeys.ToState, event.toState)
+                enum(LogFieldKeys.LockType, event.lockType)
+                reason(LogFieldKeys.Reason, reason)
+                enum(LogFieldKeys.Owner, event.owner)
+                durationMs(LogFieldKeys.ElapsedMs, event.elapsedMs)
+                event.timeoutMs?.let { durationMs(LogFieldKeys.TimeoutMs, it) }
+                if (event.activeLeaseCount > 0) {
+                    count(LogFieldKeys.ActiveLeaseCount, event.activeLeaseCount)
+                }
+            }
+            when (event.reason) {
+                SessionTransitionReason.OPEN_FAILED -> logger.error(
+                    Events.Database.SessionTransitionFailed,
+                    ErrorCodes.DatabaseSessionOpenFailed,
+                    reason,
+                    requireNotNull(event.error),
+                    logFields,
+                )
+                SessionTransitionReason.CLOSE_FAILED -> logger.error(
+                    Events.Database.SessionTransitionFailed,
+                    ErrorCodes.DatabaseSessionCloseFailed,
+                    reason,
+                    requireNotNull(event.error),
+                    logFields,
+                )
+                SessionTransitionReason.DRAIN_TIMEOUT -> logger.degraded(
+                    Events.Database.SessionTransitionFailed,
+                    ErrorCodes.DatabaseSessionCloseFailed,
+                    reason,
+                    logFields,
+                )
+                else -> logger.info(Events.Database.SessionTransition, logFields)
+            }
         }
     }
 
-    private fun emitRuntimeEvent(
-        level: EventLevel,
-        event: SessionRuntimeEvent,
-        error: Throwable? = null,
-    ) {
-        telemetry.emit(
-            TelemetryEvent(
-                level = level,
-                category = EventCategory.DATABASE,
-                name = "database.session.${event.name.lowercase()}",
-                throwableType = error?.javaClass?.simpleName,
-            )
-        )
+    private fun SessionTransitionReason.toReasonCode(): ReasonCode = when (this) {
+        SessionTransitionReason.OPEN -> Reasons.SessionOpen
+        SessionTransitionReason.OPEN_FAILED -> Reasons.SessionOpenFailed
+        SessionTransitionReason.RESUME -> Reasons.SessionResume
+        SessionTransitionReason.SOFT_LOCK -> Reasons.SessionSoftLock
+        SessionTransitionReason.SEAL -> Reasons.SessionSeal
+        SessionTransitionReason.DRAIN_TIMEOUT -> Reasons.SessionDrainTimeout
+        SessionTransitionReason.CLOSE_FAILED -> Reasons.DatabaseSessionCloseFailed
     }
 }

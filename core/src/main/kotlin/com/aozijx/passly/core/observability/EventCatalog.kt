@@ -130,6 +130,7 @@ object ErrorCodes {
     val DiagnosticsExportFailed = ErrorCode("DIAGNOSTICS_EXPORT_FAILED")
     val ApplicationUnhandledException = ErrorCode("APPLICATION_UNHANDLED_EXCEPTION")
     val NativeLibraryLoadFailed = ErrorCode("NATIVE_LIBRARY_LOAD_FAILED")
+    val SecurityLockFailed = ErrorCode("SECURITY_LOCK_FAILED")
 }
 
 object Reasons {
@@ -138,11 +139,26 @@ object Reasons {
     val DatabaseUnavailable = ReasonCode("DATABASE_UNAVAILABLE")
     val NoMatchingEntry = ReasonCode("NO_MATCHING_ENTRY")
     val PlatformCallbackFailed = ReasonCode("PLATFORM_CALLBACK_FAILED")
-    val SessionCloseFailed = ReasonCode("SESSION_CLOSE_FAILED")
+    val DatabaseSessionCloseFailed = ReasonCode("DATABASE_SESSION_CLOSE_FAILED")
     val AuthenticationRejected = ReasonCode("AUTHENTICATION_REJECTED")
     val StorageFailure = ReasonCode("STORAGE_FAILURE")
     val UnknownFailure = ReasonCode("UNKNOWN_FAILURE")
     val NativeLibraryUnavailable = ReasonCode("NATIVE_LIBRARY_UNAVAILABLE")
+    val SessionOpen = ReasonCode("SESSION_OPEN")
+    val SessionOpenFailed = ReasonCode("SESSION_OPEN_FAILED")
+    val SessionResume = ReasonCode("SESSION_RESUME")
+    val SessionSoftLock = ReasonCode("SESSION_SOFT_LOCK")
+    val SessionSeal = ReasonCode("SESSION_SEAL")
+    val SessionDrainTimeout = ReasonCode("SESSION_DRAIN_TIMEOUT")
+    val SessionCloseFailed = ReasonCode("SESSION_CLOSE_FAILED")
+    val SecurityLockOperationFailed = ReasonCode("SECURITY_LOCK_OPERATION_FAILED")
+    val User = ReasonCode("USER")
+    val IdleTimeout = ReasonCode("IDLE_TIMEOUT")
+    val AutofillRequestFinished = ReasonCode("AUTOFILL_REQUEST_FINISHED")
+    val Background = ReasonCode("BACKGROUND")
+    val RecoveryExit = ReasonCode("RECOVERY_EXIT")
+    val IntegrityFailure = ReasonCode("INTEGRITY_FAILURE")
+    val AppExit = ReasonCode("APP_EXIT")
 }
 
 object Operations {

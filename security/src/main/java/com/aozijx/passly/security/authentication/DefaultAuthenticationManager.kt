@@ -1,9 +1,5 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.core.telemetry.TelemetryRuntime
-import com.aozijx.passly.core.telemetry.ErrorCode
-import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.core.telemetry.SafeLogValue
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
@@ -55,7 +51,8 @@ class DefaultAuthenticationManager @Inject constructor(
     private val session: VaultSessionController,
     private val settingsSource: SecuritySettingsSource,
     private val availabilityResolver: AuthenticationAvailabilityResolver,
-    private val sensitiveDataKeyManager: SensitiveDataKeyManager
+    private val sensitiveDataKeyManager: SensitiveDataKeyManager,
+    private val securityEvents: SecuritySessionEventLogger,
 ) : AuthenticationManager {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val requestMutex = Mutex()
@@ -95,10 +92,17 @@ class DefaultAuthenticationManager @Inject constructor(
     override suspend fun authenticate(
         request: AuthenticationRequest,
         input: AuthInput,
+    ): AuthenticationResult = securityEvents.traceAuthentication {
+        authenticateInternal(request, input, this)
+    }
+
+    private suspend fun authenticateInternal(
+        request: AuthenticationRequest,
+        input: AuthInput,
+        traceScope: SecuritySessionEventLogger.AuthenticationTraceScope,
     ): AuthenticationResult {
         if (!requestMutex.tryLock()) {
             return finish(
-                request,
                 AuthenticationResult.Failure(
                     AuthenticationFailure(AuthenticationFailureCode.BUSY, request.id)
                 )
@@ -115,7 +119,6 @@ class DefaultAuthenticationManager @Inject constructor(
         try {
             if (wasRecoveryMode && request.purpose !in AuthenticationMethodPolicy.RECOVERY_MODE_PURPOSES) {
                 return finish(
-                    request,
                     AuthenticationResult.Failure(
                         AuthenticationFailure(
                             AuthenticationFailureCode.SESSION_MODE_RESTRICTED,
@@ -154,7 +157,6 @@ class DefaultAuthenticationManager @Inject constructor(
                 session.transition(AuthenticationState.AwaitingHost(request.id))
             }
             val lease = hostRegistry.awaitLease() ?: return finish(
-                request,
                 AuthenticationResult.Failure(
                     AuthenticationFailure(
                         AuthenticationFailureCode.HOST_UNAVAILABLE,
@@ -171,7 +173,6 @@ class DefaultAuthenticationManager @Inject constructor(
             if (available.isEmpty()) {
                 if (opensSession) restoreState(previousState)
                 return finish(
-                    request,
                     AuthenticationResult.Failure(
                         AuthenticationFailure(
                             AuthenticationFailureCode.METHOD_UNAVAILABLE,
@@ -183,7 +184,6 @@ class DefaultAuthenticationManager @Inject constructor(
             val host = lease.hostOrNull() ?: run {
                 if (opensSession) restoreState(previousState)
                 return finish(
-                    request,
                     AuthenticationResult.Failure(
                         AuthenticationFailure(
                             AuthenticationFailureCode.HOST_UNAVAILABLE,
@@ -198,13 +198,12 @@ class DefaultAuthenticationManager @Inject constructor(
                 else -> host.chooseMethod(request.purpose, available)
                     ?: run {
                         if (opensSession) restoreState(previousState)
-                        return finish(request, AuthenticationResult.Cancelled(CancellationReason.USER))
+                        return finish(AuthenticationResult.Cancelled(CancellationReason.USER))
                     }
             }
             if (!hostRegistry.isCurrent(lease)) {
                 if (opensSession) restoreState(previousState)
                 return finish(
-                    request,
                     AuthenticationResult.Failure(
                         AuthenticationFailure(
                             AuthenticationFailureCode.HOST_UNAVAILABLE,
@@ -262,14 +261,14 @@ class DefaultAuthenticationManager @Inject constructor(
                     AuthenticationResult.Failure(execution.failure)
                 }
             }
-            return finish(request, result)
+            return finish(result)
         } catch (cancelled: CancellationException) {
             if (opensSession) restoreState(previousState)
             throw cancelled
         } catch (failure: Throwable) {
+            traceScope.recordFailure(failure)
             if (opensSession) restoreState(previousState)
             return finish(
-                request,
                 AuthenticationResult.Failure(
                     AuthenticationFailure(
                         AuthenticationFailureCode.SESSION_TRANSITION_FAILED,
@@ -307,20 +306,6 @@ class DefaultAuthenticationManager @Inject constructor(
         }
     }
 
-    private fun finish(
-        request: AuthenticationRequest,
-        result: AuthenticationResult
-    ): AuthenticationResult {
-        if (result is AuthenticationResult.Failure) {
-            TelemetryRuntime.w(
-                EventCategory.AUTHENTICATION,
-                "authentication_failed",
-                fields = mapOf(
-                    "code" to SafeLogValue.ErrorCodeValue(ErrorCode(result.failure.code.name))
-                )
-            )
-        }
-        return result
-    }
+    private fun finish(result: AuthenticationResult): AuthenticationResult = result
 
 }

@@ -1,9 +1,7 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.core.telemetry.TelemetryRuntime
 import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
-import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.port.AuthorizationPermitRevoker
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
@@ -44,6 +42,7 @@ class VaultSessionController @Inject constructor(
     private val sessionManager: DatabaseSessionLifecycle,
     private val vaultBootstrapStore: VaultBootstrapStore,
     private val lockStateManager: LockStateManager,
+    private val securityEvents: SecuritySessionEventLogger,
     idleTimeoutSettings: com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
 ) : SecureSessionAccessState, SessionActivityReporter, DatabaseSessionFailureState, DatabaseSessionRecovery {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -268,10 +267,13 @@ class VaultSessionController @Inject constructor(
 
     /** Closes a session whose recovery code could not be durably consumed. */
     private suspend fun sealStagedRecoverySession() {
-        runCatching { sessionManager.seal() }
-            .onFailure { error ->
-                TelemetryRuntime.e(EventCategory.DATABASE, "recovery_rollback_seal_failed", throwable = error)
+        securityEvents.traceLock(LockReason.RECOVERY_EXIT, timeoutMs = 5_000) {
+            try {
+                sessionManager.seal()
+            } catch (failure: Throwable) {
+                recordFailure(failure)
             }
+        }
         dekManager.lock()
         lockStateManager.mark(SecureSessionState.SEALED)
         transition(AuthenticationState.Locked)
@@ -289,7 +291,10 @@ class VaultSessionController @Inject constructor(
      * - SEALED（AUTOFILL_REQUEST_FINISHED / BACKGROUND / INTEGRITY_FAILURE / APP_EXIT）：
      *   排干 + 关库 + 擦 DEK
      */
-    suspend fun lock(reason: LockReason) {
+    suspend fun lock(reason: LockReason) = securityEvents.traceLock(
+        reason = reason,
+        timeoutMs = if (reason.toLockLevel() == SecureSessionState.SEALED) 5_000 else 0,
+    ) {
         mutex.withLock {
             if (!shouldApplyLock(_state.value, reason)) return@withLock
             authorizationPermitRevoker.revokeAll()
@@ -315,18 +320,20 @@ class VaultSessionController @Inject constructor(
 
             when (targetLevel) {
                 SecureSessionState.SOFT_LOCKED -> {
-                    runCatching { sessionManager.softLock() }
-                        .onFailure { e ->
-                            TelemetryRuntime.e(EventCategory.DATABASE, "soft_lock_failed", throwable = e)
-                        }
+                    try {
+                        sessionManager.softLock()
+                    } catch (failure: Throwable) {
+                        recordFailure(failure)
+                    }
                     lockStateManager.mark(SecureSessionState.SOFT_LOCKED)
                 }
 
                 SecureSessionState.SEALED -> {
-                    runCatching { sessionManager.seal() }
-                        .onFailure { e ->
-                            TelemetryRuntime.e(EventCategory.DATABASE, "seal_failed", throwable = e)
-                        }
+                    try {
+                        sessionManager.seal()
+                    } catch (failure: Throwable) {
+                        recordFailure(failure)
+                    }
                     dekManager.lock()
                     lockStateManager.mark(SecureSessionState.SEALED)
                 }

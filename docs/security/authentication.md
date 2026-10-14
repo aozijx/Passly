@@ -2,7 +2,7 @@
 
 状态：当前实现。
 
-代码核对日期：2026-10-14。
+代码核对日期：2026-10-15。
 
 ## 契约与状态机
 
@@ -103,3 +103,19 @@ stateDiagram-v2
 Bootstrap 先写 PREPARED journal，再创建 candidate key/Envelope；单次更新切换 active binding 并登记旧 alias
 待清理。提交后删除旧 alias 失败只记录并留待 Reconciler 重试，不回滚新 binding。启动和认证成功后都会清理 orphan
 candidate 与 obsolete alias。
+
+## 安全会话可观测性
+
+认证、锁定和数据库会话统一使用结构化 Logger。一次认证或锁定操作创建一个根 trace；该操作触发的数据库打开、恢复、
+软锁、租约排干和封存事件在当前 trace 内创建子 span，不再为每条事件生成新的 correlation ID。数据库运行时模块只发布
+平台无关的 `SessionTransitionEvent`，由 data 层适配为日志，避免运行时会话依赖 Android 或日志实现。
+
+数据库会话转换记录 `from_state`、`to_state`、`owner`、`reason`、`lock_type`、`elapsed_ms`；租约排干超时还记录
+`timeout_ms` 和 `active_lease_count`。锁定开始与完成记录 `lock_reason`、`trigger`、`timeout_ms`、`result` 和
+`elapsed_ms`。认证完成只记录受控枚举 `BIOMETRIC`、`MASTER_PASSWORD` 或 `RECOVERY`，不记录凭据、异常消息、
+明文包名或请求携带的敏感内容。
+
+底层抛出的异常与清理阶段捕获的异常都以 ERROR 和标准错误码记录安全异常快照；清理阶段的日志不能改变原有控制流，
+数据库关闭失败后仍继续擦除密钥并发布 Locked。业务拒绝属于 WARN 降级，生命周期设置导致的后台锁跳过属于 DEBUG。
+`AutofillAuthenticated` 的临时会话所有权不变：必须先向平台交付填充结果，再释放 Autofill interaction 并触发封存；
+普通 `Authenticated` 会话不会被延迟到达的 Autofill 释放关闭。

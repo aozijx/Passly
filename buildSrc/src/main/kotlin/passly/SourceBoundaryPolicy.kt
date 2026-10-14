@@ -535,6 +535,7 @@ internal object SourceBoundaryPolicy {
             allowedImportPrefixes = setOf(
                 "com.aozijx.passly.core.crypto.",
                 "com.aozijx.passly.core.error.",
+                "com.aozijx.passly.core.observability.",
                 "com.aozijx.passly.core.platform.VaultResourcePaths",
                 "com.aozijx.passly.core.telemetry.",
             ),
