@@ -1,18 +1,11 @@
 package com.aozijx.passly.app.observability
 
 import com.aozijx.passly.core.observability.EventId
-import com.aozijx.passly.core.observability.ErrorCode
-import com.aozijx.passly.core.observability.ErrorPayload
 import com.aozijx.passly.core.observability.Events
-import com.aozijx.passly.core.observability.ExceptionSnapshot
-import com.aozijx.passly.core.observability.ExceptionType
 import com.aozijx.passly.core.observability.LogCategory
-import com.aozijx.passly.core.observability.LogFieldKey
 import com.aozijx.passly.core.observability.LogFields
 import com.aozijx.passly.core.observability.LogLevel
-import com.aozijx.passly.core.observability.LogValue
 import com.aozijx.passly.core.observability.ProcessSessionId
-import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.SanitizedLogRecord
 import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
@@ -30,6 +23,9 @@ import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.nio.file.Files
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -67,15 +63,14 @@ class ObservabilityExportServiceTest {
         assertTrue(service.export(TestPermit, DiagnosticsExportTarget.Share).isSuccess)
 
         val lines = files.sharedText!!.lineSequence().filter(String::isNotBlank)
-            .map { it.split('\t') }.toList()
-        assertEquals("manifest", lines.first()[0])
+            .map { Json.parseToJsonElement(it).jsonObject }.toList()
+        assertEquals("manifest", lines.first().getValue("type").jsonPrimitive.content)
         assertEquals(
             listOf("event_00000001", "event_00000002"),
-            lines.drop(1).map { it[2] },
+            lines.drop(1).map { it.getValue("event_id").jsonPrimitive.content },
         )
-        assertEquals(listOf("100", "200"), lines.drop(1).map { it[3] })
-        assertTrue(lines.drop(1).all { it.size == 20 })
-        assertFalse(files.sharedText!!.contains("timestamp_ms"))
+        assertEquals(listOf("100", "200"), lines.drop(1).map { it.getValue("timestamp_ms").jsonPrimitive.content })
+        assertTrue(lines.drop(1).all { "schema_version" !in it })
         assertTrue(files.deleteScheduled)
         assertFalse(files.target!!.exists())
     }
@@ -88,12 +83,11 @@ class ObservabilityExportServiceTest {
         service.export(TestPermit, DiagnosticsExportTarget.Share).getOrThrow()
 
         val records = files.sharedText!!.lineSequence().filter(String::isNotBlank)
-            .map { it.split('\t') }.toList()
-        val manifest = records.single { it[0] == "manifest" }
-        assertEquals(13, manifest.size)
-        assertEquals("Passly", manifest[4])
-        assertEquals("Pixel", manifest[8])
-        assertEquals(1, records.count { it[0] == "manifest" })
+            .map { Json.parseToJsonElement(it).jsonObject }.toList()
+        val manifest = records.single { it["type"]?.jsonPrimitive?.content == "manifest" }
+        assertEquals("Passly", manifest.getValue("app_name").jsonPrimitive.content)
+        assertEquals("Pixel", manifest.getValue("model").jsonPrimitive.content)
+        assertEquals(1, records.count { it["type"]?.jsonPrimitive?.content == "manifest" })
         val exported = files.sharedText!!
         listOf(
             "android_id",
@@ -107,38 +101,6 @@ class ObservabilityExportServiceTest {
     }
 
     @Test
-    fun `text row keeps fixed value positions and omits protocol key names`() {
-        val encoded = LogRecordTextEncoder().encode(
-            record("event_00000003", 300).copy(
-                level = LogLevel.ERROR,
-                fields = LogFields.fromSanitized(
-                    mapOf(LogFieldKey("retry_count") to LogValue.Count(2)),
-                ),
-                error = ErrorPayload(
-                    errorCode = ErrorCode("AUTOFILL_RESULT_DELIVERY_FAILED"),
-                    reason = ReasonCode("PLATFORM_CALLBACK_FAILED"),
-                    exception = ExceptionSnapshot(
-                        type = ExceptionType("IllegalStateException"),
-                        appStackFrames = emptyList(),
-                        causeTypes = emptyList(),
-                        foreignFrameCount = 4,
-                    ),
-                ),
-            ),
-        )
-
-        val columns = encoded.split('\t')
-        assertEquals(20, columns.size)
-        assertEquals("300", columns[3])
-        assertEquals("2", columns[13])
-        assertEquals("AUTOFILL_RESULT_DELIVERY_FAILED", columns[14])
-        assertEquals("PLATFORM_CALLBACK_FAILED", columns[15])
-        assertEquals("IllegalStateException", columns[16])
-        assertEquals("4", columns[19])
-        assertFalse(encoded.contains("timestamp_ms"))
-    }
-
-    @Test
     fun `document export writes directly to selected uri without share cache`() = runTest {
         val files = RecordingExportStorageGateway(cacheDirectory)
         val service = service(PageStore(listOf(record("event_00000001", 100))), files)
@@ -148,7 +110,7 @@ class ObservabilityExportServiceTest {
             DiagnosticsExportTarget.Document("content://documents/log.txt"),
         ).getOrThrow()
 
-        assertTrue(files.documentText!!.startsWith("manifest\t"))
+        assertTrue(files.documentText!!.startsWith("{\"type\":\"manifest\""))
         assertEquals(null, files.target)
         assertEquals(0, files.clearCalls)
         assertFalse(files.documentDeleted)
@@ -259,7 +221,7 @@ class ObservabilityExportServiceTest {
             clearCalls++
         }
 
-        override fun createExportFile(): File = File(directory, "passly_diagnostics.txt").also {
+        override fun createExportFile(): File = File(directory, "passly_diagnostics.jsonl").also {
             target = it
         }
 

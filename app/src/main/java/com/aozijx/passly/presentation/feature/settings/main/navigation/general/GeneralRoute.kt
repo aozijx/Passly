@@ -48,7 +48,7 @@ internal fun GeneralRoute(
     val logExportFailedMessage = stringResource(R.string.settings_log_export_failed)
     val logSaveCompletedMessage = stringResource(R.string.settings_log_save_completed)
     val diagnosticsDocumentPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("text/plain"),
+        ActivityResultContracts.CreateDocument("application/x-ndjson"),
     ) { uri ->
         if (uri != null) {
             diagnosticsViewModel.onAction(
@@ -150,4 +150,4 @@ internal fun GeneralRoute(
     }
 }
 
-private const val DIAGNOSTICS_FILE_NAME = "passly_diagnostics.txt"
+private const val DIAGNOSTICS_FILE_NAME = "passly_diagnostics.jsonl"

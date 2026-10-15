@@ -8,7 +8,6 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.DocumentsContract
 import androidx.core.content.FileProvider
-import com.aozijx.passly.core.observability.LogValue
 import com.aozijx.passly.core.observability.SanitizedLogRecord
 import com.aozijx.passly.core.observability.sink.LogRecordCursor
 import com.aozijx.passly.core.observability.sink.LogRecordStore
@@ -18,6 +17,7 @@ import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationPermitVerifier
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportGateway
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportTarget
+import com.aozijx.passly.feature.settings.diagnostics.LogFormat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.OutputStream
@@ -25,51 +25,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-internal class LogRecordTextEncoder @Inject constructor() {
-    fun encode(record: SanitizedLogRecord): String = values(
-        "event",
-        ExportManifestFactory.SCHEMA_VERSION,
-        record.eventId.value,
-        record.timestampMs,
-        record.elapsedRealtimeMs,
-        record.level.name,
-        record.category.name,
-        record.event.value,
-        record.processSessionId.value,
-        record.secureSessionId?.value,
-        record.trace.traceId.value,
-        record.trace.spanId.value,
-        record.trace.parentSpanId?.value,
-        record.fields.values.toSortedMap(compareBy { it.value }).values.joinToString(";") { it.asText() },
-        record.error?.errorCode?.value,
-        record.error?.reason?.value,
-        record.error?.exception?.type?.value,
-        record.error?.exception?.appStackFrames?.joinToString(";") { it.value },
-        record.error?.exception?.causeTypes?.joinToString(";") { it.value },
-        record.error?.exception?.foreignFrameCount,
-    )
-
-    private fun LogValue.asText(): String = when (this) {
-        is LogValue.Count -> value.toString()
-        is LogValue.DurationMs -> value.toString()
-        is LogValue.Ratio -> value.toString()
-        is LogValue.BooleanValue -> value.toString()
-        is LogValue.EnumValue -> value.value
-        is LogValue.ErrorCodeValue -> value.value
-        is LogValue.ReasonCodeValue -> value.value
-        is LogValue.OperationCodeValue -> value.value
-        is LogValue.HashedIdentifierValue -> value.value
-        is LogValue.HashedIdentifierInput -> error("Pending identifier reached export")
-    }
-}
-
-internal fun values(vararg values: Any?): String = values.joinToString("\t") {
-    it?.toString().orEmpty()
-        .replace("\\", "\\\\")
-        .replace("\t", "\\t")
-        .replace("\r", "\\r")
-        .replace("\n", "\\n")
-}
 
 internal interface DiagnosticsExportStorageGateway {
     fun clearStaleExports()
@@ -87,7 +42,7 @@ class ObservabilityExportService @Inject internal constructor(
     private val manifestFactory: ExportManifestFactory,
     private val storage: DiagnosticsExportStorageGateway,
     private val permitVerifier: AuthorizationPermitVerifier,
-    private val recordEncoder: LogRecordTextEncoder = LogRecordTextEncoder(),
+    private val exportEncoder: DiagnosticsExportEncoder = DiagnosticsExportEncoder(),
 ) : DiagnosticsExportGateway {
     override suspend fun export(
         permit: AuthorizationPermit,
@@ -157,10 +112,12 @@ class ObservabilityExportService @Inject internal constructor(
         output: OutputStream,
         records: List<SanitizedLogRecord>,
     ) {
-        output.bufferedWriter(Charsets.UTF_8).use { writer ->
-            writer.appendLine(manifestFactory.encode(records.size))
-            records.forEach { writer.appendLine(recordEncoder.encode(it)) }
-        }
+        exportEncoder.write(
+            format = LogFormat.JSONL,
+            output = output,
+            manifest = manifestFactory.create(records.size),
+            records = records,
+        )
     }
 
     private fun readRecords(): List<SanitizedLogRecord> {
@@ -193,7 +150,7 @@ internal class AndroidDiagnosticsExportStorageGateway @Inject constructor(
 
     override fun createExportFile(): File = File(
         context.cacheDir,
-        "$EXPORT_PREFIX${System.currentTimeMillis()}.txt",
+        "$EXPORT_PREFIX${System.currentTimeMillis()}.jsonl",
     )
 
     override fun share(file: File): Result<Unit> = runCatching {
@@ -201,7 +158,7 @@ internal class AndroidDiagnosticsExportStorageGateway @Inject constructor(
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         val intent = Intent.createChooser(
             Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
+                type = LogFormat.JSONL.mimeType
                 putExtra(Intent.EXTRA_STREAM, uri)
                 clipData = ClipData.newRawUri("Passly diagnostics", uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)

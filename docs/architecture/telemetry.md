@@ -74,22 +74,25 @@ Logger、Service Locator 或安装前 no-op 桥。
 运行时预生成 emergency 数据密钥。崩溃时先 flush 普通队列 300 ms；失败后 emergency writer 最多等待
 200 ms，且不调用 Keystore、不等待普通 writer lock。队列溢出只为 ERROR/FATAL 尝试一次独立 fallback。
 
-查看最多读取 500 条。明文导出最多读取当前新 store 的 5000 条记录，并在存储层以最多 500 条一页跨文件读取；
-按 `timestamp_ms + event_id` 排序并按 `event_id` 去重。第一行固定为 manifest，集中包含生成时间、App 版本、
-设备/系统环境，后续每行是一个事件。manifest 禁止 Android ID、
-Build fingerprint、serial、明文包名和已安装应用列表。
+查看最多读取 500 条。明文导出最多读取当前 store 的 5000 条记录，并在存储层以最多 500 条一页跨文件读取；
+按 `timestamp_ms + elapsed_realtime_ms + event_id` 确定性排序并按 `event_id` 去重。manifest 集中包含 schema、生成时间、
+记录数及 App/设备/系统环境，禁止 Android ID、Build fingerprint、serial、明文包名和已安装应用列表。
 
 导出必须在现有 `EXPORT_DIAGNOSTICS` 新鲜认证授权块内写入内容。保存与分享是两条明确的目标链路：保存通过
-Storage Access Framework 的 `CreateDocument(text/plain)` 让用户选择目标 URI，并直接写入该 URI，不创建分享缓存；
+Storage Access Framework 当前使用 `CreateDocument(application/x-ndjson)` 让用户选择目标 URI，并直接写入该 URI，不创建分享缓存；
 认证取消、拒绝或写入失败时尝试删除由选择器预创建的未完成文档；
 分享才在 `cacheDir` 创建临时文本并通过 FileProvider 只读发送。分享失败立即删除，成功后 10 分钟删除，新分享前先清理
 旧临时文件。明文导出不属于备份内容，也不复用备份目录设置。
 
-导出文件使用 `.txt` 与 UTF-8 TSV。每行只输出值，不重复输出键名；空值保留为空列，制表符、换行和反斜杠会转义。
-manifest 固定顺序为：记录类型、格式版本、生成时间、记录数、App 名称、版本名、版本号、厂商、型号、SDK、系统版本、
-语言列表、时区。Autofill 等功能模块的状态由模块自身通过事件记录，不进入通用 manifest。事件固定顺序为：记录类型、
-格式版本、event id、时间戳、单调时钟、级别、分类、事件名、进程会话、安全会话、trace、span、parent span、按字段名排序
-后的字段值、错误码、原因、异常类型、应用栈、cause 类型、外部栈计数。字段名本身不写入文本。
+JSONL 是唯一 canonical 事件模型。独立 JSONL 第一行是 manifest JSON，后续事件字段稳定按 `time`、
+`timestamp_ms`、`elapsed_realtime_ms`、`level`、`event`、`event_id`、`context`、`error`、`trace`、`session`
+输出；缺失的可选对象/字段不输出，事件本身不重复 schema/version sentinel。TSV 只能从 canonical JSON 投影，固定八列为
+`time level event outcome details exception trace session`，空列保留，bag 使用转义后的 `key=value`，未知 JSON 路径归入
+`details` 而不丢失。独立 TSV 在表头前输出一行 `# key=value` manifest header。
+
+ZIP 只包含 `manifest.json`、`diagnostics.jsonl`、`diagnostics.tsv`、`README.txt`；其中 JSONL/TSV payload 不重复
+manifest。所有格式共享同一编码器、ISO-8601 UTC 动态时间、字段排序和安全异常快照。Autofill 等模块状态只通过模块事件
+进入 payload，不写入通用 manifest。未知 schema major 在写出任何字节前拒绝，不生成部分文件。
 
 业务代码禁止直接 `printStackTrace` 或使用 `android.util.Log`；Android 系统日志统一由 `LogcatSink.kt` 输出。
 

@@ -19,6 +19,21 @@ data class ExportContext(
     val timezone: String,
 )
 
+data class ExportManifest(
+    val schemaVersion: Int,
+    val generatedAtMs: Long,
+    val recordCount: Int,
+    val appName: String,
+    val appVersionName: String,
+    val appVersionCode: Long,
+    val manufacturer: String,
+    val model: String,
+    val sdkInt: Int,
+    val osRelease: String,
+    val locales: List<String>,
+    val timezone: String,
+)
+
 fun interface ExportContextProvider {
     fun current(): ExportContext
 }
@@ -31,23 +46,22 @@ class ExportManifestFactory @Inject constructor(
     private val contextProvider: ExportContextProvider,
     private val clock: ExportClock,
 ) {
-    fun encode(recordCount: Int): String {
+    fun create(recordCount: Int): ExportManifest {
         require(recordCount >= 0)
         val context = contextProvider.current()
-        return values(
-            "manifest",
-            SCHEMA_VERSION,
-            clock.nowMs(),
-            recordCount,
-            context.appName,
-            context.appVersionName,
-            context.appVersionCode,
-            context.manufacturer,
-            context.model,
-            context.sdkInt,
-            context.osRelease,
-            context.locales.joinToString(","),
-            context.timezone,
+        return ExportManifest(
+            schemaVersion = SCHEMA_VERSION,
+            generatedAtMs = clock.nowMs(),
+            recordCount = recordCount,
+            appName = context.appName,
+            appVersionName = context.appVersionName,
+            appVersionCode = context.appVersionCode,
+            manufacturer = context.manufacturer,
+            model = context.model,
+            sdkInt = context.sdkInt,
+            osRelease = context.osRelease,
+            locales = context.locales,
+            timezone = context.timezone,
         )
     }
 
@@ -71,12 +85,9 @@ internal class AndroidExportContextProvider @Inject constructor(
         timezone = TimeZone.getDefault().id.bounded(),
     )
 
-    private fun currentLocales(): List<String> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+    private fun currentLocales(): List<String> {
         val locales = context.resources.configuration.locales
-        (0 until locales.size()).map { locales[it].toLanguageTag().bounded() }.take(MAX_LOCALES)
-    } else {
-        @Suppress("DEPRECATION")
-        listOf(context.resources.configuration.locale.toLanguageTag().bounded())
+        return (0 until locales.size()).map { locales[it].toLanguageTag().bounded() }.take(MAX_LOCALES)
     }
 
     private fun String.bounded(): String = take(MAX_CONTEXT_CHARS)
