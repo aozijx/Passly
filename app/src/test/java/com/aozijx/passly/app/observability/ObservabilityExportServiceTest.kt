@@ -17,9 +17,12 @@ import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationPermitVerifier
-import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportTarget
-import java.io.File
+import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportRequest
+import com.aozijx.passly.feature.settings.diagnostics.ExportAction
+import com.aozijx.passly.feature.settings.diagnostics.ExportArtifactSpec
+import com.aozijx.passly.feature.settings.diagnostics.LogFormat
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.OutputStream
 import java.nio.file.Files
 import kotlinx.coroutines.test.runTest
@@ -60,7 +63,7 @@ class ObservabilityExportServiceTest {
         val files = RecordingExportStorageGateway(cacheDirectory)
         val service = service(store, files)
 
-        assertTrue(service.export(TestPermit, DiagnosticsExportTarget.Share).isSuccess)
+        assertTrue(service.export(TestPermit, shareRequest()).isSuccess)
 
         val lines = files.sharedText!!.lineSequence().filter(String::isNotBlank)
             .map { Json.parseToJsonElement(it).jsonObject }.toList()
@@ -80,7 +83,7 @@ class ObservabilityExportServiceTest {
         val files = RecordingExportStorageGateway(cacheDirectory)
         val service = service(PageStore(listOf(record("event_00000001", 100))), files)
 
-        service.export(TestPermit, DiagnosticsExportTarget.Share).getOrThrow()
+        service.export(TestPermit, shareRequest()).getOrThrow()
 
         val records = files.sharedText!!.lineSequence().filter(String::isNotBlank)
             .map { Json.parseToJsonElement(it).jsonObject }.toList()
@@ -107,7 +110,11 @@ class ObservabilityExportServiceTest {
 
         service.export(
             TestPermit,
-            DiagnosticsExportTarget.Document("content://documents/log.txt"),
+            DiagnosticsExportRequest(
+                ExportAction.EXPORT_LOCAL,
+                LogFormat.JSONL,
+                "content://documents/log.jsonl",
+            ),
         ).getOrThrow()
 
         assertTrue(files.documentText!!.startsWith("{\"type\":\"manifest\""))
@@ -117,11 +124,49 @@ class ObservabilityExportServiceTest {
     }
 
     @Test
+    fun `every share format uses its declared extension and mime type`() = runTest {
+        LogFormat.entries.forEach { format ->
+            val files = RecordingExportStorageGateway(cacheDirectory)
+            val service = service(PageStore(listOf(record("event_00000001", 100))), files)
+
+            service.export(TestPermit, shareRequest(format)).getOrThrow()
+
+            assertEquals(format.extension, files.artifactSpec?.extension)
+            assertEquals(format.mimeType, files.artifactSpec?.mimeType)
+            assertEquals(format.mimeType, files.sharedMimeType)
+            assertTrue(files.target!!.name.endsWith(".${format.extension}"))
+            assertTrue(files.sharedBytes!!.isNotEmpty())
+        }
+    }
+
+    @Test
+    fun `every local format writes directly to the selected document`() = runTest {
+        LogFormat.entries.forEach { format ->
+            val files = RecordingExportStorageGateway(cacheDirectory)
+            val service = service(PageStore(listOf(record("event_00000001", 100))), files)
+
+            service.export(
+                TestPermit,
+                DiagnosticsExportRequest(
+                    ExportAction.EXPORT_LOCAL,
+                    format,
+                    "content://documents/log.${format.extension}",
+                ),
+            ).getOrThrow()
+
+            assertTrue(files.documentBytes!!.isNotEmpty())
+            assertEquals(null, files.target)
+            assertEquals(0, files.clearCalls)
+            assertFalse(files.documentDeleted)
+        }
+    }
+
+    @Test
     fun `failed share deletes plaintext immediately`() = runTest {
         val files = RecordingExportStorageGateway(cacheDirectory, shareFailure = true)
         val service = service(PageStore(listOf(record("event_00000001", 100))), files)
 
-        assertTrue(service.export(TestPermit, DiagnosticsExportTarget.Share).isFailure)
+        assertTrue(service.export(TestPermit, shareRequest()).isFailure)
 
         assertFalse(files.target!!.exists())
         assertFalse(files.deleteScheduled)
@@ -136,7 +181,7 @@ class ObservabilityExportServiceTest {
             permitAccepted = false,
         )
 
-        assertTrue(service.export(TestPermit, DiagnosticsExportTarget.Share).isFailure)
+        assertTrue(service.export(TestPermit, shareRequest()).isFailure)
 
         assertEquals(null, files.target)
         assertEquals(0, files.clearCalls)
@@ -176,6 +221,9 @@ class ObservabilityExportServiceTest {
             },
         )
 
+    private fun shareRequest(format: LogFormat = LogFormat.JSONL) =
+        DiagnosticsExportRequest(ExportAction.SHARE, format)
+
     private fun record(eventId: String, timestampMs: Long) = SanitizedLogRecord(
         eventId = EventId(eventId),
         timestampMs = timestampMs,
@@ -212,21 +260,31 @@ class ObservabilityExportServiceTest {
     ) : DiagnosticsExportStorageGateway {
         var target: File? = null
         var sharedText: String? = null
+        var sharedBytes: ByteArray? = null
         var deleteScheduled = false
         var clearCalls = 0
         var documentText: String? = null
+        var documentBytes: ByteArray? = null
         var documentDeleted = false
+        var artifactSpec: ExportArtifactSpec? = null
+        var sharedMimeType: String? = null
 
         override fun clearStaleExports() {
             clearCalls++
         }
 
-        override fun createExportFile(): File = File(directory, "passly_diagnostics.jsonl").also {
+        override fun createExportFile(spec: ExportArtifactSpec): File = File(
+            directory,
+            "passly_diagnostics.${spec.extension}",
+        ).also {
+            artifactSpec = spec
             target = it
         }
 
-        override fun share(file: File): Result<Unit> {
-            sharedText = file.readText()
+        override fun share(file: File, mimeType: String): Result<Unit> {
+            sharedMimeType = mimeType
+            sharedBytes = file.readBytes()
+            sharedText = sharedBytes!!.toString(Charsets.UTF_8)
             return if (shareFailure) Result.failure(IllegalStateException("share failed")) else Result.success(Unit)
         }
 
@@ -241,7 +299,8 @@ class ObservabilityExportServiceTest {
 
         override fun openDocument(uri: String): OutputStream = object : ByteArrayOutputStream() {
             override fun close() {
-                documentText = toString(Charsets.UTF_8.name())
+                documentBytes = toByteArray()
+                documentText = documentBytes!!.toString(Charsets.UTF_8)
                 super.close()
             }
         }

@@ -78,11 +78,16 @@ Logger、Service Locator 或安装前 no-op 桥。
 按 `timestamp_ms + elapsed_realtime_ms + event_id` 确定性排序并按 `event_id` 去重。manifest 集中包含 schema、生成时间、
 记录数及 App/设备/系统环境，禁止 Android ID、Build fingerprint、serial、明文包名和已安装应用列表。
 
-导出必须在现有 `EXPORT_DIAGNOSTICS` 新鲜认证授权块内写入内容。保存与分享是两条明确的目标链路：保存通过
-Storage Access Framework 当前使用 `CreateDocument(application/x-ndjson)` 让用户选择目标 URI，并直接写入该 URI，不创建分享缓存；
-认证取消、拒绝或写入失败时尝试删除由选择器预创建的未完成文档；
-分享才在 `cacheDir` 创建临时文本并通过 FileProvider 只读发送。分享失败立即删除，成功后 10 分钟删除，新分享前先清理
-旧临时文件。明文导出不属于备份内容，也不复用备份目录设置。
+导出必须在现有 `EXPORT_DIAGNOSTICS` 新鲜认证授权块内写入内容。调用方只提交一个
+`DiagnosticsExportRequest(action, format, documentUri)`；`SHARE` 禁止携带 URI，`EXPORT_LOCAL` 必须携带 SAF 返回的
+`content://` URI。动作与格式保持正交，JSONL/TSV/ZIP 均可用于保存或分享；每次请求只 flush、读取、排序并生成一次
+manifest，然后由同一编码器输出所选格式，不为不同目的维护第二套导出逻辑。
+
+保存通过 Storage Access Framework 的 `CreateDocument` 选择与格式匹配的目标（JSONL 为
+`application/x-ndjson`、TSV 为 `text/tab-separated-values`、ZIP 为 `application/zip`），认证成功后直接写入该 URI，
+不创建分享缓存；认证取消、拒绝或写入失败时尝试删除选择器预创建的未完成文档。分享才在 `cacheDir` 创建带正确扩展名
+的临时明文文件，并以对应 MIME 经 FileProvider 只读发送。分享失败立即删除，成功后 10 分钟删除，新分享前先清理旧
+临时文件。明文导出不属于备份内容，也不复用备份目录设置。当前旧设置入口固定请求 JSONL；格式选择由专用日志页接管。
 
 JSONL 是唯一 canonical 事件模型。独立 JSONL 第一行是 manifest JSON，后续事件字段稳定按 `time`、
 `timestamp_ms`、`elapsed_realtime_ms`、`level`、`event`、`event_id`、`context`、`error`、`trace`、`session`

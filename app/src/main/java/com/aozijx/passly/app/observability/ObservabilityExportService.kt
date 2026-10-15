@@ -16,8 +16,11 @@ import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationPermitVerifier
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportGateway
-import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportTarget
+import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportRequest
+import com.aozijx.passly.feature.settings.diagnostics.ExportAction
+import com.aozijx.passly.feature.settings.diagnostics.ExportArtifactSpec
 import com.aozijx.passly.feature.settings.diagnostics.LogFormat
+import com.aozijx.passly.feature.settings.diagnostics.artifactSpec
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.OutputStream
@@ -28,8 +31,8 @@ import kotlinx.coroutines.withContext
 
 internal interface DiagnosticsExportStorageGateway {
     fun clearStaleExports()
-    fun createExportFile(): File
-    fun share(file: File): Result<Unit>
+    fun createExportFile(spec: ExportArtifactSpec): File
+    fun share(file: File, mimeType: String): Result<Unit>
     fun scheduleDeletion(file: File)
     fun delete(file: File)
     fun openDocument(uri: String): OutputStream
@@ -46,7 +49,7 @@ class ObservabilityExportService @Inject internal constructor(
 ) : DiagnosticsExportGateway {
     override suspend fun export(
         permit: AuthorizationPermit,
-        target: DiagnosticsExportTarget,
+        request: DiagnosticsExportRequest,
     ): Result<Unit> =
         withContext(Dispatchers.IO) {
             if (!permitVerifier.consume(permit, EXPORT_SCOPE)) {
@@ -58,32 +61,38 @@ class ObservabilityExportService @Inject internal constructor(
                     .distinctBy { it.eventId }
                     .sortedWith(
                         compareBy<SanitizedLogRecord> { it.timestampMs }
+                            .thenBy { it.elapsedRealtimeMs }
                             .thenBy { it.eventId.value },
                     )
             }.fold(
                 onSuccess = { records ->
-                    when (target) {
-                        DiagnosticsExportTarget.Share -> exportForSharing(records)
-                        is DiagnosticsExportTarget.Document -> exportToDocument(target.uri, records)
+                    when (request.action) {
+                        ExportAction.SHARE -> exportForSharing(records, request.format)
+                        ExportAction.EXPORT_LOCAL -> exportToDocument(
+                            requireNotNull(request.documentUri),
+                            records,
+                            request.format,
+                        )
                     }
                 },
                 onFailure = Result.Companion::failure,
             )
         }
 
-    override suspend fun discard(target: DiagnosticsExportTarget) {
-        if (target is DiagnosticsExportTarget.Document) {
-            withContext(Dispatchers.IO) { storage.deleteDocument(target.uri) }
+    override suspend fun discard(request: DiagnosticsExportRequest) {
+        if (request.action == ExportAction.EXPORT_LOCAL) {
+            withContext(Dispatchers.IO) { storage.deleteDocument(requireNotNull(request.documentUri)) }
         }
     }
 
-    private fun exportForSharing(records: List<SanitizedLogRecord>): Result<Unit> {
+    private fun exportForSharing(records: List<SanitizedLogRecord>, format: LogFormat): Result<Unit> {
         var exportFile: File? = null
         return try {
             storage.clearStaleExports()
-            exportFile = storage.createExportFile()
-            writeExport(exportFile.outputStream(), records)
-            storage.share(exportFile).fold(
+            val spec = format.artifactSpec()
+            exportFile = storage.createExportFile(spec)
+            writeExport(exportFile.outputStream(), records, format)
+            storage.share(exportFile, spec.mimeType).fold(
                 onSuccess = {
                     storage.scheduleDeletion(exportFile)
                     Result.success(Unit)
@@ -102,8 +111,9 @@ class ObservabilityExportService @Inject internal constructor(
     private fun exportToDocument(
         uri: String,
         records: List<SanitizedLogRecord>,
+        format: LogFormat,
     ): Result<Unit> = runCatching {
-        writeExport(storage.openDocument(uri), records)
+        writeExport(storage.openDocument(uri), records, format)
     }.onFailure {
         storage.deleteDocument(uri)
     }
@@ -111,9 +121,10 @@ class ObservabilityExportService @Inject internal constructor(
     private fun writeExport(
         output: OutputStream,
         records: List<SanitizedLogRecord>,
+        format: LogFormat,
     ) {
         exportEncoder.write(
-            format = LogFormat.JSONL,
+            format = format,
             output = output,
             manifest = manifestFactory.create(records.size),
             records = records,
@@ -148,17 +159,17 @@ internal class AndroidDiagnosticsExportStorageGateway @Inject constructor(
             ?.forEach(File::delete)
     }
 
-    override fun createExportFile(): File = File(
+    override fun createExportFile(spec: ExportArtifactSpec): File = File(
         context.cacheDir,
-        "$EXPORT_PREFIX${System.currentTimeMillis()}.jsonl",
+        "$EXPORT_PREFIX${System.currentTimeMillis()}.${spec.extension}",
     )
 
-    override fun share(file: File): Result<Unit> = runCatching {
+    override fun share(file: File, mimeType: String): Result<Unit> = runCatching {
         require(file.isFile && file.canonicalFile.parentFile == context.cacheDir.canonicalFile)
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         val intent = Intent.createChooser(
             Intent(Intent.ACTION_SEND).apply {
-                type = LogFormat.JSONL.mimeType
+                type = mimeType
                 putExtra(Intent.EXTRA_STREAM, uri)
                 clipData = ClipData.newRawUri("Passly diagnostics", uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)

@@ -7,9 +7,11 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportResult
-import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportTarget
+import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportRequest
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
+import com.aozijx.passly.feature.settings.diagnostics.ExportAction
 import com.aozijx.passly.feature.settings.diagnostics.ExportDiagnosticsUseCase
+import com.aozijx.passly.feature.settings.diagnostics.LogFormat
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -51,9 +53,11 @@ class DiagnosticsSettingsViewModel @Inject constructor(
             DiagnosticsSettingsAction.RequestSave ->
                 eventChannel.trySend(DiagnosticsSettingsEffect.SelectSaveDocument)
             is DiagnosticsSettingsAction.SaveToDocument -> authenticateAndExport(
-                DiagnosticsExportTarget.Document(action.uri),
+                DiagnosticsExportRequest(ExportAction.EXPORT_LOCAL, LogFormat.JSONL, action.uri),
             )
-            DiagnosticsSettingsAction.Share -> authenticateAndExport(DiagnosticsExportTarget.Share)
+            DiagnosticsSettingsAction.Share -> authenticateAndExport(
+                DiagnosticsExportRequest(ExportAction.SHARE, LogFormat.JSONL),
+            )
         }
     }
 
@@ -100,10 +104,10 @@ class DiagnosticsSettingsViewModel @Inject constructor(
         mutate(DiagnosticsSettingsMutation.LogsCleared)
     }
 
-    private fun authenticateAndExport(target: DiagnosticsExportTarget) = viewModelScope.launch {
+    private fun authenticateAndExport(request: DiagnosticsExportRequest) = viewModelScope.launch {
         logger.withRootTrace(Operations.DiagnosticsExport) {
-            when (val result = exportDiagnostics(target)) {
-                DiagnosticsExportResult.Completed -> if (target is DiagnosticsExportTarget.Document) {
+            when (val result = exportDiagnostics(request)) {
+                DiagnosticsExportResult.Completed -> if (request.action == ExportAction.EXPORT_LOCAL) {
                     eventChannel.trySend(DiagnosticsSettingsEffect.SaveCompleted)
                 }
                 DiagnosticsExportResult.Cancelled -> Unit

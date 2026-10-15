@@ -16,29 +16,41 @@ import org.junit.Test
 
 class ExportDiagnosticsUseCaseTest {
     @Test
-    fun `share executes inside exact diagnostics authorization scope`() = runTest {
-        val gate = RecordingGate(true)
-        val gateway = RecordingGateway(gate)
-        val result = ExportDiagnosticsUseCase(FullAccess, gate, gateway)(
-            DiagnosticsExportTarget.Share,
-        )
-        assertEquals(DiagnosticsExportResult.Completed, result)
-        assertEquals(AuthorizationScope.Global(AuthenticationPurpose.EXPORT_DIAGNOSTICS), gate.scope)
-        assertEquals(true, gateway.calledInsideAuthorization)
-        assertEquals(1, gateway.calls)
-        assertEquals(DiagnosticsExportTarget.Share, gateway.target)
+    fun `all action and format pairs reach the gateway unchanged inside authorization`() = runTest {
+        ExportAction.entries.forEach { action ->
+            LogFormat.entries.forEach { format ->
+                val gate = RecordingGate(true)
+                val gateway = RecordingGateway(gate)
+                val request = DiagnosticsExportRequest(
+                    action = action,
+                    format = format,
+                    documentUri = if (action == ExportAction.EXPORT_LOCAL) "content://documents/log.${format.extension}" else null,
+                )
+
+                val result = ExportDiagnosticsUseCase(FullAccess, gate, gateway)(request)
+
+                assertEquals(DiagnosticsExportResult.Completed, result)
+                assertEquals(AuthorizationScope.Global(AuthenticationPurpose.EXPORT_DIAGNOSTICS), gate.scope)
+                assertEquals(true, gateway.calledInsideAuthorization)
+                assertEquals(request, gateway.request)
+            }
+        }
     }
 
     @Test
     fun `document export keeps selected destination inside authorization scope`() = runTest {
         val gate = RecordingGate(true)
         val gateway = RecordingGateway(gate)
-        val target = DiagnosticsExportTarget.Document("content://documents/log.txt")
+        val request = DiagnosticsExportRequest(
+            ExportAction.EXPORT_LOCAL,
+            LogFormat.TSV,
+            "content://documents/log.tsv",
+        )
 
-        val result = ExportDiagnosticsUseCase(FullAccess, gate, gateway)(target)
+        val result = ExportDiagnosticsUseCase(FullAccess, gate, gateway)(request)
 
         assertEquals(DiagnosticsExportResult.Completed, result)
-        assertEquals(target, gateway.target)
+        assertEquals(request, gateway.request)
         assertEquals(true, gateway.calledInsideAuthorization)
     }
 
@@ -46,13 +58,13 @@ class ExportDiagnosticsUseCaseTest {
     fun `cancelled authorization never creates plaintext export`() = runTest {
         val gate = RecordingGate(false)
         val gateway = RecordingGateway(gate)
-        val target = DiagnosticsExportTarget.Document("content://documents/cancelled.txt")
+        val request = DiagnosticsExportRequest(ExportAction.EXPORT_LOCAL, LogFormat.ZIP, "content://documents/cancelled.zip")
         assertEquals(
             DiagnosticsExportResult.Cancelled,
-            ExportDiagnosticsUseCase(FullAccess, gate, gateway)(target),
+            ExportDiagnosticsUseCase(FullAccess, gate, gateway)(request),
         )
         assertEquals(0, gateway.calls)
-        assertEquals(target, gateway.discardedTarget)
+        assertEquals(request, gateway.discardedRequest)
     }
 
     @Test
@@ -62,12 +74,12 @@ class ExportDiagnosticsUseCaseTest {
             gate = gate,
             result = Result.failure(IllegalStateException("write failed")),
         )
-        val target = DiagnosticsExportTarget.Document("content://documents/incomplete.txt")
+        val request = DiagnosticsExportRequest(ExportAction.EXPORT_LOCAL, LogFormat.JSONL, "content://documents/incomplete.jsonl")
 
-        val result = ExportDiagnosticsUseCase(FullAccess, gate, gateway)(target)
+        val result = ExportDiagnosticsUseCase(FullAccess, gate, gateway)(request)
 
         assertEquals(true, result is DiagnosticsExportResult.Failed)
-        assertEquals(target, gateway.discardedTarget)
+        assertEquals(request, gateway.discardedRequest)
     }
 
     private class RecordingGate(private val allow: Boolean) : AuthorizationGate {
@@ -87,20 +99,20 @@ class ExportDiagnosticsUseCaseTest {
     ) : DiagnosticsExportGateway {
         var calls = 0
         var calledInsideAuthorization = false
-        var target: DiagnosticsExportTarget? = null
-        var discardedTarget: DiagnosticsExportTarget? = null
+        var request: DiagnosticsExportRequest? = null
+        var discardedRequest: DiagnosticsExportRequest? = null
         override suspend fun export(
             permit: AuthorizationPermit,
-            target: DiagnosticsExportTarget,
+            request: DiagnosticsExportRequest,
         ): Result<Unit> {
             calls++
             calledInsideAuthorization = gate.inside
-            this.target = target
+            this.request = request
             return result
         }
 
-        override suspend fun discard(target: DiagnosticsExportTarget) {
-            discardedTarget = target
+        override suspend fun discard(request: DiagnosticsExportRequest) {
+            discardedRequest = request
         }
     }
 

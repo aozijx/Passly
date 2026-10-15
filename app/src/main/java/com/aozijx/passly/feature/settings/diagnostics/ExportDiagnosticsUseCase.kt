@@ -8,18 +8,13 @@ import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import javax.inject.Inject
 
-sealed interface DiagnosticsExportTarget {
-    data object Share : DiagnosticsExportTarget
-    data class Document(val uri: String) : DiagnosticsExportTarget
-}
-
 interface DiagnosticsExportGateway {
     suspend fun export(
         permit: AuthorizationPermit,
-        target: DiagnosticsExportTarget,
+        request: DiagnosticsExportRequest,
     ): Result<Unit>
 
-    suspend fun discard(target: DiagnosticsExportTarget)
+    suspend fun discard(request: DiagnosticsExportRequest)
 }
 
 class ExportDiagnosticsUseCase @Inject constructor(
@@ -27,29 +22,29 @@ class ExportDiagnosticsUseCase @Inject constructor(
     private val authorizationGate: AuthorizationGate,
     private val gateway: DiagnosticsExportGateway,
 ) {
-    suspend operator fun invoke(target: DiagnosticsExportTarget): DiagnosticsExportResult {
+    suspend operator fun invoke(request: DiagnosticsExportRequest): DiagnosticsExportResult {
         if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
-            gateway.discard(target)
+            gateway.discard(request)
             return DiagnosticsExportResult.SessionRestricted
         }
         return when (
             val authorization = authorizationGate.authorize(
                 AuthorizationScope.Global(AuthenticationPurpose.EXPORT_DIAGNOSTICS),
-            ) { permit -> gateway.export(permit, target) }
+            ) { permit -> gateway.export(permit, request) }
         ) {
             is AuthorizationResult.Allowed -> authorization.value.fold(
                 onSuccess = { DiagnosticsExportResult.Completed },
                 onFailure = {
-                    gateway.discard(target)
+                    gateway.discard(request)
                     DiagnosticsExportResult.Failed(it)
                 },
             )
             is AuthorizationResult.Denied -> {
-                gateway.discard(target)
+                gateway.discard(request)
                 DiagnosticsExportResult.Denied
             }
             AuthorizationResult.Cancelled -> {
-                gateway.discard(target)
+                gateway.discard(request)
                 DiagnosticsExportResult.Cancelled
             }
         }
