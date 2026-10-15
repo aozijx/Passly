@@ -1,6 +1,7 @@
 package com.aozijx.passly.presentation.feature.settings.ui.main
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +23,7 @@ import com.aozijx.passly.presentation.shared.components.topbar.PasslyNavigationT
 internal fun SettingsSecondaryPage(
     title: String,
     onBack: (() -> Unit)?,
+    actions: @Composable RowScope.() -> Unit = {},
     content: LazyListScope.() -> Unit
 ) {
     val adaptiveLayout = LocalPasslyAdaptiveLayout.current
@@ -31,6 +33,7 @@ internal fun SettingsSecondaryPage(
             PasslyNavigationTopBar(
                 title = title,
                 onNavigateBack = onBack,
+                actions = actions,
             )
         }
     ) { innerPadding ->

@@ -56,6 +56,7 @@ class DiagnosticsViewModel @Inject constructor(
             DiagnosticsAction.DismissFormatSheet -> mutate(DiagnosticsMutation.FormatSheetDismissed)
             is DiagnosticsAction.SelectFormat -> selectFormat(action.format)
             is DiagnosticsAction.SaveToDocument -> saveToDocument(action.uri)
+            DiagnosticsAction.SaveDocumentCancelled -> mutate(DiagnosticsMutation.LocalExportConsumed)
             DiagnosticsAction.RequestClear -> mutate(DiagnosticsMutation.ClearRequested)
             DiagnosticsAction.DismissClear -> mutate(DiagnosticsMutation.ClearDismissed)
             DiagnosticsAction.ConfirmClear -> clearLogs()

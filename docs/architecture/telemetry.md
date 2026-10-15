@@ -77,8 +77,15 @@ Logger、Service Locator 或安装前 no-op 桥。
 查看最多读取当前 store 的 500 条。运行时为每条查看记录保留结构化 `LogLevel`、精确 `trace_id` 和已脱敏的固定八列
 TSV 行，presentation 不解析文本恢复字段。查看页默认显示 INFO/WARN/ERROR，FATAL 归入 ERROR 组，DEBUG 默认隐藏；
 等级筛选与精确 trace-id 查询只作用于这 500 条内存记录，绝不传入导出请求或改变导出内容。复制单行只使用对应的
-已脱敏 TSV 行；复制 Trace 最多输出同一 trace 的 100 行，不能访问原始 record、Throwable 或未脱敏字段。页面进入时
-立即刷新记录和当前视图字节数，完整会话校验失败时不读取日志；清理成功后同时清空 retained/visible 状态。
+已脱敏 TSV 行；复制 Trace 最多输出同一 trace 的 100 行，不能访问原始 record、Throwable 或未脱敏字段。复制通过
+Android ClipboardManager 标记为敏感内容，不写入 Compose 可保存状态。页面进入时立即刷新记录和当前视图字节数，完整
+会话校验失败时不读取日志；清理成功后同时清空 retained/visible 状态。
+
+诊断日志是 `SettingsDestination.Diagnostics` 独立二级页面。General 只发出导航，不持有日志 ViewModel、SAF launcher、
+导出或清理状态；诊断 Route 独占页面进入刷新、三种 MIME 的 `CreateDocument`、效果收集与敏感剪贴板写入。Top bar 菜单
+提供保存、分享、清理，保存/分享共用格式选择 sheet。页面固定显示 E/W/I/D FilterChip 与精确 trace 搜索；行使用等宽
+字体，INFO/DEBUG 保持中性色，WARN 使用有限强调色，ERROR/FATAL 使用错误色，同时始终保留等级文本以满足无障碍识别。
+长按行只提供“复制该行”和“复制该 Trace”，选择器取消会清除 pending 格式，不会遗留可误用的导出请求。
 
 明文导出最多读取当前 store 的 5000 条记录，并在存储层以最多 500 条一页跨文件读取；
 按 `timestamp_ms + elapsed_realtime_ms + event_id` 确定性排序并按 `event_id` 去重。manifest 集中包含 schema、生成时间、
@@ -93,7 +100,7 @@ manifest，然后由同一编码器输出所选格式，不为不同目的维护
 `application/x-ndjson`、TSV 为 `text/tab-separated-values`、ZIP 为 `application/zip`），认证成功后直接写入该 URI，
 不创建分享缓存；认证取消、拒绝或写入失败时尝试删除选择器预创建的未完成文档。分享才在 `cacheDir` 创建带正确扩展名
 的临时明文文件，并以对应 MIME 经 FileProvider 只读发送。分享失败立即删除，成功后 10 分钟删除，新分享前先清理旧
-临时文件。明文导出不属于备份内容，也不复用备份目录设置。当前旧设置入口固定请求 JSONL；格式选择由专用日志页接管。
+临时文件。明文导出不属于备份内容，也不复用备份目录设置。
 
 JSONL 是唯一 canonical 事件模型。独立 JSONL 第一行是 manifest JSON，后续事件字段稳定按 `time`、
 `timestamp_ms`、`elapsed_realtime_ms`、`level`、`event`、`event_id`、`context`、`error`、`trace`、`session`

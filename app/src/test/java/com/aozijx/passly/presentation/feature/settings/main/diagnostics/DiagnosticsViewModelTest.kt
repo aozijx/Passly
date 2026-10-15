@@ -103,6 +103,11 @@ class DiagnosticsViewModelTest {
             ),
             effect.await(),
         )
+        assertEquals(LogFormat.TSV, viewModel.uiState.value.pendingLocalFormat)
+
+        viewModel.onAction(DiagnosticsAction.SaveDocumentCancelled)
+
+        assertEquals(null, viewModel.uiState.value.pendingLocalFormat)
     }
 
     @Test

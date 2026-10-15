@@ -80,3 +80,5 @@ Android API 依据：[Log](https://developer.android.com/reference/android/util/
   该链路不创建应用内明文副本，也不读取或复用备份目录设置。
 - 只有“分享”会在 `cacheDir` 创建与格式匹配的明文临时文件，并用对应 MIME 交给系统分享：分享失败立即删除，
   分享成功后 10 分钟删除，下一次分享前清理陈旧文件。
+- App 内查看器只接收 `LogLevel + trace_id + 已脱敏 TSV 行`，等级/trace 筛选不改变导出范围。复制单行或最多 100 行的
+  同一 Trace 时使用 Android 敏感剪贴板标记；UI 不接触原始 record、Throwable 或隐私策略之前的字段。

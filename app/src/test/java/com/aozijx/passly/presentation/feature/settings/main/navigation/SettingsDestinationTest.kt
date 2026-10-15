@@ -26,7 +26,7 @@ class SettingsDestinationTest {
     fun everyDetailRouteIsRegisteredExactlyOnceWithStableKeys() {
         val routes = settingsDetailRoutes()
 
-        assertEquals(12, routes.size)
+        assertEquals(13, routes.size)
         assertEquals(routes.size, routes.distinct().size)
         assertEquals(routes.size, routes.map(SettingsDestination::route).distinct().size)
         assertTrue(SettingsDestination.Main !in routes)
@@ -35,7 +35,7 @@ class SettingsDestinationTest {
                 "settings/security", "settings/privacy", "settings/permissions", "settings/appearance",
                 "settings/interface", "settings/interaction", "settings/autofill",
                 "settings/data", "settings/backup_restore", "settings/notifications",
-                "settings/recovery_code", "settings/general",
+                "settings/recovery_code", "settings/general", "settings/diagnostics",
             ),
             routes.map(SettingsDestination::route).toSet(),
         )

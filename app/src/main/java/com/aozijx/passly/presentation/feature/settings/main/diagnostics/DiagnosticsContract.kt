@@ -45,6 +45,7 @@ sealed interface DiagnosticsAction {
     data object DismissFormatSheet : DiagnosticsAction
     data class SelectFormat(val format: LogFormat) : DiagnosticsAction
     data class SaveToDocument(val uri: String) : DiagnosticsAction
+    data object SaveDocumentCancelled : DiagnosticsAction
     data object RequestClear : DiagnosticsAction
     data object DismissClear : DiagnosticsAction
     data object ConfirmClear : DiagnosticsAction

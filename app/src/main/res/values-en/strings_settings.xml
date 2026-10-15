@@ -318,15 +318,25 @@
     <string name="settings_log_clear_confirm_message">Clear all logs? This cannot be undone.</string>
     <string name="settings_log_empty">No logs</string>
     <string name="settings_log_save_action">Save logs</string>
-    <string name="settings_log_save_action_subtitle">Choose a location, then verify to write</string>
     <string name="settings_log_share_action">Share logs</string>
-    <string name="settings_log_share_action_subtitle">Create a temporary plaintext file for sharing after verification</string>
     <string name="settings_log_save_completed">Logs saved</string>
     <string name="settings_log_export_failed">Couldn’t export logs. Try again.</string>
     <string name="settings_log_loading">Loading logs…</string>
     <string name="settings_log_management_title">Logs</string>
     <string name="settings_log_view_title">View logs</string>
     <string name="settings_log_view_subtitle">Always recorded and encrypted by day</string>
+    <string name="settings_diagnostics_title">Diagnostic logs</string>
+    <string name="settings_diagnostics_menu">Log actions</string>
+    <string name="settings_diagnostics_trace_search">Exact trace_id search</string>
+    <string name="settings_diagnostics_session_restricted">This session cannot read diagnostic logs</string>
+    <string name="settings_diagnostics_export_format">Choose export format</string>
+    <string name="settings_diagnostics_share_format">Choose share format</string>
+    <string name="settings_diagnostics_jsonl_description">Complete machine-readable structured events with a manifest on the first line</string>
+    <string name="settings_diagnostics_tsv_description">Human-readable fixed eight-column view with a manifest header</string>
+    <string name="settings_diagnostics_zip_description">Bundle the manifest, JSONL, TSV, and format guide</string>
+    <string name="settings_diagnostics_copy_title">Copy diagnostics</string>
+    <string name="settings_diagnostics_copy_row">Copy row</string>
+    <string name="settings_diagnostics_copy_trace">Copy trace</string>
     <string name="settings_system_notification_settings">System notification access</string>
     <string name="settings_system_notification_settings_summary">Manage notification permission and channels in system settings</string>
 

@@ -3,6 +3,7 @@ package com.aozijx.passly.presentation.shared.components.topbar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -61,6 +62,7 @@ fun PasslyNavigationTopBar(
     title: String,
     onNavigateBack: (() -> Unit)?,
     navigationEnabled: Boolean = true,
+    actions: @Composable RowScope.() -> Unit = {},
 ) {
     TopAppBar(
         modifier = Modifier.background(MaterialTheme.colorScheme.surface),
@@ -81,6 +83,7 @@ fun PasslyNavigationTopBar(
                 }
             }
         },
+        actions = actions,
         colors = passlyCompactTopAppBarColors(),
     )
 }

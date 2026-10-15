@@ -10,6 +10,7 @@ import com.aozijx.passly.presentation.feature.settings.main.navigation.core.Reco
 import com.aozijx.passly.presentation.feature.settings.main.navigation.core.SecurityRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.data.BackupRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.data.DataManagementRoute
+import com.aozijx.passly.presentation.feature.settings.main.navigation.general.DiagnosticsRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.general.GeneralRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.general.NotificationsRoute
 import com.aozijx.passly.presentation.feature.settings.main.navigation.interaction.InteractionRoute
@@ -40,7 +41,11 @@ internal fun SettingsDetailRoute(
         SettingsDestination.DataManagement -> DataManagementRoute(onOpenTrash, onBack)
         SettingsDestination.BackupRestore -> BackupRoute(onBack)
         SettingsDestination.RecoveryCode -> RecoveryCodeRoute(onBack)
-        SettingsDestination.General -> GeneralRoute(onBack)
+        SettingsDestination.General -> GeneralRoute(
+            onOpenDiagnostics = { onNavigateTo(SettingsDestination.Diagnostics) },
+            onBack = onBack,
+        )
+        SettingsDestination.Diagnostics -> DiagnosticsRoute(onBack)
         SettingsDestination.Notifications -> NotificationsRoute(onBack)
     }
 }

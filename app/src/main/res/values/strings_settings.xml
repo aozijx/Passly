@@ -318,15 +318,25 @@
     <string name="settings_log_clear_confirm_message">清除全部日志？此操作无法撤销。</string>
     <string name="settings_log_empty">暂无日志</string>
     <string name="settings_log_save_action">保存日志</string>
-    <string name="settings_log_save_action_subtitle">选择保存位置，验证后写入</string>
     <string name="settings_log_share_action">分享日志</string>
-    <string name="settings_log_share_action_subtitle">验证后生成临时明文文件用于分享</string>
     <string name="settings_log_save_completed">日志已保存</string>
     <string name="settings_log_export_failed">日志导出失败，请重试</string>
     <string name="settings_log_loading">正在加载日志…</string>
     <string name="settings_log_management_title">日志管理</string>
     <string name="settings_log_view_title">查看日志</string>
     <string name="settings_log_view_subtitle">始终记录，按日加密保存</string>
+    <string name="settings_diagnostics_title">诊断日志</string>
+    <string name="settings_diagnostics_menu">日志操作</string>
+    <string name="settings_diagnostics_trace_search">精确搜索 trace_id</string>
+    <string name="settings_diagnostics_session_restricted">当前会话无权读取诊断日志</string>
+    <string name="settings_diagnostics_export_format">选择导出格式</string>
+    <string name="settings_diagnostics_share_format">选择分享格式</string>
+    <string name="settings_diagnostics_jsonl_description">机器可读的完整结构化事件；文件首行包含 manifest</string>
+    <string name="settings_diagnostics_tsv_description">适合人工阅读的固定八列视图；文件头包含 manifest</string>
+    <string name="settings_diagnostics_zip_description">打包 manifest、JSONL、TSV 与格式说明</string>
+    <string name="settings_diagnostics_copy_title">复制诊断信息</string>
+    <string name="settings_diagnostics_copy_row">复制该行</string>
+    <string name="settings_diagnostics_copy_trace">复制该 Trace</string>
     <string name="settings_system_notification_settings">系统通知权限</string>
     <string name="settings_system_notification_settings_summary">前往系统权限中心管理通知权限和渠道</string>
 

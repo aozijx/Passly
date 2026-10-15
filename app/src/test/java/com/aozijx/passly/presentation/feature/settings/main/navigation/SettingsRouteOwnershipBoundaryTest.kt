@@ -31,7 +31,7 @@ class SettingsRouteOwnershipBoundaryTest {
     }
 
     @Test
-    fun `general and notifications destinations have one route owner`() {
+    fun `general diagnostics and notifications destinations have one route owner`() {
         val sourceRoot = listOf(
             File("src/main/java"),
             File("app/src/main/java"),
@@ -49,11 +49,33 @@ class SettingsRouteOwnershipBoundaryTest {
         assertFalse(File(generalRoot, "NotificationDetail.kt").exists())
 
         val generalRoute = File(routeRoot, "GeneralRoute.kt").readText()
+        val diagnosticsRoute = File(routeRoot, "DiagnosticsRoute.kt")
         val notificationsRoute = File(routeRoot, "NotificationsRoute.kt").readText()
         assertTrue(generalRoute.contains("GeneralSettingsViewModel"))
-        assertTrue(generalRoute.contains("DiagnosticsViewModel"))
+        assertFalse(generalRoute.contains("DiagnosticsViewModel"))
+        assertFalse(generalRoute.contains("CreateDocument"))
+        assertTrue(diagnosticsRoute.isFile)
+        assertTrue(diagnosticsRoute.readText().contains("DiagnosticsViewModel"))
+        assertTrue(diagnosticsRoute.readText().contains("CreateDocument"))
+        assertTrue(diagnosticsRoute.readText().contains("DiagnosticsAction.PageEntered"))
         assertTrue(notificationsRoute.contains("NotificationSettingsViewModel"))
         assertTrue(notificationsRoute.contains("rememberPermissionRequestHost"))
+    }
+
+    @Test
+    fun `diagnostics screen exposes filters search and sanitized copy actions`() {
+        val sourceRoot = listOf(File("src/main/java"), File("app/src/main/java"))
+            .firstOrNull(File::isDirectory) ?: error("Cannot locate app source root")
+        val screen = sourceRoot.resolve(
+            "com/aozijx/passly/presentation/feature/settings/ui/diagnostics/DiagnosticsScreen.kt",
+        )
+
+        assertTrue(screen.isFile)
+        val source = screen.readText()
+        listOf("ERROR", "WARN", "INFO", "DEBUG", "SearchChanged", "CopyRow", "CopyTrace").forEach {
+            assertTrue("Missing diagnostics interaction: $it", source.contains(it))
+        }
+        assertFalse(source.contains("SanitizedLogRecord"))
     }
 
     @Test
