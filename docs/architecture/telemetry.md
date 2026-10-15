@@ -11,6 +11,12 @@
 计数、时长、比率、布尔、枚举、受控代码和待 HMAC 的标识符。`Logger.warn/error` 的签名强制要求
 `ErrorCode + ReasonCode + Throwable`，已知但没有异常对象的降级使用 `degraded`。
 
+App 业务层统一调用 `logger.log(LogStatements.<领域>.<事件>(...))`。`LogStatements` 是全 App 的类型化语句目录，
+当前包含 Application、Database、Security、Autofill，后续领域在同一目录扩展；它负责绑定 level、event、
+error_code、reason 和允许字段，业务代码无需重复导入或拼装协议常量。它不是 Autofill 专用 facade，也不创建第二套
+Logger。无法注入依赖的 Android framework 回调使用 `LoggerRuntime.log(operation, statement)`；未捕获异常仅接受
+`FatalLogStatement`，避免普通语句误走崩溃通道。
+
 业务调用不能构造 `SanitizedLogRecord` 或直接调用 Sink。后续隐私层必须把 pending 标识符替换为 HMAC、把
 Throwable 转换为不含 message/path 的安全快照后，才能将不可变记录交给 `LogSink`。Trace API 已固定在 Logger
 契约中。`TraceContextElement` 通过 `CoroutineContext` 与线程上下文共同传播同一个 Trace；根操作创建 Trace，

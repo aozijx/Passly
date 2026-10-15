@@ -9,6 +9,10 @@ import androidx.credentials.provider.BeginGetCredentialResponse
 import androidx.credentials.provider.BeginGetPasswordOption
 import androidx.credentials.provider.CredentialEntry
 import com.aozijx.passly.R
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.Reasons
+import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.feature.autofill.credential.CredentialManagerFlow
@@ -25,6 +29,8 @@ class CredentialBeginGetHandler @Inject constructor(
     private val flow: CredentialManagerFlow,
     private val adapter: CredentialPlatformAdapter,
     private val pendingIntentFactory: CredentialPendingIntentFactory,
+    private val logger: Logger,
+    private val traceContinuations: TraceContinuationStore,
 ) {
     suspend fun resolve(
         request: BeginGetCredentialRequest,
@@ -32,11 +38,17 @@ class CredentialBeginGetHandler @Inject constructor(
     ): BeginGetCredentialResponse {
         val passwordOptions = request.beginGetCredentialOptions
             .filterIsInstance<BeginGetPasswordOption>()
-        if (passwordOptions.isEmpty()) return BeginGetCredentialResponse()
+        if (passwordOptions.isEmpty()) {
+            logUnavailable(Reasons.NoFillableFields)
+            return BeginGetCredentialResponse()
+        }
 
         val packageName =
             CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo)
-                ?: return BeginGetCredentialResponse()
+                ?: run {
+                    logUnavailable(Reasons.NoFillableFields)
+                    return BeginGetCredentialResponse()
+                }
         return buildResponse(
             discovery = flow.beginGet(adapter.buildRequest(packageName)),
             passwordOptions = passwordOptions,
@@ -84,6 +96,8 @@ class CredentialBeginGetHandler @Inject constructor(
         includeUnlockAction: Boolean,
     ): BeginGetCredentialResponse = when (discovery) {
         is AutofillDiscoveryOutcome.RequiresUnlock -> if (includeUnlockAction) {
+                traceContinuations.capture(discovery.snapshot.id.value)
+                logger.log(LogStatements.Autofill.discoveryCompleted())
                 BeginGetCredentialResponse(
                     authenticationActions = listOf(
                         AuthenticationAction(
@@ -112,21 +126,34 @@ class CredentialBeginGetHandler @Inject constructor(
             }
             if (entries.isEmpty()) {
                 flow.cancel(discovery.snapshot.id)
+                logUnavailable(Reasons.NoMatchingEntry)
                 BeginGetCredentialResponse()
             } else {
+                traceContinuations.capture(discovery.snapshot.id.value)
+                logger.log(LogStatements.Autofill.discoveryCompleted())
                 BeginGetCredentialResponse(entries)
             }
         }
 
         is AutofillDiscoveryOutcome.NoCandidates -> {
             flow.cancel(discovery.snapshot.id)
+            logUnavailable(Reasons.NoMatchingEntry)
             BeginGetCredentialResponse()
         }
 
-        AutofillDiscoveryOutcome.Disabled,
-        AutofillDiscoveryOutcome.UnsupportedFields,
-        is AutofillDiscoveryOutcome.Failed,
-        -> BeginGetCredentialResponse()
+        AutofillDiscoveryOutcome.Disabled -> BeginGetCredentialResponse().also {
+            logUnavailable(Reasons.SessionRestricted)
+        }
+        AutofillDiscoveryOutcome.UnsupportedFields -> BeginGetCredentialResponse().also {
+            logUnavailable(Reasons.NoFillableFields)
+        }
+        is AutofillDiscoveryOutcome.Failed -> BeginGetCredentialResponse().also {
+            logUnavailable(Reasons.DatabaseUnavailable)
+        }
+    }
+
+    private fun logUnavailable(reason: com.aozijx.passly.core.observability.ReasonCode) {
+        logger.log(LogStatements.Autofill.discoveryUnavailable(reason))
     }
 }
 

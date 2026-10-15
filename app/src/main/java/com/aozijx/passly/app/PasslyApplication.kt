@@ -10,10 +10,8 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.app.observability.LoggerRuntime
 import com.aozijx.passly.app.observability.ObservabilityRuntimeController
-import com.aozijx.passly.core.observability.ErrorCodes
-import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Operations
-import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenance
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
 import dagger.hilt.android.HiltAndroidApp
@@ -78,12 +76,9 @@ class PasslyApplication : Application() {
         try {
             System.loadLibrary("sqlcipher")
         } catch (e: UnsatisfiedLinkError) {
-            LoggerRuntime.error(
+            LoggerRuntime.log(
                 operation = Operations.ApplicationStartup,
-                event = Events.Application.NativeLibraryLoadFailed,
-                errorCode = ErrorCodes.NativeLibraryLoadFailed,
-                reason = Reasons.NativeLibraryUnavailable,
-                throwable = e,
+                statement = LogStatements.Application.nativeLibraryLoadFailed(e),
             )
         }
 

@@ -9,8 +9,10 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
-import com.aozijx.passly.core.telemetry.TelemetryRuntime
-import com.aozijx.passly.core.telemetry.EventCategory
+import androidx.lifecycle.lifecycleScope
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
 import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService
@@ -19,6 +21,7 @@ import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @AndroidEntryPoint
@@ -29,6 +32,9 @@ class CredentialResponseActivity : AppCompatActivity() {
 
     @Inject
     lateinit var resultDelivery: AutofillResultDelivery
+
+    @Inject
+    lateinit var logger: Logger
 
     private val viewModel: CredentialResponseViewModel by viewModels()
     private val resultFinishing = AtomicBoolean(false)
@@ -71,7 +77,11 @@ class CredentialResponseActivity : AppCompatActivity() {
             )
 
             else -> {
-                TelemetryRuntime.w(EventCategory.AUTOFILL, "credential.response_action_unknown")
+                lifecycleScope.launch {
+                    logger.withRootTrace(Operations.AutofillCredentialRequest) {
+                        logger.log(LogStatements.Autofill.actionIgnored())
+                    }
+                }
                 CredentialResponseLaunch(
                     action = CredentialResponseUiAction.UnknownAction,
                 )

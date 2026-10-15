@@ -14,8 +14,10 @@ import androidx.credentials.provider.BeginGetCredentialRequest
 import androidx.credentials.provider.BeginGetCredentialResponse
 import androidx.credentials.provider.CredentialProviderService
 import androidx.credentials.provider.ProviderClearCredentialStateRequest
-import com.aozijx.passly.core.telemetry.TelemetryRuntime
-import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import dagger.hilt.android.AndroidEntryPoint
@@ -47,6 +49,9 @@ class ModernCredentialService : CredentialProviderService() {
     @Inject
     lateinit var finishInteraction: FinishAutofillInteraction
 
+    @Inject
+    lateinit var logger: Logger
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     companion object {
@@ -62,18 +67,20 @@ class ModernCredentialService : CredentialProviderService() {
         callback: OutcomeReceiver<BeginGetCredentialResponse, GetCredentialException>
     ) {
         val job = scope.launch {
-            try {
-                val response = beginGetHandler.resolve(request, this@ModernCredentialService)
-                if (!cancellationSignal.isCanceled) {
-                    callback.onResult(response)
-                }
-            } catch (e: CancellationException) {
-                // Android canceled the request; no callback is allowed after cancellation.
-                throw e
-            } catch (e: Exception) {
-                TelemetryRuntime.e(EventCategory.AUTOFILL, "credential.get_request_failed", throwable = e)
-                if (!cancellationSignal.isCanceled) {
-                    callback.onError(GetCredentialUnknownException(e.message ?: "Unknown error"))
+            logger.withRootTrace(Operations.AutofillCredentialRequest) {
+                logger.log(LogStatements.Autofill.discoveryStarted())
+                try {
+                    val response = beginGetHandler.resolve(request, this@ModernCredentialService)
+                    if (!cancellationSignal.isCanceled) {
+                        callback.onResult(response)
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    logger.log(LogStatements.Autofill.discoveryFailed(e))
+                    if (!cancellationSignal.isCanceled) {
+                        callback.onError(GetCredentialUnknownException("Credential discovery failed"))
+                    }
                 }
             }
         }
@@ -86,23 +93,23 @@ class ModernCredentialService : CredentialProviderService() {
         callback: OutcomeReceiver<BeginCreateCredentialResponse, CreateCredentialException>
     ) {
         val job = scope.launch {
-            try {
-                val response = beginCreateHandler.resolve(request, this@ModernCredentialService)
-                if (!cancellationSignal.isCanceled) {
-                    callback.onResult(response)
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: CreateCredentialException) {
-                if (!cancellationSignal.isCanceled) {
-                    callback.onError(e)
-                }
-            } catch (e: Exception) {
-                TelemetryRuntime.e(EventCategory.AUTOFILL, "credential.create_request_failed", throwable = e)
-                if (!cancellationSignal.isCanceled) {
-                    callback.onError(
-                        CreateCredentialUnknownException(e.message ?: "Unknown error")
-                    )
+            logger.withRootTrace(Operations.AutofillCredentialRequest) {
+                logger.log(LogStatements.Autofill.saveStarted())
+                try {
+                    val response = beginCreateHandler.resolve(request, this@ModernCredentialService)
+                    if (!cancellationSignal.isCanceled) {
+                        callback.onResult(response)
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: CreateCredentialException) {
+                    logger.log(LogStatements.Autofill.saveFailed(e, Reasons.NoFillableFields))
+                    if (!cancellationSignal.isCanceled) callback.onError(e)
+                } catch (e: Exception) {
+                    logger.log(LogStatements.Autofill.saveFailed(e, Reasons.UnknownFailure))
+                    if (!cancellationSignal.isCanceled) {
+                        callback.onError(CreateCredentialUnknownException("Credential creation failed"))
+                    }
                 }
             }
         }

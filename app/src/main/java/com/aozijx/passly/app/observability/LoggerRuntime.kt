@@ -1,37 +1,21 @@
 package com.aozijx.passly.app.observability
 
-import com.aozijx.passly.core.observability.DiagnosticId
-import com.aozijx.passly.core.observability.ErrorCode
-import com.aozijx.passly.core.observability.EventKey
-import com.aozijx.passly.core.observability.LogFields
+import com.aozijx.passly.core.observability.FatalLogStatement
 import com.aozijx.passly.core.observability.LogLevel
+import com.aozijx.passly.core.observability.LogStatement
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.OperationCode
-import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.SanitizedLogRecord
 import com.aozijx.passly.core.observability.sink.LogSink
 import kotlinx.coroutines.runBlocking
 
 /** Typed bridge reserved for Android framework callbacks that cannot receive injected dependencies. */
 interface FrameworkLogger {
-    fun debug(operation: OperationCode, event: EventKey, fields: LogFields = LogFields.Empty)
-    fun info(operation: OperationCode, event: EventKey, fields: LogFields = LogFields.Empty)
-    fun error(
-        operation: OperationCode,
-        event: EventKey,
-        errorCode: ErrorCode,
-        reason: ReasonCode,
-        throwable: Throwable,
-        fields: LogFields = LogFields.Empty,
-    ): DiagnosticId?
+    fun log(operation: OperationCode, statement: LogStatement)
 
     fun fatal(
         operation: OperationCode,
-        event: EventKey,
-        errorCode: ErrorCode,
-        reason: ReasonCode,
-        throwable: Throwable,
-        fields: LogFields = LogFields.Empty,
+        statement: FatalLogStatement,
     ): SanitizedLogRecord?
 }
 
@@ -54,66 +38,33 @@ object LoggerRuntime : LoggerRuntimeGateway, FrameworkLogger {
         if (delegate === logger) delegate = NoOpFrameworkLogger
     }
 
-    override fun debug(operation: OperationCode, event: EventKey, fields: LogFields) =
-        delegate.debug(operation, event, fields)
-
-    override fun info(operation: OperationCode, event: EventKey, fields: LogFields) =
-        delegate.info(operation, event, fields)
-
-    override fun error(
-        operation: OperationCode,
-        event: EventKey,
-        errorCode: ErrorCode,
-        reason: ReasonCode,
-        throwable: Throwable,
-        fields: LogFields,
-    ): DiagnosticId? = delegate.error(operation, event, errorCode, reason, throwable, fields)
+    override fun log(operation: OperationCode, statement: LogStatement) =
+        delegate.log(operation, statement)
 
     override fun fatal(
         operation: OperationCode,
-        event: EventKey,
-        errorCode: ErrorCode,
-        reason: ReasonCode,
-        throwable: Throwable,
-        fields: LogFields,
+        statement: FatalLogStatement,
     ): SanitizedLogRecord? =
-        delegate.fatal(operation, event, errorCode, reason, throwable, fields)
+        delegate.fatal(operation, statement)
 }
 
 internal class RootTraceFrameworkLogger(
     private val logger: Logger,
     private val crashCapture: CrashRecordCaptureSink,
 ) : FrameworkLogger {
-    override fun debug(operation: OperationCode, event: EventKey, fields: LogFields) {
-        safelyRun { logger.withRootTrace(operation) { logger.debug(event, fields) } }
-    }
-
-    override fun info(operation: OperationCode, event: EventKey, fields: LogFields) {
-        safelyRun { logger.withRootTrace(operation) { logger.info(event, fields) } }
-    }
-
-    override fun error(
-        operation: OperationCode,
-        event: EventKey,
-        errorCode: ErrorCode,
-        reason: ReasonCode,
-        throwable: Throwable,
-        fields: LogFields,
-    ): DiagnosticId? = safelyRun {
-        logger.withRootTrace(operation) { logger.error(event, errorCode, reason, throwable, fields) }
+    override fun log(operation: OperationCode, statement: LogStatement) {
+        safelyRun {
+            logger.withRootTrace(operation) { logger.log(statement) }
+        }
     }
 
     override fun fatal(
         operation: OperationCode,
-        event: EventKey,
-        errorCode: ErrorCode,
-        reason: ReasonCode,
-        throwable: Throwable,
-        fields: LogFields,
+        statement: FatalLogStatement,
     ): SanitizedLogRecord? {
         crashCapture.clear()
         safelyRun {
-            logger.withRootTrace(operation) { logger.fatal(event, errorCode, reason, throwable, fields) }
+            logger.withRootTrace(operation) { logger.log(statement) }
         }
         return crashCapture.take()
     }
@@ -137,23 +88,10 @@ internal class CrashRecordCaptureSink : LogSink {
 }
 
 private object NoOpFrameworkLogger : FrameworkLogger {
-    override fun debug(operation: OperationCode, event: EventKey, fields: LogFields) = Unit
-    override fun info(operation: OperationCode, event: EventKey, fields: LogFields) = Unit
-    override fun error(
-        operation: OperationCode,
-        event: EventKey,
-        errorCode: ErrorCode,
-        reason: ReasonCode,
-        throwable: Throwable,
-        fields: LogFields,
-    ): DiagnosticId? = null
+    override fun log(operation: OperationCode, statement: LogStatement) = Unit
 
     override fun fatal(
         operation: OperationCode,
-        event: EventKey,
-        errorCode: ErrorCode,
-        reason: ReasonCode,
-        throwable: Throwable,
-        fields: LogFields,
+        statement: FatalLogStatement,
     ): SanitizedLogRecord? = null
 }

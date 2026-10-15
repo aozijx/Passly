@@ -103,6 +103,16 @@ Autofill 跨越目标应用、Android 系统、Passly Service、认证 Activity 
 - Legacy 待保存密码只存在于有界的一次性内存 store，以及消费后的 ViewModel 内存 continuation；不会进入可保存 UI state。
 - 传统 Autofill 的认证结果使用临时 Dataset 标志，减少系统长期缓存。
 
+## 结构化日志与链路续接
+
+Legacy Autofill 与 Credential Manager 使用同一个通用 `Logger` 协议，但保留各自独立的 Android 请求和结果合同。业务调用通过 `LogStatements.Autofill` 选择类型化语句；事件名、级别、错误码和默认失败原因由 core 目录统一定义，调用点不自行拼接 JSON 或自由文本事件。
+
+- `LegacyAutofillService` 与 `ModernCredentialService` 的系统回调分别建立 `autofill_legacy_request` 和 `autofill_credential_request` 根 trace。
+- 需要跨 Service、PendingIntent、Activity 和 ViewModel 继续的链路由 process-local `TraceContinuationStore` 保存一次性 trace token，并以 `AutofillInteractionId` 的不透明值路由；路由 key 不写入日志。token 过期、进程重启或已消费时，新建根 trace 并记录 DEBUG 级 `application.trace_resume_unavailable`，不会从 Intent 重建旧授权。
+- 结果发布与会话关闭属于同一个 `trace_id` 下的两个 span。`autofill.result.delivered` 只能出现在平台回调成功之后；只有此后才禁止新 borrower 并进入 `autofill.session.close_started`。平台回调失败记录带安全异常快照的 `AUTOFILL_RESULT_DELIVERY_FAILED`，不关闭会话。
+- 目标包名只以 `target_package` 的 HMAC 值出现。域名、密码、用户名、异常 message、interaction ID 和 trace token 均不得进入日志；异常仅保留类型、受限应用栈帧和 cause 类型。
+- Legacy 保存记录 `save.started/staged/completed/failed`，捕获到的异常必须交给 Logger 生成脱敏快照，不能再使用丢弃 throwable 的 catch 分支。
+
 ## 取消与清理
 
 - 成功、失败、用户取消和协程取消都必须进入统一终态；成功路径必须先发布平台结果，立即封闭 lease 的新借用入口，再在不可取消的收尾区释放已有持有者。

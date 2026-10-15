@@ -16,6 +16,7 @@ import com.aozijx.passly.core.observability.SecureSessionId
 import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
 import com.aozijx.passly.core.observability.TraceScope
+import com.aozijx.passly.core.observability.TraceResumeResult
 import com.aozijx.passly.core.observability.privacy.LogSanitizer
 import com.aozijx.passly.core.observability.privacy.SanitizationContext
 import com.aozijx.passly.core.observability.privacy.SanitizationResult
@@ -26,6 +27,8 @@ import com.aozijx.passly.core.observability.trace.SpanStarted
 import com.aozijx.passly.core.observability.trace.TraceContext
 import com.aozijx.passly.core.observability.trace.TraceContextElement
 import com.aozijx.passly.core.observability.trace.TraceLifecycleSink
+import com.aozijx.passly.core.observability.trace.TraceToken
+import com.aozijx.passly.core.observability.trace.TraceTokenRegistry
 import java.security.SecureRandom
 import java.util.Base64
 import java.util.concurrent.CancellationException
@@ -73,6 +76,7 @@ class DefaultLogger(
     private val timeSource: ObservabilityTimeSource,
     private val processSessionProvider: ProcessSessionProvider,
     private val secureSessionProvider: SecureSessionProvider,
+    private val traceTokenRegistry: TraceTokenRegistry = TraceTokenRegistry(timeSource::elapsedRealtimeMs),
 ) : Logger {
     override fun debug(event: EventKey, fields: LogFields) {
         emit(PendingLogEvent(LogLevel.DEBUG, event, fields))
@@ -128,6 +132,24 @@ class DefaultLogger(
         val parent = TraceContext.currentOrNull()
             ?: return withRootTrace(operation, block)
         return runSpan(parent.child(idGenerator.spanId(), operation), block)
+    }
+
+    override fun captureTraceToken(singleUse: Boolean): TraceToken = traceTokenRegistry.capture(
+        context = requireTraceContext(),
+        processSessionId = processSessionProvider.current(),
+        singleUse = singleUse,
+    )
+
+    override suspend fun <T> resumeTrace(
+        token: TraceToken,
+        operation: OperationCode,
+        block: suspend TraceScope.() -> T,
+    ): TraceResumeResult<T> {
+        val captured = traceTokenRegistry.consume(token, processSessionProvider.current())
+            ?: return TraceResumeResult.Unavailable
+        return TraceResumeResult.Resumed(
+            runSpan(captured.child(idGenerator.spanId(), operation), block),
+        )
     }
 
     private suspend fun <T> runSpan(

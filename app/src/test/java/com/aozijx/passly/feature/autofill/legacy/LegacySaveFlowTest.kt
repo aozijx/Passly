@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -46,6 +47,24 @@ class LegacySaveFlowTest {
         assertEquals(LegacySavePreparation.Saved, fixture.flow.prepare(request()))
         assertEquals(1, fixture.saveCalls)
         assertEquals(0, fixture.authentication.authenticationCount)
+    }
+
+    @Test
+    fun `immediate persistence exception reaches the service boundary unchanged`() = runBlocking {
+        val failure = IllegalStateException("password=must-not-be-logged")
+        val fixture = fixture(
+            initialState = AuthenticationState.Authenticated(1L),
+            saveFailure = failure,
+        )
+
+        val thrown = try {
+            fixture.flow.prepare(request())
+            null
+        } catch (caught: IllegalStateException) {
+            caught
+        }
+
+        assertSame(failure, thrown)
     }
 
     @Test
@@ -169,6 +188,7 @@ class LegacySaveFlowTest {
             listOf(AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)),
         ),
         saveOutcome: AutofillSaveOutcome = AutofillSaveOutcome.Saved(EntryId("saved")),
+        saveFailure: RuntimeException? = null,
     ): Fixture {
         val settings = MutableStateFlow(settings())
         val vault = FakeVault(initialState)
@@ -190,6 +210,7 @@ class LegacySaveFlowTest {
             extractDraft = { AutofillSaveDraftExtraction.Ready(draft()) },
             saveCredential = {
                 saveCalls++
+                saveFailure?.let { throw it }
                 saveOutcome
             },
         )

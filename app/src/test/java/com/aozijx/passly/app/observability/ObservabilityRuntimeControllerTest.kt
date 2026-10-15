@@ -6,11 +6,13 @@ import com.aozijx.passly.core.observability.ErrorPayload
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.EventKey
 import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.FatalLogStatement
 import com.aozijx.passly.core.observability.ExceptionSnapshot
 import com.aozijx.passly.core.observability.ExceptionType
 import com.aozijx.passly.core.observability.LogCategory
 import com.aozijx.passly.core.observability.LogFields
 import com.aozijx.passly.core.observability.LogLevel
+import com.aozijx.passly.core.observability.LogStatement
 import com.aozijx.passly.core.observability.OperationCode
 import com.aozijx.passly.core.observability.ProcessSessionId
 import com.aozijx.passly.core.observability.Reasons
@@ -138,29 +140,14 @@ class ObservabilityRuntimeControllerTest {
         val infoEvents = mutableListOf<EventKey>()
         var fatalCalls = 0
 
-        override fun debug(operation: OperationCode, event: EventKey, fields: LogFields) = Unit
-
-        override fun info(operation: OperationCode, event: EventKey, fields: LogFields) {
+        override fun log(operation: OperationCode, statement: LogStatement) {
             order += "info"
-            infoEvents += event
+            infoEvents += statement.event
         }
-
-        override fun error(
-            operation: OperationCode,
-            event: EventKey,
-            errorCode: com.aozijx.passly.core.observability.ErrorCode,
-            reason: com.aozijx.passly.core.observability.ReasonCode,
-            throwable: Throwable,
-            fields: LogFields,
-        ): DiagnosticId = DiagnosticId("DGN-ABCD-EFGH")
 
         override fun fatal(
             operation: OperationCode,
-            event: EventKey,
-            errorCode: com.aozijx.passly.core.observability.ErrorCode,
-            reason: com.aozijx.passly.core.observability.ReasonCode,
-            throwable: Throwable,
-            fields: LogFields,
+            statement: FatalLogStatement,
         ): SanitizedLogRecord? {
             fatalCalls++
             return fatalRecord()

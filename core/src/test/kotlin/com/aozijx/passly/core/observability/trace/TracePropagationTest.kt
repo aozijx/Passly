@@ -7,6 +7,7 @@ import com.aozijx.passly.core.observability.ProcessSessionId
 import com.aozijx.passly.core.observability.SecureSessionId
 import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
+import com.aozijx.passly.core.observability.TraceResumeResult
 import com.aozijx.passly.core.observability.internal.DefaultLogger
 import com.aozijx.passly.core.observability.internal.ObservabilityIdGenerator
 import com.aozijx.passly.core.observability.internal.ObservabilityTimeSource
@@ -167,6 +168,72 @@ class TracePropagationTest {
         assertNull(registry.consume(first, process))
         assertTrue(registry.consume(second, process) != null)
         assertTrue(registry.consume(third, process) != null)
+    }
+
+    @Test
+    fun `captured trace token resumes as a child span on the original trace`() = runTest {
+        val lifecycle = RecordingTraceLifecycleSink()
+        val logger = logger(lifecycleSink = lifecycle)
+        var token: TraceToken? = null
+        var rootTraceId: TraceId? = null
+        var rootSpanId: SpanId? = null
+
+        logger.withRootTrace(Operations.AutofillLegacyRequest) {
+            rootTraceId = traceId
+            rootSpanId = spanId
+            token = logger.captureTraceToken()
+        }
+
+        val result = logger.resumeTrace(token!!, Operations.AutofillResultDelivery) {
+            assertEquals(rootTraceId, traceId)
+            assertEquals(rootSpanId, parentSpanId)
+            "delivered"
+        }
+
+        assertEquals(TraceResumeResult.Resumed("delivered"), result)
+        val resumed = lifecycle.started.single { it.operation == Operations.AutofillResultDelivery }
+        assertEquals(rootTraceId, resumed.trace.traceId)
+        assertEquals(rootSpanId, resumed.trace.parentSpanId)
+    }
+
+    @Test
+    fun `single use trace token cannot be resumed twice`() = runTest {
+        val logger = logger()
+        var token: TraceToken? = null
+
+        logger.withRootTrace(Operations.AutofillCredentialRequest) {
+            token = logger.captureTraceToken()
+        }
+
+        val captured = requireNotNull(token)
+        assertTrue(logger.resumeTrace(captured, Operations.AutofillResultDelivery) { Unit } is TraceResumeResult.Resumed)
+        assertEquals(
+            TraceResumeResult.Unavailable,
+            logger.resumeTrace(captured, Operations.AutofillSessionClose) { Unit },
+        )
+    }
+
+    @Test
+    fun `continuation store consumes an opaque callback key without logging it`() = runTest {
+        val lifecycle = RecordingTraceLifecycleSink()
+        val logger = logger(lifecycleSink = lifecycle)
+        val continuations = TraceContinuationStore(logger)
+        var originalTrace: TraceId? = null
+
+        logger.withRootTrace(Operations.AutofillCredentialRequest) {
+            originalTrace = traceId
+            continuations.capture("interaction_1234")
+        }
+
+        val resumed = continuations.resume("interaction_1234", Operations.AutofillResultDelivery) {
+            traceId
+        }
+
+        assertEquals(TraceResumeResult.Resumed(originalTrace), resumed)
+        assertEquals(
+            TraceResumeResult.Unavailable,
+            continuations.resume("interaction_1234", Operations.AutofillSessionClose) { traceId },
+        )
     }
 
     @Test

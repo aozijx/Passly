@@ -1,14 +1,11 @@
 package com.aozijx.passly.data.local.database.session
 
 import com.aozijx.passly.core.error.model.DatabaseInitFailed
-import com.aozijx.passly.core.observability.ErrorCodes
-import com.aozijx.passly.core.observability.Events
-import com.aozijx.passly.core.observability.LogFieldKeys
+import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.Reasons
-import com.aozijx.passly.core.observability.fields
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
 import com.aozijx.passly.runtime.session.RuntimeSessionManager
@@ -74,40 +71,35 @@ internal class DatabaseSessionEventLogger @Inject constructor(
     suspend fun record(event: SessionTransitionEvent) {
         logger.inSpan(Operations.DatabaseSession) {
             val reason = event.reason.toReasonCode()
-            val logFields = fields {
-                enum(LogFieldKeys.FromState, event.fromState)
-                enum(LogFieldKeys.ToState, event.toState)
-                enum(LogFieldKeys.LockType, event.lockType)
-                reason(LogFieldKeys.Reason, reason)
-                enum(LogFieldKeys.Owner, event.owner)
-                durationMs(LogFieldKeys.ElapsedMs, event.elapsedMs)
-                event.timeoutMs?.let { durationMs(LogFieldKeys.TimeoutMs, it) }
-                if (event.activeLeaseCount > 0) {
-                    count(LogFieldKeys.ActiveLeaseCount, event.activeLeaseCount)
-                }
-            }
+            val logFields = LogStatements.Database.sessionFields(
+                fromState = event.fromState,
+                toState = event.toState,
+                lockType = event.lockType,
+                reason = reason,
+                owner = event.owner,
+                elapsedMs = event.elapsedMs,
+                timeoutMs = event.timeoutMs,
+                activeLeaseCount = event.activeLeaseCount,
+            )
             when (event.reason) {
-                SessionTransitionReason.OPEN_FAILED -> logger.error(
-                    Events.Database.SessionTransitionFailed,
-                    ErrorCodes.DatabaseSessionOpenFailed,
-                    reason,
-                    requireNotNull(event.error),
-                    logFields,
+                SessionTransitionReason.OPEN_FAILED -> logger.log(
+                    LogStatements.Database.sessionOpenFailed(
+                        requireNotNull(event.error),
+                        reason,
+                        logFields,
+                    ),
                 )
-                SessionTransitionReason.CLOSE_FAILED -> logger.error(
-                    Events.Database.SessionTransitionFailed,
-                    ErrorCodes.DatabaseSessionCloseFailed,
-                    reason,
-                    requireNotNull(event.error),
-                    logFields,
+                SessionTransitionReason.CLOSE_FAILED -> logger.log(
+                    LogStatements.Database.sessionCloseFailed(
+                        requireNotNull(event.error),
+                        reason,
+                        logFields,
+                    ),
                 )
-                SessionTransitionReason.DRAIN_TIMEOUT -> logger.degraded(
-                    Events.Database.SessionTransitionFailed,
-                    ErrorCodes.DatabaseSessionCloseFailed,
-                    reason,
-                    logFields,
+                SessionTransitionReason.DRAIN_TIMEOUT -> logger.log(
+                    LogStatements.Database.sessionDrainTimeout(reason, logFields),
                 )
-                else -> logger.info(Events.Database.SessionTransition, logFields)
+                else -> logger.log(LogStatements.Database.sessionTransition(logFields))
             }
         }
     }

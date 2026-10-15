@@ -20,7 +20,6 @@ import com.aozijx.passly.feature.autofill.legacy.runtime.LegacySaveToken
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
@@ -164,17 +163,12 @@ class LegacySaveFlow internal constructor(
     private suspend fun legacySaveEnabled(): Boolean =
         settingsSource.interaction.first().autofill.let { it.enabled && it.savePromptsEnabled }
 
-    private suspend fun persistImmediately(draft: AutofillSaveDraft): LegacySavePreparation = try {
+    private suspend fun persistImmediately(draft: AutofillSaveDraft): LegacySavePreparation =
         when (saveCredential(draft)) {
             is AutofillSaveOutcome.Saved -> LegacySavePreparation.Saved
             AutofillSaveOutcome.InvalidDraft -> LegacySavePreparation.InvalidDraft
             is AutofillSaveOutcome.Failed -> LegacySavePreparation.Failed
         }
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (_: Exception) {
-        LegacySavePreparation.Failed
-    }
 
     private suspend fun claimCompletion(id: AutofillInteractionId): Boolean =
         completionMutex.withLock { completionsInProgress.add(id) }

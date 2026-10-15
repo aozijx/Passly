@@ -1,14 +1,11 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.core.observability.ErrorCodes
-import com.aozijx.passly.core.observability.Events
-import com.aozijx.passly.core.observability.LogFieldKeys
 import com.aozijx.passly.core.observability.LogFields
+import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.Reasons
-import com.aozijx.passly.core.observability.fields
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.LockReason
@@ -24,32 +21,50 @@ class SecuritySessionEventLogger @Inject internal constructor(
     ): T = logger.withRootTrace(Operations.SecurityLock) {
         val startedAt = elapsedRealtimeMs()
         val traceScope = LockTraceScope()
-        logger.info(Events.Security.LockStarted, lockFields(reason, timeoutMs, SecurityResult.STARTED, 0))
+        logger.log(
+            LogStatements.Security.lockStarted(
+                lockFields(reason, timeoutMs, SecurityResult.STARTED, 0),
+            ),
+        )
         try {
             traceScope.block().also {
                 val handledFailure = traceScope.failure
                 if (handledFailure != null) {
-                    logger.error(
-                        Events.Security.LockCompleted,
-                        ErrorCodes.SecurityLockFailed,
-                        Reasons.SecurityLockOperationFailed,
-                        handledFailure,
-                        lockFields(reason, timeoutMs, SecurityResult.FAILURE, elapsedSince(startedAt)),
+                    logger.log(
+                        LogStatements.Security.lockFailed(
+                            handledFailure,
+                            lockFields(
+                                reason,
+                                timeoutMs,
+                                SecurityResult.FAILURE,
+                                elapsedSince(startedAt),
+                            ),
+                        ),
                     )
                 } else {
-                logger.info(
-                        Events.Security.LockCompleted,
-                        lockFields(reason, timeoutMs, SecurityResult.SUCCESS, elapsedSince(startedAt)),
+                    logger.log(
+                        LogStatements.Security.lockCompleted(
+                            lockFields(
+                                reason,
+                                timeoutMs,
+                                SecurityResult.SUCCESS,
+                                elapsedSince(startedAt),
+                            ),
+                        ),
                     )
                 }
             }
         } catch (failure: Throwable) {
-            logger.error(
-                Events.Security.LockCompleted,
-                ErrorCodes.SecurityLockFailed,
-                Reasons.SecurityLockOperationFailed,
-                failure,
-                lockFields(reason, timeoutMs, SecurityResult.FAILURE, elapsedSince(startedAt)),
+            logger.log(
+                LogStatements.Security.lockFailed(
+                    failure,
+                    lockFields(
+                        reason,
+                        timeoutMs,
+                        SecurityResult.FAILURE,
+                        elapsedSince(startedAt),
+                    ),
+                ),
             )
             throw failure
         }
@@ -60,21 +75,25 @@ class SecuritySessionEventLogger @Inject internal constructor(
         block: suspend () -> T,
     ): T = logger.withRootTrace(Operations.SecurityAuthentication) {
         val startedAt = elapsedRealtimeMs()
-        logger.info(Events.Security.UnlockStarted, authenticationFields(method, SecurityResult.STARTED, 0))
+        logger.log(
+            LogStatements.Security.authenticationStarted(
+                authenticationFields(method, SecurityResult.STARTED, 0),
+            ),
+        )
         try {
             block().also {
-                logger.info(
-                    Events.Security.UnlockCompleted,
-                    authenticationFields(method, SecurityResult.SUCCESS, elapsedSince(startedAt)),
+                logger.log(
+                    LogStatements.Security.authenticationCompleted(
+                        authenticationFields(method, SecurityResult.SUCCESS, elapsedSince(startedAt)),
+                    ),
                 )
             }
         } catch (failure: Throwable) {
-            logger.error(
-                Events.Security.UnlockCompleted,
-                ErrorCodes.AuthenticationFailed,
-                Reasons.UnknownFailure,
-                failure,
-                authenticationFields(method, SecurityResult.FAILURE, elapsedSince(startedAt)),
+            logger.log(
+                LogStatements.Security.authenticationFailed(
+                    failure,
+                    authenticationFields(method, SecurityResult.FAILURE, elapsedSince(startedAt)),
+                ),
             )
             throw failure
         }
@@ -85,16 +104,19 @@ class SecuritySessionEventLogger @Inject internal constructor(
     ): AuthenticationResult = logger.withRootTrace(Operations.SecurityAuthentication) {
         val startedAt = elapsedRealtimeMs()
         val traceScope = AuthenticationTraceScope()
-        logger.info(Events.Security.UnlockStarted)
+        logger.log(LogStatements.Security.authenticationStarted())
         val result = try {
             traceScope.block()
         } catch (failure: Throwable) {
-            logger.error(
-                Events.Security.AuthenticationFailed,
-                ErrorCodes.AuthenticationFailed,
-                Reasons.UnknownFailure,
-                failure,
-                fields { durationMs(LogFieldKeys.ElapsedMs, elapsedSince(startedAt)) },
+            logger.log(
+                LogStatements.Security.authenticationFailed(
+                    failure,
+                    LogStatements.Security.authenticationFields(
+                        method = null,
+                        result = SecurityResult.FAILURE,
+                        elapsedMs = elapsedSince(startedAt),
+                    ),
+                ),
             )
             throw failure
         }
@@ -104,29 +126,18 @@ class SecuritySessionEventLogger @Inject internal constructor(
             is AuthenticationResult.Cancelled -> SecurityResult.CANCELLED
             is AuthenticationResult.Failure -> SecurityResult.FAILURE
         }
-        val resultFields = fields {
-            method?.let { enum(LogFieldKeys.AuthenticationMethod, it.toLogMethod()) }
-            enum(LogFieldKeys.Result, outcome)
-            durationMs(LogFieldKeys.ElapsedMs, elapsedSince(startedAt))
-        }
+        val resultFields = LogStatements.Security.authenticationFields(
+            method = method?.toLogMethod(),
+            result = outcome,
+            elapsedMs = elapsedSince(startedAt),
+        )
         val handledFailure = traceScope.failure
         if (handledFailure != null) {
-            logger.error(
-                Events.Security.AuthenticationFailed,
-                ErrorCodes.AuthenticationFailed,
-                Reasons.UnknownFailure,
-                handledFailure,
-                resultFields,
-            )
+            logger.log(LogStatements.Security.authenticationFailed(handledFailure, resultFields))
         } else if (result is AuthenticationResult.Failure) {
-            logger.degraded(
-                Events.Security.AuthenticationFailed,
-                ErrorCodes.AuthenticationFailed,
-                Reasons.AuthenticationRejected,
-                resultFields,
-            )
+            logger.log(LogStatements.Security.authenticationRejected(resultFields))
         } else {
-            logger.info(Events.Security.UnlockCompleted, resultFields)
+            logger.log(LogStatements.Security.authenticationCompleted(resultFields))
         }
         result
     }
@@ -154,23 +165,23 @@ class SecuritySessionEventLogger @Inject internal constructor(
         timeoutMs: Long,
         result: SecurityResult,
         elapsedMs: Long,
-    ): LogFields = fields {
-        reason(LogFieldKeys.LockReason, reason.toReasonCode())
-        enum(LogFieldKeys.Trigger, reason.toTrigger())
-        durationMs(LogFieldKeys.TimeoutMs, timeoutMs)
-        enum(LogFieldKeys.Result, result)
-        durationMs(LogFieldKeys.ElapsedMs, elapsedMs)
-    }
+    ): LogFields = LogStatements.Security.lockFields(
+        lockReason = reason.toReasonCode(),
+        trigger = reason.toTrigger(),
+        timeoutMs = timeoutMs,
+        result = result,
+        elapsedMs = elapsedMs,
+    )
 
     private fun authenticationFields(
         method: AuthenticationMethod,
         result: SecurityResult,
         elapsedMs: Long,
-    ): LogFields = fields {
-        enum(LogFieldKeys.AuthenticationMethod, method.toLogMethod())
-        enum(LogFieldKeys.Result, result)
-        durationMs(LogFieldKeys.ElapsedMs, elapsedMs)
-    }
+    ): LogFields = LogStatements.Security.authenticationFields(
+        method = method.toLogMethod(),
+        result = result,
+        elapsedMs = elapsedMs,
+    )
 
     private fun LockReason.toReasonCode(): ReasonCode = when (this) {
         LockReason.USER -> Reasons.User

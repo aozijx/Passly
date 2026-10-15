@@ -4,6 +4,7 @@ import com.aozijx.passly.core.observability.DiagnosticId
 import com.aozijx.passly.core.observability.ErrorCodes
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.ProcessSessionId
 import com.aozijx.passly.core.observability.Reasons
@@ -86,6 +87,73 @@ class DefaultLoggerTest {
         assertNotEquals(rootDiagnosticId, separateFailureId)
     }
 
+    @Test
+    fun `typed log statement supplies the event code and reason contract`() = runTest {
+        val records = mutableListOf<SanitizedLogRecord>()
+        val logger = logger(
+            PrivacyPolicy(IdentifierHasher { _, _ -> null }, ContractViolationBehavior.REJECT),
+            listOf(LogSink(records::add)),
+        )
+        val failure = IllegalStateException("must not become a log message")
+
+        logger.withRootTrace(Operations.AutofillResultDelivery) {
+            logger.log(LogStatements.Autofill.resultDeliveryFailed(failure))
+        }
+
+        val record = records.single()
+        assertEquals(Events.Autofill.ResultDeliveryFailed, record.event)
+        assertEquals(ErrorCodes.AutofillResultDeliveryFailed, record.error?.errorCode)
+        assertEquals(Reasons.PlatformCallbackFailed, record.error?.reason)
+        assertEquals("IllegalStateException", record.error?.exception?.type?.value)
+    }
+
+    @Test
+    fun `typed statement catalog is shared by app database security and autofill`() = runTest {
+        val records = mutableListOf<SanitizedLogRecord>()
+        val logger = logger(
+            PrivacyPolicy(IdentifierHasher { _, _ -> null }, ContractViolationBehavior.REJECT),
+            listOf(LogSink(records::add)),
+        )
+
+        logger.withRootTrace(Operations.ApplicationStartup) {
+            logger.log(LogStatements.Application.backgroundLockSkipped())
+            logger.log(
+                LogStatements.Database.sessionTransition(
+                    LogStatements.Database.sessionFields(
+                        fromState = TestState.LOCKED,
+                        toState = TestState.OPEN,
+                        lockType = TestState.SOFT,
+                        reason = Reasons.SessionOpen,
+                        owner = TestState.APP,
+                        elapsedMs = 12,
+                        timeoutMs = null,
+                        activeLeaseCount = 0,
+                    ),
+                ),
+            )
+            logger.log(
+                LogStatements.Security.authenticationRejected(
+                    LogStatements.Security.authenticationFields(
+                        method = TestState.BIOMETRIC,
+                        result = TestState.REJECTED,
+                        elapsedMs = 8,
+                    ),
+                ),
+            )
+            logger.log(LogStatements.Autofill.discoveryUnavailable(Reasons.NoMatchingEntry))
+        }
+
+        assertEquals(
+            listOf(
+                Events.Application.BackgroundLockSkipped,
+                Events.Database.SessionTransition,
+                Events.Security.AuthenticationFailed,
+                Events.Autofill.DiscoveryUnavailable,
+            ),
+            records.map(SanitizedLogRecord::event),
+        )
+    }
+
     private fun logger(
         sanitizer: LogSanitizer,
         sinks: List<LogSink>,
@@ -113,4 +181,6 @@ class DefaultLoggerTest {
             return DiagnosticId.fromEntropy(ByteArray(8) { index -> (seed + index).toByte() })
         }
     }
+
+    private enum class TestState { LOCKED, OPEN, SOFT, APP, BIOMETRIC, REJECTED }
 }

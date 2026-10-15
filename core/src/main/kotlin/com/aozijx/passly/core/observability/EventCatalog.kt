@@ -86,6 +86,7 @@ object Events {
         val SaveStaged = EventKey("autofill.save.staged")
         val SaveCompleted = EventKey("autofill.save.completed")
         val SaveFailed = EventKey("autofill.save.failed")
+        val ActionIgnored = EventKey("autofill.action.ignored")
     }
 
     val All: Set<EventKey> = setOf(
@@ -116,6 +117,7 @@ object Events {
         Autofill.SaveStaged,
         Autofill.SaveCompleted,
         Autofill.SaveFailed,
+        Autofill.ActionIgnored,
     )
 }
 

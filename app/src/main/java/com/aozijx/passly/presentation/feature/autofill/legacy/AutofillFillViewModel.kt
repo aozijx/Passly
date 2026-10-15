@@ -4,8 +4,11 @@ import android.content.Context
 import android.service.autofill.FillResponse
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.core.telemetry.TelemetryRuntime
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.core.observability.Reasons
+import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillAuthorizationOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillField
@@ -43,6 +46,8 @@ class AutofillFillViewModel @Inject constructor(
     private val finishInteraction: FinishAutofillInteraction,
     private val interactionStore: AutofillInteractionStore,
     private val responseFactory: LegacyResponseFactory,
+    private val logger: Logger,
+    private val traceContinuations: TraceContinuationStore,
     @param:ApplicationContext private val appContext: Context,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow<AutofillFillUiState>(AutofillFillUiState.Initial)
@@ -62,19 +67,33 @@ class AutofillFillViewModel @Inject constructor(
         if (currentRequest == request && mutableUiState.value != AutofillFillUiState.Initial) return
         currentRequest = request
         viewModelScope.launch {
-            mutate(AutofillFillMutation.Loading)
-            try {
-                when (authorizeInteraction(request.interactionId)) {
-                    is AutofillAuthorizationOutcome.Authorized -> continueAuthorized(request)
-                    is AutofillAuthorizationOutcome.Cancelled,
-                    is AutofillAuthorizationOutcome.Failed,
-                    is AutofillAuthorizationOutcome.Rejected,
-                    -> mutate(AutofillFillMutation.Completed(AutofillFillResult.Cancelled))
+            continueTrace(request) {
+                mutate(AutofillFillMutation.Loading)
+                logger.log(LogStatements.Autofill.authenticationStarted())
+                try {
+                    when (authorizeInteraction(request.interactionId)) {
+                        is AutofillAuthorizationOutcome.Authorized -> {
+                            logger.log(LogStatements.Autofill.authenticationCompleted())
+                            continueAuthorized(request)
+                        }
+                        is AutofillAuthorizationOutcome.Cancelled,
+                        is AutofillAuthorizationOutcome.Failed,
+                        is AutofillAuthorizationOutcome.Rejected,
+                        -> {
+                            logger.log(
+                                LogStatements.Autofill.discoveryUnavailable(
+                                    Reasons.AuthenticationRejected,
+                                ),
+                            )
+                            traceContinuations.discard(request.interactionId.value)
+                            mutate(AutofillFillMutation.Completed(AutofillFillResult.Cancelled))
+                        }
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    fail(request, "legacy.fill_authorization_failed", error)
                 }
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (error: Exception) {
-                fail(request, "legacy.fill_authorization_failed", error)
             }
         }
     }
@@ -86,19 +105,27 @@ class AutofillFillViewModel @Inject constructor(
             return
         }
 
+        logger.log(LogStatements.Autofill.discoveryStarted())
         when (val discovery = discover(request)) {
             is AutofillDiscoveryOutcome.Candidates -> {
+                logger.log(LogStatements.Autofill.discoveryCompleted())
                 val directEntryId = request.directEntryId
                 when {
                     directEntryId != null -> resolve(request, directEntryId)
                     request.uiMode == AutofillPresentation.BOTTOM_SHEET -> {
+                        traceContinuations.capture(request.interactionId.value)
                         mutate(AutofillFillMutation.CandidatesAvailable(discovery.candidates))
                     }
                     else -> returnDiscoveryResponse(request, discovery)
                 }
             }
 
-            is AutofillDiscoveryOutcome.NoCandidates -> returnDiscoveryResponse(request, discovery)
+            is AutofillDiscoveryOutcome.NoCandidates -> {
+                logger.log(
+                    LogStatements.Autofill.discoveryUnavailable(Reasons.NoMatchingEntry),
+                )
+                returnDiscoveryResponse(request, discovery)
+            }
             AutofillDiscoveryOutcome.Disabled,
             AutofillDiscoveryOutcome.UnsupportedFields,
             is AutofillDiscoveryOutcome.Failed,
@@ -123,6 +150,7 @@ class AutofillFillViewModel @Inject constructor(
             finishInteraction.cancel(request.interactionId)
             mutate(AutofillFillMutation.Completed(AutofillFillResult.Cancelled))
         } else {
+            traceContinuations.capture(request.interactionId.value)
             mutate(AutofillFillMutation.Completed(AutofillFillResult.Response(response)))
         }
     }
@@ -130,13 +158,15 @@ class AutofillFillViewModel @Inject constructor(
     private fun selectCandidate(entryId: EntryId) {
         val request = currentRequest ?: return
         viewModelScope.launch {
-            mutate(AutofillFillMutation.Loading)
-            try {
-                resolve(request, entryId)
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (error: Exception) {
-                fail(request, "legacy.selection_failed", error)
+            continueTrace(request) {
+                mutate(AutofillFillMutation.Loading)
+                try {
+                    resolve(request, entryId)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    fail(request, "legacy.selection_failed", error)
+                }
             }
         }
     }
@@ -177,6 +207,7 @@ class AutofillFillViewModel @Inject constructor(
         }
 
         val receipt = AutofillSelectionReceipt(request.interactionId, outcome.payload.entryId)
+        traceContinuations.capture(request.interactionId.value)
         val result = if (request.returnsDataset) {
             AutofillFillResult.DatasetResult(dataset, receipt)
         } else {
@@ -191,7 +222,10 @@ class AutofillFillViewModel @Inject constructor(
     private fun cancel() {
         val request = currentRequest
         viewModelScope.launch {
-            request?.let { finishInteraction.cancel(it.interactionId) }
+            request?.let {
+                finishInteraction.cancel(it.interactionId)
+                traceContinuations.discard(it.interactionId.value)
+            }
             mutate(AutofillFillMutation.Completed(AutofillFillResult.Cancelled))
         }
     }
@@ -202,10 +236,11 @@ class AutofillFillViewModel @Inject constructor(
         error: Exception? = null,
     ) {
         finishInteraction.cancel(request.interactionId)
+        traceContinuations.discard(request.interactionId.value)
         if (error == null) {
-            TelemetryRuntime.w(EventCategory.AUTOFILL, event)
+            logger.log(LogStatements.Autofill.discoveryUnavailable(Reasons.UnknownFailure))
         } else {
-            TelemetryRuntime.e(EventCategory.AUTOFILL, event, throwable = error)
+            logger.log(LogStatements.Autofill.discoveryFailed(error))
         }
         mutate(AutofillFillMutation.Failed(event))
     }
@@ -213,6 +248,15 @@ class AutofillFillViewModel @Inject constructor(
     private fun mutate(mutation: AutofillFillMutation) {
         mutableUiState.value = AutofillFillReducer.reduce(mutableUiState.value, mutation)
     }
+
+    private suspend fun <T> continueTrace(
+        request: AutofillFillRequest,
+        block: suspend com.aozijx.passly.core.observability.TraceScope.() -> T,
+    ): T = traceContinuations.continueOrRoot(
+            request.interactionId.value,
+            Operations.AutofillLegacyRequest,
+            block,
+        )
 
     private fun AutofillFillRequest.roleMap(): Map<String, FieldRole> = buildMap {
         usernameIds.forEach { put(it.toString(), FieldRole.USERNAME) }

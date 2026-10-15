@@ -1,12 +1,8 @@
 package com.aozijx.passly.app.observability
 
 import android.os.Process
-import com.aozijx.passly.core.observability.ErrorCodes
-import com.aozijx.passly.core.observability.Events
-import com.aozijx.passly.core.observability.LogFieldKeys
+import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Operations
-import com.aozijx.passly.core.observability.Reasons
-import com.aozijx.passly.core.observability.fields
 import com.aozijx.passly.core.observability.sink.LogRecordStore
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
 import java.util.concurrent.atomic.AtomicBoolean
@@ -47,10 +43,7 @@ class ObservabilityRuntimeController @Inject internal constructor(
         try {
             val record = frameworkLogger.fatal(
                 operation = Operations.ApplicationLifecycle,
-                event = Events.Application.UnhandledException,
-                errorCode = ErrorCodes.ApplicationUnhandledException,
-                reason = Reasons.UnknownFailure,
-                throwable = throwable,
+                statement = LogStatements.Application.unhandledException(throwable),
             )
             val flushed = runCatching { store.flush(CRASH_FLUSH_TIMEOUT_MS) }.getOrDefault(false)
             if (!flushed && record != null) {
@@ -100,16 +93,15 @@ class ObservabilityRuntimeController @Inject internal constructor(
     }
 
     private fun recordPreviousExit(exit: PreviousExit) {
-        frameworkLogger.info(
+        frameworkLogger.log(
             operation = Operations.ApplicationStartup,
-            event = Events.Application.PreviousProcessExit,
-            fields = fields {
-                enum(LogFieldKeys.ExitReason, exit.reason)
-                if (exit.status >= 0) count(LogFieldKeys.ExitStatus, exit.status)
-                enum(LogFieldKeys.Importance, exit.importance)
-                count(LogFieldKeys.PssKb, exit.pssKb)
-                count(LogFieldKeys.RssKb, exit.rssKb)
-            },
+            statement = LogStatements.Application.previousProcessExit(
+                exitReason = exit.reason,
+                status = exit.status,
+                importance = exit.importance,
+                pssKb = exit.pssKb,
+                rssKb = exit.rssKb,
+            ),
         )
     }
 

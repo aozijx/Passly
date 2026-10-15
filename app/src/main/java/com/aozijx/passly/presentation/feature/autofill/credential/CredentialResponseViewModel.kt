@@ -11,8 +11,11 @@ import androidx.credentials.exceptions.NoCredentialException
 import androidx.credentials.provider.PendingIntentHandler
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.core.telemetry.TelemetryRuntime
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.core.observability.Reasons
+import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.feature.autofill.credential.CredentialAuthenticationExceptionMapper
@@ -44,6 +47,8 @@ import kotlinx.coroutines.withContext
 class CredentialResponseViewModel @Inject constructor(
     private val flow: CredentialManagerFlow,
     private val beginGetHandler: CredentialBeginGetHandler,
+    private val logger: Logger,
+    private val traceContinuations: TraceContinuationStore,
     @param:ApplicationContext private val appContext: android.content.Context,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow<CredentialResponseUiState>(
@@ -67,7 +72,10 @@ class CredentialResponseViewModel @Inject constructor(
         val interactionId = activeInteractionId ?: return
         activeInteractionId = null
         viewModelScope.launch {
-            withContext(NonCancellable) { flow.cancel(interactionId) }
+            withContext(NonCancellable) {
+                flow.cancel(interactionId)
+                traceContinuations.discard(interactionId.value)
+            }
         }
     }
 
@@ -79,7 +87,6 @@ class CredentialResponseViewModel @Inject constructor(
             )
         },
     ) {
-        TelemetryRuntime.i(EventCategory.AUTOFILL, "credential.password_request_received")
         when (val request = CredentialRequestParser.parsePasswordGet(sourceIntent)) {
             is PasswordGetParseResult.Failed -> {
                 cancelTrackedInteraction()
@@ -87,6 +94,7 @@ class CredentialResponseViewModel @Inject constructor(
             }
             is PasswordGetParseResult.Ready -> {
                 activeInteractionId = request.interactionId
+                logger.log(LogStatements.Autofill.authenticationStarted())
                 when (
                     val result = flow.selectPassword(
                         interactionId = request.interactionId,
@@ -97,6 +105,8 @@ class CredentialResponseViewModel @Inject constructor(
                 ) {
                     is CredentialManagerPasswordResult.Success -> {
                         activeInteractionId = null
+                        logger.log(LogStatements.Autofill.authenticationCompleted())
+                        traceContinuations.capture(request.interactionId.value)
                         complete(
                             CredentialResponseFactory.buildPasswordResponse(
                                 result.username,
@@ -104,11 +114,14 @@ class CredentialResponseViewModel @Inject constructor(
                             ),
                             receipt = result.receipt,
                         )
-                        TelemetryRuntime.i(EventCategory.AUTOFILL, "credential.password_resolved")
                     }
 
                     CredentialManagerPasswordResult.NotAvailable -> {
                         activeInteractionId = null
+                        logger.log(
+                            LogStatements.Autofill.discoveryUnavailable(Reasons.NoMatchingEntry),
+                        )
+                        traceContinuations.discard(request.interactionId.value)
                         completeGetError(NoCredentialException("Credential is no longer available"))
                     }
                 }
@@ -131,6 +144,7 @@ class CredentialResponseViewModel @Inject constructor(
             }
             is UnlockParseResult.Ready -> {
                 activeInteractionId = request.interactionId
+                logger.log(LogStatements.Autofill.authenticationStarted())
                 when (
                     val result = beginGetHandler.resolveAfterUnlock(
                         request = request.request,
@@ -143,11 +157,19 @@ class CredentialResponseViewModel @Inject constructor(
                         PendingIntentHandler.setBeginGetCredentialResponse(intent, result.response)
                         // The same interaction remains active for the picker selection.
                         activeInteractionId = null
+                        logger.log(LogStatements.Autofill.authenticationCompleted())
+                        traceContinuations.capture(request.interactionId.value)
                         complete(intent)
                     }
 
                     is CredentialUnlockResponse.NotAuthorized -> {
                         activeInteractionId = null
+                        logger.log(
+                            LogStatements.Autofill.discoveryUnavailable(
+                                Reasons.AuthenticationRejected,
+                            ),
+                        )
+                        traceContinuations.discard(request.interactionId.value)
                         completeGetError(
                             CredentialAuthenticationExceptionMapper.toGetException(
                                 result.result.authorization,
@@ -158,6 +180,10 @@ class CredentialResponseViewModel @Inject constructor(
                     CredentialUnlockResponse.Unavailable -> {
                         flow.cancel(request.interactionId)
                         activeInteractionId = null
+                        logger.log(
+                            LogStatements.Autofill.discoveryUnavailable(Reasons.NoMatchingEntry),
+                        )
+                        traceContinuations.discard(request.interactionId.value)
                         completeGetError(NoCredentialException("Credential is no longer available"))
                     }
                 }
@@ -180,6 +206,7 @@ class CredentialResponseViewModel @Inject constructor(
             }
             is PasswordCreateParseResult.Ready -> {
                 activeInteractionId = request.interactionId
+                logger.log(LogStatements.Autofill.authenticationStarted())
                 when (
                     val result = flow.createPassword(
                         interactionId = request.interactionId,
@@ -190,17 +217,25 @@ class CredentialResponseViewModel @Inject constructor(
                 ) {
                     CredentialManagerCreateResult.Saved -> {
                         activeInteractionId = null
+                        logger.log(LogStatements.Autofill.authenticationCompleted())
+                        logger.log(LogStatements.Autofill.saveCompleted())
+                        traceContinuations.discard(request.interactionId.value)
                         complete(CredentialResponseFactory.buildPasswordCreateResponse())
-                        TelemetryRuntime.i(EventCategory.AUTOFILL, "credential.password_created")
                     }
 
                     CredentialManagerCreateResult.NotSaved -> {
                         activeInteractionId = null
+                        logger.log(LogStatements.Autofill.saveUnavailable(Reasons.StorageFailure))
+                        traceContinuations.discard(request.interactionId.value)
                         completeCreateError(CreateCredentialUnknownException("Credential was not saved"))
                     }
 
                     is CredentialManagerCreateResult.NotAuthorized -> {
                         activeInteractionId = null
+                        logger.log(
+                            LogStatements.Autofill.saveUnavailable(Reasons.AuthenticationRejected),
+                        )
+                        traceContinuations.discard(request.interactionId.value)
                         completeCreateError(
                             CredentialAuthenticationExceptionMapper.toCreateException(
                                 result.authorization,
@@ -220,18 +255,16 @@ class CredentialResponseViewModel @Inject constructor(
         if (!requestStarted.compareAndSet(false, true)) return
         activeInteractionId = CredentialRequestParser.parseInteractionId(sourceIntent)
         viewModelScope.launch {
-            try {
-                block()
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (error: Exception) {
-                TelemetryRuntime.e(
-                    EventCategory.AUTOFILL,
-                    "credential.response_failed",
-                    throwable = error,
-                )
-                cancelTrackedInteraction()
-                complete(failureIntent(error))
+            continueTrace(activeInteractionId) {
+                try {
+                    block()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    logger.log(LogStatements.Autofill.discoveryFailed(error))
+                    cancelTrackedInteraction()
+                    complete(failureIntent(error))
+                }
             }
         }
     }
@@ -267,5 +300,22 @@ class CredentialResponseViewModel @Inject constructor(
         val interactionId = activeInteractionId ?: return
         activeInteractionId = null
         flow.cancel(interactionId)
+        traceContinuations.discard(interactionId.value)
+    }
+
+    private suspend fun <T> continueTrace(
+        interactionId: AutofillInteractionId?,
+        block: suspend com.aozijx.passly.core.observability.TraceScope.() -> T,
+    ): T {
+        if (interactionId != null) {
+            return traceContinuations.continueOrRoot(
+                interactionId.value,
+                Operations.AutofillCredentialRequest,
+                block,
+            )
+        }
+        return logger.withRootTrace(Operations.AutofillCredentialRequest) {
+            block()
+        }
     }
 }
