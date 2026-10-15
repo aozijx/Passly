@@ -32,7 +32,7 @@ class ObservabilityRuntimeController @Inject internal constructor(
     private val crashHandlers: CrashHandlerRegistry,
     private val processTerminator: ProcessTerminator,
     private val eventAggregator: EventAggregator,
-    private val recordEncoder: LogRecordJsonEncoder = LogRecordJsonEncoder(),
+    private val recordEncoder: LogRecordTextEncoder = LogRecordTextEncoder(),
 ) : DiagnosticsLogStore {
     private val started = AtomicBoolean(false)
     private val shutdown = AtomicBoolean(false)

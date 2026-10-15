@@ -222,6 +222,10 @@ class PrivacyPolicy(
             LogFieldKeys.PssKb to FieldKind.COUNT,
             LogFieldKeys.RssKb to FieldKind.COUNT,
             LogFieldKeys.Source to FieldKind.ENUM,
+            LogFieldKeys.ErrorLayer to FieldKind.ENUM,
+            LogFieldKeys.Severity to FieldKind.ENUM,
+            LogFieldKeys.Recoverable to FieldKind.BOOLEAN,
+            LogFieldKeys.Operation to FieldKind.OPERATION,
         )
     }
 }

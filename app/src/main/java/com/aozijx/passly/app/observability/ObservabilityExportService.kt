@@ -21,68 +21,51 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
+internal class LogRecordTextEncoder @Inject constructor() {
+    fun encode(record: SanitizedLogRecord): String = values(
+        "event",
+        ExportManifestFactory.SCHEMA_VERSION,
+        record.eventId.value,
+        record.timestampMs,
+        record.elapsedRealtimeMs,
+        record.level.name,
+        record.category.name,
+        record.event.value,
+        record.processSessionId.value,
+        record.secureSessionId?.value,
+        record.trace.traceId.value,
+        record.trace.spanId.value,
+        record.trace.parentSpanId?.value,
+        record.fields.values.toSortedMap(compareBy { it.value }).values.joinToString(";") { it.asText() },
+        record.error?.errorCode?.value,
+        record.error?.reason?.value,
+        record.error?.diagnosticId?.value,
+        record.error?.exception?.type?.value,
+        record.error?.exception?.appStackFrames?.joinToString(";") { it.value },
+        record.error?.exception?.causeTypes?.joinToString(";") { it.value },
+        record.error?.exception?.foreignFrameCount,
+    )
 
-internal class LogRecordJsonEncoder @Inject constructor() {
-    fun encode(record: SanitizedLogRecord): String = toJson(record).toString()
-
-    fun toJson(record: SanitizedLogRecord): JsonObject = buildJsonObject {
-        put("record_type", "event")
-        put("schema_version", ExportManifestFactory.SCHEMA_VERSION)
-        put("event_id", record.eventId.value)
-        put("timestamp_ms", record.timestampMs)
-        put("elapsed_realtime_ms", record.elapsedRealtimeMs)
-        put("level", record.level.name)
-        put("category", record.category.name)
-        put("name", record.event.value)
-        put("process_session_id", record.processSessionId.value)
-        put("secure_session_id", record.secureSessionId?.let { JsonPrimitive(it.value) } ?: JsonNull)
-        put("trace", buildJsonObject {
-            put("trace_id", record.trace.traceId.value)
-            put("span_id", record.trace.spanId.value)
-            put("parent_span_id", record.trace.parentSpanId?.let { JsonPrimitive(it.value) } ?: JsonNull)
-        })
-        put(
-            "fields",
-            JsonObject(
-                record.fields.values.toSortedMap(compareBy { it.value }).map { (key, value) ->
-                    key.value to value.toJsonValue()
-                }.toMap(),
-            ),
-        )
-        record.error?.let { error ->
-            put("error", buildJsonObject {
-                put("error_code", error.errorCode.value)
-                put("reason", error.reason.value)
-                put("diag_id", error.diagnosticId.value)
-                error.exception?.let { exception ->
-                    put("exception_type", exception.type.value)
-                    put("stack_trace", JsonArray(exception.appStackFrames.map { JsonPrimitive(it.value) }))
-                    put("cause_types", JsonArray(exception.causeTypes.map { JsonPrimitive(it.value) }))
-                    put("foreign_frame_count", exception.foreignFrameCount)
-                }
-            })
-        }
-    }
-
-    private fun LogValue.toJsonValue(): JsonElement = when (this) {
-        is LogValue.Count -> JsonPrimitive(value)
-        is LogValue.DurationMs -> JsonPrimitive(value)
-        is LogValue.Ratio -> JsonPrimitive(value)
-        is LogValue.BooleanValue -> JsonPrimitive(value)
-        is LogValue.EnumValue -> JsonPrimitive(value.value)
-        is LogValue.ErrorCodeValue -> JsonPrimitive(value.value)
-        is LogValue.ReasonCodeValue -> JsonPrimitive(value.value)
-        is LogValue.OperationCodeValue -> JsonPrimitive(value.value)
-        is LogValue.HashedIdentifierValue -> JsonPrimitive(value.value)
+    private fun LogValue.asText(): String = when (this) {
+        is LogValue.Count -> value.toString()
+        is LogValue.DurationMs -> value.toString()
+        is LogValue.Ratio -> value.toString()
+        is LogValue.BooleanValue -> value.toString()
+        is LogValue.EnumValue -> value.value
+        is LogValue.ErrorCodeValue -> value.value
+        is LogValue.ReasonCodeValue -> value.value
+        is LogValue.OperationCodeValue -> value.value
+        is LogValue.HashedIdentifierValue -> value.value
         is LogValue.HashedIdentifierInput -> error("Pending identifier reached export")
     }
+}
+
+internal fun values(vararg values: Any?): String = values.joinToString("\t") {
+    it?.toString().orEmpty()
+        .replace("\\", "\\\\")
+        .replace("\t", "\\t")
+        .replace("\r", "\\r")
+        .replace("\n", "\\n")
 }
 
 internal interface DiagnosticsExportFileGateway {
@@ -99,7 +82,7 @@ class ObservabilityExportService @Inject internal constructor(
     private val manifestFactory: ExportManifestFactory,
     private val files: DiagnosticsExportFileGateway,
     private val permitVerifier: AuthorizationPermitVerifier,
-    private val recordEncoder: LogRecordJsonEncoder = LogRecordJsonEncoder(),
+    private val recordEncoder: LogRecordTextEncoder = LogRecordTextEncoder(),
 ) : DiagnosticsExportGateway {
     override suspend fun exportAndShare(permit: AuthorizationPermit): Result<Unit> =
         withContext(Dispatchers.IO) {
@@ -119,7 +102,7 @@ class ObservabilityExportService @Inject internal constructor(
                 val exportFile = files.createExportFile()
                 target = exportFile
                 exportFile.outputStream().bufferedWriter(Charsets.UTF_8).use { writer ->
-                    writer.appendLine(manifestFactory.create(records.size).toString())
+                    writer.appendLine(manifestFactory.encode(records.size))
                     records.forEach { writer.appendLine(recordEncoder.encode(it)) }
                 }
                 files.share(exportFile).fold(
@@ -168,7 +151,7 @@ internal class AndroidDiagnosticsExportFileGateway @Inject constructor(
 
     override fun createExportFile(): File = File(
         context.cacheDir,
-        "$EXPORT_PREFIX${System.currentTimeMillis()}.jsonl",
+        "$EXPORT_PREFIX${System.currentTimeMillis()}.txt",
     )
 
     override fun share(file: File): Result<Unit> = runCatching {
@@ -176,7 +159,7 @@ internal class AndroidDiagnosticsExportFileGateway @Inject constructor(
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         val intent = Intent.createChooser(
             Intent(Intent.ACTION_SEND).apply {
-                type = "application/x-ndjson"
+                type = "text/plain"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 clipData = ClipData.newRawUri("Passly diagnostics", uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)

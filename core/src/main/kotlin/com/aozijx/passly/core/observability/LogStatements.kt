@@ -1,5 +1,9 @@
 package com.aozijx.passly.core.observability
 
+import com.aozijx.passly.core.error.model.AppError
+import com.aozijx.passly.core.error.model.ErrorSeverity
+import com.aozijx.passly.core.observability.reporting.ErrorReportContext
+
 /** A complete, typed logging instruction. Business code does not assemble protocol fields. */
 sealed interface LogStatement {
     val event: EventKey
@@ -72,6 +76,30 @@ private data class FatalStatement(
 }
 
 object LogStatements {
+    object ApplicationError {
+        fun failure(error: AppError, context: ErrorReportContext): LogStatement {
+            val event = when (context.category) {
+                LogCategory.APPLICATION -> Events.Application.Error
+                LogCategory.DATABASE -> Events.Database.Error
+                LogCategory.SECURITY -> Events.Security.Error
+                LogCategory.AUTOFILL -> Events.Autofill.Error
+                LogCategory.BACKUP -> Events.Backup.Error
+            }
+            val fields = fields {
+                enum(LogFieldKeys.ErrorLayer, error.layer)
+                enum(LogFieldKeys.Severity, error.severity)
+                boolean(LogFieldKeys.Recoverable, error.recoverable)
+                operation(LogFieldKeys.Operation, context.operation)
+            }
+            val errorCode = ErrorCode(error.code)
+            val reason = ReasonCode(error.code)
+            return when (error.severity) {
+                ErrorSeverity.WARNING -> WarningStatement(event, errorCode, reason, error, fields)
+                ErrorSeverity.ERROR -> ErrorStatement(event, errorCode, reason, error, fields)
+            }
+        }
+    }
+
     object Application {
         fun traceResumeUnavailable(): LogStatement =
             DebugStatement(Events.Application.TraceResumeUnavailable, LogFields.Empty)

@@ -4,10 +4,10 @@ import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
-import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.core.telemetry.OperationCode
-import com.aozijx.passly.core.telemetry.reporting.AppErrorReporter
-import com.aozijx.passly.core.telemetry.reporting.ErrorReportContext
+import com.aozijx.passly.core.observability.LogCategory
+import com.aozijx.passly.core.observability.OperationCode
+import com.aozijx.passly.core.observability.reporting.AppErrorReporter
+import com.aozijx.passly.core.observability.reporting.ErrorReportContext
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -59,7 +59,8 @@ internal class DatabaseTransactionRunner @Inject constructor(
                 block()
             }
         }
-        return result.onFailure { report(it, operation) }
+        if (result is AppResult.Failure) report(result.error, operation)
+        return result
     }
 
     /**
@@ -75,7 +76,8 @@ internal class DatabaseTransactionRunner @Inject constructor(
                 block()
             }
         }
-        return result.onFailure { report(it, operation) }
+        if (result is AppResult.Failure) report(result.error, operation)
+        return result
     }
 
     /**
@@ -102,12 +104,12 @@ internal class DatabaseTransactionRunner @Inject constructor(
         }
     }
 
-    private fun report(error: com.aozijx.passly.core.error.model.AppError, operation: String) {
+    private suspend fun report(error: com.aozijx.passly.core.error.model.AppError, operation: String) {
         errorReporter.report(
             error = error,
             context = ErrorReportContext(
                 operation = OperationCode(operation),
-                category = EventCategory.DATABASE
+                category = LogCategory.DATABASE
             )
         )
     }

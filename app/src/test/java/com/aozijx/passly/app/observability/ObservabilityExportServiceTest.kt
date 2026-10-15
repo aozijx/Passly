@@ -1,11 +1,19 @@
 package com.aozijx.passly.app.observability
 
 import com.aozijx.passly.core.observability.EventId
+import com.aozijx.passly.core.observability.ErrorCode
+import com.aozijx.passly.core.observability.ErrorPayload
 import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.DiagnosticId
+import com.aozijx.passly.core.observability.ExceptionSnapshot
+import com.aozijx.passly.core.observability.ExceptionType
 import com.aozijx.passly.core.observability.LogCategory
+import com.aozijx.passly.core.observability.LogFieldKey
 import com.aozijx.passly.core.observability.LogFields
 import com.aozijx.passly.core.observability.LogLevel
+import com.aozijx.passly.core.observability.LogValue
 import com.aozijx.passly.core.observability.ProcessSessionId
+import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.SanitizedLogRecord
 import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
@@ -20,13 +28,6 @@ import com.aozijx.passly.domain.access.port.AuthorizationPermitVerifier
 import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -63,13 +64,17 @@ class ObservabilityExportServiceTest {
 
         assertTrue(service.exportAndShare(TestPermit).isSuccess)
 
-        val lines = files.sharedText!!.lineSequence().filter(String::isNotBlank).map(Json::parseToJsonElement).toList()
-        assertEquals("manifest", lines.first().jsonObject.getValue("record_type").jsonPrimitive.content)
+        val lines = files.sharedText!!.lineSequence().filter(String::isNotBlank)
+            .map { it.split('\t') }.toList()
+        assertEquals("manifest", lines.first()[0])
         assertEquals(
             listOf("event_00000001", "event_00000002"),
-            lines.drop(1).map { it.jsonObject.getValue("event_id").jsonPrimitive.content },
+            lines.drop(1).map { it[2] },
         )
-        lines.forEach(::assertSchemaShape)
+        assertEquals(listOf("100", "200"), lines.drop(1).map { it[3] })
+        assertTrue(lines.drop(1).all { it.size == 21 })
+        assertFalse(files.sharedText!!.contains("timestamp_ms"))
+        assertFalse(files.sharedText!!.contains("diag_id"))
         assertTrue(files.deleteScheduled)
         assertFalse(files.target!!.exists())
     }
@@ -82,15 +87,12 @@ class ObservabilityExportServiceTest {
         service.exportAndShare(TestPermit).getOrThrow()
 
         val records = files.sharedText!!.lineSequence().filter(String::isNotBlank)
-            .map(Json::parseToJsonElement).map(JsonElement::jsonObject).toList()
-        val manifest = records.single { it["record_type"]?.jsonPrimitive?.content == "manifest" }
-        assertEquals("Passly", manifest.getValue("app").jsonObject.getValue("name").jsonPrimitive.content)
-        assertEquals("Pixel", manifest.getValue("device").jsonObject.getValue("model").jsonPrimitive.content)
-        assertEquals(
-            true,
-            manifest.getValue("autofill").jsonObject.getValue("legacy_service_enabled").jsonPrimitive.content.toBoolean(),
-        )
-        assertEquals(1, records.count { "device" in it })
+            .map { it.split('\t') }.toList()
+        val manifest = records.single { it[0] == "manifest" }
+        assertEquals("Passly", manifest[4])
+        assertEquals("Pixel", manifest[8])
+        assertEquals("true", manifest[13])
+        assertEquals(1, records.count { it[0] == "manifest" })
         val exported = files.sharedText!!
         listOf("android_id", "fingerprint", "serial", "package_name", "com.example.secret").forEach {
             assertFalse(exported.contains(it, ignoreCase = true))
@@ -98,14 +100,38 @@ class ObservabilityExportServiceTest {
     }
 
     @Test
-    fun `schema resource is stable named and describes every emitted record type`() {
-        val schemaText = checkNotNull(javaClass.classLoader!!.getResource("observability.schema.json"))
-            .readText()
-        val schema = Json.parseToJsonElement(schemaText).jsonObject
+    fun `text row keeps fixed value positions and omits protocol key names`() {
+        val encoded = LogRecordTextEncoder().encode(
+            record("event_00000003", 300).copy(
+                level = LogLevel.ERROR,
+                fields = LogFields.fromSanitized(
+                    mapOf(LogFieldKey("retry_count") to LogValue.Count(2)),
+                ),
+                error = ErrorPayload(
+                    errorCode = ErrorCode("AUTOFILL_RESULT_DELIVERY_FAILED"),
+                    reason = ReasonCode("PLATFORM_CALLBACK_FAILED"),
+                    diagnosticId = DiagnosticId("DGN-ABCD-EFGH"),
+                    exception = ExceptionSnapshot(
+                        type = ExceptionType("IllegalStateException"),
+                        appStackFrames = emptyList(),
+                        causeTypes = emptyList(),
+                        foreignFrameCount = 4,
+                    ),
+                ),
+            ),
+        )
 
-        assertEquals("https://json-schema.org/draft/2020-12/schema", schema.getValue("\$schema").jsonPrimitive.content)
-        val definitions = schema.getValue("\$defs").jsonObject
-        assertTrue(setOf("manifest", "event", "trace", "error", "safeValue").all(definitions::containsKey))
+        val columns = encoded.split('\t')
+        assertEquals(21, columns.size)
+        assertEquals("300", columns[3])
+        assertEquals("2", columns[13])
+        assertEquals("AUTOFILL_RESULT_DELIVERY_FAILED", columns[14])
+        assertEquals("PLATFORM_CALLBACK_FAILED", columns[15])
+        assertEquals("DGN-ABCD-EFGH", columns[16])
+        assertEquals("IllegalStateException", columns[17])
+        assertEquals("4", columns[20])
+        assertFalse(encoded.contains("timestamp_ms"))
+        assertFalse(encoded.contains("diag_id"))
     }
 
     @Test
@@ -171,25 +197,6 @@ class ObservabilityExportServiceTest {
             },
         )
 
-    private fun assertSchemaShape(element: JsonElement) {
-        val value = element.jsonObject
-        assertEquals(1, value.getValue("schema_version").jsonPrimitive.content.toInt())
-        when (value.getValue("record_type").jsonPrimitive.content) {
-            "manifest" -> {
-                assertTrue(setOf("export", "app", "device", "autofill").all(value::containsKey))
-            }
-            "event" -> {
-                val required = setOf(
-                    "event_id", "timestamp_ms", "elapsed_realtime_ms", "level", "category",
-                    "name", "process_session_id", "trace", "fields",
-                )
-                assertTrue(required.all(value::containsKey))
-                assertTrue(setOf("trace_id", "span_id").all(value.getValue("trace").jsonObject::containsKey))
-            }
-            else -> throw AssertionError("Unexpected record type")
-        }
-    }
-
     private fun record(eventId: String, timestampMs: Long) = SanitizedLogRecord(
         eventId = EventId(eventId),
         timestampMs = timestampMs,
@@ -233,7 +240,7 @@ class ObservabilityExportServiceTest {
             clearCalls++
         }
 
-        override fun createExportFile(): File = File(directory, "passly_diagnostics.jsonl").also {
+        override fun createExportFile(): File = File(directory, "passly_diagnostics.txt").also {
             target = it
         }
 

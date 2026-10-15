@@ -50,6 +50,7 @@ value class EnumName(val value: String) {
 
 object Events {
     object Application {
+        val Error = EventKey("application.error.reported")
         val PreviousProcessExit = EventKey("application.previous_process_exit")
         val TraceResumeUnavailable = EventKey("application.trace_resume_unavailable")
         val BackgroundLockSkipped = EventKey("application.background_lock_skipped")
@@ -58,11 +59,13 @@ object Events {
     }
 
     object Database {
+        val Error = EventKey("database.error.reported")
         val SessionTransition = EventKey("database.session.transition")
         val SessionTransitionFailed = EventKey("database.session.transition_failed")
     }
 
     object Security {
+        val Error = EventKey("security.error.reported")
         val LockStarted = EventKey("security.lock.started")
         val LockCompleted = EventKey("security.lock.completed")
         val UnlockStarted = EventKey("security.unlock.started")
@@ -71,6 +74,7 @@ object Events {
     }
 
     object Autofill {
+        val Error = EventKey("autofill.error.reported")
         val DiscoveryStarted = EventKey("autofill.discovery.started")
         val DiscoveryCompleted = EventKey("autofill.discovery.completed")
         val DiscoveryUnavailable = EventKey("autofill.discovery.unavailable")
@@ -89,19 +93,27 @@ object Events {
         val ActionIgnored = EventKey("autofill.action.ignored")
     }
 
+    object Backup {
+        val Error = EventKey("backup.error.reported")
+    }
+
     val All: Set<EventKey> = setOf(
+        Application.Error,
         Application.PreviousProcessExit,
         Application.TraceResumeUnavailable,
         Application.BackgroundLockSkipped,
         Application.UnhandledException,
         Application.NativeLibraryLoadFailed,
+        Database.Error,
         Database.SessionTransition,
         Database.SessionTransitionFailed,
+        Security.Error,
         Security.LockStarted,
         Security.LockCompleted,
         Security.UnlockStarted,
         Security.UnlockCompleted,
         Security.AuthenticationFailed,
+        Autofill.Error,
         Autofill.DiscoveryStarted,
         Autofill.DiscoveryCompleted,
         Autofill.DiscoveryUnavailable,
@@ -118,6 +130,7 @@ object Events {
         Autofill.SaveCompleted,
         Autofill.SaveFailed,
         Autofill.ActionIgnored,
+        Backup.Error,
     )
 }
 
@@ -198,4 +211,8 @@ object LogFieldKeys {
     val PssKb = LogFieldKey("pss_kb")
     val RssKb = LogFieldKey("rss_kb")
     val Source = LogFieldKey("source")
+    val ErrorLayer = LogFieldKey("error_layer")
+    val Severity = LogFieldKey("severity")
+    val Recoverable = LogFieldKey("recoverable")
+    val Operation = LogFieldKey("operation")
 }

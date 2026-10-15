@@ -1,9 +1,9 @@
 package com.aozijx.passly.app.diagnostics.di
 
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
-import com.aozijx.passly.app.diagnostics.TelemetryAppErrorReporter
+import com.aozijx.passly.app.observability.ObservabilityAppErrorReporter
+import com.aozijx.passly.core.observability.reporting.AppErrorReporter
 import com.aozijx.passly.core.telemetry.TelemetryReporter
-import com.aozijx.passly.core.telemetry.reporting.AppErrorReporter
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -16,7 +16,7 @@ abstract class DiagnosticsModule {
     @Binds
     @Singleton
     internal abstract fun bindAppErrorReporter(
-        impl: TelemetryAppErrorReporter
+        impl: ObservabilityAppErrorReporter
     ): AppErrorReporter
 
     companion object {

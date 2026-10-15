@@ -3,10 +3,10 @@ package com.aozijx.passly.feature.backup.internal.archive
 import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.core.telemetry.OperationCode
-import com.aozijx.passly.core.telemetry.reporting.AppErrorReporter
-import com.aozijx.passly.core.telemetry.reporting.ErrorReportContext
+import com.aozijx.passly.core.observability.LogCategory
+import com.aozijx.passly.core.observability.OperationCode
+import com.aozijx.passly.core.observability.reporting.AppErrorReporter
+import com.aozijx.passly.core.observability.reporting.ErrorReportContext
 import com.aozijx.passly.feature.backup.internal.archive.di.BackupIoDispatcher
 import com.aozijx.passly.feature.backup.internal.archive.format.BackupFormatRegistry
 import com.aozijx.passly.feature.backup.internal.archive.io.BackupFileStore
@@ -40,7 +40,7 @@ internal class BackupArchiveServiceImpl @Inject constructor(
     override suspend fun export(
         request: BackupExportRequest
     ): AppResult<Unit> = withContext(ioDispatcher) {
-        AppResult.runSuspendCatching {
+        val result = AppResult.runSuspendCatching {
             val adapter = formatRegistry.exporter(request.format)
             validatePassword(adapter.requiresPassword, request.password)
             val bundle = snapshotGateway.read(
@@ -62,13 +62,15 @@ internal class BackupArchiveServiceImpl @Inject constructor(
             } finally {
                 bundle.clearResourceData()
             }
-        }.onFailure { report(it, "backup_export") }
+        }
+        if (result is AppResult.Failure) report(result.error, "backup_export")
+        result
     }
 
     override suspend fun import(
         request: BackupImportRequest
     ): AppResult<BackupImportResult> = withContext(ioDispatcher) {
-        AppResult.runSuspendCatching {
+        val result = AppResult.runSuspendCatching {
             val payload = fileStore.readBytesSafely(request.sourceUri)
             try {
                 val adapter = formatRegistry.importer(request.format, payload)
@@ -90,22 +92,27 @@ internal class BackupArchiveServiceImpl @Inject constructor(
             } finally {
                 payload.fill(0)
             }
-        }.onFailure { report(it, "backup_import") }
+        }
+        if (result is AppResult.Failure) report(result.error, "backup_import")
+        result
     }
 
-    override suspend fun checkDirectoryWritable(uri: String): AppResult<Unit> =
-        fileStore.checkWritable(uri).onFailure { report(it, "backup_check_writable") }
+    override suspend fun checkDirectoryWritable(uri: String): AppResult<Unit> {
+        val result = fileStore.checkWritable(uri)
+        if (result is AppResult.Failure) report(result.error, "backup_check_writable")
+        return result
+    }
 
     private fun validatePassword(required: Boolean, password: CharArray?) {
         if (required && (password == null || password.isEmpty())) throw BackupFailed()
     }
 
-    private fun report(error: AppError, operation: String) {
+    private suspend fun report(error: AppError, operation: String) {
         errorReporter.report(
             error = error,
             context = ErrorReportContext(
                 operation = OperationCode(operation),
-                category = EventCategory.BACKUP
+                category = LogCategory.BACKUP
             )
         )
     }

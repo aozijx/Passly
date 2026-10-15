@@ -9,11 +9,6 @@ import com.aozijx.passly.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.TimeZone
 import javax.inject.Inject
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 
 data class ExportContext(
     val appName: String,
@@ -42,35 +37,27 @@ class ExportManifestFactory @Inject constructor(
     private val contextProvider: ExportContextProvider,
     private val clock: ExportClock,
 ) {
-    fun create(recordCount: Int): JsonObject {
+    fun encode(recordCount: Int): String {
         require(recordCount >= 0)
         val context = contextProvider.current()
-        return buildJsonObject {
-            put("record_type", "manifest")
-            put("schema_version", SCHEMA_VERSION)
-            put("export", buildJsonObject {
-                put("generated_at_ms", clock.nowMs())
-                put("record_count", recordCount)
-            })
-            put("app", buildJsonObject {
-                put("name", context.appName)
-                put("version_name", context.appVersionName)
-                put("version_code", context.appVersionCode)
-            })
-            put("device", buildJsonObject {
-                put("manufacturer", context.manufacturer)
-                put("model", context.model)
-                put("sdk_int", context.sdkInt)
-                put("os_release", context.osRelease)
-                put("locales", JsonArray(context.locales.map(::JsonPrimitive)))
-                put("timezone", context.timezone)
-            })
-            put("autofill", buildJsonObject {
-                put("legacy_service_enabled", context.legacyAutofillEnabled)
-                put("credential_provider_available", context.credentialProviderAvailable)
-                put("inline_suggestions_supported", context.inlineSuggestionsSupported)
-            })
-        }
+        return values(
+            "manifest",
+            SCHEMA_VERSION,
+            clock.nowMs(),
+            recordCount,
+            context.appName,
+            context.appVersionName,
+            context.appVersionCode,
+            context.manufacturer,
+            context.model,
+            context.sdkInt,
+            context.osRelease,
+            context.locales.joinToString(","),
+            context.timezone,
+            context.legacyAutofillEnabled,
+            context.credentialProviderAvailable,
+            context.inlineSuggestionsSupported,
+        )
     }
 
     companion object {
