@@ -46,8 +46,7 @@ class EncryptedLogRecordStoreTest {
     }
 
     @Test
-    fun `writes encrypted records and ignores legacy elog1 files`() {
-        File(directory, "legacy.elog1").writeText("legacy secret")
+    fun `writes and reads encrypted records`() {
         val store = newStore()
         val record = sampleRecord(1)
 
@@ -56,18 +55,13 @@ class EncryptedLogRecordStoreTest {
 
         assertEquals(listOf(record), store.readPage(null, 10).records)
         assertEquals(1, directory.listFiles()!!.count { it.extension == "log" })
-        assertEquals("legacy secret", File(directory, "legacy.elog1").readText())
         store.close()
     }
 
     @Test
-    fun `retention removes expired log but never touches legacy extension`() {
+    fun `retention removes expired log`() {
         val expiredLog = File(directory, "expired.log").apply {
             writeText("expired")
-            setLastModified(now - EncryptedLogFileManager.RETENTION_MS - 1)
-        }
-        val legacy = File(directory, "expired.elog1").apply {
-            writeText("legacy")
             setLastModified(now - EncryptedLogFileManager.RETENTION_MS - 1)
         }
         val store = newStore()
@@ -75,7 +69,6 @@ class EncryptedLogRecordStoreTest {
         assertTrue(store.flush(2_000))
 
         assertFalse(expiredLog.exists())
-        assertTrue(legacy.exists())
         store.close()
     }
 

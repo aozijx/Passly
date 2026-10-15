@@ -9,7 +9,7 @@
 |---|---|---|
 | 认证失败双消息 | 已解决 | `AuthFeedbackPresenter` 按 correlation ID 发布一次；用户取消静默 |
 | 底层直接 Toast | 已解决 | 旧 Gateway、Authenticator、Launcher 与 ViewModel error event 已删除 |
-| 旧日志旁路与脆弱过滤 | 已解决 | 所有调用点进入 `AppLog`，Sanitizer 在 Sink 前执行 |
+| 日志旁路与脆弱过滤 | 已解决 | 所有调用点进入 `Logger`，隐私策略在 Sink 前执行 |
 | Crash 路径锁与 Keystore 风险 | 已解决 | 有界 writer；预加载 emergency key；崩溃写入不取普通锁、不访问 Keystore |
 | 恢复码重新生成提前失效 | 已解决 | 候选草稿确认后才提交 Envelope；进程恢复显示 DraftExpired |
 | DatabaseSession 并发关闭 | 待设备复核 | 会话控制已接入 lease gate，事务故障注入仍需设备测试 |

@@ -1,11 +1,6 @@
 # Logger 与诊断日志
 
-> 正式 Logger v1 的目标设计与迁移边界见
-> [Passly Logger v1 与可观测性系统设计](../superpowers/specs/2026-10-14-observability-logger-design.md)。
-> 旧 Telemetry API、writer、codec 和 DI 已删除；`.elog1` 文件格式不代表正式 Logger API 版本，生产代码不得恢复
-> per-event `correlationId` 模型或兼容读取链路。
-
-## Logger v1 契约
+## Logger 契约
 
 `core/observability` 已定义唯一业务 API：事件、错误码、原因码、操作码和字段名均为验证后的值类型；字段只允许
 计数、时长、比率、布尔、枚举、受控代码和待 HMAC 的标识符。`Logger.warn/error` 的签名强制要求
@@ -68,9 +63,6 @@ Logger、Service Locator 或安装前 no-op 桥。
 - 读取使用 `fileId + byte offset + sequence` 游标，不把整个文件载入内存。
 - writer 是容量 256 的单线程队列；文件按日期或 1 MiB 轮换，最多 3 个文件、3 MiB、3 天。
 
-旧 `noBackupFilesDir/diagnostics_v1/*.elog1` 不兼容：新 store 不扫描、不读取、不迁移也不删除已存在文件；旧 writer、
-codec、业务调用和 DI 已从源码删除，新导出只读取当前 store。
-
 ## 崩溃和导出
 
 运行时预生成 emergency 数据密钥。崩溃时先 flush 普通队列 300 ms；失败后 emergency writer 最多等待
@@ -83,7 +75,7 @@ Build fingerprint、serial、明文包名和已安装应用列表。
 
 导出必须在现有 `EXPORT_DIAGNOSTICS` 新鲜认证授权块内创建文件。临时文本只写入 `cacheDir`，通过
 FileProvider 以 `text/plain` 只读分享；分享失败立即删除，成功后 10 分钟删除，新导出前先清理旧临时文件。明文导出不属于备份
-内容，也不会合并 legacy `.elog1`。
+内容。
 
 导出文件使用 `.txt` 与 UTF-8 TSV。每行只输出值，不重复输出键名；空值保留为空列，制表符、换行和反斜杠会转义。
 manifest 固定顺序为：记录类型、格式版本、生成时间、记录数、App 名称、版本名、版本号、厂商、型号、SDK、系统版本、
@@ -91,8 +83,7 @@ manifest 固定顺序为：记录类型、格式版本、生成时间、记录�
 格式版本、event id、时间戳、单调时钟、级别、分类、事件名、进程会话、安全会话、trace、span、parent span、按字段名排序
 后的字段值、错误码、原因、诊断值、异常类型、应用栈、cause 类型、外部栈计数。字段名本身不写入文本。
 
-禁止恢复旧 `core/diagnostics`、`AppLog`、Sanitizer、旧 Runtime/Sink/CrashHandler，也禁止直接
-`printStackTrace` 或在其他文件使用 `android.util.Log`。
+业务代码禁止直接 `printStackTrace` 或使用 `android.util.Log`；Android 系统日志统一由 `LogcatSink.kt` 输出。
 
 ## Android 系统日志边界
 

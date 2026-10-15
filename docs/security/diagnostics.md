@@ -3,9 +3,6 @@
 当前实现和加密文件规范统一维护在
 [Telemetry 与诊断日志](../architecture/telemetry.md)。安全评审、格式变更和导出策略必须同步更新该文档与 codec 测试。
 
-正式 Logger v1 的隐私模型、Keystore HMAC、异常安全快照、Trace、设备导出 manifest 和分阶段迁移见
-[Passly Logger v1 与可观测性系统设计](../superpowers/specs/2026-10-14-observability-logger-design.md)。
-
 安全底线：任何 Sink 均不得接收 Throwable message、密码、密钥、OTP、Token、URL、文件路径或目标应用明文包名。
 Android Logcat 与加密文件必须经过同一验证和脱敏管线，不得把 Logcat 作为绕过隐私策略的调试入口。
 
@@ -42,12 +39,10 @@ Android API 依据：[Log](https://developer.android.com/reference/android/util/
 [KeyGenParameterSpec](https://developer.android.com/reference/android/security/keystore/KeyGenParameterSpec) 与
 [ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo)。
 
-## Logger v1 本地加密容器
+## Logger 本地加密容器
 
 - 新记录只进入应用内部 `noBackupFilesDir/logs/*.log`。`.log` 是 Passly 私有二进制加密容器，
   不是明文 Logcat 导出；格式协商由文件头 magic 和 schema version 完成，扩展名不带版本号。
-- Logger 与旧 `diagnostics_v1/*.elog1` 不兼容：不扫描、不读取、不迁移也不删除旧文件。旧日志调用、writer、codec
-  和 DI 已从源码删除，运行时只维护当前协议。
 - 每个文件使用随机 256-bit AES 数据密钥和 AES-GCM；数据密钥由独立 Android Keystore wrapping key
   `com.aozijx.passly.observability.wrap.v1` 加密。文件头和每条记录的 sequence、level、file id 均进入 AAD，
   篡改、乱序和跨文件复制会读取失败。
@@ -70,5 +65,5 @@ Android API 依据：[Log](https://developer.android.com/reference/android/util/
 - UTF-8 `.txt` 导出必须持有 `EXPORT_DIAGNOSTICS` 的 fresh `AuthorizationPermit`。第一行是唯一 manifest，包含有界的
   App/设备/系统/Autofill 能力上下文；其余行为按时间排序、按 event id 去重的当前 `.log` 记录。每行按固定列顺序
   只写值，空值保留为空列且特殊字符转义，不重复写协议键名。禁止 Android
-  ID、fingerprint、serial、明文包名和 legacy `.elog1` 内容。
+  ID、fingerprint、serial 和明文包名。
 - 明文临时文件仅位于 `cacheDir`：分享失败立即删除，分享成功后 10 分钟删除，下一次导出前清理陈旧文件。

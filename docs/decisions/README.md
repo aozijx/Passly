@@ -31,6 +31,5 @@ ADR，并在双方状态中建立替代关系。
 | [0018](ADR-0018-lookup-metadata-strategy.md)              | Accepted   | Metadata/Lookup/Credential 分离    |
 | [0019](ADR-0019-single-dek-derived-session-key.md)        | Accepted   | 单 DEK 与派生会话密钥                    |
 | [0020](ADR-0020-unified-lifecycle-safe-authentication.md) | Accepted   | 生命周期安全的统一认证系统                    |
-| [0021](ADR-0021-encrypted-diagnostics.md)                 | Accepted   | 可插拔加密诊断系统                        |
 | [0022](ADR-0022-keyed-backup-document.md)                | Accepted   | 稳定键值字段备份文档                       |
 | [0023](ADR-0023-typed-autofill-interactions.md)           | Accepted   | 类型化 Autofill interaction           |
