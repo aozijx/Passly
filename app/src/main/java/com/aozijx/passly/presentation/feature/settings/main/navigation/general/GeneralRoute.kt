@@ -4,6 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -44,6 +46,16 @@ internal fun GeneralRoute(
     val cacheClearedMessage = stringResource(R.string.settings_general_cache_cleared)
     val featurePendingMessage = stringResource(R.string.settings_general_feature_pending)
     val logExportFailedMessage = stringResource(R.string.settings_log_export_failed)
+    val logSaveCompletedMessage = stringResource(R.string.settings_log_save_completed)
+    val diagnosticsDocumentPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain"),
+    ) { uri ->
+        if (uri != null) {
+            diagnosticsViewModel.onAction(
+                DiagnosticsSettingsAction.SaveToDocument(uri.toString()),
+            )
+        }
+    }
 
     LaunchedEffect(diagnosticsViewModel) {
         diagnosticsViewModel.onAction(DiagnosticsSettingsAction.RefreshLogs)
@@ -71,9 +83,13 @@ internal fun GeneralRoute(
         }
     }
 
-    LaunchedEffect(diagnosticsViewModel, logExportFailedMessage) {
+    LaunchedEffect(diagnosticsViewModel, logExportFailedMessage, logSaveCompletedMessage) {
         diagnosticsViewModel.events.collect { effect ->
             when (effect) {
+                DiagnosticsSettingsEffect.SelectSaveDocument ->
+                    diagnosticsDocumentPicker.launch(DIAGNOSTICS_FILE_NAME)
+                DiagnosticsSettingsEffect.SaveCompleted ->
+                    Toast.makeText(context, logSaveCompletedMessage, Toast.LENGTH_SHORT).show()
                 DiagnosticsSettingsEffect.ExportFailed ->
                     Toast.makeText(context, logExportFailedMessage, Toast.LENGTH_SHORT).show()
             }
@@ -103,8 +119,11 @@ internal fun GeneralRoute(
                     onCloseViewer = {
                         diagnosticsViewModel.onAction(DiagnosticsSettingsAction.CloseViewer)
                     },
-                    onExport = {
-                        diagnosticsViewModel.onAction(DiagnosticsSettingsAction.Export)
+                    onSave = {
+                        diagnosticsViewModel.onAction(DiagnosticsSettingsAction.RequestSave)
+                    },
+                    onShare = {
+                        diagnosticsViewModel.onAction(DiagnosticsSettingsAction.Share)
                     },
                     onRequestClear = {
                         diagnosticsViewModel.onAction(DiagnosticsSettingsAction.RequestClear)
@@ -130,3 +149,5 @@ internal fun GeneralRoute(
         }
     }
 }
+
+private const val DIAGNOSTICS_FILE_NAME = "passly_diagnostics.txt"

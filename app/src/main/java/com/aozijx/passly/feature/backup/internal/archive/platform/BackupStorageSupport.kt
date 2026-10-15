@@ -16,13 +16,15 @@ interface BackupStorageSupport {
         timestamp: Long = System.currentTimeMillis()
     ): String
 
-    fun createNamedExportTarget(
+    suspend fun createNamedExportTarget(
         directoryTreeUri: String,
         fileName: String,
         mimeType: String = BACKUP_FILE_MIME
     ): Result<ExportTarget>
 
-    fun deleteDocument(uri: Uri): Boolean
+    suspend fun deleteDocument(uri: Uri): Boolean
+
+    suspend fun checkDirectoryWritable(directoryTreeUri: String): Result<Unit>
 
     companion object {
         internal const val BACKUP_FILE_MIME = "application/octet-stream"

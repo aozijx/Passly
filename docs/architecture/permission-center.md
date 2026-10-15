@@ -58,8 +58,10 @@ flowchart LR
 共用它，统一得到 `NOT_CONFIGURED`、`GRANTED`、`GRANT_MISSING` 或 `UNAVAILABLE`。权限管理页只展示
 目录名与授权状态，并导航到备份设置；备份页是选择、更换、重新授权和清除目录设置的唯一 UI 所有者。
 权限 ViewModel 只依赖 `BackupDirectoryStatusInteractor`，不能访问选择或清除操作。
-清除只释放 grant 与设置，不删除已导出的文件。检查只验证 URI、persisted write grant 及
-provider/tree 可用性，不创建、截断或删除文档。
+清除只释放 grant 与设置，不删除已导出的文件。权限中心的状态检查只验证 URI、persisted write grant 及
+provider/tree 可用性，不修改文档。备份页的显式“测试写入权限”属于备份操作：它在实际导出子目录创建、写入并清理
+专用临时文件，不把 tree URI 当作普通文件打开，也不触碰已有备份。
+测试文件的创建、写入和删除在备份 IO dispatcher 上完成；删除返回失败或抛出异常时，写入检查同样失败并记录错误。
 
 新增运行时权限必须更新枚举、Catalog、Manifest、请求所有者、状态/拒绝测试和本表。Hilt EntryPoint
 service locator、Boolean requester、旧 `AppPermission` 混合模型不得恢复。

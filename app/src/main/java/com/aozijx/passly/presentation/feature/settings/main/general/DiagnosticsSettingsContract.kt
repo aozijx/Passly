@@ -23,9 +23,13 @@ sealed interface DiagnosticsSettingsAction {
     data object RequestClear : DiagnosticsSettingsAction
     data object DismissClear : DiagnosticsSettingsAction
     data object ConfirmClear : DiagnosticsSettingsAction
-    data object Export : DiagnosticsSettingsAction
+    data object RequestSave : DiagnosticsSettingsAction
+    data class SaveToDocument(val uri: String) : DiagnosticsSettingsAction
+    data object Share : DiagnosticsSettingsAction
 }
 
 sealed interface DiagnosticsSettingsEffect {
+    data object SelectSaveDocument : DiagnosticsSettingsEffect
+    data object SaveCompleted : DiagnosticsSettingsEffect
     data object ExportFailed : DiagnosticsSettingsEffect
 }

@@ -18,6 +18,7 @@ import com.aozijx.passly.core.observability.TraceResumeResult
 import com.aozijx.passly.core.observability.TraceScope
 import com.aozijx.passly.core.observability.trace.TraceToken
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportGateway
+import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportTarget
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
 import com.aozijx.passly.feature.settings.diagnostics.ExportDiagnosticsUseCase
 import com.aozijx.passly.testing.MainDispatcherRule
@@ -105,8 +106,13 @@ class DiagnosticsSettingsViewModelTest {
     }
 
     private object UnusedExportGateway : DiagnosticsExportGateway {
-        override suspend fun exportAndShare(permit: AuthorizationPermit): Result<Unit> =
+        override suspend fun export(
+            permit: AuthorizationPermit,
+            target: DiagnosticsExportTarget,
+        ): Result<Unit> =
             error("Export is not used")
+
+        override suspend fun discard(target: DiagnosticsExportTarget) = Unit
     }
 
     private object UnusedLogger : Logger {

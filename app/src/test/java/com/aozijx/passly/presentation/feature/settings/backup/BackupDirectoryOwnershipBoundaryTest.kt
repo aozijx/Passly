@@ -41,6 +41,9 @@ class BackupDirectoryOwnershipBoundaryTest {
         assertFalse(directoryAccess.contains("persistedUriPermissions"))
         assertFalse(exportStorage.contains("persistedUriPermissions"))
         assertFalse(fileStore.contains("persistedUriPermissions"))
-        assertTrue(fileStore.contains("openFileDescriptor(parsed, \"rw\")"))
+        assertFalse(fileStore.contains("openFileDescriptor(parsed, \"rw\")"))
+        assertTrue(exportStorage.contains("checkDirectoryWritable"))
+        assertTrue(exportStorage.contains("DocumentsContract.createDocument"))
+        assertTrue(exportStorage.contains("DocumentsContract.deleteDocument"))
     }
 }

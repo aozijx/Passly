@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.backup.internal.operation
 
 import android.net.Uri
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.observability.reporting.AppErrorReporter
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
@@ -43,6 +44,7 @@ class BackupOperationInteractorTest {
             backupService = UnusedBackupService,
             storageSupport = storage,
             authorizationGate = gate,
+            errorReporter = NoopErrorReporter,
         )
 
         val result = interactor.exportToConfiguredDirectory(exportRequest())
@@ -53,6 +55,26 @@ class BackupOperationInteractorTest {
             gate.scope,
         )
         assertTrue(storage.createdInsideAuthorization)
+    }
+
+    @Test
+    fun `directory check validates the configured tree through storage support`() = runBlocking {
+        val storage = RecordingStorageSupport(RecordingAuthorizationGate())
+        val interactor = BackupOperationInteractor(
+            settingsSource = object : BackupDirectorySettingsSource {
+                override val backupDirectoryUri = flowOf(null)
+            },
+            backupService = UnusedBackupService,
+            storageSupport = storage,
+            authorizationGate = RecordingAuthorizationGate(),
+            errorReporter = NoopErrorReporter,
+        )
+
+        assertEquals(
+            BackupExecutionResult.DirectoryWritable,
+            interactor.checkDirectoryWritable("content://documents/tree/backup"),
+        )
+        assertEquals("content://documents/tree/backup", storage.checkedDirectoryUri)
     }
 
     private fun exportRequest() = BackupExportOperationRequest(
@@ -88,11 +110,12 @@ class BackupOperationInteractorTest {
         private val gate: RecordingAuthorizationGate,
     ) : BackupStorageSupport {
         var createdInsideAuthorization = false
+        var checkedDirectoryUri: String? = null
 
         override fun buildBackupFileName(extension: String, timestamp: Long): String =
             "backup.$extension"
 
-        override fun createNamedExportTarget(
+        override suspend fun createNamedExportTarget(
             directoryTreeUri: String,
             fileName: String,
             mimeType: String,
@@ -101,7 +124,12 @@ class BackupOperationInteractorTest {
             return Result.failure(IllegalStateException("stop after observing authorization"))
         }
 
-        override fun deleteDocument(uri: Uri): Boolean = true
+        override suspend fun deleteDocument(uri: Uri): Boolean = true
+
+        override suspend fun checkDirectoryWritable(directoryTreeUri: String): Result<Unit> {
+            checkedDirectoryUri = directoryTreeUri
+            return Result.success(Unit)
+        }
     }
 
     private object UnusedBackupService : BackupArchiveService {
@@ -111,7 +139,7 @@ class BackupOperationInteractorTest {
         override suspend fun import(request: BackupImportRequest): AppResult<BackupImportResult> =
             error("Import should not run")
 
-        override suspend fun checkDirectoryWritable(uri: String): AppResult<Unit> =
-            error("Directory check should not run")
     }
+
+    private val NoopErrorReporter = AppErrorReporter { _, _ -> Unit }
 }

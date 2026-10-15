@@ -97,12 +97,6 @@ internal class BackupArchiveServiceImpl @Inject constructor(
         result
     }
 
-    override suspend fun checkDirectoryWritable(uri: String): AppResult<Unit> {
-        val result = fileStore.checkWritable(uri)
-        if (result is AppResult.Failure) report(result.error, "backup_check_writable")
-        return result
-    }
-
     private fun validatePassword(required: Boolean, password: CharArray?) {
         if (required && (password == null || password.isEmpty())) throw BackupFailed()
     }

@@ -115,7 +115,7 @@
     <string name="settings_auth_password_hint">Use at least 6 characters with a mix of letters, numbers, or symbols.</string>
     <string name="settings_auth_password_mismatch">Passwords do not match</string>
     <string name="settings_auth_password_set_success">App password set successfully</string>
-    <string name="settings_auth_current_password_incorrect">Incorrect current app password</string>
+    <string name="settings_auth_current_password_incorrect">The current app password is incorrect. Enter it again.</string>
     <string name="settings_auth_last_method_required">Keep at least one unlock method</string>
     <string name="settings_auth_operation_failed">Password operation failed. Try again.</string>
     <plurals name="settings_duration_minutes"><item quantity="one">%d minute</item><item quantity="other">%d minutes</item></plurals>
@@ -317,8 +317,11 @@
     <string name="settings_log_clear_confirm_action">Clear</string>
     <string name="settings_log_clear_confirm_message">Clear all logs? This cannot be undone.</string>
     <string name="settings_log_empty">No logs</string>
-    <string name="settings_log_export_action">Export logs</string>
-    <string name="settings_log_export_action_subtitle">Create a temporary plaintext file after verification</string>
+    <string name="settings_log_save_action">Save logs</string>
+    <string name="settings_log_save_action_subtitle">Choose a location, then verify to write</string>
+    <string name="settings_log_share_action">Share logs</string>
+    <string name="settings_log_share_action_subtitle">Create a temporary plaintext file for sharing after verification</string>
+    <string name="settings_log_save_completed">Logs saved</string>
     <string name="settings_log_export_failed">Couldn’t export logs. Try again.</string>
     <string name="settings_log_loading">Loading logs…</string>
     <string name="settings_log_management_title">Logs</string>

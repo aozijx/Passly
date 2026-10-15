@@ -10,5 +10,4 @@ interface BackupArchiveService {
 
     suspend fun import(request: BackupImportRequest): AppResult<BackupImportResult>
 
-    suspend fun checkDirectoryWritable(uri: String): AppResult<Unit>
 }

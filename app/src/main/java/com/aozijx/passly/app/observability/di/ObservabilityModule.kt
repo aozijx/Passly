@@ -3,7 +3,7 @@ package com.aozijx.passly.app.observability.di
 import android.content.Context
 import android.os.SystemClock
 import com.aozijx.passly.BuildConfig
-import com.aozijx.passly.app.observability.AndroidDiagnosticsExportFileGateway
+import com.aozijx.passly.app.observability.AndroidDiagnosticsExportStorageGateway
 import com.aozijx.passly.app.observability.AndroidExportContextProvider
 import com.aozijx.passly.app.observability.AndroidKeystoreIdentifierHasher
 import com.aozijx.passly.app.observability.AndroidPreviousProcessExitGateway
@@ -11,7 +11,7 @@ import com.aozijx.passly.app.observability.AndroidProcessTerminator
 import com.aozijx.passly.app.observability.AndroidTraceSink
 import com.aozijx.passly.app.observability.CrashHandlerRegistry
 import com.aozijx.passly.app.observability.CrashRecordCaptureSink
-import com.aozijx.passly.app.observability.DiagnosticsExportFileGateway
+import com.aozijx.passly.app.observability.DiagnosticsExportStorageGateway
 import com.aozijx.passly.app.observability.ExportClock
 import com.aozijx.passly.app.observability.ExportContextProvider
 import com.aozijx.passly.app.observability.LogcatSink
@@ -121,9 +121,9 @@ internal object ObservabilityModule {
 
     @Provides
     @Singleton
-    fun provideExportFileGateway(
+    fun provideExportStorageGateway(
         @ApplicationContext context: Context,
-    ): DiagnosticsExportFileGateway = AndroidDiagnosticsExportFileGateway(context)
+    ): DiagnosticsExportStorageGateway = AndroidDiagnosticsExportStorageGateway(context)
 
     @Provides
     fun provideDiagnosticsLogStore(

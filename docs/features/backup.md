@@ -99,8 +99,11 @@ JSON 使用 resourcesBase64 保存资源；加密格式的 ZIP 使用 resources/
 应用不声明或请求 `READ_EXTERNAL_STORAGE`、`WRITE_EXTERNAL_STORAGE`、`MANAGE_EXTERNAL_STORAGE`。
 `BackupDirectoryGrantInspector` 是设置页和导出链路共享的唯一授权检查器，区分未配置、授权有效、授权
 丢失和 provider/tree 不可用。“权限管理”只展示目录授权状态并导航到“备份与恢复”；选择、更换、
-重新授权和清除目录只在“备份与恢复”中执行。清除目录设置不会删除任何已经导出的文件。检查访问状态
-不得创建、覆盖、截断或删除测试文件。
+重新授权和清除目录只在“备份与恢复”中执行。清除目录设置不会删除任何已经导出的文件。权限页的状态检查
+只读验证 URI、grant 和 provider/tree；备份页中用户主动触发的“测试写入权限”则在实际导出使用的 Passly 子目录内
+创建单字节临时文件，并在成功或失败后清理，以验证真实的创建和写入能力。不得用 `openFileDescriptor` 把 tree URI
+误当普通文件，也不得覆盖或截断已有备份。创建、写入和删除均在备份 IO dispatcher 上执行；清理失败必须使检查失败并
+进入统一错误报告，不能显示“目录可写”。
 
 1. 已解锁且通过备份导出认证后，Room Snapshot Reader 读取所选条目、完整字段、关系和资源。
 2. KeyedEntryArchiveMapper 将 Domain Entry 映射为 keyed records。

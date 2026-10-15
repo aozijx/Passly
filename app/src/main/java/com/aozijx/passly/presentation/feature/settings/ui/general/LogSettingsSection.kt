@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.SaveAlt
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,7 +40,8 @@ fun LogSettingsSection(
     state: DiagnosticsSettingsUiState,
     onOpenViewer: () -> Unit,
     onCloseViewer: () -> Unit,
-    onExport: () -> Unit,
+    onSave: () -> Unit,
+    onShare: () -> Unit,
     onRequestClear: () -> Unit,
     onConfirmClear: () -> Unit,
     onDismissClear: () -> Unit,
@@ -47,8 +49,10 @@ fun LogSettingsSection(
     val logManagementTitle = stringResource(R.string.settings_log_management_title)
     val viewLogsTitle = stringResource(R.string.settings_log_view_title)
     val viewLogsSubtitle = stringResource(R.string.settings_log_view_subtitle)
-    val exportLogsTitle = stringResource(R.string.settings_log_export_action)
-    val exportLogsSubtitle = stringResource(R.string.settings_log_export_action_subtitle)
+    val saveLogsTitle = stringResource(R.string.settings_log_save_action)
+    val saveLogsSubtitle = stringResource(R.string.settings_log_save_action_subtitle)
+    val shareLogsTitle = stringResource(R.string.settings_log_share_action)
+    val shareLogsSubtitle = stringResource(R.string.settings_log_share_action_subtitle)
     val clearLogsTitle = stringResource(R.string.settings_log_clear_action)
     SettingsSectionTitle(text = logManagementTitle)
     SegmentedSettingsGroup(
@@ -61,11 +65,18 @@ fun LogSettingsSection(
                 onClick = onOpenViewer,
             ),
             navigationSettingsGroupItem(
-                key = "logs.export",
+                key = "logs.save",
                 icon = Icons.Default.SaveAlt,
-                title = exportLogsTitle,
-                subtitle = exportLogsSubtitle,
-                onClick = onExport,
+                title = saveLogsTitle,
+                subtitle = saveLogsSubtitle,
+                onClick = onSave,
+            ),
+            navigationSettingsGroupItem(
+                key = "logs.share",
+                icon = Icons.Default.Share,
+                title = shareLogsTitle,
+                subtitle = shareLogsSubtitle,
+                onClick = onShare,
             ),
             navigationSettingsGroupItem(
                 key = "logs.clear",

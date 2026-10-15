@@ -115,7 +115,7 @@
     <string name="settings_auth_password_hint">至少6位，建议混合字母、数字或符号</string>
     <string name="settings_auth_password_mismatch">密码不一致</string>
     <string name="settings_auth_password_set_success">应用密码已设置</string>
-    <string name="settings_auth_current_password_incorrect">当前应用密码不正确</string>
+    <string name="settings_auth_current_password_incorrect">当前应用密码错误，请重新输入</string>
     <string name="settings_auth_last_method_required">至少保留一种解锁方式</string>
     <string name="settings_auth_operation_failed">密码操作失败，请重试</string>
     <plurals name="settings_duration_minutes"><item quantity="other">%d 分钟</item></plurals>
@@ -317,8 +317,11 @@
     <string name="settings_log_clear_confirm_action">清除</string>
     <string name="settings_log_clear_confirm_message">清除全部日志？此操作无法撤销。</string>
     <string name="settings_log_empty">暂无日志</string>
-    <string name="settings_log_export_action">导出日志</string>
-    <string name="settings_log_export_action_subtitle">验证后生成临时明文文件</string>
+    <string name="settings_log_save_action">保存日志</string>
+    <string name="settings_log_save_action_subtitle">选择保存位置，验证后写入</string>
+    <string name="settings_log_share_action">分享日志</string>
+    <string name="settings_log_share_action_subtitle">验证后生成临时明文文件用于分享</string>
+    <string name="settings_log_save_completed">日志已保存</string>
     <string name="settings_log_export_failed">日志导出失败，请重试</string>
     <string name="settings_log_loading">正在加载日志…</string>
     <string name="settings_log_management_title">日志管理</string>

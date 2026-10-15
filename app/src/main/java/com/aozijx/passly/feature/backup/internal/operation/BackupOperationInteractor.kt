@@ -5,6 +5,10 @@ import com.aozijx.passly.core.error.mapping.fromThrowable
 import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.observability.LogCategory
+import com.aozijx.passly.core.observability.OperationCode
+import com.aozijx.passly.core.observability.reporting.AppErrorReporter
+import com.aozijx.passly.core.observability.reporting.ErrorReportContext
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthorizationResult
 import com.aozijx.passly.domain.access.model.AuthorizationScope
@@ -26,16 +30,27 @@ internal class BackupOperationInteractor @Inject constructor(
     private val backupService: BackupArchiveService,
     private val storageSupport: BackupStorageSupport,
     private val authorizationGate: AuthorizationGate,
+    private val errorReporter: AppErrorReporter,
 ) {
     fun buildExportFileName(format: BackupExportFormat): String =
         storageSupport.buildBackupFileName(format.extension)
 
     suspend fun checkDirectoryWritable(uri: String?): BackupExecutionResult {
         if (uri.isNullOrBlank()) return BackupExecutionResult.Failure(BackupFailed())
-        return when (val result = backupService.checkDirectoryWritable(uri)) {
-            is AppResult.Success -> BackupExecutionResult.DirectoryWritable
-            is AppResult.Failure -> BackupExecutionResult.Failure(result.error)
-        }
+        return storageSupport.checkDirectoryWritable(uri).fold(
+            onSuccess = { BackupExecutionResult.DirectoryWritable },
+            onFailure = {
+                val error = AppError.fromThrowable(it)
+                errorReporter.report(
+                    error,
+                    ErrorReportContext(
+                        operation = OperationCode("backup_check_writable"),
+                        category = LogCategory.BACKUP,
+                    ),
+                )
+                BackupExecutionResult.Failure(error)
+            },
+        )
     }
 
     suspend fun exportToConfiguredDirectory(
@@ -139,7 +154,7 @@ internal class BackupOperationInteractor @Inject constructor(
         }
     }
 
-    private fun deleteFailedExport(targetUri: Uri, deleteOnFailure: Boolean) {
+    private suspend fun deleteFailedExport(targetUri: Uri, deleteOnFailure: Boolean) {
         if (deleteOnFailure) storageSupport.deleteDocument(targetUri)
     }
 }

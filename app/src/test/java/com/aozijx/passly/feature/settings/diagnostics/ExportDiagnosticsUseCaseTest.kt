@@ -16,22 +16,58 @@ import org.junit.Test
 
 class ExportDiagnosticsUseCaseTest {
     @Test
-    fun `export and share execute inside exact diagnostics authorization scope`() = runTest {
+    fun `share executes inside exact diagnostics authorization scope`() = runTest {
         val gate = RecordingGate(true)
         val gateway = RecordingGateway(gate)
-        val result = ExportDiagnosticsUseCase(FullAccess, gate, gateway)()
+        val result = ExportDiagnosticsUseCase(FullAccess, gate, gateway)(
+            DiagnosticsExportTarget.Share,
+        )
         assertEquals(DiagnosticsExportResult.Completed, result)
         assertEquals(AuthorizationScope.Global(AuthenticationPurpose.EXPORT_DIAGNOSTICS), gate.scope)
         assertEquals(true, gateway.calledInsideAuthorization)
         assertEquals(1, gateway.calls)
+        assertEquals(DiagnosticsExportTarget.Share, gateway.target)
+    }
+
+    @Test
+    fun `document export keeps selected destination inside authorization scope`() = runTest {
+        val gate = RecordingGate(true)
+        val gateway = RecordingGateway(gate)
+        val target = DiagnosticsExportTarget.Document("content://documents/log.txt")
+
+        val result = ExportDiagnosticsUseCase(FullAccess, gate, gateway)(target)
+
+        assertEquals(DiagnosticsExportResult.Completed, result)
+        assertEquals(target, gateway.target)
+        assertEquals(true, gateway.calledInsideAuthorization)
     }
 
     @Test
     fun `cancelled authorization never creates plaintext export`() = runTest {
         val gate = RecordingGate(false)
         val gateway = RecordingGateway(gate)
-        assertEquals(DiagnosticsExportResult.Cancelled, ExportDiagnosticsUseCase(FullAccess, gate, gateway)())
+        val target = DiagnosticsExportTarget.Document("content://documents/cancelled.txt")
+        assertEquals(
+            DiagnosticsExportResult.Cancelled,
+            ExportDiagnosticsUseCase(FullAccess, gate, gateway)(target),
+        )
         assertEquals(0, gateway.calls)
+        assertEquals(target, gateway.discardedTarget)
+    }
+
+    @Test
+    fun `failed document export discards picker-created document`() = runTest {
+        val gate = RecordingGate(true)
+        val gateway = RecordingGateway(
+            gate = gate,
+            result = Result.failure(IllegalStateException("write failed")),
+        )
+        val target = DiagnosticsExportTarget.Document("content://documents/incomplete.txt")
+
+        val result = ExportDiagnosticsUseCase(FullAccess, gate, gateway)(target)
+
+        assertEquals(true, result is DiagnosticsExportResult.Failed)
+        assertEquals(target, gateway.discardedTarget)
     }
 
     private class RecordingGate(private val allow: Boolean) : AuthorizationGate {
@@ -45,13 +81,26 @@ class ExportDiagnosticsUseCaseTest {
         }
     }
 
-    private class RecordingGateway(private val gate: RecordingGate) : DiagnosticsExportGateway {
+    private class RecordingGateway(
+        private val gate: RecordingGate,
+        private val result: Result<Unit> = Result.success(Unit),
+    ) : DiagnosticsExportGateway {
         var calls = 0
         var calledInsideAuthorization = false
-        override suspend fun exportAndShare(permit: AuthorizationPermit): Result<Unit> {
+        var target: DiagnosticsExportTarget? = null
+        var discardedTarget: DiagnosticsExportTarget? = null
+        override suspend fun export(
+            permit: AuthorizationPermit,
+            target: DiagnosticsExportTarget,
+        ): Result<Unit> {
             calls++
             calledInsideAuthorization = gate.inside
-            return Result.success(Unit)
+            this.target = target
+            return result
+        }
+
+        override suspend fun discard(target: DiagnosticsExportTarget) {
+            discardedTarget = target
         }
     }
 

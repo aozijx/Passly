@@ -3,8 +3,10 @@ package com.aozijx.passly.app.observability
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.provider.DocumentsContract
 import androidx.core.content.FileProvider
 import com.aozijx.passly.core.observability.LogValue
 import com.aozijx.passly.core.observability.SanitizedLogRecord
@@ -15,8 +17,10 @@ import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationPermitVerifier
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportGateway
+import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportTarget
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import java.io.OutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
@@ -68,58 +72,97 @@ internal fun values(vararg values: Any?): String = values.joinToString("\t") {
         .replace("\n", "\\n")
 }
 
-internal interface DiagnosticsExportFileGateway {
+internal interface DiagnosticsExportStorageGateway {
     fun clearStaleExports()
     fun createExportFile(): File
     fun share(file: File): Result<Unit>
     fun scheduleDeletion(file: File)
     fun delete(file: File)
+    fun openDocument(uri: String): OutputStream
+    fun deleteDocument(uri: String)
 }
 
 @Singleton
 class ObservabilityExportService @Inject internal constructor(
     private val store: LogRecordStore,
     private val manifestFactory: ExportManifestFactory,
-    private val files: DiagnosticsExportFileGateway,
+    private val storage: DiagnosticsExportStorageGateway,
     private val permitVerifier: AuthorizationPermitVerifier,
     private val recordEncoder: LogRecordTextEncoder = LogRecordTextEncoder(),
 ) : DiagnosticsExportGateway {
-    override suspend fun exportAndShare(permit: AuthorizationPermit): Result<Unit> =
+    override suspend fun export(
+        permit: AuthorizationPermit,
+        target: DiagnosticsExportTarget,
+    ): Result<Unit> =
         withContext(Dispatchers.IO) {
             if (!permitVerifier.consume(permit, EXPORT_SCOPE)) {
                 return@withContext Result.failure(SecurityException("Diagnostics export authorization rejected"))
             }
-            var target: File? = null
-            try {
-                files.clearStaleExports()
+            runCatching {
                 store.flush(FLUSH_TIMEOUT_MS)
-                val records = readRecords()
+                readRecords()
                     .distinctBy { it.eventId }
                     .sortedWith(
                         compareBy<SanitizedLogRecord> { it.timestampMs }
                             .thenBy { it.eventId.value },
                     )
-                val exportFile = files.createExportFile()
-                target = exportFile
-                exportFile.outputStream().bufferedWriter(Charsets.UTF_8).use { writer ->
-                    writer.appendLine(manifestFactory.encode(records.size))
-                    records.forEach { writer.appendLine(recordEncoder.encode(it)) }
-                }
-                files.share(exportFile).fold(
-                    onSuccess = {
-                        files.scheduleDeletion(exportFile)
-                        Result.success(Unit)
-                    },
-                    onFailure = { failure ->
-                        files.delete(exportFile)
-                        Result.failure(failure)
-                    },
-                )
-            } catch (failure: Exception) {
-                target?.let(files::delete)
-                Result.failure(failure)
-            }
+            }.fold(
+                onSuccess = { records ->
+                    when (target) {
+                        DiagnosticsExportTarget.Share -> exportForSharing(records)
+                        is DiagnosticsExportTarget.Document -> exportToDocument(target.uri, records)
+                    }
+                },
+                onFailure = Result.Companion::failure,
+            )
         }
+
+    override suspend fun discard(target: DiagnosticsExportTarget) {
+        if (target is DiagnosticsExportTarget.Document) {
+            withContext(Dispatchers.IO) { storage.deleteDocument(target.uri) }
+        }
+    }
+
+    private fun exportForSharing(records: List<SanitizedLogRecord>): Result<Unit> {
+        var exportFile: File? = null
+        return try {
+            storage.clearStaleExports()
+            exportFile = storage.createExportFile()
+            writeExport(exportFile.outputStream(), records)
+            storage.share(exportFile).fold(
+                onSuccess = {
+                    storage.scheduleDeletion(exportFile)
+                    Result.success(Unit)
+                },
+                onFailure = { failure ->
+                    storage.delete(exportFile)
+                    Result.failure(failure)
+                },
+            )
+        } catch (failure: Exception) {
+            exportFile?.let(storage::delete)
+            Result.failure(failure)
+        }
+    }
+
+    private fun exportToDocument(
+        uri: String,
+        records: List<SanitizedLogRecord>,
+    ): Result<Unit> = runCatching {
+        writeExport(storage.openDocument(uri), records)
+    }.onFailure {
+        storage.deleteDocument(uri)
+    }
+
+    private fun writeExport(
+        output: OutputStream,
+        records: List<SanitizedLogRecord>,
+    ) {
+        output.bufferedWriter(Charsets.UTF_8).use { writer ->
+            writer.appendLine(manifestFactory.encode(records.size))
+            records.forEach { writer.appendLine(recordEncoder.encode(it)) }
+        }
+    }
 
     private fun readRecords(): List<SanitizedLogRecord> {
         val records = ArrayList<SanitizedLogRecord>(MAX_EXPORT_RECORDS)
@@ -140,9 +183,9 @@ class ObservabilityExportService @Inject internal constructor(
     }
 }
 
-internal class AndroidDiagnosticsExportFileGateway @Inject constructor(
+internal class AndroidDiagnosticsExportStorageGateway @Inject constructor(
     @param:ApplicationContext private val context: Context,
-) : DiagnosticsExportFileGateway {
+) : DiagnosticsExportStorageGateway {
     override fun clearStaleExports() {
         context.cacheDir.listFiles()
             ?.filter { it.isFile && it.name.startsWith(EXPORT_PREFIX) }
@@ -175,6 +218,17 @@ internal class AndroidDiagnosticsExportFileGateway @Inject constructor(
 
     override fun delete(file: File) {
         file.delete()
+    }
+
+    override fun openDocument(uri: String): OutputStream {
+        val documentUri = Uri.parse(uri)
+        require(documentUri.scheme == "content")
+        return context.contentResolver.openOutputStream(documentUri, "rwt")
+            ?: error("Unable to open diagnostics export destination")
+    }
+
+    override fun deleteDocument(uri: String) {
+        runCatching { DocumentsContract.deleteDocument(context.contentResolver, Uri.parse(uri)) }
     }
 
     private companion object {

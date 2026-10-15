@@ -7,6 +7,7 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportResult
+import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportTarget
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
 import com.aozijx.passly.feature.settings.diagnostics.ExportDiagnosticsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -47,7 +48,12 @@ class DiagnosticsSettingsViewModel @Inject constructor(
             DiagnosticsSettingsAction.DismissClear ->
                 mutate(DiagnosticsSettingsMutation.ClearDismissed)
             DiagnosticsSettingsAction.ConfirmClear -> clearLogs()
-            DiagnosticsSettingsAction.Export -> authenticateAndExport()
+            DiagnosticsSettingsAction.RequestSave ->
+                eventChannel.trySend(DiagnosticsSettingsEffect.SelectSaveDocument)
+            is DiagnosticsSettingsAction.SaveToDocument -> authenticateAndExport(
+                DiagnosticsExportTarget.Document(action.uri),
+            )
+            DiagnosticsSettingsAction.Share -> authenticateAndExport(DiagnosticsExportTarget.Share)
         }
     }
 
@@ -94,12 +100,13 @@ class DiagnosticsSettingsViewModel @Inject constructor(
         mutate(DiagnosticsSettingsMutation.LogsCleared)
     }
 
-    private fun authenticateAndExport() = viewModelScope.launch {
+    private fun authenticateAndExport(target: DiagnosticsExportTarget) = viewModelScope.launch {
         logger.withRootTrace(Operations.DiagnosticsExport) {
-            when (val result = exportDiagnostics()) {
-                DiagnosticsExportResult.Completed,
-                DiagnosticsExportResult.Cancelled,
-                    -> Unit
+            when (val result = exportDiagnostics(target)) {
+                DiagnosticsExportResult.Completed -> if (target is DiagnosticsExportTarget.Document) {
+                    eventChannel.trySend(DiagnosticsSettingsEffect.SaveCompleted)
+                }
+                DiagnosticsExportResult.Cancelled -> Unit
                 DiagnosticsExportResult.Denied,
                 DiagnosticsExportResult.SessionRestricted,
                     -> eventChannel.trySend(DiagnosticsSettingsEffect.ExportFailed)

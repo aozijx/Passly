@@ -3,7 +3,6 @@ package com.aozijx.passly.feature.backup.internal.archive
 import android.content.Context
 import androidx.core.net.toUri
 import com.aozijx.passly.core.error.model.BackupFailed
-import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.feature.backup.internal.archive.io.BackupFileStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.FileNotFoundException
@@ -53,11 +52,4 @@ internal class AndroidBackupFileStore @Inject constructor(
         }
     }
 
-    override suspend fun checkWritable(uri: String): AppResult<Unit> =
-        AppResult.runSuspendCatching {
-            val parsed = uri.toUri()
-            context.contentResolver.openFileDescriptor(parsed, "rw")
-                ?.use { /* 打开但不写入，避免截断现有文件。 */ }
-                ?: throw BackupFailed()
-        }
 }

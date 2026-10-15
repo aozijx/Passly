@@ -73,9 +73,11 @@ Logger、Service Locator 或安装前 no-op 桥。
 设备/系统环境，后续每行是一个事件。manifest 禁止 Android ID、
 Build fingerprint、serial、明文包名和已安装应用列表。
 
-导出必须在现有 `EXPORT_DIAGNOSTICS` 新鲜认证授权块内创建文件。临时文本只写入 `cacheDir`，通过
-FileProvider 以 `text/plain` 只读分享；分享失败立即删除，成功后 10 分钟删除，新导出前先清理旧临时文件。明文导出不属于备份
-内容。
+导出必须在现有 `EXPORT_DIAGNOSTICS` 新鲜认证授权块内写入内容。保存与分享是两条明确的目标链路：保存通过
+Storage Access Framework 的 `CreateDocument(text/plain)` 让用户选择目标 URI，并直接写入该 URI，不创建分享缓存；
+认证取消、拒绝或写入失败时尝试删除由选择器预创建的未完成文档；
+分享才在 `cacheDir` 创建临时文本并通过 FileProvider 只读发送。分享失败立即删除，成功后 10 分钟删除，新分享前先清理
+旧临时文件。明文导出不属于备份内容，也不复用备份目录设置。
 
 导出文件使用 `.txt` 与 UTF-8 TSV。每行只输出值，不重复输出键名；空值保留为空列，制表符、换行和反斜杠会转义。
 manifest 固定顺序为：记录类型、格式版本、生成时间、记录数、App 名称、版本名、版本号、厂商、型号、SDK、系统版本、

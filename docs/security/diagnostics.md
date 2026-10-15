@@ -67,4 +67,7 @@ Android API 依据：[Log](https://developer.android.com/reference/android/util/
   不进入通用 manifest。每行按固定列顺序
   只写值，空值保留为空列且特殊字符转义，不重复写协议键名。禁止 Android
   ID、fingerprint、serial 和明文包名。
-- 明文临时文件仅位于 `cacheDir`：分享失败立即删除，分享成功后 10 分钟删除，下一次导出前清理陈旧文件。
+- 用户选择“保存”时，系统 `CreateDocument` 返回目标 URI，认证成功后直接写入该 URI；认证取消、拒绝或写入失败时
+  尝试删除选择器预创建的未完成文档。
+  该链路不创建应用内明文副本，也不读取或复用备份目录设置。
+- 只有“分享”会在 `cacheDir` 创建明文临时文件：分享失败立即删除，分享成功后 10 分钟删除，下一次分享前清理陈旧文件。

@@ -25,7 +25,10 @@ import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationPermitVerifier
+import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportTarget
 import java.io.File
+import java.io.ByteArrayOutputStream
+import java.io.OutputStream
 import java.nio.file.Files
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -59,10 +62,10 @@ class ObservabilityExportServiceTest {
                 duplicate,
             ),
         )
-        val files = RecordingExportFileGateway(cacheDirectory)
+        val files = RecordingExportStorageGateway(cacheDirectory)
         val service = service(store, files)
 
-        assertTrue(service.exportAndShare(TestPermit).isSuccess)
+        assertTrue(service.export(TestPermit, DiagnosticsExportTarget.Share).isSuccess)
 
         val lines = files.sharedText!!.lineSequence().filter(String::isNotBlank)
             .map { it.split('\t') }.toList()
@@ -81,10 +84,10 @@ class ObservabilityExportServiceTest {
 
     @Test
     fun `manifest contains only generic device and app context once`() = runTest {
-        val files = RecordingExportFileGateway(cacheDirectory)
+        val files = RecordingExportStorageGateway(cacheDirectory)
         val service = service(PageStore(listOf(record("event_00000001", 100))), files)
 
-        service.exportAndShare(TestPermit).getOrThrow()
+        service.export(TestPermit, DiagnosticsExportTarget.Share).getOrThrow()
 
         val records = files.sharedText!!.lineSequence().filter(String::isNotBlank)
             .map { it.split('\t') }.toList()
@@ -141,11 +144,27 @@ class ObservabilityExportServiceTest {
     }
 
     @Test
-    fun `failed share deletes plaintext immediately`() = runTest {
-        val files = RecordingExportFileGateway(cacheDirectory, shareFailure = true)
+    fun `document export writes directly to selected uri without share cache`() = runTest {
+        val files = RecordingExportStorageGateway(cacheDirectory)
         val service = service(PageStore(listOf(record("event_00000001", 100))), files)
 
-        assertTrue(service.exportAndShare(TestPermit).isFailure)
+        service.export(
+            TestPermit,
+            DiagnosticsExportTarget.Document("content://documents/log.txt"),
+        ).getOrThrow()
+
+        assertTrue(files.documentText!!.startsWith("manifest\t"))
+        assertEquals(null, files.target)
+        assertEquals(0, files.clearCalls)
+        assertFalse(files.documentDeleted)
+    }
+
+    @Test
+    fun `failed share deletes plaintext immediately`() = runTest {
+        val files = RecordingExportStorageGateway(cacheDirectory, shareFailure = true)
+        val service = service(PageStore(listOf(record("event_00000001", 100))), files)
+
+        assertTrue(service.export(TestPermit, DiagnosticsExportTarget.Share).isFailure)
 
         assertFalse(files.target!!.exists())
         assertFalse(files.deleteScheduled)
@@ -153,14 +172,14 @@ class ObservabilityExportServiceTest {
 
     @Test
     fun `invalid permit fails before plaintext file is created`() = runTest {
-        val files = RecordingExportFileGateway(cacheDirectory)
+        val files = RecordingExportStorageGateway(cacheDirectory)
         val service = service(
             store = PageStore(listOf(record("event_00000001", 100))),
             files = files,
             permitAccepted = false,
         )
 
-        assertTrue(service.exportAndShare(TestPermit).isFailure)
+        assertTrue(service.export(TestPermit, DiagnosticsExportTarget.Share).isFailure)
 
         assertEquals(null, files.target)
         assertEquals(0, files.clearCalls)
@@ -168,7 +187,7 @@ class ObservabilityExportServiceTest {
 
     private fun service(
         store: LogRecordStore,
-        files: RecordingExportFileGateway,
+        files: RecordingExportStorageGateway,
         permitAccepted: Boolean = true,
     ) =
         ObservabilityExportService(
@@ -189,7 +208,7 @@ class ObservabilityExportServiceTest {
                 },
                 clock = ExportClock { 1_700_000_000_000 },
             ),
-            files = files,
+            storage = files,
             permitVerifier = object : AuthorizationPermitVerifier {
                 override fun consume(
                     permit: AuthorizationPermit,
@@ -230,14 +249,16 @@ class ObservabilityExportServiceTest {
         override fun close() = Unit
     }
 
-    private class RecordingExportFileGateway(
+    private class RecordingExportStorageGateway(
         private val directory: File,
         private val shareFailure: Boolean = false,
-    ) : DiagnosticsExportFileGateway {
+    ) : DiagnosticsExportStorageGateway {
         var target: File? = null
         var sharedText: String? = null
         var deleteScheduled = false
         var clearCalls = 0
+        var documentText: String? = null
+        var documentDeleted = false
 
         override fun clearStaleExports() {
             clearCalls++
@@ -259,6 +280,17 @@ class ObservabilityExportServiceTest {
 
         override fun delete(file: File) {
             file.delete()
+        }
+
+        override fun openDocument(uri: String): OutputStream = object : ByteArrayOutputStream() {
+            override fun close() {
+                documentText = toString(Charsets.UTF_8.name())
+                super.close()
+            }
+        }
+
+        override fun deleteDocument(uri: String) {
+            documentDeleted = true
         }
     }
 
