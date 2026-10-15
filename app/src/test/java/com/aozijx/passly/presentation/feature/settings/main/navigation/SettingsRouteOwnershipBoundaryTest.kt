@@ -51,7 +51,7 @@ class SettingsRouteOwnershipBoundaryTest {
         val generalRoute = File(routeRoot, "GeneralRoute.kt").readText()
         val notificationsRoute = File(routeRoot, "NotificationsRoute.kt").readText()
         assertTrue(generalRoute.contains("GeneralSettingsViewModel"))
-        assertTrue(generalRoute.contains("DiagnosticsSettingsViewModel"))
+        assertTrue(generalRoute.contains("DiagnosticsViewModel"))
         assertTrue(notificationsRoute.contains("NotificationSettingsViewModel"))
         assertTrue(notificationsRoute.contains("rememberPermissionRequestHost"))
     }

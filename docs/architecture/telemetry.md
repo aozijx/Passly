@@ -74,7 +74,13 @@ Logger、Service Locator 或安装前 no-op 桥。
 运行时预生成 emergency 数据密钥。崩溃时先 flush 普通队列 300 ms；失败后 emergency writer 最多等待
 200 ms，且不调用 Keystore、不等待普通 writer lock。队列溢出只为 ERROR/FATAL 尝试一次独立 fallback。
 
-查看最多读取 500 条。明文导出最多读取当前 store 的 5000 条记录，并在存储层以最多 500 条一页跨文件读取；
+查看最多读取当前 store 的 500 条。运行时为每条查看记录保留结构化 `LogLevel`、精确 `trace_id` 和已脱敏的固定八列
+TSV 行，presentation 不解析文本恢复字段。查看页默认显示 INFO/WARN/ERROR，FATAL 归入 ERROR 组，DEBUG 默认隐藏；
+等级筛选与精确 trace-id 查询只作用于这 500 条内存记录，绝不传入导出请求或改变导出内容。复制单行只使用对应的
+已脱敏 TSV 行；复制 Trace 最多输出同一 trace 的 100 行，不能访问原始 record、Throwable 或未脱敏字段。页面进入时
+立即刷新记录和当前视图字节数，完整会话校验失败时不读取日志；清理成功后同时清空 retained/visible 状态。
+
+明文导出最多读取当前 store 的 5000 条记录，并在存储层以最多 500 条一页跨文件读取；
 按 `timestamp_ms + elapsed_realtime_ms + event_id` 确定性排序并按 `event_id` 去重。manifest 集中包含 schema、生成时间、
 记录数及 App/设备/系统环境，禁止 Android ID、Build fingerprint、serial、明文包名和已安装应用列表。
 

@@ -6,6 +6,7 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.metrics.EventAggregator
 import com.aozijx.passly.core.observability.sink.LogRecordStore
+import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogLine
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -69,9 +70,15 @@ class ObservabilityRuntimeController @Inject internal constructor(
         return runCatching { store.flush(timeoutMs) }.getOrDefault(false)
     }
 
-    override suspend fun readLines(limit: Int): List<String> = withContext(Dispatchers.IO) {
+    override suspend fun readLines(limit: Int): List<DiagnosticsLogLine> = withContext(Dispatchers.IO) {
         require(limit > 0) { "Line limit must be positive" }
-        readRecords(limit).map(recordEncoder::encode)
+        readRecords(limit).map { record ->
+            DiagnosticsLogLine(
+                level = record.level,
+                text = recordEncoder.encode(record),
+                traceId = record.trace.traceId.value,
+            )
+        }
     }
 
     override suspend fun clear() = withContext(Dispatchers.IO) { store.clear() }

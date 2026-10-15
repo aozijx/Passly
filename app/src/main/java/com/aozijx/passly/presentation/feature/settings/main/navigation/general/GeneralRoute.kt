@@ -21,9 +21,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
-import com.aozijx.passly.presentation.feature.settings.main.general.DiagnosticsSettingsAction
-import com.aozijx.passly.presentation.feature.settings.main.general.DiagnosticsSettingsEffect
-import com.aozijx.passly.presentation.feature.settings.main.general.DiagnosticsSettingsViewModel
+import com.aozijx.passly.feature.settings.diagnostics.ExportAction
+import com.aozijx.passly.feature.settings.diagnostics.LogFormat
+import com.aozijx.passly.presentation.feature.settings.main.diagnostics.DiagnosticsAction
+import com.aozijx.passly.presentation.feature.settings.main.diagnostics.DiagnosticsEffect
+import com.aozijx.passly.presentation.feature.settings.main.diagnostics.DiagnosticsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.general.GeneralSettingsAction
 import com.aozijx.passly.presentation.feature.settings.main.general.GeneralSettingsEffect
 import com.aozijx.passly.presentation.feature.settings.main.general.GeneralSettingsViewModel
@@ -41,7 +43,7 @@ internal fun GeneralRoute(
     val context = LocalContext.current
     val generalViewModel: GeneralSettingsViewModel = hiltViewModel()
     val generalState by generalViewModel.uiState.collectAsStateWithLifecycle()
-    val diagnosticsViewModel: DiagnosticsSettingsViewModel = hiltViewModel()
+    val diagnosticsViewModel: DiagnosticsViewModel = hiltViewModel()
     val diagnosticsState by diagnosticsViewModel.uiState.collectAsStateWithLifecycle()
     val cacheClearedMessage = stringResource(R.string.settings_general_cache_cleared)
     val featurePendingMessage = stringResource(R.string.settings_general_feature_pending)
@@ -52,13 +54,13 @@ internal fun GeneralRoute(
     ) { uri ->
         if (uri != null) {
             diagnosticsViewModel.onAction(
-                DiagnosticsSettingsAction.SaveToDocument(uri.toString()),
+                DiagnosticsAction.SaveToDocument(uri.toString()),
             )
         }
     }
 
     LaunchedEffect(diagnosticsViewModel) {
-        diagnosticsViewModel.onAction(DiagnosticsSettingsAction.RefreshLogs)
+        diagnosticsViewModel.onAction(DiagnosticsAction.PageEntered)
     }
 
     LaunchedEffect(generalViewModel, cacheClearedMessage, featurePendingMessage) {
@@ -84,14 +86,15 @@ internal fun GeneralRoute(
     }
 
     LaunchedEffect(diagnosticsViewModel, logExportFailedMessage, logSaveCompletedMessage) {
-        diagnosticsViewModel.events.collect { effect ->
+        diagnosticsViewModel.effects.collect { effect ->
             when (effect) {
-                DiagnosticsSettingsEffect.SelectSaveDocument ->
+                is DiagnosticsEffect.SelectSaveDocument ->
                     diagnosticsDocumentPicker.launch(DIAGNOSTICS_FILE_NAME)
-                DiagnosticsSettingsEffect.SaveCompleted ->
+                DiagnosticsEffect.SaveCompleted ->
                     Toast.makeText(context, logSaveCompletedMessage, Toast.LENGTH_SHORT).show()
-                DiagnosticsSettingsEffect.ExportFailed ->
+                DiagnosticsEffect.ExportFailed ->
                     Toast.makeText(context, logExportFailedMessage, Toast.LENGTH_SHORT).show()
+                is DiagnosticsEffect.CopyText -> Unit
             }
         }
     }
@@ -113,26 +116,22 @@ internal fun GeneralRoute(
 
                 LogSettingsSection(
                     state = diagnosticsState,
-                    onOpenViewer = {
-                        diagnosticsViewModel.onAction(DiagnosticsSettingsAction.OpenViewer)
-                    },
-                    onCloseViewer = {
-                        diagnosticsViewModel.onAction(DiagnosticsSettingsAction.CloseViewer)
-                    },
                     onSave = {
-                        diagnosticsViewModel.onAction(DiagnosticsSettingsAction.RequestSave)
+                        diagnosticsViewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.EXPORT_LOCAL))
+                        diagnosticsViewModel.onAction(DiagnosticsAction.SelectFormat(LogFormat.JSONL))
                     },
                     onShare = {
-                        diagnosticsViewModel.onAction(DiagnosticsSettingsAction.Share)
+                        diagnosticsViewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.SHARE))
+                        diagnosticsViewModel.onAction(DiagnosticsAction.SelectFormat(LogFormat.JSONL))
                     },
                     onRequestClear = {
-                        diagnosticsViewModel.onAction(DiagnosticsSettingsAction.RequestClear)
+                        diagnosticsViewModel.onAction(DiagnosticsAction.RequestClear)
                     },
                     onConfirmClear = {
-                        diagnosticsViewModel.onAction(DiagnosticsSettingsAction.ConfirmClear)
+                        diagnosticsViewModel.onAction(DiagnosticsAction.ConfirmClear)
                     },
                     onDismissClear = {
-                        diagnosticsViewModel.onAction(DiagnosticsSettingsAction.DismissClear)
+                        diagnosticsViewModel.onAction(DiagnosticsAction.DismissClear)
                     },
                 )
 

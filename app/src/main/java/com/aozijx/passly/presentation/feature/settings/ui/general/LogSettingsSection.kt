@@ -21,6 +21,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -31,21 +35,18 @@ import com.aozijx.passly.R
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.presentation.feature.settings.main.general.DiagnosticsLogPageUiState
-import com.aozijx.passly.presentation.feature.settings.main.general.DiagnosticsOverlayUiState
-import com.aozijx.passly.presentation.feature.settings.main.general.DiagnosticsSettingsUiState
+import com.aozijx.passly.presentation.feature.settings.main.diagnostics.DiagnosticsUiState
 
 @Composable
 fun LogSettingsSection(
-    state: DiagnosticsSettingsUiState,
-    onOpenViewer: () -> Unit,
-    onCloseViewer: () -> Unit,
+    state: DiagnosticsUiState,
     onSave: () -> Unit,
     onShare: () -> Unit,
     onRequestClear: () -> Unit,
     onConfirmClear: () -> Unit,
     onDismissClear: () -> Unit,
 ) {
+    var showViewer by rememberSaveable { mutableStateOf(false) }
     val logManagementTitle = stringResource(R.string.settings_log_management_title)
     val viewLogsTitle = stringResource(R.string.settings_log_view_title)
     val viewLogsSubtitle = stringResource(R.string.settings_log_view_subtitle)
@@ -62,7 +63,7 @@ fun LogSettingsSection(
                 icon = Icons.Default.BugReport,
                 title = viewLogsTitle,
                 subtitle = viewLogsSubtitle,
-                onClick = onOpenViewer,
+                onClick = { showViewer = true },
             ),
             navigationSettingsGroupItem(
                 key = "logs.save",
@@ -88,13 +89,14 @@ fun LogSettingsSection(
         )
     )
 
-    when (val overlay = state.overlay) {
-        DiagnosticsOverlayUiState.Closed -> Unit
-        is DiagnosticsOverlayUiState.Viewer -> LogViewerSheet(
-            page = overlay.page,
-            onDismiss = onCloseViewer,
+    if (showViewer) {
+        LogViewerSheet(
+            state = state,
+            onDismiss = { showViewer = false },
         )
-        DiagnosticsOverlayUiState.ClearConfirmation -> ClearLogsConfirmDialog(
+    }
+    if (state.isClearConfirmationVisible) {
+        ClearLogsConfirmDialog(
             onConfirm = onConfirmClear,
             onDismiss = onDismissClear,
         )
@@ -103,14 +105,11 @@ fun LogSettingsSection(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun LogViewerSheet(page: DiagnosticsLogPageUiState, onDismiss: () -> Unit) {
-    val displayText = when (page) {
-        DiagnosticsLogPageUiState.Loading -> stringResource(R.string.settings_log_loading)
-        is DiagnosticsLogPageUiState.Content -> if (page.text.isBlank()) {
-            stringResource(R.string.settings_log_empty)
-        } else {
-            page.text
-        }
+private fun LogViewerSheet(state: DiagnosticsUiState, onDismiss: () -> Unit) {
+    val displayText = when {
+        state.isLoading -> stringResource(R.string.settings_log_loading)
+        state.visibleLines.isEmpty() -> stringResource(R.string.settings_log_empty)
+        else -> state.visibleLines.joinToString("\n") { it.text }
     }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
