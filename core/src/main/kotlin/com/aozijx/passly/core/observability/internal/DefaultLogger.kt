@@ -20,6 +20,7 @@ import com.aozijx.passly.core.observability.TraceResumeResult
 import com.aozijx.passly.core.observability.privacy.LogSanitizer
 import com.aozijx.passly.core.observability.privacy.SanitizationContext
 import com.aozijx.passly.core.observability.privacy.SanitizationResult
+import com.aozijx.passly.core.observability.metrics.EventAggregator
 import com.aozijx.passly.core.observability.sink.LogSink
 import com.aozijx.passly.core.observability.trace.SpanCompleted
 import com.aozijx.passly.core.observability.trace.SpanResult
@@ -76,6 +77,7 @@ class DefaultLogger(
     private val timeSource: ObservabilityTimeSource,
     private val processSessionProvider: ProcessSessionProvider,
     private val secureSessionProvider: SecureSessionProvider,
+    private val aggregator: EventAggregator? = null,
     private val traceTokenRegistry: TraceTokenRegistry = TraceTokenRegistry(timeSource::elapsedRealtimeMs),
 ) : Logger {
     override fun debug(event: EventKey, fields: LogFields) {
@@ -222,6 +224,7 @@ class DefaultLogger(
             ),
         )
         if (result is SanitizationResult.Accepted) {
+            if (aggregator?.record(result.record) == false) return
             sinks.forEach { sink ->
                 try {
                     sink.emit(result.record)

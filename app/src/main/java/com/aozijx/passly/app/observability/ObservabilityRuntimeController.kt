@@ -2,7 +2,9 @@ package com.aozijx.passly.app.observability
 
 import android.os.Process
 import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.core.observability.metrics.EventAggregator
 import com.aozijx.passly.core.observability.sink.LogRecordStore
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
 import java.util.concurrent.atomic.AtomicBoolean
@@ -10,6 +12,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 
 internal interface CrashHandlerRegistry {
     fun current(): Thread.UncaughtExceptionHandler?
@@ -23,11 +26,12 @@ internal fun interface ProcessTerminator {
 @Singleton
 class ObservabilityRuntimeController @Inject internal constructor(
     private val store: LogRecordStore,
-    private val frameworkLogger: FrameworkLogger,
-    private val loggerRuntime: LoggerRuntimeGateway,
+    private val logger: Logger,
+    private val crashCapture: CrashRecordCaptureSink,
     private val previousExitSource: PreviousExitSource,
     private val crashHandlers: CrashHandlerRegistry,
     private val processTerminator: ProcessTerminator,
+    private val eventAggregator: EventAggregator,
     private val recordEncoder: LogRecordJsonEncoder = LogRecordJsonEncoder(),
 ) : DiagnosticsLogStore {
     private val started = AtomicBoolean(false)
@@ -41,10 +45,7 @@ class ObservabilityRuntimeController @Inject internal constructor(
             return@UncaughtExceptionHandler
         }
         try {
-            val record = frameworkLogger.fatal(
-                operation = Operations.ApplicationLifecycle,
-                statement = LogStatements.Application.unhandledException(throwable),
-            )
+            val record = captureFatal(throwable)
             val flushed = runCatching { store.flush(CRASH_FLUSH_TIMEOUT_MS) }.getOrDefault(false)
             if (!flushed && record != null) {
                 runCatching { store.crashEmergencyWrite(record, CRASH_EMERGENCY_TIMEOUT_MS) }
@@ -58,14 +59,15 @@ class ObservabilityRuntimeController @Inject internal constructor(
 
     fun start() {
         if (!started.compareAndSet(false, true)) return
-        loggerRuntime.install(frameworkLogger)
         previousCrashHandler = crashHandlers.current()
         crashHandlers.install(crashHandler)
         previousExitSource.readUnrecorded()?.let(::recordPreviousExit)
     }
 
-    fun flush(timeoutMs: Long = LIFECYCLE_FLUSH_TIMEOUT_MS): Boolean =
-        runCatching { store.flush(timeoutMs) }.getOrDefault(false)
+    fun flush(timeoutMs: Long = LIFECYCLE_FLUSH_TIMEOUT_MS): Boolean {
+        eventAggregator.flush()
+        return runCatching { store.flush(timeoutMs) }.getOrDefault(false)
+    }
 
     override suspend fun readLines(limit: Int): List<String> = withContext(Dispatchers.IO) {
         require(limit > 0) { "Line limit must be positive" }
@@ -76,8 +78,8 @@ class ObservabilityRuntimeController @Inject internal constructor(
 
     fun shutdown() {
         if (!shutdown.compareAndSet(false, true)) return
+        eventAggregator.flush()
         if (crashHandlers.current() === crashHandler) crashHandlers.install(previousCrashHandler)
-        loggerRuntime.uninstall(frameworkLogger)
         runCatching { store.close() }
     }
 
@@ -93,16 +95,33 @@ class ObservabilityRuntimeController @Inject internal constructor(
     }
 
     private fun recordPreviousExit(exit: PreviousExit) {
-        frameworkLogger.log(
-            operation = Operations.ApplicationStartup,
-            statement = LogStatements.Application.previousProcessExit(
-                exitReason = exit.reason,
-                status = exit.status,
-                importance = exit.importance,
-                pssKb = exit.pssKb,
-                rssKb = exit.rssKb,
-            ),
-        )
+        runCatching {
+            runBlocking {
+                logger.withRootTrace(Operations.ApplicationStartup) {
+                    logger.log(
+                        LogStatements.Application.previousProcessExit(
+                            exitReason = exit.reason,
+                            status = exit.status,
+                            importance = exit.importance,
+                            pssKb = exit.pssKb,
+                            rssKb = exit.rssKb,
+                        ),
+                    )
+                }
+            }
+        }
+    }
+
+    private fun captureFatal(throwable: Throwable): com.aozijx.passly.core.observability.SanitizedLogRecord? {
+        crashCapture.clear()
+        runCatching {
+            runBlocking {
+                logger.withRootTrace(Operations.ApplicationLifecycle) {
+                    logger.log(LogStatements.Application.unhandledException(throwable))
+                }
+            }
+        }
+        return crashCapture.take()
     }
 
     private fun delegateCrash(thread: Thread, throwable: Throwable) {

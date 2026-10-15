@@ -27,15 +27,9 @@ class AutofillResultDelivery internal constructor(
     private val completeSelection: CompleteAutofillSelection,
     private val unlockLease: AutofillUnlockLease,
     private val scope: CoroutineScope,
-    private val logger: Logger?,
-    private val continuations: TraceContinuationStore?,
+    private val logger: Logger,
+    private val continuations: TraceContinuationStore,
 ) {
-    internal constructor(
-        completeSelection: CompleteAutofillSelection,
-        unlockLease: AutofillUnlockLease,
-        scope: CoroutineScope,
-    ) : this(completeSelection, unlockLease, scope, null, null)
-
     @Inject
     constructor(
         completeSelection: CompleteAutofillSelection,
@@ -55,23 +49,19 @@ class AutofillResultDelivery internal constructor(
         receipt: AutofillSelectionReceipt,
         deliverToPlatform: () -> Unit,
     ) {
-        if (logger == null || continuations == null) {
-            deliverToPlatform()
-        } else {
-            runBlocking {
-                continuations.continueOrRoot(
-                    receipt.interactionId.value,
-                    Operations.AutofillResultDelivery,
-                ) {
-                    logger.log(LogStatements.Autofill.resultDeliveryStarted())
-                    try {
-                        deliverToPlatform()
-                        logger.log(LogStatements.Autofill.resultDelivered())
-                        continuations.capture(receipt.interactionId.value)
-                    } catch (error: Exception) {
-                        logger.log(LogStatements.Autofill.resultDeliveryFailed(error))
-                        throw error
-                    }
+        runBlocking {
+            continuations.continueOrRoot(
+                receipt.interactionId.value,
+                Operations.AutofillResultDelivery,
+            ) {
+                logger.log(LogStatements.Autofill.resultDeliveryStarted())
+                try {
+                    deliverToPlatform()
+                    logger.log(LogStatements.Autofill.resultDelivered())
+                    continuations.capture(receipt.interactionId.value)
+                } catch (error: Exception) {
+                    logger.log(LogStatements.Autofill.resultDeliveryFailed(error))
+                    throw error
                 }
             }
         }
@@ -81,10 +71,6 @@ class AutofillResultDelivery internal constructor(
 
     private fun delivered(receipt: AutofillSelectionReceipt) {
         scope.launch {
-            if (logger == null || continuations == null) {
-                completeWithoutLogging(receipt)
-                return@launch
-            }
             try {
                 continuations.continueOrRoot(
                     receipt.interactionId.value,
@@ -110,15 +96,4 @@ class AutofillResultDelivery internal constructor(
             }
         }
     }
-
-    private suspend fun completeWithoutLogging(receipt: AutofillSelectionReceipt) {
-        try {
-            completeSelection(receipt.interactionId, receipt.entryId)
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (_: Exception) {
-            // Compatibility path for tests that construct this class without the production Logger.
-        }
-    }
-
 }

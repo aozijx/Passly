@@ -1,6 +1,11 @@
 package com.aozijx.passly.feature.autofill.runtime
 
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.observability.*
+import com.aozijx.passly.core.observability.internal.*
+import com.aozijx.passly.core.observability.privacy.*
+import com.aozijx.passly.core.observability.sink.LogSink
+import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -37,6 +42,7 @@ class AutofillResultDeliveryTest {
             initialState = AutofillInteractionState.Authorized,
         )
         lease.acquireOrBorrow(completedInteraction.id, acquiredUnlock = true)
+        val logger = testLogger()
         val delivery = AutofillResultDelivery(
             completeSelection = CompleteAutofillSelection(
                 RecordAutofillUsageUseCase(NoOpActivityRecorder),
@@ -44,6 +50,8 @@ class AutofillResultDeliveryTest {
             ),
             unlockLease = lease,
             scope = this,
+            logger = logger,
+            continuations = TraceContinuationStore(logger),
         )
 
         delivery.deliverResult(
@@ -69,6 +77,7 @@ class AutofillResultDeliveryTest {
             initialState = AutofillInteractionState.Authorized,
         )
         lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
+        val logger = testLogger()
         val delivery = AutofillResultDelivery(
             completeSelection = CompleteAutofillSelection(
                 RecordAutofillUsageUseCase(NoOpActivityRecorder),
@@ -76,6 +85,8 @@ class AutofillResultDeliveryTest {
             ),
             unlockLease = lease,
             scope = this,
+            logger = logger,
+            continuations = TraceContinuationStore(logger),
         )
 
         assertNull(lockController.reason)
@@ -111,4 +122,25 @@ class AutofillResultDeliveryTest {
         override suspend fun deleteByEntryId(entryId: String) = Unit
         override suspend fun deleteBefore(timestamp: Long) = Unit
     }
+
+    private fun testLogger() = DefaultLogger(
+        sanitizer = PrivacyPolicy(IdentifierHasher { _, _ -> null }, ContractViolationBehavior.THROW),
+        sinks = listOf(LogSink { }),
+        lifecycleSinks = emptyList(),
+        idGenerator = object : ObservabilityIdGenerator {
+            private var next = 0
+            private fun id(prefix: String) = "${prefix}_${++next}_value"
+            override fun eventId() = EventId(id("event"))
+            override fun traceId() = TraceId(id("trace"))
+            override fun spanId() = SpanId(id("span"))
+            override fun diagnosticId() =
+                DiagnosticId.fromEntropy(ByteArray(8) { index -> (index + ++next).toByte() })
+        },
+        timeSource = object : ObservabilityTimeSource {
+            override fun wallTimeMs() = 1_700_000_000_000L
+            override fun elapsedRealtimeMs() = 100L
+        },
+        processSessionProvider = ProcessSessionProvider { ProcessSessionId("process_session") },
+        secureSessionProvider = SecureSessionProvider { null },
+    )
 }

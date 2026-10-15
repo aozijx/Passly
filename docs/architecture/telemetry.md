@@ -14,8 +14,9 @@
 App 业务层统一调用 `logger.log(LogStatements.<领域>.<事件>(...))`。`LogStatements` 是全 App 的类型化语句目录，
 当前包含 Application、Database、Security、Autofill，后续领域在同一目录扩展；它负责绑定 level、event、
 error_code、reason 和允许字段，业务代码无需重复导入或拼装协议常量。它不是 Autofill 专用 facade，也不创建第二套
-Logger。无法注入依赖的 Android framework 回调使用 `LoggerRuntime.log(operation, statement)`；未捕获异常仅接受
-`FatalLogStatement`，避免普通语句误走崩溃通道。
+Logger。Application、LifecycleObserver、Service、ViewModel 和运行时控制器均通过依赖注入获得同一个 Logger；不设
+全局 runtime bridge。未捕获异常由运行时控制器在原线程建立根 Trace，并通过 `CrashRecordCaptureSink` 取得同一条
+已脱敏 FATAL 记录交给应急写入。
 
 业务调用不能构造 `SanitizedLogRecord` 或直接调用 Sink。后续隐私层必须把 pending 标识符替换为 HMAC、把
 Throwable 转换为不含 message/path 的安全快照后，才能将不可变记录交给 `LogSink`。Trace API 已固定在 Logger
@@ -33,6 +34,21 @@ Throwable 转换为不含 message/path 的安全快照后，才能将不可变�
 - `app/observability`：应用级装配、framework bridge、Logcat/Perfetto、崩溃处理、上次进程退出读取和认证导出。
 - `data/observability`：`SanitizedLogRecord` codec 与应用内部加密文件存储。
 - `LogcatSink.kt`：observability 生产代码中唯一允许导入 `android.util.Log` 的文件。
+
+生产事件只有一条执行链：
+
+```text
+注入 Logger 的调用点
+  -> Logger.withRootTrace / inSpan
+  -> logger.log(LogStatements...)
+  -> DefaultLogger
+  -> PrivacyPolicy（校验、异常快照、HMAC）
+  -> EventAggregator（安全维度聚合、仅 DEBUG 采样）
+  -> CrashCapture / LocalAlert / Logcat / EncryptedLogStore
+```
+
+`TraceContinuationStore` 只持有进程内、单次消费的 Trace token，用于 Autofill Service → 认证 Activity → 结果交付的
+回调断点；它不代理 Logger、不持久化业务 ID，也不改变 Legacy Autofill 与 Credential Manager 各自的结果对象。
 
 业务事件名使用受控 lower-dot 标识符。持久化字段只允许计数、时长、有限比率、布尔、枚举名、错误码、原因码、
 操作码和由底层 HMAC 的标识符。自由文本 message、Throwable message、密码、Token、邮箱、URL 与文件路径不得进入
@@ -85,6 +101,20 @@ Debug Sink 在格式化前使用 `Log.isLoggable`，且永远不把原始 Throwa
 Logger 还会把受控 Span 名称接入 `android.os.Trace`，用于 Perfetto 性能分析；并在下次启动时从
 `ApplicationExitInfo` 读取稳定的退出 reason/status/importance/内存数值。系统提供的 description、进程名和原始
 ANR trace 不进入标准日志或导出。
+
+## 聚合、采样与本地告警
+
+所有领域共用一个进程内 `EventAggregator`，输入只能是已经通过隐私策略的 `SanitizedLogRecord`。聚合键由
+event、level、category、脱敏字段、error_code 和 reason 组成，不包含 trace_id、span_id、diag_id 或任何原始标识符。
+默认最多维护 256 个 LRU bucket、窗口 5 分钟；淘汰、窗口到期、App 进入后台和运行时关闭时生成有界
+`MetricSnapshot`，包含 count、first/last timestamp，以及存在 `elapsed_ms` 时的 min/max/average。
+
+仅 DEBUG 可做基于 `event + process_session_id` 的稳定采样，不使用目标包名等标识符。ERROR/FATAL 以及 Autofill
+结果交付事件始终保留。聚合快照回调带递归保护，Logger 自身指标不会再次进入聚合器。
+
+`LocalAlertPolicy` 只在本机观察脱敏后的失败记录，不发起网络传输。当前规则是 10 分钟内连续出现 3 次
+`DATABASE_SESSION_OPEN_FAILED` 时生成一个告警，并附带触发阈值时最新的 `diag_id`；同一窗口不重复告警，窗口过期
+后自动清除。
 
 ## 错误接入规范
 

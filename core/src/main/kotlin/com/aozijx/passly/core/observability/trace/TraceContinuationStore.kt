@@ -9,7 +9,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Process-local bridge for continuing a trace across callbacks that cannot carry coroutine context.
+ * Process-local owner for continuing a trace across callbacks that cannot carry coroutine context.
  * Keys are opaque routing identifiers and are never written to logs.
  */
 @Singleton

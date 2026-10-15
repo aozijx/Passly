@@ -14,17 +14,14 @@ import com.aozijx.passly.app.observability.CrashRecordCaptureSink
 import com.aozijx.passly.app.observability.DiagnosticsExportFileGateway
 import com.aozijx.passly.app.observability.ExportClock
 import com.aozijx.passly.app.observability.ExportContextProvider
-import com.aozijx.passly.app.observability.FrameworkLogger
 import com.aozijx.passly.app.observability.LogcatSink
-import com.aozijx.passly.app.observability.LoggerRuntime
-import com.aozijx.passly.app.observability.LoggerRuntimeGateway
+import com.aozijx.passly.app.observability.LocalAlertPolicy
 import com.aozijx.passly.app.observability.ObservabilityExportService
 import com.aozijx.passly.app.observability.ObservabilityRuntimeController
 import com.aozijx.passly.app.observability.PlatformCrashHandlerRegistry
 import com.aozijx.passly.app.observability.PreviousExitSource
 import com.aozijx.passly.app.observability.PreviousProcessExitReader
 import com.aozijx.passly.app.observability.ProcessTerminator
-import com.aozijx.passly.app.observability.RootTraceFrameworkLogger
 import com.aozijx.passly.app.observability.SharedPreferencesPreviousExitCursor
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.ProcessSessionId
@@ -33,6 +30,7 @@ import com.aozijx.passly.core.observability.internal.ObservabilityTimeSource
 import com.aozijx.passly.core.observability.internal.ProcessSessionProvider
 import com.aozijx.passly.core.observability.internal.SecureObservabilityIdGenerator
 import com.aozijx.passly.core.observability.internal.SecureSessionProvider
+import com.aozijx.passly.core.observability.metrics.EventAggregator
 import com.aozijx.passly.core.observability.privacy.ContractViolationBehavior
 import com.aozijx.passly.core.observability.privacy.PrivacyPolicy
 import com.aozijx.passly.core.observability.sink.LogRecordStore
@@ -64,6 +62,8 @@ internal object ObservabilityModule {
     fun provideLogger(
         store: LogRecordStore,
         crashCapture: CrashRecordCaptureSink,
+        eventAggregator: EventAggregator,
+        localAlertPolicy: LocalAlertPolicy,
     ): Logger {
         val idGenerator = SecureObservabilityIdGenerator()
         val processSessionId = ProcessSessionId(randomOpaqueId())
@@ -76,7 +76,7 @@ internal object ObservabilityModule {
                     ContractViolationBehavior.REJECT
                 },
             ),
-            sinks = listOf(crashCapture, LogcatSink(BuildConfig.DEBUG), store),
+            sinks = listOf(crashCapture, localAlertPolicy, LogcatSink(BuildConfig.DEBUG), store),
             lifecycleSinks = listOf(AndroidTraceSink()),
             idGenerator = idGenerator,
             timeSource = object : ObservabilityTimeSource {
@@ -85,18 +85,13 @@ internal object ObservabilityModule {
             },
             processSessionProvider = ProcessSessionProvider { processSessionId },
             secureSessionProvider = SecureSessionProvider { null },
+            aggregator = eventAggregator,
         )
     }
 
     @Provides
     @Singleton
-    fun provideFrameworkLogger(
-        logger: Logger,
-        crashCapture: CrashRecordCaptureSink,
-    ): FrameworkLogger = RootTraceFrameworkLogger(logger, crashCapture)
-
-    @Provides
-    fun provideLoggerRuntimeGateway(): LoggerRuntimeGateway = LoggerRuntime
+    fun provideEventAggregator(): EventAggregator = EventAggregator()
 
     @Provides
     fun provideCrashHandlerRegistry(): CrashHandlerRegistry = PlatformCrashHandlerRegistry

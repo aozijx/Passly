@@ -8,9 +8,9 @@ import android.os.Bundle
 import android.os.StrictMode
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.aozijx.passly.BuildConfig
-import com.aozijx.passly.app.observability.LoggerRuntime
 import com.aozijx.passly.app.observability.ObservabilityRuntimeController
 import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenance
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
@@ -47,6 +47,9 @@ class PasslyApplication : Application() {
     @Inject
     lateinit var deviceLockController: DeviceLockController
 
+    @Inject
+    lateinit var logger: Logger
+
     private val diagnosticsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
@@ -76,10 +79,11 @@ class PasslyApplication : Application() {
         try {
             System.loadLibrary("sqlcipher")
         } catch (e: UnsatisfiedLinkError) {
-            LoggerRuntime.log(
-                operation = Operations.ApplicationStartup,
-                statement = LogStatements.Application.nativeLibraryLoadFailed(e),
-            )
+            diagnosticsScope.launch {
+                logger.withRootTrace(Operations.ApplicationStartup) {
+                    logger.log(LogStatements.Application.nativeLibraryLoadFailed(e))
+                }
+            }
         }
 
         // 生命周期与全局交互监听

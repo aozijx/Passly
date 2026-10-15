@@ -2,9 +2,9 @@ package com.aozijx.passly.app
 
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import com.aozijx.passly.app.observability.LoggerRuntime
 import com.aozijx.passly.app.observability.ObservabilityRuntimeController
 import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -37,6 +37,7 @@ class AppLifecycleObserver @Inject constructor(
     private val observabilityRuntime: ObservabilityRuntimeController,
     private val idleTimeoutSettings: IdleTimeoutSettings,
     private val deviceLockController: DeviceLockController,
+    private val logger: Logger,
 ) : DefaultLifecycleObserver {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -54,10 +55,9 @@ class AppLifecycleObserver @Inject constructor(
                 val lockOnBackground = idleTimeoutSettings.isLockOnBackground.first()
                 val recoveryMode = secureSessionAccessState.isRecoveryMode()
                 if (!lockOnBackground && !recoveryMode) {
-                    LoggerRuntime.log(
-                        operation = Operations.ApplicationLifecycle,
-                        statement = LogStatements.Application.backgroundLockSkipped(),
-                    )
+                    logger.withRootTrace(Operations.ApplicationLifecycle) {
+                        logger.log(LogStatements.Application.backgroundLockSkipped())
+                    }
                 } else {
                     // 封存会话：排干租约 → 关闭数据库 → 同步认证状态
                     sessionLockController.lock(LockReason.BACKGROUND)
