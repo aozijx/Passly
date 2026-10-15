@@ -20,8 +20,8 @@ Throwable 转换为不含 message/path 的安全快照后，才能将不可变�
 每个子操作只创建 Span 并指向直接父 Span。跨系统回调只传递最长 10 分钟、默认单次消费、最多 128 个的 opaque
 `TraceToken`，且 token 与 `process_session_id` 绑定，进程或会话不匹配时立即失效。
 
-`DefaultLogger` 对每个事件只执行一次隐私策略，再把同一个不可变记录分发给所有 Sink。一次根 Trace 内首次可上报
-失败创建 `diag_id`，后续子 Span 复用；新根 Trace 创建新的 ID。Span 生命周期独立输出固定操作码、结果和单调时钟
+`DefaultLogger` 对每个事件只执行一次隐私策略，再把同一个不可变记录分发给所有 Sink。`trace_id` 是一次操作唯一的
+关联标识，子 Span 只继承该 Trace，不再为失败生成第二套诊断标识。Span 生命周期独立输出固定操作码、结果和单调时钟
 耗时，平台 Trace 或日志 Sink 的异常不会改变业务控制流；业务异常和取消仍按原实例向上传播。
 
 ## 当前分层
@@ -83,7 +83,7 @@ Storage Access Framework 的 `CreateDocument(text/plain)` 让用户选择目标 
 manifest 固定顺序为：记录类型、格式版本、生成时间、记录数、App 名称、版本名、版本号、厂商、型号、SDK、系统版本、
 语言列表、时区。Autofill 等功能模块的状态由模块自身通过事件记录，不进入通用 manifest。事件固定顺序为：记录类型、
 格式版本、event id、时间戳、单调时钟、级别、分类、事件名、进程会话、安全会话、trace、span、parent span、按字段名排序
-后的字段值、错误码、原因、诊断值、异常类型、应用栈、cause 类型、外部栈计数。字段名本身不写入文本。
+后的字段值、错误码、原因、异常类型、应用栈、cause 类型、外部栈计数。字段名本身不写入文本。
 
 业务代码禁止直接 `printStackTrace` 或使用 `android.util.Log`；Android 系统日志统一由 `LogcatSink.kt` 输出。
 
@@ -94,7 +94,7 @@ Android Studio 和系统
 时间线中的即时诊断，不替代加密持久化日志。事件必须先完成字段校验、异常快照和脱敏，再按 Android 原生
 DEBUG/INFO/WARN/ERROR 优先级输出；业务层不得直接打印异常或敏感字段。
 
-Logger 使用有限稳定 Tag 和有界单行摘要，并与加密记录共享 `event_id/trace_id/diag_id`。根据 Android 官方
+Logger 使用有限稳定 Tag 和有界单行摘要，并与加密记录共享 `event_id/trace_id/span_id`。根据 Android 官方
 关于 Log 信息泄露的建议，Release 默认完全关闭 Logcat Sink；显式诊断窗口只启用内部加密日志，不提升 Logcat。
 Debug Sink 在格式化前使用 `Log.isLoggable`，且永远不把原始 Throwable 交给 Android Log API。
 
@@ -105,7 +105,7 @@ ANR trace 不进入标准日志或导出。
 ## 聚合、采样与本地告警
 
 所有领域共用一个进程内 `EventAggregator`，输入只能是已经通过隐私策略的 `SanitizedLogRecord`。聚合键由
-event、level、category、脱敏字段、error_code 和 reason 组成，不包含 trace_id、span_id、diag_id 或任何原始标识符。
+event、level、category、脱敏字段、error_code 和 reason 组成，不包含 trace_id、span_id 或任何原始标识符。
 默认最多维护 256 个 LRU bucket、窗口 5 分钟；淘汰、窗口到期、App 进入后台和运行时关闭时生成有界
 `MetricSnapshot`，包含 count、first/last timestamp，以及存在 `elapsed_ms` 时的 min/max/average。
 
@@ -113,7 +113,7 @@ event、level、category、脱敏字段、error_code 和 reason 组成，不包�
 结果交付事件始终保留。聚合快照回调带递归保护，Logger 自身指标不会再次进入聚合器。
 
 `LocalAlertPolicy` 只在本机观察脱敏后的失败记录，不发起网络传输。当前规则是 10 分钟内连续出现 3 次
-`DATABASE_SESSION_OPEN_FAILED` 时生成一个告警，并附带触发阈值时最新的 `diag_id`；同一窗口不重复告警，窗口过期
+`DATABASE_SESSION_OPEN_FAILED` 时生成一个告警，并附带触发阈值时最新的 `trace_id`；同一窗口不重复告警，窗口过期
 后自动清除。
 
 ## 错误接入规范
@@ -139,7 +139,7 @@ data class ErrorReportContext(
 ```
 
 Reporter 属于 observability 层，不属 error 层。在 repository / use case 协程边界统一调用一次，避免重复记录。
-旧 `AppError.errorId` 只用于进程内有界去重，不转换为 Trace、诊断值或导出字段。
+旧 `AppError.errorId` 只用于进程内有界去重，不转换为 Trace 或导出字段。
 
 ### 白名单字段
 

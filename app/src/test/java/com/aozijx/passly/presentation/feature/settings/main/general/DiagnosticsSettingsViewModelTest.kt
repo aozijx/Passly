@@ -7,7 +7,6 @@ import com.aozijx.passly.domain.access.model.AuthorizationResult
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.core.observability.DiagnosticId
 import com.aozijx.passly.core.observability.ErrorCode
 import com.aozijx.passly.core.observability.EventKey
 import com.aozijx.passly.core.observability.LogFields
@@ -123,7 +122,7 @@ class DiagnosticsSettingsViewModelTest {
             errorCode: ErrorCode,
             reason: ReasonCode,
             fields: LogFields,
-        ): DiagnosticId = error("Logger is not used")
+        ) = error("Logger is not used")
 
         override fun warn(
             event: EventKey,
@@ -131,7 +130,7 @@ class DiagnosticsSettingsViewModelTest {
             reason: ReasonCode,
             throwable: Throwable,
             fields: LogFields,
-        ): DiagnosticId = error("Logger is not used")
+        ) = error("Logger is not used")
 
         override fun error(
             event: EventKey,
@@ -139,7 +138,7 @@ class DiagnosticsSettingsViewModelTest {
             reason: ReasonCode,
             throwable: Throwable,
             fields: LogFields,
-        ): DiagnosticId = error("Logger is not used")
+        ) = error("Logger is not used")
 
         override fun fatal(
             event: EventKey,
@@ -147,7 +146,7 @@ class DiagnosticsSettingsViewModelTest {
             reason: ReasonCode,
             throwable: Throwable,
             fields: LogFields,
-        ): DiagnosticId = error("Logger is not used")
+        ) = error("Logger is not used")
 
         override suspend fun <T> withRootTrace(
             operation: OperationCode,

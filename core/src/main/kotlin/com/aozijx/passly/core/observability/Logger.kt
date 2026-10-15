@@ -14,7 +14,7 @@ interface TraceScope {
 }
 
 interface Logger {
-    fun log(statement: LogStatement): DiagnosticId? = statement.writeTo(this)
+    fun log(statement: LogStatement) = statement.writeTo(this)
 
     fun debug(event: EventKey, fields: LogFields = LogFields.Empty)
     fun info(event: EventKey, fields: LogFields = LogFields.Empty)
@@ -24,7 +24,7 @@ interface Logger {
         errorCode: ErrorCode,
         reason: ReasonCode,
         fields: LogFields = LogFields.Empty,
-    ): DiagnosticId
+    )
 
     fun warn(
         event: EventKey,
@@ -32,7 +32,7 @@ interface Logger {
         reason: ReasonCode,
         throwable: Throwable,
         fields: LogFields = LogFields.Empty,
-    ): DiagnosticId
+    )
 
     fun error(
         event: EventKey,
@@ -40,7 +40,7 @@ interface Logger {
         reason: ReasonCode,
         throwable: Throwable,
         fields: LogFields = LogFields.Empty,
-    ): DiagnosticId
+    )
 
     fun fatal(
         event: EventKey,
@@ -48,7 +48,7 @@ interface Logger {
         reason: ReasonCode,
         throwable: Throwable,
         fields: LogFields = LogFields.Empty,
-    ): DiagnosticId
+    )
 
     suspend fun <T> withRootTrace(
         operation: OperationCode,

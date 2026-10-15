@@ -43,7 +43,6 @@ internal class LogRecordTextEncoder @Inject constructor() {
         record.fields.values.toSortedMap(compareBy { it.value }).values.joinToString(";") { it.asText() },
         record.error?.errorCode?.value,
         record.error?.reason?.value,
-        record.error?.diagnosticId?.value,
         record.error?.exception?.type?.value,
         record.error?.exception?.appStackFrames?.joinToString(";") { it.value },
         record.error?.exception?.causeTypes?.joinToString(";") { it.value },

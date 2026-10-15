@@ -1,6 +1,5 @@
 package com.aozijx.passly.core.observability.internal
 
-import com.aozijx.passly.core.observability.DiagnosticId
 import com.aozijx.passly.core.observability.ErrorCodes
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.Events
@@ -19,7 +18,6 @@ import com.aozijx.passly.core.observability.privacy.PrivacyPolicy
 import com.aozijx.passly.core.observability.sink.LogSink
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
 
@@ -46,24 +44,21 @@ class DefaultLoggerTest {
     }
 
     @Test
-    fun `each reportable failure creates one diagnostic id reused by child events`() = runTest {
+    fun `child failures share the operation trace without a second correlation identifier`() = runTest {
         val records = mutableListOf<SanitizedLogRecord>()
         val logger = logger(
             PrivacyPolicy(IdentifierHasher { _, _ -> null }, ContractViolationBehavior.REJECT),
             listOf(LogSink(records::add)),
         )
-        var rootDiagnosticId: DiagnosticId? = null
-        var childDiagnosticId: DiagnosticId? = null
-
         logger.withRootTrace(Operations.AutofillLegacyRequest) {
-            rootDiagnosticId = logger.error(
+            logger.error(
                 Events.Autofill.ResultDeliveryFailed,
                 ErrorCodes.AutofillResultDeliveryFailed,
                 Reasons.PlatformCallbackFailed,
                 IllegalStateException("first"),
             )
             logger.inSpan(Operations.AutofillSessionClose) {
-                childDiagnosticId = logger.warn(
+                logger.warn(
                     Events.Autofill.SessionCloseFailed,
                     ErrorCodes.AutofillSessionCloseFailed,
                     Reasons.SessionCloseFailed,
@@ -72,19 +67,9 @@ class DefaultLoggerTest {
             }
         }
 
-        assertEquals(rootDiagnosticId, childDiagnosticId)
-        assertEquals(listOf(rootDiagnosticId, rootDiagnosticId), records.map { it.error?.diagnosticId })
-
-        var separateFailureId: DiagnosticId? = null
-        logger.withRootTrace(Operations.AutofillCredentialRequest) {
-            separateFailureId = logger.error(
-                Events.Autofill.ResultDeliveryFailed,
-                ErrorCodes.AutofillResultDeliveryFailed,
-                Reasons.PlatformCallbackFailed,
-                IllegalStateException("third"),
-            )
-        }
-        assertNotEquals(rootDiagnosticId, separateFailureId)
+        assertEquals(1, records.map { it.trace.traceId }.distinct().size)
+        assertEquals(records.first().trace.traceId, records.last().trace.traceId)
+        assertEquals(records.first().trace.spanId, records.last().trace.parentSpanId)
     }
 
     @Test
@@ -176,10 +161,6 @@ class DefaultLoggerTest {
         override fun eventId() = EventId(id("event"))
         override fun traceId() = TraceId(id("trace"))
         override fun spanId() = SpanId(id("span"))
-        override fun diagnosticId(): DiagnosticId {
-            val seed = ++next
-            return DiagnosticId.fromEntropy(ByteArray(8) { index -> (seed + index).toByte() })
-        }
     }
 
     private enum class TestState { LOCKED, OPEN, SOFT, APP, BIOMETRIC, REJECTED }

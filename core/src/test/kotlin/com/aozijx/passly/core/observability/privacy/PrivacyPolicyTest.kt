@@ -1,6 +1,5 @@
 package com.aozijx.passly.core.observability.privacy
 
-import com.aozijx.passly.core.observability.DiagnosticId
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.EventKey
 import com.aozijx.passly.core.observability.Events
@@ -209,7 +208,6 @@ class PrivacyPolicyTest {
                     errorCode = ErrorCodes.AutofillResultDeliveryFailed,
                     reason = Reasons.PlatformCallbackFailed,
                     throwable = IllegalStateException(secret),
-                    diagnosticId = DiagnosticId.fromEntropy(byteArrayOf(1, 2, 3, 4, 5, 6, 7)),
                 ),
             ),
             context(),
@@ -233,7 +231,6 @@ class PrivacyPolicyTest {
                 errorCode = ErrorCodes.AutofillResultDeliveryFailed,
                 reason = Reasons.PlatformCallbackFailed,
                 throwable = IllegalStateException(throwableSecret),
-                diagnosticId = DiagnosticId.fromEntropy(byteArrayOf(1, 2, 3, 4, 5, 6, 7)),
             ),
         )
 

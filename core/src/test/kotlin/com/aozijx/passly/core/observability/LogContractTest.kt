@@ -5,7 +5,6 @@ import java.lang.reflect.Modifier
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LogContractTest {
@@ -54,24 +53,14 @@ class LogContractTest {
     @Test
     fun `warn and error require code reason and throwable at the API boundary`() {
         val warnContract:
-            Logger.(EventKey, ErrorCode, ReasonCode, Throwable, LogFields) -> DiagnosticId =
+            Logger.(EventKey, ErrorCode, ReasonCode, Throwable, LogFields) -> Unit =
             Logger::warn
         val errorContract:
-            Logger.(EventKey, ErrorCode, ReasonCode, Throwable, LogFields) -> DiagnosticId =
+            Logger.(EventKey, ErrorCode, ReasonCode, Throwable, LogFields) -> Unit =
             Logger::error
 
         assertFalse(warnContract == errorContract)
         assertEquals(SanitizedLogRecord::class.java, LogSink::class.java.methods.single().parameterTypes.single())
-    }
-
-    @Test
-    fun `diagnostic id display form contains no time device or error data`() {
-        val diagnosticId = DiagnosticId.fromEntropy(byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8))
-
-        assertTrue(diagnosticId.value.matches(Regex("DGN-[A-Z2-9]{4}-[A-Z2-9]{4}")))
-        assertFalse(diagnosticId.value.contains("2026"))
-        assertFalse(diagnosticId.value.contains("PIXEL"))
-        assertFalse(diagnosticId.value.contains("AUTOFILL"))
     }
 
     @Test

@@ -1,6 +1,5 @@
 package com.aozijx.passly.core.observability.trace
 
-import com.aozijx.passly.core.observability.DiagnosticId
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.ProcessSessionId
@@ -275,8 +274,6 @@ class TracePropagationTest {
         override fun eventId() = EventId(id("event"))
         override fun traceId() = TraceId(id("trace"))
         override fun spanId() = SpanId(id("span"))
-        override fun diagnosticId() =
-            DiagnosticId.fromEntropy(ByteArray(8) { index -> (index + next++).toByte() })
     }
 
     private class RecordingTraceLifecycleSink : TraceLifecycleSink {

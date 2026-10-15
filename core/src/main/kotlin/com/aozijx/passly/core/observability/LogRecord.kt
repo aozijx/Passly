@@ -18,25 +18,6 @@ value class EventId(val value: String) {
 }
 
 @JvmInline
-value class DiagnosticId(val value: String) {
-    init {
-        require(value.matches(Regex("^DGN-[A-Z2-9]{4}-[A-Z2-9]{4}$"))) { "Invalid diagnostic id" }
-    }
-
-    companion object {
-        private const val ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-
-        fun fromEntropy(entropy: ByteArray): DiagnosticId {
-            require(entropy.size >= 7) { "Diagnostic id requires at least 7 bytes" }
-            val body = CharArray(7) { index -> ALPHABET[entropy[index].toInt() and 31] }
-            val checksum = ALPHABET[body.fold(0) { value, char -> value + char.code } and 31]
-            val encoded = String(body) + checksum
-            return DiagnosticId("DGN-${encoded.take(4)}-${encoded.drop(4)}")
-        }
-    }
-}
-
-@JvmInline
 value class TraceId(val value: String) {
     init {
         require(value.matches(OPAQUE_ID_PATTERN)) { "Invalid trace id" }
@@ -105,17 +86,15 @@ data class PendingError(
     val errorCode: ErrorCode,
     val reason: ReasonCode,
     val throwable: Throwable?,
-    val diagnosticId: DiagnosticId,
 ) {
     override fun toString(): String =
         "PendingError(errorCode=$errorCode, reason=$reason, " +
-            "throwableType=${throwable?.javaClass?.simpleName}, diagnosticId=$diagnosticId)"
+            "throwableType=${throwable?.javaClass?.simpleName})"
 }
 
 data class ErrorPayload(
     val errorCode: ErrorCode,
     val reason: ReasonCode,
-    val diagnosticId: DiagnosticId,
     val exception: ExceptionSnapshot?,
 )
 

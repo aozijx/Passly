@@ -1,6 +1,5 @@
 package com.aozijx.passly.app.observability
 
-import com.aozijx.passly.core.observability.DiagnosticId
 import com.aozijx.passly.core.observability.ErrorCodes
 import com.aozijx.passly.core.observability.ErrorPayload
 import com.aozijx.passly.core.observability.EventId
@@ -118,7 +117,6 @@ class LogcatSinkTest {
             ErrorPayload(
                 errorCode = ErrorCodes.AutofillResultDeliveryFailed,
                 reason = Reasons.PlatformCallbackFailed,
-                diagnosticId = DiagnosticId("DGN-BCDE-FGHI"),
                 exception = ExceptionSnapshot(
                     type = ExceptionType("IllegalStateException"),
                     appStackFrames = emptyList(),

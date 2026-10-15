@@ -1,6 +1,5 @@
 package com.aozijx.passly.core.observability.internal
 
-import com.aozijx.passly.core.observability.DiagnosticId
 import com.aozijx.passly.core.observability.ErrorCode
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.EventKey
@@ -52,7 +51,6 @@ interface ObservabilityIdGenerator {
     fun eventId(): EventId
     fun traceId(): TraceId
     fun spanId(): SpanId
-    fun diagnosticId(): DiagnosticId
 }
 
 class SecureObservabilityIdGenerator(
@@ -61,9 +59,6 @@ class SecureObservabilityIdGenerator(
     override fun eventId(): EventId = EventId(randomOpaqueId())
     override fun traceId(): TraceId = TraceId(randomOpaqueId())
     override fun spanId(): SpanId = SpanId(randomOpaqueId(8))
-    override fun diagnosticId(): DiagnosticId =
-        DiagnosticId.fromEntropy(ByteArray(8).also(secureRandom::nextBytes))
-
     private fun randomOpaqueId(byteCount: Int = 16): String =
         Base64.getUrlEncoder().withoutPadding()
             .encodeToString(ByteArray(byteCount).also(secureRandom::nextBytes))
@@ -93,7 +88,7 @@ class DefaultLogger(
         errorCode: ErrorCode,
         reason: ReasonCode,
         fields: LogFields,
-    ): DiagnosticId = emitFailure(LogLevel.WARN, event, errorCode, reason, null, fields)
+    ) = emitFailure(LogLevel.WARN, event, errorCode, reason, null, fields)
 
     override fun warn(
         event: EventKey,
@@ -101,7 +96,7 @@ class DefaultLogger(
         reason: ReasonCode,
         throwable: Throwable,
         fields: LogFields,
-    ): DiagnosticId = emitFailure(LogLevel.WARN, event, errorCode, reason, throwable, fields)
+    ) = emitFailure(LogLevel.WARN, event, errorCode, reason, throwable, fields)
 
     override fun error(
         event: EventKey,
@@ -109,7 +104,7 @@ class DefaultLogger(
         reason: ReasonCode,
         throwable: Throwable,
         fields: LogFields,
-    ): DiagnosticId = emitFailure(LogLevel.ERROR, event, errorCode, reason, throwable, fields)
+    ) = emitFailure(LogLevel.ERROR, event, errorCode, reason, throwable, fields)
 
     override fun fatal(
         event: EventKey,
@@ -117,7 +112,7 @@ class DefaultLogger(
         reason: ReasonCode,
         throwable: Throwable,
         fields: LogFields,
-    ): DiagnosticId = emitFailure(LogLevel.FATAL, event, errorCode, reason, throwable, fields)
+    ) = emitFailure(LogLevel.FATAL, event, errorCode, reason, throwable, fields)
 
     override suspend fun <T> withRootTrace(
         operation: OperationCode,
@@ -192,19 +187,17 @@ class DefaultLogger(
         reason: ReasonCode,
         throwable: Throwable?,
         fields: LogFields,
-    ): DiagnosticId {
+    ) {
         val traceContext = requireTraceContext()
-        val diagnosticId = traceContext.failureDiagnosticId.getOrCreate(idGenerator::diagnosticId)
         emit(
             PendingLogEvent(
                 level = level,
                 event = event,
                 fields = fields,
-                error = PendingError(errorCode, reason, throwable, diagnosticId),
+                error = PendingError(errorCode, reason, throwable),
             ),
             traceContext,
         )
-        return diagnosticId
     }
 
     private fun emit(event: PendingLogEvent) {

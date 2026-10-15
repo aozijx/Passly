@@ -125,7 +125,6 @@ class PrivacyPolicy(
             ErrorPayload(
                 errorCode = it.errorCode,
                 reason = it.reason,
-                diagnosticId = it.diagnosticId,
                 exception = it.throwable?.let(exceptionSnapshotFactory::create),
             )
         }

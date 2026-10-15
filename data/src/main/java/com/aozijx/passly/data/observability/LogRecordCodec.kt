@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.observability
 
 import com.aozijx.passly.core.observability.AppStackFrame
-import com.aozijx.passly.core.observability.DiagnosticId
 import com.aozijx.passly.core.observability.EnumName
 import com.aozijx.passly.core.observability.ErrorCode
 import com.aozijx.passly.core.observability.ErrorPayload
@@ -34,7 +33,7 @@ import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
 
 object LogRecordCodec {
-    private const val SCHEMA_VERSION = 1
+    private const val SCHEMA_VERSION = 2
     private const val MAX_STRING_BYTES = 4096
     private const val MAX_FIELDS = 64
     private const val MAX_FRAMES = 24
@@ -170,7 +169,6 @@ object LogRecordCodec {
     private fun DataOutputStream.writeError(error: ErrorPayload) {
         writeString(error.errorCode.value, 64)
         writeString(error.reason.value, 64)
-        writeString(error.diagnosticId.value, 13)
         writeBoolean(error.exception != null)
         error.exception?.let { snapshot ->
             writeString(snapshot.type.value, 64)
@@ -185,7 +183,6 @@ object LogRecordCodec {
     private fun DataInputStream.readError(): ErrorPayload {
         val code = ErrorCode(readString(64))
         val reason = ReasonCode(readString(64))
-        val diagnosticId = DiagnosticId(readString(13))
         val exception = if (readStrictBoolean()) {
             val type = ExceptionType(readString(64))
             val frameCount = readUnsignedShort().also { require(it <= MAX_FRAMES) }
@@ -195,7 +192,7 @@ object LogRecordCodec {
             val foreignCount = readInt().also { require(it >= 0) }
             ExceptionSnapshot(type, frames, causes, foreignCount)
         } else null
-        return ErrorPayload(code, reason, diagnosticId, exception)
+        return ErrorPayload(code, reason, exception)
     }
 
     private fun DataOutputStream.writeString(value: String, maxBytes: Int) {

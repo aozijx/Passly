@@ -1,6 +1,5 @@
 package com.aozijx.passly.data.local.database.session
 
-import com.aozijx.passly.core.observability.DiagnosticId
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.LogFieldKeys
@@ -125,6 +124,5 @@ class AppDatabaseSessionObservabilityTest {
         override fun eventId() = EventId(value("event"))
         override fun traceId() = TraceId(value("trace"))
         override fun spanId() = SpanId(value("span"))
-        override fun diagnosticId() = DiagnosticId.fromEntropy(ByteArray(8) { (++next + it).toByte() })
     }
 }

@@ -6,10 +6,10 @@ import org.junit.Test
 
 class EventAggregatorTest {
     @Test
-    fun `safe dimensions aggregate while trace and diagnostic ids do not split buckets`() {
+    fun `safe dimensions aggregate while trace ids do not split buckets`() {
         val aggregator = EventAggregator(capacity = 8, debugSamplePercent = 100)
-        aggregator.record(record(timestamp = 10, trace = "trace_aaaaaaaa", diag = "DGN-AAAA-AAAA"))
-        aggregator.record(record(timestamp = 20, trace = "trace_bbbbbbbb", diag = "DGN-BBBB-BBBB"))
+        aggregator.record(record(timestamp = 10, trace = "trace_aaaaaaaa", failure = true))
+        aggregator.record(record(timestamp = 20, trace = "trace_bbbbbbbb", failure = true))
 
         val metric = aggregator.flush().single()
         assertEquals(2L, metric.count)
@@ -65,7 +65,7 @@ class EventAggregatorTest {
         event: EventKey = Events.Application.BackgroundLockSkipped,
         timestamp: Long = 10,
         trace: String = "trace_12345678",
-        diag: String? = null,
+        failure: Boolean = false,
     ) = SanitizedLogRecord(
         eventId = EventId("event_${timestamp}_value"),
         timestampMs = timestamp,
@@ -77,13 +77,12 @@ class EventAggregatorTest {
         secureSessionId = null,
         trace = TraceSnapshot(TraceId(trace), SpanId("span_123456789"), null),
         fields = fields { durationMs(LogFieldKeys.ElapsedMs, 7) },
-        error = diag?.let {
+        error = if (failure) {
             ErrorPayload(
                 ErrorCodes.DatabaseSessionOpenFailed,
                 Reasons.SessionOpenFailed,
-                DiagnosticId(it),
                 null,
             )
-        },
+        } else null,
     )
 }

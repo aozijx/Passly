@@ -4,7 +4,6 @@ import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.ErrorCode
 import com.aozijx.passly.core.observability.ErrorPayload
 import com.aozijx.passly.core.observability.Events
-import com.aozijx.passly.core.observability.DiagnosticId
 import com.aozijx.passly.core.observability.ExceptionSnapshot
 import com.aozijx.passly.core.observability.ExceptionType
 import com.aozijx.passly.core.observability.LogCategory
@@ -75,9 +74,8 @@ class ObservabilityExportServiceTest {
             lines.drop(1).map { it[2] },
         )
         assertEquals(listOf("100", "200"), lines.drop(1).map { it[3] })
-        assertTrue(lines.drop(1).all { it.size == 21 })
+        assertTrue(lines.drop(1).all { it.size == 20 })
         assertFalse(files.sharedText!!.contains("timestamp_ms"))
-        assertFalse(files.sharedText!!.contains("diag_id"))
         assertTrue(files.deleteScheduled)
         assertFalse(files.target!!.exists())
     }
@@ -119,7 +117,6 @@ class ObservabilityExportServiceTest {
                 error = ErrorPayload(
                     errorCode = ErrorCode("AUTOFILL_RESULT_DELIVERY_FAILED"),
                     reason = ReasonCode("PLATFORM_CALLBACK_FAILED"),
-                    diagnosticId = DiagnosticId("DGN-ABCD-EFGH"),
                     exception = ExceptionSnapshot(
                         type = ExceptionType("IllegalStateException"),
                         appStackFrames = emptyList(),
@@ -131,16 +128,14 @@ class ObservabilityExportServiceTest {
         )
 
         val columns = encoded.split('\t')
-        assertEquals(21, columns.size)
+        assertEquals(20, columns.size)
         assertEquals("300", columns[3])
         assertEquals("2", columns[13])
         assertEquals("AUTOFILL_RESULT_DELIVERY_FAILED", columns[14])
         assertEquals("PLATFORM_CALLBACK_FAILED", columns[15])
-        assertEquals("DGN-ABCD-EFGH", columns[16])
-        assertEquals("IllegalStateException", columns[17])
-        assertEquals("4", columns[20])
+        assertEquals("IllegalStateException", columns[16])
+        assertEquals("4", columns[19])
         assertFalse(encoded.contains("timestamp_ms"))
-        assertFalse(encoded.contains("diag_id"))
     }
 
     @Test

@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.observability
 
 import com.aozijx.passly.core.observability.EventId
-import com.aozijx.passly.core.observability.DiagnosticId
 import com.aozijx.passly.core.observability.ErrorCode
 import com.aozijx.passly.core.observability.ErrorPayload
 import com.aozijx.passly.core.observability.Events
@@ -253,7 +252,6 @@ class EncryptedLogRecordStoreTest {
         error = ErrorPayload(
             errorCode = ErrorCode("AUTOFILL_RESULT_DELIVERY_FAILED"),
             reason = ReasonCode("PLATFORM_CALLBACK_FAILED"),
-            diagnosticId = DiagnosticId("DGN-ABCD-EFGH"),
             exception = ExceptionSnapshot(
                 type = ExceptionType("IllegalStateException"),
                 appStackFrames = emptyList(),

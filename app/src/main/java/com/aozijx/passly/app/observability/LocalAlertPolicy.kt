@@ -1,9 +1,9 @@
 package com.aozijx.passly.app.observability
 
-import com.aozijx.passly.core.observability.DiagnosticId
 import com.aozijx.passly.core.observability.ErrorCode
 import com.aozijx.passly.core.observability.ErrorCodes
 import com.aozijx.passly.core.observability.SanitizedLogRecord
+import com.aozijx.passly.core.observability.TraceId
 import com.aozijx.passly.core.observability.sink.LogSink
 import java.util.ArrayDeque
 import javax.inject.Inject
@@ -11,7 +11,7 @@ import javax.inject.Singleton
 
 data class LocalDiagnosticAlert(
     val errorCode: ErrorCode,
-    val diagnosticId: DiagnosticId,
+    val traceId: TraceId,
     val createdAtMs: Long,
 )
 
@@ -29,10 +29,10 @@ class LocalAlertPolicy @Inject constructor() : LogSink {
         expire(record.timestampMs)
         val error = record.error ?: return null
         if (error.errorCode != ErrorCodes.DatabaseSessionOpenFailed) return null
-        databaseOpenFailures.addLast(Failure(record.timestampMs, error.diagnosticId))
+        databaseOpenFailures.addLast(Failure(record.timestampMs))
         prune(record.timestampMs)
         if (alert == null && databaseOpenFailures.size >= ALERT_THRESHOLD) {
-            alert = LocalDiagnosticAlert(error.errorCode, error.diagnosticId, record.timestampMs)
+            alert = LocalDiagnosticAlert(error.errorCode, record.trace.traceId, record.timestampMs)
             return alert
         }
         return null
@@ -58,7 +58,7 @@ class LocalAlertPolicy @Inject constructor() : LogSink {
         }
     }
 
-    private data class Failure(val timestampMs: Long, val diagnosticId: DiagnosticId)
+    private data class Failure(val timestampMs: Long)
 
     private companion object {
         const val ALERT_THRESHOLD = 3

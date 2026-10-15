@@ -48,7 +48,6 @@ class TraceTokenRegistry(
             spanId = context.spanId,
             parentSpanId = context.parentSpanId,
             operation = context.operation,
-            failureDiagnosticId = context.failureDiagnosticId,
             processSessionId = processSessionId,
             expiresAtMs = nowMs() + ttlMs,
             singleUse = singleUse,
@@ -70,7 +69,6 @@ class TraceTokenRegistry(
             spanId = entry.spanId,
             parentSpanId = entry.parentSpanId,
             operation = entry.operation,
-            failureDiagnosticId = entry.failureDiagnosticId,
         )
     }
 
@@ -84,7 +82,6 @@ class TraceTokenRegistry(
         val spanId: SpanId,
         val parentSpanId: SpanId?,
         val operation: OperationCode,
-        val failureDiagnosticId: FailureDiagnosticId,
         val processSessionId: ProcessSessionId,
         val expiresAtMs: Long,
         val singleUse: Boolean,

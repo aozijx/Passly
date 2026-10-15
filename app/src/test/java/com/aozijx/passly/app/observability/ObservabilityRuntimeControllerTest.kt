@@ -126,8 +126,6 @@ class ObservabilityRuntimeControllerTest {
         override fun eventId() = EventId(id("event"))
         override fun traceId() = TraceId(id("trace"))
         override fun spanId() = SpanId(id("span"))
-        override fun diagnosticId() =
-            DiagnosticId.fromEntropy(ByteArray(8) { index -> (index + ++next).toByte() })
     }
 
     private class RecordingCrashHandlerRegistry(

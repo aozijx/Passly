@@ -76,7 +76,6 @@ private object SafeLogcatRecordFormatter : LogcatRecordFormatter {
         record.error?.let { error ->
             append(" error_code=").append(error.errorCode.value)
             append(" reason=").append(error.reason.value)
-            append(" diag_id=").append(error.diagnosticId.value)
             error.exception?.let { exception ->
                 append(" exception_type=").append(exception.type.value)
                 append(" app_stack=").append(exception.appStackFrames.joinToString(",") { it.value })

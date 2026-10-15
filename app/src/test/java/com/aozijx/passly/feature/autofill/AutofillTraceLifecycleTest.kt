@@ -1,7 +1,6 @@
 package com.aozijx.passly.feature.autofill
 
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.core.observability.DiagnosticId
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.Operations
@@ -231,8 +230,6 @@ class AutofillTraceLifecycleTest {
         override fun eventId() = EventId(id("event"))
         override fun traceId() = TraceId(id("trace"))
         override fun spanId() = SpanId(id("span"))
-        override fun diagnosticId() =
-            DiagnosticId.fromEntropy(ByteArray(8) { index -> (index + ++next).toByte() })
     }
 
     private class RecordingLockController : SessionLockController {

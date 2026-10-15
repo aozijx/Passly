@@ -53,6 +53,8 @@ Android API 依据：[Log](https://developer.android.com/reference/android/util/
   写日志或替换原始崩溃。
 - codec 只接受 `SanitizedLogRecord`，并重新校验事件目录、category、level/error 契约、严格 UTF-8、长度、
   枚举、trace/error 结构和尾随字节。未 HMAC 的标识符无法构造为可持久化字段。
+- 私有 record codec 当前 schema 为 2；它删除了旧失败诊断标识，旧 schema 记录会被明确拒绝，不提供兼容读取器。
+  错误通过同一操作的 `trace_id` 关联，语义由 `error_code + reason + exception snapshot` 表达。
 
 ## 运行时与导出边界
 

@@ -12,7 +12,7 @@ import org.junit.Test
 
 class ObservabilityAppErrorReporterTest {
     @Test
-    fun `old error id is not reused and duplicate boundary reports collapse`() = runTest {
+    fun `domain error id is not exposed and duplicate boundary reports collapse`() = runTest {
         val records = mutableListOf<SanitizedLogRecord>()
         val reporter = ObservabilityAppErrorReporter(logger(records))
         val error = DatabaseInitFailed(errorId = "018f-stable-error-id")
@@ -22,7 +22,7 @@ class ObservabilityAppErrorReporterTest {
         reporter.report(error, context)
 
         val record = records.single()
-        assertNotNull(record.error?.diagnosticId)
+        assertNotNull(record.error)
         assertNotEquals(error.errorId, record.trace.traceId.value)
         assertFalse(record.toString().contains(error.errorId))
     }
@@ -37,7 +37,6 @@ class ObservabilityAppErrorReporterTest {
             override fun eventId() = EventId(id("event"))
             override fun traceId() = TraceId(id("trace"))
             override fun spanId() = SpanId(id("span"))
-            override fun diagnosticId() = DiagnosticId.fromEntropy(ByteArray(8) { 1 })
         },
         timeSource = object : ObservabilityTimeSource {
             override fun wallTimeMs() = 1L

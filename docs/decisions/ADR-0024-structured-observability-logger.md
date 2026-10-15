@@ -8,6 +8,9 @@ Passly 使用自研 `core/observability` Logger 作为唯一生产日志入口�
 和 `LogStatements` 类型化目录记录事件；不提供静态 Runtime、兼容桥或第二套 Autofill 日志系统。Legacy Autofill
 与 Credential Manager 保留各自的平台结果对象，只共享底层日志契约。
 
+一次操作只使用 `trace_id` 关联所有子事件。失败不再创建、传播或持久化第二套 diagnostic id；`error_code`、
+`reason` 和安全异常快照表达失败语义。删除该字段后私有 record codec 直接升级并拒绝旧 schema，不提供迁移读取器。
+
 所有记录先通过字段白名单、异常安全快照和本机 Keystore HMAC，再进入聚合器和 Sink。Debug 构建可输出到 Android
 Logcat；Release 不输出 Logcat。`LogcatSink.kt` 是唯一允许直接导入 `android.util.Log` 的生产文件。Perfetto 只接收
 受控操作名，不接收业务值。

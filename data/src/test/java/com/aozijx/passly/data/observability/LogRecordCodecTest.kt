@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.observability
 
 import com.aozijx.passly.core.observability.AppStackFrame
-import com.aozijx.passly.core.observability.DiagnosticId
 import com.aozijx.passly.core.observability.EnumName
 import com.aozijx.passly.core.observability.ErrorCode
 import com.aozijx.passly.core.observability.ErrorPayload
@@ -23,7 +22,9 @@ import com.aozijx.passly.core.observability.SecureSessionId
 import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
 import com.aozijx.passly.core.observability.TraceSnapshot
+import java.nio.ByteBuffer
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
@@ -31,8 +32,10 @@ class LogRecordCodecTest {
     @Test
     fun `round trip preserves all safe values trace hierarchy and error snapshot`() {
         val record = sampleRecord()
+        val encoded = LogRecordCodec.encode(record)
 
-        assertEquals(record, LogRecordCodec.decode(LogRecordCodec.encode(record)))
+        assertEquals(record, LogRecordCodec.decode(encoded))
+        assertFalse(encoded.decodeToString().contains("DGN-"))
     }
 
     @Test
@@ -52,6 +55,17 @@ class LogRecordCodecTest {
         val malformed = encoded.copyOf().also { it[eventOffset] = 0xC3.toByte() }
         assertThrows(Exception::class.java) {
             LogRecordCodec.decode(malformed)
+        }
+    }
+
+    @Test
+    fun `decoder rejects the removed diagnostic id schema instead of migrating it`() {
+        val legacyVersion = LogRecordCodec.encode(sampleRecord()).copyOf().also {
+            ByteBuffer.wrap(it).putInt(1)
+        }
+
+        assertThrows(IllegalArgumentException::class.java) {
+            LogRecordCodec.decode(legacyVersion)
         }
     }
 
@@ -101,7 +115,6 @@ class LogRecordCodecTest {
         error = ErrorPayload(
             errorCode = ErrorCode("AUTOFILL_RESULT_DELIVERY_FAILED"),
             reason = ReasonCode("PLATFORM_CALLBACK_FAILED"),
-            diagnosticId = DiagnosticId("DGN-ABCD-EFGH"),
             exception = ExceptionSnapshot(
                 type = ExceptionType("IllegalStateException"),
                 appStackFrames = listOf(

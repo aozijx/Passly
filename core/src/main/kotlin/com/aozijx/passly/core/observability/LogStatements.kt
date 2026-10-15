@@ -7,7 +7,7 @@ import com.aozijx.passly.core.observability.reporting.ErrorReportContext
 /** A complete, typed logging instruction. Business code does not assemble protocol fields. */
 sealed interface LogStatement {
     val event: EventKey
-    fun writeTo(logger: Logger): DiagnosticId?
+    fun writeTo(logger: Logger)
 }
 
 sealed interface FatalLogStatement : LogStatement
@@ -16,9 +16,8 @@ private data class InfoStatement(
     override val event: EventKey,
     val fields: LogFields,
 ) : LogStatement {
-    override fun writeTo(logger: Logger): DiagnosticId? {
+    override fun writeTo(logger: Logger) {
         logger.info(event, fields)
-        return null
     }
 }
 
@@ -26,9 +25,8 @@ private data class DebugStatement(
     override val event: EventKey,
     val fields: LogFields,
 ) : LogStatement {
-    override fun writeTo(logger: Logger): DiagnosticId? {
+    override fun writeTo(logger: Logger) {
         logger.debug(event, fields)
-        return null
     }
 }
 
@@ -38,7 +36,7 @@ private data class DegradedStatement(
     val reason: ReasonCode,
     val fields: LogFields,
 ) : LogStatement {
-    override fun writeTo(logger: Logger): DiagnosticId =
+    override fun writeTo(logger: Logger) =
         logger.degraded(event, errorCode, reason, fields)
 }
 
@@ -49,7 +47,7 @@ private data class ErrorStatement(
     val throwable: Throwable,
     val fields: LogFields,
 ) : LogStatement {
-    override fun writeTo(logger: Logger): DiagnosticId =
+    override fun writeTo(logger: Logger) =
         logger.error(event, errorCode, reason, throwable, fields)
 }
 
@@ -60,7 +58,7 @@ private data class WarningStatement(
     val throwable: Throwable,
     val fields: LogFields,
 ) : LogStatement {
-    override fun writeTo(logger: Logger): DiagnosticId =
+    override fun writeTo(logger: Logger) =
         logger.warn(event, errorCode, reason, throwable, fields)
 }
 
@@ -71,7 +69,7 @@ private data class FatalStatement(
     val throwable: Throwable,
     val fields: LogFields,
 ) : FatalLogStatement {
-    override fun writeTo(logger: Logger): DiagnosticId =
+    override fun writeTo(logger: Logger) =
         logger.fatal(event, errorCode, reason, throwable, fields)
 }
 
