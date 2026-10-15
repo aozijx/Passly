@@ -56,6 +56,9 @@ internal fun ScannerRoute(
                 ScannerScreenAction.CameraPermissionDenied,
                 -> onDismiss()
 
+                is ScannerScreenAction.CameraFailure ->
+                    viewModel.onAction(ScannerUiAction.CameraFailure(action.error))
+
                 ScannerScreenAction.PickPhoto -> {
                     viewModel.onAction(ScannerUiAction.StartScanning)
                     pickPhoto(ImageType.SCREEN)

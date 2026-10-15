@@ -46,8 +46,8 @@ Android API 依据：[Log](https://developer.android.com/reference/android/util/
 
 - 新记录只进入应用内部 `noBackupFilesDir/logs/*.log`。`.log` 是 Passly 私有二进制加密容器，
   不是明文 Logcat 导出；格式协商由文件头 magic 和 schema version 完成，扩展名不带版本号。
-- Logger v1 与旧 `diagnostics_v1/*.elog1` 不兼容：不扫描、不读取、不迁移也不删除旧文件。最终移除旧日志调用时
-  一并删除旧 writer/codec，避免长期维护两套协议。
+- Logger 与旧 `diagnostics_v1/*.elog1` 不兼容：不扫描、不读取、不迁移也不删除旧文件。旧日志调用、writer、codec
+  和 DI 已从源码删除，运行时只维护当前协议。
 - 每个文件使用随机 256-bit AES 数据密钥和 AES-GCM；数据密钥由独立 Android Keystore wrapping key
   `com.aozijx.passly.observability.wrap.v1` 加密。文件头和每条记录的 sequence、level、file id 均进入 AAD，
   篡改、乱序和跨文件复制会读取失败。
@@ -61,13 +61,14 @@ Android API 依据：[Log](https://developer.android.com/reference/android/util/
 
 ## 运行时与导出边界
 
-- `PasslyApplication` 只启动 `ObservabilityRuntimeController`。Logger、store 和 framework bridge 安装完成后才注册
+- `PasslyApplication` 只启动 `ObservabilityRuntimeController`。Logger 与 store 完成装配后才注册
   uncaught-exception handler 并读取上次进程退出；重复启动、flush、shutdown 均不能重复安装或关闭资源。
 - FATAL 事件与普通 Sink 共享同一份已脱敏 record。崩溃路径先等待正常队列 300 ms，失败时再用同一 record 尝试
   200 ms emergency write，最后始终委托原 handler；重入时不再写日志，避免递归崩溃。
 - 后台与退出操作按回调顺序串行执行：后台生命周期先完成会话锁定再 flush；应用退出先等待前序操作、完成
   `APP_EXIT` 锁定再 shutdown，防止数据库/认证关闭事件被提前截断。无需后台锁定的重复生命周期事件降为 DEBUG。
-- JSONL 导出必须持有 `EXPORT_DIAGNOSTICS` 的 fresh `AuthorizationPermit`。第一行是唯一 manifest，包含有界的
-  App/设备/系统/Autofill 能力上下文；其余行为按时间排序、按 `event_id` 去重的当前 `.log` 记录。禁止 Android
+- UTF-8 `.txt` 导出必须持有 `EXPORT_DIAGNOSTICS` 的 fresh `AuthorizationPermit`。第一行是唯一 manifest，包含有界的
+  App/设备/系统/Autofill 能力上下文；其余行为按时间排序、按 event id 去重的当前 `.log` 记录。每行按固定列顺序
+  只写值，空值保留为空列且特殊字符转义，不重复写协议键名。禁止 Android
   ID、fingerprint、serial、明文包名和 legacy `.elog1` 内容。
 - 明文临时文件仅位于 `cacheDir`：分享失败立即删除，分享成功后 10 分钟删除，下一次导出前清理陈旧文件。

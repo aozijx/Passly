@@ -9,6 +9,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.app.message.compose.ProvideAppNoticePublisher
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.app.message.presentation.AppNoticeEffects
 import com.aozijx.passly.app.platform.permission.PermissionServices
@@ -23,6 +24,7 @@ import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 internal fun PasslyApp(
     activity: FragmentActivity,
     authenticationHostRegistry: AuthenticationHostRegistry,
+    logger: Logger,
     noticePublisher: AppNoticePublisher,
     permissionServices: PermissionServices,
 ) {
@@ -45,7 +47,7 @@ internal fun PasslyApp(
                 appearance = shellState.appearance,
                 appCornerRadiusDp = shellState.appCornerRadiusDp,
             ) {
-                AuthenticationHost(activity, authenticationHostRegistry) {
+                AuthenticationHost(activity, authenticationHostRegistry, logger) {
                     AppShell(
                         window = activity.window,
                         uiState = shellState,

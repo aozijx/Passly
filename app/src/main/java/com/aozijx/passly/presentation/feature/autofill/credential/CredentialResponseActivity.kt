@@ -50,7 +50,7 @@ class CredentialResponseActivity : AppCompatActivity() {
 
         setContent {
             AppTheme {
-                AuthenticationHost(this, authenticationHostRegistry) {
+                AuthenticationHost(this, authenticationHostRegistry, logger) {
                     CredentialResponseRoute(
                         action = launch.action,
                         viewModel = viewModel,

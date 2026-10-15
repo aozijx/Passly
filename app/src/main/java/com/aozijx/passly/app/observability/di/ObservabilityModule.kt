@@ -33,6 +33,8 @@ import com.aozijx.passly.core.observability.internal.SecureSessionProvider
 import com.aozijx.passly.core.observability.metrics.EventAggregator
 import com.aozijx.passly.core.observability.privacy.ContractViolationBehavior
 import com.aozijx.passly.core.observability.privacy.PrivacyPolicy
+import com.aozijx.passly.core.observability.reporting.AppErrorReporter
+import com.aozijx.passly.app.observability.ObservabilityAppErrorReporter
 import com.aozijx.passly.core.observability.sink.LogRecordStore
 import com.aozijx.passly.core.observability.sink.LogRecordStoreFactory
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportGateway
@@ -132,6 +134,11 @@ internal object ObservabilityModule {
     fun provideDiagnosticsExportGateway(
         service: ObservabilityExportService,
     ): DiagnosticsExportGateway = service
+
+    @Provides
+    fun provideAppErrorReporter(
+        reporter: ObservabilityAppErrorReporter,
+    ): AppErrorReporter = reporter
 
     private fun randomOpaqueId(): String = Base64.getUrlEncoder().withoutPadding().encodeToString(
         ByteArray(PROCESS_SESSION_ID_BYTES).also(SecureRandom()::nextBytes),

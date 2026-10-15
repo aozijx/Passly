@@ -6,4 +6,5 @@ sealed interface ScannerUiAction {
     data object CopyText : ScannerUiAction
     data object StartScanning : ScannerUiAction
     data object StopScanning : ScannerUiAction
+    data class CameraFailure(val error: Throwable) : ScannerUiAction
 }

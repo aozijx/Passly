@@ -9,7 +9,7 @@ import com.aozijx.passly.core.error.model.DATABASE_INIT_FAILED
 import com.aozijx.passly.core.error.model.DATABASE_LOCKED
 import com.aozijx.passly.core.error.model.NOT_FOUND
 import com.aozijx.passly.core.error.model.UNEXPECTED
-import com.aozijx.passly.core.telemetry.OperationCode
+import com.aozijx.passly.core.observability.OperationCode
 import com.aozijx.passly.app.message.model.NoticeCode
 
 /**

@@ -56,12 +56,21 @@ object Events {
         val BackgroundLockSkipped = EventKey("application.background_lock_skipped")
         val UnhandledException = EventKey("application.unhandled_exception")
         val NativeLibraryLoadFailed = EventKey("application.native_library_load_failed")
+        val PackageIconUnavailable = EventKey("application.package_icon.unavailable")
+        val ResourceCleanupFailed = EventKey("application.resource_cleanup.failed")
+        val DeviceLockCompleted = EventKey("application.device_lock.completed")
+        val DiagnosticsExportFailed = EventKey("application.diagnostics_export.failed")
+        val ScannedOtpInvalid = EventKey("application.scanned_otp.invalid")
+        val ScannerFailed = EventKey("application.scanner.failed")
     }
 
     object Database {
         val Error = EventKey("database.error.reported")
         val SessionTransition = EventKey("database.session.transition")
         val SessionTransitionFailed = EventKey("database.session.transition_failed")
+        val Opened = EventKey("database.opened")
+        val OpenFailed = EventKey("database.open_failed")
+        val ResetFailed = EventKey("database.reset_failed")
     }
 
     object Security {
@@ -71,6 +80,16 @@ object Events {
         val UnlockStarted = EventKey("security.unlock.started")
         val UnlockCompleted = EventKey("security.unlock.completed")
         val AuthenticationFailed = EventKey("security.authentication.failed")
+        val BiometricPromptFailed = EventKey("security.biometric_prompt.failed")
+        val VaultInitialized = EventKey("security.vault.initialized")
+        val VaultUnlocked = EventKey("security.vault.unlocked")
+        val VerificationTagCreated = EventKey("security.verification_tag.created")
+        val EnvelopeRekeyed = EventKey("security.envelope.rekeyed")
+        val VaultOperationFailed = EventKey("security.vault.operation_failed")
+        val VaultDeletionStarted = EventKey("security.vault_deletion.started")
+        val VaultDeleted = EventKey("security.vault.deleted")
+        val VaultLockStarted = EventKey("security.vault_lock.started")
+        val VaultLocked = EventKey("security.vault.locked")
     }
 
     object Autofill {
@@ -95,6 +114,7 @@ object Events {
 
     object Backup {
         val Error = EventKey("backup.error.reported")
+        val ResourceCleanupFailed = EventKey("backup.resource_cleanup.failed")
     }
 
     val All: Set<EventKey> = setOf(
@@ -104,15 +124,34 @@ object Events {
         Application.BackgroundLockSkipped,
         Application.UnhandledException,
         Application.NativeLibraryLoadFailed,
+        Application.PackageIconUnavailable,
+        Application.ResourceCleanupFailed,
+        Application.DeviceLockCompleted,
+        Application.DiagnosticsExportFailed,
+        Application.ScannedOtpInvalid,
+        Application.ScannerFailed,
         Database.Error,
         Database.SessionTransition,
         Database.SessionTransitionFailed,
+        Database.Opened,
+        Database.OpenFailed,
+        Database.ResetFailed,
         Security.Error,
         Security.LockStarted,
         Security.LockCompleted,
         Security.UnlockStarted,
         Security.UnlockCompleted,
         Security.AuthenticationFailed,
+        Security.BiometricPromptFailed,
+        Security.VaultInitialized,
+        Security.VaultUnlocked,
+        Security.VerificationTagCreated,
+        Security.EnvelopeRekeyed,
+        Security.VaultOperationFailed,
+        Security.VaultDeletionStarted,
+        Security.VaultDeleted,
+        Security.VaultLockStarted,
+        Security.VaultLocked,
         Autofill.Error,
         Autofill.DiscoveryStarted,
         Autofill.DiscoveryCompleted,
@@ -131,6 +170,7 @@ object Events {
         Autofill.SaveFailed,
         Autofill.ActionIgnored,
         Backup.Error,
+        Backup.ResourceCleanupFailed,
     )
 }
 
@@ -146,6 +186,14 @@ object ErrorCodes {
     val ApplicationUnhandledException = ErrorCode("APPLICATION_UNHANDLED_EXCEPTION")
     val NativeLibraryLoadFailed = ErrorCode("NATIVE_LIBRARY_LOAD_FAILED")
     val SecurityLockFailed = ErrorCode("SECURITY_LOCK_FAILED")
+    val BiometricPromptFailed = ErrorCode("BIOMETRIC_PROMPT_FAILED")
+    val VaultOperationFailed = ErrorCode("VAULT_OPERATION_FAILED")
+    val PackageIconUnavailable = ErrorCode("PACKAGE_ICON_UNAVAILABLE")
+    val ScannedOtpInvalid = ErrorCode("SCANNED_OTP_INVALID")
+    val ScannerFailed = ErrorCode("SCANNER_FAILED")
+    val ResourceCleanupFailed = ErrorCode("RESOURCE_CLEANUP_FAILED")
+    val DatabaseOpenFailed = ErrorCode("DATABASE_OPEN_FAILED")
+    val DatabaseResetFailed = ErrorCode("DATABASE_RESET_FAILED")
 }
 
 object Reasons {
@@ -174,6 +222,21 @@ object Reasons {
     val RecoveryExit = ReasonCode("RECOVERY_EXIT")
     val IntegrityFailure = ReasonCode("INTEGRITY_FAILURE")
     val AppExit = ReasonCode("APP_EXIT")
+    val PackageNotInstalled = ReasonCode("PACKAGE_NOT_INSTALLED")
+    val ImageDecodeFailed = ReasonCode("IMAGE_DECODE_FAILED")
+    val FileDeleteFailed = ReasonCode("FILE_DELETE_FAILED")
+    val DatabaseOpenFailed = ReasonCode("DATABASE_OPEN_FAILED")
+    val DatabaseResetFailed = ReasonCode("DATABASE_RESET_FAILED")
+    val InvalidConfiguration = ReasonCode("INVALID_CONFIGURATION")
+    val HostUnavailable = ReasonCode("HOST_UNAVAILABLE")
+    val PermissionDenied = ReasonCode("PERMISSION_DENIED")
+    val InvalidInput = ReasonCode("INVALID_INPUT")
+    val ScannerProcessingFailed = ReasonCode("SCANNER_PROCESSING_FAILED")
+    val AuthenticationFailed = ReasonCode("AUTHENTICATION_FAILED")
+    val DekVerificationFailed = ReasonCode("DEK_VERIFICATION_FAILED")
+    val DekInstallFailed = ReasonCode("DEK_INSTALL_FAILED")
+    val UnlockFailed = ReasonCode("UNLOCK_FAILED")
+    val CallbackFailed = ReasonCode("CALLBACK_FAILED")
 }
 
 object Operations {
@@ -187,6 +250,14 @@ object Operations {
     val AutofillResultDelivery = OperationCode("autofill_result_delivery")
     val AutofillSessionClose = OperationCode("autofill_session_close")
     val DiagnosticsExport = OperationCode("diagnostics_export")
+    val DatabaseOpen = OperationCode("database_open")
+    val DatabaseReset = OperationCode("database_reset")
+    val ResourceCleanup = OperationCode("resource_cleanup")
+    val PackageIconLoad = OperationCode("package_icon_load")
+    val BackupRestore = OperationCode("backup_restore")
+    val VaultOtpImport = OperationCode("vault_otp_import")
+    val Scanner = OperationCode("scanner")
+    val VaultKeyManagement = OperationCode("vault_key_management")
 }
 
 object LogFieldKeys {
@@ -215,4 +286,6 @@ object LogFieldKeys {
     val Severity = LogFieldKey("severity")
     val Recoverable = LogFieldKey("recoverable")
     val Operation = LogFieldKey("operation")
+    val Locked = LogFieldKey("locked")
+    val ClearTask = LogFieldKey("clear_task")
 }

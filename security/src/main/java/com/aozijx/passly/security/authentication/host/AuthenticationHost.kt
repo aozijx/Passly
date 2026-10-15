@@ -11,6 +11,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.security.authentication.host.ActivityAuthUiHost
 import com.aozijx.passly.security.authentication.host.AuthenticationDialogRequest
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
@@ -19,10 +20,13 @@ import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 fun AuthenticationHost(
     activity: FragmentActivity,
     registry: AuthenticationHostRegistry,
+    logger: Logger,
     content: @Composable () -> Unit,
 ) {
     val owner: AuthenticationHostOwnerViewModel = viewModel(viewModelStoreOwner = activity)
-    val host = remember(activity, owner.ownerId) { ActivityAuthUiHost(activity, owner.ownerId) }
+    val host = remember(activity, owner.ownerId, logger) {
+        ActivityAuthUiHost(activity, owner.ownerId, logger)
+    }
     val dialog by host.dialog.collectAsStateWithLifecycle()
 
     DisposableEffect(activity, host, registry) {

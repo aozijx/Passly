@@ -20,8 +20,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.aozijx.passly.core.telemetry.TelemetryRuntime
-import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.app.platform.permission.rememberPermissionRequestHost
 import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
 import com.aozijx.passly.core.permission.model.PermissionStatus
@@ -46,6 +44,7 @@ private class ScannerCameraSession {
 internal fun ScannerCameraHost(
     onBarcodeDetected: (String) -> Unit,
     onPermissionDenied: () -> Unit,
+    onFailure: (Throwable) -> Unit,
     isScanning: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -62,6 +61,7 @@ internal fun ScannerCameraHost(
     val hasPermission = remember { mutableStateOf(false) }
     val currentOnBarcodeDetected by rememberUpdatedState(onBarcodeDetected)
     val currentOnPermissionDenied by rememberUpdatedState(onPermissionDenied)
+    val currentOnFailure by rememberUpdatedState(onFailure)
     val permissionHost = rememberPermissionRequestHost("scanner.camera") { permission, result ->
         if (permission != RuntimePermission.CAMERA) return@rememberPermissionRequestHost
         val isGranted = result is PermissionRequestOutcome.Granted
@@ -118,25 +118,16 @@ internal fun ScannerCameraHost(
                                         .addOnSuccessListener { barcodes ->
                                             if (disposed) return@addOnSuccessListener
                                             barcodes.firstOrNull()?.rawValue?.let { value ->
-                                                TelemetryRuntime.d(EventCategory.APPLICATION, "scanner.barcode_detected")
                                                 currentOnBarcodeDetected(value)
                                             }
                                         }
                                         .addOnFailureListener { error ->
-                                            TelemetryRuntime.e(
-                                                EventCategory.APPLICATION,
-                                                "scanner.analysis_failed",
-                                                throwable = error,
-                                            )
+                                            currentOnFailure(error)
                                         }
                                         .addOnCompleteListener { imageProxy.close() }
                                 } catch (error: Exception) {
                                     imageProxy.close()
-                                    TelemetryRuntime.e(
-                                        EventCategory.APPLICATION,
-                                        "scanner.analysis_submission_failed",
-                                        throwable = error,
-                                    )
+                                    currentOnFailure(error)
                                 }
                             }
                         }
@@ -151,7 +142,7 @@ internal fun ScannerCameraHost(
                         imageAnalysis,
                     )
                 } catch (error: Exception) {
-                    TelemetryRuntime.e(EventCategory.APPLICATION, "scanner.camera_binding_failed", throwable = error)
+                    currentOnFailure(error)
                 }
             }, ContextCompat.getMainExecutor(context))
         }

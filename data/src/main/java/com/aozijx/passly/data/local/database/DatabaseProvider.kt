@@ -3,10 +3,9 @@ package com.aozijx.passly.data.local.database
 import android.content.Context
 import androidx.room.Room
 import com.aozijx.passly.data.local.database.callback.AttachmentReferenceConstraintCallback
-import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.core.telemetry.EventLevel
-import com.aozijx.passly.core.telemetry.TelemetryEvent
-import com.aozijx.passly.core.telemetry.TelemetryReporter
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.Operations
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -23,7 +22,7 @@ import javax.inject.Singleton
 @Singleton
 class DatabaseProvider @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val telemetry: TelemetryReporter,
+    private val logger: Logger,
 ) {
     /**
      * 打开数据库。
@@ -34,6 +33,7 @@ class DatabaseProvider @Inject constructor(
 
     internal suspend fun open(databaseName: String, key: ByteArray): AppDatabase =
         withContext(Dispatchers.IO) {
+            logger.inSpan(Operations.DatabaseOpen) {
             require(databaseName.matches(Regex("[a-zA-Z0-9_.-]+"))) { "Invalid database name" }
             val factory = SupportOpenHelperFactory(key.copyOf())
             val db = Room.databaseBuilder(
@@ -47,25 +47,13 @@ class DatabaseProvider @Inject constructor(
 
             runCatching { db.openHelper.writableDatabase }
                 .onFailure { error ->
-                    telemetry.emit(
-                        TelemetryEvent(
-                            level = EventLevel.ERROR,
-                            category = EventCategory.DATABASE,
-                            name = "database.open_failed",
-                            throwableType = error.javaClass.simpleName,
-                        )
-                    )
+                    logger.log(LogStatements.Database.openFailed(error))
                     db.close()
                     throw error
                 }
 
-            telemetry.emit(
-                TelemetryEvent(
-                    level = EventLevel.INFO,
-                    category = EventCategory.DATABASE,
-                    name = "database.opened",
-                )
-            )
+            logger.log(LogStatements.Database.opened())
             db
+            }
         }
 }

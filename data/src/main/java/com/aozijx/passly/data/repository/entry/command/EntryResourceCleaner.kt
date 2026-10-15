@@ -2,10 +2,9 @@ package com.aozijx.passly.data.repository.entry.command
 
 import android.content.Context
 import com.aozijx.passly.core.platform.VaultResourcePaths
-import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.core.telemetry.EventLevel
-import com.aozijx.passly.core.telemetry.TelemetryReporter
-import com.aozijx.passly.core.telemetry.report
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -31,28 +30,25 @@ internal class EntryResourceCleaner @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
     private val databaseTransactions: DatabaseTransactionRunner,
-    private val telemetry: TelemetryReporter,
+    private val logger: Logger,
 ) {
     private val imageRoot: File
         get() = VaultResourcePaths.vaultImagesDir(context)
 
     suspend fun clean(resources: Collection<DeletedEntryResources>) {
-        attachmentGarbageCollector.drain()
-        withContext(Dispatchers.IO) {
-            resources
-                .distinctBy(DeletedEntryResources::entryId)
-                .forEach { resource ->
-                    runCatching {
-                        deleteCustomIcon(resource.customIconPath)
-                    }.onFailure { error ->
-                        telemetry.report(
-                            EventLevel.WARN,
-                            EventCategory.FILE_IO,
-                            "trash.resource_cleanup_failed",
-                            error
-                        )
+        logger.inSpan(Operations.ResourceCleanup) {
+            attachmentGarbageCollector.drain()
+            withContext(Dispatchers.IO) {
+                resources
+                    .distinctBy(DeletedEntryResources::entryId)
+                    .forEach { resource ->
+                        runCatching {
+                            deleteCustomIcon(resource.customIconPath)
+                        }.onFailure { error ->
+                            logger.log(LogStatements.Application.resourceCleanupFailed(error))
+                        }
                     }
-                }
+            }
         }
     }
 
@@ -62,14 +58,11 @@ internal class EntryResourceCleaner @Inject constructor(
             entryQueryDao().countByIconCustomReference(candidate)
         }.getOrNull() ?: return
         if (references != 0) return
-        withContext(Dispatchers.IO) {
-            runCatching { deleteCustomIcon(candidate) }.onFailure { error ->
-                telemetry.report(
-                    EventLevel.WARN,
-                    EventCategory.FILE_IO,
-                    "entry.icon_replacement_cleanup_failed",
-                    error,
-                )
+        logger.inSpan(Operations.ResourceCleanup) {
+            withContext(Dispatchers.IO) {
+                runCatching { deleteCustomIcon(candidate) }.onFailure { error ->
+                    logger.log(LogStatements.Application.resourceCleanupFailed(error))
+                }
             }
         }
     }

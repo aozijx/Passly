@@ -5,6 +5,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
@@ -17,6 +18,9 @@ class LegacySaveActivity : AppCompatActivity() {
     @Inject
     lateinit var authenticationHostRegistry: AuthenticationHostRegistry
 
+    @Inject
+    lateinit var logger: Logger
+
     private val viewModel: LegacySaveViewModel by viewModels()
     private val terminal = AtomicBoolean(false)
 
@@ -25,7 +29,7 @@ class LegacySaveActivity : AppCompatActivity() {
         val token = intent.getStringExtra(AutofillLaunchExtras.LEGACY_SAVE_TOKEN)
         setContent {
             AppTheme {
-                AuthenticationHost(this, authenticationHostRegistry) {
+                AuthenticationHost(this, authenticationHostRegistry, logger) {
                     LegacySaveRoute(
                         token = token,
                         viewModel = viewModel,

@@ -7,23 +7,23 @@
 ```mermaid
 flowchart TD
     EX["Throwable（DAO / 文件 / 密码学）"] -->|"mapper"| AE["AppError / AppResult"]
-    AE -->|"report(error, context)"| REP["AppErrorReporter（telemetry）"]
+    AE -->|"suspend report(error, context)"| REP["AppErrorReporter（observability）"]
     AE -->|"error code + operation"| NM["AppErrorNoticeMapper（message）"]
     NM -->|"NoticeCode"| MC["消息中心"]
 ```
 
 - **core/error**：只表达失败和控制流（`AppError`、`AppResult`）。不记录日志、不发布消息、不依赖 Android。
-- **core/telemetry**：可观察 Error，但 Error 不知道 Telemetry 的存在。通过 `AppErrorReporter`
+- **core/observability**：可观察 Error，但 Error 不知道 Logger 的存在。通过 `AppErrorReporter`
   契约在边界统一记录。
 - **app/message**：根据 error code + operation 映射为 `NoticeCode`，由消息中心决定展示方式。
 
 ## 禁止反向依赖
 
 ```
-core/error -X-> telemetry
-core/error -X-> AppTelemetry
+core/error -X-> observability
+core/error -X-> Logger
 core/error -X-> message center
-telemetry  -X-> UI 文案
+observability -X-> UI 文案
 message    -X-> Throwable
 ```
 
@@ -44,16 +44,16 @@ core/error/
     CryptoException.kt   -- 密码学边界异常
     DatabaseException.kt -- 数据库边界异常
 
-core/telemetry/
-  model/
-  policy/
+core/observability/
+  LogStatements.kt
+  privacy/
   reporting/
-    AppErrorReporter.kt   -- Reporter 契约（属 telemetry，不属 error）
+    AppErrorReporter.kt   -- suspend Reporter 契约（属 observability，不属 error）
     ErrorReportContext.kt -- 上报上下文（operation + category）
 
-app/diagnostics/
-  TelemetryAppErrorReporter.kt -- Reporter 实现
-  AppTelemetry.kt              -- 框架回调桥接
+app/observability/
+  ObservabilityAppErrorReporter.kt -- Reporter 实现
+  ObservabilityRuntimeController.kt -- 生命周期、崩溃与本地存储所有者
 
 app/message/
   mapping/
@@ -79,12 +79,12 @@ AppResult.Failure(AppError)
 
 ```kotlin
 fun interface AppErrorReporter {
-    fun report(error: AppError, context: ErrorReportContext)
+    suspend fun report(error: AppError, context: ErrorReportContext)
 }
 
 data class ErrorReportContext(
     val operation: OperationCode,
-    val category: EventCategory,
+    val category: LogCategory,
 )
 ```
 
@@ -97,7 +97,7 @@ data class ErrorReportContext(
 | severity              | entryId              |
 | recoverable           | 文件路径                 |
 | operation             | URL / 域名             |
-| correlation_id        | 包名                   |
+| operation             | 包名                   |
 | throwable_type（白名单校验） | 用户名、备份 URI、密码、密钥、OTP |
 
 ### AppError → UI / Notice
@@ -140,9 +140,10 @@ sealed class AppError(
 )
 ```
 
-- `code` 是稳定标识符，UI 文案通过 `ErrorMessages.toUiMessage(code)` 映射。
+- `code` 是稳定标识符，UI 文案通过受控 mapper 映射。
 - 不保存 `message`、`cause`、日志字段、Android 类型。
-- 当前仍扩展 `Exception` 以兼容 `throw`/`catch` 语义。`throwableType` 字段记录原始异常类型名（白名单校验后可用于遥测）。
+- 当前仍扩展 `Exception` 以兼容 `throw`/`catch` 语义。异常仅由底层转换为不含 message/path 的安全快照。
+- `errorId` 不进入 Trace、诊断值或导出，只用于 Reporter 的进程内有界重复抑制。
 - 长期目标：Repository 边界统一返回 `AppResult`，不再 `throw AppError` 子类，届时可移除 `Exception` 继承。
 
 ## 相关文档

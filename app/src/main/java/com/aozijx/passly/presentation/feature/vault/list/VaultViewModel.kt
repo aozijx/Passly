@@ -6,8 +6,9 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
-import com.aozijx.passly.core.telemetry.TelemetryRuntime
-import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -58,6 +59,7 @@ class VaultViewModel @Inject internal constructor(
     private val dataChangeSignal: VaultDataChangeSignal,
     private val accessPolicy: SecureSessionAccessPolicy,
     otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
+    private val logger: Logger,
 ) : ViewModel() {
 
     private val _effects = Channel<VaultEffect>(Channel.BUFFERED)
@@ -102,16 +104,18 @@ class VaultViewModel @Inject internal constructor(
     private fun addScannedOtp(config: OtpConfig) {
         if (!ensureFullSecureSessionAccess("恢复模式不能保存 OTP")) return
         viewModelScope.launch {
+            logger.withRootTrace(Operations.VaultOtpImport) {
             val draft = try {
                 config.toNewEntryDraft()
             } catch (error: IllegalArgumentException) {
-                TelemetryRuntime.e(EventCategory.APPLICATION, "vault.scanned_otp_invalid", throwable = error)
+                logger.log(LogStatements.Application.scannedOtpInvalid(error))
                 emitError("OTP 数据无效")
-                return@launch
+                return@withRootTrace
             }
             when (val result = createEntry(draft)) {
                 is AppResult.Success -> setAddType(null)
                 is AppResult.Failure -> emitError(result.error.code)
+            }
             }
         }
     }

@@ -7,6 +7,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.core.net.toUri
 import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.Operations
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
@@ -21,6 +24,7 @@ import javax.inject.Inject
 class ScannerViewModel @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
     private val clipboardWriter: SensitiveClipboardWriter,
+    private val logger: Logger,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ScannerUiState>(ScannerUiState.Scanning)
@@ -38,6 +42,7 @@ class ScannerViewModel @Inject constructor(
             ScannerUiAction.CopyText -> copyText()
             is ScannerUiAction.StartScanning -> resetAndStart()
             is ScannerUiAction.StopScanning -> stopScanning()
+            is ScannerUiAction.CameraFailure -> reportFailure(action.error)
         }
     }
 
@@ -84,11 +89,20 @@ class ScannerViewModel @Inject constructor(
             context = appContext,
             uri = uri,
             onSuccess = { onBarcodeDetected(it) },
-            onFailure = { message ->
+            onFailure = { message, error ->
+                error?.let(::reportFailure)
                 mutate(ScannerMutation.ImageProcessingFailed)
                 _effects.trySend(ScannerEffect.ShowError(message))
             }
         )
+    }
+
+    private fun reportFailure(error: Throwable) {
+        viewModelScope.launch {
+            logger.withRootTrace(Operations.Scanner) {
+                logger.log(LogStatements.Application.scannerFailed(error))
+            }
+        }
     }
 
     private fun mutate(mutation: ScannerMutation) {

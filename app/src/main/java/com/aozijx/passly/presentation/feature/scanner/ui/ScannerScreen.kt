@@ -68,6 +68,7 @@ internal fun ScannerScreen(
             onPermissionDenied = {
                 onAction(ScannerScreenAction.CameraPermissionDenied)
             },
+            onFailure = { onAction(ScannerScreenAction.CameraFailure(it)) },
             isScanning = isScanning,
         )
         ScannerViewfinder(isScanning = isScanning)

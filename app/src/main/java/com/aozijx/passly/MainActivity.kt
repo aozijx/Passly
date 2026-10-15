@@ -13,6 +13,7 @@ import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.platform.permission.PermissionServices
 import com.aozijx.passly.app.DeviceLockController
 import com.aozijx.passly.core.permission.contract.PermissionRequestHistory
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.permission.contract.PermissionStatusReader
 import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
 import com.aozijx.passly.presentation.PasslyApp
@@ -41,6 +42,9 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var deviceLockController: DeviceLockController
 
+    @Inject
+    lateinit var logger: Logger
+
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppContentTheme)
         super.onCreate(savedInstanceState)
@@ -58,6 +62,7 @@ class MainActivity : AppCompatActivity() {
             PasslyApp(
                 activity = this,
                 authenticationHostRegistry = authenticationHostRegistry,
+                logger = logger,
                 noticePublisher = noticePublisher,
                 permissionServices = permissionServices,
             )

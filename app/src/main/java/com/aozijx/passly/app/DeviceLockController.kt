@@ -10,8 +10,9 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.PowerManager
 import androidx.core.content.ContextCompat
-import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.core.telemetry.TelemetryRuntime
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionLockController
@@ -98,6 +99,7 @@ class DeviceLockController @Inject constructor(
     sessionAccessState: SecureSessionAccessState,
     sessionLockController: SessionLockController,
     securitySettingsSource: SecuritySettingsSource,
+    private val logger: Logger,
 ) : SensorEventListener {
     private val lockScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -199,14 +201,19 @@ class DeviceLockController @Inject constructor(
     ) {
         lockScope.launch {
             try {
-                triggerMutex.withLock {
-                    val result = handler.handle(trigger)
-                    screenOffGeneration?.let(screenOffLockTracker::complete)
-                    TelemetryRuntime.i(
-                        EventCategory.APPLICATION,
-                        "device_lock.completed trigger=${trigger.name} locked=${result.locked} clear_task=${result.shouldClearTask}",
-                    )
-                    if (result.shouldClearTask) activeTaskClearRequests.requestClear()
+                logger.withRootTrace(Operations.SecurityLock) {
+                    triggerMutex.withLock {
+                        val result = handler.handle(trigger)
+                        screenOffGeneration?.let(screenOffLockTracker::complete)
+                        logger.log(
+                            LogStatements.Application.deviceLockCompleted(
+                                trigger = trigger,
+                                locked = result.locked,
+                                clearTask = result.shouldClearTask,
+                            ),
+                        )
+                        if (result.shouldClearTask) activeTaskClearRequests.requestClear()
+                    }
                 }
             } finally {
                 onComplete()

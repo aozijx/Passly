@@ -2,10 +2,9 @@ package com.aozijx.passly.app.database.backup
 
 import android.content.Context
 import com.aozijx.passly.core.platform.VaultResourcePaths
-import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.core.telemetry.EventLevel
-import com.aozijx.passly.core.telemetry.TelemetryReporter
-import com.aozijx.passly.core.telemetry.report
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
 import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
@@ -29,6 +28,7 @@ import com.aozijx.passly.core.crypto.AttachmentContentProtector
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -50,11 +50,12 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
     private val documentMapper: RoomBackupSnapshotMapper,
     private val attachmentContentProtector: AttachmentContentProtector,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
-    private val telemetry: TelemetryReporter,
+    private val logger: Logger,
 ) {
 
     suspend fun restore(bundle: BackupBundle, mode: ImportMode) =
-        attachmentGarbageCollector.withMutationLock {
+        logger.inSpan(Operations.BackupRestore) {
+            attachmentGarbageCollector.withMutationLock {
         require(
             mode != ImportMode.OVERWRITE ||
                 bundle.sourceEntryCount == 0 ||
@@ -210,7 +211,7 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
                         retainedCanonicalPaths = restoredFiles
                     )
                 }.onFailure { error ->
-                    report("backup.resource_cleanup_failed", error)
+                    logger.log(LogStatements.Backup.resourceCleanupFailed(error))
                 }
             }
             BackupRestoreResult(
@@ -221,7 +222,8 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
             fileJournal.rollback()
             throw error
         }
-    }
+            }
+        }
 
     private fun cleanupUnreferencedFiles(
         roots: List<File>,
@@ -232,17 +234,17 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
                 if (candidate == root) return@candidateLoop
                 if (candidate.isFile && candidate.canonicalPath !in retainedCanonicalPaths) {
                     if (!candidate.delete()) {
-                        report("backup.resource_delete_failed")
+                        logger.log(
+                            LogStatements.Backup.resourceCleanupFailed(
+                                IOException("Backup resource deletion failed"),
+                            ),
+                        )
                     }
                 } else if (candidate.isDirectory) {
                     candidate.delete()
                 }
             }
         }
-    }
-
-    private fun report(name: String, throwable: Throwable? = null) {
-        telemetry.report(EventLevel.WARN, EventCategory.BACKUP, name, throwable)
     }
 }
 

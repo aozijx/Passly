@@ -2,8 +2,8 @@
 
 > 正式 Logger v1 的目标设计与迁移边界见
 > [Passly Logger v1 与可观测性系统设计](../superpowers/specs/2026-10-14-observability-logger-design.md)。
-> Logger 正在按模块迁移；旧 `.elog1` 文件格式不代表正式 Logger API 版本，业务代码不得继续扩展
-> per-event `correlationId` 模型。
+> 旧 Telemetry API、writer、codec 和 DI 已删除；`.elog1` 文件格式不代表正式 Logger API 版本，生产代码不得恢复
+> per-event `correlationId` 模型或兼容读取链路。
 
 ## Logger v1 契约
 
@@ -14,8 +14,9 @@
 App 业务层统一调用 `logger.log(LogStatements.<领域>.<事件>(...))`。`LogStatements` 是全 App 的类型化语句目录，
 当前包含 Application、Database、Security、Autofill，后续领域在同一目录扩展；它负责绑定 level、event、
 error_code、reason 和允许字段，业务代码无需重复导入或拼装协议常量。它不是 Autofill 专用 facade，也不创建第二套
-Logger。Application、LifecycleObserver、Service、ViewModel 和运行时控制器均通过依赖注入获得同一个 Logger；不设
-全局 runtime bridge。未捕获异常由运行时控制器在原线程建立根 Trace，并通过 `CrashRecordCaptureSink` 取得同一条
+Logger。Application、LifecycleObserver、Service、Activity、ViewModel 和运行时控制器均通过依赖注入获得同一个
+Logger；非注入式工具只返回结果或错误，由注入所有者记录，不设全局 runtime bridge。未捕获异常由运行时控制器在
+原线程建立根 Trace，并通过 `CrashRecordCaptureSink` 取得同一条
 已脱敏 FATAL 记录交给应急写入。
 
 业务调用不能构造 `SanitizedLogRecord` 或直接调用 Sink。后续隐私层必须把 pending 标识符替换为 HMAC、把
@@ -31,7 +32,7 @@ Throwable 转换为不含 message/path 的安全快照后，才能将不可变�
 ## 当前分层
 
 - `core/observability`：强类型事件/字段/错误目录、Trace、隐私策略和 Sink 契约。
-- `app/observability`：应用级装配、framework bridge、Logcat/Perfetto、崩溃处理、上次进程退出读取和认证导出。
+- `app/observability`：应用级装配、Logcat/Perfetto、崩溃处理、上次进程退出读取和认证导出。
 - `data/observability`：`SanitizedLogRecord` codec 与应用内部加密文件存储。
 - `LogcatSink.kt`：observability 生产代码中唯一允许导入 `android.util.Log` 的文件。
 
@@ -52,8 +53,8 @@ Throwable 转换为不含 message/path 的安全快照后，才能将不可变�
 
 业务事件名使用受控 lower-dot 标识符。持久化字段只允许计数、时长、有限比率、布尔、枚举名、错误码、原因码、
 操作码和由底层 HMAC 的标识符。自由文本 message、Throwable message、密码、Token、邮箱、URL 与文件路径不得进入
-事件。普通业务对象必须注入 `Logger`；只有不能注入依赖的 Android framework 回调可以使用强类型
-`LoggerRuntime`，该 bridge 在安装前和卸载后均为 no-op。
+事件。普通业务对象必须注入 `Logger`；Android framework 回调由其注入所有者捕获并进入根 Trace，不提供静态
+Logger、Service Locator 或安装前 no-op 桥。
 
 ## 本地加密文件
 
@@ -67,8 +68,8 @@ Throwable 转换为不含 message/path 的安全快照后，才能将不可变�
 - 读取使用 `fileId + byte offset + sequence` 游标，不把整个文件载入内存。
 - writer 是容量 256 的单线程队列；文件按日期或 1 MiB 轮换，最多 3 个文件、3 MiB、3 天。
 
-旧 `noBackupFilesDir/diagnostics_v1/*.elog1` 不兼容：新 store 不扫描、不读取、不迁移也不删除它们。旧 writer、
-codec 和业务调用会在迁移完成后删除，不在新导出中合并两套记录。
+旧 `noBackupFilesDir/diagnostics_v1/*.elog1` 不兼容：新 store 不扫描、不读取、不迁移也不删除已存在文件；旧 writer、
+codec、业务调用和 DI 已从源码删除，新导出只读取当前 store。
 
 ## 崩溃和导出
 
@@ -124,27 +125,28 @@ event、level、category、脱敏字段、error_code 和 reason 组成，不包�
 
 ## 错误接入规范
 
-Telemetry 可以观察 Error，但 Error 不知道 Telemetry 的存在。依赖方向：
+Observability 可以观察 Error，但 Error 不知道 Logger 的存在。依赖方向：
 
 ```
-core/error -X-> core/telemetry
-core/error -X-> AppTelemetry
+core/error -X-> core/observability
+core/error -X-> Logger
 ```
 
 ### AppErrorReporter
 
 ```kotlin
 fun interface AppErrorReporter {
-    fun report(error: AppError, context: ErrorReportContext)
+    suspend fun report(error: AppError, context: ErrorReportContext)
 }
 
 data class ErrorReportContext(
     val operation: OperationCode,
-    val category: EventCategory,
+    val category: LogCategory,
 )
 ```
 
-Reporter 属于 telemetry 层，不属 error 层。在 repository / use case 边界统一调用一次，避免重复记录。
+Reporter 属于 observability 层，不属 error 层。在 repository / use case 协程边界统一调用一次，避免重复记录。
+旧 `AppError.errorId` 只用于进程内有界去重，不转换为 Trace、诊断值或导出字段。
 
 ### 白名单字段
 
@@ -157,7 +159,6 @@ Reporter 属于 telemetry 层，不属 error 层。在 repository / use case 边
 | severity              | entryId              |
 | recoverable           | 文件路径                 |
 | operation             | URL / 域名             |
-| correlation_id        | 包名                   |
 | throwable_type（白名单校验） | 用户名、备份 URI、密码、密钥、OTP |
 
 ### 记录策略
@@ -178,23 +179,23 @@ Reporter 属于 telemetry 层，不属 error 层。在 repository / use case 边
 
 ```kotlin
 // DatabaseTransactionRunner 在数据库操作失败后报告
-private fun report(error: AppError, operation: String) {
+private suspend fun report(error: AppError, operation: String) {
     errorReporter.report(
         error = error,
         context = ErrorReportContext(
             operation = OperationCode(operation),
-            category = EventCategory.DATABASE
+            category = LogCategory.DATABASE
         )
     )
 }
 
 // BackupArchiveServiceImpl 在导入/导出失败后报告
-private fun report(error: AppError, operation: String) {
+private suspend fun report(error: AppError, operation: String) {
     errorReporter.report(
         error = error,
         context = ErrorReportContext(
             operation = OperationCode(operation),
-            category = EventCategory.BACKUP
+            category = LogCategory.BACKUP
         )
     )
 }

@@ -13,8 +13,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.aozijx.passly.core.telemetry.TelemetryRuntime
-import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportResult
 import com.aozijx.passly.feature.settings.diagnostics.ExportDiagnosticsUseCase
 
@@ -22,7 +23,8 @@ import com.aozijx.passly.feature.settings.diagnostics.ExportDiagnosticsUseCase
 class DiagnosticsSettingsViewModel @Inject constructor(
     private val secureSessionAccessState: SecureSessionAccessState,
     private val logStore: DiagnosticsLogStore,
-    private val exportDiagnostics: ExportDiagnosticsUseCase
+    private val exportDiagnostics: ExportDiagnosticsUseCase,
+    private val logger: Logger,
 ) : ViewModel() {
     private val eventChannel = Channel<DiagnosticsSettingsEffect>(Channel.BUFFERED)
     val events = eventChannel.receiveAsFlow()
@@ -71,7 +73,8 @@ class DiagnosticsSettingsViewModel @Inject constructor(
     }
 
     private fun authenticateAndExport() = viewModelScope.launch {
-        when (val result = exportDiagnostics()) {
+        logger.withRootTrace(Operations.DiagnosticsExport) {
+            when (val result = exportDiagnostics()) {
             DiagnosticsExportResult.Completed,
             DiagnosticsExportResult.Cancelled,
                 -> Unit
@@ -79,13 +82,10 @@ class DiagnosticsSettingsViewModel @Inject constructor(
             DiagnosticsExportResult.SessionRestricted,
                 -> eventChannel.trySend(DiagnosticsSettingsEffect.ExportFailed)
             is DiagnosticsExportResult.Failed -> {
-                TelemetryRuntime.e(
-                    EventCategory.APPLICATION,
-                    "diagnostics.export_failed",
-                    throwable = result.cause,
-                )
+                logger.log(LogStatements.Application.diagnosticsExportFailed(result.cause))
                 eventChannel.trySend(DiagnosticsSettingsEffect.ExportFailed)
             }
+        }
         }
     }
     private fun mutate(mutation: DiagnosticsSettingsMutation) {

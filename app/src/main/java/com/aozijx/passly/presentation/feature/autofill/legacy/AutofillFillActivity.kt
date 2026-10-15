@@ -11,6 +11,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
@@ -31,6 +32,9 @@ class AutofillFillActivity : FragmentActivity() {
     @Inject
     lateinit var resultDelivery: AutofillResultDelivery
 
+    @Inject
+    lateinit var logger: Logger
+
     private val viewModel: AutofillFillViewModel by viewModels()
     private val resultFinishing = AtomicBoolean(false)
 
@@ -44,7 +48,7 @@ class AutofillFillActivity : FragmentActivity() {
 
         setContent {
             AppTheme {
-                AuthenticationHost(this, authenticationHostRegistry) {
+                AuthenticationHost(this, authenticationHostRegistry, logger) {
                     AutofillFillRoute(
                         request = request,
                         viewModel = viewModel,

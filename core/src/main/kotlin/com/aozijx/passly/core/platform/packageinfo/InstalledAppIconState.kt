@@ -27,7 +27,7 @@ fun rememberInstalledAppIconBitmap(packageName: String?): ImageBitmap? {
     }
     LaunchedEffect(iconLoader, packageName) {
         bitmapState.value = withContext(Dispatchers.IO) {
-            packageName?.let(iconLoader::loadIcon)
+            packageName?.let { iconLoader.loadIcon(it) }
         }
     }
     val bitmap by bitmapState

@@ -6,8 +6,10 @@ import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import com.aozijx.passly.security.R
-import com.aozijx.passly.core.telemetry.TelemetryRuntime
-import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.security.authentication.SecretChars
@@ -35,7 +37,8 @@ internal sealed interface AuthenticationDialogRequest {
 
 class ActivityAuthUiHost(
     private val activity: FragmentActivity,
-    override val ownerId: String
+    override val ownerId: String,
+    private val logger: Logger,
 ) : AuthUiHost {
     private val _dialog = MutableStateFlow<AuthenticationDialogRequest?>(null)
     internal val dialog: StateFlow<AuthenticationDialogRequest?> = _dialog.asStateFlow()
@@ -78,8 +81,8 @@ class ActivityAuthUiHost(
     override suspend fun authenticateBiometric(
         spec: BiometricPromptSpec,
         cryptoObject: BiometricPrompt.CryptoObject?
-    ): BiometricHostResult {
-        if (!snapshot().usable) return BiometricHostResult.HostUnavailable
+    ): BiometricHostResult = logger.inSpan(Operations.SecurityAuthentication) {
+        if (!snapshot().usable) return@inSpan BiometricHostResult.HostUnavailable
         val promptInfo = try {
             BiometricPromptSpecFactory.create(
                 context = activity,
@@ -87,14 +90,10 @@ class ActivityAuthUiHost(
                 cryptoBound = cryptoObject != null
             )
         } catch (failure: IllegalArgumentException) {
-            TelemetryRuntime.e(
-                EventCategory.AUTHENTICATION,
-                "biometric.prompt_configuration_invalid",
-                throwable = failure
-            )
-            return BiometricHostResult.Failure(BiometricHostFailure.CRYPTO_OBJECT_INVALID)
+            logger.log(LogStatements.Security.biometricPromptFailed(failure, Reasons.InvalidConfiguration))
+            return@inSpan BiometricHostResult.Failure(BiometricHostFailure.CRYPTO_OBJECT_INVALID)
         }
-        return suspendCancellableCoroutine { continuation ->
+        suspendCancellableCoroutine { continuation ->
             val callback = object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     activePrompt.set(null)
@@ -126,10 +125,12 @@ class ActivityAuthUiHost(
             val prompt = try {
                 BiometricPrompt(activity, activity.mainExecutor, callback)
             } catch (failure: IllegalStateException) {
-                TelemetryRuntime.w(
-                    EventCategory.AUTHENTICATION,
-                    "biometric.prompt_host_invalid",
-                    throwable = failure
+                logger.log(
+                    LogStatements.Security.biometricPromptFailed(
+                        failure,
+                        Reasons.HostUnavailable,
+                        degraded = true,
+                    ),
                 )
                 if (continuation.isActive) continuation.resume(BiometricHostResult.HostUnavailable)
                 return@suspendCancellableCoroutine
@@ -148,11 +149,7 @@ class ActivityAuthUiHost(
                 else prompt.authenticate(promptInfo, cryptoObject)
             } catch (failure: IllegalArgumentException) {
                 activePrompt.set(null)
-                TelemetryRuntime.e(
-                    EventCategory.AUTHENTICATION,
-                    "biometric.crypto_or_prompt_invalid",
-                    throwable = failure
-                )
+                logger.log(LogStatements.Security.biometricPromptFailed(failure, Reasons.InvalidConfiguration))
                 if (continuation.isActive) {
                     continuation.resume(
                         BiometricHostResult.Failure(BiometricHostFailure.CRYPTO_OBJECT_INVALID)
@@ -160,19 +157,17 @@ class ActivityAuthUiHost(
                 }
             } catch (failure: IllegalStateException) {
                 activePrompt.set(null)
-                TelemetryRuntime.w(
-                    EventCategory.AUTHENTICATION,
-                    "biometric.prompt_show_host_invalid",
-                    throwable = failure
+                logger.log(
+                    LogStatements.Security.biometricPromptFailed(
+                        failure,
+                        Reasons.HostUnavailable,
+                        degraded = true,
+                    ),
                 )
                 if (continuation.isActive) continuation.resume(BiometricHostResult.HostUnavailable)
             } catch (failure: SecurityException) {
                 activePrompt.set(null)
-                TelemetryRuntime.e(
-                    EventCategory.AUTHENTICATION,
-                    "biometric.prompt_permission_denied",
-                    throwable = failure
-                )
+                logger.log(LogStatements.Security.biometricPromptFailed(failure, Reasons.PermissionDenied))
                 if (continuation.isActive) {
                     continuation.resume(
                         BiometricHostResult.Failure(BiometricHostFailure.METHOD_UNAVAILABLE)
@@ -180,11 +175,7 @@ class ActivityAuthUiHost(
                 }
             } catch (failure: Exception) {
                 activePrompt.set(null)
-                TelemetryRuntime.e(
-                    EventCategory.AUTHENTICATION,
-                    "biometric.prompt_unexpected_failure",
-                    throwable = failure
-                )
+                logger.log(LogStatements.Security.biometricPromptFailed(failure, Reasons.UnknownFailure))
                 if (continuation.isActive) continuation.resume(BiometricHostResult.HostUnavailable)
             }
         }

@@ -1,9 +1,9 @@
 package com.aozijx.passly.security.dek
 
-import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.core.telemetry.EventLevel
-import com.aozijx.passly.core.telemetry.TelemetryReporter
-import com.aozijx.passly.core.telemetry.report
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.KdfAlgorithm
 import com.aozijx.passly.domain.access.model.KeyEnvelope
@@ -25,7 +25,7 @@ import javax.inject.Singleton
 class DekManager @Inject constructor(
     private val vaultBootstrapStore: VaultBootstrapStore,
     private val fieldKeyManager: FieldKeyManager,
-    private val telemetry: TelemetryReporter
+    private val logger: Logger,
 ) {
     private val mutex = Mutex()
 
@@ -49,6 +49,7 @@ class DekManager @Inject constructor(
         salt: ByteArray,
         algorithm: KdfAlgorithm
     ) {
+        logger.inSpan(Operations.VaultKeyManagement) {
         mutex.withLock {
             check(vaultBootstrapStore.loadAll().isEmpty()) { "Vault already initialized" }
 
@@ -58,11 +59,12 @@ class DekManager @Inject constructor(
                 vaultBootstrapStore.save(
                     EnvelopeManager.wrapWithKey(type, dek, wrappingKey, salt, algorithm)
                 )
-                report(EventLevel.INFO, "security.vault_initialized")
+                logger.log(LogStatements.Security.vaultInitialized())
                 cacheAndUnlock(dek)
             } finally {
                 MemoryCleaner.wipeByteArray(dek)
             }
+        }
         }
     }
 
@@ -70,6 +72,7 @@ class DekManager @Inject constructor(
         type: EnvelopeType,
         cipher: Cipher
     ) {
+        logger.inSpan(Operations.VaultKeyManagement) {
         mutex.withLock {
             check(vaultBootstrapStore.loadAll().isEmpty()) { "Vault already initialized" }
 
@@ -77,11 +80,12 @@ class DekManager @Inject constructor(
             try {
                 vaultBootstrapStore.saveVerificationTag(VerificationTag.create(dek))
                 vaultBootstrapStore.save(EnvelopeManager.wrapWithCipher(type, dek, cipher))
-                report(EventLevel.INFO, "security.vault_initialized")
+                logger.log(LogStatements.Security.vaultInitialized())
                 cacheAndUnlock(dek)
             } finally {
                 MemoryCleaner.wipeByteArray(dek)
             }
+        }
         }
     }
 
@@ -91,7 +95,8 @@ class DekManager @Inject constructor(
         val tag = vaultBootstrapStore.loadVerificationTag()
             ?: return DekUnlockResult.Failed(DekUnlockError.ENVELOPE_CORRUPTED)
 
-        return mutex.withLock {
+        return logger.inSpan(Operations.VaultKeyManagement) {
+        mutex.withLock {
             try {
                 check(_state is DekState.Locked) { "Already unlocked" }
                 val dek = EnvelopeManager.unwrap(keyEnvelope, cipher)
@@ -101,24 +106,26 @@ class DekManager @Inject constructor(
                 } finally {
                     MemoryCleaner.wipeByteArray(dek)
                 }
-                report(EventLevel.INFO, "security.vault_unlocked")
+                logger.log(LogStatements.Security.vaultUnlocked())
                 DekUnlockResult.Success
             } catch (e: javax.crypto.AEADBadTagException) {
-                report(EventLevel.WARN, "security.authentication_failed", e)
+                logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.AuthenticationFailed, degraded = true))
                 DekUnlockResult.Failed(DekUnlockError.AUTH_FAILED)
             } catch (e: IllegalArgumentException) {
-                report(EventLevel.ERROR, "security.dek_verification_failed", e)
+                logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.DekVerificationFailed))
                 DekUnlockResult.Failed(DekUnlockError.DEK_VERIFY_FAILED)
             } catch (e: Exception) {
-                report(EventLevel.ERROR, "security.unlock_failed", e)
+                logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.UnlockFailed))
                 DekUnlockResult.Failed(DekUnlockError.UNKNOWN)
             }
+        }
         }
     }
 
     suspend fun setDek(type: EnvelopeType, dek: ByteArray): DekUnlockResult {
         val tag = vaultBootstrapStore.loadVerificationTag()
-        return mutex.withLock {
+        return logger.inSpan(Operations.VaultKeyManagement) {
+        mutex.withLock {
             try {
                 check(_state is DekState.Locked) { "Already unlocked" }
 
@@ -126,30 +133,33 @@ class DekManager @Inject constructor(
                     VerificationTag.verify(dek, tag, type.value)
                 } else {
                     vaultBootstrapStore.saveVerificationTag(VerificationTag.create(dek))
-                    report(EventLevel.INFO, "security.verification_tag_created")
+                    logger.log(LogStatements.Security.verificationTagCreated())
                 }
 
                 cacheAndUnlock(dek)
-                report(EventLevel.INFO, "security.vault_unlocked")
+                logger.log(LogStatements.Security.vaultUnlocked())
                 DekUnlockResult.Success
             } catch (e: IllegalArgumentException) {
-                report(EventLevel.ERROR, "security.dek_verification_failed", e)
+                logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.DekVerificationFailed))
                 DekUnlockResult.Failed(DekUnlockError.DEK_VERIFY_FAILED)
             } catch (e: Exception) {
-                report(EventLevel.ERROR, "security.dek_install_failed", e)
+                logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.DekInstallFailed))
                 DekUnlockResult.Failed(DekUnlockError.UNKNOWN)
             }
+        }
         }
     }
 
     suspend fun rekey(type: EnvelopeType, cipher: Cipher) {
+        logger.inSpan(Operations.VaultKeyManagement) {
         mutex.withLock {
             val current = _state
             check(current is DekState.Unlocked) {
                 "DEK not loaded, current: ${current::class.simpleName}"
             }
             vaultBootstrapStore.save(EnvelopeManager.wrapWithCipher(type, current.dek, cipher))
-            report(EventLevel.INFO, "security.envelope_rekeyed")
+            logger.log(LogStatements.Security.envelopeRekeyed())
+        }
         }
     }
 
@@ -159,6 +169,7 @@ class DekManager @Inject constructor(
         salt: ByteArray,
         algorithm: KdfAlgorithm
     ) {
+        logger.inSpan(Operations.VaultKeyManagement) {
         mutex.withLock {
             val current = _state
             check(current is DekState.Unlocked) {
@@ -167,7 +178,8 @@ class DekManager @Inject constructor(
             vaultBootstrapStore.save(
                 EnvelopeManager.wrapWithKey(type, current.dek, wrappingKey, salt, algorithm)
             )
-            report(EventLevel.INFO, "security.envelope_rekeyed")
+            logger.log(LogStatements.Security.envelopeRekeyed())
+        }
         }
     }
 
@@ -195,41 +207,45 @@ class DekManager @Inject constructor(
     }
 
     suspend fun lock() {
+        logger.inSpan(Operations.VaultKeyManagement) {
         mutex.withLock {
             _state = DekState.Locking
             _isUnlocked.value = false
-            report(EventLevel.INFO, "security.lock_started")
+            logger.log(LogStatements.Security.vaultLockStarted())
         }
         try {
             lockCallback?.invoke()
         } catch (e: Exception) {
-            report(EventLevel.ERROR, "security.lock_callback_failed", e)
+            logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.CallbackFailed))
         }
         mutex.withLock {
             wipeCurrentDek()
             fieldKeyManager.clear()
             _state = DekState.Locked
-            report(EventLevel.INFO, "security.lock_completed")
+            logger.log(LogStatements.Security.vaultLocked())
+        }
         }
     }
 
     suspend fun deleteVault() {
+        logger.inSpan(Operations.VaultKeyManagement) {
         mutex.withLock {
             _state = DekState.Deleting
             _isUnlocked.value = false
-            report(EventLevel.INFO, "security.vault_deletion_started")
+            logger.log(LogStatements.Security.vaultDeletionStarted())
         }
         try {
             lockCallback?.invoke()
         } catch (e: Exception) {
-            report(EventLevel.ERROR, "security.deletion_callback_failed", e)
+            logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.CallbackFailed))
         }
         mutex.withLock {
             wipeCurrentDek()
             fieldKeyManager.clear()
             vaultBootstrapStore.clear()
             _state = DekState.Locked
-            report(EventLevel.INFO, "security.vault_deleted")
+            logger.log(LogStatements.Security.vaultDeleted())
+        }
         }
     }
 
@@ -247,9 +263,5 @@ class DekManager @Inject constructor(
             is DekState.Unlocked -> MemoryCleaner.wipeByteArray(s.dek)
             else -> {}
         }
-    }
-
-    private fun report(level: EventLevel, name: String, throwable: Throwable? = null) {
-        telemetry.report(level, EventCategory.SECURITY, name, throwable)
     }
 }

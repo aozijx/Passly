@@ -1,6 +1,6 @@
 package com.aozijx.passly.security.dek
 
-import com.aozijx.passly.core.telemetry.TelemetryReporter
+import com.aozijx.passly.testing.testLogger
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.domain.access.model.BiometricBootstrapState
@@ -30,7 +30,7 @@ class SensitiveDataKeyManagerTest {
     fun setUp() = runBlocking {
         store = InMemoryVaultBootstrapStore()
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        val dekManager = DekManager(store, FieldKeyManager(), TelemetryReporter { })
+        val dekManager = DekManager(store, FieldKeyManager(), testLogger())
         val result = dekManager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { it.toByte() })
         check(result == DekUnlockResult.Success)
         manager = SensitiveDataKeyManager(store, dekManager, scope)

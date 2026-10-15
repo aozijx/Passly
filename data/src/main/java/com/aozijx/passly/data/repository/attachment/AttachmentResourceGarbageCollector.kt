@@ -3,10 +3,9 @@ package com.aozijx.passly.data.repository.attachment
 import android.content.Context
 import com.aozijx.passly.core.platform.VaultResourcePaths
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
-import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.core.telemetry.EventLevel
-import com.aozijx.passly.core.telemetry.TelemetryReporter
-import com.aozijx.passly.core.telemetry.report
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
@@ -16,6 +15,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,7 +23,7 @@ import javax.inject.Singleton
 class AttachmentResourceGarbageCollector @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val databaseSession: AppDatabaseSession,
-    private val telemetry: TelemetryReporter,
+    private val logger: Logger,
 ) {
     private val mutationMutex = Mutex()
 
@@ -51,11 +51,13 @@ class AttachmentResourceGarbageCollector @Inject constructor(
     }
 
     /** Phase two: idempotent file deletion followed by database finalization. */
-    suspend fun drain(limit: Int = 64) = withMutationLock {
-        val pending = databaseSession.query {
-            attachmentResourceDao().getPendingGc(limit)
+    suspend fun drain(limit: Int = 64) = logger.inSpan(Operations.ResourceCleanup) {
+        withMutationLock {
+            val pending = databaseSession.query {
+                attachmentResourceDao().getPendingGc(limit)
+            }
+            pending.forEach { item -> drainOne(item) }
         }
-        pending.forEach { item -> drainOne(item) }
     }
 
     private suspend fun drainOne(item: AttachmentResourceEntity) {
@@ -82,10 +84,10 @@ class AttachmentResourceGarbageCollector @Inject constructor(
             databaseSession.transaction {
                 attachmentResourceDao().recordAttempt(item.resourceId, System.currentTimeMillis())
             }
-            telemetry.report(
-                EventLevel.WARN,
-                EventCategory.FILE_IO,
-                "attachment.resource_gc_failed"
+            logger.log(
+                LogStatements.Application.resourceCleanupFailed(
+                    IOException("Attachment resource deletion failed"),
+                ),
             )
             return
         }

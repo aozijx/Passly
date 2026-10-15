@@ -7,10 +7,9 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.LruCache
 import androidx.core.graphics.drawable.toBitmap
-import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.core.telemetry.EventLevel
-import com.aozijx.passly.core.telemetry.TelemetryReporter
-import com.aozijx.passly.core.telemetry.report
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.Operations
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,18 +17,18 @@ import javax.inject.Singleton
 @Singleton
 class InstalledAppIconLoader @Inject constructor(
     @ApplicationContext context: Context,
-    private val telemetry: TelemetryReporter,
+    private val logger: Logger,
 ) {
     private val packageManager = context.packageManager
     private val cache = LruCache<String, Bitmap>(60)
     private val targetSize = (48 * context.resources.displayMetrics.density).toInt()
 
-    fun loadIcon(packageName: String): Bitmap? {
-        cache[packageName]?.let { return it }
-        return try {
+    suspend fun loadIcon(packageName: String): Bitmap? = logger.inSpan(Operations.PackageIconLoad) {
+        cache[packageName]?.let { return@inSpan it }
+        try {
             convert(packageManager.getApplicationIcon(packageName))?.also { cache.put(packageName, it) }
         } catch (error: PackageManager.NameNotFoundException) {
-            report(EventLevel.WARN, "platform.package_icon_not_found", error)
+            logger.log(LogStatements.Application.packageIconNotFound(error))
             null
         }
     }
@@ -39,10 +38,7 @@ class InstalledAppIconLoader @Inject constructor(
             drawable.bitmap
         } else drawable.toBitmap(targetSize, targetSize)
     } catch (error: Exception) {
-        report(EventLevel.ERROR, "platform.package_icon_decode_failed", error)
+        logger.log(LogStatements.Application.packageIconDecodeFailed(error))
         null
     }
-
-    private fun report(level: EventLevel, name: String, error: Throwable) =
-        telemetry.report(level, EventCategory.APPLICATION, name, error)
 }

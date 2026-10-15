@@ -139,6 +139,67 @@ object LogStatements {
             throwable,
             LogFields.Empty,
         )
+
+        fun packageIconNotFound(throwable: Throwable): LogStatement = WarningStatement(
+            Events.Application.PackageIconUnavailable,
+            ErrorCodes.PackageIconUnavailable,
+            Reasons.PackageNotInstalled,
+            throwable,
+            LogFields.Empty,
+        )
+
+        fun packageIconDecodeFailed(throwable: Throwable): LogStatement = ErrorStatement(
+            Events.Application.PackageIconUnavailable,
+            ErrorCodes.PackageIconUnavailable,
+            Reasons.ImageDecodeFailed,
+            throwable,
+            LogFields.Empty,
+        )
+
+        fun resourceCleanupFailed(throwable: Throwable): LogStatement = WarningStatement(
+            Events.Application.ResourceCleanupFailed,
+            ErrorCodes.ResourceCleanupFailed,
+            Reasons.FileDeleteFailed,
+            throwable,
+            LogFields.Empty,
+        )
+
+        fun deviceLockCompleted(
+            trigger: Enum<*>,
+            locked: Boolean,
+            clearTask: Boolean,
+        ): LogStatement = InfoStatement(
+            Events.Application.DeviceLockCompleted,
+            fields {
+                enum(LogFieldKeys.Trigger, trigger)
+                boolean(LogFieldKeys.Locked, locked)
+                boolean(LogFieldKeys.ClearTask, clearTask)
+            },
+        )
+
+        fun diagnosticsExportFailed(throwable: Throwable): LogStatement = ErrorStatement(
+            Events.Application.DiagnosticsExportFailed,
+            ErrorCodes.DiagnosticsExportFailed,
+            Reasons.StorageFailure,
+            throwable,
+            LogFields.Empty,
+        )
+
+        fun scannedOtpInvalid(throwable: Throwable): LogStatement = WarningStatement(
+            Events.Application.ScannedOtpInvalid,
+            ErrorCodes.ScannedOtpInvalid,
+            Reasons.InvalidInput,
+            throwable,
+            LogFields.Empty,
+        )
+
+        fun scannerFailed(throwable: Throwable): LogStatement = ErrorStatement(
+            Events.Application.ScannerFailed,
+            ErrorCodes.ScannerFailed,
+            Reasons.ScannerProcessingFailed,
+            throwable,
+            LogFields.Empty,
+        )
     }
 
     object Database {
@@ -190,6 +251,24 @@ object LogStatements {
                 reason,
                 fields,
             )
+
+        fun opened(): LogStatement = InfoStatement(Events.Database.Opened, LogFields.Empty)
+
+        fun openFailed(throwable: Throwable): LogStatement = ErrorStatement(
+            Events.Database.OpenFailed,
+            ErrorCodes.DatabaseOpenFailed,
+            Reasons.DatabaseOpenFailed,
+            throwable,
+            LogFields.Empty,
+        )
+
+        fun resetFailed(throwable: Throwable): LogStatement = ErrorStatement(
+            Events.Database.ResetFailed,
+            ErrorCodes.DatabaseResetFailed,
+            Reasons.DatabaseResetFailed,
+            throwable,
+            LogFields.Empty,
+        )
     }
 
     object Security {
@@ -255,6 +334,90 @@ object LogStatements {
             throwable,
             fields,
         )
+
+        fun biometricPromptFailed(
+            throwable: Throwable,
+            reason: ReasonCode,
+            degraded: Boolean = false,
+        ): LogStatement = if (degraded) {
+            WarningStatement(
+                Events.Security.BiometricPromptFailed,
+                ErrorCodes.BiometricPromptFailed,
+                reason,
+                throwable,
+                LogFields.Empty,
+            )
+        } else {
+            ErrorStatement(
+                Events.Security.BiometricPromptFailed,
+                ErrorCodes.BiometricPromptFailed,
+                reason,
+                throwable,
+                LogFields.Empty,
+            )
+        }
+
+        fun vaultInitialized(): LogStatement = InfoStatement(
+            Events.Security.VaultInitialized,
+            LogFields.Empty,
+        )
+
+        fun vaultUnlocked(): LogStatement = InfoStatement(
+            Events.Security.VaultUnlocked,
+            LogFields.Empty,
+        )
+
+        fun verificationTagCreated(): LogStatement = InfoStatement(
+            Events.Security.VerificationTagCreated,
+            LogFields.Empty,
+        )
+
+        fun envelopeRekeyed(): LogStatement = InfoStatement(
+            Events.Security.EnvelopeRekeyed,
+            LogFields.Empty,
+        )
+
+        fun vaultDeletionStarted(): LogStatement = InfoStatement(
+            Events.Security.VaultDeletionStarted,
+            LogFields.Empty,
+        )
+
+        fun vaultDeleted(): LogStatement = InfoStatement(
+            Events.Security.VaultDeleted,
+            LogFields.Empty,
+        )
+
+        fun vaultLockStarted(): LogStatement = InfoStatement(
+            Events.Security.VaultLockStarted,
+            LogFields.Empty,
+        )
+
+        fun vaultLocked(): LogStatement = InfoStatement(
+            Events.Security.VaultLocked,
+            LogFields.Empty,
+        )
+
+        fun vaultOperationFailed(
+            throwable: Throwable,
+            reason: ReasonCode,
+            degraded: Boolean = false,
+        ): LogStatement = if (degraded) {
+            WarningStatement(
+                Events.Security.VaultOperationFailed,
+                ErrorCodes.VaultOperationFailed,
+                reason,
+                throwable,
+                LogFields.Empty,
+            )
+        } else {
+            ErrorStatement(
+                Events.Security.VaultOperationFailed,
+                ErrorCodes.VaultOperationFailed,
+                reason,
+                throwable,
+                LogFields.Empty,
+            )
+        }
     }
 
     object Autofill {
@@ -360,5 +523,15 @@ object LogStatements {
 
         fun actionIgnored(): LogStatement =
             DebugStatement(Events.Autofill.ActionIgnored, LogFields.Empty)
+    }
+
+    object Backup {
+        fun resourceCleanupFailed(throwable: Throwable): LogStatement = WarningStatement(
+            Events.Backup.ResourceCleanupFailed,
+            ErrorCodes.ResourceCleanupFailed,
+            Reasons.FileDeleteFailed,
+            throwable,
+            LogFields.Empty,
+        )
     }
 }

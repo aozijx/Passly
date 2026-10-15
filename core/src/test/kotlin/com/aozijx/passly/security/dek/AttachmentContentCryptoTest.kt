@@ -1,6 +1,6 @@
 package com.aozijx.passly.security.dek
 
-import com.aozijx.passly.core.telemetry.TelemetryReporter
+import com.aozijx.passly.testing.testLogger
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.domain.access.model.BiometricBinding
@@ -23,7 +23,7 @@ class AttachmentContentCryptoTest {
     @Before
     fun setUp() = runBlocking {
         val store = InMemoryVaultBootstrapStore()
-        dekManager = DekManager(store, FieldKeyManager(), TelemetryReporter { })
+        dekManager = DekManager(store, FieldKeyManager(), testLogger())
         check(dekManager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { it.toByte() }) == DekUnlockResult.Success)
         crypto = AttachmentContentCrypto(AttachmentDataKeyManager(store, dekManager))
     }
