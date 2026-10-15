@@ -70,7 +70,7 @@ Logger、Service Locator 或安装前 no-op 桥。
 
 查看最多读取 500 条。明文导出最多读取当前新 store 的 5000 条记录，并在存储层以最多 500 条一页跨文件读取；
 按 `timestamp_ms + event_id` 排序并按 `event_id` 去重。第一行固定为 manifest，集中包含生成时间、App 版本、
-设备/系统环境和 Autofill 能力，后续每行是一个事件。manifest 禁止 Android ID、
+设备/系统环境，后续每行是一个事件。manifest 禁止 Android ID、
 Build fingerprint、serial、明文包名和已安装应用列表。
 
 导出必须在现有 `EXPORT_DIAGNOSTICS` 新鲜认证授权块内创建文件。临时文本只写入 `cacheDir`，通过
@@ -79,7 +79,7 @@ FileProvider 以 `text/plain` 只读分享；分享失败立即删除，成功�
 
 导出文件使用 `.txt` 与 UTF-8 TSV。每行只输出值，不重复输出键名；空值保留为空列，制表符、换行和反斜杠会转义。
 manifest 固定顺序为：记录类型、格式版本、生成时间、记录数、App 名称、版本名、版本号、厂商、型号、SDK、系统版本、
-语言列表、时区、Legacy Autofill 状态、Credential Provider 状态、Inline Suggestions 状态。事件固定顺序为：记录类型、
+语言列表、时区。Autofill 等功能模块的状态由模块自身通过事件记录，不进入通用 manifest。事件固定顺序为：记录类型、
 格式版本、event id、时间戳、单调时钟、级别、分类、事件名、进程会话、安全会话、trace、span、parent span、按字段名排序
 后的字段值、错误码、原因、诊断值、异常类型、应用栈、cause 类型、外部栈计数。字段名本身不写入文本。
 

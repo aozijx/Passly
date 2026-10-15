@@ -17,6 +17,7 @@ sealed interface DiagnosticsLogPageUiState {
 }
 
 sealed interface DiagnosticsSettingsAction {
+    data object RefreshLogs : DiagnosticsSettingsAction
     data object OpenViewer : DiagnosticsSettingsAction
     data object CloseViewer : DiagnosticsSettingsAction
     data object RequestClear : DiagnosticsSettingsAction

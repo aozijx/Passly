@@ -7,6 +7,7 @@ internal sealed interface DiagnosticsSettingsMutation {
         val content: String,
         val byteCount: Int,
     ) : DiagnosticsSettingsMutation
+    data class LogCacheMeasured(val byteCount: Int) : DiagnosticsSettingsMutation
     data object ClearRequested : DiagnosticsSettingsMutation
     data object ClearDismissed : DiagnosticsSettingsMutation
     data object LogsCleared : DiagnosticsSettingsMutation
@@ -35,6 +36,9 @@ internal object DiagnosticsSettingsReducer {
         } else {
             state
         }
+        is DiagnosticsSettingsMutation.LogCacheMeasured -> state.copy(
+            logByteCount = mutation.byteCount,
+        )
         DiagnosticsSettingsMutation.ClearRequested -> state.copy(
             overlay = DiagnosticsOverlayUiState.ClearConfirmation,
         )

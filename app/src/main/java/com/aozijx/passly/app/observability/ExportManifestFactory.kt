@@ -1,10 +1,7 @@
 package com.aozijx.passly.app.observability
 
-import android.content.ComponentName
 import android.content.Context
 import android.os.Build
-import android.provider.Settings
-import android.view.autofill.AutofillManager
 import com.aozijx.passly.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.TimeZone
@@ -20,9 +17,6 @@ data class ExportContext(
     val osRelease: String,
     val locales: List<String>,
     val timezone: String,
-    val legacyAutofillEnabled: Boolean,
-    val credentialProviderAvailable: Boolean,
-    val inlineSuggestionsSupported: Boolean,
 )
 
 fun interface ExportContextProvider {
@@ -54,9 +48,6 @@ class ExportManifestFactory @Inject constructor(
             context.osRelease,
             context.locales.joinToString(","),
             context.timezone,
-            context.legacyAutofillEnabled,
-            context.credentialProviderAvailable,
-            context.inlineSuggestionsSupported,
         )
     }
 
@@ -78,10 +69,6 @@ internal class AndroidExportContextProvider @Inject constructor(
         osRelease = Build.VERSION.RELEASE.orEmpty().bounded(),
         locales = currentLocales(),
         timezone = TimeZone.getDefault().id.bounded(),
-        legacyAutofillEnabled = isLegacyAutofillEnabled(),
-        credentialProviderAvailable = isCredentialProviderAvailable(),
-        inlineSuggestionsSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
-            context.getSystemService(AutofillManager::class.java)?.isEnabled == true,
     )
 
     private fun currentLocales(): List<String> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -92,27 +79,10 @@ internal class AndroidExportContextProvider @Inject constructor(
         listOf(context.resources.configuration.locale.toLanguageTag().bounded())
     }
 
-    private fun isLegacyAutofillEnabled(): Boolean {
-        val selected = Settings.Secure.getString(
-            context.contentResolver,
-            AUTOFILL_SERVICE_SETTING,
-        ) ?: return false
-        return ComponentName.unflattenFromString(selected)?.packageName == context.packageName
-    }
-
-    private fun isCredentialProviderAvailable(): Boolean = runCatching {
-        val component = ComponentName(
-            context.packageName,
-            "${context.packageName}.feature.autofill.credential.service.ModernCredentialService",
-        )
-        context.packageManager.getServiceInfo(component, 0).enabled
-    }.getOrDefault(false)
-
     private fun String.bounded(): String = take(MAX_CONTEXT_CHARS)
 
     private companion object {
         const val MAX_CONTEXT_CHARS = 128
         const val MAX_LOCALES = 8
-        const val AUTOFILL_SERVICE_SETTING = "autofill_service"
     }
 }

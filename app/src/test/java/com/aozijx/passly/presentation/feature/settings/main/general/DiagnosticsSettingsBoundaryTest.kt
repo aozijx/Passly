@@ -20,4 +20,21 @@ class DiagnosticsSettingsBoundaryTest {
         assertFalse(viewModel.contains("Dispatchers.IO"))
         assertFalse(viewModel.contains("withContext"))
     }
+
+    @Test
+    fun `general page requests a diagnostics cache refresh on entry`() {
+        val sourceRoot = listOf(File("src/main/java"), File("app/src/main/java"))
+            .firstOrNull(File::isDirectory) ?: error("Cannot locate app source root")
+        val contract = File(
+            sourceRoot,
+            "com/aozijx/passly/presentation/feature/settings/main/general/DiagnosticsSettingsContract.kt",
+        ).readText()
+        val route = File(
+            sourceRoot,
+            "com/aozijx/passly/presentation/feature/settings/main/navigation/general/GeneralRoute.kt",
+        ).readText()
+
+        assertTrue(contract.contains("data object RefreshLogs"))
+        assertTrue(route.contains("DiagnosticsSettingsAction.RefreshLogs"))
+    }
 }

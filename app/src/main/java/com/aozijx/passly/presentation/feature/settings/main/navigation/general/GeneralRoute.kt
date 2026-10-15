@@ -45,6 +45,10 @@ internal fun GeneralRoute(
     val featurePendingMessage = stringResource(R.string.settings_general_feature_pending)
     val logExportFailedMessage = stringResource(R.string.settings_log_export_failed)
 
+    LaunchedEffect(diagnosticsViewModel) {
+        diagnosticsViewModel.onAction(DiagnosticsSettingsAction.RefreshLogs)
+    }
+
     LaunchedEffect(generalViewModel, cacheClearedMessage, featurePendingMessage) {
         generalViewModel.effects.collect { effect ->
             when (effect) {

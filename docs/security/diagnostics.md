@@ -63,7 +63,8 @@ Android API 依据：[Log](https://developer.android.com/reference/android/util/
 - 后台与退出操作按回调顺序串行执行：后台生命周期先完成会话锁定再 flush；应用退出先等待前序操作、完成
   `APP_EXIT` 锁定再 shutdown，防止数据库/认证关闭事件被提前截断。无需后台锁定的重复生命周期事件降为 DEBUG。
 - UTF-8 `.txt` 导出必须持有 `EXPORT_DIAGNOSTICS` 的 fresh `AuthorizationPermit`。第一行是唯一 manifest，包含有界的
-  App/设备/系统/Autofill 能力上下文；其余行为按时间排序、按 event id 去重的当前 `.log` 记录。每行按固定列顺序
+  App、设备和系统上下文；其余行为按时间排序、按 event id 去重的当前 `.log` 记录。功能模块状态通过模块事件记录，
+  不进入通用 manifest。每行按固定列顺序
   只写值，空值保留为空列且特殊字符转义，不重复写协议键名。禁止 Android
   ID、fingerprint、serial 和明文包名。
 - 明文临时文件仅位于 `cacheDir`：分享失败立即删除，分享成功后 10 分钟删除，下一次导出前清理陈旧文件。

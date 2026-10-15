@@ -80,7 +80,7 @@ class ObservabilityExportServiceTest {
     }
 
     @Test
-    fun `manifest contains device app and autofill context once without forbidden identifiers`() = runTest {
+    fun `manifest contains only generic device and app context once`() = runTest {
         val files = RecordingExportFileGateway(cacheDirectory)
         val service = service(PageStore(listOf(record("event_00000001", 100))), files)
 
@@ -89,12 +89,18 @@ class ObservabilityExportServiceTest {
         val records = files.sharedText!!.lineSequence().filter(String::isNotBlank)
             .map { it.split('\t') }.toList()
         val manifest = records.single { it[0] == "manifest" }
+        assertEquals(13, manifest.size)
         assertEquals("Passly", manifest[4])
         assertEquals("Pixel", manifest[8])
-        assertEquals("true", manifest[13])
         assertEquals(1, records.count { it[0] == "manifest" })
         val exported = files.sharedText!!
-        listOf("android_id", "fingerprint", "serial", "package_name", "com.example.secret").forEach {
+        listOf(
+            "android_id",
+            "fingerprint",
+            "serial",
+            "package_name",
+            "com.example.secret",
+        ).forEach {
             assertFalse(exported.contains(it, ignoreCase = true))
         }
     }
@@ -179,9 +185,6 @@ class ObservabilityExportServiceTest {
                         osRelease = "16",
                         locales = listOf("zh-CN"),
                         timezone = "Asia/Shanghai",
-                        legacyAutofillEnabled = true,
-                        credentialProviderAvailable = true,
-                        inlineSuggestionsSupported = true,
                     )
                 },
                 clock = ExportClock { 1_700_000_000_000 },
