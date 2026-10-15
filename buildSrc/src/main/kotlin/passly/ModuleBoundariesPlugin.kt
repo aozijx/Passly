@@ -14,6 +14,45 @@ class ModuleBoundariesPlugin : Plugin<Project> {
             "moduleBoundaries",
             ModuleBoundariesExtension::class.java,
         )
+        val catalogFile = target.layout.projectDirectory.file("config/observability/error-catalog.json")
+        val generateCatalogSources = target.tasks.register(
+            "generateErrorCatalogSources",
+            GenerateErrorCatalogTask::class.java,
+        ) {
+            group = "build setup"
+            description = "Generates the typed error catalog sources."
+            this.catalogFile.set(catalogFile)
+            coreOutputDirectory.set(
+                target.layout.projectDirectory.dir("core/build/generated/source/errorCatalog"),
+            )
+            appOutputDirectory.set(
+                target.layout.projectDirectory.dir("app/build/generated/source/errorCatalog"),
+            )
+        }
+        val generateErrorCodes = target.tasks.register(
+            "generateErrorCodes",
+            GenerateErrorCatalogTask::class.java,
+        ) {
+            group = "documentation"
+            description = "Generates the checked-in error code reference."
+            this.catalogFile.set(catalogFile)
+            markdownOutputFile.set(target.layout.projectDirectory.file("docs/ERROR_CODES.md"))
+            dependsOn(generateCatalogSources)
+        }
+        val verifyErrorCodes = target.tasks.register(
+            "verifyErrorCodes",
+            VerifyErrorCatalogTask::class.java,
+        ) {
+            group = "verification"
+            description = "Verifies catalog uniqueness, messages, and generated documentation."
+            this.catalogFile.set(catalogFile)
+            markdownFile.set(target.layout.projectDirectory.file("docs/ERROR_CODES.md"))
+            stringResourceFiles.from(
+                target.layout.projectDirectory.file("app/src/main/res/values/strings.xml"),
+                target.layout.projectDirectory.file("app/src/main/res/values-en/strings.xml"),
+            )
+            mustRunAfter(generateErrorCodes)
+        }
         val verification = target.tasks.register(
             "verifyModuleBoundaries",
             VerifyModuleBoundariesTask::class.java,
@@ -28,7 +67,7 @@ class ModuleBoundariesPlugin : Plugin<Project> {
         target.tasks.register("verifyArchitecture") {
             group = "verification"
             description = "Runs the repository architecture boundary verification."
-            dependsOn(verification)
+            dependsOn(verification, verifyErrorCodes)
         }
         val metrics = target.tasks.register(
             "reportArchitectureMetrics",
@@ -44,7 +83,7 @@ class ModuleBoundariesPlugin : Plugin<Project> {
 
         target.subprojects {
             tasks.matching { it.name == "check" }.configureEach {
-                dependsOn(verification)
+                dependsOn(verification, verifyErrorCodes)
             }
         }
 

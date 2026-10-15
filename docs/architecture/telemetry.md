@@ -24,6 +24,12 @@ Throwable 转换为不含 message/path 的安全快照后，才能将不可变�
 关联标识，子 Span 只继承该 Trace，不再为失败生成第二套诊断标识。Span 生命周期独立输出固定操作码、结果和单调时钟
 耗时，平台 Trace 或日志 Sink 的异常不会改变业务控制流；业务异常和取消仍按原实例向上传播。
 
+错误码与原因码的唯一来源是 `config/observability/error-catalog.json`。Gradle 从该结构化目录生成 core 的
+`ErrorCodes`/`Reasons`、App 的 `GeneratedErrorMessageResolver` 和已提交的 `docs/ERROR_CODES.md`；生产源码不再
+手写第二份常量。目录解析会拒绝未知属性、重复 symbol/code、未知默认原因和非法 exposure。只有
+`USER_ACTIONABLE` 错误允许声明 `message_key`，且 `verifyErrorCodes` 要求默认与英文资源都存在；`INTERNAL` 错误
+不得映射用户文案，UI 也不得直接展示原始错误码或异常文本。
+
 ## 当前分层
 
 - `core/observability`：强类型事件/字段/错误目录、Trace、隐私策略和 Sink 契约。

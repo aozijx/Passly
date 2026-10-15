@@ -5,6 +5,10 @@ plugins {
     alias(libs.plugins.hilt.android)
 }
 
+val generateErrorCatalogSources = rootProject.tasks.named<passly.GenerateErrorCatalogTask>(
+    "generateErrorCatalogSources",
+)
+
 android {
     namespace = "com.aozijx.passly.core"
     compileSdk = libs.versions.androidCompileSdk.get().toInt()
@@ -16,6 +20,14 @@ android {
     buildFeatures {
         compose = true
     }
+
+}
+
+androidComponents.onVariants { variant ->
+    variant.sources.java?.addGeneratedSourceDirectory(
+        generateErrorCatalogSources,
+        passly.GenerateErrorCatalogTask::coreOutputDirectory,
+    )
 }
 
 kotlin {

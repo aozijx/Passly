@@ -15,6 +15,11 @@ Throwable 只转换为安全快照：保留简单异常类型、最多 24 个 Pa
 计数。转换过程不读取或保存异常 message、localizedMessage、suppressed、文件名/绝对路径以及第三方类名。所有
 Sink 只接受经过该策略生成的不可变 `SanitizedLogRecord`。
 
+错误语义集中在 `config/observability/error-catalog.json`。目录中的 code、默认 reason、category、exposure 和说明由
+生成任务统一校验；内部错误禁止声明用户提示。只有显式标记为 `USER_ACTIONABLE` 的错误可生成资源映射，并且默认与
+英文 `strings.xml` 必须同时包含该 key。用户界面只能使用生成的资源 ID，不能把错误码、Throwable message 或诊断
+细节作为回退文案。
+
 遵循 Android 官方 Log 信息泄露指导，Release 默认关闭 Logcat Sink；用户开启诊断窗口只启用内部加密记录。
 Logger 不把 Throwable 直接交给 Android Log API。Perfetto 只接收固定操作名与匿名 counter；`ApplicationExitInfo`
 只读取稳定枚举/数值，不导出 description、processName 或原始 ANR trace。

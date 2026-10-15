@@ -8,6 +8,9 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
 }
+val generateErrorCatalogSources = rootProject.tasks.named<passly.GenerateErrorCatalogTask>(
+    "generateErrorCatalogSources",
+)
 // Release 签名优先读取环境变量，其次读取本地未跟踪 keystore.properties
 val keystoreProperties = Properties().apply {
     val keystoreFile = rootProject.file("keystore.properties")
@@ -86,6 +89,7 @@ android {
         buildConfig = true
     }
 
+
     splits {
         abi {
             isEnable = true
@@ -103,6 +107,13 @@ android {
             "OldTargetApi"
         )
     }
+}
+
+androidComponents.onVariants { variant ->
+    variant.sources.java?.addGeneratedSourceDirectory(
+        generateErrorCatalogSources,
+        passly.GenerateErrorCatalogTask::appOutputDirectory,
+    )
 }
 
 // Kotlin 配置
