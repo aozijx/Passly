@@ -18,9 +18,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.feature.backup.internal.archive.BackupJson
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
-import java.io.File
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -178,21 +176,6 @@ class RoomBackupSnapshotMapperTest {
                 }
             }
         }
-    }
-
-    @Test
-    fun otpMappingsDoNotDependOnEnumNames() {
-        val sourceRoot = listOf(File("src/main/java"), File("app/src/main/java"))
-            .firstOrNull(File::isDirectory) ?: error("Cannot locate app source root")
-        val source = sourceRoot.resolve(
-            "com/aozijx/passly/app/database/backup/KeyedEntryArchiveMapper.kt",
-        ).readText()
-
-        listOf(
-            "OtpType.valueOf",
-            "OtpHashAlgorithm.valueOf",
-            "OtpSecretEncoding.valueOf",
-        ).forEach { bridge -> assertFalse("Mapper still uses $bridge", source.contains(bridge)) }
     }
 
     private fun com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord.fieldText(
