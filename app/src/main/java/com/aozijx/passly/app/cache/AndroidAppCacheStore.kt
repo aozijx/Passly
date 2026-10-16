@@ -3,7 +3,7 @@ package com.aozijx.passly.app.cache
 import android.content.Context
 import com.aozijx.passly.core.platform.cache.DirectoryContentsCleaner
 import com.aozijx.passly.core.platform.cache.DirectoryTreeSizeCalculator
-import com.aozijx.passly.feature.settings.general.AppCacheStore
+import com.aozijx.passly.feature.settings.data.AppCacheStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

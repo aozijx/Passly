@@ -1,6 +1,6 @@
 package com.aozijx.passly.app.cache
 
-import com.aozijx.passly.feature.settings.general.AppCacheStore
+import com.aozijx.passly.feature.settings.data.AppCacheStore
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

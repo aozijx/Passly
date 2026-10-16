@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.feature.settings.main.navigation.general
+package com.aozijx.passly.presentation.feature.settings.main.navigation.data
 
 import android.content.ClipData
 import android.content.ClipboardManager

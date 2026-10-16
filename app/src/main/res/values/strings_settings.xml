@@ -8,8 +8,8 @@
     <string name="settings_page_backup_restore_summary">加密、JSON、TXT 导出与导入</string>
     <string name="settings_page_data">数据管理</string>
     <string name="settings_page_data_summary">本地数据、回收站与永久清空</string>
-    <string name="settings_page_general">通用</string>
-    <string name="settings_page_general_summary">缓存、日志、关于</string>
+    <string name="settings_page_about">关于</string>
+    <string name="settings_page_about_summary">版本、隐私与开源许可</string>
     <string name="settings_page_interaction">操作与手势</string>
     <string name="settings_page_interaction_summary">滑动操作</string>
     <string name="settings_page_autofill">自动填充</string>
@@ -303,19 +303,21 @@
     <string name="settings_topic_security">安全</string>
     <string name="settings_topic_security_summary">生物识别变化、恢复码变更等提醒</string>
 
-    <!-- General and diagnostics -->
-    <string name="settings_general_about_app">关于 %1$s</string>
-    <string name="settings_general_about_section">关于</string>
-    <string name="settings_general_cache_section">缓存</string>
-    <string name="settings_general_clear_cache">清除缓存</string>
-    <string name="settings_general_cache_cleared">缓存已清理</string>
-    <string name="settings_general_feature_pending">功能开发中，敬请期待</string>
-    <string name="settings_general_open_source_licenses">开源许可</string>
-    <string name="settings_general_privacy_policy">隐私政策</string>
-    <string name="settings_general_terms">用户协议</string>
+    <!-- About, storage, and diagnostics -->
+    <string name="settings_about_app">关于 %1$s</string>
+    <string name="settings_about_section">关于</string>
+    <string name="settings_storage_cache_section">缓存</string>
+    <string name="settings_storage_clear_cache">清除缓存</string>
+    <string name="settings_storage_cache_cleared">缓存已清理</string>
+    <string name="settings_about_feature_pending">功能开发中，敬请期待</string>
+    <string name="settings_about_open_source_licenses">开源许可</string>
+    <string name="settings_about_privacy_policy">隐私政策</string>
+    <string name="settings_about_terms">用户协议</string>
     <string name="settings_log_clear_action">清除日志</string>
     <string name="settings_log_clear_confirm_action">清除</string>
     <string name="settings_log_clear_confirm_message">清除全部日志？此操作无法撤销。</string>
+    <string name="settings_log_cleared">日志已清除</string>
+    <string name="settings_log_clear_failed">当前无法清除日志</string>
     <string name="settings_log_empty">暂无日志</string>
     <string name="settings_log_save_action">保存日志</string>
     <string name="settings_log_share_action">分享日志</string>

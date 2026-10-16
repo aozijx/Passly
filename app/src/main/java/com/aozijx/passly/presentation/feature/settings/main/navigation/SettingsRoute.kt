@@ -46,7 +46,7 @@ fun SettingsRoute(
     val scope = rememberCoroutineScope()
     val mainListState = rememberLazyGridState()
 
-    val backBehavior = BackNavigationBehavior.PopUntilScaffoldValueChange
+    val backBehavior = settingsBackNavigationBehavior
     val isSinglePane = navigator.scaffoldDirective.maxHorizontalPartitions == 1
     val selectedRoute = navigator.currentDestination?.contentKey
     var retainedDetailRoute by remember { mutableStateOf<SettingsDestination?>(null) }
@@ -94,7 +94,7 @@ fun SettingsRoute(
                 )
             },
             detailContent = {
-                SettingsDetailRoute(
+                AnimatedSettingsDetailRoute(
                     route = renderedDetailRoute,
                     onOpenTrash = onOpenTrash,
                     onNavigateTo = navigateToDetail,
@@ -128,40 +128,84 @@ fun SettingsRoute(
                     enterTransition = EnterTransition.None,
                     exitTransition = ExitTransition.None,
                 ) {
-                    // 详情内容路由切换：利用 AnimatedContent 的可中断/重定向机制——
-                    // 动画播放中若目标路由再次变化，动画立即重定向到新目标，配合 spring
-                    // 弹簧动画平滑衔接，快速连续点击多个设置项也不会跳变或卡顿。
-                    AnimatedContent(
-                        targetState = renderedDetailRoute,
-                        transitionSpec = {
-                            val enter = fadeIn(
-                                animationSpec = routeFadeIn
-                            ) + slideInHorizontally(
-                                initialOffsetX = { it / 5 },
-                                animationSpec = routeSlide
-                            )
-                            val exit = fadeOut(
-                                animationSpec = routeFadeOut
-                            ) + slideOutHorizontally(
-                                targetOffsetX = { -it / 5 },
-                                animationSpec = routeSlide
-                            )
-                            enter togetherWith exit using SizeTransform(clip = false)
-                        },
-                        label = "settingsDetail"
-                    ) { route ->
-                        SettingsDetailRoute(
-                            route = route,
-                            onOpenTrash = onOpenTrash,
-                            onNavigateTo = navigateToDetail,
-                            onBack = null,
-                        )
-                    }
+                    AnimatedSettingsDetailRoute(
+                        route = renderedDetailRoute,
+                        onOpenTrash = onOpenTrash,
+                        onNavigateTo = navigateToDetail,
+                        onBack = null,
+                    )
                 }
             },
         )
     }
 
+}
+
+/** Pops one destination so nested details return to their owning settings page. */
+@OptIn(ExperimentalMaterial3AdaptiveApi::class)
+internal val settingsBackNavigationBehavior = BackNavigationBehavior.PopLatest
+
+internal enum class SettingsDetailTransitionDirection {
+    Forward,
+    Backward,
+}
+
+internal fun resolveSettingsDetailTransitionDirection(
+    initial: SettingsDestination?,
+    target: SettingsDestination?,
+): SettingsDetailTransitionDirection = when {
+    settingsParentDestination(target) == initial -> SettingsDetailTransitionDirection.Forward
+    settingsParentDestination(initial) == target -> SettingsDetailTransitionDirection.Backward
+    else -> SettingsDetailTransitionDirection.Forward
+}
+
+private fun settingsParentDestination(
+    destination: SettingsDestination?,
+): SettingsDestination? = when (destination) {
+    SettingsDestination.Diagnostics -> SettingsDestination.DataManagement
+    SettingsDestination.BackupRestore -> SettingsDestination.Permissions
+    else -> null
+}
+
+/** Shared detail animation for both compact and expanded settings layouts. */
+@Composable
+private fun AnimatedSettingsDetailRoute(
+    route: SettingsDestination?,
+    onOpenTrash: () -> Unit,
+    onNavigateTo: (SettingsDestination) -> Unit,
+    onBack: (() -> Unit)?,
+) {
+    AnimatedContent(
+        targetState = route,
+        transitionSpec = {
+            val direction = resolveSettingsDetailTransitionDirection(initialState, targetState)
+            val enterOffset: (Int) -> Int = when (direction) {
+                SettingsDetailTransitionDirection.Forward -> { width -> width / 5 }
+                SettingsDetailTransitionDirection.Backward -> { width -> -width / 5 }
+            }
+            val exitOffset: (Int) -> Int = when (direction) {
+                SettingsDetailTransitionDirection.Forward -> { width -> -width / 5 }
+                SettingsDetailTransitionDirection.Backward -> { width -> width / 5 }
+            }
+            val enter = fadeIn(animationSpec = routeFadeIn) + slideInHorizontally(
+                initialOffsetX = enterOffset,
+                animationSpec = routeSlide,
+            )
+            val exit = fadeOut(animationSpec = routeFadeOut) + slideOutHorizontally(
+                targetOffsetX = exitOffset,
+                animationSpec = routeSlide,
+            )
+            enter togetherWith exit using SizeTransform(clip = false)
+        },
+        label = "settingsDetail",
+    ) { destination ->
+        SettingsDetailRoute(
+            route = destination,
+            onOpenTrash = onOpenTrash,
+            onNavigateTo = onNavigateTo,
+            onBack = onBack,
+        )
+    }
 }
 
 /**

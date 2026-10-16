@@ -8,8 +8,8 @@
     <string name="settings_page_backup_restore_summary">Encrypted, JSON and TXT import or export</string>
     <string name="settings_page_data">Data management</string>
     <string name="settings_page_data_summary">Local data, trash and reset</string>
-    <string name="settings_page_general">General</string>
-    <string name="settings_page_general_summary">Cache, logs, about</string>
+    <string name="settings_page_about">About</string>
+    <string name="settings_page_about_summary">Version, privacy, and open-source licenses</string>
     <string name="settings_page_interaction">Actions &amp; gestures</string>
     <string name="settings_page_interaction_summary">Swipe actions</string>
     <string name="settings_page_autofill">Autofill</string>
@@ -303,19 +303,21 @@
     <string name="settings_topic_security">Security</string>
     <string name="settings_topic_security_summary">Notify about authentication and recovery changes</string>
 
-    <!-- General and diagnostics -->
-    <string name="settings_general_about_app">About %1$s</string>
-    <string name="settings_general_about_section">About</string>
-    <string name="settings_general_cache_section">Cache</string>
-    <string name="settings_general_clear_cache">Clear cache</string>
-    <string name="settings_general_cache_cleared">Cache cleared</string>
-    <string name="settings_general_feature_pending">Coming soon</string>
-    <string name="settings_general_open_source_licenses">Open-source licenses</string>
-    <string name="settings_general_privacy_policy">Privacy policy</string>
-    <string name="settings_general_terms">Terms of service</string>
+    <!-- About, storage, and diagnostics -->
+    <string name="settings_about_app">About %1$s</string>
+    <string name="settings_about_section">About</string>
+    <string name="settings_storage_cache_section">Cache</string>
+    <string name="settings_storage_clear_cache">Clear cache</string>
+    <string name="settings_storage_cache_cleared">Cache cleared</string>
+    <string name="settings_about_feature_pending">Coming soon</string>
+    <string name="settings_about_open_source_licenses">Open-source licenses</string>
+    <string name="settings_about_privacy_policy">Privacy policy</string>
+    <string name="settings_about_terms">Terms of service</string>
     <string name="settings_log_clear_action">Clear logs</string>
     <string name="settings_log_clear_confirm_action">Clear</string>
     <string name="settings_log_clear_confirm_message">Clear all logs? This cannot be undone.</string>
+    <string name="settings_log_cleared">Logs cleared</string>
+    <string name="settings_log_clear_failed">Logs couldn’t be cleared</string>
     <string name="settings_log_empty">No logs</string>
     <string name="settings_log_save_action">Save logs</string>
     <string name="settings_log_share_action">Share logs</string>

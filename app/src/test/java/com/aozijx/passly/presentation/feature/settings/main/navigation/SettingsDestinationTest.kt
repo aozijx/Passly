@@ -35,7 +35,7 @@ class SettingsDestinationTest {
                 "settings/security", "settings/privacy", "settings/permissions", "settings/appearance",
                 "settings/interface", "settings/interaction", "settings/autofill",
                 "settings/data", "settings/backup_restore", "settings/notifications",
-                "settings/recovery_code", "settings/general", "settings/diagnostics",
+                "settings/recovery_code", "settings/about", "settings/diagnostics",
             ),
             routes.map(SettingsDestination::route).toSet(),
         )

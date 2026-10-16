@@ -57,7 +57,7 @@ class SettingsDestinationParameterBoundaryTest {
                 "AppPasswordSettingsUiState",
             ),
         )
-        listOf("general/GeneralRoute.kt", "general/NotificationsRoute.kt").forEach { path ->
+        listOf("about/AboutRoute.kt", "general/NotificationsRoute.kt").forEach { path ->
             assertNarrow(
                 path,
                 forbidden = listOf(

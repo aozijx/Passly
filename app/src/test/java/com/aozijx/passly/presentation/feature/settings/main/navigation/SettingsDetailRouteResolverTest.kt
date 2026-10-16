@@ -1,9 +1,42 @@
 package com.aozijx.passly.presentation.feature.settings.main.navigation
 
+import androidx.compose.material3.adaptive.navigation.BackNavigationBehavior
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SettingsDetailRouteResolverTest {
+    @Test
+    fun diagnosticsUsesForwardTransitionFromDataManagement() {
+        assertEquals(
+            SettingsDetailTransitionDirection.Forward,
+            resolveSettingsDetailTransitionDirection(
+                initial = SettingsDestination.DataManagement,
+                target = SettingsDestination.Diagnostics,
+            ),
+        )
+    }
+
+    @Test
+    fun diagnosticsBackUsesReverseTransitionToDataManagement() {
+        assertEquals(
+            SettingsDetailTransitionDirection.Backward,
+            resolveSettingsDetailTransitionDirection(
+                initial = SettingsDestination.Diagnostics,
+                target = SettingsDestination.DataManagement,
+            ),
+        )
+    }
+
+    @OptIn(ExperimentalMaterial3AdaptiveApi::class)
+    @Test
+    fun nestedDetailBackReturnsToItsParentDetail() {
+        assertEquals(
+            BackNavigationBehavior.PopLatest,
+            settingsBackNavigationBehavior,
+        )
+    }
+
     @Test
     fun detailTargetEntersAboveList() {
         assertEquals(

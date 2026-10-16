@@ -249,11 +249,13 @@ feature/vault/
 Settings 简单页面使用 UDF 模式（语义化方法 + UiState）：
 
 ```text
-feature/settings/general/
-  NotificationSettingsContract.kt      # UiState
-  NotificationSettingsViewModel.kt     # 语义化方法
-  NotificationDetail.kt                # UI
-  NotificationSettingsSection.kt       # UI 组件
+feature/settings/
+  main/general/
+    NotificationSettingsContract.kt      # UiState
+    NotificationSettingsViewModel.kt     # 语义化方法
+  main/data/
+    StorageSettingsContract.kt           # 缓存/日志占用封闭状态
+    StorageSettingsViewModel.kt          # 存储统计、清理与一次性结果
 ```
 
 Settings 中的异步或弹层流程仍必须使用页面语义状态，而不是因为页面较小就退回多个标记：

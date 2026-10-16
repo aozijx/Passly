@@ -31,29 +31,29 @@ class SettingsRouteOwnershipBoundaryTest {
     }
 
     @Test
-    fun `general diagnostics and notifications destinations have one route owner`() {
+    fun `about storage diagnostics and notifications destinations have one route owner`() {
         val sourceRoot = listOf(
             File("src/main/java"),
             File("app/src/main/java"),
         ).firstOrNull(File::isDirectory) ?: error("Cannot locate app source root")
-        val generalRoot = File(
+        val dataRoot = File(
             sourceRoot,
-            "com/aozijx/passly/presentation/feature/settings/main/general",
+            "com/aozijx/passly/presentation/feature/settings/main/data",
         )
-        val routeRoot = File(
+        val navigationRoot = File(
             sourceRoot,
-            "com/aozijx/passly/presentation/feature/settings/main/navigation/general",
+            "com/aozijx/passly/presentation/feature/settings/main/navigation",
         )
 
-        assertFalse(File(generalRoot, "GeneralDetail.kt").exists())
-        assertFalse(File(generalRoot, "NotificationDetail.kt").exists())
-
-        val generalRoute = File(routeRoot, "GeneralRoute.kt").readText()
-        val diagnosticsRoute = File(routeRoot, "DiagnosticsRoute.kt")
-        val notificationsRoute = File(routeRoot, "NotificationsRoute.kt").readText()
-        assertTrue(generalRoute.contains("GeneralSettingsViewModel"))
-        assertFalse(generalRoute.contains("DiagnosticsViewModel"))
-        assertFalse(generalRoute.contains("CreateDocument"))
+        val aboutRoute = File(navigationRoot, "about/AboutRoute.kt").readText()
+        val dataRoute = File(navigationRoot, "data/DataManagementRoute.kt").readText()
+        val diagnosticsRoute = File(navigationRoot, "data/DiagnosticsRoute.kt")
+        val notificationsRoute = File(navigationRoot, "general/NotificationsRoute.kt").readText()
+        assertTrue(File(dataRoot, "StorageSettingsViewModel.kt").isFile)
+        assertTrue(dataRoute.contains("StorageSettingsViewModel"))
+        assertTrue(dataRoute.contains("LogSettingsSection"))
+        assertFalse(aboutRoute.contains("ViewModel"))
+        assertFalse(aboutRoute.contains("DiagnosticsViewModel"))
         assertTrue(diagnosticsRoute.isFile)
         assertTrue(diagnosticsRoute.readText().contains("DiagnosticsViewModel"))
         assertTrue(diagnosticsRoute.readText().contains("CreateDocument"))

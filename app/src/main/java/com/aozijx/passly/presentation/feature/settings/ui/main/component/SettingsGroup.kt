@@ -101,11 +101,11 @@ internal enum class SettingsGroup(
         subtitleRes = R.string.settings_page_notifications_summary,
         routeKey = "settings/notifications"
     ),
-    GENERAL(
+    ABOUT(
         sectionTitleRes = R.string.settings_section_other,
         icon = Icons.Default.Info,
-        titleRes = R.string.settings_page_general,
-        subtitleRes = R.string.settings_page_general_summary,
-        routeKey = "settings/general"
+        titleRes = R.string.settings_page_about,
+        subtitleRes = R.string.settings_page_about_summary,
+        routeKey = "settings/about"
     )
 }

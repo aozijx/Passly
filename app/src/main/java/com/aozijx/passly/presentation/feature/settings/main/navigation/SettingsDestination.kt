@@ -9,7 +9,7 @@ sealed class SettingsDestination(val route: String) : Serializable {
     companion object {
         private val destinations by lazy {
             listOf(Security, Privacy, Permissions, Appearance, Interface, Interaction, Autofill,
-                DataManagement, BackupRestore, Notifications, RecoveryCode, General, Diagnostics)
+                DataManagement, BackupRestore, Notifications, RecoveryCode, About, Diagnostics)
                 .associateBy(SettingsDestination::route)
         }
 
@@ -63,8 +63,8 @@ sealed class SettingsDestination(val route: String) : Serializable {
         private fun readResolve(): Any = RecoveryCode
     }
 
-    data object General : SettingsDestination("settings/general") {
-        private fun readResolve(): Any = General
+    data object About : SettingsDestination("settings/about") {
+        private fun readResolve(): Any = About
     }
 
     data object Diagnostics : SettingsDestination("settings/diagnostics") {
@@ -84,6 +84,6 @@ internal fun settingsDetailRoutes(): List<SettingsDestination> = listOf(
     SettingsDestination.BackupRestore,
     SettingsDestination.Notifications,
     SettingsDestination.RecoveryCode,
-    SettingsDestination.General,
+    SettingsDestination.About,
     SettingsDestination.Diagnostics,
 )

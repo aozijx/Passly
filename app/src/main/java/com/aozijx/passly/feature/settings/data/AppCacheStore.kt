@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.settings.general
+package com.aozijx.passly.feature.settings.data
 
 /** Feature-facing operations for application-owned cache data. */
 interface AppCacheStore {

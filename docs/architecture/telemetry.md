@@ -94,8 +94,10 @@ TSV 行，presentation 不解析文本恢复字段。查看页默认显示 INFO/
 Android ClipboardManager 标记为敏感内容，不写入 Compose 可保存状态。页面进入时立即刷新记录和当前视图字节数，完整
 会话校验失败时不读取日志；页面显示内部加密 `.log` 文件的实际总占用，清理成功后同时清空 retained/visible 状态和占用。
 
-诊断日志是 `SettingsDestination.Diagnostics` 独立二级页面。General 只发出导航，不持有日志 ViewModel、SAF launcher、
-导出或清理状态；诊断 Route 独占页面进入刷新、三种 MIME 的 `CreateDocument`、效果收集与敏感剪贴板写入。Top bar 菜单
+诊断日志是 `SettingsDestination.Diagnostics` 独立二级页面，由“数据管理”中的日志入口导航；数据管理进入时并行读取缓存与
+加密日志占用，清除日志行右侧显示当前占用并在清除后刷新。数据管理只持有存储统计和清理动作，不持有日志查看状态、
+SAF launcher 或导出状态。“关于”是无 ViewModel 的独立页面。诊断 Route 独占页面进入刷新、
+三种 MIME 的 `CreateDocument`、效果收集与敏感剪贴板写入。Top bar 菜单
 提供保存、分享、清理，保存/分享共用带圆角语义容器和格式说明的选择 sheet。页面固定显示 E/W/I/D FilterChip 与
 结构化元数据搜索；行使用等宽
 字体，INFO/DEBUG 保持中性色，WARN 使用有限强调色，ERROR/FATAL 使用错误色，同时始终保留等级文本以满足无障碍识别。
