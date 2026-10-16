@@ -44,7 +44,7 @@ class DiagnosticsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun `page entry refreshes typed lines and cached byte count`() = runTest {
+    fun `page entry refreshes typed lines`() = runTest {
         val lines = listOf(
             DiagnosticsLogLine(LogLevel.INFO, "row-one", "trace_one", "application.one"),
             DiagnosticsLogLine(LogLevel.WARN, "row-two", "trace_two", "application.two"),
@@ -62,7 +62,6 @@ class DiagnosticsViewModelTest {
 
         assertEquals(1, store.readCount)
         assertEquals(lines, viewModel.uiState.value.retainedLines)
-        assertEquals(1_024L, viewModel.uiState.value.logByteCount)
     }
 
     @Test

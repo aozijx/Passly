@@ -11,7 +11,6 @@ data class DiagnosticsUiState(
     val retainedLines: List<DiagnosticsLogLine> = emptyList(),
     val selectedLevels: Set<LogLevel> = DEFAULT_VISIBLE_LEVELS,
     val searchQuery: String = "",
-    val logByteCount: Long = 0,
     val pendingExportAction: ExportAction? = null,
     val pendingLocalFormat: LogFormat? = null,
     val isClearConfirmationVisible: Boolean = false,

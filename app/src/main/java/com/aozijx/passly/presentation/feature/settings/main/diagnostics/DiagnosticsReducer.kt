@@ -7,7 +7,7 @@ import com.aozijx.passly.feature.settings.diagnostics.LogFormat
 
 internal sealed interface DiagnosticsMutation {
     data object Loading : DiagnosticsMutation
-    data class LinesLoaded(val lines: List<DiagnosticsLogLine>, val byteCount: Long) : DiagnosticsMutation
+    data class LinesLoaded(val lines: List<DiagnosticsLogLine>) : DiagnosticsMutation
     data object SessionRestricted : DiagnosticsMutation
     data class LevelToggled(val level: LogLevel) : DiagnosticsMutation
     data class SearchChanged(val query: String) : DiagnosticsMutation
@@ -27,13 +27,11 @@ internal object DiagnosticsReducer {
             isLoading = false,
             isSessionRestricted = false,
             retainedLines = mutation.lines,
-            logByteCount = mutation.byteCount,
         )
         DiagnosticsMutation.SessionRestricted -> state.copy(
             isLoading = false,
             isSessionRestricted = true,
             retainedLines = emptyList(),
-            logByteCount = 0,
         )
         is DiagnosticsMutation.LevelToggled -> state.copy(
             selectedLevels = state.selectedLevels.toggle(mutation.level),
@@ -50,7 +48,6 @@ internal object DiagnosticsReducer {
         DiagnosticsMutation.ClearDismissed -> state.copy(isClearConfirmationVisible = false)
         DiagnosticsMutation.LogsCleared -> state.copy(
             retainedLines = emptyList(),
-            logByteCount = 0,
             isClearConfirmationVisible = false,
         )
     }

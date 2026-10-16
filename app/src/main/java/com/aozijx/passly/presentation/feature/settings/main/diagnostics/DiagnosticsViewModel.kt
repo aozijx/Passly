@@ -72,7 +72,7 @@ class DiagnosticsViewModel @Inject constructor(
                 return@launch
             }
             val lines = logStore.readLines(MAX_VIEW_LINES)
-            mutate(DiagnosticsMutation.LinesLoaded(lines, logStore.storageBytes()))
+            mutate(DiagnosticsMutation.LinesLoaded(lines))
         }
     }
 

@@ -27,12 +27,11 @@ class DiagnosticsReducerTest {
     fun `default view includes info warn error and fatal while debug is hidden`() {
         val state = DiagnosticsReducer.reduce(
             DiagnosticsUiState(),
-            DiagnosticsMutation.LinesLoaded(listOf(info, warn, error, fatal, debug), 42),
+            DiagnosticsMutation.LinesLoaded(listOf(info, warn, error, fatal, debug)),
         )
 
         assertEquals(setOf(LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR), state.selectedLevels)
         assertEquals(listOf(info, warn, error, fatal), state.visibleLines)
-        assertEquals(42, state.logByteCount)
         assertFalse(state.isLoading)
     }
 
@@ -77,7 +76,6 @@ class DiagnosticsReducerTest {
         val state = DiagnosticsReducer.reduce(
             DiagnosticsUiState(
                 retainedLines = listOf(error),
-                logByteCount = 10,
                 isClearConfirmationVisible = true,
             ),
             DiagnosticsMutation.LogsCleared,
@@ -85,7 +83,6 @@ class DiagnosticsReducerTest {
 
         assertTrue(state.retainedLines.isEmpty())
         assertTrue(state.visibleLines.isEmpty())
-        assertEquals(0, state.logByteCount)
         assertFalse(state.isClearConfirmationVisible)
     }
 }

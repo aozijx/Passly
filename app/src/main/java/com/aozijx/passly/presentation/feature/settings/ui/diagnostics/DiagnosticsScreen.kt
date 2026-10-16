@@ -1,6 +1,5 @@
 package com.aozijx.passly.presentation.feature.settings.ui.diagnostics
 
-import android.text.format.Formatter
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -91,16 +89,6 @@ internal fun DiagnosticsScreen(
             }
         },
     ) {
-        if (!state.isLoading && !state.isSessionRestricted) item {
-            Text(
-                text = stringResource(
-                    R.string.settings_diagnostics_storage_usage,
-                    Formatter.formatShortFileSize(LocalContext.current, state.logByteCount),
-                ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.labelLarge,
-            )
-        }
         item {
             OutlinedTextField(
                 value = state.searchQuery,
