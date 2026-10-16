@@ -62,6 +62,7 @@ object Events {
         val DiagnosticsExportFailed = EventKey("application.diagnostics_export.failed")
         val ScannedOtpInvalid = EventKey("application.scanned_otp.invalid")
         val ScannerFailed = EventKey("application.scanner.failed")
+        val LogOverflow = EventKey("application.log.overflow")
     }
 
     object Database {
@@ -130,6 +131,7 @@ object Events {
         Application.DiagnosticsExportFailed,
         Application.ScannedOtpInvalid,
         Application.ScannerFailed,
+        Application.LogOverflow,
         Database.Error,
         Database.SessionTransition,
         Database.SessionTransitionFailed,
@@ -224,4 +226,9 @@ object LogFieldKeys {
     val Operation = LogFieldKey("operation")
     val Locked = LogFieldKey("locked")
     val ClearTask = LogFieldKey("clear_task")
+    val DroppedDebugCount = LogFieldKey("dropped_debug_count")
+    val DroppedInfoCount = LogFieldKey("dropped_info_count")
+    val DroppedWarnCount = LogFieldKey("dropped_warn_count")
+    val DroppedErrorCount = LogFieldKey("dropped_error_count")
+    val DroppedFatalCount = LogFieldKey("dropped_fatal_count")
 }

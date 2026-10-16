@@ -7,7 +7,7 @@ import com.aozijx.passly.feature.settings.diagnostics.LogFormat
 
 internal sealed interface DiagnosticsMutation {
     data object Loading : DiagnosticsMutation
-    data class LinesLoaded(val lines: List<DiagnosticsLogLine>, val byteCount: Int) : DiagnosticsMutation
+    data class LinesLoaded(val lines: List<DiagnosticsLogLine>, val byteCount: Long) : DiagnosticsMutation
     data object SessionRestricted : DiagnosticsMutation
     data class LevelToggled(val level: LogLevel) : DiagnosticsMutation
     data class SearchChanged(val query: String) : DiagnosticsMutation

@@ -188,7 +188,11 @@ internal class EncryptedLogFileManager(
             .array()
 
     fun listLogFiles(): List<File> = directory.listFiles()
-        ?.filter { it.isFile && it.extension == LOG_EXTENSION }
+        ?.filter {
+            it.isFile &&
+                it.extension == LOG_EXTENSION &&
+                it.canonicalFile.parentFile == directory.canonicalFile
+        }
         ?.sortedWith(compareBy(File::lastModified, File::getName))
         .orEmpty()
 
@@ -210,18 +214,26 @@ internal class EncryptedLogFileManager(
 
     fun cleanup() {
         val cutoff = nowMs() - RETENTION_MS
-        listLogFiles().filter { it.lastModified() < cutoff }.forEach(File::delete)
-        listLogFiles().sortedWith(
-            compareBy<File>(File::lastModified, File::getName).reversed(),
-        ).drop(maxFiles).forEach(File::delete)
+        val activeFile = activeEntry?.file?.canonicalFile
+        listLogFiles()
+            .filter { it.canonicalFile != activeFile && it.lastModified() < cutoff }
+            .forEach { runCatching { it.delete() } }
+        val files = listLogFiles()
+        val excessCount = (files.size - maxFiles).coerceAtLeast(0)
+        files.filter { it.canonicalFile != activeFile }
+            .sortedWith(compareBy(File::lastModified, File::getName))
+            .take(excessCount)
+            .forEach { runCatching { it.delete() } }
         var total = listLogFiles().sumOf(File::length)
-        listLogFiles().forEach { file ->
+        listLogFiles().filter { it.canonicalFile != activeFile }.forEach { file ->
             if (total > maxTotalBytes) {
                 val length = file.length()
-                if (file.delete()) total -= length
+                if (runCatching { file.delete() }.getOrDefault(false)) total -= length
             }
         }
     }
+
+    fun storageBytes(): Long = listLogFiles().sumOf(File::length)
 
     fun clear() {
         activeEntry?.destroy()

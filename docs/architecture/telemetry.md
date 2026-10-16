@@ -72,7 +72,12 @@ Logger、Service Locator 或安装前 no-op 桥。
 - wrapping nonce 与每条 record nonce 都独立随机生成且必须为 12 bytes；GCM tag 为 128 bits。
 - 解码严格校验长度、UTF-8、枚举范围、sequence、外层/载荷 level 一致性和尾随字节。
 - 读取使用 `fileId + byte offset + sequence` 游标，不把整个文件载入内存。
-- writer 是容量 256 的单线程队列；文件按日期或 1 MiB 轮换，最多 3 个文件、3 MiB、3 天。
+- writer 是容量 256 的单线程队列，Logger 装配完成后即可接收启动阶段事件，调用线程只入队、不执行文件 I/O。
+  队列满时，高等级事件依次淘汰待写 DEBUG、INFO；仍无法入队的事件按等级原子计数，不保留被丢弃事件的内容。
+  下一次生命周期 flush 在队列恢复后写一条 `application.log.overflow` 计数汇总并再次 flush，避免递归写入饱和队列。
+- 文件按日期或 1 MiB 轮换，最多 3 个文件、3 MiB、3 天；按时间和文件名稳定地从最旧文件清理，并始终保护
+  当前活动文件。清理和占用统计只处理 canonical parent 为日志目录的 `.log` 文件；轮换、清理和关闭会覆盖不再使用的
+  内存数据密钥。设置层读取的是这些加密文件的实际总字节数，而不是当前可见文本的估算值。
 
 ## 崩溃和导出
 

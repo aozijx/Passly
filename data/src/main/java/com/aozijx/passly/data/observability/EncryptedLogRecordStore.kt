@@ -3,6 +3,7 @@ package com.aozijx.passly.data.observability
 import android.content.Context
 import com.aozijx.passly.core.observability.LogLevel
 import com.aozijx.passly.core.observability.SanitizedLogRecord
+import com.aozijx.passly.core.observability.sink.LogDropCounts
 import com.aozijx.passly.core.observability.sink.LogRecordCursor
 import com.aozijx.passly.core.observability.sink.LogRecordPage
 import com.aozijx.passly.core.observability.sink.LogRecordStore
@@ -19,6 +20,7 @@ import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLongArray
 import java.util.concurrent.atomic.AtomicReference
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -50,6 +52,8 @@ internal class EncryptedLogRecordStore(
     )
     private val crashClaimed = AtomicBoolean(false)
     private val overflowEmergencyClaimed = AtomicBoolean(false)
+    private val overflowEmergencyThread = AtomicReference<Thread?>(null)
+    private val droppedCounts = AtomicLongArray(LogLevel.entries.size)
     private val writer = ThreadPoolExecutor(
         1,
         1,
@@ -68,14 +72,17 @@ internal class EncryptedLogRecordStore(
         try {
             writer.execute(task)
         } catch (_: RejectedExecutionException) {
-            if (record.level != LogLevel.DEBUG && evictQueuedDebug()) {
+            val evicted = evictQueuedLowerPriority(record.level)
+            if (evicted != null) {
+                recordDrop(evicted)
                 if (runCatching { writer.execute(task) }.isSuccess) return
             }
             if (record.level in setOf(LogLevel.ERROR, LogLevel.FATAL) &&
                 overflowEmergencyClaimed.compareAndSet(false, true)
             ) {
-                emergencyWrite(record, EMERGENCY_TIMEOUT_MS, "overflow")
+                if (emergencyWriteAsync(record, "overflow")) return
             }
+            recordDrop(record.level)
         }
     }
 
@@ -178,8 +185,15 @@ internal class EncryptedLogRecordStore(
                 TimeUnit.MILLISECONDS,
             )
             if (!queued) return false
-            val remaining = (deadline - System.nanoTime()).coerceAtLeast(0)
-            completed.await(remaining, TimeUnit.NANOSECONDS)
+            var remaining = (deadline - System.nanoTime()).coerceAtLeast(0)
+            if (!completed.await(remaining, TimeUnit.NANOSECONDS)) return false
+            overflowEmergencyThread.get()?.let { emergencyThread ->
+                remaining = (deadline - System.nanoTime()).coerceAtLeast(0)
+                TimeUnit.NANOSECONDS.timedJoin(emergencyThread, remaining)
+                if (emergencyThread.isAlive) return false
+                overflowEmergencyThread.compareAndSet(emergencyThread, null)
+            }
+            true
         } catch (_: InterruptedException) {
             Thread.currentThread().interrupt()
             false
@@ -190,6 +204,16 @@ internal class EncryptedLogRecordStore(
         flush(500)
         synchronized(writeLock) { manager.clear() }
     }
+
+    override fun storageBytes(): Long = synchronized(writeLock) { manager.storageBytes() }
+
+    override fun drainDroppedCounts(): LogDropCounts = LogDropCounts(
+        debug = droppedCounts.getAndSet(LogLevel.DEBUG.ordinal, 0),
+        info = droppedCounts.getAndSet(LogLevel.INFO.ordinal, 0),
+        warn = droppedCounts.getAndSet(LogLevel.WARN.ordinal, 0),
+        error = droppedCounts.getAndSet(LogLevel.ERROR.ordinal, 0),
+        fatal = droppedCounts.getAndSet(LogLevel.FATAL.ordinal, 0),
+    )
 
     override fun crashEmergencyWrite(record: SanitizedLogRecord, timeoutMs: Long): Boolean {
         require(timeoutMs > 0) { "Emergency timeout must be positive" }
@@ -209,6 +233,9 @@ internal class EncryptedLogRecordStore(
         } catch (_: InterruptedException) {
             Thread.currentThread().interrupt()
             false
+        }
+        overflowEmergencyThread.getAndSet(null)?.let { emergencyThread ->
+            runCatching { emergencyThread.join(CLOSE_TIMEOUT_MS) }
         }
         if (terminated) synchronized(writeLock) { manager.close() }
         emergencyEntry.getAndSet(null)?.destroy()
@@ -237,36 +264,65 @@ internal class EncryptedLogRecordStore(
         }
     }
 
-    private fun evictQueuedDebug(): Boolean {
-        val debugTask = writer.queue.firstOrNull {
-            it is WriteTask && it.record.level == LogLevel.DEBUG
-        } ?: return false
-        return writer.queue.remove(debugTask)
+    private fun evictQueuedLowerPriority(incoming: LogLevel): LogLevel? {
+        val evictableLevels = listOf(LogLevel.DEBUG, LogLevel.INFO)
+            .filter { it.ordinal < incoming.ordinal }
+        for (level in evictableLevels) {
+            val task = writer.queue.firstOrNull {
+                it is WriteTask && it.record.level == level
+            } ?: continue
+            if (writer.queue.remove(task)) return level
+        }
+        return null
+    }
+
+    private fun recordDrop(level: LogLevel) {
+        droppedCounts.incrementAndGet(level.ordinal)
+    }
+
+    private fun emergencyWriteAsync(record: SanitizedLogRecord, prefix: String): Boolean {
+        val entry = emergencyEntry.getAndSet(null) ?: return false
+        overflowEmergencyThread.set(launchEmergencyWrite(record, prefix, entry))
+        return true
     }
 
     /** Uses only pre-created in-memory key material and a separate file; no Keystore or normal lock. */
     private fun emergencyWrite(record: SanitizedLogRecord, timeoutMs: Long, prefix: String): Boolean {
         val completed = AtomicBoolean(false)
         val entry = emergencyEntry.getAndSet(null) ?: return false
-        val thread = Thread({
-            var plain: ByteArray? = null
-            try {
-                plain = LogRecordCodec.encode(record)
-                val file = File(directory, "${prefix}_${nowMs()}.log")
-                manager.writeHeader(file, entry)
-                append(file, entry, 1, record.level.ordinal, plain)
-                completed.set(true)
-            } catch (_: Throwable) {
-                // Logging must never replace the original failure.
-            } finally {
-                plain?.fill(0)
-                entry.destroy()
-            }
-        }, "passly-observability-emergency").apply { isDaemon = true }
-        thread.start()
+        val thread = launchEmergencyWrite(record, prefix, entry, completed)
         runCatching { thread.join(timeoutMs) }
         return completed.get()
     }
+
+    private fun launchEmergencyWrite(
+        record: SanitizedLogRecord,
+        prefix: String,
+        entry: EncryptedLogFileManager.Entry,
+        completed: AtomicBoolean = AtomicBoolean(false),
+    ): Thread = Thread(
+        {
+            var plain: ByteArray? = null
+            var stagingFile: File? = null
+            try {
+                plain = LogRecordCodec.encode(record)
+                val staging = File.createTempFile("${prefix}_${nowMs()}_", ".tmp", directory)
+                    .also { stagingFile = it }
+                manager.writeHeader(staging, entry)
+                append(staging, entry, 1, record.level.ordinal, plain)
+                val completedFile = File(directory, "${staging.nameWithoutExtension}.log")
+                completed.set(staging.renameTo(completedFile))
+            } catch (_: Throwable) {
+                // Logging must never replace the original failure.
+            } finally {
+                if (completed.get().not()) stagingFile?.delete()
+                plain?.fill(0)
+                entry.destroy()
+            }
+        },
+        "passly-observability-emergency",
+    ).apply { isDaemon = true }
+        .also(Thread::start)
 
     private fun append(
         file: File,
@@ -350,7 +406,7 @@ internal class EncryptedLogRecordStore(
         private const val MAX_FILE_BYTES = 1024 * 1024L
         private const val MAX_QUEUED_RECORDS = 256
         private const val MAX_PAGE_RECORDS = 500
-        private const val EMERGENCY_TIMEOUT_MS = 50L
+        private const val CLOSE_TIMEOUT_MS = 500L
     }
 }
 

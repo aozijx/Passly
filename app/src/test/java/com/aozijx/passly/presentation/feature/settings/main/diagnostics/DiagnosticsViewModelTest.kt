@@ -62,7 +62,7 @@ class DiagnosticsViewModelTest {
 
         assertEquals(1, store.readCount)
         assertEquals(lines, viewModel.uiState.value.retainedLines)
-        assertEquals("row-one\nrow-two".toByteArray().size, viewModel.uiState.value.logByteCount)
+        assertEquals(1_024L, viewModel.uiState.value.logByteCount)
     }
 
     @Test
@@ -146,6 +146,8 @@ class DiagnosticsViewModelTest {
             readCount++
             return lines.take(limit)
         }
+
+        override suspend fun storageBytes(): Long = 1_024L
 
         override suspend fun clear() = Unit
     }

@@ -72,7 +72,7 @@ class DiagnosticsViewModel @Inject constructor(
                 return@launch
             }
             val lines = logStore.readLines(MAX_VIEW_LINES)
-            mutate(DiagnosticsMutation.LinesLoaded(lines, lines.byteCount()))
+            mutate(DiagnosticsMutation.LinesLoaded(lines, logStore.storageBytes()))
         }
     }
 
@@ -138,9 +138,6 @@ class DiagnosticsViewModel @Inject constructor(
     private fun mutate(mutation: DiagnosticsMutation) {
         _uiState.update { DiagnosticsReducer.reduce(it, mutation) }
     }
-
-    private fun List<DiagnosticsLogLine>.byteCount(): Int =
-        joinToString("\n") { it.text }.toByteArray(Charsets.UTF_8).size
 
     private companion object {
         const val MAX_VIEW_LINES = 500

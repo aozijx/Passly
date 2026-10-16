@@ -15,6 +15,7 @@ import com.aozijx.passly.core.observability.SanitizedLogRecord
 import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
 import com.aozijx.passly.core.observability.TraceSnapshot
+import com.aozijx.passly.core.observability.sink.LogDropCounts
 import java.io.File
 import java.nio.file.Files
 import java.io.RandomAccessFile
@@ -150,6 +151,52 @@ class EncryptedLogRecordStoreTest {
             listOf("event_00000001", "event_00000003"),
             store.readPage(null, 10).records.map { it.eventId.value },
         )
+        assertEquals(LogDropCounts(debug = 1), store.drainDroppedCounts())
+        assertEquals(LogDropCounts(), store.drainDroppedCounts())
+        store.close()
+    }
+
+    @Test
+    fun `queue overflow evicts info before accepting warn`() {
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val first = AtomicBoolean(true)
+        val store = newStore(
+            maxQueuedRecords = 1,
+            beforeWrite = {
+                if (first.compareAndSet(true, false)) {
+                    entered.countDown()
+                    release.await(2, TimeUnit.SECONDS)
+                }
+            },
+        )
+        store.write(sampleRecord(1))
+        assertTrue(entered.await(2, TimeUnit.SECONDS))
+        store.write(sampleRecord(2))
+        store.write(errorRecord(3).copy(level = LogLevel.WARN))
+        release.countDown()
+        assertTrue(store.flush(2_000))
+
+        assertEquals(
+            listOf("event_00000001", "event_00000003"),
+            store.readPage(null, 10).records.map { it.eventId.value },
+        )
+        assertEquals(LogDropCounts(info = 1), store.drainDroppedCounts())
+        store.close()
+    }
+
+    @Test
+    fun `storage bytes reports encrypted log files only`() {
+        val unrelated = File(directory, "keep.txt").apply { writeText("not a log") }
+        val store = newStore()
+        store.write(sampleRecord(1))
+        assertTrue(store.flush(2_000))
+
+        val expected = directory.listFiles()!!
+            .filter { it.extension == EncryptedLogFileManager.LOG_EXTENSION }
+            .sumOf(File::length)
+        assertEquals(expected, store.storageBytes())
+        assertTrue(unrelated.exists())
         store.close()
     }
 

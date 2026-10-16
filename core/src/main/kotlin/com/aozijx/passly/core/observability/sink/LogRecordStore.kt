@@ -2,6 +2,16 @@ package com.aozijx.passly.core.observability.sink
 
 import com.aozijx.passly.core.observability.SanitizedLogRecord
 
+data class LogDropCounts(
+    val debug: Long = 0,
+    val info: Long = 0,
+    val warn: Long = 0,
+    val error: Long = 0,
+    val fatal: Long = 0,
+) {
+    val total: Long get() = debug + info + warn + error + fatal
+}
+
 data class LogRecordCursor(
     val fileIndex: Int,
     val fileId: String,
@@ -21,6 +31,8 @@ interface LogRecordStore : LogSink, AutoCloseable {
     fun readPage(cursor: LogRecordCursor?, limit: Int): LogRecordPage
     fun readBetween(startTimestampMs: Long, endTimestampMs: Long, limit: Int): List<SanitizedLogRecord>
     fun flush(timeoutMs: Long): Boolean
+    fun storageBytes(): Long
+    fun drainDroppedCounts(): LogDropCounts
     fun clear()
     fun crashEmergencyWrite(record: SanitizedLogRecord, timeoutMs: Long): Boolean
 }

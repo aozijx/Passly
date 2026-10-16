@@ -3,6 +3,7 @@ package com.aozijx.passly.core.observability
 import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.model.ErrorSeverity
 import com.aozijx.passly.core.observability.reporting.ErrorReportContext
+import com.aozijx.passly.core.observability.sink.LogDropCounts
 
 /** A complete, typed logging instruction. Business code does not assemble protocol fields. */
 sealed interface LogStatement {
@@ -197,6 +198,17 @@ object LogStatements {
             Reasons.ScannerProcessingFailed,
             throwable,
             LogFields.Empty,
+        )
+
+        fun logOverflow(dropped: LogDropCounts): LogStatement = InfoStatement(
+            Events.Application.LogOverflow,
+            fields {
+                count(LogFieldKeys.DroppedDebugCount, dropped.debug)
+                count(LogFieldKeys.DroppedInfoCount, dropped.info)
+                count(LogFieldKeys.DroppedWarnCount, dropped.warn)
+                count(LogFieldKeys.DroppedErrorCount, dropped.error)
+                count(LogFieldKeys.DroppedFatalCount, dropped.fatal)
+            },
         )
     }
 

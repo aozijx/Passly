@@ -234,6 +234,11 @@ class PrivacyPolicy(
             LogFieldKeys.Operation to FieldKind.OPERATION,
             LogFieldKeys.Locked to FieldKind.BOOLEAN,
             LogFieldKeys.ClearTask to FieldKind.BOOLEAN,
+            LogFieldKeys.DroppedDebugCount to FieldKind.COUNT,
+            LogFieldKeys.DroppedInfoCount to FieldKind.COUNT,
+            LogFieldKeys.DroppedWarnCount to FieldKind.COUNT,
+            LogFieldKeys.DroppedErrorCount to FieldKind.COUNT,
+            LogFieldKeys.DroppedFatalCount to FieldKind.COUNT,
         )
     }
 }

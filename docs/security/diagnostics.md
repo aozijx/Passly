@@ -52,11 +52,12 @@ Android API 依据：[Log](https://developer.android.com/reference/android/util/
 - 每个文件使用随机 256-bit AES 数据密钥和 AES-GCM；数据密钥由独立 Android Keystore wrapping key
   `com.aozijx.passly.observability.wrap.v1` 加密。文件头和每条记录的 sequence、level、file id 均进入 AAD，
   篡改、乱序和跨文件复制会读取失败。
-- 单文件上限 1 MiB，最多保留 3 个文件、总计 3 MiB、最长 3 天。轮换和删除只匹配新目录中的 `.log`，
-  不触碰其他文件。
-- 正常写入使用容量 256 的单线程队列；队列满时优先淘汰待写 DEBUG。ERROR/FATAL 只能进行一次预初始化
-  emergency write。紧急路径不访问 Keystore、不获取正常 writer 锁；所有存储异常被 Sink 边界吞掉，不允许递归
-  写日志或替换原始崩溃。
+- 单文件上限 1 MiB，最多保留 3 个文件、总计 3 MiB、最长 3 天。轮换和删除只接受 canonical parent 为日志目录的
+  `.log`，不触碰其他文件；当前活动文件不参与清理，删除失败彼此隔离。轮换、清理和关闭都会覆盖被替换的数据密钥。
+- 正常写入使用容量 256 的单线程队列；调用线程只做非阻塞入队。队列满时，高等级事件依次淘汰待写 DEBUG、INFO，
+  仍无法入队的事件只累计分等级计数。恢复或生命周期 flush 时输出一条 `application.log.overflow` 汇总，计数器不保存
+  被丢弃事件内容。ERROR/FATAL 只能进行一次预初始化 emergency write；该写入在独立线程执行，并只由有界 flush 等待。
+  紧急路径不访问 Keystore、不获取正常 writer 锁；所有存储异常被 Sink 边界吞掉，不允许递归写日志或替换原始崩溃。
 - codec 只接受 `SanitizedLogRecord`，并重新校验事件目录、category、level/error 契约、严格 UTF-8、长度、
   枚举、trace/error 结构和尾随字节。未 HMAC 的标识符无法构造为可持久化字段。
 - 私有 record codec 当前 schema 为 3；它持久化受控 `exception_kind` 并拒绝所有旧 schema，不提供兼容读取器。

@@ -6,6 +6,7 @@ import com.aozijx.passly.core.observability.metrics.EventAggregator
 import com.aozijx.passly.core.observability.privacy.*
 import com.aozijx.passly.core.observability.sink.*
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -82,34 +83,69 @@ class ObservabilityRuntimeControllerTest {
         controller.shutdown()
         controller.shutdown()
 
-        assertEquals(listOf(300L), store.flushTimeouts)
+        assertEquals(listOf(300L, 300L), store.flushTimeouts)
         assertEquals(1, store.closeCalls)
         assertSame(previous, registry.current)
+    }
+
+    @Test
+    fun `logger accepts startup events before runtime controller starts`() {
+        val store = RecordingStore()
+        val controller = controller(store, noPreviousExit, RecordingCrashHandlerRegistry()) { logger ->
+            runBlocking {
+                logger.withRootTrace(Operations.ApplicationStartup) {
+                    logger.log(LogStatements.Application.traceResumeUnavailable())
+                }
+            }
+        }
+
+        assertEquals(listOf(Events.Application.TraceResumeUnavailable), store.records.map { it.event })
+        controller.start()
+    }
+
+    @Test
+    fun `flush records one structured overflow summary and drains counters`() {
+        val store = RecordingStore().apply {
+            dropped = LogDropCounts(debug = 4, info = 2, warn = 1)
+        }
+        val controller = controller(store, noPreviousExit, RecordingCrashHandlerRegistry())
+
+        assertTrue(controller.flush())
+
+        val overflow = store.records.single { it.event == Events.Application.LogOverflow }
+        assertEquals(LogValue.Count(4), overflow.fields.values[LogFieldKeys.DroppedDebugCount])
+        assertEquals(LogValue.Count(2), overflow.fields.values[LogFieldKeys.DroppedInfoCount])
+        assertEquals(LogValue.Count(1), overflow.fields.values[LogFieldKeys.DroppedWarnCount])
+        assertEquals(LogDropCounts(), store.dropped)
+        assertEquals(2, store.flushTimeouts.size)
     }
 
     private fun controller(
         store: RecordingStore,
         previous: PreviousExitSource,
         registry: RecordingCrashHandlerRegistry,
+        beforeController: (Logger) -> Unit = {},
     ): ObservabilityRuntimeController {
         val crashCapture = CrashRecordCaptureSink()
+        val logger = DefaultLogger(
+            sanitizer = PrivacyPolicy(
+                IdentifierHasher { _, _ -> null },
+                ContractViolationBehavior.THROW,
+            ),
+            sinks = listOf(crashCapture, store),
+            lifecycleSinks = emptyList(),
+            idGenerator = SequentialIdGenerator(),
+            timeSource = object : ObservabilityTimeSource {
+                override fun wallTimeMs() = 1_700_000_000_000L
+                override fun elapsedRealtimeMs() = 100L
+            },
+            processSessionProvider = ProcessSessionProvider { ProcessSessionId("process_session") },
+            secureSessionProvider = SecureSessionProvider { null },
+        )
+        beforeController(logger)
         return ObservabilityRuntimeController(
             store = store,
-            logger = DefaultLogger(
-                sanitizer = PrivacyPolicy(
-                    IdentifierHasher { _, _ -> null },
-                    ContractViolationBehavior.THROW,
-                ),
-                sinks = listOf(crashCapture, store),
-                lifecycleSinks = emptyList(),
-                idGenerator = SequentialIdGenerator(),
-                timeSource = object : ObservabilityTimeSource {
-                    override fun wallTimeMs() = 1_700_000_000_000L
-                    override fun elapsedRealtimeMs() = 100L
-                },
-                processSessionProvider = ProcessSessionProvider { ProcessSessionId("process_session") },
-                secureSessionProvider = SecureSessionProvider { null },
-            ),
+            logger = logger,
             crashCapture = crashCapture,
             previousExitSource = previous,
             crashHandlers = registry,
@@ -151,6 +187,7 @@ class ObservabilityRuntimeControllerTest {
         val emergencyTimeouts = mutableListOf<Long>()
         var closeCalls = 0
         var onFlush: () -> Unit = {}
+        var dropped = LogDropCounts()
         override fun write(record: SanitizedLogRecord) {
             records += record
             order += "log_write"
@@ -159,6 +196,8 @@ class ObservabilityRuntimeControllerTest {
             LogRecordPage(emptyList(), 0, null)
         override fun readBetween(startTimestampMs: Long, endTimestampMs: Long, limit: Int) =
             emptyList<SanitizedLogRecord>()
+        override fun storageBytes() = 0L
+        override fun drainDroppedCounts() = dropped.also { dropped = LogDropCounts() }
         override fun flush(timeoutMs: Long): Boolean {
             flushTimeouts += timeoutMs
             onFlush()

@@ -10,6 +10,7 @@ import com.aozijx.passly.core.observability.SanitizedLogRecord
 import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
 import com.aozijx.passly.core.observability.TraceSnapshot
+import com.aozijx.passly.core.observability.sink.LogDropCounts
 import com.aozijx.passly.core.observability.sink.LogRecordCursor
 import com.aozijx.passly.core.observability.sink.LogRecordPage
 import com.aozijx.passly.core.observability.sink.LogRecordStore
@@ -248,6 +249,8 @@ class ObservabilityExportServiceTest {
             LogRecordPage(records.take(limit), records.size, null)
         override fun readBetween(startTimestampMs: Long, endTimestampMs: Long, limit: Int) =
             records.filter { it.timestampMs in startTimestampMs until endTimestampMs }.take(limit)
+        override fun storageBytes() = 0L
+        override fun drainDroppedCounts() = LogDropCounts()
         override fun flush(timeoutMs: Long) = true
         override fun clear() = Unit
         override fun crashEmergencyWrite(record: SanitizedLogRecord, timeoutMs: Long) = true

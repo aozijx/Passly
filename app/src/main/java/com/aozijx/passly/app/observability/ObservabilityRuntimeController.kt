@@ -67,7 +67,21 @@ class ObservabilityRuntimeController @Inject internal constructor(
 
     fun flush(timeoutMs: Long = LIFECYCLE_FLUSH_TIMEOUT_MS): Boolean {
         eventAggregator.flush()
-        return runCatching { store.flush(timeoutMs) }.getOrDefault(false)
+        val startedAt = System.nanoTime()
+        if (!runCatching { store.flush(timeoutMs) }.getOrDefault(false)) return false
+        val dropped = store.drainDroppedCounts()
+        if (dropped.total == 0L) return true
+        val summaryRecorded = runCatching {
+            runBlocking {
+                logger.withRootTrace(Operations.ApplicationLifecycle) {
+                    logger.log(LogStatements.Application.logOverflow(dropped))
+                }
+            }
+        }.isSuccess
+        if (!summaryRecorded) return false
+        val elapsedMs = (System.nanoTime() - startedAt) / NANOS_PER_MILLISECOND
+        val remainingMs = (timeoutMs - elapsedMs).coerceAtLeast(0)
+        return runCatching { store.flush(remainingMs) }.getOrDefault(false)
     }
 
     override suspend fun readLines(limit: Int): List<DiagnosticsLogLine> = withContext(Dispatchers.IO) {
@@ -83,9 +97,11 @@ class ObservabilityRuntimeController @Inject internal constructor(
 
     override suspend fun clear() = withContext(Dispatchers.IO) { store.clear() }
 
+    override suspend fun storageBytes(): Long = withContext(Dispatchers.IO) { store.storageBytes() }
+
     fun shutdown() {
         if (!shutdown.compareAndSet(false, true)) return
-        eventAggregator.flush()
+        runCatching { flush(LIFECYCLE_FLUSH_TIMEOUT_MS) }
         if (crashHandlers.current() === crashHandler) crashHandlers.install(previousCrashHandler)
         runCatching { store.close() }
     }
@@ -137,6 +153,7 @@ class ObservabilityRuntimeController @Inject internal constructor(
 
     private companion object {
         const val PAGE_SIZE = 500
+        const val NANOS_PER_MILLISECOND = 1_000_000L
         const val LIFECYCLE_FLUSH_TIMEOUT_MS = 300L
         const val CRASH_FLUSH_TIMEOUT_MS = 300L
         const val CRASH_EMERGENCY_TIMEOUT_MS = 200L
