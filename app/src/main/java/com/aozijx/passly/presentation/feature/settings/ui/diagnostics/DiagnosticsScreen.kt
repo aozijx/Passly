@@ -1,13 +1,15 @@
 package com.aozijx.passly.presentation.feature.settings.ui.diagnostics
 
+import android.text.format.Formatter
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
@@ -22,6 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -87,11 +91,21 @@ internal fun DiagnosticsScreen(
             }
         },
     ) {
+        if (!state.isLoading && !state.isSessionRestricted) item {
+            Text(
+                text = stringResource(
+                    R.string.settings_diagnostics_storage_usage,
+                    Formatter.formatShortFileSize(LocalContext.current, state.logByteCount),
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelLarge,
+            )
+        }
         item {
             OutlinedTextField(
                 value = state.searchQuery,
                 onValueChange = { onAction(DiagnosticsAction.SearchChanged(it)) },
-                label = { Text(stringResource(R.string.settings_diagnostics_trace_search)) },
+                label = { Text(stringResource(R.string.settings_diagnostics_search)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -185,7 +199,10 @@ private fun FormatSheet(
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.padding(horizontal = 24.dp, vertical = 12.dp)) {
+        Column(
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             Text(
                 text = if (action == ExportAction.SHARE) {
                     stringResource(R.string.settings_diagnostics_share_format)
@@ -194,6 +211,7 @@ private fun FormatSheet(
                 },
                 style = MaterialTheme.typography.titleLarge,
             )
+            Spacer(Modifier.height(4.dp))
             FormatOption(LogFormat.JSONL, R.string.settings_diagnostics_jsonl_description, onSelect)
             FormatOption(LogFormat.TSV, R.string.settings_diagnostics_tsv_description, onSelect)
             FormatOption(LogFormat.ZIP, R.string.settings_diagnostics_zip_description, onSelect)
@@ -203,18 +221,22 @@ private fun FormatSheet(
 
 @Composable
 private fun FormatOption(format: LogFormat, description: Int, onSelect: (LogFormat) -> Unit) {
-    Column(
+    Surface(
+        onClick = { onSelect(format) },
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onSelect(format) }
-            .padding(vertical = 14.dp),
+            .padding(vertical = 2.dp),
     ) {
-        Text(format.name, style = MaterialTheme.typography.titleMedium)
-        Text(
-            stringResource(description),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        Column(Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
+            Text(format.name, style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(description),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
     }
 }
 

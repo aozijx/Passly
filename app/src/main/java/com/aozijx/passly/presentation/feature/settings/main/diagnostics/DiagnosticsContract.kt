@@ -20,9 +20,13 @@ data class DiagnosticsUiState(
         get() {
             val query = searchQuery.trim()
             return retainedLines.filter { line ->
-                line.matchesSelectedLevel() && (query.isEmpty() || line.traceId == query)
+                line.matchesSelectedLevel() && (query.isEmpty() || line.matches(query))
             }
         }
+
+    private fun DiagnosticsLogLine.matches(query: String): Boolean =
+        listOfNotNull(traceId, event, errorCode, exceptionKind, exceptionType)
+            .any { it.contains(query, ignoreCase = true) }
 
     private fun DiagnosticsLogLine.matchesSelectedLevel(): Boolean = when (level) {
         LogLevel.FATAL -> LogLevel.ERROR in selectedLevels

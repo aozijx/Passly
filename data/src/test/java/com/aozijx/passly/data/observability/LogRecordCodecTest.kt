@@ -23,7 +23,6 @@ import com.aozijx.passly.core.observability.SecureSessionId
 import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
 import com.aozijx.passly.core.observability.TraceSnapshot
-import java.nio.ByteBuffer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
@@ -56,17 +55,6 @@ class LogRecordCodecTest {
         val malformed = encoded.copyOf().also { it[eventOffset] = 0xC3.toByte() }
         assertThrows(Exception::class.java) {
             LogRecordCodec.decode(malformed)
-        }
-    }
-
-    @Test
-    fun `decoder rejects the removed diagnostic id schema instead of migrating it`() {
-        val legacyVersion = LogRecordCodec.encode(sampleRecord()).copyOf().also {
-            ByteBuffer.wrap(it).putInt(1)
-        }
-
-        assertThrows(IllegalArgumentException::class.java) {
-            LogRecordCodec.decode(legacyVersion)
         }
     }
 

@@ -327,7 +327,8 @@
     <string name="settings_log_view_subtitle">Always recorded and encrypted by day</string>
     <string name="settings_diagnostics_title">Diagnostic logs</string>
     <string name="settings_diagnostics_menu">Log actions</string>
-    <string name="settings_diagnostics_trace_search">Exact trace_id search</string>
+    <string name="settings_diagnostics_search">Search events, error codes, exception classes, or traces</string>
+    <string name="settings_diagnostics_storage_usage">Encrypted log storage: %1$s</string>
     <string name="settings_diagnostics_session_restricted">This session cannot read diagnostic logs</string>
     <string name="settings_diagnostics_export_format">Choose export format</string>
     <string name="settings_diagnostics_share_format">Choose share format</string>

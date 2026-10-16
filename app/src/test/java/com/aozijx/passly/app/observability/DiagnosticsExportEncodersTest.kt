@@ -33,7 +33,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -100,19 +99,9 @@ class DiagnosticsExportEncodersTest {
             }
         }
 
-        assertEquals(listOf("manifest.json", "diagnostics.jsonl", "diagnostics.tsv", "README.txt"), entries.keys.toList())
-        assertFalse(entries.getValue("diagnostics.jsonl").contains("\"type\":\"manifest\""))
-        assertFalse(entries.getValue("diagnostics.tsv").startsWith("#"))
-    }
-
-    @Test
-    fun `unknown schema is rejected before output`() {
-        val output = ByteArrayOutputStream()
-
-        assertThrows(IllegalArgumentException::class.java) {
-            encoder.write(LogFormat.JSONL, output, manifest.copy(schemaVersion = 99), emptyList())
-        }
-        assertEquals(0, output.size())
+        assertEquals(listOf("manifest.json", "logs.jsonl", "logs.tsv", "README.txt"), entries.keys.toList())
+        assertFalse(entries.getValue("logs.jsonl").contains("\"type\":\"manifest\""))
+        assertFalse(entries.getValue("logs.tsv").startsWith("#"))
     }
 
     @Test

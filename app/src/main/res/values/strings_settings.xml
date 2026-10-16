@@ -327,7 +327,8 @@
     <string name="settings_log_view_subtitle">始终记录，按日加密保存</string>
     <string name="settings_diagnostics_title">诊断日志</string>
     <string name="settings_diagnostics_menu">日志操作</string>
-    <string name="settings_diagnostics_trace_search">精确搜索 trace_id</string>
+    <string name="settings_diagnostics_search">搜索事件、错误代码、异常类或 Trace</string>
+    <string name="settings_diagnostics_storage_usage">加密日志占用：%1$s</string>
     <string name="settings_diagnostics_session_restricted">当前会话无权读取诊断日志</string>
     <string name="settings_diagnostics_export_format">选择导出格式</string>
     <string name="settings_diagnostics_share_format">选择分享格式</string>

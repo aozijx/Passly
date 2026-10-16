@@ -60,7 +60,7 @@ Android API 依据：[Log](https://developer.android.com/reference/android/util/
   紧急路径不访问 Keystore、不获取正常 writer 锁；所有存储异常被 Sink 边界吞掉，不允许递归写日志或替换原始崩溃。
 - codec 只接受 `SanitizedLogRecord`，并重新校验事件目录、category、level/error 契约、严格 UTF-8、长度、
   枚举、trace/error 结构和尾随字节。未 HMAC 的标识符无法构造为可持久化字段。
-- 私有 record codec 当前 schema 为 3；它持久化受控 `exception_kind` 并拒绝所有旧 schema，不提供兼容读取器。
+- 私有 record codec 使用唯一的固定 schema 1；version 校验属于加密容器完整性检查，不存在历史格式路由或兼容读取器。
   错误通过同一操作的 `trace_id` 关联，语义由 `error_code + reason + exception_kind + exception snapshot` 表达。
 
 ## 运行时与导出边界
@@ -87,5 +87,6 @@ Android API 依据：[Log](https://developer.android.com/reference/android/util/
   该链路不创建应用内明文副本，也不读取或复用备份目录设置。
 - 只有“分享”会在 `cacheDir` 创建与格式匹配的明文临时文件，并用对应 MIME 交给系统分享：分享失败立即删除，
   分享成功后 10 分钟删除，下一次分享前清理陈旧文件。
-- App 内查看器只接收 `LogLevel + trace_id + 已脱敏 TSV 行`，等级/trace 筛选不改变导出范围。复制单行或最多 100 行的
+- App 内查看器只接收等级、事件名、错误码、安全异常类别/类型、`trace_id` 与已脱敏 TSV 行；搜索这些结构化元数据，
+  不解析 TSV 文本，也不改变导出范围。页面显示内部加密日志文件的实际总字节数。复制单行或最多 100 行的
   同一 Trace 时使用 Android 敏感剪贴板标记；UI 不接触原始 record、Throwable 或隐私策略之前的字段。

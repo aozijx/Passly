@@ -278,7 +278,7 @@ class ObservabilityExportServiceTest {
 
         override fun createExportFile(spec: ExportArtifactSpec): File = File(
             directory,
-            "passly_diagnostics.${spec.extension}",
+            "passly_logs.${spec.extension}",
         ).also {
             artifactSpec = spec
             target = it

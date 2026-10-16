@@ -88,14 +88,16 @@ Logger、Service Locator 或安装前 no-op 桥。
 
 查看最多读取当前 store 的 500 条。运行时为每条查看记录保留结构化 `LogLevel`、精确 `trace_id` 和已脱敏的固定八列
 TSV 行，presentation 不解析文本恢复字段。查看页默认显示 INFO/WARN/ERROR，FATAL 归入 ERROR 组，DEBUG 默认隐藏；
-等级筛选与精确 trace-id 查询只作用于这 500 条内存记录，绝不传入导出请求或改变导出内容。复制单行只使用对应的
+等级筛选与本地搜索只作用于这 500 条内存记录；搜索对 `trace_id`、事件名、错误码、稳定异常类别和异常类名执行
+不区分大小写的包含匹配，绝不传入导出请求或改变导出内容。复制单行只使用对应的
 已脱敏 TSV 行；复制 Trace 最多输出同一 trace 的 100 行，不能访问原始 record、Throwable 或未脱敏字段。复制通过
 Android ClipboardManager 标记为敏感内容，不写入 Compose 可保存状态。页面进入时立即刷新记录和当前视图字节数，完整
-会话校验失败时不读取日志；清理成功后同时清空 retained/visible 状态。
+会话校验失败时不读取日志；页面显示内部加密 `.log` 文件的实际总占用，清理成功后同时清空 retained/visible 状态和占用。
 
 诊断日志是 `SettingsDestination.Diagnostics` 独立二级页面。General 只发出导航，不持有日志 ViewModel、SAF launcher、
 导出或清理状态；诊断 Route 独占页面进入刷新、三种 MIME 的 `CreateDocument`、效果收集与敏感剪贴板写入。Top bar 菜单
-提供保存、分享、清理，保存/分享共用格式选择 sheet。页面固定显示 E/W/I/D FilterChip 与精确 trace 搜索；行使用等宽
+提供保存、分享、清理，保存/分享共用带圆角语义容器和格式说明的选择 sheet。页面固定显示 E/W/I/D FilterChip 与
+结构化元数据搜索；行使用等宽
 字体，INFO/DEBUG 保持中性色，WARN 使用有限强调色，ERROR/FATAL 使用错误色，同时始终保留等级文本以满足无障碍识别。
 长按行只提供“复制该行”和“复制该 Trace”，选择器取消会清除 pending 格式，不会遗留可误用的导出请求。
 
@@ -120,9 +122,10 @@ JSONL 是唯一 canonical 事件模型。独立 JSONL 第一行是 manifest JSON
 `time level event outcome details exception trace session`，空列保留，bag 使用转义后的 `key=value`，未知 JSON 路径归入
 `details` 而不丢失。独立 TSV 在表头前输出一行 `# key=value` manifest header。
 
-ZIP 只包含 `manifest.json`、`diagnostics.jsonl`、`diagnostics.tsv`、`README.txt`；其中 JSONL/TSV payload 不重复
+ZIP 只包含 `manifest.json`、`logs.jsonl`、`logs.tsv`、`README.txt`；其中 JSONL/TSV payload 不重复
 manifest。所有格式共享同一编码器、ISO-8601 UTC 动态时间、字段排序和安全异常快照。Autofill 等模块状态只通过模块事件
-进入 payload，不写入通用 manifest。未知 schema major 在写出任何字节前拒绝，不生成部分文件。
+进入 payload，不写入通用 manifest。当前只有一种导出 schema，编码器直接输出该格式，不保留旧格式路由或兼容分支。
+分享缓存名使用 `passly_logs_<时间>.<扩展名>`，SAF 建议名使用 `passly_logs.<扩展名>`。
 
 业务代码禁止直接 `printStackTrace` 或使用 `android.util.Log`；Android 系统日志统一由 `LogcatSink.kt` 输出。
 

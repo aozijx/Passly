@@ -199,7 +199,7 @@ internal class AndroidDiagnosticsExportStorageGateway @Inject constructor(
     }
 
     private companion object {
-        const val EXPORT_PREFIX = "passly_diagnostics_"
+        const val EXPORT_PREFIX = "passly_logs_"
         const val DELETE_DELAY_MS = 10 * 60 * 1000L
     }
 }

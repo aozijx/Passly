@@ -46,8 +46,8 @@ class DiagnosticsViewModelTest {
     @Test
     fun `page entry refreshes typed lines and cached byte count`() = runTest {
         val lines = listOf(
-            DiagnosticsLogLine(LogLevel.INFO, "row-one", "trace_one"),
-            DiagnosticsLogLine(LogLevel.WARN, "row-two", "trace_two"),
+            DiagnosticsLogLine(LogLevel.INFO, "row-one", "trace_one", "application.one"),
+            DiagnosticsLogLine(LogLevel.WARN, "row-two", "trace_two", "application.two"),
         )
         val store = RecordingLogStore(lines)
         val viewModel = DiagnosticsViewModel(
@@ -68,7 +68,7 @@ class DiagnosticsViewModelTest {
     @Test
     fun `copy row and trace emit only sanitized bounded tsv rows`() = runTest {
         val traceLines = (0..100).map { index ->
-            DiagnosticsLogLine(LogLevel.INFO, "row-$index", "trace_shared")
+            DiagnosticsLogLine(LogLevel.INFO, "row-$index", "trace_shared", "application.row")
         }
         val viewModel = viewModel(RecordingLogStore(traceLines))
         viewModel.onAction(DiagnosticsAction.PageEntered)
@@ -99,7 +99,7 @@ class DiagnosticsViewModelTest {
             DiagnosticsEffect.SelectSaveDocument(
                 format = LogFormat.TSV,
                 mimeType = "text/tab-separated-values",
-                fileName = "passly_diagnostics.tsv",
+                fileName = "passly_logs.tsv",
             ),
             effect.await(),
         )

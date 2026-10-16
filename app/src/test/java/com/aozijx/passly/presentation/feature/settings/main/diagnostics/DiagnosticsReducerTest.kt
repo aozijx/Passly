@@ -9,11 +9,19 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DiagnosticsReducerTest {
-    private val info = DiagnosticsLogLine(LogLevel.INFO, "info-row", "trace_info")
-    private val warn = DiagnosticsLogLine(LogLevel.WARN, "warn-row", "trace_shared")
-    private val error = DiagnosticsLogLine(LogLevel.ERROR, "error-row", "trace_shared")
-    private val fatal = DiagnosticsLogLine(LogLevel.FATAL, "fatal-row", "trace_fatal")
-    private val debug = DiagnosticsLogLine(LogLevel.DEBUG, "debug-row", "trace_debug")
+    private val info = DiagnosticsLogLine(LogLevel.INFO, "info-row", "trace_info", "application.started")
+    private val warn = DiagnosticsLogLine(LogLevel.WARN, "warn-row", "trace_shared", "security.auth.failed")
+    private val error = DiagnosticsLogLine(
+        LogLevel.ERROR,
+        "error-row",
+        "trace_shared",
+        "database.open.failed",
+        errorCode = "DATABASE_OPEN_FAILED",
+        exceptionKind = "DATABASE_IO",
+        exceptionType = "SQLiteException",
+    )
+    private val fatal = DiagnosticsLogLine(LogLevel.FATAL, "fatal-row", "trace_fatal", "application.crash")
+    private val debug = DiagnosticsLogLine(LogLevel.DEBUG, "debug-row", "trace_debug", "autofill.skipped")
 
     @Test
     fun `default view includes info warn error and fatal while debug is hidden`() {
@@ -45,16 +53,22 @@ class DiagnosticsReducerTest {
     }
 
     @Test
-    fun `exact trace search selects the whole retained trace and clear restores level filtering`() {
+    fun `search matches trace event error code and exception metadata`() {
         val initial = DiagnosticsUiState(retainedLines = listOf(info, warn, error, debug))
 
-        val searched = DiagnosticsReducer.reduce(
+        val byTrace = DiagnosticsReducer.reduce(
             initial,
             DiagnosticsMutation.SearchChanged("trace_shared"),
         )
-        val cleared = DiagnosticsReducer.reduce(searched, DiagnosticsMutation.SearchChanged(""))
+        val byEvent = DiagnosticsReducer.reduce(initial, DiagnosticsMutation.SearchChanged("database.open"))
+        val byCode = DiagnosticsReducer.reduce(initial, DiagnosticsMutation.SearchChanged("database_open_failed"))
+        val byClass = DiagnosticsReducer.reduce(initial, DiagnosticsMutation.SearchChanged("sqlite"))
+        val cleared = DiagnosticsReducer.reduce(byTrace, DiagnosticsMutation.SearchChanged(""))
 
-        assertEquals(listOf(warn, error), searched.visibleLines)
+        assertEquals(listOf(warn, error), byTrace.visibleLines)
+        assertEquals(listOf(error), byEvent.visibleLines)
+        assertEquals(listOf(error), byCode.visibleLines)
+        assertEquals(listOf(error), byClass.visibleLines)
         assertEquals(listOf(info, warn, error), cleared.visibleLines)
     }
 

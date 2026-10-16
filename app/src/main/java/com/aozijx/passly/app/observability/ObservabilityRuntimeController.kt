@@ -91,6 +91,10 @@ class ObservabilityRuntimeController @Inject internal constructor(
                 level = record.level,
                 text = recordEncoder.encode(record),
                 traceId = record.trace.traceId.value,
+                event = record.event.value,
+                errorCode = record.error?.errorCode?.value,
+                exceptionKind = record.error?.exception?.kind?.name,
+                exceptionType = record.error?.exception?.type?.value,
             )
         }
     }

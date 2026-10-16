@@ -18,16 +18,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import javax.inject.Inject
 
-internal object DiagnosticsSchemaRouter {
-    const val CURRENT_SCHEMA_VERSION = 1
-
-    fun requireSupported(schemaVersion: Int) {
-        require(schemaVersion == CURRENT_SCHEMA_VERSION) {
-            "Unsupported diagnostics schema $schemaVersion"
-        }
-    }
-}
-
 internal data class CanonicalDiagnosticsEvent(
     private val record: SanitizedLogRecord,
 ) {
@@ -192,7 +182,6 @@ internal class DiagnosticsExportEncoder @Inject constructor() {
         records: List<SanitizedLogRecord>,
         embedManifest: Boolean = true,
     ) {
-        DiagnosticsSchemaRouter.requireSupported(manifest.schemaVersion)
         val events = records.sortedWith(
             compareBy<SanitizedLogRecord> { it.timestampMs }
                 .thenBy { it.elapsedRealtimeMs }
@@ -223,8 +212,8 @@ internal class DiagnosticsExportEncoder @Inject constructor() {
     private fun writeZip(output: OutputStream, manifest: ExportManifest, events: List<JsonObject>) {
         ZipOutputStream(output).use { zip ->
             zip.writeEntry("manifest.json", Json.encodeToString(JsonElement.serializer(), manifest.toJson()) + "\n")
-            zip.writeEntry("diagnostics.jsonl") { writeJsonl(it, manifest, events, false) }
-            zip.writeEntry("diagnostics.tsv") { writeTsv(it, manifest, events, false) }
+            zip.writeEntry("logs.jsonl") { writeJsonl(it, manifest, events, false) }
+            zip.writeEntry("logs.tsv") { writeTsv(it, manifest, events, false) }
             zip.writeEntry("README.txt", ZIP_README)
         }
     }
@@ -247,7 +236,7 @@ internal class DiagnosticsExportEncoder @Inject constructor() {
     }
 
     private companion object {
-        const val ZIP_README = "Passly diagnostics. JSONL is the canonical machine format; TSV is the human-readable projection.\n"
+        const val ZIP_README = "Passly logs. JSONL is the canonical machine format; TSV is the human-readable projection.\n"
     }
 }
 

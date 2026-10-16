@@ -88,7 +88,7 @@ class DiagnosticsViewModel @Inject constructor(
                     DiagnosticsEffect.SelectSaveDocument(
                         format = format,
                         mimeType = format.mimeType,
-                        fileName = "passly_diagnostics.${format.extension}",
+                        fileName = "passly_logs.${format.extension}",
                     ),
                 )
             }
