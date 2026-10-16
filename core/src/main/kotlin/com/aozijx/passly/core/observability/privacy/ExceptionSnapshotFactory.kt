@@ -3,9 +3,10 @@ package com.aozijx.passly.core.observability.privacy
 import com.aozijx.passly.core.observability.AppStackFrame
 import com.aozijx.passly.core.observability.ExceptionSnapshot
 import com.aozijx.passly.core.observability.ExceptionType
+import com.aozijx.passly.core.observability.ExceptionKind
 
 class ExceptionSnapshotFactory {
-    fun create(throwable: Throwable): ExceptionSnapshot {
+    fun create(throwable: Throwable, kind: ExceptionKind = ExceptionKind.UNKNOWN): ExceptionSnapshot {
         var foreignFrameCount = 0
         val appFrames = buildList {
             throwable.stackTrace.forEach { frame ->
@@ -32,6 +33,7 @@ class ExceptionSnapshotFactory {
             appStackFrames = appFrames,
             causeTypes = causeTypes,
             foreignFrameCount = foreignFrameCount,
+            kind = kind,
         )
     }
 

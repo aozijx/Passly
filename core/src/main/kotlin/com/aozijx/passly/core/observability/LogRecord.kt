@@ -60,6 +60,16 @@ value class ExceptionType(val value: String) {
     }
 }
 
+enum class ExceptionKind {
+    DATABASE_IO,
+    CRYPTO,
+    AUTHENTICATION,
+    PLATFORM,
+    LIFECYCLE,
+    IO,
+    UNKNOWN,
+}
+
 @JvmInline
 value class AppStackFrame(val value: String) {
     init {
@@ -74,6 +84,7 @@ data class ExceptionSnapshot(
     val appStackFrames: List<AppStackFrame>,
     val causeTypes: List<ExceptionType>,
     val foreignFrameCount: Int,
+    val kind: ExceptionKind = ExceptionKind.UNKNOWN,
 ) {
     init {
         require(appStackFrames.size <= 24) { "Too many application stack frames" }

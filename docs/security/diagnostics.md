@@ -11,9 +11,10 @@ Logger v1 的隐私层采用“类型与字段目录白名单优先、检测规�
 拒绝/丢弃该字段，绝不回退为明文或普通摘要。Debug 构建对契约违规抛出不含原值的
 `LogContractViolation`，Release 构建返回仅含匿名违规枚举的拒绝结果。
 
-Throwable 只转换为安全快照：保留简单异常类型、最多 24 个 Passly 源码栈帧、最多 3 层 cause 类型以及外部帧
-计数。转换过程不读取或保存异常 message、localizedMessage、suppressed、文件名/绝对路径以及第三方类名。所有
-Sink 只接受经过该策略生成的不可变 `SanitizedLogRecord`。
+Throwable 只在 core 隐私边界转换：`ExceptionMapper` 先依据受控错误码映射稳定 `exception_kind`，未知错误只按
+`GeneralSecurityException`/`IOException` 等稳定父类型兜底；随后生成包含简单异常类型、最多 24 个 Passly 源码
+栈帧、最多 3 层 cause 类型和外部帧计数的安全快照。转换过程不读取或保存异常 message、localizedMessage、
+suppressed、文件名/绝对路径以及第三方类名。所有 Sink 只接受经过该策略生成的不可变 `SanitizedLogRecord`。
 
 错误语义集中在 `config/observability/error-catalog.json`。目录中的 code、默认 reason、category、exposure 和说明由
 生成任务统一校验；内部错误禁止声明用户提示。只有显式标记为 `USER_ACTIONABLE` 的错误可生成资源映射，并且默认与
@@ -58,8 +59,8 @@ Android API 依据：[Log](https://developer.android.com/reference/android/util/
   写日志或替换原始崩溃。
 - codec 只接受 `SanitizedLogRecord`，并重新校验事件目录、category、level/error 契约、严格 UTF-8、长度、
   枚举、trace/error 结构和尾随字节。未 HMAC 的标识符无法构造为可持久化字段。
-- 私有 record codec 当前 schema 为 2；它删除了旧失败诊断标识，旧 schema 记录会被明确拒绝，不提供兼容读取器。
-  错误通过同一操作的 `trace_id` 关联，语义由 `error_code + reason + exception snapshot` 表达。
+- 私有 record codec 当前 schema 为 3；它持久化受控 `exception_kind` 并拒绝所有旧 schema，不提供兼容读取器。
+  错误通过同一操作的 `trace_id` 关联，语义由 `error_code + reason + exception_kind + exception snapshot` 表达。
 
 ## 运行时与导出边界
 
@@ -69,6 +70,11 @@ Android API 依据：[Log](https://developer.android.com/reference/android/util/
   200 ms emergency write，最后始终委托原 handler；重入时不再写日志，避免递归崩溃。
 - 后台与退出操作按回调顺序串行执行：后台生命周期先完成会话锁定再 flush；应用退出先等待前序操作、完成
   `APP_EXIT` 锁定再 shutdown，防止数据库/认证关闭事件被提前截断。无需后台锁定的重复生命周期事件降为 DEBUG。
+- Security 只创建操作内子 Span；存在 Autofill/App Trace 时继承它，独立调用时才自动建立根 Trace。认证必须记录
+  `purpose`，锁定必须显式记录彼此独立的 `lock_reason` 与 `trigger`。一分钟内只抑制 `from_state == to_state` 的
+  DEBUG/INFO 重复观察；真实状态转换和 WARN/ERROR/FATAL 不采样。
+- Autofill 只记录确实可观察的发现、认证、平台结果交付和 Passly 会话关闭阶段。成功终态携带非负单调
+  `elapsed_ms`；平台 request id 不可成为 `trace_id`，也不记录无法由 Android API 证实的 `field_filled`。
 - JSONL/TSV/ZIP 导出必须持有 `EXPORT_DIAGNOSTICS` 的 fresh `AuthorizationPermit`。调用方用单一请求同时声明
   `action + format`：分享不得携带目标 URI，本地导出必须携带 SAF 返回的 `content://` URI。六种组合共用同一个
   授权入口、当前记录快照、manifest 工厂和编码器，不允许在 UI 或存储层复制格式逻辑。JSONL 是唯一 canonical 数据模型；

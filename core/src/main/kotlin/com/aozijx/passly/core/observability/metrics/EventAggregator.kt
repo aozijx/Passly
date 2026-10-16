@@ -41,7 +41,7 @@ class EventAggregator(
         } else {
             existing.add(record)
         }
-        return shouldEmit(record)
+        return shouldEmit(record, firstInWindow = existing == null)
     }
 
     @Synchronized
@@ -74,7 +74,8 @@ class EventAggregator(
         return snapshot
     }
 
-    private fun shouldEmit(record: SanitizedLogRecord): Boolean {
+    private fun shouldEmit(record: SanitizedLogRecord, firstInWindow: Boolean): Boolean {
+        if (record.isUnchangedLowSeverityState()) return firstInWindow
         if (record.level != LogLevel.DEBUG || record.event in NEVER_SAMPLE_EVENTS) return true
         if (debugSamplePercent == 0) return false
         if (debugSamplePercent == 100) return true
@@ -155,7 +156,7 @@ class EventAggregator(
 
     private companion object {
         const val DEFAULT_CAPACITY = 256
-        const val DEFAULT_WINDOW_MS = 5 * 60 * 1000L
+        const val DEFAULT_WINDOW_MS = 60_000L
         const val DEFAULT_DEBUG_SAMPLE_PERCENT = 25
         val NEVER_SAMPLE_EVENTS = setOf(
             Events.Autofill.ResultDeliveryStarted,
@@ -167,3 +168,10 @@ class EventAggregator(
 
 private fun SanitizedLogRecord.metricElapsedMs(): Long? =
     (fields.values[LogFieldKeys.ElapsedMs] as? LogValue.DurationMs)?.value
+
+private fun SanitizedLogRecord.isUnchangedLowSeverityState(): Boolean {
+    if (level != LogLevel.DEBUG && level != LogLevel.INFO) return false
+    val from = fields.values[LogFieldKeys.FromState] ?: return false
+    val to = fields.values[LogFieldKeys.ToState] ?: return false
+    return from == to
+}

@@ -8,6 +8,7 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.Reasons
+import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillAuthorizationOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
@@ -69,11 +70,16 @@ class AutofillFillViewModel @Inject constructor(
         viewModelScope.launch {
             continueTrace(request) {
                 mutate(AutofillFillMutation.Loading)
+                val authenticationStartedAt = monotonicTimeMs()
                 logger.log(LogStatements.Autofill.authenticationStarted())
                 try {
                     when (authorizeInteraction(request.interactionId)) {
                         is AutofillAuthorizationOutcome.Authorized -> {
-                            logger.log(LogStatements.Autofill.authenticationCompleted())
+                            logger.log(
+                                LogStatements.Autofill.authenticationCompleted(
+                                    monotonicTimeMs() - authenticationStartedAt,
+                                ),
+                            )
                             continueAuthorized(request)
                         }
                         is AutofillAuthorizationOutcome.Cancelled,
@@ -105,10 +111,15 @@ class AutofillFillViewModel @Inject constructor(
             return
         }
 
+        val discoveryStartedAt = monotonicTimeMs()
         logger.log(LogStatements.Autofill.discoveryStarted())
         when (val discovery = discover(request)) {
             is AutofillDiscoveryOutcome.Candidates -> {
-                logger.log(LogStatements.Autofill.discoveryCompleted())
+                logger.log(
+                    LogStatements.Autofill.discoveryCompleted(
+                        monotonicTimeMs() - discoveryStartedAt,
+                    ),
+                )
                 val directEntryId = request.directEntryId
                 when {
                     directEntryId != null -> resolve(request, directEntryId)

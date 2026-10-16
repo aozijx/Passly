@@ -12,7 +12,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationSnapshot
 import com.aozijx.passly.domain.access.model.AuthenticationState
-import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.model.CancellationReason
 import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
@@ -92,7 +92,7 @@ class DefaultAuthenticationManager @Inject constructor(
     override suspend fun authenticate(
         request: AuthenticationRequest,
         input: AuthInput,
-    ): AuthenticationResult = securityEvents.traceAuthentication {
+    ): AuthenticationResult = securityEvents.traceAuthentication(request.purpose) {
         authenticateInternal(request, input, this)
     }
 
@@ -281,7 +281,7 @@ class DefaultAuthenticationManager @Inject constructor(
         }
     }
 
-    override suspend fun lock(reason: LockReason) = session.lock(reason)
+    override suspend fun lock(request: SessionLockRequest) = session.lock(request)
 
     override suspend fun refreshAvailability() {
         _methods.value = availabilityResolver.resolve()

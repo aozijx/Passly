@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.autofill.runtime
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -54,13 +55,23 @@ class AutofillResultDelivery internal constructor(
                 receipt.interactionId.value,
                 Operations.AutofillResultDelivery,
             ) {
+                val deliveryStartedAt = monotonicTimeMs()
                 logger.log(LogStatements.Autofill.resultDeliveryStarted())
                 try {
                     deliverToPlatform()
-                    logger.log(LogStatements.Autofill.resultDelivered())
+                    logger.log(
+                        LogStatements.Autofill.resultDelivered(
+                            monotonicTimeMs() - deliveryStartedAt,
+                        ),
+                    )
                     continuations.capture(receipt.interactionId.value)
                 } catch (error: Exception) {
-                    logger.log(LogStatements.Autofill.resultDeliveryFailed(error))
+                    logger.log(
+                        LogStatements.Autofill.resultDeliveryFailed(
+                            error,
+                            monotonicTimeMs() - deliveryStartedAt,
+                        ),
+                    )
                     throw error
                 }
             }
@@ -76,14 +87,24 @@ class AutofillResultDelivery internal constructor(
                     receipt.interactionId.value,
                     Operations.AutofillSessionClose,
                 ) {
+                    val closeStartedAt = monotonicTimeMs()
                     logger.log(LogStatements.Autofill.sessionCloseStarted())
                     try {
                         completeSelection(receipt.interactionId, receipt.entryId)
-                        logger.log(LogStatements.Autofill.sessionClosed())
+                        logger.log(
+                            LogStatements.Autofill.sessionClosed(
+                                monotonicTimeMs() - closeStartedAt,
+                            ),
+                        )
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (error: Exception) {
-                        logger.log(LogStatements.Autofill.sessionCloseFailed(error))
+                        logger.log(
+                            LogStatements.Autofill.sessionCloseFailed(
+                                error,
+                                monotonicTimeMs() - closeStartedAt,
+                            ),
+                        )
                         throw error
                     } finally {
                         continuations.discard(receipt.interactionId.value)

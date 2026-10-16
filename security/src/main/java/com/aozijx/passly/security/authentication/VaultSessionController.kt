@@ -12,6 +12,8 @@ import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequestId
 import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.LockTrigger
+import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
@@ -267,7 +269,10 @@ class VaultSessionController @Inject constructor(
 
     /** Closes a session whose recovery code could not be durably consumed. */
     private suspend fun sealStagedRecoverySession() {
-        securityEvents.traceLock(LockReason.RECOVERY_EXIT, timeoutMs = 5_000) {
+        securityEvents.traceLock(
+            SessionLockRequest(LockReason.RECOVERY_EXIT, LockTrigger.RECOVERY_EXIT),
+            timeoutMs = 5_000,
+        ) {
             try {
                 sessionManager.seal()
             } catch (failure: Throwable) {
@@ -291,19 +296,19 @@ class VaultSessionController @Inject constructor(
      * - SEALED（AUTOFILL_REQUEST_FINISHED / BACKGROUND / INTEGRITY_FAILURE / APP_EXIT）：
      *   排干 + 关库 + 擦 DEK
      */
-    suspend fun lock(reason: LockReason) = securityEvents.traceLock(
-        reason = reason,
-        timeoutMs = if (reason.toLockLevel() == SecureSessionState.SEALED) 5_000 else 0,
+    suspend fun lock(request: SessionLockRequest) = securityEvents.traceLock(
+        request = request,
+        timeoutMs = if (request.reason.toLockLevel() == SecureSessionState.SEALED) 5_000 else 0,
     ) {
         mutex.withLock {
-            if (!shouldApplyLock(_state.value, reason)) return@withLock
+            if (!shouldApplyLock(_state.value, request.reason)) return@withLock
             authorizationPermitRevoker.revokeAll()
             sensitiveDataKeyManager.clear()
             // A recovery session never degrades to a soft lock: closing it must wipe its DEK.
             val targetLevel = if (_state.value is AuthenticationState.RecoveryMode) {
                 SecureSessionState.SEALED
             } else {
-                reason.toLockLevel()
+                request.reason.toLockLevel()
             }
             if (!lockStateManager.state.shouldEscalateTo(targetLevel)) {
                 // SEALED 状态仍需确保残留 DEK 被擦除。例如数据库打开失败时，
@@ -315,7 +320,7 @@ class VaultSessionController @Inject constructor(
                 }
                 return@withLock
             }
-            transition(AuthenticationState.Locking(reason))
+            transition(AuthenticationState.Locking(request.reason))
             idleJob?.cancel()
 
             when (targetLevel) {
@@ -354,7 +359,7 @@ class VaultSessionController @Inject constructor(
         idleJob?.cancel()
         idleJob = scope.launch {
             delay(timeoutMs.milliseconds)
-            lock(LockReason.IDLE_TIMEOUT)
+            lock(SessionLockRequest(LockReason.IDLE_TIMEOUT, LockTrigger.IDLE_TIMER))
         }
     }
 

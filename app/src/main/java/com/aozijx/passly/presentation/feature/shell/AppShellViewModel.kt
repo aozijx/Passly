@@ -3,6 +3,8 @@ package com.aozijx.passly.presentation.feature.shell
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.LockTrigger
+import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
 import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
 import com.aozijx.passly.domain.access.port.DatabaseSessionRetryResult
@@ -51,13 +53,15 @@ class AppShellViewModel @Inject constructor(
 
     fun onAction(action: AppShellUiAction) {
         when (action) {
-            AppShellUiAction.ExitRecovery -> lock(LockReason.RECOVERY_EXIT)
+            AppShellUiAction.ExitRecovery -> lock(
+                SessionLockRequest(LockReason.RECOVERY_EXIT, LockTrigger.RECOVERY_EXIT),
+            )
             AppShellUiAction.RetryDatabaseSession -> retryDatabaseSession()
         }
     }
 
-    private fun lock(reason: LockReason) {
-        viewModelScope.launch { sessionLockController.lock(reason) }
+    private fun lock(request: SessionLockRequest) {
+        viewModelScope.launch { sessionLockController.lock(request) }
     }
 
     private fun observeAuthStates() {

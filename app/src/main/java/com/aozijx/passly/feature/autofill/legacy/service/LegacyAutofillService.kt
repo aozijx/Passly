@@ -12,6 +12,7 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.Reasons
+import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
@@ -76,17 +77,28 @@ class LegacyAutofillService : AutofillService() {
         val job = serviceScope.launch {
             logger.withRootTrace(Operations.AutofillLegacyRequest) {
                 val requestFields = requestFields(internalRequest.packageName)
+                val discoveryStartedAt = monotonicTimeMs()
                 logger.log(LogStatements.Autofill.discoveryStarted(requestFields))
                 try {
                     val outcome = discoverCandidates(internalRequest)
                     when (outcome) {
                         is AutofillDiscoveryOutcome.Candidates -> {
                             traceContinuations.capture(outcome.snapshot.id.value)
-                            logger.log(LogStatements.Autofill.discoveryCompleted(requestFields))
+                            logger.log(
+                                LogStatements.Autofill.discoveryCompleted(
+                                    monotonicTimeMs() - discoveryStartedAt,
+                                    requestFields,
+                                ),
+                            )
                         }
                         is AutofillDiscoveryOutcome.RequiresUnlock -> {
                             traceContinuations.capture(outcome.snapshot.id.value)
-                            logger.log(LogStatements.Autofill.discoveryCompleted(requestFields))
+                            logger.log(
+                                LogStatements.Autofill.discoveryCompleted(
+                                    monotonicTimeMs() - discoveryStartedAt,
+                                    requestFields,
+                                ),
+                            )
                         }
                         is AutofillDiscoveryOutcome.NoCandidates -> logger.log(
                             LogStatements.Autofill.discoveryUnavailable(

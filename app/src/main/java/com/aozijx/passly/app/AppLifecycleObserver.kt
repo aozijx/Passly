@@ -7,6 +7,8 @@ import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.LockTrigger
+import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
@@ -60,7 +62,9 @@ class AppLifecycleObserver @Inject constructor(
                     }
                 } else {
                     // 封存会话：排干租约 → 关闭数据库 → 同步认证状态
-                    sessionLockController.lock(LockReason.BACKGROUND)
+                    sessionLockController.lock(
+                        SessionLockRequest(LockReason.BACKGROUND, LockTrigger.APP_BACKGROUND),
+                    )
                 }
             } finally {
                 // 等待锁流程结束再排干日志，避免生命周期尾部事件丢失。
@@ -72,7 +76,9 @@ class AppLifecycleObserver @Inject constructor(
     override fun onDestroy(owner: LifecycleOwner) {
         enqueueLifecycleOperation {
             try {
-                sessionLockController.lock(LockReason.APP_EXIT)
+                sessionLockController.lock(
+                    SessionLockRequest(LockReason.APP_EXIT, LockTrigger.APP_EXIT),
+                )
             } finally {
                 observabilityRuntime.shutdown()
             }

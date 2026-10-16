@@ -48,7 +48,8 @@ internal data class CanonicalDiagnosticsEvent(
                 put("reason_code", error.reason.value)
                 error.exception?.let { exception ->
                     put("exception", buildJsonObject {
-                        put("kind", exception.type.value)
+                        put("kind", exception.kind.name)
+                        put("type", exception.type.value)
                         put("app_stack", JsonPrimitive(exception.appStackFrames.joinToString(",") { it.value }))
                         put("cause_kinds", JsonPrimitive(exception.causeTypes.joinToString(",") { it.value }))
                         put("foreign_frame_count", exception.foreignFrameCount)

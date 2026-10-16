@@ -5,6 +5,7 @@ import com.aozijx.passly.core.observability.ErrorPayload
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.ExceptionSnapshot
+import com.aozijx.passly.core.observability.ExceptionKind
 import com.aozijx.passly.core.observability.ExceptionType
 import com.aozijx.passly.core.observability.LogCategory
 import com.aozijx.passly.core.observability.LogFieldKey
@@ -68,6 +69,7 @@ class LogcatSinkTest {
         assertTrue(line.length <= LogcatSink.MAX_SUMMARY_CHARS)
         assertFalse(line.contains('\n'))
         assertTrue(line.contains("AUTOFILL_RESULT_DELIVERY_FAILED"))
+        assertTrue(line.contains("exception_kind=PLATFORM"))
         assertTrue(line.contains("IllegalStateException"))
         assertFalse(line.contains("Throwable"))
     }
@@ -122,6 +124,7 @@ class LogcatSinkTest {
                     appStackFrames = emptyList(),
                     causeTypes = emptyList(),
                     foreignFrameCount = 2,
+                    kind = ExceptionKind.PLATFORM,
                 ),
             )
         } else {

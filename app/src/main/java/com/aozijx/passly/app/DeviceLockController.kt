@@ -14,6 +14,8 @@ import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.LockTrigger
+import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.settings.model.SecuritySettings
@@ -73,17 +75,17 @@ internal class DeviceLockHandler(
 ) {
     suspend fun handle(trigger: DeviceLockTrigger): DeviceLockResult {
         val security = securitySettings.value
-        val reason = when (trigger) {
-            DeviceLockTrigger.SCREEN_OFF -> LockReason.BACKGROUND
+        val request = when (trigger) {
+            DeviceLockTrigger.SCREEN_OFF -> SessionLockRequest(LockReason.BACKGROUND, LockTrigger.SCREEN_OFF)
             DeviceLockTrigger.FLIP -> {
                 if (!sessionAccessState.isUnlocked() && !sessionAccessState.isRecoveryMode()) {
                     return DeviceLockResult(locked = false)
                 }
                 if (!security.isFlipToLockEnabled) return DeviceLockResult(locked = false)
-                LockReason.USER
+                SessionLockRequest(LockReason.USER, LockTrigger.DEVICE_FLIP)
             }
         }
-        sessionLockController.lock(reason)
+        sessionLockController.lock(request)
         return DeviceLockResult(
             locked = true,
             shouldClearTask = security.isFlipToLockEnabled &&

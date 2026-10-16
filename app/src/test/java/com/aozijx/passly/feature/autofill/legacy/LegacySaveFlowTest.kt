@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.CancellationReason
 import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.AuthenticationRequester
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionLockController
@@ -295,8 +296,8 @@ class LegacySaveFlowTest {
             }
         }
 
-        override suspend fun lock(reason: LockReason) {
-            lastLockReason = reason
+        override suspend fun lock(request: SessionLockRequest) {
+            lastLockReason = request.reason
             vault.lock()
         }
     }

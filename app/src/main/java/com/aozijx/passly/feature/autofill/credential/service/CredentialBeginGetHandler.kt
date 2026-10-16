@@ -12,6 +12,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Reasons
+import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
@@ -36,6 +37,7 @@ class CredentialBeginGetHandler @Inject constructor(
         request: BeginGetCredentialRequest,
         context: Context,
     ): BeginGetCredentialResponse {
+        val discoveryStartedAt = monotonicTimeMs()
         val passwordOptions = request.beginGetCredentialOptions
             .filterIsInstance<BeginGetPasswordOption>()
         if (passwordOptions.isEmpty()) {
@@ -54,6 +56,7 @@ class CredentialBeginGetHandler @Inject constructor(
             passwordOptions = passwordOptions,
             context = context,
             includeUnlockAction = true,
+            discoveryStartedAt = discoveryStartedAt,
         )
     }
 
@@ -62,6 +65,7 @@ class CredentialBeginGetHandler @Inject constructor(
         interactionId: AutofillInteractionId,
         context: Context,
     ): CredentialUnlockResponse {
+        val discoveryStartedAt = monotonicTimeMs()
         val passwordOptions = request.beginGetCredentialOptions
             .filterIsInstance<BeginGetPasswordOption>()
         if (passwordOptions.isEmpty()) return CredentialUnlockResponse.Unavailable
@@ -84,6 +88,7 @@ class CredentialBeginGetHandler @Inject constructor(
                     passwordOptions = passwordOptions,
                     context = context,
                     includeUnlockAction = false,
+                    discoveryStartedAt = discoveryStartedAt,
                 ),
             )
         }
@@ -94,10 +99,15 @@ class CredentialBeginGetHandler @Inject constructor(
         passwordOptions: List<BeginGetPasswordOption>,
         context: Context,
         includeUnlockAction: Boolean,
+        discoveryStartedAt: Long,
     ): BeginGetCredentialResponse = when (discovery) {
         is AutofillDiscoveryOutcome.RequiresUnlock -> if (includeUnlockAction) {
                 traceContinuations.capture(discovery.snapshot.id.value)
-                logger.log(LogStatements.Autofill.discoveryCompleted())
+                logger.log(
+                    LogStatements.Autofill.discoveryCompleted(
+                        monotonicTimeMs() - discoveryStartedAt,
+                    ),
+                )
                 BeginGetCredentialResponse(
                     authenticationActions = listOf(
                         AuthenticationAction(
@@ -130,7 +140,11 @@ class CredentialBeginGetHandler @Inject constructor(
                 BeginGetCredentialResponse()
             } else {
                 traceContinuations.capture(discovery.snapshot.id.value)
-                logger.log(LogStatements.Autofill.discoveryCompleted())
+                logger.log(
+                    LogStatements.Autofill.discoveryCompleted(
+                        monotonicTimeMs() - discoveryStartedAt,
+                    ),
+                )
                 BeginGetCredentialResponse(entries)
             }
         }

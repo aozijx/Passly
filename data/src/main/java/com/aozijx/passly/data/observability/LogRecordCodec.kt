@@ -8,6 +8,7 @@ import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.EventKey
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.ExceptionSnapshot
+import com.aozijx.passly.core.observability.ExceptionKind
 import com.aozijx.passly.core.observability.ExceptionType
 import com.aozijx.passly.core.observability.HashedIdentifier
 import com.aozijx.passly.core.observability.LogCategory
@@ -33,7 +34,7 @@ import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
 
 object LogRecordCodec {
-    private const val SCHEMA_VERSION = 2
+    private const val SCHEMA_VERSION = 3
     private const val MAX_STRING_BYTES = 4096
     private const val MAX_FIELDS = 64
     private const val MAX_FRAMES = 24
@@ -171,6 +172,7 @@ object LogRecordCodec {
         writeString(error.reason.value, 64)
         writeBoolean(error.exception != null)
         error.exception?.let { snapshot ->
+            writeByte(snapshot.kind.ordinal)
             writeString(snapshot.type.value, 64)
             writeShort(snapshot.appStackFrames.size)
             snapshot.appStackFrames.forEach { writeString(it.value, 256) }
@@ -184,13 +186,14 @@ object LogRecordCodec {
         val code = ErrorCode(readString(64))
         val reason = ReasonCode(readString(64))
         val exception = if (readStrictBoolean()) {
+            val kind = enumAt<ExceptionKind>(readUnsignedByte(), "exception kind")
             val type = ExceptionType(readString(64))
             val frameCount = readUnsignedShort().also { require(it <= MAX_FRAMES) }
             val frames = List(frameCount) { AppStackFrame(readString(256)) }
             val causeCount = readUnsignedShort().also { require(it <= 3) }
             val causes = List(causeCount) { ExceptionType(readString(64)) }
             val foreignCount = readInt().also { require(it >= 0) }
-            ExceptionSnapshot(type, frames, causes, foreignCount)
+            ExceptionSnapshot(type, frames, causes, foreignCount, kind)
         } else null
         return ErrorPayload(code, reason, exception)
     }

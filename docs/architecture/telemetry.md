@@ -20,6 +20,11 @@ Throwable 转换为不含 message/path 的安全快照后，才能将不可变�
 每个子操作只创建 Span 并指向直接父 Span。跨系统回调只传递最长 10 分钟、默认单次消费、最多 128 个的 opaque
 `TraceToken`，且 token 与 `process_session_id` 绑定，进程或会话不匹配时立即失效。
 
+Trace 的所有者是用户/系统操作，不是模块。Security 统一使用 `Logger.inSpan()`：位于 Autofill 或 App 操作中时继承
+该操作的 `trace_id` 并创建子 Span，独立调用时由 Logger 自动创建根 Trace。认证事件始终携带受控 `purpose`；锁定
+调用必须提供 `SessionLockRequest(reason, trigger)`，其中 reason 表示锁定策略，trigger 表示实际触发信号。screen-off、
+翻转、后台、空闲计时器、Autofill 完成、恢复模式退出和 App 退出因此不会再被折叠为同一语义。
+
 `DefaultLogger` 对每个事件只执行一次隐私策略，再把同一个不可变记录分发给所有 Sink。`trace_id` 是一次操作唯一的
 关联标识，子 Span 只继承该 Trace，不再为失败生成第二套诊断标识。Span 生命周期独立输出固定操作码、结果和单调时钟
 耗时，平台 Trace 或日志 Sink 的异常不会改变业务控制流；业务异常和取消仍按原实例向上传播。
@@ -133,11 +138,29 @@ ANR trace 不进入标准日志或导出。
 
 所有领域共用一个进程内 `EventAggregator`，输入只能是已经通过隐私策略的 `SanitizedLogRecord`。聚合键由
 event、level、category、脱敏字段、error_code 和 reason 组成，不包含 trace_id、span_id 或任何原始标识符。
-默认最多维护 256 个 LRU bucket、窗口 5 分钟；淘汰、窗口到期、App 进入后台和运行时关闭时生成有界
+默认最多维护 256 个 LRU bucket、窗口 1 分钟；淘汰、窗口到期、App 进入后台和运行时关闭时生成有界
 `MetricSnapshot`，包含 count、first/last timestamp，以及存在 `elapsed_ms` 时的 min/max/average。
 
-仅 DEBUG 可做基于 `event + process_session_id` 的稳定采样，不使用目标包名等标识符。ERROR/FATAL 以及 Autofill
-结果交付事件始终保留。聚合快照回调带递归保护，Logger 自身指标不会再次进入聚合器。
+只有带类型化 `from_state`/`to_state` 且两者相等的 DEBUG/INFO 重复观察会在一分钟窗口内抑制；窗口首条仍输出。
+`from_state != to_state` 的真实转换以及所有 WARN/ERROR/FATAL 永远绕过抑制。聚合快照回调带递归保护，Logger 自身
+指标不会再次进入聚合器。
+
+## Security 与 Autofill 链路语义
+
+认证目的使用固定协议词汇，例如 `VAULT_UNLOCK`、`AUTOFILL`、`SECRET_REVEAL` 与 `DIAGNOSTICS_EXPORT`，不直接
+序列化业务枚举名。锁定的 `lock_reason` 与 `trigger` 分列记录；调用方必须显式选择组合，不提供旧的单参数重载。
+Legacy Autofill 和 Credential Manager 各自在平台回调入口创建随机 Passly 根 Trace；系统 request id 不作为 Trace。
+opaque continuation 只恢复 Passly 已捕获的上下文，Security 认证在其中是普通子 Span，不存在“Security 继承 Autofill
+模块”的依赖关系。
+
+可观测的 Autofill 阶段为发现、认证、结果交付和 Passly 会话关闭。成功终态均携带用 `System.nanoTime()` 计算并
+归一为非负值的 `elapsed_ms`；结果交付与会话关闭使用两个独立 Span，但保持同一 `trace_id`。没有 Android 回调能证明
+字段确实写入时，不记录虚构的 `field_filled` 事件。
+
+`ExceptionMapper` 以错误码上下文为主，将异常归入 `DATABASE_IO`、`CRYPTO`、`AUTHENTICATION`、`PLATFORM`、
+`LIFECYCLE`、`IO` 或 `UNKNOWN`。未知错误只按 JDK 稳定父类型兜底，绝不读取 message；安全快照仍保留最多 24 个
+Passly 栈帧、3 层 cause 类型和外部帧计数。`exception_kind` 因此不依赖 Release 混淆后的类名，具体异常类型只作为
+辅助快照字段。
 
 `LocalAlertPolicy` 只在本机观察脱敏后的失败记录，不发起网络传输。当前规则是 10 分钟内连续出现 3 次
 `DATABASE_SESSION_OPEN_FAILED` 时生成一个告警，并附带触发阈值时最新的 `trace_id`；同一窗口不重复告警，窗口过期

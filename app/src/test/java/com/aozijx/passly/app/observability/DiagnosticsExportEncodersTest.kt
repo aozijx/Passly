@@ -7,6 +7,7 @@ import com.aozijx.passly.core.observability.ErrorPayload
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.ExceptionSnapshot
+import com.aozijx.passly.core.observability.ExceptionKind
 import com.aozijx.passly.core.observability.ExceptionType
 import com.aozijx.passly.core.observability.LogCategory
 import com.aozijx.passly.core.observability.LogFieldKey
@@ -126,10 +127,12 @@ class DiagnosticsExportEncodersTest {
                     listOf(AppStackFrame("com.aozijx.passly.Safe#call:42")),
                     emptyList(),
                     1,
+                    ExceptionKind.PLATFORM,
                 ),
             ),
         )
 
+        assertTrue(encodeBytes(LogFormat.JSONL, listOf(record)).decodeToString().contains("PLATFORM"))
         LogFormat.entries.forEach { format ->
             val exported = encodeBytes(format, listOf(record)).decodeToString()
             assertFalse(exported.contains(secret))

@@ -1,5 +1,6 @@
 package com.aozijx.passly.core.observability.privacy
 
+import com.aozijx.passly.core.observability.ExceptionKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -17,10 +18,11 @@ class ExceptionSnapshotFactoryTest {
         )
         root.addSuppressed(IllegalArgumentException("OTP_SENTINEL"))
 
-        val snapshot = factory.create(root)
+        val snapshot = factory.create(root, ExceptionKind.AUTHENTICATION)
         val encoded = snapshot.toString()
 
         assertEquals("IllegalStateException", snapshot.type.value)
+        assertEquals(ExceptionKind.AUTHENTICATION, snapshot.kind)
         assertEquals(listOf("feature.login.LoginUseCase#invoke:42"), snapshot.appStackFrames.map { it.value })
         assertEquals(1, snapshot.foreignFrameCount)
         listOf("PASSWORD_SENTINEL", "PATH_SENTINEL", "TOKEN_SENTINEL", "OTP_SENTINEL", "com.bank.secret")

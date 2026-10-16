@@ -60,12 +60,24 @@ class EventAggregatorTest {
         assertEquals(1, aggregator.activeBucketCount)
     }
 
+    @Test
+    fun `unchanged info state emits once per minute while transitions and failures bypass suppression`() {
+        val aggregator = EventAggregator(capacity = 8, debugSamplePercent = 100)
+
+        assertTrue(aggregator.record(record(level = LogLevel.INFO, timestamp = 0, state = "SEALED" to "SEALED")))
+        assertFalse(aggregator.record(record(level = LogLevel.INFO, timestamp = 30_000, state = "SEALED" to "SEALED")))
+        assertTrue(aggregator.record(record(level = LogLevel.INFO, timestamp = 60_000, state = "SEALED" to "SEALED")))
+        assertTrue(aggregator.record(record(level = LogLevel.INFO, timestamp = 60_001, state = "SEALED" to "UNLOCKED")))
+        assertTrue(aggregator.record(record(level = LogLevel.WARN, timestamp = 60_002, state = "SEALED" to "SEALED")))
+    }
+
     private fun record(
         level: LogLevel = LogLevel.DEBUG,
         event: EventKey = Events.Application.BackgroundLockSkipped,
         timestamp: Long = 10,
         trace: String = "trace_12345678",
         failure: Boolean = false,
+        state: Pair<String, String>? = null,
     ) = SanitizedLogRecord(
         eventId = EventId("event_${timestamp}_value"),
         timestampMs = timestamp,
@@ -76,7 +88,13 @@ class EventAggregatorTest {
         processSessionId = ProcessSessionId("process_123456"),
         secureSessionId = null,
         trace = TraceSnapshot(TraceId(trace), SpanId("span_123456789"), null),
-        fields = fields { durationMs(LogFieldKeys.ElapsedMs, 7) },
+        fields = fields {
+            durationMs(LogFieldKeys.ElapsedMs, 7)
+            state?.let { (from, to) ->
+                enum(LogFieldKeys.FromState, TestState.valueOf(from))
+                enum(LogFieldKeys.ToState, TestState.valueOf(to))
+            }
+        },
         error = if (failure) {
             ErrorPayload(
                 ErrorCodes.DatabaseSessionOpenFailed,
@@ -85,4 +103,6 @@ class EventAggregatorTest {
             )
         } else null,
     )
+
+    private enum class TestState { SEALED, UNLOCKED }
 }

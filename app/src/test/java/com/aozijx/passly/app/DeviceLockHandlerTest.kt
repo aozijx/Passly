@@ -2,6 +2,8 @@ package com.aozijx.passly.app
 
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.LockTrigger
+import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.settings.model.SecuritySettings
@@ -92,6 +94,7 @@ class DeviceLockHandlerTest {
         assertTrue(result.locked)
         assertFalse(result.shouldClearTask)
         assertEquals(LockReason.BACKGROUND, lockController.reason)
+        assertEquals(LockTrigger.SCREEN_OFF, lockController.trigger)
     }
 
     @Test
@@ -123,6 +126,7 @@ class DeviceLockHandlerTest {
 
         assertTrue(result.locked)
         assertEquals(LockReason.BACKGROUND, lockController.reason)
+        assertEquals(LockTrigger.SCREEN_OFF, lockController.trigger)
     }
 
     @Test
@@ -155,6 +159,7 @@ class DeviceLockHandlerTest {
         assertTrue(result.locked)
         assertTrue(result.shouldClearTask)
         assertEquals(LockReason.USER, lockController.reason)
+        assertEquals(LockTrigger.DEVICE_FLIP, lockController.trigger)
     }
 
     private fun handler(
@@ -176,9 +181,11 @@ class DeviceLockHandlerTest {
 
     private class RecordingLockController : SessionLockController {
         var reason: LockReason? = null
+        var trigger: LockTrigger? = null
 
-        override suspend fun lock(reason: LockReason) {
-            this.reason = reason
+        override suspend fun lock(request: SessionLockRequest) {
+            reason = request.reason
+            trigger = request.trigger
         }
     }
 }

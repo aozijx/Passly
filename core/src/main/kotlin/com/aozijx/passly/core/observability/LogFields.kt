@@ -45,6 +45,12 @@ class LogFields private constructor(
     override fun hashCode(): Int = values.hashCode()
     override fun toString(): String = "LogFields(keys=${values.keys.map(LogFieldKey::value)})"
 
+    internal fun withDuration(key: LogFieldKey, value: Long): LogFields {
+        require(key !in values) { "Duplicate log field" }
+        require(values.size < MAX_FIELDS) { "Too many log fields" }
+        return LogFields(values + (key to LogValue.DurationMs(value)))
+    }
+
     class Builder internal constructor() {
         private val values = linkedMapOf<LogFieldKey, LogValue>()
 

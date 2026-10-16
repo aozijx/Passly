@@ -2,6 +2,7 @@ package com.aozijx.passly.core.observability.privacy
 
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.ErrorPayload
+import com.aozijx.passly.core.observability.ExceptionMapper
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.IdentifierNamespace
 import com.aozijx.passly.core.observability.LogFieldKey
@@ -125,7 +126,12 @@ class PrivacyPolicy(
             ErrorPayload(
                 errorCode = it.errorCode,
                 reason = it.reason,
-                exception = it.throwable?.let(exceptionSnapshotFactory::create),
+                exception = it.throwable?.let { throwable ->
+                    exceptionSnapshotFactory.create(
+                        throwable = throwable,
+                        kind = ExceptionMapper.map(it.errorCode, throwable),
+                    )
+                },
             )
         }
         return SanitizationResult.Accepted(
@@ -215,6 +221,7 @@ class PrivacyPolicy(
             LogFieldKeys.Trigger to FieldKind.ENUM,
             LogFieldKeys.Result to FieldKind.ENUM,
             LogFieldKeys.AuthenticationMethod to FieldKind.ENUM,
+            LogFieldKeys.AuthenticationPurpose to FieldKind.ENUM,
             LogFieldKeys.ExitStatus to FieldKind.COUNT,
             LogFieldKeys.ExitReason to FieldKind.ENUM,
             LogFieldKeys.Importance to FieldKind.ENUM,

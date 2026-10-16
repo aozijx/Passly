@@ -5,14 +5,14 @@ import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationSnapshot
 import com.aozijx.passly.domain.access.model.AuthenticationState
-import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.SessionLockRequest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 
 interface AuthenticationManager : AuthenticationRequester, AuthenticationMethodAvailability, SessionLockController {
     val state: StateFlow<AuthenticationState>
-    override suspend fun lock(reason: LockReason)
+    override suspend fun lock(request: SessionLockRequest)
     suspend fun refreshAvailability()
     fun snapshot(): AuthenticationSnapshot
 }
@@ -25,7 +25,7 @@ interface AuthenticationRequester {
 }
 
 interface SessionLockController {
-    suspend fun lock(reason: LockReason)
+    suspend fun lock(request: SessionLockRequest)
 }
 
 interface SecureSessionAccessState {

@@ -150,6 +150,23 @@ enum class LockReason {
     APP_EXIT,
 }
 
+enum class LockTrigger {
+    USER_ACTION,
+    IDLE_TIMER,
+    AUTOFILL_COMPLETION,
+    APP_BACKGROUND,
+    SCREEN_OFF,
+    DEVICE_FLIP,
+    RECOVERY_EXIT,
+    INTEGRITY_FAILURE,
+    APP_EXIT,
+}
+
+data class SessionLockRequest(
+    val reason: LockReason,
+    val trigger: LockTrigger,
+)
+
 data class AuthenticationSnapshot(
     val state: AuthenticationState,
     val methods: AuthenticationMethods,

@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.AuthenticationRequester
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionLockController
@@ -151,6 +152,6 @@ class RecoveryModeBoundaryTest {
             input: AuthInput,
         ): AuthenticationResult = error("Recovery-mode Autofill must not authenticate during discovery")
 
-        override suspend fun lock(reason: LockReason) = Unit
+        override suspend fun lock(request: SessionLockRequest) = Unit
     }
 }

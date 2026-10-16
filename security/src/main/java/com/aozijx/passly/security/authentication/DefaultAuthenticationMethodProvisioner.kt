@@ -15,6 +15,8 @@ import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationRequestId
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.LockTrigger
+import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.github.f4b6a3.uuid.UuidCreator
@@ -79,7 +81,11 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
                 }
                 if (wasRecoveryMode) {
                     finishRecoveryPasswordProvisioning(
-                        seal = { session.lock(LockReason.RECOVERY_EXIT) },
+                        seal = {
+                            session.lock(
+                                SessionLockRequest(LockReason.RECOVERY_EXIT, LockTrigger.RECOVERY_EXIT),
+                            )
+                        },
                         refreshAvailability = authenticationManager::refreshAvailability
                     )
                 } else {

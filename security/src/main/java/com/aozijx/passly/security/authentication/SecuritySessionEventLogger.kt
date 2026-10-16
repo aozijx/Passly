@@ -7,23 +7,26 @@ import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.LockTrigger
+import com.aozijx.passly.domain.access.model.SessionLockRequest
 import javax.inject.Inject
 
 class SecuritySessionEventLogger @Inject internal constructor(
     private val logger: Logger,
 ) {
     suspend fun <T> traceLock(
-        reason: LockReason,
+        request: SessionLockRequest,
         timeoutMs: Long,
         block: suspend LockTraceScope.() -> T,
-    ): T = logger.withRootTrace(Operations.SecurityLock) {
+    ): T = logger.inSpan(Operations.SecurityLock) {
         val startedAt = elapsedRealtimeMs()
         val traceScope = LockTraceScope()
         logger.log(
             LogStatements.Security.lockStarted(
-                lockFields(reason, timeoutMs, SecurityResult.STARTED, 0),
+                lockFields(request, timeoutMs, SecurityResult.STARTED, 0),
             ),
         )
         try {
@@ -34,7 +37,7 @@ class SecuritySessionEventLogger @Inject internal constructor(
                         LogStatements.Security.lockFailed(
                             handledFailure,
                             lockFields(
-                                reason,
+                                request,
                                 timeoutMs,
                                 SecurityResult.FAILURE,
                                 elapsedSince(startedAt),
@@ -45,7 +48,7 @@ class SecuritySessionEventLogger @Inject internal constructor(
                     logger.log(
                         LogStatements.Security.lockCompleted(
                             lockFields(
-                                reason,
+                                request,
                                 timeoutMs,
                                 SecurityResult.SUCCESS,
                                 elapsedSince(startedAt),
@@ -59,7 +62,7 @@ class SecuritySessionEventLogger @Inject internal constructor(
                 LogStatements.Security.lockFailed(
                     failure,
                     lockFields(
-                        reason,
+                        request,
                         timeoutMs,
                         SecurityResult.FAILURE,
                         elapsedSince(startedAt),
@@ -71,20 +74,21 @@ class SecuritySessionEventLogger @Inject internal constructor(
     }
 
     suspend fun <T> traceAuthentication(
+        purpose: AuthenticationPurpose,
         method: AuthenticationMethod,
         block: suspend () -> T,
-    ): T = logger.withRootTrace(Operations.SecurityAuthentication) {
+    ): T = logger.inSpan(Operations.SecurityAuthentication) {
         val startedAt = elapsedRealtimeMs()
         logger.log(
             LogStatements.Security.authenticationStarted(
-                authenticationFields(method, SecurityResult.STARTED, 0),
+                authenticationFields(purpose, method, SecurityResult.STARTED, 0),
             ),
         )
         try {
             block().also {
                 logger.log(
                     LogStatements.Security.authenticationCompleted(
-                        authenticationFields(method, SecurityResult.SUCCESS, elapsedSince(startedAt)),
+                        authenticationFields(purpose, method, SecurityResult.SUCCESS, elapsedSince(startedAt)),
                     ),
                 )
             }
@@ -92,7 +96,7 @@ class SecuritySessionEventLogger @Inject internal constructor(
             logger.log(
                 LogStatements.Security.authenticationFailed(
                     failure,
-                    authenticationFields(method, SecurityResult.FAILURE, elapsedSince(startedAt)),
+                    authenticationFields(purpose, method, SecurityResult.FAILURE, elapsedSince(startedAt)),
                 ),
             )
             throw failure
@@ -100,11 +104,16 @@ class SecuritySessionEventLogger @Inject internal constructor(
     }
 
     suspend fun traceAuthentication(
+        purpose: AuthenticationPurpose,
         block: suspend AuthenticationTraceScope.() -> AuthenticationResult,
-    ): AuthenticationResult = logger.withRootTrace(Operations.SecurityAuthentication) {
+    ): AuthenticationResult = logger.inSpan(Operations.SecurityAuthentication) {
         val startedAt = elapsedRealtimeMs()
         val traceScope = AuthenticationTraceScope()
-        logger.log(LogStatements.Security.authenticationStarted())
+        logger.log(
+            LogStatements.Security.authenticationStarted(
+                authenticationFields(purpose, null, SecurityResult.STARTED, 0),
+            ),
+        )
         val result = try {
             traceScope.block()
         } catch (failure: Throwable) {
@@ -113,6 +122,7 @@ class SecuritySessionEventLogger @Inject internal constructor(
                     failure,
                     LogStatements.Security.authenticationFields(
                         method = null,
+                        purpose = purpose.toLogPurpose(),
                         result = SecurityResult.FAILURE,
                         elapsedMs = elapsedSince(startedAt),
                     ),
@@ -128,6 +138,7 @@ class SecuritySessionEventLogger @Inject internal constructor(
         }
         val resultFields = LogStatements.Security.authenticationFields(
             method = method?.toLogMethod(),
+            purpose = purpose.toLogPurpose(),
             result = outcome,
             elapsedMs = elapsedSince(startedAt),
         )
@@ -161,24 +172,26 @@ class SecuritySessionEventLogger @Inject internal constructor(
     }
 
     private fun lockFields(
-        reason: LockReason,
+        request: SessionLockRequest,
         timeoutMs: Long,
         result: SecurityResult,
         elapsedMs: Long,
     ): LogFields = LogStatements.Security.lockFields(
-        lockReason = reason.toReasonCode(),
-        trigger = reason.toTrigger(),
+        lockReason = request.reason.toReasonCode(),
+        trigger = request.trigger.toLogTrigger(),
         timeoutMs = timeoutMs,
         result = result,
         elapsedMs = elapsedMs,
     )
 
     private fun authenticationFields(
-        method: AuthenticationMethod,
+        purpose: AuthenticationPurpose,
+        method: AuthenticationMethod?,
         result: SecurityResult,
         elapsedMs: Long,
     ): LogFields = LogStatements.Security.authenticationFields(
-        method = method.toLogMethod(),
+        method = method?.toLogMethod(),
+        purpose = purpose.toLogPurpose(),
         result = result,
         elapsedMs = elapsedMs,
     )
@@ -193,13 +206,16 @@ class SecuritySessionEventLogger @Inject internal constructor(
         LockReason.APP_EXIT -> Reasons.AppExit
     }
 
-    private fun LockReason.toTrigger(): SecurityTrigger = when (this) {
-        LockReason.USER -> SecurityTrigger.USER
-        LockReason.IDLE_TIMEOUT -> SecurityTrigger.IDLE_TIMER
-        LockReason.AUTOFILL_REQUEST_FINISHED -> SecurityTrigger.AUTOFILL
-        LockReason.BACKGROUND, LockReason.APP_EXIT -> SecurityTrigger.LIFECYCLE
-        LockReason.RECOVERY_EXIT -> SecurityTrigger.RECOVERY
-        LockReason.INTEGRITY_FAILURE -> SecurityTrigger.INTEGRITY
+    private fun LockTrigger.toLogTrigger(): SecurityTrigger = when (this) {
+        LockTrigger.USER_ACTION -> SecurityTrigger.USER_ACTION
+        LockTrigger.IDLE_TIMER -> SecurityTrigger.IDLE_TIMER
+        LockTrigger.AUTOFILL_COMPLETION -> SecurityTrigger.AUTOFILL_COMPLETION
+        LockTrigger.APP_BACKGROUND -> SecurityTrigger.APP_BACKGROUND
+        LockTrigger.SCREEN_OFF -> SecurityTrigger.SCREEN_OFF
+        LockTrigger.DEVICE_FLIP -> SecurityTrigger.DEVICE_FLIP
+        LockTrigger.RECOVERY_EXIT -> SecurityTrigger.RECOVERY_EXIT
+        LockTrigger.INTEGRITY_FAILURE -> SecurityTrigger.INTEGRITY_FAILURE
+        LockTrigger.APP_EXIT -> SecurityTrigger.APP_EXIT
     }
 
     private fun AuthenticationMethod.toLogMethod(): AuthenticationMethodLog = when (this) {
@@ -208,12 +224,57 @@ class SecuritySessionEventLogger @Inject internal constructor(
         AuthenticationMethod.RECOVERY_CODE -> AuthenticationMethodLog.RECOVERY
     }
 
+    private fun AuthenticationPurpose.toLogPurpose(): AuthenticationPurposeLog = when (this) {
+        AuthenticationPurpose.UNLOCK_VAULT -> AuthenticationPurposeLog.VAULT_UNLOCK
+        AuthenticationPurpose.REAUTHENTICATE -> AuthenticationPurposeLog.REAUTHENTICATION
+        AuthenticationPurpose.AUTOFILL -> AuthenticationPurposeLog.AUTOFILL
+        AuthenticationPurpose.REVEAL_SECRET -> AuthenticationPurposeLog.SECRET_REVEAL
+        AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET -> AuthenticationPurposeLog.HIGH_SENSITIVITY_REVEAL
+        AuthenticationPurpose.COPY_SECRET -> AuthenticationPurposeLog.SECRET_COPY
+        AuthenticationPurpose.DELETE_ENTRY -> AuthenticationPurposeLog.ENTRY_DELETE
+        AuthenticationPurpose.BACKUP_EXPORT -> AuthenticationPurposeLog.BACKUP_EXPORT
+        AuthenticationPurpose.BACKUP_IMPORT -> AuthenticationPurposeLog.BACKUP_IMPORT
+        AuthenticationPurpose.MANAGE_APP_PASSWORD -> AuthenticationPurposeLog.APP_PASSWORD_MANAGEMENT
+        AuthenticationPurpose.MANAGE_RECOVERY_CODE -> AuthenticationPurposeLog.RECOVERY_CODE_MANAGEMENT
+        AuthenticationPurpose.RECOVER_AUTH_METHODS -> AuthenticationPurposeLog.AUTH_METHOD_RECOVERY
+        AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY -> AuthenticationPurposeLog.BIOMETRIC_POLICY_CHANGE
+        AuthenticationPurpose.EXPORT_DIAGNOSTICS -> AuthenticationPurposeLog.DIAGNOSTICS_EXPORT
+        AuthenticationPurpose.CLEAR_DATABASE -> AuthenticationPurposeLog.DATABASE_CLEAR
+    }
+
     private fun elapsedRealtimeMs(): Long = System.nanoTime() / NANOS_PER_MILLISECOND
     private fun elapsedSince(startedAt: Long): Long = (elapsedRealtimeMs() - startedAt).coerceAtLeast(0)
 
-    private enum class SecurityTrigger { USER, IDLE_TIMER, AUTOFILL, LIFECYCLE, RECOVERY, INTEGRITY }
+    private enum class SecurityTrigger {
+        USER_ACTION,
+        IDLE_TIMER,
+        AUTOFILL_COMPLETION,
+        APP_BACKGROUND,
+        SCREEN_OFF,
+        DEVICE_FLIP,
+        RECOVERY_EXIT,
+        INTEGRITY_FAILURE,
+        APP_EXIT,
+    }
     private enum class SecurityResult { STARTED, SUCCESS, FAILURE, CANCELLED }
     private enum class AuthenticationMethodLog { BIOMETRIC, MASTER_PASSWORD, RECOVERY }
+    private enum class AuthenticationPurposeLog {
+        VAULT_UNLOCK,
+        REAUTHENTICATION,
+        AUTOFILL,
+        SECRET_REVEAL,
+        HIGH_SENSITIVITY_REVEAL,
+        SECRET_COPY,
+        ENTRY_DELETE,
+        BACKUP_EXPORT,
+        BACKUP_IMPORT,
+        APP_PASSWORD_MANAGEMENT,
+        RECOVERY_CODE_MANAGEMENT,
+        AUTH_METHOD_RECOVERY,
+        BIOMETRIC_POLICY_CHANGE,
+        DIAGNOSTICS_EXPORT,
+        DATABASE_CLEAR,
+    }
 
     private companion object {
         const val NANOS_PER_MILLISECOND = 1_000_000L

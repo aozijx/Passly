@@ -1,6 +1,8 @@
 package com.aozijx.passly.feature.autofill.runtime
 
 import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.LockTrigger
+import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import javax.inject.Inject
@@ -59,7 +61,12 @@ class AutofillUnlockLease @Inject constructor(
             }
         }
         if (shouldLock) {
-            sessionLockController.lock(LockReason.AUTOFILL_REQUEST_FINISHED)
+            sessionLockController.lock(
+                SessionLockRequest(
+                    LockReason.AUTOFILL_REQUEST_FINISHED,
+                    LockTrigger.AUTOFILL_COMPLETION,
+                ),
+            )
         }
     }
 }

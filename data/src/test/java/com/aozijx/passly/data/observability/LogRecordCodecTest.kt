@@ -7,6 +7,7 @@ import com.aozijx.passly.core.observability.ErrorPayload
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.ExceptionSnapshot
+import com.aozijx.passly.core.observability.ExceptionKind
 import com.aozijx.passly.core.observability.ExceptionType
 import com.aozijx.passly.core.observability.HashedIdentifier
 import com.aozijx.passly.core.observability.LogCategory
@@ -122,6 +123,7 @@ class LogRecordCodecTest {
                 ),
                 causeTypes = listOf(ExceptionType("RuntimeException")),
                 foreignFrameCount = 3,
+                kind = ExceptionKind.PLATFORM,
             ),
         ),
     )

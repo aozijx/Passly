@@ -8,6 +8,8 @@ import com.aozijx.passly.core.observability.sink.LogSink
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.LockTrigger
+import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
@@ -100,13 +102,16 @@ class AutofillResultDeliveryTest {
 
         assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
         assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
+        assertEquals(LockTrigger.AUTOFILL_COMPLETION, lockController.trigger)
     }
 
     private class RecordingLockController : SessionLockController {
         var reason: LockReason? = null
+        var trigger: LockTrigger? = null
 
-        override suspend fun lock(reason: LockReason) {
-            this.reason = reason
+        override suspend fun lock(request: SessionLockRequest) {
+            reason = request.reason
+            trigger = request.trigger
         }
     }
 

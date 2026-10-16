@@ -211,6 +211,7 @@ object LogFieldKeys {
     val Trigger = LogFieldKey("trigger")
     val Result = LogFieldKey("result")
     val AuthenticationMethod = LogFieldKey("authentication_method")
+    val AuthenticationPurpose = LogFieldKey("authentication_purpose")
     val ExitStatus = LogFieldKey("exit_status")
     val ExitReason = LogFieldKey("exit_reason")
     val Importance = LogFieldKey("importance")

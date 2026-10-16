@@ -3,6 +3,8 @@ package com.aozijx.passly.feature.autofill
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.LogFieldKeys
+import com.aozijx.passly.core.observability.LogValue
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.ProcessSessionId
 import com.aozijx.passly.core.observability.SanitizedLogRecord
@@ -20,6 +22,8 @@ import com.aozijx.passly.core.observability.privacy.PrivacyPolicy
 import com.aozijx.passly.core.observability.sink.LogSink
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.LockTrigger
+import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
@@ -89,7 +93,12 @@ class AutofillTraceLifecycleTest {
         )
         assertEquals(1, records.map { it.trace.traceId }.distinct().size)
         assertNotEquals(records[0].trace.spanId, records[2].trace.spanId)
+        listOf(records[1], records[3]).forEach { completed ->
+            val elapsed = completed.fields.values[LogFieldKeys.ElapsedMs] as LogValue.DurationMs
+            assertEquals(true, elapsed.value >= 0)
+        }
         assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
+        assertEquals(LockTrigger.AUTOFILL_COMPLETION, lockController.trigger)
     }
 
     @Test
@@ -234,8 +243,10 @@ class AutofillTraceLifecycleTest {
 
     private class RecordingLockController : SessionLockController {
         var reason: LockReason? = null
-        override suspend fun lock(reason: LockReason) {
-            this.reason = reason
+        var trigger: LockTrigger? = null
+        override suspend fun lock(request: SessionLockRequest) {
+            reason = request.reason
+            trigger = request.trigger
         }
     }
 

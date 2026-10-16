@@ -3,6 +3,7 @@ package com.aozijx.passly.core.observability.internal
 import com.aozijx.passly.core.observability.ErrorCodes
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.ExceptionKind
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.ProcessSessionId
@@ -82,7 +83,7 @@ class DefaultLoggerTest {
         val failure = IllegalStateException("must not become a log message")
 
         logger.withRootTrace(Operations.AutofillResultDelivery) {
-            logger.log(LogStatements.Autofill.resultDeliveryFailed(failure))
+            logger.log(LogStatements.Autofill.resultDeliveryFailed(failure, 1))
         }
 
         val record = records.single()
@@ -90,6 +91,7 @@ class DefaultLoggerTest {
         assertEquals(ErrorCodes.AutofillResultDeliveryFailed, record.error?.errorCode)
         assertEquals(Reasons.PlatformCallbackFailed, record.error?.reason)
         assertEquals("IllegalStateException", record.error?.exception?.type?.value)
+        assertEquals(ExceptionKind.PLATFORM, record.error?.exception?.kind)
     }
 
     @Test
@@ -120,6 +122,7 @@ class DefaultLoggerTest {
                 LogStatements.Security.authenticationRejected(
                     LogStatements.Security.authenticationFields(
                         method = TestState.BIOMETRIC,
+                        purpose = TestState.APP,
                         result = TestState.REJECTED,
                         elapsedMs = 8,
                     ),

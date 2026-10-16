@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.autofill.core
 
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
@@ -69,8 +70,8 @@ class CompleteAutofillSelectionTest {
     private class RecordingLockController : SessionLockController {
         var reason: LockReason? = null
 
-        override suspend fun lock(reason: LockReason) {
-            this.reason = reason
+        override suspend fun lock(request: SessionLockRequest) {
+            reason = request.reason
         }
     }
 

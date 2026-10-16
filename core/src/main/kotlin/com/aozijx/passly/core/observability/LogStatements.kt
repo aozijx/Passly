@@ -286,10 +286,12 @@ object LogStatements {
 
         fun authenticationFields(
             method: Enum<*>?,
+            purpose: Enum<*>?,
             result: Enum<*>,
             elapsedMs: Long,
         ): LogFields = fields {
             method?.let { enum(LogFieldKeys.AuthenticationMethod, it) }
+            purpose?.let { enum(LogFieldKeys.AuthenticationPurpose, it) }
             enum(LogFieldKeys.Result, result)
             durationMs(LogFieldKeys.ElapsedMs, elapsedMs)
         }
@@ -433,8 +435,13 @@ object LogStatements {
         fun discoveryStarted(fields: LogFields = LogFields.Empty): LogStatement =
             InfoStatement(Events.Autofill.DiscoveryStarted, fields)
 
-        fun discoveryCompleted(fields: LogFields = LogFields.Empty): LogStatement =
-            InfoStatement(Events.Autofill.DiscoveryCompleted, fields)
+        fun discoveryCompleted(
+            elapsedMs: Long,
+            fields: LogFields = LogFields.Empty,
+        ): LogStatement = InfoStatement(
+            Events.Autofill.DiscoveryCompleted,
+            fields.withElapsed(elapsedMs),
+        )
 
         fun discoveryUnavailable(
             reason: ReasonCode,
@@ -461,35 +468,41 @@ object LogStatements {
         fun authenticationStarted(): LogStatement =
             InfoStatement(Events.Autofill.AuthenticationStarted, LogFields.Empty)
 
-        fun authenticationCompleted(): LogStatement =
-            InfoStatement(Events.Autofill.AuthenticationCompleted, LogFields.Empty)
+        fun authenticationCompleted(elapsedMs: Long): LogStatement = InfoStatement(
+            Events.Autofill.AuthenticationCompleted,
+            LogFields.Empty.withElapsed(elapsedMs),
+        )
 
         fun resultDeliveryStarted(): LogStatement =
             InfoStatement(Events.Autofill.ResultDeliveryStarted, LogFields.Empty)
 
-        fun resultDelivered(): LogStatement =
-            InfoStatement(Events.Autofill.ResultDelivered, LogFields.Empty)
+        fun resultDelivered(elapsedMs: Long): LogStatement = InfoStatement(
+            Events.Autofill.ResultDelivered,
+            LogFields.Empty.withElapsed(elapsedMs),
+        )
 
-        fun resultDeliveryFailed(throwable: Throwable): LogStatement = ErrorStatement(
+        fun resultDeliveryFailed(throwable: Throwable, elapsedMs: Long): LogStatement = ErrorStatement(
             Events.Autofill.ResultDeliveryFailed,
             ErrorCodes.AutofillResultDeliveryFailed,
             Reasons.PlatformCallbackFailed,
             throwable,
-            LogFields.Empty,
+            LogFields.Empty.withElapsed(elapsedMs),
         )
 
         fun sessionCloseStarted(): LogStatement =
             InfoStatement(Events.Autofill.SessionCloseStarted, LogFields.Empty)
 
-        fun sessionClosed(): LogStatement =
-            InfoStatement(Events.Autofill.SessionClosed, LogFields.Empty)
+        fun sessionClosed(elapsedMs: Long): LogStatement = InfoStatement(
+            Events.Autofill.SessionClosed,
+            LogFields.Empty.withElapsed(elapsedMs),
+        )
 
-        fun sessionCloseFailed(throwable: Throwable): LogStatement = ErrorStatement(
+        fun sessionCloseFailed(throwable: Throwable, elapsedMs: Long): LogStatement = ErrorStatement(
             Events.Autofill.SessionCloseFailed,
             ErrorCodes.AutofillSessionCloseFailed,
             Reasons.SessionCloseFailed,
             throwable,
-            LogFields.Empty,
+            LogFields.Empty.withElapsed(elapsedMs),
         )
 
         fun saveStarted(): LogStatement =
@@ -532,4 +545,7 @@ object LogStatements {
             LogFields.Empty,
         )
     }
+
+    private fun LogFields.withElapsed(elapsedMs: Long): LogFields =
+        withDuration(LogFieldKeys.ElapsedMs, elapsedMs.coerceAtLeast(0))
 }

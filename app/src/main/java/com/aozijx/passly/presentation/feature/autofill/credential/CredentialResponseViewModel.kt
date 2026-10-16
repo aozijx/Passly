@@ -15,6 +15,7 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.Reasons
+import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
@@ -94,6 +95,7 @@ class CredentialResponseViewModel @Inject constructor(
             }
             is PasswordGetParseResult.Ready -> {
                 activeInteractionId = request.interactionId
+                val authenticationStartedAt = monotonicTimeMs()
                 logger.log(LogStatements.Autofill.authenticationStarted())
                 when (
                     val result = flow.selectPassword(
@@ -105,7 +107,11 @@ class CredentialResponseViewModel @Inject constructor(
                 ) {
                     is CredentialManagerPasswordResult.Success -> {
                         activeInteractionId = null
-                        logger.log(LogStatements.Autofill.authenticationCompleted())
+                        logger.log(
+                            LogStatements.Autofill.authenticationCompleted(
+                                monotonicTimeMs() - authenticationStartedAt,
+                            ),
+                        )
                         traceContinuations.capture(request.interactionId.value)
                         complete(
                             CredentialResponseFactory.buildPasswordResponse(
@@ -144,6 +150,7 @@ class CredentialResponseViewModel @Inject constructor(
             }
             is UnlockParseResult.Ready -> {
                 activeInteractionId = request.interactionId
+                val authenticationStartedAt = monotonicTimeMs()
                 logger.log(LogStatements.Autofill.authenticationStarted())
                 when (
                     val result = beginGetHandler.resolveAfterUnlock(
@@ -157,7 +164,11 @@ class CredentialResponseViewModel @Inject constructor(
                         PendingIntentHandler.setBeginGetCredentialResponse(intent, result.response)
                         // The same interaction remains active for the picker selection.
                         activeInteractionId = null
-                        logger.log(LogStatements.Autofill.authenticationCompleted())
+                        logger.log(
+                            LogStatements.Autofill.authenticationCompleted(
+                                monotonicTimeMs() - authenticationStartedAt,
+                            ),
+                        )
                         traceContinuations.capture(request.interactionId.value)
                         complete(intent)
                     }
@@ -206,6 +217,7 @@ class CredentialResponseViewModel @Inject constructor(
             }
             is PasswordCreateParseResult.Ready -> {
                 activeInteractionId = request.interactionId
+                val authenticationStartedAt = monotonicTimeMs()
                 logger.log(LogStatements.Autofill.authenticationStarted())
                 when (
                     val result = flow.createPassword(
@@ -217,7 +229,11 @@ class CredentialResponseViewModel @Inject constructor(
                 ) {
                     CredentialManagerCreateResult.Saved -> {
                         activeInteractionId = null
-                        logger.log(LogStatements.Autofill.authenticationCompleted())
+                        logger.log(
+                            LogStatements.Autofill.authenticationCompleted(
+                                monotonicTimeMs() - authenticationStartedAt,
+                            ),
+                        )
                         logger.log(LogStatements.Autofill.saveCompleted())
                         traceContinuations.discard(request.interactionId.value)
                         complete(CredentialResponseFactory.buildPasswordCreateResponse())
