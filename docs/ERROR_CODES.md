@@ -2,29 +2,46 @@
 
 > Generated from `config/observability/error-catalog.json`. Do not edit by hand.
 
-## Errors
+## Errors by category
 
-| Code | Default reason | Category | Exposure | Description |
-|---|---|---|---|---|
-| `AUTOFILL_DISCOVERY_UNAVAILABLE` | `NO_MATCHING_ENTRY` | AUTOFILL | INTERNAL | Autofill discovery could not produce a usable result. |
-| `AUTOFILL_RESULT_DELIVERY_FAILED` | `PLATFORM_CALLBACK_FAILED` | AUTOFILL | INTERNAL | Autofill result delivery failed. |
-| `AUTOFILL_SESSION_CLOSE_FAILED` | `SESSION_CLOSE_FAILED` | AUTOFILL | INTERNAL | Autofill session cleanup failed. |
-| `AUTOFILL_SAVE_FAILED` | `UNKNOWN_FAILURE` | AUTOFILL | INTERNAL | Autofill save processing failed. |
-| `DATABASE_SESSION_OPEN_FAILED` | `SESSION_OPEN_FAILED` | DATABASE | INTERNAL | The managed database session failed to open. |
-| `DATABASE_SESSION_CLOSE_FAILED` | `SESSION_CLOSE_FAILED` | DATABASE | INTERNAL | The managed database session failed to close. |
-| `AUTHENTICATION_FAILED` | `AUTHENTICATION_FAILED` | SECURITY | USER_ACTIONABLE | Authentication failed and the user can retry. |
-| `DIAGNOSTICS_EXPORT_FAILED` | `STORAGE_FAILURE` | APPLICATION | INTERNAL | Diagnostics export failed. |
-| `APPLICATION_UNHANDLED_EXCEPTION` | `UNKNOWN_FAILURE` | APPLICATION | INTERNAL | An unhandled application failure reached the crash boundary. |
-| `NATIVE_LIBRARY_LOAD_FAILED` | `NATIVE_LIBRARY_UNAVAILABLE` | APPLICATION | INTERNAL | A required native library failed to load. |
-| `SECURITY_LOCK_FAILED` | `SECURITY_LOCK_OPERATION_FAILED` | SECURITY | INTERNAL | The vault lock operation failed. |
-| `BIOMETRIC_PROMPT_FAILED` | `AUTHENTICATION_FAILED` | SECURITY | USER_ACTIONABLE | Biometric authentication failed and the user can retry. |
-| `VAULT_OPERATION_FAILED` | `UNKNOWN_FAILURE` | SECURITY | INTERNAL | A protected vault operation failed. |
-| `PACKAGE_ICON_UNAVAILABLE` | `PACKAGE_NOT_INSTALLED` | APPLICATION | INTERNAL | A package icon could not be loaded. |
-| `SCANNED_OTP_INVALID` | `INVALID_INPUT` | APPLICATION | INTERNAL | A scanned OTP payload failed validation. |
-| `SCANNER_FAILED` | `SCANNER_PROCESSING_FAILED` | APPLICATION | INTERNAL | Scanner processing failed. |
-| `RESOURCE_CLEANUP_FAILED` | `FILE_DELETE_FAILED` | APPLICATION | INTERNAL | Confined resource cleanup failed. |
-| `DATABASE_OPEN_FAILED` | `DATABASE_OPEN_FAILED` | DATABASE | INTERNAL | The database failed to open. |
-| `DATABASE_RESET_FAILED` | `DATABASE_RESET_FAILED` | DATABASE | INTERNAL | The database reset failed. |
+### Autofill
+
+| Code | Default reason | Exposure | Description |
+|---|---|---|---|
+| `AUTOFILL_DISCOVERY_UNAVAILABLE` | `NO_MATCHING_ENTRY` | INTERNAL | Autofill discovery could not produce a usable result. |
+| `AUTOFILL_RESULT_DELIVERY_FAILED` | `PLATFORM_CALLBACK_FAILED` | INTERNAL | Autofill result delivery failed. |
+| `AUTOFILL_SESSION_CLOSE_FAILED` | `SESSION_CLOSE_FAILED` | INTERNAL | Autofill session cleanup failed. |
+| `AUTOFILL_SAVE_FAILED` | `UNKNOWN_FAILURE` | INTERNAL | Autofill save processing failed. |
+
+### Database
+
+| Code | Default reason | Exposure | Description |
+|---|---|---|---|
+| `DATABASE_SESSION_OPEN_FAILED` | `SESSION_OPEN_FAILED` | INTERNAL | The managed database session failed to open. |
+| `DATABASE_SESSION_CLOSE_FAILED` | `SESSION_CLOSE_FAILED` | INTERNAL | The managed database session failed to close. |
+| `DATABASE_OPEN_FAILED` | `DATABASE_OPEN_FAILED` | INTERNAL | The database failed to open. |
+| `DATABASE_RESET_FAILED` | `DATABASE_RESET_FAILED` | INTERNAL | The database reset failed. |
+
+### Security
+
+| Code | Default reason | Exposure | Description |
+|---|---|---|---|
+| `AUTHENTICATION_FAILED` | `AUTHENTICATION_FAILED` | USER_ACTIONABLE | Authentication failed and the user can retry. |
+| `SECURITY_LOCK_FAILED` | `SECURITY_LOCK_OPERATION_FAILED` | INTERNAL | The vault lock operation failed. |
+| `BIOMETRIC_PROMPT_FAILED` | `AUTHENTICATION_FAILED` | USER_ACTIONABLE | Biometric authentication failed and the user can retry. |
+| `VAULT_OPERATION_FAILED` | `UNKNOWN_FAILURE` | INTERNAL | A protected vault operation failed. |
+
+### Application
+
+| Code | Default reason | Exposure | Description |
+|---|---|---|---|
+| `DIAGNOSTICS_EXPORT_FAILED` | `STORAGE_FAILURE` | INTERNAL | Diagnostics export failed. |
+| `APPLICATION_UNHANDLED_EXCEPTION` | `UNKNOWN_FAILURE` | INTERNAL | An unhandled application failure reached the crash boundary. |
+| `NATIVE_LIBRARY_LOAD_FAILED` | `NATIVE_LIBRARY_UNAVAILABLE` | INTERNAL | A required native library failed to load. |
+| `PACKAGE_ICON_UNAVAILABLE` | `PACKAGE_NOT_INSTALLED` | INTERNAL | A package icon could not be loaded. |
+| `SCANNED_OTP_INVALID` | `INVALID_INPUT` | INTERNAL | A scanned OTP payload failed validation. |
+| `SCANNER_FAILED` | `SCANNER_PROCESSING_FAILED` | INTERNAL | Scanner processing failed. |
+| `RESOURCE_CLEANUP_FAILED` | `FILE_DELETE_FAILED` | INTERNAL | Confined resource cleanup failed. |
 
 ## Reasons
 

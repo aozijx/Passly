@@ -125,7 +125,7 @@ object LogStatements {
 
         fun nativeLibraryLoadFailed(throwable: Throwable): LogStatement = ErrorStatement(
             Events.Application.NativeLibraryLoadFailed,
-            ErrorCodes.NativeLibraryLoadFailed,
+            ErrorCodes.Application.NativeLibraryLoadFailed,
             Reasons.NativeLibraryUnavailable,
             throwable,
             LogFields.Empty,
@@ -133,7 +133,7 @@ object LogStatements {
 
         fun unhandledException(throwable: Throwable): FatalLogStatement = FatalStatement(
             Events.Application.UnhandledException,
-            ErrorCodes.ApplicationUnhandledException,
+            ErrorCodes.Application.ApplicationUnhandledException,
             Reasons.UnknownFailure,
             throwable,
             LogFields.Empty,
@@ -141,7 +141,7 @@ object LogStatements {
 
         fun packageIconNotFound(throwable: Throwable): LogStatement = WarningStatement(
             Events.Application.PackageIconUnavailable,
-            ErrorCodes.PackageIconUnavailable,
+            ErrorCodes.Application.PackageIconUnavailable,
             Reasons.PackageNotInstalled,
             throwable,
             LogFields.Empty,
@@ -149,7 +149,7 @@ object LogStatements {
 
         fun packageIconDecodeFailed(throwable: Throwable): LogStatement = ErrorStatement(
             Events.Application.PackageIconUnavailable,
-            ErrorCodes.PackageIconUnavailable,
+            ErrorCodes.Application.PackageIconUnavailable,
             Reasons.ImageDecodeFailed,
             throwable,
             LogFields.Empty,
@@ -157,7 +157,7 @@ object LogStatements {
 
         fun resourceCleanupFailed(throwable: Throwable): LogStatement = WarningStatement(
             Events.Application.ResourceCleanupFailed,
-            ErrorCodes.ResourceCleanupFailed,
+            ErrorCodes.Application.ResourceCleanupFailed,
             Reasons.FileDeleteFailed,
             throwable,
             LogFields.Empty,
@@ -178,7 +178,7 @@ object LogStatements {
 
         fun diagnosticsExportFailed(throwable: Throwable): LogStatement = ErrorStatement(
             Events.Application.DiagnosticsExportFailed,
-            ErrorCodes.DiagnosticsExportFailed,
+            ErrorCodes.Application.DiagnosticsExportFailed,
             Reasons.StorageFailure,
             throwable,
             LogFields.Empty,
@@ -186,7 +186,7 @@ object LogStatements {
 
         fun scannedOtpInvalid(throwable: Throwable): LogStatement = WarningStatement(
             Events.Application.ScannedOtpInvalid,
-            ErrorCodes.ScannedOtpInvalid,
+            ErrorCodes.Application.ScannedOtpInvalid,
             Reasons.InvalidInput,
             throwable,
             LogFields.Empty,
@@ -194,7 +194,7 @@ object LogStatements {
 
         fun scannerFailed(throwable: Throwable): LogStatement = ErrorStatement(
             Events.Application.ScannerFailed,
-            ErrorCodes.ScannerFailed,
+            ErrorCodes.Application.ScannerFailed,
             Reasons.ScannerProcessingFailed,
             throwable,
             LogFields.Empty,
@@ -239,7 +239,7 @@ object LogStatements {
         fun sessionOpenFailed(throwable: Throwable, reason: ReasonCode, fields: LogFields): LogStatement =
             ErrorStatement(
                 Events.Database.SessionTransitionFailed,
-                ErrorCodes.DatabaseSessionOpenFailed,
+                ErrorCodes.Database.DatabaseSessionOpenFailed,
                 reason,
                 throwable,
                 fields,
@@ -248,7 +248,7 @@ object LogStatements {
         fun sessionCloseFailed(throwable: Throwable, reason: ReasonCode, fields: LogFields): LogStatement =
             ErrorStatement(
                 Events.Database.SessionTransitionFailed,
-                ErrorCodes.DatabaseSessionCloseFailed,
+                ErrorCodes.Database.DatabaseSessionCloseFailed,
                 reason,
                 throwable,
                 fields,
@@ -257,7 +257,7 @@ object LogStatements {
         fun sessionDrainTimeout(reason: ReasonCode, fields: LogFields): LogStatement =
             DegradedStatement(
                 Events.Database.SessionTransitionFailed,
-                ErrorCodes.DatabaseSessionCloseFailed,
+                ErrorCodes.Database.DatabaseSessionCloseFailed,
                 reason,
                 fields,
             )
@@ -266,7 +266,7 @@ object LogStatements {
 
         fun openFailed(throwable: Throwable): LogStatement = ErrorStatement(
             Events.Database.OpenFailed,
-            ErrorCodes.DatabaseOpenFailed,
+            ErrorCodes.Database.DatabaseOpenFailed,
             Reasons.DatabaseOpenFailed,
             throwable,
             LogFields.Empty,
@@ -274,7 +274,7 @@ object LogStatements {
 
         fun resetFailed(throwable: Throwable): LogStatement = ErrorStatement(
             Events.Database.ResetFailed,
-            ErrorCodes.DatabaseResetFailed,
+            ErrorCodes.Database.DatabaseResetFailed,
             Reasons.DatabaseResetFailed,
             throwable,
             LogFields.Empty,
@@ -316,7 +316,7 @@ object LogStatements {
 
         fun lockFailed(throwable: Throwable, fields: LogFields): LogStatement = ErrorStatement(
             Events.Security.LockCompleted,
-            ErrorCodes.SecurityLockFailed,
+            ErrorCodes.Security.SecurityLockFailed,
             Reasons.SecurityLockOperationFailed,
             throwable,
             fields,
@@ -330,7 +330,7 @@ object LogStatements {
 
         fun authenticationRejected(fields: LogFields): LogStatement = DegradedStatement(
             Events.Security.AuthenticationFailed,
-            ErrorCodes.AuthenticationFailed,
+            ErrorCodes.Security.AuthenticationFailed,
             Reasons.AuthenticationRejected,
             fields,
         )
@@ -341,7 +341,7 @@ object LogStatements {
             reason: ReasonCode = Reasons.UnknownFailure,
         ): LogStatement = ErrorStatement(
             Events.Security.AuthenticationFailed,
-            ErrorCodes.AuthenticationFailed,
+            ErrorCodes.Security.AuthenticationFailed,
             reason,
             throwable,
             fields,
@@ -354,7 +354,7 @@ object LogStatements {
         ): LogStatement = if (degraded) {
             WarningStatement(
                 Events.Security.BiometricPromptFailed,
-                ErrorCodes.BiometricPromptFailed,
+                ErrorCodes.Security.BiometricPromptFailed,
                 reason,
                 throwable,
                 LogFields.Empty,
@@ -362,7 +362,7 @@ object LogStatements {
         } else {
             ErrorStatement(
                 Events.Security.BiometricPromptFailed,
-                ErrorCodes.BiometricPromptFailed,
+                ErrorCodes.Security.BiometricPromptFailed,
                 reason,
                 throwable,
                 LogFields.Empty,
@@ -416,7 +416,7 @@ object LogStatements {
         ): LogStatement = if (degraded) {
             WarningStatement(
                 Events.Security.VaultOperationFailed,
-                ErrorCodes.VaultOperationFailed,
+                ErrorCodes.Security.VaultOperationFailed,
                 reason,
                 throwable,
                 LogFields.Empty,
@@ -424,7 +424,7 @@ object LogStatements {
         } else {
             ErrorStatement(
                 Events.Security.VaultOperationFailed,
-                ErrorCodes.VaultOperationFailed,
+                ErrorCodes.Security.VaultOperationFailed,
                 reason,
                 throwable,
                 LogFields.Empty,
@@ -460,7 +460,7 @@ object LogStatements {
             fields: LogFields = LogFields.Empty,
         ): LogStatement = DegradedStatement(
             Events.Autofill.DiscoveryUnavailable,
-            ErrorCodes.AutofillDiscoveryUnavailable,
+            ErrorCodes.Autofill.AutofillDiscoveryUnavailable,
             reason,
             fields,
         )
@@ -471,7 +471,7 @@ object LogStatements {
             fields: LogFields = LogFields.Empty,
         ): LogStatement = ErrorStatement(
             Events.Autofill.DiscoveryUnavailable,
-            ErrorCodes.AutofillDiscoveryUnavailable,
+            ErrorCodes.Autofill.AutofillDiscoveryUnavailable,
             reason,
             throwable,
             fields,
@@ -495,7 +495,7 @@ object LogStatements {
 
         fun resultDeliveryFailed(throwable: Throwable, elapsedMs: Long): LogStatement = ErrorStatement(
             Events.Autofill.ResultDeliveryFailed,
-            ErrorCodes.AutofillResultDeliveryFailed,
+            ErrorCodes.Autofill.AutofillResultDeliveryFailed,
             Reasons.PlatformCallbackFailed,
             throwable,
             LogFields.Empty.withElapsed(elapsedMs),
@@ -511,7 +511,7 @@ object LogStatements {
 
         fun sessionCloseFailed(throwable: Throwable, elapsedMs: Long): LogStatement = ErrorStatement(
             Events.Autofill.SessionCloseFailed,
-            ErrorCodes.AutofillSessionCloseFailed,
+            ErrorCodes.Autofill.AutofillSessionCloseFailed,
             Reasons.SessionCloseFailed,
             throwable,
             LogFields.Empty.withElapsed(elapsedMs),
@@ -528,7 +528,7 @@ object LogStatements {
 
         fun saveUnavailable(reason: ReasonCode): LogStatement = DegradedStatement(
             Events.Autofill.SaveFailed,
-            ErrorCodes.AutofillSaveFailed,
+            ErrorCodes.Autofill.AutofillSaveFailed,
             reason,
             LogFields.Empty,
         )
@@ -538,7 +538,7 @@ object LogStatements {
             reason: ReasonCode = Reasons.StorageFailure,
         ): LogStatement = ErrorStatement(
             Events.Autofill.SaveFailed,
-            ErrorCodes.AutofillSaveFailed,
+            ErrorCodes.Autofill.AutofillSaveFailed,
             reason,
             throwable,
             LogFields.Empty,
@@ -551,7 +551,7 @@ object LogStatements {
     object Backup {
         fun resourceCleanupFailed(throwable: Throwable): LogStatement = WarningStatement(
             Events.Backup.ResourceCleanupFailed,
-            ErrorCodes.ResourceCleanupFailed,
+            ErrorCodes.Application.ResourceCleanupFailed,
             Reasons.FileDeleteFailed,
             throwable,
             LogFields.Empty,

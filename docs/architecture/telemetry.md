@@ -31,7 +31,9 @@ Trace 的所有者是用户/系统操作，不是模块。Security 统一使用 
 
 错误码与原因码的唯一来源是 `config/observability/error-catalog.json`。Gradle 从该结构化目录生成 core 的
 `ErrorCodes`/`Reasons`、App 的 `GeneratedErrorMessageResolver` 和已提交的 `docs/ERROR_CODES.md`；生产源码不再
-手写第二份常量。目录解析会拒绝未知属性、重复 symbol/code、未知默认原因和非法 exposure。只有
+手写第二份常量。`ErrorCodes` 按 `Application/Database/Security/Autofill/Backup` 大类提供嵌套 API，生成文档也按
+同一大类分组；叶子 code 的 wire 值保持稳定，分类只由目录的 `category` 决定。目录解析会拒绝未知属性、重复
+symbol/code、未知默认原因和非法 exposure。只有
 `USER_ACTIONABLE` 错误允许声明 `message_key`，且 `verifyErrorCodes` 要求默认与英文资源都存在；`INTERNAL` 错误
 不得映射用户文案，UI 也不得直接展示原始错误码或异常文本。
 

@@ -12,15 +12,15 @@ class ExceptionMapperTest {
 
         assertEquals(
             ExceptionKind.DATABASE_IO,
-            ExceptionMapper.map(ErrorCodes.DatabaseOpenFailed, obfuscatedFailure),
+            ExceptionMapper.map(ErrorCodes.Database.DatabaseOpenFailed, obfuscatedFailure),
         )
         assertEquals(
             ExceptionKind.AUTHENTICATION,
-            ExceptionMapper.map(ErrorCodes.AuthenticationFailed, obfuscatedFailure),
+            ExceptionMapper.map(ErrorCodes.Security.AuthenticationFailed, obfuscatedFailure),
         )
         assertEquals(
             ExceptionKind.PLATFORM,
-            ExceptionMapper.map(ErrorCodes.AutofillResultDeliveryFailed, obfuscatedFailure),
+            ExceptionMapper.map(ErrorCodes.Autofill.AutofillResultDeliveryFailed, obfuscatedFailure),
         )
     }
 
@@ -28,15 +28,15 @@ class ExceptionMapperTest {
     fun `unclassified errors use controlled throwable families only`() {
         assertEquals(
             ExceptionKind.CRYPTO,
-            ExceptionMapper.map(ErrorCodes.ApplicationUnhandledException, AEADBadTagException()),
+            ExceptionMapper.map(ErrorCodes.Application.ApplicationUnhandledException, AEADBadTagException()),
         )
         assertEquals(
             ExceptionKind.IO,
-            ExceptionMapper.map(ErrorCodes.ApplicationUnhandledException, IOException("secret")),
+            ExceptionMapper.map(ErrorCodes.Application.ApplicationUnhandledException, IOException("secret")),
         )
         assertEquals(
             ExceptionKind.UNKNOWN,
-            ExceptionMapper.map(ErrorCodes.ApplicationUnhandledException, RuntimeException("secret")),
+            ExceptionMapper.map(ErrorCodes.Application.ApplicationUnhandledException, RuntimeException("secret")),
         )
     }
 }

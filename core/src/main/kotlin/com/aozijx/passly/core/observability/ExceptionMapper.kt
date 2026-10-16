@@ -6,31 +6,31 @@ import java.security.GeneralSecurityException
 /** Maps failures to a stable diagnostic vocabulary without inspecting exception messages. */
 object ExceptionMapper {
     fun map(errorCode: ErrorCode, throwable: Throwable): ExceptionKind = when (errorCode) {
-        ErrorCodes.DatabaseSessionOpenFailed,
-        ErrorCodes.DatabaseSessionCloseFailed,
-        ErrorCodes.DatabaseOpenFailed,
-        ErrorCodes.DatabaseResetFailed,
+        ErrorCodes.Database.DatabaseSessionOpenFailed,
+        ErrorCodes.Database.DatabaseSessionCloseFailed,
+        ErrorCodes.Database.DatabaseOpenFailed,
+        ErrorCodes.Database.DatabaseResetFailed,
         -> ExceptionKind.DATABASE_IO
 
-        ErrorCodes.AuthenticationFailed,
-        ErrorCodes.BiometricPromptFailed,
+        ErrorCodes.Security.AuthenticationFailed,
+        ErrorCodes.Security.BiometricPromptFailed,
         -> ExceptionKind.AUTHENTICATION
 
-        ErrorCodes.SecurityLockFailed,
-        ErrorCodes.ResourceCleanupFailed,
+        ErrorCodes.Security.SecurityLockFailed,
+        ErrorCodes.Application.ResourceCleanupFailed,
         -> ExceptionKind.LIFECYCLE
 
-        ErrorCodes.AutofillDiscoveryUnavailable,
-        ErrorCodes.AutofillResultDeliveryFailed,
-        ErrorCodes.AutofillSessionCloseFailed,
-        ErrorCodes.AutofillSaveFailed,
-        ErrorCodes.PackageIconUnavailable,
-        ErrorCodes.ScannerFailed,
-        ErrorCodes.NativeLibraryLoadFailed,
+        ErrorCodes.Autofill.AutofillDiscoveryUnavailable,
+        ErrorCodes.Autofill.AutofillResultDeliveryFailed,
+        ErrorCodes.Autofill.AutofillSessionCloseFailed,
+        ErrorCodes.Autofill.AutofillSaveFailed,
+        ErrorCodes.Application.PackageIconUnavailable,
+        ErrorCodes.Application.ScannerFailed,
+        ErrorCodes.Application.NativeLibraryLoadFailed,
         -> ExceptionKind.PLATFORM
 
-        ErrorCodes.DiagnosticsExportFailed -> ExceptionKind.IO
-        ErrorCodes.VaultOperationFailed -> ExceptionKind.CRYPTO
+        ErrorCodes.Application.DiagnosticsExportFailed -> ExceptionKind.IO
+        ErrorCodes.Security.VaultOperationFailed -> ExceptionKind.CRYPTO
         else -> mapThrowableFamily(throwable)
     }
 

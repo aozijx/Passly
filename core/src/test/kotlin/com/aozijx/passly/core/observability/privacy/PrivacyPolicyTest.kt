@@ -205,7 +205,7 @@ class PrivacyPolicyTest {
                 level = LogLevel.ERROR,
                 event = Events.Autofill.ResultDeliveryFailed,
                 error = PendingError(
-                    errorCode = ErrorCodes.AutofillResultDeliveryFailed,
+                    errorCode = ErrorCodes.Autofill.AutofillResultDeliveryFailed,
                     reason = Reasons.PlatformCallbackFailed,
                     throwable = IllegalStateException(secret),
                 ),
@@ -228,7 +228,7 @@ class PrivacyPolicyTest {
                 hashedIdentifier(LogFieldKeys.TargetPackage, IdentifierNamespace.TARGET_PACKAGE, rawPackage)
             },
             error = PendingError(
-                errorCode = ErrorCodes.AutofillResultDeliveryFailed,
+                errorCode = ErrorCodes.Autofill.AutofillResultDeliveryFailed,
                 reason = Reasons.PlatformCallbackFailed,
                 throwable = IllegalStateException(throwableSecret),
             ),

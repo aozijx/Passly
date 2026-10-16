@@ -117,7 +117,7 @@ class LogcatSinkTest {
         fields = fields,
         error = if (withError) {
             ErrorPayload(
-                errorCode = ErrorCodes.AutofillResultDeliveryFailed,
+                errorCode = ErrorCodes.Autofill.AutofillResultDeliveryFailed,
                 reason = Reasons.PlatformCallbackFailed,
                 exception = ExceptionSnapshot(
                     type = ExceptionType("IllegalStateException"),

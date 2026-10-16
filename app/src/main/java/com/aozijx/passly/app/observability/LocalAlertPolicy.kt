@@ -28,7 +28,7 @@ class LocalAlertPolicy @Inject constructor() : LogSink {
     fun observe(record: SanitizedLogRecord): LocalDiagnosticAlert? {
         expire(record.timestampMs)
         val error = record.error ?: return null
-        if (error.errorCode != ErrorCodes.DatabaseSessionOpenFailed) return null
+        if (error.errorCode != ErrorCodes.Database.DatabaseSessionOpenFailed) return null
         databaseOpenFailures.addLast(Failure(record.timestampMs))
         prune(record.timestampMs)
         if (alert == null && databaseOpenFailures.size >= ALERT_THRESHOLD) {

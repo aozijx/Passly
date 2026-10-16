@@ -60,11 +60,13 @@ class ErrorCatalogTaskTest {
         val second = ErrorCatalogRenderer.render(catalog)
 
         assertEquals(first, second)
+        assertTrue(first.coreKotlin.contains("object Security"))
         assertTrue(first.coreKotlin.contains("val One = ErrorCode(\"ONE_ERROR\")"))
-        assertTrue(first.appKotlin.contains("R.string.auth_error_failed"))
+        assertTrue(first.appKotlin.contains("ErrorCodes.Security.One -> R.string.auth_error_failed"))
         assertTrue(first.appKotlin.contains("else -> null"))
         assertTrue(!first.appKotlin.contains("errorCode.value"))
-        assertTrue(first.markdown.contains("| `ONE_ERROR` | `KNOWN` | SECURITY | USER_ACTIONABLE | Visible failure |"))
+        assertTrue(first.markdown.contains("### Security"))
+        assertTrue(first.markdown.contains("| `ONE_ERROR` | `KNOWN` | USER_ACTIONABLE | Visible failure |"))
     }
 
     private fun parse(errors: String): ErrorCatalog = ErrorCatalogParser.parse(

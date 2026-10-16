@@ -173,7 +173,11 @@ internal object ErrorCatalogRenderer {
         appendLine(")")
         appendLine()
         appendLine("object ErrorCodes {")
-        catalog.errors.forEach { appendLine("    val ${it.symbol} = ErrorCode(\"${it.code}\")") }
+        catalog.errors.groupBy(ErrorCatalogEntry::category).forEach { (category, errors) ->
+            appendLine("    object ${category.categoryObjectName()} {")
+            errors.forEach { appendLine("        val ${it.symbol} = ErrorCode(\"${it.code}\")") }
+            appendLine("    }")
+        }
         appendLine("}")
         appendLine()
         appendLine("object Reasons {")
@@ -184,7 +188,7 @@ internal object ErrorCatalogRenderer {
         appendLine("    val All: List<RegisteredError> = listOf(")
         catalog.errors.forEach {
             val reasonSymbol = catalog.reasons.single { reason -> reason.code == it.defaultReason }.symbol
-            appendLine("        RegisteredError(ErrorCodes.${it.symbol}, Reasons.$reasonSymbol, LogCategory.${it.category}, ErrorExposure.${it.exposure}),")
+            appendLine("        RegisteredError(ErrorCodes.${it.category.categoryObjectName()}.${it.symbol}, Reasons.$reasonSymbol, LogCategory.${it.category}, ErrorExposure.${it.exposure}),")
         }
         appendLine("    )")
         appendLine("}")
@@ -203,7 +207,7 @@ internal object ErrorCatalogRenderer {
         appendLine("    @StringRes")
         appendLine("    fun resolve(errorCode: ErrorCode): Int? = when (errorCode) {")
         catalog.errors.filter { it.messageKey != null }.forEach {
-            appendLine("        ErrorCodes.${it.symbol} -> R.string.${it.messageKey}")
+            appendLine("        ErrorCodes.${it.category.categoryObjectName()}.${it.symbol} -> R.string.${it.messageKey}")
         }
         appendLine("        else -> null")
         appendLine("    }")
@@ -215,12 +219,16 @@ internal object ErrorCatalogRenderer {
         appendLine()
         appendLine("> Generated from `config/observability/error-catalog.json`. Do not edit by hand.")
         appendLine()
-        appendLine("## Errors")
-        appendLine()
-        appendLine("| Code | Default reason | Category | Exposure | Description |")
-        appendLine("|---|---|---|---|---|")
-        catalog.errors.forEach {
-            appendLine("| `${it.code}` | `${it.defaultReason}` | ${it.category} | ${it.exposure} | ${it.description} |")
+        appendLine("## Errors by category")
+        catalog.errors.groupBy(ErrorCatalogEntry::category).forEach { (category, errors) ->
+            appendLine()
+            appendLine("### ${category.categoryObjectName()}")
+            appendLine()
+            appendLine("| Code | Default reason | Exposure | Description |")
+            appendLine("|---|---|---|---|")
+            errors.forEach {
+                appendLine("| `${it.code}` | `${it.defaultReason}` | ${it.exposure} | ${it.description} |")
+            }
         }
         appendLine()
         appendLine("## Reasons")
@@ -229,6 +237,8 @@ internal object ErrorCatalogRenderer {
         appendLine("|---|---|")
         catalog.reasons.forEach { appendLine("| `${it.code}` | ${it.description} |") }
     }
+
+    private fun String.categoryObjectName(): String = lowercase().replaceFirstChar(Char::uppercase)
 }
 
 abstract class GenerateErrorCatalogTask : DefaultTask() {

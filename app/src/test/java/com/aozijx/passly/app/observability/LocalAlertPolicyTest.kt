@@ -38,7 +38,7 @@ class LocalAlertPolicyTest {
         trace = TraceSnapshot(TraceId(traceId), SpanId("span_123456789"), null),
         fields = LogFields.Empty,
         error = ErrorPayload(
-            ErrorCodes.DatabaseSessionOpenFailed,
+            ErrorCodes.Database.DatabaseSessionOpenFailed,
             Reasons.SessionOpenFailed,
             null,
         ),

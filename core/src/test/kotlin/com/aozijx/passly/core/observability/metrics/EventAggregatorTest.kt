@@ -97,7 +97,7 @@ class EventAggregatorTest {
         },
         error = if (failure) {
             ErrorPayload(
-                ErrorCodes.DatabaseSessionOpenFailed,
+                ErrorCodes.Database.DatabaseSessionOpenFailed,
                 Reasons.SessionOpenFailed,
                 null,
             )
