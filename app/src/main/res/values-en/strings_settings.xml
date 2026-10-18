@@ -188,7 +188,6 @@
     <string name="settings_swipe_action_copy_username">Copy username</string>
     <string name="settings_swipe_action_disabled">Disabled</string>
     <string name="settings_swipe_action_delete">Delete</string>
-    <string name="settings_swipe_action_detail">Details</string>
     <string name="settings_swipe_gesture_enabled">List swipe gestures</string>
     <string name="settings_swipe_gesture_enabled_description">Swipe entries to run quick actions</string>
     <string name="settings_swipe_gesture_left_action">Left-swipe action</string>

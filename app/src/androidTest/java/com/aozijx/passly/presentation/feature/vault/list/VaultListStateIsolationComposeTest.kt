@@ -45,7 +45,7 @@ class VaultListStateIsolationComposeTest {
     private fun display() = VaultListDisplayUiModel(
         cardPresentations = emptyList(),
         swipeLeftAction = SwipeActionUiModel.DELETE,
-        swipeRightAction = SwipeActionUiModel.DETAIL,
+        swipeRightAction = SwipeActionUiModel.COPY_PASSWORD,
         isSwipeEnabled = true,
         isPullToSearchEnabled = true,
         collapseTopBarOnScroll = false,

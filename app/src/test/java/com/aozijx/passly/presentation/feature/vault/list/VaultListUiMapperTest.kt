@@ -11,10 +11,12 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.domain.entry.model.query.EntryCapability
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListDisplayUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpKindUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultSortOptionUiModel
 import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.mapping.entry.toUiModel
 import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
@@ -24,11 +26,19 @@ import org.junit.Test
 
 class VaultListUiMapperTest {
     @Test
+    fun defaultSortShowsNewestCreatedEntries() {
+        val ui = EntrySort.DEFAULT.toUiModel()
+
+        assertEquals(VaultSortOptionUiModel.CREATED_AT, ui.option)
+        assertTrue(ui.descending)
+    }
+
+    @Test
     fun dialogChangesAreIsolatedFromPagingAndPageChromeState() {
         val display = VaultListDisplayUiModel(
             cardPresentations = emptyList(),
             swipeLeftAction = SwipeActionUiModel.DELETE,
-            swipeRightAction = SwipeActionUiModel.DETAIL,
+            swipeRightAction = SwipeActionUiModel.COPY_PASSWORD,
             isSwipeEnabled = true,
             isPullToSearchEnabled = false,
             collapseTopBarOnScroll = false,

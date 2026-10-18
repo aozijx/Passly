@@ -11,7 +11,6 @@ class SwipeActionPresentationMapperTest {
         val pairs = listOf(
             SwipeActionType.DISABLED to SwipeActionUiModel.DISABLED,
             SwipeActionType.DELETE to SwipeActionUiModel.DELETE,
-            SwipeActionType.DETAIL to SwipeActionUiModel.DETAIL,
             SwipeActionType.COPY_PASSWORD to SwipeActionUiModel.COPY_PASSWORD,
             SwipeActionType.COPY_USERNAME to SwipeActionUiModel.COPY_USERNAME,
         )

@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+package passly.preferences;
+
+option java_package = "com.aozijx.passly.data.preferences.proto";
+option java_multiple_files = true;
+
+message SecurityPreferences {
+    optional bool secure_content_enabled = 1 [default = true];
+    optional bool flip_to_lock_enabled = 2 [default = true];
+    optional bool flip_exit_and_clear_stack = 3 [default = false];
+    optional bool lock_on_background = 4 [default = false];
+    optional int64 lock_timeout_ms = 5 [default = 60000];
+    optional bool invalidate_biometric_key_on_change = 6 [default = true];
+    optional bool reauthenticate_sensitive_copies = 7 [default = true];
+    optional bool clipboard_clear_enabled = 8 [default = true];
+    optional int32 clipboard_clear_delay_seconds = 9 [default = 30];
+}

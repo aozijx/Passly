@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.settings
 
-import com.aozijx.passly.data.local.datastore.settings.InterfacePreferences
+import com.aozijx.passly.data.preferences.proto.InterfacePreferences
 import com.aozijx.passly.domain.settings.model.AppCornerRadiusConstraints
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
 

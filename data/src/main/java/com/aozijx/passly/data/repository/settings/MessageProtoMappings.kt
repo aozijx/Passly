@@ -1,77 +1,72 @@
 package com.aozijx.passly.data.repository.settings
 
-import com.aozijx.passly.data.local.datastore.settings.MessagePreferences
-import com.aozijx.passly.data.local.datastore.settings.NoticeLevelProto
-import com.aozijx.passly.data.local.datastore.settings.TopicMessagePreference
+import com.aozijx.passly.data.preferences.proto.MessageLevelPreference
+import com.aozijx.passly.data.preferences.proto.MessagePreferences
 import com.aozijx.passly.domain.settings.model.MessageLevel
 import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.model.TopicMessageSettings
-import com.aozijx.passly.domain.settings.model.defaultMessageTopicSettings
 
-// -- MessageTopic --
-internal fun String.toMessageTopicDomain(): MessageTopic = when (this) {
-    "clipboard" -> MessageTopic.CLIPBOARD
-    "app_lifecycle" -> MessageTopic.APP_LIFECYCLE
-    "backup" -> MessageTopic.BACKUP
-    "security" -> MessageTopic.SECURITY
-    "database" -> MessageTopic.DATABASE
-    else -> MessageTopic.CLIPBOARD
+internal fun MessageLevel.toProto(): MessageLevelPreference = when (this) {
+    MessageLevel.INFO -> MessageLevelPreference.MESSAGE_LEVEL_INFO
+    MessageLevel.SUCCESS -> MessageLevelPreference.MESSAGE_LEVEL_SUCCESS
+    MessageLevel.WARNING -> MessageLevelPreference.MESSAGE_LEVEL_WARNING
+    MessageLevel.ERROR -> MessageLevelPreference.MESSAGE_LEVEL_ERROR
+    MessageLevel.CRITICAL -> MessageLevelPreference.MESSAGE_LEVEL_CRITICAL
 }
 
-internal fun MessageTopic.toMessageTopicString(): String = when (this) {
-    MessageTopic.CLIPBOARD -> "clipboard"
-    MessageTopic.APP_LIFECYCLE -> "app_lifecycle"
-    MessageTopic.BACKUP -> "backup"
-    MessageTopic.SECURITY -> "security"
-    MessageTopic.DATABASE -> "database"
+internal fun MessageLevelPreference.toDomain(): MessageLevel = when (this) {
+    MessageLevelPreference.MESSAGE_LEVEL_INFO -> MessageLevel.INFO
+    MessageLevelPreference.MESSAGE_LEVEL_SUCCESS -> MessageLevel.SUCCESS
+    MessageLevelPreference.MESSAGE_LEVEL_WARNING -> MessageLevel.WARNING
+    MessageLevelPreference.MESSAGE_LEVEL_ERROR -> MessageLevel.ERROR
+    MessageLevelPreference.MESSAGE_LEVEL_CRITICAL -> MessageLevel.CRITICAL
+    MessageLevelPreference.MESSAGE_LEVEL_UNSPECIFIED ->
+        throw IllegalArgumentException("Unsupported message level: $this")
 }
 
-// -- MessageLevel --
-internal fun MessageLevel.toProto(): NoticeLevelProto = when (this) {
-    MessageLevel.INFO -> NoticeLevelProto.NOTICE_LEVEL_INFO
-    MessageLevel.SUCCESS -> NoticeLevelProto.NOTICE_LEVEL_SUCCESS
-    MessageLevel.WARNING -> NoticeLevelProto.NOTICE_LEVEL_WARNING
-    MessageLevel.ERROR -> NoticeLevelProto.NOTICE_LEVEL_ERROR
-    MessageLevel.CRITICAL -> NoticeLevelProto.NOTICE_LEVEL_CRITICAL
-}
-
-internal fun NoticeLevelProto.toDomain(): MessageLevel = when (this) {
-    NoticeLevelProto.NOTICE_LEVEL_INFO -> MessageLevel.INFO
-    NoticeLevelProto.NOTICE_LEVEL_SUCCESS -> MessageLevel.SUCCESS
-    NoticeLevelProto.NOTICE_LEVEL_WARNING -> MessageLevel.WARNING
-    NoticeLevelProto.NOTICE_LEVEL_ERROR -> MessageLevel.ERROR
-    NoticeLevelProto.NOTICE_LEVEL_CRITICAL -> MessageLevel.CRITICAL
-}
-
-// -- MessagePreferences encode / decode --
-internal fun decodeMessageSettings(proto: MessagePreferences?): MessageSettings {
-    if (proto == null) return MessageSettings()
-    val configured = proto.topicsList.associate { item ->
-        item.topicKey.toMessageTopicDomain() to TopicMessageSettings(
-            enabled = item.enabled,
-            minimumLevel = item.minimumLevel.toDomain()
-        )
-    }
-    return MessageSettings(
+internal fun decodeMessageSettings(proto: MessagePreferences): MessageSettings =
+    MessageSettings(
         optionalMessagesEnabled = proto.optionalMessagesEnabled,
         systemNotificationsEnabled = proto.systemNotificationsEnabled,
-        topicSettings = defaultMessageTopicSettings() + configured
+        topicSettings = mapOf(
+            MessageTopic.CLIPBOARD to TopicMessageSettings(
+                enabled = proto.clipboardEnabled,
+                minimumLevel = proto.clipboardMinimumLevel.toDomain(),
+            ),
+            MessageTopic.APP_LIFECYCLE to TopicMessageSettings(
+                enabled = proto.appLifecycleEnabled,
+                minimumLevel = proto.appLifecycleMinimumLevel.toDomain(),
+            ),
+            MessageTopic.BACKUP to TopicMessageSettings(
+                enabled = proto.backupEnabled,
+                minimumLevel = proto.backupMinimumLevel.toDomain(),
+            ),
+            MessageTopic.SECURITY to TopicMessageSettings(
+                enabled = proto.securityEnabled,
+                minimumLevel = proto.securityMinimumLevel.toDomain(),
+            ),
+            MessageTopic.DATABASE to TopicMessageSettings(
+                enabled = proto.databaseEnabled,
+                minimumLevel = proto.databaseMinimumLevel.toDomain(),
+            ),
+        ),
     )
-}
 
 internal fun encodeMessageSettings(settings: MessageSettings): MessagePreferences =
     MessagePreferences.newBuilder()
         .setOptionalMessagesEnabled(settings.optionalMessagesEnabled)
         .setSystemNotificationsEnabled(settings.systemNotificationsEnabled)
-        .addAllTopics(
-            MessageTopic.entries.map { topic ->
-                val value = settings.topic(topic)
-                TopicMessagePreference.newBuilder()
-                    .setTopicKey(topic.toMessageTopicString())
-                    .setEnabled(value.enabled)
-                    .setMinimumLevel(value.minimumLevel.toProto())
-                    .build()
-            }
+        .setClipboardEnabled(settings.topic(MessageTopic.CLIPBOARD).enabled)
+        .setClipboardMinimumLevel(settings.topic(MessageTopic.CLIPBOARD).minimumLevel.toProto())
+        .setAppLifecycleEnabled(settings.topic(MessageTopic.APP_LIFECYCLE).enabled)
+        .setAppLifecycleMinimumLevel(
+            settings.topic(MessageTopic.APP_LIFECYCLE).minimumLevel.toProto(),
         )
+        .setBackupEnabled(settings.topic(MessageTopic.BACKUP).enabled)
+        .setBackupMinimumLevel(settings.topic(MessageTopic.BACKUP).minimumLevel.toProto())
+        .setSecurityEnabled(settings.topic(MessageTopic.SECURITY).enabled)
+        .setSecurityMinimumLevel(settings.topic(MessageTopic.SECURITY).minimumLevel.toProto())
+        .setDatabaseEnabled(settings.topic(MessageTopic.DATABASE).enabled)
+        .setDatabaseMinimumLevel(settings.topic(MessageTopic.DATABASE).minimumLevel.toProto())
         .build()

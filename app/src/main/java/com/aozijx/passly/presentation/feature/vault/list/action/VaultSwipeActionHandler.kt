@@ -31,7 +31,6 @@ fun handleSwipeAction(
     actionType: SwipeActionType,
     item: VaultListItemUiModel,
     onQuickDelete: (String) -> Unit,
-    onShowDetail: (String) -> Unit,
     onCopy: (FieldKey) -> Unit,
 ) {
     when (actionType) {
@@ -39,6 +38,5 @@ fun handleSwipeAction(
         SwipeActionType.COPY_PASSWORD -> onCopy(FieldKey.PASSWORD)
         SwipeActionType.COPY_USERNAME -> onCopy(FieldKey.USERNAME)
         SwipeActionType.DELETE -> onQuickDelete(item.id)
-        SwipeActionType.DETAIL -> onShowDetail(item.id)
     }
 }

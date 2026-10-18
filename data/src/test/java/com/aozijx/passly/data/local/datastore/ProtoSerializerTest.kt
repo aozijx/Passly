@@ -1,13 +1,15 @@
 package com.aozijx.passly.data.local.datastore
 
 import androidx.datastore.core.CorruptionException
-import com.aozijx.passly.data.local.datastore.settings.AppSettings
-import com.aozijx.passly.data.local.datastore.settings.AppearancePreferences
-import com.aozijx.passly.data.local.datastore.settings.InteractionPreferences
-import com.aozijx.passly.data.local.datastore.settings.MessagePreferences
-import com.aozijx.passly.data.local.datastore.settings.NoticeLevelProto
-import com.aozijx.passly.data.local.datastore.settings.SecurityPreferences
-import com.aozijx.passly.data.local.datastore.settings.TopicMessagePreference
+import com.aozijx.passly.data.preferences.proto.AppPreferences
+import com.aozijx.passly.data.preferences.proto.AppearancePreferences
+import com.aozijx.passly.data.preferences.proto.AutofillPresentationPreference
+import com.aozijx.passly.data.preferences.proto.EntryHierarchyDisplayModePreference
+import com.aozijx.passly.data.preferences.proto.MessageLevelPreference
+import com.aozijx.passly.data.preferences.proto.SecurityPreferences
+import com.aozijx.passly.data.preferences.proto.SortDirectionPreference
+import com.aozijx.passly.data.preferences.proto.SwipeActionPreference
+import com.aozijx.passly.data.preferences.proto.VaultSortFieldPreference
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -20,91 +22,105 @@ import java.io.ByteArrayOutputStream
 class ProtoSerializerTest {
 
     @Test
-    fun interactionSettings_activeFieldsUseOnlySupportedPreferences() {
+    fun appPreferences_defaultInstanceOwnsPersistedBehavior() {
+        val defaults = AppPreferences.getDefaultInstance()
+
+        assertTrue(defaults.appearance.dynamicColorEnabled)
+        assertFalse(defaults.interaction.swipeActionsEnabled)
+        assertFalse(defaults.interaction.pullToSearchEnabled)
         assertEquals(
-            (1..5).toList(),
-            listOf(
-                InteractionPreferences.SWIPE_ACTIONS_ENABLED_FIELD_NUMBER,
-                InteractionPreferences.SWIPE_LEFT_ACTION_FIELD_NUMBER,
-                InteractionPreferences.SWIPE_RIGHT_ACTION_FIELD_NUMBER,
-                InteractionPreferences.AUTOFILL_FIELD_NUMBER,
-                InteractionPreferences.PULL_TO_SEARCH_ENABLED_FIELD_NUMBER,
-            ),
+            SwipeActionPreference.SWIPE_ACTION_COPY_PASSWORD,
+            defaults.interaction.swipeLeftAction,
+        )
+        assertEquals(SwipeActionPreference.SWIPE_ACTION_DELETE, defaults.interaction.swipeRightAction)
+        assertTrue(defaults.interaction.autofill.enabled)
+        assertEquals(
+            AutofillPresentationPreference.AUTOFILL_PRESENTATION_SYSTEM_INLINE,
+            defaults.interaction.autofill.presentation,
+        )
+        assertEquals(
+            VaultSortFieldPreference.VAULT_SORT_FIELD_CREATED_AT,
+            defaults.vaultView.sort.field,
+        )
+        assertEquals(
+            SortDirectionPreference.SORT_DIRECTION_DESCENDING,
+            defaults.vaultView.sort.direction,
+        )
+        assertEquals(
+            EntryHierarchyDisplayModePreference.ENTRY_HIERARCHY_DISPLAY_MODE_COLLAPSED,
+            defaults.vaultView.hierarchyDisplayMode,
+        )
+        assertEquals(
+            MessageLevelPreference.MESSAGE_LEVEL_WARNING,
+            defaults.message.securityMinimumLevel,
+        )
+        assertEquals(
+            MessageLevelPreference.MESSAGE_LEVEL_ERROR,
+            defaults.message.databaseMinimumLevel,
         )
     }
 
     @Test
-    fun appSettings_schemaOwnsNonZeroDefaults() {
-        val defaults = AppSettingsSerializer.defaultValue
+    fun securityPreferences_defaultInstanceOwnsLockAndClipboardPolicy() {
+        val defaults = SecurityPreferences.getDefaultInstance()
 
-        assertEquals(2, defaults.version)
-        assertEquals(60_000L, defaults.security.lockTimeoutMs)
-        assertTrue(defaults.security.reauthenticateSensitiveCopies)
-        assertEquals(true, defaults.appearance.dynamicColorEnabled)
-        assertEquals(true, defaults.security.secureContentEnabled)
-        assertEquals(false, defaults.interaction.swipeActionsEnabled)
-        assertEquals("copy_password", defaults.interaction.swipeLeftAction)
-        assertEquals("detail", defaults.interaction.swipeRightAction)
-        assertTrue(defaults.interaction.pullToSearchEnabled)
-        assertTrue(defaults.interaction.autofill.enabled)
-        assertEquals("system_inline", defaults.interaction.autofill.presentation)
-        assertTrue(defaults.interaction.autofill.credentialManagerEnabled)
-        assertTrue(defaults.interaction.autofill.requireAuthentication)
-        assertFalse(defaults.interaction.autofill.allowUnmatchedSuggestions)
-        assertEquals(5, defaults.interaction.autofill.maxSuggestions)
-        assertFalse(defaults.hasMessage())
+        assertTrue(defaults.secureContentEnabled)
+        assertTrue(defaults.flipToLockEnabled)
+        assertFalse(defaults.flipExitAndClearStack)
+        assertFalse(defaults.lockOnBackground)
+        assertEquals(60_000L, defaults.lockTimeoutMs)
+        assertTrue(defaults.invalidateBiometricKeyOnChange)
+        assertTrue(defaults.reauthenticateSensitiveCopies)
+        assertTrue(defaults.clipboardClearEnabled)
+        assertEquals(30, defaults.clipboardClearDelaySeconds)
     }
 
     @Test
-    fun appSettings_roundTripPreservesPresenceAndCollections() = runBlocking {
-        val settings = AppSettings.newBuilder()
+    fun appPreferences_roundTripPreservesAppValues() = runBlocking {
+        val preferences = AppPreferences.newBuilder()
             .setAppearance(
                 AppearancePreferences.newBuilder()
                     .setDynamicColorEnabled(false)
-                    .build()
-            )
-            .setSecurity(
-                SecurityPreferences.newBuilder()
-                    .setLockTimeoutMs(45_000)
-                    .build()
-            )
-            .setMessage(
-                MessagePreferences.newBuilder()
-                    .setOptionalMessagesEnabled(false)
-                    .setSystemNotificationsEnabled(false)
-                    .addTopics(
-                        TopicMessagePreference.newBuilder()
-                            .setTopicKey("backup")
-                            .setEnabled(false)
-                            .setMinimumLevel(NoticeLevelProto.NOTICE_LEVEL_ERROR)
-                            .build()
-                    )
-                    .build()
+                    .setThemeKey("oled")
+                    .build(),
             )
             .build()
         val output = ByteArrayOutputStream()
 
-        AppSettingsSerializer.writeTo(settings, output)
-        val decoded = AppSettingsSerializer.readFrom(ByteArrayInputStream(output.toByteArray()))
+        AppPreferencesSerializer.writeTo(preferences, output)
+        val decoded = AppPreferencesSerializer.readFrom(ByteArrayInputStream(output.toByteArray()))
 
-        assertEquals(settings, decoded)
-        assertEquals(false, decoded.appearance.dynamicColorEnabled)
-        assertTrue(decoded.hasAppearance())
-        assertTrue(decoded.appearance.hasDynamicColorEnabled())
-        assertTrue(decoded.hasMessage())
-        assertFalse(decoded.message.optionalMessagesEnabled)
-        assertFalse(decoded.message.systemNotificationsEnabled)
-        assertEquals(1, decoded.message.topicsCount)
-        assertEquals("backup", decoded.message.getTopics(0).topicKey)
+        assertEquals(preferences, decoded)
+        assertFalse(decoded.appearance.dynamicColorEnabled)
+        assertEquals("oled", decoded.appearance.themeKey)
     }
 
     @Test
-    fun appSettings_rejectsCorruptProto() {
-        assertThrows(CorruptionException::class.java) {
-            runBlocking {
-                AppSettingsSerializer.readFrom(
-                    ByteArrayInputStream(byteArrayOf(0x0A, 0x7F))
-                )
+    fun securityPreferences_roundTripPreservesSecurityValues() = runBlocking {
+        val preferences = SecurityPreferences.newBuilder()
+            .setLockOnBackground(true)
+            .setLockTimeoutMs(45_000L)
+            .setClipboardClearDelaySeconds(15)
+            .build()
+        val output = ByteArrayOutputStream()
+
+        SecurityPreferencesSerializer.writeTo(preferences, output)
+        val decoded = SecurityPreferencesSerializer.readFrom(ByteArrayInputStream(output.toByteArray()))
+
+        assertEquals(preferences, decoded)
+        assertTrue(decoded.lockOnBackground)
+        assertEquals(45_000L, decoded.lockTimeoutMs)
+        assertEquals(15, decoded.clipboardClearDelaySeconds)
+    }
+
+    @Test
+    fun preferenceSerializers_rejectCorruptProto() {
+        listOf<suspend () -> Unit>(
+            { AppPreferencesSerializer.readFrom(ByteArrayInputStream(byteArrayOf(0x00))) },
+            { SecurityPreferencesSerializer.readFrom(ByteArrayInputStream(byteArrayOf(0x00))) },
+        ).forEach { readCorruptInput ->
+            assertThrows(CorruptionException::class.java) {
+                runBlocking { readCorruptInput() }
             }
         }
     }

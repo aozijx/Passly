@@ -143,7 +143,6 @@ private fun createAppSwipeActionSpec(
     val icon = when (actionType) {
         SwipeActionUiModel.DISABLED -> return null
         SwipeActionUiModel.DELETE -> Icons.Default.Delete
-        SwipeActionUiModel.DETAIL -> Icons.Default.Info
         SwipeActionUiModel.COPY_PASSWORD -> Icons.Default.ContentCopy
         SwipeActionUiModel.COPY_USERNAME -> Icons.Default.Person
     }

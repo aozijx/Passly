@@ -69,7 +69,7 @@ class TextVaultRenderer @Inject constructor() {
         appendField(sb, "标题", fields["title"]?.text)
         appendField(sb, "类型", entry.type)
         entry.fields.forEach { field ->
-            if (field.key == "title" || field.key == "notes" || field.key == "custom_fields") {
+            if (field.key in NON_INLINE_FIELDS) {
                 return@forEach
             }
             appendField(sb, fieldLabel(field.key), field.value.toDisplayText())
@@ -128,6 +128,8 @@ class TextVaultRenderer @Inject constructor() {
     }
 
     private companion object {
+        val NON_INLINE_FIELDS = setOf("title", "notes", "custom_fields", "favorite")
+
         val FIELD_LABELS = mapOf(
             "username" to "用户名",
             "email" to "邮箱",

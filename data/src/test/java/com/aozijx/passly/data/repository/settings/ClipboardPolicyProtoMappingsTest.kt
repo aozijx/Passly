@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.settings
 
-import com.aozijx.passly.data.local.datastore.settings.SecurityPreferences
+import com.aozijx.passly.data.preferences.proto.SecurityPreferences
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

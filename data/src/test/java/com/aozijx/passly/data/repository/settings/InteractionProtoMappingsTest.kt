@@ -1,6 +1,8 @@
 package com.aozijx.passly.data.repository.settings
 
-import com.aozijx.passly.data.local.datastore.settings.AutofillPreferences
+import com.aozijx.passly.data.preferences.proto.AutofillPreferences
+import com.aozijx.passly.data.preferences.proto.InteractionPreferences
+import com.aozijx.passly.data.preferences.proto.SwipeActionPreference
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -8,9 +10,24 @@ import org.junit.Test
 
 class InteractionProtoMappingsTest {
     @Test
-    fun `disabled swipe direction has a stable storage key`() {
-        assertEquals("disabled", SwipeActionType.DISABLED.toSwipeActionString())
-        assertEquals(SwipeActionType.DISABLED, "disabled".toSwipeActionDomain())
+    fun `proto interaction defaults map to safe directional actions`() {
+        val settings = readInteraction(InteractionPreferences.getDefaultInstance())
+
+        assertEquals(false, settings.isPullToSearchEnabled)
+        assertEquals(SwipeActionType.COPY_PASSWORD, settings.swipeLeftAction)
+        assertEquals(SwipeActionType.DELETE, settings.swipeRightAction)
+    }
+
+    @Test
+    fun `disabled swipe direction round trips through proto enum`() {
+        assertEquals(
+            SwipeActionPreference.SWIPE_ACTION_DISABLED,
+            SwipeActionType.DISABLED.toProto(),
+        )
+        assertEquals(
+            SwipeActionType.DISABLED,
+            SwipeActionPreference.SWIPE_ACTION_DISABLED.toDomain(),
+        )
     }
 
     @Test

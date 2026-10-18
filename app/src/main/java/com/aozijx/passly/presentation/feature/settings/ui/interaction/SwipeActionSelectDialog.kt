@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -36,7 +35,6 @@ import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
 private val SWIPE_ACTIONS = listOf(
     SwipeActionUiModel.DISABLED,
     SwipeActionUiModel.DELETE,
-    SwipeActionUiModel.DETAIL,
     SwipeActionUiModel.COPY_PASSWORD,
     SwipeActionUiModel.COPY_USERNAME
 )
@@ -44,7 +42,6 @@ private val SWIPE_ACTIONS = listOf(
 private fun SwipeActionUiModel.icon(): ImageVector = when (this) {
     SwipeActionUiModel.DISABLED -> Icons.Default.Block
     SwipeActionUiModel.DELETE -> Icons.Default.Delete
-    SwipeActionUiModel.DETAIL -> Icons.Default.Info
     SwipeActionUiModel.COPY_PASSWORD -> Icons.Default.ContentCopy
     SwipeActionUiModel.COPY_USERNAME -> Icons.Default.Person
 }
@@ -68,13 +65,11 @@ internal fun SwipeActionSelectDialog(
                         SwipeActionUiModel.DISABLED -> MaterialTheme.colorScheme.surfaceVariant
                         SwipeActionUiModel.DELETE -> MaterialTheme.colorScheme.errorContainer
                         SwipeActionUiModel.COPY_PASSWORD, SwipeActionUiModel.COPY_USERNAME -> MaterialTheme.colorScheme.secondaryContainer
-                        SwipeActionUiModel.DETAIL -> MaterialTheme.colorScheme.primaryContainer
                     }
                     val selectedContentColor = when (action) {
                         SwipeActionUiModel.DISABLED -> MaterialTheme.colorScheme.onSurfaceVariant
                         SwipeActionUiModel.DELETE -> MaterialTheme.colorScheme.onErrorContainer
                         SwipeActionUiModel.COPY_PASSWORD, SwipeActionUiModel.COPY_USERNAME -> MaterialTheme.colorScheme.onSecondaryContainer
-                        SwipeActionUiModel.DETAIL -> MaterialTheme.colorScheme.onPrimaryContainer
                     }
                     Row(
                         modifier = Modifier

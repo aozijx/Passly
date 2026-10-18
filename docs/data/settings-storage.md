@@ -1,57 +1,88 @@
 # 设置存储
 
-应用设置使用 Proto DataStore，Schema 位于 `data/src/main/proto/app_settings.proto`。Proto2 presence
-与显式默认值共同保证“未写入”不被误解为 Kotlin/Proto 的零值。
+Passly 使用两个 Proto DataStore 保存用户偏好：
 
-## 模型归属
+- `app_preferences.proto` → `app_preferences.pb`：外观、界面、交互、自动填充、Vault 视图、消息和备份目录。
+- `security_preferences.proto` → `security_preferences.pb`：安全窗口、锁定、生物识别密钥策略和剪贴板保护。
 
-设置契约（`AppSettingsSnapshot`、`SettingsCommand`、`MessageSettings` 及 `AppSettingsRepository`
-端口）位于 `:domain` 的 `domain/settings`。`:data` 只保留 Proto 生成 DTO
-（`data/local/datastore/settings`）、Serializer 与实现（`data/repository/settings`），在
-`ProtoSettingsMappings` 中把 Proto 映射为 Domain 设置模型；App 消费 Domain 模型，通知事件
-（`AppNotice`）在 App 层。
+现有 `bootstrap.proto` → `bootstrap.pb` 保持不变，只由 Vault 认证流程按需读取。它不是常驻设置流，不能与
+普通或安全偏好合并。
 
-## 加密边界
+## 代码归属
 
-Proto DataStore 只提供原子文件更新和结构化序列化，**不会自动加密整个文件**。本项目也没有引入
-Google Tink（见 [ADR-0009](../decisions/ADR-0009-no-google-tink.md)）。
+- `:domain` 定义设置模型、约束和 repository 端口。
+- `:data` 的 `preferences.proto` 生成包定义持久化 DTO；Serializer 负责损坏输入处理；两个 Store 分别映射
+  自己的 DataStore。
+- App 只消费 Domain 模型，不直接依赖生成的 Proto 类型。
 
-- `app_settings.pb`、`diagnostics_settings.pb` 是普通 Proto 文件，只能保存非秘密偏好。
-- `bootstrap.pb` 文件本身同样不是整文件密文，但其中的 DEK 是已经由应用密码派生密钥或
-  Android Keystore 密钥包裹后的 envelope ciphertext；salt、nonce、算法版本等可公开元数据也
-  会随信封保存。
-- 密码、OTP secret、恢复码明文、会话密钥和附件正文不得进入设置 DataStore。
+`ProtoAppPreferencesStore` 不读写安全字段；`ProtoSecurityPreferencesStore` 不读写普通应用字段。页面需要两类状态时，
+在既有 presentation 生命周期中组合两个 Flow，不创建第三个聚合存储。
 
-如果未来引入 Tink，目标应是明确的 keyset/跨平台格式或整文件 AEAD，并通过新 ADR 定义迁移与
-密钥生命周期；不能仅“给 DataStore 加 Tink”就假定所有字段自动获得正确的安全边界。
+## Proto 的边界
 
-## 字段原则
+Proto 只保存已经存在读写入口、确实需要跨启动保留的用户选择。它不是业务规则容器。
 
-- 有非零默认值的 scalar 使用 `optional` 与 `[default = ...]`。
-- 固定集合优先 enum；多值使用 `repeated`；键值扩展使用 `map`。
-- 不用逗号或分号拼接集合。
-- 删除字段时保留 `reserved` 字段号，禁止复用。
-- Serializer 遇到损坏输入抛出 `CorruptionException`，不静默恢复为默认值。
-- 尚未升级为 Proto enum 的固定字符串值必须由 Domain 提供稳定 key 和显式
-  `Supported / Missing / Unsupported` 解析结果；Data Mapper 穷尽处理结果，未知键不能回退成另一个
-  合法设置。Vault 的排序字段和层级展示模式当前遵循这一规则，写回值与现有 Proto v1 字符串保持一致。
+适合进入 Proto：
 
-## 设置与会话状态
+- 主题、语言、界面开关。
+- 下拉搜索、左右滑动作和自动填充用户选项。
+- Vault 主排序、方向、收藏置顶和层级显示方式。
+- 通知主题开关与最低等级。
+- 用户通过 SAF 选择的备份目录。
+- 锁定和剪贴板保护偏好。
+
+不进入 Proto：
+
+- 排序 tie-breaker、校验范围、状态机、错误降级和自动填充执行策略。
+- 备份 sheet 的当前格式、包含项、导入模式等一次性工作流参数。
+- 没有实际写入入口的预留字段。
+- 页面加载、搜索词、弹窗、待处理 effect、缓存或日志占用等运行时状态。
+- 密码、密钥、OTP secret、恢复码明文、会话密钥和附件正文。
+
+## 默认值与读取
+
+Proto2 的 `optional` 与 `[default = ...]` 定义首次安装和新文件的持久化偏好。Serializer 的 `defaultValue` 使用根消息
+`getDefaultInstance()`；DataStore 文件不存在时直接发出该实例。Mapper 不再写 `?: 60000`、字符串 `else` 回退或
+`EntrySort.DEFAULT` 等第二套持久化默认。
+
+固定选择使用以 `Preference` 结尾的 Proto enum，例如 `SwipeActionPreference`，避免与 Domain 类型重名和 `as`
+别名导入。每个 enum 的 0 值为 `*_UNSPECIFIED`，字段显式指定合法默认值；Mapper 收到显式
+`UNSPECIFIED` 时抛错，不猜测另一个合法选择。Proto2 遇到未来版本的未知 enum 数值时会把它保留为 unknown field，
+当前生成的 getter 将该字段视为未设置并返回 schema 的显式默认值。
+
+范围规范化和业务不变量仍留在 Domain。例如最大建议数和剪贴板延迟在写入时按 Domain 约束规范化，稳定排序的
+tie-breaker 由 Domain 查询规则补充，不持久化。
+
+## 加密与兼容边界
+
+Proto DataStore 提供原子更新和结构化序列化，不自动加密整个文件。本项目未引入 Google Tink，原因见
+[ADR-0009](../decisions/ADR-0009-no-google-tink.md)。
+
+- `app_preferences.pb` 与 `security_preferences.pb` 只能保存非秘密偏好。
+- `bootstrap.pb` 本身不是整文件密文；其中的 DEK 是由应用密码派生密钥或 Android Keystore 密钥包裹后的信封密文。
+- 诊断日志使用自己的内部文件存储，不存在 `diagnostics_settings.pb`。
+
+新的两个 preferences 文件不读取或迁移旧 `app_settings.pb`，也不保留兼容桥。旧文件仅包含非秘密偏好；升级后由
+新 schema 的默认实例开始。Vault 数据库、密码与 `bootstrap.pb` 不受影响。
+
+## 数据流
 
 ```mermaid
 flowchart LR
-    Screen --> SettingsRepository --> Proto[(app_settings.pb)]
-    Screen --> RuntimeRepository --> Memory["进程内 StateFlow"]
+    AppScreen --> AppRepository[ProtoAppPreferencesStore] --> AppProto[(app_preferences.pb)]
+    SecurityConsumer --> SecurityRepository[ProtoSecurityPreferencesStore] --> SecurityProto[(security_preferences.pb)]
+    Authentication --> BootstrapStore[ProtoVaultBootstrapStore] --> BootstrapProto[(bootstrap.pb)]
 ```
 
-跨进程需要保留的主题、排序、标签、消息偏好和详情页偏好属于 Proto；当前解锁状态、临时输入和一次性页面
-effect 属于内存 Flow。`runtime_extra` 只应用于尚未稳定的兼容字段，稳定业务设置应升级为强类型 Proto 字段。
+两个 preferences repository 直接映射 `DataStore.data`，沿用 Domain 的 Flow 端口。不为每个设置属性建立全局 eager
+`StateFlow`、专用 CoroutineScope 或重复缓存。
 
-## 当前注意事项
+## Schema 演进规则
 
-`dark_mode` 当前仍是可空布尔语义，而界面已要求浅色、深色、跟随系统三种模式。后续应使用强类型
-enum，并保留旧字段号，避免继续用额外字符串修补。
+- 有非零默认值的 scalar 使用 `optional` 与 `[default = ...]`。
+- 固定集合优先 enum；集合使用 `repeated`，不用逗号或分号拼接。
+- 发布后删除字段必须保留 `reserved` 字段号和名称，禁止复用。
+- 根消息不添加没有读取、拒绝或迁移行为的版本字段；需要迁移路由时，版本字段与规则一起引入。
+- Serializer 遇到损坏输入抛出 `CorruptionException`，不静默重置整个设置文件。
 
-消息相关设置分为状态栏通知、图标下载通知、剪贴板清除 Toast 和应用关闭
-Toast。系统通知权限是交付条件，不是设置值本身；设计见[权限与消息](../features/permissions-and-messages.md)。
-
+消息通知权限和系统能力是交付条件，不是偏好值；相关设计见[权限与消息](../features/permissions-and-messages.md)。

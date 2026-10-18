@@ -188,7 +188,6 @@
     <string name="settings_swipe_action_copy_username">复制账号</string>
     <string name="settings_swipe_action_disabled">禁用</string>
     <string name="settings_swipe_action_delete">删除</string>
-    <string name="settings_swipe_action_detail">详情</string>
     <string name="settings_swipe_gesture_enabled">列表快捷手势</string>
     <string name="settings_swipe_gesture_enabled_description">左右滑动条目执行快捷操作</string>
     <string name="settings_swipe_gesture_left_action">左滑快捷动作</string>

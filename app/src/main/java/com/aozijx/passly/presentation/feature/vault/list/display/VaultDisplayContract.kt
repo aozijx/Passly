@@ -18,9 +18,9 @@ data class VaultStyleConfig(
 
 data class VaultInteractionConfig(
     val isSwipeEnabled: Boolean = true,
-    val isPullToSearchEnabled: Boolean = true,
+    val isPullToSearchEnabled: Boolean = false,
     val swipeLeftAction: SwipeActionType = SwipeActionType.COPY_PASSWORD,
-    val swipeRightAction: SwipeActionType = SwipeActionType.DETAIL,
+    val swipeRightAction: SwipeActionType = SwipeActionType.DELETE,
 )
 
 data class VaultDisplayUiState(

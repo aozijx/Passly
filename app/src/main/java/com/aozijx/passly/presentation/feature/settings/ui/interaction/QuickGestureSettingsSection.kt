@@ -67,7 +67,6 @@ internal fun SwipeActionUiModel.localizedLabel(): String = stringResource(
     when (this) {
         SwipeActionUiModel.DISABLED -> R.string.settings_swipe_action_disabled
         SwipeActionUiModel.DELETE -> R.string.settings_swipe_action_delete
-        SwipeActionUiModel.DETAIL -> R.string.settings_swipe_action_detail
         SwipeActionUiModel.COPY_PASSWORD -> R.string.settings_swipe_action_copy_password
         SwipeActionUiModel.COPY_USERNAME -> R.string.settings_swipe_action_copy_username
     }

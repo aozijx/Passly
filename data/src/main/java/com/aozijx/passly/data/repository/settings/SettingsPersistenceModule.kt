@@ -27,78 +27,78 @@ internal abstract class SettingsPersistenceModule {
     @Binds
     @Singleton
     abstract fun bindIdleTimeoutSettings(
-        impl: ProtoSettingsStore
+        impl: ProtoSecurityPreferencesStore
     ): IdleTimeoutSettings
 
     @Binds
     @Singleton
     abstract fun bindAppearanceSettingsRepository(
-        impl: ProtoSettingsStore
+        impl: ProtoAppPreferencesStore
     ): AppearanceSettingsRepository
 
     @Binds
     @Singleton
     abstract fun bindInterfaceSettingsRepository(
-        impl: ProtoSettingsStore
+        impl: ProtoAppPreferencesStore
     ): InterfaceSettingsRepository
 
     @Binds
     @Singleton
     abstract fun bindLibraryViewSettingsRepository(
-        impl: ProtoSettingsStore
+        impl: ProtoAppPreferencesStore
     ): LibraryViewSettingsRepository
 
     @Binds
     @Singleton
     abstract fun bindLibraryViewSettingsSource(
-        impl: ProtoSettingsStore
+        impl: ProtoAppPreferencesStore
     ): LibraryViewSettingsSource
 
     @Binds
     @Singleton
     abstract fun bindSecuritySettingsRepository(
-        impl: ProtoSettingsStore
+        impl: ProtoSecurityPreferencesStore
     ): SecuritySettingsRepository
 
     @Binds
     @Singleton
     abstract fun bindSecuritySettingsSource(
-        impl: ProtoSettingsStore
+        impl: ProtoSecurityPreferencesStore
     ): SecuritySettingsSource
 
     @Binds
     @Singleton
     abstract fun bindMessageSettingsRepository(
-        impl: ProtoSettingsStore
+        impl: ProtoAppPreferencesStore
     ): MessageSettingsRepository
 
     @Binds
     @Singleton
     abstract fun bindMessageSettingsSource(
-        impl: ProtoSettingsStore
+        impl: ProtoAppPreferencesStore
     ): MessageSettingsSource
 
     @Binds
     @Singleton
     abstract fun bindBackupDirectorySettingsRepository(
-        impl: ProtoSettingsStore
+        impl: ProtoAppPreferencesStore
     ): BackupDirectorySettingsRepository
 
     @Binds
     @Singleton
     abstract fun bindBackupDirectorySettingsSource(
-        impl: ProtoSettingsStore
+        impl: ProtoAppPreferencesStore
     ): BackupDirectorySettingsSource
 
     @Binds
     @Singleton
     abstract fun bindInteractionSettingsRepository(
-        impl: ProtoSettingsStore
+        impl: ProtoAppPreferencesStore
     ): InteractionSettingsRepository
 
     @Binds
     @Singleton
     abstract fun bindInteractionSettingsSource(
-        impl: ProtoSettingsStore
+        impl: ProtoAppPreferencesStore
     ): InteractionSettingsSource
 }

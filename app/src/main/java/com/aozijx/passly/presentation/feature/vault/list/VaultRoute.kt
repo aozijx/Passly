@@ -81,9 +81,6 @@ internal fun VaultRoute(
                     onQuickDelete = { entryId ->
                         vaultViewModel.onAction(VaultUiAction.QuickDelete(entryId))
                     },
-                    onShowDetail = { entryId ->
-                        navigation.navigate(VaultDestinationRequest.OpenDetail(entryId))
-                    },
                     onCopy = { fieldKey ->
                         when (val request = resolveCopyRequest(item, fieldKey)) {
                             is VaultCopyRequest.Field -> vaultViewModel.onAction(

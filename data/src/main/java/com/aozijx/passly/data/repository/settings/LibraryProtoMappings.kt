@@ -1,98 +1,86 @@
 package com.aozijx.passly.data.repository.settings
 
-import com.aozijx.passly.data.local.datastore.settings.CardDensity as ProtoCardDensity
-import com.aozijx.passly.data.local.datastore.settings.EntryCardPresentation as ProtoEntryCardPresentation
-import com.aozijx.passly.data.local.datastore.settings.VaultSortPreference
-import com.aozijx.passly.data.local.datastore.settings.VaultViewPreferences
-import com.aozijx.passly.domain.settings.model.CardDensity
-import com.aozijx.passly.domain.settings.model.EntryCardPresentation
+import com.aozijx.passly.data.preferences.proto.EntryHierarchyDisplayModePreference
+import com.aozijx.passly.data.preferences.proto.SortDirectionPreference
+import com.aozijx.passly.data.preferences.proto.VaultSortFieldPreference
+import com.aozijx.passly.data.preferences.proto.VaultSortPreference
+import com.aozijx.passly.data.preferences.proto.VaultViewPreferences
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
-import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayModeParseResult
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
-import com.aozijx.passly.domain.entry.model.query.EntrySortFieldParseResult
 import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.domain.settings.model.LibraryViewSettings
 
-// -- CardDensity --
-internal fun ProtoCardDensity.toDomain(): CardDensity = when (this) {
-    ProtoCardDensity.CARD_DENSITY_COMPACT -> CardDensity.COMPACT
-    ProtoCardDensity.CARD_DENSITY_STANDARD -> CardDensity.STANDARD
-    ProtoCardDensity.CARD_DENSITY_COMFORTABLE -> CardDensity.COMFORTABLE
-    ProtoCardDensity.CARD_DENSITY_UNSPECIFIED -> CardDensity.STANDARD
+internal fun VaultSortFieldPreference.toDomain(): EntrySortField = when (this) {
+    VaultSortFieldPreference.VAULT_SORT_FIELD_TITLE -> EntrySortField.TITLE
+    VaultSortFieldPreference.VAULT_SORT_FIELD_CREATED_AT -> EntrySortField.CREATED_AT
+    VaultSortFieldPreference.VAULT_SORT_FIELD_UPDATED_AT -> EntrySortField.UPDATED_AT
+    VaultSortFieldPreference.VAULT_SORT_FIELD_LAST_USED_AT -> EntrySortField.LAST_USED_AT
+    VaultSortFieldPreference.VAULT_SORT_FIELD_USAGE_FREQUENCY -> EntrySortField.USAGE_FREQUENCY
+    VaultSortFieldPreference.VAULT_SORT_FIELD_ENTRY_TYPE -> EntrySortField.ENTRY_TYPE
+    VaultSortFieldPreference.VAULT_SORT_FIELD_ID -> EntrySortField.ID
+    VaultSortFieldPreference.VAULT_SORT_FIELD_UNSPECIFIED ->
+        throw IllegalArgumentException("Unsupported vault sort field: $this")
 }
 
-internal fun CardDensity.toProto(): ProtoCardDensity = when (this) {
-    CardDensity.COMPACT -> ProtoCardDensity.CARD_DENSITY_COMPACT
-    CardDensity.STANDARD -> ProtoCardDensity.CARD_DENSITY_STANDARD
-    CardDensity.COMFORTABLE -> ProtoCardDensity.CARD_DENSITY_COMFORTABLE
+internal fun EntrySortField.toProto(): VaultSortFieldPreference = when (this) {
+    EntrySortField.TITLE -> VaultSortFieldPreference.VAULT_SORT_FIELD_TITLE
+    EntrySortField.CREATED_AT -> VaultSortFieldPreference.VAULT_SORT_FIELD_CREATED_AT
+    EntrySortField.UPDATED_AT -> VaultSortFieldPreference.VAULT_SORT_FIELD_UPDATED_AT
+    EntrySortField.LAST_USED_AT -> VaultSortFieldPreference.VAULT_SORT_FIELD_LAST_USED_AT
+    EntrySortField.USAGE_FREQUENCY -> VaultSortFieldPreference.VAULT_SORT_FIELD_USAGE_FREQUENCY
+    EntrySortField.ENTRY_TYPE -> VaultSortFieldPreference.VAULT_SORT_FIELD_ENTRY_TYPE
+    EntrySortField.ID -> VaultSortFieldPreference.VAULT_SORT_FIELD_ID
 }
 
-// -- VaultSortPreference ↔ EntrySort --
-internal fun VaultSortPreference.toDomain(): EntrySort {
-    val sortField = EntrySortField.parseStoredKey(field).requireSupported("sort field")
-    val direction = if (descending) SortDirection.DESC else SortDirection.ASC
-    val tieBreaker = EntrySortField.parseStoredKey(tieBreakerField)
-        .requireSupported("sort tie-breaker field")
-    return EntrySort(sortField, direction, pinFavorites, tieBreaker)
+internal fun SortDirectionPreference.toDomain(): SortDirection = when (this) {
+    SortDirectionPreference.SORT_DIRECTION_ASCENDING -> SortDirection.ASC
+    SortDirectionPreference.SORT_DIRECTION_DESCENDING -> SortDirection.DESC
+    SortDirectionPreference.SORT_DIRECTION_UNSPECIFIED ->
+        throw IllegalArgumentException("Unsupported sort direction: $this")
 }
+
+internal fun SortDirection.toProto(): SortDirectionPreference = when (this) {
+    SortDirection.ASC -> SortDirectionPreference.SORT_DIRECTION_ASCENDING
+    SortDirection.DESC -> SortDirectionPreference.SORT_DIRECTION_DESCENDING
+}
+
+internal fun VaultSortPreference.toDomain(): EntrySort = EntrySort(
+    field = field.toDomain(),
+    direction = direction.toDomain(),
+    pinFavorites = pinFavorites,
+    tieBreaker = EntrySortField.ID,
+)
 
 internal fun EntrySort.toProtoSort(): VaultSortPreference =
     VaultSortPreference.newBuilder()
-        .setField(field.key)
-        .setDescending(direction == SortDirection.DESC)
+        .setField(field.toProto())
+        .setDirection(direction.toProto())
         .setPinFavorites(pinFavorites)
-        .setTieBreakerField(tieBreaker.key)
         .build()
 
-// -- EntryCardPresentation --
-internal fun ProtoEntryCardPresentation.toDomain(): EntryCardPresentation =
-    EntryCardPresentation(
-        entryTypeKey = entryTypeKey,
-        variantKey = variantKey,
-        density = density.toDomain(),
-        showIcon = showIcon,
-        showFavorite = showFavorite,
-        showSecondaryText = showSecondaryText,
-        showQuickAction = showQuickAction
-    )
+internal fun EntryHierarchyDisplayModePreference.toDomain(): EntryHierarchyDisplayMode = when (this) {
+    EntryHierarchyDisplayModePreference.ENTRY_HIERARCHY_DISPLAY_MODE_COLLAPSED ->
+        EntryHierarchyDisplayMode.COLLAPSED
+    EntryHierarchyDisplayModePreference.ENTRY_HIERARCHY_DISPLAY_MODE_EXPANDED ->
+        EntryHierarchyDisplayMode.EXPANDED
+    EntryHierarchyDisplayModePreference.ENTRY_HIERARCHY_DISPLAY_MODE_SEPARATE ->
+        EntryHierarchyDisplayMode.SEPARATE
+    EntryHierarchyDisplayModePreference.ENTRY_HIERARCHY_DISPLAY_MODE_UNSPECIFIED ->
+        throw IllegalArgumentException("Unsupported hierarchy display mode: $this")
+}
 
-internal fun EntryCardPresentation.toProto(): ProtoEntryCardPresentation =
-    ProtoEntryCardPresentation.newBuilder()
-        .setEntryTypeKey(entryTypeKey)
-        .setVariantKey(variantKey)
-        .setDensity(density.toProto())
-        .setShowIcon(showIcon)
-        .setShowFavorite(showFavorite)
-        .setShowSecondaryText(showSecondaryText)
-        .setShowQuickAction(showQuickAction)
-        .build()
+internal fun EntryHierarchyDisplayMode.toProto(): EntryHierarchyDisplayModePreference = when (this) {
+    EntryHierarchyDisplayMode.COLLAPSED ->
+        EntryHierarchyDisplayModePreference.ENTRY_HIERARCHY_DISPLAY_MODE_COLLAPSED
+    EntryHierarchyDisplayMode.EXPANDED ->
+        EntryHierarchyDisplayModePreference.ENTRY_HIERARCHY_DISPLAY_MODE_EXPANDED
+    EntryHierarchyDisplayMode.SEPARATE ->
+        EntryHierarchyDisplayModePreference.ENTRY_HIERARCHY_DISPLAY_MODE_SEPARATE
+}
 
 internal fun readVault(p: VaultViewPreferences): LibraryViewSettings =
     LibraryViewSettings(
-        sort = if (p.hasSort()) p.sort.toDomain() else EntrySort.DEFAULT,
-        entryCardPresentations = p.entryCardPresentationsList.map { it.toDomain() },
-        entryHierarchyDisplayMode = EntryHierarchyDisplayMode
-            .parseStoredKey(p.entryHierarchyDisplayMode)
-            .requireSupported()
+        sort = p.sort.toDomain(),
+        entryHierarchyDisplayMode = p.hierarchyDisplayMode.toDomain(),
     )
-
-private fun EntrySortFieldParseResult.requireSupported(fieldName: String): EntrySortField =
-    when (this) {
-        is EntrySortFieldParseResult.Supported -> value
-        EntrySortFieldParseResult.Missing ->
-            throw IllegalArgumentException("Stored $fieldName is missing")
-        is EntrySortFieldParseResult.Unsupported ->
-            throw IllegalArgumentException("Unsupported stored $fieldName: $storedValue")
-    }
-
-private fun EntryHierarchyDisplayModeParseResult.requireSupported(): EntryHierarchyDisplayMode =
-    when (this) {
-        is EntryHierarchyDisplayModeParseResult.Supported -> value
-        EntryHierarchyDisplayModeParseResult.Missing ->
-            throw IllegalArgumentException("Stored entry hierarchy display mode is missing")
-        is EntryHierarchyDisplayModeParseResult.Unsupported ->
-            throw IllegalArgumentException(
-                "Unsupported stored entry hierarchy display mode: $storedValue",
-            )
-    }

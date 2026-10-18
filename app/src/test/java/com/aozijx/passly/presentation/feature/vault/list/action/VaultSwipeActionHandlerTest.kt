@@ -33,14 +33,12 @@ class VaultSwipeActionHandlerTest {
             actionType = SwipeActionType.COPY_PASSWORD,
             item = item,
             onQuickDelete = { events += "delete" },
-            onShowDetail = { events += "detail" },
             onCopy = { events += "copy" }
         )
         handleSwipeAction(
             actionType = SwipeActionType.DELETE,
             item = item,
             onQuickDelete = { events += "delete" },
-            onShowDetail = { events += "detail" },
             onCopy = { events += "copy" }
         )
 
@@ -58,7 +56,6 @@ class VaultSwipeActionHandlerTest {
             actionType = SwipeActionType.DISABLED,
             item = item,
             onQuickDelete = { events += "delete" },
-            onShowDetail = { events += "detail" },
             onCopy = { events += "copy" },
         )
 

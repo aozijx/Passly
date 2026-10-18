@@ -9,6 +9,7 @@ import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.settings.model.SecuritySettings
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
@@ -144,6 +145,27 @@ class DeviceLockHandlerTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun `lock waits for the persisted security snapshot`() = runTest {
+        val lockController = RecordingLockController()
+        val settings = MutableStateFlow<SecuritySettings?>(null)
+        val handler = DeviceLockHandler(
+            sessionAccessState = FakeSessionState(AuthenticationState.Authenticated(1L)),
+            sessionLockController = lockController,
+            securitySettings = settings,
+        )
+
+        val result = async { handler.handle(DeviceLockTrigger.FLIP) }
+        runCurrent()
+        assertNull(lockController.reason)
+
+        settings.value = SecuritySettings(isFlipToLockEnabled = true)
+
+        assertTrue(result.await().locked)
+        assertEquals(LockTrigger.DEVICE_FLIP, lockController.trigger)
+    }
+
+    @Test
     fun `enabled flip locks softly and follows clear task setting`() = runTest {
         val lockController = RecordingLockController()
         val handler = handler(
@@ -169,7 +191,7 @@ class DeviceLockHandlerTest {
     ) = DeviceLockHandler(
         sessionAccessState = FakeSessionState(initialState),
         sessionLockController = lockController,
-        securitySettings = MutableStateFlow(security),
+        securitySettings = MutableStateFlow<SecuritySettings?>(security),
     )
 
     private class FakeSessionState(initial: AuthenticationState) : SecureSessionAccessState {

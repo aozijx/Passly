@@ -7,9 +7,9 @@ import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
 
 data class InteractionSettingsUiState(
     val isSwipeEnabled: Boolean = false,
-    val isPullToSearchEnabled: Boolean = true,
+    val isPullToSearchEnabled: Boolean = false,
     val swipeLeftAction: SwipeActionType = SwipeActionType.COPY_PASSWORD,
-    val swipeRightAction: SwipeActionType = SwipeActionType.DETAIL,
+    val swipeRightAction: SwipeActionType = SwipeActionType.DELETE,
 )
 
 sealed interface InteractionSettingsAction {

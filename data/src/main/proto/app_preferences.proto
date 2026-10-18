@@ -1,0 +1,141 @@
+syntax = "proto2";
+
+package passly.preferences;
+
+option java_package = "com.aozijx.passly.data.preferences.proto";
+option java_multiple_files = true;
+
+message AppPreferences {
+    optional AppearancePreferences appearance = 1;
+    optional InterfacePreferences interface_prefs = 2;
+    optional InteractionPreferences interaction = 3;
+    optional VaultViewPreferences vault_view = 4;
+    optional MessagePreferences message = 5;
+    optional BackupPreferences backup = 6;
+}
+
+message AppearancePreferences {
+    optional ThemeModePreference theme_mode = 1 [default = THEME_MODE_SYSTEM];
+    optional bool dynamic_color_enabled = 2 [default = true];
+    optional string theme_key = 3 [default = "default"];
+    optional int32 canvas_tint_percent = 4 [default = 8];
+    optional string language = 5 [default = "system"];
+    optional FontFamilyPreference font_family = 6 [default = FONT_FAMILY_APP_BUNDLED];
+}
+
+enum ThemeModePreference {
+    THEME_MODE_UNSPECIFIED = 0;
+    THEME_MODE_SYSTEM = 1;
+    THEME_MODE_LIGHT = 2;
+    THEME_MODE_DARK = 3;
+}
+
+enum FontFamilyPreference {
+    FONT_FAMILY_UNSPECIFIED = 0;
+    FONT_FAMILY_APP_BUNDLED = 1;
+    FONT_FAMILY_SYSTEM = 2;
+}
+
+message InterfacePreferences {
+    optional bool hide_system_bars = 1 [default = false];
+    optional bool collapse_top_bar_on_scroll = 2 [default = false];
+    optional bool collapse_quick_filter_bar_on_scroll = 3 [default = false];
+    optional float app_corner_radius_dp = 4 [default = 16];
+}
+
+message InteractionPreferences {
+    optional bool swipe_actions_enabled = 1 [default = false];
+    optional SwipeActionPreference swipe_left_action = 2 [default = SWIPE_ACTION_COPY_PASSWORD];
+    optional SwipeActionPreference swipe_right_action = 3 [default = SWIPE_ACTION_DELETE];
+    optional bool pull_to_search_enabled = 4 [default = false];
+    optional AutofillPreferences autofill = 5;
+}
+
+enum SwipeActionPreference {
+    SWIPE_ACTION_UNSPECIFIED = 0;
+    SWIPE_ACTION_DISABLED = 1;
+    SWIPE_ACTION_DELETE = 2;
+    SWIPE_ACTION_COPY_PASSWORD = 3;
+    SWIPE_ACTION_COPY_USERNAME = 4;
+}
+
+message AutofillPreferences {
+    optional bool enabled = 1 [default = true];
+    optional AutofillPresentationPreference presentation = 2 [default = AUTOFILL_PRESENTATION_SYSTEM_INLINE];
+    optional bool credential_manager_enabled = 3 [default = true];
+    optional bool require_authentication = 4 [default = true];
+    optional bool include_otp = 5 [default = true];
+    optional bool save_prompts_enabled = 6 [default = true];
+    optional bool allow_unmatched_suggestions = 7 [default = false];
+    optional int32 max_suggestions = 8 [default = 5];
+}
+
+enum AutofillPresentationPreference {
+    AUTOFILL_PRESENTATION_UNSPECIFIED = 0;
+    AUTOFILL_PRESENTATION_SYSTEM_INLINE = 1;
+    AUTOFILL_PRESENTATION_BOTTOM_SHEET = 2;
+}
+
+message VaultViewPreferences {
+    optional VaultSortPreference sort = 1;
+    optional EntryHierarchyDisplayModePreference hierarchy_display_mode = 2
+        [default = ENTRY_HIERARCHY_DISPLAY_MODE_COLLAPSED];
+}
+
+message VaultSortPreference {
+    optional VaultSortFieldPreference field = 1 [default = VAULT_SORT_FIELD_CREATED_AT];
+    optional SortDirectionPreference direction = 2 [default = SORT_DIRECTION_DESCENDING];
+    optional bool pin_favorites = 3 [default = true];
+}
+
+enum VaultSortFieldPreference {
+    VAULT_SORT_FIELD_UNSPECIFIED = 0;
+    VAULT_SORT_FIELD_TITLE = 1;
+    VAULT_SORT_FIELD_CREATED_AT = 2;
+    VAULT_SORT_FIELD_UPDATED_AT = 3;
+    VAULT_SORT_FIELD_LAST_USED_AT = 4;
+    VAULT_SORT_FIELD_USAGE_FREQUENCY = 5;
+    VAULT_SORT_FIELD_ENTRY_TYPE = 6;
+    VAULT_SORT_FIELD_ID = 7;
+}
+
+enum SortDirectionPreference {
+    SORT_DIRECTION_UNSPECIFIED = 0;
+    SORT_DIRECTION_ASCENDING = 1;
+    SORT_DIRECTION_DESCENDING = 2;
+}
+
+enum EntryHierarchyDisplayModePreference {
+    ENTRY_HIERARCHY_DISPLAY_MODE_UNSPECIFIED = 0;
+    ENTRY_HIERARCHY_DISPLAY_MODE_COLLAPSED = 1;
+    ENTRY_HIERARCHY_DISPLAY_MODE_EXPANDED = 2;
+    ENTRY_HIERARCHY_DISPLAY_MODE_SEPARATE = 3;
+}
+
+message MessagePreferences {
+    optional bool optional_messages_enabled = 1 [default = true];
+    optional bool system_notifications_enabled = 2 [default = true];
+    optional bool clipboard_enabled = 3 [default = true];
+    optional MessageLevelPreference clipboard_minimum_level = 4 [default = MESSAGE_LEVEL_INFO];
+    optional bool app_lifecycle_enabled = 5 [default = true];
+    optional MessageLevelPreference app_lifecycle_minimum_level = 6 [default = MESSAGE_LEVEL_INFO];
+    optional bool backup_enabled = 7 [default = true];
+    optional MessageLevelPreference backup_minimum_level = 8 [default = MESSAGE_LEVEL_INFO];
+    optional bool security_enabled = 9 [default = true];
+    optional MessageLevelPreference security_minimum_level = 10 [default = MESSAGE_LEVEL_WARNING];
+    optional bool database_enabled = 11 [default = true];
+    optional MessageLevelPreference database_minimum_level = 12 [default = MESSAGE_LEVEL_ERROR];
+}
+
+enum MessageLevelPreference {
+    MESSAGE_LEVEL_UNSPECIFIED = 0;
+    MESSAGE_LEVEL_INFO = 1;
+    MESSAGE_LEVEL_SUCCESS = 2;
+    MESSAGE_LEVEL_WARNING = 3;
+    MESSAGE_LEVEL_ERROR = 4;
+    MESSAGE_LEVEL_CRITICAL = 5;
+}
+
+message BackupPreferences {
+    optional string directory_tree_uri = 1 [default = ""];
+}

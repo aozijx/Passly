@@ -6,7 +6,6 @@ import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
 fun SwipeActionType.toUiModel(): SwipeActionUiModel = when (this) {
     SwipeActionType.DISABLED -> SwipeActionUiModel.DISABLED
     SwipeActionType.DELETE -> SwipeActionUiModel.DELETE
-    SwipeActionType.DETAIL -> SwipeActionUiModel.DETAIL
     SwipeActionType.COPY_PASSWORD -> SwipeActionUiModel.COPY_PASSWORD
     SwipeActionType.COPY_USERNAME -> SwipeActionUiModel.COPY_USERNAME
 }
@@ -14,7 +13,6 @@ fun SwipeActionType.toUiModel(): SwipeActionUiModel = when (this) {
 fun SwipeActionUiModel.toDomainModel(): SwipeActionType = when (this) {
     SwipeActionUiModel.DISABLED -> SwipeActionType.DISABLED
     SwipeActionUiModel.DELETE -> SwipeActionType.DELETE
-    SwipeActionUiModel.DETAIL -> SwipeActionType.DETAIL
     SwipeActionUiModel.COPY_PASSWORD -> SwipeActionType.COPY_PASSWORD
     SwipeActionUiModel.COPY_USERNAME -> SwipeActionType.COPY_USERNAME
 }

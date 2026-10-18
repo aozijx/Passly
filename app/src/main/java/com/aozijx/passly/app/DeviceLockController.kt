@@ -27,11 +27,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -71,10 +70,10 @@ internal class ScreenOffLockTracker {
 internal class DeviceLockHandler(
     private val sessionAccessState: SecureSessionAccessState,
     private val sessionLockController: SessionLockController,
-    private val securitySettings: StateFlow<SecuritySettings>,
+    private val securitySettings: StateFlow<SecuritySettings?>,
 ) {
     suspend fun handle(trigger: DeviceLockTrigger): DeviceLockResult {
-        val security = securitySettings.value
+        val security = securitySettings.filterNotNull().first()
         val request = when (trigger) {
             DeviceLockTrigger.SCREEN_OFF -> SessionLockRequest(LockReason.BACKGROUND, LockTrigger.SCREEN_OFF)
             DeviceLockTrigger.FLIP -> {
@@ -106,11 +105,7 @@ class DeviceLockController @Inject constructor(
     private val lockScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val triggerMutex = Mutex()
-    private val securitySettings = securitySettingsSource.security.stateIn(
-        scope = mainScope,
-        started = SharingStarted.Eagerly,
-        initialValue = SecuritySettings(),
-    )
+    private val securitySettings = MutableStateFlow<SecuritySettings?>(null)
     private val handler = DeviceLockHandler(
         sessionAccessState = sessionAccessState,
         sessionLockController = sessionLockController,
@@ -140,10 +135,12 @@ class DeviceLockController @Inject constructor(
 
     init {
         mainScope.launch {
-            securitySettings
-                .map { settings -> settings.isFlipToLockEnabled }
-                .distinctUntilChanged()
-                .collect { updateSensorRegistration() }
+            securitySettingsSource.security.collect { settings ->
+                val flipSettingChanged =
+                    securitySettings.value?.isFlipToLockEnabled != settings.isFlipToLockEnabled
+                securitySettings.value = settings
+                if (flipSettingChanged) updateSensorRegistration()
+            }
         }
     }
 
@@ -190,7 +187,7 @@ class DeviceLockController @Inject constructor(
 
     private fun updateSensorRegistration() {
         sensorManager.unregisterListener(this)
-        if (!appInForeground || !securitySettings.value.isFlipToLockEnabled) return
+        if (!appInForeground || securitySettings.value?.isFlipToLockEnabled != true) return
         accelerometer?.let { sensor ->
             sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
         }
