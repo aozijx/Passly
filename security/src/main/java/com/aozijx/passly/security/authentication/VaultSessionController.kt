@@ -24,7 +24,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -322,8 +321,7 @@ class VaultSessionController @Inject constructor(
                 return@withLock
             }
             transition(AuthenticationState.Locking(request.reason))
-            val currentJob = currentCoroutineContext()[Job]
-            idleJob?.takeUnless { it === currentJob }?.cancel()
+            idleJob?.cancel()
             idleJob = null
 
             when (targetLevel) {
@@ -362,6 +360,7 @@ class VaultSessionController @Inject constructor(
         idleJob?.cancel()
         idleJob = scope.launch {
             delay(timeoutMs.milliseconds)
+            idleJob = null
             lock(SessionLockRequest(LockReason.IDLE_TIMEOUT, LockTrigger.IDLE_TIMER))
         }
     }

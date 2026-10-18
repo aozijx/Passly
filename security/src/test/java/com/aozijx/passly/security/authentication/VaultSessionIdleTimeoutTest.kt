@@ -26,6 +26,7 @@ import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.dek.FieldKeyManager
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import com.aozijx.passly.security.lock.LockStateManager
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -36,6 +37,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -138,7 +140,9 @@ class VaultSessionIdleTimeoutTest {
         override suspend fun <T> inSpan(
             operation: OperationCode,
             block: suspend TraceScope.() -> T,
-        ): T = TestTraceScope.block()
+        ): T = withContext(CoroutineName("test-span")) {
+            TestTraceScope.block()
+        }
 
         override fun captureTraceToken(singleUse: Boolean): TraceToken = error("not used")
         override suspend fun <T> resumeTrace(
