@@ -107,7 +107,7 @@ class LogRecordCodecTest {
             exception = ExceptionSnapshot(
                 type = ExceptionType("IllegalStateException"),
                 appStackFrames = listOf(
-                    AppStackFrame("com.aozijx.passly.autofill.Result#deliver:42"),
+                    AppStackFrame("autofill.Result#deliver(Result.kt:42)"),
                 ),
                 causeTypes = listOf(ExceptionType("RuntimeException")),
                 foreignFrameCount = 3,

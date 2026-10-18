@@ -113,7 +113,7 @@ class DiagnosticsExportEncodersTest {
                 ReasonCode("PLATFORM_CALLBACK_FAILED"),
                 ExceptionSnapshot(
                     ExceptionType("IllegalStateException"),
-                    listOf(AppStackFrame("com.aozijx.passly.Safe#call:42")),
+                    listOf(AppStackFrame("Safe#call(Safe.kt:42)")),
                     emptyList(),
                     1,
                     ExceptionKind.PLATFORM,

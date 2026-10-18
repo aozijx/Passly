@@ -37,8 +37,12 @@ process-local 的 opaque `TraceToken`：默认单次消费、最长 10 分钟、
 `localizedMessage` 或 suppressed exception。
 
 安全快照最多保留 24 个 Passly 应用栈帧、3 层 cause 的简单类型、外部栈帧计数，以及稳定
-`exception_kind` 与受限异常类型。Release 混淆后的类名只作为辅助信息，不能承担错误语义。失败通过同一操作的
-`trace_id` 关联，不生成第二套 diagnostic/correlation ID。
+`exception_kind` 与受限异常类型。应用栈帧格式为 `相对类名#方法(源码文件:行号)`；源码文件名只接受
+受限的 `.kt`/`.java` 标识符，不接受路径。Debug 通过 Passly 包前缀识别应用帧；Release 的 R8 短类名帧
+通过已保留的 `SourceFile + LineNumberTable` 生成可读源码类名和行号，仍不输出第三方完整包名。方法名和
+异常类型在 Release 中可能被混淆，因此错误语义必须由 `error_code + reason_code + exception_kind` 承担，
+精确还原仍使用与 App 版本匹配的 R8 mapping。失败通过同一操作的 `trace_id` 关联，不生成第二套
+diagnostic/correlation ID。
 
 ## 聚合和采样
 

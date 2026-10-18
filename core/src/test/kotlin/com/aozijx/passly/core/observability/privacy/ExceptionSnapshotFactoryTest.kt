@@ -13,7 +13,8 @@ class ExceptionSnapshotFactoryTest {
     fun `snapshot never reads or emits throwable messages suppressed messages or foreign frames`() {
         val root = IllegalStateException("PASSWORD_SENTINEL")
         root.stackTrace = arrayOf(
-            StackTraceElement("com.aozijx.passly.feature.login.LoginUseCase", "invoke", "PATH_SENTINEL", 42),
+            StackTraceElement("com.aozijx.passly.feature.login.LoginUseCase", "invoke", "LoginUseCase.kt", 42),
+            StackTraceElement("com.aozijx.passly.feature.login.OtherUseCase", "invoke", "PATH_SENTINEL", 43),
             StackTraceElement("com.bank.secret.CustomerActivity", "TOKEN_SENTINEL", "CustomerActivity.kt", 8),
         )
         root.addSuppressed(IllegalArgumentException("OTP_SENTINEL"))
@@ -23,8 +24,11 @@ class ExceptionSnapshotFactoryTest {
 
         assertEquals("IllegalStateException", snapshot.type.value)
         assertEquals(ExceptionKind.AUTHENTICATION, snapshot.kind)
-        assertEquals(listOf("feature.login.LoginUseCase#invoke:42"), snapshot.appStackFrames.map { it.value })
-        assertEquals(1, snapshot.foreignFrameCount)
+        assertEquals(
+            listOf("feature.login.LoginUseCase#invoke(LoginUseCase.kt:42)"),
+            snapshot.appStackFrames.map { it.value },
+        )
+        assertEquals(2, snapshot.foreignFrameCount)
         listOf("PASSWORD_SENTINEL", "PATH_SENTINEL", "TOKEN_SENTINEL", "OTP_SENTINEL", "com.bank.secret")
             .forEach { assertFalse(encoded.contains(it)) }
     }
@@ -54,5 +58,22 @@ class ExceptionSnapshotFactoryTest {
         assertEquals(24, snapshot.appStackFrames.size)
         assertEquals(3, snapshot.causeTypes.size)
         assertTrue(snapshot.causeTypes.all { it.value.endsWith("Exception") })
+    }
+
+    @Test
+    fun `snapshot derives a readable class from a minified release frame`() {
+        val root = IllegalStateException("secret")
+        root.stackTrace = arrayOf(
+            StackTraceElement("b08", "a", "VaultSessionController.kt", 321),
+            StackTraceElement("android.os.Handler", "dispatchMessage", "Handler.java", 99),
+        )
+
+        val snapshot = factory.create(root, ExceptionKind.LIFECYCLE)
+
+        assertEquals(
+            listOf("VaultSessionController#a(VaultSessionController.kt:321)"),
+            snapshot.appStackFrames.map { it.value },
+        )
+        assertEquals(1, snapshot.foreignFrameCount)
     }
 }

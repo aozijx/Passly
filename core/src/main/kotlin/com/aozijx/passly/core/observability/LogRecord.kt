@@ -132,7 +132,10 @@ data class SanitizedLogRecord(
 
 internal val OPAQUE_ID_PATTERN = Regex("^[A-Za-z0-9_-]{8,64}$")
 internal val APP_STACK_FRAME_PATTERN =
-    Regex("^[A-Za-z0-9_$.-]{1,160}#[A-Za-z0-9_$<>-]{1,64}:[1-9][0-9]{0,6}$")
+    Regex(
+        "^[A-Za-z0-9_$.-]{1,160}#[A-Za-z0-9_$<>-]{1,64}" +
+            "\\([A-Za-z][A-Za-z0-9_$-]{0,95}\\.(?:kt|java):[1-9][0-9]{0,6}\\)$",
+    )
 
 fun EventKey.category(): LogCategory = when (value.substringBefore('.')) {
     "application" -> LogCategory.APPLICATION

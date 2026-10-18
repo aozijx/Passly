@@ -1,4 +1,5 @@
 # ========== 基础属性（保留，用于崩溃日志和注解） ==========
+# SourceFile/LineNumberTable 供脱敏诊断栈输出源码文件与行号，不得在 Release 移除。
 -keepattributes Signature, *Annotation*, EnclosingMethod, InnerClasses, SourceFile, LineNumberTable
 
 # ========== Hilt（只保留模块方法，组件由插件自带） ==========
