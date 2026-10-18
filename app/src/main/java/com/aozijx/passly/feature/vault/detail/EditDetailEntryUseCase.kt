@@ -23,7 +23,7 @@ import kotlinx.coroutines.sync.withLock
 internal sealed interface DetailEntryEdit {
     data class SetTitle(val value: String) : DetailEntryEdit
     data object ToggleFavorite : DetailEntryEdit
-    data class SetSensitiveField(
+    data class SetFieldValue(
         val fieldKey: FieldKey,
         val value: String,
     ) : DetailEntryEdit
@@ -106,7 +106,7 @@ internal fun DetailEntryEdit.applyTo(entry: Entry): Entry? = when (this) {
     DetailEntryEdit.ToggleFavorite -> entry.copy(
         profile = entry.profile.copy(favorite = !entry.favorite),
     )
-    is DetailEntryEdit.SetSensitiveField -> applySensitiveField(entry)
+    is DetailEntryEdit.SetFieldValue -> applyFieldValue(entry)
     is DetailEntryEdit.SetNotes -> entry.copy(
         secret = entry.secret.copy(notes = value),
     )
@@ -128,7 +128,7 @@ internal fun DetailEntryEdit.applyTo(entry: Entry): Entry? = when (this) {
     )
 }
 
-private fun DetailEntryEdit.SetSensitiveField.applySensitiveField(entry: Entry): Entry? =
+private fun DetailEntryEdit.SetFieldValue.applyFieldValue(entry: Entry): Entry? =
     when (fieldKey) {
         FieldKey.USERNAME,
         FieldKey.CARD_HOLDER,

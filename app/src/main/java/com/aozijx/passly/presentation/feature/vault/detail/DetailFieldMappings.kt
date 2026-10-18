@@ -3,25 +3,7 @@ package com.aozijx.passly.presentation.feature.vault.detail
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailFieldUiModel
 
-internal val DetailFieldUiModel.revealedKey: String?
-    get() = when (this) {
-        DetailFieldUiModel.USERNAME -> RevealedFieldKey.USERNAME
-        DetailFieldUiModel.PASSWORD -> RevealedFieldKey.PASSWORD
-        DetailFieldUiModel.CARDHOLDER -> RevealedFieldKey.CARDHOLDER
-        DetailFieldUiModel.CARD_NUMBER -> RevealedFieldKey.CARD_NUMBER
-        DetailFieldUiModel.CARD_CVV -> RevealedFieldKey.CVV
-        DetailFieldUiModel.PAYMENT_PIN -> RevealedFieldKey.PAYMENT_PIN
-        DetailFieldUiModel.SSH_PASSPHRASE -> RevealedFieldKey.SSH_PASSPHRASE
-        DetailFieldUiModel.SSH_PRIVATE_KEY -> RevealedFieldKey.SSH_PRIVATE_KEY
-        DetailFieldUiModel.SEED_PHRASE -> RevealedFieldKey.SEED_PHRASE
-        DetailFieldUiModel.PASSKEY_DATA -> RevealedFieldKey.PASSKEY_DATA
-        DetailFieldUiModel.ID_NUMBER -> RevealedFieldKey.ID_NUMBER
-        DetailFieldUiModel.CARD_EXPIRATION,
-        DetailFieldUiModel.HARDWARE_INFO,
-            -> null
-    }
-
-internal val DetailFieldUiModel.copyKey: FieldKey?
+internal val DetailFieldUiModel.fieldKey: FieldKey
     get() = when (this) {
         DetailFieldUiModel.USERNAME -> FieldKey.USERNAME
         DetailFieldUiModel.PASSWORD -> FieldKey.PASSWORD
@@ -37,3 +19,6 @@ internal val DetailFieldUiModel.copyKey: FieldKey?
         DetailFieldUiModel.HARDWARE_INFO -> FieldKey.HARDWARE_INFO
         DetailFieldUiModel.ID_NUMBER -> FieldKey.ID_NUMBER
     }
+
+internal val DetailFieldUiModel.draftKey: DetailDraftKey
+    get() = DetailDraftKey.EntryField(fieldKey)

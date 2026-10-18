@@ -2,6 +2,7 @@ package com.aozijx.passly.presentation.feature.vault.detail
 
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -22,17 +23,14 @@ import com.aozijx.passly.presentation.feature.vault.detail.ui.model.CredentialSe
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailActivityTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailActivityUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailAssociatedInfoUiModel
-import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailBankCardUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailBodyUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailContentUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailEditorOverlaysUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailHeaderUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailIconCardUiModel
-import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailIdentityUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailMetadataUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailNotesUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailOtpUiModel
-import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailPasskeyUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailPresentationModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailSectionUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionComparisonUiState
@@ -41,8 +39,6 @@ import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisi
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionListUiState
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionRestoreUiState
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailRevisionSheetUiModel
-import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailSeedPhraseUiModel
-import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailSshUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.DetailTagEditorUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.RelatedEntryUiModel
 import com.aozijx.passly.presentation.feature.vault.detail.ui.model.ScopedSensitiveText
@@ -90,18 +86,10 @@ internal fun toDetailPresentationModel(
 ): DetailPresentationModel? {
     val entry = state.entry ?: return null
     val shared = detailContentUiModel(entry, state)
-    val revealedUsername = state.revealed(RevealedFieldKey.USERNAME)
-    val revealedPassword = state.revealed(RevealedFieldKey.PASSWORD)
-    val cardholder = state.revealed(RevealedFieldKey.CARDHOLDER).copyToString()
-    val cardNumber = state.revealed(RevealedFieldKey.CARD_NUMBER).copyToString()
-    val cvv = state.revealed(RevealedFieldKey.CVV).copyToString()
-    val paymentPin = state.revealed(RevealedFieldKey.PAYMENT_PIN).copyToString()
-    val card = entry.secret.card
-    val hasNumber = !card?.cardNumber.isNullOrBlank() || cardNumber != null
-    val hasCvv = !card?.cardCvv.isNullOrBlank() || cvv != null || state.fieldEdits.isEditing(RevealedFieldKey.CVV)
-    val hasPin = !card?.paymentPin.isNullOrBlank() || paymentPin != null
-    val passphrase = state.revealed(RevealedFieldKey.SSH_PASSPHRASE).copyToString()
-    val privateKey = state.revealed(RevealedFieldKey.SSH_PRIVATE_KEY).copyToString()
+    val fields = DetailFieldProjection(state)
+    val revealedUsername = state.revealed(FieldKey.USERNAME)
+    val revealedPassword = state.revealed(FieldKey.PASSWORD)
+    val password = fields.protected(FieldKey.PASSWORD, SensitiveFieldKey.PASSWORD)
 
     return DetailPresentationModel(
         header = detailHeaderUiModel(entry, state),
@@ -125,78 +113,52 @@ internal fun toDetailPresentationModel(
                                 SensitiveFieldKey.PASSWORD !in state.sensitiveFieldKeys
                             ),
                         revealedValue = revealedUsername?.asScopedSensitiveText(),
-                        isEditing = state.fieldEdits.isEditing(RevealedFieldKey.USERNAME),
-                        editedValue = state.fieldEdits.draft(RevealedFieldKey.USERNAME),
+                        isEditing = state.fieldEdits.isEditing(FieldKey.USERNAME),
+                        editedValue = state.fieldEdits.draft(FieldKey.USERNAME),
                         valueForEditing = revealedUsername.copyToString() ?: entry.username,
                     ),
                     password = CredentialFieldUiState(
                         visible = if (entry.type == EntryType.WIFI) {
                             !entry.secret.wifi?.password.isNullOrBlank()
                         } else {
-                            SensitiveFieldKey.PASSWORD in state.sensitiveFieldKeys || entry.type != EntryType.LOGIN
+                            password.present || entry.type != EntryType.LOGIN
                         },
                         revealedValue = revealedPassword?.asScopedSensitiveText(),
-                        isEditing = state.fieldEdits.isEditing(RevealedFieldKey.PASSWORD),
-                        editedValue = state.fieldEdits.draft(RevealedFieldKey.PASSWORD),
+                        isEditing = state.fieldEdits.isEditing(FieldKey.PASSWORD),
+                        editedValue = state.fieldEdits.draft(FieldKey.PASSWORD),
                         valueForEditing = revealedPassword.copyToString().orEmpty(),
                     ),
                 )
             } else null,
             otp = detailOtpUiModel(otp),
-            bankCard = if (DetailSectionKey.BANK_CARD in state.sections) DetailBankCardUiModel(
-                cardholder ?: entry.username, cardholder != null,
-                cardNumber, cardNumber != null, hasNumber,
-                cvv, cvv != null, hasCvv, card?.cardExpiry,
-                paymentPin, paymentPin != null, hasPin,
-                state.fieldEdits.isEditing(RevealedFieldKey.CARDHOLDER),
-                state.fieldEdits.draft(RevealedFieldKey.CARDHOLDER),
-                state.fieldEdits.isEditing(RevealedFieldKey.CARD_NUMBER),
-                state.fieldEdits.draft(RevealedFieldKey.CARD_NUMBER),
-                state.fieldEdits.isEditing(RevealedFieldKey.CVV),
-                state.fieldEdits.draft(RevealedFieldKey.CVV),
-                (hasNumber && cardNumber == null) || (hasCvv && cvv == null) || (hasPin && paymentPin == null),
-            ) else null,
-            identity = if (DetailSectionKey.IDENTITY in state.sections) DetailIdentityUiModel(
-                SensitiveFieldKey.IDENTITY_NUMBER in state.sensitiveFieldKeys,
-                state.revealed(RevealedFieldKey.ID_NUMBER).copyToString(),
-                state.revealed(RevealedFieldKey.ID_NUMBER) != null,
-                entry.username,
-            ) else null,
-            ssh = if (DetailSectionKey.SSH in state.sections) DetailSshUiModel(
-                entry.username,
-                SensitiveFieldKey.SSH_PASSPHRASE in state.sensitiveFieldKeys,
-                SensitiveFieldKey.SSH_PRIVATE_KEY in state.sensitiveFieldKeys,
-                passphrase,
-                passphrase != null,
-                privateKey,
-                privateKey != null,
-                state.fieldEdits.isEditing(RevealedFieldKey.SSH_PASSPHRASE),
-                state.fieldEdits.draft(RevealedFieldKey.SSH_PASSPHRASE),
-                (SensitiveFieldKey.SSH_PRIVATE_KEY in state.sensitiveFieldKeys && privateKey == null) ||
-                    (SensitiveFieldKey.SSH_PASSPHRASE in state.sensitiveFieldKeys && passphrase == null),
-            ) else null,
-            seedPhrase = if (DetailSectionKey.SEED_PHRASE in state.sections) DetailSeedPhraseUiModel(
-                present = SensitiveFieldKey.SEED_PHRASE in state.sensitiveFieldKeys,
-                revealedValue = state.revealed(RevealedFieldKey.SEED_PHRASE).copyToString(),
-            ) else null,
-            passkey = if (DetailSectionKey.PASSKEY in state.sections) DetailPasskeyUiModel(
-                present = SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE in state.sensitiveFieldKeys,
-                revealedValue = state.revealed(RevealedFieldKey.PASSKEY_DATA).copyToString(),
-                hardwareKeyInfo = entry.secret.passkey?.hardwareKeyInfo,
-            ) else null,
+            bankCard = if (DetailSectionKey.BANK_CARD in state.sections) {
+                detailBankCardUiModel(entry, state, fields)
+            } else null,
+            identity = if (DetailSectionKey.IDENTITY in state.sections) {
+                detailIdentityUiModel(entry, fields)
+            } else null,
+            ssh = if (DetailSectionKey.SSH in state.sections) {
+                detailSshUiModel(entry, state, fields)
+            } else null,
+            seedPhrase = if (DetailSectionKey.SEED_PHRASE in state.sections) {
+                detailSeedPhraseUiModel(fields)
+            } else null,
+            passkey = if (DetailSectionKey.PASSKEY in state.sections) {
+                detailPasskeyUiModel(entry, fields)
+            } else null,
             relatedEntries = shared.relatedEntries,
             tags = entry.tags,
             associations = DetailAssociatedInfoUiModel(
                 domain = entry.associatedDomain,
-                editedDomain = state.fieldEdits.draft(DetailEditKey.DOMAIN),
-                isEditingDomain = state.fieldEdits.isEditing(DetailEditKey.DOMAIN),
+                editedDomain = state.fieldEdits.draft(DetailDraftKey.Domain),
+                isEditingDomain = state.fieldEdits.isEditing(DetailDraftKey.Domain),
             ),
             associatedApps = state.associatedApps.map(DetailInstalledApp::toPackagePickerItemUiModel),
             packagePickerApps = state.packagePickerApps.map(DetailInstalledApp::toPackagePickerItemUiModel),
             notes = DetailNotesUiModel(
                 notes = entry.secret.notes,
-                editedNotes = state.fieldEdits.draft(DetailEditKey.NOTES),
-                isEditing = state.fieldEdits.isEditing(DetailEditKey.NOTES),
+                editedNotes = state.fieldEdits.draft(DetailDraftKey.Notes),
+                isEditing = state.fieldEdits.isEditing(DetailDraftKey.Notes),
             ),
             metadata = shared.metadata,
             activities = shared.activities,
@@ -306,16 +268,6 @@ internal fun SensitiveValue?.asScopedSensitiveText(): ScopedSensitiveText {
         }
 
         override fun toString() = "***"
-    }
-}
-
-private fun SensitiveValue?.copyToString(): String? {
-    val source = this ?: return null
-    val chars = source.toCharArray()
-    return try {
-        String(chars)
-    } finally {
-        chars.fill('\u0000')
     }
 }
 

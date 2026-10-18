@@ -1,5 +1,6 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -10,9 +11,9 @@ class DetailRevealStoreTest {
     fun `hiding a revealed field wipes its owned value`() {
         val store = DetailRevealStore()
         val secret = OwnedChars.fromString("secret")
-        store.replace("password", secret)
+        store.replace(FieldKey.PASSWORD, secret)
 
-        store.replace("password", null)
+        store.replace(FieldKey.PASSWORD, null)
 
         assertTrue(secret.isWiped)
     }
@@ -22,9 +23,9 @@ class DetailRevealStoreTest {
         val store = DetailRevealStore()
         val first = OwnedChars.fromString("first")
         val second = OwnedChars.fromString("second")
-        store.replace("password", first)
+        store.replace(FieldKey.PASSWORD, first)
 
-        store.replace("password", second)
+        store.replace(FieldKey.PASSWORD, second)
         assertTrue(first.isWiped)
 
         store.clear()

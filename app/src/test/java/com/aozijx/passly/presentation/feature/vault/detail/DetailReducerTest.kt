@@ -3,6 +3,7 @@ package com.aozijx.passly.presentation.feature.vault.detail
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -44,38 +45,38 @@ class DetailReducerTest {
     fun `field edit draft is owned by detail state until save succeeds`() {
         val started = DetailReducer.reduce(
             DetailUiState(),
-            DetailMutation.FieldEditingStarted(RevealedFieldKey.PASSWORD, "old"),
+            DetailMutation.FieldEditingStarted(DetailDraftKey.EntryField(FieldKey.PASSWORD), "old"),
         )
         val changed = DetailReducer.reduce(
             started,
-            DetailMutation.FieldDraftChanged(RevealedFieldKey.PASSWORD, "new"),
+            DetailMutation.FieldDraftChanged(DetailDraftKey.EntryField(FieldKey.PASSWORD), "new"),
         )
         val saving = DetailReducer.reduce(
             changed,
             DetailMutation.SaveStarted(
-                DetailEditCompletion.SensitiveField(RevealedFieldKey.PASSWORD),
+                DetailEditCompletion.Field(FieldKey.PASSWORD),
             ),
         )
         val saved = DetailReducer.reduce(
             saving,
             DetailMutation.SaveSucceeded(
-                DetailEditCompletion.SensitiveField(RevealedFieldKey.PASSWORD),
+                DetailEditCompletion.Field(FieldKey.PASSWORD),
             ),
         )
 
-        assertTrue(started.fieldEdits.isEditing(RevealedFieldKey.PASSWORD))
-        assertEquals("old", started.fieldEdits.draft(RevealedFieldKey.PASSWORD))
-        assertEquals("new", changed.fieldEdits.draft(RevealedFieldKey.PASSWORD))
-        assertFalse(saved.fieldEdits.isEditing(RevealedFieldKey.PASSWORD))
-        assertEquals("", saved.fieldEdits.draft(RevealedFieldKey.PASSWORD))
+        assertTrue(started.fieldEdits.isEditing(FieldKey.PASSWORD))
+        assertEquals("old", started.fieldEdits.draft(FieldKey.PASSWORD))
+        assertEquals("new", changed.fieldEdits.draft(FieldKey.PASSWORD))
+        assertFalse(saved.fieldEdits.isEditing(FieldKey.PASSWORD))
+        assertEquals("", saved.fieldEdits.draft(FieldKey.PASSWORD))
     }
 
     @Test
     fun `failed field save keeps draft open for correction`() {
-        val completion = DetailEditCompletion.SensitiveField(RevealedFieldKey.CVV)
+        val completion = DetailEditCompletion.Field(FieldKey.CARD_CVV)
         val editing = DetailReducer.reduce(
             DetailUiState(),
-            DetailMutation.FieldEditingStarted(RevealedFieldKey.CVV, "123"),
+            DetailMutation.FieldEditingStarted(DetailDraftKey.EntryField(FieldKey.CARD_CVV), "123"),
         )
         val saving = DetailReducer.reduce(editing, DetailMutation.SaveStarted(completion))
         val failed = DetailReducer.reduce(
@@ -83,8 +84,8 @@ class DetailReducerTest {
             DetailMutation.SaveFailed(completion, "write_failed"),
         )
 
-        assertTrue(failed.fieldEdits.isEditing(RevealedFieldKey.CVV))
-        assertEquals("123", failed.fieldEdits.draft(RevealedFieldKey.CVV))
+        assertTrue(failed.fieldEdits.isEditing(FieldKey.CARD_CVV))
+        assertEquals("123", failed.fieldEdits.draft(FieldKey.CARD_CVV))
     }
 
     @Test
@@ -92,15 +93,15 @@ class DetailReducerTest {
         try {
             val revealed = DetailReducer.reduce(
                 DetailUiState(),
-                DetailMutation.RevealedFieldChanged("cvv", cvv),
+                DetailMutation.RevealedFieldChanged(FieldKey.CARD_CVV, cvv),
             )
             val hidden = DetailReducer.reduce(
                 revealed,
-                DetailMutation.RevealedFieldChanged("cvv", null),
+                DetailMutation.RevealedFieldChanged(FieldKey.CARD_CVV, null),
             )
 
-            assertEquals("123", String(revealed.revealed("cvv")!!.toCharArray()))
-            assertNull(hidden.revealed("cvv"))
+            assertEquals("123", String(revealed.revealed(FieldKey.CARD_CVV)!!.toCharArray()))
+            assertNull(hidden.revealed(FieldKey.CARD_CVV))
         } finally {
             cvv.wipe()
         }
@@ -112,7 +113,7 @@ class DetailReducerTest {
         try {
             val state = DetailUiState(
                 isAccessHistoryEnabled = true,
-                revealedFields = mapOf("password" to password),
+                revealedFields = mapOf(FieldKey.PASSWORD to password),
             )
             val presented = DetailReducer.reduce(
                 state,
@@ -127,7 +128,7 @@ class DetailReducerTest {
             )
 
             assertTrue(presented.isAccessHistoryEnabled)
-            assertEquals("secret", String(presented.revealed("password")!!.toCharArray()))
+            assertEquals("secret", String(presented.revealed(FieldKey.PASSWORD)!!.toCharArray()))
             assertEquals("Updated", presented.entry?.title)
             assertEquals(listOf(DetailSectionKey.CREDENTIAL, DetailSectionKey.NOTES), presented.sections)
         } finally {
@@ -142,7 +143,7 @@ class DetailReducerTest {
             val cleared = DetailReducer.reduce(
                 DetailUiState(
                     entry = entry("Secret"),
-                    revealedFields = mapOf("password" to password),
+                    revealedFields = mapOf(FieldKey.PASSWORD to password),
                     saveState = DetailSaveState.Saving(DetailEditCompletion.Notes),
                 ),
                 DetailMutation.StateCleared,

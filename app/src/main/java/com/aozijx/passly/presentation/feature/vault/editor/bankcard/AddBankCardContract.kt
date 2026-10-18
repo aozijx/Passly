@@ -60,4 +60,4 @@ data class AddBankCardUiState(
         get() = form.isValid && savePhase == AddBankCardSavePhase.Idle
 }
 
-internal fun cardExpiryYearRange(currentYear: Int): IntRange = 1900..currentYear
+internal fun cardExpiryYearRange(currentYear: Int): IntRange = currentYear..(currentYear + 20)

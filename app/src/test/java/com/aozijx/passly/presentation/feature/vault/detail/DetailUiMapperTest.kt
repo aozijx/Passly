@@ -7,9 +7,11 @@ import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.credential.CardCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.presentation.feature.vault.detail.section.DetailSectionKey
@@ -103,7 +105,7 @@ class DetailUiMapperTest {
         val entry = noteEntry()
         val state = DetailUiState(
             entry = entry,
-            fieldEdits = DetailFieldEditState().start(DetailEditKey.NOTES, "draft"),
+            fieldEdits = DetailFieldEditState().start(DetailDraftKey.Notes, "draft"),
             saveState = DetailSaveState.Saving(DetailEditCompletion.Tags),
         )
 
@@ -159,6 +161,42 @@ class DetailUiMapperTest {
         assertEquals("Office", presentation.header.title)
         assertFalse(requireNotNull(presentation.content.credential).username.visible)
         assertTrue(requireNotNull(presentation.content.credential).password.visible)
+    }
+
+    @Test
+    fun `bank card presentation keeps stored sensitive fields visible while locked`() {
+        val entry = Entry(
+            identity = EntryIdentity(
+                id = EntryId("bank-card"),
+                type = EntryType.BANK_CARD,
+                timestamps = EntryTimestamps(1L),
+            ),
+            profile = EntryProfile(title = "Daily card"),
+            secret = EntrySecret(
+                credential = CardCredential(
+                    cardHolder = "Alice",
+                    cardExpiry = "08/2030",
+                ),
+            ),
+        )
+        val state = DetailUiState(
+            entry = entry,
+            sections = listOf(DetailSectionKey.BANK_CARD),
+            sensitiveFieldKeys = setOf(
+                SensitiveFieldKey.CARD_NUMBER,
+                SensitiveFieldKey.CARD_CVV,
+                SensitiveFieldKey.CARD_PAYMENT_PIN,
+            ),
+        )
+
+        val card = requireNotNull(toDetailPresentationModel(state, null)?.content?.bankCard)
+
+        assertEquals("Alice", card.cardholder)
+        assertTrue(card.cardholderRevealed)
+        assertTrue(card.hasCardNumber)
+        assertTrue(card.hasCvv)
+        assertTrue(card.hasPaymentPin)
+        assertTrue(card.canRevealMore)
     }
 
     private fun noteEntry() = Entry(

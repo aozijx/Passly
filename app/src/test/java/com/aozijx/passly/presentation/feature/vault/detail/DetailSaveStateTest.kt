@@ -85,8 +85,8 @@ class DetailSaveStateTest {
     @Test
     fun successfulNotesAndDomainSavesCloseOnlyTheirOwnedDrafts() {
         val edits = DetailFieldEditState()
-            .start(DetailEditKey.NOTES, "draft notes")
-            .start(DetailEditKey.DOMAIN, "example.com")
+            .start(DetailDraftKey.Notes, "draft notes")
+            .start(DetailDraftKey.Domain, "example.com")
         val notesSaved = DetailReducer.reduce(
             DetailUiState(
                 fieldEdits = edits,
@@ -94,8 +94,8 @@ class DetailSaveStateTest {
             ),
             DetailMutation.SaveSucceeded(DetailEditCompletion.Notes),
         )
-        assertFalse(notesSaved.fieldEdits.isEditing(DetailEditKey.NOTES))
-        assertTrue(notesSaved.fieldEdits.isEditing(DetailEditKey.DOMAIN))
+        assertFalse(notesSaved.fieldEdits.isEditing(DetailDraftKey.Notes))
+        assertTrue(notesSaved.fieldEdits.isEditing(DetailDraftKey.Domain))
 
         val domainSaved = DetailReducer.reduce(
             DetailUiState(
@@ -104,14 +104,14 @@ class DetailSaveStateTest {
             ),
             DetailMutation.SaveSucceeded(DetailEditCompletion.Associations),
         )
-        assertTrue(domainSaved.fieldEdits.isEditing(DetailEditKey.NOTES))
-        assertFalse(domainSaved.fieldEdits.isEditing(DetailEditKey.DOMAIN))
+        assertTrue(domainSaved.fieldEdits.isEditing(DetailDraftKey.Notes))
+        assertFalse(domainSaved.fieldEdits.isEditing(DetailDraftKey.Domain))
     }
 
     @Test
     fun failedNotesSavePreservesViewModelOwnedDraft() {
         val state = DetailUiState(
-            fieldEdits = DetailFieldEditState().start(DetailEditKey.NOTES, "draft notes"),
+            fieldEdits = DetailFieldEditState().start(DetailDraftKey.Notes, "draft notes"),
             saveState = DetailSaveState.Saving(DetailEditCompletion.Notes),
         )
 
@@ -120,8 +120,8 @@ class DetailSaveStateTest {
             DetailMutation.SaveFailed(DetailEditCompletion.Notes, "CONFLICT"),
         )
 
-        assertTrue(actual.fieldEdits.isEditing(DetailEditKey.NOTES))
-        assertEquals("draft notes", actual.fieldEdits.draft(DetailEditKey.NOTES))
+        assertTrue(actual.fieldEdits.isEditing(DetailDraftKey.Notes))
+        assertEquals("draft notes", actual.fieldEdits.draft(DetailDraftKey.Notes))
         assertEquals(
             DetailSaveState.Failed(DetailEditCompletion.Notes, "CONFLICT"),
             actual.saveState,

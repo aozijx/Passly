@@ -163,14 +163,14 @@ class DetailViewModel @Inject internal constructor(
 
             DetailUiAction.StartNotesEdit -> {
                 val notes = _uiState.value.entry?.secret?.notes.orEmpty()
-                mutate(DetailMutation.FieldEditingStarted(DetailEditKey.NOTES, notes))
+                mutate(DetailMutation.FieldEditingStarted(DetailDraftKey.Notes, notes))
             }
 
             is DetailUiAction.UpdateNotesDraft ->
-                mutate(DetailMutation.FieldDraftChanged(DetailEditKey.NOTES, event.value))
+                mutate(DetailMutation.FieldDraftChanged(DetailDraftKey.Notes, event.value))
 
             DetailUiAction.SaveNotes -> {
-                val notes = _uiState.value.fieldEdits.draft(DetailEditKey.NOTES)
+                val notes = _uiState.value.fieldEdits.draft(DetailDraftKey.Notes)
                 viewModelScope.launch {
                     persistEntryEdit(
                         DetailEntryEdit.SetNotes(notes.ifBlank { null }),
@@ -181,16 +181,16 @@ class DetailViewModel @Inject internal constructor(
 
             DetailUiAction.StartDomainEdit -> {
                 val domain = _uiState.value.entry?.associations?.primaryUrl.orEmpty()
-                mutate(DetailMutation.FieldEditingStarted(DetailEditKey.DOMAIN, domain))
+                mutate(DetailMutation.FieldEditingStarted(DetailDraftKey.Domain, domain))
             }
 
             is DetailUiAction.UpdateDomainDraft ->
-                mutate(DetailMutation.FieldDraftChanged(DetailEditKey.DOMAIN, event.value))
+                mutate(DetailMutation.FieldDraftChanged(DetailDraftKey.Domain, event.value))
 
             DetailUiAction.SaveDomain -> {
                 val state = _uiState.value
                 if (state.entry == null) return
-                val domain = state.fieldEdits.draft(DetailEditKey.DOMAIN)
+                val domain = state.fieldEdits.draft(DetailDraftKey.Domain)
                 viewModelScope.launch {
                     persistEntryEdit(
                         DetailEntryEdit.SetPrimaryUrl(domain.trim().ifBlank { null }),
@@ -200,23 +200,17 @@ class DetailViewModel @Inject internal constructor(
             }
 
             is DetailUiAction.StartFieldEdit ->
-                event.field.revealedKey?.let {
-                    mutate(DetailMutation.FieldEditingStarted(it, event.initialValue))
-                }
+                mutate(DetailMutation.FieldEditingStarted(event.field.draftKey, event.initialValue))
 
             is DetailUiAction.UpdateFieldDraft ->
-                event.field.revealedKey?.let {
-                    mutate(DetailMutation.FieldDraftChanged(it, event.value))
-                }
+                mutate(DetailMutation.FieldDraftChanged(event.field.draftKey, event.value))
 
             is DetailUiAction.CancelFieldEdit ->
-                event.field.revealedKey?.let {
-                    mutate(DetailMutation.FieldEditingCancelled(it))
-                }
+                mutate(DetailMutation.FieldEditingCancelled(event.field.draftKey))
 
             is DetailUiAction.ToggleFieldVisibility -> {
                 val current = _uiState.value.entry ?: return
-                val key = event.field.revealedKey ?: return
+                val key = event.field.fieldKey
                 if (_uiState.value.revealed(key) != null) {
                     setRevealedField(key, null)
                 } else {
@@ -237,12 +231,10 @@ class DetailViewModel @Inject internal constructor(
             is DetailUiAction.SaveField -> {
                 if (_uiState.value.entry == null) return
                 viewModelScope.launch {
-                    val revealedKey = event.field.revealedKey ?: return@launch
-                    val fieldKey = DetailSensitiveFieldKeyMapper.toFieldKey(revealedKey)
-                        ?: return@launch
+                    val fieldKey = event.field.fieldKey
                     persistEntryEdit(
-                        edit = DetailEntryEdit.SetSensitiveField(fieldKey, event.newValue),
-                        completion = DetailEditCompletion.SensitiveField(revealedKey),
+                        edit = DetailEntryEdit.SetFieldValue(fieldKey, event.newValue),
+                        completion = DetailEditCompletion.Field(fieldKey),
                     )
                 }
             }
@@ -379,7 +371,7 @@ class DetailViewModel @Inject internal constructor(
             DetailUiAction.KeepEditingFavicon ->
                 mutate(DetailMutation.FaviconEditorDiscardCancelled)
 
-            is DetailUiAction.CopyField -> event.field.copyKey?.let(::copyField)
+            is DetailUiAction.CopyField -> copyField(event.field.fieldKey)
             DetailUiAction.CopyOtpCode -> copyOtpCode()
             DetailUiAction.ExportOtpQr -> {
                 val entry = _uiState.value.entry ?: return
@@ -435,7 +427,7 @@ class DetailViewModel @Inject internal constructor(
 
     private fun revealFieldsFromPresentation(fields: Set<DetailFieldUiModel>) {
         val current = _uiState.value.entry ?: return
-        val hiddenKeys = fields.mapNotNullTo(linkedSetOf()) { it.revealedKey }
+        val hiddenKeys = fields.mapTo(linkedSetOf()) { it.fieldKey }
             .filterTo(linkedSetOf()) { _uiState.value.revealed(it) == null }
         if (hiddenKeys.isEmpty()) return
         viewModelScope.launch { revealFields(current, hiddenKeys) }
@@ -482,13 +474,16 @@ class DetailViewModel @Inject internal constructor(
                 when {
                     latest.username.isNotEmpty() -> mutate(
                         DetailMutation.FieldEditingStarted(
-                            RevealedFieldKey.USERNAME,
+                            DetailDraftKey.EntryField(FieldKey.USERNAME),
                             latest.username
                         ),
                     )
 
                     SensitiveFieldKey.PASSWORD in snapshot.presentation.sensitiveFieldKeys -> mutate(
-                        DetailMutation.FieldEditingStarted(RevealedFieldKey.PASSWORD, ""),
+                        DetailMutation.FieldEditingStarted(
+                            DetailDraftKey.EntryField(FieldKey.PASSWORD),
+                            "",
+                        ),
                     )
                 }
             }
@@ -503,24 +498,19 @@ class DetailViewModel @Inject internal constructor(
         }
     }
 
-    private fun setRevealedField(key: String, value: SensitiveValue?) {
+    private fun setRevealedField(key: FieldKey, value: SensitiveValue?) {
         revealStore.replace(key, value)
         mutate(DetailMutation.RevealedFieldChanged(key, value))
     }
 
-    private suspend fun revealFields(entry: Entry, uiKeys: Set<String>) {
+    private suspend fun revealFields(entry: Entry, requested: Set<FieldKey>) {
         if (!accessPolicy.hasFullAccess()) return
-        val requested = uiKeys.mapNotNull(DetailSensitiveFieldKeyMapper::toFieldKey).toSet()
         if (requested.isEmpty()) return
         revealEntryFields.reveal(
             entry = entry,
             requestedFields = requested,
             recordLowSensitivityAccess = _uiState.value.isAccessHistoryEnabled,
-        ).forEach { (fieldKey, value) ->
-            DetailSensitiveFieldKeyMapper.toUiKey(fieldKey)?.let { uiKey ->
-                setRevealedField(uiKey, value)
-            }
-        }
+        ).forEach(::setRevealedField)
     }
 
     private fun clearSensitiveState() {
@@ -692,10 +682,10 @@ class DetailViewModel @Inject internal constructor(
                     ),
                 )
                 if (
-                    completion is DetailEditCompletion.SensitiveField &&
-                    edit is DetailEntryEdit.SetSensitiveField
+                    completion is DetailEditCompletion.Field &&
+                    edit is DetailEntryEdit.SetFieldValue
                 ) {
-                    setRevealedField(completion.key, OwnedChars.fromString(edit.value))
+                    setRevealedField(edit.fieldKey, OwnedChars.fromString(edit.value))
                 }
                 mutate(DetailMutation.SaveSucceeded(completion))
             }

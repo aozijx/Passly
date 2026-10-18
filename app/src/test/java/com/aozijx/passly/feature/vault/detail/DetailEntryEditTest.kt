@@ -57,7 +57,7 @@ class DetailEntryEditTest {
     fun usernameEditPreservesLatestUnrelatedFields() {
         val latest = loginEntry()
 
-        val actual = DetailEntryEdit.SetSensitiveField(
+        val actual = DetailEntryEdit.SetFieldValue(
             FieldKey.USERNAME,
             "latest-user",
         ).applyRequired(latest)
@@ -70,7 +70,7 @@ class DetailEntryEditTest {
     fun loginPasswordEditPreservesLatestCredentialFields() {
         val latest = loginEntry()
 
-        val actual = DetailEntryEdit.SetSensitiveField(
+        val actual = DetailEntryEdit.SetFieldValue(
             FieldKey.PASSWORD,
             "new-password",
         ).applyRequired(latest)
@@ -84,11 +84,11 @@ class DetailEntryEditTest {
     fun cardEditsPreserveOtherCardFields() {
         val latest = cardEntry()
 
-        val withNumber = DetailEntryEdit.SetSensitiveField(
+        val withNumber = DetailEntryEdit.SetFieldValue(
             FieldKey.CARD_NUMBER,
             "5555555555554444",
         ).applyRequired(latest)
-        val withCvv = DetailEntryEdit.SetSensitiveField(
+        val withCvv = DetailEntryEdit.SetFieldValue(
             FieldKey.CARD_CVV,
             "999",
         ).applyRequired(latest)
@@ -105,7 +105,7 @@ class DetailEntryEditTest {
     fun wifiPasswordEditPreservesWifiMetadata() {
         val latest = wifiEntry()
 
-        val actual = DetailEntryEdit.SetSensitiveField(
+        val actual = DetailEntryEdit.SetFieldValue(
             FieldKey.PASSWORD,
             "new-wifi-password",
         ).applyRequired(latest)
@@ -120,7 +120,7 @@ class DetailEntryEditTest {
     fun sshPassphraseEditPreservesKeys() {
         val latest = sshEntry()
 
-        val actual = DetailEntryEdit.SetSensitiveField(
+        val actual = DetailEntryEdit.SetFieldValue(
             FieldKey.SSH_PASSPHRASE,
             "new-passphrase",
         ).applyRequired(latest)
@@ -187,7 +187,7 @@ class DetailEntryEditTest {
 
     @Test
     fun unsupportedSensitiveFieldDoesNotProduceAnEntryUpdate() {
-        val actual = DetailEntryEdit.SetSensitiveField(
+        val actual = DetailEntryEdit.SetFieldValue(
             FieldKey.PAYMENT_PIN,
             "1234",
         ).applyTo(cardEntry())

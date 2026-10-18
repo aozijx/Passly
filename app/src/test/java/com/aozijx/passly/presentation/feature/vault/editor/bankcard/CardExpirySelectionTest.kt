@@ -6,17 +6,19 @@ import org.junit.Test
 
 class CardExpirySelectionTest {
     @Test
-    fun yearRange_supportsHistoricalCardsThroughTheCurrentYear() {
+    fun yearRange_startsNowAndCoversTwentyFutureYears() {
         val years = cardExpiryYearRange(currentYear = 2026)
 
-        assertEquals(1900, years.first)
-        assertEquals(2026, years.last)
-        assertTrue(1995 in years)
+        assertEquals(2026, years.first)
+        assertEquals(2046, years.last)
+        assertTrue(2038 in years)
     }
 
     @Test
-    fun yearRange_doesNotOfferFutureYears() {
-        assertTrue(2027 !in cardExpiryYearRange(currentYear = 2026))
+    fun yearRange_excludesExpiredYears() {
+        val years = cardExpiryYearRange(currentYear = 2026)
+
+        assertTrue(2025 !in years)
     }
 
     @Test

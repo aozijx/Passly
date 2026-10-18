@@ -1,6 +1,7 @@
 package com.aozijx.passly.presentation.feature.vault.detail
 
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.presentation.feature.vault.detail.history.DetailRevisionMutation
@@ -25,10 +26,10 @@ internal sealed interface DetailMutation {
     data object TitleEditingStarted : DetailMutation
     data object TitleEditingCancelled : DetailMutation
     data class EditedTitleChanged(val value: String) : DetailMutation
-    data class FieldEditingStarted(val key: String, val initialValue: String) : DetailMutation
-    data class FieldDraftChanged(val key: String, val value: String) : DetailMutation
-    data class FieldEditingCancelled(val key: String) : DetailMutation
-    data class RevealedFieldChanged(val key: String, val value: SensitiveValue?) : DetailMutation
+    data class FieldEditingStarted(val key: DetailDraftKey, val initialValue: String) : DetailMutation
+    data class FieldDraftChanged(val key: DetailDraftKey, val value: String) : DetailMutation
+    data class FieldEditingCancelled(val key: DetailDraftKey) : DetailMutation
+    data class RevealedFieldChanged(val key: FieldKey, val value: SensitiveValue?) : DetailMutation
     data object RevealedFieldsCleared : DetailMutation
     data class HistoryChanged(val entryId: EntryId, val history: List<EntryActivity>) : DetailMutation
     data class PackagePickerAppsChanged(
@@ -168,12 +169,12 @@ internal object DetailReducer {
                         isEditingTitle = mutation.completion != DetailEditCompletion.Title && state.isEditingTitle,
                         saveState = DetailSaveState.Idle,
                         fieldEdits = when (mutation.completion) {
-                            is DetailEditCompletion.SensitiveField ->
-                                state.fieldEdits.finish(mutation.completion.key)
+                            is DetailEditCompletion.Field ->
+                                state.fieldEdits.finish(DetailDraftKey.EntryField(mutation.completion.key))
                             DetailEditCompletion.Notes ->
-                                state.fieldEdits.finish(DetailEditKey.NOTES)
+                                state.fieldEdits.finish(DetailDraftKey.Notes)
                             DetailEditCompletion.Associations ->
-                                state.fieldEdits.finish(DetailEditKey.DOMAIN)
+                                state.fieldEdits.finish(DetailDraftKey.Domain)
                             else -> state.fieldEdits
                         },
                         tagEditor = if (mutation.completion == DetailEditCompletion.Tags) {
