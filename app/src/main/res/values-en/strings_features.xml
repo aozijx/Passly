@@ -14,6 +14,15 @@
     <string name="vault_fab_ssh_key">SSH key</string>
     <string name="vault_fab_id_card">ID card</string>
     <string name="vault_fab_add_title">Add item</string>
+    <string name="vault_add_type_password_description">Accounts, passwords, and websites</string>
+    <string name="vault_add_type_totp_description">Two-step verification codes</string>
+    <string name="vault_add_type_bank_card_description">Card number, expiry, and security code</string>
+    <string name="vault_add_type_wifi_description">Network name and connection password</string>
+    <string name="vault_add_type_ssh_key_description">Keys for server access</string>
+    <string name="vault_add_type_id_card_description">Identity and document details</string>
+    <string name="vault_add_type_seed_phrase_description">Crypto wallet recovery phrase</string>
+    <string name="vault_add_type_passkey_description">Passwordless sign-in credential</string>
+    <string name="vault_add_type_recovery_code_description">Backup account recovery codes</string>
 
     <!-- Entry history -->
     <string name="vault_detail_history_label">Activity log</string>

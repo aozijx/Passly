@@ -16,6 +16,15 @@
     <string name="vault_fab_id_card">身份证</string>
     <string name="vault_fab_passkey" translatable="false">Passkey</string>
     <string name="vault_fab_add_title">添加条目</string>
+    <string name="vault_add_type_password_description">账号、密码与网站信息</string>
+    <string name="vault_add_type_totp_description">两步验证动态验证码</string>
+    <string name="vault_add_type_bank_card_description">卡号、有效期与安全码</string>
+    <string name="vault_add_type_wifi_description">网络名称与连接密码</string>
+    <string name="vault_add_type_ssh_key_description">服务器访问密钥</string>
+    <string name="vault_add_type_id_card_description">证件号码与身份信息</string>
+    <string name="vault_add_type_seed_phrase_description">加密钱包恢复助记词</string>
+    <string name="vault_add_type_passkey_description">免密码登录凭据</string>
+    <string name="vault_add_type_recovery_code_description">账号恢复备用代码</string>
 
     <!-- 条目历史 -->
     <string name="vault_detail_history_label">活动日志</string>
