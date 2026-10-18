@@ -33,3 +33,5 @@ ADR，并在双方状态中建立替代关系。
 | [0020](ADR-0020-unified-lifecycle-safe-authentication.md) | Accepted   | 生命周期安全的统一认证系统                    |
 | [0022](ADR-0022-keyed-backup-document.md)                | Accepted   | 稳定键值字段备份文档                       |
 | [0023](ADR-0023-typed-autofill-interactions.md)           | Accepted   | 类型化 Autofill interaction           |
+| [0024](ADR-0024-structured-observability-logger.md)      | Implemented | 统一结构化 Observability Logger          |
+| [0025](ADR-0025-sealed-autofill-save-inbox.md)           | Accepted, pending | 锁定状态 Sealed Autofill Save Inbox |

@@ -44,9 +44,9 @@ Data 自己拥有 Repository、存储与数据策略的 Hilt binding。App 负�
 
 Domain 不按 UI 页面镜像目录，但可为跨平台入口共享的稳定业务契约建立能力包。`autofill` 的候选、作用域和
 Repository 端口属于这种契约；Android Autofill/Credential Manager 编排仍属于 App。`backup`、通知和数据库
-生命周期属于 App/Data/Runtime 边界，不在 Domain 中建立同名协议实现。应用偏好（`AppSettingsSnapshot`、
-`SettingsCommand` 与 `domain/settings` 的模型和端口）在 Domain 统一表达，Data 只负责其 Proto
-存储与实现（`data/local/datastore` + `data/repository/settings`）。领域内部只使用 `model`、
+生命周期属于 App/Data/Runtime 边界，不在 Domain 中建立同名协议实现。应用偏好由 `domain/settings` 下按职责拆分的
+模型与端口统一表达，Data 只负责两个 Proto DataStore 的映射和实现（`data/local/datastore` +
+`data/repository/settings`）。领域内部只使用 `model`、
 `policy`、`port` 等少量稳定职责目录；只有关系、查询、凭据等确有独立不变量的 Entry 子概念才
 继续分组。
 
@@ -113,6 +113,7 @@ UseCase，避免把领域规则放进 Compose 或 Android 回调。
 
 - [包边界](package-boundaries.md)
 - [运行时流程](runtime-flows.md)
+- [Presentation 状态管理](../development/architecture-and-state.md)
 - [安全总览](../security/overview.md)
 - [ADR-0007：UseCase 可选](../decisions/ADR-0007-usecase-is-optional.md)
 

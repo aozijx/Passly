@@ -7,16 +7,16 @@ Passly 的目标是保护离线设备上的保险库数据，并把凭据暴露�
 ```mermaid
 flowchart TB
     Auth["生物识别 / 应用密码 / 恢复码"] --> Envelope["Envelope 解封 Vault DEK"]
-    Envelope --> DB["SQLCipher 数据库"]
     Envelope --> Session["派生字段会话密钥"]
     Session --> Field["AES-256-GCM 字段加密"]
-    Session --> Index["Blind Index"]
+    Envelope --> DB["SQLCipher 数据库"]
 ```
 
 - Android Keystore 保护生物识别包装密钥。
 - Argon2id 从应用密码或恢复码派生包装密钥。
 - 多个 Envelope 包装同一份随机 Vault DEK；认证方式可变化而不重加密全部数据。
 - SQLCipher 保护数据库整体，敏感负载另做字段级认证加密。
+- 非敏感 Profile 元数据使用结构化列支持本地查询；密码、密钥、OTP Secret 等高敏字段不进入查询索引。
 - 锁定时先关闭数据库，再擦除 DEK 与派生会话密钥。
 
 ## 信任边界

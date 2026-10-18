@@ -42,8 +42,9 @@ Proto 只保存已经存在读写入口、确实需要跨启动保留的用户�
 ## 默认值与读取
 
 Proto2 的 `optional` 与 `[default = ...]` 定义首次安装和新文件的持久化偏好。Serializer 的 `defaultValue` 使用根消息
-`getDefaultInstance()`；DataStore 文件不存在时直接发出该实例。Mapper 不再写 `?: 60000`、字符串 `else` 回退或
-`EntrySort.DEFAULT` 等第二套持久化默认。
+`getDefaultInstance()`；DataStore 文件不存在时直接发出该实例。Proto mapper 不写 `?: 60000` 或字符串 `else`
+等持久化回退。Domain 模型仍有用于测试和完整对象构造的 `EntrySort.DEFAULT`/data-class 默认值；当前值必须与
+Proto 显式默认一致，但 DataStore 读取不能绕过 Proto 去选择这些值。
 
 固定选择使用以 `Preference` 结尾的 Proto enum，例如 `SwipeActionPreference`，避免与 Domain 类型重名和 `as`
 别名导入。每个 enum 的 0 值为 `*_UNSPECIFIED`，字段显式指定合法默认值；Mapper 收到显式
@@ -75,7 +76,8 @@ flowchart LR
 ```
 
 两个 preferences repository 直接映射 `DataStore.data`，沿用 Domain 的 Flow 端口。不为每个设置属性建立全局 eager
-`StateFlow`、专用 CoroutineScope 或重复缓存。
+`StateFlow`、专用 CoroutineScope 或重复缓存。当前 Vault 首次排序为创建时间降序、收藏置顶；下拉搜索和滑动操作
+默认关闭，启用滑动后左滑复制密码、右滑删除。这些值来自 `app_preferences.proto`。
 
 ## Schema 演进规则
 

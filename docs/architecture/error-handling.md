@@ -30,11 +30,15 @@ message    -X-> Throwable
 ## 目录结构
 
 ```
-core/error/
+core/common/.../core/error/
   model/
     AppError.kt          -- 纯错误模型（code、layer、severity、recoverable、errorId）
-    ErrorCode.kt         -- 集中错误码常量
-    DataErrors.kt        -- 数据层错误子类
+    ErrorCodes.kt        -- 集中错误码常量
+    DatabaseErrors.kt    -- 数据库错误子类
+    CryptoErrors.kt      -- 密码学错误子类
+    BackupErrors.kt      -- 备份错误子类
+    FileErrors.kt        -- 文件错误子类
+    NetworkErrors.kt     -- 网络错误子类
     DomainErrors.kt      -- 领域层错误子类
   result/
     AppResult.kt         -- Success/Failure、map/fold、异常转换
@@ -96,9 +100,9 @@ data class ErrorReportContext(
 | error_layer           | Throwable.message    |
 | severity              | entryId              |
 | recoverable           | 文件路径                 |
-| operation             | URL / 域名             |
-| operation             | 包名                   |
-| throwable_type（白名单校验） | 用户名、备份 URI、密码、密钥、OTP |
+| category              | URL / 域名             |
+| throwable_type（白名单校验） | 包名                   |
+|                         | 用户名、备份 URI、密码、密钥、OTP |
 
 ### AppError → UI / Notice
 
@@ -148,7 +152,7 @@ sealed class AppError(
 
 ## 相关文档
 
-- [遥测与诊断日志](telemetry.md)
+- [可观测性与诊断日志](observability/README.md)
 - [消息中心](message-center.md)
 - [包边界](package-boundaries.md)
 - [安全总览](../security/overview.md)

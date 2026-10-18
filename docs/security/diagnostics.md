@@ -1,93 +1,43 @@
-# 安全诊断
+# 诊断安全与隐私
 
-当前实现和加密文件规范统一维护在
-[Telemetry 与诊断日志](../architecture/telemetry.md)。安全评审、格式变更和导出策略必须同步更新该文档与 codec 测试。
+状态：当前实现（代码核对：2026-10-18）。
 
-安全底线：任何 Sink 均不得接收 Throwable message、密码、密钥、OTP、Token、URL、文件路径或目标应用明文包名。
-Android Logcat 与加密文件必须经过同一验证和脱敏管线，不得把 Logcat 作为绕过隐私策略的调试入口。
+本页只定义安全策略。Logger 结构、存储和格式分别见[可观测性架构](../architecture/observability/README.md)、
+[运行时与加密存储](../architecture/observability/runtime-and-storage.md)和
+[导出格式](../architecture/observability/export-formats.md)。
 
-Logger v1 的隐私层采用“类型与字段目录白名单优先、检测规则兜底”：业务字段只能使用注册字段及其指定值类型；目标
-应用包名只能通过 `IdentifierNamespace.TARGET_PACKAGE` 进入 HMAC 端口，合法性校验或 Keystore HMAC 失败时直接
-拒绝/丢弃该字段，绝不回退为明文或普通摘要。Debug 构建对契约违规抛出不含原值的
-`LogContractViolation`，Release 构建返回仅含匿名违规枚举的拒绝结果。
+## 允许进入日志的数据
 
-Throwable 只在 core 隐私边界转换：`ExceptionMapper` 先依据受控错误码映射稳定 `exception_kind`，未知错误只按
-`GeneralSecurityException`/`IOException` 等稳定父类型兜底；随后生成包含简单异常类型、最多 24 个 Passly 源码
-栈帧、最多 3 层 cause 类型和外部帧计数的安全快照。转换过程不读取或保存异常 message、localizedMessage、
-suppressed、文件名/绝对路径以及第三方类名。所有 Sink 只接受经过该策略生成的不可变 `SanitizedLogRecord`。
+业务字段必须来自 `LogFieldKey -> FieldKind` 白名单。允许计数、时长、有限比率、布尔、受控枚举、错误码、
+原因码、操作码和待 HMAC 标识符。自由字符串不是业务日志字段类型。
 
-错误语义集中在 `config/observability/error-catalog.json`。目录中的 code、默认 reason、category、exposure 和说明由
-生成任务统一校验；内部错误禁止声明用户提示。只有显式标记为 `USER_ACTIONABLE` 的错误可生成资源映射，并且默认与
-英文 `strings.xml` 必须同时包含该 key。用户界面只能使用生成的资源 ID，不能把错误码、Throwable message 或诊断
-细节作为回退文案。
+以下内容禁止进入任何 Sink：
 
-遵循 Android 官方 Log 信息泄露指导，Release 默认关闭 Logcat Sink；用户开启诊断窗口只启用内部加密记录。
-Logger 不把 Throwable 直接交给 Android Log API。Perfetto 只接收固定操作名与匿名 counter；`ApplicationExitInfo`
-只读取稳定枚举/数值，不导出 description、processName 或原始 ANR trace。
+- 密码、密钥、OTP secret、恢复码和 token；
+- 用户名、用户输入、URL、域名和文件路径；
+- 明文目标包名、Activity 全限定名、Android ID、serial 和 Build fingerprint；
+- `Throwable.message`、`localizedMessage`、suppressed exception 和第三方栈帧名。
 
-## Android 原生诊断边界
+目标包名只能以 `IdentifierNamespace.TARGET_PACKAGE` 进入 Keystore-backed HMAC 端口。校验或 HMAC 失败时
+拒绝字段，不能回退为明文、普通 SHA 或截断值。Debug 对合同违规抛出不含原值的 `LogContractViolation`；
+Release 只返回匿名拒绝结果。
 
-- HMAC-SHA256 密钥由 Android Keystore 在本机生成，别名为
-  `com.aozijx.passly.observability.hmac.v1`，仅授权 `PURPOSE_SIGN`，不要求用户认证且不可导出。输入按
-  `passly-observability-v1\0<namespace>\0<value>` 域分离，输出只保留 128 bit 并编码为 `h1_` 前缀；异常时返回
-  `null`，不得回退到明文或普通 SHA 摘要。
-- Logcat 只在 Debug 构建启用，先调用 `Log.isLoggable` 再格式化；只使用固定 Tag 和单行有界摘要。Release 构建
-  在所有等级（包括 FATAL）都不会调用 Logcat。`LogcatSink.kt` 是 observability 目录中唯一允许导入
-  `android.util.Log` 的文件。
-- 系统 Trace 只使用 `OperationCode` 到固定 section name 的映射，并以同一 name/cookie 成对调用异步 begin/end；
-  重复完成和平台异常都被隔离，不能改变业务结果。
-- `ApplicationExitInfo` 只读取 timestamp、受控 reason、status、importance、PSS/RSS。禁止读取或导出
-  description、processName、UID/PID 和 ANR trace；timestamp 游标保证同一退出记录最多上报一次，游标持久化失败
-  也不能阻断应用启动。
+## 异常与错误
 
-Android API 依据：[Log](https://developer.android.com/reference/android/util/Log)、
-[Trace](https://developer.android.com/reference/android/os/Trace)、
-[KeyGenParameterSpec](https://developer.android.com/reference/android/security/keystore/KeyGenParameterSpec) 与
-[ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo)。
+异常只在 core 隐私边界转换成受限快照。WARN/ERROR/FATAL 业务语句必须携带受控错误码、原因码和异常对象；
+没有异常对象的已知降级使用 `degraded`。原始异常文本不得用于用户提示或日志解释。
 
-## Logger 本地加密容器
+用户提示只来自错误目录中标记为 `USER_ACTIONABLE` 的资源映射。`INTERNAL` 错误没有用户文案，UI 不得显示
+原始错误码作为兜底。
 
-- 新记录只进入应用内部 `noBackupFilesDir/logs/*.log`。`.log` 是 Passly 私有二进制加密容器，
-  不是明文 Logcat 导出；格式协商由文件头 magic 和 schema version 完成，扩展名不带版本号。
-- 每个文件使用随机 256-bit AES 数据密钥和 AES-GCM；数据密钥由独立 Android Keystore wrapping key
-  `com.aozijx.passly.observability.wrap.v1` 加密。文件头和每条记录的 sequence、level、file id 均进入 AAD，
-  篡改、乱序和跨文件复制会读取失败。
-- 单文件上限 1 MiB，最多保留 3 个文件、总计 3 MiB、最长 3 天。轮换和删除只接受 canonical parent 为日志目录的
-  `.log`，不触碰其他文件；当前活动文件不参与清理，删除失败彼此隔离。轮换、清理和关闭都会覆盖被替换的数据密钥。
-- 正常写入使用容量 256 的单线程队列；调用线程只做非阻塞入队。队列满时，高等级事件依次淘汰待写 DEBUG、INFO，
-  仍无法入队的事件只累计分等级计数。恢复或生命周期 flush 时输出一条 `application.log.overflow` 汇总，计数器不保存
-  被丢弃事件内容。ERROR/FATAL 只能进行一次预初始化 emergency write；该写入在独立线程执行，并只由有界 flush 等待。
-  紧急路径不访问 Keystore、不获取正常 writer 锁；所有存储异常被 Sink 边界吞掉，不允许递归写日志或替换原始崩溃。
-- codec 只接受 `SanitizedLogRecord`，并重新校验事件目录、category、level/error 契约、严格 UTF-8、长度、
-  枚举、trace/error 结构和尾随字节。未 HMAC 的标识符无法构造为可持久化字段。
-- 私有 record codec 使用唯一的固定 schema 1；version 校验属于加密容器完整性检查，不存在历史格式路由或兼容读取器。
-  错误通过同一操作的 `trace_id` 关联，语义由 `error_code + reason + exception_kind + exception snapshot` 表达。
+## 本地和导出边界
 
-## 运行时与导出边界
+- 内部日志只存放在 `noBackupFilesDir/logs`，不进入 Android Auto Backup 或 Passly Vault 备份。
+- Logcat 与加密文件经过同一隐私管线；Release 关闭 Logcat。
+- App 内查看器只接收结构化索引和已脱敏 TSV 行，不接触原始 record 或 Throwable。
+- 明文只允许存在于用户选择的 SAF 文档或分享临时缓存；分享缓存有界清理。
+- 导出必须持有新鲜 `EXPORT_DIAGNOSTICS` 授权，不得因为 App 已解锁而跳过复验。
+- Autofill 配置、Manifest 和其他模块快照不写入通用 manifest；模块状态只能作为允许的事件字段出现。
 
-- `PasslyApplication` 只启动 `ObservabilityRuntimeController`。Logger 与 store 完成装配后才注册
-  uncaught-exception handler 并读取上次进程退出；重复启动、flush、shutdown 均不能重复安装或关闭资源。
-- FATAL 事件与普通 Sink 共享同一份已脱敏 record。崩溃路径先等待正常队列 300 ms，失败时再用同一 record 尝试
-  200 ms emergency write，最后始终委托原 handler；重入时不再写日志，避免递归崩溃。
-- 后台与退出操作按回调顺序串行执行：后台生命周期先完成会话锁定再 flush；应用退出先等待前序操作、完成
-  `APP_EXIT` 锁定再 shutdown，防止数据库/认证关闭事件被提前截断。无需后台锁定的重复生命周期事件降为 DEBUG。
-- Security 只创建操作内子 Span；存在 Autofill/App Trace 时继承它，独立调用时才自动建立根 Trace。认证必须记录
-  `purpose`，锁定必须显式记录彼此独立的 `lock_reason` 与 `trigger`。一分钟内只抑制 `from_state == to_state` 的
-  DEBUG/INFO 重复观察；真实状态转换和 WARN/ERROR/FATAL 不采样。
-- Autofill 只记录确实可观察的发现、认证、平台结果交付和 Passly 会话关闭阶段。成功终态携带非负单调
-  `elapsed_ms`；平台 request id 不可成为 `trace_id`，也不记录无法由 Android API 证实的 `field_filled`。
-- JSONL/TSV/ZIP 导出必须持有 `EXPORT_DIAGNOSTICS` 的 fresh `AuthorizationPermit`。调用方用单一请求同时声明
-  `action + format`：分享不得携带目标 URI，本地导出必须携带 SAF 返回的 `content://` URI。六种组合共用同一个
-  授权入口、当前记录快照、manifest 工厂和编码器，不允许在 UI 或存储层复制格式逻辑。JSONL 是唯一 canonical 数据模型；
-  TSV 只从该 JSON 投影固定八列，未知字段进入 `details`。独立 JSONL/TSV 各自携带 manifest，ZIP 则只在
-  `manifest.json` 携带一次，并包含 manifest-free 的 JSONL/TSV 与 README。编码器只接受 `SanitizedLogRecord`，
-  特殊字符按目标格式转义，禁止 Android ID、fingerprint、serial、明文包名和任意 Throwable message。
-- 用户选择“保存”时，系统用所选格式的 MIME 与扩展名启动 `CreateDocument` 并返回目标 URI，认证成功后直接写入该 URI；认证取消、拒绝或写入失败时
-  尝试删除选择器预创建的未完成文档。
-  该链路不创建应用内明文副本，也不读取或复用备份目录设置。
-- 只有“分享”会在 `cacheDir` 创建与格式匹配的明文临时文件，并用对应 MIME 交给系统分享：分享失败立即删除，
-  分享成功后 10 分钟删除，下一次分享前清理陈旧文件。
-- App 内查看器只接收等级、事件名、错误码、安全异常类别/类型、`trace_id` 与已脱敏 TSV 行；搜索这些结构化元数据，
-  不解析 TSV 文本，也不改变导出范围。内部加密日志文件的实际总字节数由“数据管理”页统一展示，查看页不重复读取。
-  复制单行或最多 100 行的
-  同一 Trace 时使用 Android 敏感剪贴板标记；UI 不接触原始 record、Throwable 或隐私策略之前的字段。
+隐私回归测试必须向字段、异常和 codec 注入可识别秘密，并断言 JSONL、TSV、ZIP、Logcat 与加密 round trip
+均不包含原值。测试必须覆盖包名与路径，不只覆盖示例密码。

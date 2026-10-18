@@ -22,7 +22,7 @@ ADR-0003。
 
 Envelope 与 verification tag 必须在数据库打开前可用，因此保存于独立 VaultBootstrapStore。接口位于
 Domain 的 `access.port`，生物识别轮换状态位于 `access.model`；当前 Proto DataStore 实现位于 Data 层。
-Room 的 `key_envelopes` 表是未清理的遗留实现，不是当前真相源。
+Room schema 当前没有认证 Envelope 真相源；不得重新把认证材料写入业务数据库。
 
 ## 生命周期
 

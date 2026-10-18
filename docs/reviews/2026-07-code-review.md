@@ -37,7 +37,7 @@ Argon2id 参数后，旧备份可能无法恢复；头部也未作为明确 AAD 
 `PSLYBKP1`，写入 KDF/cipher ID、Argon2 参数和所有长度，并把完整头作为 AAD。旧
 `PASSLYBK` 文件明确不兼容，不保留实验 reader。
 
-证据：`EncryptedBackupContainerCodec.kt`、`docs/features/backup.md`。
+证据：`EncryptedBackupContainerCodec.kt`；当前协议文档已迁移到 `docs/features/backup/`。
 
 ### P1：消息生产者同时“发布错误”和“返回错误”
 

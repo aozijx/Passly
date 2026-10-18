@@ -1,131 +1,120 @@
 # 数据库
 
-状态：当前实现（Room Schema v1）。本文只描述全新安装，不承诺旧 Schema 迁移。
+状态：当前实现（Room Schema v1）。本文描述当前代码与全新安装，不承诺旧开发 Schema 的迁移。
 
-## 模块与访问边界
+## 所有权与访问边界
+
+`:data` 拥有 Room Entity、DAO、converter、Schema、SQLCipher provider、数据库 session adapter，以及
+Entry、附件、历史等仓储实现。`:data` 不依赖 App 或 Feature。
 
 ```mermaid
 flowchart TB
-    Repo["Domain Repository 实现"] --> Session["AppDatabaseSession"]
+    Repository["Repository / command executor"] --> Session["AppDatabaseSession"]
     Session --> Provider["DatabaseProvider"]
     Provider --> Room["Room AppDatabase"]
     Room --> SQLCipher["SQLCipher passphrase"]
-    Repo --> Mapper["Entity ↔ Domain Mapper"]
-    Mapper --> DAO
+    Repository --> Mapper["Entity / payload / Domain mapper"]
+    Repository --> DAO
     DAO --> Room
 ```
 
-`:data` 统一拥有 Room Entity、DAO、converter、Schema、`AppDatabase`、SQLCipher provider、数据库强类型
-session adapter，以及 Entry、Settings、Diagnostics 等数据实现。数据库相关代码是该模块内部的一个
-内聚子域。`DatabaseProvider` 使用调用方经 `SessionKeySource` 提供的会话密钥创建
-加密数据库；`AppDatabaseSession` 延迟打开，并在应用锁定或进入后台时关闭实例。Repository 必须经
-session adapter 访问数据库，不能长期缓存 DAO 或 Room 实例。
+`DatabaseProvider` 使用 `SessionKeySource` 提供的会话密钥打开加密数据库；`AppDatabaseSession` 管理
+租约、延迟打开和关闭。Repository 必须在 session adapter 提供的作用域内使用 DAO，不能长期缓存
+Room 实例或越过锁定边界持有 DAO。
 
-`:data` 只依赖 Core、Domain 与 `:runtime:session`，不依赖 App 或 Feature。备份协议、格式与流程位于 app 的
-`feature.backup`；其数据库快照适配代码集中在 feature 私有的 `internal/archive/snapshot` 目录。Repository 与存储实现的
-Hilt binding 由 `:data` 自己拥有；App 只提供会话密钥来源、遥测 reporter 等进程级依赖并组装 Android 入口。
+备份协议与交互属于 `app/feature/backup`；Feature 只能通过明确的快照适配边界接触数据库数据，不能把
+Room Entity 当作可移植协议。
 
-## 当前表
+## 当前 Schema
+
+`AppDatabase` 当前只注册以下八张表：
 
 | 表 | 用途 |
 |---|---|
-| `entries` | 原子条目的身份、结构类型、能力位、OTP 类型、索引版本、时间戳和加密 `summaryBlob` |
-| `entry_secret_fields` | 按 `entryId + fieldKey` 隔离的字段级密文行：敏感字段（`PASSWORD`、卡号/CVV 等）各自独立 AES-GCM 加密，低敏结构（notes、customFields 等）聚合为 `STRUCT_BUNDLE` 行；读取用字段变量定位密文 |
-| `entry_links` | 原子 Entry 之间的类型化关系；任一端点删除时级联删除 link |
-| `entry_revisions` | `entryContentCipher` 与 `sensitiveFieldCipherSet` 组成的完整 Entry 历史快照 |
+| `entries` | Entry 身份、类型、能力位、OTP 类型、可查询的 Profile 元数据和时间戳 |
+| `entry_secret_fields` | `entryId + fieldKey` 定位的密文行；高敏字段逐字段保存，低敏结构聚合在 `STRUCT_BUNDLE` |
+| `entry_links` | Entry 之间的类型化关系；任一端点删除时级联删除 |
+| `entry_revisions` | Entry Profile 与敏感字段集合的完整历史快照密文 |
 | `entry_activities` | 查看、复制、使用等审计/统计事件，不用于恢复 |
-| `attachment_resources` | 由 keyed content ID 标识的不可变加密附件内容元数据 |
-| `attachment_refs` | 当前 Entry 的文件名、可空 MIME、顺序及 `PENDING`/`COMMITTED` 引用 |
+| `attachment_resources` | keyed content ID 标识的不可变加密附件资源及其 GC 生命周期状态 |
+| `attachment_refs` | 当前 Entry 对资源的引用、文件名、MIME、顺序和 staging 状态 |
 | `revision_attachment_refs` | 历史 Revision 对不可变附件资源的引用 |
-| `attachment_gc_queue` | 文件删除第二阶段的持久队列 |
 
-Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `data/schemas`，本文不复制完整字段声明。
-当前没有独立 `entry_drafts` 表；未提交的编辑表单只存在于 UI 生命周期，只有附件通过
-`PENDING + stagingOwnerId` 支持进程重启后的暂存恢复。
+Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `data/schemas`。当前没有 `entry_drafts`、
+`attachment_gc_queue` 或 Autofill Inbox 导入日志表。
 
-## Entry 类型、关系与分类
+## Entry 元数据与查询
 
-- `entryType` 是条目的结构类型，决定可用字段、详情组件和能力，例如 `LOGIN`、`BANK_CARD`、
-  `SSH_KEY`。它不是用户分类。
-- 当前 `entries` 没有 `vaultId` 或 `parentEntryId`。密码、OTP、Passkey 等凭据保持原子 Entry，
-  通过 `entry_links(sourceEntryId, targetEntryId, relationType)` 表达类型化关系，不能把多个凭据塞入
-  一个巨型 Blob。Link 只表达关系，不拥有任何密文。
-- 当前 UI 的筛选项来自 `entryType.name`，并以“条目类型”展示。自定义分类尚未实现；后续应使用
-  独立 `categoryId` 或关联表，不能复用 `entryType`。
-- `capabilityFlags` 表示一个原子条目实际具有的能力，用于列表和详情快速判断；它不表示跨条目的
-  账户组合，也不能替代 `entryType` 或 `entry_links`。
+`entries` 使用结构化列保存 Profile 元数据：`title`、`username`、`primaryUrl`、`domains`、
+`applicationIds`、图标字段、`favorite`、`tags`、过期时间和创建/更新时间。当前表中没有
+`summaryBlob` 或 `indexVersion`。
 
-### 持久化枚举键
+- `entryType` 是结构类型，不是用户分类。
+- `capabilityFlags` 表示条目实际具有的能力，不能替代 `entryType` 或 `entry_links`。
+- 当前没有 `vaultId` 或 `parentEntryId`；关联凭据保持原子 Entry，通过 `entry_links` 表达关系。
+- 列表和搜索直接查询 `entries` 的结构化列及 JSON 集合。动态查询始终使用参数绑定；文本搜索当前使用
+  SQLite `LIKE`，不会扫描高敏字段密文。
+- Profile 由 `EntryProfileMapper.fromEntity()` 直接映射，不需要先解密摘要 Blob。
 
-数据库列、密文字段键和 Revision 快照中的枚举值统一由 `StorageEnumMappings` 显式映射为稳定键。
-编码与解码必须穷举每个领域值，不能依赖 `Enum.name`、`Enum.valueOf` 或 ordinal；遇到未知或损坏的
-持久化键必须在 Data 边界明确失败，不能静默替换成另一个合法默认值。新增枚举成员时必须同步补齐
-双向映射，并由全量 round-trip 测试覆盖。
+数据库列、密文字段键和 Revision 快照中的枚举值通过 `StorageEnumMappings` 显式映射为稳定键。
+持久化协议不得依赖 ordinal；新增领域枚举时必须补齐双向映射与 round-trip 测试。Room converter
+负责 SQL 边界的强类型转换，未知持久化值必须明确失败，不能静默替换成合法默认值。
 
-Room Entity 和 DAO 在进程内保留领域类型；例如 `entries.otpType` 由 `OtpTypeConverter` 在 SQL 边界
-转换，列表 Mapper 不再重新解析字符串。`null` 只表示该条目确实没有 OTP 元数据。
+## Secret 读取边界
 
-当前稳定键与既有 Schema v1 中保存的字符串逐字节一致，因此这次收紧映射不升级 Room 数据库版本。
+高敏字段按 `entryId + fieldKey` 分行 AES-GCM 加密，AAD 绑定对应记录身份。`PASSWORD`、银行卡号、
+CVV、支付 PIN、身份号码、助记词、恢复码、SSH 私钥/口令、Passkey 私钥引用和 OTP Secret 都不进入
+`entries` Profile 列。
 
-## Blob 与读取边界
+`STRUCT_BUNDLE` 保存低敏凭据结构、notes 和 custom fields，并把逐字段高敏值置为 `null`。因此：
 
-`summaryBlob` 是 AES-GCM 密文，解密后为 `SummaryPayload`。其中的 `color` 是可选展示元数据，
-不是加密参数、分类或类型判别字段。
+- 普通详情读取 `entries` Profile 与 `STRUCT_BUNDLE`，不物化高敏字段；
+- 单字段 reveal 只查询并解密对应 `fieldKey`；
+- 备份、恢复和完成授权后的 Autofill 等完整凭据流程，才通过 `readAll()` 合并全部字段；
+- 普通更新用 `Preserve / Clear / Replace` 区分未加载、主动清空和替换，避免为了写低敏结构而解密全部
+  高敏字段。
 
-secret 数据全部位于 `entry_secret_fields`。敏感字段（`PASSWORD`、银行卡号、CVV、支付 PIN、
-助记词、恢复码、SSH 私钥/口令、Passkey 私钥引用、OTP Secret）每字段一个独立密文行，
-AAD 绑定 `entryId + fieldKey`；低敏结构（credential 的非敏感字段、notes、customFields）
-聚合在 `STRUCT_BUNDLE` 行。普通详情查询只解密 `STRUCT_BUNDLE`（字段级值保持 `null`），
-reveal 单字段只读取并解密对应字段行，不触碰同条目其他字段密文。字段级 reveal 必须消费
-与当前会话绑定且 scope 精确匹配的授权许可。
-
-列表优先读取 metadata，详情读取低敏 bundle；Repository 将两者聚合成不含字段级值的领域模型，
-需要完整凭据的批量流程（备份、恢复、自动填充点选后）才组装全部字段。列表搜索只查询 entries 中
-可检索的摘要列及 JSON 集合，不查询敏感字段；当前实现直接使用参数化 SQLite `LIKE`。
-
-数据库历史与用户备份是不同边界：Revision 是库内 Entry 快照，用户备份是独立全量 Snapshot。
-数据库 Entity、备份 DTO 与 Domain model 必须由 Mapper 隔离。
+`SummaryPayload` 仍用于 Revision 的 Profile 快照编码，不是 `entries` 当前存储格式。
 
 ## 历史与附件生命周期
 
-- 历史采用完整快照而非 diff。`entryContentCipher` 自包含 Entry 内容，`sensitiveFieldCipherSet`
-  保存该版本的高敏字段集合；附件正文不复制进 Revision Blob，而由 `revision_attachment_refs`
-  共享不可变内容资源。单 Entry 最多保留 50 条，全库最多保留 1000 条。
-- 软删除保留历史；永久删除和清空回收站在同一事务中删除相关历史，事务失败整体回滚。
-- 附件正文不进入 Room Blob，而是保存为
-  `filesDir/attachments/content/<resourceId>.enc`。`resourceId` 是 keyed content ID，同时作为
-  附件密文的 AAD；文件名、可空 MIME 和显示顺序属于 ref，不属于内容资源。
-- 只有当前引用和历史引用均为 0 时，资源才进入 `attachment_gc_queue`。数据库事务先标记
-  `PENDING_GC`，文件删除成功后再删除资源行；外键 `RESTRICT` 防止仍被引用的内容误删。
-- 附件不做通用压缩。图片、PDF、视频、ZIP 等通常已经压缩；若未来为纯文本启用压缩，必须记录
-  算法、原始长度、压缩长度和硬性解压上限。
+- Revision 使用完整快照而非 diff。Profile 快照和高敏字段集合分别加密；附件正文不复制进 Revision，
+  只通过 `revision_attachment_refs` 引用不可变资源。
+- 单 Entry 最多保留 50 条 Revision，全库最多 1000 条。永久删除和清空回收站在数据库事务中同步
+  删除关联历史。
+- 附件正文位于 `filesDir/attachments/content/<resourceId>.enc`。`resourceId` 是 keyed content ID，
+  文件名、可空 MIME 和显示顺序属于引用行。
+- 当当前引用和历史引用都为 0 时，资源行改为 `PENDING_GC`；`enqueuedAt`、`attemptCount` 和
+  `lastAttemptAt` 就是持久重试状态。文件删除成功后再删除资源行。没有单独 GC 队列表。
+- 外键和删除前引用计数阻止仍被引用的内容被回收。附件不做通用压缩。
 
 ## Session 生命周期
 
 ```mermaid
 stateDiagram-v2
     [*] --> Closed
-    Closed --> Open: 首次数据库访问且 DEK 已解锁
-    Open --> Closed: 锁定 / 后台关闭
+    Closed --> Open: 首次访问且 DEK 已解锁
+    Open --> Closed: 锁定 / 安全策略关闭
     Closed --> Open: 再次认证
 ```
 
 - 错误密钥或 Schema 不匹配必须返回明确错误，禁止自动删库。
 - 锁定顺序为：拒绝新操作 → 等待租约排空并关闭数据库 → 擦除 DEK 与会话密钥。
-- 导入的覆盖或合并操作必须在事务中完成，失败整体回滚。
-- 当前开发期 Room Schema、Secret Payload 和 Revision 均保持版本 `1`。备份协议版本独立，当前身份为
-  `passly-field-archive v1`；切换该备份格式不升级 Room，也不要求清除现有数据库。Room/Secret 发生
-  破坏性变更时仍不提供旧开发库迁移，安装旧开发版本数据需按对应变更说明处理。
-- 数据库关闭超时不能制造“已关闭”的假象；详见[代码审查](../reviews/2026-07-code-review.md)。
+- 覆盖导入、Revision 恢复和多表写入必须在事务中完成，失败整体回滚。
+- 当前 Room Schema、Secret Payload 和 Revision 格式均为版本 `1`；备份协议版本独立。
+- 数据库关闭超时不能制造“已关闭”的假象；相关风险见[代码审查](../reviews/2026-07-code-review.md)。
+
+计划中的 Sealed Autofill Inbox 独立于 SQLCipher 数据库；它需要的 `autofill_import_log` 只有在 Inbox
+实施时才加入 Schema，不能提前把计划表写成当前实现。见
+[Sealed Inbox](../features/autofill/sealed-inbox.md)。
 
 ## 初始化失败与数据重置
 
-数据库初始化失败时，故障弹窗只提供“重试”和“关闭应用”两个选项，禁止从错误页清空数据。
+数据库初始化失败页只提供重试和关闭应用，不在故障路径提供清库。
 
-数据重置（永久清空 Passly 数据）只出现在“设置 → 数据管理”。它必须经过明确确认和新鲜认证，
-会删除数据库（含 WAL/SHM/journal）、附件和自定义图片，随后使用 Bootstrap Store 中原有 DEK 创建
-新的空 `passly.db`，并刷新数据会话。应用设置、认证信封和密钥绑定的独立存储会被保留。不再生成
-恢复编号，也不保存故障数据库副本。
+“设置 → 数据管理”的永久重置必须经过确认和新鲜认证。它删除数据库及 WAL/SHM/journal、附件和
+自定义图片，然后使用现有 Bootstrap DEK 创建空数据库；普通偏好、认证信封和密钥绑定仍由各自的
+存储生命周期管理。
 
 ## 相关实现
 
@@ -133,4 +122,5 @@ stateDiagram-v2
 - `data/src/main/java/com/aozijx/passly/data/local/database/DatabaseProvider.kt`
 - `data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSession.kt`
 - `data/src/main/java/com/aozijx/passly/data/local/database/entity/`
+- `data/src/main/java/com/aozijx/passly/data/repository/entry/SecretFieldStore.kt`
 - [ADR-0018](../decisions/ADR-0018-lookup-metadata-strategy.md)

@@ -66,12 +66,12 @@ Vault 目的地。条目 CRUD、OTP、筛选、页面导航和敏感授权流程
 
 ## Passly、Vault 与 Entry
 
-Passly 是产品名；`vault` 是安全领域概念，不应再作为界面品牌文案。
+Passly 是产品名；`vault` 是安全领域概念，不作为面向用户的品牌替代词。
 
-- UI 类优先使用 `EntryListScreen`、`EntryListViewModel`、`PasslyData` 等产品语义；
-- 领域聚合统一命名为 `Entry`；`VaultEntry`、`EntryAggregate` 只作为待迁移的应用/Data 旧名，不再新增引用；
-- `vaultId` 当前表示逻辑数据空间所有权。只有产品正式改成 workspace/space 模型时才应迁移为
-  `spaceId`，不能把它改名为 category 或 group；
+- 新的领域模型统一使用 `Entry`。现有 `VaultEntryPageSource`、`VaultViewModel` 等名称属于 Vault Feature
+  的页面/适配器命名，不代表另一个领域聚合；重命名时应连同消费者一次完成，不能再造桥接别名；
+- 当前 `EntryEntity` 和 `Entry` 都没有 `vaultId`。应用当前只有一个加密凭据域；未来只有真正引入多个
+  数据空间时，才新增明确的 `spaceId`/`vaultId` 合同；
 - 数据库、备份格式和认证中的 Vault 表示“已加密凭据域”，仍是有效术语。此类持久化名称不能只做源码替换，
   必须与 schema/备份版本一起演进。
 
@@ -85,5 +85,5 @@ Passly 是产品名；`vault` 是安全领域概念，不应再作为界面品�
 nullable 的 `savingEdit` 与 `saveErrorCode`。
 
 用户自定义分类尚未实现。实现时应新增独立 `categoryId` 或 Entry-Category 关联表；`tags` 继续表示多值标签。
-同一账户下的 LOGIN、OTP、PASSKEY 等仍是多个原子 Entry，通过 `parentEntryId` 指向 `ACCOUNT`，不使用
-`entryType`、`vaultId` 或 category 来组合。
+当前也没有 `parentEntryId` 或 `ACCOUNT` 容器。LOGIN、OTP、PASSKEY 等保持原子 Entry，需要组合时使用
+`entry_links` 的显式关系类型，不使用 `entryType`、标签或未来的空间 ID 冒充父子关系。

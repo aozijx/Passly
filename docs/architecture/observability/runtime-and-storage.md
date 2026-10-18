@@ -1,0 +1,49 @@
+# 日志运行时与加密存储
+
+状态：当前实现（代码核对：2026-10-18）。
+
+## Android 运行时
+
+`PasslyApplication` 启动一个 `ObservabilityRuntimeController`。Logger 与 store 装配完成后才注册未捕获异常
+handler，并读取 `ApplicationExitInfo` 的受控数值。系统 description、进程名和原始 ANR trace 不进入标准日志。
+
+`LogcatSink.kt` 是 observability 生产代码中唯一允许导入 `android.util.Log` 的文件。它只接收已脱敏记录，
+输出有限 Tag 和有界单行摘要，并保留 `event_id/trace_id/span_id`。Release 默认关闭 Logcat；Debug 在格式化前
+检查 `Log.isLoggable`，且永远不把原始 `Throwable` 交给 Android Log API。
+
+受控 Span 名称同时写入 `android.os.Trace`，供 Perfetto 分析。业务层不得调用 `printStackTrace` 或创建第二套
+静态 Logger/Service Locator。
+
+## 非阻塞写入与背压
+
+加密 store 使用容量 256 的单线程队列，生产者线程只入队，不执行文件 I/O。队列满时优先淘汰待写 DEBUG，
+再淘汰 INFO；无法接收的记录仅按等级累计数量。ERROR/FATAL 可尝试一次独立 emergency write。
+
+队列恢复并发生生命周期 flush 时，运行时写入一条 `application.log.overflow` 计数汇总。汇总不包含被丢弃内容，
+也不递归进入已饱和队列。
+
+崩溃路径先等待普通 flush 300 ms，再最多等待 emergency writer 200 ms。应急数据密钥在运行时预生成；崩溃时
+不访问 Keystore、不获取普通 writer lock，最后始终委托原 handler。
+
+## 文件和轮换
+
+日志只存放在 `noBackupFilesDir/logs`，扩展名为 `.log`。文件名不表达协议版本；文件头固定为 schema 1。
+每个文件拥有随机 256-bit AES 数据密钥，再由 Android Keystore wrapping key 使用 AES-256-GCM 包装。
+
+- Header AAD：magic、format version、16-byte file ID、created time。
+- Record AAD：magic、format version、file ID、严格递增 sequence、level。
+- wrapping nonce 与 record nonce 均为独立随机 12 bytes；GCM tag 为 128 bits。
+- codec 校验长度、UTF-8、枚举、sequence、外层/载荷 level 和尾随字节。
+- 读取使用 file ID、byte offset 和 sequence 游标，每页最多 500 条，不把全部文件载入内存。
+
+文件按日期或 1 MiB 轮换，最多 3 个文件、3 MiB、3 天。清理与容量统计只处理 canonical parent 正好是日志
+目录的普通 `.log` 文件，并保护当前活动文件。轮换、清理和关闭会覆盖不再使用的内存数据密钥。
+
+诊断页面读取最多 500 条用于查看；导出最多读取 5000 条，并按 500 条分页。日志实际占用只在“数据管理”页
+展示，查看页不维护第二份容量状态。
+
+相关实现：
+
+- [`ObservabilityRuntimeController`](../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityRuntimeController.kt)
+- [`EncryptedLogRecordStore`](../../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogRecordStore.kt)
+- [`EncryptedLogFileManager`](../../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogFileManager.kt)

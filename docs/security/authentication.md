@@ -6,7 +6,7 @@
 
 ## 契约与状态机
 
-`AuthenticationManager` 是唯一认证编排入口。请求只包含目的、允许方式、新鲜认证要求和 correlation ID；不得携带
+`AuthenticationManager` 是唯一认证编排入口。请求只包含目的、允许方式和 `AuthenticationRequestId`；不得携带
 Activity、文案、资源 ID、Launcher、Cipher 或 PendingIntent。
 
 ```mermaid
@@ -21,7 +21,7 @@ stateDiagram-v2
     AutofillAuthenticated --> Authenticating: 用户打开主应用并认证
     Authenticating --> Authenticated: 主应用认证成功并接管会话
     Unlocking --> RecoveryMode: 恢复码验证成功
-    RecoveryMode --> Authenticated: 新应用密码设置成功
+    RecoveryMode --> Locking: 新应用密码设置成功
     RecoveryMode --> Locking: 退出 / 超时 / 后台
     Authenticated --> Authenticating: 新鲜复验
     Authenticated --> Locking: 手动 / 超时 / 后台 / 完整性错误
@@ -77,8 +77,8 @@ stateDiagram-v2
   “恢复码草稿已过期，请重新认证后生成”。
 - 恢复码不再产生普通 `Authenticated` 会话。验证成功后进入受限 `RecoveryMode`：数据库可以为恢复任务打开，
   但 `VaultAccessState.isAuthorized` 仍为 false，主 Vault、详情、查看和复制密码都不能挂载。
-- 恢复模式只允许设置新的应用密码、重新配置生物识别、`RECOVERY_EXPORT` 和退出锁定。设置新应用密码后才提升为
-  普通完整会话。
+- 恢复模式只允许设置新的应用密码、重新配置生物识别、`RECOVERY_EXPORT` 和退出锁定。设置新应用密码后立即以
+  `RECOVERY_EXIT` 锁定，用户必须用新密码重新进入普通完整会话。
 - `RECOVERY_EXPORT` 只接受恢复码，并且只能输出要求新备份密码的 Passly 加密格式；恢复码不作为备份密码，也不能
   放宽普通 `BACKUP_EXPORT`。
 - 不存在“查看已有恢复码”。
@@ -107,7 +107,7 @@ candidate 与 obsolete alias。
 ## 安全会话可观测性
 
 认证、锁定和数据库会话统一使用结构化 Logger。一次认证或锁定操作创建一个根 trace；该操作触发的数据库打开、恢复、
-软锁、租约排干和封存事件在当前 trace 内创建子 span，不再为每条事件生成新的 correlation ID。数据库运行时模块只发布
+软锁、租约排干和封存事件在当前 trace 内创建子 span，不再为每条事件生成新的关联 ID。数据库运行时模块只发布
 平台无关的 `SessionTransitionEvent`，由 data 层适配为日志，避免运行时会话依赖 Android 或日志实现。
 
 数据库会话转换记录 `from_state`、`to_state`、`owner`、`reason`、`lock_type`、`elapsed_ms`；租约排干超时还记录

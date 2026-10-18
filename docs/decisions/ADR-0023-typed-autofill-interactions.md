@@ -44,4 +44,4 @@
 ## 关联资料
 
 - [自动填充安全与架构](../security/autofill.md)
-- [Credential Manager Provider](../features/credential-manager.md)
+- [Credential Manager Provider](../features/autofill/credential-manager.md)

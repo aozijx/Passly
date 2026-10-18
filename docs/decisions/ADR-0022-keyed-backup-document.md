@@ -54,5 +54,5 @@ AES-256-GCM 边界。
 
 ## 关联
 
-- [Backup 功能与 Passly 备份协议](../features/backup.md)
+- [Backup 功能与 Passly 备份协议](../features/backup/README.md)
 - [ADR-0016](ADR-0016-backup-format.md)
