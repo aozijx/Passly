@@ -62,6 +62,7 @@
     {"symbol":"ResourceCleanupFailed","code":"RESOURCE_CLEANUP_FAILED","default_reason":"FILE_DELETE_FAILED","category":"APPLICATION","exposure":"INTERNAL","description":"Confined resource cleanup failed."},
     {"symbol":"DatabaseOpenFailed","code":"DATABASE_OPEN_FAILED","default_reason":"DATABASE_OPEN_FAILED","category":"DATABASE","exposure":"INTERNAL","description":"The database failed to open."},
     {"symbol":"DatabaseResetFailed","code":"DATABASE_RESET_FAILED","default_reason":"DATABASE_RESET_FAILED","category":"DATABASE","exposure":"INTERNAL","description":"The database reset failed."},
-    {"symbol":"VaultEntryCreateFailed","code":"VAULT_ENTRY_CREATE_FAILED","default_reason":"UNKNOWN_FAILURE","category":"VAULT","exposure":"INTERNAL","description":"A vault entry could not be created."}
+    {"symbol":"VaultEntryCreateFailed","code":"VAULT_ENTRY_CREATE_FAILED","default_reason":"UNKNOWN_FAILURE","category":"VAULT","exposure":"INTERNAL","description":"A vault entry could not be created."},
+    {"symbol":"VaultEntryUpdateFailed","code":"VAULT_ENTRY_UPDATE_FAILED","default_reason":"UNKNOWN_FAILURE","category":"VAULT","exposure":"INTERNAL","description":"A vault entry could not be updated."}
   ]
 }

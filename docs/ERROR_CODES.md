@@ -48,6 +48,7 @@
 | Code | Default reason | Exposure | Description |
 |---|---|---|---|
 | `VAULT_ENTRY_CREATE_FAILED` | `UNKNOWN_FAILURE` | INTERNAL | A vault entry could not be created. |
+| `VAULT_ENTRY_UPDATE_FAILED` | `UNKNOWN_FAILURE` | INTERNAL | A vault entry could not be updated. |
 
 ## Reasons
 

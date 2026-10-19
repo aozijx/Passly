@@ -5,6 +5,10 @@ import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryIcon
@@ -19,6 +23,7 @@ import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import javax.inject.Inject
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.CancellationException
 
 internal sealed interface DetailEntryEdit {
     data class SetTitle(val value: String) : DetailEntryEdit
@@ -38,24 +43,55 @@ internal class EditDetailEntryUseCase @Inject constructor(
     private val entryQueryRepository: EntryQueryRepository,
     private val entryCommandRepository: EntryCommandRepository,
     private val secureSessionAccessState: SecureSessionAccessState,
+    private val logger: Logger,
 ) {
     private val editMutex = Mutex()
 
     suspend fun edit(
         entryId: EntryId,
         edit: DetailEntryEdit,
-    ): AppResult<Entry> = editMutex.withLock {
+    ): AppResult<Entry> = logger.inSpan(Operations.VaultEntryUpdate) {
+        val startedAt = monotonicTimeMs()
+        var entryType: EntryType? = null
+        logger.log(LogStatements.Vault.entryUpdateStarted())
+        val result = try {
+            editMutex.withLock { performEdit(entryId, edit) { entryType = it } }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            logger.log(
+                LogStatements.Vault.entryUpdateFailed(failure, entryType, monotonicTimeMs() - startedAt),
+            )
+            throw failure
+        }
+        when (result) {
+            is AppResult.Success -> logger.log(
+                LogStatements.Vault.entryUpdateCompleted(entryType, monotonicTimeMs() - startedAt),
+            )
+            is AppResult.Failure -> logger.log(
+                LogStatements.Vault.entryUpdateFailed(result.error, entryType, monotonicTimeMs() - startedAt),
+            )
+        }
+        result
+    }
+
+    private suspend fun performEdit(
+        entryId: EntryId,
+        edit: DetailEntryEdit,
+        observeType: (EntryType) -> Unit,
+    ): AppResult<Entry> {
         if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
-            return@withLock AppResult.Failure(SessionModeRestricted())
+            return AppResult.Failure(SessionModeRestricted())
         }
         var conflictRetries = 0
         while (true) {
             val latest = entryQueryRepository.getById(entryId)
-                ?: return@withLock AppResult.Failure(NotFound())
+                ?: return AppResult.Failure(NotFound())
+            observeType(latest.type)
             val updated = edit.applyTo(latest)
-                ?: return@withLock AppResult.Failure(ValidationError())
+                ?: return AppResult.Failure(ValidationError())
             val changes = updated.changesFrom(latest)
-                ?: return@withLock AppResult.Success(latest)
+                ?: return AppResult.Success(latest)
             when (
                 val result = entryCommandRepository.updateEntry(
                     id = entryId,
@@ -65,8 +101,8 @@ internal class EditDetailEntryUseCase @Inject constructor(
             ) {
                 is AppResult.Success -> {
                     val persisted = entryQueryRepository.getById(entryId)
-                        ?: return@withLock AppResult.Failure(NotFound())
-                    return@withLock AppResult.Success(persisted)
+                        ?: return AppResult.Failure(NotFound())
+                    return AppResult.Success(persisted)
                 }
 
                 is AppResult.Failure -> {
@@ -74,7 +110,7 @@ internal class EditDetailEntryUseCase @Inject constructor(
                         conflictRetries += 1
                         continue
                     }
-                    return@withLock result
+                    return result
                 }
             }
         }

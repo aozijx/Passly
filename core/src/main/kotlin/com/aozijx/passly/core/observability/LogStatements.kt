@@ -580,11 +580,7 @@ object LogStatements {
             trigger: Enum<*>,
             elapsedMs: Long,
         ): LogStatement {
-            val reason = when (error.code) {
-                "SESSION_MODE_RESTRICTED" -> Reasons.SessionRestricted
-                "VALIDATION_ERROR" -> Reasons.InvalidInput
-                else -> Reasons.UnknownFailure
-            }
+            val reason = failureReason(error)
             val fields = entryFields(entryType, trigger).withElapsed(elapsedMs)
             return when (error.severity) {
                 ErrorSeverity.WARNING -> WarningStatement(
@@ -617,9 +613,63 @@ object LogStatements {
             entryFields(entryType, trigger).withElapsed(elapsedMs),
         )
 
+        fun entryUpdateStarted(): LogStatement =
+            InfoStatement(Events.Vault.EntryUpdateStarted, LogFields.Empty)
+
+        fun entryUpdateCompleted(entryType: Enum<*>?, elapsedMs: Long): LogStatement = InfoStatement(
+            Events.Vault.EntryUpdateCompleted,
+            entryTypeFields(entryType).withElapsed(elapsedMs),
+        )
+
+        fun entryUpdateFailed(
+            error: AppError,
+            entryType: Enum<*>?,
+            elapsedMs: Long,
+        ): LogStatement {
+            val fields = entryTypeFields(entryType).withElapsed(elapsedMs)
+            return when (error.severity) {
+                ErrorSeverity.WARNING -> WarningStatement(
+                    Events.Vault.EntryUpdateFailed,
+                    ErrorCodes.Vault.VaultEntryUpdateFailed,
+                    failureReason(error),
+                    error,
+                    fields,
+                )
+                ErrorSeverity.ERROR -> ErrorStatement(
+                    Events.Vault.EntryUpdateFailed,
+                    ErrorCodes.Vault.VaultEntryUpdateFailed,
+                    failureReason(error),
+                    error,
+                    fields,
+                )
+            }
+        }
+
+        fun entryUpdateFailed(
+            throwable: Throwable,
+            entryType: Enum<*>?,
+            elapsedMs: Long,
+        ): LogStatement = ErrorStatement(
+            Events.Vault.EntryUpdateFailed,
+            ErrorCodes.Vault.VaultEntryUpdateFailed,
+            Reasons.UnknownFailure,
+            throwable,
+            entryTypeFields(entryType).withElapsed(elapsedMs),
+        )
+
         private fun entryFields(entryType: Enum<*>, trigger: Enum<*>): LogFields = fields {
             enum(LogFieldKeys.EntryType, entryType)
             enum(LogFieldKeys.Trigger, trigger)
+        }
+
+        private fun entryTypeFields(entryType: Enum<*>?): LogFields = fields {
+            entryType?.let { enum(LogFieldKeys.EntryType, it) }
+        }
+
+        private fun failureReason(error: AppError): ReasonCode = when (error.code) {
+            "SESSION_MODE_RESTRICTED" -> Reasons.SessionRestricted
+            "VALIDATION_ERROR" -> Reasons.InvalidInput
+            else -> Reasons.UnknownFailure
         }
     }
 

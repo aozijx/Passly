@@ -31,6 +31,11 @@ schema 1 内保持不变，新增值只能分配未使用 ID，枚举重排不�
 脱敏应用栈后再原样抛出；协程取消不记为业务失败。ViewModel、Autofill 适配层和 Repository 不得重复记录
 同一次创建失败。
 
+详情编辑由 `EditDetailEntryUseCase` 持有 `vault_entry_update` Span，输出
+`vault.entry.update_started/completed/failed`。更新事件不记录 Entry ID 或被修改字段的值；成功读取条目类型后
+才附加 `entry_type`，因此会话受限或条目不存在时不会为了补齐日志字段额外查询数据。一次乐观锁冲突重试仍属于
+同一 Span，只在最终结果处记录一次 completed/failed，避免把内部重试误报成用户可见失败。
+
 ## Trace 所有权
 
 Trace 属于一次用户操作或系统回调，不属于模块。入口使用 `withRootTrace` 创建随机 `trace_id`；内部操作使用

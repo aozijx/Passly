@@ -5,6 +5,9 @@ import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.LogFieldKeys
+import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -19,6 +22,8 @@ import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.testing.testLogger
+import com.aozijx.passly.testing.RecordingTestLogger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -35,7 +40,7 @@ class EditDetailEntryUseCaseTest {
     fun restrictedSessionIsRejectedAtTheEditUseCaseBoundary() = runTest {
         val query = FakeQueryRepository(entry(version = 1))
         val command = FakeCommandRepository(query)
-        val useCase = EditDetailEntryUseCase(query, command, RestrictedSessionAccessState)
+        val useCase = EditDetailEntryUseCase(query, command, RestrictedSessionAccessState, testLogger())
 
         val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTags(emptySet()))
 
@@ -51,7 +56,7 @@ class EditDetailEntryUseCaseTest {
             ),
         )
         val command = FakeCommandRepository(query)
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState)
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
         val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTags(emptySet()))
 
@@ -64,7 +69,8 @@ class EditDetailEntryUseCaseTest {
     fun updateAppliesPatchToLatestEntryAndReturnsReloadedVersion() = runTest {
         val query = FakeQueryRepository(entry(version = 7, notes = "latest notes"))
         val command = FakeCommandRepository(query)
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState)
+        val logger = RecordingTestLogger()
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, logger)
 
         val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
 
@@ -73,6 +79,15 @@ class EditDetailEntryUseCaseTest {
         assertEquals("latest notes", updated.secret.notes)
         assertEquals(8, updated.version.value)
         assertEquals(listOf(7), command.expectedVersions)
+        assertEquals(
+            listOf(Events.Vault.EntryUpdateStarted, Events.Vault.EntryUpdateCompleted),
+            logger.events.map { it.event },
+        )
+        assertEquals(listOf(Operations.VaultEntryUpdate), logger.spans)
+        assertEquals(
+            setOf(LogFieldKeys.EntryType, LogFieldKeys.ElapsedMs),
+            logger.events.last().fields.values.keys,
+        )
     }
 
     @Test
@@ -84,7 +99,7 @@ class EditDetailEntryUseCaseTest {
                 query.current = entry(version = 4, notes = "concurrent notes")
             }
         }
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState)
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
         val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
 
@@ -102,12 +117,15 @@ class EditDetailEntryUseCaseTest {
             failures += Conflict(errorId = "first-conflict")
             failures += Conflict(errorId = "second-conflict")
         }
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState)
+        val logger = RecordingTestLogger()
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, logger)
 
         val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
 
         assertTrue((result as AppResult.Failure).error is Conflict)
         assertEquals(2, command.expectedVersions.size)
+        assertEquals(Events.Vault.EntryUpdateFailed, logger.events.last().event)
+        assertTrue(logger.events.last().throwable is Conflict)
     }
 
     @Test
@@ -116,7 +134,7 @@ class EditDetailEntryUseCaseTest {
         val command = FakeCommandRepository(query).apply {
             failures += ValidationError(errorId = "validation")
         }
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState)
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
         val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
 
@@ -131,6 +149,7 @@ class EditDetailEntryUseCaseTest {
             query,
             FakeCommandRepository(query),
             FullSessionAccessState,
+            testLogger(),
         )
 
         val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
@@ -150,7 +169,7 @@ class EditDetailEntryUseCaseTest {
                 releaseFirst.await()
             }
         }
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState)
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
         val first = async { useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("First")) }
         firstStarted.await()
@@ -181,6 +200,7 @@ class EditDetailEntryUseCaseTest {
             query,
             FakeCommandRepository(query),
             FullSessionAccessState,
+            testLogger(),
         )
 
         val result = useCase.edit(
@@ -206,6 +226,7 @@ class EditDetailEntryUseCaseTest {
             query,
             FakeCommandRepository(query),
             FullSessionAccessState,
+            testLogger(),
         )
 
         val result = useCase.edit(
@@ -225,7 +246,7 @@ class EditDetailEntryUseCaseTest {
             failures += Conflict(errorId = "first-conflict")
             onFailure = { query.current = entry(version = 4, favorite = false) }
         }
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState)
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
         val result = useCase.edit(ENTRY_ID, DetailEntryEdit.ToggleFavorite)
 

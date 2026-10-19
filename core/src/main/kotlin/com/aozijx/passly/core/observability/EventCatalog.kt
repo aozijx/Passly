@@ -123,6 +123,9 @@ object Events {
         val EntryCreateStarted = EventKey("vault.entry.create_started")
         val EntryCreateCompleted = EventKey("vault.entry.create_completed")
         val EntryCreateFailed = EventKey("vault.entry.create_failed")
+        val EntryUpdateStarted = EventKey("vault.entry.update_started")
+        val EntryUpdateCompleted = EventKey("vault.entry.update_completed")
+        val EntryUpdateFailed = EventKey("vault.entry.update_failed")
     }
 
     val All: Set<EventKey> = setOf(
@@ -184,6 +187,9 @@ object Events {
         Vault.EntryCreateStarted,
         Vault.EntryCreateCompleted,
         Vault.EntryCreateFailed,
+        Vault.EntryUpdateStarted,
+        Vault.EntryUpdateCompleted,
+        Vault.EntryUpdateFailed,
     )
 }
 
@@ -207,6 +213,7 @@ object Operations {
     val Scanner = OperationCode("scanner")
     val VaultKeyManagement = OperationCode("vault_key_management")
     val VaultEntryCreate = OperationCode("vault_entry_create")
+    val VaultEntryUpdate = OperationCode("vault_entry_update")
 }
 
 object LogFieldKeys {
