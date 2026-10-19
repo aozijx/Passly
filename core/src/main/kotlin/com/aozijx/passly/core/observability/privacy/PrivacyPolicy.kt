@@ -232,7 +232,6 @@ class PrivacyPolicy(
             LogFieldKeys.Severity to FieldKind.ENUM,
             LogFieldKeys.Recoverable to FieldKind.BOOLEAN,
             LogFieldKeys.Operation to FieldKind.OPERATION,
-            LogFieldKeys.Locked to FieldKind.BOOLEAN,
             LogFieldKeys.ClearTask to FieldKind.BOOLEAN,
             LogFieldKeys.DroppedDebugCount to FieldKind.COUNT,
             LogFieldKeys.DroppedInfoCount to FieldKind.COUNT,

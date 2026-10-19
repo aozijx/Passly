@@ -59,6 +59,7 @@ object Events {
         val PackageIconUnavailable = EventKey("application.package_icon.unavailable")
         val ResourceCleanupFailed = EventKey("application.resource_cleanup.failed")
         val DeviceLockCompleted = EventKey("application.device_lock.completed")
+        val DeviceLockSkipped = EventKey("application.device_lock.skipped")
         val DiagnosticsExportFailed = EventKey("application.diagnostics_export.failed")
         val ScannedOtpInvalid = EventKey("application.scanned_otp.invalid")
         val ScannerFailed = EventKey("application.scanner.failed")
@@ -138,6 +139,7 @@ object Events {
         Application.PackageIconUnavailable,
         Application.ResourceCleanupFailed,
         Application.DeviceLockCompleted,
+        Application.DeviceLockSkipped,
         Application.DiagnosticsExportFailed,
         Application.ScannedOtpInvalid,
         Application.ScannerFailed,
@@ -243,7 +245,6 @@ object LogFieldKeys {
     val Severity = LogFieldKey("severity")
     val Recoverable = LogFieldKey("recoverable")
     val Operation = LogFieldKey("operation")
-    val Locked = LogFieldKey("locked")
     val ClearTask = LogFieldKey("clear_task")
     val DroppedDebugCount = LogFieldKey("dropped_debug_count")
     val DroppedInfoCount = LogFieldKey("dropped_info_count")

@@ -170,15 +170,18 @@ object LogStatements {
 
         fun deviceLockCompleted(
             trigger: Enum<*>,
-            locked: Boolean,
             clearTask: Boolean,
         ): LogStatement = InfoStatement(
             Events.Application.DeviceLockCompleted,
             fields {
                 enum(LogFieldKeys.Trigger, trigger)
-                boolean(LogFieldKeys.Locked, locked)
                 boolean(LogFieldKeys.ClearTask, clearTask)
             },
+        )
+
+        fun deviceLockSkipped(trigger: Enum<*>): LogStatement = DebugStatement(
+            Events.Application.DeviceLockSkipped,
+            fields { enum(LogFieldKeys.Trigger, trigger) },
         )
 
         fun diagnosticsExportFailed(throwable: Throwable): LogStatement = ErrorStatement(

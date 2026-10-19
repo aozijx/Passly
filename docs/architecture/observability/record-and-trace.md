@@ -49,6 +49,11 @@ process-local 的 opaque `TraceToken`：默认单次消费、最长 10 分钟、
 认证事件记录受控 `purpose`。锁定使用 `SessionLockRequest(reason, trigger)`，分别表达策略原因和实际触发信号。
 例如后台超时、屏幕关闭、翻转、Autofill 完成和 App 退出不能压缩成同一个“锁定”原因。
 
+设备翻转传感器采用带释放阈值的边沿触发：持续朝下只派发一次，恢复朝上后才能再次触发。
+`application.device_lock.completed` 只表示实际执行了锁定，并记录 `trigger` 与 `clear_task`；会话已经锁定、
+翻转锁定关闭等未执行情况记录为 DEBUG `application.device_lock.skipped`，不得以 `completed + locked=false`
+表达，以免把操作结果和最终会话状态混为一谈。
+
 ## 异常语义
 
 `ExceptionMapper` 依据错误码上下文把异常映射为稳定类别：`DATABASE_IO`、`CRYPTO`、

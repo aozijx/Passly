@@ -11,6 +11,7 @@ import android.hardware.SensorManager
 import android.os.PowerManager
 import androidx.core.content.ContextCompat
 import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.LogStatement
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.domain.access.model.LockReason
@@ -41,10 +42,38 @@ internal enum class DeviceLockTrigger {
     FLIP,
 }
 
-internal data class DeviceLockResult(
-    val locked: Boolean,
-    val shouldClearTask: Boolean = false,
-)
+internal sealed interface DeviceLockResult {
+    data class Locked(val shouldClearTask: Boolean) : DeviceLockResult
+    data object Skipped : DeviceLockResult
+}
+
+internal fun DeviceLockResult.toLogStatement(trigger: DeviceLockTrigger): LogStatement = when (this) {
+    is DeviceLockResult.Locked -> LogStatements.Application.deviceLockCompleted(
+        trigger = trigger,
+        clearTask = shouldClearTask,
+    )
+    DeviceLockResult.Skipped -> LogStatements.Application.deviceLockSkipped(trigger)
+}
+
+internal class FlipTriggerGate {
+    private var faceDown = false
+
+    fun shouldTrigger(zAxis: Float): Boolean {
+        if (zAxis >= RELEASE_THRESHOLD) faceDown = false
+        if (faceDown || zAxis >= FLIP_THRESHOLD) return false
+        faceDown = true
+        return true
+    }
+
+    fun reset() {
+        faceDown = false
+    }
+
+    private companion object {
+        const val FLIP_THRESHOLD = -8.5f
+        const val RELEASE_THRESHOLD = -7.5f
+    }
+}
 
 /**
  * Tracks screen-off work across the suspend boundary used to seal the vault.
@@ -78,15 +107,14 @@ internal class DeviceLockHandler(
             DeviceLockTrigger.SCREEN_OFF -> SessionLockRequest(LockReason.BACKGROUND, LockTrigger.SCREEN_OFF)
             DeviceLockTrigger.FLIP -> {
                 if (!sessionAccessState.isUnlocked() && !sessionAccessState.isRecoveryMode()) {
-                    return DeviceLockResult(locked = false)
+                    return DeviceLockResult.Skipped
                 }
-                if (!security.isFlipToLockEnabled) return DeviceLockResult(locked = false)
+                if (!security.isFlipToLockEnabled) return DeviceLockResult.Skipped
                 SessionLockRequest(LockReason.USER, LockTrigger.DEVICE_FLIP)
             }
         }
         sessionLockController.lock(request)
-        return DeviceLockResult(
-            locked = true,
+        return DeviceLockResult.Locked(
             shouldClearTask = security.isFlipToLockEnabled &&
                 security.isFlipExitAndClearStackEnabled,
         )
@@ -114,6 +142,7 @@ class DeviceLockController @Inject constructor(
     private val activeTaskClearRequests = ActiveTaskClearRequests()
     val clearTaskRequests: Flow<Unit> = activeTaskClearRequests.events
     private val screenOffLockTracker = ScreenOffLockTracker()
+    private val flipTriggerGate = FlipTriggerGate()
     private val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -180,13 +209,14 @@ class DeviceLockController @Inject constructor(
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type != Sensor.TYPE_ACCELEROMETER) return
-        if (event.values[2] < FLIP_THRESHOLD) dispatch(DeviceLockTrigger.FLIP)
+        if (flipTriggerGate.shouldTrigger(event.values[2])) dispatch(DeviceLockTrigger.FLIP)
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
 
     private fun updateSensorRegistration() {
         sensorManager.unregisterListener(this)
+        flipTriggerGate.reset()
         if (!appInForeground || securitySettings.value?.isFlipToLockEnabled != true) return
         accelerometer?.let { sensor ->
             sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
@@ -204,14 +234,10 @@ class DeviceLockController @Inject constructor(
                     triggerMutex.withLock {
                         val result = handler.handle(trigger)
                         screenOffGeneration?.let(screenOffLockTracker::complete)
-                        logger.log(
-                            LogStatements.Application.deviceLockCompleted(
-                                trigger = trigger,
-                                locked = result.locked,
-                                clearTask = result.shouldClearTask,
-                            ),
-                        )
-                        if (result.shouldClearTask) activeTaskClearRequests.requestClear()
+                        logger.log(result.toLogStatement(trigger))
+                        if (result is DeviceLockResult.Locked && result.shouldClearTask) {
+                            activeTaskClearRequests.requestClear()
+                        }
                     }
                 }
             } finally {
@@ -220,7 +246,4 @@ class DeviceLockController @Inject constructor(
         }
     }
 
-    private companion object {
-        const val FLIP_THRESHOLD = -8.5f
-    }
 }

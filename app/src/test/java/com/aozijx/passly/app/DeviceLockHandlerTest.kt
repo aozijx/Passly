@@ -7,6 +7,8 @@ import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.settings.model.SecuritySettings
+import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.testing.RecordingTestLogger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.async
@@ -21,6 +23,30 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DeviceLockHandlerTest {
+
+    @Test
+    fun `continuous face-down sensor samples dispatch one flip until device is released`() {
+        val gate = FlipTriggerGate()
+
+        assertTrue(gate.shouldTrigger(-9.0f))
+        assertFalse(gate.shouldTrigger(-9.3f))
+        assertFalse(gate.shouldTrigger(-8.8f))
+        assertFalse(gate.shouldTrigger(-6.5f))
+        assertTrue(gate.shouldTrigger(-9.1f))
+    }
+
+    @Test
+    fun `skipped lock result is not reported as completed`() {
+        val logger = RecordingTestLogger()
+
+        logger.log(DeviceLockResult.Locked(shouldClearTask = true).toLogStatement(DeviceLockTrigger.FLIP))
+        logger.log(DeviceLockResult.Skipped.toLogStatement(DeviceLockTrigger.FLIP))
+
+        assertEquals(
+            listOf(Events.Application.DeviceLockCompleted, Events.Application.DeviceLockSkipped),
+            logger.events.map { it.event },
+        )
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
@@ -90,9 +116,8 @@ class DeviceLockHandlerTest {
             ),
         )
 
-        val result = handler.handle(DeviceLockTrigger.SCREEN_OFF)
+        val result = handler.handle(DeviceLockTrigger.SCREEN_OFF) as DeviceLockResult.Locked
 
-        assertTrue(result.locked)
         assertFalse(result.shouldClearTask)
         assertEquals(LockReason.BACKGROUND, lockController.reason)
         assertEquals(LockTrigger.SCREEN_OFF, lockController.trigger)
@@ -108,9 +133,8 @@ class DeviceLockHandlerTest {
             ),
         )
 
-        val result = handler.handle(DeviceLockTrigger.SCREEN_OFF)
+        val result = handler.handle(DeviceLockTrigger.SCREEN_OFF) as DeviceLockResult.Locked
 
-        assertTrue(result.locked)
         assertTrue(result.shouldClearTask)
     }
 
@@ -125,7 +149,7 @@ class DeviceLockHandlerTest {
 
         val result = handler.handle(DeviceLockTrigger.SCREEN_OFF)
 
-        assertTrue(result.locked)
+        assertTrue(result is DeviceLockResult.Locked)
         assertEquals(LockReason.BACKGROUND, lockController.reason)
         assertEquals(LockTrigger.SCREEN_OFF, lockController.trigger)
     }
@@ -140,7 +164,7 @@ class DeviceLockHandlerTest {
 
         val result = handler.handle(DeviceLockTrigger.FLIP)
 
-        assertFalse(result.locked)
+        assertEquals(DeviceLockResult.Skipped, result)
         assertNull(lockController.reason)
     }
 
@@ -161,7 +185,7 @@ class DeviceLockHandlerTest {
 
         settings.value = SecuritySettings(isFlipToLockEnabled = true)
 
-        assertTrue(result.await().locked)
+        assertTrue(result.await() is DeviceLockResult.Locked)
         assertEquals(LockTrigger.DEVICE_FLIP, lockController.trigger)
     }
 
@@ -176,9 +200,8 @@ class DeviceLockHandlerTest {
             ),
         )
 
-        val result = handler.handle(DeviceLockTrigger.FLIP)
+        val result = handler.handle(DeviceLockTrigger.FLIP) as DeviceLockResult.Locked
 
-        assertTrue(result.locked)
         assertTrue(result.shouldClearTask)
         assertEquals(LockReason.USER, lockController.reason)
         assertEquals(LockTrigger.DEVICE_FLIP, lockController.trigger)
