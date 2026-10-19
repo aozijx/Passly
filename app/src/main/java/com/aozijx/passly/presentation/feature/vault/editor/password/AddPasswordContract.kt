@@ -1,5 +1,7 @@
 package com.aozijx.passly.presentation.feature.vault.editor.password
 
+import com.aozijx.passly.presentation.shared.components.AppPackagePickerItemUiModel
+
 data class AddPasswordFormState(
     val title: String = "",
     val username: String = "",
@@ -7,6 +9,7 @@ data class AddPasswordFormState(
     val website: String = "",
     val notes: String = "",
     val tags: String = "",
+    val associatedAppPackage: String? = null,
     val isPasswordVisible: Boolean = false
 ) {
     val isValid: Boolean
@@ -15,6 +18,8 @@ data class AddPasswordFormState(
 
 data class AddPasswordUiState(
     val form: AddPasswordFormState = AddPasswordFormState(),
+    val availableApps: List<AppPackagePickerItemUiModel> = emptyList(),
+    val availableAppsLoaded: Boolean = false,
     val savePhase: AddPasswordSavePhase = AddPasswordSavePhase.Idle,
 ) {
     val canSave: Boolean

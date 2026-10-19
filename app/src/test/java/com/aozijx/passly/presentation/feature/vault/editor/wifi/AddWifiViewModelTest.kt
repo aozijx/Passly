@@ -35,6 +35,14 @@ class AddWifiViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
+    fun `blank required fields disable save without showing errors`() {
+        val state = viewModel(RecordingRepository()).uiState.value
+
+        assertFalse(state.canSave)
+        assertTrue(state.fieldErrors.isEmpty())
+    }
+
+    @Test
     fun `domain wifi validation drives save availability and field errors`() {
         val viewModel = viewModel(RecordingRepository())
 

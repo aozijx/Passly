@@ -8,5 +8,7 @@ sealed interface AddPasswordAction {
     data class WebsiteChanged(val value: String) : AddPasswordAction
     data class NotesChanged(val value: String) : AddPasswordAction
     data class TagsChanged(val value: String) : AddPasswordAction
+    data object LoadAssociatedApps : AddPasswordAction
+    data class AssociatedAppSelected(val packageName: String) : AddPasswordAction
     data object Save : AddPasswordAction
 }

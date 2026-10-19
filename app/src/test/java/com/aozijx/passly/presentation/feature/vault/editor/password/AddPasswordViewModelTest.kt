@@ -1,6 +1,8 @@
 package com.aozijx.passly.presentation.feature.vault.editor.password
 
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.platform.packageinfo.InstalledAppDirectory
+import com.aozijx.passly.core.platform.packageinfo.InstalledAppMetadata
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
@@ -14,18 +16,21 @@ import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.Rule
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AddPasswordViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
     fun formAllowsPasswordOnlyLoginAndPreservesPasswordWhitespace() {
-        val viewModel = AddPasswordViewModel(createEntryUseCase(AuthenticatedSession), AuthenticatedSession)
+        val viewModel = viewModel()
 
         viewModel.onAction(AddPasswordAction.TitleChanged("Mail"))
         viewModel.onAction(AddPasswordAction.PasswordChanged(" secret "))
@@ -52,7 +57,7 @@ class AddPasswordViewModelTest {
 
     @Test
     fun onClearedWipesPasswordContent() {
-        val viewModel = AddPasswordViewModel(createEntryUseCase(AuthenticatedSession), AuthenticatedSession)
+        val viewModel = viewModel()
         viewModel.onAction(AddPasswordAction.TitleChanged("Mail"))
         viewModel.onAction(AddPasswordAction.PasswordChanged("secret"))
 
@@ -66,9 +71,23 @@ class AddPasswordViewModelTest {
     }
 
     @Test
+    fun `loading and selecting an associated app updates the form`() = runTest {
+        val viewModel = viewModel(
+            apps = listOf(InstalledAppMetadata("Mail", "com.example.mail")),
+        )
+
+        viewModel.onAction(AddPasswordAction.LoadAssociatedApps)
+        advanceUntilIdle()
+        viewModel.onAction(AddPasswordAction.AssociatedAppSelected("com.example.mail"))
+
+        assertEquals("com.example.mail", viewModel.uiState.value.form.associatedAppPackage)
+        assertEquals("Mail", viewModel.uiState.value.availableApps.single().label)
+    }
+
+    @Test
     fun sessionLockWipesPasswordContent() = runTest {
         val session = MutableSession()
-        val viewModel = AddPasswordViewModel(createEntryUseCase(session), session)
+        val viewModel = viewModel(session = session)
         viewModel.onAction(AddPasswordAction.TitleChanged("Mail"))
         viewModel.onAction(AddPasswordAction.PasswordChanged("secret"))
 
@@ -83,6 +102,24 @@ class AddPasswordViewModelTest {
         secureSessionAccessState = session,
         materializer = EntryDraftMaterializer(),
     )
+
+    private fun viewModel(
+        session: SecureSessionAccessState = AuthenticatedSession,
+        apps: List<InstalledAppMetadata> = emptyList(),
+    ) = AddPasswordViewModel(
+        createEntryUseCase = createEntryUseCase(session),
+        secureSessionAccessState = session,
+        installedAppDirectory = FakeInstalledAppDirectory(apps),
+    )
+
+    private class FakeInstalledAppDirectory(
+        private val apps: List<InstalledAppMetadata>,
+    ) : InstalledAppDirectory {
+        override suspend fun metadataFor(packageName: String) =
+            apps.firstOrNull { it.packageName == packageName }
+
+        override suspend fun launchableApps() = apps
+    }
 
     private object AuthenticatedSession : SecureSessionAccessState {
         override val authenticationState: StateFlow<AuthenticationState> =

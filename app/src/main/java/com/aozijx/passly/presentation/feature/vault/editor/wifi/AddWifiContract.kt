@@ -29,11 +29,11 @@ sealed interface AddWifiInitialContent {
 
 data class AddWifiUiState(
     val form: AddWifiFormState = AddWifiFormState(),
-    val fieldErrors: Map<FieldKey, EntryViolationCode> = form.fieldErrors(),
+    val fieldErrors: Map<FieldKey, EntryViolationCode> = form.visibleFieldErrors(),
     val savePhase: AddWifiSavePhase = AddWifiSavePhase.Idle,
 ) {
     val canSave: Boolean
-        get() = fieldErrors.isEmpty() && savePhase == AddWifiSavePhase.Idle
+        get() = form.fieldErrors().isEmpty() && savePhase == AddWifiSavePhase.Idle
 }
 
 internal fun AddWifiFormState.fieldErrors(): Map<FieldKey, EntryViolationCode> = buildMap {
@@ -44,9 +44,12 @@ internal fun AddWifiFormState.fieldErrors(): Map<FieldKey, EntryViolationCode> =
     ).forEach { put(it.field, it.code) }
 }
 
+private fun AddWifiFormState.visibleFieldErrors(): Map<FieldKey, EntryViolationCode> =
+    fieldErrors().filterValues { it != EntryViolationCode.REQUIRED }
+
 internal fun AddWifiUiState.withForm(form: AddWifiFormState): AddWifiUiState {
     return copy(
         form = form,
-        fieldErrors = form.fieldErrors(),
+        fieldErrors = form.visibleFieldErrors(),
     )
 }

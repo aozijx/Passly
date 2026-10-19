@@ -16,6 +16,13 @@ fun AddPasswordFormState.toEntryDraft(): EntryDraft {
     draft = draft.withOptionalText(definition, FieldKey.USERNAME, username)
     draft = draft.withOptionalText(definition, FieldKey.PRIMARY_URL, website)
     draft = draft.withOptionalText(definition, FieldKey.NOTES, notes)
+    associatedAppPackage?.takeIf(String::isNotBlank)?.let { packageName ->
+        draft = draft.withValue(
+            definition,
+            FieldKey.APPLICATION_IDS,
+            EntryDraftValue.TextList(listOf(packageName)),
+        )
+    }
     return draft.withTags(definition, tags)
 }
 

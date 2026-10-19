@@ -1,6 +1,9 @@
 package com.aozijx.passly.presentation.feature.vault.editor.ui.password
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -8,10 +11,16 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -20,13 +29,16 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.platform.packageinfo.rememberInstalledAppIconBitmap
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordAction
-import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordUiState
 import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordSavePhase
-import com.aozijx.passly.presentation.shared.components.NextFocusTextField
+import com.aozijx.passly.presentation.feature.vault.editor.password.AddPasswordUiState
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.presentation.feature.vault.editor.ui.common.EntryEditorSection
+import com.aozijx.passly.presentation.shared.components.AppPackagePickerBottomSheet
+import com.aozijx.passly.presentation.shared.components.NextFocusTextField
 
 @Composable
 fun AddPasswordEditorScreen(
@@ -40,6 +52,10 @@ fun AddPasswordEditorScreen(
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val form = state.form
+    var showAssociatedAppPicker by rememberSaveable { mutableStateOf(false) }
+    val selectedApp = form.associatedAppPackage?.let { packageName ->
+        state.availableApps.firstOrNull { it.packageName == packageName }
+    }
 
     fun save() {
         keyboardController?.hide()
@@ -107,6 +123,36 @@ fun AddPasswordEditorScreen(
                 label = stringResource(R.string.vault_add_password_website),
                 keyboardType = KeyboardType.Uri,
             )
+            OutlinedCard(
+                onClick = {
+                    showAssociatedAppPicker = true
+                    onAction(AddPasswordAction.LoadAssociatedApps)
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.vault_detail_associated_package),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = selectedApp?.label
+                            ?: form.associatedAppPackage
+                            ?: stringResource(R.string.not_set),
+                    )
+                    selectedApp?.packageName?.let { packageName ->
+                        Text(
+                            text = packageName,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = form.notes,
@@ -125,5 +171,17 @@ fun AddPasswordEditorScreen(
                 ),
             )
         }
+    }
+
+    if (showAssociatedAppPicker) {
+        AppPackagePickerBottomSheet(
+            apps = state.availableApps,
+            appIcon = { rememberInstalledAppIconBitmap(it) },
+            onSelect = { app ->
+                onAction(AddPasswordAction.AssociatedAppSelected(app.packageName))
+                showAssociatedAppPicker = false
+            },
+            onDismiss = { showAssociatedAppPicker = false },
+        )
     }
 }

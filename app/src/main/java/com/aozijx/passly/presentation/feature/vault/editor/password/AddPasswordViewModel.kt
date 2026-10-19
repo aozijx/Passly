@@ -3,11 +3,14 @@ package com.aozijx.passly.presentation.feature.vault.editor.password
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.platform.packageinfo.InstalledAppDirectory
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffect
+import com.aozijx.passly.presentation.shared.components.AppPackagePickerItemUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +23,9 @@ import javax.inject.Inject
 class AddPasswordViewModel @Inject constructor(
     private val createEntryUseCase: CreateEntryUseCase,
     private val secureSessionAccessState: SecureSessionAccessState,
+    private val installedAppDirectory: InstalledAppDirectory,
 ) : ViewModel() {
+    private var associatedAppsLoadJob: Job? = null
     private val _uiState = MutableStateFlow(AddPasswordUiState())
     val uiState = _uiState.asStateFlow()
     private val _effects = Channel<EditorSaveEffect>(Channel.BUFFERED)
@@ -43,7 +48,30 @@ class AddPasswordViewModel @Inject constructor(
             is AddPasswordAction.WebsiteChanged -> mutateForm { it.copy(website = action.value) }
             is AddPasswordAction.NotesChanged -> mutateForm { it.copy(notes = action.value) }
             is AddPasswordAction.TagsChanged -> mutateForm { it.copy(tags = action.value) }
+            AddPasswordAction.LoadAssociatedApps -> loadAssociatedApps()
+            is AddPasswordAction.AssociatedAppSelected -> mutateForm {
+                it.copy(associatedAppPackage = action.packageName)
+            }
             AddPasswordAction.Save -> save()
+        }
+    }
+
+    private fun loadAssociatedApps() {
+        if (_uiState.value.availableAppsLoaded || associatedAppsLoadJob?.isActive == true) return
+        associatedAppsLoadJob = viewModelScope.launch {
+            try {
+                val apps = installedAppDirectory.launchableApps().map { metadata ->
+                    AppPackagePickerItemUiModel(metadata.label, metadata.packageName)
+                }
+                _uiState.value = _uiState.value.copy(
+                    availableApps = apps,
+                    availableAppsLoaded = true,
+                )
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Throwable) {
+                // Keep the state retryable; reopening the picker triggers another load.
+            }
         }
     }
 
@@ -81,6 +109,8 @@ class AddPasswordViewModel @Inject constructor(
     }
 
     private fun clearSensitiveContent() {
+        associatedAppsLoadJob?.cancel()
+        associatedAppsLoadJob = null
         _uiState.value = AddPasswordUiState()
     }
 

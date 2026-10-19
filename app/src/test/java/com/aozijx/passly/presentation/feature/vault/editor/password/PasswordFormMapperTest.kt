@@ -15,6 +15,7 @@ class PasswordFormMapperTest {
         val draft = AddPasswordFormState(
             title = "  Mail  ", username = " user@example.com ", password = " secret ",
             website = " https://example.com ", notes = " personal ", tags = " work, , mail, work ",
+            associatedAppPackage = "com.example.mail",
         ).toEntryDraft()
 
         assertEquals(EntryDraftTarget.New(EntryType.LOGIN), draft.target)
@@ -23,6 +24,10 @@ class PasswordFormMapperTest {
         assertEquals(EntryDraftValue.Text(" secret "), draft[FieldKey.PASSWORD])
         assertEquals(EntryDraftValue.Text("https://example.com"), draft[FieldKey.PRIMARY_URL])
         assertEquals(EntryDraftValue.Text("personal"), draft[FieldKey.NOTES])
+        assertEquals(
+            EntryDraftValue.TextList(listOf("com.example.mail")),
+            draft[FieldKey.APPLICATION_IDS],
+        )
         assertEquals(EntryDraftValue.TextList(listOf("work", "mail", "work")), draft[FieldKey.TAGS])
         assertTrue(draft.missingRequiredFields(EntryTypeDefinitions[EntryType.LOGIN]).isEmpty())
     }
@@ -36,11 +41,13 @@ class PasswordFormMapperTest {
             website = " ",
             notes = " ",
             tags = " , ",
+            associatedAppPackage = null,
         ).toEntryDraft()
 
         assertEquals(null, draft[FieldKey.USERNAME])
         assertEquals(null, draft[FieldKey.PRIMARY_URL])
         assertEquals(null, draft[FieldKey.NOTES])
         assertEquals(null, draft[FieldKey.TAGS])
+        assertEquals(null, draft[FieldKey.APPLICATION_IDS])
     }
 }
