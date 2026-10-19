@@ -10,6 +10,7 @@ import javax.inject.Inject
 enum class AutofillSaveDraftRejection {
     PACKAGE_MISSING,
     PASSWORD_MISSING,
+    PASSWORD_AMBIGUOUS,
 }
 
 sealed interface AutofillSaveDraftExtraction {
@@ -29,15 +30,20 @@ class AutofillSaveDraftExtractor @Inject constructor(
         }
 
         val roles = fieldMatchStrategy.match(request).roleMap
-        val values = request.fields.associate { it.id to it.text.orEmpty() }
-        val password = roles.entries.firstNotNullOfOrNull { (id, role) ->
-            values[id]?.takeIf(String::isNotBlank)?.takeIf { role == FieldRole.PASSWORD }
-        } ?: return AutofillSaveDraftExtraction.Rejected(
-            AutofillSaveDraftRejection.PASSWORD_MISSING,
-        )
-        val username = roles.entries.firstNotNullOfOrNull { (id, role) ->
-            values[id]?.takeIf(String::isNotBlank)?.takeIf { role == FieldRole.USERNAME }
-        }.orEmpty()
+        val password = when (val selection = selectValue(request, roles, FieldRole.PASSWORD)) {
+            is ValueSelection.Selected -> selection.value
+            ValueSelection.Missing -> return AutofillSaveDraftExtraction.Rejected(
+                AutofillSaveDraftRejection.PASSWORD_MISSING,
+            )
+            ValueSelection.Ambiguous -> return AutofillSaveDraftExtraction.Rejected(
+                AutofillSaveDraftRejection.PASSWORD_AMBIGUOUS,
+            )
+        }
+        val username = when (val selection = selectValue(request, roles, FieldRole.USERNAME)) {
+            is ValueSelection.Selected -> selection.value
+            ValueSelection.Missing,
+            ValueSelection.Ambiguous -> ""
+        }
 
         return AutofillSaveDraftExtraction.Ready(
             AutofillSaveDraft(
@@ -48,5 +54,30 @@ class AutofillSaveDraftExtractor @Inject constructor(
                 password = password,
             ),
         )
+    }
+
+    private fun selectValue(
+        request: AutofillRequest,
+        roles: Map<String, FieldRole>,
+        role: FieldRole,
+    ): ValueSelection {
+        val candidates = request.fields.filter { field ->
+            roles[field.id] == role && !field.text.isNullOrBlank()
+        }
+        val focusedCandidates = candidates.filter { it.isFocused }
+        val selected = when {
+            focusedCandidates.size == 1 -> focusedCandidates.single()
+            focusedCandidates.size > 1 -> return ValueSelection.Ambiguous
+            candidates.size == 1 -> candidates.single()
+            candidates.isEmpty() -> return ValueSelection.Missing
+            else -> return ValueSelection.Ambiguous
+        }
+        return ValueSelection.Selected(selected.text.orEmpty())
+    }
+
+    private sealed interface ValueSelection {
+        data class Selected(val value: String) : ValueSelection
+        data object Missing : ValueSelection
+        data object Ambiguous : ValueSelection
     }
 }

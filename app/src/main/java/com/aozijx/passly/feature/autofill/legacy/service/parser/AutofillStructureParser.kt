@@ -32,6 +32,9 @@ data class ParsedStructure(
 
 object AutofillStructureParser {
 
+    private const val MAX_TREE_DEPTH = 64
+    private const val MAX_NODE_COUNT = 10_000
+
     fun parse(contexts: List<FillContext>): ParsedStructure {
         val structure = contexts.lastOrNull()?.structure ?: return ParsedStructure()
         val parser = ParserImpl(structure)
@@ -50,11 +53,18 @@ object AutofillStructureParser {
         val editableFields = mutableListOf<EditableFieldInfo>()
 
         init {
-            val windowCount = structure.windowNodeCount
-            for (i in 0 until windowCount) {
-                val window = structure.getWindowNodeAt(i)
-                parseNode(window.rootViewNode)
+            val roots = buildList {
+                for (index in 0 until structure.windowNodeCount) {
+                    add(structure.getWindowNodeAt(index).rootViewNode)
+                }
             }
+            traverseBoundedPreOrder(
+                roots = roots,
+                maxDepth = MAX_TREE_DEPTH,
+                maxNodes = MAX_NODE_COUNT,
+                children = ::childrenOf,
+                visit = ::parseNode,
+            )
         }
 
         private fun parseNode(node: AssistStructure.ViewNode) {
@@ -93,12 +103,14 @@ object AutofillStructureParser {
                 )
             }
 
-            val childCount = node.childCount
-            for (i in 0 until childCount) {
-                val child = node.getChildAt(i) ?: continue
-                parseNode(child)
-            }
         }
+
+        private fun childrenOf(node: AssistStructure.ViewNode): List<AssistStructure.ViewNode> =
+            buildList(node.childCount) {
+                for (index in 0 until node.childCount) {
+                    node.getChildAt(index)?.let(::add)
+                }
+            }
 
         private fun inputTypeNames(inputType: Int): String {
             if (inputType == InputType.TYPE_NULL) return "TYPE_NULL"

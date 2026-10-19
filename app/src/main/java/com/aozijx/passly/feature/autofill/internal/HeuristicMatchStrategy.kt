@@ -52,8 +52,8 @@ class HeuristicMatchStrategy @Inject constructor(
             }
 
             // 3. Track state for weak-target synthesis
-            val isEditable = isEditableTextField(field)
-            if (field.isFocused && isEditable) {
+            // LegacyPlatformAdapter only exposes fields accepted by the structure parser.
+            if (field.isFocused) {
                 focusedEditable = field
             }
 
@@ -114,13 +114,5 @@ class HeuristicMatchStrategy @Inject constructor(
         return field.resourceId?.let { pattern.containsMatchIn(it) } == true ||
                field.hints.any { pattern.containsMatchIn(it) } ||
                field.contentDescription?.let { pattern.containsMatchIn(it) } == true
-    }
-
-    private fun isEditableTextField(field: AutofillField): Boolean {
-        if (field.hints.isNotEmpty()) return true
-        val className = field.className.orEmpty()
-        if (className.contains("edittext", ignoreCase = true) || className.contains("textinput", ignoreCase = true)) return true
-        val raw = field.inputType ?: return false
-        return raw.contains("TYPE_CLASS_TEXT") || raw.contains("TYPE_CLASS_NUMBER")
     }
 }

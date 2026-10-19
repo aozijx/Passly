@@ -1,6 +1,21 @@
 # Autofill 共享填充流程
 
-状态：当前实现（代码核对：2026-10-18）。
+状态：当前实现（代码核对：2026-10-19）。
+
+## Legacy 结构解析与字段分类
+
+`AutofillStructureParser` 只负责从 Android `AssistStructure` 抽取可编辑字段的静态元数据和值，不判断
+username/password/OTP 语义。`LegacyPlatformAdapter` 将结果映射为平台无关的 `AutofillRequest`，随后仅由
+`HeuristicMatchStrategy` 的规则链分类字段，避免解析层和策略层各维护一套关键词规则。
+
+结构遍历在 Autofill 后台协程中执行，并使用迭代式先序遍历；单次请求最多访问 10,000 个节点、最多下探 64 层，
+避免复杂页面或异常 WebView 造成回调线程卡顿或递归栈溢出。限制不会改变限制范围内的窗口和节点顺序。
+
+提交按钮不作为 Legacy 保存协议的输入。`SaveInfo` 只声明已分类的密码字段、可选用户名字段，并使用
+`FLAG_SAVE_ON_ALL_VIEWS_INVISIBLE` 判断表单离场，因此不恢复无消费方的 `submitId`。
+
+保存草稿不会再以 `roleMap` 或节点的偶然顺序覆盖候选：每种角色优先唯一的聚焦非空字段，否则只接受唯一非空字段。
+多个未聚焦密码候选会拒绝保存；多个未聚焦用户名候选会留空，避免把不同表单的用户名和密码拼成一条凭据。
 
 ## 发现与授权
 

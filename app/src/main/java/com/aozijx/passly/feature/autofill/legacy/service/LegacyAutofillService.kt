@@ -71,15 +71,15 @@ class LegacyAutofillService : AutofillService() {
         cancellationSignal: CancellationSignal,
         callback: FillCallback,
     ) {
-        val parsed = AutofillStructureParser.parse(request.fillContexts)
-        val internalRequest = adapter.buildRequest(parsed)
-
         val job = serviceScope.launch {
             logger.withRootTrace(Operations.AutofillLegacyRequest) {
-                val requestFields = requestFields(internalRequest.packageName)
-                val discoveryStartedAt = monotonicTimeMs()
-                logger.log(LogStatements.Autofill.discoveryStarted(requestFields))
+                var requestFields = LogFields.Empty
                 try {
+                    val parsed = AutofillStructureParser.parse(request.fillContexts)
+                    val internalRequest = adapter.buildRequest(parsed)
+                    requestFields = requestFields(internalRequest.packageName)
+                    val discoveryStartedAt = monotonicTimeMs()
+                    logger.log(LogStatements.Autofill.discoveryStarted(requestFields))
                     val outcome = discoverCandidates(internalRequest)
                     when (outcome) {
                         is AutofillDiscoveryOutcome.Candidates -> {
