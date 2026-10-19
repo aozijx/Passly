@@ -2,10 +2,9 @@ package com.aozijx.passly.presentation.feature.shell
 
 import android.view.Window
 import android.widget.Toast
-import androidx.compose.animation.Crossfade
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.ui.platform.LocalContext
 import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.app.message.model.NoticeCode
@@ -38,11 +37,7 @@ internal fun AppShell(
         }
     }
 
-    Crossfade(
-        targetState = uiState.destination,
-        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
-        label = "auth_transition",
-    ) { destination ->
+    SecureShellDestination(uiState.destination) { destination ->
         when (destination) {
             AppShellDestination.DATABASE_ERROR -> {
                 val databaseState = uiState.databaseState as AppShellDatabaseState.Failed
@@ -69,6 +64,22 @@ internal fun AppShell(
         window = window,
         policy = uiState.windowPolicy,
     )
+}
+
+/**
+ * Switches authentication domains without retaining outgoing sensitive composition.
+ *
+ * Vault content owns a NavHost and graph-scoped ViewModels. Keeping it alive for a visual
+ * crossfade after the secure session changes can recompose it after that NavHost is cleared.
+ */
+@Composable
+internal fun SecureShellDestination(
+    destination: AppShellDestination,
+    content: @Composable (AppShellDestination) -> Unit,
+) {
+    key(destination) {
+        content(destination)
+    }
 }
 
 private const val APP_CLOSE_MESSAGE_DELAY_MS = 1_000L

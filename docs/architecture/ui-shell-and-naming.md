@@ -64,6 +64,10 @@ SharedTransition/AnimatedVisibility 等框架 Scope 只传给真实消费者，�
 Vault 目的地。条目 CRUD、OTP、筛选、页面导航和敏感授权流程不得加入 Shell；这些职责分别留在 Feature、
 导航宿主和安全边界。
 
+Shell 的认证域切换采用 keyed 的即时替换，不对 Vault、认证、恢复或数据库错误内容做根级 `Crossfade`。
+离开 Vault 时必须在下一组合帧释放其 NavHost、图作用域 ViewModel 和敏感 Compose state，不能为了视觉过渡
+保留已失效的 Vault 内容。Vault 内部页面切换仍由 `PasslyNavHost` 的 Navigation 动画负责。
+
 ## Passly、Vault 与 Entry
 
 Passly 是产品名；`vault` 是安全领域概念，不作为面向用户的品牌替代词。
