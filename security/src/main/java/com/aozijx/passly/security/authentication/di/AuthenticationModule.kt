@@ -12,6 +12,7 @@ import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
 import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
+import com.aozijx.passly.domain.access.port.SessionVisibilityController
 import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.security.authentication.BiometricRotationReconciler
 import com.aozijx.passly.security.authentication.DefaultAuthenticationManager
@@ -93,6 +94,12 @@ internal abstract class AuthenticationModule {
     abstract fun bindSessionActivityReporter(
         impl: VaultSessionController,
     ): SessionActivityReporter
+
+    @Binds
+    @Singleton
+    abstract fun bindSessionVisibilityController(
+        impl: VaultSessionController,
+    ): SessionVisibilityController
 
     @Binds
     @Singleton

@@ -28,10 +28,13 @@ import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import com.aozijx.passly.security.lock.LockStateManager
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -45,6 +48,101 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class VaultSessionIdleTimeoutTest {
+    @Test
+    fun `disabling background lock preserves the existing idle timeout`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val databaseSession = YieldingDatabaseSession()
+            val controller = createController(
+                dispatcher = dispatcher,
+                databaseSession = databaseSession,
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(false),
+            )
+
+            runCurrent()
+            controller.transition(AuthenticationState.Authenticated(0L))
+            controller.onAppForeground()
+            advanceTimeBy(500L)
+            controller.onAppBackground()
+            advanceTimeBy(500L)
+            runCurrent()
+
+            assertTrue(databaseSession.softLockCompleted)
+            assertEquals(0, databaseSession.sealCount)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun `background lock waits for configured timeout and is cancelled on foreground return`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val databaseSession = YieldingDatabaseSession()
+            val controller = createController(
+                dispatcher = dispatcher,
+                databaseSession = databaseSession,
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(true),
+            )
+
+            runCurrent()
+            controller.transition(AuthenticationState.Authenticated(0L))
+            controller.onAppBackground()
+            advanceTimeBy(999L)
+            runCurrent()
+
+            assertEquals(0, databaseSession.sealCount)
+
+            controller.onAppForeground()
+            advanceTimeBy(1L)
+            runCurrent()
+
+            assertEquals(0, databaseSession.sealCount)
+            advanceUntilIdle()
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun `foreground return cannot cancel a background seal after timeout elapsed`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val logger = RecordingLogger()
+            val databaseSession = YieldingDatabaseSession(pauseSeal = true)
+            val controller = createController(
+                dispatcher = dispatcher,
+                databaseSession = databaseSession,
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(true),
+                logger = logger,
+            )
+
+            runCurrent()
+            controller.transition(AuthenticationState.Authenticated(0L))
+            controller.onAppBackground()
+            advanceTimeBy(1_000L)
+            runCurrent()
+            databaseSession.sealStarted.await()
+
+            controller.onAppForeground()
+            databaseSession.allowSealToFinish.complete(Unit)
+            runCurrent()
+
+            assertEquals(1, databaseSession.sealCount)
+            assertEquals(0, logger.errorEvents.count { it == Events.Security.LockCompleted })
+            assertEquals(1, logger.infoEvents.count { it == Events.Security.LockCompleted })
+            advanceUntilIdle()
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     @Test
     fun `idle timeout does not cancel its own lock operation or report a false failure`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
@@ -73,6 +171,7 @@ class VaultSessionIdleTimeoutTest {
 
             runCurrent()
             controller.transition(AuthenticationState.Authenticated(0L))
+            controller.onAppForeground()
             controller.onUserInteraction()
             advanceTimeBy(1L)
             runCurrent()
@@ -86,9 +185,40 @@ class VaultSessionIdleTimeoutTest {
         }
     }
 
-    private class YieldingDatabaseSession : DatabaseSessionLifecycle {
+    private fun createController(
+        dispatcher: CoroutineDispatcher,
+        databaseSession: DatabaseSessionLifecycle,
+        timeout: MutableStateFlow<Long>,
+        lockOnBackground: MutableStateFlow<Boolean>,
+        logger: RecordingLogger = RecordingLogger(),
+    ): VaultSessionController {
+        val bootstrap = EmptyVaultBootstrapStore()
+        val dekManager = DekManager(bootstrap, FieldKeyManager(), logger)
+        val sensitiveKeyManager = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher))
+        val lockState = LockStateManager().apply { mark(SecureSessionState.UNLOCKED) }
+        return VaultSessionController(
+            dekManager = dekManager,
+            sensitiveDataKeyManager = sensitiveKeyManager,
+            authorizationPermitRevoker = { },
+            sessionManager = databaseSession,
+            vaultBootstrapStore = bootstrap,
+            lockStateManager = lockState,
+            securityEvents = SecuritySessionEventLogger(logger),
+            idleTimeoutSettings = object : IdleTimeoutSettings {
+                override val isLockOnBackground = lockOnBackground
+                override val lockTimeout = timeout
+            },
+        )
+    }
+
+    private class YieldingDatabaseSession(
+        private val pauseSeal: Boolean = false,
+    ) : DatabaseSessionLifecycle {
         override var lockState: SecureSessionState = SecureSessionState.UNLOCKED
         var softLockCompleted = false
+        var sealCount = 0
+        val sealStarted = CompletableDeferred<Unit>()
+        val allowSealToFinish = CompletableDeferred<Unit>()
 
         override suspend fun unlock(): Throwable? = null
 
@@ -99,6 +229,9 @@ class VaultSessionIdleTimeoutTest {
         }
 
         override suspend fun seal() {
+            sealStarted.complete(Unit)
+            if (pauseSeal) allowSealToFinish.await()
+            sealCount += 1
             lockState = SecureSessionState.SEALED
         }
     }

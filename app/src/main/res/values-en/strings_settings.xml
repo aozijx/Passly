@@ -154,8 +154,8 @@
     <string name="settings_security_invalidate_biometric_key">Invalidate key when biometrics change</string>
     <string name="settings_security_invalidate_biometric_key_disabled">Keep the current key when system enrollment changes</string>
     <string name="settings_security_invalidate_biometric_key_enabled">Re-enable after adding or removing biometrics</string>
-    <string name="settings_security_lock_on_background">Lock immediately</string>
-    <string name="settings_security_lock_on_background_description">Lock after leaving the app</string>
+    <string name="settings_security_lock_on_background">Auto-lock in background</string>
+    <string name="settings_security_lock_on_background_description">Lock after the auto-lock delay while the app is in the background</string>
     <string name="settings_security_protection_section">Security protection</string>
     <string name="settings_security_secure_content">Secure content</string>
     <string name="settings_security_secure_content_description">Block captures and hide recent-app previews</string>

@@ -154,8 +154,8 @@
     <string name="settings_security_invalidate_biometric_key">生物识别变更时销毁密钥</string>
     <string name="settings_security_invalidate_biometric_key_disabled">系统录入变化后仍保留当前密钥</string>
     <string name="settings_security_invalidate_biometric_key_enabled">新增或移除生物识别后，需要重新启用</string>
-    <string name="settings_security_lock_on_background">立即锁定</string>
-    <string name="settings_security_lock_on_background_description">退出应用后锁定</string>
+    <string name="settings_security_lock_on_background">后台自动锁定</string>
+    <string name="settings_security_lock_on_background_description">离开应用达到自动锁定时间后锁定</string>
     <string name="settings_security_protection_section">安全防护</string>
     <string name="settings_security_secure_content">安全防护</string>
     <string name="settings_security_secure_content_description">禁止截屏录屏，隐藏多任务预览</string>

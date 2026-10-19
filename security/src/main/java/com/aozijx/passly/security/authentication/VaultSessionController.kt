@@ -1,33 +1,37 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.runtime.session.SecureSessionState
-import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationRequestId
+import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.LockTrigger
+import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.AuthorizationPermitRevoker
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
 import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
 import com.aozijx.passly.domain.access.port.DatabaseSessionRetryResult
-import com.aozijx.passly.domain.access.port.SessionActivityReporter
-import com.aozijx.passly.domain.access.model.AuthenticationState
-import com.aozijx.passly.domain.access.model.AuthenticationPurpose
-import com.aozijx.passly.domain.access.model.AuthenticationRequestId
-import com.aozijx.passly.domain.access.model.LockReason
-import com.aozijx.passly.domain.access.model.LockTrigger
-import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.access.port.SessionActivityReporter
+import com.aozijx.passly.domain.access.port.SessionVisibilityController
+import com.aozijx.passly.domain.access.port.VaultBootstrapStore
+import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
+import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
+import com.aozijx.passly.runtime.session.SecureSessionState
+import com.aozijx.passly.security.dek.DekUnlockResult
 import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
-import com.aozijx.passly.security.dek.DekUnlockResult
-import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.security.lock.LockStateManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -45,14 +49,19 @@ class VaultSessionController @Inject constructor(
     private val vaultBootstrapStore: VaultBootstrapStore,
     private val lockStateManager: LockStateManager,
     private val securityEvents: SecuritySessionEventLogger,
-    idleTimeoutSettings: com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
-) : SecureSessionAccessState, SessionActivityReporter, DatabaseSessionFailureState, DatabaseSessionRecovery {
+    private val idleTimeoutSettings: IdleTimeoutSettings,
+) : SecureSessionAccessState, SessionActivityReporter, SessionVisibilityController,
+    DatabaseSessionFailureState, DatabaseSessionRecovery {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutex = Mutex()
     private val _state = MutableStateFlow<AuthenticationState>(AuthenticationState.Locked)
     private val _databaseFailure = MutableStateFlow<Throwable?>(null)
     private var idleJob: Job? = null
-    private var timeoutMs = 30_000L
+    private val visibilityMonitor = Any()
+    private var appInForeground = false
+    private var backgroundGeneration = 0L
+    private var backgroundJob: Job? = null
+    private var backgroundLockStarted = false
 
     override val authenticationState: StateFlow<AuthenticationState> = _state.asStateFlow()
     override val databaseFailure: StateFlow<Throwable?> = _databaseFailure.asStateFlow()
@@ -60,10 +69,6 @@ class VaultSessionController @Inject constructor(
     override fun isUnlocked(): Boolean = lockStateManager.isUnlocked()
     override fun isRecoveryMode(): Boolean = _state.value is AuthenticationState.RecoveryMode
     override fun isLocked(): Boolean = lockStateManager.isLocked()
-
-    init {
-        scope.launch { idleTimeoutSettings.lockTimeout.collect { timeoutMs = it } }
-    }
 
     // ============================== 解锁 ==============================
 
@@ -353,15 +358,82 @@ class VaultSessionController @Inject constructor(
     }
 
     override fun onUserInteraction() {
-        if (isUnlocked()) resetIdleTimer()
+        if (isUnlocked() && synchronized(visibilityMonitor) { appInForeground }) resetIdleTimer()
     }
 
     private fun resetIdleTimer() {
         idleJob?.cancel()
+        if (!synchronized(visibilityMonitor) { appInForeground }) {
+            idleJob = null
+            return
+        }
         idleJob = scope.launch {
+            val timeoutMs = idleTimeoutSettings.lockTimeout.first()
             delay(timeoutMs.milliseconds)
             idleJob = null
             lock(SessionLockRequest(LockReason.IDLE_TIMEOUT, LockTrigger.IDLE_TIMER))
+        }
+    }
+
+    override fun onAppForeground() {
+        val pendingJob = synchronized(visibilityMonitor) {
+            appInForeground = true
+            backgroundGeneration += 1
+            if (backgroundLockStarted) null else backgroundJob.also { backgroundJob = null }
+        }
+        pendingJob?.cancel()
+        if (isUnlocked()) resetIdleTimer()
+    }
+
+    override fun onAppBackground() {
+        val previousJob: Job?
+        val generation: Long
+        synchronized(visibilityMonitor) {
+            appInForeground = false
+            backgroundGeneration += 1
+            generation = backgroundGeneration
+            previousJob = if (backgroundLockStarted) null else backgroundJob
+            backgroundJob = null
+            backgroundLockStarted = false
+        }
+        previousJob?.cancel()
+
+        val job = scope.launch {
+            val recoveryMode = isRecoveryMode()
+            if (!recoveryMode && !idleTimeoutSettings.isLockOnBackground.first()) return@launch
+            idleJob?.cancel()
+            idleJob = null
+            val delayMs = if (recoveryMode) 0L else idleTimeoutSettings.lockTimeout.first()
+            delay(delayMs.milliseconds)
+            val shouldLock = synchronized(visibilityMonitor) {
+                if (appInForeground || generation != backgroundGeneration) {
+                    false
+                } else {
+                    backgroundLockStarted = true
+                    true
+                }
+            }
+            if (!shouldLock) return@launch
+
+            try {
+                withContext(NonCancellable) {
+                    lock(SessionLockRequest(LockReason.BACKGROUND, LockTrigger.APP_BACKGROUND))
+                }
+            } finally {
+                synchronized(visibilityMonitor) {
+                    if (generation == backgroundGeneration) {
+                        backgroundJob = null
+                        backgroundLockStarted = false
+                    }
+                }
+            }
+        }
+        synchronized(visibilityMonitor) {
+            if (generation == backgroundGeneration && !appInForeground) {
+                backgroundJob = job
+            } else {
+                job.cancel()
+            }
         }
     }
 
