@@ -2,9 +2,32 @@ package com.aozijx.passly.core.observability
 
 import java.util.UUID
 
-enum class LogLevel { DEBUG, INFO, WARN, ERROR, FATAL }
+enum class LogLevel(val wireId: Int) {
+    DEBUG(0),
+    INFO(1),
+    WARN(2),
+    ERROR(3),
+    FATAL(4),
+    ;
 
-enum class LogCategory { APPLICATION, DATABASE, SECURITY, AUTOFILL, BACKUP }
+    companion object {
+        fun fromWireId(wireId: Int): LogLevel? = entries.firstOrNull { it.wireId == wireId }
+    }
+}
+
+enum class LogCategory(val wireId: Int) {
+    APPLICATION(0),
+    DATABASE(1),
+    SECURITY(2),
+    AUTOFILL(3),
+    BACKUP(4),
+    VAULT(5),
+    ;
+
+    companion object {
+        fun fromWireId(wireId: Int): LogCategory? = entries.firstOrNull { it.wireId == wireId }
+    }
+}
 
 @JvmInline
 value class EventId(val value: String) {
@@ -60,14 +83,19 @@ value class ExceptionType(val value: String) {
     }
 }
 
-enum class ExceptionKind {
-    DATABASE_IO,
-    CRYPTO,
-    AUTHENTICATION,
-    PLATFORM,
-    LIFECYCLE,
-    IO,
-    UNKNOWN,
+enum class ExceptionKind(val wireId: Int) {
+    DATABASE_IO(0),
+    CRYPTO(1),
+    AUTHENTICATION(2),
+    PLATFORM(3),
+    LIFECYCLE(4),
+    IO(5),
+    UNKNOWN(6),
+    ;
+
+    companion object {
+        fun fromWireId(wireId: Int): ExceptionKind? = entries.firstOrNull { it.wireId == wireId }
+    }
 }
 
 @JvmInline
@@ -143,5 +171,6 @@ fun EventKey.category(): LogCategory = when (value.substringBefore('.')) {
     "security" -> LogCategory.SECURITY
     "autofill" -> LogCategory.AUTOFILL
     "backup" -> LogCategory.BACKUP
+    "vault" -> LogCategory.VAULT
     else -> throw IllegalArgumentException("Event category is not registered")
 }

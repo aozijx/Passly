@@ -59,8 +59,8 @@ object LogRecordCodec {
                 out.writeInt(SCHEMA_VERSION)
                 out.writeLong(record.timestampMs)
                 out.writeLong(record.elapsedRealtimeMs)
-                out.writeByte(record.level.ordinal)
-                out.writeByte(record.category.ordinal)
+                out.writeByte(record.level.wireId)
+                out.writeByte(record.category.wireId)
                 out.writeString(record.eventId.value, 64)
                 out.writeString(record.event.value, 96)
                 out.writeString(record.processSessionId.value, 64)
@@ -89,8 +89,10 @@ object LogRecordCodec {
                 require(input.readInt() == SCHEMA_VERSION) { "Unsupported record schema" }
                 val timestampMs = input.readLong()
                 val elapsedRealtimeMs = input.readLong()
-                val level = enumAt<LogLevel>(input.readUnsignedByte(), "level")
-                val category = enumAt<LogCategory>(input.readUnsignedByte(), "category")
+                val level = LogLevel.fromWireId(input.readUnsignedByte())
+                    ?: throw IllegalArgumentException("Invalid level wire id")
+                val category = LogCategory.fromWireId(input.readUnsignedByte())
+                    ?: throw IllegalArgumentException("Invalid category wire id")
                 val eventId = EventId(input.readString(64))
                 val event = EventKey(input.readString(96))
                 require(event in Events.All) { "Unregistered event" }
@@ -172,7 +174,7 @@ object LogRecordCodec {
         writeString(error.reason.value, 64)
         writeBoolean(error.exception != null)
         error.exception?.let { snapshot ->
-            writeByte(snapshot.kind.ordinal)
+            writeByte(snapshot.kind.wireId)
             writeString(snapshot.type.value, 64)
             writeShort(snapshot.appStackFrames.size)
             snapshot.appStackFrames.forEach { writeString(it.value, 256) }
@@ -186,7 +188,8 @@ object LogRecordCodec {
         val code = ErrorCode(readString(64))
         val reason = ReasonCode(readString(64))
         val exception = if (readStrictBoolean()) {
-            val kind = enumAt<ExceptionKind>(readUnsignedByte(), "exception kind")
+            val kind = ExceptionKind.fromWireId(readUnsignedByte())
+                ?: throw IllegalArgumentException("Invalid exception kind wire id")
             val type = ExceptionType(readString(64))
             val frameCount = readUnsignedShort().also { require(it <= MAX_FRAMES) }
             val frames = List(frameCount) { AppStackFrame(readString(256)) }
@@ -232,7 +235,4 @@ object LogRecordCodec {
         else -> throw IllegalArgumentException("Invalid boolean $value")
     }
 
-    private inline fun <reified T : Enum<T>> enumAt(ordinal: Int, label: String): T =
-        enumValues<T>().getOrNull(ordinal)
-            ?: throw IllegalArgumentException("Invalid $label ordinal")
 }

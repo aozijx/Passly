@@ -13,6 +13,7 @@ import com.aozijx.passly.feature.vault.editor.bankcard.CardNetworkMatch
 import com.aozijx.passly.feature.vault.editor.bankcard.CardNumberValidationResult
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryDraftMaterializer
+import com.aozijx.passly.testing.testLogger
 import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,6 +66,7 @@ class AddBankCardViewModelTest {
         entryCommandRepository = NoOpEntryCommandRepository,
         secureSessionAccessState = AuthenticatedSession,
         materializer = EntryDraftMaterializer(),
+        logger = testLogger(),
     )
 
     private object AuthenticatedSession : SecureSessionAccessState {

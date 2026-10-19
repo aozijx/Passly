@@ -1,11 +1,11 @@
 # 日志记录、错误与 Trace
 
-状态：当前实现（代码核对：2026-10-18）。
+状态：当前实现（代码核对：2026-10-19）。
 
 ## Logger 合同
 
 业务层通过注入的 `Logger` 调用 `logger.log(LogStatements.<领域>.<事件>(...))`。当前事件目录覆盖
-Application、Database、Security、Autofill 和 Backup。类型化语句绑定等级、事件、错误码、原因码和允许字段，
+Application、Database、Security、Autofill、Backup 和 Vault。类型化语句绑定等级、事件、错误码、原因码和允许字段，
 调用点不重复导入协议常量。
 
 - `DEBUG`、`INFO` 用于观察和状态转换。
@@ -16,6 +16,20 @@ Application、Database、Security、Autofill 和 Backup。类型化语句绑定�
 错误码和原因码的唯一来源是 `config/observability/error-catalog.json`。Gradle 生成 core 类型、App 用户提示
 resolver 和 `docs/ERROR_CODES.md`。错误码按 Application、Database、Security、Autofill、Backup 分组，但 wire
 值不依赖 Kotlin 枚举名。只有 `USER_ACTIONABLE` 错误能映射本地化提示；UI 不得回退显示原始错误码。
+
+持久化 codec 中的等级、类别和异常类别均使用显式 `wireId`，禁止写入 `enum.ordinal`。已有 ID 在
+schema 1 内保持不变，新增值只能分配未使用 ID，枚举重排不得改变日志协议。
+
+## Vault 写操作
+
+条目创建由 `CreateEntryUseCase` 持有 `vault_entry_create` Span，无论来自编辑器还是 Autofill 保存，均输出
+`vault.entry.create_started`，并以 `vault.entry.create_completed` 或 `vault.entry.create_failed` 结束。允许字段仅为
+`entry_type`、`trigger` 和 `elapsed_ms`；`trigger` 区分 `USER` 与 `AUTOFILL`。不得记录条目 ID、标题、账号、
+密码、URL、SSID、应用包名或草稿内容。
+
+受控 `AppResult.Failure` 保持原返回值并按错误严重级别输出；未包装异常记录原始 `Throwable` 以便底层生成
+脱敏应用栈后再原样抛出；协程取消不记为业务失败。ViewModel、Autofill 适配层和 Repository 不得重复记录
+同一次创建失败。
 
 ## Trace 所有权
 

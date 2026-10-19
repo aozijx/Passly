@@ -37,6 +37,7 @@ class LogcatSink internal constructor(
         LogCategory.SECURITY -> "Passly/Auth"
         LogCategory.AUTOFILL -> "Passly/Autofill"
         LogCategory.BACKUP -> "Passly/Backup"
+        LogCategory.VAULT -> "Passly/Vault"
     }
 
     private fun priorityFor(level: LogLevel): AndroidLogPriority = when (level) {

@@ -3,6 +3,10 @@ package com.aozijx.passly.feature.vault.entry
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.port.AutofillEntryWriter
 import com.aozijx.passly.domain.entry.model.Entry
@@ -17,6 +21,7 @@ import com.aozijx.passly.domain.entry.policy.EntryValidation
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
 class CreateEntryUseCase internal constructor(
     private val entryCommandRepository: EntryCommandRepository,
@@ -25,6 +30,8 @@ class CreateEntryUseCase internal constructor(
     private val autofillEntryWriter: AutofillEntryWriter = UnavailableAutofillEntryWriter,
     private val idFactory: () -> EntryId,
     private val clock: () -> Long,
+    private val logger: Logger,
+    private val monotonicClock: () -> Long,
 ) {
     @Inject
     constructor(
@@ -32,6 +39,7 @@ class CreateEntryUseCase internal constructor(
         secureSessionAccessState: SecureSessionAccessState,
         materializer: EntryDraftMaterializer,
         autofillEntryWriter: AutofillEntryWriter,
+        logger: Logger,
     ) : this(
         entryCommandRepository = entryCommandRepository,
         secureSessionAccessState = secureSessionAccessState,
@@ -39,12 +47,15 @@ class CreateEntryUseCase internal constructor(
         autofillEntryWriter = autofillEntryWriter,
         idFactory = { EntryId(UuidCreator.getTimeOrderedEpoch().toString()) },
         clock = System::currentTimeMillis,
+        logger = logger,
+        monotonicClock = ::monotonicTimeMs,
     )
 
     internal constructor(
         entryCommandRepository: EntryCommandRepository,
         secureSessionAccessState: SecureSessionAccessState,
         materializer: EntryDraftMaterializer,
+        logger: Logger,
     ) : this(
         entryCommandRepository = entryCommandRepository,
         secureSessionAccessState = secureSessionAccessState,
@@ -52,20 +63,62 @@ class CreateEntryUseCase internal constructor(
         autofillEntryWriter = UnavailableAutofillEntryWriter,
         idFactory = { EntryId(UuidCreator.getTimeOrderedEpoch().toString()) },
         clock = System::currentTimeMillis,
+        logger = logger,
+        monotonicClock = ::monotonicTimeMs,
     )
 
-    suspend operator fun invoke(draft: EntryDraft): AppResult<EntryId> {
-        if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
-            return AppResult.Failure(SessionModeRestricted())
-        }
-        return create(draft, entryCommandRepository::createEntry)
-    }
+    suspend operator fun invoke(draft: EntryDraft): AppResult<EntryId> = observeCreate(
+        draft = draft,
+        trigger = EntryCreateTrigger.USER,
+        hasAccess = secureSessionAccessState::hasFullSecureSessionAccess,
+        persist = entryCommandRepository::createEntry,
+    )
 
-    internal suspend fun createFromAutofill(draft: EntryDraft): AppResult<EntryId> {
-        if (!secureSessionAccessState.hasAutofillSessionAccess()) {
-            return AppResult.Failure(SessionModeRestricted())
+    internal suspend fun createFromAutofill(draft: EntryDraft): AppResult<EntryId> = observeCreate(
+        draft = draft,
+        trigger = EntryCreateTrigger.AUTOFILL,
+        hasAccess = secureSessionAccessState::hasAutofillSessionAccess,
+        persist = autofillEntryWriter::create,
+    )
+
+    private suspend fun observeCreate(
+        draft: EntryDraft,
+        trigger: EntryCreateTrigger,
+        hasAccess: () -> Boolean,
+        persist: suspend (Entry) -> AppResult<EntryId>,
+    ): AppResult<EntryId> = logger.inSpan(Operations.VaultEntryCreate) {
+        val entryType = draft.target.type
+        val startedAt = monotonicClock()
+        logger.log(LogStatements.Vault.entryCreateStarted(entryType, trigger))
+        val result = try {
+            if (hasAccess()) {
+                create(draft, persist)
+            } else {
+                AppResult.Failure(SessionModeRestricted())
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            logger.log(
+                LogStatements.Vault.entryCreateFailed(
+                    failure,
+                    entryType,
+                    trigger,
+                    monotonicClock() - startedAt,
+                ),
+            )
+            throw failure
         }
-        return create(draft, autofillEntryWriter::create)
+        val elapsedMs = monotonicClock() - startedAt
+        when (result) {
+            is AppResult.Success -> logger.log(
+                LogStatements.Vault.entryCreateCompleted(entryType, trigger, elapsedMs),
+            )
+            is AppResult.Failure -> logger.log(
+                LogStatements.Vault.entryCreateFailed(result.error, entryType, trigger, elapsedMs),
+            )
+        }
+        result
     }
 
     private suspend fun create(
@@ -94,6 +147,8 @@ class CreateEntryUseCase internal constructor(
         return persist(entry)
     }
 }
+
+private enum class EntryCreateTrigger { USER, AUTOFILL }
 
 private object UnavailableAutofillEntryWriter : AutofillEntryWriter {
     override suspend fun create(

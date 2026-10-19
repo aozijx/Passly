@@ -43,6 +43,12 @@
 | `SCANNER_FAILED` | `SCANNER_PROCESSING_FAILED` | INTERNAL | Scanner processing failed. |
 | `RESOURCE_CLEANUP_FAILED` | `FILE_DELETE_FAILED` | INTERNAL | Confined resource cleanup failed. |
 
+### Vault
+
+| Code | Default reason | Exposure | Description |
+|---|---|---|---|
+| `VAULT_ENTRY_CREATE_FAILED` | `UNKNOWN_FAILURE` | INTERNAL | A vault entry could not be created. |
+
 ## Reasons
 
 | Code | Description |

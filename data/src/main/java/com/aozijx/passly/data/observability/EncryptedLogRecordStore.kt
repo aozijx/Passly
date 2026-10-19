@@ -122,7 +122,7 @@ internal class EncryptedLogRecordStore(
                         val sequence = input.readLong()
                         require(sequence == expected) { "Non-monotonic record sequence" }
                         val level = input.readUnsignedByte()
-                        require(level in LogLevel.entries.indices) { "Invalid record level" }
+                        require(LogLevel.fromWireId(level) != null) { "Invalid record level" }
                         val ciphertext = ByteArray(
                             input.readInt().checkedMax(LogRecordCodec.MAX_RECORD_BYTES + TAG_BYTES),
                         ).also(input::readFully)
@@ -133,7 +133,7 @@ internal class EncryptedLogRecordStore(
                         } finally {
                             plain.fill(0)
                         }
-                        require(record.level.ordinal == level) { "Authenticated level mismatch" }
+                        require(record.level.wireId == level) { "Authenticated level mismatch" }
                         records += record
                         expected++
                         if (records.size == limit) {
@@ -251,7 +251,7 @@ internal class EncryptedLogRecordStore(
                         insideWriteLock()
                         val entry = manager.currentEntry()
                         val sequence = manager.countRecords(entry.file).toLong() + 1
-                        append(entry.file, entry, sequence, record.level.ordinal, plain)
+                        append(entry.file, entry, sequence, record.level.wireId, plain)
                         manager.cleanup()
                     }
                 } finally {
@@ -309,7 +309,7 @@ internal class EncryptedLogRecordStore(
                 val staging = File.createTempFile("${prefix}_${nowMs()}_", ".tmp", directory)
                     .also { stagingFile = it }
                 manager.writeHeader(staging, entry)
-                append(staging, entry, 1, record.level.ordinal, plain)
+                append(staging, entry, 1, record.level.wireId, plain)
                 val completedFile = File(directory, "${staging.nameWithoutExtension}.log")
                 completed.set(staging.renameTo(completedFile))
             } catch (_: Throwable) {

@@ -118,6 +118,13 @@ object Events {
         val ResourceCleanupFailed = EventKey("backup.resource_cleanup.failed")
     }
 
+    object Vault {
+        val Error = EventKey("vault.error.reported")
+        val EntryCreateStarted = EventKey("vault.entry.create_started")
+        val EntryCreateCompleted = EventKey("vault.entry.create_completed")
+        val EntryCreateFailed = EventKey("vault.entry.create_failed")
+    }
+
     val All: Set<EventKey> = setOf(
         Application.Error,
         Application.PreviousProcessExit,
@@ -173,6 +180,10 @@ object Events {
         Autofill.ActionIgnored,
         Backup.Error,
         Backup.ResourceCleanupFailed,
+        Vault.Error,
+        Vault.EntryCreateStarted,
+        Vault.EntryCreateCompleted,
+        Vault.EntryCreateFailed,
     )
 }
 
@@ -195,6 +206,7 @@ object Operations {
     val VaultOtpImport = OperationCode("vault_otp_import")
     val Scanner = OperationCode("scanner")
     val VaultKeyManagement = OperationCode("vault_key_management")
+    val VaultEntryCreate = OperationCode("vault_entry_create")
 }
 
 object LogFieldKeys {
@@ -231,4 +243,5 @@ object LogFieldKeys {
     val DroppedWarnCount = LogFieldKey("dropped_warn_count")
     val DroppedErrorCount = LogFieldKey("dropped_error_count")
     val DroppedFatalCount = LogFieldKey("dropped_fatal_count")
+    val EntryType = LogFieldKey("entry_type")
 }

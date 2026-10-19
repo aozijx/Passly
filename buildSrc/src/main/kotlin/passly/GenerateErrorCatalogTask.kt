@@ -36,7 +36,7 @@ internal object ErrorCatalogParser {
     private val symbolPattern = Regex("^[A-Z][A-Za-z0-9]{1,63}$")
     private val codePattern = Regex("^[A-Z][A-Z0-9_]{2,63}$")
     private val messageKeyPattern = Regex("^[a-z][a-z0-9_]{2,127}$")
-    private val categories = setOf("APPLICATION", "DATABASE", "SECURITY", "AUTOFILL", "BACKUP")
+    private val categories = setOf("APPLICATION", "DATABASE", "SECURITY", "AUTOFILL", "BACKUP", "VAULT")
     private val exposures = setOf("INTERNAL", "USER_ACTIONABLE")
 
     fun parse(file: File): ErrorCatalog {

@@ -13,6 +13,7 @@ import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryDraftMaterializer
+import com.aozijx.passly.testing.testLogger
 import com.aozijx.passly.presentation.feature.vault.editor.EditorSaveEffect
 import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
@@ -163,7 +164,7 @@ class AddWifiViewModelTest {
         repository: EntryCommandRepository,
         session: SecureSessionAccessState = AuthenticatedSession,
     ) = AddWifiViewModel(
-        createEntryUseCase = CreateEntryUseCase(repository, session, EntryDraftMaterializer()),
+        createEntryUseCase = CreateEntryUseCase(repository, session, EntryDraftMaterializer(), testLogger()),
         secureSessionAccessState = session,
     )
 

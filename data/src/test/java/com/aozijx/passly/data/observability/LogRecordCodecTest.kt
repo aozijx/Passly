@@ -30,6 +30,16 @@ import org.junit.Test
 
 class LogRecordCodecTest {
     @Test
+    fun `persisted enum wire ids are explicit stable protocol values`() {
+        assertEquals(0, LogLevel.DEBUG.wireId)
+        assertEquals(4, LogLevel.FATAL.wireId)
+        assertEquals(0, LogCategory.APPLICATION.wireId)
+        assertEquals(5, LogCategory.VAULT.wireId)
+        assertEquals(0, ExceptionKind.DATABASE_IO.wireId)
+        assertEquals(6, ExceptionKind.UNKNOWN.wireId)
+    }
+
+    @Test
     fun `round trip preserves all safe values trace hierarchy and error snapshot`() {
         val record = sampleRecord()
         val encoded = LogRecordCodec.encode(record)

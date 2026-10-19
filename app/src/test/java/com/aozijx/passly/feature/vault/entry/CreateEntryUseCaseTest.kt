@@ -4,6 +4,20 @@ import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.observability.ErrorCode
+import com.aozijx.passly.core.observability.EventKey
+import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.LogFields
+import com.aozijx.passly.core.observability.LogFieldKeys
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.OperationCode
+import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.core.observability.ReasonCode
+import com.aozijx.passly.core.observability.SpanId
+import com.aozijx.passly.core.observability.TraceId
+import com.aozijx.passly.core.observability.TraceResumeResult
+import com.aozijx.passly.core.observability.TraceScope
+import com.aozijx.passly.core.observability.trace.TraceToken
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
@@ -23,6 +37,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -90,6 +105,15 @@ class CreateEntryUseCaseTest {
         assertEquals(EntryVersion.INITIAL, entry.version)
         assertEquals(123L, entry.createdAt)
         assertEquals(123L, entry.updatedAt)
+        assertEquals(
+            listOf(Events.Vault.EntryCreateStarted, Events.Vault.EntryCreateCompleted),
+            fixture.logger.events.map(RecordedLog::event),
+        )
+        assertEquals(listOf(Operations.VaultEntryCreate), fixture.logger.spans)
+        assertEquals(
+            setOf(LogFieldKeys.EntryType, LogFieldKeys.Trigger, LogFieldKeys.ElapsedMs),
+            fixture.logger.events.last().fields.values.keys,
+        )
     }
 
     @Test
@@ -101,6 +125,31 @@ class CreateEntryUseCaseTest {
 
         assertSame(failure, result)
         assertEquals(1, fixture.repository.createCalls)
+        assertEquals(
+            listOf(Events.Vault.EntryCreateStarted, Events.Vault.EntryCreateFailed),
+            fixture.logger.events.map(RecordedLog::event),
+        )
+        assertSame(failure.error, fixture.logger.events.last().throwable)
+    }
+
+    @Test
+    fun repositoryException_isLoggedWithOriginalThrowableAndRethrown() {
+        val failure = IllegalStateException("sensitive message must be sanitized downstream")
+        val fixture = fixture(
+            state = AuthenticationState.Authenticated(1L),
+            repositoryException = failure,
+        )
+
+        val thrown = assertThrows(IllegalStateException::class.java) {
+            runBlocking { fixture.useCase(validLoginDraft()) }
+        }
+
+        assertSame(failure, thrown)
+        assertEquals(
+            listOf(Events.Vault.EntryCreateStarted, Events.Vault.EntryCreateFailed),
+            fixture.logger.events.map(RecordedLog::event),
+        )
+        assertSame(failure, fixture.logger.events.last().throwable)
     }
 
     @Test
@@ -152,8 +201,10 @@ class CreateEntryUseCaseTest {
     private fun fixture(
         state: AuthenticationState,
         repositoryResult: AppResult<EntryId> = AppResult.Success(EntryId("generated-id")),
+        repositoryException: RuntimeException? = null,
     ): Fixture {
-        val repository = RecordingEntryCommandRepository(repositoryResult)
+        val repository = RecordingEntryCommandRepository(repositoryResult, repositoryException)
+        val logger = RecordingLogger()
         var idCalls = 0
         var clockCalls = 0
         val useCase = CreateEntryUseCase(
@@ -162,18 +213,85 @@ class CreateEntryUseCaseTest {
             materializer = EntryDraftMaterializer(),
             idFactory = { idCalls++; EntryId("generated-id") },
             clock = { clockCalls++; 123L },
+            logger = logger,
+            monotonicClock = { 10L },
         )
-        return Fixture(useCase, repository, { idCalls }, { clockCalls })
+        return Fixture(useCase, repository, logger, { idCalls }, { clockCalls })
     }
 
     private class Fixture(
         val useCase: CreateEntryUseCase,
         val repository: RecordingEntryCommandRepository,
+        val logger: RecordingLogger,
         private val idCallCount: () -> Int,
         private val clockCallCount: () -> Int,
     ) {
         val idCalls get() = idCallCount()
         val clockCalls get() = clockCallCount()
+    }
+
+    private data class RecordedLog(
+        val event: EventKey,
+        val fields: LogFields,
+        val throwable: Throwable? = null,
+    )
+
+    private class RecordingLogger : Logger {
+        val events = mutableListOf<RecordedLog>()
+        val spans = mutableListOf<OperationCode>()
+
+        override fun debug(event: EventKey, fields: LogFields) { events += RecordedLog(event, fields) }
+        override fun info(event: EventKey, fields: LogFields) { events += RecordedLog(event, fields) }
+        override fun degraded(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, fields: LogFields) {
+            events += RecordedLog(event, fields)
+        }
+        override fun warn(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) { events += RecordedLog(event, fields, throwable) }
+        override fun error(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) { events += RecordedLog(event, fields, throwable) }
+        override fun fatal(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) { events += RecordedLog(event, fields, throwable) }
+
+        override suspend fun <T> withRootTrace(
+            operation: OperationCode,
+            block: suspend TraceScope.() -> T,
+        ): T = inSpan(operation, block)
+
+        override suspend fun <T> inSpan(
+            operation: OperationCode,
+            block: suspend TraceScope.() -> T,
+        ): T {
+            spans += operation
+            return TestTraceScope.block()
+        }
+
+        override fun captureTraceToken(singleUse: Boolean): TraceToken = error("not used")
+        override suspend fun <T> resumeTrace(
+            token: TraceToken,
+            operation: OperationCode,
+            block: suspend TraceScope.() -> T,
+        ): TraceResumeResult<T> = error("not used")
+    }
+
+    private object TestTraceScope : TraceScope {
+        override val traceId = TraceId("test_trace")
+        override val spanId = SpanId("test_span")
+        override val parentSpanId: SpanId? = null
     }
 
     private class FixedSecureSessionAccessState(state: AuthenticationState) : SecureSessionAccessState {
@@ -184,6 +302,7 @@ class CreateEntryUseCaseTest {
 
     private class RecordingEntryCommandRepository(
         private val createResult: AppResult<EntryId>,
+        private val createException: RuntimeException?,
     ) : EntryCommandRepository {
         var createCalls = 0
         var createdEntry: Entry? = null
@@ -191,6 +310,7 @@ class CreateEntryUseCaseTest {
         override suspend fun createEntry(entry: Entry): AppResult<EntryId> {
             createCalls++
             createdEntry = entry
+            createException?.let { throw it }
             return createResult
         }
 

@@ -83,6 +83,7 @@ object LogStatements {
                 LogCategory.SECURITY -> Events.Security.Error
                 LogCategory.AUTOFILL -> Events.Autofill.Error
                 LogCategory.BACKUP -> Events.Backup.Error
+                LogCategory.VAULT -> Events.Vault.Error
             }
             val fields = fields {
                 enum(LogFieldKeys.ErrorLayer, error.layer)
@@ -556,6 +557,70 @@ object LogStatements {
             throwable,
             LogFields.Empty,
         )
+    }
+
+    object Vault {
+        fun entryCreateStarted(entryType: Enum<*>, trigger: Enum<*>): LogStatement = InfoStatement(
+            Events.Vault.EntryCreateStarted,
+            entryFields(entryType, trigger),
+        )
+
+        fun entryCreateCompleted(
+            entryType: Enum<*>,
+            trigger: Enum<*>,
+            elapsedMs: Long,
+        ): LogStatement = InfoStatement(
+            Events.Vault.EntryCreateCompleted,
+            entryFields(entryType, trigger).withElapsed(elapsedMs),
+        )
+
+        fun entryCreateFailed(
+            error: AppError,
+            entryType: Enum<*>,
+            trigger: Enum<*>,
+            elapsedMs: Long,
+        ): LogStatement {
+            val reason = when (error.code) {
+                "SESSION_MODE_RESTRICTED" -> Reasons.SessionRestricted
+                "VALIDATION_ERROR" -> Reasons.InvalidInput
+                else -> Reasons.UnknownFailure
+            }
+            val fields = entryFields(entryType, trigger).withElapsed(elapsedMs)
+            return when (error.severity) {
+                ErrorSeverity.WARNING -> WarningStatement(
+                    Events.Vault.EntryCreateFailed,
+                    ErrorCodes.Vault.VaultEntryCreateFailed,
+                    reason,
+                    error,
+                    fields,
+                )
+                ErrorSeverity.ERROR -> ErrorStatement(
+                    Events.Vault.EntryCreateFailed,
+                    ErrorCodes.Vault.VaultEntryCreateFailed,
+                    reason,
+                    error,
+                    fields,
+                )
+            }
+        }
+
+        fun entryCreateFailed(
+            throwable: Throwable,
+            entryType: Enum<*>,
+            trigger: Enum<*>,
+            elapsedMs: Long,
+        ): LogStatement = ErrorStatement(
+            Events.Vault.EntryCreateFailed,
+            ErrorCodes.Vault.VaultEntryCreateFailed,
+            Reasons.UnknownFailure,
+            throwable,
+            entryFields(entryType, trigger).withElapsed(elapsedMs),
+        )
+
+        private fun entryFields(entryType: Enum<*>, trigger: Enum<*>): LogFields = fields {
+            enum(LogFieldKeys.EntryType, entryType)
+            enum(LogFieldKeys.Trigger, trigger)
+        }
     }
 
     private fun LogFields.withElapsed(elapsedMs: Long): LogFields =

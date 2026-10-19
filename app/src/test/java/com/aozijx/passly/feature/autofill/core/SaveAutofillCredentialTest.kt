@@ -16,6 +16,7 @@ import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryDraftMaterializer
+import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
@@ -60,8 +61,10 @@ class SaveAutofillCredentialTest {
             secureSessionAccessState = session,
             materializer = EntryDraftMaterializer(),
             autofillEntryWriter = repository,
+            logger = testLogger(),
             idFactory = { EntryId("saved-entry") },
             clock = { 1L },
+            monotonicClock = { 1L },
         )
         return Fixture(
             operation = SaveAutofillCredential(

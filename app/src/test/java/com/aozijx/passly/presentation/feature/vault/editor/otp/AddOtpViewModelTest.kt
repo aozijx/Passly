@@ -17,6 +17,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryDraftMaterializer
+import com.aozijx.passly.testing.testLogger
 import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -83,6 +84,7 @@ class AddOtpViewModelTest {
         entryCommandRepository = NoOpEntryCommandRepository,
         secureSessionAccessState = AuthenticatedSession,
         materializer = EntryDraftMaterializer(),
+        logger = testLogger(),
     )
 
     private object AuthenticatedSession : SecureSessionAccessState {

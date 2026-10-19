@@ -55,6 +55,7 @@ import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import com.aozijx.passly.feature.autofill.runtime.AutofillUnlockLease
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryDraftMaterializer
+import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -250,8 +251,10 @@ class CredentialManagerFlowTest {
                 secureSessionAccessState = vault,
                 materializer = EntryDraftMaterializer(),
                 autofillEntryWriter = commandRepository,
+                logger = testLogger(),
                 idFactory = { EntryId("saved-entry") },
                 clock = { 1L },
+                monotonicClock = { 1L },
             ),
         )
         return Fixture(
