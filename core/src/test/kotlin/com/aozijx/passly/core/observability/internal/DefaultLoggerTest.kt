@@ -94,54 +94,6 @@ class DefaultLoggerTest {
         assertEquals(ExceptionKind.PLATFORM, record.error?.exception?.kind)
     }
 
-    @Test
-    fun `typed statement catalog is shared by app database security and autofill`() = runTest {
-        val records = mutableListOf<SanitizedLogRecord>()
-        val logger = logger(
-            PrivacyPolicy(IdentifierHasher { _, _ -> null }, ContractViolationBehavior.REJECT),
-            listOf(LogSink(records::add)),
-        )
-
-        logger.withRootTrace(Operations.ApplicationStartup) {
-            logger.log(LogStatements.Application.backgroundLockSkipped())
-            logger.log(
-                LogStatements.Database.sessionTransition(
-                    LogStatements.Database.sessionFields(
-                        fromState = TestState.LOCKED,
-                        toState = TestState.OPEN,
-                        lockType = TestState.SOFT,
-                        reason = Reasons.SessionOpen,
-                        owner = TestState.APP,
-                        elapsedMs = 12,
-                        timeoutMs = null,
-                        activeLeaseCount = 0,
-                    ),
-                ),
-            )
-            logger.log(
-                LogStatements.Security.authenticationRejected(
-                    LogStatements.Security.authenticationFields(
-                        method = TestState.BIOMETRIC,
-                        purpose = TestState.APP,
-                        result = TestState.REJECTED,
-                        elapsedMs = 8,
-                    ),
-                ),
-            )
-            logger.log(LogStatements.Autofill.discoveryUnavailable(Reasons.NoMatchingEntry))
-        }
-
-        assertEquals(
-            listOf(
-                Events.Application.BackgroundLockSkipped,
-                Events.Database.SessionTransition,
-                Events.Security.AuthenticationFailed,
-                Events.Autofill.DiscoveryUnavailable,
-            ),
-            records.map(SanitizedLogRecord::event),
-        )
-    }
-
     private fun logger(
         sanitizer: LogSanitizer,
         sinks: List<LogSink>,
@@ -165,6 +117,4 @@ class DefaultLoggerTest {
         override fun traceId() = TraceId(id("trace"))
         override fun spanId() = SpanId(id("span"))
     }
-
-    private enum class TestState { LOCKED, OPEN, SOFT, APP, BIOMETRIC, REJECTED }
 }

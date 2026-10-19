@@ -12,15 +12,49 @@ class ExceptionMapperTest {
 
         assertEquals(
             ExceptionKind.DATABASE_IO,
-            ExceptionMapper.map(ErrorCodes.Database.DatabaseOpenFailed, obfuscatedFailure),
+            ExceptionMapper.map(ErrorCodes.Database.DatabaseOpenFailed, Reasons.DatabaseOpenFailed, obfuscatedFailure),
         )
         assertEquals(
             ExceptionKind.AUTHENTICATION,
-            ExceptionMapper.map(ErrorCodes.Security.AuthenticationFailed, obfuscatedFailure),
+            ExceptionMapper.map(ErrorCodes.Security.AuthenticationFailed, Reasons.AuthenticationFailed, obfuscatedFailure),
         )
         assertEquals(
             ExceptionKind.PLATFORM,
-            ExceptionMapper.map(ErrorCodes.Autofill.AutofillResultDeliveryFailed, obfuscatedFailure),
+            ExceptionMapper.map(
+                ErrorCodes.Autofill.AutofillResultDeliveryFailed,
+                Reasons.PlatformCallbackFailed,
+                obfuscatedFailure,
+            ),
+        )
+    }
+
+    @Test
+    fun `broad error codes use the reason to classify the failing subsystem`() {
+        val failure = RuntimeException("secret")
+
+        assertEquals(
+            ExceptionKind.IO,
+            ExceptionMapper.map(
+                ErrorCodes.Application.ResourceCleanupFailed,
+                Reasons.FileDeleteFailed,
+                failure,
+            ),
+        )
+        assertEquals(
+            ExceptionKind.CRYPTO,
+            ExceptionMapper.map(
+                ErrorCodes.Security.VaultOperationFailed,
+                Reasons.DekVerificationFailed,
+                failure,
+            ),
+        )
+        assertEquals(
+            ExceptionKind.LIFECYCLE,
+            ExceptionMapper.map(
+                ErrorCodes.Security.VaultOperationFailed,
+                Reasons.CallbackFailed,
+                failure,
+            ),
         )
     }
 
@@ -28,15 +62,27 @@ class ExceptionMapperTest {
     fun `unclassified errors use controlled throwable families only`() {
         assertEquals(
             ExceptionKind.CRYPTO,
-            ExceptionMapper.map(ErrorCodes.Application.ApplicationUnhandledException, AEADBadTagException()),
+            ExceptionMapper.map(
+                ErrorCodes.Application.ApplicationUnhandledException,
+                Reasons.UnknownFailure,
+                AEADBadTagException(),
+            ),
         )
         assertEquals(
             ExceptionKind.IO,
-            ExceptionMapper.map(ErrorCodes.Application.ApplicationUnhandledException, IOException("secret")),
+            ExceptionMapper.map(
+                ErrorCodes.Application.ApplicationUnhandledException,
+                Reasons.UnknownFailure,
+                IOException("secret"),
+            ),
         )
         assertEquals(
             ExceptionKind.UNKNOWN,
-            ExceptionMapper.map(ErrorCodes.Application.ApplicationUnhandledException, RuntimeException("secret")),
+            ExceptionMapper.map(
+                ErrorCodes.Application.ApplicationUnhandledException,
+                Reasons.UnknownFailure,
+                RuntimeException("secret"),
+            ),
         )
     }
 }

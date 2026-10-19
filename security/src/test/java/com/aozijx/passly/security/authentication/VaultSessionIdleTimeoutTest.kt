@@ -135,7 +135,7 @@ class VaultSessionIdleTimeoutTest {
             runCurrent()
 
             assertEquals(1, databaseSession.sealCount)
-            assertEquals(0, logger.errorEvents.count { it == Events.Security.LockCompleted })
+            assertEquals(0, logger.errorEvents.count { it == Events.Security.LockFailed })
             assertEquals(1, logger.infoEvents.count { it == Events.Security.LockCompleted })
             advanceUntilIdle()
         } finally {
@@ -178,7 +178,7 @@ class VaultSessionIdleTimeoutTest {
 
             assertTrue(databaseSession.softLockCompleted)
             assertEquals(SecureSessionState.SOFT_LOCKED, lockState.state)
-            assertEquals(0, logger.errorEvents.count { it == Events.Security.LockCompleted })
+            assertEquals(0, logger.errorEvents.count { it == Events.Security.LockFailed })
             assertEquals(1, logger.infoEvents.count { it == Events.Security.LockCompleted })
         } finally {
             Dispatchers.resetMain()

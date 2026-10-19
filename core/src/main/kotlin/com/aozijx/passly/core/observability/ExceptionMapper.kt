@@ -5,7 +5,11 @@ import java.security.GeneralSecurityException
 
 /** Maps failures to a stable diagnostic vocabulary without inspecting exception messages. */
 object ExceptionMapper {
-    fun map(errorCode: ErrorCode, throwable: Throwable): ExceptionKind = when (errorCode) {
+    fun map(
+        errorCode: ErrorCode,
+        reason: ReasonCode,
+        throwable: Throwable,
+    ): ExceptionKind = when (errorCode) {
         ErrorCodes.Database.DatabaseSessionOpenFailed,
         ErrorCodes.Database.DatabaseSessionCloseFailed,
         ErrorCodes.Database.DatabaseOpenFailed,
@@ -16,9 +20,8 @@ object ExceptionMapper {
         ErrorCodes.Security.BiometricPromptFailed,
         -> ExceptionKind.AUTHENTICATION
 
-        ErrorCodes.Security.SecurityLockFailed,
-        ErrorCodes.Application.ResourceCleanupFailed,
-        -> ExceptionKind.LIFECYCLE
+        ErrorCodes.Security.SecurityLockFailed -> ExceptionKind.LIFECYCLE
+        ErrorCodes.Application.ResourceCleanupFailed -> ExceptionKind.IO
 
         ErrorCodes.Autofill.AutofillDiscoveryUnavailable,
         ErrorCodes.Autofill.AutofillResultDeliveryFailed,
@@ -30,7 +33,15 @@ object ExceptionMapper {
         -> ExceptionKind.PLATFORM
 
         ErrorCodes.Application.DiagnosticsExportFailed -> ExceptionKind.IO
-        ErrorCodes.Security.VaultOperationFailed -> ExceptionKind.CRYPTO
+        ErrorCodes.Security.VaultOperationFailed -> when (reason) {
+            Reasons.DekVerificationFailed,
+            Reasons.DekInstallFailed,
+            Reasons.UnlockFailed,
+            -> ExceptionKind.CRYPTO
+            Reasons.AuthenticationFailed -> ExceptionKind.AUTHENTICATION
+            Reasons.CallbackFailed -> ExceptionKind.LIFECYCLE
+            else -> mapThrowableFamily(throwable)
+        }
         else -> mapThrowableFamily(throwable)
     }
 

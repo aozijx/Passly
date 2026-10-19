@@ -111,6 +111,6 @@ internal class DatabaseSessionEventLogger @Inject constructor(
         SessionTransitionReason.SOFT_LOCK -> Reasons.SessionSoftLock
         SessionTransitionReason.SEAL -> Reasons.SessionSeal
         SessionTransitionReason.DRAIN_TIMEOUT -> Reasons.SessionDrainTimeout
-        SessionTransitionReason.CLOSE_FAILED -> Reasons.DatabaseSessionCloseFailed
+        SessionTransitionReason.CLOSE_FAILED -> Reasons.DatabaseResourceCloseFailed
     }
 }

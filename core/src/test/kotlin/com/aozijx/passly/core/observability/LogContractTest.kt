@@ -78,6 +78,4 @@ class LogContractTest {
             )
         }
     }
-
-    private enum class TestSource { LEGACY }
 }

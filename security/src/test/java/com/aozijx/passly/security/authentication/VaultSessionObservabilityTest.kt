@@ -7,6 +7,7 @@ import com.aozijx.passly.core.observability.LogFieldKeys
 import com.aozijx.passly.core.observability.LogLevel
 import com.aozijx.passly.core.observability.LogValue
 import com.aozijx.passly.core.observability.ProcessSessionId
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.core.observability.SanitizedLogRecord
 import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
@@ -22,6 +23,7 @@ import com.aozijx.passly.core.observability.privacy.PrivacyPolicy
 import com.aozijx.passly.core.observability.sink.LogSink
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.CancellationReason
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationRequestId
@@ -30,6 +32,7 @@ import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.model.LockTrigger
 import com.aozijx.passly.domain.access.model.SessionLockRequest
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.CancellationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -107,7 +110,7 @@ class VaultSessionObservabilityTest {
 
         assertSame(failure, thrown)
         val error = records.last()
-        assertEquals(Events.Security.LockCompleted, error.event)
+        assertEquals(Events.Security.LockFailed, error.event)
         assertEquals(LogLevel.ERROR, error.level)
         assertEquals("FAILURE", (error.fields.values[LogFieldKeys.Result] as LogValue.EnumValue).value.value)
         assertEquals("IllegalStateException", error.error!!.exception!!.type.value)
@@ -123,7 +126,7 @@ class VaultSessionObservabilityTest {
         events.traceAuthentication(AuthenticationPurpose.UNLOCK_VAULT, AuthenticationMethod.APP_PASSWORD) { }
 
         assertEquals(
-            listOf(Events.Security.UnlockStarted, Events.Security.UnlockCompleted),
+            listOf(Events.Security.AuthenticationStarted, Events.Security.AuthenticationCompleted),
             records.map(SanitizedLogRecord::event),
         )
         assertEquals(1, records.map { it.trace.traceId }.distinct().size)
@@ -147,13 +150,15 @@ class VaultSessionObservabilityTest {
             SessionLockRequest(LockReason.BACKGROUND, LockTrigger.APP_BACKGROUND),
             timeoutMs = 5_000,
         ) {
-            recordFailure(failure)
+            recordFailure(failure, Reasons.SessionSealFailed)
         }
 
-        val completed = records.last()
-        assertEquals(LogLevel.ERROR, completed.level)
-        assertEquals("FAILURE", (completed.fields.values[LogFieldKeys.Result] as LogValue.EnumValue).value.value)
-        assertEquals("IllegalStateException", completed.error!!.exception!!.type.value)
+        val failed = records.last()
+        assertEquals(Events.Security.LockFailed, failed.event)
+        assertEquals(LogLevel.ERROR, failed.level)
+        assertEquals("FAILURE", (failed.fields.values[LogFieldKeys.Result] as LogValue.EnumValue).value.value)
+        assertEquals("SESSION_SEAL_FAILED", failed.error!!.reason.value)
+        assertEquals("IllegalStateException", failed.error!!.exception!!.type.value)
     }
 
     @Test
@@ -180,6 +185,68 @@ class VaultSessionObservabilityTest {
             (failures.single().fields.values[LogFieldKeys.AuthenticationPurpose] as LogValue.EnumValue).value.value,
         )
         assertFalse(failures.single().toString().contains("credential secret"))
+    }
+
+    @Test
+    fun `controlled authentication rejection has a distinct rejected terminal`() = runTest {
+        val records = mutableListOf<SanitizedLogRecord>()
+        val events = SecuritySessionEventLogger(logger(records))
+
+        events.traceAuthentication(AuthenticationPurpose.AUTOFILL) {
+            AuthenticationResult.Failure(
+                AuthenticationFailure(
+                    AuthenticationFailureCode.CREDENTIAL_INCORRECT,
+                    AuthenticationRequestId("request"),
+                ),
+            )
+        }
+
+        assertEquals(
+            listOf(Events.Security.AuthenticationStarted, Events.Security.AuthenticationRejected),
+            records.map(SanitizedLogRecord::event),
+        )
+        assertEquals(LogLevel.WARN, records.last().level)
+        assertEquals("AUTHENTICATION_REJECTED", records.last().error!!.reason.value)
+    }
+
+    @Test
+    fun `authentication cancellation has a non-error cancelled terminal`() = runTest {
+        val records = mutableListOf<SanitizedLogRecord>()
+        val events = SecuritySessionEventLogger(logger(records))
+
+        events.traceAuthentication(AuthenticationPurpose.AUTOFILL) {
+            AuthenticationResult.Cancelled(CancellationReason.USER)
+        }
+
+        assertEquals(
+            listOf(Events.Security.AuthenticationStarted, Events.Security.AuthenticationCancelled),
+            records.map(SanitizedLogRecord::event),
+        )
+        assertEquals(LogLevel.INFO, records.last().level)
+        assertEquals("CANCELLED", (records.last().fields.values[LogFieldKeys.Result] as LogValue.EnumValue).value.value)
+        assertEquals(null, records.last().error)
+    }
+
+    @Test
+    fun `lock coroutine cancellation has one cancelled terminal and is rethrown`() {
+        val records = mutableListOf<SanitizedLogRecord>()
+        val events = SecuritySessionEventLogger(logger(records))
+
+        assertThrows(CancellationException::class.java) {
+            kotlinx.coroutines.runBlocking {
+                events.traceLock(
+                    SessionLockRequest(LockReason.BACKGROUND, LockTrigger.APP_BACKGROUND),
+                    timeoutMs = 5_000,
+                ) { throw CancellationException("caller cancelled") }
+            }
+        }
+
+        assertEquals(
+            listOf(Events.Security.LockStarted, Events.Security.LockCancelled),
+            records.map(SanitizedLogRecord::event),
+        )
+        assertEquals(LogLevel.INFO, records.last().level)
+        assertEquals(null, records.last().error)
     }
 
     private fun logger(records: MutableList<SanitizedLogRecord>) = DefaultLogger(

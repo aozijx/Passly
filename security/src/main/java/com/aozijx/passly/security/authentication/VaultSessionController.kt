@@ -1,5 +1,6 @@
 package com.aozijx.passly.security.authentication
 
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequestId
 import com.aozijx.passly.domain.access.model.AuthenticationState
@@ -281,7 +282,7 @@ class VaultSessionController @Inject constructor(
             try {
                 sessionManager.seal()
             } catch (failure: Throwable) {
-                recordFailure(failure)
+                recordFailure(failure, Reasons.SessionSealFailed)
             }
         }
         dekManager.lock()
@@ -334,7 +335,7 @@ class VaultSessionController @Inject constructor(
                     try {
                         sessionManager.softLock()
                     } catch (failure: Throwable) {
-                        recordFailure(failure)
+                        recordFailure(failure, Reasons.SessionSoftLockFailed)
                     }
                     lockStateManager.mark(SecureSessionState.SOFT_LOCKED)
                 }
@@ -343,7 +344,7 @@ class VaultSessionController @Inject constructor(
                     try {
                         sessionManager.seal()
                     } catch (failure: Throwable) {
-                        recordFailure(failure)
+                        recordFailure(failure, Reasons.SessionSealFailed)
                     }
                     dekManager.lock()
                     lockStateManager.mark(SecureSessionState.SEALED)

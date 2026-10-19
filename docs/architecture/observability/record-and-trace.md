@@ -13,9 +13,27 @@ Application、Database、Security、Autofill、Backup 和 Vault。类型化语�
 - `warn`、`error`、`fatal` 强制传入 `ErrorCode + ReasonCode + Throwable`。
 - Sink 失败不能改变业务控制流；业务异常与协程取消仍按原实例传播。
 
+操作型事件采用互斥终态，同一 `span_id` 最多输出一个终态：
+
+- `*.started`：操作开始；仅在需要耗时或链路定位时记录。
+- `*.completed`：只表示成功，不能携带 `result=FAILURE/CANCELLED`。
+- `*.failed`：异常失败，必须携带 `error_code + reason_code + exception`。
+- `*.rejected`：输入、凭据或策略被受控拒绝，使用 WARN 和稳定错误/原因码，但没有伪造异常。
+- `*.cancelled`：用户或调用方取消，使用 INFO，不携带错误载荷。
+- `*.skipped/unavailable`：未执行或能力不可用，不得冒充 completed/failed。
+
+Security 的认证事件统一为 `security.authentication.*`，具体用途由 `authentication_purpose` 区分；只有实际
+Vault 状态变化才使用 `security.vault.unlocked`。锁定事件使用 `security.lock.started`，并精确结束为
+`completed`、`failed` 或 `cancelled`，禁止输出 `security.lock.completed + result=FAILURE`。
+
 错误码和原因码的唯一来源是 `config/observability/error-catalog.json`。Gradle 生成 core 类型、App 用户提示
 resolver 和 `docs/ERROR_CODES.md`。错误码按 Application、Database、Security、Autofill、Backup 分组，但 wire
 值不依赖 Kotlin 枚举名。只有 `USER_ACTIONABLE` 错误能映射本地化提示；UI 不得回退显示原始错误码。
+
+错误码表达“哪个稳定操作失败”，原因码表达“为什么失败”。例如 `SECURITY_LOCK_FAILED` 下使用
+`SESSION_SOFT_LOCK_FAILED` 或 `SESSION_SEAL_FAILED`，不得再配同义的 `SECURITY_LOCK_OPERATION_FAILED`。
+异常类别由 `error_code + reason_code + Throwable` 联合映射：文件清理属于 `IO`；Vault DEK 校验属于
+`CRYPTO`；Vault 回调失败属于 `LIFECYCLE`。业务层不得根据混淆后的异常类名推断错误含义。
 
 持久化 codec 中的等级、类别和异常类别均使用显式 `wireId`，禁止写入 `enum.ordinal`。已有 ID 在
 schema 1 内保持不变，新增值只能分配未使用 ID，枚举重排不得改变日志协议。

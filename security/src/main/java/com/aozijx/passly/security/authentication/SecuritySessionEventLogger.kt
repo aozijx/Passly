@@ -13,6 +13,7 @@ import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.model.LockTrigger
 import com.aozijx.passly.domain.access.model.SessionLockRequest
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
 class SecuritySessionEventLogger @Inject internal constructor(
     private val logger: Logger,
@@ -35,7 +36,8 @@ class SecuritySessionEventLogger @Inject internal constructor(
                 if (handledFailure != null) {
                     logger.log(
                         LogStatements.Security.lockFailed(
-                            handledFailure,
+                            handledFailure.throwable,
+                            handledFailure.reason,
                             lockFields(
                                 request,
                                 timeoutMs,
@@ -57,10 +59,23 @@ class SecuritySessionEventLogger @Inject internal constructor(
                     )
                 }
             }
+        } catch (cancelled: CancellationException) {
+            logger.log(
+                LogStatements.Security.lockCancelled(
+                    lockFields(
+                        request,
+                        timeoutMs,
+                        SecurityResult.CANCELLED,
+                        elapsedSince(startedAt),
+                    ),
+                ),
+            )
+            throw cancelled
         } catch (failure: Throwable) {
             logger.log(
                 LogStatements.Security.lockFailed(
                     failure,
+                    Reasons.UnknownFailure,
                     lockFields(
                         request,
                         timeoutMs,
@@ -92,6 +107,18 @@ class SecuritySessionEventLogger @Inject internal constructor(
                     ),
                 )
             }
+        } catch (cancelled: CancellationException) {
+            logger.log(
+                LogStatements.Security.authenticationCancelled(
+                    authenticationFields(
+                        purpose,
+                        method,
+                        SecurityResult.CANCELLED,
+                        elapsedSince(startedAt),
+                    ),
+                ),
+            )
+            throw cancelled
         } catch (failure: Throwable) {
             logger.log(
                 LogStatements.Security.authenticationFailed(
@@ -116,6 +143,18 @@ class SecuritySessionEventLogger @Inject internal constructor(
         )
         val result = try {
             traceScope.block()
+        } catch (cancelled: CancellationException) {
+            logger.log(
+                LogStatements.Security.authenticationCancelled(
+                    LogStatements.Security.authenticationFields(
+                        method = null,
+                        purpose = purpose.toLogPurpose(),
+                        result = SecurityResult.CANCELLED,
+                        elapsedMs = elapsedSince(startedAt),
+                    ),
+                ),
+            )
+            throw cancelled
         } catch (failure: Throwable) {
             logger.log(
                 LogStatements.Security.authenticationFailed(
@@ -145,22 +184,32 @@ class SecuritySessionEventLogger @Inject internal constructor(
         val handledFailure = traceScope.failure
         if (handledFailure != null) {
             logger.log(LogStatements.Security.authenticationFailed(handledFailure, resultFields))
-        } else if (result is AuthenticationResult.Failure) {
-            logger.log(LogStatements.Security.authenticationRejected(resultFields))
         } else {
-            logger.log(LogStatements.Security.authenticationCompleted(resultFields))
+            when (result) {
+                is AuthenticationResult.Success ->
+                    logger.log(LogStatements.Security.authenticationCompleted(resultFields))
+                is AuthenticationResult.Cancelled ->
+                    logger.log(LogStatements.Security.authenticationCancelled(resultFields))
+                is AuthenticationResult.Failure ->
+                    logger.log(LogStatements.Security.authenticationRejected(resultFields))
+            }
         }
         result
     }
 
     class LockTraceScope internal constructor() {
-        internal var failure: Throwable? = null
+        internal var failure: LockFailure? = null
             private set
 
-        fun recordFailure(failure: Throwable) {
-            if (this.failure == null) this.failure = failure
+        fun recordFailure(failure: Throwable, reason: ReasonCode) {
+            if (this.failure == null) this.failure = LockFailure(failure, reason)
         }
     }
+
+    internal data class LockFailure(
+        val throwable: Throwable,
+        val reason: ReasonCode,
+    )
 
     class AuthenticationTraceScope internal constructor() {
         internal var failure: Throwable? = null

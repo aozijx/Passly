@@ -91,6 +91,7 @@ class AppDatabaseSessionObservabilityTest {
         val error = records.first()
         assertEquals(Events.Database.SessionTransitionFailed, error.event)
         assertEquals(LogLevel.ERROR, error.level)
+        assertEquals("DATABASE_RESOURCE_CLOSE_FAILED", error.error!!.reason.value)
         assertEquals("IllegalStateException", error.error!!.exception!!.type.value)
         assertFalse(error.toString().contains("secret"))
 

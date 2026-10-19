@@ -27,7 +27,7 @@
 | Code | Default reason | Exposure | Description |
 |---|---|---|---|
 | `AUTHENTICATION_FAILED` | `AUTHENTICATION_FAILED` | USER_ACTIONABLE | Authentication failed and the user can retry. |
-| `SECURITY_LOCK_FAILED` | `SECURITY_LOCK_OPERATION_FAILED` | INTERNAL | The vault lock operation failed. |
+| `SECURITY_LOCK_FAILED` | `UNKNOWN_FAILURE` | INTERNAL | The vault lock operation failed. |
 | `BIOMETRIC_PROMPT_FAILED` | `AUTHENTICATION_FAILED` | USER_ACTIONABLE | Biometric authentication failed and the user can retry. |
 | `VAULT_OPERATION_FAILED` | `UNKNOWN_FAILURE` | INTERNAL | A protected vault operation failed. |
 
@@ -59,7 +59,7 @@
 | `DATABASE_UNAVAILABLE` | The encrypted database is unavailable. |
 | `NO_MATCHING_ENTRY` | No matching vault entry was discovered. |
 | `PLATFORM_CALLBACK_FAILED` | An Android platform result callback failed. |
-| `DATABASE_SESSION_CLOSE_FAILED` | The database session could not close. |
+| `DATABASE_RESOURCE_CLOSE_FAILED` | The encrypted database resource could not close cleanly. |
 | `AUTHENTICATION_REJECTED` | The authentication result was rejected. |
 | `STORAGE_FAILURE` | A controlled storage operation failed. |
 | `UNKNOWN_FAILURE` | The failure has no narrower safe reason. |
@@ -71,7 +71,8 @@
 | `SESSION_SEAL` | A database session is sealing its material. |
 | `SESSION_DRAIN_TIMEOUT` | Active database leases did not drain before timeout. |
 | `SESSION_CLOSE_FAILED` | A session close operation failed. |
-| `SECURITY_LOCK_OPERATION_FAILED` | A vault lock operation failed. |
+| `SESSION_SOFT_LOCK_FAILED` | The secure session could not enter soft-lock state. |
+| `SESSION_SEAL_FAILED` | The secure session could not seal its protected resources. |
 | `USER` | The user explicitly initiated the operation. |
 | `IDLE_TIMEOUT` | The configured idle timeout elapsed. |
 | `AUTOFILL_REQUEST_FINISHED` | An Autofill request completed its observable lifecycle. |

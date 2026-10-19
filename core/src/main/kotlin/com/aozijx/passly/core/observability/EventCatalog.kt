@@ -79,8 +79,12 @@ object Events {
         val Error = EventKey("security.error.reported")
         val LockStarted = EventKey("security.lock.started")
         val LockCompleted = EventKey("security.lock.completed")
-        val UnlockStarted = EventKey("security.unlock.started")
-        val UnlockCompleted = EventKey("security.unlock.completed")
+        val LockFailed = EventKey("security.lock.failed")
+        val LockCancelled = EventKey("security.lock.cancelled")
+        val AuthenticationStarted = EventKey("security.authentication.started")
+        val AuthenticationCompleted = EventKey("security.authentication.completed")
+        val AuthenticationRejected = EventKey("security.authentication.rejected")
+        val AuthenticationCancelled = EventKey("security.authentication.cancelled")
         val AuthenticationFailed = EventKey("security.authentication.failed")
         val BiometricPromptFailed = EventKey("security.biometric_prompt.failed")
         val VaultInitialized = EventKey("security.vault.initialized")
@@ -153,8 +157,12 @@ object Events {
         Security.Error,
         Security.LockStarted,
         Security.LockCompleted,
-        Security.UnlockStarted,
-        Security.UnlockCompleted,
+        Security.LockFailed,
+        Security.LockCancelled,
+        Security.AuthenticationStarted,
+        Security.AuthenticationCompleted,
+        Security.AuthenticationRejected,
+        Security.AuthenticationCancelled,
         Security.AuthenticationFailed,
         Security.BiometricPromptFailed,
         Security.VaultInitialized,

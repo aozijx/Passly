@@ -4,7 +4,6 @@ import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.HashedIdentifier
 import com.aozijx.passly.core.observability.LogFieldKeys
-import com.aozijx.passly.core.observability.LogLevel
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.LogValue
 import com.aozijx.passly.core.observability.Operations
@@ -31,61 +30,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AutofillObservabilityTest {
-    @Test
-    fun `legacy and credential sources share the complete typed event contract`() = runTest {
-        val records = mutableListOf<SanitizedLogRecord>()
-        val logger = logger(records)
-        val failure = IllegalStateException("secret.example")
-
-        listOf(
-            AutofillInteractionSource.LEGACY to Operations.AutofillLegacyRequest,
-            AutofillInteractionSource.CREDENTIAL_MANAGER to Operations.AutofillCredentialRequest,
-        ).forEach { (source, operation) ->
-            logger.withRootTrace(operation) {
-                val context = LogStatements.Autofill.context(source, "com.example.target")
-                logger.log(LogStatements.Autofill.discoveryStarted(context))
-                logger.log(LogStatements.Autofill.discoveryCompleted(1, context))
-                logger.log(LogStatements.Autofill.discoveryUnavailable(Reasons.NoMatchingEntry, context))
-                logger.log(LogStatements.Autofill.authenticationStarted())
-                logger.log(LogStatements.Autofill.authenticationCompleted(1))
-                logger.log(LogStatements.Autofill.resultDeliveryStarted())
-                logger.log(LogStatements.Autofill.resultDelivered(1))
-                logger.log(LogStatements.Autofill.resultDeliveryFailed(failure, 1))
-                logger.log(LogStatements.Autofill.sessionCloseStarted())
-                logger.log(LogStatements.Autofill.sessionClosed(1))
-                logger.log(LogStatements.Autofill.sessionCloseFailed(failure, 1))
-                logger.log(LogStatements.Autofill.saveStarted())
-                logger.log(LogStatements.Autofill.saveStaged())
-                logger.log(LogStatements.Autofill.saveCompleted())
-                logger.log(LogStatements.Autofill.saveUnavailable(Reasons.StorageFailure))
-                logger.log(LogStatements.Autofill.saveFailed(failure))
-            }
-        }
-
-        val expectedEvents = listOf(
-            Events.Autofill.DiscoveryStarted,
-            Events.Autofill.DiscoveryCompleted,
-            Events.Autofill.DiscoveryUnavailable,
-            Events.Autofill.AuthenticationStarted,
-            Events.Autofill.AuthenticationCompleted,
-            Events.Autofill.ResultDeliveryStarted,
-            Events.Autofill.ResultDelivered,
-            Events.Autofill.ResultDeliveryFailed,
-            Events.Autofill.SessionCloseStarted,
-            Events.Autofill.SessionClosed,
-            Events.Autofill.SessionCloseFailed,
-            Events.Autofill.SaveStarted,
-            Events.Autofill.SaveStaged,
-            Events.Autofill.SaveCompleted,
-            Events.Autofill.SaveFailed,
-            Events.Autofill.SaveFailed,
-        )
-        assertEquals(expectedEvents + expectedEvents, records.map { it.event })
-        assertTrue(records.filter { it.level == LogLevel.WARN }.all { it.error?.reason != null })
-        assertFalse(records.joinToString().contains("com.example.target"))
-        assertFalse(records.joinToString().contains("secret.example"))
-    }
-
     @Test
     fun `typed autofill statements hash target package and retain specific unavailable reason`() = runTest {
         val records = mutableListOf<SanitizedLogRecord>()

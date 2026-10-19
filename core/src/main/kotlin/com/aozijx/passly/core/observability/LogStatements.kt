@@ -322,22 +322,32 @@ object LogStatements {
         fun lockCompleted(fields: LogFields): LogStatement =
             InfoStatement(Events.Security.LockCompleted, fields)
 
-        fun lockFailed(throwable: Throwable, fields: LogFields): LogStatement = ErrorStatement(
-            Events.Security.LockCompleted,
+        fun lockFailed(
+            throwable: Throwable,
+            reason: ReasonCode,
+            fields: LogFields,
+        ): LogStatement = ErrorStatement(
+            Events.Security.LockFailed,
             ErrorCodes.Security.SecurityLockFailed,
-            Reasons.SecurityLockOperationFailed,
+            reason,
             throwable,
             fields,
         )
 
+        fun lockCancelled(fields: LogFields): LogStatement =
+            InfoStatement(Events.Security.LockCancelled, fields)
+
         fun authenticationStarted(fields: LogFields = LogFields.Empty): LogStatement =
-            InfoStatement(Events.Security.UnlockStarted, fields)
+            InfoStatement(Events.Security.AuthenticationStarted, fields)
 
         fun authenticationCompleted(fields: LogFields): LogStatement =
-            InfoStatement(Events.Security.UnlockCompleted, fields)
+            InfoStatement(Events.Security.AuthenticationCompleted, fields)
+
+        fun authenticationCancelled(fields: LogFields): LogStatement =
+            InfoStatement(Events.Security.AuthenticationCancelled, fields)
 
         fun authenticationRejected(fields: LogFields): LogStatement = DegradedStatement(
-            Events.Security.AuthenticationFailed,
+            Events.Security.AuthenticationRejected,
             ErrorCodes.Security.AuthenticationFailed,
             Reasons.AuthenticationRejected,
             fields,

@@ -129,7 +129,7 @@ class PrivacyPolicy(
                 exception = it.throwable?.let { throwable ->
                     exceptionSnapshotFactory.create(
                         throwable = throwable,
-                        kind = ExceptionMapper.map(it.errorCode, throwable),
+                        kind = ExceptionMapper.map(it.errorCode, it.reason, throwable),
                     )
                 },
             )
