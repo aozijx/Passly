@@ -40,7 +40,9 @@
     {"symbol":"DekVerificationFailed","code":"DEK_VERIFICATION_FAILED","description":"The data-encryption-key verification failed."},
     {"symbol":"DekInstallFailed","code":"DEK_INSTALL_FAILED","description":"The data-encryption-key installation failed."},
     {"symbol":"UnlockFailed","code":"UNLOCK_FAILED","description":"The vault unlock operation failed."},
-    {"symbol":"CallbackFailed","code":"CALLBACK_FAILED","description":"A controlled application callback failed."}
+    {"symbol":"CallbackFailed","code":"CALLBACK_FAILED","description":"A controlled application callback failed."},
+    {"symbol":"NotFound","code":"NOT_FOUND","description":"The requested vault object no longer exists."},
+    {"symbol":"Conflict","code":"CONFLICT","description":"The operation conflicted with a newer vault state."}
   ],
   "errors": [
     {"symbol":"AutofillDiscoveryUnavailable","code":"AUTOFILL_DISCOVERY_UNAVAILABLE","default_reason":"NO_MATCHING_ENTRY","category":"AUTOFILL","exposure":"INTERNAL","description":"Autofill discovery could not produce a usable result."},

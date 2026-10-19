@@ -120,12 +120,12 @@ object Events {
 
     object Vault {
         val Error = EventKey("vault.error.reported")
-        val EntryCreateStarted = EventKey("vault.entry.create_started")
-        val EntryCreateCompleted = EventKey("vault.entry.create_completed")
-        val EntryCreateFailed = EventKey("vault.entry.create_failed")
-        val EntryUpdateStarted = EventKey("vault.entry.update_started")
-        val EntryUpdateCompleted = EventKey("vault.entry.update_completed")
-        val EntryUpdateFailed = EventKey("vault.entry.update_failed")
+        val EntryCreateStarted = EventKey("vault.entry.create.started")
+        val EntryCreateCompleted = EventKey("vault.entry.create.completed")
+        val EntryCreateFailed = EventKey("vault.entry.create.failed")
+        val EntryUpdateStarted = EventKey("vault.entry.update.started")
+        val EntryUpdateCompleted = EventKey("vault.entry.update.completed")
+        val EntryUpdateFailed = EventKey("vault.entry.update.failed")
     }
 
     val All: Set<EventKey> = setOf(

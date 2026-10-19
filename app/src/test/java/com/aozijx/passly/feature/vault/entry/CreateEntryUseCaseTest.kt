@@ -4,20 +4,9 @@ import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.core.observability.ErrorCode
-import com.aozijx.passly.core.observability.EventKey
 import com.aozijx.passly.core.observability.Events
-import com.aozijx.passly.core.observability.LogFields
 import com.aozijx.passly.core.observability.LogFieldKeys
-import com.aozijx.passly.core.observability.Logger
-import com.aozijx.passly.core.observability.OperationCode
 import com.aozijx.passly.core.observability.Operations
-import com.aozijx.passly.core.observability.ReasonCode
-import com.aozijx.passly.core.observability.SpanId
-import com.aozijx.passly.core.observability.TraceId
-import com.aozijx.passly.core.observability.TraceResumeResult
-import com.aozijx.passly.core.observability.TraceScope
-import com.aozijx.passly.core.observability.trace.TraceToken
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
@@ -32,6 +21,7 @@ import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
+import com.aozijx.passly.testing.RecordingTestLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
@@ -107,7 +97,7 @@ class CreateEntryUseCaseTest {
         assertEquals(123L, entry.updatedAt)
         assertEquals(
             listOf(Events.Vault.EntryCreateStarted, Events.Vault.EntryCreateCompleted),
-            fixture.logger.events.map(RecordedLog::event),
+            fixture.logger.events.map { it.event },
         )
         assertEquals(listOf(Operations.VaultEntryCreate), fixture.logger.spans)
         assertEquals(
@@ -127,7 +117,7 @@ class CreateEntryUseCaseTest {
         assertEquals(1, fixture.repository.createCalls)
         assertEquals(
             listOf(Events.Vault.EntryCreateStarted, Events.Vault.EntryCreateFailed),
-            fixture.logger.events.map(RecordedLog::event),
+            fixture.logger.events.map { it.event },
         )
         assertSame(failure.error, fixture.logger.events.last().throwable)
     }
@@ -147,7 +137,7 @@ class CreateEntryUseCaseTest {
         assertSame(failure, thrown)
         assertEquals(
             listOf(Events.Vault.EntryCreateStarted, Events.Vault.EntryCreateFailed),
-            fixture.logger.events.map(RecordedLog::event),
+            fixture.logger.events.map { it.event },
         )
         assertSame(failure, fixture.logger.events.last().throwable)
     }
@@ -204,7 +194,7 @@ class CreateEntryUseCaseTest {
         repositoryException: RuntimeException? = null,
     ): Fixture {
         val repository = RecordingEntryCommandRepository(repositoryResult, repositoryException)
-        val logger = RecordingLogger()
+        val logger = RecordingTestLogger()
         var idCalls = 0
         var clockCalls = 0
         val useCase = CreateEntryUseCase(
@@ -222,76 +212,12 @@ class CreateEntryUseCaseTest {
     private class Fixture(
         val useCase: CreateEntryUseCase,
         val repository: RecordingEntryCommandRepository,
-        val logger: RecordingLogger,
+        val logger: RecordingTestLogger,
         private val idCallCount: () -> Int,
         private val clockCallCount: () -> Int,
     ) {
         val idCalls get() = idCallCount()
         val clockCalls get() = clockCallCount()
-    }
-
-    private data class RecordedLog(
-        val event: EventKey,
-        val fields: LogFields,
-        val throwable: Throwable? = null,
-    )
-
-    private class RecordingLogger : Logger {
-        val events = mutableListOf<RecordedLog>()
-        val spans = mutableListOf<OperationCode>()
-
-        override fun debug(event: EventKey, fields: LogFields) { events += RecordedLog(event, fields) }
-        override fun info(event: EventKey, fields: LogFields) { events += RecordedLog(event, fields) }
-        override fun degraded(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, fields: LogFields) {
-            events += RecordedLog(event, fields)
-        }
-        override fun warn(
-            event: EventKey,
-            errorCode: ErrorCode,
-            reason: ReasonCode,
-            throwable: Throwable,
-            fields: LogFields,
-        ) { events += RecordedLog(event, fields, throwable) }
-        override fun error(
-            event: EventKey,
-            errorCode: ErrorCode,
-            reason: ReasonCode,
-            throwable: Throwable,
-            fields: LogFields,
-        ) { events += RecordedLog(event, fields, throwable) }
-        override fun fatal(
-            event: EventKey,
-            errorCode: ErrorCode,
-            reason: ReasonCode,
-            throwable: Throwable,
-            fields: LogFields,
-        ) { events += RecordedLog(event, fields, throwable) }
-
-        override suspend fun <T> withRootTrace(
-            operation: OperationCode,
-            block: suspend TraceScope.() -> T,
-        ): T = inSpan(operation, block)
-
-        override suspend fun <T> inSpan(
-            operation: OperationCode,
-            block: suspend TraceScope.() -> T,
-        ): T {
-            spans += operation
-            return TestTraceScope.block()
-        }
-
-        override fun captureTraceToken(singleUse: Boolean): TraceToken = error("not used")
-        override suspend fun <T> resumeTrace(
-            token: TraceToken,
-            operation: OperationCode,
-            block: suspend TraceScope.() -> T,
-        ): TraceResumeResult<T> = error("not used")
-    }
-
-    private object TestTraceScope : TraceScope {
-        override val traceId = TraceId("test_trace")
-        override val spanId = SpanId("test_span")
-        override val parentSpanId: SpanId? = null
     }
 
     private class FixedSecureSessionAccessState(state: AuthenticationState) : SecureSessionAccessState {

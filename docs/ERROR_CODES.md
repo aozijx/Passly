@@ -94,3 +94,5 @@
 | `DEK_INSTALL_FAILED` | The data-encryption-key installation failed. |
 | `UNLOCK_FAILED` | The vault unlock operation failed. |
 | `CALLBACK_FAILED` | A controlled application callback failed. |
+| `NOT_FOUND` | The requested vault object no longer exists. |
+| `CONFLICT` | The operation conflicted with a newer vault state. |

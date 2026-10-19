@@ -23,7 +23,7 @@ schema 1 内保持不变，新增值只能分配未使用 ID，枚举重排不�
 ## Vault 写操作
 
 条目创建由 `CreateEntryUseCase` 持有 `vault_entry_create` Span，无论来自编辑器还是 Autofill 保存，均输出
-`vault.entry.create_started`，并以 `vault.entry.create_completed` 或 `vault.entry.create_failed` 结束。允许字段仅为
+`vault.entry.create.started`，并以 `vault.entry.create.completed` 或 `vault.entry.create.failed` 结束。允许字段仅为
 `entry_type`、`trigger` 和 `elapsed_ms`；`trigger` 区分 `USER` 与 `AUTOFILL`。不得记录条目 ID、标题、账号、
 密码、URL、SSID、应用包名或草稿内容。
 
@@ -32,7 +32,7 @@ schema 1 内保持不变，新增值只能分配未使用 ID，枚举重排不�
 同一次创建失败。
 
 详情编辑由 `EditDetailEntryUseCase` 持有 `vault_entry_update` Span，输出
-`vault.entry.update_started/completed/failed`。更新事件不记录 Entry ID 或被修改字段的值；成功读取条目类型后
+`vault.entry.update.started/completed/failed`。更新事件不记录 Entry ID 或被修改字段的值；成功读取条目类型后
 才附加 `entry_type`，因此会话受限或条目不存在时不会为了补齐日志字段额外查询数据。一次乐观锁冲突重试仍属于
 同一 Span，只在最终结果处记录一次 completed/failed，避免把内部重试误报成用户可见失败。
 

@@ -1,7 +1,11 @@
 package com.aozijx.passly.core.observability
 
 import com.aozijx.passly.core.error.model.AppError
+import com.aozijx.passly.core.error.model.CONFLICT
 import com.aozijx.passly.core.error.model.ErrorSeverity
+import com.aozijx.passly.core.error.model.NOT_FOUND
+import com.aozijx.passly.core.error.model.SESSION_MODE_RESTRICTED
+import com.aozijx.passly.core.error.model.VALIDATION_ERROR
 import com.aozijx.passly.core.observability.reporting.ErrorReportContext
 import com.aozijx.passly.core.observability.sink.LogDropCounts
 
@@ -667,8 +671,10 @@ object LogStatements {
         }
 
         private fun failureReason(error: AppError): ReasonCode = when (error.code) {
-            "SESSION_MODE_RESTRICTED" -> Reasons.SessionRestricted
-            "VALIDATION_ERROR" -> Reasons.InvalidInput
+            SESSION_MODE_RESTRICTED -> Reasons.SessionRestricted
+            VALIDATION_ERROR -> Reasons.InvalidInput
+            NOT_FOUND -> Reasons.NotFound
+            CONFLICT -> Reasons.Conflict
             else -> Reasons.UnknownFailure
         }
     }
