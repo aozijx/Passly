@@ -11,6 +11,14 @@ Credential Manager response。
 字段时不广告保存。SaveInfo 使用 password data type，有用户名时增加 username type，并设置
 `FLAG_SAVE_ON_ALL_VIEWS_INVISIBLE`。即使没有候选，也可以返回只含 SaveInfo 的 FillResponse。
 
+发现结果只在 `LegacyResponseFactory` 映射一次，同时生成 `FillResponse` 和供 Service 记录日志、继承 interaction
+trace 的 `LegacyDiscoveryObservation`。Service 不再重复解释 `Candidates`、`RequiresUnlock` 等 domain outcome。
+Credential Manager 仍使用自己的 response 合同，不与 Legacy 结果类型合并。
+
+系统候选菜单使用 RemoteViews。业务层先生成 `AutofillRemoteItem.SingleLine/DoubleLine`，渲染器只负责选择对应
+XML 并绑定文字；XML 不包含匹配类型徽标、自定义卡片背景或业务判断。这样候选、解锁入口和选择器入口共享同一
+展示协议，而 domain 候选模型不会泄漏到 Android View 渲染器。
+
 Android 的该 flag 表示所有 required views 不可见时可触发保存，不等同于 Passly 自己持久化或排队凭据。
 `FLAG_DELAY_SAVE` 只把 FillContext 传递到同一 task 的后续 Autofill 请求，不能让 Passly 在未来解锁时主动取回
 一份挂起凭据，因此不是 sealed Inbox 的替代实现。

@@ -3,16 +3,16 @@ package com.aozijx.passly.feature.autofill.legacy.service.builder
 import android.content.Context
 import android.service.autofill.Dataset
 import android.service.autofill.FillResponse
-import android.service.autofill.SaveInfo
 import android.view.autofill.AutofillId
 import com.aozijx.passly.R
+import com.aozijx.passly.core.observability.ReasonCode
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialPayload
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryContext
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.autofill.model.FieldRole
-import com.aozijx.passly.domain.entry.model.query.MatchType
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.legacy.AutofillPendingIntentFactory
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
@@ -27,33 +27,50 @@ class LegacyResponseFactory @Inject constructor(
         context: Context,
         outcome: AutofillDiscoveryOutcome,
         parsed: ParsedStructure,
-    ): FillResponse? = when (outcome) {
+    ): FillResponse? = buildResult(context, outcome, parsed).response
+
+    fun buildResult(
+        context: Context,
+        outcome: AutofillDiscoveryOutcome,
+        parsed: ParsedStructure,
+    ): LegacyResponseBuildResult = when (outcome) {
         AutofillDiscoveryOutcome.Disabled,
-        AutofillDiscoveryOutcome.UnsupportedFields,
-        is AutofillDiscoveryOutcome.Failed,
-        -> null
+        -> unavailable(Reasons.SessionRestricted)
 
-        is AutofillDiscoveryOutcome.RequiresUnlock -> buildUnlockResponse(
-            context,
-            outcome.snapshot.id,
-            outcome.context,
-            parsed,
+        AutofillDiscoveryOutcome.UnsupportedFields -> unavailable(Reasons.NoFillableFields)
+
+        is AutofillDiscoveryOutcome.Failed -> unavailable(Reasons.DatabaseUnavailable)
+
+        is AutofillDiscoveryOutcome.RequiresUnlock -> completed(
+            interactionId = outcome.snapshot.id,
+            response = buildUnlockResponse(
+                context,
+                outcome.snapshot.id,
+                outcome.context,
+                parsed,
+            ),
         )
 
-        is AutofillDiscoveryOutcome.NoCandidates -> buildCandidateResponse(
-            context = context,
-            interactionId = outcome.snapshot.id,
-            candidates = emptyList(),
-            discoveryContext = outcome.context,
-            parsed = parsed,
+        is AutofillDiscoveryOutcome.NoCandidates -> LegacyResponseBuildResult(
+            response = buildCandidateResponse(
+                context = context,
+                interactionId = outcome.snapshot.id,
+                candidates = emptyList(),
+                discoveryContext = outcome.context,
+                parsed = parsed,
+            ),
+            observation = LegacyDiscoveryObservation.Unavailable(Reasons.NoMatchingEntry),
         )
 
-        is AutofillDiscoveryOutcome.Candidates -> buildCandidateResponse(
-            context = context,
+        is AutofillDiscoveryOutcome.Candidates -> completed(
             interactionId = outcome.snapshot.id,
-            candidates = outcome.candidates,
-            discoveryContext = outcome.context,
-            parsed = parsed,
+            response = buildCandidateResponse(
+                context = context,
+                interactionId = outcome.snapshot.id,
+                candidates = outcome.candidates,
+                discoveryContext = outcome.context,
+                parsed = parsed,
+            ),
         )
     }
 
@@ -96,7 +113,10 @@ class LegacyResponseFactory @Inject constructor(
             builder,
             parsed.allIds.toTypedArray(),
             pendingIntent.intentSender,
-            AutofillRemoteViewFactory.createUnlockTrigger(context),
+            AutofillRemoteViewFactory.render(
+                context,
+                AutofillRemoteItem.SingleLine(context.getString(R.string.vault_locked_title)),
+            ),
         )
         addSaveInfo(builder, discoveryContext, parsed)
         return builder.build()
@@ -148,20 +168,7 @@ class LegacyResponseFactory @Inject constructor(
         discoveryContext: AutofillDiscoveryContext,
         parsed: ParsedStructure,
     ): Boolean {
-        if (!discoveryContext.savePromptsEnabled) return false
-        val plan = LegacySaveInfoPolicy.plan(discoveryContext.roleMap) ?: return false
-        val idByString = parsed.editableFields.associate { it.autofillId.toString() to it.autofillId }
-        val requiredPasswordIds = plan.requiredPasswordFieldIds.mapNotNull(idByString::get)
-        if (requiredPasswordIds.isEmpty()) return false
-        val optionalUsernameIds = plan.optionalUsernameFieldIds.mapNotNull(idByString::get)
-        val dataTypes = SaveInfo.SAVE_DATA_TYPE_PASSWORD or
-            if (optionalUsernameIds.isNotEmpty()) SaveInfo.SAVE_DATA_TYPE_USERNAME else 0
-        val saveInfo = SaveInfo.Builder(dataTypes, requiredPasswordIds.toTypedArray()).apply {
-            if (optionalUsernameIds.isNotEmpty()) {
-                setOptionalIds(optionalUsernameIds.toTypedArray())
-            }
-            setFlags(SaveInfo.FLAG_SAVE_ON_ALL_VIEWS_INVISIBLE)
-        }.build()
+        val saveInfo = LegacySaveInfoFactory.create(discoveryContext, parsed) ?: return false
         builder.setSaveInfo(saveInfo)
         return true
     }
@@ -175,11 +182,13 @@ class LegacyResponseFactory @Inject constructor(
         parsed: ParsedStructure,
         roleIds: Map<FieldRole, List<AutofillId>>,
     ) {
-        val presentation = AutofillRemoteViewFactory.createDatasetItem(
-            context = context,
-            candidate = candidate,
-            badge = buildBadge(context, candidate),
-        )
+        val subtitle = candidate.entry.username.trim()
+        val item = if (subtitle.isEmpty()) {
+            AutofillRemoteItem.SingleLine(candidate.entry.title)
+        } else {
+            AutofillRemoteItem.DoubleLine(candidate.entry.title, subtitle)
+        }
+        val presentation = AutofillRemoteViewFactory.render(context, item)
         val intent = pendingIntentFactory.createCandidateIntent(
             context = context,
             interactionId = interactionId,
@@ -220,7 +229,20 @@ class LegacyResponseFactory @Inject constructor(
             builder,
             parsed.allIds.toTypedArray(),
             pendingIntent.intentSender,
-            AutofillRemoteViewFactory.createBottomSheetTrigger(context, candidateCount),
+            AutofillRemoteViewFactory.render(
+                context,
+                AutofillRemoteItem.DoubleLine(
+                    title = context.getString(
+                        R.string.autofill_prompt_title,
+                        context.getString(R.string.app_name),
+                    ),
+                    subtitle = context.resources.getQuantityString(
+                        R.plurals.autofill_trigger_count,
+                        candidateCount,
+                        candidateCount,
+                    ),
+                ),
+            ),
         )
     }
 
@@ -235,11 +257,16 @@ class LegacyResponseFactory @Inject constructor(
         ).mapValues { (_, ids) -> ids.filterNotNull() }
     }
 
-    private fun buildBadge(context: Context, candidate: AutofillCandidateSummary): String =
-        when (candidate.match.type) {
-            MatchType.APPLICATION_ID -> context.getString(R.string.autofill_badge_app)
-            MatchType.WEB_DOMAIN -> context.getString(R.string.autofill_badge_website)
-            else -> ""
-        }
+    private fun unavailable(reason: ReasonCode) = LegacyResponseBuildResult(
+        response = null,
+        observation = LegacyDiscoveryObservation.Unavailable(reason),
+    )
 
+    private fun completed(
+        interactionId: AutofillInteractionId,
+        response: FillResponse?,
+    ) = LegacyResponseBuildResult(
+        response = response,
+        observation = LegacyDiscoveryObservation.Completed(interactionId),
+    )
 }

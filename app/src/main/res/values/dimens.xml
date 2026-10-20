@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 自动填充条目的圆角 -->
-    <dimen name="autofill_item_corner_radius">16dp</dimen>
-
-    <!-- 自动填充徽标的圆角 -->
-    <dimen name="autofill_badge_corner_radius">8dp</dimen>
+    <dimen name="autofill_remote_item_min_height">56dp</dimen>
+    <dimen name="autofill_remote_item_horizontal_padding">12dp</dimen>
+    <dimen name="autofill_remote_item_single_vertical_padding">14dp</dimen>
+    <dimen name="autofill_remote_item_double_vertical_padding">8dp</dimen>
+    <dimen name="autofill_remote_item_text_spacing">2dp</dimen>
+    <dimen name="autofill_remote_item_title_text_size">15sp</dimen>
+    <dimen name="autofill_remote_item_subtitle_text_size">12sp</dimen>
 </resources>

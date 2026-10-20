@@ -3,9 +3,13 @@ package com.aozijx.passly.feature.autofill.legacy
 import android.content.Context
 import android.content.Intent
 import android.view.View
+import android.widget.FrameLayout
+import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SdkSuppress
+import com.aozijx.passly.R
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryContext
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
@@ -16,12 +20,16 @@ import com.aozijx.passly.domain.autofill.model.AutofillInteractionState
 import com.aozijx.passly.domain.autofill.model.AutofillOperationFailure
 import com.aozijx.passly.domain.autofill.model.FieldRole
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
+import com.aozijx.passly.feature.autofill.legacy.service.builder.AutofillRemoteItem
+import com.aozijx.passly.feature.autofill.legacy.service.builder.AutofillRemoteViewFactory
+import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyDiscoveryObservation
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseFactory
 import com.aozijx.passly.feature.autofill.legacy.service.parser.EditableFieldInfo
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
-import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertNotNull
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -49,7 +57,7 @@ class LegacyResponseFactoryInstrumentedTest {
             editableFields = listOf(EditableFieldInfo(passwordId)),
         )
 
-        val response = factory.buildFillResponse(
+        val result = factory.buildResult(
             context,
             AutofillDiscoveryOutcome.NoCandidates(
                 snapshot(),
@@ -58,7 +66,11 @@ class LegacyResponseFactoryInstrumentedTest {
             parsed,
         )
 
-        assertNotNull(response)
+        assertNotNull(result.response)
+        assertEquals(
+            LegacyDiscoveryObservation.Unavailable(Reasons.NoMatchingEntry),
+            result.observation,
+        )
     }
 
     @Test
@@ -95,6 +107,42 @@ class LegacyResponseFactoryInstrumentedTest {
                 AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.CANDIDATE_QUERY_FAILED),
                 parsed,
             ),
+        )
+    }
+
+    @Test
+    fun remoteItemRendererUsesTheShapeDeclaredByItsPresentationModel() {
+        val parent = FrameLayout(context)
+
+        val single = AutofillRemoteViewFactory.render(
+            context,
+            AutofillRemoteItem.SingleLine("Locked"),
+        ).apply(context, parent)
+        val double = AutofillRemoteViewFactory.render(
+            context,
+            AutofillRemoteItem.DoubleLine("Passly", "2 accounts"),
+        ).apply(context, parent)
+
+        assertEquals("Locked", single.findViewById<TextView>(R.id.item_title).text)
+        assertNull(single.findViewById<TextView?>(R.id.item_subtitle))
+        assertEquals("Passly", double.findViewById<TextView>(R.id.item_title).text)
+        assertEquals("2 accounts", double.findViewById<TextView>(R.id.item_subtitle).text)
+    }
+
+    @Test
+    fun responseBuildResultCarriesOneSemanticDiscoveryObservation() {
+        val parsed = ParsedStructure()
+
+        val result = factory.buildResult(
+            context,
+            AutofillDiscoveryOutcome.Disabled,
+            parsed,
+        )
+
+        assertNull(result.response)
+        assertEquals(
+            LegacyDiscoveryObservation.Unavailable(Reasons.SessionRestricted),
+            result.observation,
         )
     }
 

@@ -1,11 +1,11 @@
 package com.aozijx.passly.feature.autofill.legacy.service.adapter
 
 import android.content.Context
-import android.service.autofill.FillResponse
 import com.aozijx.passly.domain.autofill.model.AutofillField
-import com.aozijx.passly.domain.autofill.model.AutofillRequest
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
+import com.aozijx.passly.domain.autofill.model.AutofillRequest
 import com.aozijx.passly.domain.autofill.model.AutofillSource
+import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseBuildResult
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseFactory
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 import javax.inject.Inject
@@ -42,9 +42,9 @@ class LegacyPlatformAdapter @Inject constructor(
         )
     }
 
-    fun buildResponse(
+    fun buildResponseResult(
         outcome: AutofillDiscoveryOutcome,
         parsed: ParsedStructure,
         context: Context,
-    ): FillResponse? = responseFactory.buildFillResponse(context, outcome, parsed)
+    ): LegacyResponseBuildResult = responseFactory.buildResult(context, outcome, parsed)
 }

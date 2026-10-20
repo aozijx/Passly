@@ -54,8 +54,6 @@
     <!-- Autofill 服务相关 -->
     <plurals name="autofill_entry_compact_summary"><item quantity="other">找到 %d 个可填充账号</item></plurals>
     <string name="autofill_prompt_title">使用 %1$s 自动填充</string>
-    <string name="autofill_badge_app">应用</string>
-    <string name="autofill_badge_website">网站</string>
     <string name="select">选择</string>
     <plurals name="autofill_trigger_count">
         <item quantity="other">找到 %d 个匹配账号 · 点击选择</item>

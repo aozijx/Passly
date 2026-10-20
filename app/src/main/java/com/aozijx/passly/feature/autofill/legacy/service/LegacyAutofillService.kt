@@ -14,7 +14,6 @@ import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
-import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
@@ -22,6 +21,7 @@ import com.aozijx.passly.feature.autofill.legacy.LegacySaveFlow
 import com.aozijx.passly.feature.autofill.legacy.LegacySavePendingIntentFactory
 import com.aozijx.passly.feature.autofill.legacy.LegacySavePreparation
 import com.aozijx.passly.feature.autofill.legacy.service.adapter.LegacyPlatformAdapter
+import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyDiscoveryObservation
 import com.aozijx.passly.feature.autofill.legacy.service.parser.AutofillStructureParser
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
@@ -81,50 +81,25 @@ class LegacyAutofillService : AutofillService() {
                     val discoveryStartedAt = monotonicTimeMs()
                     logger.log(LogStatements.Autofill.discoveryStarted(requestFields))
                     val outcome = discoverCandidates(internalRequest)
-                    when (outcome) {
-                        is AutofillDiscoveryOutcome.Candidates -> {
-                            traceContinuations.capture(outcome.snapshot.id.value)
-                            logger.log(
-                                LogStatements.Autofill.discoveryCompleted(
-                                    monotonicTimeMs() - discoveryStartedAt,
-                                    requestFields,
-                                ),
-                            )
-                        }
-                        is AutofillDiscoveryOutcome.RequiresUnlock -> {
-                            traceContinuations.capture(outcome.snapshot.id.value)
-                            logger.log(
-                                LogStatements.Autofill.discoveryCompleted(
-                                    monotonicTimeMs() - discoveryStartedAt,
-                                    requestFields,
-                                ),
-                            )
-                        }
-                        is AutofillDiscoveryOutcome.NoCandidates -> logger.log(
-                            LogStatements.Autofill.discoveryUnavailable(
-                                Reasons.NoMatchingEntry,
-                                requestFields,
-                            ),
-                        )
-                        AutofillDiscoveryOutcome.Disabled -> logDiscoveryUnavailable(
-                            Reasons.SessionRestricted,
-                            requestFields,
-                        )
-                        AutofillDiscoveryOutcome.UnsupportedFields -> logDiscoveryUnavailable(
-                            Reasons.NoFillableFields,
-                            requestFields,
-                        )
-                        is AutofillDiscoveryOutcome.Failed -> logDiscoveryUnavailable(
-                            Reasons.DatabaseUnavailable,
-                            requestFields,
-                        )
-                    }
-                    val fillResponse = adapter.buildResponse(
+                    val result = adapter.buildResponseResult(
                         outcome = outcome,
                         parsed = parsed,
                         context = this@LegacyAutofillService,
                     )
-                    callback.onSuccess(fillResponse)
+                    when (val observation = result.observation) {
+                        is LegacyDiscoveryObservation.Completed -> {
+                            traceContinuations.capture(observation.interactionId.value)
+                            logger.log(
+                                LogStatements.Autofill.discoveryCompleted(
+                                    monotonicTimeMs() - discoveryStartedAt,
+                                    requestFields,
+                                ),
+                            )
+                        }
+                        is LegacyDiscoveryObservation.Unavailable ->
+                            logDiscoveryUnavailable(observation.reason, requestFields)
+                    }
+                    callback.onSuccess(result.response)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
