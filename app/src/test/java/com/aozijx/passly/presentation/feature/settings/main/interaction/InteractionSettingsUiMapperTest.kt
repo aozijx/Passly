@@ -9,7 +9,7 @@ class InteractionSettingsUiMapperTest {
 
     @Test
     fun `maps swipe actions across feature and ui boundary`() {
-        val result = InteractionSettingsUiState(
+        val result = InteractionSettingsUiState.Ready(
             isSwipeEnabled = true,
             isPullToSearchEnabled = false,
             swipeLeftAction = SwipeActionType.DELETE,

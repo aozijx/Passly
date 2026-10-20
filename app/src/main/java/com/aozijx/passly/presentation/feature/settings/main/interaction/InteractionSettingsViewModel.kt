@@ -22,7 +22,7 @@ class InteractionSettingsViewModel @Inject constructor(
 
     val uiState: StateFlow<InteractionSettingsUiState> = settingsRepository.interaction
         .map { settings ->
-            InteractionSettingsUiState(
+            InteractionSettingsUiState.Ready(
                 isSwipeEnabled = settings.isSwipeEnabled,
                 isPullToSearchEnabled = settings.isPullToSearchEnabled,
                 swipeLeftAction = settings.swipeLeftAction,
@@ -32,7 +32,7 @@ class InteractionSettingsViewModel @Inject constructor(
         .stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000L),
-            InteractionSettingsUiState(),
+            InteractionSettingsUiState.Loading,
         )
 
     private val _effects = Channel<InteractionSettingsEffect>(Channel.BUFFERED)
