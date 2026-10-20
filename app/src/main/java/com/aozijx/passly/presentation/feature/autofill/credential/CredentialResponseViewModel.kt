@@ -113,7 +113,7 @@ class CredentialResponseViewModel @Inject constructor(
                             ),
                         )
                         traceContinuations.capture(request.interactionId.value)
-                        complete(
+                        completeCommittedSelection(
                             CredentialResponseFactory.buildPasswordResponse(
                                 result.username,
                                 result.password,
@@ -170,7 +170,7 @@ class CredentialResponseViewModel @Inject constructor(
                             ),
                         )
                         traceContinuations.capture(request.interactionId.value)
-                        complete(intent)
+                        completeImmediately(intent)
                     }
 
                     is CredentialUnlockResponse.NotAuthorized -> {
@@ -236,7 +236,7 @@ class CredentialResponseViewModel @Inject constructor(
                         )
                         logger.log(LogStatements.Autofill.saveCompleted())
                         traceContinuations.discard(request.interactionId.value)
-                        complete(CredentialResponseFactory.buildPasswordCreateResponse())
+                        completeImmediately(CredentialResponseFactory.buildPasswordCreateResponse())
                     }
 
                     CredentialManagerCreateResult.NotSaved -> {
@@ -279,7 +279,7 @@ class CredentialResponseViewModel @Inject constructor(
                 } catch (error: Exception) {
                     logger.log(LogStatements.Autofill.discoveryFailed(error))
                     cancelTrackedInteraction()
-                    complete(failureIntent(error))
+                    completeImmediately(failureIntent(error))
                 }
             }
         }
@@ -294,22 +294,35 @@ class CredentialResponseViewModel @Inject constructor(
         }
     }
 
-    private fun complete(
+    private fun completeImmediately(
         resultIntent: Intent,
-        receipt: AutofillSelectionReceipt? = null,
     ) {
         mutableState.value = CredentialResponseReducer.reduce(
             mutableState.value,
-            CredentialResponseMutation.Completed(resultIntent, receipt),
+            CredentialResponseMutation.Completed(
+                CredentialResponseCompletion.Immediate(resultIntent),
+            ),
+        )
+    }
+
+    private fun completeCommittedSelection(
+        resultIntent: Intent,
+        receipt: AutofillSelectionReceipt,
+    ) {
+        mutableState.value = CredentialResponseReducer.reduce(
+            mutableState.value,
+            CredentialResponseMutation.Completed(
+                CredentialResponseCompletion.CommittedSelection(resultIntent, receipt),
+            ),
         )
     }
 
     private fun completeGetError(exception: GetCredentialException) {
-        complete(CredentialResponseFactory.buildGetException(exception))
+        completeImmediately(CredentialResponseFactory.buildGetException(exception))
     }
 
     private fun completeCreateError(exception: CreateCredentialException) {
-        complete(CredentialResponseFactory.buildCreateException(exception))
+        completeImmediately(CredentialResponseFactory.buildCreateException(exception))
     }
 
     private suspend fun cancelTrackedInteraction() {

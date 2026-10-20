@@ -36,4 +36,28 @@ class AutofillFillReducerTest {
 
         assertEquals("Entry not found", (result as AutofillFillUiState.Error).message)
     }
+
+    @Test
+    fun `non candidate workflow states render an explicit hidden display state`() {
+        val states = listOf(
+            AutofillFillUiState.Initial,
+            AutofillFillUiState.Loading,
+            AutofillFillUiState.Result(AutofillFillResult.Cancelled),
+            AutofillFillUiState.Error("failed"),
+        )
+
+        states.forEach { state ->
+            assertSame(AutofillFillDisplayState.Hidden, state.toDisplayState())
+        }
+    }
+
+    @Test
+    fun `candidate workflow state exposes candidates through display state`() {
+        val display = AutofillFillUiState.ShowCandidates(emptyList()).toDisplayState()
+
+        assertEquals(
+            AutofillFillDisplayState.Candidates(emptyList()),
+            display,
+        )
+    }
 }

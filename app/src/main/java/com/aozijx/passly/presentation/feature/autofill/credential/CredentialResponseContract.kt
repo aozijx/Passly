@@ -3,10 +3,18 @@ package com.aozijx.passly.presentation.feature.autofill.credential
 import android.content.Intent
 import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 
-data class CredentialResponseCompletion(
-    val resultIntent: Intent,
-    val receipt: AutofillSelectionReceipt? = null,
-)
+sealed interface CredentialResponseCompletion {
+    val resultIntent: Intent
+
+    data class Immediate(
+        override val resultIntent: Intent,
+    ) : CredentialResponseCompletion
+
+    data class CommittedSelection(
+        override val resultIntent: Intent,
+        val receipt: AutofillSelectionReceipt,
+    ) : CredentialResponseCompletion
+}
 
 sealed class CredentialResponseUiState {
     data object Loading : CredentialResponseUiState()

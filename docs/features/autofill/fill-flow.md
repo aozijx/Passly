@@ -1,6 +1,6 @@
 # Autofill 共享填充流程
 
-状态：当前实现（代码核对：2026-10-19）。
+状态：当前实现（代码核对：2026-10-20）。
 
 ## Legacy 结构解析与字段分类
 
@@ -36,6 +36,14 @@ interaction。并发授权合并为一次认证；成功后重新发现或最终
 请求需要 OTP 时，才沿 `OTP_FOR` 关系读取独立加密 secret 并生成验证码。
 
 ## 结果与关闭顺序
+
+Legacy Activity 的输入解析和领域请求映射分别由 `AutofillFillRequestParser`、`AutofillFillRequestMapping` 负责；
+Activity 只编排平台结果，ViewModel 只编排授权、发现和选择。Legacy 结果用 `DiscoveryResponse`、
+`SelectedResponse`、`SelectedDataset`、`Cancelled` 明确区分，不使用 nullable receipt 猜测是否需要关闭临时会话。
+Credential Manager 同样用 `Immediate` 与 `CommittedSelection` 区分普通平台响应和已选择凭据。
+
+Compose 路由将工作流状态映射为显式的 `Hidden` 或 `Candidates` 显示状态；终态提交属于独立副作用，不再通过
+nullable 候选列表或组合函数提前返回表达“当前不显示 UI”。
 
 平台 Activity 必须在 `AutofillResultDelivery.commitResult` 的提交回调内连续执行 `setResult` 和 `finish`；仅调用
 `setResult` 只是保存待返回值，不表示 Android 已收到结果。提交开始即关闭本轮 lease 的借用窗口，`finish` 返回后才在

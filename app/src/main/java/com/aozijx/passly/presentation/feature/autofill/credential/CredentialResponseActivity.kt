@@ -94,19 +94,18 @@ class CredentialResponseActivity : AppCompatActivity() {
         if (!resultFinishing.compareAndSet(false, true)) return
         // PendingIntentHandler requires RESULT_OK for both valid responses and
         // valid Credential Manager exceptions.
-        val receipt = completion.receipt
-        if (receipt == null) {
-            setResult(RESULT_OK, completion.resultIntent)
-        } else {
-            resultDelivery.commitResult(receipt) {
+        when (completion) {
+            is CredentialResponseCompletion.Immediate -> {
                 setResult(RESULT_OK, completion.resultIntent)
                 hideIme()
                 finish()
             }
-        }
-        if (receipt == null) {
-            hideIme()
-            finish()
+            is CredentialResponseCompletion.CommittedSelection ->
+                resultDelivery.commitResult(completion.receipt) {
+                    setResult(RESULT_OK, completion.resultIntent)
+                    hideIme()
+                    finish()
+                }
         }
     }
 

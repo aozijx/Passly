@@ -17,7 +17,7 @@ import org.junit.Test
 class CredentialResponseReducerTest {
 
     @Test
-    fun `successful password response retains its delivery receipt`() {
+    fun `selected password response requires committed selection delivery`() {
         val intent = Intent()
         val receipt = AutofillSelectionReceipt(
             AutofillInteractionId("interaction-1"),
@@ -26,11 +26,29 @@ class CredentialResponseReducerTest {
 
         val result = CredentialResponseReducer.reduce(
             CredentialResponseUiState.Loading,
-            CredentialResponseMutation.Completed(intent, receipt),
+            CredentialResponseMutation.Completed(
+                CredentialResponseCompletion.CommittedSelection(intent, receipt),
+            ),
         ) as CredentialResponseUiState.Complete
 
-        assertSame(intent, result.completion.resultIntent)
-        assertEquals(receipt, result.completion.receipt)
+        val completion = result.completion as CredentialResponseCompletion.CommittedSelection
+        assertSame(intent, completion.resultIntent)
+        assertEquals(receipt, completion.receipt)
+    }
+
+    @Test
+    fun `non selection response completes immediately without a nullable receipt`() {
+        val intent = Intent()
+
+        val result = CredentialResponseReducer.reduce(
+            CredentialResponseUiState.Loading,
+            CredentialResponseMutation.Completed(
+                CredentialResponseCompletion.Immediate(intent),
+            ),
+        ) as CredentialResponseUiState.Complete
+
+        val completion = result.completion as CredentialResponseCompletion.Immediate
+        assertSame(intent, completion.resultIntent)
     }
 
     @Test

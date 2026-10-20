@@ -12,13 +12,9 @@ import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillAuthorizationOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
-import com.aozijx.passly.domain.autofill.model.AutofillField
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionState
-import com.aozijx.passly.domain.autofill.model.AutofillRequest
 import com.aozijx.passly.domain.autofill.model.AutofillSelectionOutcome
-import com.aozijx.passly.domain.autofill.model.AutofillSource
-import com.aozijx.passly.domain.autofill.model.FieldRole
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.core.AuthorizeAutofillInteraction
@@ -26,8 +22,6 @@ import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.ResolveAutofillSelection
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseFactory
-import com.aozijx.passly.feature.autofill.legacy.service.parser.EditableFieldInfo
-import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -162,7 +156,7 @@ class AutofillFillViewModel @Inject constructor(
             mutate(AutofillFillMutation.Completed(AutofillFillResult.Cancelled))
         } else {
             traceContinuations.capture(request.interactionId.value)
-            mutate(AutofillFillMutation.Completed(AutofillFillResult.Response(response)))
+            mutate(AutofillFillMutation.Completed(AutofillFillResult.DiscoveryResponse(response)))
         }
     }
 
@@ -220,9 +214,9 @@ class AutofillFillViewModel @Inject constructor(
         val receipt = AutofillSelectionReceipt(request.interactionId, outcome.payload.entryId)
         traceContinuations.capture(request.interactionId.value)
         val result = if (request.returnsDataset) {
-            AutofillFillResult.DatasetResult(dataset, receipt)
+            AutofillFillResult.SelectedDataset(dataset, receipt)
         } else {
-            AutofillFillResult.Response(
+            AutofillFillResult.SelectedResponse(
                 value = FillResponse.Builder().addDataset(dataset).build(),
                 receipt = receipt,
             )
@@ -269,33 +263,4 @@ class AutofillFillViewModel @Inject constructor(
             block,
         )
 
-    private fun AutofillFillRequest.roleMap(): Map<String, FieldRole> = buildMap {
-        usernameIds.forEach { put(it.toString(), FieldRole.USERNAME) }
-        passwordIds.forEach { put(it.toString(), FieldRole.PASSWORD) }
-        otpIds.forEach { put(it.toString(), FieldRole.OTP) }
-    }
-
-    private fun AutofillFillRequest.toDomainRequest(): AutofillRequest {
-        val roles = roleMap()
-        return AutofillRequest(
-            packageName = packageName,
-            domain = webDomain,
-            fields = editableIds.map { id ->
-                AutofillField(
-                    id = id.toString(),
-                    hints = emptySet(),
-                    inputType = null,
-                    isFocused = false,
-                    role = roles[id.toString()],
-                )
-            },
-            source = AutofillSource.AUTOFILL_SERVICE,
-        )
-    }
-
-    private fun AutofillFillRequest.toParsedStructure(): ParsedStructure = ParsedStructure(
-        packageName = packageName,
-        webDomain = webDomain,
-        editableFields = editableIds.map(::EditableFieldInfo),
-    )
 }

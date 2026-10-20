@@ -10,21 +10,21 @@ import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 
 sealed interface AutofillFillResult {
-    val receipt: AutofillSelectionReceipt?
-
-    data class Response(
+    data class DiscoveryResponse(
         val value: FillResponse,
-        override val receipt: AutofillSelectionReceipt? = null,
     ) : AutofillFillResult
 
-    data class DatasetResult(
+    data class SelectedResponse(
+        val value: FillResponse,
+        val receipt: AutofillSelectionReceipt,
+    ) : AutofillFillResult
+
+    data class SelectedDataset(
         val value: Dataset,
-        override val receipt: AutofillSelectionReceipt,
+        val receipt: AutofillSelectionReceipt,
     ) : AutofillFillResult
 
-    data object Cancelled : AutofillFillResult {
-        override val receipt: AutofillSelectionReceipt? = null
-    }
+    data object Cancelled : AutofillFillResult
 }
 
 sealed class AutofillFillUiState {
@@ -39,6 +39,23 @@ sealed class AutofillFillUiState {
     ) : AutofillFillUiState()
 
     data class Error(val message: String) : AutofillFillUiState()
+}
+
+sealed interface AutofillFillDisplayState {
+    data object Hidden : AutofillFillDisplayState
+
+    data class Candidates(
+        val candidates: List<AutofillCandidateSummary>,
+    ) : AutofillFillDisplayState
+}
+
+internal fun AutofillFillUiState.toDisplayState(): AutofillFillDisplayState = when (this) {
+    is AutofillFillUiState.ShowCandidates -> AutofillFillDisplayState.Candidates(candidates)
+    AutofillFillUiState.Initial,
+    AutofillFillUiState.Loading,
+    is AutofillFillUiState.Result,
+    is AutofillFillUiState.Error,
+    -> AutofillFillDisplayState.Hidden
 }
 
 data class AutofillFillRequest(

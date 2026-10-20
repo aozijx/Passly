@@ -21,24 +21,47 @@ internal fun AutofillFillRoute(
     LaunchedEffect(request, viewModel) {
         viewModel.onAction(AutofillFillUiAction.Initialize(request))
     }
-    LaunchedEffect(state) {
-        when (val current = state) {
-            is AutofillFillUiState.Result -> onResult(current.result)
-            is AutofillFillUiState.Error -> onResult(AutofillFillResult.Cancelled)
-            AutofillFillUiState.Initial,
-            AutofillFillUiState.Loading,
-            is AutofillFillUiState.ShowCandidates -> Unit
-        }
-    }
-
-    val candidates = (state as? AutofillFillUiState.ShowCandidates)?.candidates ?: return
-    AutofillCandidateBottomSheet(
-        candidates = candidates.map(AutofillCandidateSummary::toUiItem),
-        onCandidateSelected = { candidateId ->
-            viewModel.onAction(AutofillFillUiAction.CandidateSelected(EntryId(candidateId)))
+    AutofillCompletionEffect(state, onResult)
+    AutofillFillContent(
+        displayState = state.toDisplayState(),
+        onCandidateSelected = { entryId ->
+            viewModel.onAction(AutofillFillUiAction.CandidateSelected(entryId))
         },
         onCancel = { viewModel.onAction(AutofillFillUiAction.Cancel) },
     )
+}
+
+@Composable
+private fun AutofillCompletionEffect(
+    state: AutofillFillUiState,
+    onResult: (AutofillFillResult) -> Unit,
+) {
+    LaunchedEffect(state) {
+        when (state) {
+            is AutofillFillUiState.Result -> onResult(state.result)
+            is AutofillFillUiState.Error -> onResult(AutofillFillResult.Cancelled)
+            AutofillFillUiState.Initial,
+            AutofillFillUiState.Loading,
+            is AutofillFillUiState.ShowCandidates,
+            -> Unit
+        }
+    }
+}
+
+@Composable
+private fun AutofillFillContent(
+    displayState: AutofillFillDisplayState,
+    onCandidateSelected: (EntryId) -> Unit,
+    onCancel: () -> Unit,
+) {
+    when (displayState) {
+        AutofillFillDisplayState.Hidden -> Unit
+        is AutofillFillDisplayState.Candidates -> AutofillCandidateBottomSheet(
+            candidates = displayState.candidates.map(AutofillCandidateSummary::toUiItem),
+            onCandidateSelected = { candidateId -> onCandidateSelected(EntryId(candidateId)) },
+            onCancel = onCancel,
+        )
+    }
 }
 
 private fun AutofillCandidateSummary.toUiItem() = AutofillCandidateItem(
