@@ -10,6 +10,8 @@ import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationSe
 import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationTopic
 import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
@@ -25,6 +27,14 @@ import org.junit.Test
 class NotificationSettingsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun `remains loading until persisted message preferences arrive`() = runTest {
+        val repository = RecordingMessageSettingsRepository(emptyFlow())
+        val viewModel = viewModel(repository, availableState())
+
+        assertEquals(NotificationSettingsUiState.Loading, viewModel.uiState.value)
+    }
 
     @Test
     fun `enabling notifications requests runtime permission before persisting`() = runTest {
@@ -113,8 +123,9 @@ class NotificationSettingsViewModelTest {
         channelEnabled = true,
     )
 
-    private class RecordingMessageSettingsRepository : MessageSettingsRepository {
-        override val messages = MutableStateFlow(MessageSettings())
+    private class RecordingMessageSettingsRepository(
+        override val messages: Flow<MessageSettings> = MutableStateFlow(MessageSettings()),
+    ) : MessageSettingsRepository {
         val systemNotificationWrites = mutableListOf<Boolean>()
 
         override suspend fun setOptionalMessagesEnabled(enabled: Boolean) = Unit

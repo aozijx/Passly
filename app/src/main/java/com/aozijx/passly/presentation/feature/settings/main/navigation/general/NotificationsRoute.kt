@@ -24,6 +24,7 @@ import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationSettingsAction
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationSettingsEffect
+import com.aozijx.passly.presentation.feature.settings.main.general.NotificationSettingsUiState
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.main.general.toAction
 import com.aozijx.passly.presentation.feature.settings.main.general.toUiModel
@@ -105,14 +106,17 @@ internal fun NotificationsRoute(
         title = stringResource(SettingsGroup.NOTIFICATIONS.titleRes),
         onBack = onBack,
     ) {
-        item {
-            SettingsSection {
-                NotificationSettingsSection(
-                    state = state.toUiModel(),
-                    onEvent = { event ->
-                        viewModel.onAction(event.toAction())
-                    },
-                )
+        when (val readyState = state) {
+            NotificationSettingsUiState.Loading -> Unit
+            is NotificationSettingsUiState.Ready -> item {
+                SettingsSection {
+                    NotificationSettingsSection(
+                        state = readyState.toUiModel(),
+                        onEvent = { event ->
+                            viewModel.onAction(event.toAction())
+                        },
+                    )
+                }
             }
         }
     }

@@ -28,7 +28,7 @@ class NotificationSettingsViewModel @Inject constructor(
 
     val uiState: StateFlow<NotificationSettingsUiState> = settingsRepository.messages
         .combine(systemNotificationState) { messages, system ->
-            NotificationSettingsUiState(
+            NotificationSettingsUiState.Ready(
                 optionalMessagesEnabled = messages.optionalMessagesEnabled,
                 systemNotificationsEnabled = messages.systemNotificationsEnabled,
                 runtimeNotificationPermissionGranted = system.runtimePermissionGranted,
@@ -39,7 +39,7 @@ class NotificationSettingsViewModel @Inject constructor(
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = NotificationSettingsUiState()
+            initialValue = NotificationSettingsUiState.Loading
         )
 
     internal fun onAction(action: NotificationSettingsAction) {

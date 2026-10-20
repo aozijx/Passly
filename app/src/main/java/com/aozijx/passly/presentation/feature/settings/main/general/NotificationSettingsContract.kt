@@ -7,24 +7,28 @@ import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationSe
 import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationTopic
 import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationTopicUiModel
 
-data class NotificationSettingsUiState(
-    val optionalMessagesEnabled: Boolean = true,
-    val systemNotificationsEnabled: Boolean = true,
-    val runtimeNotificationPermissionGranted: Boolean = true,
-    val notificationsEnabledBySystem: Boolean = true,
-    val notificationChannelEnabled: Boolean = true,
-    val topicSettings: Map<MessageTopic, TopicMessageSettings> = emptyMap()
-) {
-    val systemNotificationAvailable: Boolean
-        get() = runtimeNotificationPermissionGranted &&
-            notificationsEnabledBySystem &&
-            notificationChannelEnabled
+sealed interface NotificationSettingsUiState {
+    data object Loading : NotificationSettingsUiState
 
-    fun topicSetting(topic: MessageTopic): TopicMessageSettings =
-        topicSettings[topic] ?: TopicMessageSettings()
+    data class Ready(
+        val optionalMessagesEnabled: Boolean,
+        val systemNotificationsEnabled: Boolean,
+        val runtimeNotificationPermissionGranted: Boolean,
+        val notificationsEnabledBySystem: Boolean,
+        val notificationChannelEnabled: Boolean,
+        val topicSettings: Map<MessageTopic, TopicMessageSettings>,
+    ) : NotificationSettingsUiState {
+        val systemNotificationAvailable: Boolean
+            get() = runtimeNotificationPermissionGranted &&
+                notificationsEnabledBySystem &&
+                notificationChannelEnabled
+
+        fun topicSetting(topic: MessageTopic): TopicMessageSettings =
+            requireNotNull(topicSettings[topic]) { "Missing settings for $topic" }
+    }
 }
 
-internal fun NotificationSettingsUiState.toUiModel() = NotificationSettingsUiModel(
+internal fun NotificationSettingsUiState.Ready.toUiModel() = NotificationSettingsUiModel(
     systemNotificationsEnabled = systemNotificationsEnabled,
     optionalMessagesEnabled = optionalMessagesEnabled,
     topics = MessageTopic.entries.map { topic ->

@@ -11,12 +11,15 @@ class NotificationSettingsUiMapperTest {
 
     @Test
     fun `maps domain topic settings to stable ui topic order`() {
-        val result = NotificationSettingsUiState(
+        val result = NotificationSettingsUiState.Ready(
             optionalMessagesEnabled = true,
             systemNotificationsEnabled = false,
-            topicSettings = mapOf(
-                MessageTopic.CLIPBOARD to TopicMessageSettings(enabled = false),
-            ),
+            runtimeNotificationPermissionGranted = true,
+            notificationsEnabledBySystem = true,
+            notificationChannelEnabled = true,
+            topicSettings = MessageTopic.entries.associateWith { topic ->
+                TopicMessageSettings(enabled = topic != MessageTopic.CLIPBOARD)
+            },
         ).toUiModel()
 
         assertFalse(result.systemNotificationsEnabled)
