@@ -45,42 +45,50 @@ class AutofillResultDelivery internal constructor(
         continuations = continuations,
     )
 
-    /** Publishes the already-built platform result before releasing Autofill-owned access. */
-    fun deliverResult(
+    /** Commits the result to Android before releasing Autofill-owned access. */
+    fun commitResult(
         receipt: AutofillSelectionReceipt,
-        deliverToPlatform: () -> Unit,
+        commitToPlatform: () -> Unit,
     ) {
-        runBlocking {
-            continuations.continueOrRoot(
-                receipt.interactionId.value,
-                Operations.AutofillResultDelivery,
-            ) {
-                val deliveryStartedAt = monotonicTimeMs()
-                logger.log(LogStatements.Autofill.resultDeliveryStarted())
-                try {
-                    deliverToPlatform()
-                    logger.log(
-                        LogStatements.Autofill.resultDelivered(
-                            monotonicTimeMs() - deliveryStartedAt,
-                        ),
-                    )
-                    continuations.capture(receipt.interactionId.value)
-                } catch (error: Exception) {
-                    logger.log(
-                        LogStatements.Autofill.resultDeliveryFailed(
-                            error,
-                            monotonicTimeMs() - deliveryStartedAt,
-                        ),
-                    )
-                    throw error
+        unlockLease.beginResultCompletion(receipt.interactionId)
+        var committed = false
+        try {
+            runBlocking {
+                continuations.continueOrRoot(
+                    receipt.interactionId.value,
+                    Operations.AutofillResultDelivery,
+                ) {
+                    val deliveryStartedAt = monotonicTimeMs()
+                    logger.log(LogStatements.Autofill.resultDeliveryStarted())
+                    try {
+                        commitToPlatform()
+                        logger.log(
+                            LogStatements.Autofill.resultDelivered(
+                                monotonicTimeMs() - deliveryStartedAt,
+                            ),
+                        )
+                        continuations.capture(receipt.interactionId.value)
+                    } catch (error: Exception) {
+                        logger.log(
+                            LogStatements.Autofill.resultDeliveryFailed(
+                                error,
+                                monotonicTimeMs() - deliveryStartedAt,
+                            ),
+                        )
+                        throw error
+                    }
                 }
             }
+            committed = true
+        } finally {
+            if (!committed) {
+                runBlocking { unlockLease.endResultCompletion {} }
+            }
         }
-        unlockLease.stopAcceptingNewBorrowers(receipt.interactionId)
-        delivered(receipt)
+        completeDeliveredSelection(receipt)
     }
 
-    private fun delivered(receipt: AutofillSelectionReceipt) {
+    private fun completeDeliveredSelection(receipt: AutofillSelectionReceipt) {
         scope.launch {
             try {
                 continuations.continueOrRoot(
@@ -114,6 +122,10 @@ class AutofillResultDelivery internal constructor(
                 throw cancelled
             } catch (_: Exception) {
                 // Failure was recorded inside the close span; platform delivery already succeeded.
+            } finally {
+                unlockLease.endResultCompletion {
+                    completeSelection.expireAbandonedInteractions()
+                }
             }
         }
     }

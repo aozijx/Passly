@@ -11,6 +11,8 @@
 - 进程死亡拒绝旧 interaction/token；超时、返回、取消和异常释放自己的 lease。
 - 已有完整 App session 不被迟到 Autofill 完成锁定；临时 session 完成后不可再次显示上一轮秘密。
 - result delivery 失败不伪造 delivered，也不提前关闭可重试会话。
+- `setResult` 后、`finish` 前不得关闭临时会话；关闭期间的新请求等待完成后创建新的 locked interaction。
+- 成功交付会过期未提交结果的遗留 interaction；并发且都已提交的 Legacy/Credential 结果分别记为 completed。
 
 ## Inbox 实现验收
 

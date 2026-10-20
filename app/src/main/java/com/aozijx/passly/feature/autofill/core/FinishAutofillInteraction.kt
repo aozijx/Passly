@@ -31,6 +31,10 @@ class FinishAutofillInteraction @Inject constructor(
         store.activeIds(source).forEach { expire(it) }
     }
 
+    suspend fun expireAll() {
+        store.activeIds().forEach { expire(it) }
+    }
+
     private suspend fun finish(
         id: AutofillInteractionId,
         state: AutofillInteractionState,

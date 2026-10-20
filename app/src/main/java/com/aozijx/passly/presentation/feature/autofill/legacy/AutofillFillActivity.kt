@@ -137,16 +137,17 @@ class AutofillFillActivity : FragmentActivity() {
         when {
             resultIntent == null -> setResult(RESULT_CANCELED)
             receipt == null -> setResult(RESULT_OK, resultIntent)
-            else -> resultDelivery.deliverResult(receipt) {
+            else -> resultDelivery.commitResult(receipt) {
                 setResult(RESULT_OK, resultIntent)
+                hideIme()
+                finish()
             }
         }
 
-        currentFocus?.clearFocus()
-        WindowCompat.getInsetsController(window, window.decorView)
-            .hide(WindowInsetsCompat.Type.ime())
-
-        finish()
+        if (receipt == null) {
+            hideIme()
+            finish()
+        }
     }
 
     override fun onDestroy() {
@@ -154,6 +155,12 @@ class AutofillFillActivity : FragmentActivity() {
             viewModel.onAction(AutofillFillUiAction.Cancel)
         }
         super.onDestroy()
+    }
+
+    private fun hideIme() {
+        currentFocus?.clearFocus()
+        WindowCompat.getInsetsController(window, window.decorView)
+            .hide(WindowInsetsCompat.Type.ime())
     }
 
 }

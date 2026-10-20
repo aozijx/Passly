@@ -22,4 +22,9 @@ class CompleteAutofillSelection @Inject constructor(
             }
         }
     }
+
+    /** Invalidates picker/auth interactions that never committed a result to Android. */
+    suspend fun expireAbandonedInteractions() = withContext(NonCancellable) {
+        finishInteraction.expireAll()
+    }
 }

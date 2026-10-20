@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -20,6 +21,16 @@ class AutofillUnlockLease @Inject constructor(
     private val borrowers = mutableSetOf<AutofillInteractionId>()
     private var owned = false
     private var acceptingNewBorrowers = true
+    private var completionsInFlight = 0
+    private var completionBarrier: CompletableDeferred<Unit>? = null
+    private var lockPending = false
+
+    suspend fun awaitReadyForInteraction() {
+        while (true) {
+            val barrier = synchronized(stateMonitor) { completionBarrier } ?: return
+            barrier.await()
+        }
+    }
 
     suspend fun acquireOrBorrow(
         interactionId: AutofillInteractionId,
@@ -28,7 +39,7 @@ class AutofillUnlockLease @Inject constructor(
         synchronized(stateMonitor) {
             if (acquiredUnlock) {
                 owned = true
-                acceptingNewBorrowers = true
+                if (completionBarrier == null) acceptingNewBorrowers = true
             }
             if (owned) borrowers += interactionId
         }
@@ -42,10 +53,38 @@ class AutofillUnlockLease @Inject constructor(
         }
     }
 
-    /** Prevents later Autofill requests from inheriting a session whose result was delivered. */
-    fun stopAcceptingNewBorrowers(interactionId: AutofillInteractionId) {
+    /** Opens a completion barrier before the delivered interaction starts closing its session. */
+    fun beginResultCompletion(interactionId: AutofillInteractionId) {
         synchronized(stateMonitor) {
+            if (completionsInFlight == 0) completionBarrier = CompletableDeferred()
+            completionsInFlight += 1
             if (owned && interactionId in borrowers) acceptingNewBorrowers = false
+        }
+    }
+
+    suspend fun endResultCompletion(finalizeSession: suspend () -> Unit): Boolean {
+        val isLastCompletion = synchronized(stateMonitor) {
+            check(completionsInFlight > 0) { "No Autofill result completion is active" }
+            completionsInFlight -= 1
+            completionsInFlight == 0
+        }
+        if (!isLastCompletion) return false
+
+        try {
+            finalizeSession()
+            val shouldLock = mutex.withLock {
+                synchronized(stateMonitor) {
+                    lockPending.also { lockPending = false }
+                }
+            }
+            if (shouldLock) lockAutofillSession()
+            return true
+        } finally {
+            val completedBarrier = synchronized(stateMonitor) {
+                acceptingNewBorrowers = true
+                completionBarrier.also { completionBarrier = null }
+            }
+            completedBarrier?.complete(Unit)
         }
     }
 
@@ -54,19 +93,23 @@ class AutofillUnlockLease @Inject constructor(
             borrowers -= interactionId
             if (owned && borrowers.isEmpty()) {
                 owned = false
-                acceptingNewBorrowers = true
-                true
+                if (completionBarrier == null) {
+                    true
+                } else {
+                    lockPending = true
+                    false
+                }
             } else {
                 false
             }
         }
-        if (shouldLock) {
-            sessionLockController.lock(
-                SessionLockRequest(
-                    LockReason.AUTOFILL_REQUEST_FINISHED,
-                    LockTrigger.AUTOFILL_COMPLETION,
-                ),
-            )
-        }
+        if (shouldLock) lockAutofillSession()
     }
+
+    private suspend fun lockAutofillSession() = sessionLockController.lock(
+        SessionLockRequest(
+            LockReason.AUTOFILL_REQUEST_FINISHED,
+            LockTrigger.AUTOFILL_COMPLETION,
+        ),
+    )
 }

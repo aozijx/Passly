@@ -77,7 +77,7 @@ class AutofillTraceLifecycleTest {
             continuations = continuations,
         )
 
-        delivery.deliverResult(AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))) {
+        delivery.commitResult(AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))) {
             assertNull(lockController.reason)
         }
         runCurrent()
@@ -130,7 +130,7 @@ class AutofillTraceLifecycleTest {
         )
 
         assertThrows(IllegalStateException::class.java) {
-            delivery.deliverResult(AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))) {
+            delivery.commitResult(AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))) {
                 error("raw package com.secret.target must not escape")
             }
         }
@@ -169,7 +169,7 @@ class AutofillTraceLifecycleTest {
             continuations,
         )
 
-        delivery.deliverResult(AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))) {}
+        delivery.commitResult(AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))) {}
         runCurrent()
 
         assertEquals(Events.Application.TraceResumeUnavailable, records.first().event)
@@ -206,10 +206,10 @@ class AutofillTraceLifecycleTest {
         )
         val callbacks = mutableListOf<String>()
 
-        delivery.deliverResult(AutofillSelectionReceipt(legacy.id, EntryId("legacy-entry"))) {
+        delivery.commitResult(AutofillSelectionReceipt(legacy.id, EntryId("legacy-entry"))) {
             callbacks += "legacy_dataset"
         }
-        delivery.deliverResult(AutofillSelectionReceipt(credential.id, EntryId("credential-entry"))) {
+        delivery.commitResult(AutofillSelectionReceipt(credential.id, EntryId("credential-entry"))) {
             callbacks += "credential_intent"
         }
         runCurrent()

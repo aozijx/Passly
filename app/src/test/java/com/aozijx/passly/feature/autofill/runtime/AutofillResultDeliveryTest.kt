@@ -23,11 +23,14 @@ import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.StartAutofillInteraction
 import com.aozijx.passly.feature.autofill.shared.RecordAutofillUsageUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -56,16 +59,21 @@ class AutofillResultDeliveryTest {
             continuations = TraceContinuationStore(logger),
         )
 
-        delivery.deliverResult(
+        delivery.commitResult(
             receipt = AutofillSelectionReceipt(completedInteraction.id, EntryId("entry-1")),
         ) {}
-        val nextInteraction = StartAutofillInteraction(store, lease, accessState)(
-            source = AutofillInteractionSource.LEGACY,
-            scope = AutofillGrantContext("com.example.app"),
-            requireAuthentication = false,
-        )
+        val nextInteraction = async(start = CoroutineStart.UNDISPATCHED) {
+            StartAutofillInteraction(store, lease, accessState)(
+                source = AutofillInteractionSource.LEGACY,
+                scope = AutofillGrantContext("com.example.app"),
+                requireAuthentication = false,
+            )
+        }
 
-        assertEquals(AutofillInteractionState.RequiresUnlock, nextInteraction.state)
+        assertFalse(nextInteraction.isCompleted)
+        runCurrent()
+
+        assertEquals(AutofillInteractionState.RequiresUnlock, nextInteraction.await().state)
     }
 
     @Test
@@ -93,7 +101,7 @@ class AutofillResultDeliveryTest {
 
         assertNull(lockController.reason)
 
-        delivery.deliverResult(
+        delivery.commitResult(
             receipt = AutofillSelectionReceipt(interaction.id, EntryId("entry-1")),
         ) {
             assertNull(lockController.reason)
@@ -103,6 +111,45 @@ class AutofillResultDeliveryTest {
         assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
         assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
         assertEquals(LockTrigger.AUTOFILL_COMPLETION, lockController.trigger)
+    }
+
+    @Test
+    fun `successful fill expires abandoned interactions before closing temporary unlock`() = runTest {
+        val store = AutofillInteractionStore()
+        val lockController = RecordingLockController()
+        val lease = AutofillUnlockLease(lockController)
+        val selected = store.create(
+            source = AutofillInteractionSource.LEGACY,
+            scope = AutofillGrantContext("com.example.app"),
+            initialState = AutofillInteractionState.Authorized,
+        )
+        val abandoned = store.create(
+            source = AutofillInteractionSource.CREDENTIAL_MANAGER,
+            scope = AutofillGrantContext("com.example.app"),
+            initialState = AutofillInteractionState.Authorized,
+        )
+        lease.acquireOrBorrow(selected.id, acquiredUnlock = true)
+        lease.acquireOrBorrow(abandoned.id, acquiredUnlock = false)
+        val logger = testLogger()
+        val delivery = AutofillResultDelivery(
+            completeSelection = CompleteAutofillSelection(
+                RecordAutofillUsageUseCase(NoOpActivityRecorder),
+                FinishAutofillInteraction(store, lease),
+            ),
+            unlockLease = lease,
+            scope = this,
+            logger = logger,
+            continuations = TraceContinuationStore(logger),
+        )
+
+        delivery.commitResult(
+            receipt = AutofillSelectionReceipt(selected.id, EntryId("entry-1")),
+        ) {}
+        runCurrent()
+
+        assertEquals(AutofillInteractionState.Completed, store.snapshot(selected.id)?.state)
+        assertEquals(AutofillInteractionState.Expired, store.snapshot(abandoned.id)?.state)
+        assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
     }
 
     private class RecordingLockController : SessionLockController {

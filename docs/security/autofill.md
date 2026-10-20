@@ -10,7 +10,8 @@
 - interaction 绑定来源、规范化 scope、实际展示的 Entry IDs 和 process-local 生命周期。
 - 候选阶段只读元数据；密码和 OTP 只在最终选择验证后按单条读取。
 - `AutofillAuthenticated` 是窄权限会话，不授权普通 Vault 列表、编辑、备份或设置。
-- 平台结果必须先成功交付，之后才禁止 lease 新借用并关闭临时会话。
+- 结果提交边界必须包含 `setResult + finish`；提交开始后禁止 lease 新借用，`finish` 返回后才能关闭临时会话。
+- 最后一个已提交结果完成时必须过期未提交结果的遗留 interaction，关闭期间的新请求等待锁定完成。
 - 进程死亡、token 过期、scope 改变或重复 continuation 都拒绝，不能从 Intent/SavedState 恢复权限。
 
 ## 保存

@@ -33,6 +33,7 @@ class StartAutofillInteraction @Inject constructor(
         scope: AutofillGrantContext,
         requireAuthentication: Boolean,
     ): AutofillInteractionSnapshot {
+        unlockLease.awaitReadyForInteraction()
         val hasFullAccess = vaultAccessState.hasFullSecureSessionAccess()
         val snapshot = store.create(
             source = source,

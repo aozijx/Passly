@@ -254,12 +254,16 @@ class AutofillInteractionLifecycleTest {
             AutofillInteractionState.Authorized,
         )
         lease.acquireOrBorrow(delivered.id, acquiredUnlock = true)
-        lease.stopAcceptingNewBorrowers(delivered.id)
-        val next = start(AutofillInteractionSource.LEGACY, scope(), false)
+        lease.beginResultCompletion(delivered.id)
+        val nextRequest = async {
+            start(AutofillInteractionSource.LEGACY, scope(), false)
+        }
+        finish.complete(delivered.id)
+        lease.endResultCompletion {}
+        val next = nextRequest.await()
 
         val authorization = async { authorize(next.id) }
         authentication.started.await()
-        finish.complete(delivered.id)
         authentication.result.complete(
             AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD),
         )
@@ -279,8 +283,13 @@ class AutofillInteractionLifecycleTest {
             AutofillInteractionState.Authorized,
         )
         fixture.lease.acquireOrBorrow(delivered.id, acquiredUnlock = true)
-        fixture.lease.stopAcceptingNewBorrowers(delivered.id)
-        val authenticated = fixture.start(AutofillInteractionSource.LEGACY, scope(), false)
+        fixture.lease.beginResultCompletion(delivered.id)
+        val nextRequest = async {
+            fixture.start(AutofillInteractionSource.LEGACY, scope(), false)
+        }
+        fixture.finish.complete(delivered.id)
+        fixture.lease.endResultCompletion {}
+        val authenticated = nextRequest.await()
         assertEquals(AutofillInteractionState.RequiresUnlock, authenticated.state)
 
         assertTrue(fixture.authorize(authenticated.id) is AutofillAuthorizationOutcome.Authorized)

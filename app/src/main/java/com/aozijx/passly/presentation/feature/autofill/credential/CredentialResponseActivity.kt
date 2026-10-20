@@ -98,12 +98,16 @@ class CredentialResponseActivity : AppCompatActivity() {
         if (receipt == null) {
             setResult(RESULT_OK, completion.resultIntent)
         } else {
-            resultDelivery.deliverResult(receipt) {
+            resultDelivery.commitResult(receipt) {
                 setResult(RESULT_OK, completion.resultIntent)
+                hideIme()
+                finish()
             }
         }
-        hideIme()
-        finish()
+        if (receipt == null) {
+            hideIme()
+            finish()
+        }
     }
 
     private fun finishWithError() {

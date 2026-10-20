@@ -115,6 +115,12 @@ class AutofillInteractionStore @Inject constructor() {
                 .map(AutofillInteractionSnapshot::id)
         }
 
+    suspend fun activeIds(): List<AutofillInteractionId> = mutex.withLock {
+        interactions.values
+            .filterNot { it.state.isTerminal() }
+            .map(AutofillInteractionSnapshot::id)
+    }
+
     suspend fun removeTerminal(id: AutofillInteractionId) {
         mutex.withLock {
             if (interactions[id]?.state?.isTerminal() == true) {

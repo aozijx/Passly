@@ -37,16 +37,22 @@ interaction。并发授权合并为一次认证；成功后重新发现或最终
 
 ## 结果与关闭顺序
 
-平台 Activity/Service 先发布自己的成功结果；`AutofillResultDelivery` 确认成功后立即阻止本轮 lease 的新借用，
-再在不可取消收尾中调用 `CompleteAutofillSelection`。首次终态转换记录使用活动并释放 lease；重复回调幂等。
+平台 Activity 必须在 `AutofillResultDelivery.commitResult` 的提交回调内连续执行 `setResult` 和 `finish`；仅调用
+`setResult` 只是保存待返回值，不表示 Android 已收到结果。提交开始即关闭本轮 lease 的借用窗口，`finish` 返回后才在
+不可取消收尾中调用 `CompleteAutofillSelection`。首次终态转换记录使用活动并释放 lease；重复回调幂等。
 
-这保证 Android 收到结果以前不会关库，同时填充完成后再次点击输入框也不能复用上一轮临时授权。Android 没有确认
-字段实际写入的回调时，日志不能伪造 `field_filled`。
+最后一个已提交结果完成后，仍未向 Android 提交结果的列表、认证和选择 interaction 全部过期，再立即回收临时会话。
+关闭期间的新请求等待该会话完成锁定后再创建 interaction，不能落入“旧数据库仍开着但已禁止借用”的中间态。
+多个已经提交的 Legacy/Credential 结果分别完成，不互相误标为过期。
+
+这保证 Android 收到结果以前不会关库，同时填充完成后再次点击输入框会从全新锁定状态开始。Android 没有确认字段
+实际写入的回调时，日志不能伪造 `field_filled`。
 
 ## 临时会话
 
 `AutofillAuthenticated` 只允许候选、单条秘密解析、使用记录和已确认凭据保存，不挂载普通 Vault。多个已授权
-interaction 可以借用同一个临时数据库会话，但不共享候选或选择权限。
+interaction 可以借用同一个临时数据库会话，但不共享候选或选择权限。任一凭据成功交付会结束这一轮临时授权；
+遗留 borrower 不得把数据库继续保持为解锁状态。
 
 每个 interaction 有 60 秒 process-local 超时。进程死亡后 extras 不能恢复授权；系统必须重新发起请求。主 App
 完成普通解锁后会话提升为 `Authenticated`，迟到的 Autofill 释放不得锁掉它。
