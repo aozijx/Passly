@@ -118,9 +118,9 @@ fun AddPasswordEditorScreen(
                 label = stringResource(R.string.field_category),
             )
             NextFocusTextField(
-                value = form.website,
-                onValueChange = { onAction(AddPasswordAction.WebsiteChanged(it)) },
-                label = stringResource(R.string.vault_add_password_website),
+                value = form.websiteUrl,
+                onValueChange = { onAction(AddPasswordAction.WebsiteUrlChanged(it)) },
+                label = stringResource(R.string.vault_add_password_website_url),
                 keyboardType = KeyboardType.Uri,
             )
             OutlinedCard(

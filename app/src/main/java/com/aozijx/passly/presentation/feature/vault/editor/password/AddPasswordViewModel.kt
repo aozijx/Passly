@@ -45,7 +45,9 @@ class AddPasswordViewModel @Inject constructor(
             is AddPasswordAction.UsernameChanged -> mutateForm { it.copy(username = action.value) }
             is AddPasswordAction.PasswordChanged -> mutateForm { it.copy(password = action.value) }
             is AddPasswordAction.PasswordVisibilityChanged -> mutateForm { it.copy(isPasswordVisible = action.visible) }
-            is AddPasswordAction.WebsiteChanged -> mutateForm { it.copy(website = action.value) }
+            is AddPasswordAction.WebsiteUrlChanged -> mutateForm {
+                it.copy(websiteUrl = action.value)
+            }
             is AddPasswordAction.NotesChanged -> mutateForm { it.copy(notes = action.value) }
             is AddPasswordAction.TagsChanged -> mutateForm { it.copy(tags = action.value) }
             AddPasswordAction.LoadAssociatedApps -> loadAssociatedApps()

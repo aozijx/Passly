@@ -14,7 +14,7 @@ fun AddPasswordFormState.toEntryDraft(): EntryDraft {
         .withValue(definition, FieldKey.PASSWORD, EntryDraftValue.Text(password))
 
     draft = draft.withOptionalText(definition, FieldKey.USERNAME, username)
-    draft = draft.withOptionalText(definition, FieldKey.PRIMARY_URL, website)
+    draft = draft.withOptionalText(definition, FieldKey.PRIMARY_URL, websiteUrl)
     draft = draft.withOptionalText(definition, FieldKey.NOTES, notes)
     associatedAppPackage?.takeIf(String::isNotBlank)?.let { packageName ->
         draft = draft.withValue(

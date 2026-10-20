@@ -116,7 +116,7 @@
     <string name="vault_editor_section_details">Details</string>
     <string name="vault_editor_section_otp_setup">OTP setup</string>
     <string name="vault_add_password_title">Add Password</string>
-    <string name="vault_add_password_website">Website or app address</string>
+    <string name="vault_add_password_website_url">Website address</string>
     <string name="vault_add_password_save_failed">Couldn\'t save password</string>
     <string name="vault_add_bank_card_title">Add Bank Card</string>
     <string name="vault_add_bank_card_save_failed">Couldn\'t save bank card</string>

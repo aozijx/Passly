@@ -6,7 +6,7 @@ data class AddPasswordFormState(
     val title: String = "",
     val username: String = "",
     val password: String = "",
-    val website: String = "",
+    val websiteUrl: String = "",
     val notes: String = "",
     val tags: String = "",
     val associatedAppPackage: String? = null,

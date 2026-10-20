@@ -14,7 +14,7 @@ class PasswordFormMapperTest {
     fun toEntryDraft_normalizesMetadataAndPreservesPassword() {
         val draft = AddPasswordFormState(
             title = "  Mail  ", username = " user@example.com ", password = " secret ",
-            website = " https://example.com ", notes = " personal ", tags = " work, , mail, work ",
+            websiteUrl = " https://example.com ", notes = " personal ", tags = " work, , mail, work ",
             associatedAppPackage = "com.example.mail",
         ).toEntryDraft()
 
@@ -38,7 +38,7 @@ class PasswordFormMapperTest {
             title = "Account",
             password = "secret",
             username = " ",
-            website = " ",
+            websiteUrl = " ",
             notes = " ",
             tags = " , ",
             associatedAppPackage = null,
