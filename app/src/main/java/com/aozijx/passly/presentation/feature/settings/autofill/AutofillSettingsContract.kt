@@ -2,10 +2,14 @@ package com.aozijx.passly.presentation.feature.settings.autofill
 
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 
-data class AutofillSettingsUiState(
-    val autofill: AutofillSettings = AutofillSettings(),
-    val isSystemAutofillEnabled: Boolean = false,
-)
+sealed interface AutofillSettingsUiState {
+    data object Loading : AutofillSettingsUiState
+
+    data class Ready(
+        val autofill: AutofillSettings,
+        val isSystemAutofillEnabled: Boolean,
+    ) : AutofillSettingsUiState
+}
 
 sealed interface AutofillSettingsAction {
     data class SetEnabled(val enabled: Boolean) : AutofillSettingsAction

@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import com.aozijx.passly.feature.autofill.platform.AutofillServiceStatusSource
 import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -18,6 +19,17 @@ import org.junit.Test
 class AutofillSettingsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun `remains loading until persisted preferences arrive`() = runTest {
+        val repository = RecordingInteractionSettingsRepository(emptyFlow())
+        val viewModel = AutofillSettingsViewModel(
+            settingsRepository = repository,
+            autofillServiceStatusSource = AutofillServiceStatusSource { MutableStateFlow(false) },
+        )
+
+        assertEquals(AutofillSettingsUiState.Loading, viewModel.uiState.value)
+    }
 
     @Test
     fun `save prompt action updates only the legacy save preference`() = runTest {
@@ -34,8 +46,10 @@ class AutofillSettingsViewModelTest {
         assertEquals(0, repository.credentialManagerWrites)
     }
 
-    private class RecordingInteractionSettingsRepository : InteractionSettingsRepository {
-        override val interaction = MutableStateFlow(InteractionSettings())
+    private class RecordingInteractionSettingsRepository(
+        override val interaction: kotlinx.coroutines.flow.Flow<InteractionSettings> =
+            MutableStateFlow(InteractionSettings()),
+    ) : InteractionSettingsRepository {
         val savePromptWrites = mutableListOf<Boolean>()
         var credentialManagerWrites = 0
 

@@ -27,7 +27,7 @@ class AutofillSettingsViewModel @Inject constructor(
         settingsRepository.interaction,
         autofillServiceStatusSource.observeServiceEnabled(),
     ) { interaction, systemAutofillEnabled ->
-        AutofillSettingsUiState(
+        AutofillSettingsUiState.Ready(
             autofill = interaction.autofill,
             isSystemAutofillEnabled = systemAutofillEnabled,
         )
@@ -35,7 +35,7 @@ class AutofillSettingsViewModel @Inject constructor(
         .stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000L),
-            AutofillSettingsUiState(),
+            AutofillSettingsUiState.Loading,
         )
 
     fun onAction(action: AutofillSettingsAction) {

@@ -10,7 +10,7 @@ import org.junit.Test
 class AutofillSettingsUiMapperTest {
     @Test
     fun mapsSettingsAndPlatformAvailabilityToUiModel() {
-        val state = AutofillSettingsUiState(
+        val state = AutofillSettingsUiState.Ready(
             autofill = AutofillSettings(
                 enabled = false,
                 presentation = AutofillPresentation.BOTTOM_SHEET,

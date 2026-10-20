@@ -4,7 +4,7 @@ import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.presentation.feature.settings.ui.autofill.model.AutofillSettingsUiModel
 
-fun AutofillSettingsUiState.toAutofillSettingsUiModel(
+fun AutofillSettingsUiState.Ready.toAutofillSettingsUiModel(
     supportsCredentialManager: Boolean,
 ): AutofillSettingsUiModel = AutofillSettingsUiModel(
     enabled = autofill.enabled,

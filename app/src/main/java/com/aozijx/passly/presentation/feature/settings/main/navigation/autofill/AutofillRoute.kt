@@ -13,6 +13,7 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.presentation.feature.settings.autofill.AutofillSettingsEffect
+import com.aozijx.passly.presentation.feature.settings.autofill.AutofillSettingsUiState
 import com.aozijx.passly.presentation.feature.settings.autofill.AutofillSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.autofill.toAutofillSettingsUiModel
 import com.aozijx.passly.presentation.feature.settings.ui.autofill.AutofillDetail
@@ -44,14 +45,17 @@ internal fun AutofillRoute(
         title = stringResource(SettingsGroup.AUTOFILL.titleRes),
         onBack = onBack
     ) {
-        item {
-            AutofillDetail(
-                state = state.toAutofillSettingsUiModel(
-                    supportsCredentialManager =
-                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
-                ),
-                onAction = viewModel::onAction,
-            )
+        when (val readyState = state) {
+            AutofillSettingsUiState.Loading -> Unit
+            is AutofillSettingsUiState.Ready -> item {
+                AutofillDetail(
+                    state = readyState.toAutofillSettingsUiModel(
+                        supportsCredentialManager =
+                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
+                    ),
+                    onAction = viewModel::onAction,
+                )
+            }
         }
     }
 }
