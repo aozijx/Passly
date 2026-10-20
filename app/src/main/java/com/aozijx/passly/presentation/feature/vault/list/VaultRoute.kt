@@ -26,6 +26,7 @@ import com.aozijx.passly.presentation.feature.vault.list.action.VaultCopyRequest
 import com.aozijx.passly.presentation.feature.vault.list.action.handleSwipeAction
 import com.aozijx.passly.presentation.feature.vault.list.action.resolveCopyRequest
 import com.aozijx.passly.presentation.feature.vault.list.display.VaultDisplayViewModel
+import com.aozijx.passly.presentation.feature.vault.list.display.VaultDisplayUiState
 import com.aozijx.passly.presentation.feature.vault.list.ui.VaultScreen
 import com.aozijx.passly.presentation.feature.vault.list.ui.VaultSystemBarsEffect
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListDisplayUiModel
@@ -50,7 +51,11 @@ internal fun VaultRoute(
     var overlay by rememberSaveable { mutableStateOf(VaultOverlay.None) }
 
     val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
-    val vaultDisplayConfig by vaultDisplayViewModel.config.collectAsStateWithLifecycle()
+    val vaultDisplayState by vaultDisplayViewModel.config.collectAsStateWithLifecycle()
+    val vaultDisplayConfig = when (val state = vaultDisplayState) {
+        VaultDisplayUiState.Loading -> return
+        is VaultDisplayUiState.Ready -> state
+    }
 
     val display = remember(vaultDisplayConfig) {
         VaultListDisplayUiModel(

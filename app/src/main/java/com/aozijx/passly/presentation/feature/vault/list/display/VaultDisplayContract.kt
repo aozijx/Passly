@@ -5,26 +5,29 @@ import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 
 data class VaultLayoutConfig(
-    val hideSystemBars: Boolean = false,
-    val collapseTopBarOnScroll: Boolean = false,
-    val collapseQuickFilterBarOnScroll: Boolean = false,
+    val hideSystemBars: Boolean,
+    val collapseTopBarOnScroll: Boolean,
+    val collapseQuickFilterBarOnScroll: Boolean,
 )
 
 data class VaultStyleConfig(
-    val entryCardPresentations: List<EntryCardPresentation> = emptyList(),
-    val entryHierarchyDisplayMode: EntryHierarchyDisplayMode =
-        EntryHierarchyDisplayMode.COLLAPSED,
+    val entryCardPresentations: List<EntryCardPresentation>,
+    val entryHierarchyDisplayMode: EntryHierarchyDisplayMode,
 )
 
 data class VaultInteractionConfig(
-    val isSwipeEnabled: Boolean = true,
-    val isPullToSearchEnabled: Boolean = false,
-    val swipeLeftAction: SwipeActionType = SwipeActionType.COPY_PASSWORD,
-    val swipeRightAction: SwipeActionType = SwipeActionType.DELETE,
+    val isSwipeEnabled: Boolean,
+    val isPullToSearchEnabled: Boolean,
+    val swipeLeftAction: SwipeActionType,
+    val swipeRightAction: SwipeActionType,
 )
 
-data class VaultDisplayUiState(
-    val layout: VaultLayoutConfig = VaultLayoutConfig(),
-    val style: VaultStyleConfig = VaultStyleConfig(),
-    val interaction: VaultInteractionConfig = VaultInteractionConfig()
-)
+sealed interface VaultDisplayUiState {
+    data object Loading : VaultDisplayUiState
+
+    data class Ready(
+        val layout: VaultLayoutConfig,
+        val style: VaultStyleConfig,
+        val interaction: VaultInteractionConfig,
+    ) : VaultDisplayUiState
+}

@@ -25,7 +25,7 @@ class VaultDisplayViewModel @Inject constructor(
         librarySettingsSource.libraryViewSettings,
         interactionSettingsSource.interaction,
     ) { interfaceSettings, librarySettings, interactionSettings ->
-            VaultDisplayUiState(
+            VaultDisplayUiState.Ready(
                 layout = VaultLayoutConfig(
                     hideSystemBars = interfaceSettings.hideSystemBars,
                     collapseTopBarOnScroll = interfaceSettings.collapseTopBarOnScroll,
@@ -47,6 +47,6 @@ class VaultDisplayViewModel @Inject constructor(
         .stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000L),
-            VaultDisplayUiState()
+            VaultDisplayUiState.Loading
         )
 }
