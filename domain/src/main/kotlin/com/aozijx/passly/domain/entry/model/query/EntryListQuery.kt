@@ -7,7 +7,7 @@ data class EntryListQuery(
     val searchText: String = "",
     val entryTypes: Set<EntryType> = emptySet(),
     val category: String? = null,
-    val sort: EntrySort = EntrySort.DEFAULT,
+    val sort: EntrySort,
     val hierarchyMode: EntryHierarchyDisplayMode? = null,
 ) {
     val normalizedSearchText: String = searchText.trim().lowercase()

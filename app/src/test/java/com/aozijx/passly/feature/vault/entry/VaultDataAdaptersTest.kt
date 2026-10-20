@@ -8,6 +8,9 @@ import com.aozijx.passly.data.local.database.port.EntryDataRefreshNotifier
 import com.aozijx.passly.data.repository.entry.paging.EntryPagingStore
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
+import com.aozijx.passly.domain.entry.model.query.EntrySort
+import com.aozijx.passly.domain.entry.model.query.EntrySortField
+import com.aozijx.passly.domain.entry.model.query.SortDirection
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
@@ -31,7 +34,9 @@ class VaultDataAdaptersTest {
             }
         }
         val adapter = DataVaultEntryPageSource(store)
-        val query = EntryListQuery()
+        val query = EntryListQuery(
+            sort = EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC),
+        )
         val config = PagingConfig(pageSize = 23)
 
         val actualFlow = adapter.pages(query, config)

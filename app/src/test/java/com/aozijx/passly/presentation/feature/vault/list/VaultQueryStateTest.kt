@@ -3,6 +3,8 @@ package com.aozijx.passly.presentation.feature.vault.list
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntrySort
+import com.aozijx.passly.domain.entry.model.query.EntrySortField
+import com.aozijx.passly.domain.entry.model.query.SortDirection
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -27,7 +29,7 @@ class VaultQueryStateTest {
         val state = VaultQueryState.create(
             searchText = "  Mail  ",
             category = "  Work  ",
-            sort = EntrySort.DEFAULT,
+            sort = createdAtDescendingSort,
             entryTypes = emptySet(),
             hierarchyMode = EntryHierarchyDisplayMode.EXPANDED,
             reloadVersion = 7L,
@@ -50,7 +52,7 @@ class VaultQueryStateTest {
         val initial = VaultQueryState.create(
             searchText = "mail",
             category = null,
-            sort = EntrySort.DEFAULT,
+            sort = createdAtDescendingSort,
             entryTypes = emptySet(),
             hierarchyMode = EntryHierarchyDisplayMode.COLLAPSED,
             reloadVersion = 0L,
@@ -86,7 +88,7 @@ class VaultQueryStateTest {
         val initial = VaultQueryState.create(
             searchText = "",
             category = null,
-            sort = EntrySort.DEFAULT,
+            sort = createdAtDescendingSort,
             entryTypes = emptySet(),
             hierarchyMode = EntryHierarchyDisplayMode.COLLAPSED,
             reloadVersion = 0L,
@@ -128,7 +130,7 @@ class VaultQueryStateTest {
         val initial = VaultQueryState.create(
             searchText = "mail",
             category = null,
-            sort = EntrySort.DEFAULT,
+            sort = createdAtDescendingSort,
             entryTypes = emptySet(),
             hierarchyMode = EntryHierarchyDisplayMode.COLLAPSED,
             reloadVersion = 0L,
@@ -163,7 +165,9 @@ class VaultQueryStateTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `search is debounced while other query inputs propagate immediately`() = runTest {
-        val uiStates = MutableStateFlow(VaultUiState(searchQuery = "mail"))
+        val uiStates = MutableStateFlow(
+            VaultUiState(searchQuery = "mail", selectedSort = createdAtDescendingSort),
+        )
         val hierarchyModes = MutableStateFlow(EntryHierarchyDisplayMode.COLLAPSED)
         val reloadVersions = MutableStateFlow(0L)
         val observed = mutableListOf<VaultQueryState>()
@@ -185,9 +189,9 @@ class VaultQueryStateTest {
         runCurrent()
         assertEquals("Work", observed.last().category)
 
-        uiStates.value = uiStates.value.copy(selectedSort = EntrySort.DEFAULT.toggled())
+        uiStates.value = uiStates.value.copy(selectedSort = createdAtDescendingSort.toggled())
         runCurrent()
-        assertEquals(EntrySort.DEFAULT.toggled(), observed.last().sort)
+        assertEquals(createdAtDescendingSort.toggled(), observed.last().sort)
 
         hierarchyModes.value = EntryHierarchyDisplayMode.EXPANDED
         runCurrent()
@@ -203,3 +207,8 @@ class VaultQueryStateTest {
         collection.cancel()
     }
 }
+
+private val createdAtDescendingSort = EntrySort(
+    field = EntrySortField.CREATED_AT,
+    direction = SortDirection.DESC,
+)

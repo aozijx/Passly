@@ -15,6 +15,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.feature.vault.list.VaultRouteRequest
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultSortUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultSortOptionUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.search.VaultSearchState
 import com.aozijx.passly.presentation.feature.vault.list.ui.search.VaultSearchStateHolder
 import org.junit.Assert.assertTrue
@@ -137,7 +138,9 @@ class VaultTopBarMenuTest {
             showTotpCode = false,
             availableCategories = emptyList(),
             selectedCategory = null,
-            selectedSort = VaultSortUiModel.DEFAULT,
+            selectedSort = VaultSortUiModel.presets.first {
+                it.option == VaultSortOptionUiModel.CREATED_AT
+            },
         ),
         collapseOnScroll = false,
         collapseQuickFilterOnScroll = false,

@@ -55,15 +55,8 @@ data class EntrySort(
     )
 
     companion object {
-        val DEFAULT = EntrySort(
-            field = EntrySortField.CREATED_AT,
-            direction = SortDirection.DESC,
-            pinFavorites = true,
-            tieBreaker = EntrySortField.ID
-        )
-
         fun presets(): List<EntrySort> = listOf(
-            DEFAULT,
+            EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC),
             EntrySort(EntrySortField.TITLE, SortDirection.ASC),
             EntrySort(EntrySortField.UPDATED_AT, SortDirection.DESC),
             EntrySort(EntrySortField.LAST_USED_AT, SortDirection.DESC),

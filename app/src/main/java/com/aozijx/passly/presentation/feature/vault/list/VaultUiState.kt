@@ -8,7 +8,7 @@ data class VaultUiState(
     val searchQuery: String = "",
     val selectedCategory: String? = null,
     val selectedFilters: Set<AddType> = emptySet(),
-    val selectedSort: EntrySort = EntrySort.DEFAULT,
+    val selectedSort: EntrySort? = null,
     val isSearchActive: Boolean = false,
     val availableCategories: List<String> = emptyList(),
     val showTOTPCode: Boolean = true,

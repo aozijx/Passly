@@ -7,9 +7,9 @@ import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultSortOptio
 
 @StringRes
 fun VaultSortUiModel.labelResId(): Int = when (option) {
-    VaultSortOptionUiModel.DEFAULT -> R.string.sort_last_used
     VaultSortOptionUiModel.TITLE -> R.string.sort_name
     VaultSortOptionUiModel.CREATED_AT -> R.string.sort_created
     VaultSortOptionUiModel.UPDATED_AT -> R.string.sort_updated
+    VaultSortOptionUiModel.LAST_USED_AT -> R.string.sort_last_used
     VaultSortOptionUiModel.USAGE_FREQUENCY -> R.string.sort_usage
 }

@@ -12,22 +12,39 @@ import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.domain.entry.model.query.EntryCapability
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
+import com.aozijx.passly.domain.entry.model.query.EntrySortField
+import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListDisplayUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultOtpKindUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultSortOptionUiModel
+import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultSortUiModel
 import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.mapping.entry.toUiModel
 import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VaultListUiMapperTest {
     @Test
+    fun vaultDoesNotRenderBeforePersistedSortLoads() {
+        assertNull(VaultUiState().toUiModel(display()))
+    }
+
+    @Test
+    fun sortPresetsContainCreatedAtOnlyOnce() {
+        assertEquals(
+            1,
+            VaultSortUiModel.presets.count { it.option == VaultSortOptionUiModel.CREATED_AT },
+        )
+    }
+
+    @Test
     fun defaultSortShowsNewestCreatedEntries() {
-        val ui = EntrySort.DEFAULT.toUiModel()
+        val ui = createdAtDescendingSort().toUiModel()
 
         assertEquals(VaultSortOptionUiModel.CREATED_AT, ui.option)
         assertTrue(ui.descending)
@@ -35,7 +52,24 @@ class VaultListUiMapperTest {
 
     @Test
     fun dialogChangesAreIsolatedFromPagingAndPageChromeState() {
-        val display = VaultListDisplayUiModel(
+        val display = display()
+        val sort = createdAtDescendingSort()
+        val initial = VaultUiState(selectedSort = sort).toUiModel(display)
+        val withDialog = VaultUiState(selectedSort = sort, addType = AddType.BANK_CARD)
+            .toUiModel(display)
+
+        requireNotNull(initial)
+        requireNotNull(withDialog)
+
+        assertEquals(initial.toolbar, withDialog.toolbar)
+        assertEquals(initial.navigation, withDialog.navigation)
+        assertEquals(initial.content, withDialog.content)
+        assertEquals(initial.layout, withDialog.layout)
+        assertEquals(VaultAddTypeUiModel.BANK_CARD, withDialog.dialogs.addType)
+        assertEquals(false, initial.content.isPullToSearchEnabled)
+    }
+
+    private fun display() = VaultListDisplayUiModel(
             cardPresentations = emptyList(),
             swipeLeftAction = SwipeActionUiModel.DELETE,
             swipeRightAction = SwipeActionUiModel.COPY_PASSWORD,
@@ -45,17 +79,11 @@ class VaultListUiMapperTest {
             collapseQuickFilterBarOnScroll = false,
             hideSystemBars = false,
         )
-        val initial = VaultUiState().toUiModel(display)
-        val withDialog = VaultUiState(addType = AddType.BANK_CARD)
-            .toUiModel(display)
 
-        assertEquals(initial.toolbar, withDialog.toolbar)
-        assertEquals(initial.navigation, withDialog.navigation)
-        assertEquals(initial.content, withDialog.content)
-        assertEquals(initial.layout, withDialog.layout)
-        assertEquals(VaultAddTypeUiModel.BANK_CARD, withDialog.dialogs.addType)
-        assertEquals(false, initial.content.isPullToSearchEnabled)
-    }
+    private fun createdAtDescendingSort() = EntrySort(
+        field = EntrySortField.CREATED_AT,
+        direction = SortDirection.DESC,
+    )
 
     @Test
     fun entryMappingPreservesEveryRenderedValue() {

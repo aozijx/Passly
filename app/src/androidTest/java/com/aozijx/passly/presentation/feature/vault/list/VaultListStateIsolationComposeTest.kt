@@ -3,6 +3,9 @@ package com.aozijx.passly.presentation.feature.vault.list
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import com.aozijx.passly.domain.entry.model.query.EntrySort
+import com.aozijx.passly.domain.entry.model.query.EntrySortField
+import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListDisplayUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListContentUiModel
@@ -17,11 +20,15 @@ class VaultListStateIsolationComposeTest {
 
     @Test
     fun dialogAndSearchUpdatesDoNotRecomposePagingNode() {
-        val uiState = mutableStateOf(VaultUiState())
+        val uiState = mutableStateOf(
+            VaultUiState(
+                selectedSort = EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC),
+            ),
+        )
         var pagingCompositions = 0
 
         composeRule.setContent {
-            val mapped = uiState.value.toUiModel(display())
+            val mapped = requireNotNull(uiState.value.toUiModel(display()))
             PagingProbe(mapped.navigation, mapped.content) { pagingCompositions++ }
         }
         composeRule.runOnIdle { assertEquals(1, pagingCompositions) }

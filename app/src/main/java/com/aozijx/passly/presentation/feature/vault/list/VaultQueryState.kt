@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 
 /** Stable inputs used to derive the vault's single Paging generation. */
 internal data class VaultQueryState(
@@ -76,10 +77,11 @@ internal fun buildVaultQueryStates(
         .debounce(SEARCH_DEBOUNCE_MILLIS)
         .distinctUntilChanged()
     val selection = uiStates
-        .map { state ->
+        .mapNotNull { state ->
+            val sort = state.selectedSort ?: return@mapNotNull null
             VaultQuerySelection(
                 state.selectedCategory,
-                state.selectedSort,
+                sort,
                 state.selectedFilters.flatMap { it.entryTypes }.toSet(),
             )
         }

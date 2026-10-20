@@ -67,7 +67,7 @@ internal fun VaultRoute(
             hideSystemBars = vaultDisplayConfig.layout.hideSystemBars,
         )
     }
-    val renderState = uiState.toUiModel(display)
+    val renderState = uiState.toUiModel(display) ?: return
     val onItemAction: (VaultListItemAction) -> Unit = { action ->
         when (action) {
             is VaultListItemAction.Clicked -> navigation.navigate(

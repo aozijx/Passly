@@ -55,15 +55,17 @@ internal fun EntrySort.toUiModel() = VaultSortUiModel(
         EntrySortField.TITLE -> VaultSortOptionUiModel.TITLE
         EntrySortField.CREATED_AT -> VaultSortOptionUiModel.CREATED_AT
         EntrySortField.UPDATED_AT -> VaultSortOptionUiModel.UPDATED_AT
+        EntrySortField.LAST_USED_AT -> VaultSortOptionUiModel.LAST_USED_AT
         EntrySortField.USAGE_FREQUENCY -> VaultSortOptionUiModel.USAGE_FREQUENCY
-        else -> VaultSortOptionUiModel.DEFAULT
+        EntrySortField.ENTRY_TYPE,
+        EntrySortField.ID,
+        -> throw IllegalArgumentException("Unsupported user-facing sort field: $field")
     },
     descending = direction == SortDirection.DESC,
 )
 
 internal fun VaultSortUiModel.toFeatureModel(): EntrySort {
     val preset = when (option) {
-        VaultSortOptionUiModel.DEFAULT -> EntrySort.DEFAULT
         VaultSortOptionUiModel.TITLE -> EntrySort.presets()
             .first { it.field == EntrySortField.TITLE }
 
@@ -72,6 +74,9 @@ internal fun VaultSortUiModel.toFeatureModel(): EntrySort {
 
         VaultSortOptionUiModel.UPDATED_AT -> EntrySort.presets()
             .first { it.field == EntrySortField.UPDATED_AT }
+
+        VaultSortOptionUiModel.LAST_USED_AT -> EntrySort.presets()
+            .first { it.field == EntrySortField.LAST_USED_AT }
 
         VaultSortOptionUiModel.USAGE_FREQUENCY -> EntrySort.presets()
             .first { it.field == EntrySortField.USAGE_FREQUENCY }
@@ -120,11 +125,13 @@ internal fun EntryCardPresentation.toUiModel() = VaultCardPresentationUiModel(
 
 internal fun VaultUiState.toUiModel(
     display: VaultListDisplayUiModel,
-) = VaultListScreenUiModel(
+): VaultListScreenUiModel? {
+    val sort = selectedSort ?: return null
+    return VaultListScreenUiModel(
     toolbar = VaultListToolbarUiModel(
         searchQuery = searchQuery,
         selectedCategory = selectedCategory,
-        selectedSort = selectedSort.toUiModel(),
+        selectedSort = sort.toUiModel(),
         isSearchActive = isSearchActive,
         availableCategories = availableCategories,
     ),
@@ -149,4 +156,5 @@ internal fun VaultUiState.toUiModel(
         collapseQuickFilterBarOnScroll = display.collapseQuickFilterBarOnScroll,
         hideSystemBars = display.hideSystemBars,
     ),
-)
+    )
+}

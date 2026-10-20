@@ -4,7 +4,7 @@ import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 
 data class LibraryViewSettings(
-    val sort: EntrySort = EntrySort.DEFAULT,
+    val sort: EntrySort,
     val entryCardPresentations: List<EntryCardPresentation> = emptyList(),
     val entryHierarchyDisplayMode: EntryHierarchyDisplayMode =
         EntryHierarchyDisplayMode.COLLAPSED

@@ -98,14 +98,11 @@ internal fun SortSubMenu(
     onBack: () -> Unit
 ) {
     BackMenuItem(onBack)
-    val isDefault = selectedSort == VaultSortUiModel.DEFAULT
     VaultSortUiModel.presets.forEach { preset ->
         val selected = preset.option == selectedSort.option
-        val direction = when {
-            preset == VaultSortUiModel.DEFAULT -> ""
-            selected && !isDefault -> if (selectedSort.descending) " \u2193" else " \u2191"
-            else -> ""
-        }
+        val direction = if (selected) {
+            if (selectedSort.descending) " \u2193" else " \u2191"
+        } else ""
         DropdownMenuItem(
             text = {
                 MenuOptionText(
@@ -114,7 +111,7 @@ internal fun SortSubMenu(
                 )
             },
             onClick = {
-                onSortSelected(if (selected && !isDefault) selectedSort.toggled() else preset)
+                onSortSelected(if (selected) selectedSort.toggled() else preset)
             },
             modifier = Modifier.selectedMenuModifier(selected)
         )

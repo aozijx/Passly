@@ -46,18 +46,17 @@ data class VaultSortUiModel(
     fun toggled() = copy(descending = !descending)
 
     companion object {
-        val DEFAULT = VaultSortUiModel(VaultSortOptionUiModel.DEFAULT, true)
         val presets = listOf(
-            DEFAULT,
-            VaultSortUiModel(VaultSortOptionUiModel.TITLE, false),
             VaultSortUiModel(VaultSortOptionUiModel.CREATED_AT, true),
+            VaultSortUiModel(VaultSortOptionUiModel.TITLE, false),
             VaultSortUiModel(VaultSortOptionUiModel.UPDATED_AT, true),
+            VaultSortUiModel(VaultSortOptionUiModel.LAST_USED_AT, true),
             VaultSortUiModel(VaultSortOptionUiModel.USAGE_FREQUENCY, true),
         )
     }
 }
 
-enum class VaultSortOptionUiModel { DEFAULT, TITLE, CREATED_AT, UPDATED_AT, USAGE_FREQUENCY }
+enum class VaultSortOptionUiModel { TITLE, CREATED_AT, UPDATED_AT, LAST_USED_AT, USAGE_FREQUENCY }
 
 enum class VaultAddTypeUiModel {
     PASSWORD, TOTP, BANK_CARD, WIFI, SSH_KEY, ID_CARD, SEED_PHRASE, PASSKEY, RECOVERY_CODE;
