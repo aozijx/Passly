@@ -6,6 +6,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.presentation.feature.settings.appearance.InterfaceSettingsViewModel
+import com.aozijx.passly.presentation.feature.settings.appearance.InterfaceSettingsUiState
 import com.aozijx.passly.presentation.feature.settings.appearance.toAction
 import com.aozijx.passly.presentation.feature.settings.appearance.toInterfaceUiModel
 import com.aozijx.passly.presentation.feature.settings.ui.appearance.InterfaceDetail
@@ -23,13 +24,16 @@ internal fun InterfaceRoute(
         title = stringResource(SettingsGroup.INTERFACE.titleRes),
         onBack = onBack
     ) {
-        item {
-            InterfaceDetail(
-                state = state.toInterfaceUiModel(),
-                onEvent = { event ->
-                    viewModel.onAction(event.toAction())
-                },
-            )
+        when (val readyState = state) {
+            InterfaceSettingsUiState.Loading -> Unit
+            is InterfaceSettingsUiState.Ready -> item {
+                InterfaceDetail(
+                    state = readyState.toInterfaceUiModel(),
+                    onEvent = { event ->
+                        viewModel.onAction(event.toAction())
+                    },
+                )
+            }
         }
     }
 }

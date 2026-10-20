@@ -8,6 +8,26 @@ import org.junit.Test
 
 class InterfaceSettingsEventRoutingTest {
     @Test
+    fun `ready preferences map to the interface screen`() {
+        val model = InterfaceSettingsUiState.Ready(
+            hideSystemBars = true,
+            collapseTopBarOnScroll = false,
+            collapseQuickFilterBarOnScroll = true,
+            appCornerRadiusDp = 24f,
+            entryHierarchyDisplayMode = EntryHierarchyDisplayMode.EXPANDED,
+        ).toInterfaceUiModel()
+
+        assertEquals(true, model.hideSystemBars)
+        assertEquals(false, model.collapseTopBarOnScroll)
+        assertEquals(true, model.collapseQuickFilterBarOnScroll)
+        assertEquals(24f, model.appCornerRadiusDp)
+        assertEquals(
+            EntryHierarchyDisplayModeUiModel.EXPANDED,
+            model.entryHierarchyDisplayMode,
+        )
+    }
+
+    @Test
     fun `interface events preserve their values when routed to feature actions`() {
         val cases = listOf(
             InterfaceSettingsEvent.StatusBarAutoHideChanged(true) to

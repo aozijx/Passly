@@ -6,7 +6,7 @@ import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.Entry
 import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.InterfaceSettingsEvent
 import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.InterfaceUiModel
 
-fun InterfaceSettingsUiState.toInterfaceUiModel(): InterfaceUiModel = InterfaceUiModel(
+fun InterfaceSettingsUiState.Ready.toInterfaceUiModel(): InterfaceUiModel = InterfaceUiModel(
     hideSystemBars = hideSystemBars,
     collapseTopBarOnScroll = collapseTopBarOnScroll,
     collapseQuickFilterBarOnScroll = collapseQuickFilterBarOnScroll,

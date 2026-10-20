@@ -22,7 +22,7 @@ class InterfaceSettingsViewModel @Inject constructor(
         settingsRepository.interfaceSettings,
         librarySettingsRepository.libraryViewSettings,
     ) { prefs, librarySettings ->
-        InterfaceSettingsUiState(
+        InterfaceSettingsUiState.Ready(
             hideSystemBars = prefs.hideSystemBars,
             collapseTopBarOnScroll = prefs.collapseTopBarOnScroll,
             collapseQuickFilterBarOnScroll = prefs.collapseQuickFilterBarOnScroll,
@@ -33,7 +33,7 @@ class InterfaceSettingsViewModel @Inject constructor(
         .stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000L),
-            InterfaceSettingsUiState()
+            InterfaceSettingsUiState.Loading
         )
 
     fun onAction(action: InterfaceSettingsAction) {

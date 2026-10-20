@@ -1,16 +1,17 @@
 package com.aozijx.passly.presentation.feature.settings.appearance
 
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
-import com.aozijx.passly.domain.settings.model.AppCornerRadiusConstraints
+sealed interface InterfaceSettingsUiState {
+    data object Loading : InterfaceSettingsUiState
 
-data class InterfaceSettingsUiState(
-    val hideSystemBars: Boolean = false,
-    val collapseTopBarOnScroll: Boolean = false,
-    val collapseQuickFilterBarOnScroll: Boolean = false,
-    val appCornerRadiusDp: Float = AppCornerRadiusConstraints.DEFAULT_DP,
-    val entryHierarchyDisplayMode: EntryHierarchyDisplayMode =
-        EntryHierarchyDisplayMode.COLLAPSED,
-)
+    data class Ready(
+        val hideSystemBars: Boolean,
+        val collapseTopBarOnScroll: Boolean,
+        val collapseQuickFilterBarOnScroll: Boolean,
+        val appCornerRadiusDp: Float,
+        val entryHierarchyDisplayMode: EntryHierarchyDisplayMode,
+    ) : InterfaceSettingsUiState
+}
 
 sealed interface InterfaceSettingsAction {
     data class SetHideSystemBars(val enabled: Boolean) : InterfaceSettingsAction
