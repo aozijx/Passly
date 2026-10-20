@@ -58,14 +58,14 @@ private fun AutofillFillContent(
         AutofillFillDisplayState.Hidden -> Unit
         is AutofillFillDisplayState.Candidates -> AutofillCandidateBottomSheet(
             candidates = displayState.candidates.map(AutofillCandidateSummary::toUiItem),
-            onCandidateSelected = { candidateId -> onCandidateSelected(EntryId(candidateId)) },
+            onCandidateSelected = onCandidateSelected,
             onCancel = onCancel,
         )
     }
 }
 
 private fun AutofillCandidateSummary.toUiItem() = AutofillCandidateItem(
-    id = entry.id.value,
+    id = entry.id,
     iconName = entry.profile.icon.name,
     iconCustomPath = entry.profile.icon.customReference,
     associatedAppPackage = entry.profile.associations.applicationIds.firstOrNull(),

@@ -6,6 +6,7 @@ import androidx.core.content.IntentCompat
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
+import com.aozijx.passly.feature.autofill.legacy.LegacyAutofillResultTarget
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
 
 internal fun Intent.toAutofillFillRequest(): AutofillFillRequest? {
@@ -19,6 +20,9 @@ internal fun Intent.toAutofillFillRequest(): AutofillFillRequest? {
     val uiMode = getStringExtra(AutofillLaunchExtras.UI_MODE)
         ?.let { raw -> AutofillPresentation.entries.firstOrNull { it.name == raw } }
         ?: AutofillPresentation.SYSTEM_INLINE
+    val resultTarget = LegacyAutofillResultTarget.fromWireValue(
+        getStringExtra(AutofillLaunchExtras.RESULT_TARGET),
+    ) ?: return null
 
     return AutofillFillRequest(
         interactionId = interactionId,
@@ -28,7 +32,7 @@ internal fun Intent.toAutofillFillRequest(): AutofillFillRequest? {
         directEntryId = getStringExtra(AutofillLaunchExtras.ENTRY_ID)
             ?.takeIf(String::isNotBlank)
             ?.let(::EntryId),
-        returnsDataset = getBooleanExtra(AutofillLaunchExtras.RETURN_DATASET, false),
+        resultTarget = resultTarget,
         editableIds = IntentCompat.getParcelableArrayExtra(
             this,
             AutofillLaunchExtras.EDITABLE_IDS,

@@ -19,6 +19,15 @@ Credential Manager 仍使用自己的 response 合同，不与 Legacy 结果类�
 XML 并绑定文字；XML 不包含匹配类型徽标、自定义卡片背景或业务判断。这样候选、解锁入口和选择器入口共享同一
 展示协议，而 domain 候选模型不会泄漏到 Android View 渲染器。
 
+Legacy 平台的认证结果按入口显式区分，不能复用一个含隐式布尔默认值的 Intent：
+
+- 锁定发现入口是 `RESPONSE`，认证后返回重新构造的 `FillResponse`；
+- 单候选入口和底部候选选择器是 `DATASET`，选择后直接向 Android 返回所选 `Dataset` 并触发填充。
+
+底部选择器因此挂在一个需要认证的占位 Dataset 上，而不是 `FillResponse.setAuthentication()`。后者只适用于认证后
+替换整个响应；用于候选选择时会让 Android 只刷新候选而不填充。`AutofillFillRequest` 必须带有效的结果目标，未知或
+缺失值直接拒绝，不兼容旧的 `returnDataset` 格式。
+
 Android 的该 flag 表示所有 required views 不可见时可触发保存，不等同于 Passly 自己持久化或排队凭据。
 `FLAG_DELAY_SAVE` 只把 FillContext 传递到同一 task 的后续 Autofill 请求，不能让 Passly 在未来解锁时主动取回
 一份挂起凭据，因此不是 sealed Inbox 的替代实现。
@@ -46,4 +55,6 @@ token Intent 不包含用户名、密码、包名或域名。消费后的草稿�
 - [`LegacySaveDraftStore`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/runtime/LegacySaveDraftStore.kt)
 
 平台依据：[Build autofill services](https://developer.android.com/identity/autofill/autofill-services)、
+[FillResponse.Builder](https://developer.android.com/reference/android/service/autofill/FillResponse.Builder.html)、
+[Dataset.Builder](https://developer.android.com/reference/android/service/autofill/Dataset.Builder)、
 [SaveInfo](https://developer.android.com/reference/android/service/autofill/SaveInfo)。

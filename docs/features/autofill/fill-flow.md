@@ -42,6 +42,10 @@ Activity 只编排平台结果，ViewModel 只编排授权、发现和选择。L
 `SelectedResponse`、`SelectedDataset`、`Cancelled` 明确区分，不使用 nullable receipt 猜测是否需要关闭临时会话。
 Credential Manager 同样用 `Immediate` 与 `CommittedSelection` 区分普通平台响应和已选择凭据。
 
+`LegacyAutofillResultTarget` 是 Legacy 启动协议的一部分：解锁发现返回 `RESPONSE`，单候选和底部候选选择返回
+`DATASET`。PendingIntent 工厂在创建入口时写入显式稳定字符串，解析器拒绝缺失或未知值；Compose 底部列表直接传递
+类型化 `EntryId`，不再经过字符串往返转换。该目标只决定 Android 平台结果形态，不进入 domain 候选数据结构。
+
 Compose 路由将工作流状态映射为显式的 `Hidden` 或 `Candidates` 显示状态；终态提交属于独立副作用，不再通过
 nullable 候选列表或组合函数提前返回表达“当前不显示 UI”。
 

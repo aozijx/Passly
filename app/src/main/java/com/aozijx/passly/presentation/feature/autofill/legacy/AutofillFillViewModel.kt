@@ -21,6 +21,7 @@ import com.aozijx.passly.feature.autofill.core.AuthorizeAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.ResolveAutofillSelection
+import com.aozijx.passly.feature.autofill.legacy.LegacyAutofillResultTarget
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseFactory
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
@@ -213,10 +214,10 @@ class AutofillFillViewModel @Inject constructor(
 
         val receipt = AutofillSelectionReceipt(request.interactionId, outcome.payload.entryId)
         traceContinuations.capture(request.interactionId.value)
-        val result = if (request.returnsDataset) {
-            AutofillFillResult.SelectedDataset(dataset, receipt)
-        } else {
-            AutofillFillResult.SelectedResponse(
+        val result = when (request.resultTarget) {
+            LegacyAutofillResultTarget.DATASET ->
+                AutofillFillResult.SelectedDataset(dataset, receipt)
+            LegacyAutofillResultTarget.RESPONSE -> AutofillFillResult.SelectedResponse(
                 value = FillResponse.Builder().addDataset(dataset).build(),
                 receipt = receipt,
             )

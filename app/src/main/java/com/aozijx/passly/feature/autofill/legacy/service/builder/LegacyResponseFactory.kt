@@ -97,7 +97,7 @@ class LegacyResponseFactory @Inject constructor(
         if (parsed.allIds.isEmpty()) return null
         val builder = FillResponse.Builder()
         val roleIds = resolveRoleIds(discoveryContext.roleMap, parsed)
-        val intent = pendingIntentFactory.createInteractionIntent(
+        val intent = pendingIntentFactory.createUnlockIntent(
             context = context,
             interactionId = interactionId,
             parsed = parsed,
@@ -213,7 +213,7 @@ class LegacyResponseFactory @Inject constructor(
         parsed: ParsedStructure,
         roleIds: Map<FieldRole, List<AutofillId>>,
     ) {
-        val intent = pendingIntentFactory.createInteractionIntent(
+        val intent = pendingIntentFactory.createPickerIntent(
             context = context,
             interactionId = interactionId,
             parsed = parsed,
@@ -225,21 +225,22 @@ class LegacyResponseFactory @Inject constructor(
             interactionId.value.hashCode(),
             intent,
         )
-        LegacyDatasetFactory.setAuthenticationCompat(
-            builder,
-            parsed.allIds.toTypedArray(),
-            pendingIntent.intentSender,
-            AutofillRemoteViewFactory.render(
-                context,
-                AutofillRemoteItem.DoubleLine(
-                    title = context.getString(
-                        R.string.autofill_prompt_title,
-                        context.getString(R.string.app_name),
-                    ),
-                    subtitle = context.resources.getQuantityString(
-                        R.plurals.autofill_trigger_count,
-                        candidateCount,
-                        candidateCount,
+        builder.addDataset(
+            LegacyDatasetFactory.createAuthenticatedPickerDataset(
+                ids = parsed.allIds,
+                authentication = pendingIntent.intentSender,
+                presentation = AutofillRemoteViewFactory.render(
+                    context,
+                    AutofillRemoteItem.DoubleLine(
+                        title = context.getString(
+                            R.string.autofill_prompt_title,
+                            context.getString(R.string.app_name),
+                        ),
+                        subtitle = context.resources.getQuantityString(
+                            R.plurals.autofill_trigger_count,
+                            candidateCount,
+                            candidateCount,
+                        ),
                     ),
                 ),
             ),

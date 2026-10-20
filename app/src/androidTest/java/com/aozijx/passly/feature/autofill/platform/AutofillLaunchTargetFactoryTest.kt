@@ -33,7 +33,7 @@ class AutofillLaunchTargetFactoryTest {
         val target = RecordingLaunchTarget(context)
         val interactionId = AutofillInteractionId("interaction-1")
 
-        AutofillPendingIntentFactory(target).createInteractionIntent(
+        AutofillPendingIntentFactory(target).createPickerIntent(
             context = context,
             interactionId = interactionId,
             parsed = ParsedStructure(packageName = "com.example"),

@@ -30,11 +30,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
 import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 
 data class AutofillCandidateItem(
-    val id: String,
+    val id: EntryId,
     val iconName: String?,
     val iconCustomPath: String?,
     val associatedAppPackage: String?,
@@ -48,7 +49,7 @@ data class AutofillCandidateItem(
 @Composable
 fun AutofillCandidateBottomSheet(
     candidates: List<AutofillCandidateItem>,
-    onCandidateSelected: (String) -> Unit,
+    onCandidateSelected: (EntryId) -> Unit,
     onCancel: () -> Unit
 ) {
     val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)

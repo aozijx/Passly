@@ -11,7 +11,7 @@ interface AutofillLaunchTarget {
 
 object AutofillLaunchExtras {
     const val REQUEST_ID = "autofill_request_id"
-    const val RETURN_DATASET = "autofill_return_dataset"
+    const val RESULT_TARGET = "autofill_result_target"
     const val INTERACTION_ID = "autofill_interaction_id"
     const val ENTRY_ID = "autofill_entry_id"
     const val UI_MODE = "autofill_ui_mode"

@@ -27,6 +27,7 @@ import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseF
 import com.aozijx.passly.feature.autofill.legacy.service.parser.EditableFieldInfo
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
+import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertNotNull
@@ -37,17 +38,55 @@ import org.junit.runner.RunWith
 @SdkSuppress(minSdkVersion = 26)
 class LegacyResponseFactoryInstrumentedTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
-    private val factory = LegacyResponseFactory(
-        AutofillPendingIntentFactory(
-            object : AutofillLaunchTarget {
-                override fun legacyFillIntent(context: Context, requestId: String) = Intent()
+    private val pendingIntentFactory = AutofillPendingIntentFactory(
+        object : AutofillLaunchTarget {
+            override fun legacyFillIntent(context: Context, requestId: String) = Intent()
 
-                override fun legacySaveIntent(context: Context, requestId: String) = Intent()
+            override fun legacySaveIntent(context: Context, requestId: String) = Intent()
 
-                override fun credentialResponseIntent(context: Context, requestId: String) = Intent()
-            },
-        ),
+            override fun credentialResponseIntent(context: Context, requestId: String) = Intent()
+        },
     )
+    private val factory = LegacyResponseFactory(pendingIntentFactory)
+
+    @Test
+    fun pickerAndUnlockIntentsDeclareTheirPlatformResultTargets() {
+        val passwordId = View(context).autofillId
+        val parsed = ParsedStructure(
+            packageName = "com.example",
+            editableFields = listOf(EditableFieldInfo(passwordId)),
+        )
+        val interactionId = AutofillInteractionId("interaction-1")
+        val roleIds = mapOf(FieldRole.PASSWORD to listOf(passwordId))
+
+        val pickerRequest = pendingIntentFactory.createPickerIntent(
+            context = context,
+            interactionId = interactionId,
+            parsed = parsed,
+            uiMode = AutofillPresentation.BOTTOM_SHEET,
+            roleIds = roleIds,
+        )
+        val unlockRequest = pendingIntentFactory.createUnlockIntent(
+            context = context,
+            interactionId = interactionId,
+            parsed = parsed,
+            uiMode = AutofillPresentation.BOTTOM_SHEET,
+            roleIds = roleIds,
+        )
+
+        assertEquals(
+            LegacyAutofillResultTarget.DATASET,
+            LegacyAutofillResultTarget.fromWireValue(
+                pickerRequest.getStringExtra(AutofillLaunchExtras.RESULT_TARGET),
+            ),
+        )
+        assertEquals(
+            LegacyAutofillResultTarget.RESPONSE,
+            LegacyAutofillResultTarget.fromWireValue(
+                unlockRequest.getStringExtra(AutofillLaunchExtras.RESULT_TARGET),
+            ),
+        )
+    }
 
     @Test
     fun passwordFormWithoutCandidatesStillReturnsSaveInfoResponse() {
@@ -146,9 +185,12 @@ class LegacyResponseFactoryInstrumentedTest {
         )
     }
 
-    private fun discoveryContext(roleMap: Map<String, FieldRole>) = AutofillDiscoveryContext(
+    private fun discoveryContext(
+        roleMap: Map<String, FieldRole>,
+        presentation: AutofillPresentation = AutofillPresentation.SYSTEM_INLINE,
+    ) = AutofillDiscoveryContext(
         roleMap = roleMap,
-        presentation = AutofillPresentation.SYSTEM_INLINE,
+        presentation = presentation,
         requireAuthentication = false,
         includeOtp = false,
         savePromptsEnabled = true,
@@ -160,4 +202,5 @@ class LegacyResponseFactoryInstrumentedTest {
         scope = AutofillGrantContext("com.example"),
         state = AutofillInteractionState.CandidatesReady,
     )
+
 }

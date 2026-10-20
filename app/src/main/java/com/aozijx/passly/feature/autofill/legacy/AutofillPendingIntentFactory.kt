@@ -34,12 +34,17 @@ class AutofillPendingIntentFactory @Inject constructor(
         return launchTarget.legacyFillIntent(context, requestId).apply {
             setIdentifier(requestId)
             putExtra(AutofillLaunchExtras.ENTRY_ID, entryId.value)
-            putExtra(AutofillLaunchExtras.RETURN_DATASET, true)
-            putCommonExtras(interactionId, parsed, uiMode, roleIds)
+            putCommonExtras(
+                interactionId,
+                parsed,
+                uiMode,
+                roleIds,
+                LegacyAutofillResultTarget.DATASET,
+            )
         }
     }
 
-    fun createInteractionIntent(
+    fun createPickerIntent(
         context: Context,
         interactionId: AutofillInteractionId,
         parsed: ParsedStructure,
@@ -49,7 +54,33 @@ class AutofillPendingIntentFactory @Inject constructor(
         val requestId = AutofillPendingIntentPolicy.legacyInteractionRequestId(interactionId.value)
         return launchTarget.legacyFillIntent(context, requestId).apply {
             setIdentifier(requestId)
-            putCommonExtras(interactionId, parsed, uiMode, roleIds)
+            putCommonExtras(
+                interactionId,
+                parsed,
+                uiMode,
+                roleIds,
+                LegacyAutofillResultTarget.DATASET,
+            )
+        }
+    }
+
+    fun createUnlockIntent(
+        context: Context,
+        interactionId: AutofillInteractionId,
+        parsed: ParsedStructure,
+        uiMode: AutofillPresentation,
+        roleIds: Map<FieldRole, List<AutofillId>>,
+    ): Intent {
+        val requestId = AutofillPendingIntentPolicy.legacyInteractionRequestId(interactionId.value)
+        return launchTarget.legacyFillIntent(context, requestId).apply {
+            setIdentifier(requestId)
+            putCommonExtras(
+                interactionId,
+                parsed,
+                uiMode,
+                roleIds,
+                LegacyAutofillResultTarget.RESPONSE,
+            )
         }
     }
 
@@ -58,9 +89,11 @@ class AutofillPendingIntentFactory @Inject constructor(
         parsed: ParsedStructure,
         uiMode: AutofillPresentation,
         roleIds: Map<FieldRole, List<AutofillId>>,
+        resultTarget: LegacyAutofillResultTarget,
     ) {
         putExtra(AutofillLaunchExtras.INTERACTION_ID, interactionId.value)
         putExtra(AutofillLaunchExtras.UI_MODE, uiMode.name)
+        putExtra(AutofillLaunchExtras.RESULT_TARGET, resultTarget.wireValue)
         putExtra(AutofillLaunchExtras.PACKAGE_NAME, parsed.packageName)
         putExtra(AutofillLaunchExtras.WEB_DOMAIN, parsed.webDomain)
         putExtra(AutofillLaunchExtras.EDITABLE_IDS, parsed.allIds.toTypedArray())

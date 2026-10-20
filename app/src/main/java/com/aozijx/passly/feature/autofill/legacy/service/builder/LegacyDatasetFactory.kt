@@ -15,6 +15,16 @@ import android.widget.RemoteViews
  */
 internal object LegacyDatasetFactory {
 
+    fun createAuthenticatedPickerDataset(
+        ids: List<AutofillId>,
+        authentication: IntentSender,
+        presentation: RemoteViews,
+    ): Dataset {
+        val builder = Dataset.Builder().setAuthentication(authentication)
+        setMenuPresentationCompat(builder, ids, presentation)
+        return builder.build()
+    }
+
     fun createFillDatasetForRoles(
         usernameIds: List<AutofillId>,
         passwordIds: List<AutofillId>,
