@@ -14,6 +14,7 @@ import com.aozijx.passly.presentation.feature.settings.security.AppPasswordSetti
 import com.aozijx.passly.presentation.feature.settings.security.toAppPasswordMessage
 import com.aozijx.passly.presentation.feature.settings.security.rememberAppPasswordDialogCoordinator
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsAction
+import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsUiState
 import com.aozijx.passly.presentation.feature.settings.security.SecuritySettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.toSecuritySettingsUiModel
 import com.aozijx.passly.presentation.feature.settings.ui.security.AppPasswordDialogs
@@ -54,31 +55,34 @@ internal fun SecurityRoute(
         title = stringResource(SettingsGroup.SECURITY.titleRes),
         onBack = onBack,
     ) {
-        item {
-            SecurityDetail(
-                state = securityState.toSecuritySettingsUiModel(
-                    isAppPasswordEnabled = appPasswordState.isAppPasswordEnabled,
-                ),
-                onLockTimeoutChange = {
-                    securityViewModel.onAction(SecuritySettingsAction.SetLockTimeout(it))
-                },
-                onAppPasswordClick = {
-                    appPasswordViewModel.onAction(AppPasswordSettingsAction.RequestAppPasswordEntry)
-                },
-                onBiometricEnabledChange = { enabled ->
-                    securityViewModel.onAction(
-                        SecuritySettingsAction.SetBiometricEnabled(enabled),
-                    )
-                },
-                onInvalidateKeyOnBioChangeToggle = { enabled ->
-                    securityViewModel.onAction(
-                        SecuritySettingsAction.SetInvalidateKeyOnBiometricChange(enabled),
-                    )
-                },
-                onLockOnBackgroundChange = {
-                    securityViewModel.onAction(SecuritySettingsAction.ToggleLockOnBackground(it))
-                },
-            )
+        when (val state = securityState) {
+            SecuritySettingsUiState.Loading -> Unit
+            is SecuritySettingsUiState.Ready -> item {
+                SecurityDetail(
+                    state = state.toSecuritySettingsUiModel(
+                        isAppPasswordEnabled = appPasswordState.isAppPasswordEnabled,
+                    ),
+                    onLockTimeoutChange = {
+                        securityViewModel.onAction(SecuritySettingsAction.SetLockTimeout(it))
+                    },
+                    onAppPasswordClick = {
+                        appPasswordViewModel.onAction(AppPasswordSettingsAction.RequestAppPasswordEntry)
+                    },
+                    onBiometricEnabledChange = { enabled ->
+                        securityViewModel.onAction(
+                            SecuritySettingsAction.SetBiometricEnabled(enabled),
+                        )
+                    },
+                    onInvalidateKeyOnBioChangeToggle = { enabled ->
+                        securityViewModel.onAction(
+                            SecuritySettingsAction.SetInvalidateKeyOnBiometricChange(enabled),
+                        )
+                    },
+                    onLockOnBackgroundChange = {
+                        securityViewModel.onAction(SecuritySettingsAction.ToggleLockOnBackground(it))
+                    },
+                )
+            }
         }
     }
 

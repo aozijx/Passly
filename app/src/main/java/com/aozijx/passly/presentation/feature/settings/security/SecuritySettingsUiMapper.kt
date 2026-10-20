@@ -3,7 +3,7 @@ package com.aozijx.passly.presentation.feature.settings.security
 import com.aozijx.passly.domain.settings.model.LockTimeoutConstraints
 import com.aozijx.passly.presentation.feature.settings.ui.security.model.SecuritySettingsUiModel
 
-fun SecuritySettingsUiState.toSecuritySettingsUiModel(
+fun SecuritySettingsUiState.Ready.toSecuritySettingsUiModel(
     isAppPasswordEnabled: Boolean,
 ): SecuritySettingsUiModel = SecuritySettingsUiModel(
     lockTimeoutMs = lockTimeout,

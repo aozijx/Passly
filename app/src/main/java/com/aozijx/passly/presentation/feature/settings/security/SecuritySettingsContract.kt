@@ -1,11 +1,15 @@
 package com.aozijx.passly.presentation.feature.settings.security
 
-data class SecuritySettingsUiState(
-    val lockTimeout: Long = 60_000L,
-    val isInvalidateKeyOnBioChange: Boolean = true,
-    val isLockOnBackground: Boolean = false,
-    val isBiometricEnabled: Boolean = false,
-)
+sealed interface SecuritySettingsUiState {
+    data object Loading : SecuritySettingsUiState
+
+    data class Ready(
+        val lockTimeout: Long,
+        val isInvalidateKeyOnBioChange: Boolean,
+        val isLockOnBackground: Boolean,
+        val isBiometricEnabled: Boolean,
+    ) : SecuritySettingsUiState
+}
 
 sealed interface SecuritySettingsAction {
     data class SetLockTimeout(val timeoutMs: Long) : SecuritySettingsAction

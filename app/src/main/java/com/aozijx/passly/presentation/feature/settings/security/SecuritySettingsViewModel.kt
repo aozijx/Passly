@@ -5,10 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
 import com.aozijx.passly.feature.settings.security.SecurityAuthenticationSettingsInteractor
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -18,13 +18,21 @@ class SecuritySettingsViewModel @Inject constructor(
     private val settingsRepository: SecuritySettingsRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(SecuritySettingsUiState())
-    val uiState: StateFlow<SecuritySettingsUiState> = _uiState.asStateFlow()
-
-    init {
-        observeSettings()
-        observeAuthenticationMethods()
-    }
+    val uiState: StateFlow<SecuritySettingsUiState> = combine(
+        settingsRepository.security,
+        authenticationSettings.isBiometricEnabled,
+    ) { security, isBiometricEnabled ->
+        SecuritySettingsUiState.Ready(
+            lockTimeout = security.lockTimeout,
+            isInvalidateKeyOnBioChange = security.isInvalidateBiometricKeyOnChange,
+            isLockOnBackground = security.isLockOnBackground,
+            isBiometricEnabled = isBiometricEnabled,
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000L),
+        initialValue = SecuritySettingsUiState.Loading,
+    )
 
     fun onAction(action: SecuritySettingsAction) {
         when (action) {
@@ -45,30 +53,6 @@ class SecuritySettingsViewModel @Inject constructor(
         }
     }
 
-    private fun observeSettings() {
-        viewModelScope.launch {
-            settingsRepository.security.collect { security ->
-                _uiState.update {
-                    it.copy(
-                        lockTimeout = security.lockTimeout,
-                        isInvalidateKeyOnBioChange = security.isInvalidateBiometricKeyOnChange,
-                        isLockOnBackground = security.isLockOnBackground,
-                    )
-                }
-            }
-        }
-    }
-
-    private fun observeAuthenticationMethods() {
-        viewModelScope.launch {
-            authenticationSettings.isBiometricEnabled.collect { enabled ->
-                _uiState.update {
-                    it.copy(isBiometricEnabled = enabled)
-                }
-            }
-        }
-    }
-
     private fun setKeyInvalidationPolicy(enabled: Boolean) {
         viewModelScope.launch {
             authenticationSettings.setKeyInvalidationPolicy(enabled)
@@ -76,10 +60,11 @@ class SecuritySettingsViewModel @Inject constructor(
     }
 
     private fun setBiometricEnabled(enabled: Boolean) {
+        val settings = uiState.value as? SecuritySettingsUiState.Ready ?: return
         viewModelScope.launch {
             authenticationSettings.setBiometricEnabled(
                 enabled = enabled,
-                invalidateOnEnrollment = uiState.value.isInvalidateKeyOnBioChange,
+                invalidateOnEnrollment = settings.isInvalidateKeyOnBioChange,
             )
         }
     }

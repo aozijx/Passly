@@ -9,7 +9,7 @@ import org.junit.Test
 class SecuritySettingsUiMapperTest {
     @Test
     fun mapsSecurityStateAndLockConstraintsToPassiveUiModel() {
-        val model = SecuritySettingsUiState(
+        val model = SecuritySettingsUiState.Ready(
             lockTimeout = 45_000L,
             isInvalidateKeyOnBioChange = false,
             isLockOnBackground = true,
