@@ -6,14 +6,15 @@ import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.message.contract.AppVisibility
 import com.aozijx.passly.app.message.contract.AppVisibilityProvider
 import com.aozijx.passly.app.message.contract.MessageSettingsSnapshotProvider
+import com.aozijx.passly.app.message.contract.MessageSettingsSnapshot
 import com.aozijx.passly.app.message.contract.NoticeCodeRegistry
 import com.aozijx.passly.app.message.contract.NoticeDispatchStatus
 import com.aozijx.passly.app.message.contract.NoticeSink
 import com.aozijx.passly.app.message.contract.NoticeTarget
+import com.aozijx.passly.app.message.contract.RouteReason
 import com.aozijx.passly.app.message.contract.SinkResult
 import com.aozijx.passly.app.message.contract.SystemNotificationState
 import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
-import com.aozijx.passly.app.message.contract.VersionedMessageSettings
 import com.aozijx.passly.app.message.contract.defaultNoticeCodePolicy
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -21,6 +22,34 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DefaultAppNoticeDispatcherTest {
+    @Test
+    fun settingsUnavailableSuppressesNoticeWithoutClaimingOrDeliveringIt() = runBlocking {
+        var deliveries = 0
+        val dispatcher = DefaultAppNoticeDispatcher(
+            router = DefaultNoticeRouter(),
+            deduplicator = DefaultNoticeDeduplicator { 1_000L },
+            codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
+            settingsProvider = MessageSettingsSnapshotProvider { MessageSettingsSnapshot.Loading },
+            visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
+            systemStateProvider = availableSystemState(),
+            sinks = setOf(
+                sink(NoticeTarget.IN_APP) {
+                    deliveries++
+                    SinkResult.Delivered
+                }
+            )
+        )
+
+        val receipt = dispatcher.dispatch(
+            newAppNotice(NoticeCode.CLIPBOARD_CLEARED, eventId = "settings-loading")
+        )
+
+        assertEquals(0, deliveries)
+        assertEquals(0, receipt.settingsVersion)
+        assertEquals(NoticeDispatchStatus.SUPPRESSED, receipt.status)
+        assertEquals(RouteReason.SETTINGS_UNAVAILABLE, receipt.plan.reason)
+    }
+
     @Test
     fun systemFailureFallsBackToInAppAndReturnsReceipt() = runBlocking {
         var settingsReads = 0
@@ -31,7 +60,7 @@ class DefaultAppNoticeDispatcherTest {
             codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
             settingsProvider = MessageSettingsSnapshotProvider {
                 settingsReads++
-                VersionedMessageSettings(9, MessageSettings())
+                MessageSettingsSnapshot.Ready(9, MessageSettings())
             },
             visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
             systemStateProvider = availableSystemState(),
@@ -64,7 +93,7 @@ class DefaultAppNoticeDispatcherTest {
             deduplicator = DefaultNoticeDeduplicator { 1_000L },
             codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
             settingsProvider = MessageSettingsSnapshotProvider {
-                VersionedMessageSettings(1, MessageSettings())
+                MessageSettingsSnapshot.Ready(1, MessageSettings())
             },
             visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
             systemStateProvider = availableSystemState(),
@@ -96,7 +125,7 @@ class DefaultAppNoticeDispatcherTest {
             deduplicator = DefaultNoticeDeduplicator { 1_000L },
             codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
             settingsProvider = MessageSettingsSnapshotProvider {
-                VersionedMessageSettings(
+                MessageSettingsSnapshot.Ready(
                     3,
                     MessageSettings(systemNotificationsEnabled = false)
                 )

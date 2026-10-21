@@ -6,6 +6,7 @@ import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.app.message.contract.AppVisibilityProvider
 import com.aozijx.passly.app.message.contract.DeduplicationClaim
 import com.aozijx.passly.app.message.contract.MessageSettingsSnapshotProvider
+import com.aozijx.passly.app.message.contract.MessageSettingsSnapshot
 import com.aozijx.passly.app.message.contract.NoticeCodeRegistry
 import com.aozijx.passly.app.message.contract.NoticeDeduplicator
 import com.aozijx.passly.app.message.contract.NoticeDispatchReceipt
@@ -62,8 +63,17 @@ class DefaultAppNoticeDispatcher @Inject constructor(
         dispatchMutex.withLock { dispatchSerial(notice) }
 
     private suspend fun dispatchSerial(notice: AppNotice): NoticeDispatchReceipt {
+        val settings = when (val snapshot = settingsProvider.current()) {
+            MessageSettingsSnapshot.Loading -> return receipt(
+                notice = notice,
+                settingsVersion = 0,
+                plan = NoticeRoutePlan.suppressed(RouteReason.SETTINGS_UNAVAILABLE),
+                results = emptyMap(),
+                status = NoticeDispatchStatus.SUPPRESSED,
+            )
+            is MessageSettingsSnapshot.Ready -> snapshot
+        }
         val policy = codeRegistry.policyFor(notice.code)
-        val settings = settingsProvider.current()
         val systemState = systemStateProvider.current().copy(
             userSettingEnabled = settings.value.systemNotificationsEnabled
         )

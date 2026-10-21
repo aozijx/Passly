@@ -85,6 +85,10 @@ flowchart LR
 Legacy Autofill、Credential Manager 和保存 Activity 通过同一个 persisted-theme host 等待外观与圆角偏好，不调用
 无参数 `AppTheme()` 生成另一套默认主题。
 
+消息 dispatcher 的同步读取接口使用 `MessageSettingsSnapshot.Loading/Ready`。在第一份 Proto 消息偏好到达前，事件以
+`SETTINGS_UNAVAILABLE` 明确抑制，不用 Domain 构造默认值临时开启消息，也不占用事件去重 claim；偏好到达后再按
+`Ready` 快照的版本和规则路由。
+
 ## Schema 演进规则
 
 - 当前 preferences schema 按破坏性更新管理，不读取旧 `*.pb`，也不为已删除字段保留兼容解析路径；字段可随当前模型

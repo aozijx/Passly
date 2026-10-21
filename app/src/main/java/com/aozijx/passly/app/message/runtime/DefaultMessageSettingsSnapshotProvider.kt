@@ -1,8 +1,7 @@
 package com.aozijx.passly.app.message.runtime
 
 import com.aozijx.passly.app.message.contract.MessageSettingsSnapshotProvider
-import com.aozijx.passly.app.message.contract.VersionedMessageSettings
-import com.aozijx.passly.domain.settings.model.MessageSettings
+import com.aozijx.passly.app.message.contract.MessageSettingsSnapshot
 import com.aozijx.passly.domain.settings.port.MessageSettingsSource
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
@@ -18,9 +17,7 @@ class DefaultMessageSettingsSnapshotProvider @Inject constructor(
     settingsSource: MessageSettingsSource
 ) : MessageSettingsSnapshotProvider {
     private val version = AtomicLong(0)
-    private val current = AtomicReference(
-        VersionedMessageSettings(0, MessageSettings())
-    )
+    private val current = AtomicReference<MessageSettingsSnapshot>(MessageSettingsSnapshot.Loading)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     init {
@@ -28,7 +25,7 @@ class DefaultMessageSettingsSnapshotProvider @Inject constructor(
             settingsSource.messages
                 .collect { settings ->
                     current.set(
-                        VersionedMessageSettings(
+                        MessageSettingsSnapshot.Ready(
                             version = version.incrementAndGet(),
                             value = settings
                         )
@@ -37,5 +34,5 @@ class DefaultMessageSettingsSnapshotProvider @Inject constructor(
         }
     }
 
-    override fun current(): VersionedMessageSettings = current.get()
+    override fun current(): MessageSettingsSnapshot = current.get()
 }

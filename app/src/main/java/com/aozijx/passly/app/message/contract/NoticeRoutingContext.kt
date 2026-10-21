@@ -28,13 +28,17 @@ data class SystemNotificationState(
             channelEnabled
 }
 
-data class VersionedMessageSettings(
-    val version: Long,
-    val value: MessageSettings
-)
+sealed interface MessageSettingsSnapshot {
+    data object Loading : MessageSettingsSnapshot
+
+    data class Ready(
+        val version: Long,
+        val value: MessageSettings,
+    ) : MessageSettingsSnapshot
+}
 
 fun interface MessageSettingsSnapshotProvider {
-    fun current(): VersionedMessageSettings
+    fun current(): MessageSettingsSnapshot
 }
 
 fun interface AppVisibilityProvider {
