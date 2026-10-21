@@ -40,7 +40,7 @@ enum class ContractViolation {
 
 class LogContractViolation internal constructor(
     val violation: ContractViolation,
-) : IllegalArgumentException("Log contract violation: ${violation.name}")
+) : AssertionError("Log contract violation: ${violation.name}")
 
 sealed interface SanitizationResult {
     data class Accepted(
@@ -238,6 +238,7 @@ class PrivacyPolicy(
             LogFieldKeys.DroppedWarnCount to FieldKind.COUNT,
             LogFieldKeys.DroppedErrorCount to FieldKind.COUNT,
             LogFieldKeys.DroppedFatalCount to FieldKind.COUNT,
+            LogFieldKeys.EntryType to FieldKind.ENUM,
         )
     }
 }

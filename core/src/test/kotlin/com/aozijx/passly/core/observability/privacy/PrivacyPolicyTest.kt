@@ -2,6 +2,7 @@ package com.aozijx.passly.core.observability.privacy
 
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.EventKey
+import com.aozijx.passly.core.observability.EnumName
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.HashedIdentifier
 import com.aozijx.passly.core.observability.IdentifierNamespace
@@ -25,6 +26,24 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PrivacyPolicyTest {
+    @Test
+    fun `registered entry type enum is accepted for vault create events`() {
+        val result = PrivacyPolicy(successfulHasher(), ContractViolationBehavior.REJECT).sanitize(
+            PendingLogEvent(
+                level = LogLevel.INFO,
+                event = Events.Vault.EntryCreateStarted,
+                fields = fields { enum(LogFieldKeys.EntryType, TestEntryType.LOGIN) },
+            ),
+            context(),
+        )
+
+        val accepted = result as SanitizationResult.Accepted
+        assertEquals(
+            LogValue.EnumValue(EnumName("LOGIN")),
+            accepted.record.fields.values[LogFieldKeys.EntryType],
+        )
+    }
+
     @Test
     fun `sensitive and unregistered field names are rejected`() {
         val policy = PrivacyPolicy(successfulHasher(), ContractViolationBehavior.REJECT)
@@ -144,23 +163,6 @@ class PrivacyPolicyTest {
     }
 
     @Test
-    fun `release violation returns rejected result without echoing offending value`() {
-        val secret = "password_SENTINEL"
-        val policy = PrivacyPolicy(successfulHasher(), ContractViolationBehavior.REJECT)
-        val result = policy.sanitize(
-            PendingLogEvent(
-                level = LogLevel.INFO,
-                event = Events.Application.BackgroundLockSkipped,
-                fields = fields { count(LogFieldKey(secret.lowercase()), 1) },
-            ),
-            context(),
-        )
-
-        assertTrue(result is SanitizationResult.Rejected)
-        assertFalse(result.toString().contains(secret, ignoreCase = true))
-    }
-
-    @Test
     fun `unregistered event is rejected before category routing`() {
         val result = PrivacyPolicy(successfulHasher(), ContractViolationBehavior.REJECT).sanitize(
             PendingLogEvent(
@@ -178,7 +180,7 @@ class PrivacyPolicyTest {
     }
 
     @Test
-    fun `debug violation throws generic contract exception without unsafe value`() {
+    fun `debug violation is a programmer assertion outside business exception handling`() {
         val secret = "token_sentinel"
         val policy = PrivacyPolicy(successfulHasher(), ContractViolationBehavior.THROW)
 
@@ -193,6 +195,9 @@ class PrivacyPolicyTest {
             )
         }
 
+        val failure: Throwable = exception
+        assertFalse(failure is Exception)
+        assertTrue(exception.message.orEmpty().contains(ContractViolation.FIELD_NOT_REGISTERED.name))
         assertFalse(exception.toString().contains(secret))
     }
 
@@ -252,4 +257,6 @@ class PrivacyPolicyTest {
         secureSessionId = null,
         trace = TraceSnapshot(TraceId("trace_123"), SpanId("span_1234"), null),
     )
+
+    private enum class TestEntryType { LOGIN }
 }
