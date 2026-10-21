@@ -21,6 +21,7 @@ import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageS
 import com.aozijx.passly.presentation.feature.backup.BackupOperationRoute
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsUiAction
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsEffect
+import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsUiState
 import com.aozijx.passly.presentation.feature.settings.backup.DataManagementSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.ui.data.BackupDirectoryClearDialog
 import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
@@ -34,6 +35,10 @@ internal fun BackupRoute(
     val context = LocalContext.current
     val viewModel: DataManagementSettingsViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val readyState = when (val current = state) {
+        DataManagementSettingsUiState.Loading -> return
+        is DataManagementSettingsUiState.Ready -> current
+    }
     var showClearDirectoryDialog by rememberSaveable { mutableStateOf(false) }
     val notSetText = stringResource(R.string.not_set)
     val selectionCancelledMessage = stringResource(
@@ -45,8 +50,8 @@ internal fun BackupRoute(
     val unavailableMessage = stringResource(
         R.string.settings_backup_directory_unavailable,
     )
-    val pathLabel = remember(state.directoryUri) {
-        UriDisplayNameFormatter.format(state.directoryUri) ?: notSetText
+    val pathLabel = remember(readyState.directoryUri) {
+        UriDisplayNameFormatter.format(readyState.directoryUri) ?: notSetText
     }
     val backupPathPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
@@ -82,7 +87,7 @@ internal fun BackupRoute(
     ) {
         item {
             BackupOperationRoute(
-                directoryUri = state.directoryUri,
+                directoryUri = readyState.directoryUri,
                 directoryLabel = pathLabel,
                 lastExportFileLabel = notSetText,
                 onPickBackupPath = {
@@ -90,7 +95,7 @@ internal fun BackupRoute(
                         BackupStorageSupport.defaultDocumentsTreeUri()
                     )
                 },
-                onClearBackupPath = if (state.directoryUri.isNullOrBlank()) null
+                onClearBackupPath = if (readyState.directoryUri.isNullOrBlank()) null
                 else ({ showClearDirectoryDialog = true }),
             )
         }

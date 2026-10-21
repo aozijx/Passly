@@ -17,7 +17,9 @@ import kotlinx.coroutines.launch
 class DataManagementSettingsViewModel @Inject constructor(
     private val directorySettings: BackupDirectorySettingsInteractor,
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(DataManagementSettingsUiState())
+    private val _uiState = MutableStateFlow<DataManagementSettingsUiState>(
+        DataManagementSettingsUiState.Loading,
+    )
     val uiState: StateFlow<DataManagementSettingsUiState> = _uiState.asStateFlow()
     private val _effects = Channel<DataManagementSettingsEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
@@ -25,7 +27,7 @@ class DataManagementSettingsViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             directorySettings.directoryUri.collect { directoryUri ->
-                _uiState.value = DataManagementSettingsUiState(
+                _uiState.value = DataManagementSettingsUiState.Ready(
                     directoryUri = directoryUri,
                 )
             }
@@ -37,8 +39,11 @@ class DataManagementSettingsViewModel @Inject constructor(
             when (action) {
                 is DataManagementSettingsUiAction.BackupDirectoryPicked ->
                     handleSelection(action.uri)
-                DataManagementSettingsUiAction.ClearBackupDirectory ->
-                    directorySettings.clear(_uiState.value.directoryUri)
+                DataManagementSettingsUiAction.ClearBackupDirectory -> when (val state = _uiState.value) {
+                    DataManagementSettingsUiState.Loading -> Unit
+                    is DataManagementSettingsUiState.Ready ->
+                        directorySettings.clear(state.directoryUri)
+                }
             }
         }
     }
