@@ -11,6 +11,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsAction
 import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsEffect
+import com.aozijx.passly.presentation.feature.settings.security.PrivacySettingsUiState
 import com.aozijx.passly.presentation.feature.settings.security.toPrivacySettingsUiModel
 import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
 import com.aozijx.passly.presentation.feature.settings.ui.security.PrivacyDetail
@@ -40,9 +41,11 @@ internal fun PrivacyRoute(
         title = stringResource(SettingsGroup.PRIVACY.titleRes),
         onBack = onBack
     ) {
-        item {
-            PrivacyDetail(
-                state = state.toPrivacySettingsUiModel(),
+        when (val readyState = state) {
+            PrivacySettingsUiState.Loading -> Unit
+            is PrivacySettingsUiState.Ready -> item {
+                PrivacyDetail(
+                state = readyState.toPrivacySettingsUiModel(),
                 onSecureContentEnabledChange = {
                     viewModel.onAction(PrivacySettingsAction.SetSecureContentEnabled(it))
                 },
@@ -70,7 +73,8 @@ internal fun PrivacyRoute(
                 onClearClipboard = {
                     viewModel.onAction(PrivacySettingsAction.ClearClipboardNow)
                 },
-            )
+                )
+            }
         }
     }
 }

@@ -1,13 +1,17 @@
 package com.aozijx.passly.presentation.feature.settings.security
 
-data class PrivacySettingsUiState(
-    val isSecureContentEnabled: Boolean = true,
-    val isFlipToLockEnabled: Boolean = false,
-    val isFlipExitAndClearStackEnabled: Boolean = false,
-    val reauthenticateSensitiveCopies: Boolean = true,
-    val clipboardClearEnabled: Boolean = true,
-    val clipboardClearDelaySeconds: Int = 30,
-)
+sealed interface PrivacySettingsUiState {
+    data object Loading : PrivacySettingsUiState
+
+    data class Ready(
+        val isSecureContentEnabled: Boolean,
+        val isFlipToLockEnabled: Boolean,
+        val isFlipExitAndClearStackEnabled: Boolean,
+        val reauthenticateSensitiveCopies: Boolean,
+        val clipboardClearEnabled: Boolean,
+        val clipboardClearDelaySeconds: Int,
+    ) : PrivacySettingsUiState
+}
 
 sealed interface PrivacySettingsAction {
     data class SetSecureContentEnabled(val enabled: Boolean) : PrivacySettingsAction

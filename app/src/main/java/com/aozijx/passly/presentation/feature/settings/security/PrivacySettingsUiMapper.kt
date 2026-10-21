@@ -3,7 +3,7 @@ package com.aozijx.passly.presentation.feature.settings.security
 import com.aozijx.passly.presentation.feature.settings.ui.security.model.PrivacySettingsUiModel
 import com.aozijx.passly.domain.settings.model.ClipboardClearPolicy
 
-fun PrivacySettingsUiState.toPrivacySettingsUiModel(): PrivacySettingsUiModel =
+fun PrivacySettingsUiState.Ready.toPrivacySettingsUiModel(): PrivacySettingsUiModel =
     PrivacySettingsUiModel(
         isSecureContentEnabled = isSecureContentEnabled,
         isFlipToLockEnabled = isFlipToLockEnabled,

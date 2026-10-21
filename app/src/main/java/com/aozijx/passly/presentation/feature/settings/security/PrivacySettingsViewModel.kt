@@ -24,7 +24,7 @@ class PrivacySettingsViewModel @Inject constructor(
     val effects = _effects.receiveAsFlow()
 
     val uiState: StateFlow<PrivacySettingsUiState> = settingsRepository.security.map { security ->
-        PrivacySettingsUiState(
+        PrivacySettingsUiState.Ready(
             isSecureContentEnabled = security.isSecureContentEnabled,
             isFlipToLockEnabled = security.isFlipToLockEnabled,
             isFlipExitAndClearStackEnabled = security.isFlipExitAndClearStackEnabled,
@@ -35,7 +35,7 @@ class PrivacySettingsViewModel @Inject constructor(
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000L),
-        PrivacySettingsUiState()
+        PrivacySettingsUiState.Loading
     )
 
     fun onAction(action: PrivacySettingsAction) {

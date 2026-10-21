@@ -8,7 +8,7 @@ import org.junit.Test
 class PrivacySettingsUiMapperTest {
     @Test
     fun mapsEveryPrivacyFlagToPassiveUiModel() {
-        val model = PrivacySettingsUiState(
+        val model = PrivacySettingsUiState.Ready(
             isSecureContentEnabled = false,
             isFlipToLockEnabled = true,
             isFlipExitAndClearStackEnabled = true,
