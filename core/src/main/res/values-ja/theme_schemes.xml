@@ -7,4 +7,8 @@
     <string name="theme_scheme_sunset">サンセット</string>
     <string name="theme_scheme_lavender">ラベンダー</string>
     <string name="theme_scheme_mint">ミント</string>
+    <string name="theme_scheme_graphite">グラファイト</string>
+    <string name="theme_scheme_amber">アンバー</string>
+    <string name="theme_scheme_ruby">ルビー</string>
+    <string name="theme_scheme_indigo">インディゴ</string>
 </resources>

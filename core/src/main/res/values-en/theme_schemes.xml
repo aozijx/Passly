@@ -7,4 +7,8 @@
     <string name="theme_scheme_sunset">Sunset</string>
     <string name="theme_scheme_lavender">Lavender</string>
     <string name="theme_scheme_mint">Mint</string>
+    <string name="theme_scheme_graphite">Graphite</string>
+    <string name="theme_scheme_amber">Amber</string>
+    <string name="theme_scheme_ruby">Ruby</string>
+    <string name="theme_scheme_indigo">Indigo</string>
 </resources>

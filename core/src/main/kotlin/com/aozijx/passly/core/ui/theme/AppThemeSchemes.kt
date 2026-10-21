@@ -93,6 +93,42 @@ object AppThemeSchemes {
                 R.color.theme_seed_mint_tertiary,
             ),
         ),
+        ThemeSchemeDefinition(
+            "graphite",
+            R.string.theme_scheme_graphite,
+            ThemeSeedResources(
+                R.color.theme_seed_graphite_primary,
+                R.color.theme_seed_graphite_secondary,
+                R.color.theme_seed_graphite_tertiary,
+            ),
+        ),
+        ThemeSchemeDefinition(
+            "amber",
+            R.string.theme_scheme_amber,
+            ThemeSeedResources(
+                R.color.theme_seed_amber_primary,
+                R.color.theme_seed_amber_secondary,
+                R.color.theme_seed_amber_tertiary,
+            ),
+        ),
+        ThemeSchemeDefinition(
+            "ruby",
+            R.string.theme_scheme_ruby,
+            ThemeSeedResources(
+                R.color.theme_seed_ruby_primary,
+                R.color.theme_seed_ruby_secondary,
+                R.color.theme_seed_ruby_tertiary,
+            ),
+        ),
+        ThemeSchemeDefinition(
+            "indigo",
+            R.string.theme_scheme_indigo,
+            ThemeSeedResources(
+                R.color.theme_seed_indigo_primary,
+                R.color.theme_seed_indigo_secondary,
+                R.color.theme_seed_indigo_tertiary,
+            ),
+        ),
     )
 
     fun find(key: String): ThemeSchemeDefinition? = all.firstOrNull { it.key == key }

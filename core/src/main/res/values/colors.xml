@@ -1,66 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="theme_seed_default_primary">#006495</color>
-    <color name="theme_seed_default_secondary">#50606E</color>
-    <color name="theme_seed_default_tertiary">#006A6A</color>
-    <color name="primary_light">#006495</color>
-    <color name="on_primary_light">#FFFFFF</color>
-    <color name="primary_container_light">#CBE6FF</color>
-    <color name="on_primary_container_light">#001E30</color>
-    <color name="secondary_light">#50606E</color>
-    <color name="secondary_container_light">#D3E5F5</color>
-    <color name="on_secondary_container_light">#0C1D29</color>
-    <color name="tertiary_light">#006A6A</color>
-    <color name="error_light">#BA1A1A</color>
-    <color name="background_light">#F8F9FF</color>
-    <color name="surface_variant_light">#DEE3EB</color>
-    <color name="outline_light">#71787E</color>
-    <color name="primary_dark">#8FCDFF</color>
-    <color name="on_primary_dark">#003450</color>
-    <color name="primary_container_dark">#004C71</color>
-    <color name="on_primary_container_dark">#CBE6FF</color>
-    <color name="secondary_dark">#B8C8D9</color>
-    <color name="secondary_container_dark">#384956</color>
-    <color name="on_secondary_container_dark">#D3E5F5</color>
-    <color name="tertiary_dark">#81D5D5</color>
-    <color name="error_dark">#FFB4AB</color>
-    <color name="background_dark">#1A1C1E</color>
-    <color name="surface_variant_dark">#42474E</color>
-    <color name="outline_dark">#8C9199</color>
+    <color name="theme_seed_default_secondary">#535F70</color>
+    <color name="theme_seed_default_tertiary">#006874</color>
 
-    <!-- Muted manual-theme seeds. Each scheme combines these three into Material accents. -->
-    <!-- Aurora（极光）: 蓝紫渐变 -->
-    <color name="theme_seed_aurora_primary">#5B7FFF</color>
-    <color name="theme_seed_aurora_secondary">#8B9EFF</color>
-    <color name="theme_seed_aurora_tertiary">#C5D0FF</color>
+    <!-- Manual-theme source colors. Material Color Utilities derives all light/dark roles. -->
+    <!-- Aurora: Nord-inspired frost, violet, and teal. -->
+    <color name="theme_seed_aurora_primary">#5E81AC</color>
+    <color name="theme_seed_aurora_secondary">#B48EAD</color>
+    <color name="theme_seed_aurora_tertiary">#8FBCBB</color>
 
-    <!-- Sakura（樱花）: 粉红温柔 -->
-    <color name="theme_seed_sakura_primary">#FF8A9B</color>
-    <color name="theme_seed_sakura_secondary">#FFB3C1</color>
-    <color name="theme_seed_sakura_tertiary">#FFD9E0</color>
+    <!-- Sakura: Rosé Pine Dawn-inspired rose, iris, and gold. -->
+    <color name="theme_seed_sakura_primary">#B4637A</color>
+    <color name="theme_seed_sakura_secondary">#907AA9</color>
+    <color name="theme_seed_sakura_tertiary">#EA9D34</color>
 
-    <!-- Ocean（海洋）: 深蓝至浅蓝 -->
-    <color name="theme_seed_ocean_primary">#2B6B9E</color>
-    <color name="theme_seed_ocean_secondary">#4A8FC7</color>
-    <color name="theme_seed_ocean_tertiary">#A6C8E8</color>
+    <!-- Ocean: clear blue with sapphire and teal accents. -->
+    <color name="theme_seed_ocean_primary">#1E66F5</color>
+    <color name="theme_seed_ocean_secondary">#209FB5</color>
+    <color name="theme_seed_ocean_tertiary">#179299</color>
 
-    <!-- Forest（森林）: 翠绿与嫩绿 -->
-    <color name="theme_seed_forest_primary">#3A7D5A</color>
-    <color name="theme_seed_forest_secondary">#6BAF8D</color>
-    <color name="theme_seed_forest_tertiary">#B5D9C4</color>
+    <!-- Forest: leaf green with stone teal and earth gold. -->
+    <color name="theme_seed_forest_primary">#4F772D</color>
+    <color name="theme_seed_forest_secondary">#6D8F89</color>
+    <color name="theme_seed_forest_tertiary">#A07828</color>
 
-    <!-- Sunset（日落）: 暖橙红 -->
-    <color name="theme_seed_sunset_primary">#E87A4F</color>
-    <color name="theme_seed_sunset_secondary">#F2A87A</color>
-    <color name="theme_seed_sunset_tertiary">#FCD5B5</color>
+    <!-- Sunset: ember orange with magenta and twilight violet. -->
+    <color name="theme_seed_sunset_primary">#D65D3E</color>
+    <color name="theme_seed_sunset_secondary">#C44778</color>
+    <color name="theme_seed_sunset_tertiary">#7657C8</color>
 
-    <!-- Lavender（薰衣草）: 淡紫与灰紫 -->
-    <color name="theme_seed_lavender_primary">#9B7FD4</color>
-    <color name="theme_seed_lavender_secondary">#BBA7E0</color>
-    <color name="theme_seed_lavender_tertiary">#DDD0F0</color>
+    <!-- Lavender: Catppuccin-inspired mauve, lavender, and flamingo. -->
+    <color name="theme_seed_lavender_primary">#8839EF</color>
+    <color name="theme_seed_lavender_secondary">#7287FD</color>
+    <color name="theme_seed_lavender_tertiary">#DC8A78</color>
 
-    <!-- Mint（薄荷）: 清新冰蓝绿 -->
-    <color name="theme_seed_mint_primary">#4DB6A0</color>
-    <color name="theme_seed_mint_secondary">#80D0C0</color>
-    <color name="theme_seed_mint_tertiary">#C0E8DF</color>
+    <!-- Mint: restrained mint with eucalyptus and cool blue. -->
+    <color name="theme_seed_mint_primary">#008577</color>
+    <color name="theme_seed_mint_secondary">#4E7C70</color>
+    <color name="theme_seed_mint_tertiary">#46739A</color>
+
+    <!-- Graphite: low-distraction blue gray with steel and copper accents. -->
+    <color name="theme_seed_graphite_primary">#455A64</color>
+    <color name="theme_seed_graphite_secondary">#607D8B</color>
+    <color name="theme_seed_graphite_tertiary">#8D6E63</color>
+
+    <!-- Amber: warm amber with clay and olive accents. -->
+    <color name="theme_seed_amber_primary">#A15C00</color>
+    <color name="theme_seed_amber_secondary">#8D6E3F</color>
+    <color name="theme_seed_amber_tertiary">#707A36</color>
+
+    <!-- Ruby: confident crimson with plum and warm copper accents. -->
+    <color name="theme_seed_ruby_primary">#A7374E</color>
+    <color name="theme_seed_ruby_secondary">#76536B</color>
+    <color name="theme_seed_ruby_tertiary">#9A5B34</color>
+
+    <!-- Indigo: deep indigo with periwinkle and cyan accents. -->
+    <color name="theme_seed_indigo_primary">#3F51B5</color>
+    <color name="theme_seed_indigo_secondary">#625B91</color>
+    <color name="theme_seed_indigo_tertiary">#007C91</color>
 </resources>
