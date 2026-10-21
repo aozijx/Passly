@@ -20,7 +20,6 @@ import com.aozijx.passly.domain.settings.model.MessageLevel
 import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.model.SwipeActionType
-import com.aozijx.passly.domain.settings.model.ThemeCanvasTint
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
@@ -55,9 +54,6 @@ internal class ProtoAppPreferencesStore @Inject constructor(
     override suspend fun setThemeMode(mode: ThemeMode) = updateAppearance { themeMode = mode.toProto() }
     override suspend fun setDynamicColor(enabled: Boolean) = updateAppearance { dynamicColorEnabled = enabled }
     override suspend fun setThemeKey(key: String) = updateAppearance { themeKey = key }
-    override suspend fun setCanvasTintPercent(percent: Int) = updateAppearance {
-        canvasTintPercent = percent.coerceIn(ThemeCanvasTint.MIN_PERCENT, ThemeCanvasTint.MAX_PERCENT)
-    }
     override suspend fun setLanguage(language: AppLanguage) = updateAppearance {
         this.language = language.storageTag
     }

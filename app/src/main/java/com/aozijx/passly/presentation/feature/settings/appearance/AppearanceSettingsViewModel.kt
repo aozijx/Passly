@@ -26,10 +26,6 @@ class AppearanceSettingsViewModel @Inject constructor(
                 settingsRepository.setThemeKey(action.key)
             }
 
-            is AppearanceSettingsAction.SetCanvasTintPercent -> viewModelScope.launch {
-                settingsRepository.setCanvasTintPercent(action.percent)
-            }
-
             is AppearanceSettingsAction.SetLanguage -> viewModelScope.launch {
                 settingsRepository.setLanguage(action.language)
             }

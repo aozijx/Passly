@@ -1,8 +1,6 @@
 package com.aozijx.passly.core.ui.theme
 
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
@@ -19,7 +17,6 @@ fun rememberAppColorScheme(
     isDark: Boolean,
     dynamicColor: Boolean,
     themeKey: String,
-    canvasTintPercent: Int,
 ): ColorScheme {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -32,12 +29,10 @@ fun rememberAppColorScheme(
     }
 
     val accentSeeds = (selectedScheme ?: AppThemeSchemes.all.first()).resolveAccentSeeds()
-    return remember(isDark, accentSeeds, canvasTintPercent) {
-        val baseColorScheme = if (isDark) darkColorScheme() else lightColorScheme()
-        baseColorScheme.withGeneratedAccents(
+    return remember(isDark, accentSeeds) {
+        generateAppColorScheme(
             seeds = accentSeeds,
             isDark = isDark,
-            canvasTintFraction = canvasTintPercent / 100f,
         )
     }
 }

@@ -21,21 +21,12 @@ class AppThemeSchemesTest {
     }
 
     @Test
-    fun manualPalettes_applyASubtleThreeSeedTintToTheFullScreenCanvas() {
-        val neutralScheme = lightColorScheme()
-        val scheme = neutralScheme.withGeneratedAccents(TEST_SEEDS, isDark = false)
+    fun manualPalette_replacesTheCompleteColorSchemeInsteadOfTintingItsInput() {
+        val scheme = generateAppColorScheme(TEST_SEEDS, isDark = false)
 
-        assertTrue(
-            scheme.primary != neutralScheme.primary ||
-                scheme.secondary != neutralScheme.secondary ||
-                scheme.tertiary != neutralScheme.tertiary
-        )
-        assertNotEquals(neutralScheme.background, scheme.background)
-        assertEquals(neutralScheme.onBackground, scheme.onBackground)
-        assertNotEquals(neutralScheme.surface, scheme.surface)
-        assertEquals(neutralScheme.onSurface, scheme.onSurface)
-        assertTrue(scheme.surfaceContainer != neutralScheme.surfaceContainer)
-        assertTrue(scheme.surfaceVariant != neutralScheme.surfaceVariant)
+        assertNotEquals(lightColorScheme().background, scheme.background)
+        assertNotEquals(lightColorScheme().surface, scheme.surface)
+        assertNotEquals(lightColorScheme().surfaceContainer, scheme.surfaceContainer)
     }
 
     @Test
@@ -48,51 +39,38 @@ class AppThemeSchemesTest {
     }
 
     @Test
-    fun canvasTint_blendsAllThreeSeeds() {
-        val base = lightColorScheme()
+    fun manualPalette_usesAllThreeAccentSeeds() {
         val seeds = TEST_SEEDS.copy(
             secondary = TEST_SEEDS.primary,
             tertiary = TEST_SEEDS.primary,
         )
 
-        val secondaryChanged = base.withGeneratedAccents(
+        val secondaryChanged = generateAppColorScheme(
             seeds.copy(secondary = TEST_SEEDS.secondary),
             isDark = false,
         )
-        val tertiaryChanged = base.withGeneratedAccents(
+        val tertiaryChanged = generateAppColorScheme(
             seeds.copy(tertiary = TEST_SEEDS.tertiary),
             isDark = false,
         )
-        val baseline = base.withGeneratedAccents(seeds, isDark = false)
+        val baseline = generateAppColorScheme(seeds, isDark = false)
 
-        assertNotEquals(baseline.background, secondaryChanged.background)
-        assertNotEquals(baseline.background, tertiaryChanged.background)
+        assertNotEquals(baseline.secondary, secondaryChanged.secondary)
+        assertNotEquals(baseline.tertiary, tertiaryChanged.tertiary)
     }
 
     @Test
-    fun canvasTintStrength_controlsTheCanvasBlend() {
-        val base = lightColorScheme()
-        val seeds = TEST_SEEDS
+    fun manualPalette_usesNeutralSurfacesInsteadOfASeedColoredOverlay() {
+        val scheme = generateAppColorScheme(TEST_SEEDS, isDark = false)
 
-        val subtle = base.withGeneratedAccents(
-            seeds = seeds,
-            isDark = false,
-            canvasTintFraction = 0.01f,
-        )
-        val strong = base.withGeneratedAccents(
-            seeds = seeds,
-            isDark = false,
-            canvasTintFraction = 1f,
-        )
-
-        assertNotEquals(subtle.background, strong.background)
-        assertNotEquals(subtle.surfaceContainer, strong.surfaceContainer)
+        assertTrue(scheme.background.channelSpread() < 0.08f)
+        assertTrue(scheme.surfaceContainer.channelSpread() < 0.08f)
     }
 
     @Test
     fun manualPaletteForegroundPairsMeetAccessibleTextContrast() {
         listOf(false, true).forEach { isDark ->
-            val scheme = lightColorScheme().withGeneratedAccents(TEST_SEEDS, isDark)
+            val scheme = generateAppColorScheme(TEST_SEEDS, isDark)
             assertTrue(contrastRatio(scheme.primary, scheme.onPrimary) >= 4.5)
             assertTrue(contrastRatio(scheme.primaryContainer, scheme.onPrimaryContainer) >= 4.5)
             assertTrue(contrastRatio(scheme.secondary, scheme.onSecondary) >= 4.5)
@@ -105,6 +83,9 @@ class AppThemeSchemesTest {
         val darker = minOf(first.luminance(), second.luminance())
         return (lighter + 0.05f) / (darker + 0.05f)
     }
+
+    private fun Color.channelSpread(): Float =
+        maxOf(red, green, blue) - minOf(red, green, blue)
 
     private companion object {
         val TEST_SEEDS = AccentSeeds(0xFF5B789E, 0xFF6C7E71, 0xFF85789B)

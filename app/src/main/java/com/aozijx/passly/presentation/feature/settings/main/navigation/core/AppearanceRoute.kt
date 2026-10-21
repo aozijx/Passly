@@ -35,9 +35,6 @@ internal fun AppearanceRoute(
                 onThemeKeySelect = {
                     viewModel.onAction(AppearanceSettingsAction.SetThemeKey(it))
                 },
-                onCanvasTintPercentChange = {
-                    viewModel.onAction(AppearanceSettingsAction.SetCanvasTintPercent(it))
-                },
                 onLanguageChange = {
                     viewModel.onAction(
                         AppearanceSettingsAction.SetLanguage(appLanguageFromKey(it))

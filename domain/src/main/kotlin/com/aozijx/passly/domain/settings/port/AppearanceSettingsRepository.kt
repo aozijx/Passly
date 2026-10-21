@@ -12,7 +12,6 @@ interface AppearanceSettingsRepository {
     suspend fun setThemeMode(mode: ThemeMode)
     suspend fun setDynamicColor(enabled: Boolean)
     suspend fun setThemeKey(key: String)
-    suspend fun setCanvasTintPercent(percent: Int)
     suspend fun setLanguage(language: AppLanguage)
     suspend fun setFontFamily(mode: FontFamilyMode)
 }

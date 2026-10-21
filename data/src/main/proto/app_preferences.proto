@@ -18,9 +18,8 @@ message AppearancePreferences {
     optional ThemeModePreference theme_mode = 1 [default = THEME_MODE_SYSTEM];
     optional bool dynamic_color_enabled = 2 [default = true];
     optional string theme_key = 3 [default = "default"];
-    optional int32 canvas_tint_percent = 4 [default = 8];
-    optional string language = 5 [default = "system"];
-    optional FontFamilyPreference font_family = 6 [default = FONT_FAMILY_APP_BUNDLED];
+    optional string language = 4 [default = "system"];
+    optional FontFamilyPreference font_family = 5 [default = FONT_FAMILY_APP_BUNDLED];
 }
 
 enum ThemeModePreference {

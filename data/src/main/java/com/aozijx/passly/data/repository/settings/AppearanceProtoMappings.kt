@@ -6,7 +6,6 @@ import com.aozijx.passly.data.preferences.proto.ThemeModePreference
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
-import com.aozijx.passly.domain.settings.model.ThemeCanvasTint
 import com.aozijx.passly.domain.settings.model.ThemeMode
 
 internal fun ThemeModePreference.toDomain(): ThemeMode = when (this) {
@@ -40,10 +39,6 @@ internal fun readAppearance(p: AppearancePreferences): AppearanceSettings =
         themeMode = p.themeMode.toDomain(),
         isDynamicColor = p.dynamicColorEnabled,
         themeKey = p.themeKey,
-        canvasTintPercent = p.canvasTintPercent.coerceIn(
-            ThemeCanvasTint.MIN_PERCENT,
-            ThemeCanvasTint.MAX_PERCENT,
-        ),
         language = AppLanguage.fromLanguageTag(p.language),
         fontFamily = p.fontFamily.toDomain(),
     )

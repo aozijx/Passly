@@ -76,8 +76,6 @@
     <string name="settings_theme_scheme">主题方案</string>
     <string name="settings_theme_scheme_default">默认</string>
     <string name="settings_theme_scheme_select_title">选择主题方案</string>
-    <string name="settings_theme_canvas_tint">背景染色强度</string>
-    <string name="settings_theme_canvas_tint_description">混合三个主题色到背景和容器</string>
     <string name="settings_theme_mode">外观</string>
     <string name="settings_theme_mode_dark">深色</string>
     <string name="settings_theme_mode_light">浅色</string>

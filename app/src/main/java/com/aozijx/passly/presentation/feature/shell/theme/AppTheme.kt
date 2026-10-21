@@ -38,7 +38,6 @@ fun AppTheme(
         isDark = isDark,
         dynamicColor = appearance.isDynamicColor,
         themeKey = appearance.themeKey,
-        canvasTintPercent = appearance.canvasTintPercent,
     )
     val colorScheme = rememberAnimatedColorScheme(
         target = targetColorScheme,

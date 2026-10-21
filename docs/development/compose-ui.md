@@ -13,6 +13,9 @@
 ## Material 和主题
 
 - 优先使用 Material 3/Expressive 官方组件、Defaults、`MaterialTheme` 排版、颜色、shape 和对齐。
+- 动态颜色直接使用 Android 提供的动态 `ColorScheme`；手动主题由三个协调种子生成完整的亮色/暗色
+  `ColorScheme`。背景和容器来自低 chroma 的 neutral palette，不在默认画布上叠加可调颜色遮罩。
+- 手动主题切换可以对完整色彩角色做短时插值，但不能通过全屏 overlay 或二次 tint 模拟主题变化。
 - 应用圆角设置通过 `MaterialTheme.shapes` 统一传播，不复制组件 shape/gap 算法。
 - 设置分组使用 `SegmentedListItem`；没有图标时不保留不可见 leading 占位。
 - Switch 只由自身表达 checked，不用容器形状或颜色重复表达。

@@ -7,7 +7,6 @@ import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
-import com.aozijx.passly.domain.settings.model.ThemeCanvasTint
 import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.AppearanceUiModel
 import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.FontFamilyUiModel
 import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.LanguageOptionUiModel
@@ -44,9 +43,6 @@ fun AppearanceSettings.toAppearanceUiModel(): AppearanceUiModel = AppearanceUiMo
     themeMode = themeMode.toUiModel(),
     isDynamicColor = isDynamicColor,
     themeKey = themeKey,
-    canvasTintPercent = canvasTintPercent,
-    canvasTintMinPercent = ThemeCanvasTint.MIN_PERCENT,
-    canvasTintMaxPercent = ThemeCanvasTint.MAX_PERCENT,
     languageKey = language.name,
     languageLabel = language.localizedDisplayName(),
     languageOptions = languagePickerOptions(),

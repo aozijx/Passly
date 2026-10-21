@@ -14,7 +14,6 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -26,7 +25,6 @@ import com.aozijx.passly.R
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.dropdownSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
-import com.aozijx.passly.presentation.shared.components.group.sliderSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
@@ -35,7 +33,6 @@ import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.Appea
 import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.FontFamilyUiModel
 import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.ThemeModeUiModel
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +41,6 @@ internal fun AppearanceDetail(
     onThemeModeChange: (ThemeModeUiModel) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
     onThemeKeySelect: (String) -> Unit,
-    onCanvasTintPercentChange: (Int) -> Unit,
     onLanguageChange: (String) -> Unit,
     onFontFamilyChange: (FontFamilyUiModel) -> Unit
 ) {
@@ -54,10 +50,6 @@ internal fun AppearanceDetail(
     val languageSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
     val themeColorSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
     val scope = rememberCoroutineScope()
-    var canvasTintPercent by remember(state.canvasTintPercent) {
-        mutableFloatStateOf(state.canvasTintPercent.toFloat())
-    }
-
     SettingsSection {
         SettingsSectionTitle(text = stringResource(R.string.settings_group_theme))
         SegmentedSettingsGroup(
@@ -102,28 +94,6 @@ internal fun AppearanceDetail(
                         } ?: stringResource(R.string.settings_theme_scheme_default)
                     },
                     onClick = { showThemeColorSheet = true }
-                ),
-                sliderSettingsGroupItem(
-                    key = "appearance.canvas_tint",
-                    enabled = !state.isDynamicColor && state.themeKey.isNotBlank(),
-                    icon = Icons.Default.Palette,
-                    title = stringResource(R.string.settings_theme_canvas_tint),
-                    subtitle = stringResource(R.string.settings_theme_canvas_tint_description),
-                    value = canvasTintPercent,
-                    valueLabel = stringResource(
-                        R.string.settings_value_percent,
-                        canvasTintPercent.roundToInt(),
-                    ),
-                    valueRange = state.canvasTintMinPercent.toFloat()..
-                            state.canvasTintMaxPercent.toFloat(),
-                    steps = state.canvasTintMaxPercent - state.canvasTintMinPercent - 1,
-                    onValueChange = { canvasTintPercent = it },
-                    onValueChangeFinished = {
-                        val selectedPercent = canvasTintPercent.roundToInt()
-                        if (selectedPercent != state.canvasTintPercent) {
-                            onCanvasTintPercentChange(selectedPercent)
-                        }
-                    },
                 )
             )
         )
