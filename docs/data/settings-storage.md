@@ -80,6 +80,11 @@ flowchart LR
 创建时间降序、收藏置顶。下拉搜索和滑动操作默认关闭，启用滑动后左滑复制密码、右滑删除。这些值都来自
 `app_preferences.proto`。
 
+应用 Shell 在外观、界面和安全偏好全部到达前保持 `Loading`，不构造 Domain settings 默认实例冒充已加载值。加载期间
+只应用独立的安全启动窗口策略：禁止截屏且不主动隐藏系统栏；主题、语言、圆角、导航和认证界面在偏好到达后创建。
+Legacy Autofill、Credential Manager 和保存 Activity 通过同一个 persisted-theme host 等待外观与圆角偏好，不调用
+无参数 `AppTheme()` 生成另一套默认主题。
+
 ## Schema 演进规则
 
 - 当前 preferences schema 按破坏性更新管理，不读取旧 `*.pb`，也不为已删除字段保留兼容解析路径；字段可随当前模型

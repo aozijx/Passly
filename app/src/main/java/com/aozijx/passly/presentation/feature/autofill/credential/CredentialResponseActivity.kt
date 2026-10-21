@@ -14,7 +14,7 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
-import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
+import com.aozijx.passly.presentation.feature.shell.theme.PersistedAppTheme
 import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService
 import com.aozijx.passly.feature.autofill.runtime.AutofillResultDelivery
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
@@ -49,7 +49,7 @@ class CredentialResponseActivity : AppCompatActivity() {
         val launch = responseLaunch(intent)
 
         setContent {
-            AppTheme {
+            PersistedAppTheme {
                 AuthenticationHost(this, authenticationHostRegistry, logger) {
                     CredentialResponseRoute(
                         action = launch.action,

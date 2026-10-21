@@ -1,16 +1,26 @@
 package com.aozijx.passly.presentation.feature.shell
 
 import com.aozijx.passly.domain.access.model.AuthenticationState
-import com.aozijx.passly.domain.settings.model.AppCornerRadiusConstraints
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
 
 data class AppShellUiState(
     val sessionMode: AppShellSessionMode = AppShellSessionMode.AUTHENTICATION,
-    val appearance: AppearanceSettings = AppearanceSettings(),
-    val appCornerRadiusDp: Float = AppCornerRadiusConstraints.DEFAULT_DP,
-    val windowPolicy: AppWindowPolicy = AppWindowPolicy(),
+    val settings: AppShellSettingsState = AppShellSettingsState.Loading,
     val databaseState: AppShellDatabaseState = AppShellDatabaseState.Available,
 )
+
+sealed interface AppShellSettingsState {
+    data object Loading : AppShellSettingsState
+
+    data class Ready(
+        val appearance: AppearanceSettings,
+        val appCornerRadiusDp: Float,
+        val windowPolicy: AppWindowPolicy,
+    ) : AppShellSettingsState
+}
+
+internal val AppShellUiState.windowPolicy: AppWindowPolicy
+    get() = (settings as? AppShellSettingsState.Ready)?.windowPolicy ?: AppWindowPolicy()
 
 sealed interface AppShellDatabaseState {
     data object Available : AppShellDatabaseState

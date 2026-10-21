@@ -22,11 +22,13 @@ internal object AppShellReducer {
         when (mutation) {
             is AppShellMutation.SessionChanged -> state.copy(sessionMode = mutation.mode)
             is AppShellMutation.SettingsChanged -> state.copy(
-                appearance = mutation.appearance,
-                appCornerRadiusDp = mutation.interfaceSettings.appCornerRadiusDp,
-                windowPolicy = AppWindowPolicy(
-                    isSecureContentEnabled = mutation.securitySettings.isSecureContentEnabled,
-                    isStatusBarAutoHide = mutation.interfaceSettings.hideSystemBars,
+                settings = AppShellSettingsState.Ready(
+                    appearance = mutation.appearance,
+                    appCornerRadiusDp = mutation.interfaceSettings.appCornerRadiusDp,
+                    windowPolicy = AppWindowPolicy(
+                        isSecureContentEnabled = mutation.securitySettings.isSecureContentEnabled,
+                        isStatusBarAutoHide = mutation.interfaceSettings.hideSystemBars,
+                    ),
                 ),
             )
             AppShellMutation.DatabaseRetryStarted -> state.updateDatabaseFailure {

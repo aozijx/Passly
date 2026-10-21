@@ -6,7 +6,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
 import com.aozijx.passly.core.observability.Logger
-import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
+import com.aozijx.passly.presentation.feature.shell.theme.PersistedAppTheme
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
@@ -28,7 +28,7 @@ class LegacySaveActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val token = intent.getStringExtra(AutofillLaunchExtras.LEGACY_SAVE_TOKEN)
         setContent {
-            AppTheme {
+            PersistedAppTheme {
                 AuthenticationHost(this, authenticationHostRegistry, logger) {
                     LegacySaveRoute(
                         token = token,

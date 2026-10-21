@@ -19,13 +19,15 @@ import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ThemeMode
 
-val LocalAppearanceSettings = staticCompositionLocalOf { AppearanceSettings() }
+val LocalAppearanceSettings = staticCompositionLocalOf<AppearanceSettings> {
+    error("Appearance settings are unavailable outside AppTheme")
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppTheme(
-    appearance: AppearanceSettings = AppearanceSettings(),
-    appCornerRadiusDp: Float = AppCornerRadiusConstraints.DEFAULT_DP,
+    appearance: AppearanceSettings,
+    appCornerRadiusDp: Float,
     content: @Composable () -> Unit
 ) {
     val motionScheme = remember { MotionScheme.expressive() }

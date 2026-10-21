@@ -11,7 +11,7 @@ import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.feature.autofill.runtime.AutofillResultDelivery
 import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
-import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
+import com.aozijx.passly.presentation.feature.shell.theme.PersistedAppTheme
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
@@ -42,7 +42,7 @@ class AutofillFillActivity : FragmentActivity() {
         }
 
         setContent {
-            AppTheme {
+            PersistedAppTheme {
                 AuthenticationHost(this, authenticationHostRegistry, logger) {
                     AutofillFillRoute(
                         request = request,

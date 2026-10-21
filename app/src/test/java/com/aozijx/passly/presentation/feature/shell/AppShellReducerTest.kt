@@ -15,6 +15,16 @@ import org.junit.Test
 class AppShellReducerTest {
 
     @Test
+    fun `startup window policy protects content without fabricating persisted system bar settings`() {
+        val state = AppShellUiState()
+        val policy = state.windowPolicy
+
+        assertSame(AppShellSettingsState.Loading, state.settings)
+        assertEquals(true, policy.isSecureContentEnabled)
+        assertEquals(false, policy.isStatusBarAutoHide)
+    }
+
+    @Test
     fun `session projection changes without overwriting database failure state`() {
         val error = IllegalStateException("failure")
         val result = AppShellReducer.reduce(
@@ -107,9 +117,10 @@ class AppShellReducerTest {
             ),
         )
 
-        assertSame(appearance, result.appearance)
-        assertEquals(30f, result.appCornerRadiusDp)
-        assertFalse(result.windowPolicy.isSecureContentEnabled)
+        val settings = result.settings as AppShellSettingsState.Ready
+        assertSame(appearance, settings.appearance)
+        assertEquals(30f, settings.appCornerRadiusDp)
+        assertFalse(settings.windowPolicy.isSecureContentEnabled)
         assertEquals(AppShellSessionMode.VAULT, result.sessionMode)
         assertSame(error, (result.databaseState as AppShellDatabaseState.Failed).cause)
     }

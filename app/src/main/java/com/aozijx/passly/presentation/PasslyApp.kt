@@ -15,7 +15,10 @@ import com.aozijx.passly.app.message.presentation.AppNoticeEffects
 import com.aozijx.passly.app.platform.permission.PermissionServices
 import com.aozijx.passly.app.platform.permission.ProvidePermissionServices
 import com.aozijx.passly.presentation.feature.shell.AppShell
+import com.aozijx.passly.presentation.feature.shell.AppShellSettingsState
 import com.aozijx.passly.presentation.feature.shell.AppShellViewModel
+import com.aozijx.passly.presentation.feature.shell.AppWindowPolicyEffects
+import com.aozijx.passly.presentation.feature.shell.windowPolicy
 import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
@@ -30,9 +33,12 @@ internal fun PasslyApp(
 ) {
     val shellViewModel = hiltViewModel<AppShellViewModel>()
     val shellState by shellViewModel.uiState.collectAsStateWithLifecycle()
+    AppWindowPolicyEffects(activity.window, shellState.windowPolicy)
 
-    LaunchedEffect(shellState.appearance.language) {
-        val languageTags = shellState.appearance.language.applicationLocaleTags
+    val settings = shellState.settings as? AppShellSettingsState.Ready ?: return
+
+    LaunchedEffect(settings.appearance.language) {
+        val languageTags = settings.appearance.language.applicationLocaleTags
         if (AppCompatDelegate.getApplicationLocales().toLanguageTags() != languageTags) {
             AppCompatDelegate.setApplicationLocales(
                 LocaleListCompat.forLanguageTags(languageTags),
@@ -44,12 +50,11 @@ internal fun PasslyApp(
         ProvideAppNoticePublisher(noticePublisher) {
             AppNoticeEffects()
             AppTheme(
-                appearance = shellState.appearance,
-                appCornerRadiusDp = shellState.appCornerRadiusDp,
+                appearance = settings.appearance,
+                appCornerRadiusDp = settings.appCornerRadiusDp,
             ) {
                 AuthenticationHost(activity, authenticationHostRegistry, logger) {
                     AppShell(
-                        window = activity.window,
                         uiState = shellState,
                         effects = shellViewModel.effects,
                         onAction = shellViewModel::onAction,
