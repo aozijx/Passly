@@ -30,7 +30,7 @@ class AutofillLaunchTargetFactoryTest {
     @Test
     @SdkSuppress(minSdkVersion = 34)
     fun factoriesForwardStableRequestIdsToLaunchTarget() {
-        val target = RecordingLaunchTarget(context)
+        val target = RecordingLaunchTarget()
         val interactionId = AutofillInteractionId("interaction-1")
 
         AutofillPendingIntentFactory(target).createPickerIntent(
@@ -73,7 +73,7 @@ class AutofillLaunchTargetFactoryTest {
 
     @Test
     fun legacySavePendingIntentContainsOnlyOpaqueIdentity() {
-        val target = RecordingLaunchTarget(context)
+        val target = RecordingLaunchTarget()
         val pendingIntent = LegacySavePendingIntentFactory(target).create(
             context,
             LegacySaveToken("opaque-token"),
@@ -82,7 +82,7 @@ class AutofillLaunchTargetFactoryTest {
         assertFalse(pendingIntent.isImmutable)
         assertEquals(
             setOf(AutofillLaunchExtras.REQUEST_ID, AutofillLaunchExtras.LEGACY_SAVE_TOKEN),
-            target.lastLegacySaveIntent?.extras?.keySet(),
+            target.lastLegacySaveIntent?.extras?.keySet()?.toSet(),
         )
         assertEquals(
             "opaque-token",
@@ -117,23 +117,24 @@ class AutofillLaunchTargetFactoryTest {
         assertFalse(first.isImmutable)
     }
 
-    private class RecordingLaunchTarget(private val context: Context) : AutofillLaunchTarget {
+    private class RecordingLaunchTarget : AutofillLaunchTarget {
+        private val delegate = AndroidAutofillLaunchTarget()
         val requestIds = mutableListOf<String>()
         var lastLegacySaveIntent: Intent? = null
 
         override fun legacyFillIntent(context: Context, requestId: String): Intent {
             requestIds += requestId
-            return Intent().setPackage(this.context.packageName)
+            return delegate.legacyFillIntent(context, requestId)
         }
 
         override fun credentialResponseIntent(context: Context, requestId: String): Intent {
             requestIds += requestId
-            return Intent().setPackage(this.context.packageName)
+            return delegate.credentialResponseIntent(context, requestId)
         }
 
         override fun legacySaveIntent(context: Context, requestId: String): Intent {
             requestIds += requestId
-            return Intent().setPackage(this.context.packageName).also { lastLegacySaveIntent = it }
+            return delegate.legacySaveIntent(context, requestId).also { lastLegacySaveIntent = it }
         }
     }
 }
