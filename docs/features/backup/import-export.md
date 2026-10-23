@@ -2,6 +2,22 @@
 
 状态：当前实现（代码核对：2026-10-18）。
 
+Backup 归档 Vault 业务数据，不是 Room 数据库镜像。UI 与流程位于 presentation/feature/backup，协议、
+加密和文件 I/O 位于 feature/backup/internal，Room 快照适配位于 app/database/backup。
+
+| 格式 | 方向 | 资源 | 保密性 |
+| --- | --- | --- | --- |
+| `passly.encrypted` | 导入、导出 | 附件与可选图标 | Argon2id + AES-256-GCM |
+| `passly.json` | 导入、导出 | Base64 内嵌 | 明文 |
+| `passly.text` | 仅导出 | 不支持 | 明文、有损 |
+| `bitwarden.json` | 仅导入 | 不支持附件 ZIP | 仅接收明文 JSON |
+
+完整备份可包含所选条目及业务字段、关系、已提交附件和可选图标。Draft、活动记录、修订历史、可重建索引、
+设置、会话、DEK、Bootstrap、认证材料、Room 密文结构、本机路径和未提交附件不进入备份。
+协议细节见[Passly Archive v1](archive-format.md)，验证边界见[验证要求](verification.md)与
+[ADR-0022](../../decisions/ADR-0022-keyed-backup-document.md)。文档、加密容器和 Room Schema 各自独立版本；
+当前协议不兼容旧 `passly-vault`/`passly-archive` 文档。
+
 ## SAF 目录和指定目标
 
 默认备份目录使用 Storage Access Framework tree URI 与 persisted write grant，不请求传统存储权限或

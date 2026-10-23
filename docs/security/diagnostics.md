@@ -2,7 +2,7 @@
 
 状态：当前实现（代码核对：2026-10-18）。
 
-本页只定义安全策略。Logger 结构、存储和格式分别见[可观测性架构](../architecture/observability/README.md)、
+本页只定义安全策略。Logger 结构、存储和格式分别见[日志记录与 Trace](../architecture/observability/record-and-trace.md)、
 [运行时与加密存储](../architecture/observability/runtime-and-storage.md)和
 [导出格式](../architecture/observability/export-formats.md)。
 

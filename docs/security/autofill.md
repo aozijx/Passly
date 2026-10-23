@@ -2,7 +2,7 @@
 
 状态：过渡中；当前读取/保存安全边界已实现，sealed Inbox 尚未实现。
 
-平台流程见 [Autofill 功能文档](../features/autofill/README.md)。本页只定义跨入口安全不变量。
+平台流程见 [Autofill 共享填充流程](../features/autofill/fill-flow.md)。本页只定义跨入口安全不变量。
 
 ## 信任与授权
 

@@ -2,6 +2,10 @@
 
 状态：当前实现（代码核对：2026-10-18）。
 
+诊断日志是“设置 → 数据管理”下的独立二级页面。数据管理页负责缓存/日志占用统计和清理入口；诊断页负责
+查看、过滤、搜索、复制、保存和分享。两页不共享 ViewModel 状态。记录和 Trace 合同见
+[可观测性架构](../../architecture/observability/record-and-trace.md)。
+
 ## 页面行为
 
 进入诊断页立即刷新最多 500 条记录。默认显示 INFO、WARN、ERROR，FATAL 归入 ERROR，DEBUG 默认关闭。

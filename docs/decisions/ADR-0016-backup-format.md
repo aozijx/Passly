@@ -33,6 +33,6 @@ Registry 扩展，外部格式先映射到 canonical `BackupBundle`。
 
 ## 关联
 
-[Backup 功能与备份协议](../features/backup/README.md)
+[Backup 功能与备份协议](../features/backup/archive-format.md)
 
 [ADR-0022：稳定键值字段备份文档](ADR-0022-keyed-backup-document.md)

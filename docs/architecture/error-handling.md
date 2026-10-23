@@ -152,7 +152,7 @@ sealed class AppError(
 
 ## 相关文档
 
-- [可观测性与诊断日志](observability/README.md)
+- [日志记录、错误与 Trace](observability/record-and-trace.md)
 - [消息中心](message-center.md)
 - [包边界](package-boundaries.md)
 - [安全总览](../security/overview.md)

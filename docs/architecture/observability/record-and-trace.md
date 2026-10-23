@@ -2,6 +2,11 @@
 
 状态：当前实现（代码核对：2026-10-19）。
 
+Passly 只有一套结构化日志管线。业务代码提交类型化 `LogStatement`，底层统一处理 Trace、字段校验、
+异常归类、隐私清洗、采样/聚合和 Sink 分发；业务层不得拼 JSON、直接写文件或调用 `android.util.Log`。
+运行时分层、存储与 Sink 行为见[运行时与存储](runtime-and-storage.md)，导出协议见[JSONL、TSV 与 ZIP](export-formats.md)，
+隐私约束见[诊断安全](../../security/diagnostics.md)。架构决策见 [ADR-0024](../../decisions/ADR-0024-structured-observability-logger.md)。
+
 ## Logger 合同
 
 业务层通过注入的 `Logger` 调用 `logger.log(LogStatements.<领域>.<事件>(...))`。当前事件目录覆盖

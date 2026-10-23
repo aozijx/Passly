@@ -2,6 +2,12 @@
 
 状态：当前实现（代码核对：2026-10-20）。
 
+Android 12+ 保留两套平台入口：Legacy `AutofillService` 在 API 31+ 提供填充、`SaveInfo` 和 `onSaveRequest`；
+Credential Manager Provider 在 API 34+ 提供 Password get/create/clear-state。两者共享平台无关的候选发现、
+授权、单条秘密解析、草稿校验和 Entry 写入，但结果合同各自独立，不互相转换 `Dataset/FillResponse/SaveCallback`
+和 Credential Manager response。平台细节见[Legacy Service](legacy-service.md)与
+[Credential Manager Provider](credential-manager.md)，保存现状与目标见[保存流程](save-flow.md)。
+
 ## Legacy 结构解析与字段分类
 
 `AutofillStructureParser` 只负责从 Android `AssistStructure` 抽取可编辑字段的静态元数据和值，不判断

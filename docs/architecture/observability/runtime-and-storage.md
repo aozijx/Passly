@@ -2,6 +2,17 @@
 
 状态：当前实现（代码核对：2026-10-18）。
 
+| 层 | 职责 |
+| --- | --- |
+| `core/observability` | Logger API、事件与字段目录、Trace、隐私策略、聚合和 Sink 契约 |
+| `app/observability` | Android 装配、Logcat、Perfetto、崩溃捕获、导出编码和目标分发 |
+| `data/observability` | 已脱敏记录 codec、加密日志文件、轮换和分页读取 |
+| `feature/settings/diagnostics` | 查看与导出的应用层合同，不依赖 Android UI |
+| Settings presentation | 查看、筛选、搜索、复制、清除、保存与分享交互 |
+
+唯一数据链是 `Logger → DefaultLogger → PrivacyPolicy → EventAggregator → Sink`。Sink 只接受不可变的
+`SanitizedLogRecord`；隐私边界前的 `Throwable`、待 HMAC 标识符和业务对象不能进入 codec、Logcat 或导出编码器。
+
 ## Android 运行时
 
 `PasslyApplication` 启动一个 `ObservabilityRuntimeController`。Logger 与 store 装配完成后才注册未捕获异常

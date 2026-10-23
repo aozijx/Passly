@@ -4,7 +4,7 @@
 
 - [消息中心设计](../architecture/message-center.md)
 - [权限中心设计](../architecture/permission-center.md)
-- [可观测性与诊断日志](../architecture/observability/README.md)
+- [日志记录、错误与 Trace](../architecture/observability/record-and-trace.md)
 
 产品消息开关表示用户是否希望收到某类提醒；Android 运行时权限表示系统是否允许状态栏通知。
 两者是独立状态。关闭产品设置只写用户偏好；开启状态栏通知前必须验证系统通知权限、应用通知总开关和
