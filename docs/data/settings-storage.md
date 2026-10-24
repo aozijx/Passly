@@ -18,6 +18,8 @@ Passly 使用两个 Proto DataStore 保存用户偏好：
 `ProtoAppPreferencesStore` 不读写安全字段；`ProtoSecurityPreferencesStore` 不读写普通应用字段。页面需要两类状态时，
 在既有 presentation 生命周期中组合两个 Flow，不创建第三个聚合存储。
 
+应用语言提供跟随系统、简体中文和 English；Android 每应用语言列表注册 `zh-CN` 与 `en`。
+
 ## Proto 的边界
 
 Proto 只保存已经存在读写入口、确实需要跨启动保留的用户选择。它不是业务规则容器。

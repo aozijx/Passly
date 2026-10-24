@@ -80,6 +80,11 @@ class EntryPagingDaoTest {
                 searchText = "example",
                 entryTypes = setOf(EntryType.LOGIN),
                 category = "work",
+                sort = EntrySort(
+                    field = EntrySortField.TITLE,
+                    direction = SortDirection.ASC,
+                    pinFavorites = false,
+                ),
             )
         )
 
@@ -96,7 +101,14 @@ class EntryPagingDaoTest {
         insert(entry("wifi", EntryType.WIFI, "Wi-Fi"))
 
         val rows = load(
-            EntryListQuery(entryTypes = setOf(EntryType.LOGIN, EntryType.OTP)),
+            EntryListQuery(
+                entryTypes = setOf(EntryType.LOGIN, EntryType.OTP),
+                sort = EntrySort(
+                    field = EntrySortField.TITLE,
+                    direction = SortDirection.ASC,
+                    pinFavorites = false,
+                ),
+            ),
         )
 
         assertEquals(setOf("login", "otp"), rows.map { it.entry.entryId }.toSet())

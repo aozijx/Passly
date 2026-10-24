@@ -97,3 +97,4 @@
 | `CALLBACK_FAILED` | A controlled application callback failed. |
 | `NOT_FOUND` | The requested vault object no longer exists. |
 | `CONFLICT` | The operation conflicted with a newer vault state. |
+| `KEYSTORE_UNAVAILABLE` | The Android keystore biometric key operation failed. |

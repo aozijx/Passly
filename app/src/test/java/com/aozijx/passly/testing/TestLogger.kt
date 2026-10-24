@@ -43,6 +43,8 @@ internal data class RecordedTestLog(
     val event: EventKey,
     val fields: LogFields,
     val throwable: Throwable? = null,
+    val errorCode: ErrorCode? = null,
+    val reason: ReasonCode? = null,
 )
 
 internal class RecordingTestLogger : Logger {
@@ -52,7 +54,7 @@ internal class RecordingTestLogger : Logger {
     override fun debug(event: EventKey, fields: LogFields) { events += RecordedTestLog(event, fields) }
     override fun info(event: EventKey, fields: LogFields) { events += RecordedTestLog(event, fields) }
     override fun degraded(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, fields: LogFields) {
-        events += RecordedTestLog(event, fields)
+        events += RecordedTestLog(event, fields, errorCode = errorCode, reason = reason)
     }
     override fun warn(
         event: EventKey,
@@ -60,21 +62,21 @@ internal class RecordingTestLogger : Logger {
         reason: ReasonCode,
         throwable: Throwable,
         fields: LogFields,
-    ) { events += RecordedTestLog(event, fields, throwable) }
+    ) { events += RecordedTestLog(event, fields, throwable, errorCode, reason) }
     override fun error(
         event: EventKey,
         errorCode: ErrorCode,
         reason: ReasonCode,
         throwable: Throwable,
         fields: LogFields,
-    ) { events += RecordedTestLog(event, fields, throwable) }
+    ) { events += RecordedTestLog(event, fields, throwable, errorCode, reason) }
     override fun fatal(
         event: EventKey,
         errorCode: ErrorCode,
         reason: ReasonCode,
         throwable: Throwable,
         fields: LogFields,
-    ) { events += RecordedTestLog(event, fields, throwable) }
+    ) { events += RecordedTestLog(event, fields, throwable, errorCode, reason) }
 
     override suspend fun <T> withRootTrace(
         operation: OperationCode,

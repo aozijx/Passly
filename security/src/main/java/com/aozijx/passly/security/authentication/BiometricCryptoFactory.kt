@@ -17,7 +17,9 @@ internal sealed interface BiometricCryptoPreparation {
     data class Ready(val cipher: Cipher) : BiometricCryptoPreparation
     data object KeyMissing : BiometricCryptoPreparation
     data object KeyInvalidated : BiometricCryptoPreparation
-    data object Invalid : BiometricCryptoPreparation
+
+    /** Keystore 或 cipher 初始化失败，携带被吞掉的真实原因以便上游检测记录。 */
+    data class Invalid(val cause: Throwable) : BiometricCryptoPreparation
 }
 
 @Singleton
@@ -43,10 +45,10 @@ class BiometricCryptoFactory @Inject constructor(
         BiometricCryptoPreparation.Ready(cipher)
     } catch (_: KeyPermanentlyInvalidatedException) {
         BiometricCryptoPreparation.KeyInvalidated
-    } catch (_: IllegalArgumentException) {
-        BiometricCryptoPreparation.Invalid
-    } catch (_: Exception) {
-        BiometricCryptoPreparation.Invalid
+    } catch (error: IllegalArgumentException) {
+        BiometricCryptoPreparation.Invalid(error)
+    } catch (error: Exception) {
+        BiometricCryptoPreparation.Invalid(error)
     }
 
     internal fun createEncrypt(
@@ -77,8 +79,8 @@ class BiometricCryptoFactory @Inject constructor(
         BiometricCryptoPreparation.Ready(cipher)
     } catch (_: KeyPermanentlyInvalidatedException) {
         BiometricCryptoPreparation.KeyInvalidated
-    } catch (_: Exception) {
-        BiometricCryptoPreparation.Invalid
+    } catch (error: Exception) {
+        BiometricCryptoPreparation.Invalid(error)
     }
 
     internal fun deleteAlias(alias: String): Boolean = runCatching {

@@ -33,6 +33,7 @@
 ## Sheet、Dialog 和菜单
 
 - 文件名体现真实形态：`XxxSheet`、`XxxDialog`；组件只收集输入，提交交给页面所有者。
+- `ModalBottomSheet` 的外层 `modifier` 约束 Sheet 容器；内容跟随高度的 Sheet 不对外层使用 `fillMaxSize()`。
 - 互斥 overlay 使用 sealed 状态而不是多个 Boolean。
 - Popup 保持稳定锚点，内容切换不反复销毁 Popup；转场只让目标内容参与尺寸测量。
 - 破坏性动作必须有明确确认，不能把“关闭”和“确认”绑定为同一无语义回调。

@@ -49,6 +49,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    androidResources {
+        localeFilters += listOf("zh-rCN", "en")
+    }
+
     signingConfigs {
         create("release") {
             if (hasReleaseSigningConfig) {

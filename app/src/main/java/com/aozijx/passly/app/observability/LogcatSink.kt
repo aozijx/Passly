@@ -31,13 +31,15 @@ class LogcatSink internal constructor(
         gateway.println(priority, tag, summary)
     }
 
+    // 点分 tag：`log.tag.*` 系统属性不允许包含 '/'，'/' 会让 setprop 失效，
+    // 导致 DEBUG 级日志永远无法通过 adb 打开。
     private fun tagFor(category: LogCategory): String = when (category) {
-        LogCategory.APPLICATION -> "Passly/App"
-        LogCategory.DATABASE -> "Passly/Db"
-        LogCategory.SECURITY -> "Passly/Auth"
-        LogCategory.AUTOFILL -> "Passly/Autofill"
-        LogCategory.BACKUP -> "Passly/Backup"
-        LogCategory.VAULT -> "Passly/Vault"
+        LogCategory.APPLICATION -> "Passly.App"
+        LogCategory.DATABASE -> "Passly.Db"
+        LogCategory.SECURITY -> "Passly.Auth"
+        LogCategory.AUTOFILL -> "Passly.Autofill"
+        LogCategory.BACKUP -> "Passly.Backup"
+        LogCategory.VAULT -> "Passly.Vault"
     }
 
     private fun priorityFor(level: LogLevel): AndroidLogPriority = when (level) {

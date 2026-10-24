@@ -2,6 +2,12 @@ package com.aozijx.passly.presentation.feature.autofill.legacy.save
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.core.observability.ReasonCode
+import com.aozijx.passly.core.observability.Reasons
+import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.feature.autofill.legacy.LegacySaveBeginResult
 import com.aozijx.passly.feature.autofill.legacy.LegacySaveCompletion
@@ -24,12 +30,14 @@ class LegacySaveViewModel internal constructor(
     private val beginContinuation: suspend (LegacySaveToken) -> LegacySaveBeginResult,
     private val completeContinuation: suspend (LegacySaveContinuation) -> LegacySaveCompletion,
     private val cancelInteraction: suspend (AutofillInteractionId) -> Unit,
+    private val logger: Logger,
 ) : ViewModel() {
     @Inject
-    constructor(flow: LegacySaveFlow) : this(
+    constructor(flow: LegacySaveFlow, logger: Logger) : this(
         flow::beginContinuation,
         flow::completeContinuation,
         flow::cancel,
+        logger,
     )
 
     private val mutableState = MutableStateFlow<LegacySaveUiState>(LegacySaveUiState.Loading)
@@ -41,32 +49,57 @@ class LegacySaveViewModel internal constructor(
     fun onToken(rawToken: String?) {
         if (!launchStarted.compareAndSet(false, true)) return
         val token = rawToken?.takeIf(String::isNotBlank)?.let(::LegacySaveToken)
-        if (token == null) {
-            mutableState.value = LegacySaveUiState.Unrecoverable
-            return
-        }
         viewModelScope.launch {
-            try {
-                when (val begin = beginContinuation(token)) {
-                    is LegacySaveBeginResult.Ready -> complete(begin.continuation)
-                    LegacySaveBeginResult.Disabled,
-                    LegacySaveBeginResult.Unavailable,
-                    -> mutableState.value = LegacySaveUiState.Unrecoverable
+            logger.withRootTrace(Operations.AutofillLegacyRequest) {
+                if (token == null) {
+                    logger.log(LogStatements.Autofill.saveUnavailable(Reasons.UnknownFailure))
+                    mutableState.value = LegacySaveUiState.Unrecoverable
+                    return@withRootTrace
                 }
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                cancelActiveInteraction()
-                mutableState.value = LegacySaveUiState.Unrecoverable
+                try {
+                    when (val begin = beginContinuation(token)) {
+                        is LegacySaveBeginResult.Ready -> complete(begin.continuation)
+                        LegacySaveBeginResult.Disabled -> saveUnavailable(Reasons.SessionRestricted)
+                        LegacySaveBeginResult.Unavailable -> saveUnavailable(Reasons.UnknownFailure)
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    logger.log(LogStatements.Autofill.saveFailed(error))
+                    val interactionId = takeActiveInteractionId()
+                    if (interactionId != null) {
+                        logger.inSpan(Operations.AutofillSessionClose) {
+                            closeInteraction(interactionId)
+                        }
+                    }
+                    mutableState.value = LegacySaveUiState.Unrecoverable
+                }
             }
         }
     }
 
     fun cancelActiveInteraction() {
-        val interactionId = activeContinuation?.interactionId ?: return
-        activeContinuation = null
+        val interactionId = takeActiveInteractionId() ?: return
         viewModelScope.launch {
+            logger.withRootTrace(Operations.AutofillSessionClose) {
+                closeInteraction(interactionId)
+            }
+        }
+    }
+
+    private fun takeActiveInteractionId(): AutofillInteractionId? =
+        activeContinuation?.interactionId.also { activeContinuation = null }
+
+    private suspend fun closeInteraction(interactionId: AutofillInteractionId) {
+        val startedAt = monotonicTimeMs()
+        try {
             withContext(NonCancellable) { cancelInteraction(interactionId) }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            logger.log(
+                LogStatements.Autofill.sessionCloseFailed(error, monotonicTimeMs() - startedAt),
+            )
         }
     }
 
@@ -75,10 +108,23 @@ class LegacySaveViewModel internal constructor(
         val completion = completeContinuation(continuation)
         activeContinuation = null
         mutableState.value = when (completion) {
-            LegacySaveCompletion.Saved -> LegacySaveUiState.Saved
-            LegacySaveCompletion.NotAuthorized,
-            LegacySaveCompletion.NotSaved,
-            -> LegacySaveUiState.Unrecoverable
+            LegacySaveCompletion.Saved -> {
+                logger.log(LogStatements.Autofill.saveCompleted())
+                LegacySaveUiState.Saved
+            }
+            LegacySaveCompletion.NotAuthorized -> {
+                logger.log(LogStatements.Autofill.saveUnavailable(Reasons.AuthenticationRejected))
+                LegacySaveUiState.Unrecoverable
+            }
+            LegacySaveCompletion.NotSaved -> {
+                logger.log(LogStatements.Autofill.saveUnavailable(Reasons.StorageFailure))
+                LegacySaveUiState.Unrecoverable
+            }
         }
+    }
+
+    private suspend fun saveUnavailable(reason: ReasonCode) {
+        logger.log(LogStatements.Autofill.saveUnavailable(reason))
+        mutableState.value = LegacySaveUiState.Unrecoverable
     }
 }

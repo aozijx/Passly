@@ -1,5 +1,8 @@
 package com.aozijx.passly.security.authentication
 
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
@@ -22,7 +25,8 @@ class BiometricMethodExecutor @Inject constructor(
     private val vaultBootstrapStore: VaultBootstrapStore,
     private val cryptoFactory: BiometricCryptoFactory,
     private val dekManager: DekManager,
-    private val session: VaultSessionController
+    private val session: VaultSessionController,
+    private val logger: Logger,
 ) {
     internal suspend fun execute(
         request: AuthenticationRequest,
@@ -41,7 +45,15 @@ class BiometricMethodExecutor @Inject constructor(
             is BiometricCryptoPreparation.Ready -> preparation.cipher
             BiometricCryptoPreparation.KeyMissing -> return failure(AuthenticationFailureCode.KEY_MISSING, request)
             BiometricCryptoPreparation.KeyInvalidated -> return failure(AuthenticationFailureCode.KEY_INVALIDATED, request)
-            BiometricCryptoPreparation.Invalid -> return failure(AuthenticationFailureCode.CRYPTO_OBJECT_INVALID, request)
+            is BiometricCryptoPreparation.Invalid -> {
+                logger.log(
+                    LogStatements.Security.vaultOperationFailed(
+                        preparation.cause,
+                        Reasons.KeyStoreUnavailable,
+                    ),
+                )
+                return failure(AuthenticationFailureCode.CRYPTO_OBJECT_INVALID, request)
+            }
         }
         val hostResult = host.authenticateBiometric(
             BiometricPromptSpec(request.purpose),

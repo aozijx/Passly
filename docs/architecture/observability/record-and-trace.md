@@ -68,6 +68,8 @@ Trace 属于一次用户操作或系统回调，不属于模块。入口使用 `
 `TraceContextElement` 在协程与线程上下文间传播 Trace。跨 Service、PendingIntent、Activity 回调只传递
 process-local 的 opaque `TraceToken`：默认单次消费、最长 10 分钟、最多 128 个，并绑定
 `process_session_id`。进程重启、会话不匹配、过期或重复消费都不能恢复旧上下文，更不能恢复授权。
+由独立 `CoroutineScope.launch` 启动的清理任务不会自动继承调用方的 Trace：同一操作内的清理应直接在当前
+协程建立子 Span；由页面退出单独发起的清理则建立自己的根 Trace，不能在无 Trace 上下文中直接写失败日志。
 
 认证事件记录受控 `purpose`。锁定使用 `SessionLockRequest(reason, trigger)`，分别表达策略原因和实际触发信号。
 例如后台超时、屏幕关闭、翻转、Autofill 完成和 App 退出不能压缩成同一个“锁定”原因。
