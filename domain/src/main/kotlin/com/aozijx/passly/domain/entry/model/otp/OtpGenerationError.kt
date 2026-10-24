@@ -6,7 +6,7 @@ package com.aozijx.passly.domain.entry.model.otp
  * 不再返回 "000000"、"INVALID"、"------" 等可能被误认为验证码的字符串。
  */
 sealed class OtpGenerationError : Throwable() {
-    /** Secret 为空或解码失败（非法 Base32/Base64 字符）。 */
+    /** Secret 为空或解码失败（非法字符、Base32 补位或尾部位）。 */
     data object InvalidSecret : OtpGenerationError()
 
     /** 计数器无效（HOTP counter 为 null 或负值）。 */

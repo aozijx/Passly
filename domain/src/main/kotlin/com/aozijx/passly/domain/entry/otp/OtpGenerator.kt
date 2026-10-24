@@ -51,16 +51,36 @@ object OtpGenerator {
         val clean = input.trim().uppercase()
         if (clean.isEmpty()) throw OtpGenerationError.InvalidSecret
 
-        val output = ByteArray((clean.length * 5 + 7) / 8)
+        val dataLength = clean.indexOf('=').takeIf { it >= 0 } ?: clean.length
+        val expectedPadding = when (dataLength % 8) {
+            0 -> 0
+            2 -> 6
+            4 -> 4
+            5 -> 3
+            7 -> 1
+            else -> throw OtpGenerationError.InvalidSecret
+        }
+        val paddingLength = clean.length - dataLength
+        if (dataLength == 0 || paddingLength > 0 && (
+                paddingLength != expectedPadding || clean.length % 8 != 0
+            )
+        ) {
+            throw OtpGenerationError.InvalidSecret
+        }
+        for (index in dataLength until clean.length) {
+            if (clean[index] != '=') throw OtpGenerationError.InvalidSecret
+        }
+
+        val output = ByteArray(dataLength * 5 / 8)
         var buffer = 0
         var bitsLeft = 0
         var index = 0
 
-        for (char in clean) {
+        for (charIndex in 0 until dataLength) {
+            val char = clean[charIndex]
             val value: Int = when (char) {
                 in 'A'..'Z' -> char - 'A'
                 in '2'..'7' -> char - '2' + 26
-                '=' -> break
                 else -> throw OtpGenerationError.InvalidSecret
             }
 
@@ -72,6 +92,8 @@ object OtpGenerator {
                 buffer = buffer and ((1 shl bitsLeft) - 1)
             }
         }
+
+        if (buffer != 0) throw OtpGenerationError.InvalidSecret
 
         return output.copyOf(index)
     }

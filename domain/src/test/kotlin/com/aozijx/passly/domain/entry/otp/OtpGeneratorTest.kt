@@ -112,4 +112,21 @@ class OtpGeneratorTest {
         val expected = "12345678901234567890".toByteArray(Charsets.US_ASCII)
         assertTrue(expected.contentEquals(decoded))
     }
+
+    @Test
+    fun `base32 rejects malformed padding instead of generating a code`() {
+        for (secret in listOf("JBSW=Y3DPEHPK3PXP", "JBSWY3DP=", "MZ======")) {
+            val config = OtpConfig(secret = secret, encoding = OtpSecretEncoding.BASE32)
+
+            assertEquals(OtpResult.Failure(OtpGenerationError.InvalidSecret), OtpGenerator.generate(config))
+        }
+    }
+
+    @Test
+    fun `base32 accepts equivalent padded and unpadded secrets`() {
+        val expected = "f".toByteArray(Charsets.US_ASCII)
+
+        assertTrue(expected.contentEquals(OtpGenerator.base32DecodeStrict("MY======")))
+        assertTrue(expected.contentEquals(OtpGenerator.base32DecodeStrict("MY")))
+    }
 }

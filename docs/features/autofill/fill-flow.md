@@ -40,6 +40,7 @@ interaction。并发授权合并为一次认证；成功后重新发现或最终
 `ResolveAutofillSelection` 依次验证：入口仍启用、interaction 存在且已授权、最终调用方作用域相同、Entry ID
 确实展示过、Credential Manager allowed user 仍通过。之后 `AutofillCredentialResolver` 只读取选中条目的密码。
 请求需要 OTP 时，才沿 `OTP_FOR` 关系读取独立加密 secret 并生成验证码。
+Base32 secret 的字符、补位和尾部位由 `OtpGenerator` 校验；损坏时不生成或填充 OTP 码。
 
 ## 结果与关闭顺序
 
