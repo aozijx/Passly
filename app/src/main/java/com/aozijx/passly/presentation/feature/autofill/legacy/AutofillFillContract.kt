@@ -3,6 +3,7 @@ package com.aozijx.passly.presentation.feature.autofill.legacy
 import android.service.autofill.Dataset
 import android.service.autofill.FillResponse
 import android.view.autofill.AutofillId
+import android.view.inputmethod.InlineSuggestionsRequest
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -66,6 +67,7 @@ data class AutofillFillRequest(
     val webDomain: String?,
     val directEntryId: EntryId?,
     val resultTarget: LegacyAutofillResultTarget,
+    val inlineRequest: InlineSuggestionsRequest? = null,
     /** All editable fields on the page. */
     val editableIds: List<AutofillId> = emptyList(),
     /** Fields identified as having specific roles. */

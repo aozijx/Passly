@@ -1,12 +1,31 @@
 # Autofill 共享填充流程
 
-状态：当前实现（代码核对：2026-10-20）。
+状态：当前实现（代码核对：2026-10-25）。
 
-Android 12+ 保留两套平台入口：Legacy `AutofillService` 在 API 31+ 提供填充、`SaveInfo` 和 `onSaveRequest`；
+Android 12+ 有三套平台入口：Legacy `AutofillService` 在 API 31+ 提供填充、`SaveInfo` 和 `onSaveRequest`；
 Credential Manager Provider 在 API 34+ 提供 Password get/create/clear-state。两者共享平台无关的候选发现、
 授权、单条秘密解析、草稿校验和 Entry 写入，但结果合同各自独立，不互相转换 `Dataset/FillResponse/SaveCallback`
 和 Credential Manager response。平台细节见[Legacy Service](legacy-service.md)与
 [Credential Manager Provider](credential-manager.md)，保存现状与目标见[保存流程](save-flow.md)。
+
+第三套入口是用户自行在 Android 无障碍设置中启用的手动回退。系统 Autofill 未显示时，用户点击 Passly 的
+浮动按钮，服务才读取当前可编辑节点；它复用候选发现、认证和单条解析，但通过 `ACTION_SET_TEXT` 交付，
+不参与 Legacy 保存或 Credential Manager response。Legacy 的 compatibility package 由 Android 框架提供
+兼容处理，不等于 Passly 无障碍服务。
+选择页先关闭，原窗口重新成为活动窗口后才执行写入；待交付凭据只在进程内暂存至多 10 秒，过期取消 interaction。
+无障碍 Service 通过 `AutofillLaunchTarget` 请求不含 token 的显式 Activity Intent；选择页从同进程的单次
+会话存储读取请求，具体页面类只由 App 平台适配器引用，Feature 不依赖 Presentation。
+
+| 入口与展示 | 触发 | 候选 UI | 交付 | 边界与回退 |
+| --- | --- | --- | --- | --- |
+| Legacy 悬浮 | 系统 `FillRequest` | 系统下拉菜单 `RemoteViews` | `Dataset` | 用户选“悬浮候选”或键盘不支持 Inline 时使用 |
+| Legacy Inline | 系统 `FillRequest` 且键盘提供 Inline 规格 | 键盘候选条 `InlinePresentation` | 认证后 `Dataset` | 受键盘最大数量和规格约束；无请求时回到系统菜单 |
+| Legacy BottomSheet | 系统 `FillRequest` | 认证入口打开应用内 `ModalBottomSheet` | 选中后 `Dataset` | 无系统请求则不会出现 |
+| 无障碍浮动按钮 | 用户点按钮 | 应用内候选选择器 | 返回原窗口后 `ACTION_SET_TEXT` | 仅针对原窗口和包名，目标 30 秒过期，待交付最多 10 秒 |
+| Credential Manager | Android 14+ 凭据请求 | 系统凭据 UI | Provider response | 不受 Legacy 展示设置控制 |
+
+这里的“悬浮候选”指系统 Autofill 下拉菜单；“无障碍浮动按钮”是独立的手动触发入口。Android 是否最终显示
+Inline 仍由输入法决定。无障碍入口不尝试根据浏览器包名猜网页来源，网页没有可验证 origin 时不会扩大作用域。
 
 ## Legacy 结构解析与字段分类
 
@@ -28,7 +47,7 @@ username/password/OTP 语义。`LegacyPlatformAdapter` 将结果映射为平台�
 `DiscoverAutofillCandidates` 原子读取当前设置、规范化目标作用域、创建/恢复 interaction，并只查询
 `AutofillCandidateSummary` 元数据。候选阶段不读取 Entry 聚合、密码或 OTP secret。
 
-Legacy 可用 `HeuristicMatchStrategy` 识别非标准表单；Credential Manager 使用自己的严格 option/request 解析。
+Legacy 和手动无障碍入口可用 `HeuristicMatchStrategy` 识别非标准表单；Credential Manager 使用自己的严格 option/request 解析。
 平台 adapter 不直接依赖 Entry repository 或认证实现。
 
 需要解锁或设置要求每次验证时，`AuthorizeAutofillInteraction` 以 `AuthenticationPurpose.AUTOFILL` 授权同一个
@@ -82,3 +101,8 @@ interaction 可以借用同一个临时数据库会话，但不共享候选或�
 - [`ResolveAutofillSelection`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/core/ResolveAutofillSelection.kt)
 - [`AutofillResultDelivery`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillResultDelivery.kt)
 - [`AutofillInteractionStore`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillInteractionStore.kt)
+- [`ManualAccessibilityFillService`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/accessibility/ManualAccessibilityFillService.kt)
+
+平台依据：[Autofill 与 IME Inline 集成](https://developer.android.com/identity/autofill/ime-autofill)、
+[AccessibilityService](https://developer.android.com/reference/android/accessibilityservice/AccessibilityService)、
+[AccessibilityNodeInfo](https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo)。

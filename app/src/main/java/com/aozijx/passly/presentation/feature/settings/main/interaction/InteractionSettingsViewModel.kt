@@ -2,7 +2,6 @@ package com.aozijx.passly.presentation.feature.settings.main.interaction
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.presentation.mapping.gesture.toDomainModel
 import com.aozijx.passly.presentation.shared.error.toUiMessage
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -47,10 +46,10 @@ class InteractionSettingsViewModel @Inject constructor(
                 settingsRepository.setPullToSearchEnabled(action.enabled)
             }
             is InteractionSettingsAction.SetSwipeLeftAction -> saveSwipeAction {
-                settingsRepository.setSwipeLeftAction(action.action.toDomainModel())
+                settingsRepository.setSwipeLeftAction(action.action)
             }
             is InteractionSettingsAction.SetSwipeRightAction -> saveSwipeAction {
-                settingsRepository.setSwipeRightAction(action.action.toDomainModel())
+                settingsRepository.setSwipeRightAction(action.action)
             }
         }
     }

@@ -26,16 +26,10 @@ class AutofillSettingsUiMapperTest {
         assertTrue(model.isSystemServiceEnabled)
         assertFalse(model.supportsCredentialManager)
         assertFalse(model.savePromptsEnabled)
-        assertEquals(AutofillPresentationUiModel.BOTTOM_SHEET, model.presentation)
+        assertEquals(AutofillPresentation.BOTTOM_SHEET, model.presentation)
         assertEquals(AutofillSettings.MAX_SUGGESTIONS, model.maxSuggestions)
         assertEquals(AutofillSettings.MIN_SUGGESTIONS, model.minSuggestions)
         assertEquals(AutofillSettings.MAX_SUGGESTIONS, model.maxSuggestionsLimit)
     }
 
-    @Test
-    fun presentationRoundTripsAcrossFeatureUiBoundary() {
-        AutofillPresentation.entries.forEach { presentation ->
-            assertEquals(presentation, presentation.toUiModel().toDomainModel())
-        }
-    }
 }

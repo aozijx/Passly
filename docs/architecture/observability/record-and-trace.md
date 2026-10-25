@@ -35,6 +35,9 @@ Vault 状态变化才使用 `security.vault.unlocked`。锁定事件使用 `secu
 resolver 和 `docs/ERROR_CODES.md`。错误码按 Application、Database、Security、Autofill、Backup 分组，但 wire
 值不依赖 Kotlin 枚举名。只有 `USER_ACTIONABLE` 错误能映射本地化提示；UI 不得回退显示原始错误码。
 
+Autofill 服务记录所选展示模式和键盘 Inline 能力；手动无障碍回退分别记录用户请求、受控不可用、
+平台接收写入和异常失败。来源是枚举，目标包只记录 HMAC 标识；节点文字、候选标题、用户名和凭据不进入日志。
+
 错误码表达“哪个稳定操作失败”，原因码表达“为什么失败”。例如 `SECURITY_LOCK_FAILED` 下使用
 `SESSION_SOFT_LOCK_FAILED` 或 `SESSION_SEAL_FAILED`，不得再配同义的 `SECURITY_LOCK_OPERATION_FAILED`。
 异常类别由 `error_code + reason_code + Throwable` 联合映射：文件清理属于 `IO`；Vault DEK 校验属于

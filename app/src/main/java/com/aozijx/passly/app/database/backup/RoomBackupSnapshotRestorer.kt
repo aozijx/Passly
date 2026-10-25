@@ -9,7 +9,9 @@ import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
 import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
+import com.aozijx.passly.feature.backup.internal.archive.mapper.KeyedEntryArchiveMapper
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
+import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupRestoreResult
 import com.aozijx.passly.data.local.database.maintenance.DatabaseCleaner
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
@@ -18,8 +20,6 @@ import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
-import com.aozijx.passly.feature.backup.internal.archive.snapshot.RestoreFileJournal
-import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupRestoreResult
 import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.data.mapper.entry.toDatabaseFlags
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
@@ -47,7 +47,6 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
     private val databaseSession: AppDatabaseSession,
     private val databaseCleaner: DatabaseCleaner,
     private val secretFieldStore: SecretFieldStore,
-    private val documentMapper: RoomBackupSnapshotMapper,
     private val attachmentContentProtector: AttachmentContentProtector,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
     private val logger: Logger,
@@ -83,7 +82,7 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
                         existingEntryCount++
                         return@forEach
                     }
-                    val restoredEntry = documentMapper.toEntry(record)
+                    val restoredEntry = KeyedEntryArchiveMapper.toEntry(record)
                     val entryResources = resourcesByEntry[entryId].orEmpty()
                     val iconRecord = entryResources.singleOrNull {
                         it.kind == BackupResourceKind.ICON

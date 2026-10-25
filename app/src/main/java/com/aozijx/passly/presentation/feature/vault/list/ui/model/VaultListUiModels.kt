@@ -2,7 +2,7 @@ package com.aozijx.passly.presentation.feature.vault.list.ui.model
 
 import androidx.compose.runtime.Immutable
 import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
-import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 import kotlinx.coroutines.flow.Flow
 
 @Immutable
@@ -108,8 +108,8 @@ data class VaultListNavigationUiModel(
 data class VaultListContentUiModel(
     val showTotpCode: Boolean,
     val cardPresentations: List<VaultCardPresentationUiModel>,
-    val swipeLeftAction: SwipeActionUiModel,
-    val swipeRightAction: SwipeActionUiModel,
+    val swipeLeftAction: SwipeActionType,
+    val swipeRightAction: SwipeActionType,
     val isSwipeEnabled: Boolean,
     val isPullToSearchEnabled: Boolean,
 )
@@ -130,8 +130,8 @@ data class VaultListLayoutUiModel(
 @Immutable
 data class VaultListDisplayUiModel(
     val cardPresentations: List<VaultCardPresentationUiModel>,
-    val swipeLeftAction: SwipeActionUiModel,
-    val swipeRightAction: SwipeActionUiModel,
+    val swipeLeftAction: SwipeActionType,
+    val swipeRightAction: SwipeActionType,
     val isSwipeEnabled: Boolean,
     val isPullToSearchEnabled: Boolean,
     val collapseTopBarOnScroll: Boolean,

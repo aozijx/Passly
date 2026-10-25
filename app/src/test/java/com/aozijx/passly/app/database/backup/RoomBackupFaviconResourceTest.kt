@@ -2,7 +2,6 @@ package com.aozijx.passly.app.database.backup
 
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceRecord
-import com.aozijx.passly.feature.backup.internal.archive.snapshot.RestoreFileJournal
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

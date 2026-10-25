@@ -5,9 +5,13 @@
 ## 当前流程
 
 - Legacy：锁定发现、认证、同 interaction 选择、结果先交付后关闭；SaveInfo 角色和当前认证式 save。
+- Legacy 三种展示：悬浮菜单、遵守键盘容量/规格的 Inline、认证后 BottomSheet；无 Inline 请求时菜单可用。
+- 无障碍手动回退：服务启用后点击浮动按钮才扫描；认证后仅填原窗口/包名的可编辑节点；目标变化或超时拒绝。
+- 日志记录展示模式和 Inline 能力、手动请求/不可用/交付/异常；只允许脱敏包名，不含节点文字或凭据。
 - Credential Manager：locked begin-get、同 interaction 重发现、caller/allowed-user 拒绝、get/create result 合同、
   clear-state 和 PendingIntent identity。
-- 两套入口不导入对方 Android 类型；共享层只处理平台无关合同。
+- 三套入口不导入对方 Android 类型；共享层只处理平台无关合同。
+- 文本 URI 与数字密码按 Android input class 加 variation 分类，不能因 variation 位重合把 URI 当密码。
 - 进程死亡拒绝旧 interaction/token；超时、返回、取消和异常释放自己的 lease。
 - 已有完整 App session 不被迟到 Autofill 完成锁定；临时 session 完成后不可再次显示上一轮秘密。
 - result delivery 失败不伪造 delivered，也不提前关闭可重试会话。

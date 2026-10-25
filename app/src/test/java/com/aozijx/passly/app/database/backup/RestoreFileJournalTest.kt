@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.backup.internal.archive.snapshot
+package com.aozijx.passly.app.database.backup
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals

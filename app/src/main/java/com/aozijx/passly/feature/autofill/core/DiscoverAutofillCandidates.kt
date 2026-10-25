@@ -133,15 +133,18 @@ class DiscoverAutofillCandidates @Inject constructor(
     private fun AutofillSettings.supports(source: AutofillSource): Boolean = when (source) {
         AutofillSource.AUTOFILL_SERVICE -> true
         AutofillSource.CREDENTIAL_MANAGER -> credentialManagerEnabled
+        AutofillSource.ACCESSIBILITY -> true
     }
 
     private fun AutofillSource.toInteractionSource(): AutofillInteractionSource = when (this) {
         AutofillSource.AUTOFILL_SERVICE -> AutofillInteractionSource.LEGACY
         AutofillSource.CREDENTIAL_MANAGER -> AutofillInteractionSource.CREDENTIAL_MANAGER
+        AutofillSource.ACCESSIBILITY -> AutofillInteractionSource.ACCESSIBILITY
     }
 
     private fun AutofillSource.fieldMatchStrategy(): FieldMatchStrategy = when (this) {
         AutofillSource.AUTOFILL_SERVICE -> legacyFieldMatchStrategy
         AutofillSource.CREDENTIAL_MANAGER -> credentialFieldMatchStrategy
+        AutofillSource.ACCESSIBILITY -> legacyFieldMatchStrategy
     }
 }

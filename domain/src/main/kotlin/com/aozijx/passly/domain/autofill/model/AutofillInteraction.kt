@@ -21,6 +21,7 @@ enum class AutofillInteractionSource {
     LEGACY,
     LEGACY_SAVE,
     CREDENTIAL_MANAGER,
+    ACCESSIBILITY,
 }
 
 sealed interface AutofillInteractionState {

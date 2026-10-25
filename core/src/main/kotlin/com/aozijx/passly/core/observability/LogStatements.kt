@@ -451,6 +451,38 @@ object LogStatements {
     }
 
     object Autofill {
+        fun presentationSelected(mode: Enum<*>, inlineAvailable: Boolean): LogStatement =
+            InfoStatement(
+                Events.Autofill.PresentationSelected,
+                fields {
+                    enum(LogFieldKeys.Presentation, mode)
+                    boolean(LogFieldKeys.InlineAvailable, inlineAvailable)
+                },
+            )
+
+        fun fallbackStarted(fields: LogFields): LogStatement =
+            InfoStatement(Events.Autofill.FallbackStarted, fields)
+
+        fun fallbackUnavailable(reason: ReasonCode, fields: LogFields = LogFields.Empty): LogStatement =
+            DegradedStatement(
+                Events.Autofill.FallbackUnavailable,
+                ErrorCodes.Autofill.AutofillDiscoveryUnavailable,
+                reason,
+                fields,
+            )
+
+        fun fallbackDelivered(fields: LogFields): LogStatement =
+            InfoStatement(Events.Autofill.FallbackDelivered, fields)
+
+        fun fallbackFailed(throwable: Throwable, fields: LogFields = LogFields.Empty): LogStatement =
+            ErrorStatement(
+                Events.Autofill.FallbackFailed,
+                ErrorCodes.Autofill.AutofillResultDeliveryFailed,
+                Reasons.PlatformCallbackFailed,
+                throwable,
+                fields,
+            )
+
         fun context(source: Enum<*>, targetPackage: String?): LogFields = fields {
             enum(LogFieldKeys.Source, source)
             if (!targetPackage.isNullOrBlank()) {

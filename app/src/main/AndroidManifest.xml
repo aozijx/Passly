@@ -51,6 +51,13 @@
             android:theme="@style/Theme.Passly.TransparentAuth" />
 
         <activity
+            android:name=".presentation.feature.autofill.accessibility.AccessibilityFillActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:theme="@style/Theme.Passly.TransparentAuth" />
+
+        <activity
             android:name=".presentation.feature.autofill.legacy.save.LegacySaveActivity"
             android:excludeFromRecents="true"
             android:exported="false"
@@ -80,6 +87,19 @@
             <meta-data
                 android:name="android.autofill"
                 android:resource="@xml/autofill_service_config" />
+        </service>
+
+        <service
+            android:name=".feature.autofill.accessibility.ManualAccessibilityFillService"
+            android:exported="true"
+            android:label="@string/accessibility_fill_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_fill_service_config" />
         </service>
 
         <!-- API 34+ CredentialProviderService，由版本资源声明是否启用。 -->

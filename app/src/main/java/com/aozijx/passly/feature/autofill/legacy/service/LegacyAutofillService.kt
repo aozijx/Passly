@@ -15,6 +15,7 @@ import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
+import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.legacy.LegacySaveFlow
@@ -22,6 +23,8 @@ import com.aozijx.passly.feature.autofill.legacy.LegacySavePendingIntentFactory
 import com.aozijx.passly.feature.autofill.legacy.LegacySavePreparation
 import com.aozijx.passly.feature.autofill.legacy.service.adapter.LegacyPlatformAdapter
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyDiscoveryObservation
+import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyInlinePresentationFactory
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.legacy.service.parser.AutofillStructureParser
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
@@ -81,10 +84,25 @@ class LegacyAutofillService : AutofillService() {
                     val discoveryStartedAt = monotonicTimeMs()
                     logger.log(LogStatements.Autofill.discoveryStarted(requestFields))
                     val outcome = discoverCandidates(internalRequest)
+                    val presentation = when (outcome) {
+                        is AutofillDiscoveryOutcome.Candidates -> outcome.context.presentation
+                        is AutofillDiscoveryOutcome.NoCandidates -> outcome.context.presentation
+                        is AutofillDiscoveryOutcome.RequiresUnlock -> outcome.context.presentation
+                        else -> null
+                    }
+                    presentation?.let { mode ->
+                        val inline = request.inlineSuggestionsRequest
+                        logger.log(LogStatements.Autofill.presentationSelected(
+                            mode,
+                            mode == AutofillPresentation.SYSTEM_INLINE &&
+                                LegacyInlinePresentationFactory.isAvailable(inline),
+                        ))
+                    }
                     val result = adapter.buildResponseResult(
                         outcome = outcome,
                         parsed = parsed,
                         context = this@LegacyAutofillService,
+                        inlineRequest = request.inlineSuggestionsRequest,
                     )
                     when (val observation = result.observation) {
                         is LegacyDiscoveryObservation.Completed -> {

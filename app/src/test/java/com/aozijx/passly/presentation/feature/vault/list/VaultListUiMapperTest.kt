@@ -22,7 +22,7 @@ import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultSortOptio
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultSortUiModel
 import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import com.aozijx.passly.presentation.mapping.entry.toUiModel
-import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -71,8 +71,8 @@ class VaultListUiMapperTest {
 
     private fun display() = VaultListDisplayUiModel(
             cardPresentations = emptyList(),
-            swipeLeftAction = SwipeActionUiModel.DELETE,
-            swipeRightAction = SwipeActionUiModel.COPY_PASSWORD,
+            swipeLeftAction = SwipeActionType.DELETE,
+            swipeRightAction = SwipeActionType.COPY_PASSWORD,
             isSwipeEnabled = true,
             isPullToSearchEnabled = false,
             collapseTopBarOnScroll = false,

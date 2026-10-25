@@ -15,11 +15,13 @@ import com.aozijx.passly.feature.autofill.legacy.LegacySavePendingIntentFactory
 import com.aozijx.passly.feature.autofill.legacy.runtime.LegacySaveToken
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 import com.aozijx.passly.presentation.feature.autofill.credential.CredentialResponseActivity
+import com.aozijx.passly.presentation.feature.autofill.accessibility.AccessibilityFillActivity
 import com.aozijx.passly.presentation.feature.autofill.legacy.AutofillFillActivity
 import com.aozijx.passly.presentation.feature.autofill.legacy.save.LegacySaveActivity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -62,6 +64,7 @@ class AutofillLaunchTargetFactoryTest {
         val legacy = target.legacyFillIntent(context, "legacy")
         val legacySave = target.legacySaveIntent(context, "legacy-save")
         val credential = target.credentialResponseIntent(context, "credential")
+        val accessibility = target.accessibilityFillIntent(context)
 
         assertEquals(context.packageName, legacy.`package`)
         assertEquals(AutofillFillActivity::class.java.name, legacy.component?.className)
@@ -69,6 +72,9 @@ class AutofillLaunchTargetFactoryTest {
         assertEquals(LegacySaveActivity::class.java.name, legacySave.component?.className)
         assertEquals(context.packageName, credential.`package`)
         assertEquals(CredentialResponseActivity::class.java.name, credential.component?.className)
+        assertEquals(context.packageName, accessibility.`package`)
+        assertEquals(AccessibilityFillActivity::class.java.name, accessibility.component?.className)
+        assertNull(accessibility.extras)
     }
 
     @Test
@@ -126,6 +132,9 @@ class AutofillLaunchTargetFactoryTest {
             requestIds += requestId
             return delegate.legacyFillIntent(context, requestId)
         }
+
+        override fun accessibilityFillIntent(context: Context): Intent =
+            delegate.accessibilityFillIntent(context)
 
         override fun credentialResponseIntent(context: Context, requestId: String): Intent {
             requestIds += requestId

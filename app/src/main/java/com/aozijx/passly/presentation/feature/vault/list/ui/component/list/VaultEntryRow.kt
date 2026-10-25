@@ -21,7 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionContainer
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionSpec
-import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.presentation.feature.vault.list.ui.component.cardstyle.CardStyleRegistry
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListContentUiModel
 import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemAction
@@ -68,7 +68,7 @@ internal fun VaultEntryRow(
             onAction = {
                 onAction(VaultListItemAction.Swiped(currentItem, content.swipeLeftAction))
             },
-            backgroundColor = if (content.swipeLeftAction == SwipeActionUiModel.DELETE) {
+            backgroundColor = if (content.swipeLeftAction == SwipeActionType.DELETE) {
                 colorScheme.error
             } else {
                 colorScheme.primary
@@ -82,7 +82,7 @@ internal fun VaultEntryRow(
             onAction = {
                 onAction(VaultListItemAction.Swiped(currentItem, content.swipeRightAction))
             },
-            backgroundColor = if (content.swipeRightAction == SwipeActionUiModel.DELETE) {
+            backgroundColor = if (content.swipeRightAction == SwipeActionType.DELETE) {
                 colorScheme.error
             } else {
                 colorScheme.secondary
@@ -135,16 +135,16 @@ internal fun observeVaultOtpState(
 }
 
 private fun createAppSwipeActionSpec(
-    actionType: SwipeActionUiModel,
+    actionType: SwipeActionType,
     onAction: () -> Unit,
     backgroundColor: Color,
     iconTint: Color,
 ): SwipeActionSpec? {
     val icon = when (actionType) {
-        SwipeActionUiModel.DISABLED -> return null
-        SwipeActionUiModel.DELETE -> Icons.Default.Delete
-        SwipeActionUiModel.COPY_PASSWORD -> Icons.Default.ContentCopy
-        SwipeActionUiModel.COPY_USERNAME -> Icons.Default.Person
+        SwipeActionType.DISABLED -> return null
+        SwipeActionType.DELETE -> Icons.Default.Delete
+        SwipeActionType.COPY_PASSWORD -> Icons.Default.ContentCopy
+        SwipeActionType.COPY_USERNAME -> Icons.Default.Person
     }
     return SwipeActionSpec(
         icon = icon,

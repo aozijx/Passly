@@ -19,6 +19,7 @@ enum class FieldRole {
 enum class AutofillSource {
     AUTOFILL_SERVICE,
     CREDENTIAL_MANAGER,
+    ACCESSIBILITY,
 }
 
 /**

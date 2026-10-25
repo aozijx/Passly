@@ -1,6 +1,6 @@
 # Legacy Autofill Service
 
-状态：当前实现（API 31+，代码核对：2026-10-18）。
+状态：当前实现（API 31+，代码核对：2026-10-24）。
 
 `LegacyAutofillService` 解析 `AssistStructure`、处理取消信号并构造 Legacy `FillResponse`/`Dataset`。它不构造
 Credential Manager response。
@@ -15,9 +15,15 @@ Credential Manager response。
 trace 的 `LegacyDiscoveryObservation`。Service 不再重复解释 `Candidates`、`RequiresUnlock` 等 domain outcome。
 Credential Manager 仍使用自己的 response 合同，不与 Legacy 结果类型合并。
 
-系统候选菜单使用 RemoteViews。业务层先生成 `AutofillRemoteItem.SingleLine/DoubleLine`，渲染器只负责选择对应
+系统悬浮候选菜单使用 RemoteViews。业务层先生成 `AutofillRemoteItem.SingleLine/DoubleLine`，渲染器只负责选择对应
 XML 并绑定文字；XML 不包含匹配类型徽标、自定义卡片背景或业务判断。这样候选、解锁入口和选择器入口共享同一
 展示协议，而 domain 候选模型不会泄漏到 Android View 渲染器。
+
+键盘 Inline 模式在服务元数据中声明支持，读取 `FillRequest.inlineSuggestionsRequest` 的最大数量和规格，
+仅在键盘规格声明支持 AndroidX v1 模板时，为锁定入口与候选 Dataset 构造 `InlinePresentation`。请求为空、
+容量为零、未给规格或模板版本不兼容时只提供菜单呈现；
+悬浮模式始终只提供菜单呈现。认证后重建 response 的入口继续携带平台 Inline 请求。选择底部模式时，
+认证占位 Dataset 打开应用内 `ModalBottomSheet`，不把 BottomSheet 伪装成 Inline。
 
 Legacy 平台的认证结果按入口显式区分，不能复用一个含隐式布尔默认值的 Intent：
 

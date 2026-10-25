@@ -2,18 +2,11 @@ package com.aozijx.passly.presentation.feature.settings.ui.interaction
 
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
-import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
-
-internal data class InteractionDetailUiModel(
-    val isSwipeEnabled: Boolean,
-    val isPullToSearchEnabled: Boolean,
-    val swipeLeftAction: SwipeActionUiModel,
-    val swipeRightAction: SwipeActionUiModel,
-)
+import com.aozijx.passly.presentation.feature.settings.main.interaction.InteractionSettingsUiState
 
 @Composable
 internal fun InteractionDetail(
-    state: InteractionDetailUiModel,
+    state: InteractionSettingsUiState.Ready,
     onSwipeEnabledChange: (Boolean) -> Unit,
     onPullToSearchEnabledChange: (Boolean) -> Unit,
     onLeftSwipeActionClick: () -> Unit,

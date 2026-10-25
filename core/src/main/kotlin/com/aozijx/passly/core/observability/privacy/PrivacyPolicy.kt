@@ -239,6 +239,8 @@ class PrivacyPolicy(
             LogFieldKeys.DroppedErrorCount to FieldKind.COUNT,
             LogFieldKeys.DroppedFatalCount to FieldKind.COUNT,
             LogFieldKeys.EntryType to FieldKind.ENUM,
+            LogFieldKeys.Presentation to FieldKind.ENUM,
+            LogFieldKeys.InlineAvailable to FieldKind.BOOLEAN,
         )
     }
 }

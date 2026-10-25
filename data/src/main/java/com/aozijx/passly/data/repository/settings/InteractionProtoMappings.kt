@@ -26,6 +26,8 @@ internal fun SwipeActionType.toProto(): SwipeActionPreference = when (this) {
 }
 
 internal fun AutofillPresentationPreference.toDomain(): AutofillPresentation = when (this) {
+    AutofillPresentationPreference.AUTOFILL_PRESENTATION_FLOATING ->
+        AutofillPresentation.FLOATING
     AutofillPresentationPreference.AUTOFILL_PRESENTATION_SYSTEM_INLINE ->
         AutofillPresentation.SYSTEM_INLINE
     AutofillPresentationPreference.AUTOFILL_PRESENTATION_BOTTOM_SHEET ->
@@ -35,6 +37,8 @@ internal fun AutofillPresentationPreference.toDomain(): AutofillPresentation = w
 }
 
 internal fun AutofillPresentation.toProto(): AutofillPresentationPreference = when (this) {
+    AutofillPresentation.FLOATING ->
+        AutofillPresentationPreference.AUTOFILL_PRESENTATION_FLOATING
     AutofillPresentation.SYSTEM_INLINE ->
         AutofillPresentationPreference.AUTOFILL_PRESENTATION_SYSTEM_INLINE
     AutofillPresentation.BOTTOM_SHEET ->

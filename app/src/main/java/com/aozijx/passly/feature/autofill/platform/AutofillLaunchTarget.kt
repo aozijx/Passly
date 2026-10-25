@@ -7,6 +7,7 @@ interface AutofillLaunchTarget {
     fun legacyFillIntent(context: Context, requestId: String): Intent
     fun legacySaveIntent(context: Context, requestId: String): Intent
     fun credentialResponseIntent(context: Context, requestId: String): Intent
+    fun accessibilityFillIntent(context: Context): Intent
 }
 
 object AutofillLaunchExtras {
@@ -15,6 +16,7 @@ object AutofillLaunchExtras {
     const val INTERACTION_ID = "autofill_interaction_id"
     const val ENTRY_ID = "autofill_entry_id"
     const val UI_MODE = "autofill_ui_mode"
+    const val INLINE_REQUEST = "autofill_inline_request"
     const val PACKAGE_NAME = "autofill_package_name"
     const val WEB_DOMAIN = "autofill_web_domain"
     const val EDITABLE_IDS = "autofill_editable_ids"

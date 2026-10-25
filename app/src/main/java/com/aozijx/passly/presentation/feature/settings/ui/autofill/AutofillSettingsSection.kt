@@ -3,12 +3,17 @@ package com.aozijx.passly.presentation.feature.settings.ui.autofill
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.Column
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.feature.settings.autofill.AutofillPresentationUiModel
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.presentation.feature.settings.autofill.AutofillSettingsAction
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
@@ -26,6 +31,7 @@ internal fun AutofillSettingsSection(
     var candidateLimit by remember {
         mutableFloatStateOf(settings.maxSuggestions.toFloat())
     }
+    var showPresentationDialog by remember { mutableStateOf(false) }
     LaunchedEffect(settings.maxSuggestions) {
         candidateLimit = settings.maxSuggestions.toFloat()
     }
@@ -60,27 +66,30 @@ internal fun AutofillSettingsSection(
             )
             add(
                 navigationSettingsGroupItem(
+                    key = "autofill.accessibility",
+                    title = stringResource(R.string.settings_autofill_accessibility),
+                    subtitle = stringResource(R.string.settings_autofill_accessibility_summary),
+                    onClick = { onAction(AutofillSettingsAction.OpenAccessibilitySettings) },
+                )
+            )
+            add(
+                navigationSettingsGroupItem(
                     key = "autofill.presentation",
                     enabled = enabled,
                     title = stringResource(R.string.settings_autofill_presentation),
                     value = stringResource(
                         when (settings.presentation) {
-                            AutofillPresentationUiModel.SYSTEM_INLINE ->
+                            AutofillPresentation.FLOATING ->
+                                R.string.settings_autofill_mode_floating
+                            AutofillPresentation.SYSTEM_INLINE ->
                                 R.string.settings_autofill_mode_inline
 
-                            AutofillPresentationUiModel.BOTTOM_SHEET ->
+                            AutofillPresentation.BOTTOM_SHEET ->
                                 R.string.settings_autofill_mode_bottom_sheet
                         }
                     ),
                     onClick = {
-                        val next = when (settings.presentation) {
-                            AutofillPresentationUiModel.SYSTEM_INLINE ->
-                                AutofillPresentationUiModel.BOTTOM_SHEET
-
-                            AutofillPresentationUiModel.BOTTOM_SHEET ->
-                                AutofillPresentationUiModel.SYSTEM_INLINE
-                        }
-                        onAction(AutofillSettingsAction.SetPresentation(next))
+                        showPresentationDialog = true
                     },
                 )
             )
@@ -172,4 +181,31 @@ internal fun AutofillSettingsSection(
             )
         }
     )
+    if (showPresentationDialog) {
+        AlertDialog(
+            onDismissRequest = { showPresentationDialog = false },
+            title = { Text(stringResource(R.string.settings_autofill_presentation)) },
+            text = {
+                Column {
+                    AutofillPresentation.entries.forEach { mode ->
+                        val label = when (mode) {
+                            AutofillPresentation.FLOATING -> R.string.settings_autofill_mode_floating
+                            AutofillPresentation.SYSTEM_INLINE -> R.string.settings_autofill_mode_inline
+                            AutofillPresentation.BOTTOM_SHEET -> R.string.settings_autofill_mode_bottom_sheet
+                        }
+                        TextButton(onClick = {
+                            onAction(AutofillSettingsAction.SetPresentation(mode))
+                            showPresentationDialog = false
+                        }) { Text(stringResource(label)) }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showPresentationDialog = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        )
+    }
 }

@@ -162,6 +162,7 @@
     <!-- Interaction and autofill -->
     <string name="settings_autofill_mode_bottom_sheet">Bottom sheet</string>
     <string name="settings_autofill_mode_inline">Keyboard suggestions</string>
+    <string name="settings_autofill_mode_floating">Floating suggestions</string>
     <string name="settings_autofill_section">Autofill</string>
     <string name="settings_autofill_enabled">Use Passly autofill</string>
     <string name="settings_autofill_enabled_summary">Control suggestions from Autofill and Credential Manager</string>
@@ -170,6 +171,12 @@
     <string name="settings_autofill_system_enabled">Enabled</string>
     <string name="settings_autofill_system_disabled">Not enabled</string>
     <string name="settings_autofill_presentation">Suggestion display</string>
+    <string name="accessibility_fill_service_label">Passly manual fill</string>
+    <string name="accessibility_fill_service_description">Reads the current input fields and fills your chosen credential only after you tap the floating button.</string>
+    <string name="accessibility_fill_button">Fill</string>
+    <string name="accessibility_fill_button_description">Manually fill current fields with Passly</string>
+    <string name="settings_autofill_accessibility">Manual fill fallback</string>
+    <string name="settings_autofill_accessibility_summary">If system suggestions do not appear, enable Accessibility and tap the floating button</string>
     <string name="settings_autofill_credential_manager">Credential Manager</string>
     <string name="settings_autofill_credential_manager_summary">Offer login credentials on Android 14 and later</string>
     <string name="settings_autofill_require_authentication">Verify before filling</string>

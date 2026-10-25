@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.database.backup
+package com.aozijx.passly.feature.backup.internal.archive.mapper
 
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId

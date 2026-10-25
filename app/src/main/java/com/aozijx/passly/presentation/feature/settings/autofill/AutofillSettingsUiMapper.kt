@@ -1,6 +1,5 @@
 package com.aozijx.passly.presentation.feature.settings.autofill
 
-import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.presentation.feature.settings.ui.autofill.model.AutofillSettingsUiModel
 
@@ -8,7 +7,7 @@ fun AutofillSettingsUiState.Ready.toAutofillSettingsUiModel(
     supportsCredentialManager: Boolean,
 ): AutofillSettingsUiModel = AutofillSettingsUiModel(
     enabled = autofill.enabled,
-    presentation = autofill.presentation.toUiModel(),
+    presentation = autofill.presentation,
     credentialManagerEnabled = autofill.credentialManagerEnabled,
     supportsCredentialManager = supportsCredentialManager,
     requireAuthentication = autofill.requireAuthentication,
@@ -20,13 +19,3 @@ fun AutofillSettingsUiState.Ready.toAutofillSettingsUiModel(
     maxSuggestionsLimit = AutofillSettings.MAX_SUGGESTIONS,
     isSystemServiceEnabled = isSystemAutofillEnabled,
 )
-
-fun AutofillPresentation.toUiModel(): AutofillPresentationUiModel = when (this) {
-    AutofillPresentation.SYSTEM_INLINE -> AutofillPresentationUiModel.SYSTEM_INLINE
-    AutofillPresentation.BOTTOM_SHEET -> AutofillPresentationUiModel.BOTTOM_SHEET
-}
-
-fun AutofillPresentationUiModel.toDomainModel(): AutofillPresentation = when (this) {
-    AutofillPresentationUiModel.SYSTEM_INLINE -> AutofillPresentation.SYSTEM_INLINE
-    AutofillPresentationUiModel.BOTTOM_SHEET -> AutofillPresentation.BOTTOM_SHEET
-}

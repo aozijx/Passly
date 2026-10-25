@@ -5,6 +5,7 @@ import android.os.Build
 import android.service.autofill.Dataset
 import android.service.autofill.Field
 import android.service.autofill.FillResponse
+import android.service.autofill.InlinePresentation
 import android.service.autofill.Presentations
 import android.view.autofill.AutofillId
 import android.view.autofill.AutofillValue
@@ -72,30 +73,42 @@ internal object LegacyDatasetFactory {
         builder: FillResponse.Builder,
         ids: Array<AutofillId>,
         intentSender: IntentSender,
-        presentation: RemoteViews
+        presentation: RemoteViews,
+        inlinePresentation: InlinePresentation? = null,
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val presentations = Presentations.Builder().setMenuPresentation(presentation).build()
+            val presentations = Presentations.Builder().setMenuPresentation(presentation).apply {
+                inlinePresentation?.let(::setInlinePresentation)
+            }.build()
             builder.setAuthentication(ids, intentSender, presentations)
         } else {
             @Suppress("DEPRECATION")
-            builder.setAuthentication(ids, intentSender, presentation)
+            builder.setAuthentication(ids, intentSender, presentation, inlinePresentation)
         }
     }
 
     fun setMenuPresentationCompat(
         builder: Dataset.Builder,
         ids: List<AutofillId>,
-        presentation: RemoteViews
+        presentation: RemoteViews,
+        inlinePresentation: InlinePresentation? = null,
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val field = Field.Builder().setPresentations(
-                Presentations.Builder().setMenuPresentation(presentation).build()
+                Presentations.Builder().setMenuPresentation(presentation).apply {
+                    inlinePresentation?.let(::setInlinePresentation)
+                }.build()
             ).build()
             ids.forEach { builder.setField(it, field) }
         } else {
             @Suppress("DEPRECATION")
-            ids.forEach { id -> builder.setValue(id, null, presentation) }
+            ids.forEach { id ->
+                if (inlinePresentation == null) {
+                    builder.setValue(id, null, presentation)
+                } else {
+                    builder.setValue(id, null, presentation, inlinePresentation)
+                }
+            }
         }
     }
 }

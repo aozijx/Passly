@@ -151,7 +151,12 @@ class AutofillFillViewModel @Inject constructor(
         request: AutofillFillRequest,
         outcome: AutofillDiscoveryOutcome,
     ) {
-        val response = responseFactory.buildFillResponse(appContext, outcome, request.toParsedStructure())
+        val response = responseFactory.buildResult(
+            appContext,
+            outcome,
+            request.toParsedStructure(),
+            request.inlineRequest,
+        ).response
         if (response == null) {
             finishInteraction.cancel(request.interactionId)
             mutate(AutofillFillMutation.Completed(AutofillFillResult.Cancelled))

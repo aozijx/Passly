@@ -2,6 +2,7 @@ package com.aozijx.passly.presentation.feature.autofill.legacy
 
 import android.content.Intent
 import android.view.autofill.AutofillId
+import android.view.inputmethod.InlineSuggestionsRequest
 import androidx.core.content.IntentCompat
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -17,9 +18,8 @@ internal fun Intent.toAutofillFillRequest(): AutofillFillRequest? {
     val packageName = getStringExtra(AutofillLaunchExtras.PACKAGE_NAME)
         ?.takeIf(String::isNotBlank)
         ?: return null
-    val uiMode = getStringExtra(AutofillLaunchExtras.UI_MODE)
-        ?.let { raw -> AutofillPresentation.entries.firstOrNull { it.name == raw } }
-        ?: AutofillPresentation.SYSTEM_INLINE
+    val uiMode = AutofillPresentation.fromWireKey(getStringExtra(AutofillLaunchExtras.UI_MODE))
+        ?: return null
     val resultTarget = LegacyAutofillResultTarget.fromWireValue(
         getStringExtra(AutofillLaunchExtras.RESULT_TARGET),
     ) ?: return null
@@ -33,6 +33,11 @@ internal fun Intent.toAutofillFillRequest(): AutofillFillRequest? {
             ?.takeIf(String::isNotBlank)
             ?.let(::EntryId),
         resultTarget = resultTarget,
+        inlineRequest = IntentCompat.getParcelableExtra(
+            this,
+            AutofillLaunchExtras.INLINE_REQUEST,
+            InlineSuggestionsRequest::class.java,
+        ),
         editableIds = IntentCompat.getParcelableArrayExtra(
             this,
             AutofillLaunchExtras.EDITABLE_IDS,

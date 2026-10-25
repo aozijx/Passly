@@ -37,6 +37,9 @@ internal fun AutofillRoute(
                         data = "package:${context.packageName}".toUri()
                     },
                 )
+                AutofillSettingsEffect.OpenAccessibilitySettings -> context.startActivity(
+                    Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS),
+                )
             }
         }
     }

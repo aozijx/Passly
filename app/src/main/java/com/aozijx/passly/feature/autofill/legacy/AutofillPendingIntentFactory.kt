@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.view.autofill.AutofillId
+import android.view.inputmethod.InlineSuggestionsRequest
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.autofill.model.FieldRole
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -26,6 +27,7 @@ class AutofillPendingIntentFactory @Inject constructor(
         parsed: ParsedStructure,
         uiMode: AutofillPresentation,
         roleIds: Map<FieldRole, List<AutofillId>>,
+        inlineRequest: InlineSuggestionsRequest? = null,
     ): Intent {
         val requestId = AutofillPendingIntentPolicy.legacyFillRequestId(
             interactionId.value,
@@ -40,6 +42,7 @@ class AutofillPendingIntentFactory @Inject constructor(
                 uiMode,
                 roleIds,
                 LegacyAutofillResultTarget.DATASET,
+                inlineRequest,
             )
         }
     }
@@ -50,6 +53,7 @@ class AutofillPendingIntentFactory @Inject constructor(
         parsed: ParsedStructure,
         uiMode: AutofillPresentation,
         roleIds: Map<FieldRole, List<AutofillId>>,
+        inlineRequest: InlineSuggestionsRequest? = null,
     ): Intent {
         val requestId = AutofillPendingIntentPolicy.legacyInteractionRequestId(interactionId.value)
         return launchTarget.legacyFillIntent(context, requestId).apply {
@@ -60,6 +64,7 @@ class AutofillPendingIntentFactory @Inject constructor(
                 uiMode,
                 roleIds,
                 LegacyAutofillResultTarget.DATASET,
+                inlineRequest,
             )
         }
     }
@@ -70,6 +75,7 @@ class AutofillPendingIntentFactory @Inject constructor(
         parsed: ParsedStructure,
         uiMode: AutofillPresentation,
         roleIds: Map<FieldRole, List<AutofillId>>,
+        inlineRequest: InlineSuggestionsRequest? = null,
     ): Intent {
         val requestId = AutofillPendingIntentPolicy.legacyInteractionRequestId(interactionId.value)
         return launchTarget.legacyFillIntent(context, requestId).apply {
@@ -80,6 +86,7 @@ class AutofillPendingIntentFactory @Inject constructor(
                 uiMode,
                 roleIds,
                 LegacyAutofillResultTarget.RESPONSE,
+                inlineRequest,
             )
         }
     }
@@ -90,9 +97,11 @@ class AutofillPendingIntentFactory @Inject constructor(
         uiMode: AutofillPresentation,
         roleIds: Map<FieldRole, List<AutofillId>>,
         resultTarget: LegacyAutofillResultTarget,
+        inlineRequest: InlineSuggestionsRequest?,
     ) {
         putExtra(AutofillLaunchExtras.INTERACTION_ID, interactionId.value)
-        putExtra(AutofillLaunchExtras.UI_MODE, uiMode.name)
+        putExtra(AutofillLaunchExtras.UI_MODE, uiMode.wireKey)
+        inlineRequest?.let { putExtra(AutofillLaunchExtras.INLINE_REQUEST, it) }
         putExtra(AutofillLaunchExtras.RESULT_TARGET, resultTarget.wireValue)
         putExtra(AutofillLaunchExtras.PACKAGE_NAME, parsed.packageName)
         putExtra(AutofillLaunchExtras.WEB_DOMAIN, parsed.webDomain)

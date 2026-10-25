@@ -4,6 +4,7 @@ import android.app.assist.AssistStructure
 import android.service.autofill.FillContext
 import android.text.InputType
 import android.view.autofill.AutofillId
+import com.aozijx.passly.feature.autofill.core.AutofillInputTypeClassifier
 
 /** Full static properties of an editable input field (for heuristic matching). */
 data class EditableFieldInfo(
@@ -112,41 +113,15 @@ object AutofillStructureParser {
                 }
             }
 
-        private fun inputTypeNames(inputType: Int): String {
-            if (inputType == InputType.TYPE_NULL) return "TYPE_NULL"
-            val names = mutableListOf<String>()
-            val cls = inputType and InputType.TYPE_MASK_CLASS
-            when (cls) {
-                InputType.TYPE_CLASS_TEXT -> names += "TYPE_CLASS_TEXT"
-                InputType.TYPE_CLASS_NUMBER -> names += "TYPE_CLASS_NUMBER"
-                InputType.TYPE_CLASS_PHONE -> names += "TYPE_CLASS_PHONE"
-                InputType.TYPE_CLASS_DATETIME -> names += "TYPE_CLASS_DATETIME"
-            }
-            val varPart = inputType and InputType.TYPE_MASK_VARIATION
-            when (varPart) {
-                InputType.TYPE_TEXT_VARIATION_NORMAL -> names += "TEXT_VARIATION_NORMAL"
-                InputType.TYPE_TEXT_VARIATION_PASSWORD -> names += "TEXT_VARIATION_PASSWORD"
-                InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD -> names += "TEXT_VARIATION_VISIBLE_PASSWORD"
-                InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD -> names += "TEXT_VARIATION_WEB_PASSWORD"
-                InputType.TYPE_NUMBER_VARIATION_PASSWORD -> names += "NUMBER_VARIATION_PASSWORD"
-                InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS -> names += "TEXT_VARIATION_EMAIL_ADDRESS"
-                InputType.TYPE_TEXT_VARIATION_PERSON_NAME -> names += "TEXT_VARIATION_PERSON_NAME"
-                InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS -> names += "TEXT_VARIATION_WEB_EMAIL_ADDRESS"
-                InputType.TYPE_TEXT_VARIATION_WEB_EDIT_TEXT -> names += "TEXT_VARIATION_WEB_EDIT_TEXT"
-            }
-            return names.joinToString(" ")
-        }
+        private fun inputTypeNames(inputType: Int): String =
+            AutofillInputTypeClassifier.describe(inputType)
 
         private fun isEditableTextField(
             node: AssistStructure.ViewNode,
             inputType: Int,
             className: String
         ): Boolean {
-            val variation = inputType and InputType.TYPE_MASK_VARIATION
-            val isPwdType = variation == InputType.TYPE_TEXT_VARIATION_PASSWORD ||
-                    variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
-                    variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD ||
-                    variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD
+            val isPwdType = AutofillInputTypeClassifier.isPassword(inputType)
 
             if (isPwdType) return true
             if (!node.autofillHints.isNullOrEmpty()) return true

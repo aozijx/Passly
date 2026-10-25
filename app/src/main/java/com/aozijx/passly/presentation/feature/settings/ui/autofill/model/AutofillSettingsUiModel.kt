@@ -1,10 +1,10 @@
 package com.aozijx.passly.presentation.feature.settings.ui.autofill.model
 
-import com.aozijx.passly.presentation.feature.settings.autofill.AutofillPresentationUiModel
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 
 data class AutofillSettingsUiModel(
     val enabled: Boolean,
-    val presentation: AutofillPresentationUiModel,
+    val presentation: AutofillPresentation,
     val credentialManagerEnabled: Boolean,
     val supportsCredentialManager: Boolean,
     val requireAuthentication: Boolean,

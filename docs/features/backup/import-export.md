@@ -1,9 +1,11 @@
 # Backup 导入与导出
 
-状态：当前实现（代码核对：2026-10-18）。
+状态：当前实现（代码核对：2026-10-25）。
 
 Backup 归档 Vault 业务数据，不是 Room 数据库镜像。UI 与流程位于 presentation/feature/backup，协议、
-加密和文件 I/O 位于 feature/backup/internal，Room 快照适配位于 app/database/backup。
+加密和归档文件 I/O 位于 `feature/backup/internal`；稳定键映射位于 `archive/mapper`，Room 快照及恢复文件事务位于
+`app/database/backup`。能力侧仅声明 `BackupSnapshotGateway` 合同；App 适配器的 Reader/Restorer 读取
+Data 实现，页面和普通 Backup 流程不导入 Data。
 
 | 格式 | 方向 | 资源 | 保密性 |
 | --- | --- | --- | --- |

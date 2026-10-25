@@ -6,6 +6,7 @@ import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
 import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
+import com.aozijx.passly.feature.backup.internal.archive.mapper.KeyedEntryArchiveMapper
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupLinkRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
@@ -39,7 +40,6 @@ internal class RoomBackupSnapshotReader @Inject constructor(
     private val secretFieldStore: SecretFieldStore,
     private val attachmentContentProtector: AttachmentContentProtector,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
-    private val documentMapper: RoomBackupSnapshotMapper
 ) {
 
     suspend fun readBundle(
@@ -134,7 +134,7 @@ internal class RoomBackupSnapshotReader @Inject constructor(
             val now = System.currentTimeMillis()
             val exportedEntryIds = entries.mapTo(hashSetOf()) { it.id.value }
             val entryRecords = entries.map { entry ->
-                documentMapper.toRecord(
+                KeyedEntryArchiveMapper.toRecord(
                     entry = entry,
                     attachmentIds = attachmentIdsByEntry[entry.id.value].orEmpty()
                 )

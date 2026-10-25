@@ -44,7 +44,7 @@ class AutofillSettingsViewModel @Inject constructor(
                 settingsRepository.setAutofillEnabled(action.enabled)
             }
             is AutofillSettingsAction.SetPresentation -> viewModelScope.launch {
-                settingsRepository.setAutofillPresentation(action.presentation.toDomainModel())
+                settingsRepository.setAutofillPresentation(action.presentation)
             }
             is AutofillSettingsAction.SetCredentialManagerEnabled -> viewModelScope.launch {
                 settingsRepository.setCredentialManagerEnabled(action.enabled)
@@ -66,6 +66,8 @@ class AutofillSettingsViewModel @Inject constructor(
             }
             AutofillSettingsAction.OpenSystemAutofillSettings ->
                 _effects.trySend(AutofillSettingsEffect.OpenSystemAutofillSettings)
+            AutofillSettingsAction.OpenAccessibilitySettings ->
+                _effects.trySend(AutofillSettingsEffect.OpenAccessibilitySettings)
         }
     }
 }

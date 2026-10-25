@@ -83,10 +83,10 @@ class SourceBoundaryPolicyTest {
             ),
             LayerCase(
                 owner = "presentation.mapping",
-                path = "app/src/main/java/com/aozijx/passly/presentation/mapping/gesture/SwipeActionPresentationMapper.kt",
+                path = "app/src/main/java/com/aozijx/passly/presentation/mapping/entry/EntryTypePresentationMapper.kt",
                 allowed = listOf(
-                    "com.aozijx.passly.domain.settings.model.SwipeActionType",
-                    "com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel",
+                    "com.aozijx.passly.domain.entry.model.EntryType",
+                    "com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel",
                 ),
                 forbidden = listOf(
                     "com.aozijx.passly.presentation.feature.vault.VaultUiState",

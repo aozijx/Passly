@@ -7,8 +7,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.presentation.feature.autofill.legacy.ui.AutofillCandidateBottomSheet
-import com.aozijx.passly.presentation.feature.autofill.legacy.ui.AutofillCandidateItem
-import com.aozijx.passly.presentation.mapping.entry.toUiModel
+import com.aozijx.passly.presentation.feature.autofill.legacy.ui.toUiItem
 
 @Composable
 internal fun AutofillFillRoute(
@@ -30,7 +29,6 @@ internal fun AutofillFillRoute(
         onCancel = { viewModel.onAction(AutofillFillUiAction.Cancel) },
     )
 }
-
 @Composable
 private fun AutofillCompletionEffect(
     state: AutofillFillUiState,
@@ -63,14 +61,3 @@ private fun AutofillFillContent(
         )
     }
 }
-
-private fun AutofillCandidateSummary.toUiItem() = AutofillCandidateItem(
-    id = entry.id,
-    iconName = entry.profile.icon.name,
-    iconCustomPath = entry.profile.icon.customReference,
-    associatedAppPackage = entry.profile.associations.applicationIds.firstOrNull(),
-    entryType = entry.entryType.toUiModel(),
-    title = entry.title,
-    username = entry.username,
-    associatedDomain = entry.associatedDomain,
-)

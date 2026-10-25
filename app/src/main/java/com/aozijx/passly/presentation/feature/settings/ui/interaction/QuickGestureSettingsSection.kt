@@ -10,14 +10,14 @@ import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsG
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.presentation.shared.gesture.SwipeActionUiModel
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 
 @Composable
 internal fun QuickGestureSettingsSection(
     isSwipeEnabled: Boolean,
     isPullToSearchEnabled: Boolean,
-    swipeLeftAction: SwipeActionUiModel,
-    swipeRightAction: SwipeActionUiModel,
+    swipeLeftAction: SwipeActionType,
+    swipeRightAction: SwipeActionType,
     onSwipeEnabledChange: (Boolean) -> Unit,
     onPullToSearchEnabledChange: (Boolean) -> Unit,
     onLeftSwipeActionClick: () -> Unit,
@@ -63,11 +63,11 @@ internal fun QuickGestureSettingsSection(
 }
 
 @Composable
-internal fun SwipeActionUiModel.localizedLabel(): String = stringResource(
+internal fun SwipeActionType.localizedLabel(): String = stringResource(
     when (this) {
-        SwipeActionUiModel.DISABLED -> R.string.settings_swipe_action_disabled
-        SwipeActionUiModel.DELETE -> R.string.settings_swipe_action_delete
-        SwipeActionUiModel.COPY_PASSWORD -> R.string.settings_swipe_action_copy_password
-        SwipeActionUiModel.COPY_USERNAME -> R.string.settings_swipe_action_copy_username
+        SwipeActionType.DISABLED -> R.string.settings_swipe_action_disabled
+        SwipeActionType.DELETE -> R.string.settings_swipe_action_delete
+        SwipeActionType.COPY_PASSWORD -> R.string.settings_swipe_action_copy_password
+        SwipeActionType.COPY_USERNAME -> R.string.settings_swipe_action_copy_username
     }
 )

@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.autofill.legacy.service.adapter
 
 import android.content.Context
+import android.view.inputmethod.InlineSuggestionsRequest
 import com.aozijx.passly.domain.autofill.model.AutofillField
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillRequest
@@ -46,5 +47,6 @@ class LegacyPlatformAdapter @Inject constructor(
         outcome: AutofillDiscoveryOutcome,
         parsed: ParsedStructure,
         context: Context,
-    ): LegacyResponseBuildResult = responseFactory.buildResult(context, outcome, parsed)
+        inlineRequest: InlineSuggestionsRequest? = null,
+    ): LegacyResponseBuildResult = responseFactory.buildResult(context, outcome, parsed, inlineRequest)
 }

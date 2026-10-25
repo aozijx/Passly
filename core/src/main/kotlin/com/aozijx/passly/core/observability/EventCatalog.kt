@@ -116,6 +116,11 @@ object Events {
         val SaveCompleted = EventKey("autofill.save.completed")
         val SaveFailed = EventKey("autofill.save.failed")
         val ActionIgnored = EventKey("autofill.action.ignored")
+        val PresentationSelected = EventKey("autofill.presentation.selected")
+        val FallbackStarted = EventKey("autofill.accessibility.started")
+        val FallbackUnavailable = EventKey("autofill.accessibility.unavailable")
+        val FallbackDelivered = EventKey("autofill.accessibility.delivered")
+        val FallbackFailed = EventKey("autofill.accessibility.failed")
     }
 
     object Backup {
@@ -191,6 +196,11 @@ object Events {
         Autofill.SaveCompleted,
         Autofill.SaveFailed,
         Autofill.ActionIgnored,
+        Autofill.PresentationSelected,
+        Autofill.FallbackStarted,
+        Autofill.FallbackUnavailable,
+        Autofill.FallbackDelivered,
+        Autofill.FallbackFailed,
         Backup.Error,
         Backup.ResourceCleanupFailed,
         Vault.Error,
@@ -212,6 +222,7 @@ object Operations {
     val AutofillLegacyRequest = OperationCode("autofill_legacy_request")
     val AutofillCredentialRequest = OperationCode("autofill_credential_request")
     val AutofillResultDelivery = OperationCode("autofill_result_delivery")
+    val AutofillAccessibilityRequest = OperationCode("autofill_accessibility_request")
     val AutofillSessionClose = OperationCode("autofill_session_close")
     val DiagnosticsExport = OperationCode("diagnostics_export")
     val DatabaseOpen = OperationCode("database_open")
@@ -260,4 +271,6 @@ object LogFieldKeys {
     val DroppedErrorCount = LogFieldKey("dropped_error_count")
     val DroppedFatalCount = LogFieldKey("dropped_fatal_count")
     val EntryType = LogFieldKey("entry_type")
+    val Presentation = LogFieldKey("presentation")
+    val InlineAvailable = LogFieldKey("inline_available")
 }

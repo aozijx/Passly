@@ -15,8 +15,8 @@ Passly 只按稳定、可复用的技术边界拆分 Gradle 模块。业务 feat
 - `:security`：认证方式执行、授权、Android Keystore 适配与安全会话编排；只依赖稳定的 Domain/Core/Runtime
   契约，不依赖 Data 实现或 Feature UI；
 - `:data`：Room、Proto DataStore、Repository、Mapper 与加密诊断存储实现；
-- `:app`：应用壳、导航、平台入口、Notice 运行时和全部业务 feature。Backup 的协议、格式、文件 I/O、
-  数据库快照编排也归 `app/feature/backup`，不属于 `:data`。
+- `:app`：应用壳、导航、平台入口、Notice 运行时和全部业务 feature。Backup 的协议、格式与稳定键映射
+  位于 `feature/backup/internal/archive`；直接访问 Room 的快照适配位于 `app/database/backup`。
 
 ## 依赖方向
 
@@ -88,20 +88,18 @@ flowchart LR
 
 ## Feature 与 UI
 
-`feature/<name>` 是 app 内的业务垂直切片，可包含 `navigation`、`presentation`、`contract`、`ui`。
-Compose 页面和 ViewModel 由 feature 自己拥有；跨 Feature 的纯视觉组件进入 `:core`，但必须通过参数或
+App 内业务实现放在 `feature/<name>`，对应的页面、ViewModel、UI state/effect 和导航放在
+`presentation/feature/<name>`。`feature` 不导入 `presentation`；Android 入口需要启动页面时通过
+`app` 层的显式启动适配器连接。跨 Feature 的纯视觉组件进入 `:core`，但必须通过参数或
 Composable slot 接收文案和内容，不能依赖 app 的 `R` 或具体业务类型。只有出现真实的独立发布、显著构建隔离
 或多宿主复用需求时，才重新评估 feature Gradle 模块。
 
 推荐布局：
 
 ```text
-feature/settings/
-  contract/
-  navigation/
-  presentation/
-  ui/
-    component/
+feature/settings/                  业务动作与平台无关合同
+presentation/feature/settings/     Route、ViewModel、UI state/effect、页面
+app/                              Android 入口与跨边界适配器
 ```
 
 ## UseCase 何时需要

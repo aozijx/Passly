@@ -162,6 +162,7 @@
     <!-- Interaction and autofill -->
     <string name="settings_autofill_mode_bottom_sheet">底部弹窗</string>
     <string name="settings_autofill_mode_inline">键盘候选</string>
+    <string name="settings_autofill_mode_floating">悬浮候选</string>
     <string name="settings_autofill_section">自动填充</string>
     <string name="settings_autofill_enabled">使用 Passly 自动填充</string>
     <string name="settings_autofill_enabled_summary">统一控制自动填充服务和凭据管理器的建议</string>
@@ -170,6 +171,12 @@
     <string name="settings_autofill_system_enabled">已启用</string>
     <string name="settings_autofill_system_disabled">未启用</string>
     <string name="settings_autofill_presentation">候选展示</string>
+    <string name="accessibility_fill_service_label">Passly 手动填充</string>
+    <string name="accessibility_fill_service_description">仅在你点击浮动按钮后读取当前输入框并填充所选凭据。</string>
+    <string name="accessibility_fill_button">填充</string>
+    <string name="accessibility_fill_button_description">使用 Passly 手动填充当前输入框</string>
+    <string name="settings_autofill_accessibility">手动填充回退</string>
+    <string name="settings_autofill_accessibility_summary">系统候选未出现时，可启用无障碍服务并点击浮动按钮</string>
     <string name="settings_autofill_credential_manager">凭据管理器</string>
     <string name="settings_autofill_credential_manager_summary">在 Android 14 及更高版本提供登录凭据</string>
     <string name="settings_autofill_require_authentication">填充前验证</string>

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <autofill-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:settingsActivity=".MainActivity">
+    android:settingsActivity=".MainActivity"
+    android:supportsInlineSuggestions="true">
 
     <!--
       启用自动填充兼容模式 (Compatibility Mode)

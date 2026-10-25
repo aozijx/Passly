@@ -26,7 +26,14 @@ data class AutofillSettings(
     }
 }
 
-enum class AutofillPresentation {
-    SYSTEM_INLINE,
-    BOTTOM_SHEET,
+enum class AutofillPresentation(val wireKey: String) {
+    FLOATING("floating"),
+    SYSTEM_INLINE("system_inline"),
+    BOTTOM_SHEET("bottom_sheet"),
+    ;
+
+    companion object {
+        fun fromWireKey(value: String?): AutofillPresentation? =
+            entries.firstOrNull { it.wireKey == value }
+    }
 }

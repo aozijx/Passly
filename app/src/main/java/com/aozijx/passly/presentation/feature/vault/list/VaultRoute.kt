@@ -34,8 +34,6 @@ import com.aozijx.passly.presentation.feature.vault.list.ui.model.VaultListItemA
 import com.aozijx.passly.presentation.feature.vault.navigation.VaultDestinationRequest
 import com.aozijx.passly.presentation.feature.vault.navigation.VaultNavigation
 import com.aozijx.passly.presentation.feature.vault.navigation.VaultNavigationResult
-import com.aozijx.passly.presentation.mapping.gesture.toDomainModel
-import com.aozijx.passly.presentation.mapping.gesture.toUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,8 +60,8 @@ internal fun VaultRoute(
             cardPresentations = vaultDisplayConfig.style.entryCardPresentations.map {
                 it.toUiModel()
             },
-            swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction.toUiModel(),
-            swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction.toUiModel(),
+            swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction,
+            swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction,
             isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,
             isPullToSearchEnabled = vaultDisplayConfig.interaction.isPullToSearchEnabled,
             collapseTopBarOnScroll = vaultDisplayConfig.layout.collapseTopBarOnScroll,
@@ -81,7 +79,7 @@ internal fun VaultRoute(
             is VaultListItemAction.Swiped -> {
                 val item = action.item
                 handleSwipeAction(
-                    actionType = action.action.toDomainModel(),
+                    actionType = action.action,
                     item = item,
                     onQuickDelete = { entryId ->
                         vaultViewModel.onAction(VaultUiAction.QuickDelete(entryId))

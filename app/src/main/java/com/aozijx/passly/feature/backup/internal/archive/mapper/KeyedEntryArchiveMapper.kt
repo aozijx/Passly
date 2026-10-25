@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.database.backup
+package com.aozijx.passly.feature.backup.internal.archive.mapper
 
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryAssociations
@@ -34,7 +34,7 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupFieldRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupFieldValue
 
 internal object KeyedEntryArchiveMapper {
-    fun toRecord(entry: Entry, attachmentIds: List<String>): BackupEntryRecord = BackupEntryRecord(
+    fun toRecord(entry: Entry, attachmentIds: List<String> = emptyList()): BackupEntryRecord = BackupEntryRecord(
         id = entry.id.value,
         type = BackupArchiveKeyRegistry.entryTypeKey(entry.type),
         revision = entry.version.value,

@@ -4,6 +4,7 @@ import android.content.Context
 import android.service.autofill.Dataset
 import android.service.autofill.FillResponse
 import android.view.autofill.AutofillId
+import android.view.inputmethod.InlineSuggestionsRequest
 import com.aozijx.passly.R
 import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.Reasons
@@ -33,6 +34,7 @@ class LegacyResponseFactory @Inject constructor(
         context: Context,
         outcome: AutofillDiscoveryOutcome,
         parsed: ParsedStructure,
+        inlineRequest: InlineSuggestionsRequest? = null,
     ): LegacyResponseBuildResult = when (outcome) {
         AutofillDiscoveryOutcome.Disabled,
         -> unavailable(Reasons.SessionRestricted)
@@ -48,6 +50,7 @@ class LegacyResponseFactory @Inject constructor(
                 outcome.snapshot.id,
                 outcome.context,
                 parsed,
+                inlineRequest,
             ),
         )
 
@@ -58,6 +61,7 @@ class LegacyResponseFactory @Inject constructor(
                 candidates = emptyList(),
                 discoveryContext = outcome.context,
                 parsed = parsed,
+                inlineRequest = inlineRequest,
             ),
             observation = LegacyDiscoveryObservation.Unavailable(Reasons.NoMatchingEntry),
         )
@@ -70,6 +74,7 @@ class LegacyResponseFactory @Inject constructor(
                 candidates = outcome.candidates,
                 discoveryContext = outcome.context,
                 parsed = parsed,
+                inlineRequest = inlineRequest,
             ),
         )
     }
@@ -93,6 +98,7 @@ class LegacyResponseFactory @Inject constructor(
         interactionId: AutofillInteractionId,
         discoveryContext: AutofillDiscoveryContext,
         parsed: ParsedStructure,
+        inlineRequest: InlineSuggestionsRequest?,
     ): FillResponse? {
         if (parsed.allIds.isEmpty()) return null
         val builder = FillResponse.Builder()
@@ -103,6 +109,7 @@ class LegacyResponseFactory @Inject constructor(
             parsed = parsed,
             uiMode = discoveryContext.presentation,
             roleIds = roleIds,
+            inlineRequest = inlineRequest,
         )
         val pendingIntent = pendingIntentFactory.getActivityPendingIntent(
             context,
@@ -117,6 +124,15 @@ class LegacyResponseFactory @Inject constructor(
                 context,
                 AutofillRemoteItem.SingleLine(context.getString(R.string.vault_locked_title)),
             ),
+            inlinePresentation = if (discoveryContext.presentation == AutofillPresentation.SYSTEM_INLINE) {
+                LegacyInlinePresentationFactory.create(
+                    inlineRequest,
+                    0,
+                    context.getString(R.string.vault_locked_title),
+                    null,
+                    pendingIntent,
+                )
+            } else null,
         )
         addSaveInfo(builder, discoveryContext, parsed)
         return builder.build()
@@ -128,6 +144,7 @@ class LegacyResponseFactory @Inject constructor(
         candidates: List<AutofillCandidateSummary>,
         discoveryContext: AutofillDiscoveryContext,
         parsed: ParsedStructure,
+        inlineRequest: InlineSuggestionsRequest?,
     ): FillResponse? {
         if (parsed.allIds.isEmpty()) return null
 
@@ -146,7 +163,7 @@ class LegacyResponseFactory @Inject constructor(
                 roleIds,
             )
         } else {
-            candidates.forEach { candidate ->
+            candidates.forEachIndexed { index, candidate ->
                 addCandidateAuthentication(
                     builder,
                     context,
@@ -155,6 +172,10 @@ class LegacyResponseFactory @Inject constructor(
                     discoveryContext,
                     parsed,
                     roleIds,
+                    inlineRequest = if (discoveryContext.presentation == AutofillPresentation.SYSTEM_INLINE) {
+                        inlineRequest
+                    } else null,
+                    suggestionIndex = index,
                 )
             }
         }
@@ -181,6 +202,8 @@ class LegacyResponseFactory @Inject constructor(
         discoveryContext: AutofillDiscoveryContext,
         parsed: ParsedStructure,
         roleIds: Map<FieldRole, List<AutofillId>>,
+        inlineRequest: InlineSuggestionsRequest?,
+        suggestionIndex: Int,
     ) {
         val subtitle = candidate.entry.username.trim()
         val item = if (subtitle.isEmpty()) {
@@ -196,11 +219,24 @@ class LegacyResponseFactory @Inject constructor(
             parsed = parsed,
             uiMode = discoveryContext.presentation,
             roleIds = roleIds,
+            inlineRequest = inlineRequest,
         )
         val requestCode = "${interactionId.value}:${candidate.entry.id.value}".hashCode()
         val pendingIntent = pendingIntentFactory.getActivityPendingIntent(context, requestCode, intent)
         val dataset = Dataset.Builder().setAuthentication(pendingIntent.intentSender)
-        LegacyDatasetFactory.setMenuPresentationCompat(dataset, parsed.allIds, presentation)
+        val inlinePresentation = LegacyInlinePresentationFactory.create(
+            inlineRequest,
+            suggestionIndex,
+            candidate.entry.title,
+            subtitle.takeIf(String::isNotBlank),
+            pendingIntent,
+        )
+        LegacyDatasetFactory.setMenuPresentationCompat(
+            dataset,
+            parsed.allIds,
+            presentation,
+            inlinePresentation,
+        )
         builder.addDataset(dataset.build())
     }
 
