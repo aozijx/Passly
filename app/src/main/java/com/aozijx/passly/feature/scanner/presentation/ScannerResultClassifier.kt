@@ -1,26 +1,23 @@
 package com.aozijx.passly.feature.scanner.presentation
 
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.feature.vault.otp.OtpAuthUriCodec
+import com.aozijx.passly.domain.entry.otp.OtpAuthUriCodec
+import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
 import com.aozijx.passly.domain.entry.policy.WifiQrParseResult
 import com.aozijx.passly.domain.entry.policy.WifiQrPayloadParser
 import java.net.URI
+import java.net.URISyntaxException
 
 internal object ScannerResultClassifier {
-    fun classify(rawValue: String): ScannerClassification =
-        classify(rawValue, OtpAuthUriCodec::parse)
-
-    fun classify(
-        rawValue: String,
-        otpParser: (String) -> OtpConfig?,
-    ): ScannerClassification {
+    fun classify(rawValue: String): ScannerClassification {
         if (rawValue.isBlank()) return ScannerClassification.Empty
 
-        runCatching { otpParser(rawValue) }
-            .getOrNull()
-            ?.let {
-                return ScannerClassification.Classified(ScannerResult.Otp(rawValue, it))
-            }
+        when (val otp = OtpAuthUriCodec.parse(rawValue)) {
+            is OtpUriParseResult.Parsed ->
+                return ScannerClassification.Classified(ScannerResult.Otp(rawValue, otp.config))
+            OtpUriParseResult.NotOtp,
+            OtpUriParseResult.Malformed,
+            OtpUriParseResult.Unsupported -> Unit
+        }
 
         when (val wifi = WifiQrPayloadParser.parse(rawValue)) {
             is WifiQrParseResult.Parsed ->
@@ -33,7 +30,11 @@ internal object ScannerResultClassifier {
             -> Unit
         }
 
-        val uri = runCatching { URI(rawValue) }.getOrNull()
+        val uri = try {
+            URI(rawValue)
+        } catch (_: URISyntaxException) {
+            null
+        }
         if (
             uri != null &&
             (uri.scheme.equals("http", ignoreCase = true) ||

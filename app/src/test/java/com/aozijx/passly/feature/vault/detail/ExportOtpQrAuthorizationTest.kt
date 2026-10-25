@@ -17,6 +17,9 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.entry.otp.OtpAuthUriCodec
+import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
@@ -34,16 +37,7 @@ class ExportOtpQrAuthorizationTest {
     fun authenticatesBeforeRevealingSecretAndBuildingQrPayload() = runTest {
         val events = mutableListOf<String>()
         val revealed = OwnedChars.fromString("JBSWY3DPEHPK3PXP")
-        val exporter = ExportEntryQrUseCase(
-            authorizationGate = RecordingAuthorizationGate(events),
-            sensitiveFieldRepository = RecordingSensitiveFieldRepository(events, revealed),
-            activityRecorder = RecordingActivityRecorder(events),
-            logger = testLogger(),
-            formatOtpUri = { config, _ ->
-                events += "format"
-                "otpauth://totp/Example?secret=${config.secret}"
-            },
-        )
+        val exporter = exporter(events, revealed)
 
         val result = exporter(otpEntry())
         assertTrue(result is EntryQrExportResult.Ready)
@@ -55,11 +49,47 @@ class ExportOtpQrAuthorizationTest {
         }
 
         assertEquals(EntryQrKind.Otp, result.kind)
-        assertEquals(listOf("authenticate", "reveal", "format", "record"), events)
+        assertEquals(listOf("authenticate", "reveal", "record"), events)
         assertTrue(uri.startsWith("otpauth://totp/"))
         assertTrue(uri.contains("secret=JBSWY3DPEHPK3PXP"))
         assertTrue(revealed.isEmpty)
+        val parsed = OtpAuthUriCodec.parse(uri) as OtpUriParseResult.Parsed
+        assertEquals("Issuer", parsed.config.issuer)
+        assertEquals("alice", parsed.config.accountName)
     }
+
+    @Test
+    fun invalidSecretIsWipedWithoutProducingQrOrRecordingUsage() = runTest {
+        val events = mutableListOf<String>()
+        val revealed = OwnedChars.fromString("MZ")
+
+        assertEquals(EntryQrExportResult.Unavailable, exporter(events, revealed)(otpEntry()))
+        assertEquals(listOf("authenticate", "reveal"), events)
+        assertTrue(revealed.isEmpty)
+    }
+
+    @Test
+    fun base64SecretIsExportedAsEquivalentBase32AfterAuthorization() = runTest {
+        val events = mutableListOf<String>()
+        val revealed = OwnedChars.fromString("MTIzNDU2Nzg5MDEyMzQ1Njc4OTA=")
+        val result = exporter(events, revealed)(otpEntry(OtpSecretEncoding.BASE64)) as EntryQrExportResult.Ready
+
+        try {
+            val parsed = OtpAuthUriCodec.parse(result.content.toPlainString()) as OtpUriParseResult.Parsed
+            assertEquals("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", parsed.config.secret)
+            assertEquals(OtpSecretEncoding.BASE32, parsed.config.encoding)
+            assertTrue(revealed.isEmpty)
+        } finally {
+            result.content.wipe()
+        }
+    }
+
+    private fun exporter(events: MutableList<String>, revealed: OwnedChars) = ExportEntryQrUseCase(
+        authorizationGate = RecordingAuthorizationGate(events),
+        sensitiveFieldRepository = RecordingSensitiveFieldRepository(events, revealed),
+        activityRecorder = RecordingActivityRecorder(events),
+        logger = testLogger(),
+    )
 
     private class RecordingAuthorizationGate(
         private val events: MutableList<String>,
@@ -116,7 +146,7 @@ class ExportOtpQrAuthorizationTest {
         override suspend fun deleteBefore(timestamp: Long) = Unit
     }
 
-    private fun otpEntry() = Entry(
+    private fun otpEntry(encoding: OtpSecretEncoding = OtpSecretEncoding.BASE32) = Entry(
         identity = EntryIdentity(
             id = EntryId("otp-1"),
             type = EntryType.OTP,
@@ -127,6 +157,7 @@ class ExportOtpQrAuthorizationTest {
             credential = OtpCredential(
                 OtpConfig(
                     secret = null,
+                    encoding = encoding,
                     issuer = "Issuer",
                     accountName = "alice",
                 ),

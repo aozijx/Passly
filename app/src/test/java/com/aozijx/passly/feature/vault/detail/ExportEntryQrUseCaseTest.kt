@@ -153,7 +153,6 @@ class ExportEntryQrUseCaseTest {
                 override suspend fun deleteBefore(timestamp: Long) = Unit
             },
             logger = testLogger(),
-            formatOtpUri = { _, _ -> error("Unexpected OTP format") },
         )
 
         fun entry() = Entry(

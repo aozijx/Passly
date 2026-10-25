@@ -11,6 +11,9 @@ Wi-Fi 详情页通过“显示网络二维码”生成连接码；OTP 详情页�
 `SensitiveFieldRepository.readBundle` 读取当前网络凭据，不使用页面缓存的密码。OTP 仍按 `OTP_SECRET`
 的敏感字段作用域授权和读取。拒绝或取消授权不生成二维码；成功生成才记录查看行为。
 
+OTP 的 URI 由 Domain 编解码器生成，Base64 密钥会转换为等价 Base32；无效配置不输出载荷。
+元数据、参数校验和转义规则见[动态口令 URI 导入与导出](otp-uri.md)。
+
 Wi-Fi 载荷由 Domain 的 `WifiQrPayloadFormatter` 生成，使用稳定的 `nopass`、`WEP`、`WPA` 键和显式隐藏
 网络标志，并转义反斜杠、分号、逗号、冒号和双引号。开放网络不包含密码；不完整或不符合现有 Wi-Fi
 校验规则的凭据显示生成失败。格式遵循 [ZXing Wi-Fi 内容约定](https://github.com/zxing/zxing/wiki/Barcode-Contents#wi-fi-network-config-android-ios-11)。

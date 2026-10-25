@@ -6,6 +6,9 @@ Scanner 是应用内通用二维码入口，不绑定某一种密码类型。当
 `ScannerResult`：有效 `otpauth://` 为动态验证码，受支持的 `WIFI:` 内容为 Wi-Fi 凭据，带有效主机的
 HTTP/HTTPS 地址为网页链接，其余非空内容为普通文本。无法解析或不受支持的专用格式不会静默生成条目。
 
+OTP 分类直接调用 Domain 的类型化 URI 解析器，与手动输入和导出共用规则；无效算法或缺失 HOTP 计数器
+不会被补成另一份有效配置，具体边界见[动态口令 URI 导入与导出](vault/otp-uri.md)。
+
 ## 职责边界
 
 - `ScannerCameraHost` 只负责相机权限、CameraX 预览、ML Kit 分析和资源释放，并向上报告原始值。

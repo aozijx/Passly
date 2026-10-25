@@ -3,7 +3,8 @@ package com.aozijx.passly.feature.vault.presentation.editor.otp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.feature.vault.otp.OtpAuthUriCodec
+import com.aozijx.passly.domain.entry.otp.OtpAuthUriCodec
+import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
@@ -91,13 +92,15 @@ class AddOtpViewModel @Inject constructor(
     private fun updateUri(value: String, reportFailure: Boolean) {
         mutateForm { it.copy(uriText = value) }
         if (_uiState.value.savePhase == AddOtpSavePhase.Saving || value.isBlank()) return
-        val parsed = OtpAuthUriCodec.parse(value)
-        if (parsed == null) {
-            if (reportFailure) _events.trySend(AddOtpEvent.UriParseFailed)
-            return
+        when (val parsed = OtpAuthUriCodec.parse(value)) {
+            is OtpUriParseResult.Parsed -> {
+                mutateForm { it.fromParsedConfig(parsed.config) }
+                _events.trySend(AddOtpEvent.UriParsed)
+            }
+            OtpUriParseResult.NotOtp,
+            OtpUriParseResult.Malformed,
+            OtpUriParseResult.Unsupported -> if (reportFailure) _events.trySend(AddOtpEvent.UriParseFailed)
         }
-        mutateForm { it.fromParsedConfig(parsed) }
-        _events.trySend(AddOtpEvent.UriParsed)
     }
 
     private fun OtpFormState.withTypeDefaults(type: OtpType): OtpFormState = copy(

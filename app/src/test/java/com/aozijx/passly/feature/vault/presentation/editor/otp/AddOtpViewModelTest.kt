@@ -21,6 +21,8 @@ import com.aozijx.passly.testing.testLogger
 import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -30,6 +32,35 @@ import org.junit.Rule
 class AddOtpViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun encodedUriPopulatesTheEditorWithoutChangingPlusOrPercentCharacters() = runTest {
+        val viewModel = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
+
+        viewModel.onAction(AddOtpAction.UriChanged(
+            "otpauth://totp/Example%3Aalice+tag%2540mail?secret=JBSWY3DPEHPK3PXP&issuer=Example",
+            reportFailure = true,
+        ))
+
+        assertEquals("alice+tag%40mail", viewModel.uiState.value.form.accountName)
+        assertEquals("Example", viewModel.uiState.value.form.issuer)
+        assertEquals(AddOtpEvent.UriParsed, viewModel.events.first())
+    }
+
+    @Test
+    fun unsupportedUriReportsFailureWithoutReplacingExistingCredentials() = runTest {
+        val viewModel = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
+        viewModel.onAction(AddOtpAction.FormChanged(OtpFormState(title = "Keep", secret = "Existing")))
+
+        viewModel.onAction(AddOtpAction.UriChanged(
+            "otpauth://totp/alice?secret=JBSWY3DPEHPK3PXP&algorithm=MD5",
+            reportFailure = true,
+        ))
+
+        assertEquals("Existing", viewModel.uiState.value.form.secret)
+        assertEquals("Keep", viewModel.uiState.value.form.title)
+        assertEquals(AddOtpEvent.UriParseFailed, viewModel.events.first())
+    }
 
     @Test
     fun scannedHotp_roundTripsThroughFormDraftAndMaterializer() {

@@ -6,7 +6,6 @@ import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -108,7 +107,7 @@ class OtpGeneratorTest {
 
     @Test
     fun `base32 - RFC 标准解码`() {
-        val decoded = OtpGenerator.base32DecodeStrict(SECRET_20)
+        val decoded = OtpSecretCodec.decodeBase32(SECRET_20)
         val expected = "12345678901234567890".toByteArray(Charsets.US_ASCII)
         assertTrue(expected.contentEquals(decoded))
     }
@@ -126,7 +125,7 @@ class OtpGeneratorTest {
     fun `base32 accepts equivalent padded and unpadded secrets`() {
         val expected = "f".toByteArray(Charsets.US_ASCII)
 
-        assertTrue(expected.contentEquals(OtpGenerator.base32DecodeStrict("MY======")))
-        assertTrue(expected.contentEquals(OtpGenerator.base32DecodeStrict("MY")))
+        assertTrue(expected.contentEquals(OtpSecretCodec.decodeBase32("MY======")))
+        assertTrue(expected.contentEquals(OtpSecretCodec.decodeBase32("MY")))
     }
 }

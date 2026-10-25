@@ -47,6 +47,7 @@
 - [诊断日志查看与导出](features/diagnostics/viewer-and-export.md)
 - [二维码扫描](features/scanner.md)
 - [Wi-Fi 与 OTP 二维码展示](features/vault/qr-display.md)
+- [动态口令 URI 导入与导出](features/vault/otp-uri.md)
 - [权限与消息](features/permissions-and-messages.md)
 
 ## 开发规范

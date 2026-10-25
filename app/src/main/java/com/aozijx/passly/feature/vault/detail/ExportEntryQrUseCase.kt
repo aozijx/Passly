@@ -15,7 +15,8 @@ import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.otp.OtpAuthUriCodec
+import com.aozijx.passly.domain.entry.otp.OtpUriFormatResult
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.policy.WifiQrFormatResult
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
@@ -23,27 +24,17 @@ import com.aozijx.passly.domain.entry.policy.WifiQrPayloadFormatter
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.OwnedChars
-import com.aozijx.passly.feature.vault.otp.OtpAuthUriCodec
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 
-internal class ExportEntryQrUseCase internal constructor(
+internal class ExportEntryQrUseCase @Inject constructor(
     private val authorizationGate: AuthorizationGate,
     private val sensitiveFieldRepository: SensitiveFieldRepository,
     private val activityRecorder: ActivityRecorder,
     private val logger: Logger,
-    private val formatOtpUri: (OtpConfig, String) -> String,
 ) {
-    @Inject
-    constructor(
-        authorizationGate: AuthorizationGate,
-        sensitiveFieldRepository: SensitiveFieldRepository,
-        activityRecorder: ActivityRecorder,
-        logger: Logger,
-    ) : this(authorizationGate, sensitiveFieldRepository, activityRecorder, logger, OtpAuthUriCodec::format)
-
     suspend operator fun invoke(entry: Entry): EntryQrExportResult {
         var pending = OwnedChars.EMPTY
         var transferred = false
@@ -82,7 +73,10 @@ internal class ExportEntryQrUseCase internal constructor(
                                 ) ?: return@authorize EntryQrExportResult.Unavailable
                                 val chars = revealed.value.toCharArray()
                                 try {
-                                    ready(EntryQrKind.Otp, formatOtpUri(config.copy(secret = String(chars)), entry.title))
+                                    when (val formatted = OtpAuthUriCodec.format(config.copy(secret = String(chars)), entry.title)) {
+                                        is OtpUriFormatResult.Formatted -> ready(EntryQrKind.Otp, formatted.content)
+                                        OtpUriFormatResult.InvalidConfiguration -> EntryQrExportResult.Unavailable
+                                    }
                                 } finally {
                                     chars.fill('\u0000')
                                     revealed.value.wipe()
