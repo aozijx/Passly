@@ -21,15 +21,4 @@ class CardExpirySelectionTest {
         assertTrue(2025 !in years)
     }
 
-    @Test
-    fun selectedExpiryKeepsMonthAndYearAtomic() {
-        val expiry = CardExpirySelection.Selected(month = 3, year = 1998)
-
-        assertEquals("03/1998", expiry.storageValue)
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun selectedExpiryRejectsInvalidMonth() {
-        CardExpirySelection.Selected(month = 13, year = 2026)
-    }
 }

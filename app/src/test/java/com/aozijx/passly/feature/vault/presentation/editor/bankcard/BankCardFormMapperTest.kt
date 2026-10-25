@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.editor.bankcard
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.model.credential.CardExpiry
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -19,7 +20,7 @@ class BankCardFormMapperTest {
             cardNumber = " 4111 1111 1111 1111 ",
             cardCvv = " 1 23 ",
             paymentPin = " 1 2 3 4 ",
-            cardExpiry = CardExpirySelection.Selected(month = 3, year = 2030),
+            cardExpiry = CardExpirySelection.Selected(CardExpiry(month = 3, year = 2030)),
             billingAddress = " London ",
             tags = " personal, card ",
             notes = " primary ",

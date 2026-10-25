@@ -18,6 +18,29 @@ import org.junit.Test
 
 class EntryValidationTest {
     @Test
+    fun `card expiry accepts the four digit year emitted by the editor`() {
+        val violations = EntryValidation.validate(entry(
+            type = EntryType.BANK_CARD,
+            profile = EntryProfile(title = "Card"),
+            secret = EntrySecret(CardCredential(cardNumber = "4111111111111111", cardExpiry = "03/2030")),
+        ))
+
+        assertTrue(violations.isEmpty())
+    }
+
+    @Test
+    fun `card expiry rejects invalid months and ambiguous short years`() {
+        listOf("00/30", "13/30", "03/30", "00/2030", "13/2030", "03/0000").forEach { expiry ->
+            val violations = EntryValidation.validate(entry(
+                type = EntryType.BANK_CARD,
+                profile = EntryProfile(title = "Card"),
+                secret = EntrySecret(CardCredential(cardNumber = "4111111111111111", cardExpiry = expiry)),
+            ))
+            assertTrue(EntryViolation(FieldKey.CARD_EXPIRATION, EntryViolationCode.INVALID_FORMAT) in violations)
+        }
+    }
+
+    @Test
     fun `login validation keeps optional username and returns stable password code`() {
         val violations = EntryValidation.validate(
             entry(

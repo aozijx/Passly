@@ -19,7 +19,10 @@ fun AddBankCardFormState.toEntryDraft(): EntryDraft {
         is CardTypeSelection.Selected -> draft.withValue(
             definition,
             FieldKey.CARD_TYPE,
-            EntryDraftValue.Text(selection.type.name),
+            EntryDraftValue.Text(when (selection.type) {
+                CardType.DEBIT -> "DEBIT"
+                CardType.CREDIT -> "CREDIT"
+            }),
         )
     }
     draft = draft.withOptionalText(definition, FieldKey.CARD_HOLDER, cardholder)
@@ -33,7 +36,7 @@ fun AddBankCardFormState.toEntryDraft(): EntryDraft {
             draft = draft.withValue(
                 definition,
                 FieldKey.CARD_EXPIRATION,
-                EntryDraftValue.Text(selection.storageValue),
+                EntryDraftValue.Text(selection.value.storageValue),
             )
         }
     }

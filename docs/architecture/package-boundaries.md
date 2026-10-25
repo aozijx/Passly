@@ -58,6 +58,9 @@ OTP 生成、密钥编解码和 `otpauth:` URI 协议位于 `domain/entry/otp`�
 范围依据 [Mastercard 官方说明](https://www.mastercard.us/content/dam/mccom/en-us/documents/merchant-2-series-BIN-impact-checklist-aug-2016.pdf)。
 通过校验但未识别的卡组织使用 `CardNetworkMatch.Unknown` 表达。
 
+银行卡年月模型 `CardExpiry` 位于 `domain/entry/model/credential`，统一有效期解析与 `MM/YYYY` 格式化。
+页面的可选状态与年份选择范围留在 Presentation；[银行卡创建与有效期](../features/vault/card-entry.md)说明当前写入边界。
+
 ## 模型归属
 
 - Entity：数据库结构，只在 Data 层。

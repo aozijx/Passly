@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.vault.presentation.editor.bankcard
 
 import androidx.annotation.StringRes
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.entry.model.credential.CardExpiry
 import com.aozijx.passly.domain.entry.policy.CardNumberValidationResult
 
 enum class CardType(@param:StringRes val labelRes: Int) {
@@ -16,15 +17,7 @@ sealed interface CardTypeSelection {
 
 sealed interface CardExpirySelection {
     data object NotSet : CardExpirySelection
-    data class Selected(val month: Int, val year: Int) : CardExpirySelection {
-        init {
-            require(month in 1..12) { "Card expiry month must be between 1 and 12" }
-            require(year > 0) { "Card expiry year must be positive" }
-        }
-
-        val storageValue: String
-            get() = "${month.toString().padStart(2, '0')}/$year"
-    }
+    data class Selected(val value: CardExpiry) : CardExpirySelection
 }
 
 data class AddBankCardFormState(

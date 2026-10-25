@@ -7,16 +7,20 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.credential.CardExpiry
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.policy.CardNetwork
 import com.aozijx.passly.domain.entry.policy.CardNetworkMatch
 import com.aozijx.passly.domain.entry.policy.CardNumberValidationResult
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryDraftMaterializer
+import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffect
 import com.aozijx.passly.testing.testLogger
 import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -25,6 +29,27 @@ import org.junit.Rule
 class AddBankCardViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun savingCardWithSelectedExpiryPassesDomainValidationAndPersistsOnce() = runTest {
+        val created = mutableListOf<Entry>()
+        val repository = object : EntryCommandRepository by NoOpEntryCommandRepository {
+            override suspend fun createEntry(entry: Entry): AppResult<EntryId> {
+                created += entry
+                return AppResult.Success(entry.id)
+            }
+        }
+        val viewModel = AddBankCardViewModel(createEntryUseCase(repository), AuthenticatedSession)
+        viewModel.onAction(AddBankCardAction.TitleChanged("Visa"))
+        viewModel.onAction(AddBankCardAction.CardNumberChanged("4111 1111 1111 1111"))
+        viewModel.onAction(AddBankCardAction.ExpiryChanged(CardExpirySelection.Selected(CardExpiry(month = 3, year = 2030))))
+
+        viewModel.onAction(AddBankCardAction.Save)
+
+        assertEquals(EditorSaveEffect.Saved, viewModel.effects.first())
+        assertEquals("03/2030", created.single().secret.card?.cardExpiry)
+        assertEquals("", viewModel.uiState.value.form.cardNumber)
+    }
 
     @Test
     fun validCardNumberEnablesSaveAndKeepsValidationOutsideMapper() {
@@ -62,8 +87,8 @@ class AddBankCardViewModelTest {
         )
     }
 
-    private fun createEntryUseCase() = CreateEntryUseCase(
-        entryCommandRepository = NoOpEntryCommandRepository,
+    private fun createEntryUseCase(repository: EntryCommandRepository = NoOpEntryCommandRepository) = CreateEntryUseCase(
+        entryCommandRepository = repository,
         secureSessionAccessState = AuthenticatedSession,
         materializer = EntryDraftMaterializer(),
         logger = testLogger(),

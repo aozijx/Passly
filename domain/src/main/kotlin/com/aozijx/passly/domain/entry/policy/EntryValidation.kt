@@ -3,6 +3,8 @@ package com.aozijx.passly.domain.entry.policy
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.model.credential.CardExpiry
+import com.aozijx.passly.domain.entry.model.credential.CardExpiryParseResult
 
 data class EntryViolation(
     val field: FieldKey,
@@ -52,7 +54,9 @@ object EntryValidation {
             if (it.length !in 13..19) invalid(FieldKey.CARD_NUMBER, EntryViolationCode.INVALID_LENGTH)
         }
         card.cardExpiry?.let {
-            if (!it.matches(Regex("^\\d{2}/\\d{2}$"))) invalid(FieldKey.CARD_EXPIRATION, EntryViolationCode.INVALID_FORMAT)
+            if (CardExpiry.parse(it) !is CardExpiryParseResult.Parsed) {
+                invalid(FieldKey.CARD_EXPIRATION, EntryViolationCode.INVALID_FORMAT)
+            }
         }
         card.cardCvv?.let {
             if (!it.matches(Regex("^\\d{3,4}$"))) invalid(FieldKey.CARD_CVV, EntryViolationCode.INVALID_FORMAT)
