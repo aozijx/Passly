@@ -21,7 +21,11 @@ import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.otp.OtpAuthUriCodec
+import com.aozijx.passly.domain.entry.otp.OtpSecretCodec
 import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.booleanOrNull
@@ -63,6 +67,8 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
             decodeValidated(payload)
         } catch (error: BackupFailed) {
             throw error
+        } catch (_: OtpGenerationError) {
+            throw BackupFailed()
         } catch (error: Exception) {
             throw BackupFailed()
         }
@@ -269,30 +275,21 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
 
     private fun parseOtpFields(value: String): List<BackupFieldRecord> {
         val trimmed = value.trim()
-        if (trimmed.startsWith("steam://", ignoreCase = true)) {
-            return listOf(
-                archiveField(FieldKey.OTP_TYPE, BackupFieldValue.text("steam")),
-                archiveField(FieldKey.OTP_SECRET, BackupFieldValue.text(trimmed.substringAfter("steam://"))),
-                archiveField(FieldKey.OTP_ALGORITHM, BackupFieldValue.text("sha1")),
-                archiveField(FieldKey.OTP_DIGITS, BackupFieldValue.integer(5)),
-                archiveField(FieldKey.OTP_PERIOD, BackupFieldValue.integer(30)),
-                archiveField(FieldKey.OTP_ENCODING, BackupFieldValue.text("base32")),
-            )
-        }
-        if (!trimmed.startsWith("otpauth:", ignoreCase = true)) {
-            return listOf(
-                archiveField(FieldKey.OTP_TYPE, BackupFieldValue.text("totp")),
-                archiveField(FieldKey.OTP_SECRET, BackupFieldValue.text(trimmed.filterNot(Char::isWhitespace))),
-                archiveField(FieldKey.OTP_ALGORITHM, BackupFieldValue.text("sha1")),
-                archiveField(FieldKey.OTP_DIGITS, BackupFieldValue.integer(6)),
-                archiveField(FieldKey.OTP_PERIOD, BackupFieldValue.integer(30)),
-                archiveField(FieldKey.OTP_ENCODING, BackupFieldValue.text("base32")),
-            )
-        }
-        val parsed = OtpAuthUriCodec.parse(trimmed)
-        val config = when (parsed) {
+        val config = when (val parsed = OtpAuthUriCodec.parse(trimmed)) {
             is OtpUriParseResult.Parsed -> parsed.config
-            OtpUriParseResult.Malformed, OtpUriParseResult.NotOtp, OtpUriParseResult.Unsupported -> throw BackupFailed()
+            OtpUriParseResult.Malformed, OtpUriParseResult.Unsupported -> throw BackupFailed()
+            OtpUriParseResult.NotOtp -> {
+                if (trimmed.startsWith("steam://", ignoreCase = true)) {
+                    OtpConfig.steamDefaults(
+                        OtpSecretCodec.canonicalBase32(trimmed.drop("steam://".length), OtpSecretEncoding.BASE32),
+                    )
+                } else {
+                    OtpConfig(secret = OtpSecretCodec.canonicalBase32(
+                        trimmed.filterNot(Char::isWhitespace),
+                        OtpSecretEncoding.BASE32,
+                    ))
+                }
+            }
         }
         return config.toOtpArchiveFields()
     }

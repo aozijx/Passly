@@ -4,10 +4,21 @@ import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import java.util.Base64
 
-internal object OtpSecretCodec {
+object OtpSecretCodec {
     private const val BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 
-    fun decode(secret: String, encoding: OtpSecretEncoding): ByteArray {
+    /** Validates a secret and returns equivalent unpadded Base32, erasing decoded bytes on every exit. */
+    fun canonicalBase32(value: String, encoding: OtpSecretEncoding): String {
+        val source = if (encoding == OtpSecretEncoding.BASE32) value.replace(" ", "") else value
+        val decoded = decode(source, encoding)
+        return try {
+            encodeBase32(decoded)
+        } finally {
+            decoded.fill(0)
+        }
+    }
+
+    internal fun decode(secret: String, encoding: OtpSecretEncoding): ByteArray {
         val decoded = when (encoding) {
             OtpSecretEncoding.BASE32 -> decodeBase32(secret)
             OtpSecretEncoding.BASE64 -> try {
@@ -20,7 +31,7 @@ internal object OtpSecretCodec {
         return decoded
     }
 
-    fun decodeBase32(input: String): ByteArray {
+    internal fun decodeBase32(input: String): ByteArray {
         val clean = input.trim().uppercase()
         if (clean.isEmpty()) throw OtpGenerationError.InvalidSecret
         val dataLength = clean.indexOf('=').takeIf { it >= 0 } ?: clean.length
@@ -68,7 +79,7 @@ internal object OtpSecretCodec {
         }
     }
 
-    fun encodeBase32(bytes: ByteArray): String = buildString {
+    internal fun encodeBase32(bytes: ByteArray): String = buildString {
         var buffer = 0
         var bitsLeft = 0
         bytes.forEach { byte ->

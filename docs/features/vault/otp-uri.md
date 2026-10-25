@@ -20,7 +20,9 @@ Scanner 将损坏或不支持的 OTP URI 保留为普通文本；编辑器报告
 
 Bitwarden 的 `login.totp` 若以 `otpauth:` 开头，也通过上述 Domain 解析器；损坏或不支持的 URI 在适配阶段
 拒绝整个源文件，不因兼容导入策略改成默认配置。归档字段通过 `toOtpArchiveFields` 与原生导出共用稳定键映射。
-裸密钥和 `steam://` 是 Bitwarden 适配器的独立源格式分支，不作为 `otpauth:` URI 解析。
+裸密钥和 `steam://` 是 Bitwarden 适配器的独立源格式分支，不作为 `otpauth:` URI 解析；两者同样使用
+`OtpSecretCodec.canonicalBase32` 校验并规范密钥，再经共享归档字段映射输出。裸密钥允许输入空白；
+Steam 前缀按大小写无关方式识别和截取。无效密钥统一转为不含原始值的备份失败，不保留半成品条目。
 
 ## 导出与密钥
 
@@ -30,7 +32,7 @@ Bitwarden 的 `login.totp` 若以 `otpauth:` 开头，也通过上述 Domain 解
 URI 的 secret 始终为无补位 Base32。内部 Base64 密钥先解码，再转换成等价 Base32；缺失、损坏的密钥或
 无法保持语义的配置不生成二维码，也不记录成功查看行为。授权与二维码生命周期见[条目二维码展示](qr-display.md)。
 
-`OtpSecretCodec` 统一提供严格 Base32 与 Base64 解码及 Base32 编码，生成器与协议编解码共用。解码失败
+`OtpSecretCodec` 对 App 暴露密钥验证及 Base32 规范化，原始字节编解码仅在 Domain 内部使用，生成器与协议编解码共用。解码失败
 保留 `OtpGenerationError.InvalidSecret`；临时解码数组、HMAC 输入与摘要在退出路径中擦除。URI、密钥、
 账户和 issuer 不写入异常消息、日志、导航或 SavedState。JVM 测试覆盖 RFC 向量、导出后验证码不变、
 特殊字符、重复参数和拒绝路径；这些文本协议测试不代替真实设备的二维码扫描测试。

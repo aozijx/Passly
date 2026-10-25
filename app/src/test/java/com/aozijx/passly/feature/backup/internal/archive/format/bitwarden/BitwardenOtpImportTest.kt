@@ -65,6 +65,28 @@ class BitwardenOtpImportTest {
     }
 
     @Test
+    fun `bare and case insensitive Steam secrets are validated and canonicalized before import`() {
+        val bare = importOtp(" m y = = = = = = \n").fields.associate { it.key to it.value }
+        val steam = importOtp("StEaM:// ${SECRET.lowercase()} ").fields.associate { it.key to it.value }
+
+        assertEquals("MY", bare.getValue("otp_secret").text)
+        assertEquals(SECRET, steam.getValue("otp_secret").text)
+        assertEquals("steam", steam.getValue("otp_type").text)
+        assertEquals("sha1", steam.getValue("otp_algorithm").text)
+        assertEquals(5, steam.getValue("otp_digits").integerValue)
+        assertEquals(30, steam.getValue("otp_period").integerValue)
+    }
+
+    @Test
+    fun `invalid bare and Steam secrets cannot become unusable imported OTP entries`() {
+        for (strategy in BackupImportStrategy.entries) {
+            for (secret in listOf("INVALID!", "MZ======", "A", "steam://", "steam://INVALID!", "StEaM://INVALID!")) {
+                assertThrows(BackupFailed::class.java) { importOtp(secret, strategy) }
+            }
+        }
+    }
+
+    @Test
     fun `malformed ambiguous and unsupported OTP URIs fail instead of importing guessed configuration`() {
         val invalid = listOf(
             "otpauth://hotp/alice?secret=$SECRET",

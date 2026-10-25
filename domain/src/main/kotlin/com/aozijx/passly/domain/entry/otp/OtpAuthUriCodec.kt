@@ -90,7 +90,7 @@ object OtpAuthUriCodec {
         val secret = parameters["secret"] ?: return OtpUriParseResult.Malformed
         return OtpUriParseResult.Parsed(OtpConfig(
             type = resolvedType,
-            secret = canonicalSecret(secret, OtpSecretEncoding.BASE32),
+            secret = OtpSecretCodec.canonicalBase32(secret, OtpSecretEncoding.BASE32),
             algorithm = algorithm,
             digits = digits,
             periodSeconds = if (type == OtpType.HOTP) null else period,
@@ -114,7 +114,7 @@ object OtpAuthUriCodec {
         }
         val secret = config.secret ?: throw OtpGenerationError.InvalidSecret
         val parameters = linkedMapOf(
-            "secret" to canonicalSecret(secret, config.encoding),
+            "secret" to OtpSecretCodec.canonicalBase32(secret, config.encoding),
             "algorithm" to when (config.algorithm) {
                 OtpHashAlgorithm.SHA1 -> "SHA1"
                 OtpHashAlgorithm.SHA256 -> "SHA256"
@@ -167,16 +167,6 @@ object OtpAuthUriCodec {
                 require(key !in this)
                 put(key, decoded)
             }
-        }
-    }
-
-    private fun canonicalSecret(value: String, encoding: OtpSecretEncoding): String {
-        val source = if (encoding == OtpSecretEncoding.BASE32) value.replace(" ", "") else value
-        val decoded = OtpSecretCodec.decode(source, encoding)
-        return try {
-            OtpSecretCodec.encodeBase32(decoded)
-        } finally {
-            decoded.fill(0)
         }
     }
 
