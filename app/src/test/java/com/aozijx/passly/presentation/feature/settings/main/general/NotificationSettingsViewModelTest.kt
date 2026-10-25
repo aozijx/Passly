@@ -6,8 +6,6 @@ import com.aozijx.passly.domain.settings.model.MessageLevel
 import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
-import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationSettingsEvent
-import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationTopic
 import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.Flow
@@ -84,21 +82,14 @@ class NotificationSettingsViewModelTest {
     }
 
     @Test
-    fun `notification ui events map to feature actions without callback handlers`() {
-        val cases = listOf(
-            NotificationSettingsEvent.SystemNotificationsEnabledChanged(false) to
-                NotificationSettingsAction.SetSystemNotificationsEnabled(false),
-            NotificationSettingsEvent.OpenSystemNotificationSettings to
-                NotificationSettingsAction.OpenSystemNotificationSettings,
-            NotificationSettingsEvent.OptionalMessagesEnabledChanged(true) to
-                NotificationSettingsAction.SetOptionalMessagesEnabled(true),
-            NotificationSettingsEvent.TopicEnabledChanged(NotificationTopic.SECURITY, false) to
-                NotificationSettingsAction.SetTopicEnabled(MessageTopic.SECURITY, false),
-        )
+    fun `topic action persists the selected domain topic`() = runTest {
+        val repository = RecordingMessageSettingsRepository()
+        val viewModel = viewModel(repository, availableState())
 
-        cases.forEach { (event, expectedAction) ->
-            assertEquals(expectedAction, event.toAction())
-        }
+        viewModel.onAction(NotificationSettingsAction.SetTopicEnabled(MessageTopic.SECURITY, false))
+        advanceUntilIdle()
+
+        assertEquals(listOf(MessageTopic.SECURITY to false), repository.topicWrites)
     }
 
     private fun viewModel(
@@ -127,6 +118,7 @@ class NotificationSettingsViewModelTest {
         override val messages: Flow<MessageSettings> = MutableStateFlow(MessageSettings()),
     ) : MessageSettingsRepository {
         val systemNotificationWrites = mutableListOf<Boolean>()
+        val topicWrites = mutableListOf<Pair<MessageTopic, Boolean>>()
 
         override suspend fun setOptionalMessagesEnabled(enabled: Boolean) = Unit
 
@@ -134,7 +126,9 @@ class NotificationSettingsViewModelTest {
             systemNotificationWrites += enabled
         }
 
-        override suspend fun setTopicEnabled(topic: MessageTopic, enabled: Boolean) = Unit
+        override suspend fun setTopicEnabled(topic: MessageTopic, enabled: Boolean) {
+            topicWrites += topic to enabled
+        }
 
         override suspend fun setTopicMinimumLevel(topic: MessageTopic, level: MessageLevel) = Unit
     }

@@ -26,7 +26,6 @@ import com.aozijx.passly.presentation.feature.settings.main.general.Notification
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationSettingsEffect
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationSettingsUiState
 import com.aozijx.passly.presentation.feature.settings.main.general.NotificationSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.main.general.toAction
 import com.aozijx.passly.presentation.feature.settings.main.general.toUiModel
 import com.aozijx.passly.presentation.feature.settings.ui.general.NotificationSettingsSection
 import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
@@ -112,9 +111,7 @@ internal fun NotificationsRoute(
                 SettingsSection {
                     NotificationSettingsSection(
                         state = readyState.toUiModel(),
-                        onEvent = { event ->
-                            viewModel.onAction(event.toAction())
-                        },
+                        onAction = viewModel::onAction,
                     )
                 }
             }
