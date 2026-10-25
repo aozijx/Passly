@@ -22,14 +22,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.LanguageOptionUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LanguagePicker(
-    currentKey: String,
+    currentLanguage: AppLanguage,
     options: List<LanguageOptionUiModel>,
-    onSelect: (String) -> Unit,
+    onSelect: (AppLanguage) -> Unit,
     sheetState: SheetState,
     onDismiss: () -> Unit
 ) {
@@ -53,17 +54,17 @@ fun LanguagePicker(
                     style = MaterialTheme.typography.titleMedium
                 )
             }
-            items(options, key = LanguageOptionUiModel::key) { language ->
+            items(options, key = { it.language.storageTag }) { language ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onSelect(language.key) }
+                        .clickable { onSelect(language.language) }
                         .padding(horizontal = 24.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     RadioButton(
-                        selected = language.key == currentKey,
-                        onClick = { onSelect(language.key) }
+                        selected = language.language == currentLanguage,
+                        onClick = { onSelect(language.language) }
                     )
                     Spacer(Modifier.padding(start = 12.dp))
                     Text(text = language.label)

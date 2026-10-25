@@ -49,5 +49,6 @@ Host 拥有 ViewModel、effect、导航和 Domain/UI 映射。被动 UI 文件�
 - About 是无 ViewModel 的静态页面。
 - 简单 Settings 页面直接投影 Proto-backed repository Flow，不为每个开关创建完整 MVI 套件。
 
-跨 feature 共享 Domain/UI enum 时使用穷尽映射，不按枚举名称反射转换。页面私有 Sheet、Dialog 和 UiModel 放在
-拥有其状态的 feature，而不是入口页面目录。
+UI 与 Domain 语义相同的设置选项直接使用 Domain 类型；需要不同展示语义时才建立 UI model，并使用穷尽映射，
+不按枚举名称反射转换。简单设置 Content 直接发送页面 Action，不增加字段一一对应的 Event 转发层。
+页面私有 Sheet、Dialog 和 UiModel 放在拥有其状态的 feature，而不是入口页面目录。

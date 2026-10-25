@@ -7,7 +7,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.presentation.feature.settings.appearance.InterfaceSettingsViewModel
 import com.aozijx.passly.presentation.feature.settings.appearance.InterfaceSettingsUiState
-import com.aozijx.passly.presentation.feature.settings.appearance.toAction
 import com.aozijx.passly.presentation.feature.settings.appearance.toInterfaceUiModel
 import com.aozijx.passly.presentation.feature.settings.ui.appearance.InterfaceDetail
 import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
@@ -29,9 +28,7 @@ internal fun InterfaceRoute(
             is InterfaceSettingsUiState.Ready -> item {
                 InterfaceDetail(
                     state = readyState.toInterfaceUiModel(),
-                    onEvent = { event ->
-                        viewModel.onAction(event.toAction())
-                    },
+                    onAction = viewModel::onAction,
                 )
             }
         }

@@ -1,22 +1,15 @@
 package com.aozijx.passly.presentation.feature.settings.ui.appearance.model
 
+import com.aozijx.passly.domain.settings.model.AppLanguage
+import com.aozijx.passly.domain.settings.model.FontFamilyMode
+import com.aozijx.passly.domain.settings.model.ThemeMode
+
 data class AppearanceUiModel(
-    val themeMode: ThemeModeUiModel,
+    val themeMode: ThemeMode,
     val isDynamicColor: Boolean,
     val themeKey: String,
-    val languageKey: String,
+    val language: AppLanguage,
     val languageLabel: String,
     val languageOptions: List<LanguageOptionUiModel>,
-    val fontFamily: FontFamilyUiModel,
+    val fontFamily: FontFamilyMode,
 )
-
-enum class ThemeModeUiModel {
-    SYSTEM,
-    LIGHT,
-    DARK,
-}
-
-enum class FontFamilyUiModel {
-    APP_BUNDLED,
-    SYSTEM,
-}

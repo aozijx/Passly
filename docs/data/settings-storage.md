@@ -19,6 +19,8 @@ Passly 使用两个 Proto DataStore 保存用户偏好：
 在既有 presentation 生命周期中组合两个 Flow，不创建第三个聚合存储。
 
 应用语言提供跟随系统、简体中文和 English；Android 每应用语言列表注册 `zh-CN` 与 `en`。
+外观与界面设置页直接传递 `ThemeMode`、`FontFamilyMode`、`EntryHierarchyDisplayMode` 和 `AppLanguage`；
+语言选择项只附加本地化标签，页面内部不经由 enum 名称字符串往返转换。持久化键仍由 DataStore mapper 处理。
 
 ## Proto 的边界
 

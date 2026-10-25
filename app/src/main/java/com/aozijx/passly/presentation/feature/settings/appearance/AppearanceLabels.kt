@@ -5,12 +5,8 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
-import com.aozijx.passly.domain.settings.model.ThemeMode
-import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.AppearanceUiModel
-import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.FontFamilyUiModel
 import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.LanguageOptionUiModel
-import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.ThemeModeUiModel
 
 /**
  * 语言选择器使用语言自称（中文 / English），不会随当前界面语言二次翻译。
@@ -28,45 +24,16 @@ fun AppLanguage.localizedDisplayName(): String {
 
 @Composable
 fun languagePickerOptions(): List<LanguageOptionUiModel> = AppLanguage.entries.map { language ->
-    LanguageOptionUiModel(language.name, language.localizedDisplayName())
-}
-
-fun appLanguageFromKey(key: String): AppLanguage = when (key) {
-    "SYSTEM" -> AppLanguage.SYSTEM
-    "ZH" -> AppLanguage.ZH
-    "EN" -> AppLanguage.EN
-    else -> throw IllegalArgumentException("Unknown app language UI key: $key")
+    LanguageOptionUiModel(language, language.localizedDisplayName())
 }
 
 @Composable
 fun AppearanceSettings.toAppearanceUiModel(): AppearanceUiModel = AppearanceUiModel(
-    themeMode = themeMode.toUiModel(),
+    themeMode = themeMode,
     isDynamicColor = isDynamicColor,
     themeKey = themeKey,
-    languageKey = language.name,
+    language = language,
     languageLabel = language.localizedDisplayName(),
     languageOptions = languagePickerOptions(),
-    fontFamily = fontFamily.toUiModel(),
+    fontFamily = fontFamily,
 )
-
-fun ThemeMode.toUiModel(): ThemeModeUiModel = when (this) {
-    ThemeMode.SYSTEM -> ThemeModeUiModel.SYSTEM
-    ThemeMode.LIGHT -> ThemeModeUiModel.LIGHT
-    ThemeMode.DARK -> ThemeModeUiModel.DARK
-}
-
-fun ThemeModeUiModel.toDomainModel(): ThemeMode = when (this) {
-    ThemeModeUiModel.SYSTEM -> ThemeMode.SYSTEM
-    ThemeModeUiModel.LIGHT -> ThemeMode.LIGHT
-    ThemeModeUiModel.DARK -> ThemeMode.DARK
-}
-
-fun FontFamilyMode.toUiModel(): FontFamilyUiModel = when (this) {
-    FontFamilyMode.APP_BUNDLED -> FontFamilyUiModel.APP_BUNDLED
-    FontFamilyMode.SYSTEM -> FontFamilyUiModel.SYSTEM
-}
-
-fun FontFamilyUiModel.toDomainModel(): FontFamilyMode = when (this) {
-    FontFamilyUiModel.APP_BUNDLED -> FontFamilyMode.APP_BUNDLED
-    FontFamilyUiModel.SYSTEM -> FontFamilyMode.SYSTEM
-}

@@ -30,19 +30,20 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.core.ui.theme.AppThemeSchemes
 import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.AppearanceUiModel
-import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.FontFamilyUiModel
-import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.ThemeModeUiModel
+import com.aozijx.passly.domain.settings.model.AppLanguage
+import com.aozijx.passly.domain.settings.model.FontFamilyMode
+import com.aozijx.passly.domain.settings.model.ThemeMode
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun AppearanceDetail(
     state: AppearanceUiModel,
-    onThemeModeChange: (ThemeModeUiModel) -> Unit,
+    onThemeModeChange: (ThemeMode) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
     onThemeKeySelect: (String) -> Unit,
-    onLanguageChange: (String) -> Unit,
-    onFontFamilyChange: (FontFamilyUiModel) -> Unit
+    onLanguageChange: (AppLanguage) -> Unit,
+    onFontFamilyChange: (FontFamilyMode) -> Unit
 ) {
     var showThemeColorSheet by remember { mutableStateOf(false) }
     var showThemeModeMenu by remember { mutableStateOf(false) }
@@ -57,17 +58,17 @@ internal fun AppearanceDetail(
                 dropdownSettingsGroupItem(
                     key = "appearance.theme_mode",
                     icon = when (state.themeMode) {
-                        ThemeModeUiModel.SYSTEM -> Icons.Default.SettingsBrightness
-                        ThemeModeUiModel.LIGHT -> Icons.Default.LightMode
-                        ThemeModeUiModel.DARK -> Icons.Default.DarkMode
+                        ThemeMode.SYSTEM -> Icons.Default.SettingsBrightness
+                        ThemeMode.LIGHT -> Icons.Default.LightMode
+                        ThemeMode.DARK -> Icons.Default.DarkMode
                     },
                     title = stringResource(R.string.settings_theme_mode),
                     selected = state.themeMode,
                     selectedLabel = stringResource(state.themeMode.labelRes),
                     options = listOf(
-                        ThemeModeUiModel.SYSTEM to stringResource(R.string.settings_follow_system),
-                        ThemeModeUiModel.LIGHT to stringResource(R.string.settings_theme_mode_light),
-                        ThemeModeUiModel.DARK to stringResource(R.string.settings_theme_mode_dark)
+                        ThemeMode.SYSTEM to stringResource(R.string.settings_follow_system),
+                        ThemeMode.LIGHT to stringResource(R.string.settings_theme_mode_light),
+                        ThemeMode.DARK to stringResource(R.string.settings_theme_mode_dark)
                     ),
                     expanded = showThemeModeMenu,
                     onExpandedChange = { showThemeModeMenu = it },
@@ -115,16 +116,16 @@ internal fun AppearanceDetail(
                     icon = Icons.Default.TextFields,
                     title = stringResource(R.string.settings_font),
                     subtitle = stringResource(
-                        if (state.fontFamily == FontFamilyUiModel.SYSTEM) {
+                        if (state.fontFamily == FontFamilyMode.SYSTEM) {
                             R.string.settings_font_system
                         } else {
                             R.string.settings_font_app
                         }
                     ),
-                    checked = state.fontFamily == FontFamilyUiModel.SYSTEM,
+                    checked = state.fontFamily == FontFamilyMode.SYSTEM,
                     onCheckedChange = { useSystem ->
                         onFontFamilyChange(
-                            if (useSystem) FontFamilyUiModel.SYSTEM else FontFamilyUiModel.APP_BUNDLED
+                            if (useSystem) FontFamilyMode.SYSTEM else FontFamilyMode.APP_BUNDLED
                         )
                     }
                 )
@@ -134,13 +135,13 @@ internal fun AppearanceDetail(
 
     if (showLanguageSheet) {
         LanguagePicker(
-            currentKey = state.languageKey,
+            currentLanguage = state.language,
             options = state.languageOptions,
-            onSelect = { languageKey ->
+            onSelect = { language ->
                 scope.launch { languageSheetState.hide() }.invokeOnCompletion {
                     showLanguageSheet = false
                     // 此时触发导致 Activity 重启的语言变更
-                    onLanguageChange(languageKey)
+                    onLanguageChange(language)
                 }
             },
             sheetState = languageSheetState,
@@ -163,9 +164,9 @@ internal fun AppearanceDetail(
     }
 }
 
-private val ThemeModeUiModel.labelRes: Int
+private val ThemeMode.labelRes: Int
     get() = when (this) {
-        ThemeModeUiModel.SYSTEM -> R.string.settings_follow_system
-        ThemeModeUiModel.LIGHT -> R.string.settings_theme_mode_light
-        ThemeModeUiModel.DARK -> R.string.settings_theme_mode_dark
+        ThemeMode.SYSTEM -> R.string.settings_follow_system
+        ThemeMode.LIGHT -> R.string.settings_theme_mode_light
+        ThemeMode.DARK -> R.string.settings_theme_mode_dark
     }

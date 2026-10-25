@@ -23,15 +23,15 @@ import com.aozijx.passly.presentation.shared.components.group.sliderSettingsGrou
 import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.EntryHierarchyDisplayModeUiModel
-import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.InterfaceSettingsEvent
+import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
+import com.aozijx.passly.presentation.feature.settings.appearance.InterfaceSettingsAction
 import com.aozijx.passly.presentation.feature.settings.ui.appearance.model.InterfaceUiModel
 import kotlin.math.roundToInt
 
 @Composable
 internal fun InterfaceDetail(
     state: InterfaceUiModel,
-    onEvent: (InterfaceSettingsEvent) -> Unit,
+    onAction: (InterfaceSettingsAction) -> Unit,
 ) {
     var appCornerRadius by remember(state.appCornerRadiusDp) {
         mutableFloatStateOf(state.appCornerRadiusDp)
@@ -49,7 +49,7 @@ internal fun InterfaceDetail(
                     subtitle = stringResource(R.string.settings_interface_hide_status_bar_description),
                     checked = state.hideSystemBars,
                     onCheckedChange = { enabled ->
-                        onEvent(InterfaceSettingsEvent.StatusBarAutoHideChanged(enabled))
+                        onAction(InterfaceSettingsAction.SetHideSystemBars(enabled))
                     },
                 ),
                 switchSettingsGroupItem(
@@ -59,7 +59,7 @@ internal fun InterfaceDetail(
                     subtitle = stringResource(R.string.settings_interface_top_bar_collapsible_description),
                     checked = state.collapseTopBarOnScroll,
                     onCheckedChange = { enabled ->
-                        onEvent(InterfaceSettingsEvent.TopBarCollapsibleChanged(enabled))
+                        onAction(InterfaceSettingsAction.SetTopBarCollapsible(enabled))
                     },
                 ),
                 switchSettingsGroupItem(
@@ -69,7 +69,7 @@ internal fun InterfaceDetail(
                     subtitle = stringResource(R.string.settings_interface_quick_filter_bar_collapsible_description),
                     checked = state.collapseQuickFilterBarOnScroll,
                     onCheckedChange = { enabled ->
-                        onEvent(InterfaceSettingsEvent.QuickFilterBarCollapsibleChanged(enabled))
+                        onAction(InterfaceSettingsAction.SetQuickFilterBarCollapsible(enabled))
                     },
                 )
             )
@@ -97,8 +97,8 @@ internal fun InterfaceDetail(
                     onValueChange = { appCornerRadius = it },
                     onValueChangeFinished = {
                         if (appCornerRadius != state.appCornerRadiusDp) {
-                            onEvent(
-                                InterfaceSettingsEvent.AppCornerRadiusChanged(appCornerRadius),
+                            onAction(
+                                InterfaceSettingsAction.SetAppCornerRadius(appCornerRadius),
                             )
                         }
                     }
@@ -123,13 +123,13 @@ internal fun InterfaceDetail(
                     selectedLabel = stringResource(
                         state.entryHierarchyDisplayMode.labelResource()
                     ),
-                    options = EntryHierarchyDisplayModeUiModel.entries.map {
+                    options = EntryHierarchyDisplayMode.entries.map {
                         it to stringResource(it.labelResource())
                     },
                     expanded = showHierarchyModeMenu,
                     onExpandedChange = { showHierarchyModeMenu = it },
                     onSelect = { mode ->
-                        onEvent(InterfaceSettingsEvent.EntryHierarchyDisplayModeChanged(mode))
+                        onAction(InterfaceSettingsAction.SetEntryHierarchyDisplayMode(mode))
                     },
                 )
             )
@@ -138,13 +138,13 @@ internal fun InterfaceDetail(
     }
 }
 
-private fun EntryHierarchyDisplayModeUiModel.labelResource(): Int = when (this) {
-    EntryHierarchyDisplayModeUiModel.COLLAPSED ->
+private fun EntryHierarchyDisplayMode.labelResource(): Int = when (this) {
+    EntryHierarchyDisplayMode.COLLAPSED ->
         R.string.settings_interface_entry_hierarchy_collapsed
 
-    EntryHierarchyDisplayModeUiModel.EXPANDED ->
+    EntryHierarchyDisplayMode.EXPANDED ->
         R.string.settings_interface_entry_hierarchy_expanded
 
-    EntryHierarchyDisplayModeUiModel.SEPARATE ->
+    EntryHierarchyDisplayMode.SEPARATE ->
         R.string.settings_interface_entry_hierarchy_separate
 }

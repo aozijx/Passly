@@ -5,9 +5,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.aozijx.passly.presentation.feature.settings.appearance.AppearanceSettingsAction
 import com.aozijx.passly.presentation.feature.settings.appearance.AppearanceSettingsViewModel
-import com.aozijx.passly.presentation.feature.settings.appearance.appLanguageFromKey
 import com.aozijx.passly.presentation.feature.settings.appearance.toAppearanceUiModel
-import com.aozijx.passly.presentation.feature.settings.appearance.toDomainModel
 import com.aozijx.passly.presentation.feature.shell.theme.LocalAppearanceSettings
 import com.aozijx.passly.presentation.feature.settings.ui.main.component.SettingsGroup
 import com.aozijx.passly.presentation.feature.settings.ui.main.SettingsSecondaryPage
@@ -27,7 +25,7 @@ internal fun AppearanceRoute(
             AppearanceDetail(
                 state = appearance.toAppearanceUiModel(),
                 onThemeModeChange = {
-                    viewModel.onAction(AppearanceSettingsAction.SetThemeMode(it.toDomainModel()))
+                    viewModel.onAction(AppearanceSettingsAction.SetThemeMode(it))
                 },
                 onDynamicColorChange = {
                     viewModel.onAction(AppearanceSettingsAction.SetDynamicColor(it))
@@ -36,12 +34,10 @@ internal fun AppearanceRoute(
                     viewModel.onAction(AppearanceSettingsAction.SetThemeKey(it))
                 },
                 onLanguageChange = {
-                    viewModel.onAction(
-                        AppearanceSettingsAction.SetLanguage(appLanguageFromKey(it))
-                    )
+                    viewModel.onAction(AppearanceSettingsAction.SetLanguage(it))
                 },
                 onFontFamilyChange = {
-                    viewModel.onAction(AppearanceSettingsAction.SetFontFamily(it.toDomainModel()))
+                    viewModel.onAction(AppearanceSettingsAction.SetFontFamily(it))
                 }
             )
         }
