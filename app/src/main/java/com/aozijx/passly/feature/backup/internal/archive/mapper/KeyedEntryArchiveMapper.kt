@@ -208,17 +208,7 @@ private fun Entry.toArchiveFields(): List<BackupFieldRecord> = buildList {
             putText(FieldKey.PASSKEY_DATA, credential.privateKeyReference)
             putText(FieldKey.HARDWARE_INFO, credential.hardwareKeyInfo)
         }
-        is OtpCredential -> with(credential.config) {
-            put(FieldKey.OTP_TYPE, BackupFieldValue.text(type.archiveKey()))
-            putText(FieldKey.OTP_SECRET, secret)
-            put(FieldKey.OTP_ALGORITHM, BackupFieldValue.text(algorithm.archiveKey()))
-            put(FieldKey.OTP_DIGITS, BackupFieldValue.integer(digits))
-            periodSeconds?.let { put(FieldKey.OTP_PERIOD, BackupFieldValue.integer(it)) }
-            counter?.let { put(FieldKey.OTP_COUNTER, BackupFieldValue.long(it)) }
-            put(FieldKey.OTP_ENCODING, BackupFieldValue.text(encoding.archiveKey()))
-            putText(FieldKey.OTP_ISSUER, issuer)
-            putText(FieldKey.OTP_ACCOUNT_NAME, accountName)
-        }
+        is OtpCredential -> addAll(credential.config.toOtpArchiveFields())
     }
     putText(FieldKey.NOTES, secret.notes)
     if (secret.customFields.isNotEmpty()) {
@@ -291,31 +281,17 @@ private fun BackupFieldValue.requiredCustomFields(): List<BackupCustomFieldValue
         }
     }
 
-private fun OtpType.archiveKey(): String = when (this) {
-    OtpType.TOTP -> "totp"
-    OtpType.HOTP -> "hotp"
-    OtpType.STEAM -> "steam"
-}
 private fun String?.toOtpType(): OtpType = when (this) {
     null, "totp" -> OtpType.TOTP
     "hotp" -> OtpType.HOTP
     "steam" -> OtpType.STEAM
     else -> throw IllegalArgumentException("Unknown OTP type: $this")
 }
-private fun OtpHashAlgorithm.archiveKey(): String = when (this) {
-    OtpHashAlgorithm.SHA1 -> "sha1"
-    OtpHashAlgorithm.SHA256 -> "sha256"
-    OtpHashAlgorithm.SHA512 -> "sha512"
-}
 private fun String?.toOtpAlgorithm(): OtpHashAlgorithm = when (this) {
     null, "sha1" -> OtpHashAlgorithm.SHA1
     "sha256" -> OtpHashAlgorithm.SHA256
     "sha512" -> OtpHashAlgorithm.SHA512
     else -> throw IllegalArgumentException("Unknown OTP algorithm: $this")
-}
-private fun OtpSecretEncoding.archiveKey(): String = when (this) {
-    OtpSecretEncoding.BASE32 -> "base32"
-    OtpSecretEncoding.BASE64 -> "base64"
 }
 private fun String?.toOtpEncoding(): OtpSecretEncoding = when (this) {
     null, "base32" -> OtpSecretEncoding.BASE32

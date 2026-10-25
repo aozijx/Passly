@@ -1,6 +1,6 @@
 # Backup 导入与导出
 
-状态：当前实现（代码核对：2026-10-25）。
+状态：当前实现（代码核对：2026-10-26）。
 
 Backup 归档 Vault 业务数据，不是 Room 数据库镜像。UI 与流程位于 feature/backup/presentation，协议、
 加密和归档文件 I/O 位于 `feature/backup/internal`；稳定键映射位于 `archive/mapper`，Room 快照及恢复文件事务位于
@@ -51,6 +51,11 @@ TXT 是人类可读投影，不可恢复，且不输出 favorite 字段。
 清零受控密码缓冲。不得用多个 nullable/Boolean 拼出相互冲突的流程。
 
 ## 导入规划与事务
+
+Bitwarden 明文 JSON 的 OTP URI 使用 Domain 的 `OtpAuthUriCodec`，保留账户标签中的字面 `+`，只解码一次；
+没有 issuer 前缀的标签作为账户名。缺失或非法 HOTP counter、损坏数字、重复关键参数及不支持的生成参数
+在格式适配阶段拒绝整个源文件，两种导入策略均不猜测替代配置。裸密钥和 `steam://` 分支沿用源格式默认值。
+OTP URI 语义见[动态口令 URI 导入与导出](../vault/otp-uri.md)；OTP 归档字段映射由原生导出与该适配器共享。
 
 写数据库前完成探测、解密、解压、解析、分类和完整校验，生成 `ImportPlan`：
 

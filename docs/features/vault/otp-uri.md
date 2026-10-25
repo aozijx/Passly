@@ -2,7 +2,7 @@
 
 状态：当前实现。
 
-`domain/entry/otp/OtpAuthUriCodec` 是扫码、手动 URI 输入和二维码导出的同一协议实现，使用纯 JVM API。
+`domain/entry/otp/OtpAuthUriCodec` 是扫码、手动 URI 输入、Bitwarden 导入和二维码导出的同一协议实现，使用纯 JVM API。
 协议依据 [Key URI Format](https://github.com/google/google-authenticator/wiki/Key-Uri-Format)，不依赖 Android Uri。
 
 ## 解析
@@ -17,6 +17,10 @@
 
 Scanner 将损坏或不支持的 OTP URI 保留为普通文本；编辑器报告解析失败并保留已经输入的凭据，不改用
 另一种算法或猜测计数器。
+
+Bitwarden 的 `login.totp` 若以 `otpauth:` 开头，也通过上述 Domain 解析器；损坏或不支持的 URI 在适配阶段
+拒绝整个源文件，不因兼容导入策略改成默认配置。归档字段通过 `toOtpArchiveFields` 与原生导出共用稳定键映射。
+裸密钥和 `steam://` 是 Bitwarden 适配器的独立源格式分支，不作为 `otpauth:` URI 解析。
 
 ## 导出与密钥
 

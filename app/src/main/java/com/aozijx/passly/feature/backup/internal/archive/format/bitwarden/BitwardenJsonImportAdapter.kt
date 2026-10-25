@@ -7,6 +7,7 @@ import com.aozijx.passly.feature.backup.internal.archive.BackupJson
 import com.aozijx.passly.feature.backup.internal.archive.format.BackupImportAdapter
 import com.aozijx.passly.feature.backup.internal.archive.format.containsAscii
 import com.aozijx.passly.feature.backup.internal.archive.io.decodeStrictUtf8
+import com.aozijx.passly.feature.backup.internal.archive.mapper.toOtpArchiveFields
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupCustomFieldValue
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
@@ -20,12 +21,12 @@ import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.otp.OtpAuthUriCodec
+import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import java.net.URI
-import java.net.URLDecoder
 import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
@@ -103,9 +104,6 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
         BackupBundleValidator.validate(bundle, requireResourceData = false)
         return bundle
     }
-
-    private fun decode(value: String): String =
-        URLDecoder.decode(value, Charsets.UTF_8.name())
 
     private fun BitwardenItem.toBackupRecords(
         index: Int,
@@ -281,7 +279,7 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
                 archiveField(FieldKey.OTP_ENCODING, BackupFieldValue.text("base32")),
             )
         }
-        if (!trimmed.startsWith("otpauth://", ignoreCase = true)) {
+        if (!trimmed.startsWith("otpauth:", ignoreCase = true)) {
             return listOf(
                 archiveField(FieldKey.OTP_TYPE, BackupFieldValue.text("totp")),
                 archiveField(FieldKey.OTP_SECRET, BackupFieldValue.text(trimmed.filterNot(Char::isWhitespace))),
@@ -291,42 +289,12 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
                 archiveField(FieldKey.OTP_ENCODING, BackupFieldValue.text("base32")),
             )
         }
-        val uri = URI(trimmed)
-        val query = uri.rawQuery.orEmpty().split('&').filter(String::isNotBlank).associate { part ->
-            decode(part.substringBefore('=')) to decode(part.substringAfter('=', ""))
+        val parsed = OtpAuthUriCodec.parse(trimmed)
+        val config = when (parsed) {
+            is OtpUriParseResult.Parsed -> parsed.config
+            OtpUriParseResult.Malformed, OtpUriParseResult.NotOtp, OtpUriParseResult.Unsupported -> throw BackupFailed()
         }
-        val label = decode(uri.rawPath.orEmpty().removePrefix("/"))
-        val labelParts = label.split(':', limit = 2)
-        val typeKey = when (uri.host?.lowercase()) {
-            "hotp" -> "hotp"
-            "totp" -> "totp"
-            else -> throw BackupFailed()
-        }
-        val secret = query["secret"]?.takeIf(String::isNotBlank) ?: throw BackupFailed()
-        val algorithm = when (query["algorithm"]?.lowercase() ?: "sha1") {
-            "sha1" -> "sha1"
-            "sha256" -> "sha256"
-            "sha512" -> "sha512"
-            else -> throw BackupFailed()
-        }
-        return buildList {
-            add(archiveField(FieldKey.OTP_TYPE, BackupFieldValue.text(typeKey)))
-            add(archiveField(FieldKey.OTP_SECRET, BackupFieldValue.text(secret)))
-            add(archiveField(FieldKey.OTP_ALGORITHM, BackupFieldValue.text(algorithm)))
-            add(archiveField(FieldKey.OTP_DIGITS, BackupFieldValue.integer(query["digits"]?.toIntOrNull() ?: 6)))
-            if (typeKey == "hotp") {
-                add(archiveField(FieldKey.OTP_COUNTER, BackupFieldValue.long(query["counter"]?.toLongOrNull() ?: 0)))
-            } else {
-                add(archiveField(FieldKey.OTP_PERIOD, BackupFieldValue.integer(query["period"]?.toIntOrNull() ?: 30)))
-            }
-            add(archiveField(FieldKey.OTP_ENCODING, BackupFieldValue.text("base32")))
-            (query["issuer"] ?: labelParts.getOrNull(0))?.takeIf(String::isNotBlank)?.let {
-                add(archiveField(FieldKey.OTP_ISSUER, BackupFieldValue.text(it)))
-            }
-            labelParts.getOrNull(1)?.takeIf(String::isNotBlank)?.let {
-                add(archiveField(FieldKey.OTP_ACCOUNT_NAME, BackupFieldValue.text(it)))
-            }
-        }
+        return config.toOtpArchiveFields()
     }
 
     private fun archiveField(key: FieldKey, value: BackupFieldValue) = BackupFieldRecord(
