@@ -17,6 +17,7 @@ data class DetailBodyUiModel(
     val sections: Set<DetailSectionUiModel>,
     val credential: CredentialSectionUiState?,
     val otp: DetailOtpUiModel?,
+    val canShowWifiQr: Boolean,
     val bankCard: DetailBankCardUiModel?,
     val identity: DetailIdentityUiModel?,
     val ssh: DetailSshUiModel?,

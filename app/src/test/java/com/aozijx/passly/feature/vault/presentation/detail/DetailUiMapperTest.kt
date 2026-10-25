@@ -159,6 +159,7 @@ class DetailUiMapperTest {
         val presentation = requireNotNull(toDetailPresentationModel(state, null))
 
         assertEquals("Office", presentation.header.title)
+        assertTrue(presentation.content.canShowWifiQr)
         assertFalse(requireNotNull(presentation.content.credential).username.visible)
         assertTrue(requireNotNull(presentation.content.credential).password.visible)
     }

@@ -1,28 +1,18 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
-import android.graphics.Bitmap
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCode
-import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularWavyProgressIndicator
@@ -30,17 +20,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
-import androidx.compose.material3.SheetValue
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -49,24 +34,15 @@ import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailOtpUiModel
 
-sealed interface TotpQrUiState {
-    data object Hidden : TotpQrUiState
-    data object Loading : TotpQrUiState
-    data class Ready(val bitmap: Bitmap) : TotpQrUiState
-    data object Failed : TotpQrUiState
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TotpCard(
     currentState: DetailOtpUiModel?,
-    qrCode: TotpQrUiState = TotpQrUiState.Hidden,
     showProgress: Boolean = true,
     onQrClick: () -> Unit,
-    onQrDismiss: () -> Unit,
     onCodeClick: (() -> Unit)? = null
 ) {
-    val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -86,8 +62,7 @@ fun TotpCard(
                 modifier = Modifier.size(24.dp)
             ) {
                 Icon(
-                    Icons.Default.QrCode,
-                    null,
+                    Icons.Default.QrCode, contentDescription = stringResource(R.string.vault_show_otp_qr),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp)
                 )
@@ -150,13 +125,6 @@ fun TotpCard(
                 )
             }
         }
-        if (qrCode !== TotpQrUiState.Hidden) {
-            QRcodeRender(
-                qrCode = qrCode,
-                sheetState = sheetState,
-                onDismiss = onQrDismiss,
-            )
-        }
     }
 }
 
@@ -177,83 +145,4 @@ private fun TotpCircularWavyProgressIndicator(
         color = progressColor,
         trackColor = MaterialTheme.colorScheme.surfaceVariant
     )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun QRcodeRender(
-    qrCode: TotpQrUiState,
-    sheetState: SheetState,
-    onDismiss: () -> Unit
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        dragHandle = { BottomSheetDefaults.DragHandle() }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-                .navigationBarsPadding()
-                .padding(bottom = 48.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(R.string.vault_export_qr_title),
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp)
-            )
-            Text(
-                text = stringResource(R.string.vault_export_qr_message),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp)
-            )
-            Card(
-                modifier = Modifier
-                    .widthIn(max = 360.dp)
-                    .fillMaxWidth()
-                    .aspectRatio(1f),
-                shape = MaterialTheme.shapes.largeIncreased,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                ),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(20.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    when (qrCode) {
-                        TotpQrUiState.Hidden -> Unit
-                        TotpQrUiState.Loading -> CircularWavyProgressIndicator()
-                        is TotpQrUiState.Ready -> Image(
-                            bitmap = qrCode.bitmap.asImageBitmap(),
-                            contentDescription = "QR Code",
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                        TotpQrUiState.Failed -> {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    Icons.Default.QrCode,
-                                    null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.outline
-                                )
-                                Text("无法生成二维码", style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }

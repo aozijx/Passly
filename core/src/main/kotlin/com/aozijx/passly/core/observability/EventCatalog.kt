@@ -235,6 +235,7 @@ object Operations {
     val VaultKeyManagement = OperationCode("vault_key_management")
     val VaultEntryCreate = OperationCode("vault_entry_create")
     val VaultEntryUpdate = OperationCode("vault_entry_update")
+    val VaultQrExport = OperationCode("vault_qr_export")
 }
 
 object LogFieldKeys {

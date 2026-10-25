@@ -5,11 +5,15 @@ import android.graphics.Color
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
 import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 
 object QrCodeEncoder {
     fun encode(content: String, size: Int = 512): Bitmap? = try {
-        val matrix = QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, size, size)
+        val matrix = QRCodeWriter().encode(
+            content, BarcodeFormat.QR_CODE, size, size,
+            mapOf(EncodeHintType.CHARACTER_SET to "UTF-8"),
+        )
         createBitmap(matrix.width, matrix.height, Bitmap.Config.RGB_565).apply {
             for (x in 0 until matrix.width) {
                 for (y in 0 until matrix.height) {

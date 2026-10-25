@@ -17,7 +17,8 @@ import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
 import com.aozijx.passly.feature.vault.detail.DetailEntryEdit
 import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
-import com.aozijx.passly.feature.vault.detail.ExportOtpQrUseCase
+import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
@@ -54,7 +55,8 @@ class DetailViewModel @Inject internal constructor(
     private val entryTagQuery: EntryTagQuery,
     private val activityQueryRepository: ActivityQueryRepository,
     private val accessPolicy: SecureSessionAccessPolicy,
-    private val exportOtpQr: ExportOtpQrUseCase,
+    exportEntryQr: ExportEntryQrUseCase,
+    secureSessionAccessState: SecureSessionAccessState,
     private val revealEntryFields: RevealEntryFieldsUseCase,
     private val editDetailEntry: EditDetailEntryUseCase,
     private val copyEntryFieldUseCase: CopyEntryFieldUseCase,
@@ -71,6 +73,8 @@ class DetailViewModel @Inject internal constructor(
     private val revisionRevealStore = DetailRevisionRevealStore()
     private val faviconSession = DetailFaviconSession(faviconImageProcessor, viewModelScope)
     private val otpRuntime = otpCodeRuntimeFactory.create(viewModelScope)
+    private val qrSession = DetailQrSession(viewModelScope, secureSessionAccessState, exportEntryQr::invoke)
+    val qrState = qrSession.state
     private var entryLoadJob: Job? = null
     private var historyJob: Job? = null
     private var packagePickerLoadJob: Job? = null
@@ -373,14 +377,8 @@ class DetailViewModel @Inject internal constructor(
 
             is DetailUiAction.CopyField -> copyField(event.field.fieldKey)
             DetailUiAction.CopyOtpCode -> copyOtpCode()
-            DetailUiAction.ExportOtpQr -> {
-                val entry = _uiState.value.entry ?: return
-                viewModelScope.launch {
-                    exportOtpQr(entry)?.let { uri ->
-                        _effects.send(DetailEffect.ShowOtpQr(uri))
-                    }
-                }
-            }
+            DetailUiAction.ShowEntryQr -> _uiState.value.entry?.let(qrSession::request)
+            DetailUiAction.DismissEntryQr -> qrSession.close()
 
 
             is DetailUiAction.ToggleAccessHistoryRecording -> {
@@ -454,6 +452,7 @@ class DetailViewModel @Inject internal constructor(
     fun load(rawEntryId: String, launchMode: DetailLaunchMode = DetailLaunchMode.VIEW) {
         val entryId = EntryId(rawEntryId)
         if (loadedEntryId == entryId && _uiState.value.entry != null) return
+        qrSession.close()
         loadedEntryId = entryId
         entryLoadJob?.cancel()
         historyJob?.cancel()
@@ -514,6 +513,7 @@ class DetailViewModel @Inject internal constructor(
     }
 
     private fun clearSensitiveState() {
+        qrSession.close()
         revealStore.clear()
         revisionObservationJob?.cancel()
         revisionOperationJob?.cancel()

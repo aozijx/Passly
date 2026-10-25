@@ -5,13 +5,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.Lifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.list.action.CopyFieldLabelProvider
 import com.aozijx.passly.presentation.shared.media.ImageType
@@ -29,9 +28,9 @@ fun DetailRoute(
     val viewModel = hiltViewModel<DetailViewModel>()
     val context = LocalContext.current
     val presentationState by viewModel.presentation.collectAsStateWithLifecycle()
+    val qrState by viewModel.qrState.collectAsStateWithLifecycle()
     val copiedMessageFormat = stringResource(R.string.field_copy_success_message)
     val otpLabel = stringResource(R.string.vault_detail_totp_label)
-    var otpQrUri by remember(entryId) { mutableStateOf<String?>(null) }
     val pickFaviconImage = rememberImagePicker { uri, _ ->
         viewModel.onAction(DetailUiAction.PickedFaviconImage(uri))
     }
@@ -42,7 +41,6 @@ fun DetailRoute(
     LaunchedEffect(viewModel, context, copiedMessageFormat, otpLabel) {
         viewModel.effects.collectLatest { effect ->
             when (effect) {
-                is DetailEffect.ShowOtpQr -> otpQrUri = effect.uri
                 is DetailEffect.ContentCopied -> {
                     val label = effect.fieldKey
                         ?.let(CopyFieldLabelProvider::getCopyLabel)
@@ -59,15 +57,17 @@ fun DetailRoute(
     DisposableEffect(viewModel, entryId) {
         onDispose { viewModel.onAction(DetailUiAction.ClearSensitiveState) }
     }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        viewModel.onAction(DetailUiAction.DismissEntryQr)
+    }
 
     val presentation = presentationState ?: return
     DetailScreen(
         model = presentation,
-        otpQrUri = otpQrUri,
+        qrState = qrState,
         onBack = onBack,
         onAction = viewModel::onAction,
         onOpenRelatedEntry = onOpenRelatedEntry,
-        onOtpQrDismissed = { otpQrUri = null },
         onFaviconUploadRequested = { pickFaviconImage(ImageType.SCREEN) },
     )
 }

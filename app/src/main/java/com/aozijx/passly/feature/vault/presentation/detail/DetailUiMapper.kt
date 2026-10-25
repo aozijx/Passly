@@ -131,6 +131,7 @@ internal fun toDetailPresentationModel(
                 )
             } else null,
             otp = detailOtpUiModel(otp),
+            canShowWifiQr = entry.type == EntryType.WIFI,
             bankCard = if (DetailSectionKey.BANK_CARD in state.sections) {
                 detailBankCardUiModel(entry, state, fields)
             } else null,

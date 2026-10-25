@@ -130,6 +130,12 @@
 
     <!-- 详情页补充 -->
     <string name="vault_export_qr_title">导出动态口令密钥</string>
+    <string name="vault_show_otp_qr">显示动态口令二维码</string>
+    <string name="vault_show_wifi_qr">显示网络二维码</string>
+    <string name="vault_wifi_qr_title">Wi-Fi 网络二维码</string>
+    <string name="vault_wifi_qr_message">扫描二维码连接此网络</string>
+    <string name="vault_qr_image">二维码</string>
+    <string name="vault_qr_generation_failed">无法生成二维码</string>
     <string name="vault_export_qr_message">用其他设备扫描此二维码</string>
 
     <string name="vault_add_otp_title">添加动态口令</string>

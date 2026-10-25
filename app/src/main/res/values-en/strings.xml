@@ -128,6 +128,12 @@
     <string name="vault_detail_associated_package">Associated App</string>
 
     <string name="vault_export_qr_title">Export OTP secret</string>
+    <string name="vault_show_otp_qr">Show OTP QR code</string>
+    <string name="vault_show_wifi_qr">Show Wi-Fi QR code</string>
+    <string name="vault_wifi_qr_title">Wi-Fi connection code</string>
+    <string name="vault_wifi_qr_message">Scan this code to join this network</string>
+    <string name="vault_qr_image">QR code</string>
+    <string name="vault_qr_generation_failed">Couldn\'t generate QR code</string>
     <string name="vault_export_qr_message">Scan this QR code with another authenticator app</string>
 
     <string name="vault_add_otp_title">Add OTP</string>

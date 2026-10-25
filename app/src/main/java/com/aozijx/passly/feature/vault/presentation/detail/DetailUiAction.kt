@@ -58,7 +58,8 @@ sealed interface DetailUiAction {
     data object KeepEditingFavicon : DetailFaviconAction
     data class CopyField(val field: DetailFieldUiModel) : DetailSensitiveAction
     data object CopyOtpCode : DetailSensitiveAction
-    data object ExportOtpQr : DetailSensitiveAction
+    data object ShowEntryQr : DetailSensitiveAction
+    data object DismissEntryQr : DetailSensitiveAction
     data class ToggleAccessHistoryRecording(val enabled: Boolean) : DetailSensitiveAction
     data object ClearSensitiveState : DetailSensitiveAction
     data object OpenRevisionHistory : DetailRevisionAction

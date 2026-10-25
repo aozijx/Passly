@@ -46,6 +46,7 @@
 - Backup：[导入与导出](features/backup/import-export.md)、[归档格式](features/backup/archive-format.md)、[验证要求](features/backup/verification.md)
 - [诊断日志查看与导出](features/diagnostics/viewer-and-export.md)
 - [二维码扫描](features/scanner.md)
+- [Wi-Fi 与 OTP 二维码展示](features/vault/qr-display.md)
 - [权限与消息](features/permissions-and-messages.md)
 
 ## 开发规范

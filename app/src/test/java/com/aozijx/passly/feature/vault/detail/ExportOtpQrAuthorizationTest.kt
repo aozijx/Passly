@@ -23,28 +23,38 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.sensitive.OwnedChars
+import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class ExportOtpQrUseCaseTest {
+class ExportOtpQrAuthorizationTest {
     @Test
     fun authenticatesBeforeRevealingSecretAndBuildingQrPayload() = runTest {
         val events = mutableListOf<String>()
         val revealed = OwnedChars.fromString("JBSWY3DPEHPK3PXP")
-        val exporter = ExportOtpQrUseCase(
+        val exporter = ExportEntryQrUseCase(
             authorizationGate = RecordingAuthorizationGate(events),
             sensitiveFieldRepository = RecordingSensitiveFieldRepository(events, revealed),
             activityRecorder = RecordingActivityRecorder(events),
-            formatUri = { config, _ ->
+            logger = testLogger(),
+            formatOtpUri = { config, _ ->
                 events += "format"
                 "otpauth://totp/Example?secret=${config.secret}"
             },
         )
 
-        val uri = requireNotNull(exporter(otpEntry()))
+        val result = exporter(otpEntry())
+        assertTrue(result is EntryQrExportResult.Ready)
+        result as EntryQrExportResult.Ready
+        val uri = try {
+            result.content.toPlainString()
+        } finally {
+            result.content.wipe()
+        }
 
+        assertEquals(EntryQrKind.Otp, result.kind)
         assertEquals(listOf("authenticate", "reveal", "format", "record"), events)
         assertTrue(uri.startsWith("otpauth://totp/"))
         assertTrue(uri.contains("secret=JBSWY3DPEHPK3PXP"))

@@ -46,6 +46,8 @@ Domain 只接受 `WifiSecurityType.Open / Wep / WpaPersonal`。数据库与备�
 
 ## 扩展规则
 
+已保存的 Wi-Fi 条目可以在详情页显示连接二维码，生成、授权与清理边界见[条目二维码展示](vault/qr-display.md)。
+
 新增二维码类型时，应先为 `ScannerResult` 增加明确的数据类型和分类测试，再为结果卡、`ScannerPurpose`
 和 `ScannerImport` 增加穷尽分支。状态阶段和解析失败必须使用该流程自己的 sealed 类型，不能用 nullable、
 未定义枚举值或互相组合的布尔值代替。不要在 CameraHost 中按字符串分支，也不要重新增加并行的字符串/类型状态、回调式

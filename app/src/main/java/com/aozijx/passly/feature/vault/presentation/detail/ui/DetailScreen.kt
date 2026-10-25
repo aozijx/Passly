@@ -8,6 +8,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
+import com.aozijx.passly.feature.vault.presentation.detail.DetailQrState
+import com.aozijx.passly.feature.vault.presentation.detail.ui.component.EntryQrSheet
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.DetailTopBar
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.RevisionHistorySheet
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailPresentationModel
@@ -16,11 +18,10 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailPresen
 @Composable
 fun DetailScreen(
     model: DetailPresentationModel,
-    otpQrUri: String?,
+    qrState: DetailQrState,
     onBack: () -> Unit,
     onAction: (DetailUiAction) -> Unit,
     onOpenRelatedEntry: (String) -> Unit,
-    onOtpQrDismissed: () -> Unit,
     onFaviconUploadRequested: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -40,13 +41,13 @@ fun DetailScreen(
     ) { innerPadding ->
         DetailBody(
             model = model.content,
-            otpQrUri = otpQrUri,
             onAction = onAction,
             onOpenRelatedEntry = onOpenRelatedEntry,
-            onOtpQrDismissed = onOtpQrDismissed,
             modifier = Modifier.padding(innerPadding),
         )
     }
+
+    EntryQrSheet(qrState, onDismiss = { onAction(DetailUiAction.DismissEntryQr) })
 
     DetailEditorOverlays(
         model = model.overlays,

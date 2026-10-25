@@ -3,14 +3,21 @@ package com.aozijx.passly.feature.vault.presentation.detail.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.packageinfo.rememberInstalledAppIconBitmap
-import com.aozijx.passly.core.platform.qr.QrCodeEncoder
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.presentation.shared.components.AppPackagePickerBottomSheet
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.ActivityTimelineSection
@@ -29,35 +36,19 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.component.RelatedE
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.RevisionHistorySection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.SeedPhraseSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.SshKeySection
-import com.aozijx.passly.feature.vault.presentation.detail.ui.component.TotpQrUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.TotpSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailBodyUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSectionUiModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 @Composable
 fun DetailBody(
     model: DetailBodyUiModel,
-    otpQrUri: String?,
     onAction: (DetailUiAction) -> Unit,
     onOpenRelatedEntry: (String) -> Unit,
-    onOtpQrDismissed: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showPackagePicker by remember { mutableStateOf(false) }
-    val qrCode by produceState<TotpQrUiState>(
-        initialValue = if (otpQrUri == null) TotpQrUiState.Hidden else TotpQrUiState.Loading,
-        key1 = otpQrUri,
-    ) {
-        value = if (otpQrUri == null) {
-            TotpQrUiState.Hidden
-        } else {
-            withContext(Dispatchers.Default) { QrCodeEncoder.encode(otpQrUri) }
-                ?.let(TotpQrUiState::Ready) ?: TotpQrUiState.Failed
-        }
-    }
 
     DetailScrollableContent(modifier = modifier) {
         item {
@@ -76,13 +67,23 @@ fun DetailBody(
                 }
             }
         }
+        if (model.canShowWifiQr) {
+            item {
+                OutlinedButton(
+                    onClick = { onAction(DetailUiAction.ShowEntryQr) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Default.QrCode, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.vault_show_wifi_qr))
+                }
+            }
+        }
         if (DetailSectionUiModel.OTP in model.sections) {
             item {
                 TotpSection(
                     currentState = model.otp,
-                    qrCode = qrCode,
-                    onQrClick = { onAction(DetailUiAction.ExportOtpQr) },
-                    onQrDismiss = onOtpQrDismissed,
+                    onQrClick = { onAction(DetailUiAction.ShowEntryQr) },
                     onCodeClick = { onAction(DetailUiAction.CopyOtpCode) },
                 )
             }
