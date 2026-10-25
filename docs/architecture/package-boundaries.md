@@ -50,6 +50,11 @@ Entry Domain 端口，不直接构造 Entity 或具体 Repository。Autofill/Cre
 留在 App；只有可复用的条目匹配语义进入 Entry 领域。卡号校验和 Wi-Fi 二维码载荷解析属于纯规则，
 位于 `domain/entry/policy`；相机、扫码结果展示与导入编排仍在 App Feature。
 
+银行卡编辑器将原始输入交给 `CardNumberValidator`，由它一次性提取数字并执行长度、Luhn 与卡组织识别，
+页面保留用户输入的分隔格式。Mastercard 2 系列包含 222100–272099，边界和前缀末位为 0 的情况由单测覆盖；
+范围依据 [Mastercard 官方说明](https://www.mastercard.us/content/dam/mccom/en-us/documents/merchant-2-series-BIN-impact-checklist-aug-2016.pdf)。
+通过校验但未识别的卡组织使用 `CardNetworkMatch.Unknown` 表达。
+
 ## 模型归属
 
 - Entity：数据库结构，只在 Data 层。

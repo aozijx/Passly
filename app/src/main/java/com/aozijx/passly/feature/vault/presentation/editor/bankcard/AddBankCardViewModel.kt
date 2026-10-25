@@ -66,11 +66,10 @@ class AddBankCardViewModel @Inject constructor(
     }
 
     private fun updateCardNumber(value: String) {
-        val digits = value.filter(Char::isDigit)
         mutateForm {
             it.copy(
                 cardNumber = value,
-                cardNumberValidation = CardNumberValidator.validate(digits),
+                cardNumberValidation = CardNumberValidator.validate(value),
             )
         }
     }

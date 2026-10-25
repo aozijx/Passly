@@ -6,7 +6,7 @@ object CardNumberValidator {
         NetworkRule(CardNetwork.VISA, Regex("^4\\d{12}(?:\\d{3})?$")),
         NetworkRule(
             CardNetwork.MASTERCARD,
-            Regex("^(5[1-5]\\d{14}|2(2[2-9][1-9]|[3-6]\\d{2}|7[01]\\d|720)\\d{12})$")
+            Regex("^(5[1-5]\\d{14}|2(2(2[1-9]|[3-9]\\d)|[3-6]\\d{2}|7[01]\\d|720)\\d{12})$")
         ),
         NetworkRule(CardNetwork.AMEX, Regex("^3[47]\\d{13}$")),
         NetworkRule(
@@ -29,11 +29,11 @@ object CardNumberValidator {
         return CardNumberValidationResult.Valid(inferNetwork(digits))
     }
 
-    private fun inferNetwork(cardNumber: String): CardNetworkMatch {
-        val digits = cardNumber.filter { it.isDigit() }
-        val network = NETWORK_RULES.firstOrNull { it.pattern.matches(digits) }?.network
-        return if (network == null) CardNetworkMatch.Unknown
-        else CardNetworkMatch.Matched(network)
+    private fun inferNetwork(digits: String): CardNetworkMatch {
+        for (rule in NETWORK_RULES) {
+            if (rule.pattern.matches(digits)) return CardNetworkMatch.Matched(rule.network)
+        }
+        return CardNetworkMatch.Unknown
     }
 
     private fun luhn(digits: String): Boolean {
