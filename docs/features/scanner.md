@@ -31,7 +31,7 @@ Wi-Fi 结果卡和无障碍文本不显示密码，编辑页可重新扫码，�
 
 ## Wi-Fi 解析与编辑边界
 
-`WifiQrPayloadParser` 以纯 Kotlin 解析 `WIFI:` 载荷并正确处理反斜杠转义；SSID 是必需字段。支持开放网络、
+Domain 的 `WifiQrPayloadParser` 以纯 Kotlin 解析 `WIFI:` 载荷并正确处理反斜杠转义；SSID 是必需字段。支持开放网络、
 WEP，以及 WPA/WPA2/WPA3/SAE Personal。企业认证字段、未知安全类型、缺失 SSID 或损坏转义不会生成半成品
 凭据，而是保留原始内容并降级为普通文本。
 
@@ -53,7 +53,7 @@ Composable 桥或持久化原始内容。
 
 ## 相关实现
 
-- [`ScannerResult`](../../app/src/main/java/com/aozijx/passly/presentation/feature/scanner/ScannerResult.kt)
-- [`ScannerResultClassifier`](../../app/src/main/java/com/aozijx/passly/presentation/feature/scanner/ScannerResultClassifier.kt)
-- [`ScannerRoute`](../../app/src/main/java/com/aozijx/passly/presentation/feature/scanner/ScannerRoute.kt)
-- [`ScannerCameraHost`](../../app/src/main/java/com/aozijx/passly/presentation/feature/scanner/ScannerCameraHost.kt)
+- [`ScannerResult`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerResult.kt)
+- [`ScannerResultClassifier`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerResultClassifier.kt)
+- [`ScannerRoute`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerRoute.kt)
+- [`ScannerCameraHost`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerCameraHost.kt)

@@ -1,0 +1,55 @@
+package com.aozijx.passly.feature.settings.presentation.main.navigation
+
+import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class SettingsDestinationTest {
+    @Test
+    fun everyMainUiGroupRouteKeyMapsToFeatureRoute() {
+        SettingsGroup.entries.forEach { group ->
+            val route = SettingsDestination.fromRouteKey(group.routeKey)
+
+            assertNotNull(group.name, route)
+            assertEquals(group.routeKey, route?.route)
+        }
+    }
+
+    @Test
+    fun unknownRouteKeyIsRejected() {
+        assertEquals(null, SettingsDestination.fromRouteKey("settings/unknown"))
+    }
+
+    @Test
+    fun everyDetailRouteIsRegisteredExactlyOnceWithStableKeys() {
+        val routes = settingsDetailRoutes()
+
+        assertEquals(13, routes.size)
+        assertEquals(routes.size, routes.distinct().size)
+        assertEquals(routes.size, routes.map(SettingsDestination::route).distinct().size)
+        assertTrue(SettingsDestination.Main !in routes)
+        assertEquals(
+            setOf(
+                "settings/security", "settings/privacy", "settings/permissions", "settings/appearance",
+                "settings/interface", "settings/interaction", "settings/autofill",
+                "settings/data", "settings/backup_restore", "settings/notifications",
+                "settings/recovery_code", "settings/about", "settings/diagnostics",
+            ),
+            routes.map(SettingsDestination::route).toSet(),
+        )
+    }
+
+    @Test
+    fun permissionsFollowPrivacyInSecuritySection() {
+        val securityGroups = SettingsGroup.entries.filter {
+            it.sectionTitleRes == com.aozijx.passly.R.string.settings_section_security
+        }
+
+        assertEquals(
+            listOf(SettingsGroup.SECURITY, SettingsGroup.PRIVACY, SettingsGroup.PERMISSIONS),
+            securityGroups,
+        )
+    }
+}

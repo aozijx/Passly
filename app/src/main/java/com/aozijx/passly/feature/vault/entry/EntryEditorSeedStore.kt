@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault.entry
 
-import com.aozijx.passly.feature.vault.wifi.WifiQrPayload
+import com.aozijx.passly.domain.entry.policy.WifiQrPayload
 import java.util.UUID
 import javax.inject.Inject
 

@@ -28,7 +28,7 @@ class DiOwnershipPolicyTest {
     @Test
     fun presentationCannotBindADataImplementation() {
         val source = EditorSource(
-            path = "app/src/main/java/com/aozijx/passly/presentation/feature/vault/VaultBindingModule.kt",
+            path = "app/src/main/java/com/aozijx/passly/feature/vault/presentation/VaultBindingModule.kt",
             content = """
                 import com.aozijx.passly.data.repository.entry.RoomEntryQueryRepository
                 import dagger.Binds

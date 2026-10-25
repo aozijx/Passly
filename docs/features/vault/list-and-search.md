@@ -70,4 +70,4 @@ Proto 当前默认关闭滑动操作；启用后左滑复制密码、右滑删�
 - [`EntryListQuery`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/query/EntryListQuery.kt)
 - [`EntrySort`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/query/EntrySort.kt)
 - [`EntryPagingQueryFactory`](../../../data/src/main/java/com/aozijx/passly/data/local/database/query/EntryPagingQueryFactory.kt)
-- [`VaultViewModel`](../../../app/src/main/java/com/aozijx/passly/presentation/feature/vault/list/VaultViewModel.kt)
+- [`VaultViewModel`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt)

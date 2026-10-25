@@ -14,12 +14,12 @@ import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.app.message.presentation.AppNoticeEffects
 import com.aozijx.passly.app.platform.permission.PermissionServices
 import com.aozijx.passly.app.platform.permission.ProvidePermissionServices
-import com.aozijx.passly.presentation.feature.shell.AppShell
-import com.aozijx.passly.presentation.feature.shell.AppShellSettingsState
-import com.aozijx.passly.presentation.feature.shell.AppShellViewModel
-import com.aozijx.passly.presentation.feature.shell.AppWindowPolicyEffects
-import com.aozijx.passly.presentation.feature.shell.windowPolicy
-import com.aozijx.passly.presentation.feature.shell.theme.AppTheme
+import com.aozijx.passly.feature.shell.presentation.AppShell
+import com.aozijx.passly.feature.shell.presentation.AppShellSettingsState
+import com.aozijx.passly.feature.shell.presentation.AppShellViewModel
+import com.aozijx.passly.feature.shell.presentation.AppWindowPolicyEffects
+import com.aozijx.passly.feature.shell.presentation.windowPolicy
+import com.aozijx.passly.feature.shell.presentation.theme.AppTheme
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 

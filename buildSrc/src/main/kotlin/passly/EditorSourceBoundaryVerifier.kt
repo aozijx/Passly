@@ -14,7 +14,7 @@ internal object EditorSourceBoundaryVerifier {
         sources.forEach { source ->
             val path = source.path.replace('\\', '/')
             val lowerPath = path.lowercase()
-            val isPresentationEditor = "/presentation/feature/vault/editor/" in lowerPath
+            val isPresentationEditor = "/feature/vault/presentation/editor/" in lowerPath
 
             val fileName = lowerPath.substringAfterLast('/')
             val passiveUiFileSuffixes = listOf(
@@ -27,8 +27,8 @@ internal object EditorSourceBoundaryVerifier {
                 "scaffold.kt",
             )
             listOf("list", "detail", "editor").forEach { page ->
-                val isVaultPageFeature = "/presentation/feature/vault/$page/" in lowerPath
-                val isFeatureUi = "/presentation/feature/vault/$page/ui/" in lowerPath
+                val isVaultPageFeature = "/feature/vault/presentation/$page/" in lowerPath
+                val isFeatureUi = "/feature/vault/presentation/$page/ui/" in lowerPath
                 val isFeatureHost = fileName.endsWith("host.kt")
                 val isUiSection = fileName.endsWith("section.kt")
                 if (isVaultPageFeature && !isFeatureUi && !isFeatureHost && (
@@ -36,12 +36,12 @@ internal object EditorSourceBoundaryVerifier {
                             listOf("/component/", "/dialog/", "/sheet/").any(lowerPath::contains)
                         )
                 ) {
-                    val expectedRoot = "presentation/feature/vault/$page/ui"
+                    val expectedRoot = "feature/vault/presentation/$page/ui"
                     add("$path: passive vault-$page UI must live below $expectedRoot")
                 }
             }
-            val isScannerFeature = "/presentation/feature/scanner/" in lowerPath
-            val isScannerUi = "/presentation/feature/scanner/ui/" in lowerPath
+            val isScannerFeature = "/feature/scanner/presentation/" in lowerPath
+            val isScannerUi = "/feature/scanner/presentation/ui/" in lowerPath
             val isScannerHost = fileName.endsWith("host.kt")
             if (isScannerFeature && !isScannerUi && !isScannerHost && (
                 passiveUiFileSuffixes.any(fileName::endsWith) ||
@@ -50,11 +50,11 @@ internal object EditorSourceBoundaryVerifier {
             ) {
                 add(
                     "$path: passive scanner UI must live below " +
-                        "presentation/feature/scanner/ui",
+                        "feature/scanner/presentation/ui",
                 )
             }
-            val isBackupFeature = "/presentation/feature/backup/" in lowerPath
-            val isBackupUi = "/presentation/feature/backup/ui/" in lowerPath
+            val isBackupFeature = "/feature/backup/presentation/" in lowerPath
+            val isBackupUi = "/feature/backup/presentation/ui/" in lowerPath
             if (isBackupFeature && !isBackupUi && (
                 passiveUiFileSuffixes.any(fileName::endsWith) ||
                     listOf("/component/", "/dialog/", "/sheet/").any(lowerPath::contains)
@@ -62,11 +62,11 @@ internal object EditorSourceBoundaryVerifier {
             ) {
                 add(
                     "$path: passive backup UI must live below " +
-                        "presentation/feature/backup/ui",
+                        "feature/backup/presentation/ui",
                 )
             }
-            val isSettingsFeature = "/presentation/feature/settings/" in lowerPath
-            val isSettingsUi = "/presentation/feature/settings/ui/" in lowerPath
+            val isSettingsFeature = "/feature/settings/presentation/" in lowerPath
+            val isSettingsUi = "/feature/settings/presentation/ui/" in lowerPath
             val isSettingsHost = fileName.endsWith("host.kt")
             val isSettingsUiSection = fileName.endsWith("section.kt")
             if (isSettingsFeature && !isSettingsUi && !isSettingsHost && (
@@ -74,7 +74,7 @@ internal object EditorSourceBoundaryVerifier {
                     listOf("/component/", "/dialog/", "/sheet/").any(lowerPath::contains)
                 )
             ) {
-                add("$path: passive settings UI must live below presentation/feature/settings/ui")
+                add("$path: passive settings UI must live below feature/settings/presentation/ui")
             }
             if (isPresentationEditor && lowerPath.endsWith("formmapper.kt")) {
                 SourceBoundaryPolicy.editorMapperForbiddenMarkers.forEach { (label, markers) ->

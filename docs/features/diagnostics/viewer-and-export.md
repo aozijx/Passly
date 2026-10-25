@@ -34,8 +34,8 @@ Top app bar 提供保存、分享和清除。保存与分享分别打开相同�
 
 相关实现：
 
-- [`DiagnosticsScreen`](../../../app/src/main/java/com/aozijx/passly/presentation/feature/settings/ui/diagnostics/DiagnosticsScreen.kt)
-- [`DiagnosticsViewModel`](../../../app/src/main/java/com/aozijx/passly/presentation/feature/settings/main/diagnostics/DiagnosticsViewModel.kt)
+- [`DiagnosticsScreen`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/ui/diagnostics/DiagnosticsScreen.kt)
+- [`DiagnosticsViewModel`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/diagnostics/DiagnosticsViewModel.kt)
 - [`ObservabilityExportService`](../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityExportService.kt)
 
 平台依据：[Storage Access Framework](https://developer.android.com/training/data-storage/shared/documents-files)。

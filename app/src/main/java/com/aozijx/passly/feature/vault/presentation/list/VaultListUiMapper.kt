@@ -1,0 +1,160 @@
+package com.aozijx.passly.feature.vault.presentation.list
+
+import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.domain.entry.model.query.EntrySort
+import com.aozijx.passly.domain.entry.model.query.EntrySortField
+import com.aozijx.passly.domain.entry.model.query.SortDirection
+import com.aozijx.passly.domain.settings.model.CardDensity
+import com.aozijx.passly.domain.settings.model.EntryCardPresentation
+import com.aozijx.passly.feature.vault.model.AddType
+import com.aozijx.passly.feature.vault.model.OtpCodeState
+import com.aozijx.passly.presentation.mapping.entry.toUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardDensityUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardPresentationUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListContentUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListDialogsUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListDisplayUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListLayoutUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListNavigationUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListScreenUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListToolbarUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpKindUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpUiState
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortOptionUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortUiModel
+
+internal fun EntryListItem.toUiModel() = VaultListItemUiModel(
+    id = id.value,
+    entryType = entryType.toUiModel(),
+    title = title,
+    username = username,
+    category = tags.firstOrNull { it.isNotBlank() }?.trim(),
+    favorite = favorite,
+    associatedDomain = associatedDomain,
+    associatedAppPackage = associatedAppPackage,
+    iconName = icon.name,
+    iconCustomPath = iconCustomPath,
+    hasPassword = hasPassword,
+    hasOtp = hasOtp,
+    otpKind = otpType?.let { if (it == OtpType.STEAM) VaultOtpKindUiModel.STEAM else VaultOtpKindUiModel.STANDARD },
+    otpPreview = otpPreview,
+)
+
+internal fun OtpCodeState.toUiModel(): VaultOtpUiState = when (this) {
+    OtpCodeState.Pending -> VaultOtpUiState.Pending
+    is OtpCodeState.Ready -> VaultOtpUiState.Ready(code, progress)
+    is OtpCodeState.Failed -> VaultOtpUiState.Failed
+}
+
+
+internal fun EntrySort.toUiModel() = VaultSortUiModel(
+    option = when (field) {
+        EntrySortField.TITLE -> VaultSortOptionUiModel.TITLE
+        EntrySortField.CREATED_AT -> VaultSortOptionUiModel.CREATED_AT
+        EntrySortField.UPDATED_AT -> VaultSortOptionUiModel.UPDATED_AT
+        EntrySortField.LAST_USED_AT -> VaultSortOptionUiModel.LAST_USED_AT
+        EntrySortField.USAGE_FREQUENCY -> VaultSortOptionUiModel.USAGE_FREQUENCY
+        EntrySortField.ENTRY_TYPE,
+        EntrySortField.ID,
+        -> throw IllegalArgumentException("Unsupported user-facing sort field: $field")
+    },
+    descending = direction == SortDirection.DESC,
+)
+
+internal fun VaultSortUiModel.toFeatureModel(): EntrySort {
+    val preset = when (option) {
+        VaultSortOptionUiModel.TITLE -> EntrySort.presets()
+            .first { it.field == EntrySortField.TITLE }
+
+        VaultSortOptionUiModel.CREATED_AT -> EntrySort.presets()
+            .first { it.field == EntrySortField.CREATED_AT }
+
+        VaultSortOptionUiModel.UPDATED_AT -> EntrySort.presets()
+            .first { it.field == EntrySortField.UPDATED_AT }
+
+        VaultSortOptionUiModel.LAST_USED_AT -> EntrySort.presets()
+            .first { it.field == EntrySortField.LAST_USED_AT }
+
+        VaultSortOptionUiModel.USAGE_FREQUENCY -> EntrySort.presets()
+            .first { it.field == EntrySortField.USAGE_FREQUENCY }
+    }
+    val wantsDescending = preset.direction == SortDirection.DESC
+    return if (wantsDescending == descending) preset else preset.toggled()
+}
+
+internal fun AddType.toUiModel(): VaultAddTypeUiModel = when (this) {
+    AddType.PASSWORD -> VaultAddTypeUiModel.PASSWORD
+    AddType.TOTP -> VaultAddTypeUiModel.TOTP
+    AddType.BANK_CARD -> VaultAddTypeUiModel.BANK_CARD
+    AddType.WIFI -> VaultAddTypeUiModel.WIFI
+    AddType.SSH_KEY -> VaultAddTypeUiModel.SSH_KEY
+    AddType.ID_CARD -> VaultAddTypeUiModel.ID_CARD
+    AddType.SEED_PHRASE -> VaultAddTypeUiModel.SEED_PHRASE
+    AddType.PASSKEY -> VaultAddTypeUiModel.PASSKEY
+    AddType.RECOVERY_CODE -> VaultAddTypeUiModel.RECOVERY_CODE
+}
+
+internal fun VaultAddTypeUiModel.toFeatureModel(): AddType = when (this) {
+    VaultAddTypeUiModel.PASSWORD -> AddType.PASSWORD
+    VaultAddTypeUiModel.TOTP -> AddType.TOTP
+    VaultAddTypeUiModel.BANK_CARD -> AddType.BANK_CARD
+    VaultAddTypeUiModel.WIFI -> AddType.WIFI
+    VaultAddTypeUiModel.SSH_KEY -> AddType.SSH_KEY
+    VaultAddTypeUiModel.ID_CARD -> AddType.ID_CARD
+    VaultAddTypeUiModel.SEED_PHRASE -> AddType.SEED_PHRASE
+    VaultAddTypeUiModel.PASSKEY -> AddType.PASSKEY
+    VaultAddTypeUiModel.RECOVERY_CODE -> AddType.RECOVERY_CODE
+}
+
+internal fun EntryCardPresentation.toUiModel() = VaultCardPresentationUiModel(
+    entryTypeKey = entryTypeKey,
+    variantKey = variantKey,
+    density = when (density) {
+        CardDensity.COMPACT -> VaultCardDensityUiModel.COMPACT
+        CardDensity.STANDARD -> VaultCardDensityUiModel.STANDARD
+        CardDensity.COMFORTABLE -> VaultCardDensityUiModel.COMFORTABLE
+    },
+    showIcon = showIcon,
+    showFavorite = showFavorite,
+    showSecondaryText = showSecondaryText,
+    showQuickAction = showQuickAction,
+)
+
+internal fun VaultUiState.toUiModel(
+    display: VaultListDisplayUiModel,
+): VaultListScreenUiModel? {
+    val sort = selectedSort ?: return null
+    return VaultListScreenUiModel(
+    toolbar = VaultListToolbarUiModel(
+        searchQuery = searchQuery,
+        selectedCategory = selectedCategory,
+        selectedSort = sort.toUiModel(),
+        isSearchActive = isSearchActive,
+        availableCategories = availableCategories,
+    ),
+    navigation = VaultListNavigationUiModel(
+        selectedFilters = selectedFilters.map(AddType::toUiModel).toSet(),
+        filterOptions = AddType.allOptions.map(AddType::toUiModel),
+    ),
+    content = VaultListContentUiModel(
+        showTotpCode = showTOTPCode,
+        cardPresentations = display.cardPresentations,
+        swipeLeftAction = display.swipeLeftAction,
+        swipeRightAction = display.swipeRightAction,
+        isSwipeEnabled = display.isSwipeEnabled,
+        isPullToSearchEnabled = display.isPullToSearchEnabled,
+    ),
+    dialogs = VaultListDialogsUiModel(
+        addType = addType?.toUiModel(),
+        pendingDelete = pendingDelete?.toUiModel(),
+    ),
+    layout = VaultListLayoutUiModel(
+        collapseTopBarOnScroll = display.collapseTopBarOnScroll,
+        collapseQuickFilterBarOnScroll = display.collapseQuickFilterBarOnScroll,
+        hideSystemBars = display.hideSystemBars,
+    ),
+    )
+}

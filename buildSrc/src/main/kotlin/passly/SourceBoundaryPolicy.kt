@@ -1,6 +1,14 @@
 package passly
 
 internal object SourceBoundaryPolicy {
+    private val featurePresentationAreas = listOf(
+        "autofill", "backup", "database", "recovery", "scanner", "settings", "shell", "unlock", "vault",
+    )
+    private val featurePresentationPaths = featurePresentationAreas
+        .mapTo(mutableSetOf()) { "/feature/$it/presentation/" }
+    private val featurePresentationImports = featurePresentationAreas
+        .mapTo(mutableSetOf()) { "com.aozijx.passly.feature.$it.presentation." }
+
     val editorMapperForbiddenMarkers = linkedMapOf(
         "repository" to listOf(".repository.", ".port.EntryCommandRepository"),
         "UUID" to listOf("UuidCreator", "java.util.UUID"),
@@ -16,7 +24,6 @@ internal object SourceBoundaryPolicy {
             owner = "presentation.ui",
             sourcePathContains = "/com/aozijx/passly/presentation/ui/",
             forbiddenImportPrefixes = setOf(
-                "com.aozijx.passly.presentation.feature.",
                 "com.aozijx.passly.feature.",
                 "com.aozijx.passly.domain.",
                 "com.aozijx.passly.data.",
@@ -25,18 +32,10 @@ internal object SourceBoundaryPolicy {
             message = "imports a forbidden namespace",
         ),
         SourceBoundaryRule(
-            id = "LAYER_PRESENTATION_FEATURE",
-            owner = "presentation.feature",
-            sourcePathContains = "/com/aozijx/passly/presentation/feature/",
-            forbiddenImportPrefixes = setOf("com.aozijx.passly.data."),
-            message = "imports a forbidden namespace",
-        ),
-        SourceBoundaryRule(
             id = "LAYER_PRESENTATION_SHARED",
             owner = "presentation.shared",
             sourcePathContains = "/com/aozijx/passly/presentation/shared/",
             forbiddenImportPrefixes = setOf(
-                "com.aozijx.passly.presentation.feature.",
                 "com.aozijx.passly.feature.",
                 "com.aozijx.passly.domain.",
                 "com.aozijx.passly.data.",
@@ -49,7 +48,6 @@ internal object SourceBoundaryPolicy {
             owner = "presentation.mapping",
             sourcePathContains = "/com/aozijx/passly/presentation/mapping/",
             forbiddenImportPrefixes = setOf(
-                "com.aozijx.passly.presentation.feature.",
                 "com.aozijx.passly.feature.",
                 "com.aozijx.passly.data.",
                 "com.aozijx.passly.security.",
@@ -61,23 +59,22 @@ internal object SourceBoundaryPolicy {
             owner = "presentation",
             sourcePathContains = "/com/aozijx/passly/presentation/",
             allowedSourcePathContains = setOf(
-                "/presentation/feature/",
                 "/presentation/mapping/",
                 "/presentation/shared/",
                 "/presentation/ui/",
             ),
             forbiddenContentMarkers = setOf("package com.aozijx.passly.presentation."),
-            message = "presentation source must be classified as feature, mapping, shared, or ui",
+            message = "shared presentation source must be classified as mapping, shared, or ui",
         ),
         SourceBoundaryRule(
             id = "LAYER_FEATURE",
             owner = "feature",
             sourcePathContains = "/com/aozijx/passly/feature/",
-            allowedSourcePathContains = setOf(
+            allowedSourcePathContains = featurePresentationPaths + setOf(
                 "/feature/vault/entry/VaultDataAdaptersTest.kt",
                 "/feature/autofill/platform/AutofillLaunchTargetFactoryTest.kt",
             ),
-            forbiddenImportPrefixes = setOf(
+            forbiddenImportPrefixes = featurePresentationImports + setOf(
                 "com.aozijx.passly.data.",
                 "com.aozijx.passly.presentation.",
             ),
@@ -178,7 +175,15 @@ internal object SourceBoundaryPolicy {
             sourcePathContains = "/com/aozijx/passly/app/",
             message = "imports a forbidden namespace",
         ),
-    )
+    ) + featurePresentationAreas.map { area ->
+        SourceBoundaryRule(
+            id = "LAYER_FEATURE_PRESENTATION",
+            owner = "feature.presentation",
+            sourcePathContains = "/com/aozijx/passly/feature/$area/presentation/",
+            forbiddenImportPrefixes = setOf("com.aozijx.passly.data."),
+            message = "imports a forbidden namespace",
+        )
+    }
 
     val generalRules = layerRules + listOf(
         SourceBoundaryRule(
@@ -209,7 +214,6 @@ internal object SourceBoundaryPolicy {
             allowedSourcePathContains = setOf(
                 "/app/entry/paging/DataVaultEntryPageSource.kt",
                 "/app/entry/paging/DataVaultDataChangeSignal.kt",
-                "/presentation/feature/",
                 "/feature/vault/entry/VaultDataAdaptersTest.kt",
             ),
             message = "vault paging Data types may only be imported by App adapters",
@@ -217,7 +221,7 @@ internal object SourceBoundaryPolicy {
         SourceBoundaryRule(
             id = "PRESENTATION_AUTH_MANAGER_IMPORT",
             sourcePathContains = "/presentation/",
-            allowedSourcePathContains = setOf("/presentation/feature/unlock/"),
+            allowedSourcePathContains = setOf("/feature/unlock/presentation/"),
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.domain.access.port.AuthenticationManager",
             ),
@@ -294,7 +298,7 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "VAULT_UI_PAGING_FACTORY",
-            sourcePathContains = "/presentation/feature/vault/list/ui/",
+            sourcePathContains = "/feature/vault/presentation/list/ui/",
             forbiddenContentMarkers = setOf(
                 "entryPages: Map<",
             ),
@@ -302,13 +306,13 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "VAULT_LIST_EXTERNAL_MODIFIER",
-            sourcePathContains = "/presentation/feature/vault/list/ui/component/list/VaultEntryGrid.kt",
+            sourcePathContains = "/feature/vault/presentation/list/ui/component/list/VaultEntryGrid.kt",
             forbiddenContentMarkers = setOf("modifier = Modifier.fillMaxSize()"),
             message = "vault list discards the caller modifier and its gesture or layout modifiers",
         ),
         SourceBoundaryRule(
             id = "VAULT_LIST_ROW_OWNERSHIP",
-            sourcePathContains = "/presentation/feature/vault/list/ui/component/list/VaultEntryGrid.kt",
+            sourcePathContains = "/feature/vault/presentation/list/ui/component/list/VaultEntryGrid.kt",
             forbiddenContentMarkers = setOf("fun VaultEntryRow("),
             message = "vault paging container also owns entry-row rendering",
         ),
@@ -322,46 +326,46 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "BACKUP_FEATURE_SETTINGS_UI_OWNERSHIP",
-            sourcePathContains = "/presentation/feature/backup/",
+            sourcePathContains = "/feature/backup/presentation/",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.presentation.ui.settings.",
-                "com.aozijx.passly.presentation.feature.settings.ui.",
+                "com.aozijx.passly.feature.settings.presentation.ui.",
             ),
             message = "backup feature imports settings-owned UI",
         ),
         SourceBoundaryRule(
             id = "UNLOCK_FEATURE_PASSIVE_CONTENT",
-            sourcePathContains = "/presentation/feature/unlock/AuthenticationScreen.kt",
+            sourcePathContains = "/feature/unlock/presentation/AuthenticationScreen.kt",
             forbiddenContentMarkers = setOf("InputActionButton("),
             message = "unlock feature host renders passive credential input content",
         ),
         SourceBoundaryRule(
             id = "PASSWORD_EDITOR_ROUTE_PASSIVE_UI",
-            sourcePathContains = "/presentation/feature/vault/editor/password/",
+            sourcePathContains = "/feature/vault/presentation/editor/password/",
             forbiddenContentMarkers = setOf("NextFocusTextField(", "OutlinedTextField("),
             message = "password editor route renders passive fields",
         ),
         SourceBoundaryRule(
             id = "OTP_EDITOR_ROUTE_PASSIVE_UI",
-            sourcePathContains = "/presentation/feature/vault/editor/otp/",
+            sourcePathContains = "/feature/vault/presentation/editor/otp/",
             forbiddenContentMarkers = setOf("OtpConfigForm("),
             message = "OTP editor route renders passive form content",
         ),
         SourceBoundaryRule(
             id = "BANK_CARD_EDITOR_ROUTE_PASSIVE_UI",
-            sourcePathContains = "/presentation/feature/vault/editor/bankcard/",
+            sourcePathContains = "/feature/vault/presentation/editor/bankcard/",
             forbiddenContentMarkers = setOf("CardTypeDropdown("),
             message = "bank card editor route renders passive form content",
         ),
         SourceBoundaryRule(
             id = "SETTINGS_UI_VAULT_OWNERSHIP",
-            sourcePathContains = "/presentation/feature/settings/ui/",
+            sourcePathContains = "/feature/settings/presentation/ui/",
             forbiddenImportPrefixes = setOf("com.aozijx.passly.presentation.ui.vault.list.model."),
             message = "settings UI imports a Vault-owned list model",
         ),
         SourceBoundaryRule(
             id = "APP_GLOBAL_SETTINGS_BUS",
-            sourcePathContains = "/presentation/feature/settings/main/SettingsViewModel.kt",
+            sourcePathContains = "/feature/settings/presentation/main/SettingsViewModel.kt",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
                 "com.aozijx.passly.domain.settings.model.AppSettingsSnapshot",
@@ -371,7 +375,7 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "APP_GLOBAL_SETTINGS_BUS",
-            sourcePathContains = "/presentation/feature/shell/AppShellViewModel.kt",
+            sourcePathContains = "/feature/shell/presentation/AppShellViewModel.kt",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
                 "com.aozijx.passly.domain.settings.model.AppSettingsSnapshot",
@@ -381,7 +385,7 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "SETTINGS_APPEARANCE_NARROW_PORT",
-            sourcePathContains = "/presentation/feature/settings/appearance/",
+            sourcePathContains = "/feature/settings/presentation/appearance/",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
                 "com.aozijx.passly.domain.settings.model.SettingsCommand",
@@ -390,7 +394,7 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "SECURITY_SETTINGS_NARROW_PORT",
-            sourcePathContains = "/presentation/feature/settings/security/",
+            sourcePathContains = "/feature/settings/presentation/security/",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
                 "com.aozijx.passly.domain.settings.model.SettingsCommand",
@@ -407,7 +411,7 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "MESSAGE_SETTINGS_NARROW_PORT",
-            sourcePathContains = "/presentation/feature/settings/main/general/NotificationSettingsViewModel.kt",
+            sourcePathContains = "/feature/settings/presentation/main/general/NotificationSettingsViewModel.kt",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
                 "com.aozijx.passly.domain.settings.model.SettingsCommand",
@@ -424,7 +428,7 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "BACKUP_SETTINGS_NARROW_PORT",
-            sourcePathContains = "/presentation/feature/settings/backup/DataManagementSettingsViewModel.kt",
+            sourcePathContains = "/feature/settings/presentation/backup/DataManagementSettingsViewModel.kt",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
                 "com.aozijx.passly.domain.settings.model.SettingsCommand",
@@ -441,7 +445,7 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "VAULT_LIBRARY_SETTINGS_NARROW_PORT",
-            sourcePathContains = "/presentation/feature/vault/list/VaultViewModel.kt",
+            sourcePathContains = "/feature/vault/presentation/list/VaultViewModel.kt",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
                 "com.aozijx.passly.domain.settings.model.SettingsCommand",
@@ -450,7 +454,7 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "INTERACTION_SETTINGS_NARROW_PORT",
-            sourcePathContains = "/presentation/feature/settings/main/interaction/",
+            sourcePathContains = "/feature/settings/presentation/main/interaction/",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
                 "com.aozijx.passly.domain.settings.model.SettingsCommand",
@@ -459,7 +463,7 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "INTERACTION_SETTINGS_NARROW_PORT",
-            sourcePathContains = "/presentation/feature/settings/autofill/",
+            sourcePathContains = "/feature/settings/presentation/autofill/",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
                 "com.aozijx.passly.domain.settings.model.SettingsCommand",
@@ -476,7 +480,7 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "INTERACTION_SETTINGS_NARROW_PORT",
-            sourcePathContains = "/presentation/feature/vault/list/display/VaultDisplayViewModel.kt",
+            sourcePathContains = "/feature/vault/presentation/list/display/VaultDisplayViewModel.kt",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
             ),
@@ -505,7 +509,7 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "SETTINGS_DATA_MANAGEMENT_TRASH_OWNERSHIP",
-            sourcePathContains = "/presentation/feature/settings/backup/DataManagementSettings",
+            sourcePathContains = "/feature/settings/presentation/backup/DataManagementSettings",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.domain.entry.port.EntryCommandRepository",
                 "com.aozijx.passly.domain.entry.port.EntryListQueryRepository",
@@ -521,10 +525,10 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "SETTINGS_DATABASE_CAPABILITY_OWNERSHIP",
-            sourcePathContains = "/presentation/feature/settings/",
+            sourcePathContains = "/feature/settings/presentation/",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.app.database.DatabaseLifecycleGateway",
-                "com.aozijx.passly.feature.database.reset.DatabaseResetViewModel",
+                "com.aozijx.passly.feature.database.presentation.reset.DatabaseResetViewModel",
             ),
             message = "settings owns database lifecycle or reset capability",
         ),
@@ -543,7 +547,7 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "SHELL_NAV_HOST_FEATURE_REGISTRATION",
-            sourcePathContains = "/presentation/feature/shell/navigation/PasslyNavHost.kt",
+            sourcePathContains = "/feature/shell/presentation/navigation/PasslyNavHost.kt",
             forbiddenContentMarkers = setOf("composable("),
             message = "shell NavHost registers a feature destination directly",
         ),

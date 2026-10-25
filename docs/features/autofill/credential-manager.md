@@ -35,6 +35,6 @@ interaction 为 process-local、60 秒超时；认证或秘密解析中的操作
 
 - [`ModernCredentialService`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/ModernCredentialService.kt)
 - [`CredentialManagerFlow`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialManagerFlow.kt)
-- [`CredentialResponseViewModel`](../../../app/src/main/java/com/aozijx/passly/presentation/feature/autofill/credential/CredentialResponseViewModel.kt)
+- [`CredentialResponseViewModel`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/presentation/credential/CredentialResponseViewModel.kt)
 
 平台依据：[Credential provider integration](https://developer.android.com/identity/sign-in/credential-provider)。

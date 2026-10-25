@@ -10,9 +10,9 @@ class EditorSourceBoundaryVerifierTest {
         val violations = EditorSourceBoundaryVerifier.verify(
             listOf(
                 source(
-                    "app/src/main/java/com/example/presentation/feature/vault/editor/password/PasswordFormMapper.kt",
+                    "app/src/main/java/com/example/feature/vault/presentation/editor/password/PasswordFormMapper.kt",
                     """
-                    package com.example.presentation.feature.vault.editor.password
+                    package com.example.feature.vault.presentation.editor.password
                     import com.aozijx.passly.domain.entry.model.EntryDraft
                     import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
                     """.trimIndent(),
@@ -26,16 +26,16 @@ class EditorSourceBoundaryVerifierTest {
     @Test
     fun presentationEditorCannotImportDataImplementation() {
         val violations = EditorSourceBoundaryVerifier.verify(
-            listOf(source("app/src/main/java/com/aozijx/passly/presentation/feature/vault/editor/X.kt", "import com.aozijx.passly.data.repository.EntryRepositoryImpl")),
+            listOf(source("app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/X.kt", "import com.aozijx.passly.data.repository.EntryRepositoryImpl")),
         )
 
-        assertTrue(violations.single().contains("owner=presentation.feature"))
+        assertTrue(violations.single().contains("owner=feature.presentation"))
     }
 
     @Test
     fun lowerModulesCannotImportPresentationEditorState() {
         val violations = EditorSourceBoundaryVerifier.verify(
-            listOf(source("domain/src/main/kotlin/com/example/X.kt", "import com.aozijx.passly.presentation.feature.vault.editor.otp.OtpFormState")),
+            listOf(source("domain/src/main/kotlin/com/example/X.kt", "import com.aozijx.passly.feature.vault.presentation.editor.otp.OtpFormState")),
         )
 
         assertTrue(violations.single().contains("owner=domain"))
@@ -46,7 +46,7 @@ class EditorSourceBoundaryVerifierTest {
         val violations = EditorSourceBoundaryVerifier.verify(
             listOf(
                 source(
-                    "app/src/main/java/com/example/presentation/feature/vault/editor/otp/OtpFormMapper.kt",
+                    "app/src/main/java/com/example/feature/vault/presentation/editor/otp/OtpFormMapper.kt",
                     """
                     import com.aozijx.passly.domain.entry.port.EntryCommandRepository
                     import com.github.f4b6a3.uuid.UuidCreator
@@ -66,7 +66,7 @@ class EditorSourceBoundaryVerifierTest {
     fun presentationUiCannotDependOnFeatureDomainOrData() {
         val violations = EditorSourceBoundaryVerifier.verify(
             listOf(
-                source("app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/Feature.kt", "import com.aozijx.passly.presentation.feature.vault.list.VaultUiState"),
+                source("app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/Feature.kt", "import com.aozijx.passly.feature.vault.presentation.list.VaultUiState"),
                 source("app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/AppFeature.kt", "import com.aozijx.passly.feature.vault.model.AddType"),
                 source("app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/Domain.kt", "import com.aozijx.passly.domain.entry.model.Entry"),
                 source("app/src/main/java/com/aozijx/passly/presentation/ui/vault/list/Data.kt", "import com.aozijx.passly.data.repository.EntryRepositoryImpl"),
@@ -114,10 +114,10 @@ class EditorSourceBoundaryVerifierTest {
     fun vaultListPassiveUiCannotReturnToFeaturePackage() {
         val violations = EditorSourceBoundaryVerifier.verify(
             listOf(
-                source("app/src/main/java/com/example/presentation/feature/vault/list/VaultScreen.kt", "@Composable fun VaultScreen() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/vault/list/component/Card.kt", "@Composable fun Card() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/vault/list/VaultHost.kt", "@Composable fun VaultHost() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/vault/list/ui/VaultScreen.kt", "@Composable fun VaultScreen() = Unit"),
+                source("app/src/main/java/com/example/feature/vault/presentation/list/VaultScreen.kt", "@Composable fun VaultScreen() = Unit"),
+                source("app/src/main/java/com/example/feature/vault/presentation/list/component/Card.kt", "@Composable fun Card() = Unit"),
+                source("app/src/main/java/com/example/feature/vault/presentation/list/VaultHost.kt", "@Composable fun VaultHost() = Unit"),
+                source("app/src/main/java/com/example/feature/vault/presentation/list/ui/VaultScreen.kt", "@Composable fun VaultScreen() = Unit"),
             ),
         )
 
@@ -129,11 +129,11 @@ class EditorSourceBoundaryVerifierTest {
     fun vaultDetailPassiveUiCannotReturnToFeaturePackage() {
         val violations = EditorSourceBoundaryVerifier.verify(
             listOf(
-                source("app/src/main/java/com/example/presentation/feature/vault/detail/DetailScreen.kt", "@Composable fun DetailScreen() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/vault/detail/component/Header.kt", "@Composable fun Header() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/vault/detail/DetailHost.kt", "@Composable fun DetailHost() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/vault/detail/ui/DetailScreen.kt", "@Composable fun DetailScreen() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/vault/detail/ui/component/Header.kt", "@Composable fun Header() = Unit"),
+                source("app/src/main/java/com/example/feature/vault/presentation/detail/DetailScreen.kt", "@Composable fun DetailScreen() = Unit"),
+                source("app/src/main/java/com/example/feature/vault/presentation/detail/component/Header.kt", "@Composable fun Header() = Unit"),
+                source("app/src/main/java/com/example/feature/vault/presentation/detail/DetailHost.kt", "@Composable fun DetailHost() = Unit"),
+                source("app/src/main/java/com/example/feature/vault/presentation/detail/ui/DetailScreen.kt", "@Composable fun DetailScreen() = Unit"),
+                source("app/src/main/java/com/example/feature/vault/presentation/detail/ui/component/Header.kt", "@Composable fun Header() = Unit"),
             ),
         )
 
@@ -145,10 +145,10 @@ class EditorSourceBoundaryVerifierTest {
     fun vaultEditorPassiveUiCannotReturnOutsideUiPackage() {
         val violations = EditorSourceBoundaryVerifier.verify(
             listOf(
-                source("app/src/main/java/com/example/presentation/feature/vault/editor/password/AddPasswordEditorScreen.kt", "@Composable fun AddPasswordEditorScreen() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/vault/editor/common/AddEntryScaffold.kt", "class AddEntryScaffold"),
-                source("app/src/main/java/com/example/presentation/feature/vault/editor/ui/password/AddPasswordEditorScreen.kt", "@Composable fun AddPasswordEditorScreen() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/vault/editor/password/AddPasswordEditorRoute.kt", "@Composable fun AddPasswordEditorRoute() = Unit"),
+                source("app/src/main/java/com/example/feature/vault/presentation/editor/password/AddPasswordEditorScreen.kt", "@Composable fun AddPasswordEditorScreen() = Unit"),
+                source("app/src/main/java/com/example/feature/vault/presentation/editor/common/AddEntryScaffold.kt", "class AddEntryScaffold"),
+                source("app/src/main/java/com/example/feature/vault/presentation/editor/ui/password/AddPasswordEditorScreen.kt", "@Composable fun AddPasswordEditorScreen() = Unit"),
+                source("app/src/main/java/com/example/feature/vault/presentation/editor/password/AddPasswordEditorRoute.kt", "@Composable fun AddPasswordEditorRoute() = Unit"),
             ),
         )
 
@@ -160,9 +160,9 @@ class EditorSourceBoundaryVerifierTest {
     fun scannerPassiveUiCannotReturnOutsideUiPackage() {
         val violations = EditorSourceBoundaryVerifier.verify(
             listOf(
-                source("app/src/main/java/com/example/presentation/feature/scanner/ScannerContent.kt", "@Composable fun ScannerContent() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/scanner/ui/ScannerContent.kt", "@Composable fun ScannerContent() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/scanner/ScannerCameraHost.kt", "@Composable fun ScannerCameraHost() = Unit"),
+                source("app/src/main/java/com/example/feature/scanner/presentation/ScannerContent.kt", "@Composable fun ScannerContent() = Unit"),
+                source("app/src/main/java/com/example/feature/scanner/presentation/ui/ScannerContent.kt", "@Composable fun ScannerContent() = Unit"),
+                source("app/src/main/java/com/example/feature/scanner/presentation/ScannerCameraHost.kt", "@Composable fun ScannerCameraHost() = Unit"),
             ),
         )
 
@@ -174,9 +174,9 @@ class EditorSourceBoundaryVerifierTest {
     fun backupPassiveUiCannotReturnOutsideUiPackage() {
         val violations = EditorSourceBoundaryVerifier.verify(
             listOf(
-                source("app/src/main/java/com/example/presentation/feature/backup/BackupRestoreSheet.kt", "@Composable fun BackupRestoreSheet() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/backup/ui/BackupRestoreSheet.kt", "@Composable fun BackupRestoreSheet() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/backup/BackupOperationRoute.kt", "@Composable fun BackupOperationRoute() = Unit"),
+                source("app/src/main/java/com/example/feature/backup/presentation/BackupRestoreSheet.kt", "@Composable fun BackupRestoreSheet() = Unit"),
+                source("app/src/main/java/com/example/feature/backup/presentation/ui/BackupRestoreSheet.kt", "@Composable fun BackupRestoreSheet() = Unit"),
+                source("app/src/main/java/com/example/feature/backup/presentation/BackupOperationRoute.kt", "@Composable fun BackupOperationRoute() = Unit"),
             ),
         )
 
@@ -188,8 +188,8 @@ class EditorSourceBoundaryVerifierTest {
     fun backupMapperNamesAreNotClassifiedAsPassiveUi() {
         val violations = EditorSourceBoundaryVerifier.verify(
             listOf(
-                source("app/src/main/java/com/example/presentation/feature/backup/BackupSheetUiMapper.kt", "class BackupSheetUiMapper"),
-                source("app/src/test/java/com/example/presentation/feature/backup/BackupSheetUiMapperTest.kt", "class BackupSheetUiMapperTest"),
+                source("app/src/main/java/com/example/feature/backup/presentation/BackupSheetUiMapper.kt", "class BackupSheetUiMapper"),
+                source("app/src/test/java/com/example/feature/backup/presentation/BackupSheetUiMapperTest.kt", "class BackupSheetUiMapperTest"),
             ),
         )
 
@@ -200,16 +200,16 @@ class EditorSourceBoundaryVerifierTest {
     fun settingsPassiveUiCannotRemainInFeaturePackage() {
         val violations = EditorSourceBoundaryVerifier.verify(
             listOf(
-                source("app/src/main/java/com/example/presentation/feature/settings/main/SettingsScreen.kt", "@Composable fun SettingsScreen() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/settings/main/SettingsContent.kt", "@Composable fun SettingsContent() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/settings/security/SecuritySection.kt", "@Composable fun SecuritySection() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/settings/security/PasswordDialog.kt", "@Composable fun PasswordDialog() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/settings/backup/RecoverySheet.kt", "@Composable fun RecoverySheet() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/settings/main/SettingsHost.kt", "@Composable fun SettingsHost() = Unit"),
-                source("app/src/main/java/com/example/presentation/feature/settings/main/SettingsRoute.kt", "data object SettingsRoute"),
-                source("app/src/main/java/com/example/presentation/feature/settings/main/SettingsViewModel.kt", "class SettingsViewModel"),
-                source("app/src/main/java/com/example/presentation/feature/settings/main/SettingsReducer.kt", "object SettingsReducer"),
-                source("app/src/main/java/com/example/presentation/feature/settings/ui/data/DataManagementContent.kt", "@Composable fun DataManagementContent() = Unit"),
+                source("app/src/main/java/com/example/feature/settings/presentation/main/SettingsScreen.kt", "@Composable fun SettingsScreen() = Unit"),
+                source("app/src/main/java/com/example/feature/settings/presentation/main/SettingsContent.kt", "@Composable fun SettingsContent() = Unit"),
+                source("app/src/main/java/com/example/feature/settings/presentation/security/SecuritySection.kt", "@Composable fun SecuritySection() = Unit"),
+                source("app/src/main/java/com/example/feature/settings/presentation/security/PasswordDialog.kt", "@Composable fun PasswordDialog() = Unit"),
+                source("app/src/main/java/com/example/feature/settings/presentation/backup/RecoverySheet.kt", "@Composable fun RecoverySheet() = Unit"),
+                source("app/src/main/java/com/example/feature/settings/presentation/main/SettingsHost.kt", "@Composable fun SettingsHost() = Unit"),
+                source("app/src/main/java/com/example/feature/settings/presentation/main/SettingsRoute.kt", "data object SettingsRoute"),
+                source("app/src/main/java/com/example/feature/settings/presentation/main/SettingsViewModel.kt", "class SettingsViewModel"),
+                source("app/src/main/java/com/example/feature/settings/presentation/main/SettingsReducer.kt", "object SettingsReducer"),
+                source("app/src/main/java/com/example/feature/settings/presentation/ui/data/DataManagementContent.kt", "@Composable fun DataManagementContent() = Unit"),
             ),
         )
 

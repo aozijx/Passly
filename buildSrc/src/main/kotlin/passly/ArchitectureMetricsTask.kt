@@ -81,8 +81,8 @@ internal object ArchitectureMetrics {
                 forbidden = { it.startsWith("android.") || it.startsWith("androidx.") },
             ),
             "feature->presentation" to imports.countImports(
-                owner = { "/feature/" in it && "/presentation/feature/" !in it },
-                forbidden = { it.isProjectLayerImport("presentation") },
+                owner = { "/feature/" in it && "/presentation/" !in it },
+                forbidden = { it.isProjectLayerImport("presentation") || it.isFeaturePresentationImport() },
             ),
             "presentation->data" to imports.countImports(
                 owner = { "/presentation/" in it },
@@ -98,16 +98,6 @@ internal object ArchitectureMetrics {
                 val lineCount = source.content.lineSequence().count()
                 if (lineCount > LARGE_FILE_LINES) {
                     add("${source.path}: $lineCount lines")
-                }
-                val isDetailFeatureUi =
-                    "/presentation/feature/vault/detail/ui/" in source.path
-                if (
-                    "/presentation/feature/" in source.path &&
-                    !isDetailFeatureUi &&
-                    listOf("Screen.kt", "Content.kt", "Component.kt", "Dialog.kt", "Sheet.kt")
-                        .any(fileName::endsWith)
-                ) {
-                    add("${source.path}: passive UI below presentation.feature")
                 }
                 if (fileName.endsWith("ViewModel.kt")) {
                     val flowStem = fileName.removeSuffix("ViewModel.kt").lowercase()
@@ -149,7 +139,7 @@ internal object ArchitectureMetrics {
 
     private fun appOwnershipOf(path: String): String? = when {
         "/com/aozijx/passly/core/" in path -> "app-local-core"
-        "/presentation/feature/" in path -> "presentation.feature"
+        "/feature/" in path && "/presentation/" in path -> "feature.presentation"
         "/presentation/mapping/" in path -> "presentation.mapping"
         "/presentation/shared/" in path -> "presentation.shared"
         "/presentation/ui/" in path -> "presentation.ui"
@@ -171,6 +161,9 @@ internal object ArchitectureMetrics {
 
     private fun String.isProjectLayerImport(layer: String): Boolean =
         startsWith("com.aozijx.passly.$layer.") || startsWith("com.example.$layer.")
+
+    private fun String.isFeaturePresentationImport(): Boolean =
+        Regex("^com\\.(aozijx\\.passly|example)\\.feature\\.[^.]+\\.presentation\\.").containsMatchIn(this)
 
     private fun composableParameterCounts(content: String): List<Int> {
         val counts = mutableListOf<Int>()

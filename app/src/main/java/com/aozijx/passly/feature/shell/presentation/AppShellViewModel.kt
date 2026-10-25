@@ -1,0 +1,136 @@
+package com.aozijx.passly.feature.shell.presentation
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.LockTrigger
+import com.aozijx.passly.domain.access.model.SessionLockRequest
+import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
+import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
+import com.aozijx.passly.domain.access.port.DatabaseSessionRetryResult
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.access.port.SessionLockController
+import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
+import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
+import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
+import com.aozijx.passly.presentation.shared.error.toUiMessage
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class AppShellViewModel @Inject constructor(
+    private val appearanceSettingsRepository: AppearanceSettingsRepository,
+    private val interfaceSettingsRepository: InterfaceSettingsRepository,
+    private val securitySettingsSource: SecuritySettingsSource,
+    private val secureSessionAccessState: SecureSessionAccessState,
+    private val sessionLockController: SessionLockController,
+    private val databaseSessionFailureState: DatabaseSessionFailureState,
+    private val databaseSessionRecovery: DatabaseSessionRecovery,
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(AppShellUiState())
+    val uiState: StateFlow<AppShellUiState> = _uiState.asStateFlow()
+
+    private val _effects = Channel<AppShellEffect>(Channel.BUFFERED)
+    val effects = _effects.receiveAsFlow()
+
+
+    init {
+        observeSettings()
+        observeAuthStates()
+        observeDatabaseFailures()
+    }
+
+    fun onAction(action: AppShellUiAction) {
+        when (action) {
+            AppShellUiAction.ExitRecovery -> lock(
+                SessionLockRequest(LockReason.RECOVERY_EXIT, LockTrigger.RECOVERY_EXIT),
+            )
+            AppShellUiAction.RetryDatabaseSession -> retryDatabaseSession()
+        }
+    }
+
+    private fun lock(request: SessionLockRequest) {
+        viewModelScope.launch { sessionLockController.lock(request) }
+    }
+
+    private fun observeAuthStates() {
+        viewModelScope.launch {
+            secureSessionAccessState.authenticationState
+                .map { state -> state.toAppShellSessionMode() }
+                .distinctUntilChanged()
+                .collect { mode -> mutate(AppShellMutation.SessionChanged(mode)) }
+        }
+
+    }
+
+    private fun observeSettings() {
+        viewModelScope.launch {
+            combine(
+                appearanceSettingsRepository.appearance,
+                interfaceSettingsRepository.interfaceSettings,
+                securitySettingsSource.security,
+            ) { appearance, interfaceSettings, securitySettings ->
+                AppShellMutation.SettingsChanged(
+                    appearance = appearance,
+                    interfaceSettings = interfaceSettings,
+                    securitySettings = securitySettings,
+                )
+            }
+                .distinctUntilChanged()
+                .collect(::mutate)
+        }
+    }
+
+    private fun retryDatabaseSession() {
+        viewModelScope.launch {
+            mutate(AppShellMutation.DatabaseRetryStarted)
+            when (val result = databaseSessionRecovery.retry()) {
+                DatabaseSessionRetryResult.Ready,
+                DatabaseSessionRetryResult.Unavailable -> Unit
+
+                is DatabaseSessionRetryResult.Failed -> {
+                    emitEffect(
+                        AppShellEffect.ShowError(
+                            "数据库错误: ${result.cause.toUiMessage("数据库重试失败")}",
+                        ),
+                    )
+                }
+            }
+            mutate(AppShellMutation.DatabaseRetryFinished)
+        }
+    }
+
+    private fun observeDatabaseFailures() {
+        viewModelScope.launch {
+            databaseSessionFailureState.databaseFailure.collect { error ->
+                mutate(
+                    if (error == null) {
+                        AppShellMutation.DatabaseAvailable
+                    } else {
+                        AppShellMutation.DatabaseFailed(error)
+                    },
+                )
+            }
+        }
+    }
+
+    private fun emitEffect(effect: AppShellEffect) {
+        _effects.trySend(effect)
+    }
+
+    private fun mutate(mutation: AppShellMutation) {
+        _uiState.update { state -> AppShellReducer.reduce(state, mutation) }
+    }
+
+}

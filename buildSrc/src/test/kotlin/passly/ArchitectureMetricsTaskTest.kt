@@ -13,7 +13,7 @@ class ArchitectureMetricsTaskTest {
                 "import android.content.Context",
             ),
             source(
-                "app/src/main/java/com/example/presentation/feature/vault/VaultViewModel.kt",
+                "app/src/main/java/com/example/feature/vault/presentation/VaultViewModel.kt",
                 """
                     import com.example.data.SecretStore
                     import com.example.presentation.navigation.data.SettingsRoute
@@ -21,11 +21,11 @@ class ArchitectureMetricsTaskTest {
                 """.trimIndent(),
             ),
             source(
-                "app/src/test/java/com/example/presentation/feature/vault/VaultViewModelTest.kt",
+                "app/src/test/java/com/example/feature/vault/presentation/VaultViewModelTest.kt",
                 "class VaultViewModelTest",
             ),
             source(
-                "app/src/main/java/com/example/presentation/feature/settings/SettingsReducer.kt",
+                "app/src/main/java/com/example/feature/settings/presentation/SettingsReducer.kt",
                 "object SettingsReducer { fun reduce(value: Int) = helper(value) }",
             ),
             source(
@@ -33,7 +33,7 @@ class ArchitectureMetricsTaskTest {
                 "class Legacy",
             ),
             source(
-                "app/src/main/java/com/example/presentation/feature/vault/VaultScreen.kt",
+                "app/src/main/java/com/example/feature/vault/presentation/VaultScreen.kt",
                 largeSource,
             ),
         )
@@ -47,16 +47,15 @@ class ArchitectureMetricsTaskTest {
               :domain main=1 test=0
             Major App ownership areas:
               app-local-core=1
-              presentation.feature=3
+              feature.presentation=3
             Direct import invariants:
               data->app/feature/presentation=0
               domain->android=1
               feature->presentation=0
               presentation->data=1
             Review signals:
-              app/src/main/java/com/example/presentation/feature/settings/SettingsReducer.kt: trivial reducer
-              app/src/main/java/com/example/presentation/feature/vault/VaultScreen.kt: 301 lines
-              app/src/main/java/com/example/presentation/feature/vault/VaultScreen.kt: passive UI below presentation.feature
+              app/src/main/java/com/example/feature/settings/presentation/SettingsReducer.kt: trivial reducer
+              app/src/main/java/com/example/feature/vault/presentation/VaultScreen.kt: 301 lines
             """.trimIndent(),
             report,
         )
@@ -67,7 +66,7 @@ class ArchitectureMetricsTaskTest {
         val report = ArchitectureMetrics.analyze(
             listOf(
                 source(
-                    "app/src/main/java/com/example/presentation/feature/detail/DetailViewModel.kt",
+                    "app/src/main/java/com/example/feature/detail/presentation/DetailViewModel.kt",
                     "class DetailViewModel",
                 ),
             ),
@@ -75,7 +74,7 @@ class ArchitectureMetricsTaskTest {
 
         assertEquals(
             listOf(
-                "app/src/main/java/com/example/presentation/feature/detail/DetailViewModel.kt: ViewModel without focused test",
+                "app/src/main/java/com/example/feature/detail/presentation/DetailViewModel.kt: ViewModel without focused test",
             ),
             report.reviewSignals,
         )
@@ -86,7 +85,7 @@ class ArchitectureMetricsTaskTest {
         val report = ArchitectureMetrics.analyze(
             listOf(
                 source(
-                    "app/src/main/java/com/example/presentation/feature/vault/detail/ui/DetailScreen.kt",
+                    "app/src/main/java/com/example/feature/vault/presentation/detail/ui/DetailScreen.kt",
                     "@Composable fun DetailScreen() = Unit",
                 ),
             ),

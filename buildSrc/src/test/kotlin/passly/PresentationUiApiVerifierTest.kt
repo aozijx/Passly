@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 class PresentationUiApiVerifierTest {
     @Test
     fun reportsVerticalFeatureUiComposableWhenBusinessParametersExceedThreshold() {
-        val path = "app/src/main/java/com/example/feature/recovery/ui/RecoveryScreen.kt"
+        val path = "app/src/main/java/com/example/feature/recovery/presentation/ui/RecoveryScreen.kt"
         val signals = PresentationUiApiVerifier.inspect(
             listOf(
                 EditorSource(
@@ -57,7 +57,7 @@ class PresentationUiApiVerifierTest {
         val signals = PresentationUiApiVerifier.inspect(
             listOf(
                 EditorSource(
-                    path = "app/src/main/java/com/example/presentation/feature/settings/ui/SettingsContent.kt",
+                    path = "app/src/main/java/com/example/feature/settings/presentation/ui/SettingsContent.kt",
                     content = """
                         @Composable
                         internal fun SettingsContent(
@@ -80,7 +80,7 @@ class PresentationUiApiVerifierTest {
 
         assertEquals(
             listOf(
-                "app/src/main/java/com/example/presentation/feature/settings/ui/SettingsContent.kt: " +
+                "app/src/main/java/com/example/feature/settings/presentation/ui/SettingsContent.kt: " +
                     "SettingsContent has 9 business parameters (threshold 8)",
             ),
             signals,
@@ -120,7 +120,7 @@ class PresentationUiApiVerifierTest {
         val signals = PresentationUiApiVerifier.inspect(
             listOf(
                 EditorSource(
-                    path = "app/src/main/java/com/example/presentation/feature/vault/VaultHost.kt",
+                    path = "app/src/main/java/com/example/feature/vault/presentation/VaultHost.kt",
                     content = """
                         @Composable
                         internal fun VaultHost(

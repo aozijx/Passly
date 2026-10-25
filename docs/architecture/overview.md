@@ -88,8 +88,8 @@ flowchart LR
 
 ## Feature 与 UI
 
-App 内业务实现放在 `feature/<name>`，对应的页面、ViewModel、UI state/effect 和导航放在
-`presentation/feature/<name>`。`feature` 不导入 `presentation`；Android 入口需要启动页面时通过
+App 内按业务聚合：流程与平台适配放在 `feature/<name>`，对应的页面、ViewModel、UI state/effect 和导航放在
+`feature/<name>/presentation`。同一业务内，非 UI 代码不导入 presentation；Android 入口需要启动页面时通过
 `app` 层的显式启动适配器连接。跨 Feature 的纯视觉组件进入 `:core`，但必须通过参数或
 Composable slot 接收文案和内容，不能依赖 app 的 `R` 或具体业务类型。只有出现真实的独立发布、显著构建隔离
 或多宿主复用需求时，才重新评估 feature Gradle 模块。
@@ -97,9 +97,10 @@ Composable slot 接收文案和内容，不能依赖 app 的 `R` 或具体业务
 推荐布局：
 
 ```text
-feature/settings/                  业务动作与平台无关合同
-presentation/feature/settings/     Route、ViewModel、UI state/effect、页面
-app/                              Android 入口与跨边界适配器
+feature/settings/                  业务动作与平台适配
+feature/settings/presentation/     Route、ViewModel、UI state/effect、页面
+domain/settings/                   纯业务规则与跨层契约
+app/                               Android 入口与跨边界适配器
 ```
 
 ## UseCase 何时需要

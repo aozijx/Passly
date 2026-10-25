@@ -14,10 +14,10 @@ import com.aozijx.passly.feature.autofill.legacy.AutofillPendingIntentFactory
 import com.aozijx.passly.feature.autofill.legacy.LegacySavePendingIntentFactory
 import com.aozijx.passly.feature.autofill.legacy.runtime.LegacySaveToken
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
-import com.aozijx.passly.presentation.feature.autofill.credential.CredentialResponseActivity
-import com.aozijx.passly.presentation.feature.autofill.accessibility.AccessibilityFillActivity
-import com.aozijx.passly.presentation.feature.autofill.legacy.AutofillFillActivity
-import com.aozijx.passly.presentation.feature.autofill.legacy.save.LegacySaveActivity
+import com.aozijx.passly.feature.autofill.presentation.credential.CredentialResponseActivity
+import com.aozijx.passly.feature.autofill.presentation.accessibility.AccessibilityFillActivity
+import com.aozijx.passly.feature.autofill.presentation.legacy.AutofillFillActivity
+import com.aozijx.passly.feature.autofill.presentation.legacy.save.LegacySaveActivity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals

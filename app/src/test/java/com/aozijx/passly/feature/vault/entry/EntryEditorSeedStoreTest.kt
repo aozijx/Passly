@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.entry
 
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
-import com.aozijx.passly.feature.vault.wifi.WifiQrPayload
+import com.aozijx.passly.domain.entry.policy.WifiQrPayload
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
