@@ -36,6 +36,19 @@ internal class DetailWorkSession(
 
     fun isCurrent(token: Scope.Active): Boolean = scope === token && hasAccess()
 
+    suspend fun openTagEditor(
+        token: Scope.Active,
+        findAllTags: suspend () -> Set<String>,
+        currentEntry: () -> Entry?,
+    ) {
+        if (!isCurrent(token) || !currentCoroutineContext().isActive) return
+        val available = findAllTags()
+        if (!isCurrent(token) || !currentCoroutineContext().isActive) return
+        val current = currentEntry() ?: return
+        if (current.id != token.entryId) return
+        onMutation(DetailMutation.TagEditorOpened(current.tags, available))
+    }
+
     suspend fun <K> publishReveals(
         token: Scope.Active,
         values: List<Pair<K, SensitiveValue>>,

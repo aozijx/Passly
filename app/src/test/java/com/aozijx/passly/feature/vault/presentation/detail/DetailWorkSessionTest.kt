@@ -14,6 +14,8 @@ import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -25,6 +27,87 @@ import org.junit.Test
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class DetailWorkSessionTest {
+
+    @Test
+    fun accessRevokedDuringTagQueryPreventsOpening() = runTest {
+        val fixture = Fixture()
+        val gate = CompletableDeferred<Unit>()
+        val token = fixture.session.open(ID)
+        launch { fixture.session.openTagEditor(token, { gate.await(); emptySet() }, { fixture.entry }) }
+        runCurrent()
+        fixture.access = false
+        gate.complete(Unit)
+        runCurrent()
+        assertTrue(fixture.mutations.isEmpty())
+    }
+
+    @Test
+    fun tagQueryCannotOpenAnEditorAfterTheVisitIsClosed() = runTest {
+        val fixture = Fixture()
+        val gate = CompletableDeferred<Unit>()
+        val token = fixture.session.open(ID)
+        launch { fixture.session.openTagEditor(token, { gate.await(); setOf("Work") }, { fixture.entry }) }
+        runCurrent()
+        fixture.session.close()
+        gate.complete(Unit)
+        runCurrent()
+        assertTrue(fixture.mutations.isEmpty())
+    }
+
+    @Test
+    fun revisitingTheSameEntryDoesNotAcceptThePreviousTagQuery() = runTest {
+        val fixture = Fixture()
+        val gate = CompletableDeferred<Unit>()
+        val token = fixture.session.open(ID)
+        launch { fixture.session.openTagEditor(token, { gate.await(); emptySet() }, { fixture.entry }) }
+        runCurrent()
+        fixture.session.open(ID)
+        gate.complete(Unit)
+        runCurrent()
+        assertTrue(fixture.mutations.isEmpty())
+    }
+
+    @Test
+    fun cancelledTagRequestCannotPublishEvenIfItsQueryReturns() = runTest {
+        val fixture = Fixture()
+        val gate = CompletableDeferred<Unit>()
+        val token = fixture.session.open(ID)
+        val job = launch {
+            fixture.session.openTagEditor(token, {
+                withContext(NonCancellable) { gate.await() }
+                emptySet()
+            }, { fixture.entry })
+        }
+        runCurrent()
+        job.cancel()
+        gate.complete(Unit)
+        runCurrent()
+        assertTrue(fixture.mutations.isEmpty())
+    }
+
+    @Test
+    fun tagQueryReadsTheLatestCurrentTagsBeforeOpening() = runTest {
+        val fixture = Fixture()
+        val gate = CompletableDeferred<Unit>()
+        val token = fixture.session.open(ID)
+        launch { fixture.session.openTagEditor(token, { gate.await(); setOf("Work") }, { fixture.entry }) }
+        runCurrent()
+        fixture.entry = fixture.entry.copy(profile = fixture.entry.profile.copy(tags = setOf("Personal")))
+        gate.complete(Unit)
+        runCurrent()
+        assertEquals(listOf(DetailMutation.TagEditorOpened(setOf("Personal"), setOf("Work"))), fixture.mutations)
+    }
+
+    @Test
+    fun inaccessibleTagRequestDoesNotStartAQuery() = runTest {
+        val fixture = Fixture()
+        val token = fixture.session.open(ID)
+        fixture.access = false
+        var queries = 0
+        fixture.session.openTagEditor(token, { queries++; emptySet() }, { fixture.entry })
+        assertEquals(0, queries)
+        assertTrue(fixture.mutations.isEmpty())
+    }
     @Test
     fun expiredTokenCannotStartAnotherWrite() = runTest {
         val fixture = Fixture()
@@ -147,7 +230,7 @@ class DetailWorkSessionTest {
         var presentCalls = 0
         val mutations = mutableListOf<DetailMutation>()
         val reveals = mutableListOf<SensitiveValue>()
-        private val entry = Entry(EntryIdentity(ID, EntryType.LOGIN, timestamps = EntryTimestamps(1)),
+        var entry = Entry(EntryIdentity(ID, EntryType.LOGIN, timestamps = EntryTimestamps(1)),
             EntryProfile(title = "Login"), EntrySecret(LoginCredential()))
         val session = DetailWorkSession(
             hasAccess = { access },

@@ -81,6 +81,7 @@ class DetailViewModel @Inject internal constructor(
     private var entryLoadJob: Job? = null
     private var historyJob: Job? = null
     private var packagePickerLoadJob: Job? = null
+    private var tagEditorLoadJob: Job? = null
     private var revisionObservationJob: Job? = null
     private var revisionOperationJob: Job? = null
     private var loadedEntryId: EntryId? = null
@@ -257,17 +258,7 @@ class DetailViewModel @Inject internal constructor(
                 }
             }
 
-            DetailUiAction.OpenTagEditor -> {
-                val current = _uiState.value.entry ?: return
-                viewModelScope.launch {
-                    mutate(
-                        DetailMutation.TagEditorOpened(
-                            currentTags = current.tags,
-                            availableTags = entryTagQuery.findAllTags(),
-                        ),
-                    )
-                }
-            }
+            DetailUiAction.OpenTagEditor -> openTagEditor()
 
             is DetailUiAction.UpdateTagInput -> {
                 if (event.value.any { it == ',' || it == '\n' || it == '\r' }) {
@@ -301,11 +292,15 @@ class DetailViewModel @Inject internal constructor(
                 }
             }
 
-            DetailUiAction.DismissTagEditor ->
+            DetailUiAction.DismissTagEditor -> {
+                tagEditorLoadJob?.cancel()
                 mutate(DetailMutation.TagEditorDismissRequested)
+            }
 
-            DetailUiAction.ConfirmDiscardTags ->
+            DetailUiAction.ConfirmDiscardTags -> {
+                tagEditorLoadJob?.cancel()
                 mutate(DetailMutation.TagEditorDiscardConfirmed)
+            }
 
             DetailUiAction.KeepEditingTags ->
                 mutate(DetailMutation.TagEditorDiscardCancelled)
@@ -476,6 +471,7 @@ class DetailViewModel @Inject internal constructor(
         val entryId = EntryId(rawEntryId)
         if (loadedEntryId == entryId && _uiState.value.entry != null) return
         val token = workSession.open(entryId)
+        tagEditorLoadJob?.cancel()
         (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let(faviconSession::close)
         qrSession.close()
         loadedEntryId = entryId
@@ -541,6 +537,7 @@ class DetailViewModel @Inject internal constructor(
     }
 
     private fun clearSensitiveState() {
+        tagEditorLoadJob?.cancel()
         (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let(faviconSession::close)
         workSession.close()
         entryLoadJob?.cancel()
@@ -554,6 +551,17 @@ class DetailViewModel @Inject internal constructor(
         otpRuntime.clearAllSensitiveState()
         _otpState.value = null
         mutate(DetailMutation.StateCleared)
+    }
+
+    private fun openTagEditor() {
+        val state = _uiState.value
+        if (state.tagEditor is DetailTagEditorState.Open) return
+        val entryId = state.entry?.id ?: return
+        val token = workSession.current(entryId) ?: return
+        tagEditorLoadJob?.cancel()
+        tagEditorLoadJob = viewModelScope.launch {
+            workSession.openTagEditor(token, entryTagQuery::findAllTags) { _uiState.value.entry }
+        }
     }
 
     private fun openRevisionHistory() {
