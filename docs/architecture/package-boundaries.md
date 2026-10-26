@@ -59,6 +59,8 @@ Entry Domain 端口，不直接构造 Entity 或具体 Repository。Autofill/Cre
 `EntryDraftMaterializer` 位于同一 Domain 策略包，只将草稿和给定身份转换为条目；不生成 ID、不读取会话、
 不记录日志或写入仓库。Feature 的 `CreateEntryUseCase` 负责校验、会话检查、身份生成与持久化，App DI 连接
 纯转换实例。新增凭据字段时在 Domain 测试其转换，不能把持卡人等凭据值借用为 Profile 用户名。
+`EntryDraft.invalidProvidedFields` 校验所有已提供字段的归属、值类型和空数字；创建用例与物化器共用该检查，
+不能假定所有草稿都经由 `withValue` 构造。必填检查与完整凭据校验分别处理缺失字段和具体业务规则。
 
 OTP 生成、密钥编解码和 `otpauth:` URI 协议位于 `domain/entry/otp`；App 负责扫码、编辑状态、授权与展示，
 不另留 Android Uri 实现或仅用于测试的解析、格式化转发接口。

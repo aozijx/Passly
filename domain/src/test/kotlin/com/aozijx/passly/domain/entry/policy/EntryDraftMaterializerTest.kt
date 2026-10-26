@@ -21,6 +21,56 @@ class EntryDraftMaterializerTest {
     private val materializer = EntryDraftMaterializer()
 
     @Test
+    fun omittedOptionalOtpFieldsKeepTheirDefaults() {
+        val entry = materializer.materialize(draft(EntryType.OTP,
+            FieldKey.TITLE to EntryDraftValue.Text("Token"),
+            FieldKey.OTP_SECRET to EntryDraftValue.Text("MY"),
+        ), identity(EntryType.OTP))
+
+        val config = requireNotNull(entry.secret.otp?.config)
+        assertEquals(OtpType.TOTP, config.type)
+        assertEquals(6, config.digits)
+        assertEquals(30, config.periodSeconds)
+        assertNull(config.counter)
+    }
+
+    @Test
+    fun suppliedEmptyNumbersDoNotAcquireDefaults() {
+        for ((key, value) in listOf(
+            FieldKey.OTP_DIGITS to EntryDraftValue.Number(null),
+            FieldKey.OTP_PERIOD to EntryDraftValue.Number(null),
+            FieldKey.OTP_COUNTER to EntryDraftValue.LongNumber(null),
+        )) {
+            val values = mapOf(
+                FieldKey.TITLE to EntryDraftValue.Text("Token"),
+                FieldKey.OTP_SECRET to EntryDraftValue.Text("MY"),
+                FieldKey.OTP_TYPE to EntryDraftValue.Text(if (key == FieldKey.OTP_COUNTER) "HOTP" else "TOTP"),
+                key to value,
+            )
+            assertThrows(IllegalArgumentException::class.java) {
+                materializer.materialize(EntryDraft(EntryDraftTarget.New(EntryType.OTP), values), identity(EntryType.OTP))
+            }
+        }
+    }
+
+    @Test
+    fun rawDraftCannotSilentlyDiscardWrongTypesOrUnsupportedFields() {
+        for ((key, value) in listOf(
+            FieldKey.OTP_DIGITS to EntryDraftValue.Text("8"),
+            FieldKey.CARD_HOLDER to EntryDraftValue.Text("private name"),
+        )) {
+            val values = mapOf(
+                FieldKey.TITLE to EntryDraftValue.Text("Token"),
+                FieldKey.OTP_SECRET to EntryDraftValue.Text("MY"),
+                key to value,
+            )
+            assertThrows(IllegalArgumentException::class.java) {
+                materializer.materialize(EntryDraft(EntryDraftTarget.New(EntryType.OTP), values), identity(EntryType.OTP))
+            }
+        }
+    }
+
+    @Test
     fun materializeLogin_preservesCredentialAndMetadata() {
         val entry = materializer.materialize(
             draft = draft(EntryType.LOGIN,

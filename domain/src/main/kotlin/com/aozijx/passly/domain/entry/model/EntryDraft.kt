@@ -78,4 +78,17 @@ data class EntryDraft(
             values[key]?.isEmpty != false
         }
     }
+
+    /** Checks supplied values, including maps constructed without [withValue]. Omission is distinct from an empty number. */
+    fun invalidProvidedFields(definition: EntryTypeDefinition): Set<FieldKey> {
+        require(definition.type == target.type) {
+            "Draft target type does not match its entry definition"
+        }
+        return values.filterTo(linkedMapOf()) { (key, value) ->
+            definition[key]?.valueType != value.valueType || when (value) {
+                is EntryDraftValue.Number, is EntryDraftValue.LongNumber -> value.isEmpty
+                is EntryDraftValue.Text, is EntryDraftValue.TextList, is EntryDraftValue.Toggle -> false
+            }
+        }.keys.toSet()
+    }
 }

@@ -24,6 +24,9 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 class EntryDraftMaterializer {
     fun materialize(draft: EntryDraft, identity: EntryIdentity): Entry {
         require(identity.type == draft.target.type) { "Draft and identity types must match" }
+        require(draft.invalidProvidedFields(EntryTypeDefinitions[identity.type]).isEmpty()) {
+            "Draft contains invalid field shapes"
+        }
         return when (identity.type) {
             EntryType.LOGIN -> materializeLogin(draft, identity)
             EntryType.OTP -> materializeOtp(draft, identity)

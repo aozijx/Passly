@@ -34,6 +34,29 @@ import org.junit.Test
 
 class CreateEntryUseCaseTest {
     @Test
+    fun malformedDraftShapeIsRejectedBeforeIdentityCreation() = runBlocking {
+        for ((key, value) in listOf(
+            FieldKey.OTP_DIGITS to EntryDraftValue.Number(null),
+            FieldKey.OTP_DIGITS to EntryDraftValue.Text("8"),
+            FieldKey.CARD_HOLDER to EntryDraftValue.Text("private name"),
+        )) {
+            val fixture = fixture(AuthenticationState.Authenticated(1L))
+            val draft = EntryDraft(EntryDraftTarget.New(EntryType.OTP), mapOf(
+                FieldKey.TITLE to EntryDraftValue.Text("Token"),
+                FieldKey.OTP_SECRET to EntryDraftValue.Text("MY"),
+                key to value,
+            ))
+
+            val result = fixture.useCase(draft)
+
+            assertTrue(result is AppResult.Failure && result.error is ValidationError)
+            assertEquals(0, fixture.repository.createCalls)
+            assertEquals(0, fixture.idCalls)
+            assertEquals(0, fixture.clockCalls)
+        }
+    }
+
+    @Test
     fun invalidOtpDraftsAreRejectedBeforeRepositoryAccess() = runBlocking {
         val definition = EntryTypeDefinitions[EntryType.OTP]
         val invalidDrafts = listOf(

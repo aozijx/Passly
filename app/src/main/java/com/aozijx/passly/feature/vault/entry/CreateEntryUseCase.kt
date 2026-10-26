@@ -130,7 +130,7 @@ class CreateEntryUseCase internal constructor(
             return AppResult.Failure(ValidationError())
         }
         val definition = EntryTypeDefinitions[draft.target.type]
-        if (draft.missingRequiredFields(definition).isNotEmpty()) {
+        if (draft.missingRequiredFields(definition).isNotEmpty() || draft.invalidProvidedFields(definition).isNotEmpty()) {
             return AppResult.Failure(ValidationError())
         }
 
