@@ -10,6 +10,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
+import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiState
@@ -21,6 +22,45 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DetailReducerTest {
+    @Test
+    fun `late entry presentation does not reopen a cancelled title edit`() {
+        val latest = entry("Stored title")
+        val editing = DetailUiState(entry = latest, isEditingTitle = true, editedTitle = "Abandoned draft")
+        val cancelled = DetailReducer.reduce(editing, DetailMutation.TitleEditingCancelled)
+        val actual = DetailReducer.reduce(cancelled, DetailMutation.EntryPresented(
+            presentation = presentation(latest, emptyList()),
+            preserveTitleEdit = true,
+        ))
+
+        assertFalse(actual.isEditingTitle)
+        assertEquals("Stored title", actual.editedTitle)
+    }
+    @Test
+    fun `presenting wifi after save restores network name instead of profile title`() {
+        val wifi = entry("Personal label").let {
+            it.copy(identity = it.identity.copy(type = EntryType.WIFI), secret = EntrySecret(WifiCredential(" Actual SSID ")))
+        }
+        val actual = DetailReducer.reduce(DetailUiState(), DetailMutation.EntryPresented(
+            presentation = presentation(wifi, emptyList()),
+            preserveTitleEdit = false,
+        ))
+
+        assertEquals(" Actual SSID ", actual.editedTitle)
+        assertEquals(wifi, actual.entry)
+    }
+
+    @Test
+    fun `presenting a saved entry keeps an active title draft`() {
+        val latest = entry("Stored title")
+        val state = DetailUiState(entry = latest, isEditingTitle = true, editedTitle = "Local draft")
+        val actual = DetailReducer.reduce(state, DetailMutation.EntryPresented(
+            presentation = presentation(latest, emptyList()),
+            preserveTitleEdit = true,
+        ))
+
+        assertTrue(actual.isEditingTitle)
+        assertEquals("Local draft", actual.editedTitle)
+    }
     @Test
     fun `title editing transitions are derived only from state and mutation`() {
         val entry = entry(title = "Original")
@@ -122,8 +162,7 @@ class DetailReducerTest {
                         entry = entry("Updated"),
                         associatedApps = emptyList(),
                     ),
-                    isEditingTitle = false,
-                    editedTitle = "Updated",
+                    preserveTitleEdit = false,
                 ),
             )
 
@@ -167,8 +206,7 @@ class DetailReducerTest {
             state,
             DetailMutation.EntryPresented(
                 presentation = presentation(state.entry!!, listOf(item)),
-                isEditingTitle = false,
-                editedTitle = state.entry.title,
+                preserveTitleEdit = false,
             ),
         )
         val stalePicker = DetailReducer.reduce(

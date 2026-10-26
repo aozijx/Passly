@@ -16,7 +16,6 @@ import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
 import com.aozijx.passly.domain.entry.policy.EntryEdit
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -132,13 +131,11 @@ class DetailViewModel @Inject internal constructor(
             DetailUiAction.SaveTitle -> {
                 val state = _uiState.value
                 val current = state.entry ?: return
-                val newTitle = state.editedTitle.trim()
-                if (newTitle.isBlank() || newTitle == current.title) {
-                    mutate(DetailMutation.TitleEditingCancelled)
-                } else {
-                    viewModelScope.launch {
+                when (val plan = current.planDetailTitleEdit(state.editedTitle)) {
+                    DetailTitleEditPlan.Cancel -> mutate(DetailMutation.TitleEditingCancelled)
+                    is DetailTitleEditPlan.Save -> viewModelScope.launch {
                         persistEntryEdit(
-                            edit = if (current.type == EntryType.WIFI) EntryEdit.SetWifiNetworkName(newTitle) else EntryEdit.SetTitle(newTitle),
+                            edit = plan.edit,
                             completion = DetailEditCompletion.Title,
                         )
                     }
@@ -673,13 +670,10 @@ class DetailViewModel @Inject internal constructor(
         when (val result = editDetailEntry.edit(entryId, edit)) {
             is AppResult.Success -> {
                 val latest = result.data
-                val keepTitleEditing = completion != DetailEditCompletion.Title &&
-                        _uiState.value.isEditingTitle
                 mutate(
                     DetailMutation.EntryPresented(
                         presentation = presentationLoader.present(latest),
-                        isEditingTitle = keepTitleEditing,
-                        editedTitle = if (keepTitleEditing) _uiState.value.editedTitle else latest.title,
+                        preserveTitleEdit = completion != DetailEditCompletion.Title,
                     ),
                 )
                 if (

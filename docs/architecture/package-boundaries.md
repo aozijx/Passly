@@ -77,6 +77,12 @@ OTP 生成、密钥编解码和 `otpauth:` URI 协议位于 `domain/entry/otp`�
 普通标题命令仅更新 Profile；Wi-Fi 详情的网络名称编辑由 Presentation 显式选择 `SetWifiNetworkName`，
 同时更新标题与 SSID，保留原有界面行为。纯规则与测试位于 Domain，Feature 只编排会话、重试与写入。
 
+详情标题的显示、开始编辑、未修改判断和保存后刷新统一使用 `detailDisplayTitle`，Wi-Fi 对应 SSID。
+`planDetailTitleEdit` 统一保存决策：网络名按原文比较和写入，保留首尾空格；普通标题仍去除首尾空白。
+未修改网络名取消编辑，不因 Profile 的个人标签不同而重写标题或 SSID。
+`EntryPresented` 仅携带是否保留标题编辑的意图，不携带标题草稿快照；Reducer 从当前状态保留活跃草稿，
+否则从新条目派生显示名。迟到刷新不能重新打开已取消的标题编辑。
+
 单字段凭据更新由 Domain `EntryFieldEditor` 校验字段归属并复制目标值，保留无关与未揭示字段；
 随后仅校验本次替换字段，复用创建规则中的卡号、CVV、登录/Wi-Fi 密码校验。无效输入以
 `Invalid(violations)` 返回字段与错误码；不能对未揭示 bundle 直接执行整条创建校验。

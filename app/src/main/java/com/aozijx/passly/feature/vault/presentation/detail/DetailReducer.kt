@@ -19,8 +19,7 @@ internal sealed interface DetailMutation {
     ) : DetailMutation
     data class EntryPresented(
         val presentation: DetailEntryPresentation,
-        val isEditingTitle: Boolean,
-        val editedTitle: String,
+        val preserveTitleEdit: Boolean,
     ) : DetailMutation
 
     data object TitleEditingStarted : DetailMutation
@@ -96,8 +95,12 @@ internal object DetailReducer {
                 sections = presentation.sections,
                 associatedApps = presentation.associatedApps,
                 sensitiveFieldKeys = presentation.sensitiveFieldKeys,
-                isEditingTitle = mutation.isEditingTitle,
-                editedTitle = mutation.editedTitle,
+                isEditingTitle = state.isEditingTitle && mutation.preserveTitleEdit,
+                editedTitle = if (state.isEditingTitle && mutation.preserveTitleEdit) {
+                    state.editedTitle
+                } else {
+                    presentation.entry.detailDisplayTitle
+                },
                 )
             }
 
