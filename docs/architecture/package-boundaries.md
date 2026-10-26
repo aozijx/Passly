@@ -113,6 +113,11 @@ Data 在附件资源互斥锁和数据库写事务内核对当前条目及历史
 `Invalid(violations)` 返回字段与错误码；不能对未揭示 bundle 直接执行整条创建校验。
 Feature 的详情编辑用例负责会话、互斥、重试、日志和 Repository 写入。
 
+详情内联文本保存只记录提交后草稿是否发生过变化（`Unchanged / Changed`），不复制输入值；重复提交同值输入不算变化。
+同字段的修改、取消或重开会使旧保存完成保留当前草稿；未变化的草稿才在成功后关闭，失败继续保留。
+`EntryPresented` 只刷新已存储条目，不关闭标题编辑；标题完成后通过 `detailDisplayTitle` 同步实际显示值。
+网址与应用关联使用独立完成标记，保存应用关联不能关闭未保存的网址草稿。
+
 银行卡年月模型 `CardExpiry` 位于 `domain/entry/model/credential`，统一有效期解析与 `MM/YYYY` 格式化。
 页面的可选状态与年份选择范围留在 Presentation；[银行卡创建与有效期](../features/vault/card-entry.md)说明当前写入边界。
 

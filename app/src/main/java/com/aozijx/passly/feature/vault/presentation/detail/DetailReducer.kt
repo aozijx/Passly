@@ -19,7 +19,6 @@ internal sealed interface DetailMutation {
     ) : DetailMutation
     data class EntryPresented(
         val presentation: DetailEntryPresentation,
-        val preserveTitleEdit: Boolean,
     ) : DetailMutation
 
     data object TitleEditingStarted : DetailMutation
@@ -95,8 +94,7 @@ internal object DetailReducer {
                 sections = presentation.sections,
                 associatedApps = presentation.associatedApps,
                 sensitiveFieldKeys = presentation.sensitiveFieldKeys,
-                isEditingTitle = state.isEditingTitle && mutation.preserveTitleEdit,
-                editedTitle = if (state.isEditingTitle && mutation.preserveTitleEdit) {
+                editedTitle = if (state.isEditingTitle) {
                     state.editedTitle
                 } else {
                     presentation.entry.detailDisplayTitle
@@ -105,24 +103,34 @@ internal object DetailReducer {
             }
 
             DetailMutation.TitleEditingStarted -> state.copy(
+                saveState = state.draftChanged(DetailEditCompletion.Title),
                 isEditingTitle = true,
                 editedTitle = state.entry?.detailDisplayTitle.orEmpty(),
             )
 
             DetailMutation.TitleEditingCancelled -> state.copy(
+                saveState = state.draftChanged(DetailEditCompletion.Title),
                 isEditingTitle = false,
                 editedTitle = state.entry?.detailDisplayTitle.orEmpty(),
             )
 
-            is DetailMutation.EditedTitleChanged -> state.copy(editedTitle = mutation.value)
+            is DetailMutation.EditedTitleChanged -> state.copy(
+                editedTitle = mutation.value,
+                saveState = if (mutation.value == state.editedTitle) state.saveState else state.draftChanged(DetailEditCompletion.Title),
+            )
             is DetailMutation.FieldEditingStarted -> state.copy(
                 fieldEdits = state.fieldEdits.start(mutation.key, mutation.initialValue),
+                saveState = state.draftChanged(mutation.key.completion()),
             )
             is DetailMutation.FieldDraftChanged -> state.copy(
                 fieldEdits = state.fieldEdits.update(mutation.key, mutation.value),
+                saveState = if (state.fieldEdits.isEditing(mutation.key) && state.fieldEdits.draft(mutation.key) != mutation.value) {
+                    state.draftChanged(mutation.key.completion())
+                } else state.saveState,
             )
             is DetailMutation.FieldEditingCancelled -> state.copy(
                 fieldEdits = state.fieldEdits.finish(mutation.key),
+                saveState = state.draftChanged(mutation.key.completion()),
             )
             is DetailMutation.RevealedFieldChanged -> state.copy(
                 revealedFields = if (mutation.value == null) {
@@ -165,18 +173,22 @@ internal object DetailReducer {
             )
 
             is DetailMutation.SaveSucceeded -> {
-                if (state.saveState != DetailSaveState.Saving(mutation.completion)) {
+                val saving = state.saveState
+                if (saving !is DetailSaveState.Saving || saving.completion != mutation.completion) {
                     state
                 } else {
+                    val finishDraft = saving.draft == DetailSaveDraft.Unchanged
+                    val finishTitle = finishDraft && mutation.completion == DetailEditCompletion.Title
                     state.copy(
-                        isEditingTitle = mutation.completion != DetailEditCompletion.Title && state.isEditingTitle,
+                        isEditingTitle = state.isEditingTitle && !finishTitle,
+                        editedTitle = if (finishTitle) state.entry?.detailDisplayTitle ?: state.editedTitle else state.editedTitle,
                         saveState = DetailSaveState.Idle,
-                        fieldEdits = when (mutation.completion) {
+                        fieldEdits = if (!finishDraft) state.fieldEdits else when (mutation.completion) {
                             is DetailEditCompletion.Field ->
                                 state.fieldEdits.finish(DetailDraftKey.EntryField(mutation.completion.key))
                             DetailEditCompletion.Notes ->
                                 state.fieldEdits.finish(DetailDraftKey.Notes)
-                            DetailEditCompletion.Associations ->
+                            DetailEditCompletion.Domain ->
                                 state.fieldEdits.finish(DetailDraftKey.Domain)
                             else -> state.fieldEdits
                         },
@@ -195,7 +207,8 @@ internal object DetailReducer {
             }
 
             is DetailMutation.SaveFailed -> {
-                if (state.saveState != DetailSaveState.Saving(mutation.completion)) {
+                val saving = state.saveState
+                if (saving !is DetailSaveState.Saving || saving.completion != mutation.completion) {
                     state
                 } else {
                     state.copy(
@@ -234,4 +247,18 @@ internal object DetailReducer {
                 faviconEditor = DetailFaviconEditorReducer.reduce(state.faviconEditor, mutation),
             )
         }
+
+    private fun DetailUiState.draftChanged(completion: DetailEditCompletion): DetailSaveState =
+        when (val saving = saveState) {
+            is DetailSaveState.Saving -> if (saving.completion == completion) {
+                saving.copy(draft = DetailSaveDraft.Changed)
+            } else saving
+            else -> saving
+        }
+
+    private fun DetailDraftKey.completion(): DetailEditCompletion = when (this) {
+        DetailDraftKey.Notes -> DetailEditCompletion.Notes
+        DetailDraftKey.Domain -> DetailEditCompletion.Domain
+        is DetailDraftKey.EntryField -> DetailEditCompletion.Field(fieldKey)
+    }
 }

@@ -175,7 +175,7 @@ class DetailViewModel @Inject internal constructor(
                 viewModelScope.launch {
                     persistEntryEdit(
                         EntryEdit.SetApplicationIds(setOf(event.packageName)),
-                        DetailEditCompletion.Associations,
+                        DetailEditCompletion.Applications,
                     )
                 }
             }
@@ -213,7 +213,7 @@ class DetailViewModel @Inject internal constructor(
                 viewModelScope.launch {
                     persistEntryEdit(
                         EntryEdit.SetPrimaryUrl(domain.trim().ifBlank { null }),
-                        DetailEditCompletion.Associations,
+                        DetailEditCompletion.Domain,
                     )
                 }
             }

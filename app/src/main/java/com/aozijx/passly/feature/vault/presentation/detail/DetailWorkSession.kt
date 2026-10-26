@@ -72,7 +72,7 @@ internal class DetailWorkSession(
             is AppResult.Success -> {
                 val presentation = present(result.data)
                 if (!isCurrent(token) || !currentCoroutineContext().isActive) return
-                onMutation(DetailMutation.EntryPresented(presentation, completion != DetailEditCompletion.Title))
+                onMutation(DetailMutation.EntryPresented(presentation))
                 if (!isCurrent(token) || !currentCoroutineContext().isActive) return
                 if (completion is DetailEditCompletion.Field && edit is EntryEdit.SetFieldValue) {
                     onReveal(edit.fieldKey, OwnedChars.fromString(edit.value))

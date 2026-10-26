@@ -29,6 +29,19 @@ import org.junit.Test
 class DetailWorkSessionTest {
 
     @Test
+    fun titleSavePresentationPreservesAnyNewTitleDraftUntilCompletionIsReduced() = runTest {
+        val fixture = Fixture()
+        val token = fixture.session.open(ID)
+        fixture.session.persist(token, EntryEdit.SetTitle("submitted"), DetailEditCompletion.Title)
+        val presented = DetailReducer.reduce(
+            DetailUiState(isEditingTitle = true, editedTitle = "new draft"),
+            fixture.mutations.first() as DetailMutation.EntryPresented,
+        )
+        assertTrue(presented.isEditingTitle)
+        assertEquals("new draft", presented.editedTitle)
+    }
+
+    @Test
     fun accessRevokedDuringTagQueryPreventsOpening() = runTest {
         val fixture = Fixture()
         val gate = CompletableDeferred<Unit>()

@@ -51,7 +51,8 @@ sealed interface DetailEditCompletion {
     data object Title : DetailEditCompletion
     data object Favorite : DetailEditCompletion
     data object Notes : DetailEditCompletion
-    data object Associations : DetailEditCompletion
+    data object Domain : DetailEditCompletion
+    data object Applications : DetailEditCompletion
     data object Tags : DetailEditCompletion
     data object Icon : DetailEditCompletion
     data class Field(val key: FieldKey) : DetailEditCompletion
@@ -59,12 +60,17 @@ sealed interface DetailEditCompletion {
 
 sealed interface DetailSaveState {
     data object Idle : DetailSaveState
-    data class Saving(val completion: DetailEditCompletion) : DetailSaveState
+    data class Saving(
+        val completion: DetailEditCompletion,
+        val draft: DetailSaveDraft = DetailSaveDraft.Unchanged,
+    ) : DetailSaveState
     data class Failed(
         val completion: DetailEditCompletion,
         val errorCode: String,
     ) : DetailSaveState
 }
+
+enum class DetailSaveDraft { Unchanged, Changed }
 
 sealed interface DetailDraftKey {
     data object Notes : DetailDraftKey

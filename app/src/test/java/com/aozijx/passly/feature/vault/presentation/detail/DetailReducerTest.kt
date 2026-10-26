@@ -23,13 +23,25 @@ import org.junit.Test
 
 class DetailReducerTest {
     @Test
+    fun unchangedTitleCompletionUsesTheStoredDisplayTitle() {
+        val latest = entry("Canonical")
+        val saving = DetailUiState(
+            entry = entry("Before"), isEditingTitle = true, editedTitle = " Canonical ",
+            saveState = DetailSaveState.Saving(DetailEditCompletion.Title),
+        )
+        val presented = DetailReducer.reduce(saving, DetailMutation.EntryPresented(presentation(latest, emptyList())))
+        val completed = DetailReducer.reduce(presented, DetailMutation.SaveSucceeded(DetailEditCompletion.Title))
+        assertFalse(completed.isEditingTitle)
+        assertEquals("Canonical", completed.editedTitle)
+    }
+
+    @Test
     fun `late entry presentation does not reopen a cancelled title edit`() {
         val latest = entry("Stored title")
         val editing = DetailUiState(entry = latest, isEditingTitle = true, editedTitle = "Abandoned draft")
         val cancelled = DetailReducer.reduce(editing, DetailMutation.TitleEditingCancelled)
         val actual = DetailReducer.reduce(cancelled, DetailMutation.EntryPresented(
             presentation = presentation(latest, emptyList()),
-            preserveTitleEdit = true,
         ))
 
         assertFalse(actual.isEditingTitle)
@@ -42,7 +54,6 @@ class DetailReducerTest {
         }
         val actual = DetailReducer.reduce(DetailUiState(), DetailMutation.EntryPresented(
             presentation = presentation(wifi, emptyList()),
-            preserveTitleEdit = false,
         ))
 
         assertEquals(" Actual SSID ", actual.editedTitle)
@@ -55,7 +66,6 @@ class DetailReducerTest {
         val state = DetailUiState(entry = latest, isEditingTitle = true, editedTitle = "Local draft")
         val actual = DetailReducer.reduce(state, DetailMutation.EntryPresented(
             presentation = presentation(latest, emptyList()),
-            preserveTitleEdit = true,
         ))
 
         assertTrue(actual.isEditingTitle)
@@ -162,7 +172,6 @@ class DetailReducerTest {
                         entry = entry("Updated"),
                         associatedApps = emptyList(),
                     ),
-                    preserveTitleEdit = false,
                 ),
             )
 
@@ -206,7 +215,6 @@ class DetailReducerTest {
             state,
             DetailMutation.EntryPresented(
                 presentation = presentation(state.entry!!, listOf(item)),
-                preserveTitleEdit = false,
             ),
         )
         val stalePicker = DetailReducer.reduce(
