@@ -79,8 +79,9 @@ fun AddOtpEditorRoute(
             onImport = { scannerImport ->
                 when (scannerImport) {
                     is ScannerImport.Otp -> {
-                        viewModel.onAction(AddOtpAction.ScannedConfigApplied(scannerImport.config))
-                        ScannerImportHandlingResult.Applied
+                        if (viewModel.tryApplyScannedConfig(scannerImport.config)) {
+                            ScannerImportHandlingResult.Applied
+                        } else ScannerImportHandlingResult.Rejected
                     }
                     is ScannerImport.Wifi -> ScannerImportHandlingResult.Rejected
                 }

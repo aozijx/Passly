@@ -19,6 +19,10 @@ Base64 编码。临时解码字节立即擦除。输入及成功解析结果的�
 `AddOtpViewModel` 在无效输入下不调用写入用例，保留原始输入供修改；合法保存经 `CreateEntryUseCase` 写入，
 成功后清除表单敏感内容。URI 解析及第三方导入边界见[动态口令 URI 导入与导出](otp-uri.md)。
 
+URI/扫码提示只保留当前输入请求的最新结果，在消费时核对请求身份和完整认证对象；手动编辑、新 URI、保存、清理及销毁会使旧反馈失效。
+反馈只包含 `UriParsed / UriParseFailed`，不携带 URI 或密钥。`tryApplyScannedConfig` 明确返回配置是否已被当前编辑会话接受；
+锁定、保存中或销毁后的拒绝不会填入表单或发送成功反馈，Scanner Route 据此返回 `Rejected`，不能把忽略的配置报告为 `Applied`。
+
 创建和归档读取共用 Domain 的参数规则；原生恢复校验合法性后保留密钥表示和身份元数据，
 不套用手动输入的规范化。没有批量改写既有条目。归档缺省参数与兼容隔离见[归档格式](../backup/archive-format.md)。
 

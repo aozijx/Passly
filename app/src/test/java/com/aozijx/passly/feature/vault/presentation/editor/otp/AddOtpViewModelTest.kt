@@ -23,14 +23,106 @@ import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Test
 import org.junit.Rule
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AddOtpViewModelTest {
+    @Test
+    fun scannedConfigAcknowledgesOnlyAcceptedApplications() = runTest {
+        val session = MutableSession()
+        val model = AddOtpViewModel(createEntryUseCase(session = session), session)
+        val config = OtpConfig(secret = "MY")
+        session.state.value = AuthenticationState.Locked
+        runCurrent()
+        assertFalse(model.tryApplyScannedConfig(config))
+        assertEquals("", model.uiState.value.form.secret)
+        session.state.value = AuthenticationState.Authenticated(2L)
+        runCurrent()
+        assertTrue(model.tryApplyScannedConfig(config))
+        assertEquals("MY", model.uiState.value.form.secret)
+    }
+
+    @Test
+    fun savingEditorRejectsScannedConfigWithoutOverwritingItsDraftOrEmittingParsed() = runTest {
+        val release = CompletableDeferred<Unit>()
+        val repository = object : EntryCommandRepository by NoOpEntryCommandRepository {
+            override suspend fun createEntry(entry: Entry): AppResult<EntryId> {
+                release.await()
+                return AppResult.Success(entry.id)
+            }
+        }
+        val model = AddOtpViewModel(createEntryUseCase(repository), AuthenticatedSession)
+        model.onAction(AddOtpAction.FormChanged(OtpFormState(title = "Submitted", secret = "JBSWY3DPEHPK3PXP")))
+        model.onAction(AddOtpAction.Save)
+        runCurrent()
+        assertFalse(model.tryApplyScannedConfig(OtpConfig(secret = "MY")))
+        assertEquals("JBSWY3DPEHPK3PXP", model.uiState.value.form.secret)
+        val events = mutableListOf<AddOtpEvent>()
+        backgroundScope.launch { model.events.toList(events) }
+        runCurrent()
+        assertTrue(events.isEmpty())
+        release.complete(Unit)
+        runCurrent()
+    }
+
+    @Test
+    fun oldParseFeedbackDoesNotSurviveLockAndReauthentication() = runTest {
+        val session = MutableSession()
+        val model = AddOtpViewModel(createEntryUseCase(session = session), session)
+        model.onAction(AddOtpAction.UriChanged(VALID_URI, true))
+        session.state.value = AuthenticationState.Locked
+        runCurrent()
+        session.state.value = AuthenticationState.Authenticated(2L)
+        runCurrent()
+        val events = mutableListOf<AddOtpEvent>()
+        backgroundScope.launch { model.events.toList(events) }
+        runCurrent()
+        assertTrue(events.isEmpty())
+    }
+
+    @Test
+    fun manualEditingInvalidatesBufferedParseFeedback() = runTest {
+        val model = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
+        model.onAction(AddOtpAction.UriChanged(VALID_URI, true))
+        model.onAction(AddOtpAction.FormChanged(model.uiState.value.form.copy(title = "New draft")))
+        val events = mutableListOf<AddOtpEvent>()
+        backgroundScope.launch { model.events.toList(events) }
+        runCurrent()
+        assertTrue(events.isEmpty())
+    }
+
+    @Test
+    fun onlyTheLatestUriResultIsDeliveredToALateCollector() = runTest {
+        val model = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
+        model.onAction(AddOtpAction.UriChanged("invalid", true))
+        model.onAction(AddOtpAction.UriChanged(VALID_URI, true))
+        val events = mutableListOf<AddOtpEvent>()
+        backgroundScope.launch { model.events.toList(events) }
+        runCurrent()
+        assertEquals(listOf(AddOtpEvent.UriParsed), events)
+    }
+
+    @Test
+    fun destroyedEditorDoesNotDeliverBufferedFailures() = runTest {
+        val model = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
+        model.onAction(AddOtpAction.UriChanged("invalid", true))
+        model.javaClass.getDeclaredMethod("onCleared").apply { isAccessible = true }.invoke(model)
+        val events = mutableListOf<AddOtpEvent>()
+        backgroundScope.launch { model.events.toList(events) }
+        runCurrent()
+        assertTrue(events.isEmpty())
+    }
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
@@ -129,7 +221,7 @@ class AddOtpViewModelTest {
             accountName = "ada@example.com",
         )
 
-        viewModel.onAction(AddOtpAction.ScannedConfigApplied(config))
+        assertTrue(viewModel.tryApplyScannedConfig(config))
         val state: AddOtpCodeState = viewModel.uiState.value
         val entry = EntryDraftMaterializer().materialize(
             state.form.toEntryDraft(),
@@ -174,9 +266,12 @@ class AddOtpViewModelTest {
         assertTrue(viewModel.uiState.value.canSave)
     }
 
-    private fun createEntryUseCase(repository: EntryCommandRepository = NoOpEntryCommandRepository) = CreateEntryUseCase(
+    private fun createEntryUseCase(
+        repository: EntryCommandRepository = NoOpEntryCommandRepository,
+        session: SecureSessionAccessState = AuthenticatedSession,
+    ) = CreateEntryUseCase(
         entryCommandRepository = repository,
-        secureSessionAccessState = AuthenticatedSession,
+        secureSessionAccessState = session,
         materializer = EntryDraftMaterializer(),
         logger = testLogger(),
     )
@@ -185,6 +280,16 @@ class AddOtpViewModelTest {
         override val authenticationState: StateFlow<AuthenticationState> =
             MutableStateFlow(AuthenticationState.Authenticated(1L))
         override fun isUnlocked() = true
+    }
+
+    private class MutableSession : SecureSessionAccessState {
+        val state = MutableStateFlow<AuthenticationState>(AuthenticationState.Authenticated(1L))
+        override val authenticationState: StateFlow<AuthenticationState> = state
+        override fun isUnlocked() = state.value is AuthenticationState.Authenticated
+    }
+
+    private companion object {
+        const val VALID_URI = "otpauth://totp/Example?secret=JBSWY3DPEHPK3PXP"
     }
 
     private object NoOpEntryCommandRepository : EntryCommandRepository {

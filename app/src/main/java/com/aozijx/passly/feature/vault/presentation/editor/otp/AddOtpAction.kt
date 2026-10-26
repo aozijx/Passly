@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.editor.otp
 
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 
 sealed interface AddOtpAction {
@@ -10,6 +9,5 @@ sealed interface AddOtpAction {
         val value: String,
         val reportFailure: Boolean = false,
     ) : AddOtpAction
-    data class ScannedConfigApplied(val config: OtpConfig) : AddOtpAction
     data object Save : AddOtpAction
 }
