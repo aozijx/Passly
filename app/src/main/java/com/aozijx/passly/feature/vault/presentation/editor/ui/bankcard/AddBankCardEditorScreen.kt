@@ -26,14 +26,10 @@ import com.aozijx.passly.R
 import com.aozijx.passly.presentation.shared.components.NextFocusTextField
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
+import com.aozijx.passly.feature.vault.presentation.editor.ui.common.SensitiveFieldVisibilityButton
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardAction
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardUiState
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardSavePhase
@@ -135,14 +131,11 @@ fun AddBankCardEditorScreen(
                     -> null
                 },
                 trailingIcon = {
-                    IconButton(onClick = {
-                        onAction(AddBankCardAction.CardNumberVisibilityChanged(!form.isCardNumberVisible))
-                    }) {
-                        Icon(
-                            imageVector = if (form.isCardNumberVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = null
-                        )
-                    }
+                    SensitiveFieldVisibilityButton(
+                        fieldLabelRes = R.string.card_number,
+                        visible = form.isCardNumberVisible,
+                        onVisibilityChanged = { onAction(AddBankCardAction.CardNumberVisibilityChanged(it)) },
+                    )
                 }
             )
             NextFocusTextField(
@@ -152,14 +145,11 @@ fun AddBankCardEditorScreen(
                 visualTransformation = if (form.isPinVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardType = KeyboardType.Password,
                 trailingIcon = {
-                    IconButton(onClick = {
-                        onAction(AddBankCardAction.PinVisibilityChanged(!form.isPinVisible))
-                    }) {
-                        Icon(
-                            imageVector = if (form.isPinVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = null
-                        )
-                    }
+                    SensitiveFieldVisibilityButton(
+                        fieldLabelRes = R.string.payment_pin,
+                        visible = form.isPinVisible,
+                        onVisibilityChanged = { onAction(AddBankCardAction.PinVisibilityChanged(it)) },
+                    )
                 }
             )
             NextFocusTextField(
@@ -173,14 +163,11 @@ fun AddBankCardEditorScreen(
                 visualTransformation = if (form.isCvvVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardType = KeyboardType.Password,
                 trailingIcon = {
-                    IconButton(onClick = {
-                        onAction(AddBankCardAction.CvvVisibilityChanged(!form.isCvvVisible))
-                    }) {
-                        Icon(
-                            imageVector = if (form.isCvvVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = null
-                        )
-                    }
+                    SensitiveFieldVisibilityButton(
+                        fieldLabelRes = R.string.card_cvv,
+                        visible = form.isCvvVisible,
+                        onVisibilityChanged = { onAction(AddBankCardAction.CvvVisibilityChanged(it)) },
+                    )
                 }
             )
             CardExpiryField(

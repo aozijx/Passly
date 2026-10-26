@@ -6,11 +6,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
@@ -37,6 +32,7 @@ import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordS
 import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordUiState
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
+import com.aozijx.passly.feature.vault.presentation.editor.ui.common.SensitiveFieldVisibilityButton
 import com.aozijx.passly.presentation.shared.components.AppPackagePickerBottomSheet
 import com.aozijx.passly.presentation.shared.components.NextFocusTextField
 
@@ -93,20 +89,11 @@ fun AddPasswordEditorScreen(
                 visualTransformation = if (form.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardType = KeyboardType.Password,
                 trailingIcon = {
-                    IconButton(
-                        onClick = {
-                            onAction(AddPasswordAction.PasswordVisibilityChanged(!form.isPasswordVisible))
-                        },
-                    ) {
-                        Icon(
-                            imageVector = if (form.isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = if (form.isPasswordVisible) {
-                                stringResource(R.string.hide_password)
-                            } else {
-                                stringResource(R.string.show_password)
-                            }
-                        )
-                    }
+                    SensitiveFieldVisibilityButton(
+                        fieldLabelRes = R.string.password_label,
+                        visible = form.isPasswordVisible,
+                        onVisibilityChanged = { onAction(AddPasswordAction.PasswordVisibilityChanged(it)) },
+                    )
                 }
             )
         }

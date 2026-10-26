@@ -20,6 +20,10 @@
     <string name="field_copy_success_message">%1$s copied</string>
     <string name="show_password">Show password</string>
     <string name="hide_password">Hide password</string>
+    <string name="vault_editor_show_field">Show %1$s</string>
+    <string name="vault_editor_hide_field">Hide %1$s</string>
+    <string name="vault_editor_field_visible">Visible</string>
+    <string name="vault_editor_field_hidden">Hidden</string>
     <string name="field_username_hint">Username or email</string>
     <string name="field_category">Category</string>
     <string name="authentication_label">Authentication</string>

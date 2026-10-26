@@ -6,17 +6,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -37,6 +32,7 @@ import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.policy.EntryViolationCode
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
+import com.aozijx.passly.feature.vault.presentation.editor.ui.common.SensitiveFieldVisibilityButton
 import com.aozijx.passly.feature.vault.presentation.editor.wifi.AddWifiAction
 import com.aozijx.passly.feature.vault.presentation.editor.wifi.AddWifiFormState
 import com.aozijx.passly.presentation.shared.components.NextFocusTextField
@@ -79,24 +75,11 @@ internal fun WifiFormFields(
                     }
                 },
                 trailingIcon = {
-                    IconButton(
-                        onClick = {
-                            onAction(
-                                AddWifiAction.PasswordVisibilityChanged(!form.isPasswordVisible),
-                            )
-                        },
-                    ) {
-                        Icon(
-                            imageVector = if (form.isPasswordVisible) {
-                                Icons.Default.VisibilityOff
-                            } else {
-                                Icons.Default.Visibility
-                            },
-                            contentDescription = stringResource(
-                                if (form.isPasswordVisible) R.string.hide_password else R.string.show_password,
-                            ),
-                        )
-                    }
+                    SensitiveFieldVisibilityButton(
+                        fieldLabelRes = R.string.wifi_password,
+                        visible = form.isPasswordVisible,
+                        onVisibilityChanged = { onAction(AddWifiAction.PasswordVisibilityChanged(it)) },
+                    )
                 },
             )
         }

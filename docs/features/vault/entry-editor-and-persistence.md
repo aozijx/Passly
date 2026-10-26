@@ -62,6 +62,11 @@ Login 的应用列表加载先经过编辑会话守卫，并在查询前后核�
 
 专属细节见[银行卡资料与有效期](card-entry.md)、[OTP 创建](otp-entry.md)及[Wi-Fi / OTP 二维码](qr-display.md)。
 
+密码、Wi-Fi 密码及银行卡的卡号、付款 PIN、CVV 显隐使用同一
+`SensitiveFieldVisibilityButton`。控件采用 M3 `IconToggleButton`，以中英文资源表达“显示/隐藏某字段”、
+当前可见状态和选中状态；只接收字段标签资源，不接收凭据值。可见性仍由各自表单及 Action 管理，
+控件不缓存密码或另存一份可见状态。文本框的遮罩和输入内容继续由页面状态驱动。
+
 ## 已有条目的逐项编辑
 
 [`EditDetailEntryUseCase`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/EditDetailEntryUseCase.kt)
