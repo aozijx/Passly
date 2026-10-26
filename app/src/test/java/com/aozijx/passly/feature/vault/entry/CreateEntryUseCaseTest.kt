@@ -34,6 +34,21 @@ import org.junit.Test
 
 class CreateEntryUseCaseTest {
     @Test
+    fun malformedCardNumbersAreRejectedBeforeRepositoryAccess() = runBlocking {
+        for (number in listOf("4111111111111112", "not-a-card", "4111x111111111111")) {
+            val fixture = fixture(AuthenticationState.Authenticated(1L))
+            val draft = EntryDraft(EntryDraftTarget.New(EntryType.BANK_CARD), mapOf(
+                FieldKey.TITLE to EntryDraftValue.Text("Card"),
+                FieldKey.CARD_NUMBER to EntryDraftValue.Text(number),
+            ))
+
+            val result = fixture.useCase(draft)
+
+            assertTrue(result is AppResult.Failure && result.error is ValidationError)
+            assertEquals(0, fixture.repository.createCalls)
+        }
+    }
+    @Test
     fun unsupportedOtpValuesReturnValidationFailureWithoutThrowingOrPersisting() = runBlocking {
         for ((key, value) in listOf(
             FieldKey.OTP_TYPE to EntryDraftValue.Text("private-input-marker"),

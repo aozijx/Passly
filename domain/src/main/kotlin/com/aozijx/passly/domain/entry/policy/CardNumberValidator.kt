@@ -18,7 +18,10 @@ object CardNumberValidator {
     )
 
     fun validate(cardNumber: String): CardNumberValidationResult {
-        val digits = cardNumber.filter { it.isDigit() }
+        if (cardNumber.any { it !in '0'..'9' && !it.isWhitespace() && it != '-' }) {
+            return CardNumberValidationResult.Invalid(CardNumberInvalidReason.InvalidCharacters)
+        }
+        val digits = cardNumber.filter { it in '0'..'9' }
         if (digits.isEmpty()) return CardNumberValidationResult.Empty
         if (digits.length !in 13..19) {
             return CardNumberValidationResult.Invalid(CardNumberInvalidReason.InvalidLength)
@@ -73,6 +76,7 @@ sealed interface CardNetworkMatch {
 }
 
 enum class CardNumberInvalidReason {
+    InvalidCharacters,
     InvalidLength,
     ChecksumFailed,
 }

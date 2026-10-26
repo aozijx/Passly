@@ -3,6 +3,11 @@
 当前实现：`AddBankCardViewModel` 将表单转换为草稿，经 `CreateEntryUseCase` 校验后写入 Repository。
 标题与卡号必填，有效期可不设置。卡号规则由 Domain 的 `CardNumberValidator` 提供。
 
+表单与最终 `EntryValidation` 共用卡号规则：仅接受 ASCII 数字，允许空白和连字符分组；数字长度为 13–19，
+并校验 Luhn。其他字符不得先删除再校验；缺失数字返回必填错误，长度错误与字符/校验和错误分别映射到
+`INVALID_LENGTH`、`INVALID_FORMAT`。有效但未识别卡组织的号码仍可保存，原始分组格式保持不变。
+这些规则用于新建条目的格式校验，不会重写既有条目或改变原生归档恢复策略。
+
 ## 可选银行资料
 
 创建页的“银行资料”包含以下可选字段，保存前去除首尾空白；币种允许多币种文本，如 `CNY / USD`。

@@ -23,6 +23,18 @@ import org.junit.Test
 
 class EntryValidationTest {
     @Test
+    fun `card validation shares checksum and character rules with the editor`() {
+        for (number in listOf("4111111111111112", "not-a-card", "4111x111111111111")) {
+            assertEquals(
+                setOf(EntryViolation(FieldKey.CARD_NUMBER, EntryViolationCode.INVALID_FORMAT)),
+                EntryValidation.validate(entry(EntryType.BANK_CARD, EntryProfile(title = "Card"),
+                    EntrySecret(CardCredential(cardNumber = number)))),
+            )
+        }
+        assertTrue(EntryValidation.validate(entry(EntryType.BANK_CARD, EntryProfile(title = "Card"),
+            EntrySecret(CardCredential(cardNumber = "4111 1111-1111 1111")))).isEmpty())
+    }
+    @Test
     fun `otp rejects malformed secrets for both encodings`() {
         for (encoding in OtpSecretEncoding.entries) {
             assertEquals(

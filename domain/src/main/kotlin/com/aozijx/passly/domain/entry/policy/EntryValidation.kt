@@ -66,9 +66,13 @@ object EntryValidation {
 
     private fun MutableSet<EntryViolation>.validateCard(entry: Entry) {
         val card = entry.secret.card ?: return
-        requireValue(card.cardNumber, FieldKey.CARD_NUMBER)
-        card.cardNumber?.filter(Char::isDigit)?.takeIf(String::isNotEmpty)?.let {
-            if (it.length !in 13..19) invalid(FieldKey.CARD_NUMBER, EntryViolationCode.INVALID_LENGTH)
+        when (val number = CardNumberValidator.validate(card.cardNumber.orEmpty())) {
+            CardNumberValidationResult.Empty -> invalid(FieldKey.CARD_NUMBER, EntryViolationCode.REQUIRED)
+            is CardNumberValidationResult.Valid -> Unit
+            is CardNumberValidationResult.Invalid -> invalid(FieldKey.CARD_NUMBER, when (number.reason) {
+                CardNumberInvalidReason.InvalidLength -> EntryViolationCode.INVALID_LENGTH
+                CardNumberInvalidReason.InvalidCharacters, CardNumberInvalidReason.ChecksumFailed -> EntryViolationCode.INVALID_FORMAT
+            })
         }
         card.cardExpiry?.let {
             if (CardExpiry.parse(it) !is CardExpiryParseResult.Parsed) {

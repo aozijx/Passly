@@ -67,6 +67,7 @@
     <string name="card_type_debit">借记卡</string>
     <string name="card_type_credit">信用卡</string>
     <string name="card_number_invalid_length">卡号位数不正确</string>
+    <string name="card_number_invalid_characters">卡号须使用半角数字，可用空格或连字符分组</string>
     <string name="card_number_checksum_failed">卡号校验失败</string>
     <string name="payment_pin">支付密码</string>
     <string name="billing_address">账单地址</string>

@@ -1,9 +1,16 @@
 package com.aozijx.passly.domain.entry.policy
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CardNumberValidatorTest {
+    @Test
+    fun `letters punctuation and non ascii digits cannot be discarded into a valid card`() {
+        for (number in listOf("4111x111111111111", "4111/1111/1111/1111", "４１１１１１１１１１１１１１１１")) {
+            assertTrue(CardNumberValidator.validate(number) is CardNumberValidationResult.Invalid)
+        }
+    }
     @Test
     fun `mastercard two series includes prefixes ending in zero and both boundaries`() {
         listOf(

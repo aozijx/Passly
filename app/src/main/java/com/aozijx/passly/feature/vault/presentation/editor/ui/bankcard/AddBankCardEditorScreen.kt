@@ -268,6 +268,7 @@ private fun CardType.label(): String = stringResource(labelRes)
 private fun CardNumberInvalidReason.label(): String = stringResource(
     when (this) {
         CardNumberInvalidReason.InvalidLength -> R.string.card_number_invalid_length
+        CardNumberInvalidReason.InvalidCharacters -> R.string.card_number_invalid_characters
         CardNumberInvalidReason.ChecksumFailed -> R.string.card_number_checksum_failed
     },
 )
