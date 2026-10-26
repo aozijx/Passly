@@ -27,6 +27,7 @@ import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 private class ScannerCameraSession {
     var provider: ProcessCameraProvider? = null
@@ -88,12 +89,12 @@ internal fun ScannerCameraHost(
     }
 
     DisposableEffect(lifecycleOwner, hasPermission.value, isScanning) {
-        var disposed = false
+        val disposed = AtomicBoolean(false)
         cameraSession.stop()
         if (hasPermission.value && isScanning) {
             val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
             cameraProviderFuture.addListener({
-                if (disposed) return@addListener
+                if (disposed.get()) return@addListener
                 try {
                     val provider = cameraProviderFuture.get()
                     val preview = Preview.Builder().build().apply {
@@ -105,7 +106,7 @@ internal fun ScannerCameraHost(
                         .apply {
                             setAnalyzer(cameraExecutor) { imageProxy ->
                                 val mediaImage = imageProxy.image
-                                if (mediaImage == null || disposed) {
+                                if (mediaImage == null || disposed.get()) {
                                     imageProxy.close()
                                     return@setAnalyzer
                                 }
@@ -116,18 +117,18 @@ internal fun ScannerCameraHost(
                                     )
                                     barcodeScanner.process(image)
                                         .addOnSuccessListener { barcodes ->
-                                            if (disposed) return@addOnSuccessListener
+                                            if (disposed.get()) return@addOnSuccessListener
                                             barcodes.firstOrNull()?.rawValue?.let { value ->
                                                 currentOnBarcodeDetected(value)
                                             }
                                         }
                                         .addOnFailureListener { error ->
-                                            currentOnFailure(error)
+                                            if (!disposed.get()) currentOnFailure(error)
                                         }
                                         .addOnCompleteListener { imageProxy.close() }
                                 } catch (error: Exception) {
                                     imageProxy.close()
-                                    currentOnFailure(error)
+                                    if (!disposed.get()) currentOnFailure(error)
                                 }
                             }
                         }
@@ -142,13 +143,13 @@ internal fun ScannerCameraHost(
                         imageAnalysis,
                     )
                 } catch (error: Exception) {
-                    currentOnFailure(error)
+                    if (!disposed.get()) currentOnFailure(error)
                 }
             }, ContextCompat.getMainExecutor(context))
         }
 
         onDispose {
-            disposed = true
+            disposed.set(true)
             cameraSession.stop()
         }
     }

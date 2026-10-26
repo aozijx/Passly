@@ -12,8 +12,9 @@ OTP 分类直接调用 Domain 的类型化 URI 解析器，与手动输入和导
 ## 职责边界
 
 - `ScannerCameraHost` 只负责相机权限、CameraX 预览、ML Kit 分析和资源释放，并向上报告原始值。
-- `ScannerViewModel` 负责单次扫描去重、分类、停止分析、震动和安全剪贴板写入；状态以
-  `Scanning / ProcessingImage / ShowingResult / Stopped` 明确表达，重新扫描会清空结果并重置去重会话。
+- `ScannerViewModel` 负责扫描任务归属、分类、停止分析、震动和安全剪贴板写入；状态以
+  `Scanning / ProcessingImage / ShowingResult / Stopped` 明确表达。相机只在 `Scanning` 接受结果，
+  不允许后续帧覆盖展示内容；无需另存一份原始值作为去重缓存。
 - `ScannerScreen` 只根据不可变状态渲染取景框、动画和结果卡，并通过 `ScannerScreenAction` 报告交互。
 - `ScannerRoute` 负责相册选择、Toast、打开外部链接和类型化导入确认；`ScannerPurpose` 明确限制当前
   调用方能够接收的结果类型。
@@ -21,6 +22,14 @@ OTP 分类直接调用 Domain 的类型化 URI 解析器，与手动输入和导
 相机权限被拒绝时 Scanner 直接退出，权限申请与 CameraX 生命周期不会泄漏到 Vault 或编辑器。
 原始二维码和分类结果只保存在当前 Scanner 状态中：停止或退出时清空，不写入数据库、设置或日志，
 也不经 Navigation 参数传递。
+
+图片识别使用 `BarcodeImageDecoder.decode` 挂起调用，文件读取在 IO 调度器执行，结果为
+`Decoded / NoBarcode / Failed`。重扫、选择另一图片、停止或销毁时取消旧任务作用域，并以作用域
+身份检查迟到结果与提示；即使底层识别未及时取消，也不能回写当前页面。成功识别的新结果也会
+接管任务归属，作废此前排队的图片失败提示。底层 ML Kit 客户端在任务完成时关闭，取消后的回调
+不再读取识别内容。相机异步回调使用原子关闭标志，退出后不再发布结果或错误。
+复制操作也绑定当前任务作用域；已完成的剪贴板写入不因取消而回滚，但旧成功提示不会跨重扫显示。
+图片失败只传递类型化事件，由 Route 读取中英文资源；原始异常仅交给结构化日志，不作为提示文案。
 
 ## 调用方语义
 

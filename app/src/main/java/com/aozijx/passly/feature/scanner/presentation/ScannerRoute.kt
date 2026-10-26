@@ -37,15 +37,18 @@ internal fun ScannerRoute(
     val copySucceededMessage = stringResource(R.string.scanner_copy_succeeded)
     val openLinkFailedMessage = stringResource(R.string.scanner_open_link_failed)
     val importUnavailableMessage = stringResource(R.string.scanner_import_unavailable)
+    val imageNoBarcodeMessage = stringResource(R.string.scanner_image_no_barcode)
+    val imageDecodeFailedMessage = stringResource(R.string.scanner_image_decode_failed)
     val pickPhoto = rememberImagePicker { uri, _ ->
         viewModel.onAction(ScannerUiAction.DecodeImage(ImageRef(uri.toString())))
     }
 
-    LaunchedEffect(viewModel, context, copySucceededMessage) {
+    LaunchedEffect(viewModel, context, copySucceededMessage, imageNoBarcodeMessage, imageDecodeFailedMessage) {
         viewModel.effects.collect { effect ->
             val message = when (effect) {
                 ScannerEffect.CopySucceeded -> copySucceededMessage
-                is ScannerEffect.ShowError -> effect.message
+                ScannerEffect.ImageNoBarcode -> imageNoBarcodeMessage
+                ScannerEffect.ImageDecodeFailed -> imageDecodeFailedMessage
             }
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
