@@ -53,6 +53,11 @@ class AddBankCardViewModel @Inject constructor(
             }
             is AddBankCardAction.TagsChanged -> mutateForm { it.copy(tags = action.value) }
             is AddBankCardAction.BillingAddressChanged -> mutateForm { it.copy(billingAddress = action.value) }
+            is AddBankCardAction.IssuingBankChanged -> mutateForm { it.copy(issuingBank = action.value) }
+            is AddBankCardAction.BankBranchChanged -> mutateForm { it.copy(bankBranch = action.value) }
+            is AddBankCardAction.CardProductChanged -> mutateForm { it.copy(cardProduct = action.value) }
+            is AddBankCardAction.CurrencyChanged -> mutateForm { it.copy(currency = action.value) }
+            is AddBankCardAction.BankPhoneChanged -> mutateForm { it.copy(bankPhone = action.value) }
             is AddBankCardAction.NotesChanged -> mutateForm { it.copy(notes = action.value) }
             AddBankCardAction.Save -> save()
         }

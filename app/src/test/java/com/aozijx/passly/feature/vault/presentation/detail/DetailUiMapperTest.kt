@@ -17,13 +17,27 @@ import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailActivityTypeUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailOtpUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSectionUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DetailUiMapperTest {
+    @Test
+    fun bankCardDoesNotUseProfileUsernameAsCardholder() {
+        val entry = Entry(
+            identity = EntryIdentity(id = EntryId("card"), type = EntryType.BANK_CARD, timestamps = EntryTimestamps(1L)),
+            profile = EntryProfile(title = "Card", username = "profile-user"),
+            secret = EntrySecret(credential = CardCredential()),
+        )
+        val state = DetailUiState(entry = entry, sections = listOf(DetailSectionKey.BANK_CARD))
+        val card = requireNotNull(toDetailPresentationModel(state, null)?.content?.bankCard)
+
+        assertNull(card.cardholder)
+    }
     @Test
     fun headerMapperKeepsOnlyHeaderState() {
         val entry = noteEntry()
@@ -177,6 +191,8 @@ class DetailUiMapperTest {
                 credential = CardCredential(
                     cardHolder = "Alice",
                     cardExpiry = "08/2030",
+                    issuingBank = "Bank", bankBranch = "Branch", cardProduct = "Product",
+                    currency = "CNY / USD", bankPhone = "+86 123456",
                 ),
             ),
         )
@@ -193,6 +209,12 @@ class DetailUiMapperTest {
         val card = requireNotNull(toDetailPresentationModel(state, null)?.content?.bankCard)
 
         assertEquals("Alice", card.cardholder)
+        val bankDetails = card.bankDetails.associate { it.field to it.value }
+        assertEquals("Bank", bankDetails[DetailFieldUiModel.CARD_ISSUING_BANK])
+        assertEquals("Branch", bankDetails[DetailFieldUiModel.CARD_BANK_BRANCH])
+        assertEquals("Product", bankDetails[DetailFieldUiModel.CARD_PRODUCT])
+        assertEquals("CNY / USD", bankDetails[DetailFieldUiModel.CARD_CURRENCY])
+        assertEquals("+86 123456", bankDetails[DetailFieldUiModel.CARD_BANK_PHONE])
         assertTrue(card.cardholderRevealed)
         assertTrue(card.hasCardNumber)
         assertTrue(card.hasCvv)

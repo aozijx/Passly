@@ -27,6 +27,10 @@ EntryAssembler -> Entry
 再由各自 Codec 加密。Revision 另有独立的 `EntryContentSnapshotCodec` 和
 `SensitiveRevisionSnapshotCodec`；其中 `SummaryPayload` 是历史快照格式，不是 `entries` 的当前格式。
 
+银行卡发卡行、支行、产品名称、币种、客服电话及账单地址位于 `CardCredential` / `CardCredentialPayload`，
+经 Secret bundle 加密保存，不新增 Profile 明文列。持卡人的真相源为 `cardHolder`；字段读取与编辑不借用用户名。
+扩展字段保持 Payload 版本 1，读取、详情、修订快照和备份使用同一组凭据属性。
+
 ## 目录职责
 
 - `local/database/entity`：Room 表结构与约束。

@@ -89,6 +89,35 @@ fun AddBankCardEditorScreen(
             )
         }
 
+        EntryEditorSection(title = stringResource(R.string.bank_card_bank_details)) {
+            NextFocusTextField(
+                value = form.issuingBank,
+                onValueChange = { onAction(AddBankCardAction.IssuingBankChanged(it)) },
+                label = stringResource(R.string.card_issuing_bank),
+            )
+            NextFocusTextField(
+                value = form.bankBranch,
+                onValueChange = { onAction(AddBankCardAction.BankBranchChanged(it)) },
+                label = stringResource(R.string.card_bank_branch),
+            )
+            NextFocusTextField(
+                value = form.cardProduct,
+                onValueChange = { onAction(AddBankCardAction.CardProductChanged(it)) },
+                label = stringResource(R.string.card_product),
+            )
+            NextFocusTextField(
+                value = form.currency,
+                onValueChange = { onAction(AddBankCardAction.CurrencyChanged(it)) },
+                label = stringResource(R.string.card_currency),
+            )
+            NextFocusTextField(
+                value = form.bankPhone,
+                onValueChange = { onAction(AddBankCardAction.BankPhoneChanged(it)) },
+                label = stringResource(R.string.card_bank_phone),
+                keyboardType = KeyboardType.Phone,
+            )
+        }
+
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_credentials)) {
             NextFocusTextField(
                 value = form.cardNumber,

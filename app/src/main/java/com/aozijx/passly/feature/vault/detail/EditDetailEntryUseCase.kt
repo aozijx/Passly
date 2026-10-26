@@ -16,8 +16,8 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.credential.CardCredential
-import com.aozijx.passly.domain.entry.model.credential.LoginCredential
+import com.aozijx.passly.domain.entry.policy.EntryFieldEditor
+import com.aozijx.passly.domain.entry.policy.EntryFieldEditResult
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import javax.inject.Inject
@@ -165,43 +165,7 @@ internal fun DetailEntryEdit.applyTo(entry: Entry): Entry? = when (this) {
 }
 
 private fun DetailEntryEdit.SetFieldValue.applyFieldValue(entry: Entry): Entry? =
-    when (fieldKey) {
-        FieldKey.USERNAME,
-        FieldKey.CARD_HOLDER,
-        -> entry.copy(profile = entry.profile.copy(username = value))
-
-        FieldKey.PASSWORD -> when (entry.type) {
-            EntryType.WIFI -> entry.secret.wifi?.let { wifi ->
-                entry.copy(
-                    secret = entry.secret.copy(
-                        credential = wifi.copy(password = value),
-                    ),
-                )
-            }
-            else -> entry.copy(
-                secret = entry.secret.copy(
-                    credential = entry.secret.login?.copy(password = value)
-                        ?: LoginCredential(password = value),
-                ),
-            )
-        }
-
-        FieldKey.CARD_NUMBER -> entry.copy(
-            secret = entry.secret.copy(
-                credential = (entry.secret.card ?: CardCredential()).copy(cardNumber = value),
-            ),
-        )
-        FieldKey.CARD_CVV -> entry.copy(
-            secret = entry.secret.copy(
-                credential = (entry.secret.card ?: CardCredential()).copy(cardCvv = value),
-            ),
-        )
-        FieldKey.SSH_PASSPHRASE -> entry.secret.ssh?.let { ssh ->
-            entry.copy(
-                secret = entry.secret.copy(
-                    credential = ssh.copy(passphrase = value),
-                ),
-            )
-        }
-        else -> null
+    when (val result = EntryFieldEditor.edit(entry, fieldKey, value)) {
+        is EntryFieldEditResult.Updated -> result.entry
+        EntryFieldEditResult.Unsupported -> null
     }

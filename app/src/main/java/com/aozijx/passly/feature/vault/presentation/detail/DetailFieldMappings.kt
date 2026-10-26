@@ -8,6 +8,12 @@ internal val DetailFieldUiModel.fieldKey: FieldKey
         DetailFieldUiModel.USERNAME -> FieldKey.USERNAME
         DetailFieldUiModel.PASSWORD -> FieldKey.PASSWORD
         DetailFieldUiModel.CARDHOLDER -> FieldKey.CARD_HOLDER
+        DetailFieldUiModel.CARD_ISSUING_BANK -> FieldKey.CARD_ISSUING_BANK
+        DetailFieldUiModel.CARD_BANK_BRANCH -> FieldKey.CARD_BANK_BRANCH
+        DetailFieldUiModel.CARD_PRODUCT -> FieldKey.CARD_PRODUCT
+        DetailFieldUiModel.CARD_CURRENCY -> FieldKey.CARD_CURRENCY
+        DetailFieldUiModel.CARD_BANK_PHONE -> FieldKey.CARD_BANK_PHONE
+        DetailFieldUiModel.BILLING_ADDRESS -> FieldKey.BILLING_ADDRESS
         DetailFieldUiModel.CARD_NUMBER -> FieldKey.CARD_NUMBER
         DetailFieldUiModel.CARD_CVV -> FieldKey.CARD_CVV
         DetailFieldUiModel.PAYMENT_PIN -> FieldKey.PAYMENT_PIN

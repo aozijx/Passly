@@ -220,4 +220,10 @@
     <string name="revision_field_expiration">Expiration</string>
     <string name="revision_field_credential">Credential content</string>
     <string name="revision_field_custom_fields">Custom fields</string>
+    <string name="bank_card_bank_details">Bank details</string>
+    <string name="card_issuing_bank">Issuing bank</string>
+    <string name="card_bank_branch">Bank branch</string>
+    <string name="card_product">Card product</string>
+    <string name="card_currency">Currency</string>
+    <string name="card_bank_phone">Bank customer service phone</string>
 </resources>

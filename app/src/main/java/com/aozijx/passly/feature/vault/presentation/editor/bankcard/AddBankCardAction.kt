@@ -13,6 +13,11 @@ sealed interface AddBankCardAction {
     data class ExpiryChanged(val value: CardExpirySelection) : AddBankCardAction
     data class TagsChanged(val value: String) : AddBankCardAction
     data class BillingAddressChanged(val value: String) : AddBankCardAction
+    data class IssuingBankChanged(val value: String) : AddBankCardAction
+    data class BankBranchChanged(val value: String) : AddBankCardAction
+    data class CardProductChanged(val value: String) : AddBankCardAction
+    data class CurrencyChanged(val value: String) : AddBankCardAction
+    data class BankPhoneChanged(val value: String) : AddBankCardAction
     data class NotesChanged(val value: String) : AddBankCardAction
     data object Save : AddBankCardAction
 }

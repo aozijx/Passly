@@ -83,6 +83,11 @@ internal object KeyedEntryArchiveMapper {
                 paymentPin = fields.text(FieldKey.PAYMENT_PIN),
                 paymentPlatform = fields.text(FieldKey.PAYMENT_PLATFORM),
                 billingAddress = fields.text(FieldKey.BILLING_ADDRESS),
+                issuingBank = fields.text(FieldKey.CARD_ISSUING_BANK),
+                bankBranch = fields.text(FieldKey.CARD_BANK_BRANCH),
+                cardProduct = fields.text(FieldKey.CARD_PRODUCT),
+                currency = fields.text(FieldKey.CARD_CURRENCY),
+                bankPhone = fields.text(FieldKey.CARD_BANK_PHONE),
             )
             EntryCredentialKind.IDENTITY -> IdentityCredential(
                 idNumber = fields.text(FieldKey.ID_NUMBER),
@@ -188,6 +193,11 @@ private fun Entry.toArchiveFields(): List<BackupFieldRecord> = buildList {
             putText(FieldKey.PAYMENT_PIN, credential.paymentPin)
             putText(FieldKey.PAYMENT_PLATFORM, credential.paymentPlatform)
             putText(FieldKey.BILLING_ADDRESS, credential.billingAddress)
+            putText(FieldKey.CARD_ISSUING_BANK, credential.issuingBank)
+            putText(FieldKey.CARD_BANK_BRANCH, credential.bankBranch)
+            putText(FieldKey.CARD_PRODUCT, credential.cardProduct)
+            putText(FieldKey.CARD_CURRENCY, credential.currency)
+            putText(FieldKey.CARD_BANK_PHONE, credential.bankPhone)
         }
         is IdentityCredential -> {
             putText(FieldKey.ID_NUMBER, credential.idNumber)

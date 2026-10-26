@@ -42,12 +42,23 @@ class AddBankCardViewModelTest {
         val viewModel = AddBankCardViewModel(createEntryUseCase(repository), AuthenticatedSession)
         viewModel.onAction(AddBankCardAction.TitleChanged("Visa"))
         viewModel.onAction(AddBankCardAction.CardNumberChanged("4111 1111 1111 1111"))
+        viewModel.onAction(AddBankCardAction.IssuingBankChanged("Example Bank"))
+        viewModel.onAction(AddBankCardAction.BankBranchChanged("Central Branch"))
+        viewModel.onAction(AddBankCardAction.CardProductChanged("Travel Platinum"))
+        viewModel.onAction(AddBankCardAction.CurrencyChanged("CNY / USD"))
+        viewModel.onAction(AddBankCardAction.BankPhoneChanged("+86 123456"))
         viewModel.onAction(AddBankCardAction.ExpiryChanged(CardExpirySelection.Selected(CardExpiry(month = 3, year = 2030))))
 
         viewModel.onAction(AddBankCardAction.Save)
 
         assertEquals(EditorSaveEffect.Saved, viewModel.effects.first())
         assertEquals("03/2030", created.single().secret.card?.cardExpiry)
+        assertEquals("Example Bank", created.single().secret.card?.issuingBank)
+        assertEquals("Central Branch", created.single().secret.card?.bankBranch)
+        assertEquals("Travel Platinum", created.single().secret.card?.cardProduct)
+        assertEquals("CNY / USD", created.single().secret.card?.currency)
+        assertEquals("+86 123456", created.single().secret.card?.bankPhone)
+        assertEquals("", viewModel.uiState.value.form.issuingBank)
         assertEquals("", viewModel.uiState.value.form.cardNumber)
     }
 

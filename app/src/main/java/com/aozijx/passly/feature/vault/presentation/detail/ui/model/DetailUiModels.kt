@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.model
 
+import androidx.annotation.StringRes
 import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 
 data class DetailHeaderUiModel(
@@ -69,6 +70,15 @@ data class DetailBankCardUiModel(
     val editingCardNumber: Boolean, val editedCardNumber: String,
     val editingCvv: Boolean, val editedCvv: String,
     val canRevealMore: Boolean,
+    val bankDetails: List<DetailCardTextFieldUiModel> = emptyList(),
+)
+
+data class DetailCardTextFieldUiModel(
+    val field: DetailFieldUiModel,
+    @get:StringRes @param:StringRes val labelRes: Int,
+    val value: String?,
+    val editing: Boolean,
+    val editedValue: String,
 )
 
 data class DetailIdentityUiModel(

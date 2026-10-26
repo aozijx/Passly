@@ -228,4 +228,10 @@
     <string name="revision_field_expiration">到期时间</string>
     <string name="revision_field_credential">凭据内容</string>
     <string name="revision_field_custom_fields">自定义字段</string>
+    <string name="bank_card_bank_details">银行资料</string>
+    <string name="card_issuing_bank">发卡行</string>
+    <string name="card_bank_branch">开户支行</string>
+    <string name="card_product">卡片产品名称</string>
+    <string name="card_currency">币种</string>
+    <string name="card_bank_phone">银行客服电话</string>
 </resources>

@@ -52,6 +52,8 @@ class KeyedEntryArchiveRoundTripTest {
                     paymentPin = "9876",
                     paymentPlatform = "visa",
                     billingAddress = "1 Example Road",
+                    issuingBank = "Example Bank", bankBranch = "Central Branch",
+                    cardProduct = "Travel Platinum", currency = "CNY / USD", bankPhone = "+86 123456",
                 ),
                 notes = "travel",
                 customFields = listOf(
@@ -89,6 +91,8 @@ class KeyedEntryArchiveRoundTripTest {
                     paymentPin = "9876",
                     paymentPlatform = "visa",
                     billingAddress = "1 Example Road",
+                    issuingBank = "Example Bank", bankBranch = "Central Branch",
+                    cardProduct = "Travel Platinum", currency = "CNY / USD", bankPhone = "+86 123456",
                 ),
                 notes = "travel",
                 customFields = listOf(CustomField("support", "secret", CustomFieldKind.HIDDEN)),
@@ -106,6 +110,11 @@ class KeyedEntryArchiveRoundTripTest {
             record.fields.single { it.key == "card_number" }.value.text,
         )
         assertEquals(true, record.fields.single { it.key == "favorite" }.value.booleanValue)
+        assertEquals("Example Bank", record.fields.single { it.key == "card_issuing_bank" }.value.text)
+        assertEquals("Central Branch", record.fields.single { it.key == "card_bank_branch" }.value.text)
+        assertEquals("Travel Platinum", record.fields.single { it.key == "card_product" }.value.text)
+        assertEquals("CNY / USD", record.fields.single { it.key == "card_currency" }.value.text)
+        assertEquals("+86 123456", record.fields.single { it.key == "card_bank_phone" }.value.text)
         assertEquals(entry, mapper.toEntry(decoded))
     }
 

@@ -22,6 +22,8 @@ class BankCardFormMapperTest {
             paymentPin = " 1 2 3 4 ",
             cardExpiry = CardExpirySelection.Selected(CardExpiry(month = 3, year = 2030)),
             billingAddress = " London ",
+            issuingBank = " Example Bank ", bankBranch = " Central Branch ",
+            cardProduct = " Travel Platinum ", currency = " CNY / USD ", bankPhone = " +86 123456 ",
             tags = " personal, card ",
             notes = " primary ",
         ).toEntryDraft()
@@ -34,6 +36,11 @@ class BankCardFormMapperTest {
         assertEquals(EntryDraftValue.Text("1 2 3 4"), draft[FieldKey.PAYMENT_PIN])
         assertEquals(EntryDraftValue.Text("03/2030"), draft[FieldKey.CARD_EXPIRATION])
         assertEquals(EntryDraftValue.Text("London"), draft[FieldKey.BILLING_ADDRESS])
+        assertEquals(EntryDraftValue.Text("Example Bank"), draft[FieldKey.CARD_ISSUING_BANK])
+        assertEquals(EntryDraftValue.Text("Central Branch"), draft[FieldKey.CARD_BANK_BRANCH])
+        assertEquals(EntryDraftValue.Text("Travel Platinum"), draft[FieldKey.CARD_PRODUCT])
+        assertEquals(EntryDraftValue.Text("CNY / USD"), draft[FieldKey.CARD_CURRENCY])
+        assertEquals(EntryDraftValue.Text("+86 123456"), draft[FieldKey.CARD_BANK_PHONE])
         assertEquals(EntryDraftValue.TextList(listOf("personal", "card")), draft[FieldKey.TAGS])
         assertEquals(EntryDraftValue.Text("primary"), draft[FieldKey.NOTES])
         assertTrue(draft.missingRequiredFields(EntryTypeDefinitions[EntryType.BANK_CARD]).isEmpty())

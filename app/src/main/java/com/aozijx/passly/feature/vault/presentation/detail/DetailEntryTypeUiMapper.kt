@@ -1,6 +1,11 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
+import androidx.annotation.StringRes
+
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.R
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailCardTextFieldUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
@@ -40,8 +45,16 @@ internal fun detailBankCardUiModel(
     val cvv = fields.protected(FieldKey.CARD_CVV, SensitiveFieldKey.CARD_CVV)
     val paymentPin = fields.protected(FieldKey.PAYMENT_PIN, SensitiveFieldKey.CARD_PAYMENT_PIN)
 
+    fun bankDetail(field: DetailFieldUiModel, @StringRes labelRes: Int, value: String?) = DetailCardTextFieldUiModel(
+        field = field,
+        labelRes = labelRes,
+        value = value,
+        editing = state.fieldEdits.isEditing(field.fieldKey),
+        editedValue = state.fieldEdits.draft(field.fieldKey),
+    )
+
     return DetailBankCardUiModel(
-        cardholder = card?.cardHolder?.takeIf(String::isNotBlank) ?: entry.username,
+        cardholder = card?.cardHolder?.takeIf(String::isNotBlank),
         cardholderRevealed = true,
         cardNumber = cardNumber.value,
         cardNumberRevealed = cardNumber.revealed,
@@ -60,6 +73,14 @@ internal fun detailBankCardUiModel(
         editingCvv = state.fieldEdits.isEditing(FieldKey.CARD_CVV),
         editedCvv = state.fieldEdits.draft(FieldKey.CARD_CVV),
         canRevealMore = cardNumber.hidden || cvv.hidden || paymentPin.hidden,
+        bankDetails = listOf(
+            bankDetail(DetailFieldUiModel.CARD_ISSUING_BANK, R.string.card_issuing_bank, card?.issuingBank),
+            bankDetail(DetailFieldUiModel.CARD_BANK_BRANCH, R.string.card_bank_branch, card?.bankBranch),
+            bankDetail(DetailFieldUiModel.CARD_PRODUCT, R.string.card_product, card?.cardProduct),
+            bankDetail(DetailFieldUiModel.CARD_CURRENCY, R.string.card_currency, card?.currency),
+            bankDetail(DetailFieldUiModel.CARD_BANK_PHONE, R.string.card_bank_phone, card?.bankPhone),
+            bankDetail(DetailFieldUiModel.BILLING_ADDRESS, R.string.billing_address, card?.billingAddress),
+        ),
     )
 }
 

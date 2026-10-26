@@ -32,10 +32,9 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
         val secret = entry.secret
         return when (key) {
             FieldKey.TITLE -> entry.profile.title
-            FieldKey.USERNAME,
-            FieldKey.CARD_HOLDER,
-            FieldKey.WIFI_SSID,
-            -> entry.profile.username
+            FieldKey.USERNAME -> entry.profile.username
+            FieldKey.CARD_HOLDER -> secret.card?.cardHolder
+            FieldKey.WIFI_SSID -> secret.wifi?.ssid
             FieldKey.PASSWORD -> secret.login?.password
                 ?: secret.wifi?.password
                 ?: secret.ssh?.passphrase
@@ -81,6 +80,12 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
     private fun getFinanceFieldValue(entry: Entry, key: FieldKey): String? {
         val card = entry.secret.card
         return when (key) {
+            FieldKey.CARD_ISSUING_BANK -> card?.issuingBank
+            FieldKey.CARD_BANK_BRANCH -> card?.bankBranch
+            FieldKey.CARD_PRODUCT -> card?.cardProduct
+            FieldKey.CARD_CURRENCY -> card?.currency
+            FieldKey.CARD_BANK_PHONE -> card?.bankPhone
+            FieldKey.BILLING_ADDRESS -> card?.billingAddress
             FieldKey.CARD_EXPIRATION -> card?.cardExpiry
             FieldKey.CARD_CVV -> card?.cardCvv
             FieldKey.PAYMENT_PIN -> card?.paymentPin
@@ -129,7 +134,7 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
     )
 
     private fun FieldKey.isFinance() =
-        this.name.startsWith("CARD") || this.name.startsWith("PAYMENT") || this.name.contains("SECURITY")
+        this == FieldKey.BILLING_ADDRESS || this.name.startsWith("CARD") || this.name.startsWith("PAYMENT") || this.name.contains("SECURITY")
 
     private fun FieldKey.isIdentity() = this == FieldKey.ID_NUMBER
     private fun FieldKey.isConnectivity() = this.name.startsWith("WIFI")

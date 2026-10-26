@@ -42,6 +42,11 @@ object EntrySecretMapper {
                     paymentPin = it.paymentPin,
                     paymentPlatform = it.paymentPlatform,
                     billingAddress = it.billingAddress,
+                    issuingBank = it.issuingBank,
+                    bankBranch = it.bankBranch,
+                    cardProduct = it.cardProduct,
+                    currency = it.currency,
+                    bankPhone = it.bankPhone,
                 )
             },
             identity = (credential as? IdentityCredential)?.let {
@@ -108,6 +113,11 @@ object EntrySecretMapper {
                     paymentPin = it.paymentPin,
                     paymentPlatform = it.paymentPlatform,
                     billingAddress = it.billingAddress,
+                    issuingBank = it.issuingBank,
+                    bankBranch = it.bankBranch,
+                    cardProduct = it.cardProduct,
+                    currency = it.currency,
+                    bankPhone = it.bankPhone,
                 )
             },
             identity?.let {

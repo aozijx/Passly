@@ -18,6 +18,8 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.model.credential.CardCredential
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
@@ -35,6 +37,40 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EditDetailEntryUseCaseTest {
+
+    @Test
+    fun cardholderEditWritesCardCredentialAndPreservesProfileUsername() = runTest {
+        val original = entry(version = 1).let {
+            it.copy(
+                identity = it.identity.copy(type = EntryType.BANK_CARD),
+                secret = EntrySecret(credential = CardCredential(cardNumber = "4111111111111111", cardHolder = "Before")),
+            )
+        }
+        val query = FakeQueryRepository(original)
+        val command = FakeCommandRepository(query)
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+
+        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetFieldValue(FieldKey.CARD_HOLDER, "After"))
+
+        val updated = (result as AppResult.Success<Entry>).data
+        assertEquals("After", updated.secret.card?.cardHolder)
+        assertEquals(original.username, updated.username)
+        assertNull(command.submittedChanges.single().profile)
+        assertEquals("After", command.submittedChanges.single().secret?.card?.cardHolder)
+        assertEquals(original.secret.card?.cardNumber, updated.secret.card?.cardNumber)
+    }
+
+    @Test
+    fun fieldFromAnotherCredentialTypeIsRejectedWithoutThrowingOrWriting() = runTest {
+        val query = FakeQueryRepository(entry(version = 1))
+        val command = FakeCommandRepository(query)
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+
+        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetFieldValue(FieldKey.CARD_NUMBER, "5555555555554444"))
+
+        assertTrue((result as AppResult.Failure).error is ValidationError)
+        assertTrue(command.submittedChanges.isEmpty())
+    }
 
     @Test
     fun restrictedSessionIsRejectedAtTheEditUseCaseBoundary() = runTest {

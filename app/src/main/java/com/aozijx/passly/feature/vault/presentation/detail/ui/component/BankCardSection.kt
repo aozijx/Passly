@@ -25,6 +25,10 @@ fun BankCardSection(
         CardField(DetailFieldUiModel.CARDHOLDER, stringResource(R.string.cardholder), model.cardholder,
             model.cardholderRevealed, model.editingCardholder, model.editedCardholder,
             onAction, false)
+        model.bankDetails.forEach { detail ->
+            CardField(detail.field, stringResource(detail.labelRes), detail.value,
+                true, detail.editing, detail.editedValue, onAction, false)
+        }
         if (model.hasCardNumber) CardField(DetailFieldUiModel.CARD_NUMBER,
             stringResource(R.string.card_number), model.cardNumber, model.cardNumberRevealed,
             model.editingCardNumber, model.editedCardNumber, onAction, true)
@@ -64,7 +68,7 @@ private fun CardField(
         value = editedValue, onValueChange = { onAction(DetailUiAction.UpdateFieldDraft(field, it)) },
         label = { Text(stringResource(R.string.field_edit_action, label)) }, modifier = Modifier.fillMaxWidth(),
         trailingIcon = { IconButton(onClick = { onAction(DetailUiAction.SaveField(field, editedValue)) }) {
-            Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary) } }, singleLine = true)
+            Icon(Icons.Default.Check, stringResource(R.string.save), tint = MaterialTheme.colorScheme.primary) } }, singleLine = true)
     else DetailItem(label = label, value = value, isRevealed = revealed, maskStyle = maskStyle,
         onCopy = { onAction(DetailUiAction.CopyField(field)) },
         onEdit = { onAction(DetailUiAction.StartFieldEdit(field, value.orEmpty())) },

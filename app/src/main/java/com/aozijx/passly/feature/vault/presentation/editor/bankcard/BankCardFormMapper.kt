@@ -29,6 +29,11 @@ fun AddBankCardFormState.toEntryDraft(): EntryDraft {
     draft = draft.withOptionalText(definition, FieldKey.CARD_CVV, cardCvv)
     draft = draft.withOptionalText(definition, FieldKey.PAYMENT_PIN, paymentPin)
     draft = draft.withOptionalText(definition, FieldKey.BILLING_ADDRESS, billingAddress)
+    draft = draft.withOptionalText(definition, FieldKey.CARD_ISSUING_BANK, issuingBank)
+    draft = draft.withOptionalText(definition, FieldKey.CARD_BANK_BRANCH, bankBranch)
+    draft = draft.withOptionalText(definition, FieldKey.CARD_PRODUCT, cardProduct)
+    draft = draft.withOptionalText(definition, FieldKey.CARD_CURRENCY, currency)
+    draft = draft.withOptionalText(definition, FieldKey.CARD_BANK_PHONE, bankPhone)
     draft = draft.withOptionalText(definition, FieldKey.NOTES, notes)
     when (val selection = cardExpiry) {
         CardExpirySelection.NotSet -> Unit
