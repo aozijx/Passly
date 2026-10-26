@@ -43,7 +43,7 @@ Presentation 经用例或 Domain 端口访问数据，不直接使用 DAO。完�
 | Login | `AddPasswordFormState` / `AddPasswordUiState`、`PasswordFormMapper.kt` | 网站写入 `PRIMARY_URL`，应用写入 `APPLICATION_IDS`；密码保留原值 |
 | OTP | `OtpFormState` / `AddOtpCodeState`、`OtpFormMapper.kt` | `OtpConfigInput` 与扫码配置共用 Domain 校验 |
 | Bank Card | `AddBankCardFormState` / `AddBankCardUiState`、`BankCardFormMapper.kt` | 卡号、有效期和可选银行资料使用各自规则 |
-| Wi-Fi | `AddWifiFormState` / `AddWifiUiState`、`WifiFormMapper.kt` | 网络名、安全类型、密码及隐藏标记一起转换；扫码种子只初始化一次 |
+| Wi-Fi | `AddWifiFormState` / `AddWifiUiState`、`WifiFormMapper.kt` | 网络名原样保留并同时作为初始标题，安全类型、密码及隐藏标记一起转换；扫码种子只初始化一次 |
 
 每类 ViewModel 暴露不可变 `uiState`，拥有自己的 `Idle / Saving` 阶段与保存逻辑。
 保存取点击时的表单快照，期间拒绝表单更新和重复保存；成功清空表单并发送 `EditorSaveEffect.Saved`，

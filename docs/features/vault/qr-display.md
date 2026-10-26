@@ -22,6 +22,9 @@ Wi-Fi 载荷由 Domain 的 `WifiQrPayloadFormatter` 生成，使用稳定的 `no
 网络标志，并转义反斜杠、分号、逗号、冒号和双引号。开放网络不包含密码；不完整或不符合现有 Wi-Fi
 校验规则的凭据显示生成失败。格式遵循 [ZXing Wi-Fi 内容约定](https://github.com/zxing/zxing/wiki/Barcode-Contents#wi-fi-network-config-android-ios-11)。
 
+手动创建和扫码种子中的网络名原样映射到 `WIFI_SSID` 与初始标题，首尾空格不做 trim；全空白网络名仍校验失败。
+`AddWifiViewModelTest` 通过实际创建用例检查交给 Repository 端口的名称，再将该条目编码为二维码载荷，验证中文、空格和转义字符的往返。
+
 ## 生命周期与边界
 
 `DetailQrSession` 用 `Hidden / Loading / Ready / Failed` 表达互斥阶段，持有可擦除的二维码字符缓冲，向 UI

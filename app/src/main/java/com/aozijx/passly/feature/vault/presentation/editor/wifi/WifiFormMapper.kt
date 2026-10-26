@@ -13,8 +13,8 @@ import com.aozijx.passly.domain.entry.policy.WifiQrPayload
 fun AddWifiFormState.toEntryDraft(): EntryDraft {
     val definition = EntryTypeDefinitions[EntryType.WIFI]
     var draft = EntryDraft(EntryDraftTarget.New(EntryType.WIFI))
-        .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text(ssid.trim()))
-        .withValue(definition, FieldKey.WIFI_SSID, EntryDraftValue.Text(ssid.trim()))
+        .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text(ssid))
+        .withValue(definition, FieldKey.WIFI_SSID, EntryDraftValue.Text(ssid))
         .withValue(
             definition,
             FieldKey.WIFI_SECURITY,

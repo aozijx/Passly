@@ -22,8 +22,8 @@ class WifiFormMapperTest {
         ).toEntryDraft()
 
         assertEquals(EntryDraftTarget.New(EntryType.WIFI), draft.target)
-        assertEquals(EntryDraftValue.Text("Passly"), draft[FieldKey.TITLE])
-        assertEquals(EntryDraftValue.Text("Passly"), draft[FieldKey.WIFI_SSID])
+        assertEquals(EntryDraftValue.Text("  Passly  "), draft[FieldKey.TITLE])
+        assertEquals(EntryDraftValue.Text("  Passly  "), draft[FieldKey.WIFI_SSID])
         assertEquals(EntryDraftValue.Text("WEP"), draft[FieldKey.WIFI_SECURITY])
         assertEquals(EntryDraftValue.Text("abcde"), draft[FieldKey.PASSWORD])
         assertEquals(EntryDraftValue.Toggle(true), draft[FieldKey.WIFI_HIDDEN])
@@ -49,8 +49,8 @@ class WifiFormMapperTest {
     fun `ssid is the single source for wifi title`() {
         val draft = AddWifiFormState(ssid = "  Office  ").toEntryDraft()
 
-        assertEquals(EntryDraftValue.Text("Office"), draft[FieldKey.TITLE])
-        assertEquals(EntryDraftValue.Text("Office"), draft[FieldKey.WIFI_SSID])
+        assertEquals(EntryDraftValue.Text("  Office  "), draft[FieldKey.TITLE])
+        assertEquals(EntryDraftValue.Text("  Office  "), draft[FieldKey.WIFI_SSID])
     }
 
     @Test

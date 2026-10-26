@@ -13,6 +13,11 @@ import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
+import com.aozijx.passly.domain.entry.policy.WifiQrPayload
+import com.aozijx.passly.domain.entry.policy.WifiQrPayloadFormatter
+import com.aozijx.passly.domain.entry.policy.WifiQrFormatResult
+import com.aozijx.passly.domain.entry.policy.WifiQrPayloadParser
+import com.aozijx.passly.domain.entry.policy.WifiQrParseResult
 import com.aozijx.passly.testing.testLogger
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffect
 import com.aozijx.passly.testing.MainDispatcherRule
@@ -34,6 +39,50 @@ import org.junit.Test
 class AddWifiViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun `manual creation preserves the exact network name through materialization`() = runTest {
+        val created = mutableListOf<Entry>()
+        val repository = RecordingRepository { entry -> created += entry; AppResult.Success(entry.id) }
+        val model = viewModel(repository)
+        model.onAction(AddWifiAction.SsidChanged("  Office  "))
+        model.onAction(AddWifiAction.PasswordChanged("password"))
+        model.onAction(AddWifiAction.Save)
+        advanceUntilIdle()
+        assertEquals("  Office  ", created.single().title)
+        assertEquals("  Office  ", created.single().secret.wifi?.ssid)
+    }
+
+    @Test
+    fun `scanned network survives creation and qr export without changing its name`() = runTest {
+        val original = WifiQrPayload("  办公;网\\:  ", "  password  ", WifiSecurityType.WpaPersonal, true)
+        val initialQr = WifiQrPayloadFormatter.format(original) as WifiQrFormatResult.Formatted
+        val scanned = WifiQrPayloadParser.parse(initialQr.content) as WifiQrParseResult.Parsed
+        val created = mutableListOf<Entry>()
+        val repository = RecordingRepository { entry -> created += entry; AppResult.Success(entry.id) }
+        val model = viewModel(repository)
+        model.initialize(AddWifiInitialContent.Scanned(scanned.payload))
+        model.onAction(AddWifiAction.Save)
+        advanceUntilIdle()
+        val wifi = requireNotNull(created.single().secret.wifi)
+        val exported = WifiQrPayloadFormatter.format(WifiQrPayload(
+            wifi.ssid, wifi.password.orEmpty(), wifi.securityType, wifi.isHidden,
+        )) as WifiQrFormatResult.Formatted
+        val parsed = WifiQrPayloadParser.parse(exported.content) as WifiQrParseResult.Parsed
+        assertEquals(original, parsed.payload)
+    }
+
+    @Test
+    fun `preserving network whitespace does not permit an entirely blank name`() = runTest {
+        val repository = RecordingRepository()
+        val model = viewModel(repository)
+        model.onAction(AddWifiAction.SsidChanged(" \t "))
+        model.onAction(AddWifiAction.SecurityTypeChanged(WifiSecurityType.Open))
+        assertFalse(model.uiState.value.canSave)
+        model.onAction(AddWifiAction.Save)
+        advanceUntilIdle()
+        assertEquals(0, repository.createCalls)
+    }
 
     @Test
     fun `blank required fields disable save without showing errors`() {
