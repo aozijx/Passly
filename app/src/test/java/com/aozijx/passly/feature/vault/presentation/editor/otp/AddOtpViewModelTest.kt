@@ -10,6 +10,9 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.model.EntryDraftValue
+import com.aozijx.passly.domain.entry.otp.toNewEntryDraft
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
@@ -38,6 +41,24 @@ import org.junit.Rule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AddOtpViewModelTest {
+    @Test
+    fun `scanner editor and direct creation share complete identity title`() {
+        val model = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
+        val config = OtpConfig(secret = "MY", issuer = " Example: West ", accountName = " alice:admin ")
+        assertTrue(model.tryApplyScannedConfig(config))
+        val directTitle = (config.toNewEntryDraft()[FieldKey.TITLE] as EntryDraftValue.Text).value
+        assertEquals(directTitle, model.uiState.value.form.title)
+        assertEquals("Example: West: alice:admin", directTitle)
+    }
+
+    @Test
+    fun `scan without identity keeps the existing editor title`() {
+        val model = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
+        model.onAction(AddOtpAction.FormChanged(OtpFormState(title = "My title")))
+        assertTrue(model.tryApplyScannedConfig(OtpConfig(secret = "MY")))
+        assertEquals("My title", model.uiState.value.form.title)
+    }
+
     @Test
     fun scannedConfigAcknowledgesOnlyAcceptedApplications() = runTest {
         val session = MutableSession()

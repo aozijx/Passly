@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.entry
+package com.aozijx.passly.domain.entry.otp
 
 import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
@@ -8,22 +8,16 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 
-internal fun OtpConfig.toNewEntryDraft(): EntryDraft {
+/** A creation draft from an existing configuration; identity metadata is not form-normalized. */
+fun OtpConfig.toNewEntryDraft(title: String = suggestedEntryTitle()): EntryDraft {
     val definition = EntryTypeDefinitions[EntryType.OTP]
-    val title = listOfNotNull(
-        issuer?.trim()?.takeIf(String::isNotEmpty),
-        accountName?.trim()?.takeIf(String::isNotEmpty),
-    ).joinToString(": ")
-        .substringBefore(':')
-        .trim()
-        .ifEmpty { "TOTP" }
 
     var draft = EntryDraft(EntryType.OTP)
         .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text(title))
         .withValue(
             definition,
             FieldKey.OTP_SECRET,
-            EntryDraftValue.Text(requireNotNull(secret) { "Scanned OTP secret is unavailable" }),
+            EntryDraftValue.Text(requireNotNull(secret) { "OTP secret is unavailable" }),
         )
         .withValue(definition, FieldKey.OTP_TYPE, EntryDraftValue.Text(type.name))
         .withValue(definition, FieldKey.OTP_DIGITS, EntryDraftValue.Number(digits))
@@ -35,11 +29,21 @@ internal fun OtpConfig.toNewEntryDraft(): EntryDraft {
     } else {
         draft.withValue(definition, FieldKey.OTP_PERIOD, EntryDraftValue.Number(periodSeconds))
     }
-    issuer?.trim()?.takeIf(String::isNotEmpty)?.let {
+    issuer?.takeIf(String::isNotBlank)?.let {
         draft = draft.withValue(definition, FieldKey.OTP_ISSUER, EntryDraftValue.Text(it))
     }
-    accountName?.trim()?.takeIf(String::isNotEmpty)?.let {
+    accountName?.takeIf(String::isNotBlank)?.let {
         draft = draft.withValue(definition, FieldKey.OTP_ACCOUNT_NAME, EntryDraftValue.Text(it))
     }
     return draft
 }
+
+/** Display-only trimming must not change the stored issuer or account. */
+fun OtpConfig.suggestedEntryTitle(fallback: String = when (type) {
+    OtpType.TOTP -> "TOTP"
+    OtpType.HOTP -> "HOTP"
+    OtpType.STEAM -> "Steam"
+}): String = listOfNotNull(
+    issuer?.trim()?.takeIf(String::isNotEmpty),
+    accountName?.trim()?.takeIf(String::isNotEmpty),
+).joinToString(": ").ifEmpty { fallback }

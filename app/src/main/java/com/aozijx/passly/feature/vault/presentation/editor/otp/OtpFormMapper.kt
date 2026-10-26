@@ -7,14 +7,14 @@ import com.aozijx.passly.domain.entry.model.EntryTypeDefinition
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.otp.OtpConfigInputResult
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
-import com.aozijx.passly.feature.vault.entry.toNewEntryDraft
+import com.aozijx.passly.domain.entry.otp.toNewEntryDraft
 
 fun OtpFormState.toEntryDraft(): EntryDraft {
     val definition = EntryTypeDefinitions[EntryType.OTP]
     val parsed = configInput.parse()
     require(parsed is OtpConfigInputResult.Valid) { "OTP input must be valid before creating a draft" }
     val config = parsed.config
-    var draft = config.toNewEntryDraft().withValue(definition, FieldKey.TITLE, EntryDraftValue.Text(title.trim()))
+    var draft = config.toNewEntryDraft(title = title.trim())
     draft = draft.withOptionalText(definition, FieldKey.NOTES, notes)
     return draft.withTags(definition, tags)
 }

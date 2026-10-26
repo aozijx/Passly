@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.otp.suggestedEntryTitle
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
@@ -118,12 +119,8 @@ class AddOtpViewModel @Inject constructor(
 
     private fun OtpFormState.fromParsedConfig(config: OtpConfig): OtpFormState {
         val parsedAccountName = config.accountName.orEmpty()
-        val parsedTitle = listOfNotNull(
-            config.issuer?.takeIf(String::isNotBlank),
-            parsedAccountName.takeIf(String::isNotBlank),
-        ).joinToString(": ")
         return copy(
-            title = parsedTitle.ifBlank { title },
+            title = config.suggestedEntryTitle(fallback = title),
             accountName = parsedAccountName,
             secret = config.secret.orEmpty(),
             issuer = config.issuer.orEmpty(),

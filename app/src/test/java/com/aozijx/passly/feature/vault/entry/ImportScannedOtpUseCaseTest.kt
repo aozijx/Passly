@@ -9,6 +9,9 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.testing.testLogger
@@ -27,6 +30,20 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ImportScannedOtpUseCaseTest {
+    @Test
+    fun `direct import persists full hotp config with readable complete title`() = runTest {
+        val config = OtpConfig(
+            type = OtpType.HOTP, secret = "Zm9v", encoding = OtpSecretEncoding.BASE64,
+            algorithm = OtpHashAlgorithm.SHA256, digits = 8, counter = Long.MAX_VALUE, periodSeconds = null,
+            issuer = " Operations: West ", accountName = " alice:admin ",
+        )
+        val repository = Repository { AppResult.Success(EntryId("saved")) }
+        assertTrue(importer(repository)(config))
+        val entry = repository.entries.single()
+        assertEquals("Operations: West: alice:admin", entry.title)
+        assertEquals(config, entry.secret.otp?.config)
+    }
+
     @Test
     fun `import is acknowledged only after repository confirms storage`() = runTest {
         val stored = CompletableDeferred<AppResult<EntryId>>()
@@ -83,7 +100,12 @@ class ImportScannedOtpUseCaseTest {
 
     private class Repository(val create: suspend () -> AppResult<EntryId>) : EntryCommandRepository {
         var calls = 0
-        override suspend fun createEntry(entry: Entry): AppResult<EntryId> { calls++; return create() }
+        val entries = mutableListOf<Entry>()
+        override suspend fun createEntry(entry: Entry): AppResult<EntryId> {
+            calls++
+            entries += entry
+            return create()
+        }
         override suspend fun updateEntry(id: EntryId, expectedVersion: EntryVersion, changes: EntryUpdate) = AppResult.Success(Unit)
         override suspend fun moveToTrash(id: EntryId, expectedVersion: EntryVersion) = AppResult.Success(Unit)
         override suspend fun restoreEntry(id: EntryId, expectedVersion: EntryVersion) = AppResult.Success(Unit)

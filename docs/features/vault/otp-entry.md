@@ -15,7 +15,12 @@
 Base64 编码。临时解码字节立即擦除。输入及成功解析结果的字符串表示隐藏密钥、账户和 issuer。
 失败字段映射为中英文提示，不把字段值放进错误、日志或导航。
 
-`OtpFormMapper` 只接受有效配置，并与扫码创建复用 `OtpConfig.toNewEntryDraft`；标题、标签和备注仍由表单提供。
+`OtpFormMapper` 只接受有效配置，并与扫码创建复用 Domain 的 `OtpConfig.toNewEntryDraft`；标题、标签和备注仍由表单提供。
+配置到草稿的纯转换位于 [`OtpEntryDraft.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/otp/OtpEntryDraft.kt)，不依赖页面或应用服务。直接导入保留非空白身份元数据，
+不对 issuer 或 account 做表单裁剪；手动表单仍由 `OtpConfigInput` 规范化后传入。
+首页导入与编辑器共用 `suggestedEntryTitle`，组合完整的 `issuer: account`，不按冒号截断身份。
+显示标题只裁剪各部分首尾空白；没有身份资料时，直接导入按类型使用 `TOTP / HOTP / Steam`，
+编辑器保留已有标题。用户保存表单时以表单标题为准，不先生成默认标题再覆盖。
 `AddOtpViewModel` 在无效输入下不调用写入用例，保留原始输入供修改；合法保存经 `CreateEntryUseCase` 写入，
 成功后清除表单敏感内容。URI 解析及第三方导入边界见[动态口令 URI 导入与导出](otp-uri.md)。
 
