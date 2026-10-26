@@ -17,6 +17,7 @@ import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListDisplayUiModel
+import com.aozijx.passly.feature.vault.presentation.navigation.VaultEditorDestinationRegistry
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpKindUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortOptionUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortUiModel
@@ -29,6 +30,23 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VaultListUiMapperTest {
+    @Test
+    fun everyCreationMenuOptionHasAnEditorDestination() {
+        val model = requireNotNull(VaultUiState(selectedSort = createdAtDescendingSort()).toUiModel(display()))
+        val menuTypes = model.navigation.creationOptions
+        assertEquals(listOf(VaultAddTypeUiModel.PASSWORD, VaultAddTypeUiModel.TOTP,
+            VaultAddTypeUiModel.BANK_CARD, VaultAddTypeUiModel.WIFI), menuTypes)
+        assertTrue(menuTypes.isNotEmpty())
+        assertTrue(menuTypes.all { VaultEditorDestinationRegistry.routeFor(it) != null })
+    }
+
+    @Test
+    fun readingAndFilteringTypesDoNotRequireACreationRoute() {
+        val model = requireNotNull(VaultUiState(selectedSort = createdAtDescendingSort()).toUiModel(display()))
+        assertTrue(VaultAddTypeUiModel.SSH_KEY in model.navigation.filterOptions)
+        assertNull(VaultEditorDestinationRegistry.routeFor(VaultAddTypeUiModel.SSH_KEY))
+    }
+
     @Test
     fun vaultDoesNotRenderBeforePersistedSortLoads() {
         assertNull(VaultUiState().toUiModel(display()))
@@ -55,7 +73,11 @@ class VaultListUiMapperTest {
         val display = display()
         val sort = createdAtDescendingSort()
         val initial = VaultUiState(selectedSort = sort).toUiModel(display)
-        val withDialog = VaultUiState(selectedSort = sort, addType = AddType.BANK_CARD)
+        val pending = EntryListItem(
+            EntryIdentity(EntryId("pending"), EntryType.LOGIN, timestamps = EntryTimestamps(1L)),
+            EntryProfile(title = "Pending"),
+        )
+        val withDialog = VaultUiState(selectedSort = sort, pendingDelete = pending)
             .toUiModel(display)
 
         requireNotNull(initial)
@@ -65,7 +87,7 @@ class VaultListUiMapperTest {
         assertEquals(initial.navigation, withDialog.navigation)
         assertEquals(initial.content, withDialog.content)
         assertEquals(initial.layout, withDialog.layout)
-        assertEquals(VaultAddTypeUiModel.BANK_CARD, withDialog.dialogs.addType)
+        assertEquals(pending.toUiModel(), withDialog.dialogs.pendingDelete)
         assertEquals(false, initial.content.isPullToSearchEnabled)
     }
 

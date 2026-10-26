@@ -63,7 +63,6 @@ enum class VaultAddTypeUiModel {
 
     companion object {
         val fabMenuOptions = listOf(TOTP, PASSWORD)
-        val allOptions = entries.toList()
     }
 }
 
@@ -102,6 +101,7 @@ data class VaultListToolbarUiModel(
 data class VaultListNavigationUiModel(
     val selectedFilters: Set<VaultAddTypeUiModel>,
     val filterOptions: List<VaultAddTypeUiModel>,
+    val creationOptions: List<VaultAddTypeUiModel>,
 )
 
 @Immutable
@@ -116,7 +116,6 @@ data class VaultListContentUiModel(
 
 @Immutable
 data class VaultListDialogsUiModel(
-    val addType: VaultAddTypeUiModel?,
     val pendingDelete: VaultListItemUiModel?,
 )
 

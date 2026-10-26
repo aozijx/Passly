@@ -1,6 +1,12 @@
 package com.aozijx.passly.feature.vault.presentation.list
 
 import com.aozijx.passly.feature.vault.model.AddType
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryIdentity
+import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -27,7 +33,7 @@ class VaultReducerTest {
         val initial = VaultUiState(
             searchQuery = "work",
             isSearchActive = true,
-            addType = AddType.PASSWORD,
+            selectedFilters = setOf(AddType.PASSWORD),
         )
 
         val result = VaultReducer.reduce(
@@ -37,7 +43,7 @@ class VaultReducerTest {
 
         assertEquals("work", result.searchQuery)
         assertTrue(result.isSearchActive)
-        assertEquals(AddType.PASSWORD, result.addType)
+        assertEquals(setOf(AddType.PASSWORD), result.selectedFilters)
         assertEquals(listOf("Work"), result.availableCategories)
     }
 
@@ -45,13 +51,16 @@ class VaultReducerTest {
     fun `clearing dialogs preserves list and display preferences`() {
         val initial = VaultUiState(
             showTOTPCode = false,
-            addType = AddType.TOTP,
+            pendingDelete = EntryListItem(
+                EntryIdentity(EntryId("pending"), EntryType.LOGIN, timestamps = EntryTimestamps(1L)),
+                EntryProfile(title = "Pending"),
+            ),
             availableCategories = listOf("Personal"),
         )
 
         val result = VaultReducer.reduce(initial, VaultMutation.DialogsCleared)
 
-        assertNull(result.addType)
+        assertNull(result.pendingDelete)
         assertFalse(result.showTOTPCode)
         assertEquals(listOf("Personal"), result.availableCategories)
     }

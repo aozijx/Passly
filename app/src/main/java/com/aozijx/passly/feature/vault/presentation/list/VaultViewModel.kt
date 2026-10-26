@@ -29,7 +29,6 @@ import com.aozijx.passly.feature.vault.entry.MoveEntryToTrashResult
 import com.aozijx.passly.feature.vault.entry.VaultDataChangeSignal
 import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
 import com.aozijx.passly.feature.vault.entry.toNewEntryDraft
-import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
@@ -113,7 +112,7 @@ class VaultViewModel @Inject internal constructor(
                 return@withRootTrace
             }
             when (val result = createEntry(draft)) {
-                is AppResult.Success -> setAddType(null)
+                is AppResult.Success -> Unit
                 is AppResult.Failure -> emitError(result.error.code)
             }
             }
@@ -144,7 +143,6 @@ class VaultViewModel @Inject internal constructor(
                 mutate(VaultMutation.SearchVisibilityChanged(action.active))
 
             VaultUiAction.ToggleShowTotpCode -> toggleShowTOTPCode()
-            is VaultUiAction.AddTypeSelected -> setAddType(action.type)
             is VaultUiAction.ItemToDeleteSelected -> setItemToDelete(action.item)
             VaultUiAction.ConfirmDelete -> confirmDelete()
             is VaultUiAction.QuickDelete -> quickDelete(action.entryId)
@@ -161,11 +159,6 @@ class VaultViewModel @Inject internal constructor(
 
     private fun toggleShowTOTPCode() {
         mutate(VaultMutation.TotpVisibilityToggled)
-    }
-
-    private fun setAddType(type: AddType?) {
-        if (type != null && !ensureFullSecureSessionAccess("当前会话不能新建条目")) return
-        mutate(VaultMutation.AddTypeChanged(type))
     }
 
     private fun setItemToDelete(item: EntryListItem?) {

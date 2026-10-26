@@ -11,5 +11,7 @@ internal object VaultEditorDestinationRegistry {
         VaultAddTypeUiModel.WIFI to AppRoute.AddWifi.route,
     )
 
+    val creatableTypes: List<VaultAddTypeUiModel> = routes.keys.toList()
+
     fun routeFor(type: VaultAddTypeUiModel): String? = routes[type]
 }

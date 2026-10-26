@@ -15,7 +15,6 @@ sealed interface VaultUiAction {
     data class FilterToggled(val filter: AddType?) : VaultUiAction
     data class SearchToggled(val active: Boolean) : VaultUiAction
     data object ToggleShowTotpCode : VaultUiAction
-    data class AddTypeSelected(val type: AddType?) : VaultUiAction
     data class ItemToDeleteSelected(val item: EntryListItem?) : VaultUiAction
     data object ConfirmDelete : VaultUiAction
     data class QuickDelete(val entryId: String) : VaultUiAction

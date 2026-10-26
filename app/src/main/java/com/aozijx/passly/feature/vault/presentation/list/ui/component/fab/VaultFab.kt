@@ -56,6 +56,7 @@ private const val FAB_MENU_STAGGER_MILLIS = 45
 
 @Composable
 fun VaultFab(
+    creationOptions: List<VaultAddTypeUiModel>,
     onAddTypeSelected: (VaultAddTypeUiModel) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -72,7 +73,7 @@ fun VaultFab(
         label = "fabRotation"
     )
 
-    val fabMenuOptions = VaultAddTypeUiModel.fabMenuOptions
+    val fabMenuOptions = VaultAddTypeUiModel.fabMenuOptions.filter(creationOptions::contains)
     val sharedFabModifier = with(sharedTransitionScope) {
         Modifier.sharedBounds(
             sharedContentState = rememberSharedContentState(ADD_ENTRY_FAB_SHARED_KEY),
@@ -181,6 +182,7 @@ fun VaultFab(
 
     if (showAddEntryBottomSheet) {
         AddEntryBottomSheet(
+            options = creationOptions,
             onDismiss = { showAddEntryBottomSheet = false },
             onSelectType = { type ->
                 showFabMenu = false

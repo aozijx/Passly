@@ -12,6 +12,5 @@ data class VaultUiState(
     val isSearchActive: Boolean = false,
     val availableCategories: List<String> = emptyList(),
     val showTOTPCode: Boolean = true,
-    val addType: AddType? = null,
     val pendingDelete: EntryListItem? = null
 )

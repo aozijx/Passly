@@ -148,12 +148,7 @@ internal fun VaultRoute(
             }
         },
         onAddTypeSelected = { type ->
-            when (navigation.navigate(VaultDestinationRequest.OpenEditor(type))) {
-                VaultNavigationResult.Navigated -> Unit
-                VaultNavigationResult.UnsupportedDestination ->
-                    vaultViewModel.onAction(VaultUiAction.AddTypeSelected(type.toFeatureModel()))
-                VaultNavigationResult.AccessDenied -> Unit
-            }
+            navigation.navigate(VaultDestinationRequest.OpenEditor(type))
         },
     )
 

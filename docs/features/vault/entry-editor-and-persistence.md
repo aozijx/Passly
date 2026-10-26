@@ -75,8 +75,9 @@ Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace
 
 [`VaultEditorDestinationRegistry`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/navigation/VaultEditorDestinationRegistry.kt)
 目前只映射 Password、TOTP、Bank Card、Wi-Fi 四个导航目的地。不支持的请求返回 `UnsupportedDestination`，不回退到 Login。
-但 `AddEntryBottomSheet` 当前仍遍历 `VaultAddTypeUiModel.allOptions`，其中包含未实现目的地的类型；创建菜单和路由能力尚未收敛。
-筛选、读取、导入可支持的类型也不能直接视为可创建类型。
+注册表从目的地映射派生 `creatableTypes`，由列表 UI model 传入 FAB 和创建弹层；快捷项也与该列表取交集。
+组件只渲染传入的创建选项，不自行遍历类型枚举。筛选继续使用独立的全量选项，读取、导入支持的类型不等于可创建类型。
+不支持目的地的请求不会进入备用表单；旧的未渲染 `addType` 状态与分支已移除。
 
 新增可创建类型应同时核对字段定义、强类型表单与映射、Domain 物化和校验、事务存储、详情读取及备份往返；
 声明 Autofill、扫码等能力时，再验证对应集成。增加注册表只能解决实际的路由或组合需求，不能替代能力闭环。
@@ -85,9 +86,11 @@ Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace
 
 - 创建页仍重复保存、失败恢复和认证清理逻辑；没有 `EntryEditorSession`、`EntryFormAdapter`、`EntryEditorRegistry` 或 `EntryMaterializerRegistry` 实现。
 - 集中式物化器目前只有四个创建分支；需要扩展类型时按实际语义调整，不把每个分支强制包装成空转发类。
-- 创建菜单仍可展示不支持创建的类型；完整表单编辑与 `Existing` 草稿更新尚未实现。
+- 完整表单编辑与 `Existing` 草稿更新尚未实现。
 
 验证以现有测试为准：`CreateEntryUseCaseTest`、四类表单映射及 ViewModel 测试覆盖创建入口；Domain 的
 `EntryDraftMaterializerTest`、`EntryEditTest`、`EntryFieldEditorTest` 覆盖纯规则；`EditDetailEntryUseCaseTest` 和
 详情状态测试覆盖逐项更新与发布边界。它们不证明未实现的统一编辑器、所有类型能力或真实设备交互已经完成。
+`VaultListUiMapperTest` 与 `VaultNavigationTest` 检查创建选项均有目的地、筛选能力独立保留；
+`AddEntryBottomSheetTest` 提供按传入选项渲染和转发选择的仪器用例，编译通过不等于设备运行通过。
 修改实现时按[测试要求](../../development/testing.md)运行相关模块、App 门禁及所需仪器测试。

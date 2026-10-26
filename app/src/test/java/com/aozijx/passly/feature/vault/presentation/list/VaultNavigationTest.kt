@@ -35,7 +35,7 @@ class VaultNavigationTest {
     }
 
     @Test
-    fun `unregistered editor type remains available to the existing fallback owner`() {
+    fun `unregistered editor type is rejected without navigating`() {
         val routes = mutableListOf<String>()
         val navigation = navigation(singleTopRoutes = routes)
 

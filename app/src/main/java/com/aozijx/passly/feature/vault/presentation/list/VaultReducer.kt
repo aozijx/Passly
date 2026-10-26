@@ -12,7 +12,6 @@ internal sealed interface VaultMutation {
     data class SortChanged(val sort: EntrySort) : VaultMutation
     data class SearchVisibilityChanged(val active: Boolean) : VaultMutation
     data object TotpVisibilityToggled : VaultMutation
-    data class AddTypeChanged(val type: AddType?) : VaultMutation
     data class PendingDeleteChanged(val item: EntryListItem?) : VaultMutation
     data class DeletedEntryHandled(val entryId: String) : VaultMutation
     data class CategoriesChanged(val categories: List<String>) : VaultMutation
@@ -39,7 +38,6 @@ internal object VaultReducer {
             )
             VaultMutation.TotpVisibilityToggled ->
                 state.copy(showTOTPCode = !state.showTOTPCode)
-            is VaultMutation.AddTypeChanged -> state.copy(addType = mutation.type)
             is VaultMutation.PendingDeleteChanged -> state.copy(pendingDelete = mutation.item)
             is VaultMutation.DeletedEntryHandled -> state.copy(
                 pendingDelete = state.pendingDelete?.takeUnless { it.id.value == mutation.entryId },
@@ -47,7 +45,6 @@ internal object VaultReducer {
             is VaultMutation.CategoriesChanged ->
                 state.copy(availableCategories = mutation.categories)
             VaultMutation.DialogsCleared -> state.copy(
-                addType = null,
                 pendingDelete = null,
             )
         }

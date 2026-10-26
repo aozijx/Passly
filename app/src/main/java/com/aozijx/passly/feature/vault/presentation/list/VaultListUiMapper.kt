@@ -9,6 +9,7 @@ import com.aozijx.passly.domain.settings.model.CardDensity
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.OtpCodeState
+import com.aozijx.passly.feature.vault.presentation.navigation.VaultEditorDestinationRegistry
 import com.aozijx.passly.presentation.mapping.entry.toUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardDensityUiModel
@@ -138,6 +139,7 @@ internal fun VaultUiState.toUiModel(
     navigation = VaultListNavigationUiModel(
         selectedFilters = selectedFilters.map(AddType::toUiModel).toSet(),
         filterOptions = AddType.allOptions.map(AddType::toUiModel),
+        creationOptions = VaultEditorDestinationRegistry.creatableTypes,
     ),
     content = VaultListContentUiModel(
         showTotpCode = showTOTPCode,
@@ -148,7 +150,6 @@ internal fun VaultUiState.toUiModel(
         isPullToSearchEnabled = display.isPullToSearchEnabled,
     ),
     dialogs = VaultListDialogsUiModel(
-        addType = addType?.toUiModel(),
         pendingDelete = pendingDelete?.toUiModel(),
     ),
     layout = VaultListLayoutUiModel(

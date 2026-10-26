@@ -42,6 +42,7 @@ import com.aozijx.passly.feature.vault.presentation.list.ui.model.labelRes
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEntryBottomSheet(
+    options: List<VaultAddTypeUiModel>,
     onDismiss: () -> Unit,
     onSelectType: (VaultAddTypeUiModel) -> Unit,
 ) {
@@ -63,7 +64,7 @@ fun AddEntryBottomSheet(
             )
             Spacer(Modifier.height(20.dp))
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                VaultAddTypeUiModel.allOptions.chunked(2).forEach { types ->
+                options.chunked(2).forEach { types ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
