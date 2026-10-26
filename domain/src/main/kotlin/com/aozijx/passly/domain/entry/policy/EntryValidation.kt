@@ -20,8 +20,6 @@ enum class EntryViolationCode {
 
 /** Pure domain validation; presentation maps violations to localized text. */
 object EntryValidation {
-    private val cardCvvPattern = Regex("^[0-9]{3,4}$")
-
     /** Partial updates validate only the replaced field; other sensitive values may be unrevealed. */
     internal fun validateEditedField(entry: Entry, field: FieldKey): Set<EntryViolation> = buildSet {
         when (field) {
@@ -99,7 +97,7 @@ object EntryValidation {
     }
 
     private fun MutableSet<EntryViolation>.validateCardCvv(value: String?) {
-        if (!value.isNullOrBlank() && !cardCvvPattern.matches(value)) {
+        if (!CardCvvValidator.isValid(value)) {
             invalid(FieldKey.CARD_CVV, EntryViolationCode.INVALID_FORMAT)
         }
     }

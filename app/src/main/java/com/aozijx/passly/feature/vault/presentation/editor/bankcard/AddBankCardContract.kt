@@ -4,6 +4,8 @@ import androidx.annotation.StringRes
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.credential.CardExpiry
 import com.aozijx.passly.domain.entry.policy.CardNumberValidationResult
+import com.aozijx.passly.domain.entry.policy.CardNumberValidator
+import com.aozijx.passly.domain.entry.policy.CardCvvValidator
 
 enum class CardType(@param:StringRes val labelRes: Int) {
     DEBIT(R.string.card_type_debit),
@@ -25,7 +27,6 @@ data class AddBankCardFormState(
     val cardType: CardTypeSelection = CardTypeSelection.Unselected,
     val cardholder: String = "",
     val cardNumber: String = "",
-    val cardNumberValidation: CardNumberValidationResult = CardNumberValidationResult.Empty,
     val cardCvv: String = "",
     val paymentPin: String = "",
     val cardExpiry: CardExpirySelection = CardExpirySelection.NotSet,
@@ -41,8 +42,14 @@ data class AddBankCardFormState(
     val isCvvVisible: Boolean = false,
     val isPinVisible: Boolean = false
 ) {
+    val cardNumberValidation: CardNumberValidationResult
+        get() = CardNumberValidator.validate(cardNumber)
+
+    val isCvvValid: Boolean
+        get() = CardCvvValidator.isValid(cardCvv.trim())
+
     val isValid: Boolean
-        get() = title.isNotBlank() && cardNumberValidation is CardNumberValidationResult.Valid
+        get() = title.isNotBlank() && cardNumberValidation is CardNumberValidationResult.Valid && isCvvValid
 }
 
 sealed interface AddBankCardSavePhase {

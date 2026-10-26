@@ -3,7 +3,6 @@ package com.aozijx.passly.feature.vault.presentation.editor.bankcard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.entry.policy.CardNumberValidator
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveSession
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,7 +36,7 @@ class AddBankCardViewModel @Inject constructor(
                 it.copy(cardType = CardTypeSelection.Selected(action.value))
             }
             is AddBankCardAction.CardholderChanged -> mutateForm { it.copy(cardholder = action.value) }
-            is AddBankCardAction.CardNumberChanged -> updateCardNumber(action.value)
+            is AddBankCardAction.CardNumberChanged -> mutateForm { it.copy(cardNumber = action.value) }
             is AddBankCardAction.CardNumberVisibilityChanged -> mutateForm { it.copy(isCardNumberVisible = action.visible) }
             is AddBankCardAction.PaymentPinChanged -> mutateForm { it.copy(paymentPin = action.value) }
             is AddBankCardAction.PinVisibilityChanged -> mutateForm { it.copy(isPinVisible = action.visible) }
@@ -63,15 +62,6 @@ class AddBankCardViewModel @Inject constructor(
         val current = _uiState.value
         val form = transform(current.form)
         _uiState.value = current.copy(form = form)
-    }
-
-    private fun updateCardNumber(value: String) {
-        mutateForm {
-            it.copy(
-                cardNumber = value,
-                cardNumberValidation = CardNumberValidator.validate(value),
-            )
-        }
     }
 
     private fun save() {

@@ -122,6 +122,7 @@
     <string name="vault_add_password_save_failed">Couldn\'t save password</string>
     <string name="vault_add_bank_card_title">Add Bank Card</string>
     <string name="vault_add_bank_card_save_failed">Couldn\'t save bank card</string>
+    <string name="vault_card_cvv_invalid">Enter 3 or 4 ASCII digits, or leave blank</string>
     <string name="vault_add_wifi_title">Add Wi-Fi</string>
     <string name="vault_add_wifi_save_failed">Couldn\'t save Wi-Fi</string>
     <string name="vault_reveal_info">Verify and reveal details</string>

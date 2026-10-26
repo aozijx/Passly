@@ -20,13 +20,68 @@ import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.Rule
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AddBankCardViewModelTest {
+    @Test
+    fun `invalid cvv does not attempt save or emit failure and correction saves normally`() = runTest {
+        val created = mutableListOf<Entry>()
+        val repository = object : EntryCommandRepository by NoOpEntryCommandRepository {
+            override suspend fun createEntry(entry: Entry): AppResult<EntryId> {
+                created += entry
+                return AppResult.Success(entry.id)
+            }
+        }
+        val model = AddBankCardViewModel(createEntryUseCase(repository), AuthenticatedSession)
+        val effects = mutableListOf<EditorSaveEffect>()
+        backgroundScope.launch { model.effects.toList(effects) }
+        model.onAction(AddBankCardAction.TitleChanged("Card"))
+        model.onAction(AddBankCardAction.CardNumberChanged("4111111111111111"))
+        model.onAction(AddBankCardAction.CvvChanged("12"))
+        model.onAction(AddBankCardAction.Save)
+        runCurrent()
+        assertEquals(0, created.size)
+        assertEquals(emptyList<EditorSaveEffect>(), effects)
+        assertEquals(AddBankCardSavePhase.Idle, model.uiState.value.savePhase)
+        model.onAction(AddBankCardAction.CvvChanged(" 123 "))
+        model.onAction(AddBankCardAction.Save)
+        runCurrent()
+        assertEquals("123", created.single().secret.card?.cardCvv)
+        assertEquals(listOf(EditorSaveEffect.Saved), effects)
+    }
+
+    @Test
+    fun `invalid optional cvv disables save until corrected or cleared`() {
+        val model = AddBankCardViewModel(createEntryUseCase(), AuthenticatedSession)
+        model.onAction(AddBankCardAction.TitleChanged("Card"))
+        model.onAction(AddBankCardAction.CardNumberChanged("4111111111111111"))
+        for (value in listOf("12", "12345", "1 23", "１２３", "abc")) {
+            model.onAction(AddBankCardAction.CvvChanged(value))
+            assertTrue(!model.uiState.value.canSave)
+        }
+        for (value in listOf("123", "1234", " 123 ", "", "   ")) {
+            model.onAction(AddBankCardAction.CvvChanged(value))
+            assertTrue(model.uiState.value.canSave)
+        }
+    }
+
+    @Test
+    fun `copied card form derives number validation from the replacement input`() {
+        val form = AddBankCardFormState(
+            title = "Card", cardNumber = "4111111111111111",
+        )
+        assertTrue(!form.copy(cardNumber = "invalid").isValid)
+    }
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
@@ -84,9 +139,6 @@ class AddBankCardViewModelTest {
         val form = AddBankCardFormState(
             title = "Visa",
             cardNumber = "4111111111111111",
-            cardNumberValidation = CardNumberValidationResult.Valid(
-                CardNetworkMatch.Matched(CardNetwork.VISA),
-            ),
         )
 
         assertTrue(AddBankCardUiState(form = form).canSave)

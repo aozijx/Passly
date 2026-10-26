@@ -166,6 +166,10 @@ fun AddBankCardEditorScreen(
                 value = form.cardCvv,
                 onValueChange = { onAction(AddBankCardAction.CvvChanged(it)) },
                 label = stringResource(R.string.card_cvv),
+                isError = !form.isCvvValid,
+                supportingText = if (!form.isCvvValid) {
+                    { Text(stringResource(R.string.vault_card_cvv_invalid)) }
+                } else null,
                 visualTransformation = if (form.isCvvVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardType = KeyboardType.Password,
                 trailingIcon = {
