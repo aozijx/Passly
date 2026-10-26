@@ -59,6 +59,10 @@ Bitwarden 明文 JSON 的 OTP URI 使用 Domain 的 `OtpAuthUriCodec`，保留�
 裸密钥保留删除输入空白的规则；非法字符、补位或尾部位、空 Steam 密钥均拒绝导入。
 OTP URI 语义见[动态口令 URI 导入与导出](../vault/otp-uri.md)；OTP 归档字段映射由原生导出与该适配器共享。
 
+Bitwarden 银行卡的完整合法年月经 Domain `CardExpiry` 统一为 `MM/YYYY`；一位月份会补零，年份必须为
+四位。缺失部分或非法值保留为隐藏自定义字段 `Bitwarden.expMonth` / `Bitwarden.expYear`，不合成损坏日期，
+不猜测两位年份，也不覆盖已有自定义字段。此转换适用于两种导入策略，原生归档字符串仍原样保留。
+
 写数据库前完成探测、解密、解压、解析、分类和完整校验，生成 `ImportPlan`：
 
 - `COMPATIBLE`：隔离未知 Entry type、未知字段或语义无效 Entry，并裁剪依赖关系/资源；

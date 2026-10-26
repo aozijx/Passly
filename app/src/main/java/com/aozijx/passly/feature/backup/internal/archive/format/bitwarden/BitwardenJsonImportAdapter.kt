@@ -21,6 +21,8 @@ import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.model.credential.CardExpiry
+import com.aozijx.passly.domain.entry.model.credential.CardExpiryParseResult
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
@@ -173,10 +175,22 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
                 source.number?.takeIf(String::isNotBlank)?.let {
                     fields += archiveField(FieldKey.CARD_NUMBER, BackupFieldValue.text(it))
                 }
-                listOfNotNull(source.expMonth, source.expYear)
-                    .takeIf(List<String>::isNotEmpty)?.joinToString("/")?.let {
-                        fields += archiveField(FieldKey.CARD_EXPIRATION, BackupFieldValue.text(it))
+                val month = source.expMonth?.trim().orEmpty()
+                val year = source.expYear?.trim().orEmpty()
+                if (month.isNotEmpty() || year.isNotEmpty()) {
+                    when (val expiry = CardExpiry.parse("${month.padStart(2, '0')}/$year")) {
+                        is CardExpiryParseResult.Parsed -> fields += archiveField(
+                            FieldKey.CARD_EXPIRATION, BackupFieldValue.text(expiry.value.storageValue),
+                        )
+                        CardExpiryParseResult.Invalid -> {
+                            listOf("expMonth" to source.expMonth, "expYear" to source.expYear).forEach { (key, value) ->
+                                value?.let {
+                                    customFields += BackupCustomFieldValue("Bitwarden.$key", it, BackupCustomFieldValue.KIND_HIDDEN)
+                                }
+                            }
+                        }
                     }
+                }
                 source.code?.takeIf(String::isNotBlank)?.let {
                     fields += archiveField(FieldKey.CARD_CVV, BackupFieldValue.text(it))
                 }
