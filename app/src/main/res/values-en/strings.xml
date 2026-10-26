@@ -94,7 +94,7 @@
     <string name="scanner_open_link_failed">Unable to open link</string>
     <string name="scanner_copy_succeeded">Copied securely to clipboard</string>
     <string name="scanner_processing_image">Processing image</string>
-    <string name="scanner_import_unavailable">This QR code cannot be used here</string>
+    <string name="scanner_import_unavailable">Could not apply this QR code. Please check and try again.</string>
     <string name="wifi_scanned_seed_unavailable">Scanned content expired. Scan it again.</string>
 
     <string name="backup_export_success">Export successful</string>

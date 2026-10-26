@@ -6,14 +6,9 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
-import com.aozijx.passly.core.observability.LogStatements
-import com.aozijx.passly.core.observability.Logger
-import com.aozijx.passly.core.observability.Operations
-import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
@@ -23,12 +18,11 @@ import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
-import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
+import com.aozijx.passly.feature.vault.entry.ImportScannedOtpUseCase
 import com.aozijx.passly.feature.vault.entry.MoveEntryToTrashUseCase
 import com.aozijx.passly.feature.vault.entry.MoveEntryToTrashResult
 import com.aozijx.passly.feature.vault.entry.VaultDataChangeSignal
 import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
-import com.aozijx.passly.feature.vault.entry.toNewEntryDraft
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
@@ -51,14 +45,13 @@ class VaultViewModel @Inject internal constructor(
     private val entryListQueryRepository: EntryListQueryRepository,
     private val entryPageSource: VaultEntryPageSource,
     private val settingsRepository: LibraryViewSettingsRepository,
-    private val createEntry: CreateEntryUseCase,
+    internal val importScannedOtp: ImportScannedOtpUseCase,
     private val moveEntryToTrash: MoveEntryToTrashUseCase,
     private val copyEntryField: CopyEntryFieldUseCase,
     private val copyOtpCode: CopyOtpCodeUseCase,
     private val dataChangeSignal: VaultDataChangeSignal,
     private val accessPolicy: SecureSessionAccessPolicy,
     otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
-    private val logger: Logger,
 ) : ViewModel() {
 
     private val _effects = Channel<VaultEffect>(Channel.BUFFERED)
@@ -100,25 +93,6 @@ class VaultViewModel @Inject internal constructor(
         .map { pagingData -> pagingData.map(EntryListItem::toUiModel) }
         .cachedIn(viewModelScope)
 
-    private fun addScannedOtp(config: OtpConfig) {
-        if (!ensureFullSecureSessionAccess("恢复模式不能保存 OTP")) return
-        viewModelScope.launch {
-            logger.withRootTrace(Operations.VaultOtpImport) {
-            val draft = try {
-                config.toNewEntryDraft()
-            } catch (error: IllegalArgumentException) {
-                logger.log(LogStatements.Application.scannedOtpInvalid(error))
-                emitError("OTP 数据无效")
-                return@withRootTrace
-            }
-            when (val result = createEntry(draft)) {
-                is AppResult.Success -> Unit
-                is AppResult.Failure -> emitError(result.error.code)
-            }
-            }
-        }
-    }
-
     /**
      * OTP 状态（高频率变化，每秒更新）。
      * 独立 Flow 避免 OTP 更新触发整个 UI 状态重组。
@@ -148,7 +122,6 @@ class VaultViewModel @Inject internal constructor(
             is VaultUiAction.QuickDelete -> quickDelete(action.entryId)
             is VaultUiAction.CopyField -> copyField(action.entryId, action.entryType, action.fieldKey)
             is VaultUiAction.CopyOtp -> copyOtp(action.entryId)
-            is VaultUiAction.AddScannedOtp -> addScannedOtp(action.config)
         }
     }
 

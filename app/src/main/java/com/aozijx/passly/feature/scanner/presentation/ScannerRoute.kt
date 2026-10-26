@@ -6,6 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
@@ -15,15 +17,22 @@ import com.aozijx.passly.R
 import com.aozijx.passly.feature.scanner.presentation.ui.ScannerScreen
 import com.aozijx.passly.presentation.shared.media.ImageType
 import com.aozijx.passly.presentation.shared.media.rememberImagePicker
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun ScannerRoute(
     purpose: ScannerPurpose,
-    onImport: (ScannerImport) -> ScannerImportHandlingResult,
+    onImport: suspend (ScannerImport) -> ScannerImportHandlingResult,
     onDismiss: () -> Unit,
 ) {
     val viewModel = hiltViewModel<ScannerViewModel>()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    val importSession = remember(state) { ScannerImportSession() }
+    val importPhase by importSession.phase.collectAsStateWithLifecycle()
+    DisposableEffect(importSession) {
+        onDispose { importSession.close() }
+    }
     val context = LocalContext.current
     val copySucceededMessage = stringResource(R.string.scanner_copy_succeeded)
     val openLinkFailedMessage = stringResource(R.string.scanner_open_link_failed)
@@ -50,11 +59,19 @@ internal fun ScannerRoute(
     ScannerScreen(
         state = state,
         purpose = purpose,
+        importing = importPhase == ScannerImportPhase.Importing,
         onAction = { action ->
+            if (importSession.phase.value == ScannerImportPhase.Closed) return@ScannerScreen
+            if (importSession.phase.value == ScannerImportPhase.Importing &&
+                action != ScannerScreenAction.Dismiss && action != ScannerScreenAction.CameraPermissionDenied
+            ) return@ScannerScreen
             when (action) {
                 ScannerScreenAction.Dismiss,
                 ScannerScreenAction.CameraPermissionDenied,
-                -> onDismiss()
+                -> {
+                    importSession.close()
+                    onDismiss()
+                }
 
                 is ScannerScreenAction.CameraFailure ->
                     viewModel.onAction(ScannerUiAction.CameraFailure(action.error))
@@ -77,13 +94,16 @@ internal fun ScannerRoute(
                         is ScannerResult.Wifi,
                         -> when (val resolution = purpose.resolveImport(result)) {
                             is ScannerImportResolution.Available -> {
-                                when (onImport(resolution.value)) {
-                                    ScannerImportHandlingResult.Applied -> onDismiss()
-                                    ScannerImportHandlingResult.Rejected -> Toast.makeText(
+                                scope.launch {
+                                    when (importSession.confirm { onImport(resolution.value) }) {
+                                        ScannerImportOutcome.Applied -> onDismiss()
+                                        ScannerImportOutcome.Ignored -> Unit
+                                        ScannerImportOutcome.Rejected -> Toast.makeText(
                                             context,
                                             importUnavailableMessage,
                                             Toast.LENGTH_SHORT,
                                         ).show()
+                                    }
                                 }
                             }
 

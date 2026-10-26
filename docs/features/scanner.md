@@ -28,6 +28,12 @@ Vault 首页以 `General` 打开 Scanner：OTP 可直接交给 Vault 创建链�
 OTP 与 Wi-Fi 编辑器分别使用 `ApplyToOtpEditor`、`ApplyToWifiEditor`，只接收匹配的类型。链接由系统处理，
 普通文本使用安全剪贴板复制。调用方只处理 `ScannerImport`，不接管 Scanner 内部状态。
 
+导入回调为挂起调用：首页 OTP 经 `ImportScannedOtpUseCase` 转换、校验并等待仓库保存成功后，
+才返回 `Applied` 并关闭 Scanner；拒绝、无效配置或写入失败返回 `Rejected`，保留结果供重试。
+编辑器的 `Applied` 表示内容已被表单接受，Wi-Fi 首页的 `Applied` 表示已进入编辑页，不表示已保存。
+`ScannerImportSession` 在确认期间拦截重复确认、重扫与相册切换；退出会取消 Route 的确认协程，
+旧结果的迟到回执不再关闭页面或弹提示。取消不代表已完成的数据库写入会回滚。
+
 首页 Wi-Fi 结果不会把 SSID 或密码写入导航参数。`EntryEditorSeedCoordinator` 在 Vault 图作用域内保存一份
 只可消费一次的临时内容，导航只携带随机 token；锁定、恢复模式、消费完成或作用域销毁都会清空该内容。
 Wi-Fi 结果卡和无障碍文本不显示密码，编辑页可重新扫码，只替换 Wi-Fi 专属字段。

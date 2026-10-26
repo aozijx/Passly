@@ -4,6 +4,8 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -13,6 +15,7 @@ import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -39,6 +42,7 @@ internal fun ScannerResultCard(
     compact: Boolean,
     onScanAgain: () -> Unit,
     onConfirm: () -> Unit,
+    importing: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val fallbackOtpLabel = stringResource(R.string.scanner_otp_fallback_label)
@@ -151,6 +155,7 @@ internal fun ScannerResultCard(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 FilledTonalButton(
+                    enabled = !importing,
                     onClick = onScanAgain,
                     modifier = Modifier.weight(1f),
                 ) {
@@ -158,9 +163,14 @@ internal fun ScannerResultCard(
                 }
                 when (val action = presentation.primaryAction) {
                     is ScannerPrimaryActionPresentation.Available -> Button(
+                        enabled = !importing,
                         onClick = onConfirm,
                         modifier = Modifier.weight(1.35f),
                     ) {
+                        if (importing) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.width(8.dp))
+                        }
                         Text(action.label)
                     }
                     ScannerPrimaryActionPresentation.Unavailable -> Unit

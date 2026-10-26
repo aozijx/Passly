@@ -2,7 +2,6 @@ package com.aozijx.passly.feature.vault.presentation.list
 
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.feature.vault.model.AddType
@@ -24,5 +23,4 @@ sealed interface VaultUiAction {
         val fieldKey: FieldKey,
     ) : VaultUiAction
     data class CopyOtp(val entryId: String) : VaultUiAction
-    data class AddScannedOtp(val config: OtpConfig) : VaultUiAction
 }

@@ -159,8 +159,11 @@ internal fun VaultRoute(
             onImport = { scannerImport ->
                 when (scannerImport) {
                     is ScannerImport.Otp -> {
-                        vaultViewModel.onAction(VaultUiAction.AddScannedOtp(scannerImport.config))
-                        ScannerImportHandlingResult.Applied
+                        if (vaultViewModel.importScannedOtp(scannerImport.config)) {
+                            ScannerImportHandlingResult.Applied
+                        } else {
+                            ScannerImportHandlingResult.Rejected
+                        }
                     }
                     is ScannerImport.Wifi -> when (
                         navigation.navigate(

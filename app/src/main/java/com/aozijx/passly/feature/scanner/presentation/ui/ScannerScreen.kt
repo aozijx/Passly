@@ -50,6 +50,7 @@ internal fun ScannerScreen(
     purpose: ScannerPurpose,
     onAction: (ScannerScreenAction) -> Unit,
     modifier: Modifier = Modifier,
+    importing: Boolean = false,
 ) {
     val adaptiveLayout = LocalPasslyAdaptiveLayout.current
     val motionScheme = MaterialTheme.motionScheme
@@ -73,6 +74,7 @@ internal fun ScannerScreen(
         )
         ScannerViewfinder(isScanning = isScanning)
         ScannerTopBar(
+            importing = importing,
             onDismiss = { onAction(ScannerScreenAction.Dismiss) },
             onPickPhoto = { onAction(ScannerScreenAction.PickPhoto) },
         )
@@ -108,6 +110,7 @@ internal fun ScannerScreen(
                     result = scannerState.result,
                     purpose = purpose,
                     compact = !adaptiveLayout.isAtLeastMedium,
+                    importing = importing,
                     onScanAgain = { onAction(ScannerScreenAction.ScanAgain) },
                     onConfirm = { onAction(ScannerScreenAction.ConfirmResult) },
                 )
@@ -139,6 +142,7 @@ internal fun ScannerScreen(
 
 @Composable
 private fun ScannerTopBar(
+    importing: Boolean,
     onDismiss: () -> Unit,
     onPickPhoto: () -> Unit,
 ) {
@@ -169,6 +173,7 @@ private fun ScannerTopBar(
         )
         ScannerTopBarButton(
             icon = Icons.Default.PhotoLibrary,
+            enabled = !importing,
             contentDescription = stringResource(R.string.scanner_action_album),
             onClick = onPickPhoto,
             modifier = Modifier.align(Alignment.TopEnd),
@@ -182,8 +187,10 @@ private fun ScannerTopBarButton(
     contentDescription: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     IconButton(
+        enabled = enabled,
         onClick = onClick,
         modifier = modifier
             .size(48.dp)
