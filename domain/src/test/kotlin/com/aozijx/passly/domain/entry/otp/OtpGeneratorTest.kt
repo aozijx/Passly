@@ -53,6 +53,25 @@ class OtpGeneratorTest {
     }
 
     @Test
+    fun `hotp exhausted stored or overridden counter cannot return wrapped next counter`() {
+        val config = OtpConfig(type = OtpType.HOTP, secret = SECRET_20, counter = Long.MAX_VALUE)
+
+        val exhausted = OtpResult.Failure(OtpGenerationError.CounterExhausted)
+        assertEquals(exhausted, OtpGenerator.generate(config))
+        assertEquals(exhausted, OtpGenerator.generate(config.copy(counter = 0), overrideCounter = Long.MAX_VALUE))
+        assertEquals(OtpResult.Failure(OtpGenerationError.InvalidCounter), OtpGenerator.generate(config, overrideCounter = -1))
+    }
+
+    @Test
+    fun `hotp last advanceable counter returns largest representable next counter`() {
+        val config = OtpConfig(type = OtpType.HOTP, secret = SECRET_20, counter = Long.MAX_VALUE - 1)
+        val result = OtpGenerator.generate(config)
+
+        assertTrue(result is OtpResult.Success)
+        assertEquals(Long.MAX_VALUE, (result as OtpResult.Success).nextCounter)
+    }
+
+    @Test
     fun `hotp - RFC 4226 测试向量 SHA256`() {
         val config = OtpConfig(
             type = OtpType.HOTP,

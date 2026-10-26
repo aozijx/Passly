@@ -21,3 +21,13 @@ Base64 编码。临时解码字节立即擦除。输入及成功解析结果的�
 
 创建和归档读取共用 Domain 的参数规则；原生恢复校验合法性后保留密钥表示和身份元数据，
 不套用手动输入的规范化。没有批量改写既有条目。归档缺省参数与兼容隔离见[归档格式](../backup/archive-format.md)。
+
+## HOTP 生成边界
+
+`OtpGenerator` 的 HOTP 成功结果必须包含非负、可表示为 Long 的下一计数器。当前计数器为
+`Long.MAX_VALUE - 1` 时可以生成并返回 `Long.MAX_VALUE`；当前或覆盖计数器已为 `Long.MAX_VALUE` 时，
+在解码密钥和计算验证码前返回 `OtpGenerationError.CounterExhausted`。负覆盖计数器仍为 `InvalidCounter`。
+耗尽状态可存储和归档，但不能继续生成；不得通过溢出、回绕或重置为 0 继续使用。
+
+该边界约束生成器及 `OtpCodeRuntime.generateHotpCode` 的结果，不代表计数器已推进到数据库。
+当前列表与详情订阅 HOTP 时为 Pending，页面尚未连接手动生成动作，计数器消费与持久化流程仍需实现。

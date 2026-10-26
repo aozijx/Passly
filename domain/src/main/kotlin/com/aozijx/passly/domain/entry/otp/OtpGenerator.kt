@@ -48,6 +48,7 @@ object OtpGenerator {
     private fun generateCounterBased(config: OtpConfig, counter: Long?): OtpResult {
         val c = counter ?: return OtpResult.Failure(OtpGenerationError.InvalidCounter)
         if (c < 0) return OtpResult.Failure(OtpGenerationError.InvalidCounter)
+        if (c == Long.MAX_VALUE) return OtpResult.Failure(OtpGenerationError.CounterExhausted)
         val result = computeOtp(config, c, config.digits)
         return if (result is OtpResult.Success) {
             OtpResult.Success(code = result.code, nextCounter = c + 1)

@@ -1,6 +1,8 @@
 package com.aozijx.passly.feature.vault.otp
 
 import com.aozijx.passly.domain.entry.otp.OtpResult
+import com.aozijx.passly.domain.entry.otp.OtpGenerator
+import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.access.model.FreshAuthenticationRequiredException
 import com.aozijx.passly.runtime.session.SessionLockedException
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
@@ -24,6 +26,20 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OtpCodeRuntimeTest {
+
+    @Test
+    fun `exhausted HOTP counter becomes failed state without publishing a code`() = runTest {
+        val coordinator = OtpCodeRuntime(
+            scope = backgroundScope,
+            loadOtpConfig = { OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = Long.MAX_VALUE) },
+            codeGenerator = { OtpGenerator.generate(it) },
+        )
+        coordinator.activate("exhausted")
+        val result = coordinator.generateHotpCode("exhausted")
+
+        assertEquals(OtpResult.Failure(OtpGenerationError.CounterExhausted), result)
+        assertEquals(OtpCodeState.Failed(OtpGenerationError.CounterExhausted), coordinator.states.value["exhausted"])
+    }
 
     @Test
     fun `visible otp waits for fresh authentication without crashing`() = runBlocking {
