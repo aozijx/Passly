@@ -224,7 +224,9 @@ internal object DetailReducer {
                 revisions = DetailRevisionReducer.reduce(state.revisions, mutation.mutation),
             )
 
-            is DetailTagEditorMutation -> state.copy(
+            is DetailTagEditorMutation -> if (state.saveState == DetailSaveState.Saving(DetailEditCompletion.Tags)) {
+                state
+            } else state.copy(
                 tagEditor = DetailTagEditorReducer.reduce(state.tagEditor, mutation),
             )
 

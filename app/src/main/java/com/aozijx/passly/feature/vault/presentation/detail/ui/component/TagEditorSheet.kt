@@ -23,9 +23,14 @@ import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -39,6 +44,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorOverlayUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorValidationErrorUiModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -53,7 +59,21 @@ fun TagEditorSheet(
     onConfirmDiscard: () -> Unit,
     onKeepEditing: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    val dismissAllowed by rememberUpdatedState(!isSaving)
+    val sheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        confirmValueChange = { target -> target != SheetValue.Hidden || dismissAllowed },
+    )
+    val scope = rememberCoroutineScope()
+    val keepEditing: () -> Unit = {
+        onKeepEditing()
+        scope.launch { sheetState.show() }
+        Unit
+    }
+    ModalBottomSheet(
+        onDismissRequest = { if (dismissAllowed) onDismiss() },
+        sheetState = sheetState,
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -74,6 +94,7 @@ fun TagEditorSheet(
                     state.draftTags.forEach { tag ->
                         val removeLabel = stringResource(R.string.vault_detail_tag_remove, tag)
                         InputChip(
+                            enabled = !isSaving,
                             selected = true,
                             onClick = { onRemove(tag) },
                             label = { Text(tag) },
@@ -85,12 +106,14 @@ fun TagEditorSheet(
                                 )
                             },
                             modifier = Modifier.semantics {
-                                customActions = listOf(
-                                    CustomAccessibilityAction(removeLabel) {
-                                        onRemove(tag)
-                                        true
-                                    },
-                                )
+                                if (!isSaving) {
+                                    customActions = listOf(
+                                        CustomAccessibilityAction(removeLabel) {
+                                            onRemove(tag)
+                                            true
+                                        },
+                                    )
+                                }
                             },
                         )
                     }
@@ -98,6 +121,7 @@ fun TagEditorSheet(
             }
 
             OutlinedTextField(
+                enabled = !isSaving,
                 value = state.input,
                 onValueChange = onInputChanged,
                 modifier = Modifier
@@ -127,7 +151,7 @@ fun TagEditorSheet(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(
-                    onDone = { if (state.input.isNotBlank()) onSubmit(state.input) },
+                    onDone = { if (!isSaving && state.input.isNotBlank()) onSubmit(state.input) },
                 ),
             )
 
@@ -138,6 +162,7 @@ fun TagEditorSheet(
                 ) {
                     state.suggestions.forEach { suggestion ->
                         AssistChip(
+                            enabled = !isSaving,
                             onClick = { onSubmit(suggestion) },
                             label = { Text(suggestion) },
                         )
@@ -176,9 +201,9 @@ fun TagEditorSheet(
         }
     }
 
-    if (state.overlay == TagEditorOverlayUiState.ConfirmDiscard) {
+    if (state.overlay == TagEditorOverlayUiState.ConfirmDiscard && !isSaving) {
         AlertDialog(
-            onDismissRequest = onKeepEditing,
+            onDismissRequest = keepEditing,
             title = { Text(stringResource(R.string.vault_detail_tag_discard_title)) },
             text = { Text(stringResource(R.string.vault_detail_tag_discard_message)) },
             confirmButton = {
@@ -187,7 +212,7 @@ fun TagEditorSheet(
                 }
             },
             dismissButton = {
-                TextButton(onClick = onKeepEditing) {
+                TextButton(onClick = keepEditing) {
                     Text(stringResource(R.string.vault_detail_tag_keep_editing))
                 }
             },

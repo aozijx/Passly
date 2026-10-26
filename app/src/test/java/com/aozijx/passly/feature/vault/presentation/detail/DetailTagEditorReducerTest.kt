@@ -9,6 +9,37 @@ import org.junit.Test
 class DetailTagEditorReducerTest {
 
     @Test
+    fun savingTagsRejectsEditsAndDismissalsUntilTheWriteCompletes() {
+        val editor = DetailTagEditorState.Open(initialTags = setOf("Work"), input = "Personal")
+        val saving = DetailUiState(tagEditor = editor, saveState = DetailSaveState.Saving(DetailEditCompletion.Tags))
+        val changes = listOf(
+            DetailMutation.TagInputChanged("New draft"),
+            DetailMutation.TagSubmitted("Finance"),
+            DetailMutation.TagRemoved("Work"),
+            DetailMutation.TagEditorDismissRequested,
+            DetailMutation.TagEditorDiscardConfirmed,
+            DetailMutation.TagEditorDiscardCancelled,
+            DetailMutation.TagEditorOpened(setOf("Other"), emptySet()),
+        )
+        for (change in changes) assertEquals(saving, DetailReducer.reduce(saving, change))
+        val failed = DetailReducer.reduce(saving, DetailMutation.SaveFailed(DetailEditCompletion.Tags, "failure"))
+        val edited = DetailReducer.reduce(failed, DetailMutation.TagInputChanged("Try again"))
+        assertEquals("Try again", (edited.tagEditor as DetailTagEditorState.Open).input)
+        val succeeded = DetailReducer.reduce(saving, DetailMutation.SaveSucceeded(DetailEditCompletion.Tags))
+        assertEquals(DetailTagEditorState.Closed, succeeded.tagEditor)
+    }
+
+    @Test
+    fun savingAnUnrelatedFieldDoesNotBlockTheTagDraft() {
+        val state = DetailUiState(
+            tagEditor = DetailTagEditorState.Open(initialTags = emptySet()),
+            saveState = DetailSaveState.Saving(DetailEditCompletion.Favorite),
+        )
+        val edited = DetailReducer.reduce(state, DetailMutation.TagInputChanged("Personal"))
+        assertEquals("Personal", (edited.tagEditor as DetailTagEditorState.Open).input)
+    }
+
+    @Test
     fun openInitializesSortedDraftAndAvailableSuggestions() {
         val actual = DetailReducer.reduce(
             DetailUiState(),
