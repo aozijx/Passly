@@ -1,13 +1,13 @@
 package passly
 
 internal object SourceBoundaryPolicy {
-    private val featurePresentationAreas = listOf(
-        "autofill", "backup", "database", "recovery", "scanner", "settings", "shell", "unlock", "vault",
+    private val featurePresentationPath = Regex(
+        "/com/aozijx/passly/feature/[^/]+/presentation/",
+        RegexOption.IGNORE_CASE,
     )
-    private val featurePresentationPaths = featurePresentationAreas
-        .mapTo(mutableSetOf()) { "/feature/$it/presentation/" }
-    private val featurePresentationImports = featurePresentationAreas
-        .mapTo(mutableSetOf()) { "com.aozijx.passly.feature.$it.presentation." }
+    private val featurePresentationImport = Regex(
+        """^com\.aozijx\.passly\.feature\.[^.]+\.presentation(?:\.|$)""",
+    )
 
     val editorMapperForbiddenMarkers = linkedMapOf(
         "repository" to listOf(".repository.", ".port.EntryCommandRepository"),
@@ -70,11 +70,13 @@ internal object SourceBoundaryPolicy {
             id = "LAYER_FEATURE",
             owner = "feature",
             sourcePathContains = "/com/aozijx/passly/feature/",
-            allowedSourcePathContains = featurePresentationPaths + setOf(
+            allowedSourcePathContains = setOf(
                 "/feature/vault/entry/VaultDataAdaptersTest.kt",
                 "/feature/autofill/platform/AutofillLaunchTargetFactoryTest.kt",
             ),
-            forbiddenImportPrefixes = featurePresentationImports + setOf(
+            allowedSourcePathPatterns = setOf(featurePresentationPath),
+            forbiddenImportPatterns = setOf(featurePresentationImport),
+            forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.data.",
                 "com.aozijx.passly.presentation.",
             ),
@@ -175,15 +177,15 @@ internal object SourceBoundaryPolicy {
             sourcePathContains = "/com/aozijx/passly/app/",
             message = "imports a forbidden namespace",
         ),
-    ) + featurePresentationAreas.map { area ->
         SourceBoundaryRule(
             id = "LAYER_FEATURE_PRESENTATION",
             owner = "feature.presentation",
-            sourcePathContains = "/com/aozijx/passly/feature/$area/presentation/",
+            sourcePathContains = "/com/aozijx/passly/feature/",
+            sourcePathPatterns = setOf(featurePresentationPath),
             forbiddenImportPrefixes = setOf("com.aozijx.passly.data."),
             message = "imports a forbidden namespace",
-        )
-    }
+        ),
+    )
 
     val generalRules = layerRules + listOf(
         SourceBoundaryRule(

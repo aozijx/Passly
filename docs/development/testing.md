@@ -4,6 +4,10 @@
 
 按以下顺序执行，便于优先得到低成本反馈：
 
+先运行受影响模块的相关单测。修改 `buildSrc` 架构规则时，先执行 `./gradlew -p buildSrc test`，
+再从项目根执行 `./gradlew verifyArchitecture`；前者验证规则在正反例中的行为，后者扫描实际项目。
+Windows 使用 `gradlew.bat`。新增 feature 的页面归属与反向导入约束不依赖业务名称清单。
+
 1. `:app:compileDebugKotlin`
 2. `:app:testDebugUnitTest`
 3. `:app:lintDebug`

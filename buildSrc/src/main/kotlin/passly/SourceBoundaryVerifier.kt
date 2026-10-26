@@ -7,17 +7,13 @@ internal object SourceBoundaryVerifier {
     ): List<SourceBoundaryViolation> = buildList {
         sources.forEach { source ->
             val normalizedPath = "/${source.path.replace('\\', '/').trimStart('/')}"
-            rules.filter { rule ->
-                normalizedPath.contains(rule.sourcePathContains, ignoreCase = true) &&
-                    rule.allowedSourcePathContains.none { allowedPath ->
-                        normalizedPath.contains(allowedPath, ignoreCase = true)
-                    }
-            }.forEach { rule ->
+            rules.filter { it.appliesTo(normalizedPath) }.forEach { rule ->
                 source.content.lineSequence().forEach { rawLine ->
                     val evidence = rawLine.trim()
                     parseImport(evidence)?.let { importedType ->
                         if ((importedType in rule.forbiddenImports ||
-                            rule.forbiddenImportPrefixes.any(importedType::startsWith)) &&
+                            rule.forbiddenImportPrefixes.any(importedType::startsWith) ||
+                            rule.forbiddenImportPatterns.any { it.containsMatchIn(importedType) }) &&
                             rule.allowedImportPrefixes.none(importedType::startsWith)
                         ) {
                             add(rule.violation(source.path, evidence))
@@ -32,6 +28,12 @@ internal object SourceBoundaryVerifier {
             }
         }
     }
+
+    private fun SourceBoundaryRule.appliesTo(path: String): Boolean =
+        path.contains(sourcePathContains, ignoreCase = true) &&
+            (sourcePathPatterns.isEmpty() || sourcePathPatterns.any { it.containsMatchIn(path) }) &&
+            allowedSourcePathContains.none { path.contains(it, ignoreCase = true) } &&
+            allowedSourcePathPatterns.none { it.containsMatchIn(path) }
 
     private fun parseImport(line: String): String? {
         if (!line.startsWith("import ")) return null

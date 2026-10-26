@@ -76,16 +76,22 @@ OTP 生成、密钥编解码和 `otpauth:` URI 协议位于 `domain/entry/otp`�
 
 Mapper 应显式处理缺失字段、版本和错误，不用强制类型转换掩盖边界问题。
 
-## 自动检查建议
+## 自动检查
 
-架构门禁应扫描 import，并至少禁止：
+`verifyArchitecture` 通过 `verifyModuleBoundaries` 扫描项目依赖和源码 import，并包含以下禁止边：
 
 ```text
 domain -> com.aozijx.passly.data
 domain -> com.aozijx.passly.feature
-feature -> *.data.local.database.entity / *.data.local.database.dao
+feature（含页面） -> com.aozijx.passly.data
+feature 非 UI -> com.aozijx.passly.feature.<任意业务>.presentation
 security -> *.data.repository / *.data.local
 ```
 
 应用内备份的数据库快照适配器是已知例外；允许清单必须精确到文件或接口并附理由，不能通过全局排除关闭检查。
+
+`SourceBoundaryPolicy` 按 `feature/<业务>/presentation` 的单层业务路径和对应包名识别页面；新增业务无需
+登记名称。非 UI 源码不得反向导入任意业务的 Presentation，页面仍受 Data 实现导入禁令约束。
+匹配按完整路径段和包名段处理，`presentation_models` 等相似名称不作为页面。Windows 与 Unix 路径统一处理；
+带别名或通配符的 import 仍执行同一规则。受审查的精确文件例外保留在规则中。
 

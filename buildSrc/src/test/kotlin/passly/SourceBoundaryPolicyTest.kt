@@ -6,6 +6,57 @@ import kotlin.test.assertTrue
 
 class SourceBoundaryPolicyTest {
     @Test
+    fun unregisteredFeatureBusinessCannotImportPresentationIncludingAliasesAndWildcards() {
+        for (imported in listOf(
+            "com.aozijx.passly.feature.sync_engine2.presentation.SyncUiState",
+            "com.aozijx.passly.feature.sync_engine2.presentation.SyncUiState as UiState",
+            "com.aozijx.passly.feature.sync_engine2.presentation.*",
+        )) {
+            val source = EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/feature/sync_engine2/SyncUseCase.kt",
+                content = "import $imported",
+            )
+            val violation = SourceBoundaryVerifier.verify(listOf(source), SourceBoundaryPolicy.layerRules).single()
+            assertEquals("LAYER_FEATURE", violation.ruleId)
+            assertEquals(source.content, violation.evidence)
+        }
+    }
+
+    @Test
+    fun unregisteredFeaturePresentationCanUseSharedUiOnUnixAndWindowsPaths() {
+        for (path in listOf(
+            "app/src/main/java/com/aozijx/passly/feature/sync_engine2/presentation/SyncRoute.kt",
+            "D:\\Passly\\app\\src\\main\\java\\com\\aozijx\\passly\\feature\\sync_engine2\\presentation\\SyncRoute.kt",
+            "app/src/main/java/COM/AOZIJX/PASSLY/FEATURE/sync_engine2/PRESENTATION/SyncRoute.kt",
+        )) {
+            val source = EditorSource(path, "import com.aozijx.passly.presentation.shared.components.Card")
+            assertEquals(emptyList(), SourceBoundaryVerifier.verify(listOf(source), SourceBoundaryPolicy.layerRules))
+        }
+    }
+
+    @Test
+    fun unregisteredFeaturePresentationStillRejectsDataWithPresentationOwnership() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/feature/sync_engine2/presentation/SyncRoute.kt",
+            content = "import com.aozijx.passly.data.repository.Repository",
+        )
+        val violation = SourceBoundaryVerifier.verify(listOf(source), SourceBoundaryPolicy.layerRules).single()
+        assertEquals("LAYER_FEATURE_PRESENTATION", violation.ruleId)
+        assertEquals("feature.presentation", violation.owner)
+    }
+
+    @Test
+    fun presentationLookalikesAreNeitherUiExemptionsNorForbiddenUiImports() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/feature/sync_engine2/presentation_models/Model.kt",
+            content = "import com.aozijx.passly.feature.sync_engine2.presentation_models.Model",
+        )
+        assertEquals(emptyList(), SourceBoundaryVerifier.verify(listOf(source), SourceBoundaryPolicy.layerRules))
+        val reverseImport = source.copy(content = "import com.aozijx.passly.feature.sync_engine2.presentation.SyncUiState")
+        assertEquals("LAYER_FEATURE", SourceBoundaryVerifier.verify(listOf(reverseImport), SourceBoundaryPolicy.layerRules).single().ruleId)
+    }
+
+    @Test
     fun backupFeatureCannotImportSettingsOwnedUi() {
         val source = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/feature/backup/presentation/BackupRoute.kt",
