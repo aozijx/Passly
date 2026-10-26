@@ -50,6 +50,12 @@ Entry Domain 端口，不直接构造 Entity 或具体 Repository。Autofill/Cre
 留在 App；只有可复用的条目匹配语义进入 Entry 领域。卡号校验和 Wi-Fi 二维码载荷解析属于纯规则，
 位于 `domain/entry/policy`；相机、扫码结果展示与导入编排仍在 App Feature。
 
+`EntryFieldReader` 的默认实现也位于 `domain/entry/policy`，App 仅通过 DI 连接。读取按 `FieldKey`
+穷尽映射，不按枚举名称或前缀猜分组；新增字段必须明确其读取语义。凭据不存在或高敏值未揭示时返回
+无值，不编造 OTP 默认配置。读取器不授权、不访问仓库、不解密；复制与揭示流程继续在 Feature 中授权。
+布尔值使用 `true` / `false`，时间戳保留毫秒值，列表沿用逗号加空格、恢复码使用换行分隔；展示层负责本地化。
+`CUSTOM_FIELDS` 是带名称和类型的集合，不隐式拼成单个字符串，仍由专属流程处理。
+
 OTP 生成、密钥编解码和 `otpauth:` URI 协议位于 `domain/entry/otp`；App 负责扫码、编辑状态、授权与展示，
 不另留 Android Uri 实现或仅用于测试的解析、格式化转发接口。
 手动输入的原始数字与密钥通过 Domain 的 `OtpConfigInput` 解析；页面仅保留输入和显示错误，
