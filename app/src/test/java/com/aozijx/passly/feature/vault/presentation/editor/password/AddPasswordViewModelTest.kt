@@ -19,6 +19,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.test.runCurrent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -28,6 +32,73 @@ import org.junit.Rule
 class AddPasswordViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun lockedPickerRequestsDoNotQueryInstalledApplications() = runTest {
+        val session = MutableSession()
+        var queries = 0
+        val directory = directory { queries++; emptyList() }
+        val model = viewModel(session = session, directory = directory)
+        session.lock()
+        runCurrent()
+        model.onAction(AddPasswordAction.LoadAssociatedApps)
+        advanceUntilIdle()
+        assertEquals(0, queries)
+        assertTrue(!model.uiState.value.availableAppsLoaded)
+    }
+
+    @Test
+    fun oldPickerResultsCannotReplaceTheNewAuthenticatedRequests() = runTest {
+        val release = CompletableDeferred<Unit>()
+        val session = MutableSession()
+        var queries = 0
+        val model = viewModel(session = session, directory = directory {
+            if (++queries == 1) {
+                withContext(NonCancellable) { release.await() }
+                listOf(InstalledAppMetadata("Old", "old.app"))
+            } else listOf(InstalledAppMetadata("New", "new.app"))
+        })
+        model.onAction(AddPasswordAction.LoadAssociatedApps)
+        runCurrent()
+        session.lock()
+        runCurrent()
+        session.unlock()
+        runCurrent()
+        model.onAction(AddPasswordAction.LoadAssociatedApps)
+        runCurrent()
+        release.complete(Unit)
+        advanceUntilIdle()
+        assertEquals(2, queries)
+        assertEquals("new.app", model.uiState.value.availableApps.single().packageName)
+    }
+
+    @Test
+    fun cancelledPickerCannotRefillTheClearedPageEvenInTheSameAuthentication() = runTest {
+        val release = CompletableDeferred<Unit>()
+        val model = viewModel(directory = directory {
+            withContext(NonCancellable) { release.await() }
+            listOf(InstalledAppMetadata("Old", "old.app"))
+        })
+        model.onAction(AddPasswordAction.LoadAssociatedApps)
+        runCurrent()
+        val clear = model.javaClass.getDeclaredMethod("onCleared").apply { isAccessible = true }
+        clear.invoke(model)
+        release.complete(Unit)
+        advanceUntilIdle()
+        assertTrue(model.uiState.value.availableApps.isEmpty())
+        assertTrue(!model.uiState.value.availableAppsLoaded)
+    }
+
+    @Test
+    fun destroyedPickerRequestsCannotRestartLoading() = runTest {
+        var queries = 0
+        val model = viewModel(directory = directory { queries++; emptyList() })
+        val clear = model.javaClass.getDeclaredMethod("onCleared").apply { isAccessible = true }
+        clear.invoke(model)
+        model.onAction(AddPasswordAction.LoadAssociatedApps)
+        advanceUntilIdle()
+        assertEquals(0, queries)
+    }
 
     @Test
     fun formAllowsPasswordOnlyLoginAndPreservesPasswordWhitespace() {
@@ -110,10 +181,11 @@ class AddPasswordViewModelTest {
     private fun viewModel(
         session: SecureSessionAccessState = AuthenticatedSession,
         apps: List<InstalledAppMetadata> = emptyList(),
+        directory: InstalledAppDirectory = FakeInstalledAppDirectory(apps),
     ) = AddPasswordViewModel(
         createEntryUseCase = createEntryUseCase(session),
         secureSessionAccessState = session,
-        installedAppDirectory = FakeInstalledAppDirectory(apps),
+        installedAppDirectory = directory,
     )
 
     private class FakeInstalledAppDirectory(
@@ -138,7 +210,16 @@ class AddPasswordViewModelTest {
         fun lock() {
             state.value = AuthenticationState.Locked
         }
+        fun unlock() {
+            state.value = AuthenticationState.Authenticated(2L)
+        }
     }
+
+    private fun directory(load: suspend () -> List<InstalledAppMetadata>): InstalledAppDirectory =
+        object : InstalledAppDirectory {
+            override suspend fun metadataFor(packageName: String): InstalledAppMetadata? = null
+            override suspend fun launchableApps() = load()
+        }
 
     private object NoOpEntryCommandRepository : EntryCommandRepository {
         override suspend fun createEntry(entry: Entry) = AppResult.Success(entry.id)

@@ -10,6 +10,7 @@ import com.aozijx.passly.presentation.shared.components.AppPackagePickerItemUiMo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -18,7 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AddPasswordViewModel @Inject constructor(
     createEntryUseCase: CreateEntryUseCase,
-    secureSessionAccessState: SecureSessionAccessState,
+    private val secureSessionAccessState: SecureSessionAccessState,
     private val installedAppDirectory: InstalledAppDirectory,
 ) : ViewModel() {
     private var associatedAppsLoadJob: Job? = null
@@ -56,12 +57,19 @@ class AddPasswordViewModel @Inject constructor(
     }
 
     private fun loadAssociatedApps() {
+        if (!saveSession.canEdit()) return
         if (_uiState.value.availableAppsLoaded || associatedAppsLoadJob?.isActive == true) return
+        val authentication = secureSessionAccessState.authenticationState.value
         associatedAppsLoadJob = viewModelScope.launch {
+            if (!secureSessionAccessState.hasFullSecureSessionAccess() ||
+                secureSessionAccessState.authenticationState.value !== authentication) return@launch
             try {
                 val apps = installedAppDirectory.launchableApps().map { metadata ->
                     AppPackagePickerItemUiModel(metadata.label, metadata.packageName)
                 }
+                coroutineContext.ensureActive()
+                if (!secureSessionAccessState.hasFullSecureSessionAccess() ||
+                    secureSessionAccessState.authenticationState.value !== authentication) return@launch
                 _uiState.value = _uiState.value.copy(
                     availableApps = apps,
                     availableAppsLoaded = true,
