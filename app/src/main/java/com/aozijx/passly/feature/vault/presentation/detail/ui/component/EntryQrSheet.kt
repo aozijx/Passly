@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 import android.graphics.Bitmap
 import android.graphics.Color
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.SheetValue
@@ -70,16 +72,24 @@ fun EntryQrSheet(state: DetailQrState, onDismiss: () -> Unit) {
                 }),
                 style = MaterialTheme.typography.bodyMedium,
             )
-            Box(
+            Surface(
                 modifier = Modifier.align(Alignment.CenterHorizontally).widthIn(max = 360.dp)
                     .fillMaxWidth().aspectRatio(1f),
-                contentAlignment = Alignment.Center,
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
-                when (state) {
-                    DetailQrState.Hidden -> Unit
-                    is DetailQrState.Loading -> CircularWavyProgressIndicator()
-                    is DetailQrState.Failed -> Text(stringResource(R.string.vault_qr_generation_failed))
-                    is DetailQrState.Ready -> EntryQrImage(state.content)
+                Box(
+                    modifier = Modifier.padding(16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    when (state) {
+                        DetailQrState.Hidden -> Unit
+                        is DetailQrState.Loading -> CircularWavyProgressIndicator()
+                        is DetailQrState.Failed -> Text(stringResource(R.string.vault_qr_generation_failed))
+                        is DetailQrState.Ready -> EntryQrImage(state.content)
+                    }
                 }
             }
         }

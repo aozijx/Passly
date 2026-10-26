@@ -5,6 +5,10 @@
 Wi-Fi 详情页通过“显示网络二维码”生成连接码；OTP 详情页保留二维码按钮。两者共用详情页的临时二维码
 会话与弹层，文案分别说明连接网络和导入动态口令。
 
+二维码区域使用 Material 3 `Surface`：主题大圆角、1 dp `outlineVariant` 描边及
+`surfaceContainerLow` 底色，四周保留 16 dp 内边距。码图保持黑白和编码器留白，不随深色主题反色；
+加载与失败状态沿用同一容器，避免状态切换时边框跳动。
+
 ## 内容与授权
 
 `ExportEntryQrUseCase` 只处理 Wi-Fi 和 OTP。Wi-Fi 使用 `REVEAL_SECRET` 授权，在授权闭包内通过
