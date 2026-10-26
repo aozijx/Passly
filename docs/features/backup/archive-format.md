@@ -28,6 +28,16 @@ attachment IDs 必须和该 Entry 的 attachment resource 完全一致。
 v1 字段值是封闭形状：`text`、`text_list`、`boolean`、`integer`、`long`、`custom_fields`，且只能携带对应
 payload。OTP 类型、算法和编码使用明确的小写 wire 值。
 
+OTP 字段由 `KeyedEntryArchiveMapper.readOtpConfig` 统一读取；完整校验与恢复使用同一读取器，
+参数规则由 Domain `OtpConfigValidation` 提供。未知类型、算法、编码及不可解码密钥均无效。
+TOTP/HOTP 支持 6–8 位，TOTP 周期为正 Int，不另设 300 秒上限；HOTP 必须提供非负 Long counter。
+Steam 固定 SHA1、5 位和 30 秒，不接受冲突配置。
+
+缺省 type 为 TOTP，algorithm 为 SHA1，encoding 为 Base32；缺省 digits 在 Steam 为 5，其他类型为 6。
+缺省定时周期为 30 秒，HOTP 不推测缺失的 counter。缺省与非法字段分开处理，非法显式值不得回退。
+恢复会校验密钥能被所选编码解码，但保留其合法字符串表示（包括小写与补位），也不修剪 issuer 和账户名。
+原生归档不是手动输入，不对损坏字段做规范化修补。
+
 `BackupArchiveKeyRegistry` 是 Entry type、Field key、Relation type、Resource kind 与 Domain 类型间的唯一
 映射。外部格式禁止使用 Kotlin `enum.name`、ordinal、`Enum.valueOf()` 或 `enumValueOf()`。字段敏感度只信任
 本地 `EntryTypeDefinition`，备份文件不能降低访问等级。

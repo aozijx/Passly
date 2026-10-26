@@ -27,6 +27,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.otp.OtpConfigValidation
 import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupCustomFieldValue
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
@@ -44,6 +45,23 @@ internal object KeyedEntryArchiveMapper {
         fields = entry.toArchiveFields(),
         attachmentIds = attachmentIds,
     )
+
+    fun readOtpConfig(fields: Map<String, BackupFieldValue>): OtpConfig {
+        val type = fields.text(FieldKey.OTP_TYPE).toOtpType()
+        val config = OtpConfig(
+            type = type,
+            secret = fields.text(FieldKey.OTP_SECRET),
+            algorithm = fields.text(FieldKey.OTP_ALGORITHM).toOtpAlgorithm(),
+            digits = fields.integer(FieldKey.OTP_DIGITS) ?: if (type == OtpType.STEAM) 5 else 6,
+            periodSeconds = fields.integer(FieldKey.OTP_PERIOD) ?: if (type == OtpType.HOTP) null else 30,
+            counter = fields.long(FieldKey.OTP_COUNTER),
+            encoding = fields.text(FieldKey.OTP_ENCODING).toOtpEncoding(),
+            issuer = fields.text(FieldKey.OTP_ISSUER),
+            accountName = fields.text(FieldKey.OTP_ACCOUNT_NAME),
+        )
+        require(OtpConfigValidation.validate(config).isEmpty()) { "Invalid OTP archive configuration" }
+        return config
+    }
 
     fun toEntry(record: BackupEntryRecord): Entry {
         val type = requireNotNull(BackupArchiveKeyRegistry.entryType(record.type)) {
@@ -93,19 +111,7 @@ internal object KeyedEntryArchiveMapper {
                 privateKeyReference = fields.text(FieldKey.PASSKEY_DATA),
                 hardwareKeyInfo = fields.text(FieldKey.HARDWARE_INFO),
             )
-            EntryCredentialKind.OTP -> OtpCredential(
-                OtpConfig(
-                    type = fields.text(FieldKey.OTP_TYPE).toOtpType(),
-                    secret = fields.text(FieldKey.OTP_SECRET),
-                    algorithm = fields.text(FieldKey.OTP_ALGORITHM).toOtpAlgorithm(),
-                    digits = fields.integer(FieldKey.OTP_DIGITS) ?: 6,
-                    periodSeconds = fields.integer(FieldKey.OTP_PERIOD),
-                    counter = fields.long(FieldKey.OTP_COUNTER),
-                    encoding = fields.text(FieldKey.OTP_ENCODING).toOtpEncoding(),
-                    issuer = fields.text(FieldKey.OTP_ISSUER),
-                    accountName = fields.text(FieldKey.OTP_ACCOUNT_NAME),
-                ),
-            )
+            EntryCredentialKind.OTP -> OtpCredential(readOtpConfig(fields))
         }
         return Entry(
             identity = EntryIdentity(
@@ -285,18 +291,18 @@ private fun String?.toOtpType(): OtpType = when (this) {
     null, "totp" -> OtpType.TOTP
     "hotp" -> OtpType.HOTP
     "steam" -> OtpType.STEAM
-    else -> throw IllegalArgumentException("Unknown OTP type: $this")
+    else -> throw IllegalArgumentException("Unknown OTP type")
 }
 private fun String?.toOtpAlgorithm(): OtpHashAlgorithm = when (this) {
     null, "sha1" -> OtpHashAlgorithm.SHA1
     "sha256" -> OtpHashAlgorithm.SHA256
     "sha512" -> OtpHashAlgorithm.SHA512
-    else -> throw IllegalArgumentException("Unknown OTP algorithm: $this")
+    else -> throw IllegalArgumentException("Unknown OTP algorithm")
 }
 private fun String?.toOtpEncoding(): OtpSecretEncoding = when (this) {
     null, "base32" -> OtpSecretEncoding.BASE32
     "base64" -> OtpSecretEncoding.BASE64
-    else -> throw IllegalArgumentException("Unknown OTP encoding: $this")
+    else -> throw IllegalArgumentException("Unknown OTP encoding")
 }
 
 private fun String?.requireWifiSecurityType(): WifiSecurityType =

@@ -22,25 +22,10 @@ data class OtpConfigInput(
     override fun toString() = "OtpConfigInput(***)"
 
     fun parse(): OtpConfigInputResult {
-        val invalid = mutableSetOf<FieldKey>()
         val parsedDigits = digits.trim().toIntOrNull()
-        val validDigits = when (type) {
-            OtpType.STEAM -> parsedDigits == 5
-            OtpType.TOTP, OtpType.HOTP -> parsedDigits != null && parsedDigits in 6..8
-        }
-        if (!validDigits) invalid += FieldKey.OTP_DIGITS
         val parsedPeriod = if (type == OtpType.HOTP) null else period.trim().toIntOrNull()
-        if (type != OtpType.HOTP && (
-                parsedPeriod == null || parsedPeriod <= 0 || type == OtpType.STEAM && parsedPeriod != 30
-            )
-        ) {
-            invalid += FieldKey.OTP_PERIOD
-        }
         val parsedCounter = if (type == OtpType.HOTP) counter.trim().toLongOrNull() else null
-        if (type == OtpType.HOTP && (parsedCounter == null || parsedCounter < 0)) {
-            invalid += FieldKey.OTP_COUNTER
-        }
-        if (type == OtpType.STEAM && algorithm != OtpHashAlgorithm.SHA1) invalid += FieldKey.OTP_ALGORITHM
+        val invalid = OtpConfigValidation.validateParameters(type, algorithm, parsedDigits, parsedPeriod, parsedCounter)
 
         val normalizedSecret = try {
             when (encoding) {
@@ -52,7 +37,7 @@ data class OtpConfigInput(
         } catch (_: OtpGenerationError) {
             return OtpConfigInputResult.Invalid(invalid + FieldKey.OTP_SECRET)
         }
-        if (invalid.isNotEmpty()) return OtpConfigInputResult.Invalid(invalid.toSet())
+        if (invalid.isNotEmpty()) return OtpConfigInputResult.Invalid(invalid)
         return OtpConfigInputResult.Valid(OtpConfig(
             type = type,
             secret = normalizedSecret,

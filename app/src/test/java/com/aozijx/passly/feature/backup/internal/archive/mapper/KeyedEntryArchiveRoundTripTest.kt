@@ -19,6 +19,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.feature.backup.internal.archive.BackupJson
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -172,7 +173,11 @@ class KeyedEntryArchiveRoundTripTest {
                     assertEquals(type.toArchiveKey(), record.fieldText("otp_type"))
                     assertEquals(algorithm.toArchiveKey(), record.fieldText("otp_algorithm"))
                     assertEquals(encoding.toArchiveKey(), record.fieldText("otp_encoding"))
-                    assertEquals(entry, mapper.toEntry(record))
+                    if (type == OtpType.STEAM && algorithm != OtpHashAlgorithm.SHA1) {
+                        assertThrows(IllegalArgumentException::class.java) { mapper.toEntry(record) }
+                    } else {
+                        assertEquals(entry, mapper.toEntry(record))
+                    }
                 }
             }
         }

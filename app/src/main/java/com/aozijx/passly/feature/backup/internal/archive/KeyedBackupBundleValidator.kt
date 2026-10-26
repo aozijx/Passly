@@ -11,6 +11,7 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupFieldValue
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
+import com.aozijx.passly.feature.backup.internal.archive.mapper.KeyedEntryArchiveMapper
 
 internal object KeyedBackupBundleValidator {
     private val safeId = Regex("[A-Za-z0-9_-]{1,160}")
@@ -103,7 +104,7 @@ internal object KeyedBackupBundleValidator {
                 "条目缺少必填字段: ${BackupArchiveKeyRegistry.fieldKey(required)} (${entry.id})"
             }
         }
-        validateOtp(entry, knownFields)
+        validateOtp(entry)
     }
 
     private fun expectedKind(key: FieldKey, definitionType: EntryFieldValueType?): String = when (key) {
@@ -161,20 +162,9 @@ internal object KeyedBackupBundleValidator {
         else -> false
     }
 
-    private fun validateOtp(entry: BackupEntryRecord, fields: Map<FieldKey, BackupFieldValue>) {
+    private fun validateOtp(entry: BackupEntryRecord) {
         if (BackupArchiveKeyRegistry.entryType(entry.type) != com.aozijx.passly.domain.entry.model.EntryType.OTP) return
-        val type = fields[FieldKey.OTP_TYPE]?.text ?: "totp"
-        val digits = fields[FieldKey.OTP_DIGITS]?.integerValue ?: 6
-        require(digits in 5..10) { "OTP 位数无效: ${entry.id}" }
-        when (type) {
-            "hotp" -> require((fields[FieldKey.OTP_COUNTER]?.longValue ?: -1L) >= 0) {
-                "HOTP 计数器无效: ${entry.id}"
-            }
-            "totp", "steam" -> require((fields[FieldKey.OTP_PERIOD]?.integerValue ?: 30) in 1..300) {
-                "OTP 周期无效: ${entry.id}"
-            }
-            else -> throw IllegalArgumentException("未知 OTP 类型: $type (${entry.id})")
-        }
+        KeyedEntryArchiveMapper.readOtpConfig(entry.fields.associate { it.key to it.value })
     }
 
     private fun validateLinks(
