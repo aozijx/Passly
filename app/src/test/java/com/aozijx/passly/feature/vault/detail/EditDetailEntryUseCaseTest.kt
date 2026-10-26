@@ -9,6 +9,7 @@ import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.LogFieldKeys
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
@@ -37,6 +38,25 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EditDetailEntryUseCaseTest {
+    @Test
+    fun invalidMetadataReturnsValidationFailureWithoutThrowingOrWriting() = runTest {
+        for (edit in listOf(
+            EntryEdit.SetTitle("  "),
+            EntryEdit.SetTags(setOf("valid", " ")),
+            EntryEdit.SetApplicationIds(setOf(" ")),
+        )) {
+            val original = entry(version = 1)
+            val query = FakeQueryRepository(original)
+            val command = FakeCommandRepository(query)
+            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+
+            val result = useCase.edit(ENTRY_ID, edit)
+
+            assertTrue(result is AppResult.Failure && result.error is ValidationError)
+            assertTrue(command.submittedChanges.isEmpty())
+            assertEquals(original, query.current)
+        }
+    }
 
     @Test
     fun invalidCardEditReturnsValidationFailureWithoutWriting() = runTest {
@@ -48,7 +68,7 @@ class EditDetailEntryUseCaseTest {
         val command = FakeCommandRepository(query)
         val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
-        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetFieldValue(FieldKey.CARD_NUMBER, "4111111111111112"))
+        val result = useCase.edit(ENTRY_ID, EntryEdit.SetFieldValue(FieldKey.CARD_NUMBER, "4111111111111112"))
 
         assertTrue(result is AppResult.Failure && result.error is ValidationError)
         assertTrue(command.submittedChanges.isEmpty())
@@ -67,7 +87,7 @@ class EditDetailEntryUseCaseTest {
         val command = FakeCommandRepository(query)
         val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
-        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetFieldValue(FieldKey.CARD_HOLDER, "After"))
+        val result = useCase.edit(ENTRY_ID, EntryEdit.SetFieldValue(FieldKey.CARD_HOLDER, "After"))
 
         val updated = (result as AppResult.Success<Entry>).data
         assertEquals("After", updated.secret.card?.cardHolder)
@@ -83,7 +103,7 @@ class EditDetailEntryUseCaseTest {
         val command = FakeCommandRepository(query)
         val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
-        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetFieldValue(FieldKey.CARD_NUMBER, "5555555555554444"))
+        val result = useCase.edit(ENTRY_ID, EntryEdit.SetFieldValue(FieldKey.CARD_NUMBER, "5555555555554444"))
 
         assertTrue((result as AppResult.Failure).error is ValidationError)
         assertTrue(command.submittedChanges.isEmpty())
@@ -95,7 +115,7 @@ class EditDetailEntryUseCaseTest {
         val command = FakeCommandRepository(query)
         val useCase = EditDetailEntryUseCase(query, command, RestrictedSessionAccessState, testLogger())
 
-        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTags(emptySet()))
+        val result = useCase.edit(ENTRY_ID, EntryEdit.SetTags(emptySet()))
 
         assertTrue((result as AppResult.Failure).error is SessionModeRestricted)
         assertTrue(command.submittedChanges.isEmpty())
@@ -111,7 +131,7 @@ class EditDetailEntryUseCaseTest {
         val command = FakeCommandRepository(query)
         val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
-        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTags(emptySet()))
+        val result = useCase.edit(ENTRY_ID, EntryEdit.SetTags(emptySet()))
 
         assertTrue(result is AppResult.Success)
         assertEquals(emptySet<String>(), command.submittedChanges.single().profile?.tags)
@@ -125,7 +145,7 @@ class EditDetailEntryUseCaseTest {
         val logger = RecordingTestLogger()
         val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, logger)
 
-        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
+        val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
 
         val updated = (result as AppResult.Success<Entry>).data
         assertEquals("Renamed", updated.title)
@@ -154,7 +174,7 @@ class EditDetailEntryUseCaseTest {
         }
         val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
-        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
+        val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
 
         val updated = (result as AppResult.Success<Entry>).data
         assertEquals("Renamed", updated.title)
@@ -173,7 +193,7 @@ class EditDetailEntryUseCaseTest {
         val logger = RecordingTestLogger()
         val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, logger)
 
-        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
+        val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
 
         assertTrue((result as AppResult.Failure).error is Conflict)
         assertEquals(2, command.expectedVersions.size)
@@ -189,7 +209,7 @@ class EditDetailEntryUseCaseTest {
         }
         val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
-        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
+        val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
 
         assertTrue((result as AppResult.Failure).error is ValidationError)
         assertEquals(1, command.expectedVersions.size)
@@ -205,7 +225,7 @@ class EditDetailEntryUseCaseTest {
             testLogger(),
         )
 
-        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("Renamed"))
+        val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
 
         assertTrue((result as AppResult.Failure).error is NotFound)
     }
@@ -224,9 +244,9 @@ class EditDetailEntryUseCaseTest {
         }
         val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
-        val first = async { useCase.edit(ENTRY_ID, DetailEntryEdit.SetTitle("First")) }
+        val first = async { useCase.edit(ENTRY_ID, EntryEdit.SetTitle("First")) }
         firstStarted.await()
-        val second = async { useCase.edit(ENTRY_ID, DetailEntryEdit.SetNotes("Second notes")) }
+        val second = async { useCase.edit(ENTRY_ID, EntryEdit.SetNotes("Second notes")) }
         runCurrent()
 
         assertEquals(listOf(1), command.expectedVersions)
@@ -258,7 +278,7 @@ class EditDetailEntryUseCaseTest {
 
         val result = useCase.edit(
             ENTRY_ID,
-            DetailEntryEdit.SetPrimaryUrl("https://new.example.com"),
+            EntryEdit.SetPrimaryUrl("https://new.example.com"),
         )
 
         val updated = (result as AppResult.Success<Entry>).data
@@ -284,7 +304,7 @@ class EditDetailEntryUseCaseTest {
 
         val result = useCase.edit(
             ENTRY_ID,
-            DetailEntryEdit.SetApplicationIds(setOf("com.example.new")),
+            EntryEdit.SetApplicationIds(setOf("com.example.new")),
         )
 
         val updated = (result as AppResult.Success<Entry>).data
@@ -301,7 +321,7 @@ class EditDetailEntryUseCaseTest {
         }
         val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
-        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.ToggleFavorite)
+        val result = useCase.edit(ENTRY_ID, EntryEdit.ToggleFavorite)
 
         val updated = (result as AppResult.Success<Entry>).data
         assertEquals(true, updated.favorite)

@@ -11,33 +11,17 @@ import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryUpdate
-import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.policy.EntryFieldEditor
-import com.aozijx.passly.domain.entry.policy.EntryFieldEditResult
+import com.aozijx.passly.domain.entry.policy.EntryEdit
+import com.aozijx.passly.domain.entry.policy.EntryEditResult
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import javax.inject.Inject
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.CancellationException
-
-internal sealed interface DetailEntryEdit {
-    data class SetTitle(val value: String) : DetailEntryEdit
-    data object ToggleFavorite : DetailEntryEdit
-    data class SetFieldValue(
-        val fieldKey: FieldKey,
-        val value: String,
-    ) : DetailEntryEdit
-    data class SetNotes(val value: String?) : DetailEntryEdit
-    data class SetPrimaryUrl(val value: String?) : DetailEntryEdit
-    data class SetApplicationIds(val values: Set<String>) : DetailEntryEdit
-    data class SetTags(val values: Set<String>) : DetailEntryEdit
-    data class SetIcon(val value: EntryIcon) : DetailEntryEdit
-}
 
 internal class EditDetailEntryUseCase @Inject constructor(
     private val entryQueryRepository: EntryQueryRepository,
@@ -49,7 +33,7 @@ internal class EditDetailEntryUseCase @Inject constructor(
 
     suspend fun edit(
         entryId: EntryId,
-        edit: DetailEntryEdit,
+        edit: EntryEdit,
     ): AppResult<Entry> = logger.inSpan(Operations.VaultEntryUpdate) {
         val startedAt = monotonicTimeMs()
         var entryType: EntryType? = null
@@ -77,7 +61,7 @@ internal class EditDetailEntryUseCase @Inject constructor(
 
     private suspend fun performEdit(
         entryId: EntryId,
-        edit: DetailEntryEdit,
+        edit: EntryEdit,
         observeType: (EntryType) -> Unit,
     ): AppResult<Entry> {
         if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
@@ -88,8 +72,10 @@ internal class EditDetailEntryUseCase @Inject constructor(
             val latest = entryQueryRepository.getById(entryId)
                 ?: return AppResult.Failure(NotFound())
             observeType(latest.type)
-            val updated = edit.applyTo(latest)
-                ?: return AppResult.Failure(ValidationError())
+            val updated = when (val applied = edit.applyTo(latest)) {
+                is EntryEditResult.Updated -> applied.entry
+                is EntryEditResult.Invalid, EntryEditResult.Unsupported -> return AppResult.Failure(ValidationError())
+            }
             val changes = updated.changesFrom(latest)
                 ?: return AppResult.Success(latest)
             when (
@@ -127,45 +113,3 @@ private fun Entry.changesFrom(previous: Entry): EntryUpdate? {
         secret = changedSecret,
     )
 }
-
-internal fun DetailEntryEdit.applyTo(entry: Entry): Entry? = when (this) {
-    is DetailEntryEdit.SetTitle -> if (entry.type == EntryType.WIFI) {
-        entry.secret.wifi?.let { wifi ->
-            entry.copy(
-                profile = entry.profile.copy(title = value),
-                secret = entry.secret.copy(credential = wifi.copy(ssid = value)),
-            )
-        }
-    } else {
-        entry.copy(profile = entry.profile.copy(title = value))
-    }
-    DetailEntryEdit.ToggleFavorite -> entry.copy(
-        profile = entry.profile.copy(favorite = !entry.favorite),
-    )
-    is DetailEntryEdit.SetFieldValue -> applyFieldValue(entry)
-    is DetailEntryEdit.SetNotes -> entry.copy(
-        secret = entry.secret.copy(notes = value),
-    )
-    is DetailEntryEdit.SetPrimaryUrl -> entry.copy(
-        profile = entry.profile.copy(
-            associations = entry.associations.copy(primaryUrl = value),
-        ),
-    )
-    is DetailEntryEdit.SetApplicationIds -> entry.copy(
-        profile = entry.profile.copy(
-            associations = entry.associations.copy(applicationIds = values),
-        ),
-    )
-    is DetailEntryEdit.SetTags -> entry.copy(
-        profile = entry.profile.copy(tags = values),
-    )
-    is DetailEntryEdit.SetIcon -> entry.copy(
-        profile = entry.profile.copy(icon = value),
-    )
-}
-
-private fun DetailEntryEdit.SetFieldValue.applyFieldValue(entry: Entry): Entry? =
-    when (val result = EntryFieldEditor.edit(entry, fieldKey, value)) {
-        is EntryFieldEditResult.Updated -> result.entry
-        EntryFieldEditResult.Unsupported, is EntryFieldEditResult.Invalid -> null
-    }

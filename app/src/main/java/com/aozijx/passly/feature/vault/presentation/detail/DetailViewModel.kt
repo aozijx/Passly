@@ -15,7 +15,8 @@ import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
-import com.aozijx.passly.feature.vault.detail.DetailEntryEdit
+import com.aozijx.passly.domain.entry.policy.EntryEdit
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -137,7 +138,7 @@ class DetailViewModel @Inject internal constructor(
                 } else {
                     viewModelScope.launch {
                         persistEntryEdit(
-                            edit = DetailEntryEdit.SetTitle(newTitle),
+                            edit = if (current.type == EntryType.WIFI) EntryEdit.SetWifiNetworkName(newTitle) else EntryEdit.SetTitle(newTitle),
                             completion = DetailEditCompletion.Title,
                         )
                     }
@@ -148,7 +149,7 @@ class DetailViewModel @Inject internal constructor(
                 if (_uiState.value.entry == null) return
                 viewModelScope.launch {
                     persistEntryEdit(
-                        edit = DetailEntryEdit.ToggleFavorite,
+                        edit = EntryEdit.ToggleFavorite,
                         completion = DetailEditCompletion.Favorite,
                     )
                 }
@@ -159,7 +160,7 @@ class DetailViewModel @Inject internal constructor(
                 if (_uiState.value.entry == null) return
                 viewModelScope.launch {
                     persistEntryEdit(
-                        DetailEntryEdit.SetApplicationIds(setOf(event.packageName)),
+                        EntryEdit.SetApplicationIds(setOf(event.packageName)),
                         DetailEditCompletion.Associations,
                     )
                 }
@@ -177,7 +178,7 @@ class DetailViewModel @Inject internal constructor(
                 val notes = _uiState.value.fieldEdits.draft(DetailDraftKey.Notes)
                 viewModelScope.launch {
                     persistEntryEdit(
-                        DetailEntryEdit.SetNotes(notes.ifBlank { null }),
+                        EntryEdit.SetNotes(notes.ifBlank { null }),
                         DetailEditCompletion.Notes,
                     )
                 }
@@ -197,7 +198,7 @@ class DetailViewModel @Inject internal constructor(
                 val domain = state.fieldEdits.draft(DetailDraftKey.Domain)
                 viewModelScope.launch {
                     persistEntryEdit(
-                        DetailEntryEdit.SetPrimaryUrl(domain.trim().ifBlank { null }),
+                        EntryEdit.SetPrimaryUrl(domain.trim().ifBlank { null }),
                         DetailEditCompletion.Associations,
                     )
                 }
@@ -237,7 +238,7 @@ class DetailViewModel @Inject internal constructor(
                 viewModelScope.launch {
                     val fieldKey = event.field.fieldKey
                     persistEntryEdit(
-                        edit = DetailEntryEdit.SetFieldValue(fieldKey, event.newValue),
+                        edit = EntryEdit.SetFieldValue(fieldKey, event.newValue),
                         completion = DetailEditCompletion.Field(fieldKey),
                     )
                 }
@@ -278,7 +279,7 @@ class DetailViewModel @Inject internal constructor(
                 ) {
                     is TagNormalizationResult.Valid -> viewModelScope.launch {
                         persistEntryEdit(
-                            edit = DetailEntryEdit.SetTags(normalized.tags),
+                            edit = EntryEdit.SetTags(normalized.tags),
                             completion = DetailEditCompletion.Tags,
                         )
                     }
@@ -655,7 +656,7 @@ class DetailViewModel @Inject internal constructor(
     }
 
     private suspend fun persistEntryEdit(
-        edit: DetailEntryEdit,
+        edit: EntryEdit,
         completion: DetailEditCompletion,
     ) {
         val entryId = _uiState.value.entry?.id ?: return
@@ -666,7 +667,7 @@ class DetailViewModel @Inject internal constructor(
 
     private suspend fun persistStartedEntryEdit(
         entryId: EntryId,
-        edit: DetailEntryEdit,
+        edit: EntryEdit,
         completion: DetailEditCompletion,
     ) {
         when (val result = editDetailEntry.edit(entryId, edit)) {
@@ -683,7 +684,7 @@ class DetailViewModel @Inject internal constructor(
                 )
                 if (
                     completion is DetailEditCompletion.Field &&
-                    edit is DetailEntryEdit.SetFieldValue
+                    edit is EntryEdit.SetFieldValue
                 ) {
                     setRevealedField(edit.fieldKey, OwnedChars.fromString(edit.value))
                 }
@@ -737,7 +738,7 @@ class DetailViewModel @Inject internal constructor(
             }
             persistStartedEntryEdit(
                 entryId = entryId,
-                edit = DetailEntryEdit.SetIcon(persistedSource.toEntryIcon()),
+                edit = EntryEdit.SetIcon(persistedSource.toEntryIcon()),
                 completion = DetailEditCompletion.Icon,
             )
         }

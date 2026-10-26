@@ -32,6 +32,8 @@
 - `CreateEntryUseCase` 检查 session、必填字段、领域校验并通过 Repository 写入。
 - Domain 的 `EntryDraftMaterializer` 把 `EntryDraft` 和调用方提供的身份转成 `Entry`；Feature 保留创建校验、
   会话检查、身份生成和 Repository 写入。下文注册表与统一编辑会话仍为设计，不代表已实现。
+- 详情已有条目的逐项编辑使用 Domain `EntryEdit` / `EntryEditResult`；Feature 编辑用例负责加载最新版本、
+  会话检查、互斥、冲突重试与写入。无效元数据返回字段错误，不依赖模型构造异常；此路径不是下文的统一表单编辑会话。
 - Login 创建页已经把网站地址映射到 `PRIMARY_URL`，把绑定应用映射到
   `APPLICATION_IDS`；两者是独立语义，编辑器不能再以“网站或应用地址”混用。
 

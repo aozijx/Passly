@@ -72,6 +72,11 @@ OTP 生成、密钥编解码和 `otpauth:` URI 协议位于 `domain/entry/otp`�
 范围依据 [Mastercard 官方说明](https://www.mastercard.us/content/dam/mccom/en-us/documents/merchant-2-series-BIN-impact-checklist-aug-2016.pdf)。
 通过校验但未识别的卡组织使用 `CardNetworkMatch.Unknown` 表达。
 
+详情编辑命令为 Domain 的 `EntryEdit`，其 `applyTo` 返回 `EntryEditResult.Updated / Invalid / Unsupported`，
+不以 null 合并失败原因。空标题、空白标签和应用 ID 在构造模型前返回字段错误；命令字符串表示隐藏输入。
+普通标题命令仅更新 Profile；Wi-Fi 详情的网络名称编辑由 Presentation 显式选择 `SetWifiNetworkName`，
+同时更新标题与 SSID，保留原有界面行为。纯规则与测试位于 Domain，Feature 只编排会话、重试与写入。
+
 单字段凭据更新由 Domain `EntryFieldEditor` 校验字段归属并复制目标值，保留无关与未揭示字段；
 随后仅校验本次替换字段，复用创建规则中的卡号、CVV、登录/Wi-Fi 密码校验。无效输入以
 `Invalid(violations)` 返回字段与错误码；不能对未揭示 bundle 直接执行整条创建校验。
