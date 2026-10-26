@@ -31,6 +31,8 @@ OTP 与 Wi-Fi 编辑器分别使用 `ApplyToOtpEditor`、`ApplyToWifiEditor`，�
 导入回调为挂起调用：首页 OTP 经 `ImportScannedOtpUseCase` 转换、校验并等待仓库保存成功后，
 才返回 `Applied` 并关闭 Scanner；拒绝、无效配置或写入失败返回 `Rejected`，保留结果供重试。
 编辑器的 `Applied` 表示内容已被表单接受，Wi-Fi 首页的 `Applied` 表示已进入编辑页，不表示已保存。
+OTP 与 Wi-Fi 编辑器都通过带接受回执的 ViewModel 方法应用扫码内容；锁定、保存中或销毁后返回
+`Rejected`，不改写表单，也不因一次被忽略的 action 而关闭扫码结果。
 `ScannerImportSession` 在确认期间拦截重复确认、重扫与相册切换；退出会取消 Route 的确认协程，
 旧结果的迟到回执不再关闭页面或弹提示。取消不代表已完成的数据库写入会回滚。
 
@@ -50,8 +52,8 @@ Domain 只接受 `WifiSecurityType.Open / Wep / WpaPersonal`。数据库与备�
 添加与扫码预填共用同一 `EntryDraft` 创建链路。
 
 首页扫码不会直接保存 Wi-Fi。用户确认后通过一次性 seed token 进入独立 Wi-Fi 编辑页；seed 只存在于 Vault
-图作用域内存，消费、锁定或作用域销毁后清除。编辑页重新扫码只替换 SSID、安全类型、密码和隐藏网络，不覆盖
-备注、标签或用户已经修改的标题。
+图作用域内存，消费、锁定或作用域销毁后清除。编辑页重新扫码只替换 SSID、安全类型、密码和隐藏网络，
+密码显示状态重置为隐藏，保留备注与标签。创建的条目标题使用当前 SSID，保留网络名称首尾空格。
 
 ## 扩展规则
 

@@ -43,6 +43,67 @@ class AddWifiViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
+    fun `accepted scan preserves notes tags and exact network fields`() {
+        val model = viewModel(RecordingRepository())
+        model.onAction(AddWifiAction.NotesChanged("Keep notes"))
+        model.onAction(AddWifiAction.TagsChanged("home,network"))
+        model.onAction(AddWifiAction.PasswordVisibilityChanged(true))
+        val scanned = WifiQrPayload(" Office ", " password ", WifiSecurityType.WpaPersonal, true)
+
+        assertTrue(model.tryApplyScannedWifi(scanned))
+
+        val form = model.uiState.value.form
+        assertEquals(scanned.ssid, form.ssid)
+        assertEquals(scanned.password, form.password)
+        assertEquals(scanned.securityType, form.securityType)
+        assertEquals(scanned.isHidden, form.isHidden)
+        assertFalse(form.isPasswordVisible)
+        assertEquals("Keep notes", form.notes)
+        assertEquals("home,network", form.tags)
+    }
+
+    @Test
+    fun `scan during save is rejected without changing submitted credentials`() = runTest {
+        val release = CompletableDeferred<Unit>()
+        val created = mutableListOf<Entry>()
+        val model = viewModel(RecordingRepository { entry ->
+            created += entry
+            release.await()
+            AppResult.Success(entry.id)
+        })
+        enterValidWpa(model)
+        model.onAction(AddWifiAction.Save)
+        runCurrent()
+
+        assertFalse(model.tryApplyScannedWifi(WifiQrPayload("Other", "other-password", WifiSecurityType.WpaPersonal, true)))
+        assertEquals("Office", model.uiState.value.form.ssid)
+        assertEquals("password", model.uiState.value.form.password)
+        assertEquals("Office", created.single().secret.wifi?.ssid)
+        release.complete(Unit)
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun `locked and destroyed editors reject scans without retaining payload`() = runTest {
+        val session = MutableSession()
+        val model = viewModel(RecordingRepository(), session)
+        val scanned = WifiQrPayload("Office", "password", WifiSecurityType.WpaPersonal, false)
+        session.lock()
+        // Reject immediately, even before the authentication collector runs.
+        assertFalse(model.tryApplyScannedWifi(scanned))
+        assertEquals("", model.uiState.value.form.password)
+        session.unlock()
+        runCurrent()
+        assertTrue(model.tryApplyScannedWifi(scanned))
+        val onCleared = model.javaClass.getDeclaredMethod("onCleared")
+        onCleared.isAccessible = true
+        onCleared.invoke(model)
+        assertFalse(model.tryApplyScannedWifi(scanned))
+        assertEquals("", model.uiState.value.form.ssid)
+        assertEquals("", model.uiState.value.form.password)
+    }
+
+    @Test
     fun `old save cannot clear a new form after locking and unlocking`() = runTest {
         val release = CompletableDeferred<Unit>()
         val repository = RecordingRepository { entry ->

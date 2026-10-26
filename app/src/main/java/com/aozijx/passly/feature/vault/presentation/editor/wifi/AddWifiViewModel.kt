@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.editor.wifi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.entry.policy.WifiQrPayload
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveSession
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -47,7 +48,6 @@ class AddWifiViewModel @Inject constructor(
             is AddWifiAction.HiddenChanged -> mutateForm { it.copy(isHidden = action.hidden) }
             is AddWifiAction.NotesChanged -> mutateForm { it.copy(notes = action.value) }
             is AddWifiAction.TagsChanged -> mutateForm { it.copy(tags = action.value) }
-            is AddWifiAction.ApplyScannedWifi -> mutateForm { it.applyScanned(action.payload) }
             AddWifiAction.Save -> save()
         }
     }
@@ -63,10 +63,14 @@ class AddWifiViewModel @Inject constructor(
         }
     }
 
-    private fun mutateForm(transform: (AddWifiFormState) -> AddWifiFormState) {
-        if (!saveSession.canEdit()) return
+    fun tryApplyScannedWifi(payload: WifiQrPayload): Boolean =
+        mutateForm { it.applyScanned(payload) }
+
+    private fun mutateForm(transform: (AddWifiFormState) -> AddWifiFormState): Boolean {
+        if (!saveSession.canEdit()) return false
         val current = _uiState.value
         _uiState.value = current.withForm(transform(current.form))
+        return true
     }
 
     private fun save() {

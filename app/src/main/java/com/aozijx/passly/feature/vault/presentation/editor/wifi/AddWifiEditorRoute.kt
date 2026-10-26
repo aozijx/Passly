@@ -65,8 +65,9 @@ fun AddWifiEditorRoute(
             onImport = { scannerImport ->
                 when (scannerImport) {
                     is ScannerImport.Wifi -> {
-                        viewModel.onAction(AddWifiAction.ApplyScannedWifi(scannerImport.payload))
-                        ScannerImportHandlingResult.Applied
+                        if (viewModel.tryApplyScannedWifi(scannerImport.payload)) {
+                            ScannerImportHandlingResult.Applied
+                        } else ScannerImportHandlingResult.Rejected
                     }
                     is ScannerImport.Otp -> ScannerImportHandlingResult.Rejected
                 }
