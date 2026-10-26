@@ -290,7 +290,7 @@ class AddWifiViewModelTest {
         viewModel.onAction(AddWifiAction.Save)
         advanceUntilIdle()
 
-        assertTrue(viewModel.effects.first() is EditorSaveEffect.Failed)
+        assertEquals(EditorSaveEffect.Failed, viewModel.effects.first())
         assertEquals("password", viewModel.uiState.value.form.password)
         assertTrue(viewModel.uiState.value.canSave)
         assertEquals(AddWifiSavePhase.Idle, viewModel.uiState.value.savePhase)

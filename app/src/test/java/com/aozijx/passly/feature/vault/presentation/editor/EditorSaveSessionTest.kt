@@ -26,6 +26,18 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class EditorSaveSessionTest {
     @Test
+    fun domainFailureUsesLocalizedFallbackRatherThanInternalErrorCode() = runTest {
+        val fixture = Fixture(backgroundScope) { AppResult.Failure(Conflict()) }
+        val effects = mutableListOf<EditorSaveEffect>()
+        backgroundScope.launch { fixture.session.effects.toList(effects) }
+        fixture.save()
+        runCurrent()
+        assertEquals(listOf(EditorSaveEffect.Failed), effects)
+        assertFalse(fixture.saving)
+        assertEquals("original", fixture.form)
+    }
+
+    @Test
     fun conflatedLockAndUnlockWithTheSameTimestampStillInvalidatesTheOldEffect() = runTest {
         val fixture = Fixture(backgroundScope)
         fixture.save()
@@ -177,7 +189,7 @@ class EditorSaveSessionTest {
         backgroundScope.launch { fixture.session.effects.toList(effects) }
         fixture.save()
         runCurrent()
-        assertEquals(listOf(EditorSaveEffect.Failed(null)), effects)
+        assertEquals(listOf(EditorSaveEffect.Failed), effects)
         assertFalse(fixture.saving)
         assertEquals("original", fixture.form)
     }

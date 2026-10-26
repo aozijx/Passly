@@ -79,9 +79,9 @@ internal class EditorSaveSession(
                 return@launch
             }
             val effect = try {
-                when (val result = create(draft())) {
+                when (create(draft())) {
                     is AppResult.Success -> EditorSaveEffect.Saved
-                    is AppResult.Failure -> EditorSaveEffect.Failed(result.error.code)
+                    is AppResult.Failure -> EditorSaveEffect.Failed
                 }
             } catch (cancelled: CancellationException) {
                 if (phase === attempt) {
@@ -92,7 +92,7 @@ internal class EditorSaveSession(
                 }
                 throw cancelled
             } catch (_: Exception) {
-                EditorSaveEffect.Failed(null)
+                EditorSaveEffect.Failed
             }
             if (!isCurrent(attempt) || !currentCoroutineContext().isActive) {
                 if (phase === attempt) clear()
@@ -101,7 +101,7 @@ internal class EditorSaveSession(
             phase = Phase.Finished(attempt)
             when (effect) {
                 EditorSaveEffect.Saved -> onClear()
-                is EditorSaveEffect.Failed -> onIdle()
+                EditorSaveEffect.Failed -> onIdle()
             }
             deliveries.trySend(Delivery(attempt, effect))
         }
