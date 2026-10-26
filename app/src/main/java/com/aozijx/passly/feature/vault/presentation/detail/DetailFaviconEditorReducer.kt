@@ -30,7 +30,9 @@ internal object DetailFaviconEditorReducer {
             source = mutation.source,
             work = DetailFaviconWorkState.Idle,
             pendingInputPath = null,
-            promotedCandidatePath = null,
+            promotedCandidatePath = state.promotedCandidatePath?.takeIf {
+                mutation.source == DetailFaviconSource.PrivateImage(it)
+            },
             overlay = DetailFaviconOverlay.None,
         )
 
@@ -38,7 +40,6 @@ internal object DetailFaviconEditorReducer {
         is DetailMutation.FaviconSearchChanged -> state.copy(searchQuery = mutation.value)
         is DetailMutation.FaviconImageUrlChanged -> state.copy(
             imageUrl = mutation.value,
-            work = DetailFaviconWorkState.Idle,
         )
 
         DetailMutation.FaviconProcessingStarted -> state.copy(

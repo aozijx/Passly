@@ -8,6 +8,28 @@ import org.junit.Test
 class DetailFaviconReducerTest {
 
     @Test
+    fun `selecting the same promoted image preserves candidate ownership`() {
+        val source = DetailFaviconSource.PrivateImage("promoted")
+        val editor = DetailFaviconEditorState.Open(
+            initialSource = DetailFaviconSource.InferredDefault,
+            source = source,
+            promotedCandidatePath = "promoted",
+        )
+        val updated = DetailFaviconEditorReducer.reduce(editor, DetailMutation.FaviconSourceChanged(source))
+        assertEquals("promoted", (updated as DetailFaviconEditorState.Open).promotedCandidatePath)
+    }
+
+    @Test
+    fun `changing url does not mark a running image operation idle`() {
+        val editor = DetailFaviconEditorState.Open(
+            initialSource = DetailFaviconSource.InferredDefault,
+            work = DetailFaviconWorkState.Processing,
+        )
+        val updated = DetailFaviconEditorReducer.reduce(editor, DetailMutation.FaviconImageUrlChanged("https://example.com/icon"))
+        assertEquals(DetailFaviconWorkState.Processing, (updated as DetailFaviconEditorState.Open).work)
+    }
+
+    @Test
     fun openMapsBuiltInIconToSingleDraftSource() {
         val actual = DetailReducer.reduce(
             DetailUiState(),

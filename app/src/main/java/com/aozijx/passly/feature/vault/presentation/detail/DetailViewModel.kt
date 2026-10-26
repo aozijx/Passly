@@ -313,6 +313,7 @@ class DetailViewModel @Inject internal constructor(
             DetailUiAction.OpenFaviconEditor -> {
                 if (faviconSession.isSaving) return
                 val icon = _uiState.value.entry?.icon ?: return
+                (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let(faviconSession::close)
                 mutate(DetailMutation.FaviconEditorOpened(icon.toDetailFaviconSource()))
             }
 
@@ -335,8 +336,8 @@ class DetailViewModel @Inject internal constructor(
                 mutate(DetailMutation.FaviconImageUrlChanged(event.value))
 
             is DetailUiAction.PickedFaviconImage -> {
-                faviconSession.launchPreparation {
-                    stageFaviconInput { faviconImageProcessor.stageUpload(event.uri) }
+                faviconSession.launchPreparation { token ->
+                    stageFaviconInput(token) { faviconImageProcessor.stageUpload(event.uri) }
                 }
             }
 
@@ -344,18 +345,19 @@ class DetailViewModel @Inject internal constructor(
                 val editor = _uiState.value.faviconEditor as? DetailFaviconEditorState.Open
                     ?: return
                 val url = editor.imageUrl
-                faviconSession.launchPreparation {
-                    stageFaviconInput { faviconImageProcessor.stageHttpsUrl(url) }
+                faviconSession.launchPreparation { token ->
+                    stageFaviconInput(token) { faviconImageProcessor.stageHttpsUrl(url) }
                 }
             }
 
             DetailUiAction.UseFaviconWithoutCrop -> {
-                faviconSession.launchPreparation { processPendingFavicon(crop = null) }
+                faviconSession.launchPreparation { token -> processPendingFavicon(token, crop = null) }
             }
 
             is DetailUiAction.CropFaviconImage -> {
-                faviconSession.launchPreparation {
+                faviconSession.launchPreparation { token ->
                     processPendingFavicon(
+                        token,
                         FaviconCropRequest(event.zoom, event.offsetX, event.offsetY),
                     )
                 }
@@ -787,23 +789,32 @@ class DetailViewModel @Inject internal constructor(
     }
 
     private suspend fun stageFaviconInput(
+        token: DetailFaviconSession.Preparation.Active,
         stage: suspend () -> Result<String>,
     ) {
         val editor = _uiState.value.faviconEditor as? DetailFaviconEditorState.Open ?: return
         if (editor.work == DetailFaviconWorkState.Processing) return
         mutate(DetailMutation.FaviconProcessingStarted)
-        stage().fold(
+        faviconSession.publishPreparation(
+            token = token,
+            result = stage(),
+            editor = editor,
+            use = DetailFaviconSession.PreparedImageUse.CROP_INPUT,
             onSuccess = { mutate(DetailMutation.FaviconInputStaged(it)) },
             onFailure = { mutate(DetailMutation.FaviconProcessingFailed(it.toFaviconProcessingError())) },
         )
     }
 
-    private suspend fun processPendingFavicon(crop: FaviconCropRequest?) {
+    private suspend fun processPendingFavicon(token: DetailFaviconSession.Preparation.Active, crop: FaviconCropRequest?) {
         val editor = _uiState.value.faviconEditor as? DetailFaviconEditorState.Open ?: return
         val path = editor.pendingInputPath ?: return
         if (editor.work == DetailFaviconWorkState.Processing) return
         mutate(DetailMutation.FaviconProcessingStarted)
-        faviconImageProcessor.process(path, crop).fold(
+        faviconSession.publishPreparation(
+            token = token,
+            result = faviconImageProcessor.process(path, crop),
+            editor = editor,
+            use = DetailFaviconSession.PreparedImageUse.SOURCE,
             onSuccess = {
                 mutate(
                     DetailMutation.FaviconSourceChanged(
