@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.CardExpiry
 import com.aozijx.passly.domain.entry.model.credential.CardExpiryParseResult
+import com.aozijx.passly.domain.entry.otp.OtpConfigValidation
 
 data class EntryViolation(
     val field: FieldKey,
@@ -35,7 +36,7 @@ object EntryValidation {
             EntryType.SSH_KEY -> validateSsh(entry)
             EntryType.WIFI -> validateWifi(entry)
             EntryType.PASSKEY -> requireValue(entry.secret.passkey?.privateKeyReference, FieldKey.PASSKEY_DATA)
-            EntryType.OTP -> requireValue(entry.secret.otp?.config?.secret, FieldKey.OTP_SECRET)
+            EntryType.OTP -> validateOtp(entry)
             EntryType.SEED_PHRASE -> validateSeedPhrase(entry)
             EntryType.RECOVERY_CODE -> validateRecoveryCodes(entry)
             EntryType.ACCOUNT,
@@ -45,6 +46,22 @@ object EntryValidation {
 
     private fun MutableSet<EntryViolation>.validateLogin(entry: Entry) {
         requireValue(entry.secret.login?.password, FieldKey.PASSWORD)
+    }
+
+    private fun MutableSet<EntryViolation>.validateOtp(entry: Entry) {
+        val config = entry.secret.otp?.config
+        if (config == null) {
+            invalid(FieldKey.OTP_SECRET, EntryViolationCode.REQUIRED)
+            return
+        }
+        for (field in OtpConfigValidation.validate(config)) {
+            val code = if (field == FieldKey.OTP_SECRET && config.secret.isNullOrBlank()) {
+                EntryViolationCode.REQUIRED
+            } else {
+                EntryViolationCode.INVALID_FORMAT
+            }
+            invalid(field, code)
+        }
     }
 
     private fun MutableSet<EntryViolation>.validateCard(entry: Entry) {

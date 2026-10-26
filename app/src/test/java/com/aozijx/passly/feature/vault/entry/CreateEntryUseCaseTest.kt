@@ -34,6 +34,31 @@ import org.junit.Test
 
 class CreateEntryUseCaseTest {
     @Test
+    fun invalidOtpDraftsAreRejectedBeforeRepositoryAccess() = runBlocking {
+        val definition = EntryTypeDefinitions[EntryType.OTP]
+        val invalidDrafts = listOf(
+            listOf(FieldKey.OTP_SECRET to EntryDraftValue.Text("invalid!")),
+            listOf(FieldKey.OTP_SECRET to EntryDraftValue.Text("MY"),
+                FieldKey.OTP_DIGITS to EntryDraftValue.Number(5)),
+            listOf(FieldKey.OTP_SECRET to EntryDraftValue.Text("MY"),
+                FieldKey.OTP_TYPE to EntryDraftValue.Text("STEAM"),
+                FieldKey.OTP_ALGORITHM to EntryDraftValue.Text("SHA256")),
+        )
+        for (fields in invalidDrafts) {
+            val fixture = fixture(AuthenticationState.Authenticated(1L))
+            val draft = fields.fold(EntryDraft(EntryDraftTarget.New(EntryType.OTP))
+                .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text("Token"))) { current, (key, value) ->
+                current.withValue(definition, key, value)
+            }
+
+            val result = fixture.useCase(draft)
+
+            assertTrue(result is AppResult.Failure && result.error is ValidationError)
+            assertEquals(0, fixture.repository.createCalls)
+        }
+    }
+
+    @Test
     fun unauthorizedDraft_doesNotCreateIdentityOrTouchRepository() = runBlocking {
         val fixture = fixture(AuthenticationState.Locked)
 

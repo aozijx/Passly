@@ -10,6 +10,11 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.CardCredential
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
+import com.aozijx.passly.domain.entry.model.credential.OtpCredential
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import org.junit.Assert.assertEquals
@@ -17,6 +22,54 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EntryValidationTest {
+    @Test
+    fun `otp rejects malformed secrets for both encodings`() {
+        for (encoding in OtpSecretEncoding.entries) {
+            assertEquals(
+                setOf(EntryViolation(FieldKey.OTP_SECRET, EntryViolationCode.INVALID_FORMAT)),
+                otpViolations(OtpConfig(secret = "invalid!", encoding = encoding)),
+            )
+        }
+    }
+
+    @Test
+    fun `otp reports parameter violations from the shared configuration rules`() {
+        assertEquals(
+            setOf(EntryViolation(FieldKey.OTP_DIGITS, EntryViolationCode.INVALID_FORMAT)),
+            otpViolations(OtpConfig(secret = "MY", digits = 5)),
+        )
+        assertEquals(
+            setOf(FieldKey.OTP_DIGITS, FieldKey.OTP_PERIOD, FieldKey.OTP_ALGORITHM)
+                .mapTo(linkedSetOf()) { EntryViolation(it, EntryViolationCode.INVALID_FORMAT) },
+            otpViolations(OtpConfig(type = OtpType.STEAM, secret = "MY", digits = 6,
+                periodSeconds = 60, algorithm = OtpHashAlgorithm.SHA256)),
+        )
+    }
+
+    @Test
+    fun `missing otp secret retains the required violation`() {
+        assertEquals(
+            setOf(EntryViolation(FieldKey.OTP_SECRET, EntryViolationCode.REQUIRED)),
+            otpViolations(OtpConfig(secret = null)),
+        )
+    }
+
+    @Test
+    fun `valid otp configuration is checked without rewriting its representation`() {
+        val config = OtpConfig(secret = " Zg== ", encoding = OtpSecretEncoding.BASE64,
+            issuer = " Issuer ", accountName = " Account ")
+        assertTrue(otpViolations(config).isEmpty())
+        assertEquals(" Zg== ", config.secret)
+        assertEquals(" Issuer ", config.issuer)
+        assertEquals(" Account ", config.accountName)
+    }
+
+    private fun otpViolations(config: OtpConfig) = EntryValidation.validate(entry(
+        type = EntryType.OTP,
+        profile = EntryProfile(title = "OTP"),
+        secret = EntrySecret(OtpCredential(config)),
+    ))
+
     @Test
     fun `card expiry accepts the four digit year emitted by the editor`() {
         val violations = EntryValidation.validate(entry(

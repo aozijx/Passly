@@ -22,6 +22,11 @@ Base64 编码。临时解码字节立即擦除。输入及成功解析结果的�
 创建和归档读取共用 Domain 的参数规则；原生恢复校验合法性后保留密钥表示和身份元数据，
 不套用手动输入的规范化。没有批量改写既有条目。归档缺省参数与兼容隔离见[归档格式](../backup/archive-format.md)。
 
+最终创建校验也由 `EntryValidation` 调用 `OtpConfigValidation`，而非仅检查密钥非空。即使草稿绕过页面表单，
+非法 Base32/Base64、数字 OTP 的 5 位配置或不符合 Steam 固定项的配置也会在 Repository 写入前失败。
+缺失密钥返回 `REQUIRED`，非法密钥及参数返回对应字段的 `INVALID_FORMAT`；校验不重写密钥编码和身份资料，
+临时解码字节立即擦除。该检查面向携带完整凭据的创建条目，不能把未揭示的详情 bundle 当作创建输入。
+
 ## HOTP 生成边界
 
 `OtpGenerator` 的 HOTP 成功结果必须包含非负、可表示为 Long 的下一计数器。当前计数器为
