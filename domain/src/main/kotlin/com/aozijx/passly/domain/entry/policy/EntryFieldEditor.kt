@@ -10,6 +10,7 @@ sealed interface EntryFieldEditResult {
         override fun toString() = "Updated(***)"
     }
     data object Unsupported : EntryFieldEditResult
+    data class Invalid(val violations: Set<EntryViolation>) : EntryFieldEditResult
 }
 
 /** Applies one supported logical field; unrelated and unrevealed credential fields are preserved. */
@@ -50,6 +51,7 @@ object EntryFieldEditor {
             }
             else -> return EntryFieldEditResult.Unsupported
         }
-        return EntryFieldEditResult.Updated(updated)
+        val violations = EntryValidation.validateEditedField(updated, field)
+        return if (violations.isEmpty()) EntryFieldEditResult.Updated(updated) else EntryFieldEditResult.Invalid(violations)
     }
 }

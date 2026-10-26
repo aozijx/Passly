@@ -167,5 +167,5 @@ internal fun DetailEntryEdit.applyTo(entry: Entry): Entry? = when (this) {
 private fun DetailEntryEdit.SetFieldValue.applyFieldValue(entry: Entry): Entry? =
     when (val result = EntryFieldEditor.edit(entry, fieldKey, value)) {
         is EntryFieldEditResult.Updated -> result.entry
-        EntryFieldEditResult.Unsupported -> null
+        EntryFieldEditResult.Unsupported, is EntryFieldEditResult.Invalid -> null
     }

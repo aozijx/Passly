@@ -34,6 +34,12 @@ Bitwarden 的自定义资料继续作为自定义字段导入，不从标题、�
 修改持卡人只更新 `card.cardHolder`，不会修改或回退读取 `profile.username`；跨凭据类型的字段修改返回校验失败。
 未揭示的卡号、CVV 等高敏值仍按 Data 的 Preserve/Clear/Replace 契约处理。
 
+详情逐项编辑由 `EntryFieldEditor` 调用 Domain 的单字段校验，只检查本次替换的字段，不对未揭示 bundle
+执行整条创建校验。卡号继续使用上述字符、长度与 Luhn 规则，不能清空；非空 CVV 必须为 3–4 位半角数字，
+空白 CVV 表示清除。修改 CVV 或银行资料时不会要求重新提供卡号。无效输入返回 `Invalid(violations)`，
+Feature 转为校验失败并保留编辑状态，不写仓库；结果只含字段与错误码。登录密码和 Wi-Fi 密码编辑也复用
+各自的创建规则，其他未修改的凭据值保持原状。
+
 ## 有效期与导入
 
 有效期年月由 Domain 的 `CardExpiry` 表达：月份为 1–12，年份为 1–9999，创建时统一写为

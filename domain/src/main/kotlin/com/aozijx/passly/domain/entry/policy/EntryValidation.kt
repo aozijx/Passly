@@ -20,6 +20,18 @@ enum class EntryViolationCode {
 
 /** Pure domain validation; presentation maps violations to localized text. */
 object EntryValidation {
+    private val cardCvvPattern = Regex("^[0-9]{3,4}$")
+
+    /** Partial updates validate only the replaced field; other sensitive values may be unrevealed. */
+    internal fun validateEditedField(entry: Entry, field: FieldKey): Set<EntryViolation> = buildSet {
+        when (field) {
+            FieldKey.CARD_NUMBER -> validateCardNumber(entry.secret.card?.cardNumber)
+            FieldKey.CARD_CVV -> validateCardCvv(entry.secret.card?.cardCvv)
+            FieldKey.PASSWORD -> if (entry.secret.wifi != null) validateWifi(entry) else validateLogin(entry)
+            else -> Unit
+        }
+    }
+
     fun validate(entry: Entry): Set<EntryViolation> = buildSet {
         when (entry.type) {
             EntryType.LOGIN,
@@ -66,7 +78,17 @@ object EntryValidation {
 
     private fun MutableSet<EntryViolation>.validateCard(entry: Entry) {
         val card = entry.secret.card ?: return
-        when (val number = CardNumberValidator.validate(card.cardNumber.orEmpty())) {
+        validateCardNumber(card.cardNumber)
+        validateCardCvv(card.cardCvv)
+        card.cardExpiry?.let {
+            if (CardExpiry.parse(it) !is CardExpiryParseResult.Parsed) {
+                invalid(FieldKey.CARD_EXPIRATION, EntryViolationCode.INVALID_FORMAT)
+            }
+        }
+    }
+
+    private fun MutableSet<EntryViolation>.validateCardNumber(value: String?) {
+        when (val number = CardNumberValidator.validate(value.orEmpty())) {
             CardNumberValidationResult.Empty -> invalid(FieldKey.CARD_NUMBER, EntryViolationCode.REQUIRED)
             is CardNumberValidationResult.Valid -> Unit
             is CardNumberValidationResult.Invalid -> invalid(FieldKey.CARD_NUMBER, when (number.reason) {
@@ -74,13 +96,11 @@ object EntryValidation {
                 CardNumberInvalidReason.InvalidCharacters, CardNumberInvalidReason.ChecksumFailed -> EntryViolationCode.INVALID_FORMAT
             })
         }
-        card.cardExpiry?.let {
-            if (CardExpiry.parse(it) !is CardExpiryParseResult.Parsed) {
-                invalid(FieldKey.CARD_EXPIRATION, EntryViolationCode.INVALID_FORMAT)
-            }
-        }
-        card.cardCvv?.let {
-            if (!it.matches(Regex("^\\d{3,4}$"))) invalid(FieldKey.CARD_CVV, EntryViolationCode.INVALID_FORMAT)
+    }
+
+    private fun MutableSet<EntryViolation>.validateCardCvv(value: String?) {
+        if (!value.isNullOrBlank() && !cardCvvPattern.matches(value)) {
+            invalid(FieldKey.CARD_CVV, EntryViolationCode.INVALID_FORMAT)
         }
     }
 

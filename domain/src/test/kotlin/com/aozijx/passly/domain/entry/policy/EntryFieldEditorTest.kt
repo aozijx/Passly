@@ -10,8 +10,10 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.CardCredential
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
+import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EntryFieldEditorTest {
@@ -20,6 +22,32 @@ class EntryFieldEditorTest {
         EntryIdentity(EntryId("card"), EntryType.BANK_CARD, timestamps = EntryTimestamps(1)),
         EntryProfile(title = "Card", username = "profile-user"), EntrySecret(card, notes = "Keep notes"),
     )
+
+    @Test
+    fun `card number edits reject missing invalid and malformed values`() {
+        for (value in listOf("", "4111111111111112", "4111x111111111111")) {
+            assertFalse(EntryFieldEditor.edit(entry, FieldKey.CARD_NUMBER, value) is EntryFieldEditResult.Updated)
+        }
+    }
+
+    @Test
+    fun `optional cvv edits validate only the changed field and allow clearing`() {
+        val redacted = entry.copy(secret = entry.secret.copy(credential = card.copy(cardNumber = null, cardCvv = null)))
+        assertFalse(EntryFieldEditor.edit(redacted, FieldKey.CARD_CVV, "12") is EntryFieldEditResult.Updated)
+        for (value in listOf("123", "")) {
+            val updated = EntryFieldEditor.edit(redacted, FieldKey.CARD_CVV, value) as EntryFieldEditResult.Updated
+            assertEquals(redacted.secret.card?.copy(cardCvv = value), updated.entry.secret.card)
+        }
+    }
+
+    @Test
+    fun `password edits follow the corresponding credential rule`() {
+        val login = entry.copy(identity = entry.identity.copy(type = EntryType.LOGIN), secret = EntrySecret(LoginCredential()))
+        val wifi = entry.copy(identity = entry.identity.copy(type = EntryType.WIFI), secret = EntrySecret(WifiCredential("Network")))
+        assertFalse(EntryFieldEditor.edit(login, FieldKey.PASSWORD, "  ") is EntryFieldEditResult.Updated)
+        assertFalse(EntryFieldEditor.edit(wifi, FieldKey.PASSWORD, "short") is EntryFieldEditResult.Updated)
+        assertTrue(EntryFieldEditor.edit(wifi, FieldKey.PASSWORD, "valid-password") is EntryFieldEditResult.Updated)
+    }
 
     @Test
     fun `each card metadata edit changes only its logical field`() {

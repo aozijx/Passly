@@ -73,6 +73,8 @@ OTP 生成、密钥编解码和 `otpauth:` URI 协议位于 `domain/entry/otp`�
 通过校验但未识别的卡组织使用 `CardNetworkMatch.Unknown` 表达。
 
 单字段凭据更新由 Domain `EntryFieldEditor` 校验字段归属并复制目标值，保留无关与未揭示字段；
+随后仅校验本次替换字段，复用创建规则中的卡号、CVV、登录/Wi-Fi 密码校验。无效输入以
+`Invalid(violations)` 返回字段与错误码；不能对未揭示 bundle 直接执行整条创建校验。
 Feature 的详情编辑用例负责会话、互斥、重试、日志和 Repository 写入。
 
 银行卡年月模型 `CardExpiry` 位于 `domain/entry/model/credential`，统一有效期解析与 `MM/YYYY` 格式化。

@@ -39,6 +39,23 @@ import org.junit.Test
 class EditDetailEntryUseCaseTest {
 
     @Test
+    fun invalidCardEditReturnsValidationFailureWithoutWriting() = runTest {
+        val original = entry(version = 1).let {
+            it.copy(identity = it.identity.copy(type = EntryType.BANK_CARD),
+                secret = EntrySecret(CardCredential(cardNumber = null, cardCvv = null)))
+        }
+        val query = FakeQueryRepository(original)
+        val command = FakeCommandRepository(query)
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+
+        val result = useCase.edit(ENTRY_ID, DetailEntryEdit.SetFieldValue(FieldKey.CARD_NUMBER, "4111111111111112"))
+
+        assertTrue(result is AppResult.Failure && result.error is ValidationError)
+        assertTrue(command.submittedChanges.isEmpty())
+        assertEquals(original, query.current)
+    }
+
+    @Test
     fun cardholderEditWritesCardCredentialAndPreservesProfileUsername() = runTest {
         val original = entry(version = 1).let {
             it.copy(
