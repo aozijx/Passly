@@ -14,11 +14,31 @@ import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class EntryDraftMaterializerTest {
     private val materializer = EntryDraftMaterializer()
+
+    @Test
+    fun unsupportedTextualValuesAreExcludedFromFailureMessages() {
+        val marker = "private-input-marker"
+        for (key in listOf(FieldKey.OTP_TYPE, FieldKey.OTP_ALGORITHM, FieldKey.OTP_ENCODING, FieldKey.WIFI_SECURITY)) {
+            val type = if (key == FieldKey.WIFI_SECURITY) EntryType.WIFI else EntryType.OTP
+            val values = if (type == EntryType.WIFI) {
+                arrayOf(FieldKey.TITLE to EntryDraftValue.Text("Network"),
+                    FieldKey.WIFI_SSID to EntryDraftValue.Text("Network"), key to EntryDraftValue.Text(marker))
+            } else {
+                arrayOf(FieldKey.TITLE to EntryDraftValue.Text("Token"),
+                    FieldKey.OTP_SECRET to EntryDraftValue.Text("MY"), key to EntryDraftValue.Text(marker))
+            }
+            val failure = assertThrows(IllegalArgumentException::class.java) {
+                materializer.materialize(draft(type, *values), identity(type))
+            }
+            assertFalse(failure.toString().contains(marker))
+        }
+    }
 
     @Test
     fun omittedOptionalOtpFieldsKeepTheirDefaults() {

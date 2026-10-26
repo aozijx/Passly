@@ -31,6 +31,11 @@ Base64 编码。临时解码字节立即擦除。输入及成功解析结果的�
 以及显式提供但无数值的 `Number(null)` / `LongNumber(null)`。创建用例在生成 ID 和时间戳前返回校验失败，
 直接调用物化器也受同一检查约束。未提供的可选 OTP 参数仍可使用物化器默认值，显式空数字不能获得默认值。
 
+物化器将预期的字段错误表达为 `InvalidEntryDraft(fields)`，只携带字段标识与固定错误说明；未知 OTP
+类型、算法或编码不回显原始文本，OTP 参数在构造配置模型前复用 `OtpConfigValidation` 检查。创建用例只将
+这一明确的输入失败转换为 `ValidationError`，不会吞掉仓库异常或其他程序错误。Wi-Fi 安全类型缺失或未知也
+走同一失败通路；有效的稳定键和既有别名继续由 `WifiSecurityType.parseStoredValue` 解析。
+
 ## HOTP 生成边界
 
 `OtpGenerator` 的 HOTP 成功结果必须包含非负、可表示为 Long 的下一计数器。当前计数器为

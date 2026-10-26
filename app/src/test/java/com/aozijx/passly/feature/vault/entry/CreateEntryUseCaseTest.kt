@@ -34,6 +34,47 @@ import org.junit.Test
 
 class CreateEntryUseCaseTest {
     @Test
+    fun unsupportedOtpValuesReturnValidationFailureWithoutThrowingOrPersisting() = runBlocking {
+        for ((key, value) in listOf(
+            FieldKey.OTP_TYPE to EntryDraftValue.Text("private-input-marker"),
+            FieldKey.OTP_ALGORITHM to EntryDraftValue.Text("private-input-marker"),
+            FieldKey.OTP_ENCODING to EntryDraftValue.Text("private-input-marker"),
+            FieldKey.OTP_DIGITS to EntryDraftValue.Number(0),
+            FieldKey.OTP_PERIOD to EntryDraftValue.Number(0),
+        )) {
+            val fixture = fixture(AuthenticationState.Authenticated(1L))
+            val draft = EntryDraft(EntryDraftTarget.New(EntryType.OTP), mapOf(
+                FieldKey.TITLE to EntryDraftValue.Text("Token"),
+                FieldKey.OTP_SECRET to EntryDraftValue.Text("MY"),
+                key to value,
+            ))
+
+            val result = fixture.useCase(draft)
+
+            assertTrue(result is AppResult.Failure && result.error is ValidationError)
+            assertEquals(0, fixture.repository.createCalls)
+            assertTrue(fixture.logger.events.none { it.throwable?.toString()?.contains("private-input-marker") == true })
+        }
+    }
+
+    @Test
+    fun missingOrUnknownWifiSecurityReturnsValidationFailure() = runBlocking {
+        for (security in listOf<String?>(null, "private-input-marker")) {
+            val fixture = fixture(AuthenticationState.Authenticated(1L))
+            val values = linkedMapOf(
+                FieldKey.TITLE to EntryDraftValue.Text("Network"),
+                FieldKey.WIFI_SSID to EntryDraftValue.Text("Network"),
+            )
+            if (security != null) values[FieldKey.WIFI_SECURITY] = EntryDraftValue.Text(security)
+
+            val result = fixture.useCase(EntryDraft(EntryDraftTarget.New(EntryType.WIFI), values))
+
+            assertTrue(result is AppResult.Failure && result.error is ValidationError)
+            assertEquals(0, fixture.repository.createCalls)
+        }
+    }
+
+    @Test
     fun malformedDraftShapeIsRejectedBeforeIdentityCreation() = runBlocking {
         for ((key, value) in listOf(
             FieldKey.OTP_DIGITS to EntryDraftValue.Number(null),

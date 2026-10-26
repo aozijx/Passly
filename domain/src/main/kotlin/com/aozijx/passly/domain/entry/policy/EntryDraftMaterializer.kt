@@ -19,14 +19,15 @@ import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.otp.OtpConfigValidation
 
-/** Pure draft-to-entry conversion; callers own validation, identity creation, access and persistence. */
+/** Pure conversion with input checks; callers own complete credential validation, identity creation, access and persistence. */
 class EntryDraftMaterializer {
     fun materialize(draft: EntryDraft, identity: EntryIdentity): Entry {
         require(identity.type == draft.target.type) { "Draft and identity types must match" }
-        require(draft.invalidProvidedFields(EntryTypeDefinitions[identity.type]).isEmpty()) {
-            "Draft contains invalid field shapes"
-        }
+        val definition = EntryTypeDefinitions[identity.type]
+        val invalidFields = draft.invalidProvidedFields(definition) + draft.missingRequiredFields(definition)
+        if (invalidFields.isNotEmpty()) throw InvalidEntryDraft(invalidFields)
         return when (identity.type) {
             EntryType.LOGIN -> materializeLogin(draft, identity)
             EntryType.OTP -> materializeOtp(draft, identity)
@@ -57,14 +58,21 @@ class EntryDraftMaterializer {
 
     private fun materializeOtp(draft: EntryDraft, identity: EntryIdentity): Entry {
         val type = draft.otpType()
+        val algorithm = draft.otpAlgorithm()
+        val encoding = draft.otpEncoding()
+        val digits = draft.number(FieldKey.OTP_DIGITS) ?: if (type == OtpType.STEAM) 5 else 6
+        val period = if (type == OtpType.HOTP) null else draft.number(FieldKey.OTP_PERIOD) ?: 30
+        val counter = if (type == OtpType.HOTP) draft.longNumber(FieldKey.OTP_COUNTER) ?: 0L else null
+        val invalidParameters = OtpConfigValidation.validateParameters(type, algorithm, digits, period, counter)
+        if (invalidParameters.isNotEmpty()) throw InvalidEntryDraft(invalidParameters)
         val config = OtpConfig(
             type = type,
             secret = draft.text(FieldKey.OTP_SECRET),
-            algorithm = draft.otpAlgorithm(),
-            digits = draft.number(FieldKey.OTP_DIGITS) ?: if (type == OtpType.STEAM) 5 else 6,
-            periodSeconds = if (type == OtpType.HOTP) null else draft.number(FieldKey.OTP_PERIOD) ?: 30,
-            counter = if (type == OtpType.HOTP) draft.longNumber(FieldKey.OTP_COUNTER) ?: 0L else null,
-            encoding = draft.otpEncoding(),
+            algorithm = algorithm,
+            digits = digits,
+            periodSeconds = period,
+            counter = counter,
+            encoding = encoding,
             issuer = draft.text(FieldKey.OTP_ISSUER),
             accountName = draft.text(FieldKey.OTP_ACCOUNT_NAME),
         )
@@ -140,39 +148,45 @@ class EntryDraftMaterializer {
     private fun EntryDraft.toggle(key: FieldKey): Boolean =
         (this[key] as? EntryDraftValue.Toggle)?.enabled ?: false
 
-    private fun EntryDraft.otpType(): OtpType = when (val raw = text(FieldKey.OTP_TYPE)) {
+    private fun EntryDraft.otpType(): OtpType = when (text(FieldKey.OTP_TYPE)) {
         null -> OtpType.TOTP
         "TOTP" -> OtpType.TOTP
         "HOTP" -> OtpType.HOTP
         "STEAM" -> OtpType.STEAM
-        else -> throw IllegalArgumentException("Unsupported OTP_TYPE draft value: $raw")
+        else -> throw InvalidEntryDraft(setOf(FieldKey.OTP_TYPE))
     }
 
     private fun EntryDraft.otpAlgorithm(): OtpHashAlgorithm =
-        when (val raw = text(FieldKey.OTP_ALGORITHM)) {
+        when (text(FieldKey.OTP_ALGORITHM)) {
             null -> OtpHashAlgorithm.SHA1
             "SHA1" -> OtpHashAlgorithm.SHA1
             "SHA256" -> OtpHashAlgorithm.SHA256
             "SHA512" -> OtpHashAlgorithm.SHA512
-            else -> throw IllegalArgumentException("Unsupported OTP_ALGORITHM draft value: $raw")
+            else -> throw InvalidEntryDraft(setOf(FieldKey.OTP_ALGORITHM))
         }
 
     private fun EntryDraft.otpEncoding(): OtpSecretEncoding =
-        when (val raw = text(FieldKey.OTP_ENCODING)) {
+        when (text(FieldKey.OTP_ENCODING)) {
             null -> OtpSecretEncoding.BASE32
             "BASE32" -> OtpSecretEncoding.BASE32
             "BASE64" -> OtpSecretEncoding.BASE64
-            else -> throw IllegalArgumentException("Unsupported OTP_ENCODING draft value: $raw")
+            else -> throw InvalidEntryDraft(setOf(FieldKey.OTP_ENCODING))
         }
 
     private fun String?.requireWifiSecurityType(): WifiSecurityType =
         when (val result = WifiSecurityType.parseStoredValue(this)) {
             is WifiSecurityTypeParseResult.Supported -> result.value
-            WifiSecurityTypeParseResult.Missing ->
-                throw IllegalArgumentException("Wi-Fi draft security type is missing")
+            WifiSecurityTypeParseResult.Missing,
             is WifiSecurityTypeParseResult.Unsupported ->
-                throw IllegalArgumentException(
-                    "Unsupported Wi-Fi draft security type: ${result.storedValue}",
-                )
+                throw InvalidEntryDraft(setOf(FieldKey.WIFI_SECURITY))
         }
+}
+
+/** Expected input failure. Carries field identifiers only, never draft values. */
+class InvalidEntryDraft(fields: Set<FieldKey>) : IllegalArgumentException("Invalid entry draft") {
+    val fields: Set<FieldKey> = fields.toSet()
+
+    init {
+        require(fields.isNotEmpty()) { "Invalid draft must identify a field" }
+    }
 }

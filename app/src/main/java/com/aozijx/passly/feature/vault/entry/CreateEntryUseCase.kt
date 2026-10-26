@@ -18,6 +18,7 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
+import com.aozijx.passly.domain.entry.policy.InvalidEntryDraft
 import com.aozijx.passly.domain.entry.policy.EntryValidation
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.github.f4b6a3.uuid.UuidCreator
@@ -141,7 +142,11 @@ class CreateEntryUseCase internal constructor(
             version = EntryVersion.INITIAL,
             timestamps = EntryTimestamps(now),
         )
-        val entry = materializer.materialize(draft, identity)
+        val entry = try {
+            materializer.materialize(draft, identity)
+        } catch (_: InvalidEntryDraft) {
+            return AppResult.Failure(ValidationError())
+        }
         if (EntryValidation.validate(entry).isNotEmpty()) {
             return AppResult.Failure(ValidationError())
         }
