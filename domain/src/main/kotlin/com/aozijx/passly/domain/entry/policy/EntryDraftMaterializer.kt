@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.entry
+package com.aozijx.passly.domain.entry.policy
 
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryAssociations
@@ -19,9 +19,9 @@ import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import javax.inject.Inject
 
-class EntryDraftMaterializer @Inject constructor() {
+/** Pure draft-to-entry conversion; callers own validation, identity creation, access and persistence. */
+class EntryDraftMaterializer {
     fun materialize(draft: EntryDraft, identity: EntryIdentity): Entry {
         require(identity.type == draft.target.type) { "Draft and identity types must match" }
         return when (identity.type) {
@@ -77,7 +77,7 @@ class EntryDraftMaterializer @Inject constructor() {
 
     private fun materializeBankCard(draft: EntryDraft, identity: EntryIdentity) = Entry(
         identity = identity,
-        profile = draft.profile(username = draft.text(FieldKey.CARD_HOLDER).orEmpty()),
+        profile = draft.profile(),
         secret = EntrySecret(
             credential = CardCredential(
                 cardType = draft.text(FieldKey.CARD_TYPE),

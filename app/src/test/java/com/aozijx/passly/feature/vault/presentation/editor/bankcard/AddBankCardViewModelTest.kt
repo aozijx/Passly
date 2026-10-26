@@ -13,7 +13,7 @@ import com.aozijx.passly.domain.entry.policy.CardNetwork
 import com.aozijx.passly.domain.entry.policy.CardNetworkMatch
 import com.aozijx.passly.domain.entry.policy.CardNumberValidationResult
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
-import com.aozijx.passly.feature.vault.entry.EntryDraftMaterializer
+import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffect
 import com.aozijx.passly.testing.testLogger
 import com.aozijx.passly.testing.MainDispatcherRule

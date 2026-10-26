@@ -20,6 +20,10 @@
 负责持久化 Payload 往返，原生 JSON、加密备份与 TXT 导出保留对应字段。Room、内部 Payload 和归档版本保持 1。
 Bitwarden 的自定义资料继续作为自定义字段导入，不从标题、卡号或品牌推测发卡行。
 
+新建银行卡时，Domain 的 `EntryDraftMaterializer` 只将持卡人写入 `card.cardHolder`，不再复制到明文
+`profile.username`。标题、持卡人和用户名是不同字段；详情修改持卡人继续使用同一凭据属性。
+此规则不改写已有开发数据，也不清空原生归档中显式提供的 Profile 数据。
+
 详情页展示上述字段和账单地址；长按对应行可编辑，每次只编辑一个逻辑字段。清空可选资料会移除该值。
 纯字段更新由 Domain `EntryFieldEditor` 根据条目类型与字段定义处理，App 用例负责会话、互斥、版本冲突及写入。
 修改持卡人只更新 `card.cardHolder`，不会修改或回退读取 `profile.username`；跨凭据类型的字段修改返回校验失败。

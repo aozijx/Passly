@@ -56,6 +56,10 @@ Entry Domain 端口，不直接构造 Entity 或具体 Repository。Autofill/Cre
 布尔值使用 `true` / `false`，时间戳保留毫秒值，列表沿用逗号加空格、恢复码使用换行分隔；展示层负责本地化。
 `CUSTOM_FIELDS` 是带名称和类型的集合，不隐式拼成单个字符串，仍由专属流程处理。
 
+`EntryDraftMaterializer` 位于同一 Domain 策略包，只将草稿和给定身份转换为条目；不生成 ID、不读取会话、
+不记录日志或写入仓库。Feature 的 `CreateEntryUseCase` 负责校验、会话检查、身份生成与持久化，App DI 连接
+纯转换实例。新增凭据字段时在 Domain 测试其转换，不能把持卡人等凭据值借用为 Profile 用户名。
+
 OTP 生成、密钥编解码和 `otpauth:` URI 协议位于 `domain/entry/otp`；App 负责扫码、编辑状态、授权与展示，
 不另留 Android Uri 实现或仅用于测试的解析、格式化转发接口。
 手动输入的原始数字与密钥通过 Domain 的 `OtpConfigInput` 解析；页面仅保留输入和显示错误，

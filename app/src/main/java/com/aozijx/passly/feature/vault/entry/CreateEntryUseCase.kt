@@ -17,6 +17,7 @@ import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
+import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
 import com.aozijx.passly.domain.entry.policy.EntryValidation
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.github.f4b6a3.uuid.UuidCreator

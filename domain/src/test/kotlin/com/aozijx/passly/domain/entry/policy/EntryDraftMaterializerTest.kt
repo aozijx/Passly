@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.entry
+package com.aozijx.passly.domain.entry.policy
 
 import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryDraftTarget
@@ -12,7 +12,6 @@ import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
@@ -87,12 +86,17 @@ class EntryDraftMaterializerTest {
     }
 
     @Test
-    fun materializeBankCard_preservesAllCardFields() {
+    fun materializeBankCard_preservesCredentialFieldsWithoutCopyingHolderToProfile() {
         val entry = materializer.materialize(
             draft = draft(EntryType.BANK_CARD,
                 FieldKey.TITLE to EntryDraftValue.Text("Visa"),
                 FieldKey.CARD_TYPE to EntryDraftValue.Text("CREDIT"),
                 FieldKey.CARD_HOLDER to EntryDraftValue.Text("Ada"),
+                FieldKey.CARD_ISSUING_BANK to EntryDraftValue.Text("Bank"),
+                FieldKey.CARD_BANK_BRANCH to EntryDraftValue.Text("Branch"),
+                FieldKey.CARD_PRODUCT to EntryDraftValue.Text("Product"),
+                FieldKey.CARD_CURRENCY to EntryDraftValue.Text("CNY / USD"),
+                FieldKey.CARD_BANK_PHONE to EntryDraftValue.Text("+86 123456"),
                 FieldKey.CARD_NUMBER to EntryDraftValue.Text("4111 1111"),
                 FieldKey.CARD_EXPIRATION to EntryDraftValue.Text("03/2030"),
                 FieldKey.CARD_CVV to EntryDraftValue.Text("1 23"),
@@ -106,6 +110,12 @@ class EntryDraftMaterializerTest {
         val card = requireNotNull(entry.secret.card)
         assertEquals("CREDIT", card.cardType)
         assertEquals("Ada", card.cardHolder)
+        assertEquals("", entry.profile.username)
+        assertEquals("Bank", card.issuingBank)
+        assertEquals("Branch", card.bankBranch)
+        assertEquals("Product", card.cardProduct)
+        assertEquals("CNY / USD", card.currency)
+        assertEquals("+86 123456", card.bankPhone)
         assertEquals("4111 1111", card.cardNumber)
         assertEquals("03/2030", card.cardExpiry)
         assertEquals("1 23", card.cardCvv)
