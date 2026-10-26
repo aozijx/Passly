@@ -12,7 +12,6 @@ import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
-import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
 import com.aozijx.passly.domain.entry.policy.EntryEdit
@@ -41,6 +40,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -83,6 +86,13 @@ class DetailViewModel @Inject internal constructor(
     private var loadedEntryId: EntryId? = null
 
     private val _uiState = MutableStateFlow(DetailUiState())
+    private val workSession = DetailWorkSession(
+        hasAccess = accessPolicy::hasFullAccess,
+        editEntry = editDetailEntry::edit,
+        present = presentationLoader::present,
+        onMutation = ::mutate,
+        onReveal = ::setRevealedField,
+    )
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
     private val _effects = Channel<DetailEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
@@ -103,8 +113,14 @@ class DetailViewModel @Inject internal constructor(
 
     init {
         viewModelScope.launch {
+            secureSessionAccessState.authenticationState.collect {
+                if (!accessPolicy.hasFullAccess()) clearSensitiveState()
+            }
+        }
+        viewModelScope.launch {
             otpRuntime.states.collect { states ->
-                _otpState.value = loadedEntryId?.value?.let(states::get)
+                val token = loadedEntryId?.let(workSession::current)
+                _otpState.value = if (token != null && workSession.isCurrent(token)) states[token.entryId.value] else null
             }
         }
     }
@@ -409,6 +425,7 @@ class DetailViewModel @Inject internal constructor(
 
     private fun copyField(fieldKey: FieldKey) {
         val entry = _uiState.value.entry ?: return
+        val token = workSession.current(entry.id) ?: return
         viewModelScope.launch {
             if (copyEntryFieldUseCase(
                     entry.id,
@@ -416,6 +433,7 @@ class DetailViewModel @Inject internal constructor(
                     fieldKey
                 ) != CopyEntryFieldResult.Copied
             ) return@launch
+            if (!workSession.isCurrent(token)) return@launch
             clearRevealedFields()
             _effects.send(DetailEffect.ContentCopied(fieldKey))
         }
@@ -431,12 +449,14 @@ class DetailViewModel @Inject internal constructor(
 
     private fun copyOtpCode() {
         val entry = _uiState.value.entry ?: return
+        val token = workSession.current(entry.id) ?: return
         viewModelScope.launch {
             if (
                 copyOtpCodeUseCase(entry.id) {
-                    (otpState.value as? OtpCodeState.Ready)?.code
+                    if (workSession.isCurrent(token)) (otpState.value as? OtpCodeState.Ready)?.code else null
                 } != CopyEntryFieldResult.Copied
             ) return@launch
+            if (!workSession.isCurrent(token)) return@launch
             clearRevealedFields()
             _effects.send(DetailEffect.ContentCopied(null))
         }
@@ -450,6 +470,7 @@ class DetailViewModel @Inject internal constructor(
     fun load(rawEntryId: String, launchMode: DetailLaunchMode = DetailLaunchMode.VIEW) {
         val entryId = EntryId(rawEntryId)
         if (loadedEntryId == entryId && _uiState.value.entry != null) return
+        val token = workSession.open(entryId)
         qrSession.close()
         loadedEntryId = entryId
         entryLoadJob?.cancel()
@@ -465,6 +486,7 @@ class DetailViewModel @Inject internal constructor(
         entryLoadJob = viewModelScope.launch {
             if (!accessPolicy.hasFullAccess()) return@launch
             val snapshot = presentationLoader.open(entryId) ?: return@launch
+            if (!workSession.isCurrent(token)) return@launch
             val latest = snapshot.presentation.entry
             mutate(DetailMutation.SessionOpened(snapshot))
             if (launchMode != DetailLaunchMode.VIEW) {
@@ -490,7 +512,7 @@ class DetailViewModel @Inject internal constructor(
             if (!accessPolicy.hasFullAccess()) return@launch
             activityQueryRepository.observeByEntryId(entryId.value)
                 .collect { history ->
-                    mutate(DetailMutation.HistoryChanged(entryId, history))
+                    if (workSession.isCurrent(token)) mutate(DetailMutation.HistoryChanged(entryId, history))
                 }
         }
     }
@@ -503,14 +525,20 @@ class DetailViewModel @Inject internal constructor(
     private suspend fun revealFields(entry: Entry, requested: Set<FieldKey>) {
         if (!accessPolicy.hasFullAccess()) return
         if (requested.isEmpty()) return
-        revealEntryFields.reveal(
+        val token = workSession.current(entry.id) ?: return
+        val revealed = revealEntryFields.reveal(
             entry = entry,
             requestedFields = requested,
             recordLowSensitivityAccess = _uiState.value.isAccessHistoryEnabled,
-        ).forEach(::setRevealedField)
+        )
+        workSession.publishReveals(token, revealed.toList(), ::setRevealedField)
     }
 
     private fun clearSensitiveState() {
+        workSession.close()
+        entryLoadJob?.cancel()
+        historyJob?.cancel()
+        packagePickerLoadJob?.cancel()
         qrSession.close()
         revealStore.clear()
         revisionObservationJob?.cancel()
@@ -523,6 +551,7 @@ class DetailViewModel @Inject internal constructor(
 
     private fun openRevisionHistory() {
         val entryId = _uiState.value.entry?.id ?: return
+        val token = workSession.current(entryId) ?: return
         revisionObservationJob?.cancel()
         revisionOperationJob?.cancel()
         clearRevisionReveals()
@@ -530,6 +559,7 @@ class DetailViewModel @Inject internal constructor(
         revisionObservationJob = viewModelScope.launch {
             when (val initialization = observeEntryRevisions.initialize()) {
                 is AppResult.Failure -> {
+                    if (!workSession.isCurrent(token)) return@launch
                     mutateRevisionFailure(
                         entryId = entryId,
                         revisionId = null,
@@ -541,6 +571,7 @@ class DetailViewModel @Inject internal constructor(
                 is AppResult.Success -> Unit
             }
             observeEntryRevisions(entryId).collect { revisions ->
+                if (!workSession.isCurrent(token)) return@collect
                 mutate(
                     DetailMutation.Revision(
                         DetailRevisionMutation.MetadataChanged(entryId.value, revisions),
@@ -560,6 +591,7 @@ class DetailViewModel @Inject internal constructor(
     private fun selectRevision(rawRevisionId: String) {
         val revisionState = _uiState.value.revisions as? DetailRevisionState.Open ?: return
         val entryId = revisionState.entryId
+        val token = workSession.current(entryId) ?: return
         val revisionId = EntryRevisionId(rawRevisionId)
         revisionOperationJob?.cancel()
         clearRevisionReveals()
@@ -569,7 +601,9 @@ class DetailViewModel @Inject internal constructor(
             ),
         )
         revisionOperationJob = viewModelScope.launch {
-            when (val result = compareEntryRevision(entryId, revisionId)) {
+            val result = compareEntryRevision(entryId, revisionId)
+            if (!workSession.isCurrent(token) || !currentCoroutineContext().isActive) return@launch
+            when (result) {
                 is RevisionOperationResult.Succeeded -> mutate(
                     DetailMutation.Revision(
                         DetailRevisionMutation.ComparisonLoaded(
@@ -589,12 +623,19 @@ class DetailViewModel @Inject internal constructor(
         val state = _uiState.value.revisions as? DetailRevisionState.Open ?: return
         val comparison = state.page as? DetailRevisionPage.Comparison ?: return
         val entryId = state.entryId
+        val token = workSession.current(entryId) ?: return
         val revisionId = EntryRevisionId(comparison.revisionId)
         revisionOperationJob = viewModelScope.launch {
-            when (val result = revealRevisionFields(entryId, revisionId, setOf(key))) {
+            val result = revealRevisionFields(entryId, revisionId, setOf(key))
+            val currentPage = (_uiState.value.revisions as? DetailRevisionState.Open)?.page
+            if (!workSession.isCurrent(token) || currentPage !== comparison || !currentCoroutineContext().isActive) {
+                if (result is RevisionOperationResult.Succeeded) result.value.forEach { it.value.wipe() }
+                return@launch
+            }
+            when (result) {
                 is RevisionOperationResult.Succeeded -> {
-                    result.value.forEach { revisionRevealStore.replace(it.key, it.value) }
-                    _revisionReveals.value = revisionRevealStore.snapshot()
+                    workSession.publishReveals(token, result.value.map { it.key to it.value }, revisionRevealStore::replace)
+                    if (workSession.isCurrent(token)) _revisionReveals.value = revisionRevealStore.snapshot()
                 }
 
                 RevisionOperationResult.Cancelled -> Unit
@@ -607,16 +648,21 @@ class DetailViewModel @Inject internal constructor(
         val state = _uiState.value.revisions as? DetailRevisionState.Open ?: return
         val comparison = state.page as? DetailRevisionPage.Comparison ?: return
         val entryId = state.entryId
+        val token = workSession.current(entryId) ?: return
         val revisionId = EntryRevisionId(comparison.revisionId)
         revisionOperationJob?.cancel()
         mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreStarted))
         revisionOperationJob = viewModelScope.launch {
-            when (val result = restoreEntryRevision(entryId, revisionId)) {
+            val result = restoreEntryRevision(entryId, revisionId)
+            if (!workSession.isCurrent(token) || !currentCoroutineContext().isActive) return@launch
+            when (result) {
                 is RevisionOperationResult.Succeeded -> {
                     clearRevisionReveals()
                     mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreSucceeded))
                     presentationLoader.open(entryId)?.let {
-                        mutate(DetailMutation.SessionOpened(it))
+                        if (workSession.isCurrent(token) && currentCoroutineContext().isActive) {
+                            mutate(DetailMutation.SessionOpened(it))
+                        }
                     }
                 }
 
@@ -658,43 +704,16 @@ class DetailViewModel @Inject internal constructor(
     ) {
         val entryId = _uiState.value.entry?.id ?: return
         if (_uiState.value.saveState is DetailSaveState.Saving) return
+        val token = workSession.current(entryId) ?: return
         mutate(DetailMutation.SaveStarted(completion))
-        persistStartedEntryEdit(entryId, edit, completion)
-    }
-
-    private suspend fun persistStartedEntryEdit(
-        entryId: EntryId,
-        edit: EntryEdit,
-        completion: DetailEditCompletion,
-    ) {
-        when (val result = editDetailEntry.edit(entryId, edit)) {
-            is AppResult.Success -> {
-                val latest = result.data
-                mutate(
-                    DetailMutation.EntryPresented(
-                        presentation = presentationLoader.present(latest),
-                        preserveTitleEdit = completion != DetailEditCompletion.Title,
-                    ),
-                )
-                if (
-                    completion is DetailEditCompletion.Field &&
-                    edit is EntryEdit.SetFieldValue
-                ) {
-                    setRevealedField(edit.fieldKey, OwnedChars.fromString(edit.value))
-                }
-                mutate(DetailMutation.SaveSucceeded(completion))
-            }
-
-            is AppResult.Failure -> {
-                mutate(DetailMutation.SaveFailed(completion, result.error.code))
-            }
-        }
+        workSession.persist(token, edit, completion)
     }
 
     private fun saveFavicon() {
         val state = _uiState.value
         val editor = state.faviconEditor as? DetailFaviconEditorState.Open ?: return
         val entryId = state.entry?.id ?: return
+        val token = workSession.current(entryId) ?: return
         if (
             editor.work == DetailFaviconWorkState.Processing ||
             !editor.dirty ||
@@ -714,6 +733,7 @@ class DetailViewModel @Inject internal constructor(
             ) {
                 val promoted = faviconImageProcessor.promote(source.localPath)
                     .getOrElse { error ->
+                        if (!workSession.isCurrent(token)) return@launchSave
                         val processingError = error.toFaviconProcessingError()
                         mutate(DetailMutation.FaviconProcessingFailed(processingError))
                         mutate(
@@ -724,14 +744,18 @@ class DetailViewModel @Inject internal constructor(
                         )
                         return@launchSave
                     }
+                if (!workSession.isCurrent(token)) {
+                    withContext(NonCancellable) { faviconImageProcessor.discardPromotedCandidate(promoted) }
+                    return@launchSave
+                }
                 DetailFaviconSource.PrivateImage(promoted).also {
                     mutate(DetailMutation.FaviconSourcePromoted(promoted))
                 }
             } else {
                 source
             }
-            persistStartedEntryEdit(
-                entryId = entryId,
+            workSession.persist(
+                token = token,
                 edit = EntryEdit.SetIcon(persistedSource.toEntryIcon()),
                 completion = DetailEditCompletion.Icon,
             )
@@ -741,10 +765,11 @@ class DetailViewModel @Inject internal constructor(
     private fun loadPackagePickerApps() {
         val state = _uiState.value
         val entryId = state.entry?.id ?: return
+        val token = workSession.current(entryId) ?: return
         if (state.packagePickerAppsLoaded || packagePickerLoadJob?.isActive == true) return
         packagePickerLoadJob = viewModelScope.launch {
             val apps = presentationLoader.launchableApps()
-            mutate(DetailMutation.PackagePickerAppsChanged(entryId, apps))
+            if (workSession.isCurrent(token)) mutate(DetailMutation.PackagePickerAppsChanged(entryId, apps))
         }
     }
 
@@ -753,9 +778,7 @@ class DetailViewModel @Inject internal constructor(
     }
 
     override fun onCleared() {
-        (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let(
-            faviconSession::close,
-        )
+        (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let(faviconSession::close)
         clearSensitiveState()
     }
 
