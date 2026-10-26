@@ -5,7 +5,7 @@ import com.aozijx.passly.core.platform.VaultResourcePaths
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.InputStream
-import java.util.UUID
+import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,6 +28,11 @@ class FaviconImageException(
 class FaviconImageStore @Inject constructor(
     @param:ApplicationContext private val context: Context,
 ) {
+    /** Snapshot before this process can promote new editor-owned files. */
+    val recoveredPromotedCandidates: List<String> = VaultResourcePaths.vaultImagesDir(context).listFiles()
+        .orEmpty().filter { it.isFile && it.name.startsWith("favicon_") && it.extension.equals("webp", ignoreCase = true) }
+        .map(File::getAbsolutePath)
+
     init {
         cleanupStaging()
     }
@@ -80,7 +85,7 @@ class FaviconImageStore @Inject constructor(
     fun promote(stagedPath: String): String {
         val source = requireStaged(stagedPath)
         val root = VaultResourcePaths.vaultImagesDir(context).apply(File::mkdirs).canonicalFile
-        val target = File(root, "favicon_${UUID.randomUUID()}$WEBP_EXTENSION").canonicalFile
+        val target = File(root, "favicon_${UuidCreator.getTimeOrderedEpoch()}$WEBP_EXTENSION").canonicalFile
         if (target.parentFile != root || !source.renameTo(target)) {
             throw FaviconImageException(FaviconImageFailure.SAVE_FAILED)
         }
@@ -92,21 +97,6 @@ class FaviconImageStore @Inject constructor(
         runCatching { requireStaged(path).delete() }
     }
 
-    fun discardPromotedCandidate(path: String?) {
-        path ?: return
-        runCatching {
-            val root = VaultResourcePaths.vaultImagesDir(context).canonicalFile
-            val target = File(path).canonicalFile
-            if (
-                target.parentFile == root &&
-                target.name.startsWith("favicon_") &&
-                target.extension.equals("webp", ignoreCase = true)
-            ) {
-                target.delete()
-            }
-        }
-    }
-
     fun cleanupStaging() {
         stagingRoot().listFiles()?.forEach(File::deleteRecursively)
     }
@@ -115,7 +105,7 @@ class FaviconImageStore @Inject constructor(
 
     private fun createStagingFile(extension: String): File {
         val root = stagingRoot().apply(File::mkdirs).canonicalFile
-        return File(root, "${UUID.randomUUID()}$extension").canonicalFile.also { target ->
+        return File(root, "${UuidCreator.getTimeOrderedEpoch()}$extension").canonicalFile.also { target ->
             if (target.parentFile != root) {
                 throw FaviconImageException(FaviconImageFailure.INVALID_STAGING_PATH)
             }

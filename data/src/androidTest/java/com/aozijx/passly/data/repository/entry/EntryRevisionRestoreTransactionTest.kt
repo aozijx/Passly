@@ -21,6 +21,7 @@ import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.model.SensitiveRevisionAccessAction
 import com.aozijx.passly.domain.access.port.AuthorizationPermitVerifier
+import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
@@ -87,7 +88,7 @@ class EntryRevisionRestoreTransactionTest {
             bundleCodec = bundleCodec,
             sensitiveCodec = sensitiveCodec,
             permitConsumer = RevisionPermitConsumer(verifier),
-            revisionWriter = EntryRevisionWriter(contentCodec, sensitiveCodec),
+            revisionWriter = EntryRevisionWriter(contentCodec, sensitiveCodec, EntryIconResourceCleaner { }),
             activityWriter = EntryActivityWriter(),
         )
 
@@ -137,7 +138,7 @@ class EntryRevisionRestoreTransactionTest {
             bundleCodec = bundleCodec,
             sensitiveCodec = sensitiveCodec,
             permitConsumer = RevisionPermitConsumer(verifier),
-            revisionWriter = EntryRevisionWriter(contentCodec, sensitiveCodec),
+            revisionWriter = EntryRevisionWriter(contentCodec, sensitiveCodec, EntryIconResourceCleaner { }),
             activityWriter = EntryActivityWriter(),
         )
 
@@ -166,7 +167,7 @@ class EntryRevisionRestoreTransactionTest {
             bundleCodec = bundleCodec,
             sensitiveCodec = sensitiveCodec,
             permitConsumer = RevisionPermitConsumer(ExactScopeVerifier(null)),
-            revisionWriter = EntryRevisionWriter(contentCodec, sensitiveCodec),
+            revisionWriter = EntryRevisionWriter(contentCodec, sensitiveCodec, EntryIconResourceCleaner { }),
             activityWriter = EntryActivityWriter(),
         )
 

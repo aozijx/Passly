@@ -18,7 +18,8 @@ import androidx.room.PrimaryKey
     ],
     indices = [
         Index(value = ["entryId", "version"], unique = true),
-        Index(value = ["createdAt"])
+        Index(value = ["createdAt"]),
+        Index(value = ["iconCustomReference"])
     ]
 )
 data class EntryRevisionEntity(
@@ -31,5 +32,6 @@ data class EntryRevisionEntity(
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     val sensitiveFieldCipherSet: ByteArray,
     val changeType: String,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val iconCustomReference: String? = null,
 )

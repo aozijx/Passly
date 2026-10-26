@@ -28,6 +28,7 @@ internal class DeleteEntryPermanentlyExecutor @Inject constructor(
             databaseTransactions.checkVersion(entity.version, expectedVersion)
 
             val summary = EntryProfileMapper.fromEntity(entity)
+            val revisionIcons = entryRevisionQueryDao().getIconReferences(id)
             // 显式清理历史，使生命周期语义不只依赖 Room 外键的隐式级联。
             // 若随后的乐观删除失败，DatabaseTransactionRunner 会回滚本次历史删除。
             entryRevisionCommandDao().deleteByEntryId(id)
@@ -36,8 +37,8 @@ internal class DeleteEntryPermanentlyExecutor @Inject constructor(
 
             attachmentGarbageCollector.scheduleInTransaction(this)
             DeletedEntryResources(
-                entryId = id,
                 customIconPath = summary.icon.customReference,
+                revisionIconPaths = revisionIcons,
             )
         }
 

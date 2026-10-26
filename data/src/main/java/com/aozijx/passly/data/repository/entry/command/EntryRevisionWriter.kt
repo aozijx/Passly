@@ -16,6 +16,7 @@ import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
+import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,6 +30,7 @@ import javax.inject.Singleton
 internal class EntryRevisionWriter @Inject constructor(
     private val contentSnapshotCodec: EntryContentSnapshotCodec,
     private val sensitiveRevisionCodec: SensitiveRevisionSnapshotCodec,
+    private val iconResourceCleaner: EntryIconResourceCleaner,
 ) {
 
     /**
@@ -72,7 +74,8 @@ internal class EntryRevisionWriter @Inject constructor(
                 entryContentCipher = entryContentCipher,
                 sensitiveFieldCipherSet = sensitiveRevisionCodec.encode(sensitiveFields),
                 changeType = change.toStorageKey(),
-                createdAt = now
+                createdAt = now,
+                iconCustomReference = summary.icon.customReference,
             )
         )
         val revisionAttachmentRefs = attachmentRefs.map { ref ->
@@ -89,8 +92,11 @@ internal class EntryRevisionWriter @Inject constructor(
         if (revisionAttachmentRefs.isNotEmpty()) {
             revisionAttachmentRefDao().insertAllStrict(revisionAttachmentRefs)
         }
+        val discardedIcons = entryRevisionQueryDao().getIconReferencesBeyondEntryLimit(entryId, REVISION_LIMIT).toMutableSet()
         entryRevisionCommandDao().deleteOldVersions(entryId, REVISION_LIMIT)
+        discardedIcons += entryRevisionQueryDao().getIconReferencesBeyondGlobalLimit(GLOBAL_REVISION_LIMIT)
         entryRevisionCommandDao().deleteOldestBeyondGlobalLimit(GLOBAL_REVISION_LIMIT)
+        discardedIcons.forEach(iconResourceCleaner::discardUnreferencedIcon)
     }
 
     suspend fun snapshotCurrent(

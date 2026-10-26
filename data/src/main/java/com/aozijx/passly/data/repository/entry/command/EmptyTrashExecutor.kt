@@ -21,8 +21,8 @@ internal class EmptyTrashExecutor @Inject constructor(
             val resources = deletedEntries.map { entity ->
                 val summary = EntryProfileMapper.fromEntity(entity)
                 DeletedEntryResources(
-                    entryId = entity.entryId,
-                    customIconPath = summary.icon.customReference
+                    customIconPath = summary.icon.customReference,
+                    revisionIconPaths = entryRevisionQueryDao().getIconReferences(entity.entryId),
                 )
             }
             // 与父记录删除处于同一事务；活动、附件等仍由外键级联负责。

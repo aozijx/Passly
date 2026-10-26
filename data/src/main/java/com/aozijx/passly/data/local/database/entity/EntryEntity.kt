@@ -15,6 +15,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
         Index(value = ["deletedAt", "favorite", "updatedAt"]),
         Index(value = ["deletedAt", "title"]),
         Index(value = ["primaryUrl"]),
+        Index(value = ["iconCustomReference"]),
     ]
 )
 data class EntryEntity(

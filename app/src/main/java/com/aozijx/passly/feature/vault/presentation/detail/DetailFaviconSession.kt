@@ -12,13 +12,16 @@ internal class DetailFaviconSession(
     private var preparationJob: Job? = null
     private var saveJob: Job? = null
 
+    val isSaving: Boolean
+        get() = saveJob?.isCompleted == false
+
     fun launchPreparation(block: suspend () -> Unit) {
-        if (preparationJob?.isActive == true) return
+        if (isSaving || preparationJob?.isActive == true) return
         preparationJob = scope.launch { block() }
     }
 
     fun launchSave(block: suspend () -> Unit) {
-        check(saveJob?.isActive != true) { "A favicon save is already active" }
+        check(!isSaving) { "A favicon save is already active" }
         saveJob = scope.launch { block() }
     }
 
@@ -41,12 +44,17 @@ internal class DetailFaviconSession(
     }
 
     fun close(editor: DetailFaviconEditorState.Open) {
+        val pendingSave = saveJob
         cancelAll()
-        files.discardEditorResources(
-            stagedPath = editor.privateImagePath(),
-            pendingInputPath = editor.pendingInputPath,
-            promotedCandidatePath = editor.promotedCandidatePath,
-        )
+        val release = {
+            files.discardEditorResources(
+                stagedPath = editor.privateImagePath(),
+                pendingInputPath = editor.pendingInputPath,
+                promotedCandidatePath = editor.promotedCandidatePath,
+            )
+        }
+        // A cancelled writer may still be committing or rolling back. Do not reclaim its input early.
+        if (pendingSave == null) release() else pendingSave.invokeOnCompletion { release() }
     }
 
     private fun cancelPreparation() {

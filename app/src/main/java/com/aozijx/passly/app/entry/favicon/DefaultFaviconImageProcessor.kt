@@ -6,6 +6,7 @@ import com.aozijx.passly.core.platform.media.FaviconCropRequest
 import com.aozijx.passly.core.platform.media.FaviconImageProcessor
 import com.aozijx.passly.core.platform.media.FaviconProcessingException
 import com.aozijx.passly.core.platform.media.FaviconProcessingFailure
+import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.ByteArrayInputStream
 import java.util.concurrent.CancellationException
@@ -21,7 +22,12 @@ class DefaultFaviconImageProcessor @Inject constructor(
     private val imageDownloader: FaviconImageDownloader,
     private val imageStore: FaviconImageStore,
     private val bitmapTransformer: FaviconBitmapTransformer,
+    private val iconResourceCleaner: EntryIconResourceCleaner,
 ) : FaviconImageProcessor {
+    init {
+        imageStore.recoveredPromotedCandidates.forEach(iconResourceCleaner::discardUnreferencedIcon)
+    }
+
     override suspend fun stageUpload(uri: Uri): Result<String> {
         var stagedPath: String? = null
         return try {
@@ -87,9 +93,7 @@ class DefaultFaviconImageProcessor @Inject constructor(
                 }
             }
         } catch (error: CancellationException) {
-            withContext(NonCancellable + Dispatchers.IO) {
-                imageStore.discardPromotedCandidate(promotedPath)
-            }
+            promotedPath?.let(iconResourceCleaner::discardUnreferencedIcon)
             throw error
         }
     }
@@ -99,9 +103,8 @@ class DefaultFaviconImageProcessor @Inject constructor(
         imageStore.discard(path)
     }
 
-    override suspend fun discardPromotedCandidate(path: String?) = withContext(Dispatchers.IO) {
-        path ?: return@withContext
-        imageStore.discardPromotedCandidate(path)
+    override suspend fun discardPromotedCandidate(path: String?) {
+        path?.let(iconResourceCleaner::discardUnreferencedIcon)
     }
 
     override fun isStaged(path: String): Boolean = imageStore.isStaged(path)
@@ -113,7 +116,7 @@ class DefaultFaviconImageProcessor @Inject constructor(
     ) {
         imageStore.discard(stagedPath)
         imageStore.discard(pendingInputPath)
-        imageStore.discardPromotedCandidate(promotedCandidatePath)
+        promotedCandidatePath?.let(iconResourceCleaner::discardUnreferencedIcon)
     }
 
     private suspend fun discardAfterCancellation(path: String?) {

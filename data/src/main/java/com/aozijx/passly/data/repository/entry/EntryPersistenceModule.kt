@@ -16,6 +16,8 @@ import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
+import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
+import com.aozijx.passly.data.repository.entry.command.EntryResourceCleaner
 import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
@@ -29,6 +31,9 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class EntryPersistenceModule {
+    @Binds
+    @Singleton
+    abstract fun bindEntryIconResourceCleaner(impl: EntryResourceCleaner): EntryIconResourceCleaner
 
     @Binds
     @Singleton

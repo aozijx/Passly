@@ -25,4 +25,19 @@ interface EntryRevisionQueryDao {
 
     @Query("SELECT COUNT(*) FROM entry_revisions")
     suspend fun countAll(): Int
+
+    @Query("SELECT COUNT(*) FROM entry_revisions WHERE iconCustomReference = :path")
+    suspend fun countByIconCustomReference(path: String): Int
+
+    @Query("SELECT DISTINCT iconCustomReference FROM entry_revisions WHERE entryId = :entryId AND iconCustomReference IS NOT NULL")
+    suspend fun getIconReferences(entryId: String): List<String>
+
+    @Query("SELECT DISTINCT iconCustomReference FROM entry_revisions WHERE iconCustomReference IS NOT NULL")
+    suspend fun getAllIconReferences(): List<String>
+
+    @Query("SELECT DISTINCT iconCustomReference FROM entry_revisions WHERE entryId = :entryId AND iconCustomReference IS NOT NULL AND version <= (SELECT version FROM entry_revisions WHERE entryId = :entryId ORDER BY version DESC LIMIT 1 OFFSET :keepCount)")
+    suspend fun getIconReferencesBeyondEntryLimit(entryId: String, keepCount: Int): List<String>
+
+    @Query("SELECT DISTINCT iconCustomReference FROM entry_revisions WHERE iconCustomReference IS NOT NULL AND revisionId IN (SELECT revisionId FROM entry_revisions ORDER BY createdAt DESC, revisionId DESC LIMIT -1 OFFSET :keepCount)")
+    suspend fun getIconReferencesBeyondGlobalLimit(keepCount: Int): List<String>
 }

@@ -3,6 +3,9 @@ package com.aozijx.passly.feature.vault.presentation.detail
 import com.aozijx.passly.core.platform.media.FaviconDraftFiles
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -12,6 +15,43 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DetailFaviconSessionTest {
+
+    @Test
+    fun `closing waits for save cancellation to finish before releasing its files`() = runTest {
+        val files = FakeFiles()
+        val releaseSave = CompletableDeferred<Unit>()
+        val session = DetailFaviconSession(files, backgroundScope)
+        session.launchSave {
+            try {
+                awaitCancellation()
+            } finally {
+                withContext(NonCancellable) { releaseSave.await() }
+            }
+        }
+        runCurrent()
+        session.close(DetailFaviconEditorState.Open(
+            initialSource = DetailFaviconSource.InferredDefault,
+            promotedCandidatePath = "promoted",
+        ))
+        runCurrent()
+        assertTrue(files.closedPaths.isEmpty())
+        releaseSave.complete(Unit)
+        runCurrent()
+        assertEquals(listOf(null, null, "promoted"), files.closedPaths)
+    }
+
+    @Test
+    fun `active save rejects image preparation`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val session = DetailFaviconSession(FakeFiles(), backgroundScope)
+        session.launchSave { gate.await() }
+        runCurrent()
+        var prepared = false
+        session.launchPreparation { prepared = true }
+        runCurrent()
+        assertEquals(false, prepared)
+        gate.complete(Unit)
+    }
 
     @Test
     fun `active preparation rejects a second preparation`() = runTest {

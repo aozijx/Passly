@@ -2,21 +2,24 @@ package com.aozijx.passly.data.repository.entry.command
 
 import android.content.Context
 import com.aozijx.passly.core.platform.VaultResourcePaths
-import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
+import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
 internal data class DeletedEntryResources(
-    val entryId: String,
-    val customIconPath: String?
+    val customIconPath: String?,
+    val revisionIconPaths: List<String> = emptyList(),
 )
 
 /**
@@ -31,47 +34,36 @@ internal class EntryResourceCleaner @Inject constructor(
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
     private val databaseTransactions: DatabaseTransactionRunner,
     private val logger: Logger,
-) {
+    access: SecureSessionAccessState,
+) : EntryIconResourceCleaner {
+    private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val cleanupQueue = IconResourceCleanupQueue(cleanupScope, access) { path ->
+        logger.inSpan(Operations.ResourceCleanup) {
+            attachmentGarbageCollector.withMutationLock {
+                databaseTransactions.write("entry_icon_reclaim") {
+                    withContext(Dispatchers.IO) { EntryIconReclaimTransaction.reclaim(this@write, imageRoot, path) }
+                }
+            }
+        }
+    }
+
+    override fun discardUnreferencedIcon(path: String) = cleanupQueue.request(path)
+
+    suspend fun drainPendingIcons() = cleanupQueue.drain()
     private val imageRoot: File
         get() = VaultResourcePaths.vaultImagesDir(context)
 
     suspend fun clean(resources: Collection<DeletedEntryResources>) {
         logger.inSpan(Operations.ResourceCleanup) {
             attachmentGarbageCollector.drain()
-            withContext(Dispatchers.IO) {
-                resources
-                    .distinctBy(DeletedEntryResources::entryId)
-                    .forEach { resource ->
-                        runCatching {
-                            deleteCustomIcon(resource.customIconPath)
-                        }.onFailure { error ->
-                            logger.log(LogStatements.Application.resourceCleanupFailed(error))
-                        }
-                    }
-            }
+            resources.mapNotNull(DeletedEntryResources::customIconPath).forEach(cleanupQueue::enqueue)
+            resources.flatMap(DeletedEntryResources::revisionIconPaths).forEach(cleanupQueue::enqueue)
+            cleanupQueue.drain()
         }
     }
 
     suspend fun cleanReplacedIcon(oldPath: String?, newPath: String?) {
-        val candidate = oldPath?.takeIf { it.isNotBlank() && it != newPath } ?: return
-        val references = databaseTransactions.read("entry_icon_reference_check") {
-            entryQueryDao().countByIconCustomReference(candidate)
-        }.getOrNull() ?: return
-        if (references != 0) return
-        logger.inSpan(Operations.ResourceCleanup) {
-            withContext(Dispatchers.IO) {
-                runCatching { deleteCustomIcon(candidate) }.onFailure { error ->
-                    logger.log(LogStatements.Application.resourceCleanupFailed(error))
-                }
-            }
-        }
-    }
-
-    private fun deleteCustomIcon(path: String?) {
-        val normalizedPath = path?.trim()?.takeIf(String::isNotEmpty) ?: return
-        val root = imageRoot.canonicalFile
-        val target = File(normalizedPath).canonicalFile
-        if (target.parentFile != root || !target.exists()) return
-        require(target.delete()) { "Unable to delete custom icon" }
+        oldPath?.takeIf { it.isNotBlank() && it != newPath }?.let(cleanupQueue::enqueue)
+        cleanupQueue.drain()
     }
 }

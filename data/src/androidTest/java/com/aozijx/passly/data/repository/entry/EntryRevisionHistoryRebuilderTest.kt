@@ -1,5 +1,7 @@
 package com.aozijx.passly.data.repository.entry
 
+import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
+
 import android.content.Context
 import androidx.room.Room
 import androidx.room.withTransaction
@@ -68,7 +70,7 @@ class EntryRevisionHistoryRebuilderTest {
         seedObsoleteRevision(ENTRY_ONE, version = 7)
         seedObsoleteRevision(ENTRY_TWO, version = 2)
         val rebuilder = EntryRevisionHistoryRebuilder(
-            revisionWriter = EntryRevisionWriter(contentCodec, SensitiveRevisionSnapshotCodec()),
+            revisionWriter = EntryRevisionWriter(contentCodec, SensitiveRevisionSnapshotCodec(), EntryIconResourceCleaner { }),
             bundleCodec = bundleCodec,
         )
 

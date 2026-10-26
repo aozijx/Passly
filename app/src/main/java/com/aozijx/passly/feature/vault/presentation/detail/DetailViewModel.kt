@@ -311,11 +311,13 @@ class DetailViewModel @Inject internal constructor(
                 mutate(DetailMutation.TagEditorDiscardCancelled)
 
             DetailUiAction.OpenFaviconEditor -> {
+                if (faviconSession.isSaving) return
                 val icon = _uiState.value.entry?.icon ?: return
                 mutate(DetailMutation.FaviconEditorOpened(icon.toDetailFaviconSource()))
             }
 
             is DetailUiAction.SelectFaviconSource -> {
+                if (faviconSession.isSaving) return
                 val editor = _uiState.value.faviconEditor as? DetailFaviconEditorState.Open
                     ?: return
                 val source = event.source.toDetailFaviconSource()
@@ -360,6 +362,7 @@ class DetailViewModel @Inject internal constructor(
             }
 
             DetailUiAction.CancelFaviconCrop -> {
+                if (faviconSession.isSaving) return
                 val editor = _uiState.value.faviconEditor as? DetailFaviconEditorState.Open
                     ?: return
                 if (editor.work == DetailFaviconWorkState.Processing) return
@@ -471,6 +474,7 @@ class DetailViewModel @Inject internal constructor(
         val entryId = EntryId(rawEntryId)
         if (loadedEntryId == entryId && _uiState.value.entry != null) return
         val token = workSession.open(entryId)
+        (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let(faviconSession::close)
         qrSession.close()
         loadedEntryId = entryId
         entryLoadJob?.cancel()
@@ -535,6 +539,7 @@ class DetailViewModel @Inject internal constructor(
     }
 
     private fun clearSensitiveState() {
+        (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let(faviconSession::close)
         workSession.close()
         entryLoadJob?.cancel()
         historyJob?.cancel()
@@ -778,7 +783,6 @@ class DetailViewModel @Inject internal constructor(
     }
 
     override fun onCleared() {
-        (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let(faviconSession::close)
         clearSensitiveState()
     }
 

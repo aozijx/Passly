@@ -18,6 +18,7 @@ internal class InitializeEntryRevisionHistory @Inject constructor(
     private val rebuilder: EntryRevisionHistoryRebuilder,
     private val clock: DatabaseClock,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
+    private val entryResourceCleaner: EntryResourceCleaner,
 ) {
     private val mutex = Mutex()
 
@@ -30,7 +31,9 @@ internal class InitializeEntryRevisionHistory @Inject constructor(
             return@withLock AppResult.success(Unit)
         }
         val rebuild = databaseTransactions.write("entry_revision_history_initialize") {
+            val oldIcons = entryRevisionQueryDao().getAllIconReferences()
             rebuilder.rebuildInTransaction(this, clock.now())
+            oldIcons.forEach(entryResourceCleaner::discardUnreferencedIcon)
             attachmentGarbageCollector.scheduleInTransaction(this)
         }
         when (rebuild) {
@@ -38,6 +41,7 @@ internal class InitializeEntryRevisionHistory @Inject constructor(
             is AppResult.Success -> AppResult.runSuspendCatching {
                 maintenanceStore.markCompleted(CURRENT_GENERATION)
                 attachmentGarbageCollector.drain()
+                entryResourceCleaner.drainPendingIcons()
             }
         }
     }
