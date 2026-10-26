@@ -2,6 +2,8 @@ package com.aozijx.passly.data.repository.entry.command
 
 import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.data.codec.entry.SecretBundleCodec
+import com.aozijx.passly.data.codec.sensitiveFieldKeyFromStorageKey
 import com.aozijx.passly.data.local.database.DatabaseClock
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.mapper.entry.hasEntryCapability
@@ -29,6 +31,7 @@ internal class UpdateEntryExecutor @Inject constructor(
         var currentIconPath: String? = null
         val result = databaseTransactions.write("entry_update") {
             val entity = entryQueryDao().getById(id) ?: throw NotFound()
+            databaseTransactions.checkVersion(entity.version, expectedVersion)
             val oldProfile = EntryProfileMapper.fromEntity(entity)
             val newProfile = changes.profile ?: oldProfile
             replacedIconPath = oldProfile.icon.customReference
@@ -39,8 +42,14 @@ internal class UpdateEntryExecutor @Inject constructor(
             }
 
             val now = clock.now()
+            if (changes.secret != null) {
+                secretFieldStore.updateExisting(this, id, newSecret)
+            }
+            val sensitiveKeys = secretFieldQueryDao().getKeys(id).mapNotNullTo(linkedSetOf()) { key ->
+                if (key == SecretBundleCodec.FIELD_KEY) null else sensitiveFieldKeyFromStorageKey(key)
+            }
             val hasAttachments = entity.capabilityFlags.hasEntryCapability(EntryCapability.ATTACHMENTS)
-            val flags = EntryCapabilities.from(newSecret, hasAttachments).toDatabaseFlags()
+            val flags = EntryCapabilities.fromStoredSecret(newSecret, sensitiveKeys, hasAttachments).toDatabaseFlags()
             val affected = entryCommandDao().optimisticUpdate(
                 id,
                 expectedVersion,
@@ -60,10 +69,6 @@ internal class UpdateEntryExecutor @Inject constructor(
                 now,
             )
             databaseTransactions.checkAffectedRows(affected)
-
-            if (changes.secret != null) {
-                secretFieldStore.updateExisting(this, id, newSecret)
-            }
 
             revisionWriter.snapshotChanges(
                 db = this,

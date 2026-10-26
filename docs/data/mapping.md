@@ -31,6 +31,17 @@ EntryAssembler -> Entry
 经 Secret bundle 加密保存，不新增 Profile 明文列。持卡人的真相源为 `cardHolder`；字段读取与编辑不借用用户名。
 扩展字段保持 Payload 版本 1，读取、详情、修订快照和备份使用同一组凭据属性。
 
+## 已存储条目的能力标记
+
+普通查询返回的 Secret bundle 中，高敏值为 null，表示未揭示；不能据此推断密码或 OTP 不存在。
+`EntryCapabilities.from` 用于创建时的完整凭据。已存储条目通过 `fromStoredSecret` 组合结构信息和实际高敏键：
+`PASSWORD` / `SSH_PASSPHRASE` 行提供密码能力，`OTP_SECRET` 行提供 OTP 能力，其余高敏键不冒充这些能力。
+Wi-Fi 密码保存在加密 bundle 中，没有独立密码行；其密码能力仍由 bundle 内的实际值决定。
+
+更新先检查条目版本，在同一事务内执行高敏字段的 Preserve/Clear/Replace，再读取实际键集并更新能力位图、
+条目、修订和活动记录。只读键名，不为能力计算解密高敏内容。保留字段仍保留能力，显式清空则撤销对应能力；
+失败或取消由现有事务边界回滚。修订恢复也使用同一 Domain 规则，从恢复的高敏快照键重建标记。
+
 ## 目录职责
 
 - `local/database/entity`：Room 表结构与约束。

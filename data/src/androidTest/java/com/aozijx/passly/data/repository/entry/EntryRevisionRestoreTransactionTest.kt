@@ -14,6 +14,7 @@ import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
+import com.aozijx.passly.data.mapper.entry.hasEntryCapability
 import com.aozijx.passly.data.repository.entry.command.EntryActivityWriter
 import com.aozijx.passly.data.repository.entry.command.EntryRevisionWriter
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
@@ -29,12 +30,14 @@ import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
+import com.aozijx.passly.domain.entry.model.query.EntryCapability
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.security.dek.FieldKeyManager
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -108,6 +111,7 @@ class EntryRevisionRestoreTransactionTest {
         assertEquals(3, restoredVersion.value)
         assertEquals(3, restored.version)
         assertEquals("Historical", restored.title)
+        assertTrue(restored.capabilityFlags.hasEntryCapability(EntryCapability.PASSWORD))
         assertEquals("historical notes", bundleCodec.decrypt(restoredBundle.valueCipher, ENTRY_ID).notes)
         assertArrayEquals(HISTORICAL_PASSWORD_CIPHER, restoredPassword.valueCipher)
         assertEquals(3, latest.version)
@@ -150,6 +154,7 @@ class EntryRevisionRestoreTransactionTest {
 
         assertEquals(3, restoredVersion.value)
         assertEquals("Historical", database.entryQueryDao().getById(ENTRY_ID)?.title)
+        assertFalse(database.entryQueryDao().getById(ENTRY_ID)!!.capabilityFlags.hasEntryCapability(EntryCapability.PASSWORD))
         assertTrue(!verifier.consumed)
     }
 

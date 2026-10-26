@@ -25,9 +25,7 @@ import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
-import com.aozijx.passly.domain.entry.model.query.EntryCapability
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
-import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SecretFieldKeys
 import com.aozijx.passly.domain.entry.policy.SensitiveRevisionRestorePolicy
 import javax.inject.Inject
@@ -107,7 +105,7 @@ internal class EntryRevisionRestoreTransaction @Inject constructor(
         }
 
         val hasAttachments = revisionAttachments.isNotEmpty()
-        val capabilityFlags = restoredCapabilities(
+        val capabilityFlags = EntryCapabilities.fromStoredSecret(
             content.secret,
             historicalSensitiveKeys,
             hasAttachments,
@@ -211,22 +209,6 @@ internal class EntryRevisionRestoreTransaction @Inject constructor(
         if (endpoints.size != endpointIds.size || endpoints.any { it.deletedAt != null }) {
             throw NotFound()
         }
-    }
-
-    private fun restoredCapabilities(
-        bundle: EntrySecret,
-        sensitiveKeys: Set<SensitiveFieldKey>,
-        hasAttachments: Boolean,
-    ): EntryCapabilities {
-        val values = EntryCapabilities.from(bundle, hasAttachments).values.toMutableSet()
-        if (
-            SensitiveFieldKey.PASSWORD in sensitiveKeys ||
-            SensitiveFieldKey.SSH_PASSPHRASE in sensitiveKeys
-        ) {
-            values += EntryCapability.PASSWORD
-        }
-        if (SensitiveFieldKey.OTP_SECRET in sensitiveKeys) values += EntryCapability.OTP
-        return EntryCapabilities(values)
     }
 
     private fun EntryLink.toEntity() = EntryLinkEntity(

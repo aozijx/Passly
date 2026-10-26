@@ -1,6 +1,7 @@
 package com.aozijx.passly.domain.entry.model.query
 
 import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 
 enum class EntryCapability {
     PASSWORD,
@@ -20,6 +21,26 @@ data class EntryCapabilities(
     operator fun contains(capability: EntryCapability): Boolean = capability in values
 
     companion object {
+        /** Split sensitive fields use row presence; ordinary fields remain in the encrypted bundle. */
+        fun fromStoredSecret(
+            bundle: EntrySecret,
+            sensitiveKeys: Set<SensitiveFieldKey>,
+            hasAttachments: Boolean = false,
+        ): EntryCapabilities {
+            val values = from(bundle, hasAttachments).values.toMutableSet()
+            values -= EntryCapability.PASSWORD
+            values -= EntryCapability.OTP
+            if (
+                SensitiveFieldKey.PASSWORD in sensitiveKeys ||
+                SensitiveFieldKey.SSH_PASSPHRASE in sensitiveKeys ||
+                !bundle.wifi?.password.isNullOrBlank()
+            ) {
+                values += EntryCapability.PASSWORD
+            }
+            if (SensitiveFieldKey.OTP_SECRET in sensitiveKeys) values += EntryCapability.OTP
+            return EntryCapabilities(values)
+        }
+
         fun from(secret: EntrySecret, hasAttachments: Boolean = false): EntryCapabilities =
             EntryCapabilities(buildSet {
                 if (
