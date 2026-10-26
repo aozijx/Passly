@@ -186,6 +186,10 @@
     <string name="otp_type">OTP type</string>
     <string name="otp_secret_encoding">Secret encoding</string>
     <string name="otp_counter">Counter</string>
+    <string name="otp_secret_invalid">The secret does not match the selected encoding</string>
+    <string name="otp_counter_invalid">Enter a nonnegative integer up to 9223372036854775807</string>
+    <string name="otp_period_invalid">Enter a positive whole number of seconds</string>
+    <string name="otp_digits_invalid">Use 6–8 digits; Steam requires 5</string>
     <string name="otp_issuer">Issuer</string>
     <string name="otp_account_name">Account name</string>
     <string name="metadata_created_at">Created: %1$s</string>

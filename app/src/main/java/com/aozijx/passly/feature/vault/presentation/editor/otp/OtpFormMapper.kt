@@ -1,42 +1,20 @@
 package com.aozijx.passly.feature.vault.presentation.editor.otp
 
 import com.aozijx.passly.domain.entry.model.EntryDraft
-import com.aozijx.passly.domain.entry.model.EntryDraftTarget
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryTypeDefinition
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
-import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.otp.OtpConfigInputResult
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
+import com.aozijx.passly.feature.vault.entry.toNewEntryDraft
 
 fun OtpFormState.toEntryDraft(): EntryDraft {
     val definition = EntryTypeDefinitions[EntryType.OTP]
-    val digitsValue = if (type == OtpType.STEAM) 5 else digits.trim().toIntOrNull() ?: 6
-    val algorithmValue = if (type == OtpType.STEAM) OtpHashAlgorithm.SHA1 else algorithm
-    var draft = EntryDraft(EntryDraftTarget.New(EntryType.OTP))
-        .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text(title.trim()))
-        .withValue(definition, FieldKey.OTP_SECRET, EntryDraftValue.Text(secret.trim()))
-        .withValue(definition, FieldKey.OTP_TYPE, EntryDraftValue.Text(type.name))
-        .withValue(definition, FieldKey.OTP_DIGITS, EntryDraftValue.Number(digitsValue))
-        .withValue(definition, FieldKey.OTP_ALGORITHM, EntryDraftValue.Text(algorithmValue.name))
-        .withValue(definition, FieldKey.OTP_ENCODING, EntryDraftValue.Text(encoding.name))
-
-    draft = if (type == OtpType.HOTP) {
-        draft.withValue(
-            definition,
-            FieldKey.OTP_COUNTER,
-            EntryDraftValue.LongNumber(counter.trim().toLongOrNull() ?: 0L),
-        )
-    } else {
-        draft.withValue(
-            definition,
-            FieldKey.OTP_PERIOD,
-            EntryDraftValue.Number(period.trim().toIntOrNull() ?: 30),
-        )
-    }
-    draft = draft.withOptionalText(definition, FieldKey.OTP_ISSUER, issuer)
-    draft = draft.withOptionalText(definition, FieldKey.OTP_ACCOUNT_NAME, accountName)
+    val parsed = configInput.parse()
+    require(parsed is OtpConfigInputResult.Valid) { "OTP input must be valid before creating a draft" }
+    val config = parsed.config
+    var draft = config.toNewEntryDraft().withValue(definition, FieldKey.TITLE, EntryDraftValue.Text(title.trim()))
     draft = draft.withOptionalText(definition, FieldKey.NOTES, notes)
     return draft.withTags(definition, tags)
 }

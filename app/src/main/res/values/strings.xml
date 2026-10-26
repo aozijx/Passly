@@ -148,6 +148,10 @@
     <string name="otp_type">OTP 类型</string>
     <string name="otp_secret_encoding">密钥编码</string>
     <string name="otp_counter">计数器</string>
+    <string name="otp_secret_invalid">密钥与所选编码不匹配</string>
+    <string name="otp_counter_invalid">请输入非负整数，最大为 9223372036854775807</string>
+    <string name="otp_period_invalid">请输入大于 0 的整数秒数</string>
+    <string name="otp_digits_invalid">验证码位数须为 6–8；Steam 固定为 5</string>
     <string name="otp_issuer">发行方</string>
     <string name="otp_account_name">账户名称</string>
     <string name="totp_period">更新周期 (秒)</string>

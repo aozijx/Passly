@@ -17,6 +17,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryDraftMaterializer
+import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffect
 import com.aozijx.passly.testing.testLogger
 import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +33,57 @@ import org.junit.Rule
 class AddOtpViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun invalidInputCannotPersistGuessedOtpParameters() = runTest {
+        val valid = OtpFormState(title = "Mail", secret = "JBSWY3DPEHPK3PXP")
+        val invalidForms = listOf(
+            valid.copy(period = "broken"), valid.copy(period = ""),
+            valid.copy(digits = "broken"), valid.copy(digits = "9"),
+            valid.copy(type = OtpType.HOTP, counter = "broken"),
+            valid.copy(type = OtpType.HOTP, counter = ""),
+            valid.copy(secret = "INVALID!"),
+        )
+        for (form in invalidForms) {
+            val created = mutableListOf<Entry>()
+            val repository = object : EntryCommandRepository by NoOpEntryCommandRepository {
+                override suspend fun createEntry(entry: Entry): AppResult<EntryId> {
+                    created += entry
+                    return AppResult.Success(entry.id)
+                }
+            }
+            val viewModel = AddOtpViewModel(createEntryUseCase(repository), AuthenticatedSession)
+            viewModel.onAction(AddOtpAction.FormChanged(form))
+            viewModel.onAction(AddOtpAction.Save)
+
+            assertEquals(0, created.size)
+            assertEquals(form, viewModel.uiState.value.form)
+            assertTrue(!viewModel.uiState.value.canSave)
+        }
+    }
+
+    @Test
+    fun validManualInputPersistsChosenParametersOnceAndClearsSecret() = runTest {
+        val created = mutableListOf<Entry>()
+        val repository = object : EntryCommandRepository by NoOpEntryCommandRepository {
+            override suspend fun createEntry(entry: Entry): AppResult<EntryId> {
+                created += entry
+                return AppResult.Success(entry.id)
+            }
+        }
+        val viewModel = AddOtpViewModel(createEntryUseCase(repository), AuthenticatedSession)
+        viewModel.onAction(AddOtpAction.FormChanged(OtpFormState(
+            title = "Mail", secret = " my====== ", digits = "7", period = "60",
+        )))
+        viewModel.onAction(AddOtpAction.Save)
+
+        assertEquals(EditorSaveEffect.Saved, viewModel.effects.first())
+        val config = requireNotNull(created.single().secret.otp?.config)
+        assertEquals("MY", config.secret)
+        assertEquals(7, config.digits)
+        assertEquals(60, config.periodSeconds)
+        assertEquals("", viewModel.uiState.value.form.secret)
+    }
 
     @Test
     fun encodedUriPopulatesTheEditorWithoutChangingPlusOrPercentCharacters() = runTest {
@@ -67,7 +119,7 @@ class AddOtpViewModelTest {
         val viewModel = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
         val config = OtpConfig(
             type = OtpType.HOTP,
-            secret = "ABC 123",
+            secret = "Zm9v",
             algorithm = OtpHashAlgorithm.SHA512,
             digits = 8,
             periodSeconds = null,
@@ -103,7 +155,7 @@ class AddOtpViewModelTest {
 
     @Test
     fun saveCapabilityIsDerivedFromFormAndSavePhase() {
-        val form = OtpFormState(title = "Mail", secret = "ABC123")
+        val form = OtpFormState(title = "Mail", secret = "JBSWY3DPEHPK3PXP")
 
         assertTrue(AddOtpCodeState(form = form).canSave)
         assertTrue(
@@ -111,8 +163,19 @@ class AddOtpViewModelTest {
         )
     }
 
-    private fun createEntryUseCase() = CreateEntryUseCase(
-        entryCommandRepository = NoOpEntryCommandRepository,
+    @Test
+    fun switchingFromSteamToHotpRestoresNumericDigits() {
+        val viewModel = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
+        viewModel.onAction(AddOtpAction.FormChanged(OtpFormState(title = "OTP", secret = "MY")))
+        viewModel.onAction(AddOtpAction.TypeChanged(OtpType.STEAM))
+        assertEquals("5", viewModel.uiState.value.form.digits)
+        viewModel.onAction(AddOtpAction.TypeChanged(OtpType.HOTP))
+        assertEquals("6", viewModel.uiState.value.form.digits)
+        assertTrue(viewModel.uiState.value.canSave)
+    }
+
+    private fun createEntryUseCase(repository: EntryCommandRepository = NoOpEntryCommandRepository) = CreateEntryUseCase(
+        entryCommandRepository = repository,
         secureSessionAccessState = AuthenticatedSession,
         materializer = EntryDraftMaterializer(),
         logger = testLogger(),

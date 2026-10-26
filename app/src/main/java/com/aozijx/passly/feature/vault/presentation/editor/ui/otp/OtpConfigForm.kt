@@ -4,14 +4,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.otp.OtpConfigInputResult
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
@@ -27,6 +29,8 @@ fun OtpConfigForm(
     onAction: (AddOtpAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val invalidFields = (state.configInput.parse() as? OtpConfigInputResult.Invalid)?.fields.orEmpty()
+    val secretInvalid = state.secret.isNotEmpty() && FieldKey.OTP_SECRET in invalidFields
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -42,6 +46,8 @@ fun OtpConfigForm(
             value = state.secret,
             onValueChange = { onAction(AddOtpAction.FormChanged(state.copy(secret = it))) },
             label = stringResource(R.string.totp_secret),
+            isError = secretInvalid,
+            supportingText = if (secretInvalid) ({ Text(stringResource(R.string.otp_secret_invalid)) }) else null,
         )
         NextFocusTextField(
             value = state.issuer,
@@ -76,6 +82,8 @@ fun OtpConfigForm(
                     label = stringResource(R.string.otp_counter),
                     modifier = Modifier.weight(1f),
                     keyboardType = KeyboardType.Number,
+                    isError = FieldKey.OTP_COUNTER in invalidFields,
+                    supportingText = if (FieldKey.OTP_COUNTER in invalidFields) ({ Text(stringResource(R.string.otp_counter_invalid)) }) else null,
                 )
             } else {
                 NextFocusTextField(
@@ -84,8 +92,11 @@ fun OtpConfigForm(
                         onAction(AddOtpAction.FormChanged(state.copy(period = it)))
                     },
                     label = stringResource(R.string.totp_period),
+                    enabled = state.type != OtpType.STEAM,
                     modifier = Modifier.weight(1f),
                     keyboardType = KeyboardType.Number,
+                    isError = FieldKey.OTP_PERIOD in invalidFields,
+                    supportingText = if (FieldKey.OTP_PERIOD in invalidFields) ({ Text(stringResource(R.string.otp_period_invalid)) }) else null,
                 )
             }
             NextFocusTextField(
@@ -97,6 +108,8 @@ fun OtpConfigForm(
                 modifier = Modifier.weight(1f),
                 keyboardType = KeyboardType.Number,
                 enabled = state.type != OtpType.STEAM,
+                isError = FieldKey.OTP_DIGITS in invalidFields,
+                supportingText = if (FieldKey.OTP_DIGITS in invalidFields) ({ Text(stringResource(R.string.otp_digits_invalid)) }) else null,
             )
         }
         DropdownSelector(

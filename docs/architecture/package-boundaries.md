@@ -52,6 +52,8 @@ Entry Domain 端口，不直接构造 Entity 或具体 Repository。Autofill/Cre
 
 OTP 生成、密钥编解码和 `otpauth:` URI 协议位于 `domain/entry/otp`；App 负责扫码、编辑状态、授权与展示，
 不另留 Android Uri 实现或仅用于测试的解析、格式化转发接口。
+手动输入的原始数字与密钥通过 Domain 的 `OtpConfigInput` 解析；页面仅保留输入和显示错误，
+不在草稿映射中用默认值掩盖无效输入。当前规则见[动态口令创建](../features/vault/otp-entry.md)。
 
 银行卡编辑器将原始输入交给 `CardNumberValidator`，由它一次性提取数字并执行长度、Luhn 与卡组织识别，
 页面保留用户输入的分隔格式。Mastercard 2 系列包含 222100–272099，边界和前缀末位为 0 的情况由单测覆盖；

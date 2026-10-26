@@ -10,6 +10,7 @@ import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class OtpFormMapperTest {
@@ -19,7 +20,7 @@ class OtpFormMapperTest {
             title = " Example ",
             issuer = " Example Inc ",
             accountName = " user@example.com ",
-            secret = " AB C ",
+            secret = " Zm9v ",
             period = "60",
             digits = "8",
             algorithm = OtpHashAlgorithm.SHA256,
@@ -32,7 +33,7 @@ class OtpFormMapperTest {
         assertEquals(EntryDraftValue.Text("Example"), draft[FieldKey.TITLE])
         assertEquals(EntryDraftValue.Text("Example Inc"), draft[FieldKey.OTP_ISSUER])
         assertEquals(EntryDraftValue.Text("user@example.com"), draft[FieldKey.OTP_ACCOUNT_NAME])
-        assertEquals(EntryDraftValue.Text("AB C"), draft[FieldKey.OTP_SECRET])
+        assertEquals(EntryDraftValue.Text("Zm9v"), draft[FieldKey.OTP_SECRET])
         assertEquals(EntryDraftValue.Text(OtpType.TOTP.name), draft[FieldKey.OTP_TYPE])
         assertEquals(EntryDraftValue.Number(60), draft[FieldKey.OTP_PERIOD])
         assertNull(draft[FieldKey.OTP_COUNTER])
@@ -48,7 +49,7 @@ class OtpFormMapperTest {
     fun toEntryDraft_preservesHotpCounterAsLong() {
         val draft = OtpFormState(
             title = "HOTP",
-            secret = "secret",
+            secret = "JBSWY3DPEHPK3PXP",
             type = OtpType.HOTP,
             counter = Long.MAX_VALUE.toString(),
         ).toEntryDraft()
@@ -58,18 +59,27 @@ class OtpFormMapperTest {
     }
 
     @Test
-    fun toEntryDraft_forcesSteamDefaults() {
+    fun toEntryDraft_mapsValidatedSteamParameters() {
         val draft = OtpFormState(
             title = "Steam",
-            secret = "secret",
+            secret = "JBSWY3DPEHPK3PXP",
             type = OtpType.STEAM,
-            algorithm = OtpHashAlgorithm.SHA512,
-            digits = "8",
+            algorithm = OtpHashAlgorithm.SHA1,
+            digits = "5",
         ).toEntryDraft()
 
         assertEquals(EntryDraftValue.Number(5), draft[FieldKey.OTP_DIGITS])
         assertEquals(EntryDraftValue.Text("SHA1"), draft[FieldKey.OTP_ALGORITHM])
         assertEquals(EntryDraftValue.Number(30), draft[FieldKey.OTP_PERIOD])
         assertNull(draft[FieldKey.OTP_COUNTER])
+    }
+
+    @Test
+    fun toEntryDraft_rejectsInvalidNumbersInsteadOfDefaulting() {
+        val valid = OtpFormState(title = "OTP", secret = "JBSWY3DPEHPK3PXP")
+        for (form in listOf(valid.copy(period = "bad"), valid.copy(digits = "bad"),
+            valid.copy(type = OtpType.HOTP, counter = "bad"))) {
+            assertThrows(IllegalArgumentException::class.java) { form.toEntryDraft() }
+        }
     }
 }

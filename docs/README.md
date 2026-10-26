@@ -48,6 +48,7 @@
 - [二维码扫描](features/scanner.md)
 - [Wi-Fi 与 OTP 二维码展示](features/vault/qr-display.md)
 - [动态口令 URI 导入与导出](features/vault/otp-uri.md)
+- [动态口令创建](features/vault/otp-entry.md)
 - [银行卡创建与有效期](features/vault/card-entry.md)
 - [权限与消息](features/permissions-and-messages.md)
 

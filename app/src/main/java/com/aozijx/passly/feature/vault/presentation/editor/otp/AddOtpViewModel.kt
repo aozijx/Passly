@@ -107,8 +107,7 @@ class AddOtpViewModel @Inject constructor(
         type = type,
         digits = when (type) {
             OtpType.STEAM -> "5"
-            OtpType.TOTP -> if (digits == "5") "6" else digits
-            OtpType.HOTP -> digits
+            OtpType.TOTP, OtpType.HOTP -> if (digits == "5") "6" else digits
         },
         period = when (type) {
             OtpType.STEAM -> "30"
