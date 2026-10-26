@@ -218,6 +218,7 @@
     <string name="settings_trash_empty_confirm_title">Empty trash?</string>
     <string name="settings_trash_emptying">Emptying…</string>
     <string name="settings_trash_error_dismiss">Got it</string>
+    <string name="settings_trash_retry">Retry</string>
     <string name="settings_trash_title">Trash</string>
     <string name="settings_database_reset_title">Permanently clear Passly data</string>
     <string name="settings_database_reset_summary">Delete the database, attachments, and custom images</string>

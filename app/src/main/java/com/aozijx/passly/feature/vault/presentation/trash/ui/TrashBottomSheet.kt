@@ -56,6 +56,12 @@ internal data class TrashEntryUiModel(
     val iconCustomPath: String?,
 )
 
+internal sealed interface TrashErrorUiState {
+    data object Hidden : TrashErrorUiState
+    data class LoadFailed(val message: String) : TrashErrorUiState
+    data class OperationFailed(val message: String) : TrashErrorUiState
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun TrashBottomSheet(
@@ -64,12 +70,13 @@ internal fun TrashBottomSheet(
     isLoading: Boolean,
     activeEntryId: String?,
     isEmptying: Boolean,
-    error: String?,
+    error: TrashErrorUiState,
     onDismiss: () -> Unit,
     onRestore: (TrashEntryUiModel) -> Unit,
     onDelete: (TrashEntryUiModel) -> Unit,
     onEmpty: () -> Unit,
-    onClearError: () -> Unit
+    onClearError: () -> Unit,
+    onRetryLoad: () -> Unit,
 ) {
     if (!visible) return
 
@@ -105,15 +112,23 @@ internal fun TrashBottomSheet(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
             )
 
-            error?.let {
-                TrashError(
-                    message = it,
-                    onDismiss = onClearError
+            when (error) {
+                TrashErrorUiState.Hidden -> Unit
+                is TrashErrorUiState.LoadFailed -> TrashError(
+                    message = error.message,
+                    actionLabel = stringResource(R.string.settings_trash_retry),
+                    onAction = onRetryLoad,
+                )
+                is TrashErrorUiState.OperationFailed -> TrashError(
+                    message = error.message,
+                    actionLabel = stringResource(R.string.settings_trash_error_dismiss),
+                    onAction = onClearError,
                 )
             }
 
             when {
                 isLoading -> TrashLoading()
+                error is TrashErrorUiState.LoadFailed -> Unit
                 entries.isEmpty() -> TrashEmpty()
                 else -> LazyColumn(
                     modifier = Modifier
@@ -349,7 +364,8 @@ private fun TrashEmpty() {
 @Composable
 private fun TrashError(
     message: String,
-    onDismiss: () -> Unit
+    actionLabel: String,
+    onAction: () -> Unit,
 ) {
     Surface(
         color = MaterialTheme.colorScheme.errorContainer,
@@ -374,8 +390,8 @@ private fun TrashError(
                 color = MaterialTheme.colorScheme.onErrorContainer,
                 modifier = Modifier.weight(1f)
             )
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.settings_trash_error_dismiss))
+            TextButton(onClick = onAction) {
+                Text(actionLabel)
             }
         }
     }

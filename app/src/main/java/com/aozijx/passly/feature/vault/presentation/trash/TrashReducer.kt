@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.trash
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 
 internal sealed interface TrashMutation {
+    data object LoadStarted : TrashMutation
     data class Loaded(val entries: List<EntryListItem>) : TrashMutation
     data class LoadFailed(val message: String) : TrashMutation
     data object ErrorCleared : TrashMutation
@@ -15,14 +16,10 @@ internal sealed interface TrashMutation {
 
 internal object TrashReducer {
     fun reduce(state: TrashUiState, mutation: TrashMutation): TrashUiState = when (mutation) {
+        TrashMutation.LoadStarted -> state.copy(content = TrashContentState.Loading)
         is TrashMutation.Loaded -> state.copy(content = TrashContentState.Loaded(mutation.entries))
         is TrashMutation.LoadFailed -> state.copy(content = TrashContentState.Failed(mutation.message))
         TrashMutation.ErrorCleared -> state.copy(
-            content = when (state.content) {
-                is TrashContentState.Failed -> TrashContentState.Loaded(emptyList())
-                is TrashContentState.Loaded,
-                TrashContentState.Loading -> state.content
-            },
             operation = when (state.operation) {
                 is TrashOperationState.Failed -> TrashOperationState.Idle
                 TrashOperationState.Emptying,

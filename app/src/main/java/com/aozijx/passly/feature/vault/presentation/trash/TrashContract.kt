@@ -47,4 +47,5 @@ sealed interface TrashUiAction {
     data class DeletePermanently(val entryId: String, val expectedVersion: Int) : TrashUiAction
     data object Empty : TrashUiAction
     data object ClearError : TrashUiAction
+    data object RetryLoad : TrashUiAction
 }

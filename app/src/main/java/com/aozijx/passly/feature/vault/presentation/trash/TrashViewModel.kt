@@ -16,24 +16,57 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 
 @HiltViewModel
 internal class TrashViewModel @Inject constructor(
     private val entryListQueryRepository: EntryListQueryRepository,
     private val trashCommand: TrashCommandUseCase,
 ) : ViewModel() {
+    private sealed interface Observation {
+        data object Pending : Observation
+        class Active(val ticket: Any, val job: Job) : Observation
+        data object Destroyed : Observation
+    }
+
+    private var observation: Observation = Observation.Pending
     private val _uiState = MutableStateFlow(TrashUiState())
     val uiState: StateFlow<TrashUiState> = _uiState.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            entryListQueryRepository.deletedEntries
-                .catch { mutate(TrashMutation.LoadFailed(it.toUiMessage("无法读取回收站"))) }
-                .collect { mutate(TrashMutation.Loaded(it)) }
-        }
+        observeTrash()
     }
 
+    private fun observeTrash() {
+        if (observation == Observation.Destroyed) return
+        val previous = observation
+        observation = Observation.Pending
+        if (previous is Observation.Active) previous.job.cancel()
+        mutate(TrashMutation.LoadStarted)
+        val ticket = Any()
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
+            entryListQueryRepository.deletedEntries
+                .catch {
+                    currentCoroutineContext().ensureActive()
+                    if (isCurrentObservation(ticket)) mutate(TrashMutation.LoadFailed(it.toUiMessage("无法读取回收站")))
+                }
+                .collect {
+                    currentCoroutineContext().ensureActive()
+                    if (isCurrentObservation(ticket)) mutate(TrashMutation.Loaded(it))
+                }
+        }
+        observation = Observation.Active(ticket, job)
+        job.start()
+    }
+
+    private fun isCurrentObservation(ticket: Any): Boolean =
+        (observation as? Observation.Active)?.ticket === ticket
+
     fun onAction(action: TrashUiAction) {
+        if (observation == Observation.Destroyed) return
         when (action) {
             is TrashUiAction.Restore -> runEntryAction(action.entryId) {
                 trashCommand.restore(
@@ -49,6 +82,7 @@ internal class TrashViewModel @Inject constructor(
             }
             TrashUiAction.Empty -> emptyTrash()
             TrashUiAction.ClearError -> mutate(TrashMutation.ErrorCleared)
+            TrashUiAction.RetryLoad -> if (uiState.value.content is TrashContentState.Failed) observeTrash()
         }
     }
 
@@ -97,6 +131,14 @@ internal class TrashViewModel @Inject constructor(
     }
 
     private fun mutate(mutation: TrashMutation) {
+        if (observation == Observation.Destroyed) return
         _uiState.value = TrashReducer.reduce(_uiState.value, mutation)
+    }
+
+    override fun onCleared() {
+        val previous = observation
+        observation = Observation.Destroyed
+        if (previous is Observation.Active) previous.job.cancel()
+        _uiState.value = TrashUiState()
     }
 }

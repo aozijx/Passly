@@ -7,6 +7,14 @@
 具体合同见[条目修订历史](entry-revision-history.md)。备份、回收站和数据库维护不复用主列表的 Paging 配置，
 分别遵守自己的事务和授权边界。创建表单、详情逐项编辑及尚未完成的能力见[条目编辑器与写入架构](entry-editor-and-persistence.md)。
 
+## 回收站读取
+
+回收站单独订阅 `EntryListQueryRepository.deletedEntries`。加载失败保持明确的失败状态，显示重试入口，
+不展示“回收站为空”；关闭操作错误也不能将读取失败改成空列表。`RetryLoad` 只在读取失败时重建订阅，
+立即进入 Loading，重复点击不会创建重复订阅；恢复后继续以仓库 Flow 更新列表。
+每次读取有独立任务票据，替换或销毁时取消旧 Job，迟到数据和错误不能发布。销毁后清理列表状态并拒绝重试。
+重试只重建读取，不执行恢复、永久删除或清空操作；这些写入仍由 `TrashCommandUseCase` 处理授权和版本合同。
+
 ## 查询
 
 创建选项由 `VaultEditorDestinationRegistry` 的实际目的地派生，经列表 UI model 传给 FAB 与创建弹层；

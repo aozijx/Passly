@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.feature.vault.presentation.trash.ui.TrashBottomSheet
+import com.aozijx.passly.feature.vault.presentation.trash.ui.TrashErrorUiState
 
 @Composable
 internal fun TrashRoute(
@@ -16,9 +17,9 @@ internal fun TrashRoute(
     val content = state.content
     val activeEntryId = (operation as? TrashOperationState.Entry)?.entryId
     val error = when {
-        operation is TrashOperationState.Failed -> operation.message
-        content is TrashContentState.Failed -> content.message
-        else -> null
+        operation is TrashOperationState.Failed -> TrashErrorUiState.OperationFailed(operation.message)
+        content is TrashContentState.Failed -> TrashErrorUiState.LoadFailed(content.message)
+        else -> TrashErrorUiState.Hidden
     }
     TrashBottomSheet(
         visible = true,
@@ -32,5 +33,6 @@ internal fun TrashRoute(
         onDelete = { viewModel.onAction(TrashUiAction.DeletePermanently(it.id, it.version)) },
         onEmpty = { viewModel.onAction(TrashUiAction.Empty) },
         onClearError = { viewModel.onAction(TrashUiAction.ClearError) },
+        onRetryLoad = { viewModel.onAction(TrashUiAction.RetryLoad) },
     )
 }
