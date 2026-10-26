@@ -52,14 +52,16 @@ class AddWifiViewModel @Inject constructor(
         }
     }
 
-    fun initialize(content: AddWifiInitialContent) {
-        if (initializationPhase == InitializationPhase.Complete) return
+    fun initialize(loadContent: () -> AddWifiInitialContent): AddWifiInitializationResult {
+        if (initializationPhase == InitializationPhase.Complete) return AddWifiInitializationResult.AlreadyInitialized
         initializationPhase = InitializationPhase.Complete
-        when (content) {
-            AddWifiInitialContent.Blank,
-            AddWifiInitialContent.SeedUnavailable,
-            -> Unit
-            is AddWifiInitialContent.Scanned -> mutateForm { it.applyScanned(content.payload) }
+        if (!saveSession.canEdit()) return AddWifiInitializationResult.Unavailable
+        return when (val content = loadContent()) {
+            AddWifiInitialContent.Blank -> AddWifiInitializationResult.Ready
+            AddWifiInitialContent.SeedUnavailable -> AddWifiInitializationResult.Unavailable
+            is AddWifiInitialContent.Scanned -> if (tryApplyScannedWifi(content.payload)) {
+                AddWifiInitializationResult.Ready
+            } else AddWifiInitializationResult.Unavailable
         }
     }
 

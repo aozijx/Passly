@@ -91,7 +91,6 @@ internal fun NavGraphBuilder.registerVaultGraph(
             onSaved = context.navigateBack,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = this,
-            initialContent = AddWifiInitialContent.Blank,
         )
     }
 
@@ -102,7 +101,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
         ),
     ) { backStackEntry ->
         val seedCoordinator = vaultGraphSeedCoordinator(navController, backStackEntry)
-        val initialContent = remember(backStackEntry, seedCoordinator) {
+        val loadInitialContent = {
             when (
                 val parsed = EditorSeedToken.parse(
                     backStackEntry.arguments
@@ -128,7 +127,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
             onSaved = context.navigateBack,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = this,
-            initialContent = initialContent,
+            loadInitialContent = loadInitialContent,
         )
     }
 

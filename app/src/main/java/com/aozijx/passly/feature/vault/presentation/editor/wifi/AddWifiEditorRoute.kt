@@ -28,7 +28,7 @@ fun AddWifiEditorRoute(
     onSaved: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    initialContent: AddWifiInitialContent = AddWifiInitialContent.Blank,
+    loadInitialContent: () -> AddWifiInitialContent = { AddWifiInitialContent.Blank },
 ) {
     val viewModel = hiltViewModel<AddWifiViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -42,9 +42,8 @@ fun AddWifiEditorRoute(
     var overlay by remember { mutableStateOf<WifiEditorOverlay>(WifiEditorOverlay.None) }
 
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
-    LaunchedEffect(viewModel, initialContent) {
-        viewModel.initialize(initialContent)
-        if (initialContent == AddWifiInitialContent.SeedUnavailable) {
+    LaunchedEffect(viewModel) {
+        if (viewModel.initialize(loadInitialContent) == AddWifiInitializationResult.Unavailable) {
             snackbarHostState.showSnackbar(seedUnavailableMessage)
         }
     }

@@ -13,6 +13,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -21,7 +23,7 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class EntryEditorSeedCoordinatorTest {
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
     private val seed = EntryEditorSeed.Wifi(
         WifiQrPayload("Office", "secret-password", WifiSecurityType.WpaPersonal, false),
@@ -37,6 +39,41 @@ class EntryEditorSeedCoordinatorTest {
             EntryEditorSeedConsumeResult.AccessDenied,
             coordinator.consume(EditorSeedToken("missing")),
         )
+    }
+
+    @Test
+    fun `reauthentication invalidates seed even when collector misses intermediate lock`() = runTest {
+        val session = MutableSession(AuthenticationState.Authenticated(1L))
+        val coordinator = EntryEditorSeedCoordinator(session, EntryEditorSeedStore())
+        runCurrent()
+        val staged = coordinator.stage(seed) as EntryEditorSeedStageResult.Staged
+        session.set(AuthenticationState.Locked)
+        session.set(AuthenticationState.Authenticated(2L))
+
+        assertEquals(EntryEditorSeedConsumeResult.Missing, coordinator.consume(staged.token))
+    }
+
+    @Test
+    fun `new session can stage its own seed without retaining previous token`() = runTest {
+        val session = MutableSession(AuthenticationState.Authenticated(1L))
+        val coordinator = EntryEditorSeedCoordinator(session, EntryEditorSeedStore())
+        val old = coordinator.stage(seed) as EntryEditorSeedStageResult.Staged
+        session.set(AuthenticationState.Authenticated(2L))
+        val current = coordinator.stage(seed) as EntryEditorSeedStageResult.Staged
+
+        assertEquals(EntryEditorSeedConsumeResult.Missing, coordinator.consume(old.token))
+        assertEquals(EntryEditorSeedConsumeResult.Consumed(seed), coordinator.consume(current.token))
+    }
+
+    @Test
+    fun `destroyed coordinator rejects late stage and consume calls`() {
+        val session = MutableSession(AuthenticationState.Authenticated(1L))
+        val coordinator = EntryEditorSeedCoordinator(session, EntryEditorSeedStore())
+        val staged = coordinator.stage(seed) as EntryEditorSeedStageResult.Staged
+        coordinator.javaClass.getDeclaredMethod("onCleared").apply { isAccessible = true }.invoke(coordinator)
+
+        assertEquals(EntryEditorSeedStageResult.AccessDenied, coordinator.stage(seed))
+        assertEquals(EntryEditorSeedConsumeResult.AccessDenied, coordinator.consume(staged.token))
     }
 
     @Test

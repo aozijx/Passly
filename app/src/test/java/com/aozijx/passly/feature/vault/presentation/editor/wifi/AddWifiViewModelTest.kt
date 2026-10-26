@@ -43,6 +43,43 @@ class AddWifiViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
+    fun `initial content is loaded once and not retained for reinitialization`() {
+        val model = viewModel(RecordingRepository())
+        var loads = 0
+        val load = {
+            loads++
+            AddWifiInitialContent.Scanned(WifiQrPayload("Office", "password", WifiSecurityType.WpaPersonal, false))
+        }
+        assertEquals(AddWifiInitializationResult.Ready, model.initialize(load))
+        model.onAction(AddWifiAction.SsidChanged("Edited"))
+        assertEquals(AddWifiInitializationResult.AlreadyInitialized, model.initialize(load))
+        assertEquals(1, loads)
+        assertEquals("Edited", model.uiState.value.form.ssid)
+    }
+
+    @Test
+    fun `locked initialization does not consume content or replay it after unlock`() = runTest {
+        val session = MutableSession()
+        val model = viewModel(RecordingRepository(), session)
+        var loads = 0
+        val load = { loads++; AddWifiInitialContent.Scanned(WifiQrPayload("Office", "password", WifiSecurityType.WpaPersonal, false)) }
+        session.lock()
+        assertEquals(AddWifiInitializationResult.Unavailable, model.initialize(load))
+        session.unlock()
+        runCurrent()
+        assertEquals(AddWifiInitializationResult.AlreadyInitialized, model.initialize(load))
+        assertEquals(0, loads)
+        assertEquals("", model.uiState.value.form.password)
+    }
+
+    @Test
+    fun `unavailable seed is reported only during first initialization`() {
+        val model = viewModel(RecordingRepository())
+        assertEquals(AddWifiInitializationResult.Unavailable, model.initialize { AddWifiInitialContent.SeedUnavailable })
+        assertEquals(AddWifiInitializationResult.AlreadyInitialized, model.initialize { error("Must not reload") })
+    }
+
+    @Test
     fun `accepted scan preserves notes tags and exact network fields`() {
         val model = viewModel(RecordingRepository())
         model.onAction(AddWifiAction.NotesChanged("Keep notes"))
@@ -158,7 +195,7 @@ class AddWifiViewModelTest {
         val created = mutableListOf<Entry>()
         val repository = RecordingRepository { entry -> created += entry; AppResult.Success(entry.id) }
         val model = viewModel(repository)
-        model.initialize(AddWifiInitialContent.Scanned(scanned.payload))
+        model.initialize { AddWifiInitialContent.Scanned(scanned.payload) }
         model.onAction(AddWifiAction.Save)
         advanceUntilIdle()
         val wifi = requireNotNull(created.single().secret.wifi)
@@ -292,9 +329,9 @@ class AddWifiViewModelTest {
             ),
         )
 
-        viewModel.initialize(scanned)
+        viewModel.initialize { scanned }
         viewModel.onAction(AddWifiAction.SsidChanged("Edited"))
-        viewModel.initialize(AddWifiInitialContent.Blank)
+        viewModel.initialize { AddWifiInitialContent.Blank }
 
         assertEquals("Edited", viewModel.uiState.value.form.ssid)
         assertEquals("password", viewModel.uiState.value.form.password)
