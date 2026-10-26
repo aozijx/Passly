@@ -24,7 +24,7 @@ import com.aozijx.passly.domain.entry.otp.OtpConfigValidation
 /** Pure conversion with input checks; callers own complete credential validation, identity creation, access and persistence. */
 class EntryDraftMaterializer {
     fun materialize(draft: EntryDraft, identity: EntryIdentity): Entry {
-        require(identity.type == draft.target.type) { "Draft and identity types must match" }
+        require(identity.type == draft.type) { "Draft and identity types must match" }
         val definition = EntryTypeDefinitions[identity.type]
         val invalidFields = draft.invalidProvidedFields(definition) + draft.missingRequiredFields(definition)
         if (invalidFields.isNotEmpty()) throw InvalidEntryDraft(invalidFields)

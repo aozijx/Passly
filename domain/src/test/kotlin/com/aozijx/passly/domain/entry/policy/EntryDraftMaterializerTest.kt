@@ -1,7 +1,6 @@
 package com.aozijx.passly.domain.entry.policy
 
 import com.aozijx.passly.domain.entry.model.EntryDraft
-import com.aozijx.passly.domain.entry.model.EntryDraftTarget
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
@@ -68,7 +67,7 @@ class EntryDraftMaterializerTest {
                 key to value,
             )
             assertThrows(IllegalArgumentException::class.java) {
-                materializer.materialize(EntryDraft(EntryDraftTarget.New(EntryType.OTP), values), identity(EntryType.OTP))
+                materializer.materialize(EntryDraft(EntryType.OTP, values), identity(EntryType.OTP))
             }
         }
     }
@@ -85,7 +84,7 @@ class EntryDraftMaterializerTest {
                 key to value,
             )
             assertThrows(IllegalArgumentException::class.java) {
-                materializer.materialize(EntryDraft(EntryDraftTarget.New(EntryType.OTP), values), identity(EntryType.OTP))
+                materializer.materialize(EntryDraft(EntryType.OTP, values), identity(EntryType.OTP))
             }
         }
     }
@@ -235,7 +234,7 @@ class EntryDraftMaterializerTest {
 
     private fun draft(type: EntryType, vararg values: Pair<FieldKey, EntryDraftValue>): EntryDraft {
         val definition = EntryTypeDefinitions[type]
-        return values.fold(EntryDraft(EntryDraftTarget.New(type))) { draft, (key, value) ->
+        return values.fold(EntryDraft(type)) { draft, (key, value) ->
             draft.withValue(definition, key, value)
         }
     }

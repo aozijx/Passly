@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.editor.wifi
 
-import com.aozijx.passly.domain.entry.model.EntryDraftTarget
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
@@ -21,7 +20,7 @@ class WifiFormMapperTest {
             tags = " work, network, work, , ",
         ).toEntryDraft()
 
-        assertEquals(EntryDraftTarget.New(EntryType.WIFI), draft.target)
+        assertEquals(EntryType.WIFI, draft.type)
         assertEquals(EntryDraftValue.Text("  Passly  "), draft[FieldKey.TITLE])
         assertEquals(EntryDraftValue.Text("  Passly  "), draft[FieldKey.WIFI_SSID])
         assertEquals(EntryDraftValue.Text("WEP"), draft[FieldKey.WIFI_SECURITY])

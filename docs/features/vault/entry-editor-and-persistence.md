@@ -26,15 +26,15 @@ Presentation 经用例或 Domain 端口访问数据，不直接使用 DAO。完�
 ```
 
 [`CreateEntryUseCase`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/CreateEntryUseCase.kt)
-只接受 `EntryDraftTarget.New`。它先检查当前权限，再检查必填字段和 `invalidProvidedFields`，生成身份后物化、
+接收只含 `type` 和类型化字段值的创建草稿。它先检查当前权限，再检查必填字段和 `invalidProvidedFields`，生成身份后物化、
 执行完整领域校验并写入 Repository。Autofill 创建复用同一纯规则，但使用自己的会话访问检查和写入端口。
 
 [`EntryDraftMaterializer`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryDraftMaterializer.kt)
 位于 Domain，目前显式转换四种创建类型。它再次检查草稿字段及身份类型；不能假定草稿一定经 `withValue()` 构造。
 无效草稿以字段键表达失败，不能把用户输入拼入异常。`EntryValidation` 仍负责最终完整凭据校验。
 
-`EntryDraftTarget.Existing` 目前只有模型定义，没有通用更新消费者；不能据此宣称已有完整表单编辑能力。
-详情编辑不经过该目标模型。
+草稿只描述待创建内容；身份与初始版本由创建用例生成。
+已有条目通过 `EntryEdit` 与带预期版本的 Repository 更新合同修改，条目 ID 与版本由更新用例和端口参数表达。
 
 ## 四类创建表单
 
@@ -88,7 +88,7 @@ Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace
 
 - 创建页已共享保存协调器，表单更新、校验和类型专属异步能力仍由类型 ViewModel 持有；没有泛型 `EntryEditorSession`、`EntryFormAdapter`、`EntryEditorRegistry` 或 `EntryMaterializerRegistry` 实现。
 - 集中式物化器目前只有四个创建分支；需要扩展类型时按实际语义调整，不把每个分支强制包装成空转发类。
-- 完整表单编辑与 `Existing` 草稿更新尚未实现。
+- 完整条目表单编辑尚未实现；当前更新入口仍是详情逐项编辑，不提供另一套草稿更新分支。
 
 验证以现有测试为准：`CreateEntryUseCaseTest`、四类表单映射及 ViewModel 测试覆盖创建入口；Domain 的
 `EntryDraftMaterializerTest`、`EntryEditTest`、`EntryFieldEditorTest` 覆盖纯规则；`EditDetailEntryUseCaseTest` 和

@@ -11,7 +11,6 @@ import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryDraft
-import com.aozijx.passly.domain.entry.model.EntryDraftTarget
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -37,7 +36,7 @@ class CreateEntryUseCaseTest {
     fun malformedCardNumbersAreRejectedBeforeRepositoryAccess() = runBlocking {
         for (number in listOf("4111111111111112", "not-a-card", "4111x111111111111")) {
             val fixture = fixture(AuthenticationState.Authenticated(1L))
-            val draft = EntryDraft(EntryDraftTarget.New(EntryType.BANK_CARD), mapOf(
+            val draft = EntryDraft(EntryType.BANK_CARD, mapOf(
                 FieldKey.TITLE to EntryDraftValue.Text("Card"),
                 FieldKey.CARD_NUMBER to EntryDraftValue.Text(number),
             ))
@@ -58,7 +57,7 @@ class CreateEntryUseCaseTest {
             FieldKey.OTP_PERIOD to EntryDraftValue.Number(0),
         )) {
             val fixture = fixture(AuthenticationState.Authenticated(1L))
-            val draft = EntryDraft(EntryDraftTarget.New(EntryType.OTP), mapOf(
+            val draft = EntryDraft(EntryType.OTP, mapOf(
                 FieldKey.TITLE to EntryDraftValue.Text("Token"),
                 FieldKey.OTP_SECRET to EntryDraftValue.Text("MY"),
                 key to value,
@@ -82,7 +81,7 @@ class CreateEntryUseCaseTest {
             )
             if (security != null) values[FieldKey.WIFI_SECURITY] = EntryDraftValue.Text(security)
 
-            val result = fixture.useCase(EntryDraft(EntryDraftTarget.New(EntryType.WIFI), values))
+            val result = fixture.useCase(EntryDraft(EntryType.WIFI, values))
 
             assertTrue(result is AppResult.Failure && result.error is ValidationError)
             assertEquals(0, fixture.repository.createCalls)
@@ -97,7 +96,7 @@ class CreateEntryUseCaseTest {
             FieldKey.CARD_HOLDER to EntryDraftValue.Text("private name"),
         )) {
             val fixture = fixture(AuthenticationState.Authenticated(1L))
-            val draft = EntryDraft(EntryDraftTarget.New(EntryType.OTP), mapOf(
+            val draft = EntryDraft(EntryType.OTP, mapOf(
                 FieldKey.TITLE to EntryDraftValue.Text("Token"),
                 FieldKey.OTP_SECRET to EntryDraftValue.Text("MY"),
                 key to value,
@@ -125,7 +124,7 @@ class CreateEntryUseCaseTest {
         )
         for (fields in invalidDrafts) {
             val fixture = fixture(AuthenticationState.Authenticated(1L))
-            val draft = fields.fold(EntryDraft(EntryDraftTarget.New(EntryType.OTP))
+            val draft = fields.fold(EntryDraft(EntryType.OTP)
                 .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text("Token"))) { current, (key, value) ->
                 current.withValue(definition, key, value)
             }
@@ -152,7 +151,7 @@ class CreateEntryUseCaseTest {
     @Test
     fun invalidDraft_doesNotCreateIdentityOrTouchRepository() = runBlocking {
         val fixture = fixture(AuthenticationState.Authenticated(1L))
-        val invalid = EntryDraft(EntryDraftTarget.New(EntryType.LOGIN))
+        val invalid = EntryDraft(EntryType.LOGIN)
             .withValue(
                 EntryTypeDefinitions[EntryType.LOGIN],
                 FieldKey.TITLE,
@@ -160,24 +159,6 @@ class CreateEntryUseCaseTest {
             )
 
         val result = fixture.useCase(invalid)
-
-        assertTrue((result as AppResult.Failure).error is ValidationError)
-        assertEquals(0, fixture.repository.createCalls)
-        assertEquals(0, fixture.idCalls)
-        assertEquals(0, fixture.clockCalls)
-    }
-
-    @Test
-    fun existingTarget_isRejectedBeforeIdentityCreation() = runBlocking {
-        val fixture = fixture(AuthenticationState.Authenticated(1L))
-        val definition = EntryTypeDefinitions[EntryType.LOGIN]
-        val draft = EntryDraft(
-            EntryDraftTarget.Existing(EntryId("existing"), EntryType.LOGIN, EntryVersion.INITIAL),
-        )
-            .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text("Mail"))
-            .withValue(definition, FieldKey.PASSWORD, EntryDraftValue.Text("secret"))
-
-        val result = fixture.useCase(draft)
 
         assertTrue((result as AppResult.Failure).error is ValidationError)
         assertEquals(0, fixture.repository.createCalls)
@@ -255,7 +236,7 @@ class CreateEntryUseCaseTest {
         ).forEach { (security, password) ->
             val fixture = fixture(AuthenticationState.Authenticated(1L))
             val definition = EntryTypeDefinitions[EntryType.WIFI]
-            val draft = EntryDraft(EntryDraftTarget.New(EntryType.WIFI))
+            val draft = EntryDraft(EntryType.WIFI)
                 .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text("Office"))
                 .withValue(definition, FieldKey.WIFI_SSID, EntryDraftValue.Text("Passly"))
                 .withValue(definition, FieldKey.WIFI_SECURITY, EntryDraftValue.Text(security))
@@ -272,7 +253,7 @@ class CreateEntryUseCaseTest {
     fun validOpenWifi_persistsWithoutPassword() = runBlocking {
         val fixture = fixture(AuthenticationState.Authenticated(1L))
         val definition = EntryTypeDefinitions[EntryType.WIFI]
-        val draft = EntryDraft(EntryDraftTarget.New(EntryType.WIFI))
+        val draft = EntryDraft(EntryType.WIFI)
             .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text("Guest"))
             .withValue(definition, FieldKey.WIFI_SSID, EntryDraftValue.Text("Guest Wi-Fi"))
             .withValue(definition, FieldKey.WIFI_SECURITY, EntryDraftValue.Text("OPEN"))
@@ -288,7 +269,7 @@ class CreateEntryUseCaseTest {
 
     private fun validLoginDraft(): EntryDraft {
         val definition = EntryTypeDefinitions[EntryType.LOGIN]
-        return EntryDraft(EntryDraftTarget.New(EntryType.LOGIN))
+        return EntryDraft(EntryType.LOGIN)
             .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text("Mail"))
             .withValue(definition, FieldKey.PASSWORD, EntryDraftValue.Text(" secret "))
     }

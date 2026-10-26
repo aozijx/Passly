@@ -5,7 +5,6 @@ import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryDraft
-import com.aozijx.passly.domain.entry.model.EntryDraftTarget
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import kotlinx.coroutines.CancellationException
@@ -234,6 +233,6 @@ class EditorSaveSessionTest {
     }
 
     private companion object {
-        fun draft() = EntryDraft(EntryDraftTarget.New(EntryType.LOGIN))
+        fun draft() = EntryDraft(EntryType.LOGIN)
     }
 }

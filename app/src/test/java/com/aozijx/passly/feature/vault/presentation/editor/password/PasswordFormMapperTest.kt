@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.editor.password
 
-import com.aozijx.passly.domain.entry.model.EntryDraftTarget
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
@@ -18,7 +17,7 @@ class PasswordFormMapperTest {
             associatedAppPackage = "com.example.mail",
         ).toEntryDraft()
 
-        assertEquals(EntryDraftTarget.New(EntryType.LOGIN), draft.target)
+        assertEquals(EntryType.LOGIN, draft.type)
         assertEquals(EntryDraftValue.Text("Mail"), draft[FieldKey.TITLE])
         assertEquals(EntryDraftValue.Text("user@example.com"), draft[FieldKey.USERNAME])
         assertEquals(EntryDraftValue.Text(" secret "), draft[FieldKey.PASSWORD])

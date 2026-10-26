@@ -11,7 +11,6 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.port.AutofillEntryWriter
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryDraft
-import com.aozijx.passly.domain.entry.model.EntryDraftTarget
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
@@ -89,7 +88,7 @@ class CreateEntryUseCase internal constructor(
         hasAccess: () -> Boolean,
         persist: suspend (Entry) -> AppResult<EntryId>,
     ): AppResult<EntryId> = logger.inSpan(Operations.VaultEntryCreate) {
-        val entryType = draft.target.type
+        val entryType = draft.type
         val startedAt = monotonicClock()
         logger.log(LogStatements.Vault.entryCreateStarted(entryType, trigger))
         val result = try {
@@ -127,10 +126,7 @@ class CreateEntryUseCase internal constructor(
         draft: EntryDraft,
         persist: suspend (Entry) -> AppResult<EntryId>,
     ): AppResult<EntryId> {
-        if (draft.target !is EntryDraftTarget.New) {
-            return AppResult.Failure(ValidationError())
-        }
-        val definition = EntryTypeDefinitions[draft.target.type]
+        val definition = EntryTypeDefinitions[draft.type]
         if (draft.missingRequiredFields(definition).isNotEmpty() || draft.invalidProvidedFields(definition).isNotEmpty()) {
             return AppResult.Failure(ValidationError())
         }
@@ -138,7 +134,7 @@ class CreateEntryUseCase internal constructor(
         val now = clock()
         val identity = EntryIdentity(
             id = idFactory(),
-            type = draft.target.type,
+            type = draft.type,
             version = EntryVersion.INITIAL,
             timestamps = EntryTimestamps(now),
         )

@@ -1,7 +1,6 @@
 package com.aozijx.passly.feature.vault.entry
 
 import com.aozijx.passly.domain.entry.model.EntryDraft
-import com.aozijx.passly.domain.entry.model.EntryDraftTarget
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
@@ -19,7 +18,7 @@ internal fun OtpConfig.toNewEntryDraft(): EntryDraft {
         .trim()
         .ifEmpty { "TOTP" }
 
-    var draft = EntryDraft(EntryDraftTarget.New(EntryType.OTP))
+    var draft = EntryDraft(EntryType.OTP)
         .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text(title))
         .withValue(
             definition,

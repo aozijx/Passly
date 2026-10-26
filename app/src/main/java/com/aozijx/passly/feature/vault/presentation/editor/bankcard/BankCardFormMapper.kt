@@ -1,7 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.editor.bankcard
 
 import com.aozijx.passly.domain.entry.model.EntryDraft
-import com.aozijx.passly.domain.entry.model.EntryDraftTarget
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryTypeDefinition
@@ -10,7 +9,7 @@ import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 
 fun AddBankCardFormState.toEntryDraft(): EntryDraft {
     val definition = EntryTypeDefinitions[EntryType.BANK_CARD]
-    var draft = EntryDraft(EntryDraftTarget.New(EntryType.BANK_CARD))
+    var draft = EntryDraft(EntryType.BANK_CARD)
         .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text(title.trim()))
         .withValue(definition, FieldKey.CARD_NUMBER, EntryDraftValue.Text(cardNumber.trim()))
 

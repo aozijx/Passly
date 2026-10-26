@@ -1,7 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.editor.wifi
 
 import com.aozijx.passly.domain.entry.model.EntryDraft
-import com.aozijx.passly.domain.entry.model.EntryDraftTarget
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryTypeDefinition
@@ -12,7 +11,7 @@ import com.aozijx.passly.domain.entry.policy.WifiQrPayload
 
 fun AddWifiFormState.toEntryDraft(): EntryDraft {
     val definition = EntryTypeDefinitions[EntryType.WIFI]
-    var draft = EntryDraft(EntryDraftTarget.New(EntryType.WIFI))
+    var draft = EntryDraft(EntryType.WIFI)
         .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text(ssid))
         .withValue(definition, FieldKey.WIFI_SSID, EntryDraftValue.Text(ssid))
         .withValue(

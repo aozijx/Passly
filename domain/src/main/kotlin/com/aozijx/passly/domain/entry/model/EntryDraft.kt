@@ -1,20 +1,5 @@
 package com.aozijx.passly.domain.entry.model
 
-/** Identifies whether a draft creates a new aggregate or updates one optimistic-lock version. */
-sealed interface EntryDraftTarget {
-    val type: EntryType
-
-    data class New(
-        override val type: EntryType,
-    ) : EntryDraftTarget
-
-    data class Existing(
-        val entryId: EntryId,
-        override val type: EntryType,
-        val expectedVersion: EntryVersion,
-    ) : EntryDraftTarget
-}
-
 /** Typed values prevent data-driven editors from falling back to Map<String, Any>. */
 sealed interface EntryDraftValue {
     val valueType: EntryFieldValueType
@@ -46,9 +31,9 @@ sealed interface EntryDraftValue {
     }
 }
 
-/** Immutable domain draft shared by create and edit application flows. */
+/** Immutable creation input; callers own identity generation and persistence. */
 data class EntryDraft(
-    val target: EntryDraftTarget,
+    val type: EntryType,
     val values: Map<FieldKey, EntryDraftValue> = emptyMap(),
 ) {
     operator fun get(key: FieldKey): EntryDraftValue? = values[key]
@@ -58,8 +43,8 @@ data class EntryDraft(
         key: FieldKey,
         value: EntryDraftValue,
     ): EntryDraft {
-        require(definition.type == target.type) {
-            "Draft target type does not match its entry definition"
+        require(definition.type == type) {
+            "Draft type does not match its entry definition"
         }
         val field = requireNotNull(definition[key]) {
             "$key is not supported by ${definition.type}"
@@ -71,8 +56,8 @@ data class EntryDraft(
     }
 
     fun missingRequiredFields(definition: EntryTypeDefinition): Set<FieldKey> {
-        require(definition.type == target.type) {
-            "Draft target type does not match its entry definition"
+        require(definition.type == type) {
+            "Draft type does not match its entry definition"
         }
         return definition.requiredFields.filterTo(linkedSetOf()) { key ->
             values[key]?.isEmpty != false
@@ -81,8 +66,8 @@ data class EntryDraft(
 
     /** Checks supplied values, including maps constructed without [withValue]. Omission is distinct from an empty number. */
     fun invalidProvidedFields(definition: EntryTypeDefinition): Set<FieldKey> {
-        require(definition.type == target.type) {
-            "Draft target type does not match its entry definition"
+        require(definition.type == type) {
+            "Draft type does not match its entry definition"
         }
         return values.filterTo(linkedMapOf()) { (key, value) ->
             definition[key]?.valueType != value.valueType || when (value) {

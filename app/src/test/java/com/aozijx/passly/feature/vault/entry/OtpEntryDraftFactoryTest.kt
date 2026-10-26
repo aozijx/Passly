@@ -24,7 +24,7 @@ class OtpEntryDraftFactoryTest {
             accountName = "alice",
         ).toNewEntryDraft()
 
-        assertEquals(EntryType.OTP, draft.target.type)
+        assertEquals(EntryType.OTP, draft.type)
         assertEquals(EntryDraftValue.Text("Example"), draft[FieldKey.TITLE])
         assertEquals(EntryDraftValue.Text("secret"), draft[FieldKey.OTP_SECRET])
         assertEquals(EntryDraftValue.Text("SHA256"), draft[FieldKey.OTP_ALGORITHM])

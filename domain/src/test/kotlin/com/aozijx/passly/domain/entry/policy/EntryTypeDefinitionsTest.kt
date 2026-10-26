@@ -1,15 +1,12 @@
 package com.aozijx.passly.domain.entry.policy
 
-import com.aozijx.passly.domain.entry.model.EntryDraftTarget
 import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryFieldAccess
 import com.aozijx.passly.domain.entry.model.EntryFieldDefinition
 import com.aozijx.passly.domain.entry.model.EntryFieldValueType
-import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryTypeDefinition
-import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import org.junit.Assert.assertEquals
@@ -55,7 +52,7 @@ class EntryTypeDefinitionsTest {
         val counter = requireNotNull(definition[FieldKey.OTP_COUNTER])
 
         assertEquals(EntryFieldValueType.LONG, counter.valueType)
-        val draft = EntryDraft(EntryDraftTarget.New(EntryType.OTP)).withValue(
+        val draft = EntryDraft(EntryType.OTP).withValue(
             definition,
             FieldKey.OTP_COUNTER,
             EntryDraftValue.LongNumber(Long.MAX_VALUE),
@@ -118,22 +115,9 @@ class EntryTypeDefinitionsTest {
     }
 
     @Test
-    fun `existing draft target carries optimistic lock identity`() {
-        val target = EntryDraftTarget.Existing(
-            entryId = EntryId("entry-1"),
-            type = EntryType.LOGIN,
-            expectedVersion = EntryVersion(4),
-        )
-
-        assertEquals(EntryId("entry-1"), target.entryId)
-        assertEquals(EntryType.LOGIN, target.type)
-        assertEquals(EntryVersion(4), target.expectedVersion)
-    }
-
-    @Test
     fun `draft accepts only fields and value types declared by its entry type`() {
         val definition = EntryTypeDefinitions[EntryType.WIFI]
-        val draft = EntryDraft(EntryDraftTarget.New(EntryType.WIFI))
+        val draft = EntryDraft(EntryType.WIFI)
             .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text("Office"))
             .withValue(definition, FieldKey.WIFI_SSID, EntryDraftValue.Text("Passly"))
 
@@ -153,7 +137,7 @@ class EntryTypeDefinitionsTest {
     @Test
     fun `draft reports blank required fields using the domain definition`() {
         val definition = EntryTypeDefinitions[EntryType.LOGIN]
-        val draft = EntryDraft(EntryDraftTarget.New(EntryType.LOGIN))
+        val draft = EntryDraft(EntryType.LOGIN)
             .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text("Example"))
             .withValue(definition, FieldKey.USERNAME, EntryDraftValue.Text(""))
 

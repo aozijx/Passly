@@ -7,7 +7,6 @@ import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
 import com.aozijx.passly.domain.autofill.port.ApplicationLabelResolver
 import com.aozijx.passly.domain.entry.model.EntryDraft
-import com.aozijx.passly.domain.entry.model.EntryDraftTarget
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
@@ -54,7 +53,7 @@ internal fun buildAutofillCredentialDraft(
         usernameValue = draft.username,
     )
     val definition = EntryTypeDefinitions[EntryType.LOGIN]
-    var entryDraft = EntryDraft(EntryDraftTarget.New(EntryType.LOGIN))
+    var entryDraft = EntryDraft(EntryType.LOGIN)
         .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text(title))
         .withValue(definition, FieldKey.PASSWORD, EntryDraftValue.Text(draft.password))
     draft.username.trim().takeIf(String::isNotEmpty)?.let {

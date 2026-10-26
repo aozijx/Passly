@@ -1,7 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.editor.password
 
 import com.aozijx.passly.domain.entry.model.EntryDraft
-import com.aozijx.passly.domain.entry.model.EntryDraftTarget
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
@@ -9,7 +8,7 @@ import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 
 fun AddPasswordFormState.toEntryDraft(): EntryDraft {
     val definition = EntryTypeDefinitions[EntryType.LOGIN]
-    var draft = EntryDraft(EntryDraftTarget.New(EntryType.LOGIN))
+    var draft = EntryDraft(EntryType.LOGIN)
         .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text(title.trim()))
         .withValue(definition, FieldKey.PASSWORD, EntryDraftValue.Text(password))
 
