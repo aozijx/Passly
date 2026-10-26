@@ -2,7 +2,6 @@ package com.aozijx.passly.feature.vault.presentation.editor.otp
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.entry.otp.OtpAuthUriCodec
 import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -10,36 +9,34 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
-import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffect
+import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveSession
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class AddOtpViewModel @Inject constructor(
-    private val createEntryUseCase: CreateEntryUseCase,
-    private val secureSessionAccessState: SecureSessionAccessState,
+    createEntryUseCase: CreateEntryUseCase,
+    secureSessionAccessState: SecureSessionAccessState,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AddOtpCodeState())
     val uiState = _uiState.asStateFlow()
-    private val _effects = Channel<EditorSaveEffect>(Channel.BUFFERED)
-    internal val effects = _effects.receiveAsFlow()
+    private val saveSession = EditorSaveSession(
+        scope = viewModelScope,
+        access = secureSessionAccessState,
+        create = createEntryUseCase::invoke,
+        onSaving = { _uiState.value = _uiState.value.copy(savePhase = AddOtpSavePhase.Saving) },
+        onIdle = {
+            _uiState.value = _uiState.value.copy(savePhase = AddOtpSavePhase.Idle)
+        },
+        onClear = ::clearSensitiveContent,
+    )
+    internal val effects = saveSession.effects
     private val _events = Channel<AddOtpEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
-
-    init {
-        viewModelScope.launch {
-            secureSessionAccessState.authenticationState.collect {
-                if (!secureSessionAccessState.hasFullSecureSessionAccess()) clearSensitiveContent()
-            }
-        }
-    }
 
     fun onAction(action: AddOtpAction) {
         when (action) {
@@ -52,8 +49,8 @@ class AddOtpViewModel @Inject constructor(
     }
 
     private fun mutateForm(transform: (OtpFormState) -> OtpFormState) {
+        if (!saveSession.canEdit()) return
         val current = _uiState.value
-        if (current.savePhase == AddOtpSavePhase.Saving) return
         val form = transform(current.form)
         _uiState.value = current.copy(form = form)
     }
@@ -61,35 +58,17 @@ class AddOtpViewModel @Inject constructor(
     private fun save() {
         val current = _uiState.value
         if (!current.canSave) return
-        _uiState.value = current.copy(savePhase = AddOtpSavePhase.Saving)
-        viewModelScope.launch {
-            try {
-                when (val result = createEntryUseCase(current.form.toEntryDraft())) {
-                    is AppResult.Success -> {
-                        clearSensitiveContent()
-                        _effects.send(EditorSaveEffect.Saved)
-                    }
-                    is AppResult.Failure -> restoreAfterFailure(result.error.code)
-                }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Throwable) {
-                restoreAfterFailure("创建条目失败")
-            }
-        }
-    }
-
-    private suspend fun restoreAfterFailure(message: String?) {
-        _uiState.value = _uiState.value.copy(savePhase = AddOtpSavePhase.Idle)
-        _effects.send(EditorSaveEffect.Failed(message))
+        saveSession.save { current.form.toEntryDraft() }
     }
 
     private fun applyScannedConfig(config: OtpConfig) {
+        if (!saveSession.canEdit()) return
         mutateForm { it.fromParsedConfig(config) }
         _events.trySend(AddOtpEvent.UriParsed)
     }
 
     private fun updateUri(value: String, reportFailure: Boolean) {
+        if (!saveSession.canEdit()) return
         mutateForm { it.copy(uriText = value) }
         if (_uiState.value.savePhase == AddOtpSavePhase.Saving || value.isBlank()) return
         when (val parsed = OtpAuthUriCodec.parse(value)) {
@@ -142,6 +121,6 @@ class AddOtpViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        clearSensitiveContent()
+        saveSession.close()
     }
 }

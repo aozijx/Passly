@@ -2,24 +2,18 @@ package com.aozijx.passly.feature.vault.presentation.editor.wifi
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
-import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffect
+import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveSession
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.launch
 
 @HiltViewModel
 class AddWifiViewModel @Inject constructor(
-    private val createEntryUseCase: CreateEntryUseCase,
-    private val secureSessionAccessState: SecureSessionAccessState,
+    createEntryUseCase: CreateEntryUseCase,
+    secureSessionAccessState: SecureSessionAccessState,
 ) : ViewModel() {
     private sealed interface InitializationPhase {
         data object Pending : InitializationPhase
@@ -29,16 +23,18 @@ class AddWifiViewModel @Inject constructor(
     private var initializationPhase: InitializationPhase = InitializationPhase.Pending
     private val _uiState = MutableStateFlow(AddWifiUiState())
     val uiState = _uiState.asStateFlow()
-    private val _effects = Channel<EditorSaveEffect>(Channel.BUFFERED)
-    internal val effects = _effects.receiveAsFlow()
-
-    init {
-        viewModelScope.launch {
-            secureSessionAccessState.authenticationState.collect {
-                if (!secureSessionAccessState.hasFullSecureSessionAccess()) clearSensitiveContent()
-            }
-        }
-    }
+    private val saveSession = EditorSaveSession(
+        scope = viewModelScope,
+        access = secureSessionAccessState,
+        create = createEntryUseCase::invoke,
+        onSaving = { _uiState.value = _uiState.value.copy(savePhase = AddWifiSavePhase.Saving) },
+        onIdle = {
+            val current = _uiState.value
+            _uiState.value = current.withForm(current.form).copy(savePhase = AddWifiSavePhase.Idle)
+        },
+        onClear = ::clearSensitiveContent,
+    )
+    internal val effects = saveSession.effects
 
     fun onAction(action: AddWifiAction) {
         when (action) {
@@ -68,36 +64,15 @@ class AddWifiViewModel @Inject constructor(
     }
 
     private fun mutateForm(transform: (AddWifiFormState) -> AddWifiFormState) {
+        if (!saveSession.canEdit()) return
         val current = _uiState.value
-        if (current.savePhase == AddWifiSavePhase.Saving) return
         _uiState.value = current.withForm(transform(current.form))
     }
 
     private fun save() {
         val current = _uiState.value
         if (!current.canSave) return
-        _uiState.value = current.copy(savePhase = AddWifiSavePhase.Saving)
-        viewModelScope.launch {
-            try {
-                when (val result = createEntryUseCase(current.form.toEntryDraft())) {
-                    is AppResult.Success -> {
-                        clearSensitiveContent()
-                        _effects.send(EditorSaveEffect.Saved)
-                    }
-                    is AppResult.Failure -> restoreAfterFailure(result.error.code)
-                }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Throwable) {
-                restoreAfterFailure(null)
-            }
-        }
-    }
-
-    private suspend fun restoreAfterFailure(message: String?) {
-        val current = _uiState.value
-        _uiState.value = current.withForm(current.form).copy(savePhase = AddWifiSavePhase.Idle)
-        _effects.send(EditorSaveEffect.Failed(message))
+        saveSession.save { current.form.toEntryDraft() }
     }
 
     private fun clearSensitiveContent() {
@@ -105,6 +80,6 @@ class AddWifiViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        clearSensitiveContent()
+        saveSession.close()
     }
 }

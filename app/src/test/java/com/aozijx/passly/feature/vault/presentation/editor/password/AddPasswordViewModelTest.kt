@@ -94,6 +94,8 @@ class AddPasswordViewModelTest {
 
         session.lock()
 
+        viewModel.onAction(AddPasswordAction.PasswordChanged("late-secret"))
+
         assertEquals("", viewModel.uiState.value.form.password)
         assertTrue(!viewModel.uiState.value.canSave)
     }

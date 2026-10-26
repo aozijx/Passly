@@ -22,6 +22,8 @@ import com.aozijx.passly.testing.testLogger
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffect
 import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,6 +41,40 @@ import org.junit.Test
 class AddWifiViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun `old save cannot clear a new form after locking and unlocking`() = runTest {
+        val release = CompletableDeferred<Unit>()
+        val repository = RecordingRepository { entry ->
+            withContext(NonCancellable) { release.await() }
+            AppResult.Success(entry.id)
+        }
+        val session = MutableSession()
+        val model = viewModel(repository, session)
+        enterValidWpa(model)
+        model.onAction(AddWifiAction.Save)
+        runCurrent()
+        session.lock()
+        runCurrent()
+        session.unlock()
+        runCurrent()
+        model.onAction(AddWifiAction.SsidChanged("New form"))
+        model.onAction(AddWifiAction.PasswordChanged("new-password"))
+        release.complete(Unit)
+        advanceUntilIdle()
+        assertEquals("New form", model.uiState.value.form.ssid)
+        assertEquals("new-password", model.uiState.value.form.password)
+    }
+
+    @Test
+    fun `late input actions cannot refill sensitive form content while locked`() = runTest {
+        val session = MutableSession()
+        val model = viewModel(RecordingRepository(), session)
+        session.lock()
+        runCurrent()
+        model.onAction(AddWifiAction.PasswordChanged("late-password"))
+        assertEquals("", model.uiState.value.form.password)
+    }
 
     @Test
     fun `manual creation preserves the exact network name through materialization`() = runTest {
@@ -229,6 +265,9 @@ class AddWifiViewModelTest {
         override fun isUnlocked() = state.value is AuthenticationState.Authenticated
         fun lock() {
             state.value = AuthenticationState.Locked
+        }
+        fun unlock() {
+            state.value = AuthenticationState.Authenticated(2L)
         }
     }
 

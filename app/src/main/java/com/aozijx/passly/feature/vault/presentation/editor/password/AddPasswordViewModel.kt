@@ -2,42 +2,39 @@ package com.aozijx.passly.feature.vault.presentation.editor.password
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppDirectory
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
-import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffect
+import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveSession
 import com.aozijx.passly.presentation.shared.components.AppPackagePickerItemUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class AddPasswordViewModel @Inject constructor(
-    private val createEntryUseCase: CreateEntryUseCase,
-    private val secureSessionAccessState: SecureSessionAccessState,
+    createEntryUseCase: CreateEntryUseCase,
+    secureSessionAccessState: SecureSessionAccessState,
     private val installedAppDirectory: InstalledAppDirectory,
 ) : ViewModel() {
     private var associatedAppsLoadJob: Job? = null
     private val _uiState = MutableStateFlow(AddPasswordUiState())
     val uiState = _uiState.asStateFlow()
-    private val _effects = Channel<EditorSaveEffect>(Channel.BUFFERED)
-    internal val effects = _effects.receiveAsFlow()
-
-    init {
-        viewModelScope.launch {
-            secureSessionAccessState.authenticationState.collect {
-                if (!secureSessionAccessState.hasFullSecureSessionAccess()) clearSensitiveContent()
-            }
-        }
-    }
+    private val saveSession = EditorSaveSession(
+        scope = viewModelScope,
+        access = secureSessionAccessState,
+        create = createEntryUseCase::invoke,
+        onSaving = { _uiState.value = _uiState.value.copy(savePhase = AddPasswordSavePhase.Saving) },
+        onIdle = {
+            _uiState.value = _uiState.value.copy(savePhase = AddPasswordSavePhase.Idle)
+        },
+        onClear = ::clearSensitiveContent,
+    )
+    internal val effects = saveSession.effects
 
     fun onAction(action: AddPasswordAction) {
         when (action) {
@@ -78,8 +75,8 @@ class AddPasswordViewModel @Inject constructor(
     }
 
     private fun mutateForm(transform: (AddPasswordFormState) -> AddPasswordFormState) {
+        if (!saveSession.canEdit()) return
         val current = _uiState.value
-        if (current.savePhase == AddPasswordSavePhase.Saving) return
         val form = transform(current.form)
         _uiState.value = current.copy(form = form)
     }
@@ -87,27 +84,7 @@ class AddPasswordViewModel @Inject constructor(
     private fun save() {
         val current = _uiState.value
         if (!current.canSave) return
-        _uiState.value = current.copy(savePhase = AddPasswordSavePhase.Saving)
-        viewModelScope.launch {
-            try {
-                when (val result = createEntryUseCase(current.form.toEntryDraft())) {
-                    is AppResult.Success -> {
-                        clearSensitiveContent()
-                        _effects.send(EditorSaveEffect.Saved)
-                    }
-                    is AppResult.Failure -> restoreAfterFailure(result.error.code)
-                }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Throwable) {
-                restoreAfterFailure("创建条目失败")
-            }
-        }
-    }
-
-    private suspend fun restoreAfterFailure(message: String?) {
-        _uiState.value = _uiState.value.copy(savePhase = AddPasswordSavePhase.Idle)
-        _effects.send(EditorSaveEffect.Failed(message))
+        saveSession.save { current.form.toEntryDraft() }
     }
 
     private fun clearSensitiveContent() {
@@ -117,6 +94,6 @@ class AddPasswordViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        clearSensitiveContent()
+        saveSession.close()
     }
 }

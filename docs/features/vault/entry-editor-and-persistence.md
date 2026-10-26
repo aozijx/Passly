@@ -45,15 +45,17 @@ Presentation 经用例或 Domain 端口访问数据，不直接使用 DAO。完�
 | Bank Card | `AddBankCardFormState` / `AddBankCardUiState`、`BankCardFormMapper.kt` | 卡号、有效期和可选银行资料使用各自规则 |
 | Wi-Fi | `AddWifiFormState` / `AddWifiUiState`、`WifiFormMapper.kt` | 网络名原样保留并同时作为初始标题，安全类型、密码及隐藏标记一起转换；扫码种子只初始化一次 |
 
-每类 ViewModel 暴露不可变 `uiState`，拥有自己的 `Idle / Saving` 阶段与保存逻辑。
-保存取点击时的表单快照，期间拒绝表单更新和重复保存；成功清空表单并发送 `EditorSaveEffect.Saved`，
-失败回到可重试状态。当前成功 Effect 不携带条目 ID，不能按尚不存在的 `Saved(entryId)` 合同调用。
+每类 ViewModel 暴露不可变 `uiState`，保留类型专属表单和 `Idle / Saving` 展示阶段。
+共享的 `EditorSaveSession` 持有保存任务，驱动保存、失败恢复和清空回调；保存取点击时的表单快照，期间拒绝表单更新和重复保存。
+成功清空表单并发送 `EditorSaveEffect.Saved`，失败回到可重试状态。当前成功 Effect 不携带条目 ID，不能按尚不存在的 `Saved(entryId)` 合同调用。
 
 Route 按生命周期收集状态；Screen 接收状态和 Action。`EditorSaveEffectHandler` 消费保存结果并调用宿主回调或显示失败提示。
 焦点、动画和展开状态留在 Compose；字段值、扫码结果和保存状态回到表单状态。敏感输入不进入导航参数或 SavedState。
 
-四个 ViewModel 都观察认证状态并清空表单，但尚未使用统一的创建会话状态机。保存任务的持有、取消与迟到结果隔离，
-以及创建页特有异步任务的生命周期，仍需逐条核对，不能把“表单已清空”当作“所有任务已取消”。
+`EditorSaveSession` 观察认证状态，将表单和保存尝试绑定到当前完整认证对象；锁定或认证归属变化先使尝试失效，再取消保存并清空表单。
+迟到结果不能清空新表单或发出新保存效果。缓冲效果在消费时再次核对归属，新的编辑或重试会淘汰旧效果；只保留最近一次结果。
+关闭 ViewModel 后协调器不能重新激活。取消继续传播，不生成失败效果；独立取消且认证仍有效时恢复可编辑状态。
+取消或丢弃 UI 结果不撤销已经提交的数据库事务。类型专属的应用列表加载、扫码初始化与事件仍由对应 ViewModel 管理，不能把保存协调器当作整个表单的生命周期实现。
 
 专属细节见[银行卡资料与有效期](card-entry.md)、[OTP 创建](otp-entry.md)及[Wi-Fi / OTP 二维码](qr-display.md)。
 
@@ -84,13 +86,14 @@ Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace
 
 ## 当前缺口与验证
 
-- 创建页仍重复保存、失败恢复和认证清理逻辑；没有 `EntryEditorSession`、`EntryFormAdapter`、`EntryEditorRegistry` 或 `EntryMaterializerRegistry` 实现。
+- 创建页已共享保存协调器，表单更新、校验和类型专属异步能力仍由类型 ViewModel 持有；没有泛型 `EntryEditorSession`、`EntryFormAdapter`、`EntryEditorRegistry` 或 `EntryMaterializerRegistry` 实现。
 - 集中式物化器目前只有四个创建分支；需要扩展类型时按实际语义调整，不把每个分支强制包装成空转发类。
 - 完整表单编辑与 `Existing` 草稿更新尚未实现。
 
 验证以现有测试为准：`CreateEntryUseCaseTest`、四类表单映射及 ViewModel 测试覆盖创建入口；Domain 的
 `EntryDraftMaterializerTest`、`EntryEditTest`、`EntryFieldEditorTest` 覆盖纯规则；`EditDetailEntryUseCaseTest` 和
 详情状态测试覆盖逐项更新与发布边界。它们不证明未实现的统一编辑器、所有类型能力或真实设备交互已经完成。
+`EditorSaveSessionTest` 覆盖保存去重、锁定与重新认证、迟到结果、缓冲效果淘汰、取消和销毁边界；Wi-Fi 创建测试通过实际用例复现锁定期间的保存窗口。
 `VaultListUiMapperTest` 与 `VaultNavigationTest` 检查创建选项均有目的地、筛选能力独立保留；
 `AddEntryBottomSheetTest` 提供按传入选项渲染和转发选择的仪器用例，编译通过不等于设备运行通过。
 修改实现时按[测试要求](../../development/testing.md)运行相关模块、App 门禁及所需仪器测试。
