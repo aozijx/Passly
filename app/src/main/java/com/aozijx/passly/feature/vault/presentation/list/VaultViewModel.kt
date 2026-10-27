@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.presentation.shared.error.toUiErrorMessage
+import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -130,8 +131,12 @@ class VaultViewModel @Inject internal constructor(
     }
 
     private fun selectSortOption(sort: EntrySort) {
-        mutate(VaultMutation.SortChanged(sort))
-        viewModelScope.launch { settingsRepository.setSort(sort) }
+        viewModelScope.launch {
+            writePreferenceWithFeedback(
+                failureRes = R.string.vault_error_sort_failed,
+                onFailure = ::emitError,
+            ) { settingsRepository.setSort(sort) }
+        }
     }
 
     private fun toggleShowTOTPCode() {

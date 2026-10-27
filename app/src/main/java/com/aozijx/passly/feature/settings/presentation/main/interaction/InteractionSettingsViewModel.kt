@@ -3,14 +3,11 @@ package com.aozijx.passly.feature.settings.presentation.main.interaction
 import com.aozijx.passly.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.presentation.shared.error.toUiErrorMessage
+import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -61,18 +58,14 @@ class InteractionSettingsViewModel @Inject constructor(
 
     private fun saveSetting(feedback: SuccessFeedback, save: suspend () -> Unit) {
         viewModelScope.launch {
-            try {
-                save()
-                currentCoroutineContext().ensureActive()
-                if (feedback == SuccessFeedback.Saved) _effects.trySend(InteractionSettingsEffect.Saved)
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (error: Exception) {
-                currentCoroutineContext().ensureActive()
-                _effects.trySend(
-                    InteractionSettingsEffect.SaveFailed(error.toUiErrorMessage(R.string.settings_interaction_save_failed)),
-                )
-            }
+            writePreferenceWithFeedback(
+                failureRes = R.string.settings_interaction_save_failed,
+                onFailure = { _effects.trySend(InteractionSettingsEffect.SaveFailed(it)) },
+                onSuccess = {
+                    if (feedback == SuccessFeedback.Saved) _effects.trySend(InteractionSettingsEffect.Saved)
+                },
+                write = save,
+            )
         }
     }
 }
