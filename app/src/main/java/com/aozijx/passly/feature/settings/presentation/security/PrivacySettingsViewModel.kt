@@ -2,6 +2,8 @@ package com.aozijx.passly.feature.settings.presentation.security
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.R
+import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.domain.clipboard.port.OwnedClipboardCleaner
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -40,27 +42,27 @@ class PrivacySettingsViewModel @Inject constructor(
 
     fun onAction(action: PrivacySettingsAction) {
         when (action) {
-            is PrivacySettingsAction.SetSecureContentEnabled -> viewModelScope.launch {
+            is PrivacySettingsAction.SetSecureContentEnabled -> saveSetting {
                 settingsRepository.setSecureContentEnabled(action.enabled)
             }
 
-            is PrivacySettingsAction.SetFlipToLockEnabled -> viewModelScope.launch {
+            is PrivacySettingsAction.SetFlipToLockEnabled -> saveSetting {
                 settingsRepository.setFlipToLockEnabled(action.enabled)
             }
 
-            is PrivacySettingsAction.SetFlipExitAndClearStackEnabled -> viewModelScope.launch {
+            is PrivacySettingsAction.SetFlipExitAndClearStackEnabled -> saveSetting {
                 settingsRepository.setFlipExitAndClearStackEnabled(action.enabled)
             }
 
-            is PrivacySettingsAction.SetSensitiveCopyReauthentication -> viewModelScope.launch {
+            is PrivacySettingsAction.SetSensitiveCopyReauthentication -> saveSetting {
                 settingsRepository.setReauthenticateSensitiveCopies(action.enabled)
             }
 
-            is PrivacySettingsAction.SetClipboardClearEnabled -> viewModelScope.launch {
+            is PrivacySettingsAction.SetClipboardClearEnabled -> saveSetting {
                 settingsRepository.setClipboardClearEnabled(action.enabled)
             }
 
-            is PrivacySettingsAction.SetClipboardClearDelaySeconds -> viewModelScope.launch {
+            is PrivacySettingsAction.SetClipboardClearDelaySeconds -> saveSetting {
                 settingsRepository.setClipboardClearDelaySeconds(action.seconds)
             }
 
@@ -72,6 +74,16 @@ class PrivacySettingsViewModel @Inject constructor(
                 }
                 _effects.trySend(effect)
             }
+        }
+    }
+
+    private fun saveSetting(write: suspend () -> Unit) {
+        viewModelScope.launch {
+            writePreferenceWithFeedback(
+                failureRes = R.string.settings_privacy_save_failed,
+                onFailure = { _effects.trySend(PrivacySettingsEffect.SaveFailed(it)) },
+                write = write,
+            )
         }
     }
 }

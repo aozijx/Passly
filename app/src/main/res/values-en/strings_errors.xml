@@ -22,4 +22,7 @@
     <string name="vault_error_trash_failed">Unable to move the entry to trash</string>
     <string name="vault_error_sort_failed">Unable to save sort settings</string>
     <string name="settings_interface_save_failed">Unable to save interface settings</string>
+    <string name="settings_appearance_save_failed">Unable to save appearance settings</string>
+    <string name="settings_privacy_save_failed">Unable to save privacy settings</string>
+    <string name="settings_autofill_save_failed">Unable to save autofill settings</string>
 </resources>

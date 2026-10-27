@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.settings.presentation.autofill
 
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
+import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 
 sealed interface AutofillSettingsUiState {
     data object Loading : AutofillSettingsUiState
@@ -29,6 +30,7 @@ sealed interface AutofillSettingsAction {
 }
 
 sealed interface AutofillSettingsEffect {
+    data class SaveFailed(val message: UiErrorMessage) : AutofillSettingsEffect
     data object OpenSystemAutofillSettings : AutofillSettingsEffect
     data object OpenAccessibilitySettings : AutofillSettingsEffect
 }

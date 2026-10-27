@@ -1,5 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.security
 
+import com.aozijx.passly.presentation.shared.error.UiErrorMessage
+
 sealed interface PrivacySettingsUiState {
     data object Loading : PrivacySettingsUiState
 
@@ -24,6 +26,7 @@ sealed interface PrivacySettingsAction {
 }
 
 sealed interface PrivacySettingsEffect {
+    data class SaveFailed(val message: UiErrorMessage) : PrivacySettingsEffect
     data object ClipboardCleared : PrivacySettingsEffect
     data object ClipboardNotCleared : PrivacySettingsEffect
 }

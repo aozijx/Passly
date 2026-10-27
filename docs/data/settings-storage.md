@@ -89,6 +89,13 @@ flowchart LR
 失败经只读 `errors` Flow 发布 `UiErrorMessage`，不暴露内部异常文本。取消继续传播，页面销毁后的迟到失败不再通知。
 `InterfaceRoute` 在 STARTED 生命周期内消费错误，在消费时用当前 `LocalResources` 解析文案。
 
+外观设置的五类偏好、隐私设置的六类偏好以及自动填充设置的八类偏好也使用同一写入边界。
+外观继续从 Shell 提供的持久化外观状态渲染，隐私与自动填充继续订阅各自 Repository Flow，
+不通过写入回调直接修改页面选择。写入成功静默；存储失败映射为资源键，不传递异常文本，取消与迟到错误遵守上述规则。
+外观与界面页共用 `ObserveSettingsWriteErrors`；隐私与自动填充在原事件流增加 `SaveFailed`，
+各自 Route 在 STARTED 生命周期消费，当前语言变化会重建使用 `LocalResources` 的消费逻辑。
+隐私页的手动清理剪贴板反馈同样按消费时语言解析；自动填充的系统设置导航仍是独立事件，保存失败不触发导航。
+
 应用 Shell 在外观、界面和安全偏好全部到达前保持 `Loading`，不构造 Domain settings 默认实例冒充已加载值。加载期间
 只应用独立的安全启动窗口策略：禁止截屏且不主动隐藏系统栏；主题、语言、圆角、导航和认证界面在偏好到达后创建。
 Legacy Autofill、Credential Manager 和保存 Activity 通过同一个 persisted-theme host 等待外观与圆角偏好，不调用

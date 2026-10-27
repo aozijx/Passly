@@ -22,4 +22,7 @@
     <string name="vault_error_trash_failed">无法将条目移入回收站</string>
     <string name="vault_error_sort_failed">无法保存排序设置</string>
     <string name="settings_interface_save_failed">无法保存界面设置</string>
+    <string name="settings_appearance_save_failed">无法保存外观设置</string>
+    <string name="settings_privacy_save_failed">无法保存隐私设置</string>
+    <string name="settings_autofill_save_failed">无法保存自动填充设置</string>
 </resources>

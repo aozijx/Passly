@@ -2,6 +2,8 @@ package com.aozijx.passly.feature.settings.presentation.autofill
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.R
+import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.feature.autofill.platform.AutofillServiceStatusSource
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -40,34 +42,44 @@ class AutofillSettingsViewModel @Inject constructor(
 
     fun onAction(action: AutofillSettingsAction) {
         when (action) {
-            is AutofillSettingsAction.SetEnabled -> viewModelScope.launch {
+            is AutofillSettingsAction.SetEnabled -> saveSetting {
                 settingsRepository.setAutofillEnabled(action.enabled)
             }
-            is AutofillSettingsAction.SetPresentation -> viewModelScope.launch {
+            is AutofillSettingsAction.SetPresentation -> saveSetting {
                 settingsRepository.setAutofillPresentation(action.presentation)
             }
-            is AutofillSettingsAction.SetCredentialManagerEnabled -> viewModelScope.launch {
+            is AutofillSettingsAction.SetCredentialManagerEnabled -> saveSetting {
                 settingsRepository.setCredentialManagerEnabled(action.enabled)
             }
-            is AutofillSettingsAction.SetAuthenticationRequired -> viewModelScope.launch {
+            is AutofillSettingsAction.SetAuthenticationRequired -> saveSetting {
                 settingsRepository.setAutofillAuthenticationRequired(action.required)
             }
-            is AutofillSettingsAction.SetOtpEnabled -> viewModelScope.launch {
+            is AutofillSettingsAction.SetOtpEnabled -> saveSetting {
                 settingsRepository.setAutofillOtpEnabled(action.enabled)
             }
-            is AutofillSettingsAction.SetSavePromptsEnabled -> viewModelScope.launch {
+            is AutofillSettingsAction.SetSavePromptsEnabled -> saveSetting {
                 settingsRepository.setAutofillSavePromptsEnabled(action.enabled)
             }
-            is AutofillSettingsAction.SetUnmatchedSuggestionsEnabled -> viewModelScope.launch {
+            is AutofillSettingsAction.SetUnmatchedSuggestionsEnabled -> saveSetting {
                 settingsRepository.setUnmatchedAutofillSuggestionsEnabled(action.enabled)
             }
-            is AutofillSettingsAction.SetMaxSuggestions -> viewModelScope.launch {
+            is AutofillSettingsAction.SetMaxSuggestions -> saveSetting {
                 settingsRepository.setAutofillMaxSuggestions(action.count)
             }
             AutofillSettingsAction.OpenSystemAutofillSettings ->
                 _effects.trySend(AutofillSettingsEffect.OpenSystemAutofillSettings)
             AutofillSettingsAction.OpenAccessibilitySettings ->
                 _effects.trySend(AutofillSettingsEffect.OpenAccessibilitySettings)
+        }
+    }
+
+    private fun saveSetting(write: suspend () -> Unit) {
+        viewModelScope.launch {
+            writePreferenceWithFeedback(
+                failureRes = R.string.settings_autofill_save_failed,
+                onFailure = { _effects.trySend(AutofillSettingsEffect.SaveFailed(it)) },
+                write = write,
+            )
         }
     }
 }
