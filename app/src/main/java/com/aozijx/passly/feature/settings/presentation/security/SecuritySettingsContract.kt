@@ -8,6 +8,7 @@ sealed interface SecuritySettingsUiState {
         val isInvalidateKeyOnBioChange: Boolean,
         val isLockOnBackground: Boolean,
         val isBiometricEnabled: Boolean,
+        val isAuthenticationChangeInProgress: Boolean,
     ) : SecuritySettingsUiState
 }
 

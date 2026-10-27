@@ -14,6 +14,7 @@ class SecuritySettingsUiMapperTest {
             isInvalidateKeyOnBioChange = false,
             isLockOnBackground = true,
             isBiometricEnabled = true,
+            isAuthenticationChangeInProgress = true,
         ).toSecuritySettingsUiModel(isAppPasswordEnabled = true)
 
         assertEquals(45_000L, model.lockTimeoutMs)
@@ -22,6 +23,7 @@ class SecuritySettingsUiMapperTest {
         assertEquals(LockTimeoutConstraints.SLIDER_STEP_MS / 1000f, model.sliderStepSeconds)
         assertTrue(model.isAppPasswordEnabled)
         assertTrue(model.isBiometricEnabled)
+        assertTrue(model.isAuthenticationChangeInProgress)
         assertTrue(model.isLockOnBackground)
         assertFalse(model.isInvalidateKeyOnBioChange)
     }

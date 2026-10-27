@@ -7,6 +7,7 @@ data class SecuritySettingsUiModel(
     val sliderStepSeconds: Float,
     val isAppPasswordEnabled: Boolean,
     val isBiometricEnabled: Boolean,
+    val isAuthenticationChangeInProgress: Boolean,
     val isInvalidateKeyOnBioChange: Boolean,
     val isLockOnBackground: Boolean,
 )

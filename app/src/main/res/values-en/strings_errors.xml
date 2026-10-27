@@ -26,4 +26,6 @@
     <string name="settings_privacy_save_failed">Unable to save privacy settings</string>
     <string name="settings_autofill_save_failed">Unable to save autofill settings</string>
     <string name="settings_notifications_save_failed">Unable to save notification settings</string>
+    <string name="settings_security_save_failed">Unable to save security settings</string>
+    <string name="settings_security_session_restricted">This session cannot change authentication settings</string>
 </resources>

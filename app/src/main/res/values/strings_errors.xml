@@ -26,4 +26,6 @@
     <string name="settings_privacy_save_failed">无法保存隐私设置</string>
     <string name="settings_autofill_save_failed">无法保存自动填充设置</string>
     <string name="settings_notifications_save_failed">无法保存通知设置</string>
+    <string name="settings_security_save_failed">无法保存安全设置</string>
+    <string name="settings_security_session_restricted">当前会话不能修改认证设置</string>
 </resources>

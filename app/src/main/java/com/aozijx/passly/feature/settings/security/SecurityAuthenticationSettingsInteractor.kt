@@ -2,6 +2,8 @@ package com.aozijx.passly.feature.settings.security
 
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -10,11 +12,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-
-enum class SecurityAuthenticationChangeResult {
-    APPLIED,
-    NOT_APPLIED,
-}
 
 class SecurityAuthenticationSettingsInteractor @Inject constructor(
     authenticationMethodAvailability: AuthenticationMethodAvailability,
@@ -39,36 +36,28 @@ class SecurityAuthenticationSettingsInteractor @Inject constructor(
     suspend fun setBiometricEnabled(
         enabled: Boolean,
         invalidateOnEnrollment: Boolean,
-    ): SecurityAuthenticationChangeResult {
+    ): AuthenticationResult {
         if (secureSessionAccessState.isRecoveryMode()) {
-            return SecurityAuthenticationChangeResult.NOT_APPLIED
+            return AuthenticationResult.Failure(AuthenticationFailure(AuthenticationFailureCode.SESSION_MODE_RESTRICTED))
         }
-        val result = if (enabled) {
+        return if (enabled) {
             authenticationMethodProvisioner.rotateBiometricPolicy(invalidateOnEnrollment)
         } else {
             authenticationMethodProvisioner.disableBiometric()
         }
-        return result.toChangeResult()
     }
 
     suspend fun setKeyInvalidationPolicy(
         enabled: Boolean,
-    ): SecurityAuthenticationChangeResult {
+    ): AuthenticationResult {
         if (secureSessionAccessState.isRecoveryMode()) {
-            return SecurityAuthenticationChangeResult.NOT_APPLIED
+            return AuthenticationResult.Failure(AuthenticationFailure(AuthenticationFailureCode.SESSION_MODE_RESTRICTED))
         }
         val result = authenticationMethodProvisioner.rotateBiometricPolicy(enabled)
         if (result !is AuthenticationResult.Success) {
-            return SecurityAuthenticationChangeResult.NOT_APPLIED
+            return result
         }
         securitySettingsRepository.setInvalidateBiometricKeyOnChange(enabled)
-        return SecurityAuthenticationChangeResult.APPLIED
+        return result
     }
 }
-
-private fun AuthenticationResult.toChangeResult(): SecurityAuthenticationChangeResult =
-    if (this is AuthenticationResult.Success) {
-        SecurityAuthenticationChangeResult.APPLIED
-    } else {
-        SecurityAuthenticationChangeResult.NOT_APPLIED
-    }

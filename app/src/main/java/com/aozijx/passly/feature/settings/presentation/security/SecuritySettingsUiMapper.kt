@@ -12,6 +12,7 @@ fun SecuritySettingsUiState.Ready.toSecuritySettingsUiModel(
     sliderStepSeconds = LockTimeoutConstraints.SLIDER_STEP_MS / 1000f,
     isAppPasswordEnabled = isAppPasswordEnabled,
     isBiometricEnabled = isBiometricEnabled,
+    isAuthenticationChangeInProgress = isAuthenticationChangeInProgress,
     isInvalidateKeyOnBioChange = isInvalidateKeyOnBioChange,
     isLockOnBackground = isLockOnBackground,
 )

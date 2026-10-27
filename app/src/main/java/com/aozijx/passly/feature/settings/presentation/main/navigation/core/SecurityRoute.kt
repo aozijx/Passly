@@ -17,6 +17,7 @@ import com.aozijx.passly.feature.settings.presentation.security.SecuritySettings
 import com.aozijx.passly.feature.settings.presentation.security.SecuritySettingsUiState
 import com.aozijx.passly.feature.settings.presentation.security.SecuritySettingsViewModel
 import com.aozijx.passly.feature.settings.presentation.security.toSecuritySettingsUiModel
+import com.aozijx.passly.feature.settings.presentation.common.ObserveSettingsWriteErrors
 import com.aozijx.passly.feature.settings.presentation.ui.security.AppPasswordDialogs
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
@@ -28,6 +29,7 @@ internal fun SecurityRoute(
 ) {
     val context = LocalContext.current
     val securityViewModel: SecuritySettingsViewModel = hiltViewModel()
+    ObserveSettingsWriteErrors(securityViewModel.errors)
     val appPasswordViewModel: AppPasswordSettingsViewModel = hiltViewModel()
     val securityState by securityViewModel.uiState.collectAsStateWithLifecycle()
     val appPasswordState by appPasswordViewModel.uiState.collectAsStateWithLifecycle()

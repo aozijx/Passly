@@ -106,6 +106,14 @@ stateDiagram-v2
 
 ## 生物识别策略轮换
 
+安全设置保留 `AuthenticationResult` 的成功、取消和失败语义，不再用 `NOT_APPLIED` 合并原因。
+`SecuritySettingsViewModel` 在调度前占用单次认证操作状态，生物识别开关与策略切换互斥；
+执行期间两个开关禁用，取消或失败后允许重试。页面销毁后不恢复可操作状态，也不发布迟到反馈。
+策略入口只接受已加载且已启用生物识别的状态，不能经由隐藏动作意外启用认证方式。
+成功与用户取消保持静默；失败发布本地化资源键，保留“至少一种解锁方式”和会话受限的具体提示。
+仓库 Flow 与认证能力 Flow 继续决定实际选择；锁定超时和后台锁定偏好共用保存失败处理，
+Route 在 STARTED 生命周期消费错误并按当前语言解析，不展示内部异常文本。
+
 Bootstrap 先写 PREPARED journal，再创建 candidate key/Envelope；单次更新切换 active binding 并登记旧 alias
 待清理。提交后删除旧 alias 失败只记录并留待 Reconciler 重试，不回滚新 binding。启动和认证成功后都会清理 orphan
 candidate 与 obsolete alias。

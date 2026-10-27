@@ -3,6 +3,8 @@ package com.aozijx.passly.feature.settings.security
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
 import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.CancellationReason
 import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
@@ -42,11 +44,11 @@ class SecurityAuthenticationSettingsInteractorTest {
         assertFalse(interactor.verifyRecoveryCode(code))
         assertTrue(code.all { it == '\u0000' })
         assertEquals(
-            SecurityAuthenticationChangeResult.NOT_APPLIED,
+            AuthenticationResult.Failure(AuthenticationFailure(AuthenticationFailureCode.SESSION_MODE_RESTRICTED)),
             interactor.setBiometricEnabled(enabled = true, invalidateOnEnrollment = true),
         )
         assertEquals(
-            SecurityAuthenticationChangeResult.NOT_APPLIED,
+            AuthenticationResult.Failure(AuthenticationFailure(AuthenticationFailureCode.SESSION_MODE_RESTRICTED)),
             interactor.setKeyInvalidationPolicy(enabled = false),
         )
         assertEquals(0, provisioner.biometricChanges)
@@ -61,14 +63,14 @@ class SecurityAuthenticationSettingsInteractorTest {
         val interactor = interactor(provisioner = provisioner, repository = repository)
 
         assertEquals(
-            SecurityAuthenticationChangeResult.NOT_APPLIED,
+            AuthenticationResult.Cancelled(CancellationReason.USER),
             interactor.setKeyInvalidationPolicy(enabled = false),
         )
         assertEquals(emptyList<Boolean>(), repository.invalidationPolicies)
 
         provisioner.rotateResult = AuthenticationResult.Success(AuthenticationMethod.BIOMETRIC)
         assertEquals(
-            SecurityAuthenticationChangeResult.APPLIED,
+            AuthenticationResult.Success(AuthenticationMethod.BIOMETRIC),
             interactor.setKeyInvalidationPolicy(enabled = false),
         )
         assertEquals(listOf(false), repository.invalidationPolicies)
