@@ -17,6 +17,10 @@ import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
 import com.aozijx.passly.presentation.shared.error.toUiErrorMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,6 +42,13 @@ class AppShellViewModel @Inject constructor(
     private val databaseSessionFailureState: DatabaseSessionFailureState,
     private val databaseSessionRecovery: DatabaseSessionRecovery,
 ) : ViewModel() {
+    private sealed interface RetryWork {
+        data object Idle : RetryWork
+        class Active(val ticket: Any, val job: Job) : RetryWork
+        data object Destroyed : RetryWork
+    }
+
+    private var retryWork: RetryWork = RetryWork.Idle
 
     private val _uiState = MutableStateFlow(AppShellUiState())
     val uiState: StateFlow<AppShellUiState> = _uiState.asStateFlow()
@@ -53,6 +64,7 @@ class AppShellViewModel @Inject constructor(
     }
 
     fun onAction(action: AppShellUiAction) {
+        if (retryWork == RetryWork.Destroyed) return
         when (action) {
             AppShellUiAction.ExitRecovery -> lock(
                 SessionLockRequest(LockReason.RECOVERY_EXIT, LockTrigger.RECOVERY_EXIT),
@@ -94,23 +106,35 @@ class AppShellViewModel @Inject constructor(
     }
 
     private fun retryDatabaseSession() {
-        viewModelScope.launch {
-            mutate(AppShellMutation.DatabaseRetryStarted)
-            when (val result = databaseSessionRecovery.retry()) {
-                DatabaseSessionRetryResult.Ready,
-                DatabaseSessionRetryResult.Unavailable -> Unit
-
-                is DatabaseSessionRetryResult.Failed -> {
-                    emitEffect(
-                        AppShellEffect.ShowError(
+        if (retryWork != RetryWork.Idle || databaseSessionFailureState.databaseFailure.value == null) return
+        val ticket = Any()
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
+            try {
+                val result = databaseSessionRecovery.retry()
+                currentCoroutineContext().ensureActive()
+                if (!isCurrentRetry(ticket)) return@launch
+                when (result) {
+                    DatabaseSessionRetryResult.Ready,
+                    DatabaseSessionRetryResult.Unavailable -> Unit
+                    is DatabaseSessionRetryResult.Failed -> if (databaseSessionFailureState.databaseFailure.value != null) {
+                        emitEffect(AppShellEffect.ShowError(
                             result.cause.toUiErrorMessage(R.string.database_session_retry_failed),
-                        ),
-                    )
+                        ))
+                    }
+                }
+            } finally {
+                if (isCurrentRetry(ticket)) {
+                    retryWork = RetryWork.Idle
+                    mutate(AppShellMutation.DatabaseRetryFinished)
                 }
             }
-            mutate(AppShellMutation.DatabaseRetryFinished)
         }
+        retryWork = RetryWork.Active(ticket, job)
+        mutate(AppShellMutation.DatabaseRetryStarted)
+        job.start()
     }
+
+    private fun isCurrentRetry(ticket: Any): Boolean = (retryWork as? RetryWork.Active)?.ticket === ticket
 
     private fun observeDatabaseFailures() {
         viewModelScope.launch {
@@ -119,7 +143,8 @@ class AppShellViewModel @Inject constructor(
                     if (error == null) {
                         AppShellMutation.DatabaseAvailable
                     } else {
-                        AppShellMutation.DatabaseFailed(error)
+                        AppShellMutation.DatabaseFailed(error,
+                            if (retryWork is RetryWork.Active) DatabaseRetryPhase.Retrying else DatabaseRetryPhase.Idle)
                     },
                 )
             }
@@ -131,7 +156,15 @@ class AppShellViewModel @Inject constructor(
     }
 
     private fun mutate(mutation: AppShellMutation) {
+        if (retryWork == RetryWork.Destroyed) return
         _uiState.update { state -> AppShellReducer.reduce(state, mutation) }
+    }
+
+    override fun onCleared() {
+        val previous = retryWork
+        retryWork = RetryWork.Destroyed
+        if (previous is RetryWork.Active) previous.job.cancel()
+        _uiState.update { state -> AppShellReducer.reduce(state, AppShellMutation.DatabaseRetryFinished) }
     }
 
 }

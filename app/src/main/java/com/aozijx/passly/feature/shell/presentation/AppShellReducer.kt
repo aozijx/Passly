@@ -14,7 +14,10 @@ internal sealed interface AppShellMutation {
     data object DatabaseRetryStarted : AppShellMutation
     data object DatabaseRetryFinished : AppShellMutation
     data object DatabaseAvailable : AppShellMutation
-    data class DatabaseFailed(val cause: Throwable) : AppShellMutation
+    data class DatabaseFailed(
+        val cause: Throwable,
+        val retryPhase: DatabaseRetryPhase = DatabaseRetryPhase.Idle,
+    ) : AppShellMutation
 }
 
 internal object AppShellReducer {
@@ -41,7 +44,7 @@ internal object AppShellReducer {
                 databaseState = AppShellDatabaseState.Available,
             )
             is AppShellMutation.DatabaseFailed -> state.copy(
-                databaseState = AppShellDatabaseState.Failed(mutation.cause),
+                databaseState = AppShellDatabaseState.Failed(mutation.cause, mutation.retryPhase),
             )
         }
 }
