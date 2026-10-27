@@ -78,6 +78,10 @@ Vault ViewModel 或可保存状态。
 Proto 当前默认关闭滑动操作；启用后左滑复制密码、右滑删除，不再提供“详情”动作。显示和执行都必须读取
 `InteractionSettings`，不能在 UI 重新定义另一套默认。
 
+交互设置的滑动开关、下拉搜索开关及左右滑动动作共用写入失败处理。页面状态始终来自 Repository Flow，
+不在写入前伪造成功；开关写入成功保持静默，动作选择成功保留保存提示，失败统一发布本地化资源键。
+写入返回后及失败映射前检查协程仍有效；取消继续传播，已取消的慢写入即使延迟完成也不能补发成功或失败提示。
+
 相关实现：
 
 - [`EntryListQuery`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/query/EntryListQuery.kt)

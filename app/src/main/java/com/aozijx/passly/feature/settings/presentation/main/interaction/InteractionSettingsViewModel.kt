@@ -9,6 +9,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -20,6 +22,7 @@ import kotlinx.coroutines.launch
 class InteractionSettingsViewModel @Inject constructor(
     private val settingsRepository: InteractionSettingsRepository,
 ) : ViewModel() {
+    private enum class SuccessFeedback { Silent, Saved }
 
     val uiState: StateFlow<InteractionSettingsUiState> = settingsRepository.interaction
         .map { settings ->
@@ -41,29 +44,31 @@ class InteractionSettingsViewModel @Inject constructor(
 
     fun onAction(action: InteractionSettingsAction) {
         when (action) {
-            is InteractionSettingsAction.SetSwipeEnabled -> viewModelScope.launch {
+            is InteractionSettingsAction.SetSwipeEnabled -> saveSetting(SuccessFeedback.Silent) {
                 settingsRepository.setSwipeEnabled(action.enabled)
             }
-            is InteractionSettingsAction.SetPullToSearchEnabled -> viewModelScope.launch {
+            is InteractionSettingsAction.SetPullToSearchEnabled -> saveSetting(SuccessFeedback.Silent) {
                 settingsRepository.setPullToSearchEnabled(action.enabled)
             }
-            is InteractionSettingsAction.SetSwipeLeftAction -> saveSwipeAction {
+            is InteractionSettingsAction.SetSwipeLeftAction -> saveSetting(SuccessFeedback.Saved) {
                 settingsRepository.setSwipeLeftAction(action.action)
             }
-            is InteractionSettingsAction.SetSwipeRightAction -> saveSwipeAction {
+            is InteractionSettingsAction.SetSwipeRightAction -> saveSetting(SuccessFeedback.Saved) {
                 settingsRepository.setSwipeRightAction(action.action)
             }
         }
     }
 
-    private fun saveSwipeAction(save: suspend () -> Unit) {
+    private fun saveSetting(feedback: SuccessFeedback, save: suspend () -> Unit) {
         viewModelScope.launch {
             try {
                 save()
-                _effects.trySend(InteractionSettingsEffect.Saved)
+                currentCoroutineContext().ensureActive()
+                if (feedback == SuccessFeedback.Saved) _effects.trySend(InteractionSettingsEffect.Saved)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
+                currentCoroutineContext().ensureActive()
                 _effects.trySend(
                     InteractionSettingsEffect.SaveFailed(error.toUiErrorMessage(R.string.settings_interaction_save_failed)),
                 )
