@@ -40,8 +40,8 @@
 排序与交互设置共用 `writePreferenceWithFeedback` 的失败和取消处理；调用方持有协程作用域与反馈策略，
 该函数不缓存偏好或拥有页面状态。成功回调只在写入返回且协程仍有效时执行，反馈回调异常不作为存储失败重报。
 
-当前首次安装默认来自 `app_preferences.proto`：**创建时间降序、收藏置顶、Entry ID 最终兜底**。Domain 的
-`EntrySort.DEFAULT` 当前保持同一值，用于构造完整查询模型，但持久化读取由 Proto 默认实例提供。
+当前首次安装默认来自 `app_preferences.proto`：**创建时间降序、收藏置顶、Entry ID 最终兜底**。
+Domain 的 `EntrySort` 要求显式传入主字段和方向；持久化读取由 Proto 默认实例提供。
 
 排序优先级为收藏置顶（启用时）→ 主字段 → 次级字段 → Entry ID。主字段不得和 tie-breaker 相同。标题使用
 SQLite `NOCASE`；从未使用的条目在最近使用升/降序中都排末尾；Entry type 按 Domain 声明顺序而非数据库字符串。

@@ -2,6 +2,9 @@ package com.aozijx.passly.feature.settings.presentation.appearance
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.R
+import com.aozijx.passly.presentation.shared.error.UiErrorMessage
+import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -9,6 +12,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -17,6 +22,8 @@ class InterfaceSettingsViewModel @Inject constructor(
     private val settingsRepository: InterfaceSettingsRepository,
     private val librarySettingsRepository: LibraryViewSettingsRepository,
 ) : ViewModel() {
+    private val errorChannel = Channel<UiErrorMessage>(Channel.BUFFERED)
+    val errors = errorChannel.receiveAsFlow()
 
     val uiState: StateFlow<InterfaceSettingsUiState> = combine(
         settingsRepository.interfaceSettings,
@@ -38,25 +45,35 @@ class InterfaceSettingsViewModel @Inject constructor(
 
     fun onAction(action: InterfaceSettingsAction) {
         when (action) {
-            is InterfaceSettingsAction.SetHideSystemBars -> viewModelScope.launch {
+            is InterfaceSettingsAction.SetHideSystemBars -> saveSetting {
                 settingsRepository.setHideSystemBars(action.enabled)
             }
 
-            is InterfaceSettingsAction.SetTopBarCollapsible -> viewModelScope.launch {
+            is InterfaceSettingsAction.SetTopBarCollapsible -> saveSetting {
                 settingsRepository.setTopBarCollapsible(action.enabled)
             }
 
-            is InterfaceSettingsAction.SetQuickFilterBarCollapsible -> viewModelScope.launch {
+            is InterfaceSettingsAction.SetQuickFilterBarCollapsible -> saveSetting {
                 settingsRepository.setQuickFilterBarCollapsible(action.enabled)
             }
 
-            is InterfaceSettingsAction.SetAppCornerRadius -> viewModelScope.launch {
+            is InterfaceSettingsAction.SetAppCornerRadius -> saveSetting {
                 settingsRepository.setAppCornerRadius(action.radiusDp)
             }
 
-            is InterfaceSettingsAction.SetEntryHierarchyDisplayMode -> viewModelScope.launch {
+            is InterfaceSettingsAction.SetEntryHierarchyDisplayMode -> saveSetting {
                 librarySettingsRepository.setEntryHierarchyDisplayMode(action.mode)
             }
+        }
+    }
+
+    private fun saveSetting(write: suspend () -> Unit) {
+        viewModelScope.launch {
+            writePreferenceWithFeedback(
+                failureRes = R.string.settings_interface_save_failed,
+                onFailure = { errorChannel.trySend(it) },
+                write = write,
+            )
         }
     }
 }

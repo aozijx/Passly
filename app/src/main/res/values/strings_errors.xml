@@ -21,4 +21,5 @@
     <string name="vault_error_copy_otp_access">当前会话不能复制动态验证码</string>
     <string name="vault_error_trash_failed">无法将条目移入回收站</string>
     <string name="vault_error_sort_failed">无法保存排序设置</string>
+    <string name="settings_interface_save_failed">无法保存界面设置</string>
 </resources>
