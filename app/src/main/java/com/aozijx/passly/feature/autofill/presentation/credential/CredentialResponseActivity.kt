@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.autofill.presentation.credential
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -45,6 +46,7 @@ class CredentialResponseActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        excludeFromAutofill()
 
         val launch = responseLaunch(intent)
 

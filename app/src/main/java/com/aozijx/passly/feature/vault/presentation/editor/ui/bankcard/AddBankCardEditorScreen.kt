@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.editor.ui.bankcard
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -190,6 +191,7 @@ fun AddBankCardEditorScreen(
                 label = stringResource(R.string.billing_address),
             )
             OutlinedTextField(
+                modifier = Modifier.excludeFromAutofill(),
                 value = form.notes,
                 onValueChange = { onAction(AddBankCardAction.NotesChanged(it)) },
                 label = { Text(stringResource(R.string.field_notes)) },
@@ -232,7 +234,7 @@ private fun CardTypeDropdown(
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).excludeFromAutofill(),
         )
         ExposedDropdownMenu(
             expanded = expanded,

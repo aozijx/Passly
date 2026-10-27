@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.recovery.presentation.ui
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -47,7 +48,7 @@ fun RecoveryPasswordDialog(newPassword: String, confirmPassword: String, strengt
 
 @Composable
 private fun PasswordField(value: String, onChange: (String) -> Unit, enabled: Boolean, label: String, visible: Boolean, ime: ImeAction = ImeAction.Next, error: String? = null, toggle: () -> Unit) {
-    OutlinedTextField(value, onChange, Modifier.fillMaxWidth(), enabled, label = { Text(label) }, visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ime), singleLine = true, trailingIcon = { IconButton(toggle) { Icon(if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility, stringResource(if (visible) R.string.recovery_mode_hide_password else R.string.recovery_mode_show_password)) } }, isError = error != null, supportingText = error?.let { message -> { Text(message) } })
+    OutlinedTextField(value, onChange, Modifier.fillMaxWidth().excludeFromAutofill(), enabled, label = { Text(label) }, visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ime), singleLine = true, trailingIcon = { IconButton(toggle) { Icon(if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility, stringResource(if (visible) R.string.recovery_mode_hide_password else R.string.recovery_mode_show_password)) } }, isError = error != null, supportingText = error?.let { message -> { Text(message) } })
 }
 
 @Composable

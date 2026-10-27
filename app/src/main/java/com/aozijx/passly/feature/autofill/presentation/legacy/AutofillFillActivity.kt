@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.autofill.presentation.legacy
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import android.content.Intent
 import android.os.Bundle
 import android.view.autofill.AutofillManager
@@ -35,6 +36,7 @@ class AutofillFillActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        excludeFromAutofill()
         setResult(RESULT_CANCELED)
         val request = intent.toAutofillFillRequest() ?: run {
             finish()

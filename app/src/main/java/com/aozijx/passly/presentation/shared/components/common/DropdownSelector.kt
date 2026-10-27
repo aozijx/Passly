@@ -1,5 +1,6 @@
 package com.aozijx.passly.presentation.shared.components.common
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,7 +47,7 @@ fun <T> DropdownSelector(
             },
             modifier = Modifier
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                .fillMaxWidth()
+                .fillMaxWidth().excludeFromAutofill()
         )
         ExposedDropdownMenu(
             expanded = expanded,

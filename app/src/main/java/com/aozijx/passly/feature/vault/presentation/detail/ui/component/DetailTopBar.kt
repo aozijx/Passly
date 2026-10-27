@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -49,7 +50,7 @@ fun DetailTopBar(
                     value = model.editedTitle,
                     onValueChange = onTitleChanged,
                     label = null,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
                     textStyle = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                     singleLine = true,
                     trailingIcon = {

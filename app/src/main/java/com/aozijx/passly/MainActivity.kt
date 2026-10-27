@@ -1,5 +1,6 @@
 package com.aozijx.passly
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -48,6 +49,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppContentTheme)
         super.onCreate(savedInstanceState)
+        excludeFromAutofill()
         enableEdgeToEdge()
 
         WindowCompat.getInsetsController(window, window.decorView).systemBarsBehavior =

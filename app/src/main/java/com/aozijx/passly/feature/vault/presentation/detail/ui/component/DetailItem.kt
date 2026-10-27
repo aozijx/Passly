@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Row
@@ -134,7 +135,7 @@ fun EditTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
         trailingIcon = {
             IconButton(onClick = onSave) {
                 Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)

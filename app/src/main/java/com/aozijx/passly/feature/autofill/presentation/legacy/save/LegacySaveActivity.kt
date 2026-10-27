@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.autofill.presentation.legacy.save
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -26,6 +27,7 @@ class LegacySaveActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        excludeFromAutofill()
         val token = intent.getStringExtra(AutofillLaunchExtras.LEGACY_SAVE_TOKEN)
         setContent {
             PersistedAppTheme {

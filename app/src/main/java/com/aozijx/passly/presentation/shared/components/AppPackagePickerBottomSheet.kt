@@ -1,5 +1,6 @@
 package com.aozijx.passly.presentation.shared.components
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -84,7 +85,7 @@ fun AppPackagePickerBottomSheet(
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
                 singleLine = true,
                 leadingIcon = { Icon(Icons.Default.Search, null) },
                 label = { Text(stringResource(R.string.app_package_picker_search)) },

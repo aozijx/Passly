@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.settings.presentation.ui.security
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -79,7 +80,7 @@ fun AppPasswordChangeDialog(
                     keyboardActions = KeyboardActions(
                         onNext = { focusManager.moveFocus(FocusDirection.Next) },
                     ),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().excludeFromAutofill()
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 PasswordFields(

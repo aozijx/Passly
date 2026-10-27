@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -126,7 +127,7 @@ fun TagEditorSheet(
                 onValueChange = onInputChanged,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .testTag("tag-editor-input"),
+                    .testTag("tag-editor-input").excludeFromAutofill(),
                 label = { Text(stringResource(R.string.vault_detail_tag_input_label)) },
                 placeholder = { Text(stringResource(R.string.vault_detail_tag_input_hint)) },
                 supportingText = state.validationError?.let { error ->

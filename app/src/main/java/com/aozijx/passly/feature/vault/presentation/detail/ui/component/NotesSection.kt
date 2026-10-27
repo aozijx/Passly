@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -51,7 +52,7 @@ fun NotesSection(
                     value = model.editedNotes,
                     onValueChange = onNotesChanged,
                     label = { Text(notesLabel) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
                     singleLine = false,
                     minLines = 3,
                     maxLines = 10,

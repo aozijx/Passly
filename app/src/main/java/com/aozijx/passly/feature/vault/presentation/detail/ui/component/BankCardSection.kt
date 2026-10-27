@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -66,7 +67,7 @@ private fun CardField(
 ) {
     if (editing) OutlinedTextField(
         value = editedValue, onValueChange = { onAction(DetailUiAction.UpdateFieldDraft(field, it)) },
-        label = { Text(stringResource(R.string.field_edit_action, label)) }, modifier = Modifier.fillMaxWidth(),
+        label = { Text(stringResource(R.string.field_edit_action, label)) }, modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
         trailingIcon = { IconButton(onClick = { onAction(DetailUiAction.SaveField(field, editedValue)) }) {
             Icon(Icons.Default.Check, stringResource(R.string.save), tint = MaterialTheme.colorScheme.primary) } }, singleLine = true)
     else DetailItem(label = label, value = value, isRevealed = revealed, maskStyle = maskStyle,

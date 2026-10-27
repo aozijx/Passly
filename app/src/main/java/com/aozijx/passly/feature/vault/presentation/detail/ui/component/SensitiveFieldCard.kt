@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -71,7 +72,7 @@ fun SensitiveFieldCard(
                     OutlinedTextField(
                         value = editedValue,
                         onValueChange = onValueChange,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
                         label = { Text(stringResource(R.string.field_edit_action, title)) },
                         singleLine = true
                     )

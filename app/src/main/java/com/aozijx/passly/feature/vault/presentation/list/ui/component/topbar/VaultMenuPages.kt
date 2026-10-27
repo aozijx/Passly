@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.component.topbar
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -151,7 +152,7 @@ internal fun FilterSubMenu(
             modifier = Modifier
                 .padding(horizontal = 12.dp, vertical = 4.dp)
                 .fillMaxWidth()
-                .focusRequester(focusRequester),
+                .focusRequester(focusRequester).excludeFromAutofill(),
             placeholder = {
                 Text(
                     stringResource(searchHintRes),

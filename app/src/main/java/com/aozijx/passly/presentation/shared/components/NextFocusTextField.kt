@@ -1,5 +1,6 @@
 package com.aozijx.passly.presentation.shared.components
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -38,7 +39,7 @@ fun NextFocusTextField(
         isError = isError,
         supportingText = supportingText,
         singleLine = true,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().excludeFromAutofill(),
         keyboardOptions = KeyboardOptions(
             keyboardType = keyboardType,
             imeAction = ImeAction.Next,

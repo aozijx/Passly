@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
@@ -232,7 +233,7 @@ private fun FaviconCustomImage(
             value = state.imageUrl,
             onValueChange = onImageUrlChanged,
             enabled = !processing,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
             label = { Text(stringResource(R.string.vault_detail_favicon_image_url)) },
             leadingIcon = { Icon(Icons.Default.Link, contentDescription = null) },
             singleLine = true,
@@ -331,7 +332,7 @@ private fun FaviconIconLibrary(
         OutlinedTextField(
             value = state.searchQuery,
             onValueChange = onSearchChanged,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
             singleLine = true,
             label = { Text(stringResource(R.string.search)) },
         )

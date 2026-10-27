@@ -25,7 +25,7 @@
 
 ## 批次
 
-实施顺序调整：先完成独立的 Topbar 清理，再集中处理历史的数据、隐私与布局问题；范围与验收项不变。
+实施顺序调整：先完成独立的 Topbar 与应用输入边界清理，再集中处理历史的数据、隐私与布局问题；范围与验收项不变。
 
 ### 1. 生物识别策略与密钥生命周期
 
@@ -56,9 +56,12 @@
 
 ### 4. 应用内自动填充边界
 
-- [ ] 检查 MainActivity、认证/填充 Activity、公共密码输入、备份密码输入与编辑保存退出路径。
-- [ ] 在合适的 Android 宿主/输入边界统一阻止自身非凭据用途的填充和保存会话，避免按单个页面叠补丁。
-- [ ] 保留对外 Autofill、Inline、BottomSheet 与无障碍回退能力；补充边界测试、Manifest/API 检查及正式文档后提交。
+- [x] 检查 MainActivity、认证/填充 Activity、公共密码输入、备份密码输入与编辑保存退出路径。
+- [x] 在合适的 Android 宿主/输入边界统一阻止自身非凭据用途的填充和保存会话，避免按单个页面叠补丁。
+- [x] 保留对外 Autofill、Inline、BottomSheet 与无障碍回退能力；补充边界测试、Manifest/API 检查及正式文档后提交。
+
+实现：同一 `excludeFromAutofill()` 策略覆盖 27 个实际 Compose 输入节点与 5 个 Activity；Compose 明确使用 `ContentDataType.None`，宿主使用 `NO_EXCLUDE_DESCENDANTS` 并取消自己的旧会话。无障碍原有自身包名排除继续保留。
+验证：`build-internal-autofill-final.log` 全部门禁通过；Core 74、Security 50、App 862 项单测及 API 34 的 52 项仪器测试零失败。新增测试先观察到三类输入为 Text，修改后验证为 None，且密码显隐与 IME 焦点行为保持可用。
 
 ### 5. 职责清理与收尾
 

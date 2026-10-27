@@ -1,5 +1,6 @@
 package com.aozijx.passly.core.ui.components.common
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -120,7 +121,7 @@ fun InputActionButton(
                     modifier = Modifier
                         .bringIntoViewRequester(bringIntoViewRequester)
                         .focusRequester(focusRequester)
-                        .fillMaxWidth(),
+                        .fillMaxWidth().excludeFromAutofill(),
                     shape = MaterialTheme.shapes.extraLarge,
                 )
                 Spacer(modifier = Modifier.height(InputFieldSpacing))

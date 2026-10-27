@@ -2,6 +2,15 @@
 
 状态：当前实现（代码核对：2026-10-25）。
 
+## 应用内部输入边界
+
+Passly 自身的认证、备份密码、恢复及凭据编辑输入不作为系统填充目标。
+Core 的 `Modifier.excludeFromAutofill()` 在真实可编辑节点声明 `ContentDataType.None`，明确表示不可填充；
+不清除文本编辑、焦点或无障碍语义。密码显示切换不改变此策略。公共输入组件和直接使用的 Compose 文本框遵守同一约束。
+五个 Activity 宿主在创建时调用同名的 Activity 扩展：以 `NO_EXCLUDE_DESCENDANTS` 排除自身 View 子树，并取消当前宿主的填充/保存会话。
+只覆盖 Passly 内部输入，不停用系统 Autofill 服务，不取消其他应用的会话，也不改变对外候选发现和结果交付。
+应用密码、备份密码、编辑页实际语义节点及宿主排除标记由 `InternalInputAutofillTest` 验证；编辑页原有 IME 焦点测试继续保留。
+
 Android 12+ 有三套平台入口：Legacy `AutofillService` 在 API 31+ 提供填充、`SaveInfo` 和 `onSaveRequest`；
 Credential Manager Provider 在 API 34+ 提供 Password get/create/clear-state。两者共享平台无关的候选发现、
 授权、单条秘密解析、草稿校验和 Entry 写入，但结果合同各自独立，不互相转换 `Dataset/FillResponse/SaveCallback`

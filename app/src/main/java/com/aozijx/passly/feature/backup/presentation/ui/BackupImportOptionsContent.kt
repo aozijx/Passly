@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.backup.presentation.ui
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -82,7 +83,7 @@ internal fun BackupImportOptionsContent(
         OutlinedTextField(
             value = state.password,
             onValueChange = { onAction(BackupUiAction.UpdatePassword(it)) },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
             label = { Text(stringResource(R.string.settings_backup_import_password_label)) },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),

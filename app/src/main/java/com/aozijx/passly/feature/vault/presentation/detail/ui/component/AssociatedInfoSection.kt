@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -198,7 +199,7 @@ private fun DomainEditor(
         OutlinedTextField(
             value = value.text,
             onValueChange = { onValueChange(value.copy(text = it)) },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
             label = { Text(stringResource(R.string.vault_detail_domain_label)) },
             placeholder = { Text(stringResource(R.string.vault_detail_domain_placeholder)) },
             singleLine = true,

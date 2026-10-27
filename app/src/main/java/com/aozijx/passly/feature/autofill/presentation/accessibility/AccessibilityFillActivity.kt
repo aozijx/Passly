@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.autofill.presentation.accessibility
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.compose.setContent
@@ -27,6 +28,7 @@ class AccessibilityFillActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        excludeFromAutofill()
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         setContent {
             val state by viewModel.uiState.collectAsStateWithLifecycle()

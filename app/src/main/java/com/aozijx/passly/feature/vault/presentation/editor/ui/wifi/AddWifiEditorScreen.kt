@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.editor.ui.wifi
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
@@ -101,7 +102,7 @@ fun AddWifiEditorScreen(
                 value = form.notes,
                 onValueChange = { onAction(AddWifiAction.NotesChanged(it)) },
                 label = { Text(stringResource(R.string.field_notes)) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
                 singleLine = false,
                 minLines = 4,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),

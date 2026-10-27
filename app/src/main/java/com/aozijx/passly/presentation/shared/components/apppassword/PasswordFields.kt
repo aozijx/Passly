@@ -1,5 +1,6 @@
 package com.aozijx.passly.presentation.shared.components.apppassword
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -85,7 +86,7 @@ fun PasswordFields(
         keyboardActions = KeyboardActions(
             onNext = { focusManager.moveFocus(FocusDirection.Next) },
         ),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
         shape = MaterialTheme.shapes.large
     )
 
@@ -140,7 +141,7 @@ fun PasswordFields(
         supportingText = if (confirmPassword.isNotEmpty() && newPassword != confirmPassword) {
             { Text(stringResource(R.string.settings_auth_password_mismatch)) }
         } else null,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
         shape = MaterialTheme.shapes.large
     )
 }

@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.settings.presentation.ui.diagnostics
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -95,7 +96,7 @@ internal fun DiagnosticsScreen(
                 onValueChange = { onAction(DiagnosticsAction.SearchChanged(it)) },
                 label = { Text(stringResource(R.string.settings_diagnostics_search)) },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
             )
         }
         item {

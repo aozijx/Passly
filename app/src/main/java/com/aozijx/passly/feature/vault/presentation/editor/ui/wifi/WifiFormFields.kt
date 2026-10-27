@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.editor.ui.wifi
 
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -120,7 +121,7 @@ private fun WifiSecurityTypeDropdown(
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).excludeFromAutofill(),
         )
         ExposedDropdownMenu(
             expanded = expanded,
