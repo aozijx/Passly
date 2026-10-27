@@ -164,6 +164,53 @@ class VaultQueryStateTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
+    fun `unrelated ui updates cannot postpone the initial search deadline`() = runTest {
+        val states = MutableStateFlow(VaultUiState(searchQuery = "mail", selectedSort = createdAtDescendingSort))
+        val observed = mutableListOf<VaultQueryState>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            buildVaultQueryStates(states, flowOf(EntryHierarchyDisplayMode.COLLAPSED), flowOf(0L))
+                .collect(observed::add)
+        }
+        runCurrent()
+        advanceTimeBy(100L)
+        states.value = states.value.copy(showTOTPCode = !states.value.showTOTPCode)
+        runCurrent()
+        advanceTimeBy(100L)
+        states.value = states.value.copy(availableCategories = listOf("Work"), selectedCategory = "Work")
+        runCurrent()
+        advanceTimeBy(50L)
+        runCurrent()
+        assertEquals(listOf("mail"), observed.map(VaultQueryState::searchText))
+        assertEquals("Work", observed.last().category)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `equivalent search text keeps its deadline while category changes immediately`() = runTest {
+        val states = MutableStateFlow(VaultUiState(searchQuery = "mail", selectedSort = createdAtDescendingSort))
+        val observed = mutableListOf<VaultQueryState>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            buildVaultQueryStates(states, flowOf(EntryHierarchyDisplayMode.COLLAPSED), flowOf(0L))
+                .collect(observed::add)
+        }
+        runCurrent()
+        advanceTimeBy(250L)
+        runCurrent()
+        states.value = states.value.copy(searchQuery = "vault")
+        runCurrent()
+        advanceTimeBy(100L)
+        states.value = states.value.copy(searchQuery = " vault ", selectedCategory = "Work")
+        runCurrent()
+        assertEquals("mail", observed.last().searchText)
+        assertEquals("Work", observed.last().category)
+        advanceTimeBy(150L)
+        runCurrent()
+        assertEquals("vault", observed.last().searchText)
+        assertEquals("Work", observed.last().category)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
     fun `search is debounced while other query inputs propagate immediately`() = runTest {
         val uiStates = MutableStateFlow(
             VaultUiState(searchQuery = "mail", selectedSort = createdAtDescendingSort),

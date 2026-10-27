@@ -74,6 +74,7 @@ internal fun buildVaultQueryStates(
 ): Flow<VaultQueryState> {
     val effectiveSearch = uiStates
         .map { state -> state.searchQuery.trim() }
+        .distinctUntilChanged()
         .debounce(SEARCH_DEBOUNCE_MILLIS)
         .distinctUntilChanged()
     val selection = uiStates
