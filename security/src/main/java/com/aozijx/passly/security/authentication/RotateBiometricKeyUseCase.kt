@@ -20,6 +20,8 @@ import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 @Singleton
 class RotateBiometricKeyUseCase @Inject constructor(
@@ -27,10 +29,20 @@ class RotateBiometricKeyUseCase @Inject constructor(
     private val cryptoFactory: BiometricCryptoFactory,
     private val dekManager: DekManager
 ) {
+    private val rotationMutex = Mutex()
+
     suspend fun rotate(
         host: AuthUiHost,
         invalidateOnEnrollment: Boolean,
         correlationId: String
+    ): AuthenticationResult = rotationMutex.withLock {
+        rotateExclusively(host, invalidateOnEnrollment, correlationId)
+    }
+
+    private suspend fun rotateExclusively(
+        host: AuthUiHost,
+        invalidateOnEnrollment: Boolean,
+        correlationId: String,
     ): AuthenticationResult {
         if (!dekManager.isUnlocked.value) {
             return fail(AuthenticationFailureCode.SESSION_TRANSITION_FAILED, correlationId)
@@ -38,61 +50,51 @@ class RotateBiometricKeyUseCase @Inject constructor(
         val oldAlias = vaultBootstrapStore.loadBiometricState().binding?.activeAlias
         val candidateAlias =
             "${cryptoFactory.baseAlias()}.candidate.${UuidCreator.getTimeOrderedEpoch()}"
-        vaultBootstrapStore.prepareBiometricRotation(
-            BiometricRotationJournal(
-                phase = BiometricRotationPhase.PREPARED,
-                oldAlias = oldAlias,
-                candidateAlias = candidateAlias
-            )
-        )
-        val preparation = cryptoFactory.createEncrypt(candidateAlias, invalidateOnEnrollment)
-        val cipher = (preparation as? BiometricCryptoPreparation.Ready)?.cipher
-            ?: return fail(preparation.failureCode(), correlationId).also {
-                rollbackCandidate(candidateAlias)
-            }
-        return when (
-            val prompt = host.authenticateBiometric(
-                BiometricPromptSpec(AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY),
-                androidx.biometric.BiometricPrompt.CryptoObject(cipher)
-            )
-        ) {
-            is BiometricHostResult.Success -> {
-                val envelope = dekManager.withDek { dek ->
-                    EnvelopeManager.wrapWithCipher(EnvelopeType.BIOMETRIC, dek, cipher)
-                }
-                vaultBootstrapStore.commitBiometricRotation(
-                    envelope = envelope,
-                    binding = BiometricBinding(candidateAlias, invalidateOnEnrollment),
-                    obsoleteAlias = oldAlias?.takeIf { it != candidateAlias }
+        return withBiometricRotationCandidate(vaultBootstrapStore, candidateAlias, cryptoFactory::deleteAlias) {
+            vaultBootstrapStore.prepareBiometricRotation(
+                BiometricRotationJournal(
+                    phase = BiometricRotationPhase.PREPARED,
+                    oldAlias = oldAlias,
+                    candidateAlias = candidateAlias
                 )
-                if (oldAlias != null &&
-                    oldAlias != candidateAlias &&
-                    cryptoFactory.deleteAlias(oldAlias)
-                ) {
-                    vaultBootstrapStore.clearBiometricCleanupAlias(oldAlias)
-                }
-                vaultBootstrapStore.clearBiometricRotationJournal()
-                AuthenticationResult.Success(com.aozijx.passly.domain.access.model.AuthenticationMethod.BIOMETRIC)
-            }
-            is BiometricHostResult.Cancelled -> {
-                rollbackCandidate(candidateAlias)
-                AuthenticationResult.Cancelled(
-                    if (prompt.byUser) CancellationReason.USER else CancellationReason.CALLER
+            )
+            val preparation = cryptoFactory.createEncrypt(candidateAlias, invalidateOnEnrollment)
+            val cipher = (preparation as? BiometricCryptoPreparation.Ready)?.cipher
+                ?: return@withBiometricRotationCandidate fail(preparation.failureCode(), correlationId)
+            when (
+                val prompt = host.authenticateBiometric(
+                    BiometricPromptSpec(AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY),
+                    androidx.biometric.BiometricPrompt.CryptoObject(cipher)
                 )
+            ) {
+                is BiometricHostResult.Success -> {
+                    val envelope = dekManager.withDek { dek ->
+                        EnvelopeManager.wrapWithCipher(EnvelopeType.BIOMETRIC, dek, cipher)
+                    }
+                    vaultBootstrapStore.commitBiometricRotation(
+                        envelope = envelope,
+                        binding = BiometricBinding(candidateAlias, invalidateOnEnrollment),
+                        obsoleteAlias = oldAlias?.takeIf { it != candidateAlias }
+                    )
+                    if (oldAlias != null &&
+                        oldAlias != candidateAlias &&
+                        cryptoFactory.deleteAlias(oldAlias)
+                    ) {
+                        vaultBootstrapStore.clearBiometricCleanupAlias(oldAlias)
+                    }
+                    vaultBootstrapStore.clearBiometricRotationJournal()
+                    AuthenticationResult.Success(com.aozijx.passly.domain.access.model.AuthenticationMethod.BIOMETRIC)
+                }
+                is BiometricHostResult.Cancelled -> {
+                    AuthenticationResult.Cancelled(
+                        if (prompt.byUser) CancellationReason.USER else CancellationReason.CALLER
+                    )
+                }
+                is BiometricHostResult.Failure -> fail(prompt.reason.failureCode(), correlationId)
+                BiometricHostResult.HostUnavailable -> {
+                    fail(AuthenticationFailureCode.HOST_UNAVAILABLE, correlationId)
+                }
             }
-            is BiometricHostResult.Failure -> fail(prompt.reason.failureCode(), correlationId).also {
-                rollbackCandidate(candidateAlias)
-            }
-            BiometricHostResult.HostUnavailable -> {
-                rollbackCandidate(candidateAlias)
-                fail(AuthenticationFailureCode.HOST_UNAVAILABLE, correlationId)
-            }
-        }
-    }
-
-    private suspend fun rollbackCandidate(candidateAlias: String) {
-        if (cryptoFactory.deleteAlias(candidateAlias)) {
-            vaultBootstrapStore.clearBiometricRotationJournal()
         }
     }
 

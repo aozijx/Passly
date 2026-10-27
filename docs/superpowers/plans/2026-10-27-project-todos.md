@@ -29,11 +29,14 @@
 
 - [x] 完成 `BiometricConfigurationSource` 与 Data 的 bootstrap 非敏感配置投影；删除 security preferences 重复字段和二次写入。
 - [x] 更新 `SecurityAuthenticationSettingsInteractor`、`SecuritySettingsViewModel` 及回归测试；确认相同认证方式集合下策略变化仍刷新。
-- [ ] 检查 `RotateBiometricKeyUseCase`、`BiometricRotationReconciler`、`BiometricCryptoFactory` 的提交、取消、失败与录入变更路径，补足有缺口的清理测试。
-- [ ] 更新 settings-storage 与 authentication 文档，运行 Domain/Data/Security/App 对应门禁并提交。
+- [x] 检查 `RotateBiometricKeyUseCase`、`BiometricRotationReconciler`、`BiometricCryptoFactory` 的提交、取消、失败与录入变更路径，补足有缺口的清理测试。
+- [x] 更新 settings-storage 与 authentication 文档，运行 Domain/Data/Security/App 对应门禁并提交。
 
 策略真相源子批验证：`build-biometric-policy-final.log` 全部门禁通过；Domain 165、Data 70、App 864 项单测，零失败。
-密钥生命周期检查尚未完成，不据此关闭整项待办。
+密钥清理子批验证：`build-biometric-cleanup-final.log` 全部门禁通过；Security 50、App 864 项单测，API 34 模拟器 48 项仪器测试，零失败。
+修复取消/异常漏清理，并以持久化 binding 判断 candidate 是否已提交；核对 Keystore 录入变更失效标志和 Reconciler 的重试保护。
+实体设备的真实录入变更尚未验收；此处完成的是代码路径核查、清理修复及上述自动验证。
+仪器测试的既有选择器问题单独提交：`7045351`。
 
 ### 2. 版本历史、活动日志与历史界面
 
