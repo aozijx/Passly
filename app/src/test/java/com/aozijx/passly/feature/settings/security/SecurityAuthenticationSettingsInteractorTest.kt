@@ -6,12 +6,12 @@ import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.model.BiometricConfiguration
 import com.aozijx.passly.domain.access.model.CancellationReason
 import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
+import com.aozijx.passly.domain.access.port.BiometricConfigurationSource
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.settings.model.SecuritySettings
-import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -22,12 +22,37 @@ import org.junit.Test
 
 class SecurityAuthenticationSettingsInteractorTest {
     @Test
+    fun `policy change follows the committed binding without a second preference write`() = runTest {
+        val provisioner = FakeProvisioner()
+        val interactor = interactor(provisioner = provisioner)
+        assertEquals(
+            AuthenticationResult.Success(AuthenticationMethod.BIOMETRIC),
+            interactor.setKeyInvalidationPolicy(enabled = false),
+        )
+        assertEquals(BiometricConfiguration.Configured(false), interactor.biometricConfiguration.first())
+    }
+
+    @Test
+    fun `enabling uses committed policy or secure first-key policy`() = runTest {
+        for (configuration in listOf(
+            BiometricConfiguration.NotConfigured,
+            BiometricConfiguration.Configured(false),
+            BiometricConfiguration.Configured(true),
+        )) {
+            val provisioner = FakeProvisioner()
+            provisioner.configuration.value = configuration
+            val interactor = interactor(provisioner = provisioner)
+            interactor.setBiometricEnabled(enabled = true)
+            val expected = configuration != BiometricConfiguration.Configured(false)
+            assertEquals(listOf(expected), provisioner.requestedPolicies)
+        }
+    }
+
+    @Test
     fun `biometric availability is exposed as a semantic setting`() = runTest {
         val methods = MutableStateFlow(AuthenticationMethods())
         val interactor = interactor(methods = methods)
-
         assertFalse(interactor.isBiometricEnabled.first())
-
         methods.value = AuthenticationMethods(setOf(AuthenticationMethod.BIOMETRIC))
         assertTrue(interactor.isBiometricEnabled.first())
     }
@@ -40,104 +65,70 @@ class SecurityAuthenticationSettingsInteractorTest {
             provisioner = provisioner,
             state = AuthenticationState.RecoveryMode(authenticatedAtMs = 1),
         )
-
         assertFalse(interactor.verifyRecoveryCode(code))
         assertTrue(code.all { it == '\u0000' })
-        assertEquals(
-            AuthenticationResult.Failure(AuthenticationFailure(AuthenticationFailureCode.SESSION_MODE_RESTRICTED)),
-            interactor.setBiometricEnabled(enabled = true, invalidateOnEnrollment = true),
-        )
-        assertEquals(
-            AuthenticationResult.Failure(AuthenticationFailure(AuthenticationFailureCode.SESSION_MODE_RESTRICTED)),
-            interactor.setKeyInvalidationPolicy(enabled = false),
-        )
+        val restricted = AuthenticationResult.Failure(AuthenticationFailure(AuthenticationFailureCode.SESSION_MODE_RESTRICTED))
+        assertEquals(restricted, interactor.setBiometricEnabled(enabled = true))
+        assertEquals(restricted, interactor.setKeyInvalidationPolicy(enabled = false))
         assertEquals(0, provisioner.biometricChanges)
     }
 
     @Test
-    fun `key invalidation setting persists only after successful biometric rotation`() = runTest {
-        val repository = FakeSecuritySettingsRepository()
-        val provisioner = FakeProvisioner(
-            rotateResult = AuthenticationResult.Cancelled(CancellationReason.USER),
-        )
-        val interactor = interactor(provisioner = provisioner, repository = repository)
-
-        assertEquals(
-            AuthenticationResult.Cancelled(CancellationReason.USER),
-            interactor.setKeyInvalidationPolicy(enabled = false),
-        )
-        assertEquals(emptyList<Boolean>(), repository.invalidationPolicies)
-
+    fun `cancelled rotation leaves committed configuration unchanged`() = runTest {
+        val provisioner = FakeProvisioner(rotateResult = AuthenticationResult.Cancelled(CancellationReason.USER))
+        provisioner.configuration.value = BiometricConfiguration.Configured(true)
+        val interactor = interactor(provisioner = provisioner)
+        assertEquals(AuthenticationResult.Cancelled(CancellationReason.USER), interactor.setKeyInvalidationPolicy(false))
+        assertEquals(BiometricConfiguration.Configured(true), interactor.biometricConfiguration.first())
         provisioner.rotateResult = AuthenticationResult.Success(AuthenticationMethod.BIOMETRIC)
-        assertEquals(
-            AuthenticationResult.Success(AuthenticationMethod.BIOMETRIC),
-            interactor.setKeyInvalidationPolicy(enabled = false),
-        )
-        assertEquals(listOf(false), repository.invalidationPolicies)
+        assertEquals(AuthenticationResult.Success(AuthenticationMethod.BIOMETRIC), interactor.setKeyInvalidationPolicy(false))
+        assertEquals(BiometricConfiguration.Configured(false), interactor.biometricConfiguration.first())
     }
 
     private fun interactor(
         methods: MutableStateFlow<AuthenticationMethods> = MutableStateFlow(AuthenticationMethods()),
         provisioner: FakeProvisioner = FakeProvisioner(),
-        repository: FakeSecuritySettingsRepository = FakeSecuritySettingsRepository(),
         state: AuthenticationState = AuthenticationState.Authenticated(authenticatedAtMs = 1),
     ): SecurityAuthenticationSettingsInteractor {
         val authenticationState = MutableStateFlow(state)
         return SecurityAuthenticationSettingsInteractor(
-            authenticationMethodAvailability = object : AuthenticationMethodAvailability {
-                override val methods = methods
-            },
+            authenticationMethodAvailability = object : AuthenticationMethodAvailability { override val methods = methods },
             secureSessionAccessState = object : SecureSessionAccessState {
                 override val authenticationState = authenticationState
-                override fun isUnlocked() =
-                    authenticationState.value is AuthenticationState.Authenticated ||
-                        authenticationState.value is AuthenticationState.RecoveryMode
+                override fun isUnlocked() = authenticationState.value is AuthenticationState.Authenticated ||
+                    authenticationState.value is AuthenticationState.RecoveryMode
             },
             authenticationMethodProvisioner = provisioner,
-            securitySettingsRepository = repository,
+            configurationSource = object : BiometricConfigurationSource {
+                override val biometricConfiguration = provisioner.configuration
+            },
         )
     }
 
     private class FakeProvisioner(
-        var rotateResult: AuthenticationResult =
-            AuthenticationResult.Success(AuthenticationMethod.BIOMETRIC),
+        var rotateResult: AuthenticationResult = AuthenticationResult.Success(AuthenticationMethod.BIOMETRIC),
     ) : AuthenticationMethodProvisioner {
+        val configuration = MutableStateFlow<BiometricConfiguration>(BiometricConfiguration.NotConfigured)
+        val requestedPolicies = mutableListOf<Boolean>()
         var biometricChanges = 0
-
         override suspend fun authorizeAppPasswordManagement() = error("Not used")
         override suspend fun setAppPassword(password: CharArray) = error("Not used")
-        override suspend fun changeAppPassword(
-            currentPassword: CharArray,
-            newPassword: CharArray,
-        ) = error("Not used")
+        override suspend fun changeAppPassword(currentPassword: CharArray, newPassword: CharArray) = error("Not used")
         override suspend fun disableAppPassword() = error("Not used")
         override suspend fun disableBiometric(): AuthenticationResult {
-            biometricChanges += 1
+            biometricChanges++
+            if (rotateResult is AuthenticationResult.Success) configuration.value = BiometricConfiguration.NotConfigured
             return rotateResult
         }
         override suspend fun rotateBiometricPolicy(invalidateOnEnrollment: Boolean): AuthenticationResult {
-            biometricChanges += 1
+            biometricChanges++
+            requestedPolicies += invalidateOnEnrollment
+            if (rotateResult is AuthenticationResult.Success) {
+                configuration.value = BiometricConfiguration.Configured(invalidateOnEnrollment)
+            }
             return rotateResult
         }
         override suspend fun hasRecoveryCode() = true
         override suspend fun checkRecoveryCode(code: CharArray) = true
-    }
-
-    private class FakeSecuritySettingsRepository : SecuritySettingsRepository {
-        override val security = MutableStateFlow(SecuritySettings())
-        val invalidationPolicies = mutableListOf<Boolean>()
-
-        override suspend fun setInvalidateBiometricKeyOnChange(enabled: Boolean) {
-            invalidationPolicies += enabled
-        }
-
-        override suspend fun setSecureContentEnabled(enabled: Boolean) = Unit
-        override suspend fun setFlipToLockEnabled(enabled: Boolean) = Unit
-        override suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) = Unit
-        override suspend fun setLockOnBackground(enabled: Boolean) = Unit
-        override suspend fun setLockTimeout(timeoutMs: Long) = Unit
-        override suspend fun setReauthenticateSensitiveCopies(enabled: Boolean) = Unit
-        override suspend fun setClipboardClearEnabled(enabled: Boolean) = Unit
-        override suspend fun setClipboardClearDelaySeconds(delaySeconds: Int) = Unit
     }
 }

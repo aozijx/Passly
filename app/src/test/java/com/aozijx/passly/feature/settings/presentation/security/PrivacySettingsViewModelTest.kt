@@ -75,7 +75,6 @@ class PrivacySettingsViewModelTest {
         override suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) = Unit
         override suspend fun setLockOnBackground(enabled: Boolean) = Unit
         override suspend fun setLockTimeout(timeoutMs: Long) = Unit
-        override suspend fun setInvalidateBiometricKeyOnChange(enabled: Boolean) = Unit
         override suspend fun setReauthenticateSensitiveCopies(enabled: Boolean) = Unit
         override suspend fun setClipboardClearEnabled(enabled: Boolean) = Unit
         override suspend fun setClipboardClearDelaySeconds(delaySeconds: Int) = Unit

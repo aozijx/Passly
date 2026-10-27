@@ -3,10 +3,12 @@
 Passly 使用两个 Proto DataStore 保存用户偏好：
 
 - `app_preferences.proto` → `app_preferences.pb`：外观、界面、交互、自动填充、Vault 视图、消息和备份目录。
-- `security_preferences.proto` → `security_preferences.pb`：安全窗口、锁定、生物识别密钥策略和剪贴板保护。
+- `security_preferences.proto` → `security_preferences.pb`：安全窗口、锁定和剪贴板保护。
 
-现有 `bootstrap.proto` → `bootstrap.pb` 保持不变，只由 Vault 认证流程按需读取。它不是常驻设置流，不能与
-普通或安全偏好合并。
+`bootstrap.proto` → `bootstrap.pb` 保存认证材料及其绑定元数据，与偏好存储分离。
+生物识别策略只以已提交的 binding 为真相源；设置页通过 `BiometricConfigurationSource` 按需订阅
+`NotConfigured / Configured` 的非敏感投影，不接收 alias、Envelope、密钥或轮换 journal，不建立全局 eager 缓存。
+策略轮换不再向安全偏好二次写入，避免密钥已提交而页面仍显示旧偏好的跨存储不一致。
 
 ## 代码归属
 

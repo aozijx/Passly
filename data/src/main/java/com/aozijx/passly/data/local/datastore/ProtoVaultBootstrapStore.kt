@@ -13,9 +13,11 @@ import com.aozijx.passly.domain.access.model.BiometricBootstrapState
 import com.aozijx.passly.domain.access.model.BiometricRotationJournal
 import com.aozijx.passly.domain.access.model.BiometricRotationPhase
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
+import com.aozijx.passly.domain.access.port.BiometricConfigurationSource
 import com.google.protobuf.ByteString
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,10 +32,13 @@ private val Context.bootstrapDataStore: DataStore<BootstrapData> by dataStore(
 @Singleton
 internal class ProtoVaultBootstrapStore @Inject constructor(
     @param:ApplicationContext private val context: Context
-) : VaultBootstrapStore {
+) : VaultBootstrapStore, BiometricConfigurationSource {
 
     private val dataStore: DataStore<BootstrapData>
         get() = context.bootstrapDataStore
+
+    override val biometricConfiguration
+        get() = dataStore.data.map(::readBiometricConfiguration).distinctUntilChanged()
 
     override suspend fun save(envelope: KeyEnvelope) {
         dataStore.updateData { current ->

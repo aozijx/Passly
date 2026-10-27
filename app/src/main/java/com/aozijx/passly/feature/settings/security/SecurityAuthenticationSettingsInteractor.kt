@@ -7,18 +7,20 @@ import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
+import com.aozijx.passly.domain.access.port.BiometricConfigurationSource
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 
 class SecurityAuthenticationSettingsInteractor @Inject constructor(
     authenticationMethodAvailability: AuthenticationMethodAvailability,
     private val secureSessionAccessState: SecureSessionAccessState,
     private val authenticationMethodProvisioner: AuthenticationMethodProvisioner,
-    private val securitySettingsRepository: SecuritySettingsRepository,
+    private val configurationSource: BiometricConfigurationSource,
 ) {
+    val biometricConfiguration = configurationSource.biometricConfiguration
     val isBiometricEnabled: Flow<Boolean> = authenticationMethodAvailability.methods
         .map { AuthenticationMethod.BIOMETRIC in it }
         .distinctUntilChanged()
@@ -35,13 +37,14 @@ class SecurityAuthenticationSettingsInteractor @Inject constructor(
 
     suspend fun setBiometricEnabled(
         enabled: Boolean,
-        invalidateOnEnrollment: Boolean,
     ): AuthenticationResult {
         if (secureSessionAccessState.isRecoveryMode()) {
             return AuthenticationResult.Failure(AuthenticationFailure(AuthenticationFailureCode.SESSION_MODE_RESTRICTED))
         }
         return if (enabled) {
-            authenticationMethodProvisioner.rotateBiometricPolicy(invalidateOnEnrollment)
+            authenticationMethodProvisioner.rotateBiometricPolicy(
+                biometricConfiguration.first().invalidateOnEnrollmentForNextKey,
+            )
         } else {
             authenticationMethodProvisioner.disableBiometric()
         }
@@ -53,11 +56,6 @@ class SecurityAuthenticationSettingsInteractor @Inject constructor(
         if (secureSessionAccessState.isRecoveryMode()) {
             return AuthenticationResult.Failure(AuthenticationFailure(AuthenticationFailureCode.SESSION_MODE_RESTRICTED))
         }
-        val result = authenticationMethodProvisioner.rotateBiometricPolicy(enabled)
-        if (result !is AuthenticationResult.Success) {
-            return result
-        }
-        securitySettingsRepository.setInvalidateBiometricKeyOnChange(enabled)
-        return result
+        return authenticationMethodProvisioner.rotateBiometricPolicy(enabled)
     }
 }

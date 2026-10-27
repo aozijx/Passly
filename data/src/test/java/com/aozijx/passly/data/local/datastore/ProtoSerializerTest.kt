@@ -69,7 +69,6 @@ class ProtoSerializerTest {
         assertFalse(defaults.flipExitAndClearStack)
         assertFalse(defaults.lockOnBackground)
         assertEquals(60_000L, defaults.lockTimeoutMs)
-        assertTrue(defaults.invalidateBiometricKeyOnChange)
         assertTrue(defaults.reauthenticateSensitiveCopies)
         assertTrue(defaults.clipboardClearEnabled)
         assertEquals(30, defaults.clipboardClearDelaySeconds)

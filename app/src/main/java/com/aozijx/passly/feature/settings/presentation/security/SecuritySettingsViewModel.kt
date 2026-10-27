@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.BiometricConfiguration
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.presentation.shared.error.toUiErrorMessage
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
@@ -38,12 +39,13 @@ class SecuritySettingsViewModel @Inject constructor(
         settingsRepository.security,
         authenticationSettings.isBiometricEnabled,
         authenticationWork,
-    ) { security, isBiometricEnabled, work ->
+        authenticationSettings.biometricConfiguration,
+    ) { security, isBiometricEnabled, work, configuration ->
         SecuritySettingsUiState.Ready(
             lockTimeout = security.lockTimeout,
-            isInvalidateKeyOnBioChange = security.isInvalidateBiometricKeyOnChange,
+            isInvalidateKeyOnBioChange = configuration.invalidateOnEnrollmentForNextKey,
             isLockOnBackground = security.isLockOnBackground,
-            isBiometricEnabled = isBiometricEnabled,
+            isBiometricEnabled = isBiometricEnabled && configuration is BiometricConfiguration.Configured,
             isAuthenticationChangeInProgress = work == AuthenticationWork.Running,
         )
     }.stateIn(
@@ -80,11 +82,10 @@ class SecuritySettingsViewModel @Inject constructor(
     }
 
     private fun setBiometricEnabled(enabled: Boolean) {
-        val settings = uiState.value as? SecuritySettingsUiState.Ready ?: return
+        if (uiState.value !is SecuritySettingsUiState.Ready) return
         changeAuthentication {
             authenticationSettings.setBiometricEnabled(
                 enabled = enabled,
-                invalidateOnEnrollment = settings.isInvalidateKeyOnBioChange,
             )
         }
     }

@@ -5,6 +5,8 @@ import com.aozijx.passly.R
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.BiometricConfiguration
+import com.aozijx.passly.domain.access.port.BiometricConfigurationSource
 import java.io.IOException
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
@@ -116,6 +118,20 @@ class SecuritySettingsViewModelTest {
     }
 
     @Test
+    fun `committed configuration updates policy without another availability emission`() = runTest {
+        val fixture = Fixture { AuthenticationResult.Success(AuthenticationMethod.BIOMETRIC) }
+        val model = fixture.model()
+        backgroundScope.launch { model.uiState.collect {} }
+        runCurrent()
+        fixture.configuration.value = BiometricConfiguration.Configured(false)
+        runCurrent()
+        assertEquals(false, (model.uiState.value as SecuritySettingsUiState.Ready).isInvalidateKeyOnBioChange)
+        fixture.configuration.value = BiometricConfiguration.NotConfigured
+        runCurrent()
+        assertEquals(false, (model.uiState.value as SecuritySettingsUiState.Ready).isBiometricEnabled)
+    }
+
+    @Test
     fun `destroyed authentication change cannot emit late failure or run queued retry`() = runTest {
         val release = CompletableDeferred<Unit>()
         val fixture = Fixture {
@@ -142,6 +158,7 @@ class SecuritySettingsViewModelTest {
         val repository = Repository(save)
         val provisioner = Provisioner(operation)
         val methods = MutableStateFlow(AuthenticationMethods(setOf(AuthenticationMethod.BIOMETRIC)))
+        val configuration = MutableStateFlow<BiometricConfiguration>(BiometricConfiguration.Configured(true))
         private val session = object : SecureSessionAccessState {
             override val authenticationState = MutableStateFlow<AuthenticationState>(
                 AuthenticationState.Authenticated(authenticatedAtMs = 1),
@@ -151,7 +168,9 @@ class SecuritySettingsViewModelTest {
         fun model() = SecuritySettingsViewModel(
             SecurityAuthenticationSettingsInteractor(
                 object : AuthenticationMethodAvailability { override val methods = this@Fixture.methods },
-                session, provisioner, repository,
+                session, provisioner, object : BiometricConfigurationSource {
+                    override val biometricConfiguration = configuration
+                },
             ),
             repository,
         )
@@ -182,7 +201,6 @@ class SecuritySettingsViewModelTest {
         override suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) = Unit
         override suspend fun setLockOnBackground(enabled: Boolean) = save()
         override suspend fun setLockTimeout(timeoutMs: Long) = save()
-        override suspend fun setInvalidateBiometricKeyOnChange(enabled: Boolean) = save()
         override suspend fun setReauthenticateSensitiveCopies(enabled: Boolean) = Unit
         override suspend fun setClipboardClearEnabled(enabled: Boolean) = Unit
         override suspend fun setClipboardClearDelaySeconds(delaySeconds: Int) = Unit

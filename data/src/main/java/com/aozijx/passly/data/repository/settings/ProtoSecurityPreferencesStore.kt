@@ -30,8 +30,6 @@ internal class ProtoSecurityPreferencesStore @Inject constructor(
         update { flipExitAndClearStack = enabled }
     override suspend fun setLockOnBackground(enabled: Boolean) = update { lockOnBackground = enabled }
     override suspend fun setLockTimeout(timeoutMs: Long) = update { lockTimeoutMs = timeoutMs }
-    override suspend fun setInvalidateBiometricKeyOnChange(enabled: Boolean) =
-        update { invalidateBiometricKeyOnChange = enabled }
     override suspend fun setReauthenticateSensitiveCopies(enabled: Boolean) =
         update { reauthenticateSensitiveCopies = enabled }
     override suspend fun setClipboardClearEnabled(enabled: Boolean) =

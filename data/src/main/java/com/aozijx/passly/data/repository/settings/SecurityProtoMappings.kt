@@ -11,7 +11,6 @@ internal fun readSecurity(p: SecurityPreferences): SecuritySettings =
         isFlipExitAndClearStackEnabled = p.flipExitAndClearStack,
         isLockOnBackground = p.lockOnBackground,
         lockTimeout = p.lockTimeoutMs,
-        isInvalidateBiometricKeyOnChange = p.invalidateBiometricKeyOnChange,
         reauthenticateSensitiveCopies = p.reauthenticateSensitiveCopies,
         clipboardClearPolicy = ClipboardClearPolicy(
             enabled = p.clipboardClearEnabled,

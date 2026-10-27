@@ -13,7 +13,6 @@ interface SecuritySettingsRepository : SecuritySettingsSource {
     suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean)
     suspend fun setLockOnBackground(enabled: Boolean)
     suspend fun setLockTimeout(timeoutMs: Long)
-    suspend fun setInvalidateBiometricKeyOnChange(enabled: Boolean)
     suspend fun setReauthenticateSensitiveCopies(enabled: Boolean)
     suspend fun setClipboardClearEnabled(enabled: Boolean)
     suspend fun setClipboardClearDelaySeconds(delaySeconds: Int)
