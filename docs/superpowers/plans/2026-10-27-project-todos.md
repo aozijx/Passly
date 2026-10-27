@@ -25,6 +25,8 @@
 
 ## 批次
 
+实施顺序调整：先完成独立的 Topbar 清理，再集中处理历史的数据、隐私与布局问题；范围与验收项不变。
+
 ### 1. 生物识别策略与密钥生命周期
 
 - [x] 完成 `BiometricConfigurationSource` 与 Data 的 bootstrap 非敏感配置投影；删除 security preferences 重复字段和二次写入。
@@ -47,8 +49,10 @@
 
 ### 3. Topbar
 
-- [ ] 检查 `PasslyTopBar`、Vault/Detail/Settings 顶栏消费者，移除透明色与补偿背景，统一使用 M3 主题容器色。
-- [ ] 删除不再需要的函数、插值或桥接；验证主题、滚动与导航顶栏并提交。
+- [x] 检查 `PasslyTopBar`、Vault/Detail/Settings 顶栏消费者，移除透明色与补偿背景，统一使用 M3 主题容器色。
+- [x] 删除不再需要的函数、插值或桥接；验证主题、滚动与导航顶栏并提交。
+
+验证：`build-topbar-cleanup-final.log` 全部门禁通过；删除旧插值的两项测试后，App 862 项单测与 API 34 的 48 项仪器测试均零失败。旧函数引用已清零。
 
 ### 4. 应用内自动填充边界
 

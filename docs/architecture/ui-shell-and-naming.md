@@ -2,6 +2,12 @@
 
 状态：当前实现与约束。
 
+## 顶栏配色
+
+Vault、详情及公共导航顶栏共用 `passlyTopAppBarColors`，由 M3 组件绘制主题的 `surface` / `surfaceContainer`。
+滚动配色由传入的 `TopAppBarScrollBehavior` 驱动；没有滚动行为的导航顶栏保持普通容器色。
+不再提供透明顶栏配色，也不通过额外背景或手动颜色插值补偿透明容器。
+
 ## Compose 容器顺序
 
 推荐的根节点顺序如下：

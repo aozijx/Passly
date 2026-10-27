@@ -1,7 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.component.topbar
 
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
@@ -24,8 +23,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
 import com.aozijx.passly.feature.vault.presentation.list.VaultRouteRequest
 import com.aozijx.passly.feature.vault.presentation.list.ui.search.VaultSearchStateHolder
-import com.aozijx.passly.presentation.shared.components.topbar.passlyCompactTopAppBarColors
-import com.aozijx.passly.presentation.shared.components.topbar.topAppBarContainerColor
+import com.aozijx.passly.presentation.shared.components.topbar.passlyTopAppBarColors
 
 @Composable
 fun VaultTopBar(
@@ -38,11 +36,6 @@ fun VaultTopBar(
 ) {
     val density = LocalDensity.current
     val motionScheme = MaterialTheme.motionScheme
-    val topBarContainerColor = topAppBarContainerColor(
-        containerColor = MaterialTheme.colorScheme.surface,
-        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-        scrollProgress = scrollBehavior.state.overlappedFraction,
-    )
 
     LaunchedEffect(
         uiState.collapseOnScroll,
@@ -62,14 +55,13 @@ fun VaultTopBar(
         ),
     ) {
         TopAppBar(
-            modifier = Modifier.background(topBarContainerColor),
             scrollBehavior = if (uiState.collapseOnScroll && !searchStateHolder.uiState.isEditing) {
                 scrollBehavior
             } else {
                 null
             },
             windowInsets = WindowInsets.statusBars,
-            colors = passlyCompactTopAppBarColors(),
+            colors = passlyTopAppBarColors(),
             title = {
                 VaultSearchHeader(
                     uiState = uiState,
