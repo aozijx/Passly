@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 
@@ -53,6 +54,7 @@ data class EntryRevisionMetadata(
  */
 data class RedactedEntryRevision(
     val metadata: EntryRevisionMetadata,
+    val type: EntryType,
     val profile: EntryProfile,
     val secret: EntrySecret,
     val links: List<EntryLink> = emptyList(),
@@ -62,6 +64,9 @@ data class RedactedEntryRevision(
     val sensitiveFieldFingerprints: Map<SensitiveFieldKey, String> = emptyMap(),
 ) {
     init {
+        require(secret.credential.kind == type.credentialKind) {
+            "Revision credential kind must match its entry type"
+        }
         require(sensitiveFieldKeys.containsAll(sensitiveFieldFingerprints.keys)) {
             "Sensitive fingerprints must belong to present fields"
         }

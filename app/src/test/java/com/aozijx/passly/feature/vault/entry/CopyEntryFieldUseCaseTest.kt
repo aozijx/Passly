@@ -177,8 +177,8 @@ class CopyEntryFieldUseCaseTest {
     }
 
     private object UsernameReader : EntryFieldReader {
-        override fun getFieldValue(entry: Entry, key: FieldKey): String? =
-            entry.username.takeIf { key == FieldKey.USERNAME }
+        override fun getFieldValue(profile: EntryProfile, secret: EntrySecret, key: FieldKey): String? =
+            profile.username.takeIf { key == FieldKey.USERNAME }
     }
 
     private class RecordingSensitiveRepository(

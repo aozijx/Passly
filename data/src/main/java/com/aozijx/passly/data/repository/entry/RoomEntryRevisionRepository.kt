@@ -65,12 +65,14 @@ internal class RoomEntryRevisionRepository @Inject constructor(
         return databaseTransactions.read("entry_revision_load") {
             val revision = entryRevisionQueryDao().getById(entryId.value, revisionId.value)
                 ?: throw NotFound()
+            val entryType = entryQueryDao().getById(entryId.value)?.entryType ?: throw NotFound()
             val content = contentCodec.decrypt(revision.entryContentCipher, entryId.value)
             val sensitiveFingerprints = sensitiveCodec.decodeFingerprints(
                 revision.sensitiveFieldCipherSet,
             )
             RedactedEntryRevision(
                 metadata = revision.toRevisionMetadata(),
+                type = entryType,
                 profile = content.summary,
                 secret = content.secret,
                 links = content.links,

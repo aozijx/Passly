@@ -1,20 +1,13 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
+import com.aozijx.passly.feature.vault.presentation.detail.history.toRevisionSheetUiModel
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
-import com.aozijx.passly.domain.entry.model.history.RevisionFieldValue
 import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionComparisonPhase
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionListState
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionPage
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRestorePhase
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.mapping.entry.toUiModel
 import com.aozijx.passly.presentation.shared.components.AppPackagePickerItemUiModel
@@ -33,12 +26,6 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailNotesU
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailOtpUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailPresentationModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSectionUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionComparisonUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionDifferenceUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionItemUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionListUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionRestoreUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionSheetUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedEntryUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.ScopedSensitiveText
@@ -169,67 +156,8 @@ internal fun toDetailPresentationModel(
             faviconEditor = state.faviconEditor.toFaviconEditorUiModel(),
             savingTags = state.saveState == DetailSaveState.Saving(DetailEditCompletion.Tags),
             savingIcon = state.saveState == DetailSaveState.Saving(DetailEditCompletion.Icon),
-            revisionHistory = state.revisions.toUiModel(revisionReveals),
+            revisionHistory = state.revisions.toRevisionSheetUiModel(revisionReveals),
         ),
-    )
-}
-
-private fun DetailRevisionState.toUiModel(
-    reveals: Map<SensitiveFieldKey, SensitiveValue>,
-): DetailRevisionSheetUiModel = when (this) {
-    DetailRevisionState.Closed -> DetailRevisionSheetUiModel.Hidden
-    is DetailRevisionState.Open -> when (val currentPage = page) {
-        DetailRevisionPage.List -> DetailRevisionSheetUiModel.ListPage(
-            content = revisions.toUiModel(),
-        )
-        is DetailRevisionPage.Comparison -> DetailRevisionSheetUiModel.ComparisonPage(
-            revisionId = currentPage.revisionId,
-            content = currentPage.phase.toUiModel(reveals),
-        )
-    }
-}
-
-private fun DetailRevisionListState.toUiModel(): DetailRevisionListUiState = when (this) {
-    DetailRevisionListState.Loading -> DetailRevisionListUiState.Loading
-    is DetailRevisionListState.Failed -> DetailRevisionListUiState.Failed
-    is DetailRevisionListState.Ready -> DetailRevisionListUiState.Ready(
-        revisions = revisions.map {
-            DetailRevisionItemUiModel(
-                id = it.id.value,
-                version = it.version.value,
-                createdAtMs = it.createdAtMs,
-                change = it.change,
-            )
-        },
-    )
-}
-
-private fun DetailRevisionComparisonPhase.toUiModel(
-    reveals: Map<SensitiveFieldKey, SensitiveValue>,
-): DetailRevisionComparisonUiState = when (this) {
-    DetailRevisionComparisonPhase.Loading -> DetailRevisionComparisonUiState.Loading
-    is DetailRevisionComparisonPhase.Failed -> DetailRevisionComparisonUiState.Failed
-    is DetailRevisionComparisonPhase.Ready -> DetailRevisionComparisonUiState.Ready(
-        differences = differences
-            .filter { it.kind != RevisionDifferenceKind.UNCHANGED }
-            .map { difference ->
-                val sensitiveKey = (difference.field as? RevisionFieldId.Sensitive)?.key
-                DetailRevisionDifferenceUiModel(
-                    field = difference.field,
-                    kind = difference.kind,
-                    before = difference.before?.toDisplayText(),
-                    after = difference.after?.toDisplayText(),
-                    revealedValue = sensitiveKey?.let(reveals::get)?.asScopedSensitiveText(),
-                )
-            },
-        revealableKeys = differences.mapNotNullTo(linkedSetOf()) {
-            (it.field as? RevisionFieldId.Sensitive)?.key
-        },
-        restore = when (restore) {
-            DetailRevisionRestorePhase.Idle -> DetailRevisionRestoreUiState.Idle
-            DetailRevisionRestorePhase.Confirming -> DetailRevisionRestoreUiState.Confirming
-            DetailRevisionRestorePhase.Restoring -> DetailRevisionRestoreUiState.Restoring
-        },
     )
 }
 
@@ -304,20 +232,4 @@ private fun ActivityType.toUiModel(): DetailActivityTypeUiModel = when (this) {
 private fun DetailTagValidationError.toUiModel(): TagEditorValidationErrorUiModel = when (this) {
     DetailTagValidationError.TOO_MANY_TAGS -> TagEditorValidationErrorUiModel.TOO_MANY_TAGS
     DetailTagValidationError.TAG_TOO_LONG -> TagEditorValidationErrorUiModel.TAG_TOO_LONG
-}
-
-private fun RevisionFieldValue.toDisplayText(): String = when (this) {
-    is RevisionFieldValue.Text -> value
-    is RevisionFieldValue.TextSet -> values.joinToString()
-    is RevisionFieldValue.Flag -> value.toString()
-    is RevisionFieldValue.EpochMillis -> value.toString()
-    is RevisionFieldValue.Icon -> listOfNotNull(
-        value.name,
-        value.customReference,
-        value.color,
-    ).joinToString()
-    is RevisionFieldValue.Credential -> value.toString()
-    is RevisionFieldValue.CustomFields -> values.joinToString { "${it.name}: ${it.value}" }
-    is RevisionFieldValue.Links -> values.joinToString { it.relationType.name }
-    is RevisionFieldValue.AttachmentIds -> values.joinToString()
 }

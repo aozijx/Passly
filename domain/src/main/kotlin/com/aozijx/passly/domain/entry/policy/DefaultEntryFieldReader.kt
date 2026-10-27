@@ -1,6 +1,7 @@
 package com.aozijx.passly.domain.entry.policy
 
-import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
@@ -8,9 +9,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 
 /** Reads existing scalar values without authorization, decryption or presentation formatting. */
 class DefaultEntryFieldReader : EntryFieldReader {
-    override fun getFieldValue(entry: Entry, key: FieldKey): String? {
-        val profile = entry.profile
-        val secret = entry.secret
+    override fun getFieldValue(profile: EntryProfile, secret: EntrySecret, key: FieldKey): String? {
         val otp = secret.otp?.config
         return when (key) {
             FieldKey.TITLE -> profile.title

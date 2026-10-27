@@ -42,6 +42,8 @@
 
 ### 2. 版本历史、活动日志与历史界面
 
+已完成比较脱敏子批：按字段输出类型化差异，Wi-Fi 密码、安全答案及隐藏自定义字段仅标记变化；移除整对象字符串化。`build-revision-disclosure-final.log` 全部门禁通过，Domain 172、Data 70、App 862 项单测及 API 34 的 52 项仪器测试零失败。活动语义与 Sheet 布局仍待完成。
+
 - [ ] 追踪 `EntryRevisionWriter`、各 Command Executor、`EntryActivityWriter` 与活动记录仓库，区分内容快照和访问事件；复现重复或含糊记录。
 - [ ] 以真实内容修改/恢复为版本依据，完善不含值的活动语义及持久化，移除旧补丁或重复记录路径。
 - [ ] 检查 `RevisionHistorySheet`、`RevisionHistorySection`、`ActivityTimelineSection` 的状态、比较/恢复操作与滚动布局，修复全屏底部空白。

@@ -234,6 +234,7 @@ class EntryRevisionUseCasesTest {
     )
 
     private fun snapshot(keys: Set<SensitiveFieldKey>) = RedactedEntryRevision(
+        type = com.aozijx.passly.domain.entry.model.EntryType.LOGIN,
         metadata = EntryRevisionMetadata(
             id = EntryRevisionId("revision"),
             entryId = EntryId("entry"),

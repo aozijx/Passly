@@ -1,0 +1,33 @@
+<resources>
+    <string name="revision_label_email">邮箱</string>
+    <string name="revision_label_otp_secret">OTP 密钥</string>
+    <string name="revision_label_otp_digits">位数</string>
+    <string name="revision_label_otp_algorithm">散列算法</string>
+    <string name="revision_label_passkey_credential_id">凭据 ID</string>
+    <string name="revision_label_passkey_relying_party_id">依赖方 ID</string>
+    <string name="revision_label_passkey_user_handle">用户句柄</string>
+    <string name="revision_label_ssh_public_key">SSH 公钥</string>
+    <string name="revision_label_payment_platform">支付平台</string>
+    <string name="revision_label_security_question">安全问题</string>
+    <string name="revision_label_security_answer">安全回答</string>
+    <string name="revision_label_wifi_security">安全类型</string>
+    <string name="revision_change_added">已添加</string>
+    <string name="revision_change_removed">已移除</string>
+    <string name="revision_change_changed">已修改</string>
+    <string name="revision_change_unchanged">未修改</string>
+    <string name="revision_protected_value_hidden">此字段的值不在差异中展示</string>
+    <string name="revision_custom_field_label">自定义：%1$s</string>
+    <string name="revision_value_absent">未设置</string>
+    <string name="revision_value_yes">是</string>
+    <string name="revision_value_no">否</string>
+    <string name="revision_icon_custom">自定义图标</string>
+    <string name="revision_icon_default">默认图标</string>
+    <string name="revision_before_value">之前：%1$s</string>
+    <string name="revision_after_value">现在：%1$s</string>
+    <plurals name="revision_link_count">
+        <item quantity="other">%1$d 个关联条目</item>
+    </plurals>
+    <plurals name="revision_attachment_count">
+        <item quantity="other">%1$d 个附件</item>
+    </plurals>
+</resources>

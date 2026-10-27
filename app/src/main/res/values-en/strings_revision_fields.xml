@@ -1,0 +1,35 @@
+<resources>
+    <string name="revision_label_email">Email</string>
+    <string name="revision_label_otp_secret">OTP secret</string>
+    <string name="revision_label_otp_digits">Digits</string>
+    <string name="revision_label_otp_algorithm">Hash algorithm</string>
+    <string name="revision_label_passkey_credential_id">Credential ID</string>
+    <string name="revision_label_passkey_relying_party_id">Relying party ID</string>
+    <string name="revision_label_passkey_user_handle">User handle</string>
+    <string name="revision_label_ssh_public_key">SSH public key</string>
+    <string name="revision_label_payment_platform">Payment platform</string>
+    <string name="revision_label_security_question">Security question</string>
+    <string name="revision_label_security_answer">Security answer</string>
+    <string name="revision_label_wifi_security">Security type</string>
+    <string name="revision_change_added">Added</string>
+    <string name="revision_change_removed">Removed</string>
+    <string name="revision_change_changed">Changed</string>
+    <string name="revision_change_unchanged">Unchanged</string>
+    <string name="revision_protected_value_hidden">Values are hidden in comparisons</string>
+    <string name="revision_custom_field_label">Custom: %1$s</string>
+    <string name="revision_value_absent">Not set</string>
+    <string name="revision_value_yes">Yes</string>
+    <string name="revision_value_no">No</string>
+    <string name="revision_icon_custom">Custom icon</string>
+    <string name="revision_icon_default">Default icon</string>
+    <string name="revision_before_value">Before: %1$s</string>
+    <string name="revision_after_value">Now: %1$s</string>
+    <plurals name="revision_link_count">
+        <item quantity="one">%1$d linked entry</item>
+        <item quantity="other">%1$d linked entries</item>
+    </plurals>
+    <plurals name="revision_attachment_count">
+        <item quantity="one">%1$d attachment</item>
+        <item quantity="other">%1$d attachments</item>
+    </plurals>
+</resources>

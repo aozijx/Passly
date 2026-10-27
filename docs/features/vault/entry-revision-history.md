@@ -1,6 +1,6 @@
 # 条目修订历史
 
-状态：当前实现（代码核对：2026-10-18）。
+状态：当前实现。
 
 详情页的修订历史与访问活动是两个独立功能。修订历史保存可比较、可恢复的条目版本；列表、比较和恢复留在
 同一个 `RevisionHistorySheet`，不新增导航目的地。
@@ -22,6 +22,13 @@ Closed 和 Open。Open 固定绑定一个 Entry ID，并分别持有列表与当
 
 普通比较读取 redacted revision。高敏字段默认只显示字段名，逐项取得授权后才由 revision reveal 用例读取。
 揭示值只存在于不可保存的内存 store；关闭 sheet、切换 revision/entry、锁定或失去完整会话时立即清空。
+
+比较携带实际 EntryType，按 Domain 字段定义和同一个 `EntryFieldReader` 读取逻辑字段，不把整份 credential 或
+自定义字段对象转成调试文本。Wi-Fi 密码、安全回答以及任一侧为隐藏类型的自定义字段，只输出变更类型，
+不向普通差异模型传递值；高敏行继续使用不透明指纹判断变化，并沿用原授权揭示入口。
+公开字段按名称展示之前/现在，自定义字段按位置和名称区分；布尔、日期、附件与关联条目数量在界面按当前语言格式化，
+不展示内部文件路径或对象字符串。UI 映射与差异行渲染分别位于 `DetailRevisionUiMapper` 和 `RevisionDifferenceRow`，
+共享字段名称使用穷尽资源映射。
 
 Revision snapshot 是不可变历史事实。恢复不是把旧 row 原地设为当前，而是在 Data 层单事务中：校验 Entry 和
 revision、消费精确 permit、物化快照、写入新的当前版本并记录活动。UI 只有收到事务成功才显示完成。

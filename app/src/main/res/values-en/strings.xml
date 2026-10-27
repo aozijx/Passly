@@ -213,7 +213,6 @@
     <string name="revision_restore_message">The current content will be saved as a new version before restoring the selected version.</string>
     <string name="revision_restore_action">Restore version</string>
     <string name="revision_load_failed">This version could not be loaded. Go back and try again.</string>
-    <string name="revision_sensitive_masked">Sensitive content hidden</string>
     <string name="revision_reveal_action">Verify and view</string>
     <string name="revision_field_title">Title</string>
     <string name="revision_field_notes">Notes</string>
@@ -225,7 +224,6 @@
     <string name="revision_field_icon">Icon</string>
     <string name="revision_field_favorite">Favorite status</string>
     <string name="revision_field_expiration">Expiration</string>
-    <string name="revision_field_credential">Credential content</string>
     <string name="revision_field_custom_fields">Custom fields</string>
     <string name="bank_card_bank_details">Bank details</string>
     <string name="card_issuing_bank">Issuing bank</string>

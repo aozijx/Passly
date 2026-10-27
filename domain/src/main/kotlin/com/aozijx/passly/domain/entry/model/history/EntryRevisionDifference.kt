@@ -1,8 +1,7 @@
 package com.aozijx.passly.domain.entry.model.history
 
 import com.aozijx.passly.domain.entry.model.EntryIcon
-import com.aozijx.passly.domain.entry.model.credential.CustomField
-import com.aozijx.passly.domain.entry.model.credential.EntryCredential
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 
@@ -16,9 +15,11 @@ sealed interface RevisionFieldId {
     data object Favorite : RevisionFieldId
     data object Tags : RevisionFieldId
     data object ExpiresAt : RevisionFieldId
-    data object Credential : RevisionFieldId
+    data class CredentialField(val key: FieldKey) : RevisionFieldId
+    data class ProtectedField(val key: FieldKey) : RevisionFieldId
     data object Notes : RevisionFieldId
-    data object CustomFields : RevisionFieldId
+    data class CustomField(val position: Int, val name: String) : RevisionFieldId
+    data class ProtectedCustomField(val position: Int, val name: String) : RevisionFieldId
     data object Links : RevisionFieldId
     data object Attachments : RevisionFieldId
     data class Sensitive(val key: SensitiveFieldKey) : RevisionFieldId
@@ -30,8 +31,6 @@ sealed interface RevisionFieldValue {
     data class Flag(val value: Boolean) : RevisionFieldValue
     data class EpochMillis(val value: Long) : RevisionFieldValue
     data class Icon(val value: EntryIcon) : RevisionFieldValue
-    data class Credential(val value: EntryCredential) : RevisionFieldValue
-    data class CustomFields(val values: List<CustomField>) : RevisionFieldValue
     data class Links(val values: List<EntryLink>) : RevisionFieldValue
     data class AttachmentIds(val values: Set<String>) : RevisionFieldValue
 }
@@ -45,7 +44,9 @@ data class EntryRevisionDifference(
     val after: RevisionFieldValue?,
 ) {
     init {
-        if (field is RevisionFieldId.Sensitive) {
+        if (field is RevisionFieldId.Sensitive || field is RevisionFieldId.ProtectedField ||
+            field is RevisionFieldId.ProtectedCustomField
+        ) {
             require(before == null && after == null) {
                 "Sensitive revision differences cannot contain values"
             }

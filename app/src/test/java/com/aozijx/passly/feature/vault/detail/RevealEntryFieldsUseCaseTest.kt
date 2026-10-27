@@ -136,7 +136,7 @@ class RevealEntryFieldsUseCaseTest {
     ) : EntryFieldReader {
         val keys = mutableListOf<FieldKey>()
 
-        override fun getFieldValue(entry: Entry, key: FieldKey): String {
+        override fun getFieldValue(profile: EntryProfile, secret: EntrySecret, key: FieldKey): String {
             keys += key
             return value
         }

@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.vault.presentation.detail.ui.model
 
 import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
+import com.aozijx.passly.domain.entry.model.history.RevisionFieldValue
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.presentation.shared.components.AppPackagePickerItemUiModel
@@ -62,8 +63,8 @@ data class DetailRevisionItemUiModel(
 data class DetailRevisionDifferenceUiModel(
     val field: RevisionFieldId,
     val kind: RevisionDifferenceKind,
-    val before: String?,
-    val after: String?,
+    val before: RevisionFieldValue?,
+    val after: RevisionFieldValue?,
     val revealedValue: ScopedSensitiveText? = null,
 )
 

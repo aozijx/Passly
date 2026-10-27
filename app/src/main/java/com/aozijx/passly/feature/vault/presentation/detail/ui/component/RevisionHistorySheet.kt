@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
+import com.aozijx.passly.feature.vault.presentation.detail.ui.component.revision.RevisionDifferenceRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,10 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionComparisonUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionDifferenceUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionListUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionRestoreUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionSheetUiModel
@@ -184,77 +183,6 @@ private fun RevisionComparison(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun RevisionDifferenceRow(
-    difference: DetailRevisionDifferenceUiModel,
-    onAction: (DetailUiAction) -> Unit,
-) {
-    val sensitive = difference.field as? RevisionFieldId.Sensitive
-    ListItem(
-        supportingContent = {
-            if (sensitive == null) {
-                Text("${difference.before.orEmpty()} → ${difference.after.orEmpty()}")
-            } else {
-                val revealed = difference.revealedValue?.useChars(::String)
-                Text(revealed ?: stringResource(R.string.revision_sensitive_masked))
-            }
-        },
-        trailingContent = sensitive?.let { field ->
-            @Composable {
-                TextButton(onClick = { onAction(DetailUiAction.RevealRevisionField(field.key)) }) {
-                    Text(stringResource(R.string.revision_reveal_action))
-                }
-            }
-        },
-        leadingContent = null,
-        overlineContent = null,
-        colors = ListItemDefaults.colors(),
-        elevation = ListItemDefaults.elevation(),
-    ) { Text(fieldLabel(difference.field)) }
-}
-
-@Composable
-private fun fieldLabel(field: RevisionFieldId): String = when (field) {
-    RevisionFieldId.Title -> stringResource(R.string.revision_field_title)
-    RevisionFieldId.Username -> stringResource(R.string.vault_detail_username)
-    RevisionFieldId.PrimaryUrl -> stringResource(R.string.revision_field_primary_url)
-    RevisionFieldId.Domains -> stringResource(R.string.revision_field_domains)
-    RevisionFieldId.ApplicationIds -> stringResource(R.string.revision_field_applications)
-    RevisionFieldId.Icon -> stringResource(R.string.revision_field_icon)
-    RevisionFieldId.Favorite -> stringResource(R.string.revision_field_favorite)
-    RevisionFieldId.Tags -> stringResource(R.string.vault_detail_tags_title)
-    RevisionFieldId.ExpiresAt -> stringResource(R.string.revision_field_expiration)
-    RevisionFieldId.Credential -> stringResource(R.string.revision_field_credential)
-    RevisionFieldId.Notes -> stringResource(R.string.revision_field_notes)
-    RevisionFieldId.CustomFields -> stringResource(R.string.revision_field_custom_fields)
-    RevisionFieldId.Attachments -> stringResource(R.string.revision_field_attachments)
-    RevisionFieldId.Links -> stringResource(R.string.revision_field_links)
-    is RevisionFieldId.Sensitive -> when (field.key) {
-        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.PASSWORD ->
-            stringResource(R.string.password_label)
-        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.CARD_NUMBER ->
-            stringResource(R.string.card_number)
-        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.CARD_CVV ->
-            stringResource(R.string.card_cvv)
-        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.CARD_PAYMENT_PIN ->
-            stringResource(R.string.payment_pin)
-        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.IDENTITY_NUMBER ->
-            stringResource(R.string.id_number)
-        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.SEED_PHRASE ->
-            stringResource(R.string.seed_phrase)
-        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.RECOVERY_CODES ->
-            stringResource(R.string.recovery_code_label)
-        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.SSH_PRIVATE_KEY ->
-            stringResource(R.string.ssh_private_key)
-        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.SSH_PASSPHRASE ->
-            stringResource(R.string.passphrase)
-        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE ->
-            stringResource(R.string.passkey_data)
-        com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey.OTP_SECRET ->
-            stringResource(R.string.vault_detail_totp_label)
     }
 }
 
