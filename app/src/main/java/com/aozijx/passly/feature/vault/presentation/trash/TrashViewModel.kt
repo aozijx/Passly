@@ -91,8 +91,8 @@ internal class TrashViewModel @Inject constructor(
         operation: suspend () -> TrashCommandResult,
     ) {
         if (_uiState.value.isBusy) return
+        mutate(TrashMutation.EntryActionStarted(entryId))
         viewModelScope.launch {
-            mutate(TrashMutation.EntryActionStarted(entryId))
             try {
                 applyResult(operation(), "回收站操作失败")
             } finally {
@@ -104,8 +104,8 @@ internal class TrashViewModel @Inject constructor(
     private fun emptyTrash() {
         val entries = (_uiState.value.content as? TrashContentState.Loaded)?.entries.orEmpty()
         if (_uiState.value.isBusy || entries.isEmpty()) return
+        mutate(TrashMutation.EmptyStarted)
         viewModelScope.launch {
-            mutate(TrashMutation.EmptyStarted)
             try {
                 applyResult(trashCommand.empty(), "无法清空回收站")
             } finally {

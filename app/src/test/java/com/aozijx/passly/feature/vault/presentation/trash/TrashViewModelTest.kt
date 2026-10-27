@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.trash
 
 import com.aozijx.passly.core.error.result.AppResult
+import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
@@ -42,6 +43,90 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class TrashViewModelTest {
     @get:Rule val main = MainDispatcherRule(StandardTestDispatcher())
+
+    @Test
+    fun `restore reserves busy state before dispatch and blocks competing commands`() = runTest {
+        val release = CompletableDeferred<Unit>()
+        val commands = RecordingCommands { release.await() }
+        val authorization = RecordingAuthorization { true }
+        val model = model(flowOf(listOf(entry)), commands, authorization)
+        runCurrent()
+        model.onAction(TrashUiAction.Restore(entry.id.value, entry.identity.version.value))
+        assertEquals(TrashOperationState.Entry(entry.id.value), model.uiState.value.operation)
+        model.onAction(TrashUiAction.Restore(entry.id.value, entry.identity.version.value))
+        model.onAction(TrashUiAction.DeletePermanently(entry.id.value, entry.identity.version.value))
+        model.onAction(TrashUiAction.Empty)
+        runCurrent()
+        assertEquals(1, commands.restores)
+        assertEquals(0, authorization.calls)
+        assertEquals(0, commands.deletes)
+        assertEquals(0, commands.empties)
+        release.complete(Unit)
+        runCurrent()
+        assertEquals(TrashOperationState.Idle, model.uiState.value.operation)
+        clear(model)
+    }
+
+    @Test
+    fun `permanent delete reserves busy state before dispatch and authorizes once`() = runTest {
+        val release = CompletableDeferred<Unit>()
+        val commands = RecordingCommands { release.await() }
+        val authorization = RecordingAuthorization { true }
+        val model = model(flowOf(listOf(entry)), commands, authorization)
+        runCurrent()
+        model.onAction(TrashUiAction.DeletePermanently(entry.id.value, entry.identity.version.value))
+        assertTrue(model.uiState.value.isBusy)
+        model.onAction(TrashUiAction.DeletePermanently(entry.id.value, entry.identity.version.value))
+        model.onAction(TrashUiAction.Empty)
+        runCurrent()
+        assertEquals(1, authorization.calls)
+        assertEquals(1, commands.deletes)
+        assertEquals(0, commands.empties)
+        release.complete(Unit)
+        runCurrent()
+        assertEquals(TrashOperationState.Idle, model.uiState.value.operation)
+        clear(model)
+    }
+
+    @Test
+    fun `empty reserves authorization slot and cancelled authorization allows a later retry`() = runTest {
+        val release = CompletableDeferred<Unit>()
+        var allowed = false
+        val commands = RecordingCommands { }
+        val authorization = RecordingAuthorization { release.await(); allowed }
+        val model = model(flowOf(listOf(entry)), commands, authorization)
+        runCurrent()
+        model.onAction(TrashUiAction.Empty)
+        assertEquals(TrashOperationState.Emptying, model.uiState.value.operation)
+        model.onAction(TrashUiAction.Empty)
+        model.onAction(TrashUiAction.Restore(entry.id.value, entry.identity.version.value))
+        runCurrent()
+        assertEquals(1, authorization.calls)
+        assertEquals(0, commands.restores)
+        release.complete(Unit)
+        runCurrent()
+        assertEquals(TrashOperationState.Idle, model.uiState.value.operation)
+        assertEquals(0, commands.empties)
+        allowed = true
+        model.onAction(TrashUiAction.Empty)
+        runCurrent()
+        assertEquals(2, authorization.calls)
+        assertEquals(1, commands.empties)
+        clear(model)
+    }
+
+    @Test
+    fun `clearing view model cancels a queued write before repository access`() = runTest {
+        val commands = RecordingCommands { }
+        val model = model(flowOf(listOf(entry)), commands)
+        runCurrent()
+        model.onAction(TrashUiAction.Restore(entry.id.value, entry.identity.version.value))
+        clear(model)
+        model.onAction(TrashUiAction.Restore(entry.id.value, entry.identity.version.value))
+        runCurrent()
+        assertEquals(0, commands.restores)
+        assertEquals(TrashUiState(), model.uiState.value)
+    }
 
     @Test
     fun `retry restarts failed subscription once and keeps repository updates live`() = runTest {
@@ -93,7 +178,7 @@ class TrashViewModelTest {
             emit(withContext(NonCancellable) { release.await() })
         })
         runCurrent()
-        model.javaClass.getDeclaredMethod("onCleared").apply { isAccessible = true }.invoke(model)
+        clear(model)
         release.complete(listOf(entry))
         model.onAction(TrashUiAction.RetryLoad)
         runCurrent()
@@ -101,7 +186,15 @@ class TrashViewModelTest {
         assertEquals(TrashUiState(), model.uiState.value)
     }
 
-    private fun model(rows: Flow<List<EntryListItem>>): TrashViewModel {
+    private fun clear(model: TrashViewModel) {
+        ViewModelStore().apply { put("trash", model); clear() }
+    }
+
+    private fun model(
+        rows: Flow<List<EntryListItem>>,
+        commands: EntryCommandRepository = UnusedCommands,
+        authorization: AuthorizationGate = RecordingAuthorization { false },
+    ): TrashViewModel {
         val queries = object : EntryListQueryRepository {
             override val deletedEntries = rows
             override val availableCategories = flowOf(emptyList<String>())
@@ -110,11 +203,32 @@ class TrashViewModelTest {
             override val authenticationState = MutableStateFlow<AuthenticationState>(AuthenticationState.Authenticated(1L))
             override fun isUnlocked() = true
         }
-        val authorization = object : AuthorizationGate {
-            override suspend fun <T> authorize(scope: AuthorizationScope, input: AuthInput,
-                block: suspend (AuthorizationPermit) -> T): AuthorizationResult<T> = AuthorizationResult.Cancelled
+        return TrashViewModel(queries, TrashCommandUseCase(commands, access, authorization))
+    }
+
+    private class RecordingAuthorization(private val allowed: suspend () -> Boolean) : AuthorizationGate {
+        var calls = 0
+        override suspend fun <T> authorize(scope: AuthorizationScope, input: AuthInput,
+            block: suspend (AuthorizationPermit) -> T): AuthorizationResult<T> {
+            calls++
+            return if (allowed()) AuthorizationResult.Allowed(block(object : AuthorizationPermit {}))
+            else AuthorizationResult.Cancelled
         }
-        return TrashViewModel(queries, TrashCommandUseCase(UnusedCommands, access, authorization))
+    }
+
+    private class RecordingCommands(private val wait: suspend () -> Unit) : EntryCommandRepository by UnusedCommands {
+        var restores = 0
+        var deletes = 0
+        var empties = 0
+        override suspend fun restoreEntry(id: EntryId, expectedVersion: EntryVersion): AppResult<Unit> {
+            restores++; wait(); return AppResult.Success(Unit)
+        }
+        override suspend fun deletePermanently(id: EntryId, expectedVersion: EntryVersion): AppResult<Unit> {
+            deletes++; wait(); return AppResult.Success(Unit)
+        }
+        override suspend fun emptyTrash(): AppResult<Int> {
+            empties++; wait(); return AppResult.Success(1)
+        }
     }
 
     private val entry = EntryListItem(
