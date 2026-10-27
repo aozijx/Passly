@@ -75,6 +75,11 @@ Vault ViewModel 或可保存状态。
 
 ## 滑动默认值
 
+列表错误事件持有 `UiErrorMessage` 资源键；移动到回收站失败不直接展示内部错误码，会话受限提示也由界面按当前语言解析。
+无生产者的 `ShowToast` 事件已移除。列表与详情的复制标签共用 [`CopyFieldLabels.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/common/CopyFieldLabels.kt)，
+只映射字段标识到文案资源，不读取或传递凭据值；未列字段保留通用“内容”标签。详情 OTP 复制使用独立 `OtpCopied`，
+不再通过可空字段键区分。Toast 在消费时使用当前 `LocalResources` 解析标签和错误文案。
+
 Proto 当前默认关闭滑动操作；启用后左滑复制密码、右滑删除，不再提供“详情”动作。显示和执行都必须读取
 `InteractionSettings`，不能在 UI 重新定义另一套默认。
 

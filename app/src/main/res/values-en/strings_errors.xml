@@ -16,4 +16,8 @@
     <string name="database_reset_error_failed">Unable to clear Passly data</string>
     <string name="settings_interaction_save_failed">Unable to save interaction settings</string>
     <string name="database_session_retry_failed">Unable to reopen the database</string>
+    <string name="vault_error_delete_access">This session cannot delete entries</string>
+    <string name="vault_error_copy_access">This session cannot copy sensitive fields</string>
+    <string name="vault_error_copy_otp_access">This session cannot copy verification codes</string>
+    <string name="vault_error_trash_failed">Unable to move the entry to trash</string>
 </resources>

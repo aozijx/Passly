@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -21,7 +22,7 @@ import com.aozijx.passly.feature.scanner.presentation.ScannerImport
 import com.aozijx.passly.feature.scanner.presentation.ScannerImportHandlingResult
 import com.aozijx.passly.feature.scanner.presentation.ScannerPurpose
 import com.aozijx.passly.feature.scanner.presentation.ScannerRoute
-import com.aozijx.passly.feature.vault.presentation.list.action.CopyFieldLabelProvider
+import com.aozijx.passly.feature.vault.presentation.common.copyLabelRes
 import com.aozijx.passly.feature.vault.presentation.list.action.VaultCopyRequest
 import com.aozijx.passly.feature.vault.presentation.list.action.handleSwipeAction
 import com.aozijx.passly.feature.vault.presentation.list.action.resolveCopyRequest
@@ -44,6 +45,7 @@ internal fun VaultRoute(
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     var overlay by rememberSaveable { mutableStateOf(VaultOverlay.None) }
@@ -115,13 +117,12 @@ internal fun VaultRoute(
     )
     val totpLabel = stringResource(R.string.vault_detail_totp_label)
     val fieldCopiedFormat = stringResource(R.string.field_copy_success_message)
-    LaunchedEffect(vaultViewModel, context, totpLabel, fieldCopiedFormat) {
+    LaunchedEffect(vaultViewModel, context, resources, totpLabel, fieldCopiedFormat) {
         vaultViewModel.effects.collect { effect ->
             val message = when (effect) {
-                is VaultEffect.ShowError -> effect.message
-                is VaultEffect.ShowToast -> effect.message
+                is VaultEffect.ShowError -> resources.getString(effect.message.resourceId)
                 is VaultEffect.FieldCopied -> fieldCopiedFormat.format(
-                    CopyFieldLabelProvider.getCopyLabel(effect.fieldKey),
+                    resources.getString(effect.fieldKey.copyLabelRes()),
                 )
 
                 VaultEffect.OtpCopied -> fieldCopiedFormat.format(totpLabel)

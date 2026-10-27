@@ -458,7 +458,7 @@ class DetailViewModel @Inject internal constructor(
             ) return@launch
             if (!workSession.isCurrent(token)) return@launch
             clearRevealedFields()
-            _effects.send(DetailEffect.ContentCopied(null))
+            _effects.send(DetailEffect.OtpCopied)
         }
     }
 

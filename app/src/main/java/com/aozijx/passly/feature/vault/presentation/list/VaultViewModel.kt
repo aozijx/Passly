@@ -1,6 +1,10 @@
 package com.aozijx.passly.feature.vault.presentation.list
 
 import androidx.lifecycle.ViewModel
+import androidx.annotation.StringRes
+import com.aozijx.passly.R
+import com.aozijx.passly.presentation.shared.error.UiErrorMessage
+import com.aozijx.passly.presentation.shared.error.toUiErrorMessage
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -60,7 +64,7 @@ class VaultViewModel @Inject internal constructor(
     private val _uiState = MutableStateFlow(VaultUiState())
     val uiState: StateFlow<VaultUiState> = _uiState.asStateFlow()
 
-    private fun emitError(message: String) {
+    private fun emitError(message: UiErrorMessage) {
         _effects.trySend(VaultEffect.ShowError(message))
     }
 
@@ -147,12 +151,12 @@ class VaultViewModel @Inject internal constructor(
     }
 
     private fun quickDelete(entryId: String) {
-        if (!ensureFullSecureSessionAccess("当前会话不能删除条目")) return
+        if (!ensureFullSecureSessionAccess(R.string.vault_error_delete_access)) return
         moveToTrash(EntryId(entryId))
     }
 
     private fun confirmDelete() {
-        if (!ensureFullSecureSessionAccess("当前会话不能删除条目")) return
+        if (!ensureFullSecureSessionAccess(R.string.vault_error_delete_access)) return
         val item = uiState.value.pendingDelete ?: return
         moveToTrash(item.id)
     }
@@ -162,7 +166,7 @@ class VaultViewModel @Inject internal constructor(
         entryType: EntryType,
         fieldKey: FieldKey,
     ) {
-        if (!ensureFullSecureSessionAccess("当前会话不能复制敏感字段")) return
+        if (!ensureFullSecureSessionAccess(R.string.vault_error_copy_access)) return
         viewModelScope.launch {
             when (copyEntryField(EntryId(entryId), entryType, fieldKey)) {
                 CopyEntryFieldResult.Copied -> _effects.send(VaultEffect.FieldCopied(fieldKey))
@@ -174,7 +178,7 @@ class VaultViewModel @Inject internal constructor(
     }
 
     private fun copyOtp(entryId: String) {
-        if (!ensureFullSecureSessionAccess("当前会话不能复制动态验证码")) return
+        if (!ensureFullSecureSessionAccess(R.string.vault_error_copy_otp_access)) return
         viewModelScope.launch {
             when (
                 copyOtpCode(EntryId(entryId)) {
@@ -200,7 +204,7 @@ class VaultViewModel @Inject internal constructor(
                     }
 
                     MoveEntryToTrashResult.NotAuthorized -> Unit
-                    is MoveEntryToTrashResult.Failed -> emitError(result.error.code)
+                    is MoveEntryToTrashResult.Failed -> emitError(result.error.toUiErrorMessage(R.string.vault_error_trash_failed))
                 }
             } finally {
                 deletingEntryIds.remove(entryId)
@@ -229,9 +233,9 @@ class VaultViewModel @Inject internal constructor(
         }
     }
 
-    private fun ensureFullSecureSessionAccess(message: String): Boolean {
+    private fun ensureFullSecureSessionAccess(@StringRes messageRes: Int): Boolean {
         if (accessPolicy.hasFullAccess()) return true
-        emitError(message)
+        emitError(UiErrorMessage(messageRes))
         mutate(VaultMutation.DialogsCleared)
         return false
     }

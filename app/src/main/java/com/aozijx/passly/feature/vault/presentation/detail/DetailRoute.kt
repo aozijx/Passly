@@ -6,13 +6,14 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.Lifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.presentation.list.action.CopyFieldLabelProvider
+import com.aozijx.passly.feature.vault.presentation.common.copyLabelRes
 import com.aozijx.passly.presentation.shared.media.ImageType
 import com.aozijx.passly.presentation.shared.media.rememberImagePicker
 import com.aozijx.passly.feature.vault.presentation.detail.ui.DetailScreen
@@ -27,6 +28,7 @@ fun DetailRoute(
 ) {
     val viewModel = hiltViewModel<DetailViewModel>()
     val context = LocalContext.current
+    val resources = LocalResources.current
     val presentationState by viewModel.presentation.collectAsStateWithLifecycle()
     val qrState by viewModel.qrState.collectAsStateWithLifecycle()
     val copiedMessageFormat = stringResource(R.string.field_copy_success_message)
@@ -38,20 +40,13 @@ fun DetailRoute(
     LaunchedEffect(entryId, viewModel) {
         viewModel.load(entryId, launchMode)
     }
-    LaunchedEffect(viewModel, context, copiedMessageFormat, otpLabel) {
+    LaunchedEffect(viewModel, context, resources, copiedMessageFormat, otpLabel) {
         viewModel.effects.collectLatest { effect ->
-            when (effect) {
-                is DetailEffect.ContentCopied -> {
-                    val label = effect.fieldKey
-                        ?.let(CopyFieldLabelProvider::getCopyLabel)
-                        ?: otpLabel
-                    Toast.makeText(
-                        context,
-                        copiedMessageFormat.format(label),
-                        Toast.LENGTH_SHORT,
-                    ).show()
-                }
+            val label = when (effect) {
+                is DetailEffect.ContentCopied -> resources.getString(effect.fieldKey.copyLabelRes())
+                DetailEffect.OtpCopied -> otpLabel
             }
+            Toast.makeText(context, copiedMessageFormat.format(label), Toast.LENGTH_SHORT).show()
         }
     }
     DisposableEffect(viewModel, entryId) {
