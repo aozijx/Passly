@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.settings.presentation.main.general
 
 import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.model.TopicMessageSettings
+import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.feature.settings.presentation.ui.general.NotificationSettingsUiModel
 import com.aozijx.passly.feature.settings.presentation.ui.general.NotificationTopicUiModel
 
@@ -41,8 +42,9 @@ internal sealed interface NotificationSettingsAction {
     data class SetSystemNotificationsEnabled(val enabled: Boolean) :
         NotificationSettingsAction
 
-    data object RuntimePermissionGranted : NotificationSettingsAction
-    data object RuntimePermissionDenied : NotificationSettingsAction
+    data class RuntimePermissionGranted(val request: NotificationPermissionRequest) : NotificationSettingsAction
+    data class RuntimePermissionDenied(val request: NotificationPermissionRequest) : NotificationSettingsAction
+    data object CancelRuntimePermissionRequest : NotificationSettingsAction
     data object RefreshSystemNotificationState : NotificationSettingsAction
     data object OpenSystemNotificationSettings : NotificationSettingsAction
     data class SetOptionalMessagesEnabled(val enabled: Boolean) : NotificationSettingsAction
@@ -50,9 +52,12 @@ internal sealed interface NotificationSettingsAction {
         NotificationSettingsAction
 }
 
-/** 通知设置页的一次性导航副作用（MVI）。 */
+class NotificationPermissionRequest internal constructor()
+
+/** 通知设置页的一次性导航与反馈。 */
 sealed interface NotificationSettingsEffect {
-    data object RequestRuntimeNotificationPermission : NotificationSettingsEffect
+    data class SaveFailed(val message: UiErrorMessage) : NotificationSettingsEffect
+    data class RequestRuntimeNotificationPermission(val request: NotificationPermissionRequest) : NotificationSettingsEffect
     data object OpenSystemNotificationSettings : NotificationSettingsEffect
     data object ShowPermissionDenied : NotificationSettingsEffect
 }

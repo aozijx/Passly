@@ -25,4 +25,5 @@
     <string name="settings_appearance_save_failed">无法保存外观设置</string>
     <string name="settings_privacy_save_failed">无法保存隐私设置</string>
     <string name="settings_autofill_save_failed">无法保存自动填充设置</string>
+    <string name="settings_notifications_save_failed">无法保存通知设置</string>
 </resources>

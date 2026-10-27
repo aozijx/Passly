@@ -2,6 +2,8 @@ package com.aozijx.passly.feature.settings.presentation.main.general
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.R
+import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.app.message.contract.SystemNotificationState
 import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
 import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
@@ -21,6 +23,11 @@ class NotificationSettingsViewModel @Inject constructor(
     private val settingsRepository: MessageSettingsRepository,
     private val systemNotificationStateProvider: SystemNotificationStateProvider
 ) : ViewModel() {
+    private sealed interface PermissionRequestState {
+        data object Idle : PermissionRequestState
+        data class Pending(val request: NotificationPermissionRequest, val enableWhenGranted: Boolean) : PermissionRequestState
+    }
+    private var permissionRequestState: PermissionRequestState = PermissionRequestState.Idle
     private val systemNotificationState = MutableStateFlow(systemNotificationStateProvider.current())
 
     private val _effects = Channel<NotificationSettingsEffect>(Channel.BUFFERED)
@@ -46,14 +53,28 @@ class NotificationSettingsViewModel @Inject constructor(
         when (action) {
             is NotificationSettingsAction.SetSystemNotificationsEnabled -> {
                 if (action.enabled) requestSystemNotificationsEnabled()
-                else persistSystemNotificationsEnabled(false)
+                else {
+                    val pending = permissionRequestState
+                    if (pending is PermissionRequestState.Pending) {
+                        permissionRequestState = pending.copy(enableWhenGranted = false)
+                    }
+                    persistSystemNotificationsEnabled(false)
+                }
             }
 
-            NotificationSettingsAction.RuntimePermissionGranted ->
-                completeRuntimePermissionRequest()
+            is NotificationSettingsAction.RuntimePermissionGranted ->
+                completeRuntimePermissionRequest(action.request)
 
-            NotificationSettingsAction.RuntimePermissionDenied ->
-                emitEffect(NotificationSettingsEffect.ShowPermissionDenied)
+            is NotificationSettingsAction.RuntimePermissionDenied -> {
+                val pending = permissionRequestState as? PermissionRequestState.Pending ?: return
+                if (pending.request !== action.request) return
+                permissionRequestState = PermissionRequestState.Idle
+                readSystemNotificationState()
+                if (pending.enableWhenGranted) emitEffect(NotificationSettingsEffect.ShowPermissionDenied)
+            }
+
+            NotificationSettingsAction.CancelRuntimePermissionRequest ->
+                permissionRequestState = PermissionRequestState.Idle
 
             NotificationSettingsAction.RefreshSystemNotificationState ->
                 readSystemNotificationState()
@@ -61,35 +82,62 @@ class NotificationSettingsViewModel @Inject constructor(
             NotificationSettingsAction.OpenSystemNotificationSettings ->
                 emitEffect(NotificationSettingsEffect.OpenSystemNotificationSettings)
 
-            is NotificationSettingsAction.SetOptionalMessagesEnabled -> viewModelScope.launch {
+            is NotificationSettingsAction.SetOptionalMessagesEnabled -> saveSetting {
                 settingsRepository.setOptionalMessagesEnabled(action.enabled)
             }
 
-            is NotificationSettingsAction.SetTopicEnabled -> viewModelScope.launch {
+            is NotificationSettingsAction.SetTopicEnabled -> saveSetting {
                 settingsRepository.setTopicEnabled(action.topic, action.enabled)
             }
         }
     }
 
     private fun requestSystemNotificationsEnabled() {
+        val pending = permissionRequestState
+        if (pending is PermissionRequestState.Pending) {
+            permissionRequestState = pending.copy(enableWhenGranted = true)
+            return
+        }
         val system = readSystemNotificationState()
         when {
-            !system.runtimePermissionGranted ->
-                emitEffect(NotificationSettingsEffect.RequestRuntimeNotificationPermission)
+            !system.runtimePermissionGranted -> {
+                val request = NotificationPermissionRequest()
+                permissionRequestState = PermissionRequestState.Pending(request, enableWhenGranted = true)
+                emitEffect(NotificationSettingsEffect.RequestRuntimeNotificationPermission(request))
+            }
 
             system.isPlatformAvailable -> persistSystemNotificationsEnabled(true)
             else -> reportPlatformUnavailable()
         }
     }
 
-    private fun completeRuntimePermissionRequest() {
+    internal fun canLaunchRuntimePermissionRequest(request: NotificationPermissionRequest): Boolean {
+        val pending = permissionRequestState
+        return pending is PermissionRequestState.Pending && pending.request === request && pending.enableWhenGranted
+    }
+
+    private fun completeRuntimePermissionRequest(request: NotificationPermissionRequest) {
+        val pending = permissionRequestState as? PermissionRequestState.Pending ?: return
+        if (pending.request !== request) return
+        permissionRequestState = PermissionRequestState.Idle
         val system = readSystemNotificationState()
+        if (!pending.enableWhenGranted) return
         if (system.isPlatformAvailable) persistSystemNotificationsEnabled(true)
         else reportPlatformUnavailable()
     }
 
-    private fun persistSystemNotificationsEnabled(enabled: Boolean) = viewModelScope.launch {
+    private fun persistSystemNotificationsEnabled(enabled: Boolean) = saveSetting {
         settingsRepository.setSystemNotificationsEnabled(enabled)
+    }
+
+    private fun saveSetting(write: suspend () -> Unit) {
+        viewModelScope.launch {
+            writePreferenceWithFeedback(
+                failureRes = R.string.settings_notifications_save_failed,
+                onFailure = { emitEffect(NotificationSettingsEffect.SaveFailed(it)) },
+                write = write,
+            )
+        }
     }
 
     private fun reportPlatformUnavailable() {

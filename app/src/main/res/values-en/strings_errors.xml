@@ -25,4 +25,5 @@
     <string name="settings_appearance_save_failed">Unable to save appearance settings</string>
     <string name="settings_privacy_save_failed">Unable to save privacy settings</string>
     <string name="settings_autofill_save_failed">Unable to save autofill settings</string>
+    <string name="settings_notifications_save_failed">Unable to save notification settings</string>
 </resources>
