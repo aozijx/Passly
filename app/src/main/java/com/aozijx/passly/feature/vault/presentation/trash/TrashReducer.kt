@@ -1,17 +1,18 @@
 package com.aozijx.passly.feature.vault.presentation.trash
 
+import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 
 internal sealed interface TrashMutation {
     data object LoadStarted : TrashMutation
     data class Loaded(val entries: List<EntryListItem>) : TrashMutation
-    data class LoadFailed(val message: String) : TrashMutation
+    data class LoadFailed(val message: UiErrorMessage) : TrashMutation
     data object ErrorCleared : TrashMutation
     data class EntryActionStarted(val entryId: String) : TrashMutation
     data object EntryActionFinished : TrashMutation
     data object EmptyStarted : TrashMutation
     data object EmptyFinished : TrashMutation
-    data class ActionFailed(val message: String) : TrashMutation
+    data class ActionFailed(val message: UiErrorMessage) : TrashMutation
 }
 
 internal object TrashReducer {

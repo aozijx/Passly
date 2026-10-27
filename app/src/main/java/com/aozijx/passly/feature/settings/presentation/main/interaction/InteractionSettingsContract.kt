@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.settings.presentation.main.interaction
 
+import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 
 sealed interface InteractionSettingsUiState {
@@ -22,5 +23,5 @@ sealed interface InteractionSettingsAction {
 
 sealed interface InteractionSettingsEffect {
     data object Saved : InteractionSettingsEffect
-    data class SaveFailed(val message: String) : InteractionSettingsEffect
+    data class SaveFailed(val message: UiErrorMessage) : InteractionSettingsEffect
 }

@@ -1,10 +1,11 @@
 package com.aozijx.passly.feature.database.presentation.reset
 
+import com.aozijx.passly.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.feature.database.reset.DatabaseResetResult
 import com.aozijx.passly.feature.database.reset.ResetDatabaseUseCase
-import com.aozijx.passly.presentation.shared.error.toUiMessage
+import com.aozijx.passly.presentation.shared.error.toUiErrorMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,7 +42,7 @@ class DatabaseResetViewModel @Inject constructor(
                 is DatabaseResetResult.Failed -> mutate(
                     DatabaseResetMutation.ResetFailed(
                         DatabaseResetFailure.Unexpected(
-                            result.error.toUiMessage("清空 Passly 数据失败"),
+                            result.error.toUiErrorMessage(R.string.database_reset_error_failed),
                         ),
                     ),
                 )

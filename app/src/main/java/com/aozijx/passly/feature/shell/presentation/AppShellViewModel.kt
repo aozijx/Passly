@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.shell.presentation
 
+import com.aozijx.passly.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.access.model.LockReason
@@ -13,7 +14,7 @@ import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
-import com.aozijx.passly.presentation.shared.error.toUiMessage
+import com.aozijx.passly.presentation.shared.error.toUiErrorMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -102,7 +103,7 @@ class AppShellViewModel @Inject constructor(
                 is DatabaseSessionRetryResult.Failed -> {
                     emitEffect(
                         AppShellEffect.ShowError(
-                            "数据库错误: ${result.cause.toUiMessage("数据库重试失败")}",
+                            result.cause.toUiErrorMessage(R.string.database_session_retry_failed),
                         ),
                     )
                 }

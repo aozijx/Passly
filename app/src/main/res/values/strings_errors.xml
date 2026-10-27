@@ -1,0 +1,19 @@
+<resources>
+    <string name="ui_error_generic">操作失败，请稍后重试</string>
+    <string name="ui_error_database_locked">数据库已锁定，请先解锁</string>
+    <string name="ui_error_database_init_failed">数据库初始化失败</string>
+    <string name="ui_error_backup_failed">备份操作失败</string>
+    <string name="ui_error_network">网络异常，请检查网络连接</string>
+    <string name="ui_error_file_io">文件操作失败</string>
+    <string name="ui_error_crypto">加解密操作失败</string>
+    <string name="ui_error_crypto_corrupted">加密数据损坏</string>
+    <string name="ui_error_validation">输入数据无效</string>
+    <string name="ui_error_not_found">未找到请求的资源</string>
+    <string name="trash_error_load">无法读取回收站</string>
+    <string name="trash_error_command">回收站操作失败</string>
+    <string name="trash_error_empty">无法清空回收站</string>
+    <string name="trash_error_session_restricted">当前会话不能操作回收站</string>
+    <string name="database_reset_error_failed">清空 Passly 数据失败</string>
+    <string name="settings_interaction_save_failed">保存失败</string>
+    <string name="database_session_retry_failed">数据库重试失败</string>
+</resources>

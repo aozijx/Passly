@@ -122,5 +122,5 @@ private fun DatabaseResetFailure.message(): String = when (this) {
         stringResource(R.string.database_reset_error_session_restricted)
     DatabaseResetFailure.AuthorizationDenied ->
         stringResource(R.string.database_reset_error_authorization_denied)
-    is DatabaseResetFailure.Unexpected -> message
+    is DatabaseResetFailure.Unexpected -> stringResource(message.resourceId)
 }

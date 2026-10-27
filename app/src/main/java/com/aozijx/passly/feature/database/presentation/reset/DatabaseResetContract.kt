@@ -1,5 +1,7 @@
 package com.aozijx.passly.feature.database.presentation.reset
 
+import com.aozijx.passly.presentation.shared.error.UiErrorMessage
+
 data class DatabaseResetUiState(
     val phase: DatabaseResetPhase = DatabaseResetPhase.Idle,
 )
@@ -14,7 +16,7 @@ sealed interface DatabaseResetPhase {
 sealed interface DatabaseResetFailure {
     data object SessionRestricted : DatabaseResetFailure
     data object AuthorizationDenied : DatabaseResetFailure
-    data class Unexpected(val message: String) : DatabaseResetFailure
+    data class Unexpected(val message: UiErrorMessage) : DatabaseResetFailure
 }
 
 sealed interface DatabaseResetUiAction {

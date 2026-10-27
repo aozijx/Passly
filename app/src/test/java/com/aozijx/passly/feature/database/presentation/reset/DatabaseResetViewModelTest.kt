@@ -1,6 +1,9 @@
 package com.aozijx.passly.feature.database.presentation.reset
 
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.error.model.Unexpected
+import com.aozijx.passly.R
+import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.feature.database.reset.DatabaseResetGateway
 import com.aozijx.passly.feature.database.reset.ResetDatabaseUseCase
 import com.aozijx.passly.domain.access.model.AuthInput
@@ -23,6 +26,18 @@ import org.junit.Test
 class DatabaseResetViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun failedResetKeepsAResourceKeyRatherThanResolvedCopy() = runTest {
+        val gateway = object : DatabaseResetGateway {
+            override suspend fun reset(): AppResult<Unit> = AppResult.Failure(Unexpected())
+        }
+        val model = viewModel(null, gateway)
+        model.onAction(DatabaseResetUiAction.Reset)
+        val phase = model.uiState.first { it.phase is DatabaseResetPhase.Failed }.phase as DatabaseResetPhase.Failed
+        val failure = phase.reason as DatabaseResetFailure.Unexpected
+        assertEquals(UiErrorMessage(R.string.database_reset_error_failed), failure.message)
+    }
 
     @Test
     fun cancelledAuthorizationDoesNotResetOrLeaveBusyState() = runTest {

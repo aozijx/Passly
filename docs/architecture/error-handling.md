@@ -19,6 +19,14 @@ flowchart TD
 
 ## 禁止反向依赖
 
+Feature 自有的行内错误与全局 Notice 分开处理：`presentation/shared/error/UiErrorMessage.kt` 的
+`toUiErrorMessage` 只将稳定错误码映射为 `UiErrorMessage` 资源键，未知错误使用调用方的资源键回退。
+数据库重置的失败说明、回收站错误状态、交互设置保存失败效果和应用壳层重试失败效果只保存资源键，
+不携带已解析文案、Throwable 或原始异常文本。
+Compose 内容用 `stringResource`，Toast 在消费时用当前 `LocalResources` 解析资源；中英文文案在
+`values/strings_errors.xml` 与 `values-en/strings_errors.xml`，语言切换不需重建 ViewModel 的错误状态。
+取消异常必须继续传播，不能变成失败提示。此映射不记录日志、不发布 Notice，也不改变 Core 的错误码合同。
+
 ```
 core/error -X-> observability
 core/error -X-> Logger

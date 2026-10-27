@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,14 +33,15 @@ internal fun InteractionRoute(
     val viewModel: InteractionSettingsViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val resources = LocalResources.current
     val savedMessage = stringResource(R.string.settings_saved)
     var activeDialog by rememberSaveable { mutableStateOf<SwipeActionDialog?>(null) }
 
-    LaunchedEffect(viewModel, context, savedMessage) {
+    LaunchedEffect(viewModel, context, resources, savedMessage) {
         viewModel.effects.collect { effect ->
             val message = when (effect) {
                 InteractionSettingsEffect.Saved -> savedMessage
-                is InteractionSettingsEffect.SaveFailed -> effect.message
+                is InteractionSettingsEffect.SaveFailed -> resources.getString(effect.message.resourceId)
             }
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }

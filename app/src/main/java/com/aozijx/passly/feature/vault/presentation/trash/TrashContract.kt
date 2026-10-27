@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.trash
 
+import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.presentation.mapping.entry.toUiModel
 import com.aozijx.passly.feature.vault.presentation.trash.ui.TrashEntryUiModel
@@ -16,14 +17,14 @@ data class TrashUiState(
 sealed interface TrashContentState {
     data object Loading : TrashContentState
     data class Loaded(val entries: List<EntryListItem>) : TrashContentState
-    data class Failed(val message: String) : TrashContentState
+    data class Failed(val message: UiErrorMessage) : TrashContentState
 }
 
 sealed interface TrashOperationState {
     data object Idle : TrashOperationState
     data class Entry(val entryId: String) : TrashOperationState
     data object Emptying : TrashOperationState
-    data class Failed(val message: String) : TrashOperationState
+    data class Failed(val message: UiErrorMessage) : TrashOperationState
 }
 
 internal fun TrashContentState.toUiModels(): List<TrashEntryUiModel> =

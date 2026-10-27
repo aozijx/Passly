@@ -1,8 +1,11 @@
 package com.aozijx.passly.feature.vault.presentation.trash
 
+import androidx.annotation.StringRes
+import com.aozijx.passly.R
+import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.presentation.shared.error.toUiMessage
+import com.aozijx.passly.presentation.shared.error.toUiErrorMessage
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryVersion
@@ -51,7 +54,7 @@ internal class TrashViewModel @Inject constructor(
             entryListQueryRepository.deletedEntries
                 .catch {
                     currentCoroutineContext().ensureActive()
-                    if (isCurrentObservation(ticket)) mutate(TrashMutation.LoadFailed(it.toUiMessage("无法读取回收站")))
+                    if (isCurrentObservation(ticket)) mutate(TrashMutation.LoadFailed(it.toUiErrorMessage(R.string.trash_error_load)))
                 }
                 .collect {
                     currentCoroutineContext().ensureActive()
@@ -94,7 +97,7 @@ internal class TrashViewModel @Inject constructor(
         mutate(TrashMutation.EntryActionStarted(entryId))
         viewModelScope.launch {
             try {
-                applyResult(operation(), "回收站操作失败")
+                applyResult(operation(), R.string.trash_error_command)
             } finally {
                 mutate(TrashMutation.EntryActionFinished)
             }
@@ -107,23 +110,23 @@ internal class TrashViewModel @Inject constructor(
         mutate(TrashMutation.EmptyStarted)
         viewModelScope.launch {
             try {
-                applyResult(trashCommand.empty(), "无法清空回收站")
+                applyResult(trashCommand.empty(), R.string.trash_error_empty)
             } finally {
                 mutate(TrashMutation.EmptyFinished)
             }
         }
     }
 
-    private fun applyResult(result: TrashCommandResult, fallback: String) {
+    private fun applyResult(result: TrashCommandResult, @StringRes fallback: Int) {
         when (result) {
             TrashCommandResult.Completed,
             TrashCommandResult.NotAuthorized -> Unit
 
             is TrashCommandResult.Failed -> {
                 val message = if (result.error is SessionModeRestricted) {
-                    "当前会话不能操作回收站"
+                    UiErrorMessage(R.string.trash_error_session_restricted)
                 } else {
-                    result.error.toUiMessage(fallback)
+                    result.error.toUiErrorMessage(fallback)
                 }
                 mutate(TrashMutation.ActionFailed(message))
             }

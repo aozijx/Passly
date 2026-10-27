@@ -1,12 +1,14 @@
 package com.aozijx.passly.feature.settings.presentation.main.interaction
 
+import com.aozijx.passly.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.presentation.shared.error.toUiMessage
+import com.aozijx.passly.presentation.shared.error.toUiErrorMessage
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -56,13 +58,16 @@ class InteractionSettingsViewModel @Inject constructor(
 
     private fun saveSwipeAction(save: suspend () -> Unit) {
         viewModelScope.launch {
-            runCatching { save() }
-                .onSuccess { _effects.trySend(InteractionSettingsEffect.Saved) }
-                .onFailure { error ->
-                    _effects.trySend(
-                        InteractionSettingsEffect.SaveFailed(error.toUiMessage("保存失败")),
-                    )
-                }
+            try {
+                save()
+                _effects.trySend(InteractionSettingsEffect.Saved)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                _effects.trySend(
+                    InteractionSettingsEffect.SaveFailed(error.toUiErrorMessage(R.string.settings_interaction_save_failed)),
+                )
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.app.message.model.NoticeCode
@@ -22,15 +23,16 @@ internal fun AppShell(
     onCloseApp: () -> Unit,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val view = LocalView.current
     val noticePublisher = LocalAppNoticePublisher.current
 
-    LaunchedEffect(effects, context) {
+    LaunchedEffect(effects, context, resources) {
         effects.collect { effect ->
             when (effect) {
                 is AppShellEffect.ShowError -> Toast.makeText(
                     context,
-                    effect.error,
+                    resources.getString(effect.error.resourceId),
                     Toast.LENGTH_LONG,
                 ).show()
             }
