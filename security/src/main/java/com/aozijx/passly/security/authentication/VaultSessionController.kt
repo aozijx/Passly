@@ -24,6 +24,7 @@ import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioning
 import com.aozijx.passly.security.lock.LockStateManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -288,19 +289,25 @@ class VaultSessionController @Inject internal constructor(
 
     /** Closes a session whose recovery code could not be durably consumed. */
     private suspend fun sealStagedRecoverySession() {
+        var cleanupCancellation: CancellationException? = null
         securityEvents.traceLock(
             SessionLockRequest(LockReason.RECOVERY_EXIT, LockTrigger.RECOVERY_EXIT),
             timeoutMs = 5_000,
         ) {
-            try {
-                sessionManager.seal()
-            } catch (failure: Throwable) {
-                recordFailure(failure, Reasons.SessionSealFailed)
+            withContext(NonCancellable) {
+                try {
+                    sessionManager.seal()
+                } catch (cancelled: CancellationException) {
+                    cleanupCancellation = cancelled
+                } catch (failure: Throwable) {
+                    recordFailure(failure, Reasons.SessionSealFailed)
+                }
+                dekManager.lock()
+                lockStateManager.mark(SecureSessionState.SEALED)
+                transition(AuthenticationState.Locked)
             }
+            cleanupCancellation?.let { throw it }
         }
-        dekManager.lock()
-        lockStateManager.mark(SecureSessionState.SEALED)
-        transition(AuthenticationState.Locked)
     }
 
     // ============================== 锁定 ==============================
@@ -321,6 +328,7 @@ class VaultSessionController @Inject internal constructor(
     ) {
         mutex.withLock {
             if (!shouldApplyLock(_state.value, request.reason)) return@withLock
+            var cleanupCancellation: CancellationException? = null
             withContext(NonCancellable) {
                 authorizationPermitRevoker.revokeAll()
                 sensitiveDataKeyManager.clear()
@@ -334,41 +342,52 @@ class VaultSessionController @Inject internal constructor(
                     // SEALED 状态仍需确保残留 DEK 被擦除。例如数据库打开失败时，
                     // 当前锁状态尚未解锁，但认证执行器可能已暂存 DEK。
                     if (targetLevel == SecureSessionState.SEALED) {
-                        runCatching { sessionManager.seal() }
-                        dekManager.lock()
-                        transition(AuthenticationState.Locked)
-                    }
-                    return@withContext
-                }
-                transition(AuthenticationState.Locking(request.reason))
-                idleJob?.cancel()
-                idleJob = null
-
-                when (targetLevel) {
-                    SecureSessionState.SOFT_LOCKED -> {
-                        try {
-                            sessionManager.softLock()
-                        } catch (failure: Throwable) {
-                            recordFailure(failure, Reasons.SessionSoftLockFailed)
-                        }
-                        lockStateManager.mark(SecureSessionState.SOFT_LOCKED)
-                    }
-
-                    SecureSessionState.SEALED -> {
                         try {
                             sessionManager.seal()
+                        } catch (cancelled: CancellationException) {
+                            cleanupCancellation = cancelled
                         } catch (failure: Throwable) {
                             recordFailure(failure, Reasons.SessionSealFailed)
                         }
                         dekManager.lock()
-                        lockStateManager.mark(SecureSessionState.SEALED)
+                        transition(AuthenticationState.Locked)
+                    }
+                } else {
+                    transition(AuthenticationState.Locking(request.reason))
+                    idleJob?.cancel()
+                    idleJob = null
+
+                    when (targetLevel) {
+                        SecureSessionState.SOFT_LOCKED -> {
+                            try {
+                                sessionManager.softLock()
+                            } catch (cancelled: CancellationException) {
+                                cleanupCancellation = cancelled
+                            } catch (failure: Throwable) {
+                                recordFailure(failure, Reasons.SessionSoftLockFailed)
+                            }
+                            lockStateManager.mark(SecureSessionState.SOFT_LOCKED)
+                        }
+
+                        SecureSessionState.SEALED -> {
+                            try {
+                                sessionManager.seal()
+                            } catch (cancelled: CancellationException) {
+                                cleanupCancellation = cancelled
+                            } catch (failure: Throwable) {
+                                recordFailure(failure, Reasons.SessionSealFailed)
+                            }
+                            dekManager.lock()
+                            lockStateManager.mark(SecureSessionState.SEALED)
+                        }
+
+                        SecureSessionState.UNLOCKED -> { /* 锁定不可能目标是 UNLOCKED */
+                        }
                     }
 
-                    SecureSessionState.UNLOCKED -> { /* 锁定不可能目标是 UNLOCKED */
-                    }
+                    transition(AuthenticationState.Locked)
                 }
-
-                transition(AuthenticationState.Locked)
+                cleanupCancellation?.let { throw it }
             }
             currentCoroutineContext().ensureActive()
         }

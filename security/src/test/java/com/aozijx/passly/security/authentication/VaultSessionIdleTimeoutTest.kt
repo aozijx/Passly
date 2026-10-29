@@ -32,6 +32,7 @@ import com.aozijx.passly.security.dek.FieldKeyManager
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioning
 import com.aozijx.passly.security.lock.LockStateManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
@@ -101,6 +102,95 @@ class VaultSessionIdleTimeoutTest {
 
             assertTrue(dekManager.state is DekState.Locked)
             assertEquals(SecureSessionState.SEALED, lockState.state)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(1, logger.infoEvents.count { it == Events.Security.LockCancelled })
+            assertEquals(0, logger.errorEvents.count { it == Events.Security.LockFailed })
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun `seal cancellation completes lock cleanup then propagates cancellation`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val cancelled = CancellationException("database seal cancelled")
+            val logger = RecordingLogger()
+            val bootstrap = EmptyVaultBootstrapStore()
+            val dekManager = DekManager(bootstrap, FieldKeyManager(), logger)
+            dekManager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { 7 })
+            val databaseSession = YieldingDatabaseSession(sealFailure = cancelled)
+            val lockState = LockStateManager().apply { mark(SecureSessionState.UNLOCKED) }
+            val controller = VaultSessionController(
+                dekManager = dekManager,
+                sensitiveDataKeyManager = SensitiveDataKeyManager(
+                    bootstrap,
+                    dekManager,
+                    CoroutineScope(dispatcher),
+                ),
+                authorizationPermitRevoker = { },
+                sessionManager = databaseSession,
+                vaultBootstrapStore = bootstrap,
+                lockStateManager = lockState,
+                securityEvents = SecuritySessionEventLogger(logger),
+                idleTimeoutSettings = object : IdleTimeoutSettings {
+                    override val isLockOnBackground = MutableStateFlow(false)
+                    override val lockTimeout = MutableStateFlow(1_000L)
+                },
+                autofillInboxKeyProvisioning = AutofillInboxKeyProvisioning { },
+            )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val thrown = try {
+                controller.lock(SessionLockRequest(LockReason.APP_EXIT, LockTrigger.APP_EXIT))
+                null
+            } catch (failure: CancellationException) {
+                failure
+            }
+
+            assertTrue(thrown is CancellationException)
+            assertEquals(cancelled.message, thrown?.message)
+            assertEquals(1, databaseSession.sealCount)
+            assertTrue(dekManager.state is DekState.Locked)
+            assertEquals(SecureSessionState.SEALED, lockState.state)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(1, logger.infoEvents.count { it == Events.Security.LockCancelled })
+            assertEquals(0, logger.errorEvents.count { it == Events.Security.LockFailed })
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun `soft lock cancellation completes state transition then propagates cancellation`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val cancelled = CancellationException("database soft lock cancelled")
+            val logger = RecordingLogger()
+            val databaseSession = YieldingDatabaseSession(softLockFailure = cancelled)
+            val controller = createController(
+                dispatcher = dispatcher,
+                databaseSession = databaseSession,
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(false),
+                logger = logger,
+            )
+            runCurrent()
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val thrown = try {
+                controller.lock(SessionLockRequest(LockReason.USER, LockTrigger.USER_ACTION))
+                null
+            } catch (failure: CancellationException) {
+                failure
+            }
+
+            assertTrue(thrown is CancellationException)
+            assertEquals(cancelled.message, thrown?.message)
+            assertTrue(databaseSession.softLockCompleted)
+            assertEquals(SecureSessionState.SOFT_LOCKED, databaseSession.lockState)
             assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
             assertEquals(1, logger.infoEvents.count { it == Events.Security.LockCancelled })
             assertEquals(0, logger.errorEvents.count { it == Events.Security.LockFailed })
@@ -307,6 +397,8 @@ class VaultSessionIdleTimeoutTest {
 
     private class YieldingDatabaseSession(
         private val pauseSeal: Boolean = false,
+        private val sealFailure: Throwable? = null,
+        private val softLockFailure: Throwable? = null,
     ) : DatabaseSessionLifecycle {
         override var lockState: SecureSessionState = SecureSessionState.UNLOCKED
         var softLockCompleted = false
@@ -320,6 +412,7 @@ class VaultSessionIdleTimeoutTest {
             lockState = SecureSessionState.SOFT_LOCKED
             yield()
             softLockCompleted = true
+            softLockFailure?.let { throw it }
         }
 
         override suspend fun seal() {
@@ -327,6 +420,7 @@ class VaultSessionIdleTimeoutTest {
             if (pauseSeal) allowSealToFinish.await()
             sealCount += 1
             lockState = SecureSessionState.SEALED
+            sealFailure?.let { throw it }
         }
     }
 

@@ -130,6 +130,8 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - HOTP 提交后复核发现 `RoomOtpConfigRepository` 和消费事务通过 `readAll()` 解密同一条目的全部敏感字段；用损坏 PASSWORD 行证明该无关数据会使 HOTP 失败。改为只读 OTP bundle 与 `OTP_SECRET`，回归先红后绿；API 36 Data 仪器测试 33 项、Data/App 单测、`verifyArchitecture`、Data lint 与 `git diff --check` 通过。
 - API 36 AVD 复验再次发现 `AutofillLaunchTargetFactoryTest` 仍引用已在 `7877c569` 删除的 Legacy Save Activity/PendingIntent 工厂，导致 App 仪器测试编译失败。删除过期的 Legacy Save 启动断言，保留仍存在的 legacy fill、Credential Manager 与无障碍显式 Activity 验证；新保存路径由 `LegacySaveFlowTest` 覆盖。
 - 复验：`Pixel_8_Pro` API 36 AVD 的 Data 仪器测试 33 项、App 仪器测试 56 项全部通过。测试后通过 `adb emu kill` 关闭本轮启动的 AVD；当前没有连接设备。API 31 system image 未安装且没有 `sdkmanager`，硬件 Keystore 生物录入变更仍需真机验证，两项继续保留为未完成 TODO。
+- 安全会话复审发现 `VaultSessionController.lock()` 和恢复回滚路径捕获 `sessionManager.softLock()/seal()` 的 `CancellationException` 后会当作普通封存失败记录并吞掉。新增封存与软锁取消回归，旧实现先红；改为在 NonCancellable 区完成钥匙清理、锁状态和 Locked 发布，再传播取消，由 Trace 记为 `LockCancelled`。更新认证文档明确内部取消合同。
+- 验证：`VaultSessionIdleTimeoutTest`、完整 `:security:testDebugUnitTest`、`:app:testDebugUnitTest`、`verifyArchitecture`、`:security:lintDebug` 与 `git diff --check` 均通过。
 
 ### Task 1: Establish a protected baseline and live audit ledger
 
