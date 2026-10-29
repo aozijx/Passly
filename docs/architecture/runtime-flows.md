@@ -22,6 +22,9 @@ sequenceDiagram
 `VaultBootstrapStore` 位于数据库之外，使应用在 SQLCipher 尚未打开时也能取得信封。当前实现由 Proto DataStore
 提供，DEK 解锁后 `DatabaseProvider` 才能创建 Room 实例。
 
+运行时 session 从 `SessionKeySource` 取得专属密钥副本后交给资源打开；打开完成或失败都会擦除该副本。取 key 期间发生
+`CancellationException` 必须继续传播，其他取 key 异常才映射为 `KeyUnavailable`，不能把调用方取消误报为解锁失败。
+
 恢复码走独立流程：`RECOVER_AUTH_METHODS` 解封同一个 DEK 后只发布 `RecoveryMode`，不会发布普通
 `Authenticated`。恢复页面不挂载 Vault 导航，只能重建主认证、用新备份密码执行 `RECOVERY_EXPORT`，或退出锁定。
 

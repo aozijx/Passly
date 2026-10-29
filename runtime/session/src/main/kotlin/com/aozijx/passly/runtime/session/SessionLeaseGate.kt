@@ -2,6 +2,7 @@ package com.aozijx.passly.runtime.session
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
@@ -95,6 +96,8 @@ internal class SessionLeaseGate<Handle : Any>(
                 SessionLockType.NONE,
             )
             SessionUnlockResult.Success
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (error: Throwable) {
             resourceMutex.withLock { handle = null }
             leaseMutex.withLock { mutableLockState.value = SecureSessionState.SEALED }
@@ -162,6 +165,8 @@ internal class SessionLeaseGate<Handle : Any>(
             val current = handle ?: return
             try {
                 resource.close(current)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (error: Throwable) {
                 val state = mutableLockState.value
                 emitTransition(

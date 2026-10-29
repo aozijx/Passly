@@ -1,6 +1,7 @@
 package com.aozijx.passly.runtime.session
 
 import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.async
@@ -15,6 +16,69 @@ import org.junit.Test
 import kotlin.time.Duration.Companion.milliseconds
 
 class RuntimeSessionManagerTest {
+    @Test
+    fun `unlock propagates cancellation while fetching key`() = runBlocking {
+        val cancellation = CancellationException("key retrieval cancelled")
+        val manager = RuntimeSessionManager(
+            resource = FakeResource(),
+            keySource = SessionKeySource { throw cancellation },
+        )
+
+        val caught = try {
+            manager.unlock()
+            null
+        } catch (error: CancellationException) {
+            error
+        }
+
+        assertTrue(caught is CancellationException)
+        assertEquals(cancellation.message, caught?.message)
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+    }
+
+    @Test
+    fun `unlock propagates cancellation while opening resource`() = runBlocking {
+        val cancellation = CancellationException("resource open cancelled")
+        val manager = RuntimeSessionManager(
+            resource = FakeResource(openFailure = cancellation),
+            keySource = SessionKeySource { byteArrayOf(9) },
+        )
+
+        val caught = try {
+            manager.unlock()
+            null
+        } catch (error: CancellationException) {
+            error
+        }
+
+        assertTrue(caught is CancellationException)
+        assertEquals(cancellation.message, caught?.message)
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+    }
+
+    @Test
+    fun `seal propagates close cancellation after discarding handle`() = runBlocking {
+        val cancellation = CancellationException("resource close cancelled")
+        val resource = FakeResource(closeFailure = cancellation)
+        val manager = RuntimeSessionManager(
+            resource = resource,
+            keySource = SessionKeySource { byteArrayOf(9) },
+        )
+        manager.unlock()
+
+        val caught = try {
+            manager.seal()
+            null
+        } catch (error: CancellationException) {
+            error
+        }
+
+        assertTrue(caught is CancellationException)
+        assertEquals(cancellation.message, caught?.message)
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+        assertTrue(resource.closed)
+    }
+
     @Test
     fun `unlock owns and wipes supplied key`() = runBlocking {
         val suppliedKey = byteArrayOf(1, 2, 3, 4)
@@ -182,6 +246,7 @@ class RuntimeSessionManagerTest {
     }
 
     private class FakeResource(
+        private val openFailure: Throwable? = null,
         private val closeFailure: Throwable? = null,
     ) : SessionResource<FakeHandle> {
         var openedWith: ByteArray? = null
@@ -189,6 +254,7 @@ class RuntimeSessionManagerTest {
 
         override suspend fun open(key: ByteArray): FakeHandle {
             openedWith = key.clone()
+            openFailure?.let { throw it }
             return FakeHandle(7)
         }
 

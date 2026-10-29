@@ -1,5 +1,6 @@
 package com.aozijx.passly.runtime.session
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -35,6 +36,8 @@ class RuntimeSessionManager<Handle : Any>(
         return withContext(ioDispatcher) {
             val key = try {
                 keySource.copyKey()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (error: Throwable) {
                 return@withContext SessionUnlockResult.KeyUnavailable(error)
             }
