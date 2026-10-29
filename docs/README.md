@@ -92,7 +92,7 @@
 | [0022](decisions/ADR-0022-keyed-backup-document.md) | Accepted | 稳定键值字段备份文档 |
 | [0023](decisions/ADR-0023-typed-autofill-interactions.md) | Accepted | 类型化 Autofill interaction |
 | [0024](decisions/ADR-0024-structured-observability-logger.md) | Implemented | 统一结构化 Logger |
-| [0025](decisions/ADR-0025-sealed-autofill-save-inbox.md) | Accepted, pending | 锁定状态 Sealed Autofill Save Inbox |
+| [0025](decisions/ADR-0025-sealed-autofill-save-inbox.md) | Accepted, implemented | 锁定状态 Sealed Autofill Save Inbox |
 
 ## 状态标记
 

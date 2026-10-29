@@ -1,30 +1,28 @@
 # Autofill 保存语义
 
-状态：过渡中；当前保存已实现，direct-or-queued 目标尚未实现。
+状态：当前实现；保存入口分别处理平台结果，已解锁时直接写入，锁定时密封排队并在完整解锁后导入。
 
 ## 当前行为
 
 Legacy 与 Credential Manager 分别检查自己的 feature switch 和平台请求，再把类型化草稿交给共享
 `SaveAutofillCredential`。它复用正式 `EntryDraft` 校验、物化和 Entry 写事务，不读取 Android 类型或平台开关。
 
-当前已解锁会话直接保存；锁定保存需要相应平台 interaction 先认证。Android 的保存确认不是 Passly Vault 认证，
-认证来自 `AuthenticationManager`。
+已解锁会话直接写 Entry。锁定会话将草稿密封写入独立 Inbox，不要求 Autofill session 或弹出认证；完整 Vault
+解锁后由 single-flight drainer 解密并导入。Android 的保存确认只表示 durable queue 已接收，不表示 Entry 已落库。
 
-## 已批准目标
+## 结果与持久化边界
 
 ```text
-AcceptAutofillSave(draft, source)
-  -> Saved(entryId)
-  -> Queued(pendingId)
-  -> InvalidDraft
-  -> Disabled
-  -> InboxUnavailable(reason)
-  -> Failed(errorCode)
+LegacySavePreparation
+  -> Saved | Queued | InvalidDraft | Disabled | Failed
+
+CredentialManagerCreateResult
+  -> Saved | Queued | NotSaved | NotAuthorized
 ```
 
-顺序固定为：校验来源开关和草稿；有 Autofill session write access 时直接保存；否则密封写入 Inbox；只有 Entry
-事务提交或 Inbox 原子落盘成功后才完成平台结果。`Queued` 表示 durable accepted，不是已经出现在 Vault；只有解锁
-导入事务提交才是 `Imported/Saved`。
+两条入口各自校验 feature switch 与平台请求。完整安全会话直接保存；否则将完整草稿密封落盘。`Queued` 表示 durable
+accepted，不是已经出现在 Vault；只有解锁导入事务提交才是 `Imported/Saved`。稳定 Entry ID 由 draft ID 派生，
+重复导入在 Entry 写入事务内识别，不增加 Room 表或改动 Schema 版本。
 
 Legacy 对 Saved/Queued 调一次 `SaveCallback.onSuccess()`；失败调一次非敏感 `onFailure()`。Credential Manager
 使用自己的 create success/failure，不复用 SaveCallback。两条路径都不得静默丢弃旧 pending、虚报成功或为了保存

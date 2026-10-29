@@ -41,7 +41,8 @@ Room Entity 当作可移植协议。
 | `revision_attachment_refs` | 历史 Revision 对不可变附件资源的引用 |
 
 Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `data/schemas`。当前没有 `entry_drafts`、
-`attachment_gc_queue` 或 Autofill Inbox 导入日志表。
+`attachment_gc_queue` 或 Autofill Inbox 导入日志表。Inbox 文件队列独立于 SQLCipher；导入幂等性由 draft ID
+派生的稳定 Entry ID 实现，不新增 Room 表。
 
 ## Entry 元数据与查询
 
@@ -104,9 +105,8 @@ stateDiagram-v2
 - 当前 Room Schema、Secret Payload 和 Revision 格式均为版本 `1`；备份协议版本独立。
 - 数据库关闭超时不能制造“已关闭”的假象；相关风险见[代码审查](../reviews/2026-07-code-review.md)。
 
-计划中的 Sealed Autofill Inbox 独立于 SQLCipher 数据库；它需要的 `autofill_import_log` 只有在 Inbox
-实施时才加入 Schema，不能提前把计划表写成当前实现。见
-[Sealed Inbox](../features/autofill/sealed-inbox.md)。
+Sealed Autofill Inbox 使用独立耐久文件队列，完整解锁后才写入 SQLCipher Entry。Room Schema 保持版本 1；
+队列清理与幂等导入边界见 [Sealed Inbox](../features/autofill/sealed-inbox.md)。
 
 ## 初始化失败与数据重置
 

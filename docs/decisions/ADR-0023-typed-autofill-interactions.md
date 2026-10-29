@@ -23,7 +23,8 @@
 6. interaction 创建后 60 秒自动过期；正在认证、解析秘密或保存时延后回收。进程死亡时不从 Intent extras 恢复授权，而是拒绝旧选择并要求系统重新查询。
 7. 平台适配器不得直接依赖 Entry repository 或认证端口；构建期边界规则负责阻止回归。
 8. Legacy 填充广告只把已分类密码 ID 作为 required `SaveInfo`，用户名 ID 作为 optional；后续 `SaveRequest` 从最新结构重新提取草稿，不复用已完成的填充 interaction。
-9. 锁定状态的 Legacy 保存通过最多 8 条、60 秒 TTL、原子单次消费的内存 store 交接随机 token，并创建独立 `LEGACY_SAVE` interaction。明文不进入 Intent、saved state、日志或磁盘；进程死亡即不可恢复。
+9. 历史方案曾让锁定状态的 Legacy 保存通过内存 token 交接并创建独立 `LEGACY_SAVE` interaction；该项已由
+   [ADR-0025](ADR-0025-sealed-autofill-save-inbox.md) 替代。此处保留记录，不代表当前实现。
 
 ## 后果
 

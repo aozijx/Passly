@@ -43,12 +43,12 @@ stateDiagram-v2
 
 ## Host 与生物识别
 
-Main、Autofill Fill、Legacy Save 和 Credential Response Activity 都在根 Compose 安装 `AuthenticationHost`。Registry 只保存 Host
+Main、Autofill Fill 和 Credential Response Activity 都在根 Compose 安装 `AuthenticationHost`。Registry 只保存 Host
 弱引用、owner ID 和注册 token；取得 lease 与实际展示前都会检查 resumed、finishing、destroyed 和 token。无 Host
 时最多等待 500 ms，Activity 销毁会取消所属请求，Autofill 请求不会转交 MainActivity。
 
-传统 Autofill 保存认证由内部 `LegacySaveActivity` 持有独立的 `LEGACY_SAVE` interaction。保存草稿由一次性进程内 token 交接，明文只保留在非 saveable 的 ViewModel continuation 中；配置变更复用同一 ViewModel，进程死亡则拒绝恢复。成功、认证取消、持久化失败或返回退出都会结束该 interaction。只有 Autofill 自己取得或借用的临时 lease 会在最后一个借用者结束后关闭；已存在的完整 `Authenticated` 会话不受影响。
-保存处理失败时，interaction 清理在当前保存 trace 的子 Span 中完成；页面退出触发的独立清理建立新的 trace，清理失败仍记录脱敏异常而不替代原保存结果。
+Legacy 锁定保存不再启动保存 Activity 或创建认证 interaction，而是写入密封 Inbox；完整 Vault 解锁后才解密并写入 Entry。
+保存处理与填充结果的临时 lease 生命周期相互独立；已存在的完整 `Authenticated` 会话不受影响。
 
 PromptInfo 与 CryptoObject 分离。Enroll/Rotate 使用新的 ENCRYPT Cipher，Unlock 使用最新 alias 和 Envelope nonce
 创建新的 DECRYPT Cipher，VerifyIdentity 不携带 CryptoObject。Cipher 不缓存，也不进入 Bundle、Intent、

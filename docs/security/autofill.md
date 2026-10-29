@@ -1,6 +1,6 @@
 # Autofill 安全策略
 
-状态：过渡中；当前读取/保存安全边界已实现，sealed Inbox 尚未实现。
+状态：当前实现；锁定保存通过 Sealed Inbox 持久接受，并在完整 Vault 解锁后幂等导入。
 
 平台流程见 [Autofill 共享填充流程](../features/autofill/fill-flow.md)。本页只定义跨入口安全不变量。
 
@@ -20,11 +20,9 @@
 
 ## 保存
 
-当前锁定保存会认证；保存 interaction 与 fill interaction 相互独立。保存草稿不能因为 Android 已显示保存 UI 就被
-视为已获 Passly 授权。当前 Legacy 内存草稿不落盘，进程死亡后失败。
-
-批准的 Inbox 目标只提供 public-key 密封写入：锁定状态不取得 DEK、SQLCipher session 或读权限。Queued 与
-Imported 必须区分，详见 [Sealed Inbox](../features/autofill/sealed-inbox.md)。
+完整 Vault 会话可直接保存；锁定时只用 Inbox public key 密封耐久排队，不取得 DEK、SQLCipher session 或读权限，
+也不弹出认证。只有 Inbox 入队成功才向 Android 确认接收；完整解锁后按序导入。Queued 与 Imported 是不同阶段，
+详见 [Sealed Inbox](../features/autofill/sealed-inbox.md)。
 
 ## 数据和日志
 
