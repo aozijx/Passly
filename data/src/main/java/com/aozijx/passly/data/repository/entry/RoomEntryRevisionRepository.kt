@@ -69,7 +69,7 @@ internal class RoomEntryRevisionRepository @Inject constructor(
             val revision = entryRevisionQueryDao().getById(entryId.value, revisionId.value)
                 ?: throw NotFound()
             val entryType = entryQueryDao().getById(entryId.value)?.entryType ?: throw NotFound()
-            val content = contentCodec.decrypt(revision.entryContentCipher, entryId.value)
+            val content = contentCodec.decrypt(revision.entryContentCipher, entryId.value, entryType)
             val sensitiveFingerprints = sensitiveCodec.decodeFingerprints(
                 revision.sensitiveFieldCipherSet,
             )

@@ -55,7 +55,9 @@ internal class RoomAutofillCredentialResolver @Inject constructor(
                     ) {
                         return@let null
                     }
-                    val config = secretFieldStore.readBundle(this, linkedEntryId).otp?.config
+                    val config = secretFieldStore.readBundle(
+                        this, linkedEntryId, otpEntity.entryType,
+                    ).otp?.config
                     val secret = secretFieldStore.readField(
                         db = this,
                         entryId = linkedEntryId,

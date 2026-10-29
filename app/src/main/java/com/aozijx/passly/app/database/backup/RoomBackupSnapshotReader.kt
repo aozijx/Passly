@@ -64,7 +64,7 @@ internal class RoomBackupSnapshotReader @Inject constructor(
 
             val entries = metadataEntities.map { metaEntity ->
                 val summary = EntryProfileMapper.fromEntity(metaEntity)
-                val secret = secretFieldStore.readAll(this, metaEntity.entryId)
+                val secret = secretFieldStore.readAll(this, metaEntity.entryId, metaEntity.entryType)
                 EntryAssembler.assembleFromDatabase(
                     metaEntity,
                     summary,

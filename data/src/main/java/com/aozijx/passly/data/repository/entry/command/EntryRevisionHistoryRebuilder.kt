@@ -16,7 +16,7 @@ internal class EntryRevisionHistoryRebuilder @Inject constructor(
         entryQueryDao().getAll().forEach { entry ->
             val bundleSecret = secretFieldQueryDao()
                 .getField(entry.entryId, SecretBundleCodec.FIELD_KEY)
-                ?.let { bundleCodec.decrypt(it.valueCipher, entry.entryId) }
+                ?.let { bundleCodec.decrypt(it.valueCipher, entry.entryId, entry.entryType) }
                 ?: EntrySecret()
             revisionWriter.snapshotChanges(
                 db = this,
@@ -24,6 +24,7 @@ internal class EntryRevisionHistoryRebuilder @Inject constructor(
                 entryVersion = entry.version,
                 summary = EntryProfileMapper.fromEntity(entry),
                 secret = bundleSecret,
+                entryType = entry.entryType,
                 now = now,
             )
         }

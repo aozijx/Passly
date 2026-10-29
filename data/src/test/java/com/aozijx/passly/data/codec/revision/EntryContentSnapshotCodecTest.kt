@@ -3,6 +3,7 @@ package com.aozijx.passly.data.codec.revision
 import com.aozijx.passly.data.codec.DatabaseRecordAad
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
@@ -33,8 +34,8 @@ class EntryContentSnapshotCodecTest {
                 relationType = EntryRelationType.OTP_FOR,
                 createdAt = 100L,
             )
-            val encrypted = codec.encrypt(summary, secret, ENTRY_ID, listOf(link))
-            val decoded = codec.decrypt(encrypted, ENTRY_ID)
+            val encrypted = codec.encrypt(summary, secret, ENTRY_ID, EntryType.LOGIN, listOf(link))
+            val decoded = codec.decrypt(encrypted, ENTRY_ID, EntryType.LOGIN)
 
             assertEquals(summary, decoded.summary)
             assertEquals("repeated ".repeat(2_000), decoded.secret.notes)
@@ -50,6 +51,7 @@ class EntryContentSnapshotCodecTest {
                 summary = EntryProfile(title = "Example"),
                 bundleSecret = EntrySecret(credential = LoginCredential(password = "secret")),
                 entryId = ENTRY_ID,
+                expectedType = EntryType.LOGIN,
                 links = emptyList(),
             )
 

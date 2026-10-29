@@ -19,6 +19,7 @@ import com.aozijx.passly.data.repository.entry.command.EntryRevisionWriter
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
@@ -74,7 +75,7 @@ internal class EntryRevisionRestoreTransaction @Inject constructor(
         if (current.version != expectedVersion.value) throw Conflict()
         val revision = entryRevisionQueryDao().getById(entryId.value, revisionId.value)
             ?: throw NotFound()
-        val content = contentCodec.decrypt(revision.entryContentCipher, entryId.value)
+        val content = contentCodec.decrypt(revision.entryContentCipher, entryId.value, current.entryType)
         if (content.secret.credential.kind != current.entryType.credentialKind) {
             throw ValidationError()
         }
@@ -135,6 +136,7 @@ internal class EntryRevisionRestoreTransaction @Inject constructor(
             db = this,
             entryId = entryId.value,
             bundle = content.secret,
+            entryType = current.entryType,
             sensitiveFields = historicalSensitive,
             now = now,
         )
@@ -156,6 +158,7 @@ internal class EntryRevisionRestoreTransaction @Inject constructor(
             entryVersion = newVersion.value,
             summary = content.summary,
             secret = content.secret,
+            entryType = current.entryType,
             now = now,
             change = RevisionChange.VERSION_RESTORED,
         )
@@ -173,6 +176,7 @@ internal class EntryRevisionRestoreTransaction @Inject constructor(
         db: AppDatabase,
         entryId: String,
         bundle: EntrySecret,
+        entryType: EntryType,
         sensitiveFields: List<com.aozijx.passly.data.codec.revision.SensitiveFieldCipherSnapshot>,
         now: Long,
     ) = with(db) {
@@ -188,7 +192,7 @@ internal class EntryRevisionRestoreTransaction @Inject constructor(
         } + EntrySecretFieldEntity(
             entryId = entryId,
             fieldKey = SecretBundleCodec.FIELD_KEY,
-            valueCipher = bundleCodec.encrypt(bundle, entryId),
+            valueCipher = bundleCodec.encrypt(bundle, entryId, entryType),
             keyVersion = 1,
             updatedAt = now,
         )

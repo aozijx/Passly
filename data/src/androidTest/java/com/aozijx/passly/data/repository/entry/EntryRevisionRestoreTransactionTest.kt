@@ -187,14 +187,16 @@ class EntryRevisionRestoreTransactionTest {
         assertEquals(3, restored.version)
         assertEquals("Historical", restored.title)
         assertTrue(restored.capabilityFlags.hasEntryCapability(EntryCapability.PASSWORD))
-        assertEquals("historical notes", bundleCodec.decrypt(restoredBundle.valueCipher, ENTRY_ID).notes)
+        assertEquals("historical notes", bundleCodec.decrypt(
+            restoredBundle.valueCipher, ENTRY_ID, EntryType.LOGIN,
+        ).notes)
         assertArrayEquals(HISTORICAL_PASSWORD_CIPHER, restoredPassword.valueCipher)
         assertEquals(3, latest.version)
         assertEquals(RevisionChange.VERSION_RESTORED.name, latest.changeType)
         assertEquals(3, database.entryRevisionQueryDao().getByEntryId(ENTRY_ID).size)
         assertEquals(
             "Historical",
-            contentCodec.decrypt(latest.entryContentCipher, ENTRY_ID).summary.title,
+            contentCodec.decrypt(latest.entryContentCipher, ENTRY_ID, EntryType.LOGIN).summary.title,
         )
         assertEquals(
             1,
@@ -289,6 +291,7 @@ class EntryRevisionRestoreTransactionTest {
                             notes = "current notes",
                         ),
                         ENTRY_ID,
+                        EntryType.LOGIN,
                     ),
                     keyVersion = 1,
                     updatedAt = 2L,
@@ -312,6 +315,7 @@ class EntryRevisionRestoreTransactionTest {
                 notes = "historical notes",
             ),
             entryId = ENTRY_ID,
+            expectedType = EntryType.LOGIN,
             links = emptyList(),
         )
         val historicalSensitive = sensitiveCodec.encode(
@@ -347,6 +351,7 @@ class EntryRevisionRestoreTransactionTest {
                             notes = "current notes",
                         ),
                         entryId = ENTRY_ID,
+                        expectedType = EntryType.LOGIN,
                         links = emptyList(),
                     ),
                     sensitiveFieldCipherSet = sensitiveCodec.encode(

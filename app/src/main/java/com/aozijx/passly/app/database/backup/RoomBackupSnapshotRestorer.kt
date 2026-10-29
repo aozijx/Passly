@@ -135,7 +135,7 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
                     )
 
                     entryCommandDao().insertStrict(metaEntity)
-                    secretFieldStore.replaceAll(this, entryId, secret)
+                    secretFieldStore.replaceAll(this, entryId, secret, restoredEntry.type)
 
                     attachmentResources.forEach { resource ->
                         val content = requireNotNull(bundle.resourceData[resource.id])

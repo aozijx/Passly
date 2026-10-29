@@ -12,6 +12,7 @@ import com.aozijx.passly.data.codec.json.AppJson
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
@@ -96,6 +97,7 @@ class EntryContentSnapshotCodec @Inject constructor(
         summary: EntryProfile,
         bundleSecret: EntrySecret,
         entryId: String,
+        expectedType: EntryType,
         links: List<EntryLink>,
     ): ByteArray {
         // Enforce the storage boundary here as well as at the writer call site. A future caller
@@ -105,7 +107,7 @@ class EntryContentSnapshotCodec @Inject constructor(
             SummaryPayload.serializer(), EntryProfileMapper.toPayload(summary)
         ).toByteArray()
         val secretJson = AppJson.encodeToString(
-            SecretPayload.serializer(), EntrySecretMapper.toPayload(redactedSecret)
+            SecretPayload.serializer(), EntrySecretMapper.toPayload(redactedSecret, expectedType)
         ).toByteArray()
         val relationsJson = AppJson.encodeToString(
             EntryRelationsSnapshot.serializer(),
@@ -116,7 +118,7 @@ class EntryContentSnapshotCodec @Inject constructor(
         return fieldEncryptor.encrypt(encoded, DatabaseRecordAad.revision(entryId))
     }
 
-    suspend fun decrypt(cipher: ByteArray, entryId: String): DecodedEntryContentSnapshot {
+    suspend fun decrypt(cipher: ByteArray, entryId: String, expectedType: EntryType): DecodedEntryContentSnapshot {
         val encoded = fieldEncryptor.decrypt(cipher, DatabaseRecordAad.revision(entryId))
         require(encoded.startsWith(FORMAT_PREFIX)) { "Unsupported entry content snapshot format" }
         val snapshot = EntryContentSnapshot.fromBytes(
@@ -133,7 +135,7 @@ class EntryContentSnapshotCodec @Inject constructor(
         )
         return DecodedEntryContentSnapshot(
             summary = EntryProfileMapper.toDomain(summary),
-            secret = EntrySecretMapper.toDomain(secret),
+            secret = EntrySecretMapper.toDomain(secret, expectedType),
             links = relations.links.map(EntryLinkSnapshot::toDomain),
         )
     }

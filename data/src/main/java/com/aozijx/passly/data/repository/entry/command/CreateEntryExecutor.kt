@@ -70,13 +70,14 @@ internal class CreateEntryExecutor @Inject constructor(
                 updatedAt = now,
             )
             entryCommandDao().insertStrict(entity)
-            secretFieldStore.replaceAll(this, entryId, entry.secret)
+            secretFieldStore.replaceAll(this, entryId, entry.secret, entry.type)
             revisionWriter.snapshotChanges(
                 db = this,
                 entryId = entryId,
                 entryVersion = 1,
                 summary = entry.profile,
                 secret = entry.secret,
+                entryType = entry.type,
                 now = now,
             )
             attachmentGarbageCollector.scheduleInTransaction(this)

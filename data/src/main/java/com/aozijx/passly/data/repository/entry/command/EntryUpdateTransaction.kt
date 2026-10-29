@@ -40,7 +40,7 @@ internal class EntryUpdateTransaction @Inject constructor(
         if (entity.version != expectedVersion) throw Conflict()
         val oldProfile = EntryProfileMapper.fromEntity(entity)
         val newProfile = changes.profile ?: oldProfile
-        val storedSecret = secretFieldStore.readBundle(this, id)
+        val storedSecret = secretFieldStore.readBundle(this, id, entity.entryType)
         val newSecret = changes.secret ?: storedSecret
         val storedKeys = secretFieldQueryDao().getKeys(id).mapNotNullTo(linkedSetOf()) { key ->
             if (key == SecretBundleCodec.FIELD_KEY) null else sensitiveFieldKeyFromStorageKey(key)
@@ -53,7 +53,7 @@ internal class EntryUpdateTransaction @Inject constructor(
         }
 
         if (changes.secret != null) {
-            secretFieldStore.updateExisting(this, id, newSecret)
+            secretFieldStore.updateExisting(this, id, newSecret, entity.entryType)
         }
         val sensitiveKeys = secretFieldQueryDao().getKeys(id).mapNotNullTo(linkedSetOf()) { key ->
             if (key == SecretBundleCodec.FIELD_KEY) null else sensitiveFieldKeyFromStorageKey(key)
@@ -86,6 +86,7 @@ internal class EntryUpdateTransaction @Inject constructor(
             entryVersion = expectedVersion + 1,
             summary = newProfile,
             secret = newSecret,
+            entryType = entity.entryType,
             now = now,
         )
         activityWriter.recordActivity(this, id, ActivityType.UPDATE, now,

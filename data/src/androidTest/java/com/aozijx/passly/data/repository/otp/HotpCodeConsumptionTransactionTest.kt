@@ -18,6 +18,7 @@ import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
@@ -93,7 +94,7 @@ class HotpCodeConsumptionTransactionTest {
         }
 
         assertTrue(result is OtpResult.Success)
-        assertEquals(8L, secretFieldStore.readBundle(database, ENTRY_ID).otp?.config?.counter)
+        assertEquals(8L, secretFieldStore.readBundle(database, ENTRY_ID, EntryType.OTP).otp?.config?.counter)
         assertEquals(1, database.entryQueryDao().getById(ENTRY_ID)?.version)
         assertTrue(database.entryRevisionQueryDao().getByEntryId(ENTRY_ID).isEmpty())
     }
@@ -104,7 +105,23 @@ class HotpCodeConsumptionTransactionTest {
 
         transaction.consume(database, ENTRY_ID) { OtpResult.Failure(OtpGenerationError.InvalidSecret) }
 
-        assertEquals(7L, secretFieldStore.readBundle(database, ENTRY_ID).otp?.config?.counter)
+        assertEquals(7L, secretFieldStore.readBundle(database, ENTRY_ID, EntryType.OTP).otp?.config?.counter)
+    }
+
+    @Test
+    fun missingOrNonOtpEntryReturnsInvalidSecret() = runBlocking {
+        assertEquals(
+            OtpResult.Failure(OtpGenerationError.InvalidSecret),
+            transaction.consume(database, ENTRY_ID),
+        )
+
+        database.entryCommandDao().insertStrict(
+            EntryEntity(entryId = ENTRY_ID, entryType = EntryType.LOGIN, title = "Login"),
+        )
+        assertEquals(
+            OtpResult.Failure(OtpGenerationError.InvalidSecret),
+            transaction.consume(database, ENTRY_ID),
+        )
     }
 
     @Test
@@ -137,12 +154,18 @@ class HotpCodeConsumptionTransactionTest {
         )
         database.withTransaction {
             database.entryCommandDao().insertStrict(
-                EntryEntity(entryId = ENTRY_ID, title = "HOTP", otpType = OtpType.HOTP),
+                EntryEntity(
+                    entryId = ENTRY_ID,
+                    entryType = EntryType.OTP,
+                    title = "HOTP",
+                    otpType = OtpType.HOTP,
+                ),
             )
             secretFieldStore.replaceAll(
                 database,
                 ENTRY_ID,
                 EntrySecret(credential = OtpCredential(config)),
+                EntryType.OTP,
             )
         }
     }

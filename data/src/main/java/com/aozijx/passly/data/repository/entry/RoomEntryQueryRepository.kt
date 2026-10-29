@@ -28,7 +28,7 @@ internal class RoomEntryQueryRepository @Inject constructor(
         return databaseSession.query {
             val metaEntity = entryQueryDao().getById(entryId.value) ?: return@query null
             val summary = EntryProfileMapper.fromEntity(metaEntity)
-            val secret = secretFieldStore.readBundle(this, entryId.value)
+            val secret = secretFieldStore.readBundle(this, entryId.value, metaEntity.entryType)
             EntryAssembler.assembleFromDatabase(metaEntity, summary, secret)
         }
     }
@@ -39,7 +39,7 @@ internal class RoomEntryQueryRepository @Inject constructor(
             val metaEntities = entryQueryDao().getActive()
             metaEntities.map { metaEntity ->
                 val summary = EntryProfileMapper.fromEntity(metaEntity)
-                val secret = secretFieldStore.readBundle(this, metaEntity.entryId)
+                val secret = secretFieldStore.readBundle(this, metaEntity.entryId, metaEntity.entryType)
                 EntryAssembler.assembleFromDatabase(metaEntity, summary, secret)
             }
         }

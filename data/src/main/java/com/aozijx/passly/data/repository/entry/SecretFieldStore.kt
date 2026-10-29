@@ -13,6 +13,8 @@ import com.aozijx.passly.data.mapper.entry.toSensitiveFieldUpdates
 import com.aozijx.passly.data.codec.sensitiveFieldKeyFromStorageKey
 import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.credential.EntryCredentialKind
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import javax.inject.Inject
@@ -33,7 +35,7 @@ class SecretFieldStore @Inject internal constructor(
 ) {
 
     /** Replaces every secret row (bundle + field-level) for one entry. */
-    suspend fun replaceAll(db: AppDatabase, entryId: String, secret: EntrySecret) {
+    suspend fun replaceAll(db: AppDatabase, entryId: String, secret: EntrySecret, entryType: EntryType) {
         db.secretFieldCommandDao().deleteAll(entryId)
         val now = clock.now()
         val rows = mutableListOf<EntrySecretFieldEntity>()
@@ -49,7 +51,7 @@ class SecretFieldStore @Inject internal constructor(
         rows += EntrySecretFieldEntity(
             entryId = entryId,
             fieldKey = SecretBundleCodec.FIELD_KEY,
-            valueCipher = bundleCodec.encrypt(secret.toBundleSecret(), entryId),
+            valueCipher = bundleCodec.encrypt(secret.toBundleSecret(), entryId, entryType),
             keyVersion = 1,
             updatedAt = now,
         )
@@ -59,7 +61,7 @@ class SecretFieldStore @Inject internal constructor(
     /**
      * Updates an existing entry without reading or rewriting untouched high-sensitivity rows.
      */
-    suspend fun updateExisting(db: AppDatabase, entryId: String, secret: EntrySecret) {
+    suspend fun updateExisting(db: AppDatabase, entryId: String, secret: EntrySecret, entryType: EntryType) {
         val now = clock.now()
         secret.toSensitiveFieldUpdates().forEach { (key, update) ->
             when (update) {
@@ -83,7 +85,7 @@ class SecretFieldStore @Inject internal constructor(
             EntrySecretFieldEntity(
                 entryId = entryId,
                 fieldKey = SecretBundleCodec.FIELD_KEY,
-                valueCipher = bundleCodec.encrypt(secret.toBundleSecret(), entryId),
+                valueCipher = bundleCodec.encrypt(secret.toBundleSecret(), entryId, entryType),
                 keyVersion = 1,
                 updatedAt = now,
             ),
@@ -91,18 +93,18 @@ class SecretFieldStore @Inject internal constructor(
     }
 
     /** Low-sensitivity aggregate; every field-level value is `null`. */
-    suspend fun readBundle(db: AppDatabase, entryId: String): EntrySecret {
+    suspend fun readBundle(db: AppDatabase, entryId: String, entryType: EntryType): EntrySecret {
         val bundle = db.secretFieldQueryDao().getField(entryId, SecretBundleCodec.FIELD_KEY)
-            ?: return EntrySecret()
-        return bundleCodec.decrypt(bundle.valueCipher, entryId)
+            ?: return emptyBundleFor(entryType)
+        return bundleCodec.decrypt(bundle.valueCipher, entryId, entryType)
     }
 
     /** Complete secret assembled from the bundle plus every field-level ciphertext row. */
-    suspend fun readAll(db: AppDatabase, entryId: String): EntrySecret {
+    suspend fun readAll(db: AppDatabase, entryId: String, entryType: EntryType): EntrySecret {
         val rows = db.secretFieldQueryDao().getAll(entryId)
         val bundle = rows.firstOrNull { it.fieldKey == SecretBundleCodec.FIELD_KEY }
-            ?.let { bundleCodec.decrypt(it.valueCipher, entryId) }
-            ?: EntrySecret()
+            ?.let { bundleCodec.decrypt(it.valueCipher, entryId, entryType) }
+            ?: emptyBundleFor(entryType)
         val fields = rows.mapNotNull { row ->
             if (row.fieldKey == SecretBundleCodec.FIELD_KEY) return@mapNotNull null
             val key = sensitiveFieldKeyFromStorageKey(row.fieldKey)
@@ -119,9 +121,18 @@ class SecretFieldStore @Inject internal constructor(
 
     /** Reads only the OTP structure and its secret, leaving every unrelated secret encrypted. */
     suspend fun readOtpConfig(db: AppDatabase, entryId: String): OtpConfig? {
-        val bundle = readBundle(db, entryId)
+        val entry = db.entryQueryDao().getById(entryId) ?: return null
+        if (entry.deletedAt != null || entry.entryType.credentialKind != EntryCredentialKind.OTP) return null
+        val bundle = readBundle(db, entryId, entry.entryType)
         val config = bundle.otp?.config ?: return null
         val secret = readField(db, entryId, SensitiveFieldKey.OTP_SECRET)
         return config.copy(secret = secret)
+    }
+
+    private fun emptyBundleFor(entryType: EntryType): EntrySecret {
+        require(entryType.credentialKind == EntryCredentialKind.NONE) {
+            "Secret bundle is missing for entry type $entryType"
+        }
+        return EntrySecret()
     }
 }

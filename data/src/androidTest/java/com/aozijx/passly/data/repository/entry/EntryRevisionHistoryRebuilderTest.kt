@@ -92,7 +92,7 @@ class EntryRevisionHistoryRebuilderTest {
         val revision = revisions.single()
         assertEquals(version, revision.version)
         assertEquals(100L, revision.createdAt)
-        val decoded = contentCodec.decrypt(revision.entryContentCipher, entryId)
+        val decoded = contentCodec.decrypt(revision.entryContentCipher, entryId, EntryType.LOGIN)
         assertEquals(title, decoded.summary.title)
         assertEquals(notes, decoded.secret.notes)
     }
@@ -126,6 +126,7 @@ class EntryRevisionHistoryRebuilderTest {
                             notes = notes,
                         ),
                         entryId,
+                        EntryType.LOGIN,
                     ),
                     keyVersion = 1,
                     updatedAt = 2L,
