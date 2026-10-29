@@ -128,6 +128,8 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 后续补充“偏好已写入但挂起调用随后取消”的回归：旧补偿会释放已被新偏好引用的 grant，测试先红。修复后在不可取消区读取当前偏好，只有确认未引用新 URI 才回收新授权；读取失败时保留授权。设置 Interactor 定向 9 项、完整 App 868 项单测均通过。
 - 最终验证：Data 74 项单测、`:buildSrc:test`、`verifyArchitecture`、App/Data Lint 和 `git diff --check` 均通过。数据库重置修复提交于 `3fa50221`，备份取消与授权所有权修复提交于 `26e26762`；无逻辑转发测试与对应 SourceBoundary 特例单独清理。
 - HOTP 提交后复核发现 `RoomOtpConfigRepository` 和消费事务通过 `readAll()` 解密同一条目的全部敏感字段；用损坏 PASSWORD 行证明该无关数据会使 HOTP 失败。改为只读 OTP bundle 与 `OTP_SECRET`，回归先红后绿；API 36 Data 仪器测试 33 项、Data/App 单测、`verifyArchitecture`、Data lint 与 `git diff --check` 通过。
+- API 36 AVD 复验再次发现 `AutofillLaunchTargetFactoryTest` 仍引用已在 `7877c569` 删除的 Legacy Save Activity/PendingIntent 工厂，导致 App 仪器测试编译失败。删除过期的 Legacy Save 启动断言，保留仍存在的 legacy fill、Credential Manager 与无障碍显式 Activity 验证；新保存路径由 `LegacySaveFlowTest` 覆盖。
+- 复验：`Pixel_8_Pro` API 36 AVD 的 Data 仪器测试 33 项、App 仪器测试 56 项全部通过。测试后通过 `adb emu kill` 关闭本轮启动的 AVD；当前没有连接设备。API 31 system image 未安装且没有 `sdkmanager`，硬件 Keystore 生物录入变更仍需真机验证，两项继续保留为未完成 TODO。
 
 ### Task 1: Establish a protected baseline and live audit ledger
 
