@@ -7,12 +7,15 @@ import com.aozijx.passly.app.backup.BackupDirectoryGrantInspector
 import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
 import com.aozijx.passly.feature.backup.internal.archive.di.BackupIoDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 
 /**
@@ -40,8 +43,11 @@ internal class BackupExportStorageSupport @Inject constructor(
         directoryTreeUri: String,
         fileName: String,
         mimeType: String,
-    ): Result<String> = withContext(ioDispatcher) {
-        runCatching {
+    ): Result<String> = withCreatedDocumentCleanupOnCancellation(
+        ioDispatcher = ioDispatcher,
+        deleteDocument = ::deleteDocument,
+    ) { registerCreatedDocument ->
+        try {
             val grantedTreeUri = directoryTreeUri.toUri()
             val resolver = context.contentResolver
             require(
@@ -65,7 +71,13 @@ internal class BackupExportStorageSupport @Inject constructor(
             } catch (error: SecurityException) {
                 error("目录访问权限已失效，请重新选择备份目录")
             }
-            fileUri.toString()
+            val createdUri = fileUri.toString()
+            registerCreatedDocument(createdUri)
+            Result.success(createdUri)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Throwable) {
+            Result.failure(failure)
         }
     }
 
@@ -118,6 +130,32 @@ internal class BackupExportStorageSupport @Inject constructor(
     private companion object {
         const val WRITE_TEST_FILE_NAME = ".passly_write_test.tmp"
         const val WRITE_TEST_BYTE = 0
+    }
+}
+
+/** Keeps ownership of a created SAF document until the dispatcher handoff succeeds. */
+internal suspend fun <T> withCreatedDocumentCleanupOnCancellation(
+    ioDispatcher: CoroutineDispatcher,
+    deleteDocument: suspend (String) -> Boolean,
+    operation: suspend (registerCreatedDocument: (String) -> Unit) -> T,
+): T {
+    var createdUri: String? = null
+    return try {
+        withContext(ioDispatcher) {
+            operation { uri -> createdUri = uri }
+        }
+    } catch (cancelled: CancellationException) {
+        val cleanupFailure = createdUri?.let { uri ->
+            withContext(NonCancellable + ioDispatcher) {
+                runCatching {
+                    if (!deleteDocument(uri)) throw IOException("Unable to delete incomplete backup export")
+                }.exceptionOrNull()
+            }
+        }
+        if (cleanupFailure != null && cleanupFailure !== cancelled) {
+            cancelled.addSuppressed(cleanupFailure)
+        }
+        throw cancelled
     }
 }
 
