@@ -16,6 +16,7 @@ import com.aozijx.passly.data.local.database.maintenance.DatabaseCleaner
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
 import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
+import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
@@ -174,7 +175,7 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
                                 resourceId = resourceId,
                                 fileName = resource.fileName.orEmpty(),
                                 mimeType = resource.mimeType,
-                                status = AttachmentStatus.COMMITTED.name,
+                                status = AttachmentStatus.COMMITTED.toStorageKey(),
                                 stagingOwnerId = null,
                                 createdAt = resource.createdAt ?: record.updatedAt,
                             )

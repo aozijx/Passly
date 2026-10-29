@@ -41,6 +41,7 @@ app feature -X-> 任意散落的 data implementation import
 
 App 通过 Gradle 依赖 `:data` 让 Hilt 聚合实现。Backup 的 `BackupSnapshotGateway` 是能力侧合同；
 `app/database/backup` 的 Room Reader、Restorer、恢复文件事务、Gateway 实现和 Hilt binding 负责与 Data 集成。
+恢复器写入 Room 附件状态时复用 Data 的显式存储键映射，不从 Domain enum 名称推断持久化值。
 稳定键映射器位于 `feature/backup/internal/archive/mapper`，只依赖 Domain 与归档模型。
 `SourceBoundaryPolicy` 对全部 `feature` 禁止 Data 实现 import，不为 Backup 另开例外。
 Autofill 等 Android Service 需要打开页面时，由 Feature 中的启动契约与 `app` 适配器衔接，Feature 不引用 Activity 类。

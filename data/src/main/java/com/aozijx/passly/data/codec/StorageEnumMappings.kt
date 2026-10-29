@@ -122,7 +122,7 @@ internal fun sensitiveFieldKeyFromStorageKey(key: String): SensitiveFieldKey = w
     else -> invalidStorageKey("sensitive field", key)
 }
 
-internal fun AttachmentStatus.toStorageKey(): String = when (this) {
+fun AttachmentStatus.toStorageKey(): String = when (this) {
     AttachmentStatus.PENDING -> "PENDING"
     AttachmentStatus.COMMITTED -> "COMMITTED"
 }
