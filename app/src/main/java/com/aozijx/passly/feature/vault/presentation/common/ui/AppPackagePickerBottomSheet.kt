@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.shared.components
+package com.aozijx.passly.feature.vault.presentation.common.ui
 
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.Image
@@ -39,11 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-
-data class AppPackagePickerItemUiModel(
-    val label: String,
-    val packageName: String,
-)
+import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

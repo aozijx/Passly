@@ -24,8 +24,8 @@
 
 ## 输入和表单
 
-- 单行普通输入可复用 `NextFocusTextField`；需要特殊键盘、错误、敏感清理或多行行为时直接使用适合的 Material
-  输入组件。
+- Vault 条目编辑表单中的单行普通输入可复用
+  `feature/vault/presentation/editor/ui/common/NextFocusTextField.kt`；需要特殊键盘、错误、敏感清理或多行行为时直接使用适合的 Material 输入组件。
 - 密码输入复用专用小组件处理显隐、错误和清理，不创建万能表单引擎。
 - OTP、Bank Card、Wi-Fi、SSH、Identity、Seed、Passkey 使用各自的字段规则和 Host，不塞进一个通用 section。
 - trim 由字段语义决定；密码是否 trim 必须显式，不能套用普通文本规则。

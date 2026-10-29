@@ -4,7 +4,7 @@ import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldValue
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
-import com.aozijx.passly.presentation.shared.components.AppPackagePickerItemUiModel
+import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 
 data class DetailPresentationModel(
     val header: DetailHeaderUiModel,

@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.shared.components.common
+package com.aozijx.passly.feature.vault.presentation.editor.ui.otp
 
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.fillMaxWidth

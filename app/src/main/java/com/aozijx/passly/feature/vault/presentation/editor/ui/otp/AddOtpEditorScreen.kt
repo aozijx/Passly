@@ -16,7 +16,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpAction
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpCodeState
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpSavePhase
-import com.aozijx.passly.presentation.shared.components.NextFocusTextField
+import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
 

@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.editor.password
 
-import com.aozijx.passly.presentation.shared.components.AppPackagePickerItemUiModel
+import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 
 data class AddPasswordFormState(
     val title: String = "",

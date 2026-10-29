@@ -36,7 +36,7 @@ import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditor
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.SensitiveFieldVisibilityButton
 import com.aozijx.passly.feature.vault.presentation.editor.wifi.AddWifiAction
 import com.aozijx.passly.feature.vault.presentation.editor.wifi.AddWifiFormState
-import com.aozijx.passly.presentation.shared.components.NextFocusTextField
+import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 
 @Composable
 internal fun WifiFormFields(

@@ -1,4 +1,4 @@
-package com.aozijx.passly.presentation.shared.media
+package com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

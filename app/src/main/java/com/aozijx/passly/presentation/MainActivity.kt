@@ -1,6 +1,5 @@
-package com.aozijx.passly
+package com.aozijx.passly.presentation
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -8,16 +7,17 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import com.aozijx.passly.R
+import com.aozijx.passly.app.DeviceLockController
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.platform.permission.PermissionServices
-import com.aozijx.passly.app.DeviceLockController
-import com.aozijx.passly.core.permission.contract.PermissionRequestHistory
 import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.permission.contract.PermissionRequestHistory
 import com.aozijx.passly.core.permission.contract.PermissionStatusReader
 import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
-import com.aozijx.passly.presentation.PasslyApp
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch

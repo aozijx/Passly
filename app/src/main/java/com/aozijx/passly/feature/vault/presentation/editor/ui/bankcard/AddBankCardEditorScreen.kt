@@ -24,7 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.shared.components.NextFocusTextField
+import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.material3.OutlinedTextField

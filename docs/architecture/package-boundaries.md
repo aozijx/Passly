@@ -10,7 +10,7 @@
 | `core.crypto` | 无状态密码学原语、算法实现、加密格式                    | 认证流程、持久化、Android Keystore          |
 | `security` | Android Keystore、认证方式、授权与安全会话编排                 | Room Entity、DataStore 具体实现、Feature UI |
 | `feature/<name>` | app 内的业务流程、平台入口、能力合同与应用策略 | Data 实现；非 UI 代码不依赖 presentation |
-| `app` 适配器 | Android 入口、DI 与跨模块实现连接；Backup 快照可读取 Data | 页面状态、领域规则真相源 |
+| `app` 适配器 | Android Application、DI 与跨模块实现连接；Backup 快照可读取 Data | 页面状态、领域规则真相源 |
 | `feature/<name>/presentation` | 对应业务的 Route、ViewModel、UI state/effect、Compose UI | DAO、Entity、Data Repository 实现 |
 | `presentation/shared` 等 | 跨业务的纯展示组件与映射 | 具体业务流程与数据实现 |
 | `service`  | Android Service 入口与系统生命周期桥接；与单一业务流程紧耦合的实现可放在对应 `feature/<name>` 下 | 独立业务真相源 |
@@ -21,7 +21,7 @@ DEK、字段派生密钥和信封原语当前位于 `:core` 的 `security.dek/se
 锁状态和认证编排归独立的 `:security`。应用消息调度与全局框架桥归 `:app`。
 
 每个业务只有一个 `feature/<name>` 入口；页面统一放在其 `presentation` 子包，包括 Recovery 和
-Database Reset。根 `presentation` 仅保留应用组合入口、跨业务展示组件和展示映射。`core` 的共享指
+Database Reset。根 `presentation` 仅保留应用组合入口及其 Activity 宿主、跨业务展示组件和展示映射。`core` 的共享指
 跨业务使用的技术能力；包含业务语义的纯规则优先进入 Domain，不因被多个页面引用就放进 Core。
 
 ## 强制规则

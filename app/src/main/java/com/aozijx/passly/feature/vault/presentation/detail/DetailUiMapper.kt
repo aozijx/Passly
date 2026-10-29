@@ -9,7 +9,7 @@ import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import com.aozijx.passly.presentation.mapping.entry.toUiModel
-import com.aozijx.passly.presentation.shared.components.AppPackagePickerItemUiModel
+import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.CredentialFieldUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.CredentialSectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailActivityUiModel

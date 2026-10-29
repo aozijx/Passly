@@ -34,8 +34,8 @@ import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordU
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.SensitiveFieldVisibilityButton
-import com.aozijx.passly.presentation.shared.components.AppPackagePickerBottomSheet
-import com.aozijx.passly.presentation.shared.components.NextFocusTextField
+import com.aozijx.passly.feature.vault.presentation.common.ui.AppPackagePickerBottomSheet
+import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 
 @Composable
 fun AddPasswordEditorScreen(
