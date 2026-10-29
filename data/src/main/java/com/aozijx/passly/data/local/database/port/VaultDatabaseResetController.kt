@@ -6,10 +6,13 @@ import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.data.local.database.DatabaseSchema
-import com.aozijx.passly.data.local.database.port.EntryDataRefreshNotifier
-import com.aozijx.passly.data.local.database.session.AppDatabaseSession
+import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
@@ -19,27 +22,52 @@ import javax.inject.Singleton
 @Singleton
 internal class VaultDatabaseResetController @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val databaseSession: AppDatabaseSession,
+    private val databaseSession: DatabaseSessionLifecycle,
     private val dataRefreshNotifier: EntryDataRefreshNotifier,
     private val logger: Logger,
 ) : DatabaseResetController {
     override suspend fun reset(): Throwable? = withContext(Dispatchers.IO) {
-        logger.inSpan(Operations.DatabaseReset) {
-        var resetError: Throwable? = null
-        try {
-            databaseSession.seal()
-            deleteDatabaseFiles()
-            VaultResourcePaths.RESOURCE_DIRECTORY_NAMES.forEach(::deleteVaultFileDirectory)
-        } catch (error: Throwable) {
-            resetError = error
-            logger.log(LogStatements.Database.resetFailed(error))
-        }
+        currentCoroutineContext().ensureActive()
+        val outcome = withContext(NonCancellable) {
+            logger.inSpan(Operations.DatabaseReset) {
+                var resetError: Throwable? = null
+                var cancellation: CancellationException? = null
+                try {
+                    databaseSession.seal()
+                    deleteDatabaseFiles()
+                    VaultResourcePaths.RESOURCE_DIRECTORY_NAMES.forEach(::deleteVaultFileDirectory)
+                } catch (cancelled: CancellationException) {
+                    cancellation = cancelled
+                } catch (error: Throwable) {
+                    resetError = error
+                }
 
-        val reopenError = databaseSession.unlock()
-        if (reopenError == null) dataRefreshNotifier.notifyRefresh()
-        resetError ?: reopenError
+                val reopenError = try {
+                    databaseSession.unlock()
+                } catch (cancelled: CancellationException) {
+                    cancellation = cancellation ?: cancelled
+                    null
+                } catch (error: Throwable) {
+                    error
+                }
+                if (reopenError == null) dataRefreshNotifier.notifyRefresh()
+
+                resetError?.let { error ->
+                    if (reopenError != null && reopenError !== error) error.addSuppressed(reopenError)
+                    runCatching { logger.log(LogStatements.Database.resetFailed(error)) }
+                }
+                ResetOutcome(resetError ?: reopenError, cancellation)
+            }
         }
+        outcome.cancellation?.let { throw it }
+        currentCoroutineContext().ensureActive()
+        outcome.error
     }
+
+    private data class ResetOutcome(
+        val error: Throwable?,
+        val cancellation: CancellationException?,
+    )
 
     private fun deleteDatabaseFiles() {
         val databaseFile = context.getDatabasePath(DatabaseSchema.DATABASE_NAME)
