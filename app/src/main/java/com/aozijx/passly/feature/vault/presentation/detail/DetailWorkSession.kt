@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 
@@ -66,11 +67,25 @@ internal class DetailWorkSession(
 
     suspend fun persist(token: Scope.Active, edit: EntryEdit, completion: DetailEditCompletion) {
         if (!isCurrent(token) || !currentCoroutineContext().isActive) return
-        val result = editEntry(token.entryId, edit)
+        val result = try {
+            editEntry(token.entryId, edit)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            failIfCurrent(token, completion)
+            return
+        }
         if (!isCurrent(token) || !currentCoroutineContext().isActive) return
         when (result) {
             is AppResult.Success -> {
-                val presentation = present(result.data)
+                val presentation = try {
+                    present(result.data)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    failIfCurrent(token, completion)
+                    return
+                }
                 if (!isCurrent(token) || !currentCoroutineContext().isActive) return
                 onMutation(DetailMutation.EntryPresented(presentation))
                 if (!isCurrent(token) || !currentCoroutineContext().isActive) return
@@ -81,5 +96,15 @@ internal class DetailWorkSession(
             }
             is AppResult.Failure -> onMutation(DetailMutation.SaveFailed(completion, result.error.code))
         }
+    }
+
+    private suspend fun failIfCurrent(token: Scope.Active, completion: DetailEditCompletion) {
+        if (isCurrent(token) && currentCoroutineContext().isActive) {
+            onMutation(DetailMutation.SaveFailed(completion, UNEXPECTED_FAILURE))
+        }
+    }
+
+    private companion object {
+        const val UNEXPECTED_FAILURE = "UNEXPECTED_FAILURE"
     }
 }

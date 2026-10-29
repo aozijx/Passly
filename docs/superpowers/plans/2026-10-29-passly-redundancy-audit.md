@@ -265,3 +265,11 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 修复：生命周期回调使用 `UNDISPATCHED` 立即进入清理，再在 `NonCancellable + IO` 段过期 Legacy 来源活动交互；销毁时先触发清理再取消普通请求 scope。重复调用由交互终态转换保证幂等。
 - 文档：说明断连/销毁时的活动交互过期和租约释放。
 - 验证：`LegacyInteractionExpiryTest` 定向测试通过；`verifyArchitecture`、`:app:lintDebug` 与 `git diff --check` 通过。
+
+### 后续批次：详情保存异常恢复（2026-10-29）
+
+- 生产路径核对：`DetailViewModel.persistEntryEdit()` 先发布 Saving，再调用 `DetailWorkSession.persist()`；该协调器只处理 `AppResult.Failure`。`EditDetailEntryUseCase` 对意外存储异常会记录后重抛，而 presentation 刷新也可能因数据库/平台查询异常失败；两个异常路径均无 SaveFailed，界面会永久保持 Saving。
+- RED：新增意外写入异常用例，旧实现直接抛出并且不发出失败状态；再覆盖写入已返回成功、展示刷新失败的路径。
+- 修复：在保存协调器中将非取消异常映射为不暴露内部信息的 `UNEXPECTED_FAILURE`，仅当原访问凭据和协程仍有效时发出 SaveFailed；CancellationException 继续传播。
+- 文档：说明可重试失败与异常可能发生在数据库提交后的边界，重新进入详情会按持久化真相源加载。
+- 验证：`DetailWorkSessionTest` 定向测试、`verifyArchitecture`、`:app:lintDebug` 与 `git diff --check` 通过。

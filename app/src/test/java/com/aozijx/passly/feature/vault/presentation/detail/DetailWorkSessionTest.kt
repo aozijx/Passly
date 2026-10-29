@@ -234,6 +234,55 @@ class DetailWorkSessionTest {
         } finally { fixture.wipe() }
     }
 
+    @Test
+    fun unexpectedEditFailureReturnsTheSaveAttemptToAFailedState() = runTest {
+        val fixture = Fixture(beforeEdit = { error("storage unavailable") })
+        val completion = DetailEditCompletion.Field(FieldKey.PASSWORD)
+        val token = fixture.session.open(ID)
+
+        fixture.session.persist(token, EntryEdit.SetFieldValue(FieldKey.PASSWORD, "new-password"), completion)
+
+        assertEquals(
+            listOf(DetailMutation.SaveFailed(completion, "UNEXPECTED_FAILURE")),
+            fixture.mutations,
+        )
+        val reduced = DetailReducer.reduce(
+            DetailUiState(saveState = DetailSaveState.Saving(completion)),
+            fixture.mutations.single(),
+        )
+        assertEquals(DetailSaveState.Failed(completion, "UNEXPECTED_FAILURE"), reduced.saveState)
+    }
+
+    @Test
+    fun unexpectedPresentationFailureDoesNotLeaveTheSaveAttemptInProgress() = runTest {
+        val fixture = Fixture(beforePresent = { error("presentation unavailable") })
+        val completion = DetailEditCompletion.Field(FieldKey.PASSWORD)
+        val token = fixture.session.open(ID)
+
+        fixture.session.persist(token, EntryEdit.SetFieldValue(FieldKey.PASSWORD, "new-password"), completion)
+
+        assertEquals(
+            listOf(DetailMutation.SaveFailed(completion, "UNEXPECTED_FAILURE")),
+            fixture.mutations,
+        )
+    }
+
+    @Test
+    fun cancellationDuringEditIsPropagatedWithoutPublishingFailure() = runTest {
+        val cancelled = kotlinx.coroutines.CancellationException("save cancelled")
+        val fixture = Fixture(beforeEdit = { throw cancelled })
+        val token = fixture.session.open(ID)
+
+        try {
+            fixture.save(token)
+            fail("Expected cancellation to propagate")
+        } catch (actual: kotlinx.coroutines.CancellationException) {
+            assertSame(cancelled, actual)
+        }
+
+        assertTrue(fixture.mutations.isEmpty())
+    }
+
     private class Fixture(
         beforeEdit: suspend () -> Unit = {},
         beforePresent: suspend () -> Unit = {},
