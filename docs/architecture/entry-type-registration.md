@@ -8,7 +8,7 @@
 
 `EntryTypeDefinitions` 提供所有 `EntryType` 的字段目录。每类定义位于 `domain/entry/policy/type/`，包含字段类型、必填约束、访问级别及敏感存储键。静态列表在索引前拒绝重复类型，且要求覆盖 `EntryType.entries`；调用方仍通过原有 `EntryTypeDefinitions[type]` 查询。
 
-字段目录不等于创建能力。`EntryDraftMaterializer` 只物化已实现的创建类型，创建入口则由 App 的实际导航目的地决定。
+字段目录不等于创建能力。`EntryDraftMaterializer` 对全部 `EntryType` 使用穷尽分支：四种已实现类型执行物化，其余类型显式拒绝。新增类型会要求编译者明确归类。创建入口则由 App 的实际导航目的地决定。
 
 ## Data 凭据载荷
 

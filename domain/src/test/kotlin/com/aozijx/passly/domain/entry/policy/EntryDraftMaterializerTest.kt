@@ -40,6 +40,18 @@ class EntryDraftMaterializerTest {
     }
 
     @Test
+    fun unsupportedCreationTypeRemainsRejectedAfterDraftValidation() {
+        val failure = assertThrows(IllegalArgumentException::class.java) {
+            materializer.materialize(
+                draft(EntryType.NOTE, FieldKey.TITLE to EntryDraftValue.Text("Reminder")),
+                identity(EntryType.NOTE),
+            )
+        }
+
+        assertEquals("Entry creation is not supported for NOTE", failure.message)
+    }
+
+    @Test
     fun omittedOptionalOtpFieldsKeepTheirDefaults() {
         val entry = materializer.materialize(draft(EntryType.OTP,
             FieldKey.TITLE to EntryDraftValue.Text("Token"),

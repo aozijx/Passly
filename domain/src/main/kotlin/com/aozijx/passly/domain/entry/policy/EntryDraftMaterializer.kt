@@ -33,7 +33,20 @@ class EntryDraftMaterializer {
             EntryType.OTP -> materializeOtp(draft, identity)
             EntryType.BANK_CARD -> materializeBankCard(draft, identity)
             EntryType.WIFI -> materializeWifi(draft, identity)
-            else -> throw IllegalArgumentException("Entry creation is not supported for ${identity.type}")
+            EntryType.ACCOUNT,
+            EntryType.NOTE,
+            EntryType.ID_CARD,
+            EntryType.PASSPORT,
+            EntryType.DRIVER_LICENSE,
+            EntryType.SSH_KEY,
+            EntryType.PASSKEY,
+            EntryType.DATABASE_CREDENTIAL,
+            EntryType.SERVER_CREDENTIAL,
+            EntryType.API_KEY,
+            EntryType.CRYPTO_WALLET,
+            EntryType.SEED_PHRASE,
+            EntryType.RECOVERY_CODE ->
+                throw IllegalArgumentException("Entry creation is not supported for ${identity.type}")
         }
     }
 
