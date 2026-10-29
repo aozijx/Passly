@@ -58,6 +58,147 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class VaultSessionIdleTimeoutTest {
     @Test
+    fun `cancelled fresh unlock seals staged session and propagates cancellation`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val bootstrap = EmptyVaultBootstrapStore()
+            val dekManager = DekManager(bootstrap, FieldKeyManager(), RecordingLogger())
+            val session = YieldingDatabaseSession(pauseUnlock = true)
+            val lockState = LockStateManager()
+            val controller = VaultSessionController(
+                dekManager = dekManager,
+                sensitiveDataKeyManager = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher)),
+                authorizationPermitRevoker = { },
+                sessionManager = session,
+                vaultBootstrapStore = bootstrap,
+                lockStateManager = lockState,
+                securityEvents = SecuritySessionEventLogger(RecordingLogger()),
+                idleTimeoutSettings = object : IdleTimeoutSettings {
+                    override val isLockOnBackground = MutableStateFlow(false)
+                    override val lockTimeout = MutableStateFlow(1_000L)
+                },
+                autofillInboxKeyProvisioning = AutofillInboxKeyProvisioning { },
+            )
+
+            val unlockJob = launch(dispatcher) {
+                controller.commitUnlock(
+                    EnvelopeType.APP_PASSWORD,
+                    OwnedBytes(ByteArray(32) { 7 }),
+                    "unlock-cancel",
+                    AuthenticationPurpose.UNLOCK_VAULT,
+                )
+            }
+            runCurrent()
+            session.unlockStarted.await()
+            unlockJob.cancel()
+            runCurrent()
+            unlockJob.join()
+
+            assertTrue(unlockJob.isCancelled)
+            assertTrue(dekManager.state is DekState.Locked)
+            assertEquals(SecureSessionState.SEALED, lockState.state)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(1, session.sealCount)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun `cancelled soft lock resume preserves existing dek and soft lock`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val cancelled = CancellationException("soft lock resume cancelled")
+            val bootstrap = EmptyVaultBootstrapStore()
+            val dekManager = DekManager(bootstrap, FieldKeyManager(), RecordingLogger())
+            dekManager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { 6 })
+            val session = YieldingDatabaseSession(
+                initialLockState = SecureSessionState.SOFT_LOCKED,
+                unlockFailure = cancelled,
+            )
+            val lockState = LockStateManager().apply { mark(SecureSessionState.SOFT_LOCKED) }
+            val controller = VaultSessionController(
+                dekManager = dekManager,
+                sensitiveDataKeyManager = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher)),
+                authorizationPermitRevoker = { },
+                sessionManager = session,
+                vaultBootstrapStore = bootstrap,
+                lockStateManager = lockState,
+                securityEvents = SecuritySessionEventLogger(RecordingLogger()),
+                idleTimeoutSettings = object : IdleTimeoutSettings {
+                    override val isLockOnBackground = MutableStateFlow(false)
+                    override val lockTimeout = MutableStateFlow(1_000L)
+                },
+                autofillInboxKeyProvisioning = AutofillInboxKeyProvisioning { },
+            )
+
+            val thrown = try {
+                controller.commitUnlock(
+                    EnvelopeType.APP_PASSWORD,
+                    OwnedBytes(ByteArray(32) { 9 }),
+                    "soft-lock-cancel",
+                    AuthenticationPurpose.UNLOCK_VAULT,
+                )
+                null
+            } catch (failure: CancellationException) {
+                failure
+            }
+
+            assertEquals(cancelled.message, thrown?.message)
+            assertTrue(dekManager.isUnlocked.value)
+            assertEquals(SecureSessionState.SOFT_LOCKED, lockState.state)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(0, session.sealCount)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun `cancelled recovery unlock seals staged recovery session and propagates cancellation`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val cancelled = CancellationException("recovery database unlock cancelled")
+            val bootstrap = EmptyVaultBootstrapStore()
+            val dekManager = DekManager(bootstrap, FieldKeyManager(), RecordingLogger())
+            val session = YieldingDatabaseSession(unlockFailure = cancelled)
+            val lockState = LockStateManager()
+            val controller = VaultSessionController(
+                dekManager = dekManager,
+                sensitiveDataKeyManager = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher)),
+                authorizationPermitRevoker = { },
+                sessionManager = session,
+                vaultBootstrapStore = bootstrap,
+                lockStateManager = lockState,
+                securityEvents = SecuritySessionEventLogger(RecordingLogger()),
+                idleTimeoutSettings = object : IdleTimeoutSettings {
+                    override val isLockOnBackground = MutableStateFlow(false)
+                    override val lockTimeout = MutableStateFlow(1_000L)
+                },
+                autofillInboxKeyProvisioning = AutofillInboxKeyProvisioning { },
+            )
+
+            val thrown = try {
+                controller.commitRecoveryUnlock(OwnedBytes(ByteArray(32) { 8 }), "recovery-cancel")
+                null
+            } catch (failure: CancellationException) {
+                failure
+            }
+
+            assertEquals(cancelled.message, thrown?.message)
+            assertTrue(dekManager.state is DekState.Locked)
+            assertEquals(SecureSessionState.SEALED, lockState.state)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(1, session.sealCount)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
     fun `cancelling a sealed lock completes key cleanup and reports cancellation`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(dispatcher)
@@ -399,14 +540,24 @@ class VaultSessionIdleTimeoutTest {
         private val pauseSeal: Boolean = false,
         private val sealFailure: Throwable? = null,
         private val softLockFailure: Throwable? = null,
+        private val pauseUnlock: Boolean = false,
+        private val unlockFailure: Throwable? = null,
+        initialLockState: SecureSessionState = SecureSessionState.UNLOCKED,
     ) : DatabaseSessionLifecycle {
-        override var lockState: SecureSessionState = SecureSessionState.UNLOCKED
+        override var lockState: SecureSessionState = initialLockState
         var softLockCompleted = false
         var sealCount = 0
         val sealStarted = CompletableDeferred<Unit>()
         val allowSealToFinish = CompletableDeferred<Unit>()
+        val unlockStarted = CompletableDeferred<Unit>()
+        val allowUnlockToFinish = CompletableDeferred<Unit>()
 
-        override suspend fun unlock(): Throwable? = null
+        override suspend fun unlock(): Throwable? {
+            unlockStarted.complete(Unit)
+            if (pauseUnlock) allowUnlockToFinish.await()
+            unlockFailure?.let { throw it }
+            return null
+        }
 
         override suspend fun softLock() {
             lockState = SecureSessionState.SOFT_LOCKED

@@ -79,7 +79,7 @@ class VaultSessionController @Inject internal constructor(
     // ============================== 解锁 ==============================
 
     /**
-     * 提交完整解锁（SEALED → UNLOCKED）。
+     * 提交完整解锁（SEALED / SOFT_LOCKED → UNLOCKED）。
      *
      * 设置 DEK 并打开数据库。用于密码/恢复码解锁路径。
      */
@@ -90,11 +90,15 @@ class VaultSessionController @Inject internal constructor(
         purpose: AuthenticationPurpose,
     ): Boolean = mutex.withLock {
         val dek = ownedDek.consume()
+        val previousState = _state.value
+        val hadDek = dekManager.isUnlocked.value
+        var sessionUnlockStarted = false
         return try {
             transition(AuthenticationState.Unlocking(AuthenticationRequestId(correlationId)))
 
             if (dekManager.isUnlocked.value) {
                 // SOFT_LOCKED: DEK 仍在内存中，凭据已验证，只需恢复数据库会话
+                sessionUnlockStarted = true
                 val err = sessionManager.unlock()
                 if (err != null) {
                     _databaseFailure.value = err
@@ -106,6 +110,7 @@ class VaultSessionController @Inject internal constructor(
             } else {
                 when (dekManager.setDek(type, dek)) {
                     DekUnlockResult.Success -> {
+                        sessionUnlockStarted = true
                         val err = sessionManager.unlock()
                         if (err != null) {
                             _databaseFailure.value = err
@@ -125,6 +130,23 @@ class VaultSessionController @Inject internal constructor(
 
             publishAuthenticatedInternal(purpose)
             true
+        } catch (cancelled: CancellationException) {
+            if (!hadDek && dekManager.isUnlocked.value) {
+                rollbackStagedSession(LockReason.INTEGRITY_FAILURE, LockTrigger.INTEGRITY_FAILURE)
+            } else {
+                withContext(NonCancellable) {
+                    if (sessionUnlockStarted && sessionManager.lockState == SecureSessionState.UNLOCKED) {
+                        try {
+                            sessionManager.softLock()
+                        } catch (cleanupFailure: Throwable) {
+                            if (cleanupFailure !== cancelled) cancelled.addSuppressed(cleanupFailure)
+                        }
+                    }
+                    lockStateManager.mark(sessionManager.lockState)
+                    transition(previousState)
+                }
+            }
+            throw cancelled
         } finally {
             dek.fill(0)
             ownedDek.discard()
@@ -141,6 +163,9 @@ class VaultSessionController @Inject internal constructor(
         correlationId: String
     ): Boolean = mutex.withLock {
         val dek = ownedDek.consume()
+        val previousState = _state.value
+        val hadDek = dekManager.isUnlocked.value
+        var sessionUnlockStarted = false
         return try {
             transition(AuthenticationState.Unlocking(AuthenticationRequestId(correlationId)))
             if (!dekManager.isUnlocked.value) {
@@ -149,6 +174,7 @@ class VaultSessionController @Inject internal constructor(
                     return@withLock false
                 }
             }
+            sessionUnlockStarted = true
             val error = sessionManager.unlock()
             if (error != null) {
                 _databaseFailure.value = error
@@ -160,6 +186,13 @@ class VaultSessionController @Inject internal constructor(
             lockStateManager.mark(SecureSessionState.UNLOCKED)
             markRecoveryModeInternal()
             true
+        } catch (cancelled: CancellationException) {
+            if (sessionUnlockStarted || (!hadDek && dekManager.isUnlocked.value)) {
+                rollbackStagedSession(LockReason.RECOVERY_EXIT, LockTrigger.RECOVERY_EXIT)
+            } else {
+                withContext(NonCancellable) { transition(previousState) }
+            }
+            throw cancelled
         } finally {
             dek.fill(0)
             ownedDek.discard()
@@ -288,17 +321,19 @@ class VaultSessionController @Inject internal constructor(
         )
 
     /** Closes a session whose recovery code could not be durably consumed. */
-    private suspend fun sealStagedRecoverySession() {
-        var cleanupCancellation: CancellationException? = null
-        securityEvents.traceLock(
-            SessionLockRequest(LockReason.RECOVERY_EXIT, LockTrigger.RECOVERY_EXIT),
-            timeoutMs = 5_000,
-        ) {
-            withContext(NonCancellable) {
+    private suspend fun sealStagedRecoverySession() =
+        rollbackStagedSession(LockReason.RECOVERY_EXIT, LockTrigger.RECOVERY_EXIT)
+
+    private suspend fun rollbackStagedSession(reason: LockReason, trigger: LockTrigger) {
+        withContext(NonCancellable) {
+            securityEvents.traceLock(
+                SessionLockRequest(reason, trigger),
+                timeoutMs = 5_000,
+            ) {
                 try {
                     sessionManager.seal()
                 } catch (cancelled: CancellationException) {
-                    cleanupCancellation = cancelled
+                    recordFailure(cancelled, Reasons.SessionSealFailed)
                 } catch (failure: Throwable) {
                     recordFailure(failure, Reasons.SessionSealFailed)
                 }
@@ -306,7 +341,6 @@ class VaultSessionController @Inject internal constructor(
                 lockStateManager.mark(SecureSessionState.SEALED)
                 transition(AuthenticationState.Locked)
             }
-            cleanupCancellation?.let { throw it }
         }
     }
 
