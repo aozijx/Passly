@@ -4,8 +4,10 @@ import com.aozijx.passly.data.local.database.maintenance.DatabaseCleaner
 import com.aozijx.passly.data.local.database.maintenance.DatabaseCleanerImpl
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.local.datastore.ProtoVaultBootstrapStore
+import com.aozijx.passly.data.local.autofill.AutofillInboxRecordStoreImpl
 import com.aozijx.passly.data.local.database.port.VaultDatabaseResetController
 import com.aozijx.passly.domain.access.port.AutofillInboxBootstrapStore
+import com.aozijx.passly.domain.access.port.AutofillInboxRecordStore
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.domain.access.port.BiometricConfigurationSource
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
@@ -59,4 +61,10 @@ internal abstract class VaultStorageModule {
     abstract fun bindAutofillInboxBootstrapStore(
         impl: ProtoVaultBootstrapStore,
     ): AutofillInboxBootstrapStore
+
+    @Binds
+    @Singleton
+    abstract fun bindAutofillInboxRecordStore(
+        impl: AutofillInboxRecordStoreImpl,
+    ): AutofillInboxRecordStore
 }

@@ -2,6 +2,13 @@ package com.aozijx.passly.domain.autofill.model
 
 object AutofillInboxLimits {
     const val MAX_RECORD_BYTES = 64 * 1024
+    const val MAX_PENDING_RECORDS = 8
+    const val MAX_ACTIVE_BYTES = 256 * 1024
+    const val MAX_QUARANTINED_RECORDS = 8
+    const val MAX_QUARANTINE_BYTES = 256 * 1024
+    const val MAX_ROOT_BYTES = 512 * 1024
+    const val PENDING_RETENTION_MS = 24 * 60 * 60 * 1000L
+    const val QUARANTINE_RETENTION_MS = 7 * 24 * 60 * 60 * 1000L
 }
 
 @JvmInline

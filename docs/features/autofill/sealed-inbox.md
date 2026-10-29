@@ -1,6 +1,6 @@
 # Autofill Sealed Save Inbox
 
-状态：实现中。bootstrap key material 的 Domain/Proto 持久化边界、RSA 密钥生成/私钥封装/校验、完整 Vault 解锁后的幂等 provision，以及 pending record 加密协议已实现；耐久文件队列、入口接入与解锁导入尚未实现。
+状态：实现中。bootstrap key material 的 Domain/Proto 持久化边界、RSA 密钥生成/私钥封装/校验、完整 Vault 解锁后的幂等 provision、pending record 加密协议和受限耐久文件队列已实现；保存入口接入与解锁导入尚未实现。
 
 本设计允许 Vault 锁定时只进行密封写入，不授予数据库读取/解密能力，也不弹出 Passly 认证。当前代码仍使用
 认证式保存，见 [Legacy Service](legacy-service.md)和[Credential Manager](credential-manager.md)。
@@ -54,8 +54,8 @@ App 密码/生物识别变更只重包同一 DEK，不旋转 Inbox；真正 DEK 
 
 ## Pending store
 
-目录为 `filesDir/vault/autofill-inbox/<key-id>/{pending,quarantine}`。文件名是随机 draft ID，不包含包名、域名、
-用户名、Entry ID 或时间。写入采用同目录临时文件、fsync、原子 rename；启动清理 orphan temp。
+目录为 `filesDir/vault/autofill-inbox/<key-id>/{pending,quarantine}`。当前实现使用同目录临时文件、文件 `fsync` 与原子 rename，并在读取/写入时清理超期记录、旧 key 目录与孤立临时文件。文件名是随机 draft ID，不包含包名、域名、
+用户名、Entry ID 或时间；有效期依据文件修改时间管理，精确记录时间仍由加密 header 认证。
 
 pending record v1：
 
