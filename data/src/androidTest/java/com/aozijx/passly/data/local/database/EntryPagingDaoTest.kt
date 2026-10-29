@@ -2,7 +2,6 @@ package com.aozijx.passly.data.local.database
 
 import android.content.Context
 import androidx.paging.PagingSource
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.data.local.database.entity.EntryActivityEntity
@@ -36,7 +35,7 @@ class EntryPagingDaoTest {
     @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+        database = TestDatabaseFactory.inMemoryDatabaseBuilder(context)
             .allowMainThreadQueries()
             .build()
     }
@@ -252,7 +251,11 @@ class EntryPagingDaoTest {
                     placeholdersEnabled = false,
                 )
             )
-        return (result as PagingSource.LoadResult.Page).data
+        return when (result) {
+            is PagingSource.LoadResult.Page -> result.data
+            is PagingSource.LoadResult.Error -> throw result.throwable
+            is PagingSource.LoadResult.Invalid -> error("Paging source invalidated before loading")
+        }
     }
 
     private fun entry(

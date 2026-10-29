@@ -1,10 +1,8 @@
 package com.aozijx.passly.data.local.database
 
 import android.content.Context
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.aozijx.passly.data.local.database.callback.AttachmentReferenceConstraintCallback
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
 import com.aozijx.passly.data.local.database.entity.EntryEntity
@@ -27,9 +25,8 @@ class AttachmentReferenceLifecycleDaoTest {
     @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+        database = TestDatabaseFactory.inMemoryDatabaseBuilder(context)
             .allowMainThreadQueries()
-            .addCallback(AttachmentReferenceConstraintCallback)
             .build()
     }
 

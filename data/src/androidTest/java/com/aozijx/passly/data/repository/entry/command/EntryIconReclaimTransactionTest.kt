@@ -1,11 +1,11 @@
 package com.aozijx.passly.data.repository.entry.command
 
 import android.content.Context
-import androidx.room.Room
 import androidx.room.withTransaction
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.data.local.database.AppDatabase
+import com.aozijx.passly.data.local.database.TestDatabaseFactory
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import java.io.File
@@ -27,7 +27,7 @@ class EntryIconReclaimTransactionTest {
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         root = File(context.cacheDir, "icon-reclaim-test").apply { mkdirs() }
-        database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
+        database = TestDatabaseFactory.inMemoryDatabaseBuilder(context).build()
     }
 
     @After

@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.local.database
 
 import android.content.Context
-import androidx.room.Room
 import androidx.room.withTransaction
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -22,7 +21,7 @@ class EntryRevisionLifecycleDaoTest {
     @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+        database = TestDatabaseFactory.inMemoryDatabaseBuilder(context)
             .allowMainThreadQueries()
             .build()
     }

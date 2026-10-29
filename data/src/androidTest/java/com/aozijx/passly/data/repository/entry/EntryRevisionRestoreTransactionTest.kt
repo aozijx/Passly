@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.repository.entry
 
 import android.content.Context
-import androidx.room.Room
 import androidx.room.withTransaction
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -24,6 +23,7 @@ import java.lang.reflect.Proxy
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
 import com.aozijx.passly.data.local.database.AppDatabase
+import com.aozijx.passly.data.local.database.TestDatabaseFactory
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
@@ -68,7 +68,7 @@ class EntryRevisionRestoreTransactionTest {
     @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+        database = TestDatabaseFactory.inMemoryDatabaseBuilder(context)
             .allowMainThreadQueries()
             .build()
         fieldKeyManager = FieldKeyManager().apply {

@@ -32,6 +32,9 @@ baseline；只允许对冻结工具链产生且有明确理由的版本提示做
 ## 仪器测试说明
 
 连接设备的测试属于环境相关门禁。若失败，需区分应用断言、APK 安装/资源打包和设备状态，不能仅以“本地没有设备”关闭问题。
+Data 的 Room 仪器测试通过 `TestDatabaseFactory` 使用与生产相同的 SQLCipher SQLite 引擎及附件引用约束 callback；
+不能用系统 SQLite 的内存库代替生产驱动来判断 JSON 查询是否可用。不同 API 级别的 AVD 结果应分别记录，
+高版本 AVD 通过不能替代低版本真机的兼容性验证。
 Compose/Paging 的性能测试必须观察实际页面节点与查询流；单独构造占位 Composable 的重组次数不能证明生产列表
 是否重新查询。状态映射隔离使用纯 Mapper 单测，查询切换使用 Paging/Flow 行为测试。
 

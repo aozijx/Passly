@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.local.database
 
 import android.content.Context
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertTrue
@@ -14,7 +13,7 @@ class FreshDatabaseTest {
     @Test
     fun freshSchemaOpensAndRunsTransaction() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+        val database = TestDatabaseFactory.inMemoryDatabaseBuilder(context)
             .allowMainThreadQueries()
             .build()
 
