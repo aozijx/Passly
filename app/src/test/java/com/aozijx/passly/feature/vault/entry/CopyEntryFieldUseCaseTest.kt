@@ -26,6 +26,8 @@ import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.OwnedChars
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -66,6 +68,53 @@ class CopyEntryFieldUseCaseTest {
         assertTrue(value.isEmpty)
         assertEquals(0, fixture.query.reads)
         assertEquals(listOf(ENTRY_ID.value to ActivityType.COPY_PASSWORD), fixture.activityRecorder.activities)
+    }
+
+    @Test
+    fun staleDetailVisitDoesNotCopyAUsernameAfterItsReadCompletes() = runTest {
+        val queryStarted = CompletableDeferred<Unit>()
+        val finishQuery = CompletableDeferred<Unit>()
+        var visitCurrent = true
+        val fixture = fixture(
+            entry = entry(username = "alice"),
+            beforeQuery = { queryStarted.complete(Unit); finishQuery.await() },
+        )
+        val pendingCopy = async {
+            fixture.useCase(ENTRY_ID, EntryType.ACCOUNT, FieldKey.USERNAME) { visitCurrent }
+        }
+        queryStarted.await()
+
+        visitCurrent = false
+        finishQuery.complete(Unit)
+
+        assertEquals(CopyEntryFieldResult.Unavailable, pendingCopy.await())
+        assertTrue(fixture.clipboard.values.isEmpty())
+        assertTrue(fixture.activityRecorder.activities.isEmpty())
+    }
+
+    @Test
+    fun staleDetailVisitDoesNotCopyARevealedSensitiveField() = runTest {
+        val revealed = OwnedChars.fromString("secret")
+        val revealStarted = CompletableDeferred<Unit>()
+        val finishReveal = CompletableDeferred<Unit>()
+        var visitCurrent = true
+        val fixture = fixture(
+            entry = entry(),
+            revealed = revealed,
+            beforeReveal = { revealStarted.complete(Unit); finishReveal.await() },
+        )
+        val pendingCopy = async {
+            fixture.useCase(ENTRY_ID, EntryType.LOGIN, FieldKey.PASSWORD) { visitCurrent }
+        }
+        revealStarted.await()
+
+        visitCurrent = false
+        finishReveal.complete(Unit)
+
+        assertEquals(CopyEntryFieldResult.Unavailable, pendingCopy.await())
+        assertTrue(fixture.clipboard.values.isEmpty())
+        assertTrue(fixture.activityRecorder.activities.isEmpty())
+        assertTrue(revealed.isEmpty)
     }
 
     @Test
@@ -121,10 +170,12 @@ class CopyEntryFieldUseCaseTest {
         entry: Entry?,
         revealed: OwnedChars? = null,
         allowed: Boolean = true,
+        beforeQuery: suspend () -> Unit = {},
+        beforeReveal: suspend () -> Unit = {},
     ): Fixture {
         val gate = RecordingGate(allowed)
-        val query = RecordingQuery(entry)
-        val sensitiveRepository = RecordingSensitiveRepository(revealed)
+        val query = RecordingQuery(entry, beforeQuery)
+        val sensitiveRepository = RecordingSensitiveRepository(revealed, beforeReveal)
         val clipboard = RecordingClipboard()
         val activityRecorder = RecordingActivityRecorder()
         return Fixture(
@@ -169,9 +220,16 @@ class CopyEntryFieldUseCaseTest {
         }
     }
 
-    private class RecordingQuery(private val entry: Entry?) : EntryQueryRepository {
+    private class RecordingQuery(
+        private val entry: Entry?,
+        private val beforeRead: suspend () -> Unit,
+    ) : EntryQueryRepository {
         var reads = 0
-        override suspend fun getById(entryId: EntryId): Entry? = entry.also { reads++ }
+        override suspend fun getById(entryId: EntryId): Entry? {
+            reads++
+            beforeRead()
+            return entry
+        }
         override suspend fun findEntriesWithCustomIcons() = emptyList<Entry>()
         override suspend fun count() = 0
     }
@@ -183,6 +241,7 @@ class CopyEntryFieldUseCaseTest {
 
     private class RecordingSensitiveRepository(
         private val revealed: OwnedChars?,
+        private val beforeReveal: suspend () -> Unit,
     ) : SensitiveFieldRepository {
         var action: SensitiveAccessAction? = null
         override suspend fun reveal(
@@ -192,6 +251,7 @@ class CopyEntryFieldUseCaseTest {
             permit: AuthorizationPermit,
         ): RevealedSensitiveField? {
             this.action = action
+            beforeReveal()
             return revealed?.let { RevealedSensitiveField(entryId, key, it) }
         }
         override suspend fun revealMany(

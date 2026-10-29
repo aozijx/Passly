@@ -281,3 +281,11 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 修复：消费事务返回后令牌失效即返回失败结果，不发布或交付验证码；已完成的 HOTP 数据事务不回滚，计数器保持已推进。
 - 文档：说明关闭/切换/锁定期间已消费但未交付的验证码会丢弃，用户重新授权即可继续。
 - 验证：`OtpCodeRuntimeTest` 定向测试、`verifyArchitecture`、`:app:lintDebug` 与 `git diff --check` 通过。
+
+### 后续批次：详情复制绑定访问会话（2026-10-29）
+
+- 生产路径核对：`CopyEntryFieldUseCase` 在授权闭包内读取公开字段或解密单字段并直接调用剪贴板；`DetailViewModel.copyField()` 只在复制返回后检查访问令牌。页面关闭/切换发生在查询或解密挂起期间时，旧访问仍能写剪贴板。剪贴板控制器还会先挂起读取保留策略，因此仅在仓库读取后核对仍留有窗口。
+- RED：两项延迟查询/解密回归在旧逻辑下失败；控制器延迟保留策略用例在旧式先检查再挂起实现下失败。
+- 修复：详情复制用例把令牌和调用协程 Job 绑定到最终写入；Clipboard writer 增加条件写入合同，Android 控制器在读取策略后、同步写入前重新核对。OTP 复制也使用同一条件写入边界。
+- 文档：明确详情复制的访问令牌检查点与剪贴板写入器条件合同。
+- 验证：`CopyEntryFieldUseCaseTest` 与 `ClipboardCopyControllerTest` 共 12 项定向测试、`verifyArchitecture`、`:app:lintDebug` 与 `git diff --check` 通过。

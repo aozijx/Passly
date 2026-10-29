@@ -15,11 +15,17 @@ class ClipboardCopyController @Inject constructor(
     private val secureClipboard: SecureClipboard,
 ) : SensitiveClipboardWriter, OwnedClipboardCleaner {
     override suspend fun writeSensitive(text: String) {
+        writeSensitiveIf(text) { true }
+    }
+
+    override suspend fun writeSensitiveIf(text: String, canWrite: () -> Boolean): Boolean {
         val policy = settingsSource.security.first().clipboardClearPolicy
+        if (!canWrite()) return false
         secureClipboard.copySensitive(
             text = text,
             clearAfterSeconds = policy.delaySeconds.takeIf { policy.enabled },
         )
+        return true
     }
 
     override fun clearOwned(): Boolean =

@@ -5,11 +5,15 @@ import com.aozijx.passly.core.platform.clipboard.SecureClipboard
 import com.aozijx.passly.domain.settings.model.ClipboardClearPolicy
 import com.aozijx.passly.domain.settings.model.SecuritySettings
 import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -39,6 +43,31 @@ class ClipboardCopyControllerTest {
         controller.writeSensitive("secret")
 
         assertEquals("secret" to null, clipboard.lastCopy)
+    }
+
+    @Test
+    fun `conditional copy rechecks caller state after loading clipboard policy`() = runTest {
+        val policyReadStarted = CompletableDeferred<Unit>()
+        val providePolicy = CompletableDeferred<SecuritySettings>()
+        val source = object : SecuritySettingsSource {
+            override val security: Flow<SecuritySettings> = flow {
+                policyReadStarted.complete(Unit)
+                emit(providePolicy.await())
+            }
+        }
+        val clipboard = RecordingClipboard()
+        val controller = ClipboardCopyController(source, clipboard)
+        var canWrite = true
+        val pendingCopy = async {
+            controller.writeSensitiveIf("secret") { canWrite }
+        }
+        policyReadStarted.await()
+
+        canWrite = false
+        providePolicy.complete(policy(enabled = true, delay = 60))
+
+        assertFalse(pendingCopy.await())
+        assertNull(clipboard.lastCopy)
     }
 
     @Test

@@ -19,6 +19,8 @@ import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 
 internal class CopyEntryFieldUseCase @Inject constructor(
     private val authorizationGate: AuthorizationGate,
@@ -32,7 +34,9 @@ internal class CopyEntryFieldUseCase @Inject constructor(
         entryId: EntryId,
         entryType: EntryType,
         fieldKey: FieldKey,
+        canDeliver: () -> Boolean = { true },
     ): CopyEntryFieldResult {
+        val canWrite = deliveryGuard(canDeliver)
         val sensitiveKey = EntryTypeDefinitions.sensitiveStorageKey(entryType, fieldKey)
         val scope = sensitiveKey?.let {
             AuthorizationScope.SensitiveFields(
@@ -44,15 +48,20 @@ internal class CopyEntryFieldUseCase @Inject constructor(
 
         val result = when (val authorization = authorizationGate.authorize(scope) { permit ->
             if (sensitiveKey == null) {
+                if (!canWrite()) return@authorize CopyEntryFieldResult.Unavailable
                 val entry = entryQueryRepository.getById(entryId)
                     ?: return@authorize CopyEntryFieldResult.Unavailable
+                if (!canWrite()) return@authorize CopyEntryFieldResult.Unavailable
                 val value = entryFieldReader.getFieldValue(entry, fieldKey)
                     ?.takeIf(String::isNotBlank)
                     ?: return@authorize CopyEntryFieldResult.Unavailable
-                clipboardWriter.writeSensitive(value)
-                CopyEntryFieldResult.Copied
+                if (clipboardWriter.writeSensitiveIf(value, canWrite)) {
+                    CopyEntryFieldResult.Copied
+                } else {
+                    CopyEntryFieldResult.Unavailable
+                }
             } else {
-                copySensitiveField(entryId, sensitiveKey, permit)
+                copySensitiveField(entryId, sensitiveKey, permit, canWrite)
             }
         }) {
             is AuthorizationResult.Allowed -> authorization.value
@@ -60,7 +69,7 @@ internal class CopyEntryFieldUseCase @Inject constructor(
             AuthorizationResult.Cancelled,
             -> CopyEntryFieldResult.NotAuthorized
         }
-        if (result == CopyEntryFieldResult.Copied) {
+        if (result == CopyEntryFieldResult.Copied && canWrite()) {
             activityRecorder.recordUsage(entryId.value, fieldKey.copyActivityType())
         }
         return result
@@ -70,6 +79,7 @@ internal class CopyEntryFieldUseCase @Inject constructor(
         entryId: EntryId,
         key: SensitiveFieldKey,
         permit: AuthorizationPermit,
+        canWrite: () -> Boolean,
     ): CopyEntryFieldResult {
         val revealed = sensitiveFieldRepository.reveal(
             entryId = entryId,
@@ -78,13 +88,17 @@ internal class CopyEntryFieldUseCase @Inject constructor(
             permit = permit,
         ) ?: return CopyEntryFieldResult.Unavailable
         return try {
+            if (!canWrite()) return CopyEntryFieldResult.Unavailable
             val chars = revealed.value.toCharArray()
             try {
                 if (chars.isEmpty()) {
                     CopyEntryFieldResult.Unavailable
                 } else {
-                    clipboardWriter.writeSensitive(String(chars))
-                    CopyEntryFieldResult.Copied
+                    if (clipboardWriter.writeSensitiveIf(String(chars), canWrite)) {
+                        CopyEntryFieldResult.Copied
+                    } else {
+                        CopyEntryFieldResult.Unavailable
+                    }
                 }
             } finally {
                 chars.fill('\u0000')
@@ -107,16 +121,22 @@ internal class CopyOtpCodeUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         entryId: EntryId,
+        canDeliver: () -> Boolean = { true },
         codeProvider: suspend () -> String?,
     ): CopyEntryFieldResult {
+        val canWrite = deliveryGuard(canDeliver)
         val result = when (
             val authorization = authorizationGate.authorize(
                 AuthorizationScope.Global(AuthenticationPurpose.COPY_SECRET),
             ) {
+                if (!canWrite()) return@authorize CopyEntryFieldResult.Unavailable
                 val code = codeProvider()?.takeIf { it.isNotBlank() && '-' !in it }
                     ?: return@authorize CopyEntryFieldResult.Unavailable
-                clipboardWriter.writeSensitive(code)
-                CopyEntryFieldResult.Copied
+                if (clipboardWriter.writeSensitiveIf(code, canWrite)) {
+                    CopyEntryFieldResult.Copied
+                } else {
+                    CopyEntryFieldResult.Unavailable
+                }
             }
         ) {
             is AuthorizationResult.Allowed -> authorization.value
@@ -124,11 +144,16 @@ internal class CopyOtpCodeUseCase @Inject constructor(
             AuthorizationResult.Cancelled,
             -> CopyEntryFieldResult.NotAuthorized
         }
-        if (result == CopyEntryFieldResult.Copied) {
+        if (result == CopyEntryFieldResult.Copied && canWrite()) {
             activityRecorder.recordUsage(entryId.value, ActivityType.COPY_PASSWORD)
         }
         return result
     }
+}
+
+private suspend fun deliveryGuard(canDeliver: () -> Boolean): () -> Boolean {
+    val callerJob = currentCoroutineContext()[Job]
+    return { callerJob?.isActive != false && canDeliver() }
 }
 
 internal sealed interface CopyEntryFieldResult {

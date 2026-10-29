@@ -434,7 +434,8 @@ class DetailViewModel @Inject internal constructor(
             if (copyEntryFieldUseCase(
                     entry.id,
                     entry.type,
-                    fieldKey
+                    fieldKey,
+                    canDeliver = { workSession.isCurrent(token) },
                 ) != CopyEntryFieldResult.Copied
             ) return@launch
             if (!workSession.isCurrent(token)) return@launch
@@ -456,7 +457,10 @@ class DetailViewModel @Inject internal constructor(
         val token = workSession.current(entry.id) ?: return
         viewModelScope.launch {
             if (
-                copyOtpCodeUseCase(entry.id) {
+                copyOtpCodeUseCase(
+                    entry.id,
+                    canDeliver = { workSession.isCurrent(token) },
+                ) {
                     if (workSession.isCurrent(token)) otpRuntime.codeForCopy(entry.id.value) else null
                 } != CopyEntryFieldResult.Copied
             ) return@launch
