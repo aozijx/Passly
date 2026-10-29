@@ -15,6 +15,7 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.CardCredential
 import com.aozijx.passly.domain.entry.model.credential.EntryCredentialKind
+import com.aozijx.passly.domain.entry.model.credential.IdentityCredential
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
@@ -93,6 +94,20 @@ class EntrySecretMapperTest {
 
         assertEquals(EntryCredentialKind.CARD, adapter.kind)
         assertEquals(expectedPayload, payload.card)
+        assertEquals(null, payload.login)
+        assertEquals(credential, adapter.decode(payload))
+    }
+
+    @Test
+    fun `identity adapter owns the full identity slot`() {
+        val credential = populatedDataClass(IdentityCredential::class.java) as IdentityCredential
+        val expectedPayload = populatedDataClass(IdentityCredentialPayload::class.java) as IdentityCredentialPayload
+        val adapter = entryPayloadAdapters.get(EntryCredentialKind.IDENTITY)
+
+        val payload = adapter.encode(credential)
+
+        assertEquals(EntryCredentialKind.IDENTITY, adapter.kind)
+        assertEquals(expectedPayload, payload.identity)
         assertEquals(null, payload.login)
         assertEquals(credential, adapter.decode(payload))
     }

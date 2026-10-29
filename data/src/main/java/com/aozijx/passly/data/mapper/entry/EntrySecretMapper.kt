@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.mapper.entry
 
 import com.aozijx.passly.data.codec.entry.payload.CustomFieldPayload
-import com.aozijx.passly.data.codec.entry.payload.IdentityCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.PasskeyCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.SecretPayload
 import com.aozijx.passly.data.codec.entry.payload.SshCredentialPayload
@@ -29,13 +28,7 @@ object EntrySecretMapper {
             EntryCredential.None -> SecretPayload()
             is LoginCredential -> entryPayloadAdapters.get(EntryCredentialKind.LOGIN).encode(credential)
             is CardCredential -> entryPayloadAdapters.get(EntryCredentialKind.CARD).encode(credential)
-            is IdentityCredential -> SecretPayload(identity = IdentityCredentialPayload(
-                idNumber = credential.idNumber,
-                securityQuestion = credential.securityQuestion,
-                securityAnswer = credential.securityAnswer,
-                seedPhrase = credential.seedPhrase,
-                recoveryCodes = credential.recoveryCodes,
-            ))
+            is IdentityCredential -> entryPayloadAdapters.get(EntryCredentialKind.IDENTITY).encode(credential)
             is SshCredential -> SecretPayload(ssh = SshCredentialPayload(
                 credential.privateKey, credential.publicKey, credential.passphrase,
             ))
@@ -83,15 +76,7 @@ object EntrySecretMapper {
             EntryCredentialKind.NONE -> EntryCredential.None
             EntryCredentialKind.LOGIN -> entryPayloadAdapters.get(EntryCredentialKind.LOGIN).decode(this)
             EntryCredentialKind.CARD -> entryPayloadAdapters.get(EntryCredentialKind.CARD).decode(this)
-            EntryCredentialKind.IDENTITY -> requireNotNull(identity) { "Identity payload is missing" }.let {
-                IdentityCredential(
-                    it.idNumber,
-                    it.securityQuestion,
-                    it.securityAnswer,
-                    it.seedPhrase,
-                    it.recoveryCodes,
-                )
-            }
+            EntryCredentialKind.IDENTITY -> entryPayloadAdapters.get(EntryCredentialKind.IDENTITY).decode(this)
             EntryCredentialKind.SSH -> requireNotNull(ssh) { "SSH payload is missing" }.let {
                 SshCredential(it.privateKey, it.publicKey, it.passphrase)
             }

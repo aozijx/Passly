@@ -17,5 +17,6 @@ internal val entryPayloadAdapters = EntryPayloadAdapterRegistry(
         LoginEntryPayloadAdapter(),
         CardEntryPayloadAdapter(),
         WifiEntryPayloadAdapter(),
+        IdentityEntryPayloadAdapter(),
     ),
 )
