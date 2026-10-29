@@ -50,8 +50,3 @@ sealed interface ArgumentValue {
         val SAFE_CODE = Regex("[a-z][a-z0-9_.-]{0,95}")
     }
 }
-
-fun durationArgument(key: ArgumentKey, value: Long) = key to ArgumentValue.DurationMs(value)
-fun enumArgument(key: ArgumentKey, value: String) = key to ArgumentValue.EnumCode(value)
-fun reasonArgument(key: ArgumentKey, value: String) = key to ArgumentValue.ReasonCode(value)
-fun flagArgument(key: ArgumentKey, value: Boolean) = key to ArgumentValue.Flag(value)

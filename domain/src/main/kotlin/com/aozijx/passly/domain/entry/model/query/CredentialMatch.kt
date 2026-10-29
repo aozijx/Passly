@@ -1,7 +1,5 @@
 package com.aozijx.passly.domain.entry.model.query
 
-import com.aozijx.passly.domain.entry.model.Entry
-
 enum class MatchType(val score: Int) {
     APPLICATION_ID(100),
     VERIFIED_ASSOCIATION(90),
@@ -18,8 +16,3 @@ data class CredentialMatch(
 ) {
     val score: Int get() = type.score
 }
-
-data class CredentialCandidate(
-    val entry: Entry,
-    val match: CredentialMatch,
-)

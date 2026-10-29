@@ -8,14 +8,13 @@
 flowchart TD
     EX["Throwable（DAO / 文件 / 密码学）"] -->|"mapper"| AE["AppError / AppResult"]
     AE -->|"suspend report(error, context)"| REP["AppErrorReporter（observability）"]
-    AE -->|"error code + operation"| NM["AppErrorNoticeMapper（message）"]
-    NM -->|"NoticeCode"| MC["消息中心"]
+    FEATURE["Feature result / effect"] -->|"explicit NoticeCode"| MC["消息中心"]
 ```
 
 - **core/error**：只表达失败和控制流（`AppError`、`AppResult`）。不记录日志、不发布消息、不依赖 Android。
 - **core/observability**：可观察 Error，但 Error 不知道 Logger 的存在。通过 `AppErrorReporter`
   契约在边界统一记录。
-- **app/message**：根据 error code + operation 映射为 `NoticeCode`，由消息中心决定展示方式。
+- **app/message**：承载 `AppNotice`、稳定 `NoticeCode`、注册策略和投递；Feature 根据具体操作结果选择通知，避免把所有 `AppError` 全局映射成消息。
 
 ## 禁止反向依赖
 
@@ -46,7 +45,6 @@ core/common/.../core/error/
     CryptoErrors.kt      -- 密码学错误子类
     BackupErrors.kt      -- 备份错误子类
     FileErrors.kt        -- 文件错误子类
-    NetworkErrors.kt     -- 网络错误子类
     DomainErrors.kt      -- 领域层错误子类
   result/
     AppResult.kt         -- Success/Failure、map/fold、异常转换
@@ -68,8 +66,9 @@ app/observability/
   ObservabilityRuntimeController.kt -- 生命周期、崩溃与本地存储所有者
 
 app/message/
-  mapping/
-    AppErrorNoticeMapper.kt -- Error → NoticeCode 映射
+  model/                   -- AppNotice、NoticeCode 与类型化参数
+  contract/                -- NoticeCode 注册策略
+  runtime/                 -- 分发、路由和去重
 ```
 
 ## 数据流
@@ -112,17 +111,15 @@ data class ErrorReportContext(
 | throwable_type（白名单校验） | 包名                   |
 |                         | 用户名、备份 URI、密码、密钥、OTP |
 
-### AppError → UI / Notice
+### AppError → UI；Feature result → Notice
 
 ```
-页面根据 error code + operation 映射 NoticeCode
+页面根据 AppError 映射内联资源键
   ↓
-AppErrorNoticeMapper
-  ↓
-消息中心（AppNotice）
+UI feedback
 ```
 
-Error 不直接发布 `AppNotice`。内联显示（Snackbar、输入框错误）由页面根据 error code 决定。
+`AppError` 不直接发布 `AppNotice`。内联显示（Snackbar、输入框错误）由页面根据错误码决定；需要全局通知时，Feature 根据其类型化操作结果明确选择 `NoticeCode`，再交给消息中心分发。Backup 等有独立操作语义的通知映射留在对应 Feature。
 
 ## 记录策略
 
