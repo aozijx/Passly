@@ -1,6 +1,6 @@
 # Autofill Sealed Save Inbox
 
-状态：已批准，尚未实现。
+状态：实现中。bootstrap key material 的 Domain/Proto 持久化边界已实现；密钥生成、锁定保存与解锁导入尚未实现。
 
 本设计允许 Vault 锁定时只进行密封写入，不授予数据库读取/解密能力，也不弹出 Passly 认证。当前代码仍使用
 认证式保存，见 [Legacy Service](legacy-service.md)和[Credential Manager](credential-manager.md)。

@@ -5,15 +5,17 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.dataStore
 import com.aozijx.passly.data.crypto.proto.BootstrapData
 import com.aozijx.passly.data.crypto.proto.EnvelopeEntry
-import com.aozijx.passly.domain.access.model.EnvelopeType
-import com.aozijx.passly.domain.access.model.KdfAlgorithm
-import com.aozijx.passly.domain.access.model.KeyEnvelope
+import com.aozijx.passly.domain.access.model.AutofillInboxKeyMaterial
 import com.aozijx.passly.domain.access.model.BiometricBinding
 import com.aozijx.passly.domain.access.model.BiometricBootstrapState
 import com.aozijx.passly.domain.access.model.BiometricRotationJournal
 import com.aozijx.passly.domain.access.model.BiometricRotationPhase
-import com.aozijx.passly.domain.access.port.VaultBootstrapStore
+import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.model.KdfAlgorithm
+import com.aozijx.passly.domain.access.model.KeyEnvelope
+import com.aozijx.passly.domain.access.port.AutofillInboxBootstrapStore
 import com.aozijx.passly.domain.access.port.BiometricConfigurationSource
+import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.google.protobuf.ByteString
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
@@ -32,7 +34,7 @@ private val Context.bootstrapDataStore: DataStore<BootstrapData> by dataStore(
 @Singleton
 internal class ProtoVaultBootstrapStore @Inject constructor(
     @param:ApplicationContext private val context: Context
-) : VaultBootstrapStore, BiometricConfigurationSource {
+) : VaultBootstrapStore, AutofillInboxBootstrapStore, BiometricConfigurationSource {
 
     private val dataStore: DataStore<BootstrapData>
         get() = context.bootstrapDataStore
@@ -112,6 +114,19 @@ internal class ProtoVaultBootstrapStore @Inject constructor(
     override suspend fun loadAttachmentKeyEnvelope(): ByteArray? {
         val envelope = dataStore.data.first().attachmentKeyEnvelope
         return if (envelope.isEmpty) null else envelope.toByteArray()
+    }
+
+    override suspend fun saveAutofillInboxKeyMaterial(material: AutofillInboxKeyMaterial) {
+        dataStore.updateData { current ->
+            current.toBuilder().setAutofillInboxKeyMaterial(material).build()
+        }
+    }
+
+    override suspend fun loadAutofillInboxKeyMaterial(): AutofillInboxKeyMaterial? =
+        dataStore.data.first().readAutofillInboxKeyMaterial()
+
+    override suspend fun clearAutofillInboxKeyMaterial() {
+        dataStore.updateData { it.toBuilder().clearAutofillInboxKeyMaterial().build() }
     }
 
     override suspend fun loadBiometricState(): BiometricBootstrapState {
@@ -203,6 +218,7 @@ internal class ProtoVaultBootstrapStore @Inject constructor(
                 .clearVerificationTag()
                 .clearSensitiveKeyEnvelope()
                 .clearAttachmentKeyEnvelope()
+                .clearAutofillInboxKeyMaterial()
                 .clearBiometricBinding()
                 .clearBiometricRotation()
                 .clearBiometricCleanupAliases()

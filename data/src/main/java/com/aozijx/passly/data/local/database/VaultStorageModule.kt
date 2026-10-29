@@ -5,6 +5,7 @@ import com.aozijx.passly.data.local.database.maintenance.DatabaseCleanerImpl
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.local.datastore.ProtoVaultBootstrapStore
 import com.aozijx.passly.data.local.database.port.VaultDatabaseResetController
+import com.aozijx.passly.domain.access.port.AutofillInboxBootstrapStore
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.domain.access.port.BiometricConfigurationSource
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
@@ -52,4 +53,10 @@ internal abstract class VaultStorageModule {
     abstract fun bindVaultBootstrapStore(
         impl: ProtoVaultBootstrapStore,
     ): VaultBootstrapStore
+
+    @Binds
+    @Singleton
+    abstract fun bindAutofillInboxBootstrapStore(
+        impl: ProtoVaultBootstrapStore,
+    ): AutofillInboxBootstrapStore
 }

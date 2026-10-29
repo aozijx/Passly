@@ -12,6 +12,15 @@ message BootstrapData {
   repeated string biometric_cleanup_aliases = 6;
   bytes sensitive_key_envelope = 7;
   bytes attachment_key_envelope = 8;
+  AutofillInboxKeyMaterial autofill_inbox_key = 9;
+}
+
+message AutofillInboxKeyMaterial {
+  uint32 format_version = 1;
+  bytes key_id = 2;
+  bytes public_key = 3;
+  bytes public_key_sha256 = 4;
+  bytes private_key_envelope = 5;
 }
 
 message EnvelopeEntry {
