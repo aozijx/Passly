@@ -70,7 +70,7 @@
 
 - [x] 盘点 ViewModel、Route、Mapper、Coordinator 的职责和依赖，重点复核本轮涉及的安全设置、历史与编辑流程。
 - [x] 将业务编排归入现有应用服务/use case，页面状态留在 presentation；删除纯转发映射和无用文件，保留有实际转换语义的 mapper。
-- [ ] 运行最终相关门禁，检查文档链接和遗留符号，逐项记录代码与验证证据及未验证边界；待办只在本计划维护，不回填本地 AGENTS.md。
+- [x] 运行最终相关门禁，检查文档链接和遗留符号，逐项记录代码与验证证据及未验证边界；待办只在本计划维护，不回填本地 AGENTS.md。
 
 ### 当前交付与剩余验证（2026-10-29）
 
@@ -87,11 +87,15 @@ API 31 真机的 `build-history-api31.log` 未通过：Data 29 项中 3 项失�
 后续先统一测试驱动再验证，不据此改写生产查询或跳过用例。App 仅完成 12 项并报告 1 项失败，
 `PermissionRequestHostTest.changingOwnerRegistersIndependentLauncherAndRejectsOldResult` 的 XML 没有异常内容，不能视为全套已执行。
 
-用户已于 2026-10-29 明确将测试留到下次，本轮不再启动 Gradle 测试或设备操作。下轮验证事项：
+用户允许使用现有 AVD 继续验证。Data 所有 Room 仪器测试现统一通过 `TestDatabaseFactory` 使用生产 SQLCipher 驱动，并保留 `AttachmentReferenceConstraintCallback`；显式 JSON1 查询及 Autofill/Paging JSON 查询在 API 36 模拟器验证成功。分页测试遇到 `LoadResult.Error` 时现在直接抛出其原始异常。
+API 36 Data 仪器测试：30 项通过、0 失败。API 36 App 全量仪器测试最终 57 项通过、0 失败，其中 `PermissionRequestHostTest` 2 项通过。首次空历史截图为黑图；改用实屏截图后又观察到白色空窗口，旧像素断言会误判。截图测试现等待画面中出现 Sheet 与遮罩的明暗差异，完整复跑通过；最终图片经人工检查，显示 Version history Sheet 和“No versions available”。
 
-- [ ] DAO/事务仪器测试使用与生产一致的 SQLCipher 驱动，保留已有外键和附件约束 callback；核对 JSON 查询能力。
-- [ ] 分页测试明确报告 LoadResult.Error 的真实异常，避免强转掩盖 SQL 根因。
-- [ ] 重新执行 API 31 的 Data 与 App 仪器测试，排查权限宿主失败及整套测试中断原因。
-- [ ] 补齐空历史页有效截图；真实生物录入变更后的硬件 Keystore 行为仍未实测，不宣称通过。
+API 31 复验仍未完成：本机只有 API 34/36/37 系统镜像，API 31 镜像目录为空且没有 `sdkmanager`；本轮未下载/安装大型系统镜像。硬件 Keystore 的真实生物录入变更仍未实测，不宣称通过。
+
+- [x] DAO/事务仪器测试使用与生产一致的 SQLCipher 驱动，保留已有外键和附件约束 callback；核对 JSON 查询能力（API 36：30 项全过）。
+- [x] 分页测试明确报告 LoadResult.Error 的真实异常，避免强转掩盖 SQL 根因。
+- [ ] 重新执行 API 31 的 Data 与 App 仪器测试；受 SDK 缺少 API 31 system image 阻塞，API 36 结果不能代替。
+- [x] 补齐并检查空历史页有效截图。真实生物录入变更后的硬件 Keystore 行为仍未实测，不宣称通过。
 
 最终独立只读复核未提出新的代码问题；API 31 与硬件边界保留上述未完成项，因此本计划尚未整体关闭。
+收尾：`verifyArchitecture` 通过；文档相对链接检查和移除候选符号检索通过，`git diff --check` 通过。工作区本地 `AGENTS.md` 与 `.agents/skills/` 保持未跟踪，不暂存、不提交。

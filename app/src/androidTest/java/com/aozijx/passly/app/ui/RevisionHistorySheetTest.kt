@@ -3,8 +3,7 @@ package com.aozijx.passly.app.ui
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Column
 import android.graphics.Bitmap
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.test.captureToImage
+import android.graphics.Color
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.assertIsDisplayed
@@ -142,14 +141,34 @@ class RevisionHistorySheetTest {
     }
 
     private fun captureSheet(name: String) {
+        compose.waitForIdle()
+        compose.mainClock.advanceTimeBy(500)
+        compose.waitForIdle()
         val arguments = InstrumentationRegistry.getArguments()
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val directory = arguments.getString("additionalTestOutputDir")?.let(::File)
             ?: checkNotNull(context.getExternalFilesDir(null))
         directory.mkdirs()
-        File(directory, name).outputStream().use {
-            compose.onNodeWithTag("revision-history-sheet").captureToImage().asAndroidBitmap()
-                .compress(Bitmap.CompressFormat.PNG, 100, it)
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        var captured: Bitmap? = null
+        repeat(20) { attempt ->
+            if (captured != null) return@repeat
+            val candidate = automation.takeScreenshot()
+            val readable = candidate.copy(Bitmap.Config.ARGB_8888, false)
+            val top = readable.getPixel(readable.width / 2, readable.height / 2)
+            val bottom = readable.getPixel(readable.width / 2, readable.height * 85 / 100)
+            val showsSheet = name != "history-empty.png" ||
+                (Color.red(bottom) - Color.red(top) > 30 && Color.green(bottom) - Color.green(top) > 30)
+            readable.recycle()
+            if (showsSheet) {
+                captured = candidate
+            } else {
+                candidate.recycle()
+                if (attempt < 19) Thread.sleep(100)
+            }
         }
+        val screenshot = checkNotNull(captured) { "Captured revision sheet is blank: $name" }
+        File(directory, name).outputStream().use { screenshot.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        screenshot.recycle()
     }
 }
