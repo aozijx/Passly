@@ -24,34 +24,7 @@ class EntryFocusBehaviorTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun focusMovesThroughFieldsOnNextImeAction() {
-        val state = AddPasswordUiState(
-            form = AddPasswordFormState(title = "Example", password = "secret"),
-        )
-
-        composeRule.setContent {
-            AddPasswordEditorScreen(
-                state = state,
-                onAction = {},
-                onBack = {},
-                snackbarHostState = remember { SnackbarHostState() },
-                modifier = Modifier,
-            )
-        }
-
-        val resources = InstrumentationRegistry.getInstrumentation().targetContext.resources
-        val title = resources.getString(R.string.field_title)
-        val username = resources.getString(R.string.field_username_hint)
-        val password = resources.getString(R.string.password_label)
-        composeRule.onNodeWithText(title).performClick().assertIsFocused()
-        composeRule.onNodeWithText(title).performImeAction()
-        composeRule.onNodeWithText(username).assertIsFocused()
-        composeRule.onNodeWithText(username).performImeAction()
-        composeRule.onNodeWithText(password).assertIsFocused()
-    }
-
-    @Test
-    fun screenAndSaveActionModifiersHaveIndependentOwners() {
+    fun passwordEditorKeepsFocusOrderAndOwnsScreenAndSaveModifiers() {
         val state = AddPasswordUiState(
             form = AddPasswordFormState(title = "Example", password = "secret"),
         )
@@ -69,5 +42,16 @@ class EntryFocusBehaviorTest {
 
         composeRule.onNodeWithTag("editor-screen").assertIsDisplayed()
         composeRule.onNodeWithTag("editor-save-action").assertIsDisplayed()
+
+        val resources = InstrumentationRegistry.getInstrumentation().targetContext.resources
+        val title = resources.getString(R.string.field_title)
+        val username = resources.getString(R.string.field_username_hint)
+        val password = resources.getString(R.string.password_label)
+        composeRule.onNodeWithText(title).performClick().assertIsFocused()
+        composeRule.onNodeWithText(title).performImeAction()
+        composeRule.onNodeWithText(username).assertIsFocused()
+        composeRule.onNodeWithText(username).performImeAction()
+        composeRule.onNodeWithText(password).assertIsFocused()
     }
+
 }

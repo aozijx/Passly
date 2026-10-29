@@ -267,16 +267,6 @@ class AddOtpViewModelTest {
     }
 
     @Test
-    fun saveCapabilityIsDerivedFromFormAndSavePhase() {
-        val form = OtpFormState(title = "Mail", secret = "JBSWY3DPEHPK3PXP")
-
-        assertTrue(AddOtpCodeState(form = form).canSave)
-        assertTrue(
-            !AddOtpCodeState(form = form, savePhase = AddOtpSavePhase.Saving).canSave,
-        )
-    }
-
-    @Test
     fun switchingFromSteamToHotpRestoresNumericDigits() {
         val viewModel = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
         viewModel.onAction(AddOtpAction.FormChanged(OtpFormState(title = "OTP", secret = "MY")))

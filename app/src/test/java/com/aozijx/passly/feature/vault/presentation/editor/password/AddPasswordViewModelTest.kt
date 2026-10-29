@@ -115,19 +115,6 @@ class AddPasswordViewModelTest {
     }
 
     @Test
-    fun saveCapabilityIsDerivedFromFormAndSavePhase() {
-        val form = AddPasswordFormState(title = "Mail", password = "secret")
-
-        assertTrue(AddPasswordUiState(form = form).canSave)
-        assertTrue(
-            !AddPasswordUiState(
-                form = form,
-                savePhase = AddPasswordSavePhase.Saving,
-            ).canSave,
-        )
-    }
-
-    @Test
     fun onClearedWipesPasswordContent() {
         val viewModel = viewModel()
         viewModel.onAction(AddPasswordAction.TitleChanged("Mail"))

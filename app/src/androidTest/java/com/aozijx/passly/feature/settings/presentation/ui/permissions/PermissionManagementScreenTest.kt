@@ -26,22 +26,7 @@ class PermissionManagementScreenTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun requestableCameraEmitsPermissionSelection() {
-        val actions = mutableListOf<PermissionManagementScreenAction>()
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        setContent(actions)
-
-        composeRule.onNodeWithText(context.getString(R.string.settings_permissions_camera))
-            .performClick()
-
-        assertEquals(
-            listOf(PermissionManagementScreenAction.RuntimePermissionSelected(RuntimePermission.CAMERA)),
-            actions,
-        )
-    }
-
-    @Test
-    fun directoryRowOpensBackupSettings() {
+    fun screenEmitsActionsAndKeepsCapabilityRowsInformational() {
         val actions = mutableListOf<PermissionManagementScreenAction>()
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         setContent(
@@ -52,20 +37,24 @@ class PermissionManagementScreenTest {
             ),
         )
 
+        composeRule.onNodeWithText(context.getString(R.string.settings_permissions_camera))
+            .performClick()
+
+        assertEquals(
+            listOf(PermissionManagementScreenAction.RuntimePermissionSelected(RuntimePermission.CAMERA)),
+            actions,
+        )
         composeRule.onNodeWithText(
             context.getString(R.string.settings_permissions_backup_manage),
         ).performClick()
 
         assertEquals(
-            listOf(PermissionManagementScreenAction.OpenBackupSettings),
+            listOf(
+                PermissionManagementScreenAction.RuntimePermissionSelected(RuntimePermission.CAMERA),
+                PermissionManagementScreenAction.OpenBackupSettings,
+            ),
             actions,
         )
-    }
-
-    @Test
-    fun capabilityRowsAreInformational() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        setContent(mutableListOf())
 
         composeRule.onNodeWithText(
             context.getString(R.string.settings_permissions_capability_network),

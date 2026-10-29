@@ -15,8 +15,9 @@ class VaultOtpSubscriptionEffectTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun otpCompositionSubscribesAndDisposalUnsubscribes() {
+    fun subscriptionTracksVisibilityAndCompositionLifetime() {
         val showEntry = mutableStateOf(true)
+        val enabled = mutableStateOf(false)
         val events = mutableListOf<String>()
         val provider = object : VaultOtpStateProvider {
             override fun state(entryId: String): Flow<VaultOtpUiState?> =
@@ -32,46 +33,37 @@ class VaultOtpSubscriptionEffectTest {
         }
 
         composeRule.setContent {
-            if (showEntry.value) observeVaultOtpState("otp-1", provider, enabled = true)
-        }
-        composeRule.runOnIdle {
-            assertEquals(listOf("subscribe:otp-1"), events)
-            showEntry.value = false
-        }
-        composeRule.runOnIdle {
-            assertEquals(listOf("subscribe:otp-1", "unsubscribe:otp-1"), events)
-        }
-    }
-
-    @Test
-    fun otpSubscriptionFollowsCodeVisibilityAndActivePage() {
-        val enabled = mutableStateOf(false)
-        val events = mutableListOf<String>()
-        val provider = object : VaultOtpStateProvider {
-            override fun state(entryId: String): Flow<VaultOtpUiState?> = flowOf(null)
-
-            override fun subscribe(entryId: String) {
-                events += "subscribe:$entryId"
-            }
-
-            override fun unsubscribe(entryId: String) {
-                events += "unsubscribe:$entryId"
-            }
-        }
-
-        composeRule.setContent {
-            observeVaultOtpState("otp-2", provider, enabled = enabled.value)
+            if (showEntry.value) observeVaultOtpState("otp-1", provider, enabled = enabled.value)
         }
         composeRule.runOnIdle {
             assertEquals(emptyList<String>(), events)
             enabled.value = true
         }
         composeRule.runOnIdle {
-            assertEquals(listOf("subscribe:otp-2"), events)
+            assertEquals(listOf("subscribe:otp-1"), events)
             enabled.value = false
         }
         composeRule.runOnIdle {
-            assertEquals(listOf("subscribe:otp-2", "unsubscribe:otp-2"), events)
+            assertEquals(listOf("subscribe:otp-1", "unsubscribe:otp-1"), events)
+            enabled.value = true
+        }
+        composeRule.runOnIdle {
+            assertEquals(
+                listOf("subscribe:otp-1", "unsubscribe:otp-1", "subscribe:otp-1"),
+                events,
+            )
+            showEntry.value = false
+        }
+        composeRule.runOnIdle {
+            assertEquals(
+                listOf(
+                    "subscribe:otp-1",
+                    "unsubscribe:otp-1",
+                    "subscribe:otp-1",
+                    "unsubscribe:otp-1",
+                ),
+                events,
+            )
         }
     }
 }

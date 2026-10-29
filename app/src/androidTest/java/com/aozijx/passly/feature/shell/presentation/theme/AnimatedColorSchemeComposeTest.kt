@@ -23,7 +23,7 @@ class AnimatedColorSchemeComposeTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun firstCompositionIsSettledAndRapidRetargetContinuesFromVisibleColor() {
+    fun repeatedRetargetsContinueFromVisibleColorAndReachTheirTargets() {
         composeRule.mainClock.autoAdvance = false
         val first = lightColorScheme(primary = Color.Black)
         val second = lightColorScheme(primary = Color.White)
@@ -39,6 +39,25 @@ class AnimatedColorSchemeComposeTest {
                 ),
             )
         }
+        composeRule.runOnIdle {
+            assertEquals(first.primary, observed.get().primary)
+            target.value = second
+        }
+
+        composeRule.mainClock.advanceTimeBy(400)
+        val beforeReturn = composeRule.runOnIdle {
+            observed.get().primary.also { color ->
+                assertNotEquals(first.primary, color)
+                assertNotEquals(second.primary, color)
+                target.value = first
+            }
+        }
+
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.runOnIdle {
+            assertColorNear(beforeReturn, observed.get().primary, tolerance = 0.04f)
+        }
+        composeRule.mainClock.advanceTimeBy(1_100)
         composeRule.runOnIdle {
             assertEquals(first.primary, observed.get().primary)
             target.value = second
@@ -62,38 +81,6 @@ class AnimatedColorSchemeComposeTest {
         composeRule.mainClock.advanceTimeBy(1_100)
         composeRule.runOnIdle {
             assertEquals(third.primary, observed.get().primary)
-        }
-    }
-
-    @Test
-    fun returningToOriginalTargetRetargetsInsteadOfJumping() {
-        composeRule.mainClock.autoAdvance = false
-        val first = lightColorScheme(primary = Color.Black)
-        val second = lightColorScheme(primary = Color.White)
-        val target = mutableStateOf(first)
-        val observed = AtomicReference<ColorScheme>()
-
-        composeRule.setContent {
-            observed.set(
-                rememberAnimatedColorScheme(
-                    target = target.value,
-                    animationSpec = tween(durationMillis = 1_000, easing = LinearEasing),
-                ),
-            )
-        }
-        composeRule.runOnIdle { target.value = second }
-        composeRule.mainClock.advanceTimeBy(400)
-        val beforeReturn = composeRule.runOnIdle {
-            observed.get().primary.also { target.value = first }
-        }
-
-        composeRule.mainClock.advanceTimeByFrame()
-        composeRule.runOnIdle {
-            assertColorNear(beforeReturn, observed.get().primary, tolerance = 0.04f)
-        }
-        composeRule.mainClock.advanceTimeBy(1_100)
-        composeRule.runOnIdle {
-            assertEquals(first.primary, observed.get().primary)
         }
     }
 

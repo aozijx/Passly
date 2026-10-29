@@ -20,24 +20,25 @@ class AutofillSettingsSectionTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun legacySaveSwitchRemainsVisibleWithoutCredentialManagerSupport() {
+    fun savePromptAndPresentationOptionsRemainAvailableWithoutCredentialManagerSupport() {
+        val settings = AutofillSettingsUiModel(
+            enabled = true,
+            presentation = AutofillPresentation.SYSTEM_INLINE,
+            credentialManagerEnabled = false,
+            supportsCredentialManager = false,
+            requireAuthentication = true,
+            includeOtp = true,
+            savePromptsEnabled = true,
+            allowUnmatchedSuggestions = false,
+            maxSuggestions = 5,
+            minSuggestions = 1,
+            maxSuggestionsLimit = 10,
+            isSystemServiceEnabled = true,
+        )
         composeRule.setContent {
             MaterialTheme {
                 AutofillSettingsSection(
-                    settings = AutofillSettingsUiModel(
-                        enabled = true,
-                        presentation = AutofillPresentation.SYSTEM_INLINE,
-                        credentialManagerEnabled = false,
-                        supportsCredentialManager = false,
-                        requireAuthentication = true,
-                        includeOtp = true,
-                        savePromptsEnabled = true,
-                        allowUnmatchedSuggestions = false,
-                        maxSuggestions = 5,
-                        minSuggestions = 1,
-                        maxSuggestionsLimit = 10,
-                        isSystemServiceEnabled = true,
-                    ),
+                    settings = settings,
                     onAction = {},
                 )
             }
@@ -47,32 +48,6 @@ class AutofillSettingsSectionTest {
         composeRule.onNodeWithText(
             context.getString(R.string.settings_autofill_save_prompts),
         ).assertIsDisplayed()
-    }
-
-    @Test
-    fun presentationPickerOffersFloatingInlineAndBottomSheet() {
-        composeRule.setContent {
-            MaterialTheme {
-                AutofillSettingsSection(
-                    settings = AutofillSettingsUiModel(
-                        enabled = true,
-                        presentation = AutofillPresentation.SYSTEM_INLINE,
-                        credentialManagerEnabled = false,
-                        supportsCredentialManager = false,
-                        requireAuthentication = true,
-                        includeOtp = true,
-                        savePromptsEnabled = true,
-                        allowUnmatchedSuggestions = false,
-                        maxSuggestions = 5,
-                        minSuggestions = 1,
-                        maxSuggestionsLimit = 10,
-                        isSystemServiceEnabled = true,
-                    ),
-                    onAction = {},
-                )
-            }
-        }
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
 
         composeRule.onNodeWithText(context.getString(R.string.settings_autofill_presentation))
             .performClick()

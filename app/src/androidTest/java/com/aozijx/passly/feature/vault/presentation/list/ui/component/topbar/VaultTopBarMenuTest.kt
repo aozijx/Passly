@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.isPopup
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -28,7 +29,7 @@ class VaultTopBarMenuTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun moreMenuDispatchesScannerAndSettingsRequestsAfterDismissing() {
+    fun moreMenuKeepsPopupsMeasurableAndDispatchesRoutes() {
         val requests = mutableListOf<VaultRouteRequest>()
         val context = InstrumentationRegistry.getInstrumentation().targetContext
 
@@ -45,6 +46,8 @@ class VaultTopBarMenuTest {
         }
 
         composeRule.onNodeWithContentDescription(context.getString(R.string.more)).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNode(isPopup()).getUnclippedBoundsInRoot().assertNonZero()
         composeRule.onNodeWithText(context.getString(R.string.vault_menu_scan_qr))
             .assertIsDisplayed()
             .performClick()
@@ -55,7 +58,15 @@ class VaultTopBarMenuTest {
             assertTrue(requests == listOf(VaultRouteRequest.OpenScanner))
         }
 
-        composeRule.onNodeWithContentDescription(context.getString(R.string.more)).performClick()
+        composeRule.mainClock.autoAdvance = false
+        try {
+            composeRule.onNodeWithContentDescription(context.getString(R.string.more)).performClick()
+            composeRule.mainClock.advanceTimeByFrame()
+            composeRule.onNode(isPopup()).getUnclippedBoundsInRoot().assertNonZero()
+        } finally {
+            composeRule.mainClock.autoAdvance = true
+        }
+
         composeRule.waitForIdle()
         composeRule.onNodeWithText(context.getString(R.string.settings_title))
             .assertIsDisplayed()
@@ -68,68 +79,19 @@ class VaultTopBarMenuTest {
                 ),
             )
         }
-    }
-
-    @Test
-    fun menuAndSubmenusKeepNonZeroPopupBounds() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-
-        composeRule.setContent {
-            MaterialTheme {
-                VaultTopBar(
-                    uiState = topBarState(),
-                    searchStateHolder = searchStateHolder(),
-                    scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(),
-                    onAction = {},
-                    onRouteRequest = {},
-                )
-            }
-        }
 
         composeRule.onNodeWithContentDescription(context.getString(R.string.more)).performClick()
         composeRule.waitForIdle()
-        val mainBounds = composeRule.onNode(isPopup()).getUnclippedBoundsInRoot()
-        assertTrue(mainBounds.right - mainBounds.left > 0.dp)
-        assertTrue(mainBounds.bottom - mainBounds.top > 0.dp)
-
         composeRule.onNodeWithText(context.getString(R.string.vault_menu_sort)).performClick()
         composeRule.waitForIdle()
-        val sortBounds = composeRule.onNode(isPopup()).getUnclippedBoundsInRoot()
-        assertTrue(sortBounds.right - sortBounds.left > 0.dp)
-        assertTrue(sortBounds.bottom - sortBounds.top > 0.dp)
+        composeRule.onNode(isPopup()).getUnclippedBoundsInRoot().assertNonZero()
         composeRule.onNodeWithText(context.getString(R.string.sort_last_used)).assertIsDisplayed()
     }
 
-    @Test
-    fun reopenedMenuIsMeasuredBeforeAnimationClockAdvances() {
-        val requests = mutableListOf<VaultRouteRequest>()
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-
-        composeRule.setContent {
-            MaterialTheme {
-                VaultTopBar(
-                    uiState = topBarState(),
-                    searchStateHolder = searchStateHolder(),
-                    scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(),
-                    onAction = {},
-                    onRouteRequest = requests::add,
-                )
-            }
-        }
-
-        composeRule.onNodeWithContentDescription(context.getString(R.string.more)).performClick()
-        composeRule.onNodeWithText(context.getString(R.string.vault_menu_scan_qr)).performClick()
-        composeRule.waitForIdle()
-        composeRule.mainClock.autoAdvance = false
-        try {
-            composeRule.onNodeWithContentDescription(context.getString(R.string.more)).performClick()
-            composeRule.mainClock.advanceTimeByFrame()
-            val reopenedBounds = composeRule.onNode(isPopup()).getUnclippedBoundsInRoot()
-            assertTrue(reopenedBounds.right - reopenedBounds.left > 0.dp)
-            assertTrue(reopenedBounds.bottom - reopenedBounds.top > 0.dp)
-        } finally {
-            composeRule.mainClock.autoAdvance = true
-        }
+    private fun SemanticsNodeInteraction.assertNonZero() {
+        val bounds = getUnclippedBoundsInRoot()
+        assertTrue(bounds.right - bounds.left > 0.dp)
+        assertTrue(bounds.bottom - bounds.top > 0.dp)
     }
 
     private fun topBarState() = VaultTopBarUiState(
