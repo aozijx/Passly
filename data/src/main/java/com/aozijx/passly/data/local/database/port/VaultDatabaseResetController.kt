@@ -52,11 +52,12 @@ internal class VaultDatabaseResetController @Inject constructor(
                 }
                 if (reopenError == null) dataRefreshNotifier.notifyRefresh()
 
-                resetError?.let { error ->
-                    if (reopenError != null && reopenError !== error) error.addSuppressed(reopenError)
-                    runCatching { logger.log(LogStatements.Database.resetFailed(error)) }
+                if (resetError != null && reopenError != null && reopenError !== resetError) {
+                    resetError.addSuppressed(reopenError)
                 }
-                ResetOutcome(resetError ?: reopenError, cancellation)
+                val error = resetError ?: reopenError
+                error?.let { runCatching { logger.log(LogStatements.Database.resetFailed(it)) } }
+                ResetOutcome(error, cancellation)
             }
         }
         outcome.cancellation?.let { throw it }

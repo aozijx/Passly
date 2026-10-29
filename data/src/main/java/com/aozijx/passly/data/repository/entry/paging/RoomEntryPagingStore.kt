@@ -6,6 +6,7 @@ import androidx.paging.PagingData
 import androidx.paging.map
 import com.aozijx.passly.data.local.database.query.buildEntryPagingQuery
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
+import com.aozijx.passly.data.local.database.session.observeDatabaseReadAccess
 import com.aozijx.passly.data.mapper.entry.EntryListItemMapper
 import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -13,13 +14,10 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntryUsage
-import com.aozijx.passly.runtime.session.SecureSessionState
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -34,14 +32,10 @@ internal class RoomEntryPagingStore @Inject constructor(
     override fun pages(
         query: EntryListQuery,
         config: PagingConfig,
-    ): Flow<PagingData<EntryListItem>> = combine(
+    ): Flow<PagingData<EntryListItem>> = observeDatabaseReadAccess(
         sessionState.isAuthorized,
         databaseSession.lockStateFlow,
-    ) { authorized, databaseState ->
-        authorized && databaseState == SecureSessionState.UNLOCKED
-    }
-        .distinctUntilChanged()
-        .flatMapLatest { canRead ->
+    ).flatMapLatest { canRead ->
             if (!canRead) {
                 flowOf(PagingData.empty())
             } else {

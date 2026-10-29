@@ -11,6 +11,7 @@ import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.AuthorizationPermitRevoker
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
 import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
+import com.aozijx.passly.domain.access.port.DatabaseResetSessionCoordinator
 import com.aozijx.passly.domain.access.port.DatabaseSessionRetryResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
@@ -57,11 +58,20 @@ class VaultSessionController @Inject internal constructor(
     private val idleTimeoutSettings: IdleTimeoutSettings,
     private val autofillInboxKeyProvisioning: AutofillInboxKeyProvisioning,
 ) : SecureSessionAccessState, SessionActivityReporter, SessionVisibilityController,
-    DatabaseSessionFailureState, DatabaseSessionRecovery {
+    DatabaseSessionFailureState, DatabaseSessionRecovery, DatabaseResetSessionCoordinator {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutex = Mutex()
     private val _state = MutableStateFlow<AuthenticationState>(AuthenticationState.Locked)
     private val _databaseFailure = MutableStateFlow<Throwable?>(null)
+    private val databaseResetCoordinator = SecureDatabaseResetCoordinator(
+        sessionMutex = mutex,
+        sessionManager = sessionManager,
+        lockStateManager = lockStateManager,
+        authorizationPermitRevoker = authorizationPermitRevoker,
+        sensitiveDataKeyManager = sensitiveDataKeyManager,
+        authenticationState = _state,
+        databaseFailure = _databaseFailure,
+    )
     private var idleJob: Job? = null
     private val visibilityMonitor = Any()
     private var appInForeground = false
@@ -72,9 +82,11 @@ class VaultSessionController @Inject internal constructor(
     override val authenticationState: StateFlow<AuthenticationState> = _state.asStateFlow()
     override val databaseFailure: StateFlow<Throwable?> = _databaseFailure.asStateFlow()
 
-    override fun isUnlocked(): Boolean = lockStateManager.isUnlocked()
+    override fun isUnlocked(): Boolean =
+        lockStateManager.isUnlocked() && sessionManager.lockState == SecureSessionState.UNLOCKED
     override fun isRecoveryMode(): Boolean = _state.value is AuthenticationState.RecoveryMode
-    override fun isLocked(): Boolean = lockStateManager.isLocked()
+    override fun isLocked(): Boolean =
+        lockStateManager.isLocked() || sessionManager.lockState != SecureSessionState.UNLOCKED
 
     // ============================== 解锁 ==============================
 
@@ -313,6 +325,10 @@ class VaultSessionController @Inject internal constructor(
             publishAuthenticated = ::markAuthenticatedInternal,
         ).retry()
     }
+
+    override suspend fun withExclusiveDatabaseReset(
+        operation: suspend () -> Throwable?,
+    ): Throwable? = databaseResetCoordinator.withExclusiveDatabaseReset(operation)
 
     private suspend fun consumeRecoveryEnvelope(): Boolean =
         consumeRecoveryCodeOrRollback(

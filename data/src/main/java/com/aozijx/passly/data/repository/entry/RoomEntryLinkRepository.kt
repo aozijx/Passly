@@ -3,6 +3,7 @@ package com.aozijx.passly.data.repository.entry
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
+import com.aozijx.passly.data.local.database.session.observeDatabaseReadAccess
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
@@ -33,10 +34,12 @@ internal class RoomEntryLinkRepository @Inject constructor(
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) : EntryLinkRepository {
 
+    private val canRead = observeDatabaseReadAccess(sessionState.isAuthorized, databaseSession.lockStateFlow)
+
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeAll(): Flow<List<EntryLink>> =
-        sessionState.isAuthorized.flatMapLatest { authorized ->
-            if (!authorized) {
+        canRead.flatMapLatest { readable ->
+            if (!readable) {
                 flowOf(emptyList())
             } else {
                 databaseSession.observeFlow {
@@ -48,8 +51,8 @@ internal class RoomEntryLinkRepository @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeLinks(entryId: EntryId): Flow<List<EntryLink>> =
-        sessionState.isAuthorized.flatMapLatest { authorized ->
-            if (!authorized) {
+        canRead.flatMapLatest { readable ->
+            if (!readable) {
                 flowOf(emptyList())
             } else {
                 databaseSession.observeFlow {

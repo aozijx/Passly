@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.repository.activity
 
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
+import com.aozijx.passly.data.local.database.session.observeDatabaseReadAccess
 import com.aozijx.passly.data.mapper.activity.toDomain
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
@@ -22,10 +23,12 @@ internal class RoomActivityQueryRepository @Inject constructor(
     private val sessionState: SecureSessionAccessState
 ) : ActivityQueryRepository {
 
+    private val canRead = observeDatabaseReadAccess(sessionState.isAuthorized, databaseSession.lockStateFlow)
+
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeByEntryId(entryId: String): Flow<List<EntryActivity>> =
-        sessionState.isAuthorized.flatMapLatest { authorized ->
-            if (!authorized) flowOf(emptyList())
+        canRead.flatMapLatest { readable ->
+            if (!readable) flowOf(emptyList())
             else databaseSession.observeFlow {
                 entryActivityQueryDao().observeByEntryId(entryId)
                     .map { entities -> entities.map { it.toDomain() } }
@@ -35,8 +38,8 @@ internal class RoomActivityQueryRepository @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeAll(): Flow<List<EntryActivity>> =
-        sessionState.isAuthorized.flatMapLatest { authorized ->
-            if (!authorized) flowOf(emptyList())
+        canRead.flatMapLatest { readable ->
+            if (!readable) flowOf(emptyList())
             else databaseSession.observeFlow {
                 entryActivityQueryDao().observeAll()
                     .map { entities -> entities.map { it.toDomain() } }
@@ -46,8 +49,8 @@ internal class RoomActivityQueryRepository @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeByType(activityType: ActivityType): Flow<List<EntryActivity>> =
-        sessionState.isAuthorized.flatMapLatest { authorized ->
-            if (!authorized) flowOf(emptyList())
+        canRead.flatMapLatest { readable ->
+            if (!readable) flowOf(emptyList())
             else databaseSession.observeFlow {
                 entryActivityQueryDao().observeByType(activityType)
                     .map { entities -> entities.map { it.toDomain() } }

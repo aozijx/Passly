@@ -24,10 +24,39 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class VaultDatabaseResetControllerTest {
+    @Test
+    fun reopenFailureIsReturnedAfterFilesAreDeletedWithoutPublishingRefresh() = runTest {
+        val root = Files.createTempDirectory("vault-reset-test").toFile()
+        val actions = mutableListOf<String>()
+        val reopenFailure = IllegalStateException("database reopen failed")
+        val session = RecordingDatabaseSession(actions, unlockFailure = reopenFailure)
+        val context = object : ContextWrapper(null) {
+            override fun getDatabasePath(name: String) = File(root, name)
+            override fun getFilesDir() = root
+            override fun deleteDatabase(name: String): Boolean {
+                actions += "delete"
+                return true
+            }
+        }
+        val notifier = EntryDataRefreshNotifier()
+        val refreshed = async { notifier.events.first() }
+        runCurrent()
+        val controller = VaultDatabaseResetController(context, session, notifier, NoOpLogger)
+
+        val result = controller.reset()
+
+        assertEquals(reopenFailure, result)
+        assertEquals(listOf("seal-start", "seal-finished", "delete", "unlock"), actions)
+        assertEquals(SecureSessionState.SEALED, session.lockState)
+        assertFalse(refreshed.isCompleted)
+        refreshed.cancel()
+    }
+
     @Test
     fun cancellationDuringSealFinishesResetAndReopensBeforePropagating() = runTest {
         val root = Files.createTempDirectory("vault-reset-test").toFile()
@@ -65,21 +94,24 @@ class VaultDatabaseResetControllerTest {
 
     private class RecordingDatabaseSession(
         private val actions: MutableList<String>,
-        private val sealStarted: CompletableDeferred<Unit>,
-        private val finishSeal: CompletableDeferred<Unit>,
+        private val sealStarted: CompletableDeferred<Unit> = CompletableDeferred(),
+        private val finishSeal: CompletableDeferred<Unit> = CompletableDeferred(Unit),
+        private val unlockFailure: Throwable? = null,
     ) : DatabaseSessionLifecycle {
-        override val lockState: SecureSessionState = SecureSessionState.UNLOCKED
+        override var lockState: SecureSessionState = SecureSessionState.UNLOCKED
 
         override suspend fun seal() {
             actions += "seal-start"
             sealStarted.complete(Unit)
             finishSeal.await()
             actions += "seal-finished"
+            lockState = SecureSessionState.SEALED
         }
 
         override suspend fun unlock(): Throwable? {
             actions += "unlock"
-            return null
+            if (unlockFailure == null) lockState = SecureSessionState.UNLOCKED
+            return unlockFailure
         }
 
         override suspend fun softLock() = Unit

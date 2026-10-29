@@ -21,6 +21,7 @@ import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.model.LockTrigger
 import com.aozijx.passly.domain.access.model.SessionLockRequest
+import com.aozijx.passly.domain.access.port.DatabaseSessionRetryResult
 import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
@@ -32,6 +33,7 @@ import com.aozijx.passly.security.dek.FieldKeyManager
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioning
 import com.aozijx.passly.security.lock.LockStateManager
+import kotlinx.coroutines.async
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
@@ -52,11 +54,113 @@ import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class VaultSessionIdleTimeoutTest {
+    @Test
+    fun `failed reset reopen publishes locked state and supports retry`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val session = YieldingDatabaseSession()
+            val controller = createController(
+                dispatcher = dispatcher,
+                databaseSession = session,
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(false),
+            )
+            controller.transition(AuthenticationState.Authenticated(0L))
+            val reopenError = IllegalStateException("database reopen failed")
+
+            val result = controller.withExclusiveDatabaseReset {
+                session.seal()
+                session.unlockResultError = reopenError
+                session.unlock()
+            }
+
+            assertEquals(reopenError, result)
+            assertFalse(controller.isUnlocked())
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(reopenError, controller.databaseFailure.value)
+
+            session.unlockResultError = null
+            assertEquals(DatabaseSessionRetryResult.Ready, controller.retry())
+            assertTrue(controller.hasFullSecureSessionAccess())
+            assertEquals(null, controller.databaseFailure.value)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun `security lock waits for database reset to finish reopening`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val session = YieldingDatabaseSession()
+            val controller = createController(
+                dispatcher = dispatcher,
+                databaseSession = session,
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(false),
+            )
+            controller.transition(AuthenticationState.Authenticated(0L))
+            val resetStarted = CompletableDeferred<Unit>()
+            val finishReset = CompletableDeferred<Unit>()
+            val reset = async(dispatcher) {
+                controller.withExclusiveDatabaseReset {
+                    session.seal()
+                    resetStarted.complete(Unit)
+                    finishReset.await()
+                    session.unlock()
+                }
+            }
+            resetStarted.await()
+
+            val lock = async(dispatcher) {
+                controller.lock(SessionLockRequest(LockReason.USER, LockTrigger.USER_ACTION))
+            }
+            runCurrent()
+            assertFalse(lock.isCompleted)
+
+            finishReset.complete(Unit)
+            reset.await()
+            lock.await()
+
+            assertEquals(SecureSessionState.SOFT_LOCKED, session.lockState)
+            assertTrue(controller.isLocked())
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun `database-only seal immediately revokes secure session access`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val databaseSession = YieldingDatabaseSession()
+            val controller = createController(
+                dispatcher = dispatcher,
+                databaseSession = databaseSession,
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(false),
+            )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            databaseSession.lockState = SecureSessionState.SEALED
+
+            assertFalse(controller.isUnlocked())
+            assertFalse(controller.hasFullSecureSessionAccess())
+            assertTrue(controller.isLocked())
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     @Test
     fun `cancelled fresh unlock seals staged session and propagates cancellation`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
@@ -545,6 +649,7 @@ class VaultSessionIdleTimeoutTest {
         initialLockState: SecureSessionState = SecureSessionState.UNLOCKED,
     ) : DatabaseSessionLifecycle {
         override var lockState: SecureSessionState = initialLockState
+        var unlockResultError: Throwable? = null
         var softLockCompleted = false
         var sealCount = 0
         val sealStarted = CompletableDeferred<Unit>()
@@ -556,6 +661,8 @@ class VaultSessionIdleTimeoutTest {
             unlockStarted.complete(Unit)
             if (pauseUnlock) allowUnlockToFinish.await()
             unlockFailure?.let { throw it }
+            unlockResultError?.let { return it }
+            lockState = SecureSessionState.UNLOCKED
             return null
         }
 

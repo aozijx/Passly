@@ -10,6 +10,7 @@ import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
+import com.aozijx.passly.data.local.database.session.observeDatabaseReadAccess
 import com.aozijx.passly.data.repository.entry.command.InitializeEntryRevisionHistory
 import com.aozijx.passly.data.repository.entry.command.RestoreEntryRevisionExecutor
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
@@ -44,12 +45,14 @@ internal class RoomEntryRevisionRepository @Inject constructor(
     private val restoreExecutor: RestoreEntryRevisionExecutor,
     private val historyInitializer: InitializeEntryRevisionHistory,
 ) : EntryRevisionRepository {
+    private val canRead = observeDatabaseReadAccess(sessionState.isAuthorized, databaseSession.lockStateFlow)
+
     override suspend fun initializeHistory(): AppResult<Unit> = historyInitializer.execute()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeMetadata(entryId: EntryId): Flow<List<EntryRevisionMetadata>> =
-        sessionState.isAuthorized.flatMapLatest { authorized ->
-            if (!authorized) flowOf(emptyList())
+        canRead.flatMapLatest { readable ->
+            if (!readable) flowOf(emptyList())
             else databaseSession.observeFlow {
                 entryRevisionQueryDao().observeByEntryId(entryId.value)
                     .map { revisions -> revisions.map(EntryRevisionEntity::toRevisionMetadata) }
