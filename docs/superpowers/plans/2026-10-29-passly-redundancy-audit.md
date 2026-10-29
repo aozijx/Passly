@@ -233,3 +233,11 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 修复：抽出纯文件保留策略，清理只选择同前缀、普通文件且修改时间至少超过 10 分钟的导出；系统时间回拨时保守保留。
 - 文档：明确下次分享只清理超过保留期的导出，仍在分享窗口内的文件保持可读。
 - 验证：保留策略两项单测通过；`:app:testDebugUnitTest verifyArchitecture :app:lintDebug --no-parallel --max-workers=2` 通过，`git diff --check` 通过。
+
+### 后续批次：无障碍启动取消清理（2026-10-29）
+
+- 生产路径核对：`ManualAccessibilityFillService.requestFill()` 在 `withContext(Main)` 外捕获所有 `Exception`，会把 `CancellationException` 当普通启动失败记录并吞掉。
+- RED：在协程已运行并挂起后取消，旧式宽泛捕获使取消清理用例失败；断言 trace continuation 与暂存请求均需恰好清理一次，普通启动错误则需清理并记录。
+- 修复：取消路径先清除 trace 与单次会话请求，再重抛原始取消；清理异常仅作为 suppressed 保留，不覆盖原始异常。普通异常继续记录为启动失败。
+- 文档：补充无障碍服务取消时清理短生命周期状态并传播取消的合同。
+- 验证：`AccessibilityFillLaunchTest` 定向通过；`verifyArchitecture` 与 `:app:lintDebug` 通过，`git diff --check` 待最终复跑。

@@ -141,7 +141,12 @@ class ManualAccessibilityFillService : AccessibilityService() {
                                 captured.request.packageName,
                             ),
                         ))
-                        try {
+                        launchAccessibilityFill(
+                            token = captured.token,
+                            discardTrace = traceContinuations::discard,
+                            clearCaptured = sessions::clearCaptured,
+                            onFailure = { logger.log(LogStatements.Autofill.fallbackFailed(it)) },
+                        ) {
                             traceContinuations.capture(captured.token)
                             withContext(Dispatchers.Main) {
                                 startActivity(launchTarget.accessibilityFillIntent(
@@ -151,10 +156,6 @@ class ManualAccessibilityFillService : AccessibilityService() {
                                         Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
                                 })
                             }
-                        } catch (error: Exception) {
-                            traceContinuations.discard(captured.token)
-                            sessions.clearCaptured(captured.token)
-                            logger.log(LogStatements.Autofill.fallbackFailed(error))
                         }
                     }
                 }
