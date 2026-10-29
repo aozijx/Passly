@@ -9,6 +9,8 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 fun interface BackupDirectoryStatusReader {
@@ -37,15 +39,17 @@ class BackupDirectorySettingsInteractor @Inject constructor(
     private val settingsRepository: BackupDirectorySettingsRepository,
     private val directoryAccess: BackupDirectoryAccess,
 ) {
+    private val operationMutex = Mutex()
+
     val directoryUri: Flow<String?> = settingsRepository.backupDirectoryUri
 
     fun inspect(treeUri: String?): PersistedDirectoryAccessStatus =
         directoryAccess.inspect(treeUri)
 
-    suspend fun select(treeUri: String?): BackupDirectorySelectionResult {
-        if (treeUri == null) return BackupDirectorySelectionResult.Cancelled
+    suspend fun select(treeUri: String?): BackupDirectorySelectionResult = operationMutex.withLock {
+        if (treeUri == null) return@withLock BackupDirectorySelectionResult.Cancelled
         val previousTreeUri = directoryUri.first()
-        return when (val result = directoryAccess.acquire(treeUri)) {
+        when (val result = directoryAccess.acquire(treeUri)) {
             is BackupDirectoryGrantResult.Granted -> {
                 persistGrantedDirectory(result.treeUri, previousTreeUri)
             }
@@ -90,7 +94,8 @@ class BackupDirectorySettingsInteractor @Inject constructor(
         return BackupDirectorySelectionResult.Saved
     }
 
-    suspend fun clear(treeUri: String?) {
+    suspend fun clear() = operationMutex.withLock {
+        val previousTreeUri = directoryUri.first()
         var clearFailure: Throwable? = null
         try {
             settingsRepository.clearBackupDirectoryUri()
@@ -98,15 +103,15 @@ class BackupDirectorySettingsInteractor @Inject constructor(
             clearFailure = failure
         }
 
-        val shouldRelease = if (clearFailure == null) {
-            true
-        } else {
+        val persistedUri = if (clearFailure == null) null else {
             val persistedUri = withContext(NonCancellable) {
                 runCatching { settingsRepository.backupDirectoryUri.first() }
             }
-            persistedUri.isSuccess && persistedUri.getOrNull() != treeUri
+            persistedUri
         }
-        if (shouldRelease) treeUri?.takeIf(String::isNotBlank)?.let { uri ->
+        val shouldRelease = clearFailure == null ||
+            (persistedUri?.isSuccess == true && persistedUri.getOrNull() != previousTreeUri)
+        if (shouldRelease) previousTreeUri?.takeIf(String::isNotBlank)?.let { uri ->
             withContext(NonCancellable) {
                 runCatching { directoryAccess.release(uri) }
             }

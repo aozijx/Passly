@@ -39,10 +39,9 @@ class DataManagementSettingsViewModel @Inject constructor(
             when (action) {
                 is DataManagementSettingsUiAction.BackupDirectoryPicked ->
                     handleSelection(action.uri)
-                DataManagementSettingsUiAction.ClearBackupDirectory -> when (val state = _uiState.value) {
+                DataManagementSettingsUiAction.ClearBackupDirectory -> when (_uiState.value) {
                     DataManagementSettingsUiState.Loading -> Unit
-                    is DataManagementSettingsUiState.Ready ->
-                        directorySettings.clear(state.directoryUri)
+                    is DataManagementSettingsUiState.Ready -> directorySettings.clear()
                 }
             }
         }

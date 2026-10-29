@@ -2,15 +2,88 @@ package com.aozijx.passly.feature.settings.backup
 
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.runCurrent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class BackupDirectorySettingsInteractorTest {
+    @Test
+    fun `overlapping selections serialize grant ownership`() = runTest {
+        val operations = mutableListOf<String>()
+        val repository = ControlledRepository("content://tree/old", operations)
+        val access = ControlledAccess(
+            operations = operations,
+            pausedUri = "content://tree/first",
+        )
+        val interactor = BackupDirectorySettingsInteractor(repository, access)
+
+        val first = async { interactor.select("content://tree/first") }
+        runCurrent()
+        access.firstAcquireStarted.await()
+        val second = async { interactor.select("content://tree/second") }
+        runCurrent()
+
+        assertEquals(listOf("content://tree/first"), access.acquiredUris)
+        access.finishFirstAcquire.complete(Unit)
+        assertEquals(BackupDirectorySelectionResult.Saved, first.await())
+        assertEquals(BackupDirectorySelectionResult.Saved, second.await())
+
+        assertEquals("content://tree/second", repository.savedUri)
+        assertEquals(
+            listOf(
+                "acquire:content://tree/first",
+                "save:content://tree/first",
+                "release:content://tree/old",
+                "acquire:content://tree/second",
+                "save:content://tree/second",
+                "release:content://tree/first",
+            ),
+            operations,
+        )
+    }
+
+    @Test
+    fun `clear after a suspended selection releases the newly persisted uri`() = runTest {
+        val operations = mutableListOf<String>()
+        val repository = ControlledRepository("content://tree/old", operations)
+        val access = ControlledAccess(
+            operations = operations,
+            pausedUri = "content://tree/new",
+        )
+        val interactor = BackupDirectorySettingsInteractor(repository, access)
+
+        val selection = async { interactor.select("content://tree/new") }
+        runCurrent()
+        access.firstAcquireStarted.await()
+        val clear = async { interactor.clear() }
+        runCurrent()
+        assertEquals("content://tree/old", repository.savedUri)
+
+        access.finishFirstAcquire.complete(Unit)
+        assertEquals(BackupDirectorySelectionResult.Saved, selection.await())
+        clear.await()
+
+        assertNull(repository.savedUri)
+        assertEquals(
+            listOf(
+                "acquire:content://tree/new",
+                "save:content://tree/new",
+                "release:content://tree/old",
+                "clear",
+                "release:content://tree/new",
+            ),
+            operations,
+        )
+    }
+
     @Test
     fun `inspection delegates without changing repository state`() = runTest {
         val repository = FakeRepository(initialUri = "content://tree/original")
@@ -61,14 +134,17 @@ class BackupDirectorySettingsInteractorTest {
     @Test
     fun `clear clears settings before releasing the persisted grant`() = runTest {
         val operations = mutableListOf<String>()
-        val repository = FakeRepository(operations = operations)
+        val repository = FakeRepository(
+            initialUri = "content://tree/original",
+            operations = operations,
+        )
         val access = FakeAccess(
             acquireResult = BackupDirectoryGrantResult.Unavailable,
             operations = operations,
         )
         val interactor = BackupDirectorySettingsInteractor(repository, access)
 
-        interactor.clear("content://tree/original")
+        interactor.clear()
 
         assertEquals(
             listOf("clear", "release:content://tree/original"),
@@ -90,7 +166,7 @@ class BackupDirectorySettingsInteractorTest {
         )
         val interactor = BackupDirectorySettingsInteractor(repository, access)
 
-        interactor.clear("content://tree/original")
+        interactor.clear()
 
         assertNull(repository.savedUri)
         assertEquals(
@@ -114,7 +190,7 @@ class BackupDirectorySettingsInteractorTest {
         val interactor = BackupDirectorySettingsInteractor(repository, access)
 
         val cancellation = try {
-            interactor.clear("content://tree/original")
+            interactor.clear()
             null
         } catch (error: CancellationException) {
             error
@@ -143,7 +219,7 @@ class BackupDirectorySettingsInteractorTest {
         val interactor = BackupDirectorySettingsInteractor(repository, access)
 
         val failure = try {
-            interactor.clear("content://tree/original")
+            interactor.clear()
             null
         } catch (error: IllegalStateException) {
             error
@@ -324,6 +400,50 @@ class BackupDirectorySettingsInteractorTest {
         override suspend fun release(treeUri: String) {
             operations += "release:$treeUri"
             if (treeUri == failOnReleaseUri) error("grant release failed")
+        }
+    }
+
+    private class ControlledRepository(
+        initialUri: String?,
+        private val operations: MutableList<String>,
+    ) : BackupDirectorySettingsRepository {
+        private val state = MutableStateFlow(initialUri)
+        override val backupDirectoryUri: Flow<String?> = state
+        val savedUri: String? get() = state.value
+
+        override suspend fun setBackupDirectoryUri(uri: String) {
+            operations += "save:$uri"
+            state.value = uri
+        }
+
+        override suspend fun clearBackupDirectoryUri() {
+            operations += "clear"
+            state.value = null
+        }
+    }
+
+    private class ControlledAccess(
+        private val operations: MutableList<String>,
+        private val pausedUri: String,
+    ) : BackupDirectoryAccess {
+        val acquiredUris = mutableListOf<String>()
+        val firstAcquireStarted = CompletableDeferred<Unit>()
+        val finishFirstAcquire = CompletableDeferred<Unit>()
+
+        override fun inspect(treeUri: String?) = PersistedDirectoryAccessStatus.GRANTED
+
+        override suspend fun acquire(treeUri: String): BackupDirectoryGrantResult {
+            acquiredUris += treeUri
+            operations += "acquire:$treeUri"
+            if (treeUri == pausedUri) {
+                firstAcquireStarted.complete(Unit)
+                finishFirstAcquire.await()
+            }
+            return BackupDirectoryGrantResult.Granted(treeUri)
+        }
+
+        override suspend fun release(treeUri: String) {
+            operations += "release:$treeUri"
         }
     }
 }
