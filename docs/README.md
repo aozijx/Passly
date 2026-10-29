@@ -3,11 +3,13 @@
 文档以当前代码为准。平台行为同时核对 Android 官方文档；历史决策保留在 ADR 中。已批准但尚未实现的行为必须
 明确标注，不能混入当前流程。
 
-## 入门
+## 开始使用
 
 - [开发与构建](getting-started/development.md)
 
-## 架构
+## 当前系统
+
+### 架构与平台边界
 
 - [架构总览](architecture/overview.md)
 - [包与模块边界](architecture/package-boundaries.md)
@@ -16,55 +18,78 @@
 - [错误处理](architecture/error-handling.md)
 - [消息中心](architecture/message-center.md)
 - [权限中心](architecture/permission-center.md)
-- [日志记录、错误与 Trace](architecture/observability/record-and-trace.md)
+- [日志、错误与 Trace](architecture/observability/record-and-trace.md)
 - [日志运行时与加密存储](architecture/observability/runtime-and-storage.md)
 - [日志导出格式](architecture/observability/export-formats.md)
 
-## 数据
+### 数据
 
 - [数据库](data/database.md)
 - [设置存储](data/settings-storage.md)
 - [数据映射](data/mapping.md)
 - [内容渲染](data/content-rendering.md)
 
-## 安全
+### 安全
 
 - [安全总览](security/overview.md)
+- [威胁模型](security/threat-model.md)
 - [认证与恢复码](security/authentication.md)
 - [密钥管理](security/key-management.md)
 - [存储加密](security/storage-encryption.md)
 - [Autofill 安全](security/autofill.md)
 - [诊断安全](security/diagnostics.md)
-- [敏感数据读取与剪贴板](security/sensitive-data-access.md)
+- [敏感数据与剪贴板](security/sensitive-data-access.md)
 - [远程内容](security/remote-content.md)
-- [威胁模型](security/threat-model.md)
 
 ## 功能
 
-- Vault：[列表与搜索](features/vault/list-and-search.md)、[修订历史](features/vault/entry-revision-history.md)、[编辑与写入架构](features/vault/entry-editor-and-persistence.md)
-- Autofill：[共享填充流程](features/autofill/fill-flow.md)、[Legacy Service](features/autofill/legacy-service.md)、[Credential Manager](features/autofill/credential-manager.md)、[保存语义](features/autofill/save-flow.md)、[Sealed Inbox（实现中）](features/autofill/sealed-inbox.md)、[验证矩阵](features/autofill/verification.md)
-- Backup：[导入与导出](features/backup/import-export.md)、[归档格式](features/backup/archive-format.md)、[验证要求](features/backup/verification.md)
-- [诊断日志查看与导出](features/diagnostics/viewer-and-export.md)
+### Vault
+
+- [列表与搜索](features/vault/list-and-search.md)
+- [修订历史](features/vault/entry-revision-history.md)
+- [编辑与写入](features/vault/entry-editor-and-persistence.md)
+- [OTP 创建](features/vault/otp-entry.md)
+- [OTP URI](features/vault/otp-uri.md)
+- [二维码](features/vault/qr-display.md)
+- [银行卡](features/vault/card-entry.md)
+
+### Autofill
+
+- [共享流程](features/autofill/fill-flow.md)
+- [Legacy Service](features/autofill/legacy-service.md)
+- [Credential Manager](features/autofill/credential-manager.md)
+- [保存语义](features/autofill/save-flow.md)
+- [Sealed Inbox](features/autofill/sealed-inbox.md)
+- [验证矩阵](features/autofill/verification.md)
+
+### Backup
+
+- [导入与导出](features/backup/import-export.md)
+- [归档格式](features/backup/archive-format.md)
+- [验证要求](features/backup/verification.md)
+
+### 其他功能
+
+- [诊断日志](features/diagnostics/viewer-and-export.md)
 - [二维码扫描](features/scanner.md)
-- [Wi-Fi 与 OTP 二维码展示](features/vault/qr-display.md)
-- [动态口令 URI 导入与导出](features/vault/otp-uri.md)
-- [动态口令创建](features/vault/otp-entry.md)
-- [银行卡资料与有效期](features/vault/card-entry.md)
 - [权限与消息](features/permissions-and-messages.md)
 
-## 开发规范
+## 开发约定
 
 - [Kotlin 规范](development/kotlin-style.md)
 - [Compose 与 Material](development/compose-ui.md)
-- [Presentation 状态管理](development/architecture-and-state.md)
+- [状态管理](development/architecture-and-state.md)
 - [测试与质量门禁](development/testing.md)
-- [长期维护边界](development/maintenance-boundaries.md)
+- [维护边界](development/maintenance-boundaries.md)
 - [共享元素转场](development/shared-element-transitions.md)
-- [文档维护约定](development/documentation.md)
+- [文档维护](development/documentation.md)
 
-## 决策与历史审查
+## 决策与审查记录
 
-- 架构决策记录见下表；决策解释“为什么”，主题文档解释“当前如何实现”。已发布 ADR 不删除、不复用编号，变化时新增 ADR 并建立替代关系。
+ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原编号；决策变化时新增 ADR 并建立替代关系。
+
+- [2026-10-29 可维护性与冗余审查](reviews/2026-10-29-passly-maintainability-audit.md)
+- [2026-10-27 历史、界面与输入边界交付记录](reviews/2026-10-27-history-ui-delivery.md)
 - [2026-07 代码审查](reviews/2026-07-code-review.md)（仅适用于该审查时点）
 
 | ADR | 状态 | 决策 |
@@ -94,12 +119,4 @@
 | [0024](decisions/ADR-0024-structured-observability-logger.md) | Implemented | 统一结构化 Logger |
 | [0025](decisions/ADR-0025-sealed-autofill-save-inbox.md) | Accepted, implemented | 锁定状态 Sealed Autofill Save Inbox |
 
-## 状态标记
-
-| 标记 | 含义 |
-| --- | --- |
-| 当前实现 | 已对照当前仓库，可作为实现与排障依据 |
-| 已批准，尚未实现 | 已确认目标合同，不得当作现有能力 |
-| 过渡中 | 同一主题同时包含明确分隔的当前行为与批准目标 |
-| ADR | 解释决策及原因；状态和 supersession 决定是否仍有效 |
-| 历史审查 | 只描述指定 revision/日期的证据，不定义当前实现 |
+状态标记与页面结构约定见[文档维护约定](development/documentation.md)。

@@ -1,37 +1,14 @@
-# Passly Redundancy Audit Implementation Plan
+# Passly Maintainability and Redundancy Audit
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking.
+**Date:** 2026-10-29
+**Scope:** Core, Domain, Runtime Session, Security, Data, App features, build logic, tests, and documentation.
+**Method:** Classify candidates as remove, retain, or defer only after checking callers, DI, Android entry points, persistence, tests, and documentation.
 
-**Goal:** Review every Passly module, remove only proven redundant implementation, record deferred findings, and improve the local agent and project maintenance skill from concrete findings.
+## Review summary
 
-**Architecture:** Audit production code against its callers, DI registrations, Android entry points, serialization/resource references, tests, and formal docs. Record each candidate as remove, retain, or defer; perform only evidence-backed removals, then update the authoritative topic docs and the local maintenance workflow.
+The audit removed confirmed pass-through or unreferenced code, fixed reproduced cancellation and ownership defects, and updated affected topic documents. Similar names, declaration-only DI modules, test helpers, and state owners with distinct contracts were retained. Remaining device-only verification is tracked in the active verification plan.
 
-**Tech Stack:** Kotlin, Android, Gradle, Room, Hilt, Compose, Markdown, Codex project skills.
-
-**Request:** The user's repository-wide review and maintenance request in this task.
-
-## Global Constraints
-
-- Preserve all pre-existing worktree changes; do not overwrite or revert user edits.
-- Exclude the existing uncommitted revision-history/activity work from this audit unless a candidate is already explicitly covered by those edits.
-- Keep `AGENTS.md` and `.agents/skills/passly-maintenance/` local; never stage or commit them.
-- Commit verified code and formal documentation by exact path; `AGENTS.md` and `.agents/skills/` remain local-only.
-- Do not delete code based only on similar names, file size, absent textual references, or stylistic preference.
-- Keep Room schema, internal protocols, and persistence format version at 1; document any incompatible development-data implications.
-- Sync behavior changes to the relevant formal topic docs and record deferred work in this plan.
-
-## Review Focus
-
-- Hilt/Android/serialization/resource callers that ordinary Kotlin reference search misses: preserve or remove only after registrations and platform entry points are checked.
-- Security-sensitive lifecycle cleanup: verify ownership and wipe/cancellation semantics before deleting helpers or state.
-- Public contracts used across modules: do not collapse types where the boundary is consumed by another module or stable format.
-- Existing dirty changes: compare against the initial status and inspect diffs before touching any shared file.
-- Device-only behavior: record unresolved runtime verification as a TODO instead of inferring success from compilation.
-
-## Audit Ledger
-
-Append per-module findings to this file as work proceeds. Each finding includes evidence, decision, affected files, validation, and any follow-up TODO. Keep unresolved candidates explicitly deferred.
-
+## Detailed findings
 ### Baseline and rulings
 
 - Baseline captured before implementation: 41 tracked paths already modified/deleted and 4 pre-existing untracked paths. The current revision-history/activity implementation, related docs, schema, tests, `AGENTS.md`, and related TODO edits are protected. No tracked or untracked user file has been reverted.
@@ -39,14 +16,14 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - Ruling: don't consolidate the two `TestLogger.kt` files. `core` provides only a no-op `Logger`; `app` adds a recording logger used by application behavior tests, and the Gradle setup does not expose the core test source as a fixture. The apparent duplicate has distinct test responsibilities; sharing it would add test-fixtures wiring without removing behavior.
 - Ruling: keep both `ClipboardModule.kt` files. The `core` module binds the platform `SecureClipboard`; the app module binds separate Domain ports for controlled clipboard writes/cleanup. Names match, bindings do not.
 
-### Task 2 — `:core` and `:core:common`
+### Core and Core Common
 
 - Result: reviewed production source inventory, module dependencies, clipboard DI, test logger helpers, and shared error package. No production implementation met the confirmed-removal threshold.
 - Similar filenames retained: `AddEntryTransition.kt` contains shared key/overflow constants while the editor package contains the transition modifier; these are consumed together and have distinct roles.
 - Validation: read-only reference/registration audit; no source changed in these modules, so no module test was needed.
-- Dependency aliases were reconciled in Task 7; no unused declaration was proven, so this follow-up is closed.
+- Dependency aliases were reconciled during the build logic, dependency, test, and documentation review; no unused declaration was proven.
 
-### Task 3 — `:domain` and `:runtime:session`
+### Domain and Runtime Session
 
 - `:domain`: retained the distinct field reader/editor, draft materializer, validators, revision comparator, and OTP/Wi-Fi policies; each has consumers with a separate domain rule or contract. No duplicate production source or clearly dead implementation was found in the targeted model/policy scan.
 - Follow-up cross-module reference audit found stale, unreferenced domain pieces: `BackupSettings` and its private enum contract, `SessionPolicy`/`SessionPolicySource`, `StagedAttachment`, and the `CredentialCandidate` wrapper. Removed them; retained `CredentialMatch` and `MatchType`, which are consumed by Autofill.
@@ -60,7 +37,7 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - Completed post-history review: the history feature is now committed in the current baseline. `EntryRevision` had no consumers beyond its declaration; the active repository uses `EntryRevisionMetadata` and `RedactedEntryRevision`, so the unused snapshot wrapper was removed. Retained `EntryRevisionId`, which is used by revision ports and UI actions.
 - Validation: `:domain:test` passed after removing `EntryRevision`.
 
-### Task 4 — `:security`
+### Security
 
 - Reviewed authentication manager exception handling, biometric candidate cleanup, KDF runner, session event tracing, and controller lock paths against current tests and `docs/development/kotlin-style.md` / `docs/security/authentication.md`.
 - No dead or duplicate production implementation was proven; state restoration, durable candidate reconciliation, event tracing, and worker-secret cleanup have separate ownership.
@@ -69,14 +46,14 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - Remaining security limitation: a real hardware biometric re-enrollment/Keystore invalidation event is still not verified by emulator or unit tests.
 - Skill lesson: when cancellation meets security cleanup, keep cleanup complete and cancellation visible; test both resource wiping and terminal-state/event reporting.
 
-### Task 5 — `:data`
+### Data
 
 - Reference audit found `AttachmentRefMapper` had no callers; Room reference rows are created/queried through DAOs and current restoration logic directly because it also handles the revision snapshot contract. Removed the unused mapper and its unused `EntryAttachment` domain model. Kept `AttachmentStatus`, which is used by stable storage mapping and restore logic.
 - No schema, persistent key, transaction boundary, or encryption behavior changed.
 - Verification after the dead-code removals: `:core:common:test` (NO-SOURCE), `:domain:test`, `:data:test`, and `:app:compileDebugKotlin` all succeeded. `:runtime:session:test` passed independently with 9 tests.
 - The cross-project declaration scan found no other unreferenced Data declarations. No Room or storage mapping changes were needed; the current dirty `StorageEnumMappings.kt` and history transaction files remain protected.
 
-### Task 6 — `:app`
+### App
 
 - Removed unused `AppErrorNoticeMapper`; all production error notices are selected by feature-specific results (for example, Backup's typed notice mapper). Updated `docs/architecture/error-handling.md` to remove the stale global mapping flow and obsolete `NetworkErrors.kt` path.
 - Removed four unreferenced one-line argument constructors from `NoticeArgument.kt`; callers already construct typed `ArgumentValue` at their use site.
@@ -84,14 +61,14 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - Verification: `:app:testDebugUnitTest` and `:app:compileDebugKotlin` succeeded after the cleanup. Repository-wide search found no remaining references to removed symbols.
 - The candidate sweep identified `ObservabilityModule`, `EntryPolicyModule`, and `BackupDispatchersModule` as declaration-only symbols; all are retained because Hilt installs them through `@Module` metadata. Existing `BackupNoticeMapper` has a live Route caller and tests. Protected detail history/activity files were not edited.
 
-### Task 7 — dependencies, build logic, tests, and docs
+### Build logic, dependencies, tests, and documentation
 
 - Reviewed all 68 `[libraries]` aliases in `gradle/libs.versions.toml` against Gradle/Kotlin sources; no unused alias was proven, so no dependency was removed.
 - Reviewed `buildSrc` task registration: generator, verification, module boundary and metrics tasks are registered through the Gradle plugin and have distinct CLI/build/check responsibilities. No confirmed duplicate build task or implementation was removed.
 - Updated `docs/architecture/error-handling.md` for current Feature-owned Notice selection and removed stale file/type references. Full docs-relative-link scan passed: `All relative Markdown links resolve.`
-- Preserved the pre-existing `docs/superpowers/plans/2026-10-27-project-todos.md` work. The history Sheet bottom-space fix was committed separately in `1ddf8d7b`; remaining device checks stay in that plan.
+- Preserved the in-progress history and UI delivery work. The history Sheet bottom-space fix was committed separately in `1ddf8d7b`; the delivery record is now archived at [the history and UI review](2026-10-27-history-ui-delivery.md), and the remaining hardware check is tracked in the [Keystore verification plan](../superpowers/plans/2026-10-29-hardware-keystore-verification.md).
 
-### Task 8 — local agent and project skills
+### Local agent rules and project skills
 
 - Condensed `AGENTS.md` to stable rules and authoritative doc links; removed task-specific TODOs from the agent file.
 - Created two project-local skills: `passly-maintenance` for agent/docs/TODO upkeep and durable lessons; `passly-redundancy-cleanup` for evidence-led code audits. The latter treats token counts as leads, checks platform/DI/persistence callers, and separates remove/retain/defer decisions.
@@ -106,7 +83,7 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - Final verification after the filename change: `:domain:test` and `:app:compileDebugKotlin`; full affected module commands and session tests are recorded above. Android instrumentation/device behavior remains unverified.
 - Self-review followed the repository cleanup evidence rules and the code-review checklist; no independent reviewer was dispatched.
 
-## Tasks
+## Follow-up findings and fixes
 
 ### 第二轮根因与桥接复审（2026-10-29）
 
@@ -129,94 +106,9 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 最终验证：Data 74 项单测、`:buildSrc:test`、`verifyArchitecture`、App/Data Lint 和 `git diff --check` 均通过。数据库重置修复提交于 `3fa50221`，备份取消与授权所有权修复提交于 `26e26762`；无逻辑转发测试与对应 SourceBoundary 特例单独清理。
 - HOTP 提交后复核发现 `RoomOtpConfigRepository` 和消费事务通过 `readAll()` 解密同一条目的全部敏感字段；用损坏 PASSWORD 行证明该无关数据会使 HOTP 失败。改为只读 OTP bundle 与 `OTP_SECRET`，回归先红后绿；API 36 Data 仪器测试 33 项、Data/App 单测、`verifyArchitecture`、Data lint 与 `git diff --check` 通过。
 - API 36 AVD 复验再次发现 `AutofillLaunchTargetFactoryTest` 仍引用已在 `7877c569` 删除的 Legacy Save Activity/PendingIntent 工厂，导致 App 仪器测试编译失败。删除过期的 Legacy Save 启动断言，保留仍存在的 legacy fill、Credential Manager 与无障碍显式 Activity 验证；新保存路径由 `LegacySaveFlowTest` 覆盖。
-- 复验：`Pixel_8_Pro` API 36 AVD 的 Data 仪器测试 33 项、App 仪器测试 56 项全部通过。测试后通过 `adb emu kill` 关闭本轮启动的 AVD；当前没有连接设备。API 31 system image 未安装且没有 `sdkmanager`，硬件 Keystore 生物录入变更仍需真机验证，两项继续保留为未完成 TODO。
+- 该审计检查点：`Pixel_8_Pro` API 36 AVD 的 Data 仪器测试 33 项、App 仪器测试 56 项通过；API 31 模拟器镜像当时未安装。后续 API 31 真机复验已在[交付审查](2026-10-27-history-ui-delivery.md)记录通过；目前仅硬件 Keystore 生物识别录入变更仍待验收，见[活动计划](../superpowers/plans/2026-10-29-hardware-keystore-verification.md)。
 - 安全会话复审发现 `VaultSessionController.lock()` 和恢复回滚路径捕获 `sessionManager.softLock()/seal()` 的 `CancellationException` 后会当作普通封存失败记录并吞掉。新增封存与软锁取消回归，旧实现先红；改为在 NonCancellable 区完成钥匙清理、锁状态和 Locked 发布，再传播取消，由 Trace 记为 `LockCancelled`。更新认证文档明确内部取消合同。
 - 验证：`VaultSessionIdleTimeoutTest`、完整 `:security:testDebugUnitTest`、`:app:testDebugUnitTest`、`verifyArchitecture`、`:security:lintDebug` 与 `git diff --check` 均通过。
-
-### Task 1: Establish a protected baseline and live audit ledger
-
-**Files:**
-- Modify: `docs/superpowers/plans/2026-10-29-passly-redundancy-audit.md`
-- Read: initial `git status`, tracked and untracked diffs, module list, project-specific agent rules.
-
-- [x] Capture the initial worktree state and mark all pre-existing edits as protected.
-- [x] Record the audit order and evidence rules in the ledger.
-- [x] Recheck status before each edit to a previously dirty file.
-
-### Task 2: Review `:core` and `:core:common`
-
-**Files:**
-- Review: production sources, module dependencies, test support, architecture docs, DI bindings.
-- Modify only files with a confirmed duplicate/dead responsibility; update the matching formal doc and this plan.
-
-- [x] Inspect callers, DI, Android platform registrations, and tests for every candidate.
-- [x] Remove only proven redundant implementation; preserve separate production/test adapters and platform contracts.
-- [x] Run relevant module verification for code changes and log exact commands/results.
-- [x] Append retained/deferred candidates and TODOs to the audit ledger.
-
-### Task 3: Review `:domain` and `:runtime:session`
-
-**Files:** Domain contracts, policies, models, runtime session state machine, tests, and their consumers.
-
-- [x] Check duplicate domain rules and pass-through contracts across module boundaries.
-- [x] Preserve explicit state, cancellation, session ownership, and external stable-key behavior.
-- [x] Remove confirmed redundant implementation, update formal docs, run relevant verification, and record TODOs.
-
-### Task 4: Review `:security`
-
-**Files:** authentication orchestration, key/session lifecycle, DI, tests, and security documentation.
-
-- [x] Trace each candidate through authentication state ownership, callers, DI, cleanup, and security docs.
-- [x] Remove only a duplicate or unreachable responsibility with complete lifecycle evidence.
-- [x] Run relevant verification for changes and record device-only follow-up separately.
-
-### Task 5: Review `:data`
-
-**Files:** Room/DataStore implementations, DAOs, mappers, transactions, dependency declarations, tests, and data docs.
-
-- [x] Compare mapper, transaction, repository, and serialization responsibilities against actual call graphs and schemas.
-- [x] Preserve encryption boundaries, transaction atomicity, referential cleanup, stable storage keys, and Room version 1.
-- [x] Remove confirmed redundancy, update current data docs, run relevant verification, and append unresolved TODOs.
-
-### Task 6: Review `:app` and feature presentation
-
-**Files:** app wiring, Android entry points, features, ViewModels/Routes/Reducers/Mappers, resources, tests, and feature docs.
-
-- [x] Review by feature while excluding the protected in-progress revision-history changes.
-- [x] Check Manifest, DI, navigation, resource IDs, SavedState, reflection, and platform callbacks before classifying code as unused.
-- [x] Remove confirmed duplicate rules, empty mappings, or forwarding-only layers; keep lifecycle/session ownership intact.
-- [x] Update formal docs, run relevant verification, and record device verification TODOs.
-
-### Task 7: Reconcile dependencies, tests, and documentation
-
-**Files:** Gradle catalogs/build files, docs index/topic pages, obsolete plans and tests.
-
-- [x] Verify dependency use before deleting declarations and check generated/plugin use sites.
-- [x] Remove obsolete tests/docs only when the replaced behavior and all links have been reconciled.
-- [x] Update authoritative docs and links; preserve ADR history and the requested audit TODO.
-
-### Task 8: Refine local agent and project maintenance skill
-
-**Files:**
-- Modify: `AGENTS.md` (local only)
-- Create: `.agents/skills/passly-maintenance/SKILL.md` (local only)
-- Create: `.agents/skills/passly-redundancy-cleanup/SKILL.md` (local only)
-- Read: `docs/development/maintenance-boundaries.md`, `docs/development/documentation.md`, audit ledger.
-
-- [x] Keep AGENTS concise: enduring repository constraints and links to authoritative docs only.
-- [x] Split routine Passly maintenance/TODO guidance from focused redundancy-audit guidance.
-- [x] Write skills from observed failure modes, concrete bug/TODO lessons, and the verified audit process.
-- [x] Ensure skills avoid duplicating formal docs and require evidence before removing code.
-- [x] Verify both local-only files are unstaged and report their Git state.
-
-### Task 9: Final scope and workspace review
-
-**Files:** all files changed by this task and the protected baseline.
-
-- [x] Compare final changes against the initial status; confirm pre-existing work is intact.
-- [x] Run `git diff --check` and all verification required by the affected module rules.
-- [x] Confirm each commit contains only its audited paths; preserve `AGENTS.md`, local skills, and unrelated worktree changes.
-- [x] Leave remaining candidates and missing device checks as explicit TODOs.
 
 ### 后续批次：诊断导出取消边界（2026-10-29）
 
@@ -320,6 +212,20 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 修复：删除多余的公开调度入口，现有调度操作只能通过原子替换进入；顺序计时测试改为覆盖该合同。
 - 验证：`ClipboardClearSchedulerTest` 5 项、`:core:testDebugUnitTest`、`verifyArchitecture`、`:core:lintDebug` 与 `git diff --check` 通过。
 
+### 后续批次：过时测试与 UI 测试核对（2026-10-29）
+
+- 范围：核对各模块测试对本轮审计已移除生产符号的引用，并检查代表性的 Compose 仪器测试是否仍绑定当前页面、组件与 Android 入口。
+- 结果：没有发现测试继续引用 `AppErrorNoticeMapper`、`RecordAutofillUsageUseCase`、`DetailOpenRequest`、已移除的 Domain 模型/Mapper、`VaultDataAdaptersTest` 或已移除的 Legacy Save 启动入口；这些历史失配项已在对应实现批次中清理。
+- 保留：`AutofillLaunchTargetFactoryTest` 仍验证当前 Legacy Fill、Credential Manager 与 Accessibility 显式启动目标，生产目标类及 Manifest 注册仍存在。`RevisionHistorySheetTest`、`InternalInputAutofillTest`、`EntryFocusBehaviorTest`、`SensitiveFieldVisibilityTest`、`VaultTopBarMenuTest` 与 `SegmentedSettingsGroupDropdownTest` 均直接覆盖当前生产 UI/API 的可见行为，没有发现测试替身取代生产节点或已删除交互的证据。
+- 决策：本轮只做只读核对，不删除有效覆盖；静态关键字/符号检查不能证明断言与运行时行为失配，因此未把“名称含 legacy”、测试文件名不等于生产文件名或断言风格当作删除依据。
+- 验证边界：未运行单测、仪器测试或构建；此项是引用与生产声明的静态审查。后续如发现具体失败/失配用例，应以当前生产合同复现后再移除或改写。
+
+### 后续批次：合并重复的新增条目保存能力测试（2026-10-29）
+
+- 证据：密码条目和 OTP 编辑器分别在各自 ViewModel 测试中重复断言同一 UI 合同：有效表单在 Idle 可保存，Saving 时不可保存。两个状态各自实现该投影，但无需在两个长 ViewModel 测试套件中重复保存阶段断言。
+- 处理：合并到 `AddEntrySaveCapabilityTest`，同一测试并列覆盖两个表单状态；删除两个原测试位置的重复用例。表单有效性及 ViewModel 工作流测试仍留在各自套件。
+- 验证：未运行测试；`git diff --check` 通过。
+
 ### 后续批次：Autofill 使用记录转发层移除（2026-10-29）
 
 - 生产路径核对：`RecordAutofillUsageUseCase` 只把条目 ID 转成 String 并固定 `ActivityType.AUTOFILL` 后转发至 Domain `ActivityRecorder`；唯一调用方 `CompleteAutofillSelection` 已拥有“完成点选并记录使用”的应用职责。
@@ -342,3 +248,21 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 文档：明确 clear-state 清理取消合同及 PendingIntent 跨 Service 生命周期的时限边界。
 - RED：新增父 scope 在清理挂起期间取消的回归；首轮发现清理虽完成但取消后的成功回调仍执行，加入 `ensureActive()` 检查后回归通过。
 - 验证：`AutofillServiceCleanupTest` 与 `AutofillTraceLifecycleTest` 共 5 项通过；`verifyArchitecture`、单 worker `:app:lintDebug` 与 `git diff --check` 通过。
+
+### 后续批次：数据库重置与认证会话协调（2026-10-29）
+
+- 根因：数据库重置已封存并删除文件后，重开失败会由 Data 控制器返回错误，但若认证状态只看 Security 锁状态，仍可能报告 Vault 已解锁；活动 Room 查询也只看认证授权，无法随数据库会话单独封存而停止。
+- 修复：新增 Domain `DatabaseResetSessionCoordinator` 合同，由 Security 会话协调器与锁/解锁共用互斥区。重置成功后按数据库会话状态恢复；重开失败时保留错误、撤销授权、清除敏感数据密钥并发布 Locked。`isUnlocked()` 与 `isLocked()` 同时反映数据库会话状态。
+- 查询：统一用授权状态和数据库 `UNLOCKED` 状态派生可读 Flow，并用于活动、关系、修订、列表及分页查询。封存时取消 Room 观察并发出空值，成功重开后重新订阅。
+- 回归：Data 覆盖删除完成后重开失败的错误传播、封存状态和不发布刷新；Security 覆盖失败后锁定与重试、重置期间锁定请求等待；Data 共享投影测试覆盖授权及封存/重开转换。
+- 文档：同步更新数据库重置、会话和活动查询边界。
+- 验证：完整 `:data:testDebugUnitTest`、`:security:testDebugUnitTest`、`verifyArchitecture` 与 `git diff --check` 通过。并发批量执行时 Data 测试曾一次以 `EOFException` 退出；单独重跑完整 Data 套件通过。
+- 限制：未运行基于真实 Room 实例的活动 collector 集成测试；当前通过共享可读 Flow 单测和各 Repository 的生产接线覆盖其门控合同。
+
+### 后续批次：备份目录授权操作串行化（2026-10-29）
+
+- 根因：目录选择在挂起取得新 SAF grant 前快照旧 URI；并发选择可能各自覆盖并释放同一个旧 grant，选择与清除交错时清除还可能依据 UI 旧快照释放错误 URI。
+- 修复：`BackupDirectorySettingsInteractor` 在一个互斥区内执行 grant 获取、设置写入和旧 grant 回收；清除也在同一互斥区中读取最新持久化 URI，再清设置并释放实际被移除的 URI。ViewModel 不再把 UI 快照作为清除参数。Android SAF grant 与设置 Repository 的边界保持不变。
+- 回归：新增 deferred grant 屏障测试，覆盖 select/select 与 select/clear 顺序，并断言每个被替换或清除的 URI 正确释放。
+- 文档：同步更新备份 SAF 目录授权合同。
+- 验证：`BackupDirectorySettingsInteractorTest` 13 项通过；`verifyArchitecture` 与 `git diff --check` 通过。

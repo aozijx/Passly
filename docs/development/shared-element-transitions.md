@@ -69,7 +69,7 @@ SharedTransitionLayout {
 ## 方案 B：为外溢绘制预留共享边界
 
 `OverlayClip` 只决定 overlay 是否应用裁剪路径，不会扩大共享 RenderNode 自身的尺寸。元素阴影仍在自身边界被
-截断时，使用 `core/ui/animation/SharedTransitionVisualOverflow.kt`：
+截断时，使用 `core/src/main/kotlin/com/aozijx/passly/core/ui/animation/SharedTransitionVisualOverflow.kt`：
 
 ```kotlin
 val sharedModifier = with(sharedTransitionScope) {
@@ -146,7 +146,7 @@ overflow
 
 ## 相关实现
 
-- `app/navigation/PasslyNavHost.kt`：`SharedTransitionLayout` 与 `NavHost` 宿主。
-- `core/ui/animation/SharedTransitionVisualOverflow.kt`：无裁剪策略和通用 visual overflow。
-- `feature/vault/components/fab/VaultFab.kt`：入口 FAB。
-- `feature/vault/editor/common/AddEntryScaffold.kt`：目标保存 FAB。
+- `app/src/main/java/com/aozijx/passly/feature/shell/presentation/navigation/PasslyNavHost.kt`：`SharedTransitionLayout` 与 `NavHost` 宿主。
+- `core/src/main/kotlin/com/aozijx/passly/core/ui/animation/SharedTransitionVisualOverflow.kt`：无裁剪策略和通用 visual overflow。
+- `app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/ui/component/fab/VaultFab.kt`：入口 FAB。
+- `app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/ui/common/AddEntryScaffold.kt`：目标保存 FAB。
