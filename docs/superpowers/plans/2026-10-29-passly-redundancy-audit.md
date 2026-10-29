@@ -249,3 +249,11 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 修复：启动助手现在持有并返回 Job，在任务取消完成回调中幂等清理；协程体运行后仍由内层捕获取消并重抛。把 trace 初始化、开始日志与主线程 Activity 启动一并纳入该边界。
 - 文档：明确协程启动前及执行期间取消均清除暂存请求与 continuation。
 - 验证：启动前取消、运行中取消和普通启动失败三项定向用例、架构检查、Lint 与 `git diff --check` 通过。
+
+### 后续批次：详情图标裁剪取消清理（2026-10-29）
+
+- 生产路径核对：`DetailViewModel.CancelFaviconCrop` 先清除草稿中的 pending path，再由 `DetailFaviconSession.cancelCrop()` 在 ViewModel scope 启动可取消 IO 删除；导航销毁可能在删除完成前取消任务。`FaviconImageStore` 只在进程启动时清理 staging，因此文件会滞留到下次启动。
+- RED：新增在删除已挂起期间取消 owner scope 的回归；旧实现因任务未进入或被取消而没有删除该路径。
+- 修复：清理从调用点立即开始，并在 `NonCancellable` 内完成文件删除；页面生命周期不会中断已开始的临时资源回收。
+- 文档：补充裁剪取消时的资源释放合同及进程启动 staging 清理的兜底边界。
+- 验证：`DetailFaviconSessionTest` 定向测试、`verifyArchitecture`、`:app:lintDebug` 与 `git diff --check` 通过。

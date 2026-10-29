@@ -1,12 +1,15 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
 import com.aozijx.passly.core.platform.media.FaviconDraftFiles
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 internal class DetailFaviconSession(
     private val files: FaviconDraftFiles,
@@ -92,7 +95,10 @@ internal class DetailFaviconSession(
 
     fun cancelCrop(pendingInputPath: String?) {
         cancelPreparation()
-        scope.launch { files.discard(pendingInputPath) }
+        if (pendingInputPath == null) return
+        scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            withContext(NonCancellable) { files.discard(pendingInputPath) }
+        }
     }
 
     fun close(editor: DetailFaviconEditorState.Open) {

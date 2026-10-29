@@ -3,10 +3,13 @@ package com.aozijx.passly.feature.vault.presentation.detail
 import com.aozijx.passly.core.platform.media.FaviconDraftFiles
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -16,6 +19,28 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DetailFaviconSessionTest {
+
+    @Test
+    fun `cancel crop finishes discarding input when owner scope is cancelled during IO`() = runTest {
+        val files = FakeFiles()
+        val deletionStarted = CompletableDeferred<Unit>()
+        val releaseDeletion = CompletableDeferred<Unit>()
+        files.onDiscard = {
+            deletionStarted.complete(Unit)
+            releaseDeletion.await()
+        }
+        val ownerJob = Job()
+        val ownerScope = CoroutineScope(ownerJob + StandardTestDispatcher(testScheduler))
+        val session = DetailFaviconSession(files, ownerScope)
+
+        session.cancelCrop("pending-input")
+        deletionStarted.await()
+        ownerJob.cancel()
+        releaseDeletion.complete(Unit)
+        runCurrent()
+
+        assertEquals(listOf("pending-input"), files.discardedPaths)
+    }
 
     @Test
     fun `publishing a new crop input only releases the previous pending input`() = runTest {
@@ -248,8 +273,14 @@ class DetailFaviconSessionTest {
 
     private class FakeFiles : FaviconDraftFiles {
         val closedPaths = mutableListOf<String?>()
+        val discardedPaths = mutableListOf<String?>()
+        var onDiscard: suspend (String?) -> Unit = {}
 
-        override suspend fun discard(path: String?) = Unit
+        override suspend fun discard(path: String?) {
+            if (path == null) return
+            onDiscard(path)
+            discardedPaths += path
+        }
         override suspend fun discardPromotedCandidate(path: String?) = Unit
 
         override fun discardEditorResources(
