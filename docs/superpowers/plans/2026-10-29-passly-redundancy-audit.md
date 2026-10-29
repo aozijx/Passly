@@ -305,3 +305,11 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 修复：存储边界返回主线程删除任务是否入队；调度失败或抛错时保留文件，将其交给超过 10 分钟的陈旧文件清理兜底。分享成功状态不再被后置清理失败反转。
 - 文档：明确延迟删除未入队时保留接收文件，并使用年龄清理兜底。
 - 验证：`ObservabilityExportServiceTest` 14 项通过，含任务拒绝与调度异常；`verifyArchitecture`、`:app:lintDebug` 与 `git diff --check` 通过。
+
+### 后续批次：敏感剪贴板发布与过期竞态（2026-10-29）
+
+- 生产路径核对：剪贴板发布、计时任务取消/替换原先是三个独立操作；计时器先校验 token 再清剪贴板也没有与新复制串行化，两个顺序都允许新旧 owner/timer 不匹配。
+- 回归覆盖：新增交错复制与旧计时器所有权检查期间发生新复制的屏障测试，验证替换操作互斥、旧回调完成后新内容及其计时任务仍生效。
+- 修复：`ClipboardClearScheduler.replace()` 在同一监视器内执行平台发布和计时替换；计时回调只在仍是活动 Job 时，在同一监视器内完成 token 校验/清除。主动清除也在该边界中完成，继续返回既有清除结果。
+- 文档：记录发布、计时替换和所有权清除共用串行边界。
+- 验证：`:core:testDebugUnitTest`、`verifyArchitecture`、`:core:lintDebug` 与 `git diff --check` 通过。

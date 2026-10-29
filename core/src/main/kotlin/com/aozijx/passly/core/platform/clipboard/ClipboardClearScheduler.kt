@@ -2,6 +2,7 @@ package com.aozijx.passly.core.platform.clipboard
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -16,21 +17,56 @@ internal class ClipboardClearScheduler(
     fun schedule(
         ownershipToken: String,
         delayMillis: Long,
-        clear: suspend (String) -> Unit,
+        clear: (String) -> Unit,
     ) {
         synchronized(lock) {
-            pending?.cancel()
-            pending = scope.launch(dispatcher) {
-                delay(delayMillis)
-                clear(ownershipToken)
-            }
+            cancelPendingLocked()
+            scheduleLocked(ownershipToken, delayMillis, clear)
         }
     }
 
+    fun replace(
+        ownershipToken: String,
+        delayMillis: Long?,
+        publish: () -> Unit,
+        clear: (String) -> Unit,
+    ) {
+        synchronized(lock) {
+            publish()
+            cancelPendingLocked()
+            if (delayMillis != null) scheduleLocked(ownershipToken, delayMillis, clear)
+        }
+    }
+
+    fun <T> withLock(operation: () -> T): T = synchronized(lock, operation)
+
     fun cancel() {
         synchronized(lock) {
-            pending?.cancel()
-            pending = null
+            cancelPendingLocked()
         }
+    }
+
+    private fun scheduleLocked(
+        ownershipToken: String,
+        delayMillis: Long,
+        clear: (String) -> Unit,
+    ) {
+        lateinit var scheduled: Job
+        scheduled = scope.launch(dispatcher, start = CoroutineStart.LAZY) {
+            delay(delayMillis)
+            synchronized(lock) {
+                if (pending === scheduled) {
+                    clear(ownershipToken)
+                    pending = null
+                }
+            }
+        }
+        pending = scheduled
+        scheduled.start()
+    }
+
+    private fun cancelPendingLocked() {
+        pending?.cancel()
+        pending = null
     }
 }

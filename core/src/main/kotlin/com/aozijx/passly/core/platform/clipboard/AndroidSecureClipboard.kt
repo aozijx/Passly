@@ -32,25 +32,29 @@ internal class AndroidSecureClipboard @Inject constructor(
                 putString(OWNERSHIP_TOKEN_KEY, token)
             }
         }
-        clipboard.setPrimaryClip(clip)
-
-        scheduler.cancel()
-        if (clearAfterSeconds != null) {
-            scheduler.schedule(token, clearAfterSeconds * 1_000L, ::clearExact)
-        }
+        scheduler.replace(
+            ownershipToken = token,
+            delayMillis = clearAfterSeconds?.times(1_000L),
+            publish = { clipboard.setPrimaryClip(clip) },
+            clear = ::clearExact,
+        )
     }
 
-    override fun clearOwned(): ClipboardClearResult = try {
-        if (!clipboard.hasPrimaryClip()) {
-            ClipboardClearResult.Empty
-        } else {
-            val token = clipboard.primaryClipDescription
-                ?.extras
-                ?.getString(OWNERSHIP_TOKEN_KEY)
-            if (token == null) ClipboardClearResult.NotOwned else clearExact(token)
+    override fun clearOwned(): ClipboardClearResult = scheduler.withLock {
+        val result = try {
+            if (!clipboard.hasPrimaryClip()) {
+                ClipboardClearResult.Empty
+            } else {
+                val token = clipboard.primaryClipDescription
+                    ?.extras
+                    ?.getString(OWNERSHIP_TOKEN_KEY)
+                if (token == null) ClipboardClearResult.NotOwned else clearExact(token)
+            }
+        } catch (error: RuntimeException) {
+            ClipboardClearResult.Failed(error)
         }
-    } catch (error: RuntimeException) {
-        ClipboardClearResult.Failed(error)
+        if (result == ClipboardClearResult.Cleared) scheduler.cancel()
+        result
     }
 
     private fun clearExact(expectedToken: String): ClipboardClearResult = try {
@@ -61,7 +65,6 @@ internal class AndroidSecureClipboard @Inject constructor(
             ClipboardClearResult.NotOwned
         } else {
             clipboard.clearPrimaryClip()
-            scheduler.cancel()
             ClipboardClearResult.Cleared
         }
     } catch (error: RuntimeException) {
