@@ -225,3 +225,11 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 修复：独立传播取消；在授权、flush、读取、临时输出创建与编码之后检查 Job；取消时尽力删除临时明文或 SAF 文档目标，清理异常作为 suppressed 保留原始结果。
 - 文档：更新诊断导出主题页，说明同步编码中的取消会在返回后检查，并明确清理和传播合同。
 - 验证：`:app:testDebugUnitTest --tests com.aozijx.passly.app.observability.ObservabilityExportServiceTest` 定向通过；`:app:testDebugUnitTest verifyArchitecture :app:lintDebug --no-parallel --max-workers=2` 通过（App 单测 862 项）；`git diff --check` 通过。
+
+### 后续批次：分享导出保留期限（2026-10-29）
+
+- 生产路径核对：分享文件成功后安排 10 分钟删除，但下一次分享的 `clearStaleExports()` 原先删除所有 `passly_logs_` 文件，不检查年龄；连续发起第二次分享会移除仍有效的第一次分享文件。
+- RED：旧式“清理所有同前缀文件”使保留窗口测试失败；测试同时确认不匹配前缀的文件不受影响。近期文件和超期文件按精确边界选取。
+- 修复：抽出纯文件保留策略，清理只选择同前缀、普通文件且修改时间至少超过 10 分钟的导出；系统时间回拨时保守保留。
+- 文档：明确下次分享只清理超过保留期的导出，仍在分享窗口内的文件保持可读。
+- 验证：保留策略两项单测通过；`:app:testDebugUnitTest verifyArchitecture :app:lintDebug --no-parallel --max-workers=2` 通过，`git diff --check` 通过。

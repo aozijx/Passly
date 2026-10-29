@@ -194,14 +194,15 @@ internal class AndroidDiagnosticsExportStorageGateway @Inject constructor(
     @param:ApplicationContext private val context: Context,
 ) : DiagnosticsExportStorageGateway {
     override fun clearStaleExports() {
-        context.cacheDir.listFiles()
-            ?.filter { it.isFile && it.name.startsWith(EXPORT_PREFIX) }
-            ?.forEach(File::delete)
+        DiagnosticsExportFileRetention.staleFiles(
+            context.cacheDir.listFiles(),
+            System.currentTimeMillis(),
+        ).forEach(File::delete)
     }
 
     override fun createExportFile(spec: ExportArtifactSpec): File = File(
         context.cacheDir,
-        "$EXPORT_PREFIX${System.currentTimeMillis()}.${spec.extension}",
+        "${DiagnosticsExportFileRetention.PREFIX}${System.currentTimeMillis()}.${spec.extension}",
     )
 
     override fun share(file: File, mimeType: String): Result<Unit> = runCatching {
@@ -239,7 +240,6 @@ internal class AndroidDiagnosticsExportStorageGateway @Inject constructor(
     }
 
     private companion object {
-        const val EXPORT_PREFIX = "passly_logs_"
-        const val DELETE_DELAY_MS = 10 * 60 * 1000L
+        const val DELETE_DELAY_MS = DiagnosticsExportFileRetention.MAX_AGE_MS
     }
 }
