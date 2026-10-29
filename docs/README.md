@@ -42,7 +42,7 @@
 ## 功能
 
 - Vault：[列表与搜索](features/vault/list-and-search.md)、[修订历史](features/vault/entry-revision-history.md)、[编辑与写入架构](features/vault/entry-editor-and-persistence.md)
-- Autofill：[共享填充流程](features/autofill/fill-flow.md)、[Legacy Service](features/autofill/legacy-service.md)、[Credential Manager](features/autofill/credential-manager.md)、[保存语义](features/autofill/save-flow.md)、[Sealed Inbox（已批准，尚未实现）](features/autofill/sealed-inbox.md)、[验证矩阵](features/autofill/verification.md)
+- Autofill：[共享填充流程](features/autofill/fill-flow.md)、[Legacy Service](features/autofill/legacy-service.md)、[Credential Manager](features/autofill/credential-manager.md)、[保存语义](features/autofill/save-flow.md)、[Sealed Inbox（实现中）](features/autofill/sealed-inbox.md)、[验证矩阵](features/autofill/verification.md)
 - Backup：[导入与导出](features/backup/import-export.md)、[归档格式](features/backup/archive-format.md)、[验证要求](features/backup/verification.md)
 - [诊断日志查看与导出](features/diagnostics/viewer-and-export.md)
 - [二维码扫描](features/scanner.md)

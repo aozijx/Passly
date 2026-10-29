@@ -1,6 +1,6 @@
 # Autofill Sealed Save Inbox
 
-状态：实现中。bootstrap key material 的 Domain/Proto 持久化边界已实现；密钥生成、锁定保存与解锁导入尚未实现。
+状态：实现中。bootstrap key material 的 Domain/Proto 持久化边界以及 RSA 密钥生成、私钥封装/校验已实现；解锁生命周期 provision、锁定保存与解锁导入尚未实现。
 
 本设计允许 Vault 锁定时只进行密封写入，不授予数据库读取/解密能力，也不弹出 Passly 认证。当前代码仍使用
 认证式保存，见 [Legacy Service](legacy-service.md)和[Credential Manager](credential-manager.md)。
@@ -47,7 +47,9 @@ ciphertext + tag[16]  AES-256-GCM(PKCS#8 private key)
 AAD = magic || format_version || key_id || public_key_sha256
 ```
 
-AES wrapping key 由 Vault DEK 通过 `HMAC-SHA256("passly-autofill-inbox-private-wrap-v1")` 域分离得到。
+`ciphertext_length` 只计密文，不含紧随其后的 16-byte GCM tag；解码要求总长精确匹配且密文不超过 16 KiB。
+RSA 公钥编码最多 2 KiB，模数必须是 3072 位且指数固定为 65537。AES wrapping key 由 Vault DEK 通过
+`HMAC-SHA256("passly-autofill-inbox-private-wrap-v1")` 域分离得到。
 App 密码/生物识别变更只重包同一 DEK，不旋转 Inbox；真正 DEK rotation 必须在同一协议内重新包装 private key。
 
 ## Pending store
