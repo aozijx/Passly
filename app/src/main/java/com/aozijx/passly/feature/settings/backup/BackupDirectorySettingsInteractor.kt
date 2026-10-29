@@ -91,12 +91,27 @@ class BackupDirectorySettingsInteractor @Inject constructor(
     }
 
     suspend fun clear(treeUri: String?) {
-        settingsRepository.clearBackupDirectoryUri()
-        treeUri?.takeIf(String::isNotBlank)?.let { uri ->
+        var clearFailure: Throwable? = null
+        try {
+            settingsRepository.clearBackupDirectoryUri()
+        } catch (failure: Throwable) {
+            clearFailure = failure
+        }
+
+        val shouldRelease = if (clearFailure == null) {
+            true
+        } else {
+            val persistedUri = withContext(NonCancellable) {
+                runCatching { settingsRepository.backupDirectoryUri.first() }
+            }
+            persistedUri.isSuccess && persistedUri.getOrNull() != treeUri
+        }
+        if (shouldRelease) treeUri?.takeIf(String::isNotBlank)?.let { uri ->
             withContext(NonCancellable) {
                 runCatching { directoryAccess.release(uri) }
             }
         }
+        clearFailure?.let { throw it }
         currentCoroutineContext().ensureActive()
     }
 }

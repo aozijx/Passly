@@ -100,6 +100,61 @@ class BackupDirectorySettingsInteractorTest {
     }
 
     @Test
+    fun `cancellation after clear commit still releases the persisted grant`() = runTest {
+        val operations = mutableListOf<String>()
+        val repository = FakeRepository(
+            initialUri = "content://tree/original",
+            operations = operations,
+            cancelAfterClear = true,
+        )
+        val access = FakeAccess(
+            acquireResult = BackupDirectoryGrantResult.Unavailable,
+            operations = operations,
+        )
+        val interactor = BackupDirectorySettingsInteractor(repository, access)
+
+        val cancellation = try {
+            interactor.clear("content://tree/original")
+            null
+        } catch (error: CancellationException) {
+            error
+        }
+
+        assertEquals("settings cleared before cancellation", cancellation?.message)
+        assertNull(repository.savedUri)
+        assertEquals(
+            listOf("clear", "release:content://tree/original"),
+            operations,
+        )
+    }
+
+    @Test
+    fun `failed clear keeps grant when settings still reference it`() = runTest {
+        val operations = mutableListOf<String>()
+        val repository = FakeRepository(
+            initialUri = "content://tree/original",
+            operations = operations,
+            failOnClear = true,
+        )
+        val access = FakeAccess(
+            acquireResult = BackupDirectoryGrantResult.Unavailable,
+            operations = operations,
+        )
+        val interactor = BackupDirectorySettingsInteractor(repository, access)
+
+        val failure = try {
+            interactor.clear("content://tree/original")
+            null
+        } catch (error: IllegalStateException) {
+            error
+        }
+
+        assertEquals("settings clear failed", failure?.message)
+        assertEquals("content://tree/original", repository.savedUri)
+        assertEquals(listOf("clear"), operations)
+    }
+
+    @Test
     fun `replacing directory saves new uri before releasing previous grant`() = runTest {
         val operations = mutableListOf<String>()
         val repository = FakeRepository(
@@ -220,6 +275,8 @@ class BackupDirectorySettingsInteractorTest {
         private val operations: MutableList<String> = mutableListOf(),
         private val failOnSave: Boolean = false,
         private val cancelAfterSave: Boolean = false,
+        private val cancelAfterClear: Boolean = false,
+        private val failOnClear: Boolean = false,
     ) : BackupDirectorySettingsRepository {
         private val state = MutableStateFlow(initialUri)
         override val backupDirectoryUri: Flow<String?> = state
@@ -235,9 +292,11 @@ class BackupDirectorySettingsInteractorTest {
         }
 
         override suspend fun clearBackupDirectoryUri() {
+            operations += "clear"
+            if (failOnClear) error("settings clear failed")
             savedUri = null
             state.value = null
-            operations += "clear"
+            if (cancelAfterClear) throw CancellationException("settings cleared before cancellation")
         }
     }
 
