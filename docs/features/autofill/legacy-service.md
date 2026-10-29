@@ -45,7 +45,7 @@ Android 的该 flag 表示所有 required views 不可见时可触发保存，�
 
 - 已有完整 `Authenticated` 会话：验证草稿后直接写入。
 - 否则：将草稿密封写入耐久 Autofill Inbox；写入成功后调用 `SaveCallback.onSuccess()`，不启动认证 Activity。
-  当前解锁导入尚未实现，因此回调只确认已排队，不代表条目已写入 Vault。
+  Vault 下次完整解锁后由 Inbox drainer 导入；回调表示已耐久排队。
 
 相关实现：
 

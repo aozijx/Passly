@@ -14,6 +14,7 @@ import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.KdfAlgorithm
 import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.domain.access.port.AutofillInboxBootstrapStore
+import com.aozijx.passly.domain.access.port.AutofillInboxRecordStore
 import com.aozijx.passly.domain.access.port.BiometricConfigurationSource
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.google.protobuf.ByteString
@@ -33,7 +34,8 @@ private val Context.bootstrapDataStore: DataStore<BootstrapData> by dataStore(
 
 @Singleton
 internal class ProtoVaultBootstrapStore @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    private val autofillInboxRecordStore: AutofillInboxRecordStore,
 ) : VaultBootstrapStore, AutofillInboxBootstrapStore, BiometricConfigurationSource {
 
     private val dataStore: DataStore<BootstrapData>
@@ -212,6 +214,7 @@ internal class ProtoVaultBootstrapStore @Inject constructor(
     }
 
     override suspend fun clear() {
+        autofillInboxRecordStore.clear()
         dataStore.updateData {
             it.toBuilder()
                 .clearEnvelopes()

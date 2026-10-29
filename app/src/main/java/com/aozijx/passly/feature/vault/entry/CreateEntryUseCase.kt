@@ -9,6 +9,7 @@ import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.port.AutofillEntryWriter
+import com.aozijx.passly.domain.autofill.model.AutofillInboxDraftId
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -21,6 +22,7 @@ import com.aozijx.passly.domain.entry.policy.InvalidEntryDraft
 import com.aozijx.passly.domain.entry.policy.EntryValidation
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.github.f4b6a3.uuid.UuidCreator
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 
@@ -75,25 +77,36 @@ class CreateEntryUseCase internal constructor(
         persist = entryCommandRepository::createEntry,
     )
 
-    internal suspend fun createFromAutofill(draft: EntryDraft): AppResult<EntryId> = observeCreate(
-        draft = draft,
-        trigger = EntryCreateTrigger.AUTOFILL,
-        hasAccess = secureSessionAccessState::hasAutofillSessionAccess,
-        persist = autofillEntryWriter::create,
-    )
+    internal suspend fun createFromAutofill(
+        draft: EntryDraft,
+        inboxDraftId: AutofillInboxDraftId? = null,
+    ): AppResult<EntryId> {
+        val stableId = inboxDraftId?.let(::stableInboxEntryId)
+        return observeCreate(
+            draft = draft,
+            trigger = EntryCreateTrigger.AUTOFILL,
+            hasAccess = secureSessionAccessState::hasAutofillSessionAccess,
+            persist = { entry ->
+                if (inboxDraftId == null) autofillEntryWriter.create(entry)
+                else autofillEntryWriter.createFromInbox(entry, inboxDraftId)
+            },
+            forcedId = stableId,
+        )
+    }
 
     private suspend fun observeCreate(
         draft: EntryDraft,
         trigger: EntryCreateTrigger,
         hasAccess: () -> Boolean,
         persist: suspend (Entry) -> AppResult<EntryId>,
+        forcedId: EntryId? = null,
     ): AppResult<EntryId> = logger.inSpan(Operations.VaultEntryCreate) {
         val entryType = draft.type
         val startedAt = monotonicClock()
         logger.log(LogStatements.Vault.entryCreateStarted(entryType, trigger))
         val result = try {
             if (hasAccess()) {
-                create(draft, persist)
+                create(draft, persist, forcedId)
             } else {
                 AppResult.Failure(SessionModeRestricted())
             }
@@ -125,6 +138,7 @@ class CreateEntryUseCase internal constructor(
     private suspend fun create(
         draft: EntryDraft,
         persist: suspend (Entry) -> AppResult<EntryId>,
+        forcedId: EntryId?,
     ): AppResult<EntryId> {
         val definition = EntryTypeDefinitions[draft.type]
         if (draft.missingRequiredFields(definition).isNotEmpty() || draft.invalidProvidedFields(definition).isNotEmpty()) {
@@ -133,7 +147,7 @@ class CreateEntryUseCase internal constructor(
 
         val now = clock()
         val identity = EntryIdentity(
-            id = idFactory(),
+            id = forcedId ?: idFactory(),
             type = draft.type,
             version = EntryVersion.INITIAL,
             timestamps = EntryTimestamps(now),
@@ -149,6 +163,10 @@ class CreateEntryUseCase internal constructor(
         return persist(entry)
     }
 }
+
+private fun stableInboxEntryId(draftId: AutofillInboxDraftId): EntryId = EntryId(
+    UUID.nameUUIDFromBytes("passly-autofill-inbox:${draftId.value}".toByteArray(Charsets.UTF_8)).toString(),
+)
 
 private enum class EntryCreateTrigger { USER, AUTOFILL }
 

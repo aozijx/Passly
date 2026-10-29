@@ -1,8 +1,8 @@
 # Autofill Sealed Save Inbox
 
-状态：实现中。bootstrap key material 的 Domain/Proto 持久化边界、RSA 密钥生成/私钥封装/校验、完整 Vault 解锁后的幂等 provision、pending record 加密协议、受限耐久文件队列、Security 入队编排及 Legacy/Credential Manager 锁定保存入口已实现；解锁导入与数据库幂等落库尚未实现。
+状态：已实现。bootstrap key material 的 Domain/Proto 持久化边界、RSA 密钥生成/私钥封装/校验、完整 Vault 解锁后的幂等 provision、pending record 加密协议、受限耐久文件队列、Legacy/Credential Manager 锁定保存入口和解锁后幂等导入均已实现。
 
-本设计允许 Vault 锁定时只进行密封写入，不授予数据库读取/解密能力，也不弹出 Passly 认证。锁定保存入口目前在 durable queue 写入成功后向 Android 确认接收；待解锁导入完成前，这表示已排队，不代表凭据已成为 Vault 条目。导入完成前不得将其描述为已保存到 Vault。
+本设计允许 Vault 锁定时只进行密封写入，不授予数据库读取/解密能力，也不弹出 Passly 认证。锁定保存入口在 durable queue 写入成功后向 Android 确认接收；完整 Vault 解锁后按创建顺序导入。数据库使用由 draft ID 确定的稳定 Entry ID 作为幂等键，事务提交后删除 pending 文件；数据库写入与文件删除之间崩溃时，重试会识别已有条目并安全删除队列文件。
 
 ## 安全属性
 
@@ -76,7 +76,7 @@ AAD 是 encoded `magic || version || key_id || draft_id || created_at_ms` 再拼
 source（固定 wire key：Legacy=1、Credential Manager=2）、captured time、package/domain/page title/username/password。
 字符串使用 UTF-8 与 big-endian signed i32 长度，nullable 字段用 -1 表示缺失；拒绝未知 source、非法 UTF-8、尾随字节与超限字段。
 各 UTF-8 字段上限分别为 package 512、domain 4096、page title 8192、username 8192、password 32768 bytes，整条 record 上限 64 KiB。
-Entry ID 由导入事务生成，事务 marker 保存创建后返回的 ID；不在 pending payload 预造 Entry ID。解密后两个 draft ID 必须一致。
+Entry ID 由导入事务根据 draft ID 确定，不在 pending payload 预造 Entry ID。解密后两个 draft ID 必须一致。
 
 ## 限制与清理
 
@@ -85,7 +85,7 @@ Entry ID 由导入事务生成，事务 marker 保存创建后返回的 ID；不
 - temp/sidecar/pending/quarantine 整个 root 硬上限 512 KiB；
 - 满额时拒绝新保存，不删除仍有效旧记录；
 - 当前 key 已知时清理非当前 key-ID 目录；当前 quarantine 按 7 天保留；
-- record-specific transient failure 最多重试 3 次并指数退避，永久认证/格式错误立即 quarantine。
+- record-level authentication/format failure 立即 quarantine；数据库写入失败会停止本轮并保留当前及后续记录，下一次完整解锁再试。
 
 近似保存时间暴露在 header/mtime 中，用于锁定状态过期清理；这是明确接受的元数据风险。对 app 私有目录具有任意
 写权限的攻击者仍可替换 public key 并重定向之后的密封；private/public/fingerprint 检查只能在解锁时检测，不能在
@@ -93,17 +93,17 @@ Entry ID 由导入事务生成，事务 marker 保存创建后返回的 ID；不
 
 ## 幂等导入
 
-解锁后的 single-flight drainer 按创建顺序逐条解密。SQLCipher 增加
-`autofill_import_log(draft_id PRIMARY KEY, imported_at_ms, entry_id)`。同一事务先插入 import marker，再通过唯一
-`SaveAutofillCredential` 物化 Entry。提交成功才删 pending；唯一约束冲突表示已导入，可安全删文件。
+解锁后的 single-flight drainer 按创建顺序逐条解密，并通过唯一 `SaveAutofillCredential` 物化 Entry。Entry ID
+由 draft ID 确定，因此它同时充当事务幂等键，不增加 Room schema 或版本。提交成功才删 pending；已存在的同 ID
+Entry 表示此前已提交，可安全删文件。
 
-database/session-wide failure 中止整轮，不增加每条 retry；记录级失败按上述策略处理。private envelope 解不开时
+database/session-wide failure 中止整轮；记录级失败按上述策略处理。private envelope 解不开时
 保留并隔离，不删除。
 
 ## 备份和生命周期
 
 Manifest 当前 `allowBackup=false`，data extraction rules 也必须排除完整 Inbox root 与 `bootstrap.pb` 的 Inbox
 材料。该设计只承诺在容量/保留期内同一安装上的进程死亡和设备重启不丢失，不承诺跨设备或 Passly Backup 恢复。
-删除 Vault 时清除 bootstrap material、Inbox root 和 import log。
+删除 Vault 时清除 bootstrap material 与 Inbox root。
 
 决策见 [ADR-0025](../../decisions/ADR-0025-sealed-autofill-save-inbox.md)。

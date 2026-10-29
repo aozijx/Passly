@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
+import com.aozijx.passly.domain.autofill.model.AutofillInboxDraftId
 import com.aozijx.passly.domain.autofill.port.ApplicationLabelResolver
 import com.aozijx.passly.domain.autofill.port.AutofillEntryWriter
 import com.aozijx.passly.domain.entry.model.Entry
@@ -51,6 +52,19 @@ class SaveAutofillCredentialTest {
         assertEquals("", entry.username)
         assertTrue(entry.secret.credential is LoginCredential)
         assertEquals("secret", (entry.secret.credential as LoginCredential).password)
+    }
+
+    @Test
+    fun inboxRetryUsesSameEntryId() = runBlocking {
+        val fixture = fixture()
+        val inboxDraftId = AutofillInboxDraftId("00112233445566778899aabbccddeeff")
+
+        fixture.operation(draft(password = "secret"), inboxDraftId)
+        val firstId = requireNotNull(fixture.repository.createdEntry).id
+        fixture.operation(draft(password = "secret"), inboxDraftId)
+        val retryId = requireNotNull(fixture.repository.createdEntry).id
+
+        assertEquals(firstId, retryId)
     }
 
     private fun fixture(): Fixture {

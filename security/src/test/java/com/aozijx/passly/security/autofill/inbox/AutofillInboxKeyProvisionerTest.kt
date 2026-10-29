@@ -18,7 +18,15 @@ import com.aozijx.passly.domain.access.model.BiometricRotationJournal
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.domain.access.port.AutofillInboxBootstrapStore
+import com.aozijx.passly.domain.access.port.AutofillInboxRecordStore
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
+import com.aozijx.passly.domain.autofill.port.AutofillInboxDraftImporter
+import com.aozijx.passly.domain.autofill.port.AutofillInboxImportOutcome
+import com.aozijx.passly.domain.autofill.model.AutofillInboxDraftId
+import com.aozijx.passly.domain.autofill.model.AutofillInboxPendingDraft
+import com.aozijx.passly.domain.autofill.model.AutofillInboxSource
+import com.aozijx.passly.domain.autofill.model.AutofillInboxStoredRecord
+import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.dek.FieldKeyManager
 import kotlinx.coroutines.CancellationException
@@ -31,6 +39,49 @@ import org.junit.Test
 
 class AutofillInboxKeyProvisionerTest {
     @Test
+    fun importsPendingDraftAndRemovesItAfterCommit() = runBlocking {
+        val bootstrap = MemoryBootstrapStore()
+        val dekManager = DekManager(bootstrap, FieldKeyManager(), NoOpLogger).also {
+            it.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { 3 })
+        }
+        val keyCodec = AutofillInboxKeyMaterialCodec()
+        val recordCodec = AutofillInboxRecordCodec(keyCodec)
+        val material = dekManager.withDek(keyCodec::generateAndWrap)
+        bootstrap.inboxKeyMaterial = material
+        val draftId = AutofillInboxDraftId("00112233445566778899aabbccddeeff")
+        val encoded = recordCodec.seal(
+            material = material,
+            draftId = draftId,
+            source = AutofillInboxSource.LEGACY_SERVICE,
+            createdAtMs = 10,
+            capturedAtMs = 9,
+            draft = AutofillSaveDraft("com.example.app", "example.com", null, "alice", "secret"),
+        )
+        val records = MemoryRecordStore(
+            AutofillInboxStoredRecord(draftId, 10, encoded),
+        )
+        var imported: AutofillInboxPendingDraft? = null
+        val provisioner = AutofillInboxKeyProvisioner(
+            dekManager = dekManager,
+            bootstrapStore = bootstrap,
+            recordStore = records,
+            keyMaterialCodec = keyCodec,
+            recordCodec = recordCodec,
+            draftImporter = javax.inject.Provider {
+                AutofillInboxDraftImporter { imported = it; AutofillInboxImportOutcome.Imported }
+            },
+            logger = NoOpLogger,
+        )
+
+        provisioner.provisionAfterUnlock()
+
+        assertEquals(draftId, imported?.draftId)
+        assertEquals("alice", imported?.draft?.username)
+        assertEquals(listOf(draftId), records.removed)
+        assertEquals(emptyList<AutofillInboxDraftId>(), records.quarantined)
+    }
+
+    @Test
     fun provisionsOnceAndValidatesThePersistedKeyOnLaterUnlocks() = runBlocking {
         val bootstrap = MemoryBootstrapStore()
         val dekManager = DekManager(bootstrap, FieldKeyManager(), NoOpLogger).also {
@@ -39,7 +90,12 @@ class AutofillInboxKeyProvisionerTest {
         val provisioner = AutofillInboxKeyProvisioner(
             dekManager = dekManager,
             bootstrapStore = bootstrap,
+            recordStore = EmptyRecordStore,
             keyMaterialCodec = AutofillInboxKeyMaterialCodec(),
+            recordCodec = AutofillInboxRecordCodec(AutofillInboxKeyMaterialCodec()),
+            draftImporter = javax.inject.Provider {
+                AutofillInboxDraftImporter { AutofillInboxImportOutcome.Imported }
+            },
             logger = NoOpLogger,
         )
 
@@ -68,7 +124,12 @@ class AutofillInboxKeyProvisionerTest {
         val provisioner = AutofillInboxKeyProvisioner(
             dekManager = dekManager,
             bootstrapStore = bootstrap,
+            recordStore = EmptyRecordStore,
             keyMaterialCodec = AutofillInboxKeyMaterialCodec(),
+            recordCodec = AutofillInboxRecordCodec(AutofillInboxKeyMaterialCodec()),
+            draftImporter = javax.inject.Provider {
+                AutofillInboxDraftImporter { AutofillInboxImportOutcome.Imported }
+            },
             logger = NoOpLogger,
         )
 
@@ -89,7 +150,12 @@ class AutofillInboxKeyProvisionerTest {
         val provisioner = AutofillInboxKeyProvisioner(
             dekManager = dekManager,
             bootstrapStore = bootstrap,
+            recordStore = EmptyRecordStore,
             keyMaterialCodec = AutofillInboxKeyMaterialCodec(),
+            recordCodec = AutofillInboxRecordCodec(AutofillInboxKeyMaterialCodec()),
+            draftImporter = javax.inject.Provider {
+                AutofillInboxDraftImporter { AutofillInboxImportOutcome.Imported }
+            },
             logger = NoOpLogger,
         )
 
@@ -140,6 +206,46 @@ class AutofillInboxKeyProvisionerTest {
         override suspend fun clearAutofillInboxKeyMaterial() {
             inboxKeyMaterial = null
         }
+    }
+
+    private object EmptyRecordStore : AutofillInboxRecordStore {
+        override suspend fun enqueue(
+            keyId: ByteArray,
+            draftId: AutofillInboxDraftId,
+            queuedAtMs: Long,
+            encodedRecord: ByteArray,
+        ) = false
+
+        override suspend fun pending(keyId: ByteArray): List<AutofillInboxStoredRecord> = emptyList()
+        override suspend fun remove(keyId: ByteArray, draftId: AutofillInboxDraftId) = Unit
+        override suspend fun quarantine(keyId: ByteArray, draftId: AutofillInboxDraftId) = Unit
+        override suspend fun clear() = Unit
+    }
+
+    private class MemoryRecordStore(
+        vararg records: AutofillInboxStoredRecord,
+    ) : AutofillInboxRecordStore {
+        private val stored = records.toMutableList()
+        val removed = mutableListOf<AutofillInboxDraftId>()
+        val quarantined = mutableListOf<AutofillInboxDraftId>()
+
+        override suspend fun enqueue(
+            keyId: ByteArray,
+            draftId: AutofillInboxDraftId,
+            queuedAtMs: Long,
+            encodedRecord: ByteArray,
+        ) = false
+
+        override suspend fun pending(keyId: ByteArray): List<AutofillInboxStoredRecord> = stored
+        override suspend fun remove(keyId: ByteArray, draftId: AutofillInboxDraftId) {
+            removed += draftId
+            stored.removeAll { it.draftId == draftId }
+        }
+        override suspend fun quarantine(keyId: ByteArray, draftId: AutofillInboxDraftId) {
+            quarantined += draftId
+            stored.removeAll { it.draftId == draftId }
+        }
+        override suspend fun clear() = Unit
     }
 
     private object NoOpLogger : Logger {

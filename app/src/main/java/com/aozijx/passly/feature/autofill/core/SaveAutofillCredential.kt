@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.autofill.AutofillScope
 import com.aozijx.passly.domain.autofill.model.AutofillOperationFailure
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
+import com.aozijx.passly.domain.autofill.model.AutofillInboxDraftId
 import com.aozijx.passly.domain.autofill.port.ApplicationLabelResolver
 import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
@@ -22,12 +23,14 @@ class SaveAutofillCredential @Inject constructor(
 ) {
     suspend operator fun invoke(
         draft: AutofillSaveDraft,
+        inboxDraftId: AutofillInboxDraftId? = null,
     ): AutofillSaveOutcome {
         if (draft.password.isBlank()) return AutofillSaveOutcome.InvalidDraft
 
         return when (
             val result = createEntry.createFromAutofill(
                 buildAutofillCredentialDraft(draft, applicationLabelResolver),
+                inboxDraftId,
             )
         ) {
             is AppResult.Success -> AutofillSaveOutcome.Saved(result.data)

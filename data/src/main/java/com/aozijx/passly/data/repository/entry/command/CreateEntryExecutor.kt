@@ -32,16 +32,24 @@ internal class CreateEntryExecutor @Inject constructor(
         return execute(entry, databaseTransactions::writeForAutofill)
     }
 
+    suspend fun executeForInbox(entry: Entry): AppResult<EntryId> {
+        return execute(entry, databaseTransactions::writeForAutofill, idempotentByEntryId = true)
+    }
+
     private suspend fun execute(
         entry: Entry,
         write: suspend (
             String,
             suspend AppDatabase.() -> EntryId,
         ) -> AppResult<EntryId>,
+        idempotentByEntryId: Boolean = false,
     ): AppResult<EntryId> {
         val result = write("entry_create") {
-            val now = clock.now()
             val entryId = entry.id.value
+            if (idempotentByEntryId && entryQueryDao().getById(entryId) != null) {
+                return@write EntryId(entryId)
+            }
+            val now = clock.now()
             val entity = EntryEntity(
                 entryId = entryId,
                 entryType = entry.type,
