@@ -217,3 +217,11 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - [x] Run `git diff --check` and all verification required by the affected module rules.
 - [x] Confirm each commit contains only its audited paths; preserve `AGENTS.md`, local skills, and unrelated worktree changes.
 - [x] Leave remaining candidates and missing device checks as explicit TODOs.
+
+### 后续批次：诊断导出取消边界（2026-10-29）
+
+- 生产路径核对：`ObservabilityExportService.export()` 通过 `withContext(IO)` 执行同步日志读取与编码；内部 `runCatching` 会吞掉依赖抛出的 `CancellationException`，分享与本地文档分支也会将取消转换为 `Result.failure`。同步操作不会自动响应已取消 Job，若不在阶段边界检查，取消后仍可能继续打开文档或启动分享。
+- RED：新增日志读取抛取消、分享阶段抛取消、本地文档写入抛取消三项回归；旧实现全部返回普通失败。另新增在 flush 与临时文件创建期间真实取消 Job 的回归，证明旧实现会继续导出/分享。
+- 修复：独立传播取消；在授权、flush、读取、临时输出创建与编码之后检查 Job；取消时尽力删除临时明文或 SAF 文档目标，清理异常作为 suppressed 保留原始结果。
+- 文档：更新诊断导出主题页，说明同步编码中的取消会在返回后检查，并明确清理和传播合同。
+- 验证：`:app:testDebugUnitTest --tests com.aozijx.passly.app.observability.ObservabilityExportServiceTest` 定向通过；`:app:testDebugUnitTest verifyArchitecture :app:lintDebug --no-parallel --max-workers=2` 通过（App 单测 862 项）；`git diff --check` 通过。

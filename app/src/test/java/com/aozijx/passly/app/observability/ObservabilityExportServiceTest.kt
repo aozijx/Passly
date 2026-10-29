@@ -26,6 +26,10 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.OutputStream
 import java.nio.file.Files
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -174,6 +178,97 @@ class ObservabilityExportServiceTest {
     }
 
     @Test
+    fun `cancellation while reading records propagates`() = runTest {
+        val cancelled = CancellationException("diagnostics read cancelled")
+        val files = RecordingExportStorageGateway(cacheDirectory)
+        val service = service(PageStore(emptyList(), readFailure = cancelled), files)
+
+        val thrown = try {
+            service.export(TestPermit, shareRequest())
+            null
+        } catch (failure: CancellationException) {
+            failure
+        }
+
+        assertEquals(cancelled.message, thrown?.message)
+        assertEquals(null, files.target)
+    }
+
+    @Test
+    fun `coroutine cancellation during record flush stops before export`() = runTest {
+        var exportJob: Job? = null
+        val files = RecordingExportStorageGateway(cacheDirectory)
+        val service = service(PageStore(emptyList(), onFlush = { exportJob?.cancel() }), files)
+        val job = launch {
+            exportJob = currentCoroutineContext()[Job]
+            service.export(TestPermit, shareRequest())
+        }
+
+        job.join()
+
+        assertTrue(job.isCancelled)
+        assertEquals(null, files.target)
+        assertEquals(0, files.shareCalls)
+    }
+
+    @Test
+    fun `cancellation from share deletes plaintext then propagates`() = runTest {
+        val cancelled = CancellationException("diagnostics share cancelled")
+        val files = RecordingExportStorageGateway(cacheDirectory, shareException = cancelled)
+        val service = service(PageStore(emptyList()), files)
+
+        val thrown = try {
+            service.export(TestPermit, shareRequest())
+            null
+        } catch (failure: CancellationException) {
+            failure
+        }
+
+        assertEquals(cancelled.message, thrown?.message)
+        assertNotNull(files.target)
+        assertFalse(files.target!!.exists())
+        assertFalse(files.deleteScheduled)
+    }
+
+    @Test
+    fun `coroutine cancellation after share file creation prevents sharing and deletes file`() = runTest {
+        var exportJob: Job? = null
+        val files = RecordingExportStorageGateway(cacheDirectory, afterCreateFile = { exportJob?.cancel() })
+        val service = service(PageStore(emptyList()), files)
+        val job = launch {
+            exportJob = currentCoroutineContext()[Job]
+            service.export(TestPermit, shareRequest())
+        }
+
+        job.join()
+
+        assertTrue(job.isCancelled)
+        assertNotNull(files.target)
+        assertFalse(files.target!!.exists())
+        assertEquals(0, files.shareCalls)
+    }
+
+    @Test
+    fun `cancellation while writing document deletes target then propagates`() = runTest {
+        val cancelled = CancellationException("diagnostics document write cancelled")
+        val files = RecordingExportStorageGateway(cacheDirectory, documentWriteException = cancelled)
+        val service = service(PageStore(emptyList()), files)
+
+        val thrown = try {
+            service.export(
+                TestPermit,
+                DiagnosticsExportRequest(ExportAction.EXPORT_LOCAL, LogFormat.JSONL, "content://documents/log.jsonl"),
+            )
+            null
+        } catch (failure: CancellationException) {
+            failure
+        }
+
+        assertEquals(cancelled.message, thrown?.message)
+        assertTrue(files.documentDeleted)
+    }
+
+    @Test
     fun `invalid permit fails before plaintext file is created`() = runTest {
         val files = RecordingExportStorageGateway(cacheDirectory)
         val service = service(
@@ -243,15 +338,24 @@ class ObservabilityExportServiceTest {
         error = null,
     )
 
-    private class PageStore(private val records: List<SanitizedLogRecord>) : LogRecordStore {
+    private class PageStore(
+        private val records: List<SanitizedLogRecord>,
+        private val readFailure: Throwable? = null,
+        private val onFlush: (() -> Unit)? = null,
+    ) : LogRecordStore {
         override fun write(record: SanitizedLogRecord) = Unit
-        override fun readPage(cursor: LogRecordCursor?, limit: Int): LogRecordPage =
-            LogRecordPage(records.take(limit), records.size, null)
+        override fun readPage(cursor: LogRecordCursor?, limit: Int): LogRecordPage {
+            readFailure?.let { throw it }
+            return LogRecordPage(records.take(limit), records.size, null)
+        }
         override fun readBetween(startTimestampMs: Long, endTimestampMs: Long, limit: Int) =
             records.filter { it.timestampMs in startTimestampMs until endTimestampMs }.take(limit)
         override fun storageBytes() = 0L
         override fun drainDroppedCounts() = LogDropCounts()
-        override fun flush(timeoutMs: Long) = true
+        override fun flush(timeoutMs: Long): Boolean {
+            onFlush?.invoke()
+            return true
+        }
         override fun clear() = Unit
         override fun crashEmergencyWrite(record: SanitizedLogRecord, timeoutMs: Long) = true
         override fun close() = Unit
@@ -260,6 +364,9 @@ class ObservabilityExportServiceTest {
     private class RecordingExportStorageGateway(
         private val directory: File,
         private val shareFailure: Boolean = false,
+        private val shareException: Throwable? = null,
+        private val documentWriteException: Throwable? = null,
+        private val afterCreateFile: (() -> Unit)? = null,
     ) : DiagnosticsExportStorageGateway {
         var target: File? = null
         var sharedText: String? = null
@@ -271,6 +378,7 @@ class ObservabilityExportServiceTest {
         var documentDeleted = false
         var artifactSpec: ExportArtifactSpec? = null
         var sharedMimeType: String? = null
+        var shareCalls = 0
 
         override fun clearStaleExports() {
             clearCalls++
@@ -282,9 +390,12 @@ class ObservabilityExportServiceTest {
         ).also {
             artifactSpec = spec
             target = it
+            afterCreateFile?.invoke()
         }
 
         override fun share(file: File, mimeType: String): Result<Unit> {
+            shareCalls++
+            shareException?.let { throw it }
             sharedMimeType = mimeType
             sharedBytes = file.readBytes()
             sharedText = sharedBytes!!.toString(Charsets.UTF_8)
@@ -301,6 +412,16 @@ class ObservabilityExportServiceTest {
         }
 
         override fun openDocument(uri: String): OutputStream = object : ByteArrayOutputStream() {
+            override fun write(value: Int) {
+                documentWriteException?.let { throw it }
+                super.write(value)
+            }
+
+            override fun write(bytes: ByteArray, offset: Int, length: Int) {
+                documentWriteException?.let { throw it }
+                super.write(bytes, offset, length)
+            }
+
             override fun close() {
                 documentBytes = toByteArray()
                 documentText = documentBytes!!.toString(Charsets.UTF_8)

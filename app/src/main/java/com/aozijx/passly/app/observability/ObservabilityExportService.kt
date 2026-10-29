@@ -26,7 +26,10 @@ import java.io.File
 import java.io.OutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
 internal interface DiagnosticsExportStorageGateway {
@@ -52,11 +55,14 @@ class ObservabilityExportService @Inject internal constructor(
         request: DiagnosticsExportRequest,
     ): Result<Unit> =
         withContext(Dispatchers.IO) {
+            currentCoroutineContext().ensureActive()
             if (!permitVerifier.consume(permit, EXPORT_SCOPE)) {
                 return@withContext Result.failure(SecurityException("Diagnostics export authorization rejected"))
             }
-            runCatching {
+            currentCoroutineContext().ensureActive()
+            val records = try {
                 store.flush(FLUSH_TIMEOUT_MS)
+                currentCoroutineContext().ensureActive()
                 readRecords()
                     .distinctBy { it.eventId }
                     .sortedWith(
@@ -64,19 +70,20 @@ class ObservabilityExportService @Inject internal constructor(
                             .thenBy { it.elapsedRealtimeMs }
                             .thenBy { it.eventId.value },
                     )
-            }.fold(
-                onSuccess = { records ->
-                    when (request.action) {
-                        ExportAction.SHARE -> exportForSharing(records, request.format)
-                        ExportAction.EXPORT_LOCAL -> exportToDocument(
-                            requireNotNull(request.documentUri),
-                            records,
-                            request.format,
-                        )
-                    }
-                },
-                onFailure = Result.Companion::failure,
-            )
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Throwable) {
+                return@withContext Result.failure(failure)
+            }
+            currentCoroutineContext().ensureActive()
+            when (request.action) {
+                ExportAction.SHARE -> exportForSharing(records, request.format)
+                ExportAction.EXPORT_LOCAL -> exportToDocument(
+                    requireNotNull(request.documentUri),
+                    records,
+                    request.format,
+                )
+            }
         }
 
     override suspend fun discard(request: DiagnosticsExportRequest) {
@@ -85,37 +92,70 @@ class ObservabilityExportService @Inject internal constructor(
         }
     }
 
-    private fun exportForSharing(records: List<SanitizedLogRecord>, format: LogFormat): Result<Unit> {
+    private suspend fun exportForSharing(records: List<SanitizedLogRecord>, format: LogFormat): Result<Unit> {
         var exportFile: File? = null
         return try {
+            currentCoroutineContext().ensureActive()
             storage.clearStaleExports()
+            currentCoroutineContext().ensureActive()
             val spec = format.artifactSpec()
             exportFile = storage.createExportFile(spec)
+            currentCoroutineContext().ensureActive()
             writeExport(exportFile.outputStream(), records, format)
-            storage.share(exportFile, spec.mimeType).fold(
-                onSuccess = {
-                    storage.scheduleDeletion(exportFile)
-                    Result.success(Unit)
-                },
-                onFailure = { failure ->
-                    storage.delete(exportFile)
-                    Result.failure(failure)
-                },
-            )
+            currentCoroutineContext().ensureActive()
+            val shareFailure = storage.share(exportFile, spec.mimeType).exceptionOrNull()
+            if (shareFailure != null) {
+                if (shareFailure is CancellationException) throw shareFailure
+                deleteExportFile(exportFile, shareFailure)
+                Result.failure(shareFailure)
+            } else {
+                storage.scheduleDeletion(exportFile)
+                Result.success(Unit)
+            }
+        } catch (cancelled: CancellationException) {
+            exportFile?.let { deleteExportFile(it, cancelled) }
+            throw cancelled
         } catch (failure: Exception) {
-            exportFile?.let(storage::delete)
+            exportFile?.let { deleteExportFile(it, failure) }
             Result.failure(failure)
         }
     }
 
-    private fun exportToDocument(
+    private suspend fun exportToDocument(
         uri: String,
         records: List<SanitizedLogRecord>,
         format: LogFormat,
-    ): Result<Unit> = runCatching {
-        writeExport(storage.openDocument(uri), records, format)
-    }.onFailure {
-        storage.deleteDocument(uri)
+    ): Result<Unit> {
+        return try {
+            currentCoroutineContext().ensureActive()
+            val output = storage.openDocument(uri)
+            currentCoroutineContext().ensureActive()
+            writeExport(output, records, format)
+            currentCoroutineContext().ensureActive()
+            Result.success(Unit)
+        } catch (cancelled: CancellationException) {
+            deleteDocumentAfterFailure(uri, cancelled)
+            throw cancelled
+        } catch (failure: Throwable) {
+            deleteDocumentAfterFailure(uri, failure)
+            Result.failure(failure)
+        }
+    }
+
+    private fun deleteExportFile(file: File, failure: Throwable) {
+        try {
+            storage.delete(file)
+        } catch (cleanupFailure: Throwable) {
+            if (cleanupFailure !== failure) failure.addSuppressed(cleanupFailure)
+        }
+    }
+
+    private fun deleteDocumentAfterFailure(uri: String, failure: Throwable) {
+        try {
+            storage.deleteDocument(uri)
+        } catch (cleanupFailure: Throwable) {
+            if (cleanupFailure !== failure) failure.addSuppressed(cleanupFailure)
+        }
     }
 
     private fun writeExport(
