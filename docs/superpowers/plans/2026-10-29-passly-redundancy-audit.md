@@ -240,4 +240,12 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - RED：在协程已运行并挂起后取消，旧式宽泛捕获使取消清理用例失败；断言 trace continuation 与暂存请求均需恰好清理一次，普通启动错误则需清理并记录。
 - 修复：取消路径先清除 trace 与单次会话请求，再重抛原始取消；清理异常仅作为 suppressed 保留，不覆盖原始异常。普通异常继续记录为启动失败。
 - 文档：补充无障碍服务取消时清理短生命周期状态并传播取消的合同。
-- 验证：`AccessibilityFillLaunchTest` 定向通过；`verifyArchitecture` 与 `:app:lintDebug` 通过，`git diff --check` 待最终复跑。
+- 验证：`AccessibilityFillLaunchTest` 定向通过；`verifyArchitecture` 与 `:app:lintDebug` 通过，`git diff --check` 通过。
+
+### 后续批次：无障碍请求启动前取消（2026-10-29）
+
+- 生产路径复核发现：`sessions.capture()` 在启动协程前写入短时请求；若 Service 随即销毁，协程可能在执行第一行前就被取消，协程体内的异常清理器不会运行。此前 `withRootTrace` 也位于清理器之外。
+- RED：新增“启动函数体尚未运行即取消”回归，旧实现完成后请求清理和 trace 丢弃计数均为 0。
+- 修复：启动助手现在持有并返回 Job，在任务取消完成回调中幂等清理；协程体运行后仍由内层捕获取消并重抛。把 trace 初始化、开始日志与主线程 Activity 启动一并纳入该边界。
+- 文档：明确协程启动前及执行期间取消均清除暂存请求与 continuation。
+- 验证：启动前取消、运行中取消和普通启动失败三项定向用例、架构检查、Lint 与 `git diff --check` 通过。

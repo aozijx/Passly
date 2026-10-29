@@ -133,7 +133,17 @@ class ManualAccessibilityFillService : AccessibilityService() {
                 }
             }
             is AccessibilityCapture.Ready -> {
-                scope.launch {
+                launchAccessibilityFill(
+                    scope = scope,
+                    token = captured.token,
+                    discardTrace = traceContinuations::discard,
+                    clearCaptured = sessions::clearCaptured,
+                    onFailure = { error ->
+                        logger.withRootTrace(Operations.AutofillAccessibilityRequest) {
+                            logger.log(LogStatements.Autofill.fallbackFailed(error))
+                        }
+                    },
+                ) {
                     logger.withRootTrace(Operations.AutofillAccessibilityRequest) {
                         logger.log(LogStatements.Autofill.fallbackStarted(
                             LogStatements.Autofill.context(
@@ -141,21 +151,14 @@ class ManualAccessibilityFillService : AccessibilityService() {
                                 captured.request.packageName,
                             ),
                         ))
-                        launchAccessibilityFill(
-                            token = captured.token,
-                            discardTrace = traceContinuations::discard,
-                            clearCaptured = sessions::clearCaptured,
-                            onFailure = { logger.log(LogStatements.Autofill.fallbackFailed(it)) },
-                        ) {
-                            traceContinuations.capture(captured.token)
-                            withContext(Dispatchers.Main) {
-                                startActivity(launchTarget.accessibilityFillIntent(
-                                    this@ManualAccessibilityFillService,
-                                ).apply {
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
-                                        Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
-                                })
-                            }
+                        traceContinuations.capture(captured.token)
+                        withContext(Dispatchers.Main) {
+                            startActivity(launchTarget.accessibilityFillIntent(
+                                this@ManualAccessibilityFillService,
+                            ).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
+                                    Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+                            })
                         }
                     }
                 }

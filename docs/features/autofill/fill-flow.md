@@ -24,7 +24,7 @@ Credential Manager Provider 在 API 34+ 提供 Password get/create/clear-state�
 选择页先关闭，原窗口重新成为活动窗口后才执行写入；待交付凭据只在进程内暂存至多 10 秒，过期取消 interaction。
 无障碍 Service 通过 `AutofillLaunchTarget` 请求不含 token 的显式 Activity Intent；选择页从同进程的单次
 会话存储读取请求，具体页面类只由 App 平台适配器引用，Feature 不依赖 Presentation。
-服务任务取消时会清除本次暂存请求和 trace continuation，并继续传播取消；普通启动错误才记录为回退失败。
+服务任务在协程启动前或执行期间取消时，都会清除本次暂存请求和 trace continuation，并继续传播取消；普通启动错误才记录为回退失败。
 
 | 入口与展示 | 触发 | 候选 UI | 交付 | 边界与回退 |
 | --- | --- | --- | --- | --- |
