@@ -56,15 +56,18 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - Follow-up bug: `SessionLeaseGate.open()` also converted cancellation from the suspending resource open into `OpenFailed`; `SessionLeaseGate.close()` swallowed cancellation while still discarding the handle. Both reproduced with focused regression tests.
 - Fix: all three suspend boundaries rethrow `CancellationException` before mapping other `Throwable` values. Close still discards its handle in `finally`; state remains SEALED when open/close is cancelled. Updated `docs/architecture/runtime-flows.md` to document the key-copy wipe and cancellation contract.
 - Verification: focused RED runs failed at the expected assertions; final `:runtime:session:test` — 9 tests passed after the fixes.
-- TODO: inspect enum-name persistence in OTP materialization during the wider `:data` stable-storage-key review; no change made yet.
-- TODO: revisit unused `EntryRevision` after the active history implementation is finished; it is currently isolated in source search, but this audit explicitly protects the in-progress history work.
+- Completed OTP key audit: `OtpConfig.toNewEntryDraft()` temporarily represents enum choices as text, and `EntryDraftMaterializer` exhaustively parses supported OTP keys. The resulting typed `OtpConfig` is persisted by explicit Data storage-key mappings; these text values are not an external format. No code change needed.
+- Completed post-history review: the history feature is now committed in the current baseline. `EntryRevision` had no consumers beyond its declaration; the active repository uses `EntryRevisionMetadata` and `RedactedEntryRevision`, so the unused snapshot wrapper was removed. Retained `EntryRevisionId`, which is used by revision ports and UI actions.
+- Validation: `:domain:test` passed after removing `EntryRevision`.
 
 ### Task 4 — `:security`
 
 - Reviewed authentication manager exception handling, biometric candidate cleanup, KDF runner, session event tracing, and controller lock paths against current tests and `docs/development/kotlin-style.md` / `docs/security/authentication.md`.
 - No dead or duplicate production implementation was proven; state restoration, durable candidate reconciliation, event tracing, and worker-secret cleanup have separate ownership.
-- Deferred bug/TODO: `VaultSessionController.lock()` catches `Throwable` from suspend session lock/seal calls, records a failure, and continues wiping the DEK. This protects the cleanup path, but can turn caller cancellation into a lock failure and prevents `SecuritySessionEventLogger` from reporting the cancelled terminal. Define and test the required cancellation/cleanup contract before changing this security-sensitive path.
-- Skill lesson: when cancellation meets security cleanup, keep cleanup complete and cancellation visible; don't replace a broad catch without a regression test that proves both resource wiping and terminal state.
+- Fixed lock-cancellation bug: after acquiring the lock mutex, `VaultSessionController.lock()` now completes revocation, sensitive-key clear, session lock/seal, DEK wipe, and terminal-state publication inside `NonCancellable`; it then checks the original coroutine context so cancellation propagates to `SecuritySessionEventLogger` as `LockCancelled`. A regression test first failed because the DEK remained unlocked, then passed with assertions for wiped DEK, SEALED state, Locked auth state, and cancellation event.
+- Verification: `:security:testDebugUnitTest` passed, including the new cancellation regression. `:app:testDebugUnitTest` and `:app:compileDebugKotlin` passed.
+- Remaining security limitation: a real hardware biometric re-enrollment/Keystore invalidation event is still not verified by emulator or unit tests.
+- Skill lesson: when cancellation meets security cleanup, keep cleanup complete and cancellation visible; test both resource wiping and terminal-state/event reporting.
 
 ### Task 5 — `:data`
 
