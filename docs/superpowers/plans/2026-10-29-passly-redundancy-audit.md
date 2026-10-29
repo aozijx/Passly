@@ -320,3 +320,10 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 决策：移除 forwarding-only 用例；`CompleteAutofillSelection` 直接依赖 Domain 端口并显式传入 Autofill 类型。Room/Data 映射与活动记录规则仍留在原有 Domain/Data 边界。
 - 测试：保留选择完成、访问租约释放和 Trace 生命周期覆盖；补充断言记录类型为 `AUTOFILL`。
 - 验证：`CompleteAutofillSelectionTest`、`AutofillResultDeliveryTest`、`AutofillTraceLifecycleTest` 定向通过；`verifyArchitecture`、`:app:lintDebug` 与 `git diff --check` 通过。
+
+### 后续批次：Autofill Service 归属边界核验（2026-10-29）
+
+- 证据：Android Manifest 声明三个 Autofill Service。Accessibility Service 管理浮动按钮、系统回调与投递；Credential Provider Service 处理 Credential Manager 的创建/清除回调和取消；Legacy Autofill Service 解析 Fill/Save 请求、调用候选发现和保存流程并完成系统回调。
+- 决策：保留在 `feature/autofill`。这些类是 feature 专属 Android 入口，包含真实生命周期与平台协议职责；移入通用 `service` 包会新增转发边界，不会减少平台实现。
+- 文档：包边界允许单一业务流程紧耦合的 Service 实现归属对应 feature。
+- 验证：核对 Manifest 三项声明、生产 Service 实现与 `git diff --check`；未改运行代码。
