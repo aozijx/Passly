@@ -1,6 +1,6 @@
 # ADR-0025：锁定状态使用 Sealed Inbox 保存 Autofill 凭据
 
-- 状态：Accepted（实现中；bootstrap key material、密钥与 pending record 编解码、解锁 provision 和受限耐久文件队列已落地）
+- 状态：Accepted（实现中；bootstrap key material、密钥与 pending record 编解码、解锁 provision、受限耐久文件队列和 Security 入队编排已落地）
 - 日期：2026-10-18
 
 ## 背景

@@ -25,6 +25,8 @@ import com.aozijx.passly.security.authentication.SingleThreadKdfRunner
 import com.aozijx.passly.security.authentication.VaultSessionController
 import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioner
 import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioning
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxQueue
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxQueueWriter
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -42,6 +44,12 @@ internal abstract class AuthenticationModule {
     abstract fun bindAutofillInboxKeyProvisioning(
         implementation: AutofillInboxKeyProvisioner,
     ): AutofillInboxKeyProvisioning
+
+    @Binds
+    @Singleton
+    abstract fun bindAutofillInboxQueue(
+        implementation: AutofillInboxQueueWriter,
+    ): AutofillInboxQueue
 
     @Binds
     @Singleton
