@@ -3,6 +3,8 @@ package com.aozijx.passly.feature.autofill.credential
 import com.aozijx.passly.domain.autofill.model.AutofillAuthorizationOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
+import com.aozijx.passly.domain.autofill.model.AutofillInboxEnqueueOutcome
+import com.aozijx.passly.domain.autofill.model.AutofillInboxSource
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSnapshot
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
@@ -13,6 +15,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillSelectionOutcome
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.autofill.core.AuthorizeAutofillInteraction
+import com.aozijx.passly.feature.autofill.core.AutofillSaveAccessPolicy
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.ResolveAutofillSelection
@@ -20,6 +23,7 @@ import com.aozijx.passly.feature.autofill.core.SaveAutofillCredential
 import com.aozijx.passly.feature.autofill.core.StartAutofillInteraction
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxQueue
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.NonCancellable
@@ -48,6 +52,7 @@ sealed interface CredentialManagerPasswordResult {
 
 sealed interface CredentialManagerCreateResult {
     data object Saved : CredentialManagerCreateResult
+    data object Queued : CredentialManagerCreateResult
     data object NotSaved : CredentialManagerCreateResult
     data class NotAuthorized(
         val authorization: AutofillAuthorizationOutcome,
@@ -71,6 +76,8 @@ class CredentialManagerFlow @Inject constructor(
     private val finishInteraction: FinishAutofillInteraction,
     private val interactionStore: AutofillInteractionStore,
     private val settingsSource: InteractionSettingsSource,
+    private val saveAccessPolicy: AutofillSaveAccessPolicy,
+    private val inboxQueue: AutofillInboxQueue,
 ) {
     suspend fun beginGet(request: AutofillRequest): AutofillDiscoveryOutcome =
         discoverCandidates(request)
@@ -172,23 +179,37 @@ class CredentialManagerFlow @Inject constructor(
             return CredentialManagerCreateResult.NotSaved
         }
 
+        val draft = AutofillSaveDraft(
+            packageName = scope.packageName,
+            webDomain = scope.webDomain,
+            pageTitle = null,
+            username = username,
+            password = password,
+        )
+        if (!saveAccessPolicy.canPersistImmediately()) {
+            when (inboxQueue.enqueue(AutofillInboxSource.CREDENTIAL_MANAGER, draft)) {
+                AutofillInboxEnqueueOutcome.Queued -> {
+                    withContext(NonCancellable) { finishInteraction.complete(interactionId) }
+                    return CredentialManagerCreateResult.Queued
+                }
+                AutofillInboxEnqueueOutcome.Full,
+                AutofillInboxEnqueueOutcome.Failed,
+                AutofillInboxEnqueueOutcome.NotProvisioned,
+                -> {
+                    withContext(NonCancellable) { finishInteraction.cancel(interactionId) }
+                    return CredentialManagerCreateResult.NotSaved
+                }
+            }
+        }
+
         val authorization = authorizeInteraction(interactionId)
         if (authorization !is AutofillAuthorizationOutcome.Authorized) {
             return CredentialManagerCreateResult.NotAuthorized(authorization)
         }
-
         var completed = false
         return try {
             when (
-                saveCredential(
-                    AutofillSaveDraft(
-                        packageName = scope.packageName,
-                        webDomain = scope.webDomain,
-                        pageTitle = null,
-                        username = username,
-                        password = password,
-                    ),
-                )
+                saveCredential(draft)
             ) {
                 is AutofillSaveOutcome.Saved -> CredentialManagerCreateResult.Saved
                     .also { completed = true }

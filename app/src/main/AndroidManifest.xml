@@ -57,14 +57,6 @@
             android:noHistory="true"
             android:theme="@style/Theme.Passly.TransparentAuth" />
 
-        <activity
-            android:name=".feature.autofill.presentation.legacy.save.LegacySaveActivity"
-            android:excludeFromRecents="true"
-            android:exported="false"
-            android:launchMode="standard"
-            android:noHistory="true"
-            android:theme="@style/Theme.Passly.TransparentAuth" />
-
         <!-- Credential Provider 凭据选择响应 Activity -->
         <activity
             android:name=".feature.autofill.presentation.credential.CredentialResponseActivity"

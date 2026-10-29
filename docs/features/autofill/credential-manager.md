@@ -20,8 +20,7 @@ interaction scope、已展示 Entry 和 `allowedUserIds`，再读取单条密码
 `CredentialBeginCreateHandler` 只接受 password create。Credential Manager 总开关与 Legacy “保存新登录”开关
 彼此独立；两者只复用平台无关草稿校验和 `SaveAutofillCredential`。
 
-当前实现中，最终 create 在 Vault 锁定时通过自己的 interaction 认证一次，已解锁时直接写入。保存始终新增登录条目，
-不 upsert。sealed Inbox 实现后，锁定 create 将改为密封排队而不发认证，但平台 handler/response 保持独立。
+Vault 已有完整安全会话时直接写入；否则将草稿密封写入 Autofill Inbox，不弹出认证。当前 Inbox 尚未实现解锁导入，因此系统确认仅表示已耐久排队，不表示条目已进入 Vault。导入落库后保存始终新增登录条目，不按用户名 upsert。
 
 ## PendingIntent 和清理
 

@@ -19,7 +19,6 @@ import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.legacy.LegacySaveFlow
-import com.aozijx.passly.feature.autofill.legacy.LegacySavePendingIntentFactory
 import com.aozijx.passly.feature.autofill.legacy.LegacySavePreparation
 import com.aozijx.passly.feature.autofill.legacy.service.adapter.LegacyPlatformAdapter
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyDiscoveryObservation
@@ -53,9 +52,6 @@ class LegacyAutofillService : AutofillService() {
 
     @Inject
     lateinit var legacySaveFlow: LegacySaveFlow
-
-    @Inject
-    lateinit var legacySavePendingIntentFactory: LegacySavePendingIntentFactory
 
     @Inject
     lateinit var logger: Logger
@@ -142,20 +138,9 @@ class LegacyAutofillService : AutofillService() {
                         if (completion.compareAndSet(false, true)) callback.onSuccess()
                     }
 
-                    is LegacySavePreparation.Staged -> {
-                        try {
-                            val pendingIntent = legacySavePendingIntentFactory.create(
-                                this@LegacyAutofillService,
-                                result.token,
-                            )
-                            if (completion.compareAndSet(false, true)) {
-                                logger.log(LogStatements.Autofill.saveStaged())
-                                callback.onSuccess(pendingIntent.intentSender)
-                            }
-                        } catch (error: Exception) {
-                            legacySaveFlow.discard(result.token)
-                            throw error
-                        }
+                    LegacySavePreparation.Queued -> {
+                        logger.log(LogStatements.Autofill.saveStaged())
+                        if (completion.compareAndSet(false, true)) callback.onSuccess()
                     }
 
                         LegacySavePreparation.Disabled -> failSave(

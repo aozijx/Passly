@@ -1,9 +1,8 @@
 # Autofill Sealed Save Inbox
 
-状态：实现中。bootstrap key material 的 Domain/Proto 持久化边界、RSA 密钥生成/私钥封装/校验、完整 Vault 解锁后的幂等 provision、pending record 加密协议、受限耐久文件队列及 Security 入队编排已实现；Legacy/Credential Manager 保存入口接入与解锁导入尚未实现。
+状态：实现中。bootstrap key material 的 Domain/Proto 持久化边界、RSA 密钥生成/私钥封装/校验、完整 Vault 解锁后的幂等 provision、pending record 加密协议、受限耐久文件队列、Security 入队编排及 Legacy/Credential Manager 锁定保存入口已实现；解锁导入与数据库幂等落库尚未实现。
 
-本设计允许 Vault 锁定时只进行密封写入，不授予数据库读取/解密能力，也不弹出 Passly 认证。当前代码仍使用
-认证式保存，见 [Legacy Service](legacy-service.md)和[Credential Manager](credential-manager.md)。
+本设计允许 Vault 锁定时只进行密封写入，不授予数据库读取/解密能力，也不弹出 Passly 认证。锁定保存入口目前在 durable queue 写入成功后向 Android 确认接收；待解锁导入完成前，这表示已排队，不代表凭据已成为 Vault 条目。导入完成前不得将其描述为已保存到 Vault。
 
 ## 安全属性
 

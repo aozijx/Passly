@@ -7,7 +7,6 @@ import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
 import com.aozijx.passly.feature.autofill.presentation.credential.CredentialResponseActivity
 import com.aozijx.passly.feature.autofill.presentation.accessibility.AccessibilityFillActivity
 import com.aozijx.passly.feature.autofill.presentation.legacy.AutofillFillActivity
-import com.aozijx.passly.feature.autofill.presentation.legacy.save.LegacySaveActivity
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,8 +26,4 @@ class AndroidAutofillLaunchTarget @Inject constructor() : AutofillLaunchTarget {
             .setPackage(context.packageName)
             .putExtra(AutofillLaunchExtras.REQUEST_ID, requestId)
 
-    override fun legacySaveIntent(context: Context, requestId: String): Intent =
-        Intent(context, LegacySaveActivity::class.java)
-            .setPackage(context.packageName)
-            .putExtra(AutofillLaunchExtras.REQUEST_ID, requestId)
 }

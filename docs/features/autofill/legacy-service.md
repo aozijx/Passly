@@ -44,21 +44,14 @@ Android 的该 flag 表示所有 required views 不可见时可触发保存，�
 一个已分类非空密码；用户名可空，page title 当前固定为 null。
 
 - 已有完整 `Authenticated` 会话：验证草稿后直接写入。
-- 否则：`LegacySaveDraftStore` 在内存暂存最多 8 条、60 秒、单次消费的草稿，返回随机 token；
-  `SaveCallback.onSuccess(IntentSender)` 启动内部 `LegacySaveActivity`，后者建立独立 `LEGACY_SAVE` interaction，
-  认证一次并写入。
-
-token Intent 不包含用户名、密码、包名或域名。消费后的草稿只由 Activity-retained ViewModel 持有，进程死亡即
-失败且不能误报已保存。配置变化可复用当前 ViewModel。成功、取消、失败、返回或协程取消只结束该 save interaction。
-
-目标 Inbox 实现后，本节将改为 locked save 直接密封，并删除 `LegacySaveActivity`、plaintext store 和
-`LEGACY_SAVE` interaction；这些组件当前仍在用，不能提前删除。
+- 否则：将草稿密封写入耐久 Autofill Inbox；写入成功后调用 `SaveCallback.onSuccess()`，不启动认证 Activity。
+  当前解锁导入尚未实现，因此回调只确认已排队，不代表条目已写入 Vault。
 
 相关实现：
 
 - [`LegacyAutofillService`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/LegacyAutofillService.kt)
 - [`LegacySaveFlow`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/LegacySaveFlow.kt)
-- [`LegacySaveDraftStore`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/runtime/LegacySaveDraftStore.kt)
+- [Sealed Inbox](sealed-inbox.md)
 
 平台依据：[Build autofill services](https://developer.android.com/identity/autofill/autofill-services)、
 [FillResponse.Builder](https://developer.android.com/reference/android/service/autofill/FillResponse.Builder.html)、

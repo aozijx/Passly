@@ -4,7 +4,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillInboxEnqueueOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInboxSource
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 
-interface AutofillInboxQueue {
+fun interface AutofillInboxQueue {
     suspend fun enqueue(
         source: AutofillInboxSource,
         draft: AutofillSaveDraft,

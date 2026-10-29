@@ -20,6 +20,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillField
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionState
+import com.aozijx.passly.domain.autofill.model.AutofillInboxEnqueueOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillRequest
 import com.aozijx.passly.domain.autofill.model.AutofillSource
 import com.aozijx.passly.domain.autofill.model.FieldRole
@@ -144,7 +145,7 @@ class CredentialManagerFlowTest {
     }
 
     @Test
-    fun lockedCreateAuthenticatesOnceAndFinishesInteraction() = runBlocking {
+    fun lockedCreateWithoutInboxKeyRejectsWithoutAuthentication() = runBlocking {
         val fixture = fixture(AuthenticationState.Locked)
         val interaction = fixture.flow.beginCreate(scope())
 
@@ -155,9 +156,30 @@ class CredentialManagerFlowTest {
             password = "secret",
         )
 
-        assertEquals(CredentialManagerCreateResult.Saved, result)
-        assertEquals(1, fixture.authentication.authenticationCount)
-        assertEquals(1, fixture.commandRepository.createCalls)
+        assertEquals(CredentialManagerCreateResult.NotSaved, result)
+        assertEquals(0, fixture.authentication.authenticationCount)
+        assertEquals(0, fixture.commandRepository.createCalls)
+        assertEquals(AutofillInteractionState.Cancelled, fixture.store.snapshot(interaction.id)?.state)
+    }
+
+    @Test
+    fun lockedCreateQueuesSealedSaveWithoutAuthenticationOrDatabaseWrite() = runBlocking {
+        val fixture = fixture(
+            AuthenticationState.Locked,
+            inboxOutcome = AutofillInboxEnqueueOutcome.Queued,
+        )
+        val interaction = fixture.flow.beginCreate(scope())
+
+        val result = fixture.flow.createPassword(
+            interactionId = interaction.id,
+            scope = scope(),
+            username = "alice",
+            password = "secret",
+        )
+
+        assertEquals(CredentialManagerCreateResult.Queued, result)
+        assertEquals(0, fixture.authentication.authenticationCount)
+        assertEquals(0, fixture.commandRepository.createCalls)
         assertEquals(AutofillInteractionState.Completed, fixture.store.snapshot(interaction.id)?.state)
     }
 
@@ -223,6 +245,7 @@ class CredentialManagerFlowTest {
             credentialManagerEnabled = true,
             requireAuthentication = false,
         ),
+        inboxOutcome: AutofillInboxEnqueueOutcome = AutofillInboxEnqueueOutcome.NotProvisioned,
     ): Fixture {
         val settings = FixedSettingsSource(policy)
         val vault = FakeVault(initialState)
@@ -277,6 +300,10 @@ class CredentialManagerFlowTest {
                 ),
                 resolveSelection = ResolveAutofillSelection(store, resolver),
                 saveCredential = saveCredential,
+                saveAccessPolicy = com.aozijx.passly.feature.autofill.core.AutofillSaveAccessPolicy(vault),
+                inboxQueue = com.aozijx.passly.security.autofill.inbox.AutofillInboxQueue { _, _ ->
+                    inboxOutcome
+                },
                 finishInteraction = finish,
                 interactionStore = store,
                 settingsSource = settings,

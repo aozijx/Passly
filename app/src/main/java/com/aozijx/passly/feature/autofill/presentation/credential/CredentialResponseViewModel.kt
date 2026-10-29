@@ -239,6 +239,13 @@ class CredentialResponseViewModel @Inject constructor(
                         completeImmediately(CredentialResponseFactory.buildPasswordCreateResponse())
                     }
 
+                    CredentialManagerCreateResult.Queued -> {
+                        activeInteractionId = null
+                        logger.log(LogStatements.Autofill.saveStaged())
+                        traceContinuations.discard(request.interactionId.value)
+                        completeImmediately(CredentialResponseFactory.buildPasswordCreateResponse())
+                    }
+
                     CredentialManagerCreateResult.NotSaved -> {
                         activeInteractionId = null
                         logger.log(LogStatements.Autofill.saveUnavailable(Reasons.StorageFailure))
