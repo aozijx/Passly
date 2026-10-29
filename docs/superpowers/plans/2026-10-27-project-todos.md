@@ -47,7 +47,8 @@
 - [x] 追踪 `EntryRevisionWriter`、各 Command Executor、`EntryActivityWriter` 与活动记录仓库，区分内容快照和访问事件；复现重复或含糊记录。
 - [x] 以真实内容修改/恢复为版本依据，完善不含值的活动语义及持久化，移除旧补丁或重复记录路径。
 - [x] 检查 `RevisionHistorySheet`、`RevisionHistorySection`、`ActivityTimelineSection` 的状态、比较/恢复操作与滚动布局，修复全屏底部空白。
-- [ ] 运行事务、DAO、模型及 UI 相关验证，更新 entry-revision-history 文档并提交。
+- [x] 完成事务、DAO、模型及 UI 的 API 34 验证，更新 entry-revision-history 文档，并以 `1ddf8d7b` 提交。
+- [ ] 完成下方列出的 API 31 复验与未覆盖的设备检查。
 
 ### 3. Topbar
 
