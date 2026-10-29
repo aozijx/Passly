@@ -51,6 +51,7 @@ internal class OtpCodeRuntime(
     private val subscriptionCounts = mutableMapOf<String, Int>()
     private val freshAuthPausedEntryIds = mutableSetOf<String>()
     private val entryEpochs = mutableMapOf<String, Long>()
+    private var nextEntryEpoch = 0L
     private var sessionEpoch = 0L
 
     private data class ActivationToken(val sessionEpoch: Long, val entryEpoch: Long)
@@ -74,7 +75,7 @@ internal class OtpCodeRuntime(
 
     private suspend fun refreshStates(nowSeconds: Long) {
         for ((entryId, schedule) in schedules.toMap()) {
-            val token = activationToken(entryId)
+            val token = currentActivationToken(entryId) ?: continue
             if (!isCurrent(entryId, token)) continue
             if (schedule.type == OtpType.HOTP) continue
 
@@ -138,7 +139,8 @@ internal class OtpCodeRuntime(
      */
     suspend fun generateHotpCode(entryId: String): OtpResult {
         if (!sessionUnlocked) return OtpResult.Failure(OtpGenerationError.InvalidSecret)
-        val token = activationToken(entryId)
+        val token = currentActivationToken(entryId)
+            ?: return OtpResult.Failure(OtpGenerationError.InvalidSecret)
         val config = try {
             loadOtpConfig(entryId)
         } catch (_: FreshAuthenticationRequiredException) {
@@ -183,7 +185,9 @@ internal class OtpCodeRuntime(
     }
 
     private suspend fun activateTrackedEntry(entryId: String) {
-        val token = activationToken(entryId)
+        val token = ActivationToken(sessionEpoch, ++nextEntryEpoch).also {
+            entryEpochs[entryId] = it.entryEpoch
+        }
         val config = try {
             loadOtpConfig(entryId)
         } catch (_: FreshAuthenticationRequiredException) {
@@ -245,20 +249,14 @@ internal class OtpCodeRuntime(
     private fun isRequested(entryId: String): Boolean =
         entryId in activeEntryIds || entryId in subscriptionCounts
 
-    private fun activationToken(entryId: String) = ActivationToken(
-        sessionEpoch = sessionEpoch,
-        entryEpoch = entryEpochs[entryId] ?: 0L,
-    )
+    private fun currentActivationToken(entryId: String): ActivationToken? =
+        entryEpochs[entryId]?.let { ActivationToken(sessionEpoch, it) }
 
     private fun isCurrent(entryId: String, token: ActivationToken): Boolean =
         sessionUnlocked &&
             isRequested(entryId) &&
             sessionEpoch == token.sessionEpoch &&
-            (entryEpochs[entryId] ?: 0L) == token.entryEpoch
-
-    private fun invalidateEntry(entryId: String) {
-        entryEpochs[entryId] = (entryEpochs[entryId] ?: 0L) + 1L
-    }
+            entryEpochs[entryId] == token.entryEpoch
 
     fun subscribe(entryId: String) {
         val previousCount = subscriptionCounts[entryId] ?: 0
@@ -276,7 +274,7 @@ internal class OtpCodeRuntime(
         }
         subscriptionCounts.remove(entryId)
         if (entryId !in activeEntryIds) {
-            invalidateEntry(entryId)
+            entryEpochs.remove(entryId)
             freshAuthPausedEntryIds.remove(entryId)
             schedules.remove(entryId)
             _states.update { it - entryId }
@@ -292,6 +290,7 @@ internal class OtpCodeRuntime(
         sessionUnlocked = unlocked
         if (!unlocked) {
             sessionEpoch++
+            entryEpochs.clear()
             clearGeneratedState()
         } else {
             freshAuthPausedEntryIds.clear()
@@ -314,6 +313,7 @@ internal class OtpCodeRuntime(
     private fun handleSessionLocked() {
         sessionUnlocked = false
         sessionEpoch++
+        entryEpochs.clear()
         clearGeneratedState()
     }
 
@@ -335,7 +335,7 @@ internal class OtpCodeRuntime(
     }
 
     override fun entryRemoved(entryId: String) {
-        invalidateEntry(entryId)
+        entryEpochs.remove(entryId)
         freshAuthPausedEntryIds.remove(entryId)
         activeEntryIds.remove(entryId)
         subscriptionCounts.remove(entryId)
@@ -345,6 +345,7 @@ internal class OtpCodeRuntime(
 
     fun clearAllSensitiveState() {
         sessionEpoch++
+        entryEpochs.clear()
         freshAuthPausedEntryIds.clear()
         activeEntryIds.clear()
         subscriptionCounts.clear()
