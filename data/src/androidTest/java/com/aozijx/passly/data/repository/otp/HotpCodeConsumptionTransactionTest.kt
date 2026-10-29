@@ -9,18 +9,21 @@ import com.aozijx.passly.core.crypto.FieldEncryptor
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.data.codec.entry.SecretBundleCodec
 import com.aozijx.passly.data.codec.entry.SecretFieldCodec
+import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.DatabaseClock
 import com.aozijx.passly.data.local.database.TestDatabaseFactory
 import com.aozijx.passly.data.local.database.entity.EntryEntity
+import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
+import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.otp.OtpResult
-import com.aozijx.passly.domain.access.port.VaultBootstrapStore
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.dek.FieldKeyManager
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
@@ -102,6 +105,28 @@ class HotpCodeConsumptionTransactionTest {
         transaction.consume(database, ENTRY_ID) { OtpResult.Failure(OtpGenerationError.InvalidSecret) }
 
         assertEquals(7L, secretFieldStore.readBundle(database, ENTRY_ID).otp?.config?.counter)
+    }
+
+    @Test
+    fun unrelatedSensitiveFieldIsNotDecryptedDuringHOTPConsumption() = runBlocking {
+        seed(counter = 7)
+        database.secretFieldCommandDao().upsert(
+            EntrySecretFieldEntity(
+                entryId = ENTRY_ID,
+                fieldKey = SensitiveFieldKey.PASSWORD.toStorageKey(),
+                valueCipher = byteArrayOf(1),
+                keyVersion = 1,
+                updatedAt = 1,
+            ),
+        )
+
+        val result = database.withTransaction {
+            transaction.consume(database, ENTRY_ID) {
+                OtpResult.Failure(OtpGenerationError.InvalidSecret)
+            }
+        }
+
+        assertEquals(OtpResult.Failure(OtpGenerationError.InvalidSecret), result)
     }
 
     private suspend fun seed(counter: Long) {

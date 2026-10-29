@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.otp.OtpGenerator
 import com.aozijx.passly.domain.entry.otp.OtpResult
 import javax.inject.Inject
@@ -19,10 +20,13 @@ internal class HotpCodeConsumptionTransaction @Inject constructor(
         entryId: String,
         generate: (OtpConfig) -> OtpResult = OtpGenerator::generate,
     ): OtpResult {
-        val secret = secretFieldStore.readAll(db, entryId)
-        val config = secret.otp?.config
+        val bundle = secretFieldStore.readBundle(db, entryId)
+        val storedConfig = bundle.otp?.config
             ?.takeIf { it.type == OtpType.HOTP }
             ?: return OtpResult.Failure(OtpGenerationError.InvalidSecret)
+        val config = storedConfig.copy(
+            secret = secretFieldStore.readField(db, entryId, SensitiveFieldKey.OTP_SECRET),
+        )
 
         return when (val result = generate(config)) {
             is OtpResult.Failure -> result
@@ -32,7 +36,9 @@ internal class HotpCodeConsumptionTransaction @Inject constructor(
                 secretFieldStore.updateExisting(
                     db,
                     entryId,
-                    secret.copy(credential = OtpCredential(config.copy(counter = nextCounter))),
+                    bundle.copy(
+                        credential = OtpCredential(config.copy(counter = nextCounter, secret = null)),
+                    ),
                 )
                 result
             }

@@ -13,6 +13,7 @@ import com.aozijx.passly.data.mapper.entry.toSensitiveFieldUpdates
 import com.aozijx.passly.data.codec.sensitiveFieldKeyFromStorageKey
 import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import javax.inject.Inject
 
@@ -114,5 +115,13 @@ class SecretFieldStore @Inject internal constructor(
     suspend fun readField(db: AppDatabase, entryId: String, key: SensitiveFieldKey): String? {
         val row = db.secretFieldQueryDao().getField(entryId, key.toStorageKey()) ?: return null
         return fieldCodec.decrypt(entryId, key, row.valueCipher)
+    }
+
+    /** Reads only the OTP structure and its secret, leaving every unrelated secret encrypted. */
+    suspend fun readOtpConfig(db: AppDatabase, entryId: String): OtpConfig? {
+        val bundle = readBundle(db, entryId)
+        val config = bundle.otp?.config ?: return null
+        val secret = readField(db, entryId, SensitiveFieldKey.OTP_SECRET)
+        return config.copy(secret = secret)
     }
 }

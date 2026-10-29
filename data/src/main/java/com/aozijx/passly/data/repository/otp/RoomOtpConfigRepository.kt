@@ -21,8 +21,7 @@ internal class RoomOtpConfigRepository @Inject constructor(
     override suspend fun getConfig(entryId: String): OtpConfig? {
         if (!sessionState.hasFullSecureSessionAccess()) return null
         return databaseSession.query {
-            val secret = secretFieldStore.readAll(this, entryId)
-            secret.otp?.config
+            secretFieldStore.readOtpConfig(this, entryId)
         }
     }
 
