@@ -4,7 +4,6 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.component.revision
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,6 +30,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
@@ -48,10 +49,13 @@ fun RevisionHistorySheet(
     onAction: (DetailUiAction) -> Unit,
 ) {
     if (model == DetailRevisionSheetUiModel.Hidden) return
-    val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
+    val sheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+    )
     ModalBottomSheet(
         onDismissRequest = { onAction(DetailUiAction.DismissRevisionHistory) },
-        modifier = Modifier.fillMaxHeight(0.94f),
+        modifier = Modifier.testTag("revision-history-sheet"),
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         tonalElevation = 0.dp,
@@ -89,8 +93,9 @@ private fun RevisionList(
     content: DetailRevisionListUiState,
     onAction: (DetailUiAction) -> Unit,
 ) {
-    val formatter = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
-    Column(Modifier.fillMaxWidth().fillMaxHeight()) {
+    val locale = LocalConfiguration.current.locales[0]
+    val formatter = remember(locale) { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale) }
+    Column(Modifier.fillMaxWidth()) {
         Text(
             text = stringResource(R.string.revision_history_title),
             style = MaterialTheme.typography.headlineSmall,
@@ -110,7 +115,7 @@ private fun RevisionList(
                         modifier = Modifier.padding(24.dp),
                     )
                 } else {
-                    LazyColumn {
+                    LazyColumn(Modifier.weight(1f, fill = false).testTag("revision-history-list")) {
                         items(content.revisions, key = { it.id }) { revision ->
                             ListItem(
                                 supportingContent = {
@@ -140,13 +145,13 @@ private fun RevisionComparison(
     content: DetailRevisionComparisonUiState,
     onAction: (DetailUiAction) -> Unit,
 ) {
-    Column(Modifier.fillMaxWidth().fillMaxHeight()) {
+    Column(Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = { onAction(DetailUiAction.RevisionBack) }) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
             }
             Text(
                 text = stringResource(R.string.revision_comparison_title),
@@ -163,11 +168,12 @@ private fun RevisionComparison(
             )
             is DetailRevisionComparisonUiState.Ready -> {
                 LazyColumn(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f, fill = false).testTag("revision-comparison-list"),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(content.differences, key = { it.field.toString() }) { difference ->
-                        RevisionDifferenceRow(difference, onAction)
+                        RevisionDifferenceRow(difference, onAction,
+                            revealEnabled = content.restore == DetailRevisionRestoreUiState.Idle)
                     }
                 }
                 Button(

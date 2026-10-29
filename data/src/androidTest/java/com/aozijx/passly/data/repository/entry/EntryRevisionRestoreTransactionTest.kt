@@ -8,6 +8,19 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.core.crypto.AesGcmCryptoEngine
 import com.aozijx.passly.core.crypto.FieldEncryptor
 import com.aozijx.passly.data.codec.entry.SecretBundleCodec
+import com.aozijx.passly.data.codec.entry.SecretFieldCodec
+import com.aozijx.passly.data.local.database.DatabaseClock
+import com.aozijx.passly.data.repository.entry.command.EntryUpdateTransaction
+import com.aozijx.passly.data.repository.entry.command.EntryContentUpdate
+import com.aozijx.passly.domain.entry.model.EntryUpdate
+import com.aozijx.passly.domain.access.port.VaultBootstrapStore
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.security.dek.DekManager
+import com.aozijx.passly.security.dek.SensitiveDataKeyManager
+import com.aozijx.passly.security.dek.SensitiveFieldEncryptor
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import java.lang.reflect.Proxy
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
 import com.aozijx.passly.data.local.database.AppDatabase
@@ -73,6 +86,67 @@ class EntryRevisionRestoreTransactionTest {
     }
 
     @Test
+    fun unchangedBundle_doesNotRewriteContentOrRecordAnActivity() = runBlocking {
+        seedCurrentAndHistoricalRevision()
+        val update = database.withTransaction {
+            updateTransaction().update(database, ENTRY_ID, 2,
+                EntryUpdate(secret = EntrySecret(credential = LoginCredential(), notes = "current notes")), 100L)
+        }
+        assertEquals(EntryContentUpdate.Unchanged, update)
+        assertEquals(2, database.entryQueryDao().getById(ENTRY_ID)!!.version)
+        assertEquals(2, database.entryRevisionQueryDao().getByEntryId(ENTRY_ID).size)
+        assertEquals(0, database.entryActivityQueryDao().countByEntryId(ENTRY_ID))
+    }
+
+    @Test
+    fun notesRewrite_recordsOneMatchingRevisionAndPreservesUnrevealedCiphertext() = runBlocking {
+        seedCurrentAndHistoricalRevision()
+        database.withTransaction {
+            updateTransaction().update(database, ENTRY_ID, 2,
+                EntryUpdate(secret = EntrySecret(credential = LoginCredential(), notes = "rewritten")), 100L)
+        }
+        assertEquals(3, database.entryQueryDao().getById(ENTRY_ID)!!.version)
+        assertEquals(3, database.entryRevisionQueryDao().getLatest(ENTRY_ID)!!.version)
+        val activity = database.entryActivityQueryDao().getByEntryId(ENTRY_ID).single()
+        assertEquals(ActivityType.UPDATE, activity.activityType)
+        assertEquals(3, activity.revisionVersion)
+        assertArrayEquals(CURRENT_PASSWORD_CIPHER,
+            database.secretFieldQueryDao().getField(ENTRY_ID, SensitiveFieldKey.PASSWORD.name)!!.valueCipher)
+    }
+
+    @Test
+    fun clearingAbsentField_isNoOpButClearingStoredFieldCreatesOneRevision() = runBlocking {
+        seedCurrentAndHistoricalRevision(includePassword = false)
+        val changes = EntryUpdate(secret = EntrySecret(credential = LoginCredential(password = ""), notes = "current notes"))
+        assertEquals(EntryContentUpdate.Unchanged, database.withTransaction {
+            updateTransaction().update(database, ENTRY_ID, 2, changes, 100L)
+        })
+        database.secretFieldCommandDao().insertAllStrict(listOf(EntrySecretFieldEntity(
+            entryId = ENTRY_ID, fieldKey = SensitiveFieldKey.PASSWORD.name,
+            valueCipher = CURRENT_PASSWORD_CIPHER, keyVersion = 1, updatedAt = 2L,
+        )))
+        database.withTransaction { updateTransaction().update(database, ENTRY_ID, 2, changes, 100L) }
+        assertEquals(3, database.entryQueryDao().getById(ENTRY_ID)!!.version)
+        assertEquals(1, database.entryActivityQueryDao().countByEntryId(ENTRY_ID))
+        assertEquals(null, database.secretFieldQueryDao().getField(ENTRY_ID, SensitiveFieldKey.PASSWORD.name))
+    }
+
+    private fun updateTransaction(): EntryUpdateTransaction {
+        // These edits must never request field-level keys, even when ciphertext is present.
+        val bootstrap = unusedPort<VaultBootstrapStore>()
+        val manager = SensitiveDataKeyManager(bootstrap,
+            DekManager(bootstrap, fieldKeyManager, unusedPort<Logger>()), CoroutineScope(Dispatchers.Unconfined))
+        val store = SecretFieldStore(SecretFieldCodec(SensitiveFieldEncryptor(manager)), bundleCodec, DatabaseClock())
+        val activityWriter = EntryActivityWriter()
+        return EntryUpdateTransaction(store,
+            EntryRevisionWriter(contentCodec, sensitiveCodec, EntryIconResourceCleaner { }, activityWriter), activityWriter)
+    }
+
+    private inline fun <reified T> unusedPort(): T = Proxy.newProxyInstance(
+        T::class.java.classLoader, arrayOf(T::class.java),
+    ) { _, _, _ -> error("This edit must not access field-level key management") } as T
+
+    @Test
     fun restore_replacesSnapshotAndCreatesReversibleLatestRevision() = runBlocking {
         seedCurrentAndHistoricalRevision()
         val verifier = ExactScopeVerifier(
@@ -88,7 +162,7 @@ class EntryRevisionRestoreTransactionTest {
             bundleCodec = bundleCodec,
             sensitiveCodec = sensitiveCodec,
             permitConsumer = RevisionPermitConsumer(verifier),
-            revisionWriter = EntryRevisionWriter(contentCodec, sensitiveCodec, EntryIconResourceCleaner { }),
+            revisionWriter = EntryRevisionWriter(contentCodec, sensitiveCodec, EntryIconResourceCleaner { }, EntryActivityWriter()),
             activityWriter = EntryActivityWriter(),
         )
 
@@ -124,8 +198,11 @@ class EntryRevisionRestoreTransactionTest {
         )
         assertEquals(
             1,
-            database.entryActivityQueryDao().countByEntryIdAndType(ENTRY_ID, ActivityType.RESTORE),
+            database.entryActivityQueryDao().countByEntryIdAndType(ENTRY_ID, ActivityType.VERSION_RESTORED),
         )
+        assertEquals("A version restore must not look like a trash restore", 0,
+            database.entryActivityQueryDao().countByEntryIdAndType(ENTRY_ID, ActivityType.RESTORE))
+        assertEquals(3, database.entryActivityQueryDao().getByEntryId(ENTRY_ID).single().revisionVersion)
         assertTrue(verifier.consumed)
     }
 
@@ -138,7 +215,7 @@ class EntryRevisionRestoreTransactionTest {
             bundleCodec = bundleCodec,
             sensitiveCodec = sensitiveCodec,
             permitConsumer = RevisionPermitConsumer(verifier),
-            revisionWriter = EntryRevisionWriter(contentCodec, sensitiveCodec, EntryIconResourceCleaner { }),
+            revisionWriter = EntryRevisionWriter(contentCodec, sensitiveCodec, EntryIconResourceCleaner { }, EntryActivityWriter()),
             activityWriter = EntryActivityWriter(),
         )
 
@@ -167,7 +244,7 @@ class EntryRevisionRestoreTransactionTest {
             bundleCodec = bundleCodec,
             sensitiveCodec = sensitiveCodec,
             permitConsumer = RevisionPermitConsumer(ExactScopeVerifier(null)),
-            revisionWriter = EntryRevisionWriter(contentCodec, sensitiveCodec, EntryIconResourceCleaner { }),
+            revisionWriter = EntryRevisionWriter(contentCodec, sensitiveCodec, EntryIconResourceCleaner { }, EntryActivityWriter()),
             activityWriter = EntryActivityWriter(),
         )
 

@@ -32,9 +32,8 @@
     <string name="vault_detail_history_empty_filtered">暂无记录</string>
     <string name="vault_detail_activity_create">创建</string>
     <string name="vault_detail_activity_update">更新</string>
-    <string name="vault_detail_activity_sensitive_change">敏感字段已更改</string>
     <string name="vault_detail_activity_delete">删除</string>
-    <string name="vault_detail_activity_restore">恢复</string>
+    <string name="vault_detail_activity_restore">从回收站恢复</string>
     <string name="vault_detail_activity_autofill">自动填充</string>
     <string name="vault_detail_activity_copy_password">复制密码</string>
     <string name="vault_detail_activity_copy_username">复制用户名</string>
@@ -132,4 +131,6 @@
     <string name="vault_detail_favicon_error_too_large">图片过大，请选择 10 MB 以内的图片</string>
     <string name="vault_detail_favicon_error_invalid_image">无法读取该图片</string>
     <string name="vault_detail_favicon_error_save_failed">图标保存失败，请重试</string>
+    <string name="vault_detail_activity_version_restored">恢复历史版本</string>
+    <string name="vault_detail_activity_revision_format">%1$s · 版本 %2$d</string>
 </resources>

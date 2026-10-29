@@ -60,9 +60,6 @@ private fun DetailRevisionComparisonPhase.toUiModel(
                     revealedValue = sensitiveKey?.let(reveals::get)?.asScopedSensitiveText(),
                 )
             },
-        revealableKeys = differences.mapNotNullTo(linkedSetOf()) {
-            (it.field as? RevisionFieldId.Sensitive)?.key
-        },
         restore = when (restore) {
             DetailRevisionRestorePhase.Idle -> DetailRevisionRestoreUiState.Idle
             DetailRevisionRestorePhase.Confirming -> DetailRevisionRestoreUiState.Confirming

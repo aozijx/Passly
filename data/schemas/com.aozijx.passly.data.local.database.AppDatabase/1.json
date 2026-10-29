@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "33adcbbc1dbfef46ff3a71214db4f5d5",
+    "identityHash": "14eafcc37e62e3c79dca7e49683e9134",
     "entities": [
       {
         "tableName": "entries",
@@ -469,7 +469,7 @@
       },
       {
         "tableName": "entry_activities",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`activityId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `activityType` TEXT NOT NULL, `source` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`activityId`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`activityId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `activityType` TEXT NOT NULL, `revisionVersion` INTEGER, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`activityId`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "activityId",
@@ -490,9 +490,9 @@
             "notNull": true
           },
           {
-            "fieldPath": "source",
-            "columnName": "source",
-            "affinity": "TEXT"
+            "fieldPath": "revisionVersion",
+            "columnName": "revisionVersion",
+            "affinity": "INTEGER"
           },
           {
             "fieldPath": "createdAt",
@@ -822,7 +822,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '33adcbbc1dbfef46ff3a71214db4f5d5')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '14eafcc37e62e3c79dca7e49683e9134')"
     ]
   }
 }

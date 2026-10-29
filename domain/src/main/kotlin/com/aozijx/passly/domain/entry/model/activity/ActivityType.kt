@@ -2,7 +2,8 @@ package com.aozijx.passly.domain.entry.model.activity
 
 enum class ActivityType(
     val isUsage: Boolean = false,
-    val isVersionChange: Boolean = false
+    val isMutation: Boolean = false,
+    val isContentChange: Boolean = false,
 ) {
     VIEW(isUsage = true),
     COPY_USERNAME(isUsage = true),
@@ -10,17 +11,17 @@ enum class ActivityType(
     AUTOFILL(isUsage = true),
     EXPORT(isUsage = true),
     IMPORT(isUsage = true),
-    CREATE(isVersionChange = true),
-    UPDATE(isVersionChange = true),
-    SENSITIVE_CHANGE(isVersionChange = true),
-    DELETE(isVersionChange = true),
-    RESTORE(isVersionChange = true);
+    CREATE(isMutation = true, isContentChange = true),
+    UPDATE(isMutation = true, isContentChange = true),
+    VERSION_RESTORED(isMutation = true, isContentChange = true),
+    DELETE(isMutation = true),
+    RESTORE(isMutation = true);
 
     companion object {
         @JvmStatic
         val USAGE_TYPES: List<ActivityType> = entries.filter { it.isUsage }
 
         @JvmStatic
-        val VERSION_TYPES: List<ActivityType> = entries.filter { it.isVersionChange }
+        val MUTATION_TYPES: List<ActivityType> = entries.filter { it.isMutation }
     }
 }

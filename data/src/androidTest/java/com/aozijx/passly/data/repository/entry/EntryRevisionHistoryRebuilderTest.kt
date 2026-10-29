@@ -17,6 +17,7 @@ import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
 import com.aozijx.passly.data.repository.entry.command.EntryRevisionHistoryRebuilder
+import com.aozijx.passly.data.repository.entry.command.EntryActivityWriter
 import com.aozijx.passly.data.repository.entry.command.EntryRevisionWriter
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -70,7 +71,7 @@ class EntryRevisionHistoryRebuilderTest {
         seedObsoleteRevision(ENTRY_ONE, version = 7)
         seedObsoleteRevision(ENTRY_TWO, version = 2)
         val rebuilder = EntryRevisionHistoryRebuilder(
-            revisionWriter = EntryRevisionWriter(contentCodec, SensitiveRevisionSnapshotCodec(), EntryIconResourceCleaner { }),
+            revisionWriter = EntryRevisionWriter(contentCodec, SensitiveRevisionSnapshotCodec(), EntryIconResourceCleaner { }, EntryActivityWriter()),
             bundleCodec = bundleCodec,
         )
 

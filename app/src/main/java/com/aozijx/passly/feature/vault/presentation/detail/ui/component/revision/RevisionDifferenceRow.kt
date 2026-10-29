@@ -26,6 +26,7 @@ import java.util.Date
 internal fun RevisionDifferenceRow(
     difference: DetailRevisionDifferenceUiModel,
     onAction: (DetailUiAction) -> Unit,
+    revealEnabled: Boolean = true,
 ) {
     val sensitive = difference.field as? RevisionFieldId.Sensitive
     val protected = sensitive != null || difference.field is RevisionFieldId.ProtectedField ||
@@ -50,9 +51,9 @@ internal fun RevisionDifferenceRow(
                 }
             }
         },
-        trailingContent = sensitive?.let { field ->
+        trailingContent = sensitive?.takeUnless { difference.kind == RevisionDifferenceKind.ADDED }?.let { field ->
             @Composable {
-                TextButton(onClick = { onAction(DetailUiAction.RevealRevisionField(field.key)) }) {
+                TextButton(enabled = revealEnabled, onClick = { onAction(DetailUiAction.RevealRevisionField(field.key)) }) {
                     Text(stringResource(R.string.revision_reveal_action))
                 }
             }

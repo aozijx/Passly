@@ -15,6 +15,19 @@ internal sealed interface SensitiveFieldUpdate {
     data class Replace(val value: String) : SensitiveFieldUpdate
 }
 
+/** Detects effective writes without decrypting untouched field-level rows. */
+internal fun EntrySecret.hasStoredChanges(
+    storedBundle: EntrySecret,
+    storedKeys: Set<SensitiveFieldKey>,
+): Boolean = toBundleSecret() != storedBundle.toBundleSecret() ||
+    toSensitiveFieldUpdates().any { (key, update) ->
+        when (update) {
+            SensitiveFieldUpdate.Preserve -> false
+            SensitiveFieldUpdate.Clear -> key in storedKeys
+            is SensitiveFieldUpdate.Replace -> true
+        }
+    }
+
 /**
  * Splits an [EntrySecret] into field-level values (stored as per-key ciphertext rows) and the
  * low-sensitivity aggregate (stored as the `STRUCT_BUNDLE` row), and merges them back.

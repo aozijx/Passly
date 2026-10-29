@@ -13,6 +13,9 @@ import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
@@ -31,6 +34,7 @@ internal class EntryRevisionWriter @Inject constructor(
     private val contentSnapshotCodec: EntryContentSnapshotCodec,
     private val sensitiveRevisionCodec: SensitiveRevisionSnapshotCodec,
     private val iconResourceCleaner: EntryIconResourceCleaner,
+    private val activityWriter: EntryActivityWriter,
 ) {
 
     /**
@@ -108,7 +112,7 @@ internal class EntryRevisionWriter @Inject constructor(
     ) = with(db) {
         val metadata = entryQueryDao().getById(entryId) ?: return@with
         val summary = EntryProfileMapper.fromEntity(metadata)
-        val secret = secretFieldStore.readAll(this, entryId)
+        val secret = secretFieldStore.readBundle(this, entryId)
         val affected = entryCommandDao().bumpVersion(
             entryId = entryId,
             expectedVersion = metadata.version,
@@ -124,6 +128,8 @@ internal class EntryRevisionWriter @Inject constructor(
             now = now,
             change = change,
         )
+        activityWriter.recordActivity(this, entryId, ActivityType.UPDATE, now,
+            EntryActivityContext.ContentRevision(EntryVersion(metadata.version + 1)))
     }
 
     private companion object {

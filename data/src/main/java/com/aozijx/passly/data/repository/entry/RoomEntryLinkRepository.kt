@@ -96,6 +96,10 @@ internal class RoomEntryLinkRepository @Inject constructor(
                 throw ValidationError()
             }
             val previous = entryLinkQueryDao().getById(link.id.value)
+            if (previous != null && previous.sourceEntryId == link.sourceEntryId.value &&
+                previous.targetEntryId == link.targetEntryId.value && previous.relationType == link.relationType) {
+                return@write Unit
+            }
             entryLinkCommandDao().upsert(link.toEntity())
             val affectedEntryIds = buildSet {
                 add(link.sourceEntryId.value)

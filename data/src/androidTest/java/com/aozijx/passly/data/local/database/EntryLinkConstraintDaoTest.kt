@@ -43,6 +43,9 @@ class EntryLinkConstraintDaoTest {
             database.entryLinkCommandDao().upsert(link("link-2"))
         }
         assertTrue(duplicate.isFailure)
+        assertEquals("link-1", database.entryLinkQueryDao().getAll().single().linkId)
+        database.entryLinkCommandDao().upsert(link("link-1").copy(updatedAt = 2L))
+        assertEquals(2L, database.entryLinkQueryDao().getAll().single().updatedAt)
 
         assertEquals(1, database.entryCommandDao().deleteById("account"))
         assertTrue(database.entryLinkQueryDao().getAll().isEmpty())

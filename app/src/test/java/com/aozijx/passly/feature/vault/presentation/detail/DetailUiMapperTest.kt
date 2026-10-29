@@ -15,7 +15,7 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailActivityTypeUiModel
+import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailOtpUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSectionUiModel
@@ -65,7 +65,6 @@ class DetailUiMapperTest {
                 EntryActivity(
                     entryId = entry.id.value,
                     activityType = ActivityType.AUTOFILL,
-                    source = "browser",
                     createdAt = 3L,
                 )
             ),
@@ -76,8 +75,8 @@ class DetailUiMapperTest {
         assertEquals("related", ui.relatedEntries.single().id)
         assertEquals(1L, ui.metadata.createdAt)
         assertEquals(1L, ui.metadata.updatedAt)
-        assertEquals(DetailActivityTypeUiModel.AUTOFILL, ui.activities.single().type)
-        assertEquals("browser", ui.activities.single().source)
+        assertEquals(ActivityType.AUTOFILL, ui.activities.single().type)
+        assertEquals(EntryActivityContext.Usage, ui.activities.single().context)
         assertEquals(3L, ui.activities.single().createdAt)
     }
 

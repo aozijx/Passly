@@ -134,6 +134,22 @@ Feature 的详情编辑用例负责会话、互斥、重试、日志和 Reposito
 
 Mapper 应显式处理缺失字段、版本和错误，不用强制类型转换掩盖边界问题。
 
+## 页面协作职责核查
+
+本轮按真实状态所有权核查安全设置、编辑器、详情历史、Autofill 与备份，不按类名增删层级：
+
+| 位置 | 保留的职责与调整 |
+|---|---|
+| ViewModel | 生命周期、观察、UI 状态及事件；安全设置从已提交的配置 Flow 派生，详情异步发布仍由 `DetailWorkSession` 校验访问凭据。没有把页面 jobs 下沉到 Domain。 |
+| Route | 生命周期收集、导航、系统权限和 UI effect；通知权限结果与请求身份相关，保留在 Route。业务写入仍交给应用服务或端口。 |
+| Mapper | 只有实际的结构、格式或展示转换才保留；历史比较单独归 `DetailRevisionUiMapper`，字段行负责本地化。删除活动类型的同名 UI 枚举与逐项照抄映射。备份 Mapper 保留稳定外部格式边界。 |
+| Coordinator | `EntryEditorSeedCoordinator` 持有导航数据的认证会话所有权；`AppPasswordDialogCoordinator` 持有临时对话框与草稿，两者均有实际 UI 生命周期职责。 |
+| 历史应用服务 | 比较、揭示、恢复具有授权或业务编排，保留；删除仅转发初始化与 Flow 的 `ObserveEntryRevisionsUseCase`，页面直接使用 Domain 修订端口。 |
+| Data 事务 | `EntryUpdateTransaction` 只做原子内容重写、快照与活动；Executor 负责事务入口和提交后资源回收，不让数据库事务持有页面状态。 |
+
+页面不因直接使用纯 Domain 枚举或端口而增加一份空壳 UI 类型或 use case。长文件可以继续保留关联的生命周期工作，
+拆分必须形成可辨认的状态、资源或业务所有权，不能仅把调用移到另一个同参转发类。
+
 ## 自动检查
 
 `verifyArchitecture` 通过 `verifyModuleBoundaries` 扫描项目依赖和源码 import，并包含以下禁止边：

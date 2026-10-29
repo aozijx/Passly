@@ -29,6 +29,6 @@ data class EntryActivityEntity(
     val entryId: String,
     @ColumnInfo(name = "activityType")
     val activityType: ActivityType,
-    val source: String? = null,
+    val revisionVersion: Int? = null,
     val createdAt: Long = System.currentTimeMillis()
 )

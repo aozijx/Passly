@@ -21,6 +21,7 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
@@ -158,7 +159,8 @@ internal class EntryRevisionRestoreTransaction @Inject constructor(
             now = now,
             change = RevisionChange.VERSION_RESTORED,
         )
-        activityWriter.recordActivity(this, entryId.value, ActivityType.RESTORE, now)
+        activityWriter.recordActivity(this, entryId.value, ActivityType.VERSION_RESTORED, now,
+            EntryActivityContext.ContentRevision(newVersion))
 
         RestoredRevision(
             version = newVersion,

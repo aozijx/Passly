@@ -1,9 +1,10 @@
 package com.aozijx.passly.data.repository.entry.command
 
 import com.aozijx.passly.data.local.database.AppDatabase
-import com.aozijx.passly.data.local.database.entity.EntryActivityEntity
+import com.aozijx.passly.data.mapper.activity.toEntity
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
+import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,23 +23,14 @@ internal class EntryActivityWriter @Inject constructor() {
         db: AppDatabase,
         entryId: String,
         activityType: ActivityType,
-        now: Long
+        now: Long,
+        context: EntryActivityContext = EntryActivityContext.Lifecycle,
     ) {
         with(db) {
             entryActivityCommandDao().insertIdempotent(
-                EntryActivity(entryId = entryId, activityType = activityType).toEntity(now)
+                EntryActivity(entryId = entryId, activityType = activityType, context = context, createdAt = now).toEntity()
             )
         }
     }
 
-    internal companion object {
-
-        private fun EntryActivity.toEntity(now: Long) =
-            EntryActivityEntity(
-                activityId = activityId,
-                entryId = entryId,
-                activityType = activityType,
-                createdAt = now
-            )
-    }
 }

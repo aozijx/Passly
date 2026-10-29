@@ -4,7 +4,6 @@ import com.aozijx.passly.feature.vault.presentation.detail.history.toRevisionShe
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.model.OtpCodeState
@@ -13,7 +12,6 @@ import com.aozijx.passly.presentation.mapping.entry.toUiModel
 import com.aozijx.passly.presentation.shared.components.AppPackagePickerItemUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.CredentialFieldUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.CredentialSectionUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailActivityTypeUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailActivityUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailAssociatedInfoUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailBodyUiModel
@@ -52,8 +50,8 @@ internal fun detailContentUiModel(
     metadata = DetailMetadataUiModel(entry.createdAt, entry.updatedAt),
     activities = state.history.map {
         DetailActivityUiModel(
-            type = it.activityType.toUiModel(),
-            source = it.source,
+            type = it.activityType,
+            context = it.context,
             createdAt = it.createdAt,
         )
     },
@@ -213,20 +211,6 @@ private fun DetailSectionKey.toUiModel(): DetailSectionUiModel? = when (this) {
     DetailSectionKey.NOTES,
     DetailSectionKey.METADATA,
     DetailSectionKey.ACTIVITY -> null
-}
-
-private fun ActivityType.toUiModel(): DetailActivityTypeUiModel = when (this) {
-    ActivityType.VIEW -> DetailActivityTypeUiModel.VIEW
-    ActivityType.COPY_USERNAME -> DetailActivityTypeUiModel.COPY_USERNAME
-    ActivityType.COPY_PASSWORD -> DetailActivityTypeUiModel.COPY_PASSWORD
-    ActivityType.AUTOFILL -> DetailActivityTypeUiModel.AUTOFILL
-    ActivityType.EXPORT -> DetailActivityTypeUiModel.EXPORT
-    ActivityType.IMPORT -> DetailActivityTypeUiModel.IMPORT
-    ActivityType.CREATE -> DetailActivityTypeUiModel.CREATE
-    ActivityType.UPDATE -> DetailActivityTypeUiModel.UPDATE
-    ActivityType.SENSITIVE_CHANGE -> DetailActivityTypeUiModel.SENSITIVE_CHANGE
-    ActivityType.DELETE -> DetailActivityTypeUiModel.DELETE
-    ActivityType.RESTORE -> DetailActivityTypeUiModel.RESTORE
 }
 
 private fun DetailTagValidationError.toUiModel(): TagEditorValidationErrorUiModel = when (this) {

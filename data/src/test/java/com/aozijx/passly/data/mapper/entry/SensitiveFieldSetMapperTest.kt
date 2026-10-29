@@ -7,9 +7,34 @@ import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SensitiveFieldSetMapperTest {
+    @Test
+    fun `unrevealed password and an absent optional clear do not create a content revision`() {
+        val stored = EntrySecret(credential = CardCredential(), notes = "notes")
+        assertFalse(stored.copy(credential = CardCredential(cardCvv = ""))
+            .hasStoredChanges(stored, setOf(SensitiveFieldKey.CARD_NUMBER)))
+    }
+
+    @Test
+    fun `clearing an existing high field and explicitly replacing it are content changes`() {
+        val stored = EntrySecret(credential = CardCredential())
+        assertTrue(stored.copy(credential = CardCredential(cardCvv = ""))
+            .hasStoredChanges(stored, setOf(SensitiveFieldKey.CARD_CVV)))
+        assertTrue(stored.copy(credential = CardCredential(cardCvv = "123"))
+            .hasStoredChanges(stored, emptySet()))
+    }
+
+    @Test
+    fun `bundle changes create a revision while identical metadata-only saves do not`() {
+        val stored = EntrySecret(notes = "before")
+        assertFalse(stored.hasStoredChanges(stored, emptySet()))
+        assertTrue(stored.copy(notes = "after").hasStoredChanges(stored, emptySet()))
+    }
+
     @Test
     fun `missing sensitive value is preserved during an entry update`() {
         val updates = EntrySecret(

@@ -25,6 +25,7 @@ internal sealed interface DetailRevisionMutation {
     data object BackToList : DetailRevisionMutation
     data object RestoreRequested : DetailRevisionMutation
     data object RestoreCancelled : DetailRevisionMutation
+    data object RestoreAborted : DetailRevisionMutation
     data object RestoreStarted : DetailRevisionMutation
     data object RestoreSucceeded : DetailRevisionMutation
 }
@@ -61,13 +62,16 @@ internal object DetailRevisionReducer {
         }
         DetailRevisionMutation.BackToList -> state.updateOpen { copy(page = DetailRevisionPage.List) }
         DetailRevisionMutation.RestoreRequested -> state.updateReadyComparison {
-            copy(restore = DetailRevisionRestorePhase.Confirming)
+            if (restore == DetailRevisionRestorePhase.Idle) copy(restore = DetailRevisionRestorePhase.Confirming) else this
         }
         DetailRevisionMutation.RestoreCancelled -> state.updateReadyComparison {
-            copy(restore = DetailRevisionRestorePhase.Idle)
+            if (restore == DetailRevisionRestorePhase.Confirming) copy(restore = DetailRevisionRestorePhase.Idle) else this
+        }
+        DetailRevisionMutation.RestoreAborted -> state.updateReadyComparison {
+            if (restore == DetailRevisionRestorePhase.Restoring) copy(restore = DetailRevisionRestorePhase.Idle) else this
         }
         DetailRevisionMutation.RestoreStarted -> state.updateReadyComparison {
-            copy(restore = DetailRevisionRestorePhase.Restoring)
+            if (restore == DetailRevisionRestorePhase.Confirming) copy(restore = DetailRevisionRestorePhase.Restoring) else this
         }
         DetailRevisionMutation.RestoreSucceeded -> state.updateOpen {
             copy(page = DetailRevisionPage.List)

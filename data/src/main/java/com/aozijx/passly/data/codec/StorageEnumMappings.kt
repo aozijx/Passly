@@ -58,7 +58,7 @@ internal fun ActivityType.toStorageKey(): String = when (this) {
     ActivityType.IMPORT -> "IMPORT"
     ActivityType.CREATE -> "CREATE"
     ActivityType.UPDATE -> "UPDATE"
-    ActivityType.SENSITIVE_CHANGE -> "SENSITIVE_CHANGE"
+    ActivityType.VERSION_RESTORED -> "VERSION_RESTORED"
     ActivityType.DELETE -> "DELETE"
     ActivityType.RESTORE -> "RESTORE"
 }
@@ -72,7 +72,7 @@ internal fun activityTypeFromStorageKey(key: String): ActivityType = when (key) 
     "IMPORT" -> ActivityType.IMPORT
     "CREATE" -> ActivityType.CREATE
     "UPDATE" -> ActivityType.UPDATE
-    "SENSITIVE_CHANGE" -> ActivityType.SENSITIVE_CHANGE
+    "VERSION_RESTORED" -> ActivityType.VERSION_RESTORED
     "DELETE" -> ActivityType.DELETE
     "RESTORE" -> ActivityType.RESTORE
     else -> invalidStorageKey("activity type", key)

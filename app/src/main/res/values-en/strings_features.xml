@@ -30,9 +30,8 @@
     <string name="vault_detail_history_empty_filtered">No records</string>
     <string name="vault_detail_activity_create">Created</string>
     <string name="vault_detail_activity_update">Updated</string>
-    <string name="vault_detail_activity_sensitive_change">Sensitive fields changed</string>
     <string name="vault_detail_activity_delete">Deleted</string>
-    <string name="vault_detail_activity_restore">Restored</string>
+    <string name="vault_detail_activity_restore">Restored from trash</string>
     <string name="vault_detail_activity_autofill">Autofilled</string>
     <string name="vault_detail_activity_copy_password">Password copied</string>
     <string name="vault_detail_activity_copy_username">Username copied</string>
@@ -128,4 +127,6 @@
     <string name="vault_detail_favicon_error_too_large">Choose an image smaller than 10 MB</string>
     <string name="vault_detail_favicon_error_invalid_image">This image could not be read</string>
     <string name="vault_detail_favicon_error_save_failed">Could not save the icon. Try again</string>
+    <string name="vault_detail_activity_version_restored">Restored a historical version</string>
+    <string name="vault_detail_activity_revision_format">%1$s · Version %2$d</string>
 </resources>

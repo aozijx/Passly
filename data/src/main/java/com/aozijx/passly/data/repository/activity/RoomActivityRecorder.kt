@@ -4,11 +4,12 @@ import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.local.database.AppDatabase
-import com.aozijx.passly.data.local.database.entity.EntryActivityEntity
+import com.aozijx.passly.data.local.database.DatabaseClock
+import com.aozijx.passly.data.repository.entry.command.EntryActivityWriter
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.activity.EntryActivity
+import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,17 +19,17 @@ internal class RoomActivityRecorder @Inject constructor(
     private val databaseTransactions: DatabaseTransactionRunner,
     private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
+    private val activityWriter: EntryActivityWriter,
+    private val clock: DatabaseClock,
 ) : ActivityRecorder {
 
     override suspend fun recordUsage(
         entryId: String,
         type: ActivityType
     ): AppResult<Unit> {
+        require(type.isUsage) { "Usage recorder only accepts usage events" }
         val persist: suspend AppDatabase.() -> Unit = {
-            val now = System.currentTimeMillis()
-            entryActivityCommandDao().insertIdempotent(
-                EntryActivity(entryId = entryId, activityType = type).toEntity(now)
-            )
+            activityWriter.recordActivity(this, entryId, type, clock.now(), EntryActivityContext.Usage)
         }
         return if (type == ActivityType.AUTOFILL) {
             databaseTransactions.writeForAutofill("activity_record_usage", persist)
@@ -53,13 +54,4 @@ internal class RoomActivityRecorder @Inject constructor(
         }
     }
 
-    private companion object {
-        private fun EntryActivity.toEntity(now: Long) =
-            EntryActivityEntity(
-                activityId = activityId,
-                entryId = entryId,
-                activityType = activityType,
-                createdAt = now
-            )
-    }
 }

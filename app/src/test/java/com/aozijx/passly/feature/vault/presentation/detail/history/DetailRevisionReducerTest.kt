@@ -11,6 +11,35 @@ import org.junit.Test
 
 class DetailRevisionReducerTest {
     @Test
+    fun `cancelled authorization releases a claimed restore so it can be retried`() {
+        val idle = DetailRevisionState.Open(EntryId("entry"), page = DetailRevisionPage.Comparison(
+            "revision", DetailRevisionComparisonPhase.Ready(emptyList()),
+        ))
+        val confirming = DetailRevisionReducer.reduce(idle, DetailRevisionMutation.RestoreRequested)
+        val restoring = DetailRevisionReducer.reduce(confirming, DetailRevisionMutation.RestoreStarted)
+        val cancelled = DetailRevisionReducer.reduce(restoring, DetailRevisionMutation.RestoreAborted)
+        assertEquals(idle, cancelled)
+        val retry = DetailRevisionReducer.reduce(cancelled, DetailRevisionMutation.RestoreRequested)
+        assertEquals(confirming, retry)
+        assertEquals(restoring, DetailRevisionReducer.reduce(retry, DetailRevisionMutation.RestoreStarted))
+    }
+
+    @Test
+    fun `restore must be confirmed and cannot be restarted or cancelled by stale dialog actions`() {
+        val idle = DetailRevisionState.Open(EntryId("entry"), page = DetailRevisionPage.Comparison(
+            "revision", DetailRevisionComparisonPhase.Ready(emptyList()),
+        ))
+        assertEquals(idle, DetailRevisionReducer.reduce(idle, DetailRevisionMutation.RestoreStarted))
+        val confirming = DetailRevisionReducer.reduce(idle, DetailRevisionMutation.RestoreRequested)
+        val restoring = DetailRevisionReducer.reduce(confirming, DetailRevisionMutation.RestoreStarted)
+        assertEquals(DetailRevisionRestorePhase.Restoring,
+            (((restoring as DetailRevisionState.Open).page as DetailRevisionPage.Comparison).phase as DetailRevisionComparisonPhase.Ready).restore)
+        assertEquals(restoring, DetailRevisionReducer.reduce(restoring, DetailRevisionMutation.RestoreStarted))
+        assertEquals(restoring, DetailRevisionReducer.reduce(restoring, DetailRevisionMutation.RestoreRequested))
+        assertEquals(restoring, DetailRevisionReducer.reduce(restoring, DetailRevisionMutation.RestoreCancelled))
+    }
+
+    @Test
     fun `open select back and close form one sheet state machine`() {
         val opened = DetailRevisionReducer.reduce(
             DetailRevisionState.Closed,

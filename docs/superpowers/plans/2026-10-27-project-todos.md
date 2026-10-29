@@ -44,9 +44,9 @@
 
 已完成比较脱敏子批：按字段输出类型化差异，Wi-Fi 密码、安全答案及隐藏自定义字段仅标记变化；移除整对象字符串化。`build-revision-disclosure-final.log` 全部门禁通过，Domain 172、Data 70、App 862 项单测及 API 34 的 52 项仪器测试零失败。活动语义与 Sheet 布局仍待完成。
 
-- [ ] 追踪 `EntryRevisionWriter`、各 Command Executor、`EntryActivityWriter` 与活动记录仓库，区分内容快照和访问事件；复现重复或含糊记录。
-- [ ] 以真实内容修改/恢复为版本依据，完善不含值的活动语义及持久化，移除旧补丁或重复记录路径。
-- [ ] 检查 `RevisionHistorySheet`、`RevisionHistorySection`、`ActivityTimelineSection` 的状态、比较/恢复操作与滚动布局，修复全屏底部空白。
+- [x] 追踪 `EntryRevisionWriter`、各 Command Executor、`EntryActivityWriter` 与活动记录仓库，区分内容快照和访问事件；复现重复或含糊记录。
+- [x] 以真实内容修改/恢复为版本依据，完善不含值的活动语义及持久化，移除旧补丁或重复记录路径。
+- [x] 检查 `RevisionHistorySheet`、`RevisionHistorySection`、`ActivityTimelineSection` 的状态、比较/恢复操作与滚动布局，修复全屏底部空白。
 - [ ] 运行事务、DAO、模型及 UI 相关验证，更新 entry-revision-history 文档并提交。
 
 ### 3. Topbar
@@ -67,6 +67,30 @@
 
 ### 5. 职责清理与收尾
 
-- [ ] 盘点 ViewModel、Route、Mapper、Coordinator 的职责和依赖，重点复核本轮涉及的安全设置、历史与编辑流程。
-- [ ] 将业务编排归入现有应用服务/use case，页面状态留在 presentation；删除纯转发映射和无用文件，保留有实际转换语义的 mapper。
-- [ ] 运行最终相关门禁，检查文档链接和遗留符号，逐项记录代码与验证证据；仅在五项均有证据时从本地 AGENTS.md 删去已完成待办。
+- [x] 盘点 ViewModel、Route、Mapper、Coordinator 的职责和依赖，重点复核本轮涉及的安全设置、历史与编辑流程。
+- [x] 将业务编排归入现有应用服务/use case，页面状态留在 presentation；删除纯转发映射和无用文件，保留有实际转换语义的 mapper。
+- [ ] 运行最终相关门禁，检查文档链接和遗留符号，逐项记录代码与验证证据及未验证边界；待办只在本计划维护，不回填本地 AGENTS.md。
+
+### 当前交付与剩余验证（2026-10-29）
+
+实现已包含内容重写事务、无效清空/同值保存去重、活动关联实际修订、历史恢复独立事件、关系唯一键严格失败、
+自然高度 Sheet 与固定恢复操作区，以及恢复确认的同步占用和授权取消后重试。删除了空转发历史用例及重复活动 UI 枚举。
+
+本批实现的 2026-10-27 验证记录：`build-history-final.log` 全部门禁成功，Domain 175、Core 74、Security 50、
+Data 73、App 863 项单测零失败；API 34 模拟器 Data 29、App 57 项仪器测试零失败。Room schema 重新导出仍为 1。
+恢复状态新增测试先红后绿；长比较截图显示恢复按钮位于滚动区域之外。空历史截图为黑图，未作为视觉验收证据，
+其自然高度与可见性由仪器测试验证。
+
+API 31 真机的 `build-history-api31.log` 未通过：Data 29 项中 3 项失败，Autofill 查询报 `json_each` 缺失，
+分页用例另有 LoadResult.Error 被强转为 Page；生产 `DatabaseProvider` 使用 SQLCipher，测试使用系统默认 SQLite，
+后续先统一测试驱动再验证，不据此改写生产查询或跳过用例。App 仅完成 12 项并报告 1 项失败，
+`PermissionRequestHostTest.changingOwnerRegistersIndependentLauncherAndRejectsOldResult` 的 XML 没有异常内容，不能视为全套已执行。
+
+用户已于 2026-10-29 明确将测试留到下次，本轮不再启动 Gradle 测试或设备操作。下轮验证事项：
+
+- [ ] DAO/事务仪器测试使用与生产一致的 SQLCipher 驱动，保留已有外键和附件约束 callback；核对 JSON 查询能力。
+- [ ] 分页测试明确报告 LoadResult.Error 的真实异常，避免强转掩盖 SQL 根因。
+- [ ] 重新执行 API 31 的 Data 与 App 仪器测试，排查权限宿主失败及整套测试中断原因。
+- [ ] 补齐空历史页有效截图；真实生物录入变更后的硬件 Keystore 行为仍未实测，不宣称通过。
+
+最终独立只读复核未提出新的代码问题；API 31 与硬件边界保留上述未完成项，因此本计划尚未整体关闭。

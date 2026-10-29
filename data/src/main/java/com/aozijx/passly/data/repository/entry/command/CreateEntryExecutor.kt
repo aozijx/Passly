@@ -6,11 +6,12 @@ import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.mapper.entry.toDatabaseFlags
-import com.aozijx.passly.data.mapper.entry.toSensitiveFieldValues
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import javax.inject.Inject
@@ -71,10 +72,8 @@ internal class CreateEntryExecutor @Inject constructor(
                 now = now,
             )
             attachmentGarbageCollector.scheduleInTransaction(this)
-            activityWriter.recordActivity(this, entryId, ActivityType.CREATE, now)
-            if (entry.secret.toSensitiveFieldValues().isNotEmpty()) {
-                activityWriter.recordActivity(this, entryId, ActivityType.SENSITIVE_CHANGE, now)
-            }
+            activityWriter.recordActivity(this, entryId, ActivityType.CREATE, now,
+                EntryActivityContext.ContentRevision(EntryVersion.INITIAL))
             EntryId(entryId)
         }
         result.onSuccessSuspend { attachmentGarbageCollector.drain() }

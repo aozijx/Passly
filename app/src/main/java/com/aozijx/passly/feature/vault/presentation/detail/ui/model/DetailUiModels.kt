@@ -1,5 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.model
 
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 import androidx.annotation.StringRes
 import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 
@@ -19,15 +21,10 @@ data class DetailContentUiModel(
 data class DetailMetadataUiModel(val createdAt: Long, val updatedAt: Long)
 
 data class DetailActivityUiModel(
-    val type: DetailActivityTypeUiModel,
-    val source: String?,
+    val type: ActivityType,
+    val context: EntryActivityContext,
     val createdAt: Long,
 )
-
-enum class DetailActivityTypeUiModel {
-    VIEW, COPY_USERNAME, COPY_PASSWORD, AUTOFILL, EXPORT, IMPORT,
-    CREATE, UPDATE, SENSITIVE_CHANGE, DELETE, RESTORE,
-}
 
 data class CredentialFieldUiState(
     val visible: Boolean,

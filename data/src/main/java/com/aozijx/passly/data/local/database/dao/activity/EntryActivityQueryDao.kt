@@ -10,9 +10,9 @@ import kotlinx.coroutines.flow.Flow
 /**
  * 活动记录按语义分为两类：
  * - **使用记录**：[ActivityType.USAGE_TYPES] — VIEW, COPY_USERNAME, COPY_PASSWORD, AUTOFILL, EXPORT, IMPORT
- * - **版本更新**：[ActivityType.VERSION_TYPES] — CREATE, UPDATE, DELETE, RESTORE
+ * - **内容修改或生命周期操作**：[ActivityType.MUTATION_TYPES] — CREATE, UPDATE, DELETE, RESTORE
  *
- * 对应的方法前缀 `usage*` / `version*` 明确区分两种语义，
+ * 对应的方法前缀 `usage*` / `mutation*` 明确区分两种语义，
  * 避免将使用统计与版本变更日志混为一谈。
  */
 @Dao
@@ -20,49 +20,49 @@ interface EntryActivityQueryDao {
 
     // ---- observe (Flow) ----
 
-    @Query("SELECT * FROM entry_activities WHERE entryId = :entryId ORDER BY createdAt DESC")
+    @Query("SELECT * FROM entry_activities WHERE entryId = :entryId ORDER BY createdAt DESC, activityId DESC")
     fun observeByEntryId(entryId: String): Flow<List<EntryActivityEntity>>
 
-    @Query("SELECT * FROM entry_activities ORDER BY createdAt DESC")
+    @Query("SELECT * FROM entry_activities ORDER BY createdAt DESC, activityId DESC")
     fun observeAll(): Flow<List<EntryActivityEntity>>
 
-    @Query("SELECT * FROM entry_activities WHERE activityType = :activityType ORDER BY createdAt DESC")
+    @Query("SELECT * FROM entry_activities WHERE activityType = :activityType ORDER BY createdAt DESC, activityId DESC")
     fun observeByType(activityType: ActivityType): Flow<List<EntryActivityEntity>>
 
-    @Query("SELECT * FROM entry_activities WHERE entryId = :entryId AND activityType IN (:types) ORDER BY createdAt DESC")
+    @Query("SELECT * FROM entry_activities WHERE entryId = :entryId AND activityType IN (:types) ORDER BY createdAt DESC, activityId DESC")
     fun observeUsageForEntry(
         entryId: String,
         types: List<ActivityType>
     ): Flow<List<EntryActivityEntity>>
 
-    @Query("SELECT * FROM entry_activities WHERE entryId = :entryId AND activityType IN (:types) ORDER BY createdAt DESC")
-    fun observeVersionForEntry(
+    @Query("SELECT * FROM entry_activities WHERE entryId = :entryId AND activityType IN (:types) ORDER BY createdAt DESC, activityId DESC")
+    fun observeMutationForEntry(
         entryId: String,
         types: List<ActivityType>
     ): Flow<List<EntryActivityEntity>>
 
-    @Query("SELECT * FROM entry_activities WHERE activityType IN (:types) ORDER BY createdAt DESC")
+    @Query("SELECT * FROM entry_activities WHERE activityType IN (:types) ORDER BY createdAt DESC, activityId DESC")
     fun observeUsage(types: List<ActivityType>): Flow<List<EntryActivityEntity>>
 
-    @Query("SELECT * FROM entry_activities WHERE activityType IN (:types) ORDER BY createdAt DESC")
-    fun observeVersion(types: List<ActivityType>): Flow<List<EntryActivityEntity>>
+    @Query("SELECT * FROM entry_activities WHERE activityType IN (:types) ORDER BY createdAt DESC, activityId DESC")
+    fun observeMutation(types: List<ActivityType>): Flow<List<EntryActivityEntity>>
 
     // ---- paging (Paging 3) ----
 
-    @Query("SELECT * FROM entry_activities WHERE entryId = :entryId ORDER BY createdAt DESC")
+    @Query("SELECT * FROM entry_activities WHERE entryId = :entryId ORDER BY createdAt DESC, activityId DESC")
     fun pagingByEntryId(entryId: String): PagingSource<Int, EntryActivityEntity>
 
-    @Query("SELECT * FROM entry_activities ORDER BY createdAt DESC")
+    @Query("SELECT * FROM entry_activities ORDER BY createdAt DESC, activityId DESC")
     fun pagingAll(): PagingSource<Int, EntryActivityEntity>
 
-    @Query("SELECT * FROM entry_activities WHERE entryId = :entryId AND activityType IN (:types) ORDER BY createdAt DESC")
+    @Query("SELECT * FROM entry_activities WHERE entryId = :entryId AND activityType IN (:types) ORDER BY createdAt DESC, activityId DESC")
     fun pagingUsageForEntry(
         entryId: String,
         types: List<ActivityType>
     ): PagingSource<Int, EntryActivityEntity>
 
-    @Query("SELECT * FROM entry_activities WHERE entryId = :entryId AND activityType IN (:types) ORDER BY createdAt DESC")
-    fun pagingVersionForEntry(
+    @Query("SELECT * FROM entry_activities WHERE entryId = :entryId AND activityType IN (:types) ORDER BY createdAt DESC, activityId DESC")
+    fun pagingMutationForEntry(
         entryId: String,
         types: List<ActivityType>
     ): PagingSource<Int, EntryActivityEntity>
@@ -72,7 +72,7 @@ interface EntryActivityQueryDao {
     @Query("SELECT * FROM entry_activities WHERE activityId = :activityId LIMIT 1")
     suspend fun getById(activityId: String): EntryActivityEntity?
 
-    @Query("SELECT * FROM entry_activities WHERE entryId = :entryId ORDER BY createdAt DESC")
+    @Query("SELECT * FROM entry_activities WHERE entryId = :entryId ORDER BY createdAt DESC, activityId DESC")
     suspend fun getByEntryId(entryId: String): List<EntryActivityEntity>
 
     // ---- exists ----
@@ -92,7 +92,7 @@ interface EntryActivityQueryDao {
     suspend fun countUsageByEntryId(entryId: String, types: List<ActivityType>): Int
 
     @Query("SELECT COUNT(*) FROM entry_activities WHERE entryId = :entryId AND activityType IN (:types)")
-    suspend fun countVersionByEntryId(entryId: String, types: List<ActivityType>): Int
+    suspend fun countMutationByEntryId(entryId: String, types: List<ActivityType>): Int
 
     @Query("SELECT COUNT(*) FROM entry_activities WHERE entryId = :entryId AND activityType = :activityType")
     suspend fun countByEntryIdAndType(entryId: String, activityType: ActivityType): Int
