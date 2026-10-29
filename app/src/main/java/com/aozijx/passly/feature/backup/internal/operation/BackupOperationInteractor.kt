@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.backup.internal.operation
 
-import android.net.Uri
 import com.aozijx.passly.core.error.mapping.fromThrowable
 import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.model.BackupFailed
@@ -21,7 +20,11 @@ import com.aozijx.passly.feature.backup.internal.model.BackupExportOptions
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupImportResult
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /** Application use case boundary for backup flows; the ViewModel only dispatches state. */
@@ -39,8 +42,9 @@ internal class BackupOperationInteractor @Inject constructor(
         if (uri.isNullOrBlank()) return BackupExecutionResult.Failure(BackupFailed())
         return storageSupport.checkDirectoryWritable(uri).fold(
             onSuccess = { BackupExecutionResult.DirectoryWritable },
-            onFailure = {
-                val error = AppError.fromThrowable(it)
+            onFailure = { failure ->
+                if (failure is CancellationException) throw failure
+                val error = AppError.fromThrowable(failure)
                 errorReporter.report(
                     error,
                     ErrorReportContext(
@@ -59,19 +63,20 @@ internal class BackupOperationInteractor @Inject constructor(
         val directoryUri = settingsSource.backupDirectoryUri.first()
             ?.takeUnless(String::isBlank)
             ?: return@authorizeOperation BackupExecutionResult.Failure(BackupFailed())
-        val target = storageSupport.createNamedExportTarget(
+        val targetUri = storageSupport.createNamedExportTarget(
             directoryTreeUri = directoryUri,
             fileName = request.fileName,
             mimeType = request.format.mimeType,
         ).getOrElse { error ->
+            if (error is CancellationException) throw error
             return@authorizeOperation BackupExecutionResult.Failure(AppError.fromThrowable(error))
         }
-        performExport(request, target.fileUri, deleteOnFailure = true)
+        performExport(request, targetUri, deleteOnFailure = true)
     }
 
     suspend fun exportToUri(
         request: BackupExportOperationRequest,
-        targetUri: Uri,
+        targetUri: String,
         deleteOnFailure: Boolean,
     ): BackupExecutionResult = authorizeOperation(AuthenticationPurpose.BACKUP_EXPORT) {
         performExport(request, targetUri, deleteOnFailure)
@@ -98,14 +103,14 @@ internal class BackupOperationInteractor @Inject constructor(
 
     private suspend fun performExport(
         request: BackupExportOperationRequest,
-        targetUri: Uri,
+        targetUri: String,
         deleteOnFailure: Boolean,
     ): BackupExecutionResult {
         val password = request.password.takeUnless { it.isEmpty }?.toCharArray()
         return try {
             when (val result = backupService.export(
                 BackupExportRequest(
-                    targetUri = targetUri.toString(),
+                    targetUri = targetUri,
                     format = request.format.formatId,
                     password = password,
                     options = BackupExportOptions(
@@ -118,12 +123,27 @@ internal class BackupOperationInteractor @Inject constructor(
             )) {
                 is AppResult.Success -> BackupExecutionResult.ExportSucceeded
                 is AppResult.Failure -> {
-                    deleteFailedExport(targetUri, deleteOnFailure)
+                    if (deleteOnFailure) deleteFailedExport(targetUri)
                     BackupExecutionResult.Failure(result.error)
                 }
             }
+        } catch (cancelled: CancellationException) {
+            if (deleteOnFailure) {
+                val cleanupFailure = withContext(NonCancellable) {
+                    runCatching { deleteFailedExport(targetUri) }.fold(
+                        onSuccess = { deleted ->
+                            if (deleted) null else IOException("Unable to delete incomplete backup export")
+                        },
+                        onFailure = { it },
+                    )
+                }
+                if (cleanupFailure != null && cleanupFailure !== cancelled) {
+                    cancelled.addSuppressed(cleanupFailure)
+                }
+            }
+            throw cancelled
         } catch (error: Exception) {
-            deleteFailedExport(targetUri, deleteOnFailure)
+            if (deleteOnFailure) deleteFailedExport(targetUri)
             BackupExecutionResult.Failure(AppError.fromThrowable(error))
         } finally {
             password?.fill('\u0000')
@@ -147,6 +167,8 @@ internal class BackupOperationInteractor @Inject constructor(
                 is AppResult.Success -> BackupExecutionResult.ImportSucceeded(result.data)
                 is AppResult.Failure -> BackupExecutionResult.Failure(result.error)
             }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (error: Exception) {
             BackupExecutionResult.Failure(AppError.fromThrowable(error))
         } finally {
@@ -154,9 +176,8 @@ internal class BackupOperationInteractor @Inject constructor(
         }
     }
 
-    private suspend fun deleteFailedExport(targetUri: Uri, deleteOnFailure: Boolean) {
-        if (deleteOnFailure) storageSupport.deleteDocument(targetUri)
-    }
+    private suspend fun deleteFailedExport(targetUri: String): Boolean =
+        storageSupport.deleteDocument(targetUri)
 }
 
 internal sealed interface BackupExecutionResult {

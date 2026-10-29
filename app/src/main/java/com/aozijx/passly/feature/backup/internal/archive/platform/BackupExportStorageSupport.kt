@@ -1,13 +1,11 @@
 package com.aozijx.passly.feature.backup.internal.archive.platform
 
 import android.content.Context
-import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.core.net.toUri
 import com.aozijx.passly.app.backup.BackupDirectoryGrantInspector
 import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
 import com.aozijx.passly.feature.backup.internal.archive.di.BackupIoDispatcher
-import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport.ExportTarget
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -42,7 +40,7 @@ internal class BackupExportStorageSupport @Inject constructor(
         directoryTreeUri: String,
         fileName: String,
         mimeType: String,
-    ): Result<ExportTarget> = withContext(ioDispatcher) {
+    ): Result<String> = withContext(ioDispatcher) {
         runCatching {
             val grantedTreeUri = directoryTreeUri.toUri()
             val resolver = context.contentResolver
@@ -67,13 +65,13 @@ internal class BackupExportStorageSupport @Inject constructor(
             } catch (error: SecurityException) {
                 error("目录访问权限已失效，请重新选择备份目录")
             }
-            ExportTarget(fileUri, fileName, treeUri)
+            fileUri.toString()
         }
     }
 
-    override suspend fun deleteDocument(uri: Uri): Boolean = withContext(ioDispatcher) {
+    override suspend fun deleteDocument(uri: String): Boolean = withContext(ioDispatcher) {
         runCatching {
-            DocumentsContract.deleteDocument(context.contentResolver, uri)
+            DocumentsContract.deleteDocument(context.contentResolver, uri.toUri())
         }.getOrDefault(false)
     }
 

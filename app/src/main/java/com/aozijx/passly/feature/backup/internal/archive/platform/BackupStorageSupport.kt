@@ -5,12 +5,6 @@ import android.net.Uri
 import android.provider.DocumentsContract
 
 interface BackupStorageSupport {
-    data class ExportTarget(
-        val fileUri: Uri,
-        val fileName: String,
-        val directoryTreeUri: Uri
-    )
-
     fun buildBackupFileName(
         extension: String = "passly",
         timestamp: Long = System.currentTimeMillis()
@@ -20,9 +14,9 @@ interface BackupStorageSupport {
         directoryTreeUri: String,
         fileName: String,
         mimeType: String = BACKUP_FILE_MIME
-    ): Result<ExportTarget>
+    ): Result<String>
 
-    suspend fun deleteDocument(uri: Uri): Boolean
+    suspend fun deleteDocument(uri: String): Boolean
 
     suspend fun checkDirectoryWritable(directoryTreeUri: String): Result<Unit>
 

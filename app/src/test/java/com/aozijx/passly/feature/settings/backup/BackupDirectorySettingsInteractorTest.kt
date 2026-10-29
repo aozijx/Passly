@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.settings.backup
 
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
@@ -58,7 +59,7 @@ class BackupDirectorySettingsInteractorTest {
     }
 
     @Test
-    fun `clear releases the persisted grant before clearing settings`() = runTest {
+    fun `clear clears settings before releasing the persisted grant`() = runTest {
         val operations = mutableListOf<String>()
         val repository = FakeRepository(operations = operations)
         val access = FakeAccess(
@@ -70,7 +71,30 @@ class BackupDirectorySettingsInteractorTest {
         interactor.clear("content://tree/original")
 
         assertEquals(
-            listOf("release:content://tree/original", "clear"),
+            listOf("clear", "release:content://tree/original"),
+            operations,
+        )
+    }
+
+    @Test
+    fun `failed grant release does not restore cleared directory setting`() = runTest {
+        val operations = mutableListOf<String>()
+        val repository = FakeRepository(
+            initialUri = "content://tree/original",
+            operations = operations,
+        )
+        val access = FakeAccess(
+            acquireResult = BackupDirectoryGrantResult.Unavailable,
+            operations = operations,
+            failOnReleaseUri = "content://tree/original",
+        )
+        val interactor = BackupDirectorySettingsInteractor(repository, access)
+
+        interactor.clear("content://tree/original")
+
+        assertNull(repository.savedUri)
+        assertEquals(
+            listOf("clear", "release:content://tree/original"),
             operations,
         )
     }
@@ -132,12 +156,73 @@ class BackupDirectorySettingsInteractorTest {
         )
     }
 
+    @Test
+    fun `cancellation after settings commit retains the newly referenced grant`() = runTest {
+        val operations = mutableListOf<String>()
+        val repository = FakeRepository(
+            initialUri = "content://tree/previous",
+            operations = operations,
+            cancelAfterSave = true,
+        )
+        val access = FakeAccess(
+            acquireResult = BackupDirectoryGrantResult.Granted("content://tree/new"),
+            operations = operations,
+        )
+        val interactor = BackupDirectorySettingsInteractor(repository, access)
+
+        val cancellation = try {
+            interactor.select("content://tree/new")
+            null
+        } catch (error: CancellationException) {
+            error
+        }
+
+        assertEquals("settings committed before cancellation", cancellation?.message)
+        assertEquals("content://tree/new", repository.savedUri)
+        assertEquals(
+            listOf("acquire:content://tree/new", "save:content://tree/new"),
+            operations,
+        )
+    }
+
+    @Test
+    fun `failure releasing previous grant does not revoke newly saved directory`() = runTest {
+        val operations = mutableListOf<String>()
+        val repository = FakeRepository(
+            initialUri = "content://tree/previous",
+            operations = operations,
+        )
+        val access = FakeAccess(
+            acquireResult = BackupDirectoryGrantResult.Granted("content://tree/new"),
+            operations = operations,
+            failOnReleaseUri = "content://tree/previous",
+        )
+        val interactor = BackupDirectorySettingsInteractor(repository, access)
+
+        assertEquals(
+            BackupDirectorySelectionResult.Saved,
+            interactor.select("content://tree/new"),
+        )
+
+        assertEquals("content://tree/new", repository.savedUri)
+        assertEquals(
+            listOf(
+                "acquire:content://tree/new",
+                "save:content://tree/new",
+                "release:content://tree/previous",
+            ),
+            operations,
+        )
+    }
+
     private class FakeRepository(
         initialUri: String? = null,
         private val operations: MutableList<String> = mutableListOf(),
         private val failOnSave: Boolean = false,
+        private val cancelAfterSave: Boolean = false,
     ) : BackupDirectorySettingsRepository {
-        override val backupDirectoryUri: Flow<String?> = MutableStateFlow(initialUri)
+        private val state = MutableStateFlow(initialUri)
+        override val backupDirectoryUri: Flow<String?> = state
         var savedUri: String? = initialUri
             private set
 
@@ -145,10 +230,13 @@ class BackupDirectorySettingsInteractorTest {
             operations += "save:$uri"
             if (failOnSave) error("settings write failed")
             savedUri = uri
+            state.value = uri
+            if (cancelAfterSave) throw CancellationException("settings committed before cancellation")
         }
 
         override suspend fun clearBackupDirectoryUri() {
             savedUri = null
+            state.value = null
             operations += "clear"
         }
     }
@@ -158,6 +246,7 @@ class BackupDirectorySettingsInteractorTest {
         private val operations: MutableList<String> = mutableListOf(),
         private val inspectResult: PersistedDirectoryAccessStatus =
             PersistedDirectoryAccessStatus.GRANTED,
+        private val failOnReleaseUri: String? = null,
     ) : BackupDirectoryAccess {
         val acquiredUris = mutableListOf<String>()
         val inspectedUris = mutableListOf<String?>()
@@ -175,6 +264,7 @@ class BackupDirectorySettingsInteractorTest {
 
         override suspend fun release(treeUri: String) {
             operations += "release:$treeUri"
+            if (treeUri == failOnReleaseUri) error("grant release failed")
         }
     }
 }

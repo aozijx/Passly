@@ -4,8 +4,12 @@ import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 fun interface BackupDirectoryStatusReader {
     fun inspect(treeUri: String?): PersistedDirectoryAccessStatus
@@ -55,20 +59,44 @@ class BackupDirectorySettingsInteractor @Inject constructor(
     private suspend fun persistGrantedDirectory(
         grantedTreeUri: String,
         previousTreeUri: String?,
-    ): BackupDirectorySelectionResult = try {
-        settingsRepository.setBackupDirectoryUri(grantedTreeUri)
+    ): BackupDirectorySelectionResult {
+        try {
+            settingsRepository.setBackupDirectoryUri(grantedTreeUri)
+        } catch (error: Throwable) {
+            val persistedUri = withContext(NonCancellable) {
+                runCatching { settingsRepository.backupDirectoryUri.first() }
+            }
+            if (persistedUri.isSuccess && persistedUri.getOrNull() != grantedTreeUri) {
+                withContext(NonCancellable) {
+                    runCatching { directoryAccess.release(grantedTreeUri) }
+                }
+            }
+            if (error is CancellationException) throw error
+            if (persistedUri.getOrNull() != grantedTreeUri) {
+                return BackupDirectorySelectionResult.Unavailable
+            }
+        }
+
         previousTreeUri
             ?.takeIf { it.isNotBlank() && it != grantedTreeUri }
-            ?.let { directoryAccess.release(it) }
-        BackupDirectorySelectionResult.Saved
-    } catch (error: Throwable) {
-        if (error is CancellationException) throw error
-        directoryAccess.release(grantedTreeUri)
-        BackupDirectorySelectionResult.Unavailable
+            ?.let { previous ->
+                // The new URI is already authoritative. Failure to release the old OS grant
+                // must not roll back by revoking the grant now referenced by preferences.
+                withContext(NonCancellable) {
+                    runCatching { directoryAccess.release(previous) }
+                }
+            }
+        currentCoroutineContext().ensureActive()
+        return BackupDirectorySelectionResult.Saved
     }
 
     suspend fun clear(treeUri: String?) {
-        treeUri?.takeIf(String::isNotBlank)?.let { directoryAccess.release(it) }
         settingsRepository.clearBackupDirectoryUri()
+        treeUri?.takeIf(String::isNotBlank)?.let { uri ->
+            withContext(NonCancellable) {
+                runCatching { directoryAccess.release(uri) }
+            }
+        }
+        currentCoroutineContext().ensureActive()
     }
 }

@@ -129,7 +129,7 @@ internal class BackupViewModel @Inject constructor(
         ) {
             backupOperationInteractor.exportToUri(
                 request = options.toRequest(),
-                targetUri = uri,
+                targetUri = uri.toString(),
                 deleteOnFailure = deleteOnFailure,
             )
         }
