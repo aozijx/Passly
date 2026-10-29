@@ -12,7 +12,6 @@ import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillUnlockLease
-import com.aozijx.passly.feature.autofill.shared.RecordAutofillUsageUseCase
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -33,13 +32,14 @@ class CompleteAutofillSelectionTest {
             assertEquals(null, lockController.reason)
         }
         val operation = CompleteAutofillSelection(
-            recordUsage = RecordAutofillUsageUseCase(activityRecorder),
+            activityRecorder = activityRecorder,
             finishInteraction = FinishAutofillInteraction(store, lease),
         )
 
         operation(interaction.id, EntryId("entry-1"))
 
         assertEquals("entry-1", activityRecorder.recordedEntryId)
+        assertEquals(ActivityType.AUTOFILL, activityRecorder.recordedType)
         assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
         assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
     }
@@ -56,7 +56,7 @@ class CompleteAutofillSelectionTest {
         lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
         val activityRecorder = RecordingActivityRecorder()
         val operation = CompleteAutofillSelection(
-            recordUsage = RecordAutofillUsageUseCase(activityRecorder),
+            activityRecorder = activityRecorder,
             finishInteraction = FinishAutofillInteraction(store, lease),
         )
 
@@ -79,11 +79,13 @@ class CompleteAutofillSelectionTest {
         private val onRecord: () -> Unit = {},
     ) : ActivityRecorder {
         var recordedEntryId: String? = null
+        var recordedType: ActivityType? = null
         var recordCount = 0
 
         override suspend fun recordUsage(entryId: String, type: ActivityType): AppResult<Unit> {
             onRecord()
             recordedEntryId = entryId
+            recordedType = type
             recordCount++
             return AppResult.Success(Unit)
         }

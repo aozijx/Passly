@@ -2,14 +2,15 @@ package com.aozijx.passly.feature.autofill.core
 
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.feature.autofill.shared.RecordAutofillUsageUseCase
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import javax.inject.Inject
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 
 /** Closes a delivered selection once and records its usage exactly once. */
 class CompleteAutofillSelection @Inject constructor(
-    private val recordUsage: RecordAutofillUsageUseCase,
+    private val activityRecorder: ActivityRecorder,
     private val finishInteraction: FinishAutofillInteraction,
 ) {
     suspend operator fun invoke(
@@ -18,7 +19,7 @@ class CompleteAutofillSelection @Inject constructor(
     ) {
         withContext(NonCancellable) {
             finishInteraction.complete(interactionId) {
-                recordUsage(entryId.value)
+                activityRecorder.recordUsage(entryId.value, ActivityType.AUTOFILL)
             }
         }
     }

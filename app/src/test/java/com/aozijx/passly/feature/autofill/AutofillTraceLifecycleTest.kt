@@ -37,7 +37,6 @@ import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillResultDelivery
 import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import com.aozijx.passly.feature.autofill.runtime.AutofillUnlockLease
-import com.aozijx.passly.feature.autofill.shared.RecordAutofillUsageUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -68,7 +67,7 @@ class AutofillTraceLifecycleTest {
         }
         val delivery = AutofillResultDelivery(
             completeSelection = CompleteAutofillSelection(
-                RecordAutofillUsageUseCase(NoOpActivityRecorder),
+                NoOpActivityRecorder,
                 FinishAutofillInteraction(store, lease),
             ),
             unlockLease = lease,
@@ -120,7 +119,7 @@ class AutofillTraceLifecycleTest {
         }
         val delivery = AutofillResultDelivery(
             CompleteAutofillSelection(
-                RecordAutofillUsageUseCase(NoOpActivityRecorder),
+                NoOpActivityRecorder,
                 FinishAutofillInteraction(store, lease),
             ),
             lease,
@@ -160,7 +159,7 @@ class AutofillTraceLifecycleTest {
         lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
         val delivery = AutofillResultDelivery(
             CompleteAutofillSelection(
-                RecordAutofillUsageUseCase(NoOpActivityRecorder),
+                NoOpActivityRecorder,
                 FinishAutofillInteraction(store, lease),
             ),
             lease,
@@ -196,7 +195,7 @@ class AutofillTraceLifecycleTest {
         )
         val delivery = AutofillResultDelivery(
             CompleteAutofillSelection(
-                RecordAutofillUsageUseCase(NoOpActivityRecorder),
+                NoOpActivityRecorder,
                 FinishAutofillInteraction(store, lease),
             ),
             lease,

@@ -21,7 +21,6 @@ import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.feature.autofill.core.CompleteAutofillSelection
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.StartAutofillInteraction
-import com.aozijx.passly.feature.autofill.shared.RecordAutofillUsageUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
@@ -50,7 +49,7 @@ class AutofillResultDeliveryTest {
         val logger = testLogger()
         val delivery = AutofillResultDelivery(
             completeSelection = CompleteAutofillSelection(
-                RecordAutofillUsageUseCase(NoOpActivityRecorder),
+                NoOpActivityRecorder,
                 FinishAutofillInteraction(store, lease),
             ),
             unlockLease = lease,
@@ -90,7 +89,7 @@ class AutofillResultDeliveryTest {
         val logger = testLogger()
         val delivery = AutofillResultDelivery(
             completeSelection = CompleteAutofillSelection(
-                RecordAutofillUsageUseCase(NoOpActivityRecorder),
+                NoOpActivityRecorder,
                 FinishAutofillInteraction(store, lease),
             ),
             unlockLease = lease,
@@ -133,7 +132,7 @@ class AutofillResultDeliveryTest {
         val logger = testLogger()
         val delivery = AutofillResultDelivery(
             completeSelection = CompleteAutofillSelection(
-                RecordAutofillUsageUseCase(NoOpActivityRecorder),
+                NoOpActivityRecorder,
                 FinishAutofillInteraction(store, lease),
             ),
             unlockLease = lease,

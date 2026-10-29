@@ -313,3 +313,10 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 修复：`ClipboardClearScheduler.replace()` 在同一监视器内执行平台发布和计时替换；计时回调只在仍是活动 Job 时，在同一监视器内完成 token 校验/清除。主动清除也在该边界中完成，继续返回既有清除结果。
 - 文档：记录发布、计时替换和所有权清除共用串行边界。
 - 验证：`:core:testDebugUnitTest`、`verifyArchitecture`、`:core:lintDebug` 与 `git diff --check` 通过。
+
+### 后续批次：Autofill 使用记录转发层移除（2026-10-29）
+
+- 生产路径核对：`RecordAutofillUsageUseCase` 只把条目 ID 转成 String 并固定 `ActivityType.AUTOFILL` 后转发至 Domain `ActivityRecorder`；唯一调用方 `CompleteAutofillSelection` 已拥有“完成点选并记录使用”的应用职责。
+- 决策：移除 forwarding-only 用例；`CompleteAutofillSelection` 直接依赖 Domain 端口并显式传入 Autofill 类型。Room/Data 映射与活动记录规则仍留在原有 Domain/Data 边界。
+- 测试：保留选择完成、访问租约释放和 Trace 生命周期覆盖；补充断言记录类型为 `AUTOFILL`。
+- 验证：`CompleteAutofillSelectionTest`、`AutofillResultDeliveryTest`、`AutofillTraceLifecycleTest` 定向通过；`verifyArchitecture`、`:app:lintDebug` 与 `git diff --check` 通过。
