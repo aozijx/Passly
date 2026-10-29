@@ -14,6 +14,8 @@ import com.aozijx.passly.data.codec.json.AppJson
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.CardCredential
+import com.aozijx.passly.domain.entry.model.credential.EntryCredentialKind
+import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
@@ -64,6 +66,35 @@ class EntrySecretMapperTest {
         assertThrows(IllegalArgumentException::class.java) {
             EntryPayloadAdapterRegistry(listOf(OtpEntryPayloadAdapter(), OtpEntryPayloadAdapter()))
         }
+    }
+
+    @Test
+    fun `login adapter is shared by entry types with the same credential kind`() {
+        val secret = EntrySecret(LoginCredential(email = "ada@example.test", password = "secret"))
+        val adapter = entryPayloadAdapters.get(EntryCredentialKind.LOGIN)
+
+        listOf(EntryType.LOGIN, EntryType.API_KEY).forEach { entryType ->
+            val payload = EntrySecretMapper.toPayload(secret, entryType)
+
+            assertEquals(LoginCredentialPayload("ada@example.test", "secret"), payload.login)
+            assertEquals(null, payload.otp)
+            assertEquals(secret, EntrySecretMapper.toDomain(payload, entryType))
+        }
+        assertEquals(EntryCredentialKind.LOGIN, adapter.kind)
+    }
+
+    @Test
+    fun `card adapter owns the full card slot`() {
+        val credential = populatedDataClass(CardCredential::class.java) as CardCredential
+        val expectedPayload = populatedDataClass(CardCredentialPayload::class.java) as CardCredentialPayload
+        val adapter = entryPayloadAdapters.get(EntryCredentialKind.CARD)
+
+        val payload = adapter.encode(credential)
+
+        assertEquals(EntryCredentialKind.CARD, adapter.kind)
+        assertEquals(expectedPayload, payload.card)
+        assertEquals(null, payload.login)
+        assertEquals(credential, adapter.decode(payload))
     }
 
     @Test
@@ -217,6 +248,23 @@ class EntrySecretMapperTest {
         )
 
         assertEquals("WPA", payload.wifi?.securityType)
+    }
+
+    @Test
+    fun `wifi adapter round trips the credential slot`() {
+        val secret = EntrySecret(WifiCredential(
+            ssid = "Office",
+            password = "password",
+            securityType = WifiSecurityType.WpaPersonal,
+            isHidden = true,
+        ))
+        val adapter = entryPayloadAdapters.get(EntryCredentialKind.WIFI)
+
+        val payload = EntrySecretMapper.toPayload(secret, EntryType.WIFI)
+
+        assertEquals(EntryCredentialKind.WIFI, adapter.kind)
+        assertEquals("WPA", payload.wifi?.securityType)
+        assertEquals(secret, EntrySecretMapper.toDomain(payload, EntryType.WIFI))
     }
 
     @Test

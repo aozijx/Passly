@@ -11,4 +11,11 @@ internal class EntryPayloadAdapterRegistry(adapters: List<EntryPayloadAdapter>) 
         requireNotNull(adaptersByKind[kind]) { "No payload adapter registered for credential kind $kind" }
 }
 
-internal val entryPayloadAdapters = EntryPayloadAdapterRegistry(listOf(OtpEntryPayloadAdapter()))
+internal val entryPayloadAdapters = EntryPayloadAdapterRegistry(
+    listOf(
+        OtpEntryPayloadAdapter(),
+        LoginEntryPayloadAdapter(),
+        CardEntryPayloadAdapter(),
+        WifiEntryPayloadAdapter(),
+    ),
+)
