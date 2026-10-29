@@ -428,6 +428,8 @@ class CredentialManagerFlowTest {
 
         override suspend fun create(entry: Entry): AppResult<EntryId> = createEntry(entry)
 
+        override suspend fun createFromInbox(entry: Entry): AppResult<EntryId> = createEntry(entry)
+
         override suspend fun updateEntry(id: EntryId, expectedVersion: EntryVersion, changes: EntryUpdate) =
             AppResult.Success(Unit)
 

@@ -65,6 +65,7 @@ class SaveAutofillCredentialTest {
         val retryId = requireNotNull(fixture.repository.createdEntry).id
 
         assertEquals(firstId, retryId)
+        assertEquals(listOf(firstId, retryId), fixture.repository.inboxEntryIds)
     }
 
     private fun fixture(): Fixture {
@@ -115,6 +116,7 @@ class SaveAutofillCredentialTest {
     private class RecordingEntryCommandRepository : EntryCommandRepository, AutofillEntryWriter {
         var createCalls = 0
         var createdEntry: Entry? = null
+        val inboxEntryIds = mutableListOf<EntryId>()
 
         override suspend fun createEntry(entry: Entry): AppResult<EntryId> {
             createCalls++
@@ -123,6 +125,11 @@ class SaveAutofillCredentialTest {
         }
 
         override suspend fun create(entry: Entry): AppResult<EntryId> = createEntry(entry)
+
+        override suspend fun createFromInbox(entry: Entry): AppResult<EntryId> {
+            inboxEntryIds += entry.id
+            return createEntry(entry)
+        }
 
         override suspend fun updateEntry(id: EntryId, expectedVersion: EntryVersion, changes: EntryUpdate) =
             AppResult.Success(Unit)

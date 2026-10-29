@@ -88,7 +88,7 @@ class CreateEntryUseCase internal constructor(
             hasAccess = secureSessionAccessState::hasAutofillSessionAccess,
             persist = { entry ->
                 if (inboxDraftId == null) autofillEntryWriter.create(entry)
-                else autofillEntryWriter.createFromInbox(entry, inboxDraftId)
+                else autofillEntryWriter.createFromInbox(entry)
             },
             forcedId = stableId,
         )
@@ -174,4 +174,7 @@ private object UnavailableAutofillEntryWriter : AutofillEntryWriter {
     override suspend fun create(
         entry: Entry,
     ): AppResult<EntryId> = AppResult.Failure(SessionModeRestricted())
+
+    override suspend fun createFromInbox(entry: Entry): AppResult<EntryId> =
+        AppResult.Failure(SessionModeRestricted())
 }
