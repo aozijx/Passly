@@ -273,3 +273,11 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 修复：在保存协调器中将非取消异常映射为不暴露内部信息的 `UNEXPECTED_FAILURE`，仅当原访问凭据和协程仍有效时发出 SaveFailed；CancellationException 继续传播。
 - 文档：说明可重试失败与异常可能发生在数据库提交后的边界，重新进入详情会按持久化真相源加载。
 - 验证：`DetailWorkSessionTest` 定向测试、`verifyArchitecture`、`:app:lintDebug` 与 `git diff --check` 通过。
+
+### 后续批次：HOTP 旧会话结果丢弃（2026-10-29）
+
+- 生产路径核对：详情页在授权闭包中调用 `OtpCodeRuntime.codeForCopy()`；HOTP 消费会挂起等待 Data 事务。页面关闭、切换条目或锁定会清空运行时令牌，但 `generateHotpCode()` 发现旧令牌失效后仍返回成功结果，授权闭包会继续把旧码写入剪贴板。
+- RED：新增事务挂起期间关闭运行时的回归，旧实现仍返回验证码且测试失败。
+- 修复：消费事务返回后令牌失效即返回失败结果，不发布或交付验证码；已完成的 HOTP 数据事务不回滚，计数器保持已推进。
+- 文档：说明关闭/切换/锁定期间已消费但未交付的验证码会丢弃，用户重新授权即可继续。
+- 验证：`OtpCodeRuntimeTest` 定向测试、`verifyArchitecture`、`:app:lintDebug` 与 `git diff --check` 通过。

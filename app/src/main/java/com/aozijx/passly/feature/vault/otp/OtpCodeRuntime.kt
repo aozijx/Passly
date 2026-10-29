@@ -154,7 +154,9 @@ internal class OtpCodeRuntime(
             return OtpResult.Failure(OtpGenerationError.InvalidSecret)
         }
 
-        if (!isCurrent(entryId, token)) return result
+        if (!isCurrent(entryId, token)) {
+            return OtpResult.Failure(OtpGenerationError.InvalidSecret)
+        }
 
         if (result is OtpResult.Success) {
             _states.update { it + (entryId to OtpCodeState.Ready(result.code, progress = 0f)) }

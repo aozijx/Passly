@@ -14,6 +14,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
@@ -63,6 +64,30 @@ class OtpCodeRuntimeTest {
         assertEquals("code-7", coordinator.codeForCopy("hotp"))
         assertEquals("code-8", coordinator.codeForCopy("hotp"))
         assertEquals(OtpCodeState.Ready("code-8", 0f), coordinator.states.value["hotp"])
+    }
+
+    @Test
+    fun `HOTP result is discarded when runtime closes during consumption`() = runTest {
+        val consumptionStarted = CompletableDeferred<Unit>()
+        val finishConsumption = CompletableDeferred<OtpResult>()
+        val coordinator = OtpCodeRuntime(
+            scope = backgroundScope,
+            loadOtpConfig = { OtpConfig(type = OtpType.HOTP, secret = "secret", counter = 7) },
+            codeGenerator = { OtpResult.Success("unused") },
+            consumeHotpCode = {
+                consumptionStarted.complete(Unit)
+                finishConsumption.await()
+            },
+        )
+        coordinator.activate("hotp")
+        val pendingCopy = async { coordinator.codeForCopy("hotp") }
+        consumptionStarted.await()
+
+        coordinator.clearAllSensitiveState()
+        finishConsumption.complete(OtpResult.Success("123456", nextCounter = 8))
+
+        assertEquals(null, pendingCopy.await())
+        assertEquals(emptyMap<String, OtpCodeState>(), coordinator.states.value)
     }
 
     @Test
