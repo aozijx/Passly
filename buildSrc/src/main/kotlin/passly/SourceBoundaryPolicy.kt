@@ -71,7 +71,6 @@ internal object SourceBoundaryPolicy {
             owner = "feature",
             sourcePathContains = "/com/aozijx/passly/feature/",
             allowedSourcePathContains = setOf(
-                "/feature/vault/entry/VaultDataAdaptersTest.kt",
                 "/feature/autofill/platform/AutofillLaunchTargetFactoryTest.kt",
             ),
             allowedSourcePathPatterns = setOf(featurePresentationPath),
@@ -216,7 +215,6 @@ internal object SourceBoundaryPolicy {
             allowedSourcePathContains = setOf(
                 "/app/entry/paging/DataVaultEntryPageSource.kt",
                 "/app/entry/paging/DataVaultDataChangeSignal.kt",
-                "/feature/vault/entry/VaultDataAdaptersTest.kt",
             ),
             message = "vault paging Data types may only be imported by App adapters",
         ),

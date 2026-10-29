@@ -15,7 +15,7 @@
 - Preserve all pre-existing worktree changes; do not overwrite or revert user edits.
 - Exclude the existing uncommitted revision-history/activity work from this audit unless a candidate is already explicitly covered by those edits.
 - Keep `AGENTS.md` and `.agents/skills/passly-maintenance/` local; never stage or commit them.
-- Commit verified code and formal documentation by exact path; keep `AGENTS.md` and local skills outside commits.
+- Commit verified code and formal documentation by exact path; `AGENTS.md` and `.agents/skills/` remain local-only.
 - Do not delete code based only on similar names, file size, absent textual references, or stylistic preference.
 - Keep Room schema, internal protocols, and persistence format version at 1; document any incompatible development-data implications.
 - Sync behavior changes to the relevant formal topic docs and record deferred work in this plan.
@@ -108,6 +108,26 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 
 ## Tasks
 
+### 第二轮根因与桥接复审（2026-10-29）
+
+- 静态候选扫描覆盖当前 1,298 个 Kotlin/Java 源文件，并复核广泛 `Throwable` 捕获、forwarder、跨 feature/Data 接口及 SourceBoundary 白名单。发现 `VaultDatabaseResetController.reset()` 在 `DatabaseSessionLifecycle.seal()` 的可挂起边界吞掉取消；取消发生在 seal 已开始后时，路径会跳过数据库/资源删除，直接尝试 unlock，导致重置被拆成半个状态转换。
+- RED：`VaultDatabaseResetControllerTest.cancellationDuringSealFinishesResetAndReopensBeforePropagating` 失败，实际顺序为 `seal-start, unlock`，缺少 seal 完成和删除。
+- Fix：控制器改为依赖已存在的 `DatabaseSessionLifecycle` 端口。操作启动前检查取消；一旦开始 seal，就在 `NonCancellable` 内完成封存、删除、重开与刷新，最后再传播调用方取消。重置失败与重开失败同时发生时保留两个异常。
+- 删除 `VaultDataAdaptersTest`：它只验证两个无逻辑的 pass-through 转发及 Flow 身份，没有额外行为覆盖；同时删除为了该测试额外加入的 SourceBoundary 特例白名单。两个生产适配器保留在 App composition root，因为它们维持 feature 不依赖 Data 的边界；`DatabaseResetGatewayAdapter` 也保留，其负责线程切换和 Throwable 到 AppResult 的真实映射。
+- 备份复审发现 `BackupOperationInteractor` 的导入/导出把 `CancellationException` 转成普通失败；导出取消时部分目标的清理又在已取消上下文执行，可能清理失败。改为保留取消，导出目标存在时使用不可取消清理，清理失败附在原取消异常后再传播。另将 SAF URI 字符串作为流程合同，Android `Uri` 只留在 UI 和存储实现边界；移除只消费一次的 `ExportTarget` 包装及未消费的文件名/tree URI 字段。
+- 备份取消回归测试先红后绿，覆盖导出期间取消后的部分文档清理、导入取消传播，以及 storage `Result` 携带取消时的原样传播。纯转发测试/特例删除后无符号残留。
+- 验证：重置 RED 如上；GREEN 定向回归通过。完整 `:data:testDebugUnitTest` 为 74 项通过、0 失败；`:buildSrc:test`、`verifyArchitecture`、`:app:compileDebugKotlin`、`:data:lintDebug` 和 `git diff --check` 均通过。备份编排定向单测通过。
+- 续扫挂起边界：逐项复核认证管理器、恢复凭据草稿、锁定事件记录器、附件回收和 SAF 授权/可写检查中的宽泛捕获。安全路径在可挂起操作前显式传播取消；需要完成的密钥/资源清理由 `finally` 或 `NonCancellable` 承担；附件回收失败保留 `PENDING_GC` 供下次幂等重试。当前没有证据支持再删层或改异常映射。
+- 保留的边界：`BackupStorageSupport` 内的 `runCatching` 包住的是同步 SAF 查询/创建；可挂起的存储入口在返回 `Result` 后由编排器显式恢复 `CancellationException`。`AndroidBackupDirectoryAccess.acquire/release` 对授权释放做尽力清理，释放失败不会撤销已经确定的业务状态。
+- 最新验证：备份编排定向单测通过；`verifyArchitecture :app:lintDebug --no-parallel --max-workers=2` 通过（161 项动作，3 项执行）；`git diff --check` 通过。
+- 继续追踪 SAF 授权调用方时发现 `BackupDirectorySettingsInteractor.persistGrantedDirectory()` 把“保存新 URI”和“释放旧授权”包在同一个异常范围中。已有代码先正确保存新值，但旧授权释放失败会进入补偿逻辑并释放新授权，形成偏好引用失效 grant 的根因。
+- RED：新增 `failure releasing previous grant does not revoke newly saved directory`，旧实现失败，证明会返回 `Unavailable` 并尝试释放新 URI。
+- Fix：将设置写入和旧授权回收分成两个阶段；设置写入失败时在 `NonCancellable` 尽力释放新授权，写入成功后在 `NonCancellable` 尽力释放旧授权但保留已提交的新 URI，再传播调用方取消。文档同步说明旧授权释放失败只会暂留多余授权，不破坏当前授权。
+- GREEN：`:app:testDebugUnitTest --tests com.aozijx.passly.feature.settings.backup.BackupDirectorySettingsInteractorTest --no-parallel --max-workers=2` 通过。
+- 同一合同也修正 `clear()`：改为先清偏好，再在 `NonCancellable` 内尽力释放已选 grant，随后传播调用方取消。新增清理顺序和释放失败回归；两项断言先红，修复后设置 Interactor 测试集通过。
+- 后续补充“偏好已写入但挂起调用随后取消”的回归：旧补偿会释放已被新偏好引用的 grant，测试先红。修复后在不可取消区读取当前偏好，只有确认未引用新 URI 才回收新授权；读取失败时保留授权。设置 Interactor 定向 9 项、完整 App 868 项单测均通过。
+- 最终验证：Data 74 项单测、`:buildSrc:test`、`verifyArchitecture`、App/Data Lint 和 `git diff --check` 均通过。数据库重置修复提交于 `3fa50221`，备份取消与授权所有权修复提交于 `26e26762`；无逻辑转发测试与对应 SourceBoundary 特例单独清理。
+
 ### Task 1: Establish a protected baseline and live audit ledger
 
 **Files:**
@@ -190,5 +210,5 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 
 - [x] Compare final changes against the initial status; confirm pre-existing work is intact.
 - [x] Run `git diff --check` and all verification required by the affected module rules.
-- [x] Confirm the code and documentation commits contain only audited paths; preserve `AGENTS.md`, local skills, and unrelated worktree changes.
+- [x] Confirm each commit contains only its audited paths; preserve `AGENTS.md`, local skills, and unrelated worktree changes.
 - [x] Leave remaining candidates and missing device checks as explicit TODOs.
