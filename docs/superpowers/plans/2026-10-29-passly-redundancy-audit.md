@@ -289,3 +289,11 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 修复：详情复制用例把令牌和调用协程 Job 绑定到最终写入；Clipboard writer 增加条件写入合同，Android 控制器在读取策略后、同步写入前重新核对。OTP 复制也使用同一条件写入边界。
 - 文档：明确详情复制的访问令牌检查点与剪贴板写入器条件合同。
 - 验证：`CopyEntryFieldUseCaseTest` 与 `ClipboardCopyControllerTest` 共 12 项定向测试、`verifyArchitecture`、`:app:lintDebug` 与 `git diff --check` 通过。
+
+### 后续批次：恢复码与扫码复制的会话归属（2026-10-29）
+
+- 生产路径核对：`RecoveryCodeDraftInteractor.copy()` 在保留策略读取挂起期间不再确认草稿仍活动；`ScannerViewModel.copyText()` 的工作作用域只过滤旧完成提示，不能阻止旧文本继续写剪贴板。
+- RED：恢复码草稿在条件写入等待期间关闭、Scanner 在非取消写入等待期间重扫，两项旧路径回归均失败。
+- 修复：恢复码复制使用活动草稿对象身份作为条件写入守卫；Scanner 使用当前扫描工作对象守卫。共同由 Android ClipboardCopyController 在策略读取后重新校验，再执行同步平台写入。
+- 文档：更新认证与 Scanner 对复制所有权的边界描述。
+- 验证：`RecoveryCodeDraftInteractorTest` 与 `ScannerViewModelTest` 定向测试通过；`verifyArchitecture`、`:app:lintDebug` 与 `git diff --check` 通过。

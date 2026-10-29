@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 
@@ -94,19 +95,19 @@ class ScannerViewModelTest {
     }
 
     @Test
-    fun `copy completion from a previous scan cannot publish success`() = runTest {
-        val release = CompletableDeferred<Unit>()
-        val model = model(clipboardWriter = SensitiveClipboardWriter {
-            withContext(NonCancellable) { release.await() }
-        }) { BarcodeImageResult.NoBarcode }
+    fun `scan replacement prevents a pending text copy from reaching clipboard`() = runTest {
+        val clipboard = DelayedClipboard()
+        val model = model(clipboardWriter = clipboard) { BarcodeImageResult.NoBarcode }
         val effects = mutableListOf<ScannerEffect>()
         backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
         model.onAction(ScannerUiAction.BarcodeDetected("text to copy"))
         model.onAction(ScannerUiAction.CopyText)
         runCurrent()
+        clipboard.writeStarted.await()
         model.onAction(ScannerUiAction.StartScanning)
-        release.complete(Unit)
+        clipboard.finishWrite.complete(Unit)
         runCurrent()
+        assertNull(clipboard.lastValue)
         assertEquals(emptyList<ScannerEffect>(), effects)
     }
 
@@ -143,4 +144,24 @@ class ScannerViewModelTest {
         decode = decode,
         vibrate = {},
     )
+
+    private class DelayedClipboard : SensitiveClipboardWriter {
+        val writeStarted = CompletableDeferred<Unit>()
+        val finishWrite = CompletableDeferred<Unit>()
+        var lastValue: String? = null
+
+        override suspend fun writeSensitive(text: String) {
+            writeStarted.complete(Unit)
+            withContext(NonCancellable) { finishWrite.await() }
+            lastValue = text
+        }
+
+        override suspend fun writeSensitiveIf(text: String, canWrite: () -> Boolean): Boolean {
+            writeStarted.complete(Unit)
+            withContext(NonCancellable) { finishWrite.await() }
+            if (!canWrite()) return false
+            lastValue = text
+            return true
+        }
+    }
 }

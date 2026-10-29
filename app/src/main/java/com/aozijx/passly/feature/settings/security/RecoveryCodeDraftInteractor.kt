@@ -42,10 +42,14 @@ class RecoveryCodeDraftInteractor @Inject constructor(
     }
 
     suspend fun copy(): RecoveryCodeCopyResult {
-        val chars = activeDraft?.reveal() ?: return RecoveryCodeCopyResult.NoActiveDraft
+        val draft = activeDraft ?: return RecoveryCodeCopyResult.NoActiveDraft
+        val chars = draft.reveal() ?: return RecoveryCodeCopyResult.NoActiveDraft
         return try {
-            clipboardWriter.writeSensitive(String(chars))
-            RecoveryCodeCopyResult.Copied
+            if (clipboardWriter.writeSensitiveIf(String(chars)) { activeDraft === draft }) {
+                RecoveryCodeCopyResult.Copied
+            } else {
+                RecoveryCodeCopyResult.NoActiveDraft
+            }
         } finally {
             chars.fill('\u0000')
         }

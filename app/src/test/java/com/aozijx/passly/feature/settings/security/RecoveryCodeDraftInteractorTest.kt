@@ -7,8 +7,11 @@ import com.aozijx.passly.domain.access.model.RecoveryCredentialDraft
 import com.aozijx.passly.domain.access.model.RecoveryCredentialFactory
 import com.aozijx.passly.domain.access.model.RecoveryCredentialId
 import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -54,6 +57,26 @@ class RecoveryCodeDraftInteractorTest {
         assertSame(RecoveryCodeCommitResult.NoActiveDraft, interactor.commit())
     }
 
+    @Test
+    fun `dismissed recovery draft cannot finish a pending clipboard write`() = runTest {
+        val draft = FakeDraft("recovery-code")
+        val clipboard = DelayedClipboard()
+        val interactor = RecoveryCodeDraftInteractor(
+            draftFactory = RecoveryCredentialFactory { RecoveryCredentialCreation.Ready(draft) },
+            clipboardWriter = clipboard,
+        )
+        interactor.generate().let { (it as RecoveryCodeDraftResult.Ready).disclosure.wipe() }
+        val pendingCopy = async { interactor.copy() }
+        clipboard.writeStarted.await()
+
+        interactor.dismiss()
+        clipboard.finishWrite.complete(Unit)
+
+        assertSame(RecoveryCodeCopyResult.NoActiveDraft, pendingCopy.await())
+        assertNull(clipboard.lastValue)
+        assertTrue(draft.closed)
+    }
+
     private class FakeDraft(private val value: String) : RecoveryCredentialDraft {
         override val id = RecoveryCredentialId("draft-id")
         var closed = false
@@ -74,6 +97,26 @@ class RecoveryCodeDraftInteractorTest {
         var lastValue: String? = null
         override suspend fun writeSensitive(text: String) {
             lastValue = text
+        }
+    }
+
+    private class DelayedClipboard : SensitiveClipboardWriter {
+        val writeStarted = CompletableDeferred<Unit>()
+        val finishWrite = CompletableDeferred<Unit>()
+        var lastValue: String? = null
+
+        override suspend fun writeSensitive(text: String) {
+            writeStarted.complete(Unit)
+            finishWrite.await()
+            lastValue = text
+        }
+
+        override suspend fun writeSensitiveIf(text: String, canWrite: () -> Boolean): Boolean {
+            writeStarted.complete(Unit)
+            finishWrite.await()
+            if (!canWrite()) return false
+            lastValue = text
+            return true
         }
     }
 }

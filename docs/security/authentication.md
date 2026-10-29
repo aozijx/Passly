@@ -85,6 +85,7 @@ stateDiagram-v2
   “恢复码草稿已过期，请重新认证后生成”。
 - 恢复码不再产生普通 `Authenticated` 会话。验证成功后进入受限 `RecoveryMode`：数据库可以为恢复任务打开，
   但 `VaultAccessState.isAuthorized` 仍为 false，主 Vault、详情、查看和复制密码都不能挂载。
+- 恢复码草稿复制绑定仍然活动的草稿；关闭或替换草稿期间，剪贴板保留策略读取完成后会重新核对所有权，不会复制旧草稿。
 - 恢复模式只允许设置新的应用密码、重新配置生物识别、`RECOVERY_EXPORT` 和退出锁定。设置新应用密码后立即以
   `RECOVERY_EXIT` 锁定，用户必须用新密码重新进入普通完整会话。
 - `RECOVERY_EXPORT` 只接受恢复码，并且只能输出要求新备份密码的 Passly 加密格式；恢复码不作为备份密码，也不能

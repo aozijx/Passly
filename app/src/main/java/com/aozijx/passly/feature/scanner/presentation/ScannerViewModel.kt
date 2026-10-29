@@ -103,7 +103,7 @@ class ScannerViewModel internal constructor(
         val shown = uiState.value as? ScannerUiState.ShowingResult ?: return
         val text = (shown.result as? ScannerResult.PlainText)?.rawValue ?: return
         owner.scope.launch {
-            clipboardWriter.writeSensitive(text)
+            if (!clipboardWriter.writeSensitiveIf(text) { work === owner }) return@launch
             currentCoroutineContext().ensureActive()
             if (work === owner) deliveries.trySend(Delivery(owner, ScannerEffect.CopySucceeded))
         }
