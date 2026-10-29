@@ -2,6 +2,7 @@ package com.aozijx.passly.app.ui
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.mutableStateOf
 import android.graphics.Bitmap
 import android.graphics.Color
 import androidx.compose.ui.test.assertCountEquals
@@ -42,33 +43,69 @@ class RevisionHistorySheetTest {
     @get:Rule val compose = createComposeRule()
 
     @Test
-    fun emptyHistoryDoesNotReserveAnAlmostFullScreenBlankArea() {
+    fun emptyHistoryAndComparisonWrapTheirContentAndKeepRestoreAvailable() {
+        val model = mutableStateOf<DetailRevisionSheetUiModel>(
+            DetailRevisionSheetUiModel.ListPage(DetailRevisionListUiState.Ready(emptyList())),
+        )
+        val actions = mutableListOf<DetailUiAction>()
         compose.setContent {
             MaterialTheme {
                 RevisionHistorySheet(
-                    DetailRevisionSheetUiModel.ListPage(DetailRevisionListUiState.Ready(emptyList())),
-                    onAction = {},
+                    model.value,
+                    onAction = actions::add,
                 )
             }
         }
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         compose.onNodeWithText(context.getString(R.string.revision_history_empty)).assertIsDisplayed()
         captureSheet("history-empty.png")
-        val sheet = compose.onNodeWithTag("revision-history-sheet").getUnclippedBoundsInRoot()
-        assertTrue("Empty history should wrap its content: $sheet",
-            (sheet.bottom.value - sheet.top.value) < context.resources.configuration.screenHeightDp * 0.6f)
+        assertSheetWrapsContent("Empty history")
+
+        model.value = DetailRevisionSheetUiModel.ComparisonPage(
+            "revision-1",
+            DetailRevisionComparisonUiState.Ready(emptyList(), DetailRevisionRestoreUiState.Idle),
+        )
+        compose.waitForIdle()
+        compose.onNodeWithText(context.getString(R.string.revision_restore_action))
+            .assertIsDisplayed()
+            .performClick()
+        assertEquals(DetailUiAction.RequestRevisionRestore, actions.last())
+        assertSheetWrapsContent("Empty comparison")
     }
 
     @Test
-    fun longHistoryCanReachAndSelectItsLastRevision() {
+    fun longHistorySelectionOpensScrollableComparisonWithRestoreAvailable() {
+        val revisions = (1..50).map {
+            DetailRevisionItemUiModel("revision-$it", it, 1L, RevisionChange.VALUE_CHANGED)
+        }
+        val differences = (1..30).map {
+            DetailRevisionDifferenceUiModel(
+                RevisionFieldId.CustomField(it, "Field $it"),
+                RevisionDifferenceKind.CHANGED,
+                RevisionFieldValue.Text("Before $it"),
+                RevisionFieldValue.Text("After $it"),
+            )
+        }
+        val model = mutableStateOf<DetailRevisionSheetUiModel>(
+            DetailRevisionSheetUiModel.ListPage(DetailRevisionListUiState.Ready(revisions)),
+        )
         val actions = mutableListOf<DetailUiAction>()
         compose.setContent {
             MaterialTheme {
                 RevisionHistorySheet(
-                    DetailRevisionSheetUiModel.ListPage(DetailRevisionListUiState.Ready(
-                        (1..50).map { DetailRevisionItemUiModel("revision-$it", it, 1L, RevisionChange.VALUE_CHANGED) },
-                    )),
-                    onAction = actions::add,
+                    model.value,
+                    onAction = { action ->
+                        actions += action
+                        if (action is DetailUiAction.SelectRevision) {
+                            model.value = DetailRevisionSheetUiModel.ComparisonPage(
+                                action.revisionId,
+                                DetailRevisionComparisonUiState.Ready(
+                                    differences,
+                                    DetailRevisionRestoreUiState.Idle,
+                                ),
+                            )
+                        }
+                    },
                 )
             }
         }
@@ -76,43 +113,7 @@ class RevisionHistorySheetTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         compose.onAllNodesWithText(context.getString(R.string.revision_compare_action)).onLast().performClick()
         assertEquals(DetailUiAction.SelectRevision("revision-50"), actions.last())
-    }
-
-    @Test
-    fun comparisonWithoutChangesKeepsRestoreVisibleAndWrapsContent() {
-        val actions = mutableListOf<DetailUiAction>()
-        compose.setContent {
-            MaterialTheme {
-                RevisionHistorySheet(
-                    DetailRevisionSheetUiModel.ComparisonPage("revision-1",
-                        DetailRevisionComparisonUiState.Ready(emptyList(), DetailRevisionRestoreUiState.Idle)),
-                    onAction = actions::add,
-                )
-            }
-        }
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        compose.onNodeWithText(context.getString(R.string.revision_restore_action)).assertIsDisplayed().performClick()
-        assertEquals(DetailUiAction.RequestRevisionRestore, actions.last())
-        val sheet = compose.onNodeWithTag("revision-history-sheet").getUnclippedBoundsInRoot()
-        assertTrue("Empty comparison should wrap its content: $sheet",
-            (sheet.bottom.value - sheet.top.value) < context.resources.configuration.screenHeightDp * 0.6f)
-    }
-
-    @Test
-    fun longComparisonKeepsRestoreVisibleWhileAllDifferencesCanBeReached() {
-        compose.setContent {
-            MaterialTheme {
-                RevisionHistorySheet(
-                    DetailRevisionSheetUiModel.ComparisonPage("revision-1", DetailRevisionComparisonUiState.Ready(
-                        (1..30).map { DetailRevisionDifferenceUiModel(
-                            RevisionFieldId.CustomField(it, "Field $it"), RevisionDifferenceKind.CHANGED,
-                            RevisionFieldValue.Text("Before $it"), RevisionFieldValue.Text("After $it"),
-                        ) }, DetailRevisionRestoreUiState.Idle,
-                    )), onAction = {},
-                )
-            }
-        }
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        compose.waitForIdle()
         compose.onNodeWithText(context.getString(R.string.revision_restore_action)).assertIsDisplayed()
         compose.onNodeWithTag("revision-comparison-list").performScrollToIndex(29)
         compose.onNodeWithText(context.getString(R.string.revision_custom_field_label, "Field 30")).assertIsDisplayed()
@@ -170,5 +171,14 @@ class RevisionHistorySheetTest {
         val screenshot = checkNotNull(captured) { "Captured revision sheet is blank: $name" }
         File(directory, name).outputStream().use { screenshot.compress(Bitmap.CompressFormat.PNG, 100, it) }
         screenshot.recycle()
+    }
+
+    private fun assertSheetWrapsContent(description: String) {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val sheet = compose.onNodeWithTag("revision-history-sheet").getUnclippedBoundsInRoot()
+        assertTrue(
+            "$description should wrap its content: $sheet",
+            (sheet.bottom.value - sheet.top.value) < context.resources.configuration.screenHeightDp * 0.6f,
+        )
     }
 }

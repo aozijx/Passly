@@ -25,39 +25,9 @@ class PermissionRequestHostTest {
     @get:Rule val compose = createComposeRule()
 
     @Test
-    fun disposingHostReleasesLeaseAndRetainedHostCannotLaunch() {
-        val visible = mutableStateOf(true)
-        val registry = RecordingRegistry()
-        val arbiter = DefaultPermissionRequestArbiter()
-        val services = services(arbiter)
-        val hosts = mutableListOf<PermissionRequestHost>()
-        val results = mutableListOf<PermissionRequestOutcome>()
-        compose.setContent {
-            CompositionLocalProvider(LocalActivityResultRegistryOwner provides registryOwner(registry)) {
-                ProvidePermissionServices(services) {
-                    if (visible.value) {
-                        val host = rememberPermissionRequestHost("scanner") { _, result -> results += result }
-                        SideEffect { hosts += host }
-                    }
-                }
-            }
-        }
-        compose.runOnIdle {
-            assertEquals(PermissionRequestStart.Launched, hosts.last().request(RuntimePermission.CAMERA))
-            visible.value = false
-        }
-        compose.runOnIdle {
-            val lease = requireNotNull(arbiter.tryAcquire("other"))
-            assertEquals(PermissionRequestStart.HostUnavailable, hosts.last().request(RuntimePermission.CAMERA))
-            registry.dispatchResult(registry.requestCodes.single(), true)
-            assertEquals(emptyList<PermissionRequestOutcome>(), results)
-            lease.release()
-        }
-    }
-
-    @Test
-    fun changingOwnerRegistersIndependentLauncherAndRejectsOldResult() {
+    fun replacingAndDisposingHostRejectsStaleLaunchesAndResults() {
         val owner = mutableStateOf("first")
+        val visible = mutableStateOf(true)
         val registry = RecordingRegistry()
         val arbiter = DefaultPermissionRequestArbiter()
         val services = services(arbiter)
@@ -66,25 +36,49 @@ class PermissionRequestHostTest {
         compose.setContent {
             CompositionLocalProvider(LocalActivityResultRegistryOwner provides registryOwner(registry)) {
                 ProvidePermissionServices(services) {
-                    val name = owner.value
-                    val host = rememberPermissionRequestHost(name) { _, result -> results += name to result }
-                    SideEffect { hosts[name] = host }
+                    if (visible.value) {
+                        val currentOwner = owner.value
+                        val host = rememberPermissionRequestHost(currentOwner) { _, result ->
+                            results += currentOwner to result
+                        }
+                        SideEffect { hosts[currentOwner] = host }
+                    }
                 }
             }
         }
         compose.runOnIdle {
-            assertEquals(PermissionRequestStart.Launched, hosts.getValue("first").request(RuntimePermission.CAMERA))
+            assertEquals(
+                PermissionRequestStart.Launched,
+                hosts.getValue("first").request(RuntimePermission.CAMERA),
+            )
             owner.value = "second"
         }
         compose.runOnIdle {
-            assertEquals(PermissionRequestStart.HostUnavailable, hosts.getValue("first").request(RuntimePermission.CAMERA))
-            assertEquals(PermissionRequestStart.Launched, hosts.getValue("second").request(RuntimePermission.CAMERA))
+            assertEquals(
+                PermissionRequestStart.HostUnavailable,
+                hosts.getValue("first").request(RuntimePermission.CAMERA),
+            )
+            assertEquals(
+                PermissionRequestStart.Launched,
+                hosts.getValue("second").request(RuntimePermission.CAMERA),
+            )
             registry.dispatchResult(registry.requestCodes.first(), true)
             assertEquals(emptyList<Pair<String, PermissionRequestOutcome>>(), results)
             assertNull(arbiter.tryAcquire("third"))
             registry.dispatchResult(registry.requestCodes.last(), true)
             assertEquals(listOf("second" to PermissionRequestOutcome.Granted), results)
             requireNotNull(arbiter.tryAcquire("third")).release()
+            visible.value = false
+        }
+        compose.runOnIdle {
+            val lease = requireNotNull(arbiter.tryAcquire("other"))
+            assertEquals(
+                PermissionRequestStart.HostUnavailable,
+                hosts.getValue("second").request(RuntimePermission.CAMERA),
+            )
+            registry.dispatchResult(registry.requestCodes.last(), false)
+            assertEquals(listOf("second" to PermissionRequestOutcome.Granted), results)
+            lease.release()
         }
     }
 

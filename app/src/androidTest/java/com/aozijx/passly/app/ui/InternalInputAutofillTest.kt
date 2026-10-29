@@ -7,6 +7,7 @@ import android.view.View
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalView
@@ -38,55 +39,57 @@ class InternalInputAutofillTest {
     @get:Rule val compose = createComposeRule()
 
     @Test
-    fun applicationPasswordInputsAreExplicitlyNotAutofillable() {
+    fun internalInputsAndNativeHostAreExplicitlyNotAutofillable() {
+        val surface = mutableStateOf(InternalInputSurface.APPLICATION_PASSWORD)
+        val roots = mutableListOf<View>()
+
         compose.setContent {
             MaterialTheme {
-                Column { PasswordFields("", "", {}, {}, {}) }
+                when (surface.value) {
+                    InternalInputSurface.APPLICATION_PASSWORD ->
+                        Column { PasswordFields("", "", {}, {}, {}) }
+
+                    InternalInputSurface.CREDENTIAL_EDITOR ->
+                        AddPasswordEditorScreen(
+                            state = AddPasswordUiState(form = AddPasswordFormState()),
+                            onAction = {},
+                            onBack = {},
+                            snackbarHostState = remember { SnackbarHostState() },
+                        )
+
+                    InternalInputSurface.BACKUP ->
+                        BackupImportOptionsContent(
+                            BackupRestoreSheetUiState.ImportOptions(
+                                "",
+                                ImportMode.APPEND,
+                                BackupImportStrategy.COMPATIBLE,
+                            ),
+                            onAction = {},
+                        )
+
+                    InternalInputSurface.NATIVE_HOST -> {
+                        val view = LocalView.current
+                        SideEffect {
+                            view.context.activity().excludeFromAutofill()
+                            roots += view.rootView
+                        }
+                    }
+                }
             }
         }
+
         assertEquals(2, assertInputsExcluded())
         val showPassword = InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.show_password)
         compose.onAllNodesWithContentDescription(showPassword).onFirst().performClick()
         assertEquals(2, assertInputsExcluded())
-    }
 
-    @Test
-    fun credentialEditorInputsAreExplicitlyNotAutofillable() {
-        compose.setContent {
-            MaterialTheme {
-                AddPasswordEditorScreen(
-                    state = AddPasswordUiState(form = AddPasswordFormState()),
-                    onAction = {}, onBack = {},
-                    snackbarHostState = remember { SnackbarHostState() },
-                )
-            }
-        }
+        compose.runOnIdle { surface.value = InternalInputSurface.CREDENTIAL_EDITOR }
         assertInputsExcluded()
-    }
 
-    @Test
-    fun backupPasswordIsExplicitlyNotAutofillable() {
-        compose.setContent {
-            MaterialTheme {
-                BackupImportOptionsContent(
-                    BackupRestoreSheetUiState.ImportOptions("", ImportMode.APPEND, BackupImportStrategy.COMPATIBLE),
-                    onAction = {},
-                )
-            }
-        }
+        compose.runOnIdle { surface.value = InternalInputSurface.BACKUP }
         assertEquals(1, assertInputsExcluded())
-    }
 
-    @Test
-    fun nativeHostExcludesItsWholeViewSubtree() {
-        val roots = mutableListOf<View>()
-        compose.setContent {
-            val view = LocalView.current
-            SideEffect {
-                view.context.activity().excludeFromAutofill()
-                roots += view.rootView
-            }
-        }
+        compose.runOnIdle { surface.value = InternalInputSurface.NATIVE_HOST }
         compose.runOnIdle {
             assertEquals(View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS, roots.last().importantForAutofill)
         }
@@ -105,5 +108,12 @@ class InternalInputAutofillTest {
         is Activity -> this
         is ContextWrapper -> baseContext.activity()
         else -> error("Test content has no Activity")
+    }
+
+    private enum class InternalInputSurface {
+        APPLICATION_PASSWORD,
+        CREDENTIAL_EDITOR,
+        BACKUP,
+        NATIVE_HOST,
     }
 }
