@@ -44,7 +44,7 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - Result: reviewed production source inventory, module dependencies, clipboard DI, test logger helpers, and shared error package. No production implementation met the confirmed-removal threshold.
 - Similar filenames retained: `AddEntryTransition.kt` contains shared key/overflow constants while the editor package contains the transition modifier; these are consumed together and have distinct roles.
 - Validation: read-only reference/registration audit; no source changed in these modules, so no module test was needed.
-- TODO: inspect dependency aliases for unused declarations during Task 7 after each module's source/API review.
+- Dependency aliases were reconciled in Task 7; no unused declaration was proven, so this follow-up is closed.
 
 ### Task 3 — `:domain` and `:runtime:session`
 
