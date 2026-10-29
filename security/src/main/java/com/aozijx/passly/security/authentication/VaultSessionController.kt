@@ -29,6 +29,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -308,53 +310,56 @@ class VaultSessionController @Inject constructor(
     ) {
         mutex.withLock {
             if (!shouldApplyLock(_state.value, request.reason)) return@withLock
-            authorizationPermitRevoker.revokeAll()
-            sensitiveDataKeyManager.clear()
-            // A recovery session never degrades to a soft lock: closing it must wipe its DEK.
-            val targetLevel = if (_state.value is AuthenticationState.RecoveryMode) {
-                SecureSessionState.SEALED
-            } else {
-                request.reason.toLockLevel()
-            }
-            if (!lockStateManager.state.shouldEscalateTo(targetLevel)) {
-                // SEALED 状态仍需确保残留 DEK 被擦除。例如数据库打开失败时，
-                // 当前锁状态尚未解锁，但认证执行器可能已暂存 DEK。
-                if (targetLevel == SecureSessionState.SEALED) {
-                    runCatching { sessionManager.seal() }
-                    dekManager.lock()
-                    transition(AuthenticationState.Locked)
+            withContext(NonCancellable) {
+                authorizationPermitRevoker.revokeAll()
+                sensitiveDataKeyManager.clear()
+                // A recovery session never degrades to a soft lock: closing it must wipe its DEK.
+                val targetLevel = if (_state.value is AuthenticationState.RecoveryMode) {
+                    SecureSessionState.SEALED
+                } else {
+                    request.reason.toLockLevel()
                 }
-                return@withLock
-            }
-            transition(AuthenticationState.Locking(request.reason))
-            idleJob?.cancel()
-            idleJob = null
-
-            when (targetLevel) {
-                SecureSessionState.SOFT_LOCKED -> {
-                    try {
-                        sessionManager.softLock()
-                    } catch (failure: Throwable) {
-                        recordFailure(failure, Reasons.SessionSoftLockFailed)
+                if (!lockStateManager.state.shouldEscalateTo(targetLevel)) {
+                    // SEALED 状态仍需确保残留 DEK 被擦除。例如数据库打开失败时，
+                    // 当前锁状态尚未解锁，但认证执行器可能已暂存 DEK。
+                    if (targetLevel == SecureSessionState.SEALED) {
+                        runCatching { sessionManager.seal() }
+                        dekManager.lock()
+                        transition(AuthenticationState.Locked)
                     }
-                    lockStateManager.mark(SecureSessionState.SOFT_LOCKED)
+                    return@withContext
                 }
+                transition(AuthenticationState.Locking(request.reason))
+                idleJob?.cancel()
+                idleJob = null
 
-                SecureSessionState.SEALED -> {
-                    try {
-                        sessionManager.seal()
-                    } catch (failure: Throwable) {
-                        recordFailure(failure, Reasons.SessionSealFailed)
+                when (targetLevel) {
+                    SecureSessionState.SOFT_LOCKED -> {
+                        try {
+                            sessionManager.softLock()
+                        } catch (failure: Throwable) {
+                            recordFailure(failure, Reasons.SessionSoftLockFailed)
+                        }
+                        lockStateManager.mark(SecureSessionState.SOFT_LOCKED)
                     }
-                    dekManager.lock()
-                    lockStateManager.mark(SecureSessionState.SEALED)
+
+                    SecureSessionState.SEALED -> {
+                        try {
+                            sessionManager.seal()
+                        } catch (failure: Throwable) {
+                            recordFailure(failure, Reasons.SessionSealFailed)
+                        }
+                        dekManager.lock()
+                        lockStateManager.mark(SecureSessionState.SEALED)
+                    }
+
+                    SecureSessionState.UNLOCKED -> { /* 锁定不可能目标是 UNLOCKED */
+                    }
                 }
 
-                SecureSessionState.UNLOCKED -> { /* 锁定不可能目标是 UNLOCKED */
-                }
+                transition(AuthenticationState.Locked)
             }
-
-            transition(AuthenticationState.Locked)
+            currentCoroutineContext().ensureActive()
         }
     }
 

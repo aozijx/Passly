@@ -2,7 +2,7 @@
 
 状态：当前实现。
 
-代码核对日期：2026-10-19。
+代码核对日期：2026-10-29。
 
 ## 契约与状态机
 
@@ -143,5 +143,6 @@ Android 密钥创建将实际策略传入 `setInvalidatedByBiometricEnrollment`�
 
 底层抛出的异常与清理阶段捕获的异常都以 ERROR 和标准错误码记录安全异常快照；清理阶段的日志不能改变原有控制流，
 数据库关闭失败后仍继续擦除密钥并发布 Locked。业务拒绝属于 WARN 降级，尚未到期或因返回前台取消的后台倒计时不是锁库失败。
+锁定取得互斥权并开始状态转换后，撤权、清除敏感字段密钥、软锁/封存和擦除 DEK 在 `NonCancellable` 区完成；调用方取消会在终态发布后继续传播，并记录为 `LockCancelled`。尚在等待互斥权时被取消的请求不会启动锁定。
 `AutofillAuthenticated` 的临时会话所有权不变：必须先向平台交付填充结果，再释放 Autofill interaction 并触发封存；
 普通 `Authenticated` 会话不会被延迟到达的 Autofill 释放关闭。

@@ -17,22 +17,28 @@ import com.aozijx.passly.domain.access.model.BiometricBinding
 import com.aozijx.passly.domain.access.model.BiometricBootstrapState
 import com.aozijx.passly.domain.access.model.BiometricRotationJournal
 import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.LockTrigger
+import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
 import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.security.dek.DekManager
+import com.aozijx.passly.security.dek.DekState
 import com.aozijx.passly.security.dek.FieldKeyManager
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import com.aozijx.passly.security.lock.LockStateManager
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.advanceTimeBy
@@ -48,6 +54,58 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class VaultSessionIdleTimeoutTest {
+    @Test
+    fun `cancelling a sealed lock completes key cleanup and reports cancellation`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val logger = RecordingLogger()
+            val bootstrap = EmptyVaultBootstrapStore()
+            val dekManager = DekManager(bootstrap, FieldKeyManager(), logger)
+            dekManager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { 7 })
+            val databaseSession = YieldingDatabaseSession(pauseSeal = true)
+            val lockState = LockStateManager().apply { mark(SecureSessionState.UNLOCKED) }
+            val controller = VaultSessionController(
+                dekManager = dekManager,
+                sensitiveDataKeyManager = SensitiveDataKeyManager(
+                    bootstrap,
+                    dekManager,
+                    CoroutineScope(dispatcher),
+                ),
+                authorizationPermitRevoker = { },
+                sessionManager = databaseSession,
+                vaultBootstrapStore = bootstrap,
+                lockStateManager = lockState,
+                securityEvents = SecuritySessionEventLogger(logger),
+                idleTimeoutSettings = object : IdleTimeoutSettings {
+                    override val isLockOnBackground = MutableStateFlow(false)
+                    override val lockTimeout = MutableStateFlow(1_000L)
+                },
+            )
+            runCurrent()
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val lockJob = launch(dispatcher) {
+                controller.lock(SessionLockRequest(LockReason.APP_EXIT, LockTrigger.APP_EXIT))
+            }
+            runCurrent()
+            databaseSession.sealStarted.await()
+
+            lockJob.cancel()
+            databaseSession.allowSealToFinish.complete(Unit)
+            runCurrent()
+            lockJob.join()
+
+            assertTrue(dekManager.state is DekState.Locked)
+            assertEquals(SecureSessionState.SEALED, lockState.state)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(1, logger.infoEvents.count { it == Events.Security.LockCancelled })
+            assertEquals(0, logger.errorEvents.count { it == Events.Security.LockFailed })
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     @Test
     fun `disabling background lock preserves the existing idle timeout`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
