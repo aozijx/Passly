@@ -127,11 +127,12 @@ Sealed Autofill Inbox 使用独立耐久文件队列，完整解锁后才写入 
 重开失败则撤销授权、清除敏感数据密钥并转入锁定状态。活动查询流同时要求认证授权和数据库会话为 `UNLOCKED`；
 数据库封存时取消 Room 观察并发出空结果，重开后重新订阅，不依赖认证状态先发生一次虚假变化。
 
-## 相关实现
+## 代码位置
 
-- `data/src/main/java/com/aozijx/passly/data/local/database/AppDatabase.kt`
-- `data/src/main/java/com/aozijx/passly/data/local/database/DatabaseProvider.kt`
-- `data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSession.kt`
-- `data/src/main/java/com/aozijx/passly/data/local/database/entity/`
-- `data/src/main/java/com/aozijx/passly/data/repository/entry/SecretFieldStore.kt`
-- [ADR-0018](../decisions/ADR-0018-lookup-metadata-strategy.md)
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| Room schema 与数据库定义 | `AppDatabase` | [`AppDatabase.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/AppDatabase.kt) |
+| 数据库依赖提供 | `DatabaseProvider` | [`DatabaseProvider.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/DatabaseProvider.kt) |
+| 会话查询、事务、观察与锁定生命周期 | `AppDatabaseSession.query()`、`transaction()`、`observeFlow()`、`unlock()`、`softLock()`、`seal()`、`closeDatabase()` | [`AppDatabaseSession.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSession.kt) |
+| 秘密字段替换、读取与 OTP 配置读取 | `SecretFieldStore.replaceAll()`、`readBundle()`、`readField()`、`readOtpConfig()` | [`SecretFieldStore.kt`](../../data/src/main/java/com/aozijx/passly/data/repository/entry/SecretFieldStore.kt) |
+| 查找元数据策略决策 | [ADR-0018](../decisions/ADR-0018-lookup-metadata-strategy.md) | [`ADR-0018-lookup-metadata-strategy.md`](../decisions/ADR-0018-lookup-metadata-strategy.md) |

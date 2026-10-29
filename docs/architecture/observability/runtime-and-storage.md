@@ -53,8 +53,10 @@ handler，并读取 `ApplicationExitInfo` 的受控数值。系统 description�
 诊断页面读取最多 500 条用于查看；导出最多读取 5000 条，并按 500 条分页。日志实际占用只在“数据管理”页
 展示，查看页不维护第二份容量状态。
 
-相关实现：
+## 代码位置
 
-- [`ObservabilityRuntimeController`](../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityRuntimeController.kt)
-- [`EncryptedLogRecordStore`](../../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogRecordStore.kt)
-- [`EncryptedLogFileManager`](../../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogFileManager.kt)
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 观测运行时启动、读取、刷新与关闭 | `ObservabilityRuntimeController.start()`、`readLines()`、`flush()`、`shutdown()` | [`ObservabilityRuntimeController.kt`](../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityRuntimeController.kt) |
+| 加密日志记录读写与清理 | `EncryptedLogRecordStore.write()`、`readPage()`、`clear()` | [`EncryptedLogRecordStore.kt`](../../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogRecordStore.kt) |
+| 日志文件轮转与过期文件清理 | `EncryptedLogFileManager.cleanup()`、`clear()` | [`EncryptedLogFileManager.kt`](../../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogFileManager.kt) |

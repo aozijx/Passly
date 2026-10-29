@@ -42,3 +42,11 @@ Release 只返回匿名拒绝结果。
 
 隐私回归测试必须向字段、异常和 codec 注入可识别秘密，并断言 JSONL、TSV、ZIP、Logcat 与加密 round trip
 均不包含原值。测试必须覆盖包名与路径，不只覆盖示例密码。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 按白名单脱敏结构化日志字段 | `PrivacyPolicy.sanitize()` | [`PrivacyPolicy.kt`](../../core/src/main/kotlin/com/aozijx/passly/core/observability/privacy/PrivacyPolicy.kt) |
+| 将安全日志记录写入加密存储 | `EncryptedLogRecordStore.write()`、`readPage()` | [`EncryptedLogRecordStore.kt`](../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogRecordStore.kt) |
+| 编码诊断导出并管理分享文件 | `DiagnosticsExportEncoder.write()`、`ObservabilityExportService.export()` | [`DiagnosticsExportEncoders.kt`](../../app/src/main/java/com/aozijx/passly/app/observability/DiagnosticsExportEncoders.kt)、[`ObservabilityExportService.kt`](../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityExportService.kt) |

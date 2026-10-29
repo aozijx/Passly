@@ -59,3 +59,12 @@ flowchart LR
 
 新增事件必须同时增加：枚举、注册策略、受控文本资源与解析映射、参数契约、Router/Dispatcher 测试以及本表。
 不得增加 `StubSystemNotificationGateway` 或在 feature 中直接调用 `NotificationManager`。
+
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 消息模型及受控参数 | `AppNotice`、`ArgumentKey`、`ArgumentValue` | [`AppNotice.kt`](../../app/src/main/java/com/aozijx/passly/app/message/model/AppNotice.kt)、[`NoticeArgument.kt`](../../app/src/main/java/com/aozijx/passly/app/message/model/NoticeArgument.kt) |
+| 事件策略注册 | `NoticeCodeRegistry.policyFor()` | [`NoticeCodeRegistry.kt`](../../app/src/main/java/com/aozijx/passly/app/message/contract/NoticeCodeRegistry.kt) |
+| 路由与分发 | `DefaultNoticeRouter.route()`、`DefaultAppNoticeDispatcher.dispatch()` | [`DefaultNoticeRouter.kt`](../../app/src/main/java/com/aozijx/passly/app/message/runtime/DefaultNoticeRouter.kt)、[`DefaultAppNoticeDispatcher.kt`](../../app/src/main/java/com/aozijx/passly/app/message/runtime/DefaultAppNoticeDispatcher.kt) |

@@ -144,9 +144,11 @@ overflow
 - 深色、浅色和动态配色下都检查阴影；浅色背景更容易暴露硬裁剪边缘。
 - 若存在底栏或认证遮罩，确认共享元素没有越过 App Shell 的固定层。
 
-## 相关实现
+## 代码位置
 
-- `app/src/main/java/com/aozijx/passly/feature/shell/presentation/navigation/PasslyNavHost.kt`：`SharedTransitionLayout` 与 `NavHost` 宿主。
-- `core/src/main/kotlin/com/aozijx/passly/core/ui/animation/SharedTransitionVisualOverflow.kt`：无裁剪策略和通用 visual overflow。
-- `app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/ui/component/fab/VaultFab.kt`：入口 FAB。
-- `app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/ui/common/AddEntryScaffold.kt`：目标保存 FAB。
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 挂载导航共享转场宿主 | `PasslyNavHost()` | [`PasslyNavHost.kt`](../../app/src/main/java/com/aozijx/passly/feature/shell/presentation/navigation/PasslyNavHost.kt) |
+| 提供共享元素视觉溢出裁剪策略 | `SharedTransitionOverlayClip`、`Modifier.withSharedTransitionVisualOverflow()` | [`SharedTransitionVisualOverflow.kt`](../../core/src/main/kotlin/com/aozijx/passly/core/ui/animation/SharedTransitionVisualOverflow.kt) |
+| 提供列表入口 FAB | `VaultFab()` | [`VaultFab.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/ui/component/fab/VaultFab.kt) |
+| 提供新增条目编辑页的保存 FAB | `AddEntryScaffold()` | [`AddEntryScaffold.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/ui/common/AddEntryScaffold.kt) |

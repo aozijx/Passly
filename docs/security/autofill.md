@@ -35,3 +35,11 @@ Android 平台可以持有 Autofill/Credential 请求上下文，但 Passly 不�
 `performAction` 调用现场写入所选字段值，并在 `finally` 中清空该容器；不得放入 Intent、SavedState、日志或持久化。
 无障碍入口只保留短时节点引用，不读取输入框当前明文，不从浏览器包名推断网页 origin。
 `FLAG_DELAY_SAVE` 用于同一 task 的多屏 Autofill context，不提供应用解锁后的主动消费能力。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 维护 Autofill 授权与交互生命周期 | `AutofillInteractionStore`、`AuthorizeAutofillInteraction` | [`AutofillInteractionStore.kt`](../../app/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillInteractionStore.kt)、[`AuthorizeAutofillInteraction.kt`](../../app/src/main/java/com/aozijx/passly/feature/autofill/core/AuthorizeAutofillInteraction.kt) |
+| 在平台交付前后管理结果提交 | `AutofillResultDelivery.commitResult()` | [`AutofillResultDelivery.kt`](../../app/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillResultDelivery.kt) |
+| 在敏感数据读取处执行受限字段读取 | `RoomSensitiveFieldRepository.revealMany()` | [`RoomSensitiveFieldRepository.kt`](../../data/src/main/java/com/aozijx/passly/data/repository/entry/RoomSensitiveFieldRepository.kt) |

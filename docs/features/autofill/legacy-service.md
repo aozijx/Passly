@@ -50,13 +50,15 @@ Android 的该 flag 表示所有 required views 不可见时可触发保存，�
 - 否则：将草稿密封写入耐久 Autofill Inbox；写入成功后调用 `SaveCallback.onSuccess()`，不启动认证 Activity。
   Vault 下次完整解锁后由 Inbox drainer 导入；回调表示已耐久排队。
 
-相关实现：
-
-- [`LegacyAutofillService`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/LegacyAutofillService.kt)
-- [`LegacySaveFlow`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/LegacySaveFlow.kt)
-- [Sealed Inbox](sealed-inbox.md)
-
 平台依据：[Build autofill services](https://developer.android.com/identity/autofill/autofill-services)、
 [FillResponse.Builder](https://developer.android.com/reference/android/service/autofill/FillResponse.Builder.html)、
 [Dataset.Builder](https://developer.android.com/reference/android/service/autofill/Dataset.Builder)、
 [SaveInfo](https://developer.android.com/reference/android/service/autofill/SaveInfo)。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 处理旧版 Autofill 填充与保存请求 | `LegacyAutofillService.onFillRequest()`、`onSaveRequest()` | [`LegacyAutofillService.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/LegacyAutofillService.kt) |
+| 准备旧版保存流程 | `LegacySaveFlow.prepare()` | [`LegacySaveFlow.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/LegacySaveFlow.kt) |
+| 密封收件箱的模型与处理流程 | [密封收件箱文档](sealed-inbox.md) | [sealed-inbox.md](sealed-inbox.md) |

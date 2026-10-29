@@ -170,3 +170,10 @@ security -> *.data.repository / *.data.local
 匹配按完整路径段和包名段处理，`presentation_models` 等相似名称不作为页面。Windows 与 Unix 路径统一处理；
 带别名或通配符的 import 仍执行同一规则。受审查的精确文件例外保留在规则中。
 
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 检查源码包边界 | `SourceBoundaryPolicy` | [`SourceBoundaryPolicy.kt`](../../buildSrc/src/main/kotlin/passly/SourceBoundaryPolicy.kt) |
+| 检查 Gradle 模块依赖白名单 | `verifyModuleBoundaries` 任务 | [`ModuleBoundariesPlugin.kt`](../../buildSrc/src/main/kotlin/passly/ModuleBoundariesPlugin.kt)、[`VerifyModuleBoundariesTask.kt`](../../buildSrc/src/main/kotlin/passly/VerifyModuleBoundariesTask.kt) |
+| 展示 Domain 到 Data 的条目映射 | `EntryProfileMapper.fromEntity()`、`EntrySecretMapper` | [`EntryProfileMapper.kt`](../../data/src/main/java/com/aozijx/passly/data/mapper/entry/EntryProfileMapper.kt)、[`EntrySecretMapper.kt`](../../data/src/main/java/com/aozijx/passly/data/mapper/entry/EntrySecretMapper.kt) |

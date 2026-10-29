@@ -22,3 +22,10 @@ SQLCipher 使用从已解锁 Vault DEK 得到的数据库口令保护数据库�
 
 加密格式字段以 `CryptoConfig` 和加密 DTO 为事实源，文档不复制完整序列化代码。
 
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 配置加密算法与参数边界 | `CryptoConfig` | [`CryptoConfig.kt`](../../core/src/main/kotlin/com/aozijx/passly/core/crypto/CryptoConfig.kt) |
+| 加密数据库会话与 SQLCipher 生命周期 | `DatabaseProvider`、`AppDatabaseSession` | [`DatabaseProvider.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/DatabaseProvider.kt)、[`AppDatabaseSession.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSession.kt) |
+| 加密单字段秘密值 | `SensitiveFieldEncryptor`、`SecretFieldCodec` | [`SensitiveFieldEncryptor.kt`](../../core/src/main/kotlin/com/aozijx/passly/security/dek/SensitiveFieldEncryptor.kt)、[`SecretFieldCodec.kt`](../../data/src/main/java/com/aozijx/passly/data/codec/entry/SecretFieldCodec.kt) |

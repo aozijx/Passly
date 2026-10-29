@@ -33,10 +33,12 @@ interaction 为 process-local、60 秒超时；认证或秘密解析中的操作
 这些 interaction，因为系统可能在 Service 重建后才触发已返回的 PendingIntent；无人继续的 interaction 由进程级
 60 秒过期器回收。
 
-相关实现：
-
-- [`ModernCredentialService`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/ModernCredentialService.kt)
-- [`CredentialManagerFlow`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialManagerFlow.kt)
-- [`CredentialResponseViewModel`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/presentation/credential/CredentialResponseViewModel.kt)
-
 平台依据：[Credential provider integration](https://developer.android.com/identity/sign-in/credential-provider)。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| Credential Manager 平台请求入口 | `ModernCredentialService.onBeginGetCredentialRequest()`、`onBeginCreateCredentialRequest()`、`onClearCredentialStateRequest()` | [`ModernCredentialService.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/ModernCredentialService.kt) |
+| 凭据发现、选择、创建与取消编排 | `CredentialManagerFlow.beginGet()`、`selectPassword()`、`beginCreate()`、`createPassword()`、`cancel()` | [`CredentialManagerFlow.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialManagerFlow.kt) |
+| 响应界面动作与活动交互清理 | `CredentialResponseViewModel.onAction()`、`cancelActiveInteraction()` | [`CredentialResponseViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/presentation/credential/CredentialResponseViewModel.kt) |

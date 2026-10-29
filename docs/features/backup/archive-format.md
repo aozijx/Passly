@@ -70,3 +70,11 @@ AES-GCM 明文是包含 `document.json` 与 resources 的完整 ZIP，因此文�
 
 Bitwarden 导入当前支持 Login、Secure Note、Card、Identity 和 OTP；拒绝加密/账号受限 JSON、SSH、FIDO2/
 Passkey、附件 ZIP、附件描述和密码历史，避免静默丢失无法表达的数据。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 注册归档稳定类型键 | `BackupArchiveKeyRegistry` | [`BackupArchiveKeyRegistry.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveKeyRegistry.kt) |
+| 在稳定键与领域 Entry 之间映射 | `KeyedEntryArchiveMapper` | [`KeyedEntryArchiveMapper.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/mapper/KeyedEntryArchiveMapper.kt) |
+| 编码与验证备份归档 | `BackupArchiveCodec`、`KeyedBackupBundleValidator.validate()` | [`BackupArchiveCodec.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/BackupArchiveCodec.kt)、[`KeyedBackupBundleValidator.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/KeyedBackupBundleValidator.kt) |

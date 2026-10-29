@@ -71,3 +71,12 @@ provider/tree 可用性，不修改文档。备份页的显式“测试写入权
 
 新增运行时权限必须更新枚举、Catalog、Manifest、请求所有者、状态/拒绝测试和本表。Hilt EntryPoint
 service locator、Boolean requester、旧 `AppPermission` 混合模型不得恢复。
+
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 声明权限类型与运行时访问状态 | `RuntimePermission`、`RuntimePermissionAccess` | [`RuntimePermission.kt`](../../core/src/main/kotlin/com/aozijx/passly/core/permission/model/RuntimePermission.kt)、[`RuntimePermissionAccess.kt`](../../core/src/main/kotlin/com/aozijx/passly/core/permission/model/RuntimePermissionAccess.kt) |
+| 聚合权限状态和申请会话 | `PermissionRequestHost`、`PermissionRequestSession` | [`PermissionRequestHost.kt`](../../app/src/main/java/com/aozijx/passly/app/platform/permission/PermissionRequestHost.kt)、[`PermissionRequestSession.kt`](../../app/src/main/java/com/aozijx/passly/app/platform/permission/PermissionRequestSession.kt) |
+| 查询 Android 权限状态 | `AndroidPermissionStatusReader` | [`AndroidPermissionStatusReader.kt`](../../core/src/main/kotlin/com/aozijx/passly/core/permission/internal/AndroidPermissionStatusReader.kt) |

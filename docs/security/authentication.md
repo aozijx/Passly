@@ -153,3 +153,12 @@ DEK；显式重试成功后再恢复 Authenticated。Data 查询订阅同时检�
 锁定取得互斥权并开始状态转换后，撤权、清除敏感字段密钥、软锁/封存和擦除 DEK 在 `NonCancellable` 区完成；调用方取消或软锁/封存操作抛出取消异常时，都会在终态发布后继续传播并记录为 `LockCancelled`，不会记成锁定失败。尚在等待互斥权时被取消的请求不会启动锁定。
 `AutofillAuthenticated` 的临时会话所有权不变：必须先向平台交付填充结果，再释放 Autofill interaction 并触发封存；
 普通 `Authenticated` 会话不会被延迟到达的 Autofill 释放关闭。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 协调认证请求和认证方式 | `DefaultAuthenticationManager` | [`DefaultAuthenticationManager.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt) |
+| 提供 Activity 认证宿主和生命周期租约 | `AuthenticationHost`、`AuthenticationHostRegistry` | [`AuthenticationHost.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/host/AuthenticationHost.kt)、[`AuthenticationHostRegistry.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/host/AuthenticationHostRegistry.kt) |
+| 派生和封存 Vault 会话密钥 | `DekManager`、`VaultSessionController` | [`DekManager.kt`](../../core/src/main/kotlin/com/aozijx/passly/security/dek/DekManager.kt)、[`VaultSessionController.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/VaultSessionController.kt) |
+| 执行生物识别密钥轮换 | `RotateBiometricKeyUseCase`、`BiometricCryptoFactory` | [`RotateBiometricKeyUseCase.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/RotateBiometricKeyUseCase.kt)、[`BiometricCryptoFactory.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/BiometricCryptoFactory.kt) |

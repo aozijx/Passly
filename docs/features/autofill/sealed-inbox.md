@@ -107,3 +107,12 @@ Manifest 当前 `allowBackup=false`，data extraction rules 也必须排除完�
 删除 Vault 时清除 bootstrap material 与 Inbox root。
 
 决策见 [ADR-0025](../../decisions/ADR-0025-sealed-autofill-save-inbox.md)。
+
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 生成和校验密封收件箱密钥 | `AutofillInboxKeyProvisioner`、`AutofillInboxKeyMaterialCodec` | [`AutofillInboxKeyProvisioner.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxKeyProvisioner.kt)、[`AutofillInboxKeyMaterialCodec.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxKeyMaterialCodec.kt) |
+| 加密队列记录并写入受限队列 | `AutofillInboxQueueWriter.enqueue()`、`AutofillInboxRecordCodec` | [`AutofillInboxQueueWriter.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxQueueWriter.kt)、[`AutofillInboxRecordCodec.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxRecordCodec.kt) |
+| Vault 解锁后导入排队草稿 | `AutofillInboxCredentialImporter.import()` | [`AutofillInboxCredentialImporter.kt`](../../../app/src/main/java/com/aozijx/passly/app/autofill/AutofillInboxCredentialImporter.kt) |

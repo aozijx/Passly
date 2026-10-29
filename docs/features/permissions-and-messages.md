@@ -31,3 +31,12 @@ Route 在 STARTED 生命周期消费导航及反馈，保存错误按当前 `Loc
 权限 Route 负责运行时权限 Activity Result、系统设置 Intent、生命周期与一次性反馈；备份 Route 独立
 负责 SAF 目录选择。Screen 只接收不可变模型并发送语义动作。功能页仍可在真正需要权限的时刻请求，
 但必须复用 `PermissionRequestHost`，不得各自读取 Android permission 或复制永久拒绝判断。
+
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 运行时权限申请宿主 | `PermissionRequestHost.access()` | [`PermissionRequestHost.kt`](../../app/src/main/java/com/aozijx/passly/app/platform/permission/PermissionRequestHost.kt) |
+| 权限设置路由与平台结果处理 | `PermissionsRoute()` | [`PermissionsRoute.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/core/PermissionsRoute.kt) |
+| 全局消息投递与路由 | `DefaultAppNoticeDispatcher.dispatch()`、`DefaultNoticeRouter.route()` | [`DefaultAppNoticeDispatcher.kt`](../../app/src/main/java/com/aozijx/passly/app/message/runtime/DefaultAppNoticeDispatcher.kt)、[`DefaultNoticeRouter.kt`](../../app/src/main/java/com/aozijx/passly/app/message/runtime/DefaultNoticeRouter.kt) |

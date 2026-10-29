@@ -37,9 +37,11 @@ Release 专用的 Google/DuckDuckGo provider 白名单。下载完成的内容�
 - 若以后引入固定 favicon provider，应作为新的获取策略显式建模，不能悄悄放宽当前任意 HTTPS URL 的
   安全校验。
 
-## 相关实现
+## 代码位置
 
-- `app/src/main/java/com/aozijx/passly/app/entry/favicon/FaviconUrlPolicy.kt`
-- `app/src/main/java/com/aozijx/passly/app/entry/favicon/FaviconImageDownloader.kt`
-- `app/src/main/java/com/aozijx/passly/app/entry/favicon/DefaultFaviconImageProcessor.kt`
-- `app/src/main/java/com/aozijx/passly/app/entry/favicon/FaviconBitmapTransformer.kt`
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 检查网站图标 URL 与主机策略 | `FaviconUrlPolicy.validate()`、`resolveRedirect()` | [`FaviconUrlPolicy.kt`](../../app/src/main/java/com/aozijx/passly/app/entry/favicon/FaviconUrlPolicy.kt) |
+| 下载图标字节 | `FaviconImageDownloader.download()` | [`FaviconImageDownloader.kt`](../../app/src/main/java/com/aozijx/passly/app/entry/favicon/FaviconImageDownloader.kt) |
+| 处理临时文件、URL 输入与结果晋升/丢弃 | `DefaultFaviconImageProcessor.stageUpload()`、`stageHttpsUrl()`、`process()`、`promote()`、`discard()` | [`DefaultFaviconImageProcessor.kt`](../../app/src/main/java/com/aozijx/passly/app/entry/favicon/DefaultFaviconImageProcessor.kt) |
+| 转换并约束图标位图 | `FaviconBitmapTransformer.transform()` | [`FaviconBitmapTransformer.kt`](../../app/src/main/java/com/aozijx/passly/app/entry/favicon/FaviconBitmapTransformer.kt) |

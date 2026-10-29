@@ -79,6 +79,7 @@ Shell 的认证域切换采用 keyed 的即时替换，不对 Vault、认证、�
 Passly 是产品名；`vault` 是安全领域概念，不作为面向用户的品牌替代词。
 
 - 新的领域模型统一使用 `Entry`。现有 `VaultEntryPageSource`、`VaultViewModel` 等名称属于 Vault Feature
+
   的页面/适配器命名，不代表另一个领域聚合；重命名时应连同消费者一次完成，不能再造桥接别名；
 - 当前 `EntryEntity` 和 `Entry` 都没有 `vaultId`。应用当前只有一个加密凭据域；未来只有真正引入多个
   数据空间时，才新增明确的 `spaceId`/`vaultId` 合同；
@@ -97,3 +98,11 @@ nullable 的 `savingEdit` 与 `saveErrorCode`。
 用户自定义分类尚未实现。实现时应新增独立 `categoryId` 或 Entry-Category 关联表；`tags` 继续表示多值标签。
 当前也没有 `parentEntryId` 或 `ACCOUNT` 容器。LOGIN、OTP、PASSKEY 等保持原子 Entry，需要组合时使用
 `entry_links` 的显式关系类型，不使用 `entryType`、标签或未来的空间 ID 冒充父子关系。
+
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 组合根界面稳定状态 | `AppShellViewModel`、`AppShellReducer.reduce()` | [`AppShellViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/shell/presentation/AppShellViewModel.kt)、[`AppShellReducer.kt`](../../app/src/main/java/com/aozijx/passly/feature/shell/presentation/AppShellReducer.kt) |
+| 安装导航与共享转场宿主 | `PasslyNavHost()` | [`PasslyNavHost.kt`](../../app/src/main/java/com/aozijx/passly/feature/shell/presentation/navigation/PasslyNavHost.kt) |

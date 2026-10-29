@@ -79,9 +79,10 @@ Domain 只接受 `WifiSecurityType.Open / Wep / WpaPersonal`。数据库与备�
 未定义枚举值或互相组合的布尔值代替。不要在 CameraHost 中按字符串分支，也不要重新增加并行的字符串/类型状态、回调式
 Composable 桥或持久化原始内容。
 
-## 相关实现
+## 代码位置
 
-- [`ScannerResult`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerResult.kt)
-- [`ScannerResultClassifier`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerResultClassifier.kt)
-- [`ScannerRoute`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerRoute.kt)
-- [`ScannerCameraHost`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerCameraHost.kt)
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 扫描结果类型与分类 | `ScannerResult`、`ScannerResultClassifier.classify()` | [`ScannerResult.kt`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerResult.kt)、[`ScannerResultClassifier.kt`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerResultClassifier.kt) |
+| 路由状态收集与事件处理 | `ScannerRoute()` | [`ScannerRoute.kt`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerRoute.kt) |
+| CameraX 预览宿主及资源释放 | `ScannerCameraHost()`、`ScannerCameraHost.stop()` | [`ScannerCameraHost.kt`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerCameraHost.kt) |

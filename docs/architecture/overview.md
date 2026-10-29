@@ -116,3 +116,11 @@ UseCase，避免把领域规则放进 Compose 或 Android 回调。
 - [安全总览](../security/overview.md)
 - [ADR-0007：UseCase 可选](../decisions/ADR-0007-usecase-is-optional.md)
 
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| Domain 创建规则与身份物化 | `EntryDraftMaterializer.materialize()` | [`EntryDraftMaterializer.kt`](../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryDraftMaterializer.kt) |
+| Data 数据库会话边界 | `AppDatabaseSession` | [`AppDatabaseSession.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSession.kt) |
+| Security 认证与会话编排 | `DefaultAuthenticationManager`、`VaultSessionController` | [`DefaultAuthenticationManager.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt)、[`VaultSessionController.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/VaultSessionController.kt) |
+| App 导航宿主 | `PasslyNavHost()` | [`PasslyNavHost.kt`](../../app/src/main/java/com/aozijx/passly/feature/shell/presentation/navigation/PasslyNavHost.kt) |

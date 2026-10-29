@@ -53,4 +53,10 @@ ZIP 恰好包含 `manifest.json`、`logs.jsonl`、`logs.tsv`、`README.txt`。ZI
 分享缓存使用 `passly_logs_<time>.<ext>`。当前只有 schema 1，不存在旧格式兼容路由。格式变化必须先定义
 schema 演进和解析行为，不能用文件名中的 v1/v2 代替协议字段。
 
-相关实现：[`DiagnosticsExportEncoders`](../../../app/src/main/java/com/aozijx/passly/app/observability/DiagnosticsExportEncoders.kt)。
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 将诊断事件编码为 JSON | `CanonicalDiagnosticsEvent.toJson()` | [`DiagnosticsExportEncoders.kt`](../../../app/src/main/java/com/aozijx/passly/app/observability/DiagnosticsExportEncoders.kt) |
+| 将事件投影为 TSV 字段并编码记录 | `JsonEventToTsvProjector.project()`、`TsvRecordEncoder.encode()` | [`DiagnosticsExportEncoders.kt`](../../../app/src/main/java/com/aozijx/passly/app/observability/DiagnosticsExportEncoders.kt) |
+| 流式写出诊断导出 | `DiagnosticsExportEncoder.write()` | [`DiagnosticsExportEncoders.kt`](../../../app/src/main/java/com/aozijx/passly/app/observability/DiagnosticsExportEncoders.kt) |

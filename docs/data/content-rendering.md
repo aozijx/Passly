@@ -15,3 +15,10 @@
 - 编辑器当前是纯文本输入。所见即所得、语法工具栏和预览切换属于后续 UI 工作。
 
 因此，“渲染成 Notion 风格”在当前实现中指视觉排版接近，而不是声称兼容 Notion 的专有内容模型。
+
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 规范化 Markdown 内容并渲染文档 | `normalizeMarkdownDocument()`、`PasslyMarkdownDocument()` | [`MarkdownDocumentPolicy.kt`](../../core/src/main/kotlin/com/aozijx/passly/core/ui/components/markdown/MarkdownDocumentPolicy.kt)、[`PasslyMarkdownDocument.kt`](../../core/src/main/kotlin/com/aozijx/passly/core/ui/components/markdown/PasslyMarkdownDocument.kt) |

@@ -52,3 +52,11 @@ Host 拥有 ViewModel、effect、导航和 Domain/UI 映射。被动 UI 文件�
 UI 与 Domain 语义相同的设置选项直接使用 Domain 类型；需要不同展示语义时才建立 UI model，并使用穷尽映射，
 不按枚举名称反射转换。简单设置 Content 直接发送页面 Action，不增加字段一一对应的 Event 转发层。
 页面私有 Sheet、Dialog 和 UiModel 放在拥有其状态的 feature，而不是入口页面目录。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| Route 收集状态并处理生命周期事件 | `VaultRoute()` | [`VaultRoute.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultRoute.kt) |
+| 维护列表界面状态与业务动作 | `VaultViewModel.onAction()` | [`VaultViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt) |
+| 将语义动作归约为不可变状态 | `VaultReducer.reduce()` | [`VaultReducer.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultReducer.kt) |

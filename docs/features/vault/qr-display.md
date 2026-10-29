@@ -40,3 +40,12 @@ UI 的无障碍描述只包含“二维码”，不包含网络密码或 OTP 密
 Domain 测试覆盖稳定键、特殊字符、开放网络、隐藏网络和损坏凭据；App 单测覆盖授权顺序、读取最新密码、
 取消传播、锁定清理和迟到结果。AndroidTest 使用真实 Bitmap 和 ZXing 解码检查中文及特殊字符，并检查
 Wi-Fi 展示入口。无设备时只能确认 AndroidTest 编译与测试 APK 打包，不能宣称真实扫码连接已验证。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 授权读取并生成条目二维码内容 | `ExportEntryQrUseCase.invoke()` | [`ExportEntryQrUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/ExportEntryQrUseCase.kt) |
+| 管理二维码显示状态与派生资源 | `DetailQrSession` | [`DetailQrSession.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailQrSession.kt) |
+| 格式化 Wi-Fi 二维码载荷 | `WifiQrPayloadFormatter.format()` | [`WifiQrPayloadFormatter.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/WifiQrPayloadFormatter.kt) |
+| 将内容编码为位图 | `QrCodeEncoder.encode()` | [`QrCodeEncoder.kt`](../../../core/src/main/kotlin/com/aozijx/passly/core/platform/qr/QrCodeEncoder.kt) |

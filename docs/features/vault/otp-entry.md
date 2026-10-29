@@ -16,7 +16,7 @@ Base64 编码。临时解码字节立即擦除。输入及成功解析结果的�
 失败字段映射为中英文提示，不把字段值放进错误、日志或导航。
 
 `OtpFormMapper` 只接受有效配置，并与扫码创建复用 Domain 的 `OtpConfig.toNewEntryDraft`；标题、标签和备注仍由表单提供。
-配置到草稿的纯转换位于 [`OtpEntryDraft.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/otp/OtpEntryDraft.kt)，不依赖页面或应用服务。直接导入保留非空白身份元数据，
+配置到草稿的纯转换由 `OtpConfig.toNewEntryDraft()` 完成，不依赖页面或应用服务。直接导入保留非空白身份元数据，
 不对 issuer 或 account 做表单裁剪；手动表单仍由 `OtpConfigInput` 规范化后传入。
 首页导入与编辑器共用 `suggestedEntryTitle`，组合完整的 `issuer: account`，不按冒号截断身份。
 显示标题只裁剪各部分首尾空白；没有身份资料时，直接导入按类型使用 `TOTP / HOTP / Steam`，
@@ -57,3 +57,9 @@ URI/扫码提示只保留当前输入请求的最新结果，在消费时核对�
 订阅仍显示 Pending，避免展示一个可被反复复制的旧验证码；TOTP/Steam 复制当前有效时间窗内的验证码。
 OTP 运行时只解密低敏 OTP 配置与独立的 OTP secret 字段，不读取同一条目的其他敏感字段。
 若 HOTP 事务挂起期间页面关闭、切换条目或会话锁定，事务即使已成功推进计数器，返回的验证码也会因旧运行时令牌失效而丢弃，不再写入剪贴板；用户需要重新授权生成下一码。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 从 OTP 配置生成新建草稿并建议标题 | `OtpConfig.toNewEntryDraft()`、`OtpConfig.suggestedEntryTitle()` | [`OtpEntryDraft.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/otp/OtpEntryDraft.kt) |

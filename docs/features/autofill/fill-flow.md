@@ -106,14 +106,16 @@ interaction 可以借用同一个临时数据库会话，但不共享候选或�
 每个 interaction 有 60 秒 process-local 超时。进程死亡后 extras 不能恢复授权；系统必须重新发起请求。主 App
 完成普通解锁后会话提升为 `Authenticated`，迟到的 Autofill 释放不得锁掉它。
 
-相关实现：
-
-- [`DiscoverAutofillCandidates`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/core/DiscoverAutofillCandidates.kt)
-- [`ResolveAutofillSelection`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/core/ResolveAutofillSelection.kt)
-- [`AutofillResultDelivery`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillResultDelivery.kt)
-- [`AutofillInteractionStore`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillInteractionStore.kt)
-- [`ManualAccessibilityFillService`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/accessibility/ManualAccessibilityFillService.kt)
-
 平台依据：[Autofill 与 IME Inline 集成](https://developer.android.com/identity/autofill/ime-autofill)、
 [AccessibilityService](https://developer.android.com/reference/android/accessibilityservice/AccessibilityService)、
 [AccessibilityNodeInfo](https://developer.android.com/reference/android/view/accessibility/AccessibilityNodeInfo)。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 发现可填充凭据候选 | `DiscoverAutofillCandidates` | [`DiscoverAutofillCandidates.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/core/DiscoverAutofillCandidates.kt) |
+| 解析用户选择并准备填充结果 | `ResolveAutofillSelection` | [`ResolveAutofillSelection.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/core/ResolveAutofillSelection.kt) |
+| 向平台提交 Autofill 结果 | `AutofillResultDelivery.commitResult()` | [`AutofillResultDelivery.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillResultDelivery.kt) |
+| 维护交互授权、候选与结束状态 | `AutofillInteractionStore.create()`、`beginAuthorization()`、`recordCandidates()`、`finish()` | [`AutofillInteractionStore.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillInteractionStore.kt) |
+| 无障碍填充事件与服务清理 | `ManualAccessibilityFillService.onAccessibilityEvent()`、`onDestroy()` | [`ManualAccessibilityFillService.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/accessibility/ManualAccessibilityFillService.kt) |

@@ -92,3 +92,12 @@ Bitwarden 银行卡的完整合法年月经 Domain `CardExpiry` 统一为 `MM/YY
 通知与日志只记录数量和稳定原因，不记录标题、用户名、URL、字段值、OTP 或文件名。
 
 平台依据：[Storage Access Framework](https://developer.android.com/training/data-storage/shared/documents-files)。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 编排备份格式、快照、授权与文件读写 | `BackupArchiveServiceImpl` | [`BackupArchiveServiceImpl.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveServiceImpl.kt) |
+| 生成稳定键归档条目并规划导入 | `KeyedEntryArchiveMapper`、`BackupImportPlanner` | [`KeyedEntryArchiveMapper.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/mapper/KeyedEntryArchiveMapper.kt)、[`BackupImportPlanner.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/BackupImportPlanner.kt) |
+| 读取与恢复 Room 快照 | `RoomBackupSnapshotReader`、`RoomBackupSnapshotRestorer` | [`RoomBackupSnapshotReader.kt`](../../../app/src/main/java/com/aozijx/passly/app/database/backup/RoomBackupSnapshotReader.kt)、[`RoomBackupSnapshotRestorer.kt`](../../../app/src/main/java/com/aozijx/passly/app/database/backup/RoomBackupSnapshotRestorer.kt) |
+| 将备份字节写入目标并清理缓冲 | `BackupFileStore` | [`BackupFileStore.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/io/BackupFileStore.kt) |

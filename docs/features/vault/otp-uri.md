@@ -36,3 +36,11 @@ URI 的 secret 始终为无补位 Base32。内部 Base64 密钥先解码，再�
 保留 `OtpGenerationError.InvalidSecret`；临时解码数组、HMAC 输入与摘要在退出路径中擦除。URI、密钥、
 账户和 issuer 不写入异常消息、日志、导航或 SavedState。JVM 测试覆盖 RFC 向量、导出后验证码不变、
 特殊字符、重复参数和拒绝路径；这些文本协议测试不代替真实设备的二维码扫描测试。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 解析与格式化 otpauth URI | `OtpAuthUriCodec.parse()`、`format()` | [`OtpAuthUriCodec.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/otp/OtpAuthUriCodec.kt) |
+| 校验和规范化 OTP Base32 密钥 | `OtpSecretCodec.canonicalBase32()` | [`OtpSecretCodec.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/otp/OtpSecretCodec.kt) |
+| 将 OTP 配置映射到备份稳定字段 | `toOtpArchiveFields()` | [`OtpArchiveFields.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/mapper/OtpArchiveFields.kt) |

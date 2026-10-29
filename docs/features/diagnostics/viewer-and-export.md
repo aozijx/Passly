@@ -36,10 +36,12 @@ Top app bar 提供保存、分享和清除。保存与分享分别打开相同�
 尚未启动时删除已创建的临时明文文件，本地文档写入失败或取消时尽力删除系统选择的目标。同步编码期间无法
 中断的取消会在编码返回后检查并清理；同步日志读取也会在读取完成后检查取消。清理异常不会替换原始取消或失败。
 
-相关实现：
-
-- [`DiagnosticsScreen`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/ui/diagnostics/DiagnosticsScreen.kt)
-- [`DiagnosticsViewModel`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/diagnostics/DiagnosticsViewModel.kt)
-- [`ObservabilityExportService`](../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityExportService.kt)
-
 平台依据：[Storage Access Framework](https://developer.android.com/training/data-storage/shared/documents-files)。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 诊断查看与操作界面 | `DiagnosticsScreen()` | [`DiagnosticsScreen.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/ui/diagnostics/DiagnosticsScreen.kt) |
+| 诊断页面状态与用户动作 | `DiagnosticsViewModel.onAction()` | [`DiagnosticsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/diagnostics/DiagnosticsViewModel.kt) |
+| 诊断文件导出、丢弃与过期文件清理 | `ObservabilityExportService.export()`、`discard()`、`clearStaleExports()` | [`ObservabilityExportService.kt`](../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityExportService.kt) |

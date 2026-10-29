@@ -117,3 +117,12 @@ Legacy Autofill、Credential Manager 和保存 Activity 通过同一个 persiste
 - Serializer 遇到损坏输入抛出 `CorruptionException`，不静默重置整个设置文件。
 
 消息通知权限和系统能力是交付条件，不是偏好值；相关设计见[权限与消息](../features/permissions-and-messages.md)。
+
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 持久化普通偏好 | `ProtoAppPreferencesStore` | [`ProtoAppPreferencesStore.kt`](../../data/src/main/java/com/aozijx/passly/data/repository/settings/ProtoAppPreferencesStore.kt) |
+| 持久化安全偏好 | `ProtoSecurityPreferencesStore` | [`ProtoSecurityPreferencesStore.kt`](../../data/src/main/java/com/aozijx/passly/data/repository/settings/ProtoSecurityPreferencesStore.kt) |
+| 读取 bootstrap 与生物识别轮换数据 | `ProtoVaultBootstrapStore`、`readBiometricConfiguration()` | [`ProtoVaultBootstrapStore.kt`](../../data/src/main/java/com/aozijx/passly/data/local/datastore/ProtoVaultBootstrapStore.kt)、[`BiometricConfigurationMapping.kt`](../../data/src/main/java/com/aozijx/passly/data/local/datastore/BiometricConfigurationMapping.kt) |

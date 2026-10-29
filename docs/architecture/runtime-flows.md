@@ -38,6 +38,7 @@ flowchart LR
     Producers["Publisher"] --> Dispatcher["AppNoticeDispatcher"]
     Dispatcher --> InApp["In-app notice stream"]
     Dispatcher --> System["SystemNotificationGateway"]
+
     Prefs["Atomic AppMessageSettings snapshot"] --> Dispatcher
     Permission["Notification permission / channel"] --> Dispatcher
 ```
@@ -51,3 +52,12 @@ flowchart LR
 加密。导入必须先完整验证容器、解密和校验路径，再在事务中执行覆盖或合并；失败不得留下部分数据。
 
 详细格式见[Backup 归档协议](../features/backup/archive-format.md)。
+
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 认证请求编排与 Vault 会话转换 | `DefaultAuthenticationManager`、`VaultSessionController` | [`DefaultAuthenticationManager.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt)、[`VaultSessionController.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/VaultSessionController.kt) |
+| DEK 生命周期与派生会话密钥 | `DekManager` | [`DekManager.kt`](../../core/src/main/kotlin/com/aozijx/passly/security/dek/DekManager.kt) |
+| 通知路由与派发 | `DefaultNoticeRouter.route()`、`DefaultAppNoticeDispatcher.dispatch()` | [`DefaultNoticeRouter.kt`](../../app/src/main/java/com/aozijx/passly/app/message/runtime/DefaultNoticeRouter.kt)、[`DefaultAppNoticeDispatcher.kt`](../../app/src/main/java/com/aozijx/passly/app/message/runtime/DefaultAppNoticeDispatcher.kt) |

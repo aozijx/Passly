@@ -102,9 +102,11 @@ diagnostic/correlation ID。
 原始标识符。只有 `from_state == to_state` 的重复 DEBUG/INFO 观察可以抑制，窗口首条仍输出。
 真实状态转换以及 WARN/ERROR/FATAL 永不采样。聚合快照带递归保护，Logger 自身指标不会再次进入聚合器。
 
-相关实现：
+## 代码位置
 
-- [`Logger`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/Logger.kt)
-- [`LogRecord`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/LogRecord.kt)
-- [`LogStatements`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/LogStatements.kt)
-- [`PrivacyPolicy`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/privacy/PrivacyPolicy.kt)
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 日志接口与 trace 操作 | `Logger.log()`、`Logger.withRootTrace()`、`Logger.inSpan()` | [`Logger.kt`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/Logger.kt) |
+| 待处理事件与脱敏记录模型 | `PendingLogEvent`、`SanitizedLogRecord` | [`LogRecord.kt`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/LogRecord.kt) |
+| 日志语句封装 | `LogStatements` | [`LogStatements.kt`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/LogStatements.kt) |
+| 敏感字段清理 | `PrivacyPolicy.sanitize()` | [`PrivacyPolicy.kt`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/privacy/PrivacyPolicy.kt) |

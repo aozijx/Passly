@@ -93,9 +93,10 @@ Proto 当前默认关闭滑动操作；启用后左滑复制密码、右滑删�
 不在写入前伪造成功；开关写入成功保持静默，动作选择成功保留保存提示，失败统一发布本地化资源键。
 写入返回后及失败映射前检查协程仍有效；取消继续传播，已取消的慢写入即使延迟完成也不能补发成功或失败提示。
 
-相关实现：
+## 代码位置
 
-- [`EntryListQuery`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/query/EntryListQuery.kt)
-- [`EntrySort`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/query/EntrySort.kt)
-- [`EntryPagingQueryFactory`](../../../data/src/main/java/com/aozijx/passly/data/local/database/query/EntryPagingQueryFactory.kt)
-- [`VaultViewModel`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt)
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 列表查询条件与排序规则 | `EntryListQuery`、`EntrySort` | [`EntryListQuery.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/query/EntryListQuery.kt)、[`EntrySort.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/query/EntrySort.kt) |
+| 构造 SQLite 分类与分页查询 | `buildEntryCategoryQuery()`、`buildEntryPagingQuery()` | [`EntryPagingQueryFactory.kt`](../../../data/src/main/java/com/aozijx/passly/data/local/database/query/EntryPagingQueryFactory.kt) |
+| 列表界面动作与可见 OTP 订阅 | `VaultViewModel.onAction()`、`subscribeVisibleOtp()`、`unsubscribeVisibleOtp()` | [`VaultViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt) |

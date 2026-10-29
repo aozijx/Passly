@@ -58,3 +58,12 @@ Bitwarden 的分离年月字段在适配边界允许一位或两位月份，完�
 `Bitwarden.expYear` 保存，保留原文与已有自定义字段，不猜测世纪。两项都缺失或仅含空白时视为未设置。
 
 结构化年月转换仅发生在 Bitwarden 适配器；原生备份原样保留有效期字符串，既有条目与归档沿用各自读取规则。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 新建银行卡条目表单与动作编排 | `AddBankCardViewModel` | [`AddBankCardViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/bankcard/AddBankCardViewModel.kt) |
+| 校验卡号与 CVV | `CardNumberValidator.validate()`、`CardCvvValidator` | [`CardNumberValidator.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/CardNumberValidator.kt)、[`CardCvvValidator.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/CardCvvValidator.kt) |
+| 表达和解析有效期 | `CardExpiry.parse()` | [`CardExpiry.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/credential/CardExpiry.kt) |
+| 将银行卡凭据映射到加密 payload | `CardEntryPayloadAdapter.encode()` | [`CardEntryPayloadAdapter.kt`](../../../data/src/main/java/com/aozijx/passly/data/mapper/entry/CardEntryPayloadAdapter.kt) |

@@ -36,3 +36,11 @@ UI 类型实际支持的字段放入 `DetailUiState.revealedFields`。新增 Ent
 Passly 复制敏感内容时使用敏感剪贴板标记。应用进入后台或详情页关闭时，只清除仍由 Passly 写入的剪贴板；
 前台最长保留 60 秒后自动清除。所有权检查避免误删用户随后从其他应用复制的内容。
 新剪贴板发布与过期任务替换共用串行边界；过期回调校验所有权并清除时也持有该边界，避免旧计时器清掉新内容或新内容失去过期任务。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 声明字段读取授权端口 | `SensitiveFieldRepository` | [`SensitiveFieldRepository.kt`](../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/port/SensitiveFieldRepository.kt) |
+| 按字段读取或揭示加密内容 | `RoomSensitiveFieldRepository.revealMany()`、`SecretFieldStore.readField()` | [`RoomSensitiveFieldRepository.kt`](../../data/src/main/java/com/aozijx/passly/data/repository/entry/RoomSensitiveFieldRepository.kt)、[`SecretFieldStore.kt`](../../data/src/main/java/com/aozijx/passly/data/repository/entry/SecretFieldStore.kt) |
+| 驱动详情页字段揭示状态 | `DetailViewModel`、`DetailRevealStore` | [`DetailViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModel.kt)、[`DetailRevealStore.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailRevealStore.kt) |

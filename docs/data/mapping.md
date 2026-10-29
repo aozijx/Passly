@@ -68,3 +68,12 @@ Wi-Fi 密码保存在加密 bundle 中，没有独立密码行；其密码能力
 
 备份协议与流程归 `app/feature/backup`。它可以通过受控快照边界读取完整数据，但不属于 `:data` 的
 通用映射职责。
+
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 将数据库条目映射为领域 Profile | `EntryProfileMapper.fromEntity()` | [`EntryProfileMapper.kt`](../../data/src/main/java/com/aozijx/passly/data/mapper/entry/EntryProfileMapper.kt) |
+| 拆分并组装低敏与高敏字段 | `EntrySecretMapper`、`EntrySecret.toSensitiveFieldUpdates()` | [`EntrySecretMapper.kt`](../../data/src/main/java/com/aozijx/passly/data/mapper/entry/EntrySecretMapper.kt)、[`SensitiveFieldSetMapper.kt`](../../data/src/main/java/com/aozijx/passly/data/mapper/entry/SensitiveFieldSetMapper.kt) |
+| 编排秘密字段的持久化读取与写入 | `SecretFieldStore.readAll()`、`readField()` | [`SecretFieldStore.kt`](../../data/src/main/java/com/aozijx/passly/data/repository/entry/SecretFieldStore.kt) |

@@ -161,3 +161,13 @@ sealed class AppError(
 - [消息中心](message-center.md)
 - [包边界](package-boundaries.md)
 - [安全总览](../security/overview.md)
+
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 错误模型与结果容器 | `AppError`、`AppResult` | [`AppError.kt`](../../core/common/src/main/kotlin/com/aozijx/passly/core/error/model/AppError.kt)、[`AppResult.kt`](../../core/common/src/main/kotlin/com/aozijx/passly/core/error/result/AppResult.kt) |
+| 将异常映射为安全错误 | `AppErrorMapper.fromThrowable()` | [`AppErrorMapper.kt`](../../core/common/src/main/kotlin/com/aozijx/passly/core/error/mapping/AppErrorMapper.kt) |
+| 将错误上报到观测系统 | `ObservabilityAppErrorReporter.report()` | [`ObservabilityAppErrorReporter.kt`](../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityAppErrorReporter.kt) |
+| 将稳定错误码映射为本地化 UI 错误 | `toUiErrorMessage()` | [`UiErrorMessage.kt`](../../app/src/main/java/com/aozijx/passly/presentation/shared/error/UiErrorMessage.kt) |
