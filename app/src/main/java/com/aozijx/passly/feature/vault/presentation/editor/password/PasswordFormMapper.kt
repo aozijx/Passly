@@ -1,5 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.editor.password
 
+import com.aozijx.passly.feature.vault.presentation.editor.parseRawTags
+
 import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -37,6 +39,6 @@ private fun EntryDraft.withTags(
     definition: com.aozijx.passly.domain.entry.model.EntryTypeDefinition,
     rawTags: String,
 ): EntryDraft {
-    val values = rawTags.split(',').map(String::trim).filter(String::isNotEmpty)
+    val values = parseRawTags(rawTags)
     return if (values.isEmpty()) this else withValue(definition, FieldKey.TAGS, EntryDraftValue.TextList(values))
 }

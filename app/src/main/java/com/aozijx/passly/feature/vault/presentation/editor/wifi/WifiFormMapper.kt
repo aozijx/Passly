@@ -8,6 +8,7 @@ import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
+import com.aozijx.passly.feature.vault.presentation.editor.parseRawTags
 
 fun AddWifiFormState.toEntryDraft(): EntryDraft {
     val definition = EntryTypeDefinitions[EntryType.WIFI]
@@ -60,10 +61,7 @@ private fun EntryDraft.withTags(
     definition: EntryTypeDefinition,
     rawTags: String,
 ): EntryDraft {
-    val values = rawTags.split(',')
-        .map(String::trim)
-        .filter(String::isNotEmpty)
-        .distinct()
+    val values = parseRawTags(rawTags).distinct()
     return if (values.isEmpty()) this else {
         withValue(definition, FieldKey.TAGS, EntryDraftValue.TextList(values))
     }
