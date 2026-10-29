@@ -12,6 +12,7 @@
 ### 架构与平台边界
 
 - [架构总览](architecture/overview.md)
+- [条目类型与凭据注册](architecture/entry-type-registration.md)
 - [包与模块边界](architecture/package-boundaries.md)
 - [运行时流程](architecture/runtime-flows.md)
 - [UI 宿主、导航与命名](architecture/ui-shell-and-naming.md)
