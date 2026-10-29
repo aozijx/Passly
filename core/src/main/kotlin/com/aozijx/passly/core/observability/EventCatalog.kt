@@ -233,6 +233,7 @@ object Operations {
     val VaultOtpImport = OperationCode("vault_otp_import")
     val Scanner = OperationCode("scanner")
     val VaultKeyManagement = OperationCode("vault_key_management")
+    val AutofillInboxKeyProvision = OperationCode("autofill_inbox_key_provision")
     val VaultEntryCreate = OperationCode("vault_entry_create")
     val VaultEntryUpdate = OperationCode("vault_entry_update")
     val VaultQrExport = OperationCode("vault_qr_export")

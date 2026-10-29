@@ -16,6 +16,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.BiometricBinding
 import com.aozijx.passly.domain.access.model.BiometricBootstrapState
 import com.aozijx.passly.domain.access.model.BiometricRotationJournal
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.model.LockTrigger
@@ -29,6 +30,7 @@ import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.dek.DekState
 import com.aozijx.passly.security.dek.FieldKeyManager
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioning
 import com.aozijx.passly.security.lock.LockStateManager
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
@@ -81,6 +83,7 @@ class VaultSessionIdleTimeoutTest {
                     override val isLockOnBackground = MutableStateFlow(false)
                     override val lockTimeout = MutableStateFlow(1_000L)
                 },
+                autofillInboxKeyProvisioning = AutofillInboxKeyProvisioning { },
             )
             runCurrent()
             controller.transition(AuthenticationState.Authenticated(0L))
@@ -225,6 +228,7 @@ class VaultSessionIdleTimeoutTest {
                     override val isLockOnBackground = MutableStateFlow(false)
                     override val lockTimeout = timeout
                 },
+                autofillInboxKeyProvisioning = AutofillInboxKeyProvisioning { },
             )
 
             runCurrent()
@@ -249,6 +253,7 @@ class VaultSessionIdleTimeoutTest {
         timeout: MutableStateFlow<Long>,
         lockOnBackground: MutableStateFlow<Boolean>,
         logger: RecordingLogger = RecordingLogger(),
+        provisionInboxKey: suspend () -> Unit = {},
     ): VaultSessionController {
         val bootstrap = EmptyVaultBootstrapStore()
         val dekManager = DekManager(bootstrap, FieldKeyManager(), logger)
@@ -266,7 +271,38 @@ class VaultSessionIdleTimeoutTest {
                 override val isLockOnBackground = lockOnBackground
                 override val lockTimeout = timeout
             },
+            autofillInboxKeyProvisioning = AutofillInboxKeyProvisioning(provisionInboxKey),
         )
+    }
+
+    @Test
+    fun `only a full Vault unlock provisions the Autofill Inbox key`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            var provisionCount = 0
+            val fullUnlockController = createController(
+                dispatcher = dispatcher,
+                databaseSession = YieldingDatabaseSession(),
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(false),
+                provisionInboxKey = { provisionCount++ },
+            )
+            val autofillController = createController(
+                dispatcher = dispatcher,
+                databaseSession = YieldingDatabaseSession(),
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(false),
+                provisionInboxKey = { provisionCount++ },
+            )
+
+            assertTrue(fullUnlockController.markAuthenticated(AuthenticationPurpose.UNLOCK_VAULT))
+            assertEquals(1, provisionCount)
+            assertTrue(autofillController.markAuthenticated(AuthenticationPurpose.AUTOFILL))
+            assertEquals(1, provisionCount)
+        } finally {
+            Dispatchers.resetMain()
+        }
     }
 
     private class YieldingDatabaseSession(

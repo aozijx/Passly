@@ -22,6 +22,7 @@ import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.security.dek.DekUnlockResult
 import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioning
 import com.aozijx.passly.security.lock.LockStateManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -44,7 +45,7 @@ import javax.inject.Singleton
 import kotlin.time.Duration.Companion.milliseconds
 
 @Singleton
-class VaultSessionController @Inject constructor(
+class VaultSessionController @Inject internal constructor(
     private val dekManager: DekManager,
     private val sensitiveDataKeyManager: SensitiveDataKeyManager,
     private val authorizationPermitRevoker: AuthorizationPermitRevoker,
@@ -53,6 +54,7 @@ class VaultSessionController @Inject constructor(
     private val lockStateManager: LockStateManager,
     private val securityEvents: SecuritySessionEventLogger,
     private val idleTimeoutSettings: IdleTimeoutSettings,
+    private val autofillInboxKeyProvisioning: AutofillInboxKeyProvisioning,
 ) : SecureSessionAccessState, SessionActivityReporter, SessionVisibilityController,
     DatabaseSessionFailureState, DatabaseSessionRecovery {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -235,19 +237,28 @@ class VaultSessionController @Inject constructor(
         true
     }
 
-    private suspend fun markAuthenticatedInternal() = withContext(Dispatchers.Main.immediate) {
-        _state.value = AuthenticationState.Authenticated(System.currentTimeMillis())
-        resetIdleTimer()
+    private suspend fun markAuthenticatedInternal() = withContext(NonCancellable) {
+        // Once the session has opened, finish publishing its state and provisioning without leaving a partial unlock.
+        withContext(Dispatchers.Main.immediate) {
+            _state.value = AuthenticationState.Authenticated(System.currentTimeMillis())
+            resetIdleTimer()
+        }
+        autofillInboxKeyProvisioning.provisionAfterUnlock()
     }
 
     private suspend fun publishAuthenticatedInternal(purpose: AuthenticationPurpose) =
-        withContext(Dispatchers.Main.immediate) {
-            if (purpose != AuthenticationPurpose.AUTOFILL ||
-                _state.value !is AuthenticationState.Authenticated
-            ) {
-                _state.value = authenticatedStateFor(purpose, System.currentTimeMillis())
+        withContext(NonCancellable) {
+            withContext(Dispatchers.Main.immediate) {
+                if (purpose != AuthenticationPurpose.AUTOFILL ||
+                    _state.value !is AuthenticationState.Authenticated
+                ) {
+                    _state.value = authenticatedStateFor(purpose, System.currentTimeMillis())
+                }
+                resetIdleTimer()
             }
-            resetIdleTimer()
+            if (purpose == AuthenticationPurpose.UNLOCK_VAULT) {
+                autofillInboxKeyProvisioning.provisionAfterUnlock()
+            }
         }
 
     private suspend fun markRecoveryModeInternal() = withContext(Dispatchers.Main.immediate) {

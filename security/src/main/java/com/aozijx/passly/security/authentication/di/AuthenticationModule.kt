@@ -23,6 +23,8 @@ import com.aozijx.passly.security.authentication.RecoveryCredentialGenerator
 import com.aozijx.passly.security.authentication.KdfRunner
 import com.aozijx.passly.security.authentication.SingleThreadKdfRunner
 import com.aozijx.passly.security.authentication.VaultSessionController
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioner
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioning
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -35,6 +37,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class AuthenticationModule {
+    @Binds
+    @Singleton
+    abstract fun bindAutofillInboxKeyProvisioning(
+        implementation: AutofillInboxKeyProvisioner,
+    ): AutofillInboxKeyProvisioning
+
     @Binds
     @Singleton
     abstract fun bindAuthenticationRuntimeMaintenance(
