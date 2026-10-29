@@ -19,5 +19,6 @@ internal val entryPayloadAdapters = EntryPayloadAdapterRegistry(
         WifiEntryPayloadAdapter(),
         IdentityEntryPayloadAdapter(),
         SshEntryPayloadAdapter(),
+        PasskeyEntryPayloadAdapter(),
     ),
 )

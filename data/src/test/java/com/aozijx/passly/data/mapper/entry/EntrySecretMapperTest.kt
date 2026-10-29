@@ -18,6 +18,7 @@ import com.aozijx.passly.domain.entry.model.credential.EntryCredentialKind
 import com.aozijx.passly.domain.entry.model.credential.IdentityCredential
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
+import com.aozijx.passly.domain.entry.model.credential.PasskeyCredential
 import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
@@ -68,6 +69,13 @@ class EntrySecretMapperTest {
         assertThrows(IllegalArgumentException::class.java) {
             EntryPayloadAdapterRegistry(listOf(OtpEntryPayloadAdapter(), OtpEntryPayloadAdapter()))
         }
+    }
+
+    @Test
+    fun `every credential kind except none has a registered payload adapter`() {
+        EntryCredentialKind.entries
+            .filterNot { it == EntryCredentialKind.NONE }
+            .forEach { kind -> assertEquals(kind, entryPayloadAdapters.get(kind).kind) }
     }
 
     @Test
@@ -123,6 +131,20 @@ class EntrySecretMapperTest {
 
         assertEquals(EntryCredentialKind.SSH, adapter.kind)
         assertEquals(expectedPayload, payload.ssh)
+        assertEquals(null, payload.login)
+        assertEquals(credential, adapter.decode(payload))
+    }
+
+    @Test
+    fun `passkey adapter owns the full passkey slot`() {
+        val credential = populatedDataClass(PasskeyCredential::class.java) as PasskeyCredential
+        val expectedPayload = populatedDataClass(PasskeyCredentialPayload::class.java) as PasskeyCredentialPayload
+        val adapter = entryPayloadAdapters.get(EntryCredentialKind.PASSKEY)
+
+        val payload = adapter.encode(credential)
+
+        assertEquals(EntryCredentialKind.PASSKEY, adapter.kind)
+        assertEquals(expectedPayload, payload.passkey)
         assertEquals(null, payload.login)
         assertEquals(credential, adapter.decode(payload))
     }

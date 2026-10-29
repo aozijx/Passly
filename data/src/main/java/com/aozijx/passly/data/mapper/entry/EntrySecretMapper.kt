@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.mapper.entry
 
 import com.aozijx.passly.data.codec.entry.payload.CustomFieldPayload
-import com.aozijx.passly.data.codec.entry.payload.PasskeyCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.SecretPayload
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -30,13 +29,7 @@ object EntrySecretMapper {
             is IdentityCredential -> entryPayloadAdapters.get(EntryCredentialKind.IDENTITY).encode(credential)
             is SshCredential -> entryPayloadAdapters.get(EntryCredentialKind.SSH).encode(credential)
             is WifiCredential -> entryPayloadAdapters.get(EntryCredentialKind.WIFI).encode(credential)
-            is PasskeyCredential -> SecretPayload(passkey = PasskeyCredentialPayload(
-                credential.credentialId,
-                credential.rpId,
-                credential.userHandle,
-                credential.privateKeyReference,
-                credential.hardwareKeyInfo,
-            ))
+            is PasskeyCredential -> entryPayloadAdapters.get(EntryCredentialKind.PASSKEY).encode(credential)
             is OtpCredential -> entryPayloadAdapters.get(EntryCredentialKind.OTP).encode(credential)
         }
         return credentialPayload.copy(
@@ -76,15 +69,7 @@ object EntrySecretMapper {
             EntryCredentialKind.IDENTITY -> entryPayloadAdapters.get(EntryCredentialKind.IDENTITY).decode(this)
             EntryCredentialKind.SSH -> entryPayloadAdapters.get(EntryCredentialKind.SSH).decode(this)
             EntryCredentialKind.WIFI -> entryPayloadAdapters.get(EntryCredentialKind.WIFI).decode(this)
-            EntryCredentialKind.PASSKEY -> requireNotNull(passkey) { "Passkey payload is missing" }.let {
-                PasskeyCredential(
-                    it.credentialId,
-                    it.rpId,
-                    it.userHandle,
-                    it.privateKeyReference,
-                    it.hardwareKeyInfo,
-                )
-            }
+            EntryCredentialKind.PASSKEY -> entryPayloadAdapters.get(EntryCredentialKind.PASSKEY).decode(this)
             EntryCredentialKind.OTP -> entryPayloadAdapters.get(EntryCredentialKind.OTP).decode(this)
         }
 
