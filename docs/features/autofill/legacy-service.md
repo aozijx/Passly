@@ -15,6 +15,9 @@ Credential Manager response。
 trace 的 `LegacyDiscoveryObservation`。Service 不再重复解释 `Candidates`、`RequiresUnlock` 等 domain outcome。
 Credential Manager 仍使用自己的 response 合同，不与 Legacy 结果类型合并。
 
+Legacy 服务断连或销毁时会过期其来源的所有活动交互，释放对应的 Autofill 解锁租约。清理在生命周期回调内立即启动，
+并以不可取消的短任务完成；服务销毁随后取消普通请求 scope，不会中断这项状态回收。重复触发安全：交互只有在首次终态转换时释放租约。
+
 系统悬浮候选菜单使用 RemoteViews。业务层先生成 `AutofillRemoteItem.SingleLine/DoubleLine`，渲染器只负责选择对应
 XML 并绑定文字；XML 不包含匹配类型徽标、自定义卡片背景或业务判断。这样候选、解锁入口和选择器入口共享同一
 展示协议，而 domain 候选模型不会泄漏到 Android View 渲染器。

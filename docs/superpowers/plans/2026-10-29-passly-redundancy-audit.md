@@ -257,3 +257,11 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 修复：清理从调用点立即开始，并在 `NonCancellable` 内完成文件删除；页面生命周期不会中断已开始的临时资源回收。
 - 文档：补充裁剪取消时的资源释放合同及进程启动 staging 清理的兜底边界。
 - 验证：`DetailFaviconSessionTest` 定向测试、`verifyArchitecture`、`:app:lintDebug` 与 `git diff --check` 通过。
+
+### 后续批次：Legacy Autofill 服务销毁清理（2026-10-29）
+
+- 生产路径核对：`onDisconnected()` 把活动交互过期排入 service scope；服务快速销毁时 `onDestroy()` 取消该 scope，清理协程可能在开始前就被取消，活动交互及解锁租约只能等待超时回收。
+- RED：新增 scope 在清理任务调度前被取消的回归；普通 `scope.launch` 实现未运行清理体，断言失败。
+- 修复：生命周期回调使用 `UNDISPATCHED` 立即进入清理，再在 `NonCancellable + IO` 段过期 Legacy 来源活动交互；销毁时先触发清理再取消普通请求 scope。重复调用由交互终态转换保证幂等。
+- 文档：说明断连/销毁时的活动交互过期和租约释放。
+- 验证：`LegacyInteractionExpiryTest` 定向测试通过；`verifyArchitecture`、`:app:lintDebug` 与 `git diff --check` 通过。

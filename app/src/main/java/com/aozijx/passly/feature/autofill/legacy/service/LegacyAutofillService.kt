@@ -184,13 +184,16 @@ class LegacyAutofillService : AutofillService() {
         LogStatements.Autofill.context(AutofillInteractionSource.LEGACY, packageName)
 
     override fun onDisconnected() {
-        serviceScope.launch {
+        launchLegacyInteractionExpiry(serviceScope) {
             finishInteraction.expireAll(AutofillInteractionSource.LEGACY)
         }
         super.onDisconnected()
     }
 
     override fun onDestroy() {
+        launchLegacyInteractionExpiry(serviceScope) {
+            finishInteraction.expireAll(AutofillInteractionSource.LEGACY)
+        }
         serviceScope.cancel()
         super.onDestroy()
     }
