@@ -13,7 +13,6 @@ internal data class BackupImportPlan(
 )
 
 internal object BackupImportPlanner {
-    private val safeId = Regex("[A-Za-z0-9_-]{1,160}")
     private val archiveOnlyFields = setOf("icon_name", "icon_color")
 
     fun plan(bundle: BackupBundle, strategy: BackupImportStrategy): BackupImportPlan {
@@ -119,8 +118,8 @@ internal object BackupImportPlanner {
             document.links.map { Triple(it.sourceEntryId, it.targetEntryId, it.relationType) }
                 .distinct().size == document.links.size
         ) { "备份包含重复关系" }
-        require(document.entries.all { safeId.matches(it.id) }) { "备份包含不安全的条目 ID" }
-        require(document.resources.all { safeId.matches(it.id) }) { "备份包含不安全的资源 ID" }
-        require(document.links.all { safeId.matches(it.id) }) { "备份包含不安全的关系 ID" }
+        require(document.entries.all { BackupBundleValidator.isSafeArchiveId(it.id) }) { "备份包含不安全的条目 ID" }
+        require(document.resources.all { BackupBundleValidator.isSafeArchiveId(it.id) }) { "备份包含不安全的资源 ID" }
+        require(document.links.all { BackupBundleValidator.isSafeArchiveId(it.id) }) { "备份包含不安全的关系 ID" }
     }
 }

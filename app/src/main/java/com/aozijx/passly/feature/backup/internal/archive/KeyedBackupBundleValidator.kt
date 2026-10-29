@@ -14,7 +14,6 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKin
 import com.aozijx.passly.feature.backup.internal.archive.mapper.KeyedEntryArchiveMapper
 
 internal object KeyedBackupBundleValidator {
-    private val safeId = Regex("[A-Za-z0-9_-]{1,160}")
     private val sha256 = Regex("[A-Fa-f0-9]{64}")
     private val archiveOnlyTextFields = setOf("icon_name", "icon_color")
     private val commonFields = setOf(
@@ -44,7 +43,7 @@ internal object KeyedBackupBundleValidator {
         }
 
         val entryTypes = document.entries.associate { entry ->
-            require(safeId.matches(entry.id)) { "备份包含不安全的条目 ID: ${entry.id}" }
+            require(BackupBundleValidator.isSafeArchiveId(entry.id)) { "备份包含不安全的条目 ID: ${entry.id}" }
             val type = requireNotNull(BackupArchiveKeyRegistry.entryType(entry.type)) {
                 "未知条目类型: ${entry.type}"
             }
@@ -53,7 +52,7 @@ internal object KeyedBackupBundleValidator {
         }
         val entryIds = entryTypes.keys
         val resourceIds = document.resources.mapTo(linkedSetOf()) { resource ->
-            require(safeId.matches(resource.id)) { "备份包含不安全的资源 ID: ${resource.id}" }
+            require(BackupBundleValidator.isSafeArchiveId(resource.id)) { "备份包含不安全的资源 ID: ${resource.id}" }
             require(resource.entryId in entryIds) { "备份资源引用了不存在的条目" }
             resource.id
         }
@@ -176,7 +175,7 @@ internal object KeyedBackupBundleValidator {
             "备份包含重复关系"
         }
         links.forEach { link ->
-            require(safeId.matches(link.id)) { "关系 ID 无效: ${link.id}" }
+            require(BackupBundleValidator.isSafeArchiveId(link.id)) { "关系 ID 无效: ${link.id}" }
             val sourceType = requireNotNull(entryTypes[link.sourceEntryId]) { "关系引用了不存在的条目: ${link.id}" }
             val targetType = requireNotNull(entryTypes[link.targetEntryId]) { "关系引用了不存在的条目: ${link.id}" }
             require(link.sourceEntryId != link.targetEntryId) { "条目不能关联自身: ${link.id}" }
