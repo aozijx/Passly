@@ -4,6 +4,8 @@ import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
+import com.aozijx.passly.domain.entry.otp.OtpResult
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -12,7 +14,8 @@ import javax.inject.Singleton
 internal class RoomOtpConfigRepository @Inject constructor(
     private val databaseSession: AppDatabaseSession,
     private val sessionState: SecureSessionAccessState,
-    private val secretFieldStore: SecretFieldStore
+    private val secretFieldStore: SecretFieldStore,
+    private val hotpCodeConsumption: HotpCodeConsumptionTransaction,
 ) : OtpConfigRepository {
 
     override suspend fun getConfig(entryId: String): OtpConfig? {
@@ -21,5 +24,12 @@ internal class RoomOtpConfigRepository @Inject constructor(
             val secret = secretFieldStore.readAll(this, entryId)
             secret.otp?.config
         }
+    }
+
+    override suspend fun consumeHotpCode(entryId: String): OtpResult {
+        if (!sessionState.hasFullSecureSessionAccess()) {
+            return OtpResult.Failure(OtpGenerationError.InvalidSecret)
+        }
+        return databaseSession.transaction { hotpCodeConsumption.consume(this, entryId) }
     }
 }

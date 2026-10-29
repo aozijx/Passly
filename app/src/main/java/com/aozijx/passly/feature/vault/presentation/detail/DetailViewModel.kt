@@ -457,7 +457,7 @@ class DetailViewModel @Inject internal constructor(
         viewModelScope.launch {
             if (
                 copyOtpCodeUseCase(entry.id) {
-                    if (workSession.isCurrent(token)) (otpState.value as? OtpCodeState.Ready)?.code else null
+                    if (workSession.isCurrent(token)) otpRuntime.codeForCopy(entry.id.value) else null
                 } != CopyEntryFieldResult.Copied
             ) return@launch
             if (!workSession.isCurrent(token)) return@launch

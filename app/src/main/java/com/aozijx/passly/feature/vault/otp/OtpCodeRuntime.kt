@@ -34,6 +34,9 @@ internal class OtpCodeRuntime(
     private val scope: CoroutineScope,
     private val codeGenerator: suspend (OtpConfig) -> OtpResult,
     private val loadOtpConfig: suspend (String) -> OtpConfig?,
+    private val consumeHotpCode: suspend (String) -> OtpResult = {
+        OtpResult.Failure(OtpGenerationError.InvalidSecret)
+    },
     initiallyUnlocked: Boolean = true
 ) : OtpCodeInvalidator {
     private val _states = MutableStateFlow<Map<String, OtpCodeState>>(emptyMap())
@@ -141,20 +144,15 @@ internal class OtpCodeRuntime(
         if (!sessionUnlocked) return OtpResult.Failure(OtpGenerationError.InvalidSecret)
         val token = currentActivationToken(entryId)
             ?: return OtpResult.Failure(OtpGenerationError.InvalidSecret)
-        val config = try {
-            loadOtpConfig(entryId)
+        val result = try {
+            consumeHotpCode(entryId)
         } catch (_: FreshAuthenticationRequiredException) {
             pauseUntilFreshAuthentication(entryId)
             return OtpResult.Failure(OtpGenerationError.InvalidSecret)
         } catch (_: SessionLockedException) {
             handleSessionLocked()
             return OtpResult.Failure(OtpGenerationError.InvalidSecret)
-        } ?: return OtpResult.Failure(OtpGenerationError.InvalidSecret)
-        if (config.type != OtpType.HOTP) return OtpResult.Failure(OtpGenerationError.InvalidSecret)
-        val counter = config.counter ?: return OtpResult.Failure(OtpGenerationError.InvalidCounter)
-        if (counter < 0) return OtpResult.Failure(OtpGenerationError.InvalidCounter)
-
-        val result = codeGenerator(config)
+        }
 
         if (!isCurrent(entryId, token)) return result
 
@@ -166,6 +164,13 @@ internal class OtpCodeRuntime(
             }
         }
         return result
+    }
+
+    /** Returns a fresh, consumed HOTP code or the current time-based code for authorized copy. */
+    suspend fun codeForCopy(entryId: String): String? = when (schedules[entryId]?.type) {
+        OtpType.HOTP -> (generateHotpCode(entryId) as? OtpResult.Success)?.code
+        OtpType.TOTP, OtpType.STEAM -> (states.value[entryId] as? OtpCodeState.Ready)?.code
+        null -> null
     }
 
     private fun computeProgress(nowSeconds: Long, period: Int): Float {

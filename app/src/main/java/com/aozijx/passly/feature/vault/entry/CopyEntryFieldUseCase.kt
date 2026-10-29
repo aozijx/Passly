@@ -107,7 +107,7 @@ internal class CopyOtpCodeUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         entryId: EntryId,
-        codeProvider: () -> String?,
+        codeProvider: suspend () -> String?,
     ): CopyEntryFieldResult {
         val result = when (
             val authorization = authorizationGate.authorize(

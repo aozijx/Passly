@@ -19,6 +19,7 @@ class OtpCodeRuntimeFactory @Inject constructor(
         scope = scope,
         codeGenerator = OtpGenerator::generate,
         loadOtpConfig = otpConfigRepository::getConfig,
+        consumeHotpCode = otpConfigRepository::consumeHotpCode,
         initiallyUnlocked = sessionStateProvider.isWritable,
     ).also { runtime ->
         runtime.start()

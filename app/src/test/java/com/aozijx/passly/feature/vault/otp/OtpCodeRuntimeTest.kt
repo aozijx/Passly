@@ -33,12 +33,36 @@ class OtpCodeRuntimeTest {
             scope = backgroundScope,
             loadOtpConfig = { OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = Long.MAX_VALUE) },
             codeGenerator = { OtpGenerator.generate(it) },
+            consumeHotpCode = {
+                OtpGenerator.generate(
+                    OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = Long.MAX_VALUE),
+                )
+            },
         )
         coordinator.activate("exhausted")
         val result = coordinator.generateHotpCode("exhausted")
 
         assertEquals(OtpResult.Failure(OtpGenerationError.CounterExhausted), result)
         assertEquals(OtpCodeState.Failed(OtpGenerationError.CounterExhausted), coordinator.states.value["exhausted"])
+    }
+
+    @Test
+    fun `copying HOTP consumes and returns a fresh code each time`() = runTest {
+        var counter = 7L
+        val coordinator = OtpCodeRuntime(
+            scope = backgroundScope,
+            loadOtpConfig = { OtpConfig(type = OtpType.HOTP, secret = "secret", counter = counter) },
+            codeGenerator = { OtpResult.Success("unused") },
+            consumeHotpCode = {
+                val usedCounter = counter++
+                OtpResult.Success("code-$usedCounter", nextCounter = counter)
+            },
+        )
+        coordinator.activate("hotp")
+
+        assertEquals("code-7", coordinator.codeForCopy("hotp"))
+        assertEquals("code-8", coordinator.codeForCopy("hotp"))
+        assertEquals(OtpCodeState.Ready("code-8", 0f), coordinator.states.value["hotp"])
     }
 
     @Test
