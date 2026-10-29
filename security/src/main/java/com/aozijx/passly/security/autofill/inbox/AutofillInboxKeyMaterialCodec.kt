@@ -79,12 +79,7 @@ internal class AutofillInboxKeyMaterialCodec @Inject constructor() {
 
     fun decodePublicKey(encoded: ByteArray): PublicKey = decodeAndValidatePublicKey(encoded)
 
-    fun <T> withPrivateKey(
-        material: AutofillInboxKeyMaterial,
-        dek: ByteArray,
-        block: (PrivateKey) -> T,
-    ): T {
-        require(dek.size == DEK_BYTES) { "Invalid Vault key size" }
+    fun validatedPublicKey(material: AutofillInboxKeyMaterial): RSAPublicKey {
         require(material.formatVersion == AutofillInboxKeyMaterial.FORMAT_VERSION_CURRENT) {
             "Unsupported Inbox key material version"
         }
@@ -96,6 +91,17 @@ internal class AutofillInboxKeyMaterialCodec @Inject constructor() {
         require(MessageDigest.isEqual(fingerprint, material.publicKeySha256)) {
             "Inbox public key fingerprint mismatch"
         }
+        return publicKey
+    }
+
+    fun <T> withPrivateKey(
+        material: AutofillInboxKeyMaterial,
+        dek: ByteArray,
+        block: (PrivateKey) -> T,
+    ): T {
+        require(dek.size == DEK_BYTES) { "Invalid Vault key size" }
+        val publicKey = validatedPublicKey(material)
+        val fingerprint = MessageDigest.getInstance(SHA_256).digest(material.publicKey)
 
         val envelope = decodeEnvelope(material.privateKeyEnvelope, material.keyId, fingerprint)
         var wrappingKey: ByteArray? = null

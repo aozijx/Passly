@@ -1,6 +1,6 @@
 # Autofill Sealed Save Inbox
 
-状态：实现中。bootstrap key material 的 Domain/Proto 持久化边界、RSA 密钥生成/私钥封装/校验，以及完整 Vault 解锁后的幂等 provision 已实现；锁定保存与解锁导入尚未实现。
+状态：实现中。bootstrap key material 的 Domain/Proto 持久化边界、RSA 密钥生成/私钥封装/校验、完整 Vault 解锁后的幂等 provision，以及 pending record 加密协议已实现；耐久文件队列、入口接入与解锁导入尚未实现。
 
 本设计允许 Vault 锁定时只进行密封写入，不授予数据库读取/解密能力，也不弹出 Passly 认证。当前代码仍使用
 认证式保存，见 [Legacy Service](legacy-service.md)和[Credential Manager](credential-manager.md)。
@@ -73,8 +73,11 @@ payload_ciphertext + tag  AES-256-GCM(serialized draft)
 ```
 
 AAD 是 encoded `magic || version || key_id || draft_id || created_at_ms` 再拼接从 `bootstrap.pb` 读取的
-`public_key_sha256`；fingerprint 不在 record header。payload 内重复 draft ID，并包含 source、目标 Entry ID、
-package/domain/page title/username/password/captured time。解密后两个 draft ID 必须一致。
+`public_key_sha256`；fingerprint 不在 record header。payload 使用独立 magic/version，重复 draft ID，并包含
+source（固定 wire key：Legacy=1、Credential Manager=2）、captured time、package/domain/page title/username/password。
+字符串使用 UTF-8 与 big-endian signed i32 长度，nullable 字段用 -1 表示缺失；拒绝未知 source、非法 UTF-8、尾随字节与超限字段。
+各 UTF-8 字段上限分别为 package 512、domain 4096、page title 8192、username 8192、password 32768 bytes，整条 record 上限 64 KiB。
+Entry ID 由导入事务生成，事务 marker 保存创建后返回的 ID；不在 pending payload 预造 Entry ID。解密后两个 draft ID 必须一致。
 
 ## 限制与清理
 

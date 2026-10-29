@@ -1,6 +1,8 @@
 package com.aozijx.passly.security.autofill.inbox
 
 import com.aozijx.passly.domain.access.model.AutofillInboxKeyMaterial
+import com.aozijx.passly.domain.autofill.model.AutofillInboxSource
+import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -33,6 +35,30 @@ class AutofillInboxKeyMaterialCodecAndroidTest {
         }
 
         assertEquals(plaintext.toList(), restored.toList())
+
+        val recordCodec = AutofillInboxRecordCodec(codec)
+        val draftId = recordCodec.createDraftId()
+        val record = recordCodec.seal(
+            material = material,
+            draftId = draftId,
+            source = AutofillInboxSource.CREDENTIAL_MANAGER,
+            createdAtMs = 1_800_000_000_000,
+            capturedAtMs = 1_799_999_999_000,
+            draft = AutofillSaveDraft(
+                packageName = "example.app",
+                webDomain = "example.com",
+                pageTitle = "Sign in",
+                username = "person@example.com",
+                password = "secret value",
+            ),
+        )
+        val reopened = codec.withPrivateKey(material, dek) { privateKey ->
+            recordCodec.open(material, privateKey, record)
+        }
+
+        assertEquals(draftId, reopened.draftId)
+        assertEquals(AutofillInboxSource.CREDENTIAL_MANAGER, reopened.source)
+        assertEquals("secret value", reopened.draft.password)
     }
 
     private fun rsaCipher(mode: Int, key: Key): Cipher =

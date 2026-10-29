@@ -1,6 +1,6 @@
 # ADR-0025：锁定状态使用 Sealed Inbox 保存 Autofill 凭据
 
-- 状态：Accepted（实现中；bootstrap key material 的 Domain/Proto 持久化、密钥编解码及解锁 provision 已落地）
+- 状态：Accepted（实现中；bootstrap key material、密钥与 pending record 编解码及解锁 provision 已落地）
 - 日期：2026-10-18
 
 ## 背景
