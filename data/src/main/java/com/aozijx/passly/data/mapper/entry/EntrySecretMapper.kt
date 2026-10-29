@@ -3,7 +3,6 @@ package com.aozijx.passly.data.mapper.entry
 import com.aozijx.passly.data.codec.entry.payload.CustomFieldPayload
 import com.aozijx.passly.data.codec.entry.payload.PasskeyCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.SecretPayload
-import com.aozijx.passly.data.codec.entry.payload.SshCredentialPayload
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.CardCredential
@@ -29,9 +28,7 @@ object EntrySecretMapper {
             is LoginCredential -> entryPayloadAdapters.get(EntryCredentialKind.LOGIN).encode(credential)
             is CardCredential -> entryPayloadAdapters.get(EntryCredentialKind.CARD).encode(credential)
             is IdentityCredential -> entryPayloadAdapters.get(EntryCredentialKind.IDENTITY).encode(credential)
-            is SshCredential -> SecretPayload(ssh = SshCredentialPayload(
-                credential.privateKey, credential.publicKey, credential.passphrase,
-            ))
+            is SshCredential -> entryPayloadAdapters.get(EntryCredentialKind.SSH).encode(credential)
             is WifiCredential -> entryPayloadAdapters.get(EntryCredentialKind.WIFI).encode(credential)
             is PasskeyCredential -> SecretPayload(passkey = PasskeyCredentialPayload(
                 credential.credentialId,
@@ -77,9 +74,7 @@ object EntrySecretMapper {
             EntryCredentialKind.LOGIN -> entryPayloadAdapters.get(EntryCredentialKind.LOGIN).decode(this)
             EntryCredentialKind.CARD -> entryPayloadAdapters.get(EntryCredentialKind.CARD).decode(this)
             EntryCredentialKind.IDENTITY -> entryPayloadAdapters.get(EntryCredentialKind.IDENTITY).decode(this)
-            EntryCredentialKind.SSH -> requireNotNull(ssh) { "SSH payload is missing" }.let {
-                SshCredential(it.privateKey, it.publicKey, it.passphrase)
-            }
+            EntryCredentialKind.SSH -> entryPayloadAdapters.get(EntryCredentialKind.SSH).decode(this)
             EntryCredentialKind.WIFI -> entryPayloadAdapters.get(EntryCredentialKind.WIFI).decode(this)
             EntryCredentialKind.PASSKEY -> requireNotNull(passkey) { "Passkey payload is missing" }.let {
                 PasskeyCredential(

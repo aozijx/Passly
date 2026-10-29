@@ -18,6 +18,7 @@ import com.aozijx.passly.domain.entry.model.credential.EntryCredentialKind
 import com.aozijx.passly.domain.entry.model.credential.IdentityCredential
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
+import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
@@ -108,6 +109,20 @@ class EntrySecretMapperTest {
 
         assertEquals(EntryCredentialKind.IDENTITY, adapter.kind)
         assertEquals(expectedPayload, payload.identity)
+        assertEquals(null, payload.login)
+        assertEquals(credential, adapter.decode(payload))
+    }
+
+    @Test
+    fun `ssh adapter owns the full ssh slot`() {
+        val credential = populatedDataClass(SshCredential::class.java) as SshCredential
+        val expectedPayload = populatedDataClass(SshCredentialPayload::class.java) as SshCredentialPayload
+        val adapter = entryPayloadAdapters.get(EntryCredentialKind.SSH)
+
+        val payload = adapter.encode(credential)
+
+        assertEquals(EntryCredentialKind.SSH, adapter.kind)
+        assertEquals(expectedPayload, payload.ssh)
         assertEquals(null, payload.login)
         assertEquals(credential, adapter.decode(payload))
     }
