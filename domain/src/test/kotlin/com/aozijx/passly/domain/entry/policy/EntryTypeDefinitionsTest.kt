@@ -69,6 +69,40 @@ class EntryTypeDefinitionsTest {
     }
 
     @Test
+    fun `catalog rejects duplicate type definitions before indexing`() {
+        val login = EntryTypeDefinition(
+            EntryType.LOGIN,
+            listOf(EntryFieldDefinition(FieldKey.TITLE, required = true)),
+        )
+
+        val error = assertThrows(IllegalArgumentException::class.java) {
+            buildEntryTypeDefinitionIndex(
+                definitions = listOf(login, login),
+                expectedTypes = setOf(EntryType.LOGIN),
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains(EntryType.LOGIN.name))
+    }
+
+    @Test
+    fun `catalog rejects missing type definitions with the missing type identified`() {
+        val login = EntryTypeDefinition(
+            EntryType.LOGIN,
+            listOf(EntryFieldDefinition(FieldKey.TITLE, required = true)),
+        )
+
+        val error = assertThrows(IllegalArgumentException::class.java) {
+            buildEntryTypeDefinitionIndex(
+                definitions = listOf(login),
+                expectedTypes = setOf(EntryType.LOGIN, EntryType.OTP),
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains(EntryType.OTP.name))
+    }
+
+    @Test
     fun `credential types expose their own semantic fields`() {
         val login = EntryTypeDefinitions[EntryType.LOGIN]
         val card = EntryTypeDefinitions[EntryType.BANK_CARD]
