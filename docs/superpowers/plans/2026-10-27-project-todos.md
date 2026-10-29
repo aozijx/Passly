@@ -42,7 +42,7 @@
 
 ### 2. 版本历史、活动日志与历史界面
 
-已完成比较脱敏子批：按字段输出类型化差异，Wi-Fi 密码、安全答案及隐藏自定义字段仅标记变化；移除整对象字符串化。`build-revision-disclosure-final.log` 全部门禁通过，Domain 172、Data 70、App 862 项单测及 API 34 的 52 项仪器测试零失败。活动语义与 Sheet 布局仍待完成。
+比较脱敏、活动语义与 Sheet 布局子批均已完成；后续验收记录见本计划的“当前交付与剩余验证”。比较脱敏子批按字段输出类型化差异，Wi-Fi 密码、安全答案及隐藏自定义字段仅标记变化，并移除整对象字符串化。该子批的 `build-revision-disclosure-final.log` 门禁通过，Domain 172、Data 70、App 862 项单测及 API 34 的 52 项仪器测试零失败。
 
 - [x] 追踪 `EntryRevisionWriter`、各 Command Executor、`EntryActivityWriter` 与活动记录仓库，区分内容快照和访问事件；复现重复或含糊记录。
 - [x] 以真实内容修改/恢复为版本依据，完善不含值的活动语义及持久化，移除旧补丁或重复记录路径。
@@ -90,12 +90,12 @@ API 31 真机的 `build-history-api31.log` 未通过：Data 29 项中 3 项失�
 用户允许使用现有 AVD 继续验证。Data 所有 Room 仪器测试现统一通过 `TestDatabaseFactory` 使用生产 SQLCipher 驱动，并保留 `AttachmentReferenceConstraintCallback`；显式 JSON1 查询及 Autofill/Paging JSON 查询在 API 36 模拟器验证成功。分页测试遇到 `LoadResult.Error` 时现在直接抛出其原始异常。
 API 36 Data 仪器测试：30 项通过、0 失败。API 36 App 全量仪器测试最终 57 项通过、0 失败，其中 `PermissionRequestHostTest` 2 项通过。首次空历史截图为黑图；改用实屏截图后又观察到白色空窗口，旧像素断言会误判。截图测试现等待画面中出现 Sheet 与遮罩的明暗差异，完整复跑通过；最终图片经人工检查，显示 Version history Sheet 和“No versions available”。
 
-API 31 复验仍未完成：本机只有 API 34/36/37 系统镜像，API 31 镜像目录为空且没有 `sdkmanager`；本轮未下载/安装大型系统镜像。硬件 Keystore 的真实生物录入变更仍未实测，不宣称通过。
+API 31 真机复验（OXF-AN00）：Data 33 项、App 55 项仪器测试均通过，零失败。Data 结果包含 HOTP 事务成功递增持久化、失败不递增、避免解密无关敏感字段的 3 项回归测试。硬件 Keystore 的真实生物识别录入变更仍未实测。
 
 - [x] DAO/事务仪器测试使用与生产一致的 SQLCipher 驱动，保留已有外键和附件约束 callback；核对 JSON 查询能力（API 36：30 项全过）。
 - [x] 分页测试明确报告 LoadResult.Error 的真实异常，避免强转掩盖 SQL 根因。
-- [ ] 重新执行 API 31 的 Data 与 App 仪器测试；受 SDK 缺少 API 31 system image 阻塞，API 36 结果不能代替。
+- [x] 使用 API 31 真机重新执行 Data 与 App 仪器测试（Data 33 项、App 55 项均通过）。
 - [x] 补齐并检查空历史页有效截图。真实生物录入变更后的硬件 Keystore 行为仍未实测，不宣称通过。
 
-最终独立只读复核未提出新的代码问题；API 31 与硬件边界保留上述未完成项，因此本计划尚未整体关闭。
+最终独立只读复核未提出新的代码问题；API 31 Data/App 仪器测试已在真机复验通过，硬件 Keystore 的真实生物识别录入变更仍未实测，因此本计划尚未整体关闭。
 收尾：`verifyArchitecture` 通过；文档相对链接检查和移除候选符号检索通过，`git diff --check` 通过。工作区本地 `AGENTS.md` 与 `.agents/skills/` 保持未跟踪，不暂存、不提交。
