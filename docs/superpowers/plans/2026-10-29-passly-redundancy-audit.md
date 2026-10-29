@@ -314,6 +314,12 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 文档：记录发布、计时替换和所有权清除共用串行边界。
 - 验证：`:core:testDebugUnitTest`、`verifyArchitecture`、`:core:lintDebug` 与 `git diff --check` 通过。
 
+### 后续批次：移除剪贴板调度的非原子入口（2026-10-29）
+
+- 复核：`ClipboardClearScheduler.schedule()` 可绕过 `replace()` 的“发布 clip + 替换计时器”原子边界；当前生产调用已全部使用 `replace()`。
+- 修复：删除多余的公开调度入口，现有调度操作只能通过原子替换进入；顺序计时测试改为覆盖该合同。
+- 验证：`ClipboardClearSchedulerTest` 5 项、`:core:testDebugUnitTest`、`verifyArchitecture`、`:core:lintDebug` 与 `git diff --check` 通过。
+
 ### 后续批次：Autofill 使用记录转发层移除（2026-10-29）
 
 - 生产路径核对：`RecordAutofillUsageUseCase` 只把条目 ID 转成 String 并固定 `ActivityType.AUTOFILL` 后转发至 Domain `ActivityRecorder`；唯一调用方 `CompleteAutofillSelection` 已拥有“完成点选并记录使用”的应用职责。

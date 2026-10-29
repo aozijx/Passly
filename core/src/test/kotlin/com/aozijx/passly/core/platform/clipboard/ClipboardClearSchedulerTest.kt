@@ -26,7 +26,7 @@ class ClipboardClearSchedulerTest {
         val cleared = mutableListOf<String>()
         val scheduler = ClipboardClearScheduler(this, StandardTestDispatcher(testScheduler))
 
-        scheduler.schedule("first", 30_000) { cleared += it }
+        scheduler.replace("first", 30_000, publish = {}) { cleared += it }
         advanceTimeBy(29_999)
         assertEquals(emptyList<String>(), cleared)
 
@@ -35,12 +35,12 @@ class ClipboardClearSchedulerTest {
     }
 
     @Test
-    fun `new schedule replaces previous token`() = runTest {
+    fun `new replacement replaces previous token`() = runTest {
         val cleared = mutableListOf<String>()
         val scheduler = ClipboardClearScheduler(this, StandardTestDispatcher(testScheduler))
 
-        scheduler.schedule("first", 30_000) { cleared += it }
-        scheduler.schedule("second", 15_000) { cleared += it }
+        scheduler.replace("first", 30_000, publish = {}) { cleared += it }
+        scheduler.replace("second", 15_000, publish = {}) { cleared += it }
         advanceUntilIdle()
 
         assertEquals(listOf("second"), cleared)
@@ -51,7 +51,7 @@ class ClipboardClearSchedulerTest {
         val cleared = mutableListOf<String>()
         val scheduler = ClipboardClearScheduler(this, StandardTestDispatcher(testScheduler))
 
-        scheduler.schedule("first", 15_000) { cleared += it }
+        scheduler.replace("first", 15_000, publish = {}) { cleared += it }
         scheduler.cancel()
         advanceUntilIdle()
 

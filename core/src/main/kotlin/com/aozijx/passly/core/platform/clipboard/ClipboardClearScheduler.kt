@@ -14,17 +14,6 @@ internal class ClipboardClearScheduler(
     private val lock = Any()
     private var pending: Job? = null
 
-    fun schedule(
-        ownershipToken: String,
-        delayMillis: Long,
-        clear: (String) -> Unit,
-    ) {
-        synchronized(lock) {
-            cancelPendingLocked()
-            scheduleLocked(ownershipToken, delayMillis, clear)
-        }
-    }
-
     fun replace(
         ownershipToken: String,
         delayMillis: Long?,
