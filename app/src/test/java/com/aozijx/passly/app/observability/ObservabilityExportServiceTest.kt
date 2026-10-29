@@ -178,6 +178,38 @@ class ObservabilityExportServiceTest {
     }
 
     @Test
+    fun `failed deletion scheduling keeps an already shared export available`() = runTest {
+        val files = RecordingExportStorageGateway(
+            cacheDirectory,
+            scheduleDeletionAccepted = false,
+        )
+        val service = service(PageStore(listOf(record("event_00000001", 100))), files)
+
+        val result = service.export(TestPermit, shareRequest())
+
+        assertTrue(result.isSuccess)
+        assertEquals(1, files.shareCalls)
+        assertFalse(files.deleteScheduled)
+        assertTrue(files.target!!.exists())
+    }
+
+    @Test
+    fun `deletion scheduler exception keeps an already shared export available`() = runTest {
+        val files = RecordingExportStorageGateway(
+            cacheDirectory,
+            scheduleDeletionFailure = IllegalStateException("handler unavailable"),
+        )
+        val service = service(PageStore(listOf(record("event_00000001", 100))), files)
+
+        val result = service.export(TestPermit, shareRequest())
+
+        assertTrue(result.isSuccess)
+        assertEquals(1, files.shareCalls)
+        assertFalse(files.deleteScheduled)
+        assertTrue(files.target!!.exists())
+    }
+
+    @Test
     fun `cancellation while reading records propagates`() = runTest {
         val cancelled = CancellationException("diagnostics read cancelled")
         val files = RecordingExportStorageGateway(cacheDirectory)
@@ -365,6 +397,8 @@ class ObservabilityExportServiceTest {
         private val directory: File,
         private val shareFailure: Boolean = false,
         private val shareException: Throwable? = null,
+        private val scheduleDeletionFailure: Throwable? = null,
+        private val scheduleDeletionAccepted: Boolean = true,
         private val documentWriteException: Throwable? = null,
         private val afterCreateFile: (() -> Unit)? = null,
     ) : DiagnosticsExportStorageGateway {
@@ -402,9 +436,11 @@ class ObservabilityExportServiceTest {
             return if (shareFailure) Result.failure(IllegalStateException("share failed")) else Result.success(Unit)
         }
 
-        override fun scheduleDeletion(file: File) {
-            deleteScheduled = true
-            file.delete()
+        override fun scheduleDeletion(file: File): Boolean {
+            scheduleDeletionFailure?.let { throw it }
+            deleteScheduled = scheduleDeletionAccepted
+            if (scheduleDeletionAccepted) file.delete()
+            return scheduleDeletionAccepted
         }
 
         override fun delete(file: File) {

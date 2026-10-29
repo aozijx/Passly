@@ -36,7 +36,7 @@ internal interface DiagnosticsExportStorageGateway {
     fun clearStaleExports()
     fun createExportFile(spec: ExportArtifactSpec): File
     fun share(file: File, mimeType: String): Result<Unit>
-    fun scheduleDeletion(file: File)
+    fun scheduleDeletion(file: File): Boolean
     fun delete(file: File)
     fun openDocument(uri: String): OutputStream
     fun deleteDocument(uri: String)
@@ -109,7 +109,9 @@ class ObservabilityExportService @Inject internal constructor(
                 deleteExportFile(exportFile, shareFailure)
                 Result.failure(shareFailure)
             } else {
-                storage.scheduleDeletion(exportFile)
+                // Sharing already succeeded. If delayed cleanup cannot be scheduled, leave the
+                // file for the age-based sweep instead of invalidating the recipient's URI.
+                runCatching { storage.scheduleDeletion(exportFile) }
                 Result.success(Unit)
             }
         } catch (cancelled: CancellationException) {
@@ -220,9 +222,8 @@ internal class AndroidDiagnosticsExportStorageGateway @Inject constructor(
         context.startActivity(intent)
     }
 
-    override fun scheduleDeletion(file: File) {
+    override fun scheduleDeletion(file: File): Boolean =
         Handler(Looper.getMainLooper()).postDelayed({ file.delete() }, DELETE_DELAY_MS)
-    }
 
     override fun delete(file: File) {
         file.delete()

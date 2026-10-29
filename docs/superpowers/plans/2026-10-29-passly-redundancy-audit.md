@@ -297,3 +297,11 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 修复：恢复码复制使用活动草稿对象身份作为条件写入守卫；Scanner 使用当前扫描工作对象守卫。共同由 Android ClipboardCopyController 在策略读取后重新校验，再执行同步平台写入。
 - 文档：更新认证与 Scanner 对复制所有权的边界描述。
 - 验证：`RecoveryCodeDraftInteractorTest` 与 `ScannerViewModelTest` 定向测试通过；`verifyArchitecture`、`:app:lintDebug` 与 `git diff --check` 通过。
+
+### 后续批次：诊断分享清理调度失败（2026-10-29）
+
+- 生产路径核对：分享 Intent 启动成功后，`scheduleDeletion()` 若抛出异常会落入整体失败处理并立即删除接收方仍需读取的文件；Android `Handler.postDelayed()` 还可能直接返回 false 表示任务未入队。
+- RED：模拟成功分享后清理调度异常，旧实现返回失败且删除已分享文件。
+- 修复：存储边界返回主线程删除任务是否入队；调度失败或抛错时保留文件，将其交给超过 10 分钟的陈旧文件清理兜底。分享成功状态不再被后置清理失败反转。
+- 文档：明确延迟删除未入队时保留接收文件，并使用年龄清理兜底。
+- 验证：`ObservabilityExportServiceTest` 14 项通过，含任务拒绝与调度异常；`verifyArchitecture`、`:app:lintDebug` 与 `git diff --check` 通过。
