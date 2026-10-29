@@ -20,6 +20,7 @@ import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
+import com.aozijx.passly.feature.autofill.runtime.launchAutofillServiceCleanup
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -121,12 +122,15 @@ class ModernCredentialService : CredentialProviderService() {
         cancellationSignal: CancellationSignal,
         callback: OutcomeReceiver<Void?, androidx.credentials.exceptions.ClearCredentialException>
     ) {
-        val job = scope.launch {
-            finishInteraction.expireAll(AutofillInteractionSource.CREDENTIAL_MANAGER)
-            if (!cancellationSignal.isCanceled) {
-                callback.onResult(null)
+        val job = launchAutofillServiceCleanup(
+            scope = scope,
+            cleanup = {
+                finishInteraction.expireAll(AutofillInteractionSource.CREDENTIAL_MANAGER)
+            },
+            afterCleanup = {
+                if (!cancellationSignal.isCanceled) callback.onResult(null)
             }
-        }
+        )
         cancellationSignal.setOnCancelListener(job::cancel)
     }
 

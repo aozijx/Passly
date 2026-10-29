@@ -18,6 +18,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
+import com.aozijx.passly.feature.autofill.runtime.launchAutofillServiceCleanup
 import com.aozijx.passly.feature.autofill.legacy.LegacySaveFlow
 import com.aozijx.passly.feature.autofill.legacy.LegacySavePreparation
 import com.aozijx.passly.feature.autofill.legacy.service.adapter.LegacyPlatformAdapter
@@ -184,16 +185,16 @@ class LegacyAutofillService : AutofillService() {
         LogStatements.Autofill.context(AutofillInteractionSource.LEGACY, packageName)
 
     override fun onDisconnected() {
-        launchLegacyInteractionExpiry(serviceScope) {
+        launchAutofillServiceCleanup(serviceScope, cleanup = {
             finishInteraction.expireAll(AutofillInteractionSource.LEGACY)
-        }
+        })
         super.onDisconnected()
     }
 
     override fun onDestroy() {
-        launchLegacyInteractionExpiry(serviceScope) {
+        launchAutofillServiceCleanup(serviceScope, cleanup = {
             finishInteraction.expireAll(AutofillInteractionSource.LEGACY)
-        }
+        })
         serviceScope.cancel()
         super.onDestroy()
     }

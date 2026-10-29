@@ -327,3 +327,12 @@ Append per-module findings to this file as work proceeds. Each finding includes 
 - 决策：保留在 `feature/autofill`。这些类是 feature 专属 Android 入口，包含真实生命周期与平台协议职责；移入通用 `service` 包会新增转发边界，不会减少平台实现。
 - 文档：包边界允许单一业务流程紧耦合的 Service 实现归属对应 feature。
 - 验证：核对 Manifest 三项声明、生产 Service 实现与 `git diff --check`；未改运行代码。
+
+### 后续批次：Credential Manager 清除请求的服务取消边界（2026-10-29）
+
+- 生产路径核对：`onClearCredentialStateRequest()` 将 `expireAll(CREDENTIAL_MANAGER)` 放在 Service scope 普通 `launch`；取消信号或 Service 销毁可能在协程体启动前取消它，未释放的交互/临时 unlock lease 只能等进程级超时。Legacy 的同类生命周期清理已使用立即启动的不可取消清理。
+- 生命周期边界：不在 Modern Credential Service `onDestroy()` 过期全部交互，因为系统返回的 CredentialEntry PendingIntent 可能在 Service 销毁/重建后才被用户选择；由进程级 60 秒超时回收放弃的交互。
+- 修复：抽取 Autofill 级服务清理 helper，Legacy 断连/销毁与 Credential Manager clear-state 共用；清理立即进入 `NonCancellable`，请求/父 scope 取消后仍完成，成功回调只在清理完成且请求未取消时发送。
+- 文档：明确 clear-state 清理取消合同及 PendingIntent 跨 Service 生命周期的时限边界。
+- RED：新增父 scope 在清理挂起期间取消的回归；首轮发现清理虽完成但取消后的成功回调仍执行，加入 `ensureActive()` 检查后回归通过。
+- 验证：`AutofillServiceCleanupTest` 与 `AutofillTraceLifecycleTest` 共 5 项通过；`verifyArchitecture`、单 worker `:app:lintDebug` 与 `git diff --check` 通过。

@@ -28,7 +28,10 @@ PendingIntent 是显式 mutable Activity intent，identity 包含 interaction ID
 使用 `RESULT_OK`；只有无法构造协议响应才取消。解锁返回候选是中间态，选择/create 是终态。
 
 interaction 为 process-local、60 秒超时；认证或秘密解析中的操作会延后回收。`onClearCredentialStateRequest()`
-只过期 Credential Manager interactions，不删除条目，也不锁定用户原本拥有的完整 Vault 会话。
+只过期 Credential Manager interactions，不删除条目，也不锁定用户原本拥有的完整 Vault 会话。清理一旦启动，
+即使 Service scope 或请求随后取消也会完成；取消时不再调用系统成功回调。普通 Service 销毁不会立即过期
+这些 interaction，因为系统可能在 Service 重建后才触发已返回的 PendingIntent；无人继续的 interaction 由进程级
+60 秒过期器回收。
 
 相关实现：
 
