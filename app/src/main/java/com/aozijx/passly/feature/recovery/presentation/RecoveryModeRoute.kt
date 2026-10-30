@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.recovery.presentation
 
 import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
@@ -24,6 +25,10 @@ fun RecoveryModeRoute(onExit: () -> Unit) {
     val viewModel: RecoveryModeViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    DisposableEffect(viewModel) {
+        val owner = viewModel.onPageEntered()
+        onDispose { viewModel.onPageExited(owner) }
+    }
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
