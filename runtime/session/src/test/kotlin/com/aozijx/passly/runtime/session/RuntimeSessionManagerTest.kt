@@ -9,6 +9,7 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
@@ -250,6 +251,43 @@ class RuntimeSessionManagerTest {
 
         assertTrue(resource.closed)
         assertEquals(SecureSessionState.SEALED, manager.lockState)
+    }
+
+    @Test
+    fun `seal timeout cancels active write before closing resource`() = runBlocking {
+        val leaseStarted = CompletableDeferred<Unit>()
+        val leaseFinished = CompletableDeferred<Unit>()
+        val leaseFinishedBeforeClose = AtomicReference(false)
+        val resource = FakeResource(onClose = { leaseFinishedBeforeClose.set(leaseFinished.isCompleted) })
+        val manager = RuntimeSessionManager(
+            resource = resource,
+            keySource = SessionKeySource { byteArrayOf(9) },
+        )
+        manager.unlock()
+
+        val writer = async {
+            manager.write {
+                leaseStarted.complete(Unit)
+                try {
+                    kotlinx.coroutines.awaitCancellation()
+                } finally {
+                    leaseFinished.complete(Unit)
+                }
+            }
+        }
+        leaseStarted.await()
+
+        try {
+            manager.seal(timeout = 1.milliseconds)
+
+            assertTrue("timed-out write must be cancelled", writer.isCancelled)
+            assertTrue("write must finish cleanup before resource close", leaseFinished.isCompleted)
+            assertTrue(leaseFinishedBeforeClose.get())
+            assertTrue(resource.closed)
+            assertEquals(SecureSessionState.SEALED, manager.lockState)
+        } finally {
+            writer.cancelAndJoin()
+        }
     }
 
     @Test

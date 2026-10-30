@@ -19,9 +19,9 @@
 
 ### 已解决：DatabaseSession 并发关闭
 
-`RuntimeSessionManager` 通过 `SessionLeaseGate` 在同一互斥区拒绝新 lease 并计数活跃操作；封存等待事务排干，超时则记录剩余 lease 并取消观察任务，再关闭资源。
+`RuntimeSessionManager` 通过 `SessionLeaseGate` 在同一互斥区拒绝新 lease 并计数活跃操作；封存先等待排干，超时记录剩余数量并取消所有活跃 lease 的 owner Job（包括读、写和观察流），再等待清理宽限期后关闭资源。
 资源关闭和打开失败后的句柄回收都在配置的 IO dispatcher 执行，避免 Room 的同步关闭阻塞锁定调用方线程。
-Runtime 单测覆盖 dispatcher 与 lease 排干，API 36 SQLCipher 仪器测试用暂停的 Room 事务验证封存等待、拒绝新读取、提交后关闭并可重新打开。
+Runtime 单测覆盖 dispatcher、正常排干和超时取消写操作并在关闭前完成清理；API 36 SQLCipher 仪器测试用暂停的 Room 事务验证封存等待、拒绝新读取、提交后关闭并可重新打开。
 
 清理时删除了只被仪器测试调用的 `AppDatabaseSession.closeDatabase()` 和其下游 `RuntimeSessionManager.closeResource()` 转发；
 封存本身是唯一关闭所有者，测试不再在 `seal()` 后重复关库。
@@ -43,25 +43,13 @@ Argon2id 参数后，旧备份可能无法恢复；头部也未作为明确 AAD 
 
 ## 中优先级
 
-### P2：Room 仍保留失效 KeyEnvelope 实现
+### 已解决：旧 Room KeyEnvelope 实现已移除
 
-当前 Envelope 真相源是 Proto `VaultBootstrapStore`，但 `AppDatabase` 仍注册 `KeyEnvelopeEntity/Dao`
-。仓库中没有业务调用；Entity 缺少当前 Proto Envelope 的 `iv`，且 `type` 为 `String`，DAO 的
-`getByType/deleteByType` 却接收 `Int`。这既扩大 Schema，也容易让后续代码误用两个真相源。
+Bootstrap Proto 是唯一 Envelope 持久化来源；当前 Data Room entity、DAO 和 `AppDatabase` 中都没有旧 `KeyEnvelope` 注册。
 
-建议在全新安装基线下从 Room v1 移除 Entity、DAO、DatabaseSchema 常量与 AppDatabase accessor，并重新导出
-Schema；Bootstrap Proto 保持唯一来源。
+### 已解决：暗色模式已迁移到 Proto enum
 
-证据：`AppDatabase.kt:27-52`、`KeyEnvelopeEntity.kt:15-41`、`KeyEnvelopeDao.kt:24-25,50-51`。
-
-### P2：暗色模式仍以布尔字段持久化
-
-界面需要“跟随系统 / 浅色 / 深色”三态，但 Proto 的 `dark_mode` 是 `optional bool`。presence
-可以勉强表达第三态，却让 Repository/UI 容易错误地折叠为二态，也不利于后续扩展。
-
-建议新增 `ThemeMode` enum 字段并 reserve 旧字段号，Mapper 显式处理未识别值。
-
-证据：`app_settings.proto:18-20`。
+Proto `AppearancePreferences.theme_mode` 使用 `ThemeModePreference`，显式区分 SYSTEM、LIGHT、DARK；Data mapper 显式转换 Domain `ThemeMode`。
 
 ### 已解决：认证 Toast 旁路和消息去重误抑制
 

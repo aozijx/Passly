@@ -31,43 +31,40 @@ internal class SessionLeaseGate<Handle : Any>(
     val lockState: StateFlow<SecureSessionState> = mutableLockState.asStateFlow()
 
     private val activeLeases = AtomicInteger(0)
-    private val observerJobs = ConcurrentHashMap.newKeySet<Job>()
+    private val leaseOwners = ConcurrentHashMap<Job, Int>()
     private val leaseMutex = Mutex()
     private val resourceMutex = Mutex()
 
     private var handle: Handle? = null
 
     suspend fun <T> read(block: suspend Handle.() -> T): T {
-        acquireLease()
+        val owner = acquireLease()
         return try {
             resolveHandle().block()
         } finally {
-            releaseLease()
+            releaseLease(owner)
         }
     }
 
     suspend fun <T> write(block: suspend Handle.() -> T): T {
-        acquireLease()
+        val owner = acquireLease()
         return try {
             val current = resolveHandle()
             resource.transaction(current, block)
         } finally {
-            releaseLease()
+            releaseLease(owner)
         }
     }
 
     fun <T> observe(block: suspend Handle.() -> Flow<T>): Flow<T> = flow {
-        val collectorJob = currentCoroutineContext()[Job]
-        acquireLease()
-        if (collectorJob != null) observerJobs += collectorJob
+        val owner = acquireLease()
         try {
             resolveHandle().block().collect { value ->
                 ensureUnlocked()
                 emit(value)
             }
         } finally {
-            if (collectorJob != null) observerJobs -= collectorJob
-            releaseLease()
+            releaseLease(owner)
         }
     }.flowOn(Dispatchers.IO)
 
@@ -192,8 +189,10 @@ internal class SessionLeaseGate<Handle : Any>(
                 timeoutMs = timeout.inWholeMilliseconds,
                 activeLeaseCount = activeLeases.get(),
             )
-            observerJobs.forEach(Job::cancel)
-            delay(POST_CANCEL_DELAY_MS)
+            leaseOwners.keys.forEach(Job::cancel)
+            withTimeoutOrNull(POST_CANCEL_GRACE_MS) {
+                while (activeLeases.get() > 0) delay(DRAIN_POLL_MS)
+            }
         }
 
         close()
@@ -231,15 +230,21 @@ internal class SessionLeaseGate<Handle : Any>(
         }
     }
 
-    private suspend fun acquireLease() {
+    private suspend fun acquireLease(): Job? {
+        val owner = currentCoroutineContext()[Job]
         leaseMutex.withLock {
             ensureUnlocked()
             activeLeases.incrementAndGet()
+            if (owner != null) leaseOwners.compute(owner) { _, count -> (count ?: 0) + 1 }
         }
+        return owner
     }
 
-    private fun releaseLease() {
+    private fun releaseLease(owner: Job?) {
         activeLeases.decrementAndGet()
+        if (owner != null) {
+            leaseOwners.computeIfPresent(owner) { _, count -> if (count == 1) null else count - 1 }
+        }
     }
 
     private fun ensureUnlocked() {
@@ -282,7 +287,7 @@ internal class SessionLeaseGate<Handle : Any>(
 
     private companion object {
         const val DRAIN_POLL_MS = 50L
-        const val POST_CANCEL_DELAY_MS = 100L
+        const val POST_CANCEL_GRACE_MS = 100L
         const val NANOS_PER_MILLISECOND = 1_000_000L
     }
 }
