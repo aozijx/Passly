@@ -24,6 +24,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -36,8 +38,12 @@ class DiagnosticsViewModel @Inject constructor(
     private val logger: Logger,
     private val clipboardWriter: SensitiveClipboardWriter,
 ) : ViewModel() {
-    private val effectChannel = Channel<DiagnosticsEffect>(Channel.BUFFERED)
+    private data class PageEffect(val owner: Any, val effect: DiagnosticsEffect)
+
+    private val effectChannel = Channel<PageEffect>(Channel.BUFFERED)
     val effects = effectChannel.receiveAsFlow()
+        .filter { activePageOwner === it.owner }
+        .map { it.effect }
 
     private val _uiState = MutableStateFlow(DiagnosticsUiState())
     val uiState: StateFlow<DiagnosticsUiState> = _uiState.asStateFlow()
@@ -45,14 +51,11 @@ class DiagnosticsViewModel @Inject constructor(
     private var activeRefreshOwner: Any? = null
     private var copyJob: Job? = null
     private var activeCopyOwner: Any? = null
-    private var isPageActive = false
+    private var activePageOwner: Any? = null
 
     fun onAction(action: DiagnosticsAction) {
         when (action) {
-            DiagnosticsAction.PageEntered -> {
-                isPageActive = true
-                refresh()
-            }
+            DiagnosticsAction.PageEntered -> pageEntered()
             DiagnosticsAction.PageExited -> pageExited()
             DiagnosticsAction.Refresh -> refresh()
             is DiagnosticsAction.ToggleLevel -> mutate(DiagnosticsMutation.LevelToggled(action.level))
@@ -74,7 +77,13 @@ class DiagnosticsViewModel @Inject constructor(
         }
     }
 
+    private fun pageEntered() {
+        activePageOwner = Any()
+        refresh()
+    }
+
     private fun refresh() {
+        val pageOwner = activePageOwner ?: return
         val owner = Any()
         activeRefreshOwner = owner
         refreshJob?.cancel()
@@ -82,13 +91,13 @@ class DiagnosticsViewModel @Inject constructor(
         val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             try {
                 if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
-                    if (activeRefreshOwner === owner) {
+                    if (activePageOwner === pageOwner && activeRefreshOwner === owner) {
                         mutate(DiagnosticsMutation.SessionRestricted)
                     }
                     return@launch
                 }
                 val lines = logStore.readLines(MAX_VIEW_LINES)
-                if (activeRefreshOwner === owner) {
+                if (activePageOwner === pageOwner && activeRefreshOwner === owner) {
                     mutate(DiagnosticsMutation.LinesLoaded(lines))
                 }
             } finally {
@@ -103,14 +112,16 @@ class DiagnosticsViewModel @Inject constructor(
     }
 
     private fun selectFormat(format: LogFormat) {
+        val pageOwner = activePageOwner ?: return
         when (_uiState.value.pendingExportAction) {
             ExportAction.SHARE -> {
                 mutate(DiagnosticsMutation.FormatSheetDismissed)
-                authenticateAndExport(DiagnosticsExportRequest(ExportAction.SHARE, format))
+                authenticateAndExport(DiagnosticsExportRequest(ExportAction.SHARE, format), pageOwner)
             }
             ExportAction.EXPORT_LOCAL -> {
                 mutate(DiagnosticsMutation.LocalFormatSelected(format))
-                effectChannel.trySend(
+                offerEffect(
+                    pageOwner,
                     DiagnosticsEffect.SelectSaveDocument(
                         format = format,
                         mimeType = format.mimeType,
@@ -123,13 +134,15 @@ class DiagnosticsViewModel @Inject constructor(
     }
 
     private fun saveToDocument(uri: String) {
+        val pageOwner = activePageOwner ?: return
         val format = _uiState.value.pendingLocalFormat ?: return
         mutate(DiagnosticsMutation.LocalExportConsumed)
-        authenticateAndExport(DiagnosticsExportRequest(ExportAction.EXPORT_LOCAL, format, uri))
+        authenticateAndExport(DiagnosticsExportRequest(ExportAction.EXPORT_LOCAL, format, uri), pageOwner)
     }
 
     private fun copyRows(lines: List<DiagnosticsLogLine>) {
-        if (lines.isEmpty() || !isPageActive) return
+        val pageOwner = activePageOwner ?: return
+        if (lines.isEmpty()) return
         val text = lines.joinToString("\n") { it.text }
         val owner = Any()
         activeCopyOwner = owner
@@ -137,7 +150,7 @@ class DiagnosticsViewModel @Inject constructor(
         val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             try {
                 clipboardWriter.writeSensitiveIf(text) {
-                    isPageActive && activeCopyOwner === owner
+                    activePageOwner === pageOwner && activeCopyOwner === owner
                 }
             } finally {
                 if (activeCopyOwner === owner) {
@@ -151,7 +164,7 @@ class DiagnosticsViewModel @Inject constructor(
     }
 
     private fun pageExited() {
-        isPageActive = false
+        activePageOwner = null
         activeCopyOwner = null
         copyJob?.cancel()
         copyJob = null
@@ -160,43 +173,58 @@ class DiagnosticsViewModel @Inject constructor(
         refreshJob = null
     }
 
-    private fun clearLogs() = viewModelScope.launch {
-        if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
-            mutate(DiagnosticsMutation.SessionRestricted)
-            return@launch
-        }
-        refreshJob?.cancelAndJoin()
-        val result = try {
-            logStore.clear()
-        } catch (cancelled: kotlinx.coroutines.CancellationException) {
-            throw cancelled
-        } catch (_: Exception) {
-            LogClearResult.Failed
-        }
-        when (result) {
-            LogClearResult.Cleared -> mutate(DiagnosticsMutation.LogsCleared)
-            LogClearResult.Failed -> {
-                mutate(DiagnosticsMutation.ClearDismissed)
-                effectChannel.send(DiagnosticsEffect.ClearFailed)
+    private fun clearLogs() {
+        val pageOwner = activePageOwner ?: return
+        viewModelScope.launch {
+            if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
+                if (activePageOwner === pageOwner) {
+                    mutate(DiagnosticsMutation.SessionRestricted)
+                }
+                return@launch
+            }
+            refreshJob?.cancelAndJoin()
+            val result = try {
+                logStore.clear()
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                LogClearResult.Failed
+            }
+            when (result) {
+                LogClearResult.Cleared -> if (activePageOwner != null) {
+                    mutate(DiagnosticsMutation.LogsCleared)
+                }
+                LogClearResult.Failed -> {
+                    if (activePageOwner != null) {
+                        mutate(DiagnosticsMutation.ClearDismissed)
+                    }
+                    offerEffect(pageOwner, DiagnosticsEffect.ClearFailed)
+                }
             }
         }
     }
 
-    private fun authenticateAndExport(request: DiagnosticsExportRequest) = viewModelScope.launch {
+    private fun authenticateAndExport(request: DiagnosticsExportRequest, pageOwner: Any) = viewModelScope.launch {
         logger.withRootTrace(Operations.DiagnosticsExport) {
             when (val result = exportDiagnostics(request)) {
                 DiagnosticsExportResult.Completed -> if (request.action == ExportAction.EXPORT_LOCAL) {
-                    effectChannel.trySend(DiagnosticsEffect.SaveCompleted)
+                    offerEffect(pageOwner, DiagnosticsEffect.SaveCompleted)
                 }
                 DiagnosticsExportResult.Cancelled -> Unit
                 DiagnosticsExportResult.Denied,
                 DiagnosticsExportResult.SessionRestricted,
-                    -> effectChannel.trySend(DiagnosticsEffect.ExportFailed)
+                    -> offerEffect(pageOwner, DiagnosticsEffect.ExportFailed)
                 is DiagnosticsExportResult.Failed -> {
                     logger.log(LogStatements.Application.diagnosticsExportFailed(result.cause))
-                    effectChannel.trySend(DiagnosticsEffect.ExportFailed)
+                    offerEffect(pageOwner, DiagnosticsEffect.ExportFailed)
                 }
             }
+        }
+    }
+
+    private fun offerEffect(owner: Any, effect: DiagnosticsEffect) {
+        if (activePageOwner === owner) {
+            effectChannel.trySend(PageEffect(owner, effect))
         }
     }
 

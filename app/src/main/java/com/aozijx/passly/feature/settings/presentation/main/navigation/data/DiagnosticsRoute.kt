@@ -36,11 +36,11 @@ internal fun DiagnosticsRoute(onBack: (() -> Unit)?) {
         ActivityResultContracts.CreateDocument(LogFormat.ZIP.mimeType),
     ) { uri -> viewModel.onDocumentSelected(uri?.toString()) }
 
-    LaunchedEffect(viewModel) {
-        viewModel.onAction(DiagnosticsAction.PageEntered)
-    }
     DisposableEffect(viewModel) {
-        onDispose { viewModel.onAction(DiagnosticsAction.PageExited) }
+        viewModel.onAction(DiagnosticsAction.PageEntered)
+        onDispose {
+            viewModel.onAction(DiagnosticsAction.PageExited)
+        }
     }
     LaunchedEffect(viewModel, context, exportFailed, saveCompleted, clearFailed) {
         viewModel.effects.collect { effect ->

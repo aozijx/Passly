@@ -39,10 +39,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 
@@ -163,8 +165,43 @@ class DiagnosticsViewModelTest {
     }
 
     @Test
+    fun `reentry does not replay export feedback from the previous page visit`() = runTest {
+        val gateway = DeferredExportGateway()
+        val viewModel = viewModel(
+            store = RecordingLogStore(emptyList()),
+            gate = AllowingAuthorizationGate,
+            gateway = gateway,
+            logger = ExecutingLogger,
+        )
+        viewModel.onAction(DiagnosticsAction.PageEntered)
+        runCurrent()
+
+        val pickerEffect = async { viewModel.effects.first() }
+        viewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.EXPORT_LOCAL))
+        viewModel.onAction(DiagnosticsAction.SelectFormat(LogFormat.JSONL))
+        assertEquals(
+            DiagnosticsEffect.SelectSaveDocument(
+                format = LogFormat.JSONL,
+                mimeType = "application/x-ndjson",
+                fileName = "passly_logs.jsonl",
+            ),
+            pickerEffect.await(),
+        )
+
+        viewModel.onAction(DiagnosticsAction.SaveToDocument("content://test/export"))
+        gateway.exportStarted.await()
+        viewModel.onAction(DiagnosticsAction.PageExited)
+        viewModel.onAction(DiagnosticsAction.PageEntered)
+        gateway.exportResult.complete(Result.success(Unit))
+        runCurrent()
+
+        assertNull(withTimeoutOrNull(1) { viewModel.effects.first() })
+    }
+
+    @Test
     fun `local format selection emits matching saf contract independent of level filters`() = runTest {
         val viewModel = viewModel(RecordingLogStore(emptyList()))
+        viewModel.onAction(DiagnosticsAction.PageEntered)
         viewModel.onAction(DiagnosticsAction.ToggleLevel(LogLevel.INFO))
         viewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.EXPORT_LOCAL))
 
@@ -195,6 +232,7 @@ class DiagnosticsViewModelTest {
             gateway = gateway,
             logger = ExecutingLogger,
         )
+        viewModel.onAction(DiagnosticsAction.PageEntered)
         viewModel.onAction(DiagnosticsAction.SearchChanged("trace_missing"))
         viewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.SHARE))
         viewModel.onAction(DiagnosticsAction.SelectFormat(LogFormat.ZIP))
@@ -318,6 +356,21 @@ class DiagnosticsViewModelTest {
         ): Result<Unit> {
             this.request = request
             return Result.success(Unit)
+        }
+
+        override suspend fun discard(request: DiagnosticsExportRequest) = Unit
+    }
+
+    private class DeferredExportGateway : DiagnosticsExportGateway {
+        val exportStarted = CompletableDeferred<Unit>()
+        val exportResult = CompletableDeferred<Result<Unit>>()
+
+        override suspend fun export(
+            permit: AuthorizationPermit,
+            request: DiagnosticsExportRequest,
+        ): Result<Unit> {
+            exportStarted.complete(Unit)
+            return exportResult.await()
         }
 
         override suspend fun discard(request: DiagnosticsExportRequest) = Unit
