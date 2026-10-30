@@ -4,14 +4,15 @@
 
 ## 创建与详情编辑
 
-当前独立创建页支持 Login、OTP、Bank Card、Wi-Fi。已有条目的编辑由详情页按一个逻辑字段提交；
-没有统一的完整条目编辑表单，也没有把创建表单直接用于整条更新。
+当前独立创建页支持 Login、OTP、Bank Card、Wi-Fi。详情页为这四种类型提供完整表单编辑，并继续为其余类型
+提供按一个逻辑字段提交的编辑方式。完整表单复用创建表单及类型验证；更新只替换表单拥有的字段，保留身份、
+Profile/Secret 中其余数据和未揭示字段。完整编辑不覆盖用户自定义字段。
 
 | 层 | 当前职责 | 主要入口 |
 | --- | --- | --- |
-| Domain | 字段定义、草稿类型、纯校验、物化和单次编辑规则 | `EntryTypeDefinitions`、`EntryDraft`、`EntryDraftMaterializer`、`EntryEdit` / `EntryEditResult` |
-| App feature | 会话检查、ID/时间生成、冲突处理、日志和 Repository 编排 | `CreateEntryUseCase`、`EditDetailEntryUseCase` |
-| App presentation | 类型专属表单、状态、Action、ViewModel、Route 和 Compose 内容 | `feature/vault/presentation/editor/<类型>`、`presentation/detail` |
+| Domain | 字段定义、草稿类型、纯校验、物化、单字段及完整表单应用 | `EntryTypeDefinitions`、`EntryDraftMaterializer`、`EntryFieldEditor`、`EntryFormEditor`、`EntryEdit` |
+| App feature | 会话检查、敏感读取授权、冲突处理、日志和 Repository 编排 | `CreateEntryUseCase`、`LoadEditableEntryUseCase`、`EditDetailEntryUseCase` |
+| App presentation | 类型专属表单、敏感内容回填、状态、Action、ViewModel、Route 和 Compose 内容 | `feature/vault/presentation/editor/<类型>`、`presentation/detail` |
 | Data | 事务、乐观锁、高敏字段保留/替换/清除、加密、修订和活动写入 | `UpdateEntryExecutor`、`SecretFieldStore`、`EntryRevisionWriter` |
 
 Domain 不依赖 Android、导航或表单组件；物化器不生成身份、不访问 Repository。
@@ -91,6 +92,20 @@ Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace
 
 详情复制会把当前访问凭据传到复制用例，并在异步读取结束后、剪贴板平台写入前再次核对。剪贴板写入器若需先挂起读取保留策略，必须在该读取后核对凭据，再执行同步的平台写入；已关闭或切换的详情不能把旧结果写入剪贴板。
 
+## 四类完整表单编辑
+
+详情页仅对 Login、OTP、Bank Card、Wi-Fi 展示完整表单编辑入口。路由只传 `entryId`；加载用例从 Repository
+读取真实类型，目标不存在、类型不支持、授权拒绝、字段不完整或会话过期时不返回可保存表单，也不回退到其他类型。
+Login、OTP 和 Bank Card 中实际存在的高敏字段会按字段存在集合一次性请求 `REVEAL` 授权；只有完整返回所有请求字段后
+才回填表单，并记录一次 `VIEW` 活动。Wi-Fi 密码属于加密 bundle，由完整会话读取，不走高敏字段 reveal。
+
+表单加载期间禁止编辑和保存。编辑器把加载结果绑定到当前完整认证对象；锁定、切换认证会话或 ViewModel 关闭时取消加载并清空表单。
+保存使用 `EntryEdit.ReplaceForm`，更新用例重新读取最新条目、执行完整 Domain 校验，并通过预期版本写入及最多一次冲突重试提交。
+表单不拥有的字段（包括图标、收藏、过期时间、域名关联、自定义字段及非表单关联）继续保留。失败不会清空用户编辑内容；成功后清空敏感表单并返回详情。
+
+密码表单允许修改主关联应用，但回填和保存还会保留其他已有应用关联。Wi-Fi 编辑只使用编辑器回填，不触发扫码种子或创建初始化。
+其余 EntryType 没有完整表单入口，仍使用上文的单逻辑字段编辑。
+
 详情保存遇到非预期异常时，当前访问仍有效就转为可重试失败状态，避免界面永久停在 Saving；协程取消继续传播。异常也可能发生在数据库已提交、详情展示刷新失败之后，因此失败提示不等于保证事务回滚；重新打开详情会从持久化真相源重新加载。
 
 ## 创建入口与能力边界
@@ -108,11 +123,11 @@ Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace
 
 - 创建页已共享保存协调器，表单更新、校验和类型专属异步能力仍由类型 ViewModel 持有；没有泛型 `EntryEditorSession`、`EntryFormAdapter`、`EntryEditorRegistry` 或 `EntryMaterializerRegistry` 实现。
 - 集中式物化器目前只有四个创建分支；需要扩展类型时按实际语义调整，不把每个分支强制包装成空转发类。
-- 完整条目表单编辑尚未实现；当前更新入口仍是详情逐项编辑，不提供另一套草稿更新分支。
+- 完整表单编辑目前只覆盖上述四种既有创建类型；其余 EntryType 仍由详情逐项编辑，不存在通用表单或类型插件注册系统。
 
-验证以现有测试为准：`CreateEntryUseCaseTest`、四类表单映射及 ViewModel 测试覆盖创建入口；Domain 的
-`EntryDraftMaterializerTest`、`EntryEditTest`、`EntryFieldEditorTest` 覆盖纯规则；`EditDetailEntryUseCaseTest` 和
-详情状态测试覆盖逐项更新与发布边界。它们不证明未实现的统一编辑器、所有类型能力或真实设备交互已经完成。
+验证以现有测试为准：`LoadEditableEntryUseCaseTest`、`EditDetailEntryUseCaseTest`、四类表单映射及 ViewModel 测试覆盖完整编辑；Domain 的
+`EntryDraftMaterializerTest`、`EntryEditTest`、`EntryFormEditorTest`、`EntryFieldEditorTest` 覆盖纯规则；详情状态测试覆盖逐项更新与发布边界。
+这些测试不证明未支持类型的完整编辑或真实设备交互已经完成。
 `EditorSaveSessionTest` 覆盖保存去重、锁定与重新认证、迟到结果、缓冲效果淘汰、取消和销毁边界；Wi-Fi 创建测试通过实际用例复现锁定期间的保存窗口。
 `VaultListUiMapperTest` 与 `VaultNavigationTest` 检查创建选项均有目的地、筛选能力独立保留；
 `AddEntryBottomSheetTest` 提供按传入选项渲染和转发选择的仪器用例，编译通过不等于设备运行通过。
@@ -124,5 +139,8 @@ Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace
 | --- | --- | --- |
 | 创建普通条目及 Autofill 条目 | `CreateEntryUseCase.invoke()`、`createFromAutofill()` | [`CreateEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/CreateEntryUseCase.kt) |
 | 将新建草稿转换为可持久化条目 | `EntryDraftMaterializer.materialize()` | [`EntryDraftMaterializer.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryDraftMaterializer.kt) |
+| 将完整表单应用到已有条目并保留未管理状态 | `EntryFormEditor.apply()`、`EntryEdit.ReplaceForm` | [`EntryFormEditor.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryFormEditor.kt)、[`EntryEdit.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryEdit.kt) |
 | 编辑详情条目 | `EditDetailEntryUseCase.edit()` | [`EditDetailEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/EditDetailEntryUseCase.kt) |
-| 按条目类型选择编辑目标 | `VaultEditorDestinationRegistry.routeFor()` | [`VaultEditorDestinationRegistry.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/navigation/VaultEditorDestinationRegistry.kt) |
+| 获授权读取完整编辑表单 | `LoadEditableEntryUseCase.invoke()` | [`LoadEditableEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/LoadEditableEntryUseCase.kt) |
+| 按条目类型选择创建/完整编辑目标 | `VaultEditorDestinationRegistry.routeFor()`、`editRouteFor()` | [`VaultEditorDestinationRegistry.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/navigation/VaultEditorDestinationRegistry.kt) |
+| 注册详情与四个编辑目的地 | `registerVaultGraph()`、`registerEditorEditDestination()` | [`VaultGraphRegistration.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/navigation/VaultGraphRegistration.kt) |

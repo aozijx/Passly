@@ -51,11 +51,13 @@ internal class LoadEditableEntryUseCase @Inject constructor(
         val requestedKeys = presence.keys
         if (requestedKeys.isEmpty()) {
             val latest = entryQueryRepository.getById(entryId) ?: return EditableEntryLoadResult.NotFound
-            return if (latest.version == entry.version && latest.type == type && hasCurrentAccess(initialAuthentication)) {
-                EditableEntryLoadResult.Loaded(entry, initialAuthentication)
-            } else {
-                EditableEntryLoadResult.Unavailable
+            if (latest.version != entry.version || latest.type != type || !hasCurrentAccess(initialAuthentication)) {
+                return EditableEntryLoadResult.Unavailable
             }
+            activityRecorder.recordUsage(entryId.value, ActivityType.VIEW)
+            return if (hasCurrentAccess(initialAuthentication)) {
+                EditableEntryLoadResult.Loaded(entry, initialAuthentication)
+            } else EditableEntryLoadResult.Unavailable
         }
 
         val scope = AuthorizationScope.SensitiveFields(

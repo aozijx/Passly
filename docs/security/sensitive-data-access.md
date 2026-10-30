@@ -31,6 +31,12 @@ Passkey 私钥引用和 OTP Secret。它们不会在普通详情读取时进入�
 UI 类型实际支持的字段放入 `DetailUiState.revealedFields`。新增 Entry 类型不能因为 Domain 已声明字段就假定
 编辑、详情、reveal 和复制链路已经完整，必须逐类型验证完整生命周期。
 
+完整表单编辑当前仅支持 Login、OTP、Bank Card、Wi-Fi。编辑加载会先确认完整会话和 Repository 中的真实类型；
+对存在的 Login 密码、OTP Secret、银行卡号、CVV、付款 PIN 作为一个字段集合申请一次 `REVEAL` 授权，
+缺失、重复、额外或部分返回都会拒绝整个表单，不用空字符串替代未读取的高敏值。成功回填后记录 `VIEW` 活动，
+并在编辑期间绑定同一个认证对象；锁定、会话切换或页面关闭会取消待处理加载并清空表单。Wi-Fi 密码在加密 bundle 中，
+仅经完整会话读取。其他 EntryType 不提供完整表单编辑。
+
 ## 剪贴板
 
 Passly 复制敏感内容时使用敏感剪贴板标记。应用进入后台或详情页关闭时，只清除仍由 Passly 写入的剪贴板；
@@ -43,4 +49,5 @@ Passly 复制敏感内容时使用敏感剪贴板标记。应用进入后台或�
 | --- | --- | --- |
 | 声明字段读取授权端口 | `SensitiveFieldRepository` | [`SensitiveFieldRepository.kt`](../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/port/SensitiveFieldRepository.kt) |
 | 按字段读取或揭示加密内容 | `RoomSensitiveFieldRepository.revealMany()`、`SecretFieldStore.readField()` | [`RoomSensitiveFieldRepository.kt`](../../data/src/main/java/com/aozijx/passly/data/repository/entry/RoomSensitiveFieldRepository.kt)、[`SecretFieldStore.kt`](../../data/src/main/java/com/aozijx/passly/data/repository/entry/SecretFieldStore.kt) |
+| 为完整表单读取并授权现存高敏字段 | `LoadEditableEntryUseCase.invoke()` | [`LoadEditableEntryUseCase.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/detail/LoadEditableEntryUseCase.kt) |
 | 驱动详情页字段揭示状态 | `DetailViewModel`、`DetailRevealStore` | [`DetailViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModel.kt)、[`DetailRevealStore.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailRevealStore.kt) |

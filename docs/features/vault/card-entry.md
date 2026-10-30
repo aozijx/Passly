@@ -1,6 +1,6 @@
 # 银行卡资料与有效期
 
-当前实现：`AddBankCardViewModel` 将表单转换为草稿，经 `CreateEntryUseCase` 校验后写入 Repository。
+当前实现：`AddBankCardViewModel` 将新建或完整编辑表单转换为草稿，经创建或已有条目更新用例校验后写入 Repository。
 标题与卡号必填，有效期可不设置。卡号规则由 Domain 的 `CardNumberValidator` 提供。
 表单的卡号校验直接从当前卡号派生，不再另存可与输入脱节的校验结果。
 CVV 可留空；填写时页面复用 Domain 的 `CardCvvValidator`，与创建和详情替换共用 3–4 位半角数字规则。

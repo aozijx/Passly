@@ -97,6 +97,7 @@ class LoadEditableEntryUseCaseTest {
 
         assertEquals("JBSWY3DPEHPK3PXP", loadedOtp.entry.secret.otp?.config?.secret)
         assertEquals("wifi-secret", loadedWifi.entry.secret.wifi?.password)
+        assertEquals(listOf(ActivityType.VIEW), wifi.recorder.activities)
     }
 
     @Test
