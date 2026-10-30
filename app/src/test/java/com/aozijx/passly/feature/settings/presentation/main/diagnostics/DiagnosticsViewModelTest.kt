@@ -39,6 +39,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -134,6 +137,32 @@ class DiagnosticsViewModelTest {
     }
 
     @Test
+    fun `late log read cannot replace lines loaded after reentering diagnostics`() = runTest {
+        val oldLines = listOf(DiagnosticsLogLine(LogLevel.INFO, "old", "trace_old", "application.old"))
+        val newLines = listOf(DiagnosticsLogLine(LogLevel.INFO, "new", "trace_new", "application.new"))
+        val store = DeferredReadLogStore()
+        val viewModel = viewModel(store)
+
+        viewModel.onAction(DiagnosticsAction.PageEntered)
+        runCurrent()
+        store.readStarted[0].await()
+
+        viewModel.onAction(DiagnosticsAction.PageExited)
+        viewModel.onAction(DiagnosticsAction.PageEntered)
+        runCurrent()
+        store.readStarted[1].await()
+
+        store.completeRead(1, newLines)
+        runCurrent()
+        assertEquals(newLines, viewModel.uiState.value.retainedLines)
+
+        store.completeRead(0, oldLines)
+        runCurrent()
+
+        assertEquals(newLines, viewModel.uiState.value.retainedLines)
+    }
+
+    @Test
     fun `local format selection emits matching saf contract independent of level filters`() = runTest {
         val viewModel = viewModel(RecordingLogStore(emptyList()))
         viewModel.onAction(DiagnosticsAction.ToggleLevel(LogLevel.INFO))
@@ -202,6 +231,24 @@ class DiagnosticsViewModelTest {
         override suspend fun storageBytes(): Long = 1_024L
 
         override suspend fun clear() = clearResult
+    }
+
+    private class DeferredReadLogStore : DiagnosticsLogStore {
+        val readStarted = mutableListOf<CompletableDeferred<Unit>>()
+        private val readContinuations = mutableListOf<Continuation<List<DiagnosticsLogLine>>>()
+
+        override suspend fun readLines(limit: Int): List<DiagnosticsLogLine> = suspendCoroutine { continuation ->
+            readContinuations += continuation
+            readStarted += CompletableDeferred<Unit>().also { it.complete(Unit) }
+        }
+
+        fun completeRead(index: Int, lines: List<DiagnosticsLogLine>) {
+            readContinuations[index].resume(lines)
+        }
+
+        override suspend fun storageBytes(): Long = 0
+
+        override suspend fun clear() = LogClearResult.Cleared
     }
 
     private class RecordingClipboardWriter : SensitiveClipboardWriter {

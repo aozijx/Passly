@@ -42,6 +42,7 @@ class DiagnosticsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DiagnosticsUiState())
     val uiState: StateFlow<DiagnosticsUiState> = _uiState.asStateFlow()
     private var refreshJob: Job? = null
+    private var activeRefreshOwner: Any? = null
     private var copyJob: Job? = null
     private var activeCopyOwner: Any? = null
     private var isPageActive = false
@@ -74,16 +75,31 @@ class DiagnosticsViewModel @Inject constructor(
     }
 
     private fun refresh() {
+        val owner = Any()
+        activeRefreshOwner = owner
         refreshJob?.cancel()
         mutate(DiagnosticsMutation.Loading)
-        refreshJob = viewModelScope.launch {
-            if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
-                mutate(DiagnosticsMutation.SessionRestricted)
-                return@launch
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
+            try {
+                if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
+                    if (activeRefreshOwner === owner) {
+                        mutate(DiagnosticsMutation.SessionRestricted)
+                    }
+                    return@launch
+                }
+                val lines = logStore.readLines(MAX_VIEW_LINES)
+                if (activeRefreshOwner === owner) {
+                    mutate(DiagnosticsMutation.LinesLoaded(lines))
+                }
+            } finally {
+                if (activeRefreshOwner === owner) {
+                    activeRefreshOwner = null
+                    refreshJob = null
+                }
             }
-            val lines = logStore.readLines(MAX_VIEW_LINES)
-            mutate(DiagnosticsMutation.LinesLoaded(lines))
         }
+        refreshJob = job
+        job.start()
     }
 
     private fun selectFormat(format: LogFormat) {
@@ -139,6 +155,7 @@ class DiagnosticsViewModel @Inject constructor(
         activeCopyOwner = null
         copyJob?.cancel()
         copyJob = null
+        activeRefreshOwner = null
         refreshJob?.cancel()
         refreshJob = null
     }
