@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.settings.presentation.backup
 
-import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import com.aozijx.passly.feature.settings.backup.BackupDirectoryAccess
 import com.aozijx.passly.feature.settings.backup.BackupDirectoryGrantResult
@@ -32,7 +31,6 @@ class DataManagementSettingsViewModelTest {
     }
 
     private object NoOpAccess : BackupDirectoryAccess {
-        override fun inspect(treeUri: String?) = PersistedDirectoryAccessStatus.GRANT_MISSING
         override suspend fun acquire(treeUri: String) = BackupDirectoryGrantResult.Unavailable
         override suspend fun release(treeUri: String) = Unit
     }

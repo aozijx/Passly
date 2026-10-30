@@ -7,6 +7,7 @@ import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
 import com.aozijx.passly.feature.settings.backup.BackupDirectoryAccess
 import com.aozijx.passly.feature.settings.backup.BackupDirectoryGrantResult
+import com.aozijx.passly.feature.settings.backup.BackupDirectoryStatusReader
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -15,7 +16,7 @@ import kotlinx.coroutines.withContext
 class AndroidBackupDirectoryAccess @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val grantInspector: BackupDirectoryGrantInspector,
-) : BackupDirectoryAccess {
+) : BackupDirectoryAccess, BackupDirectoryStatusReader {
     override fun inspect(treeUri: String?): PersistedDirectoryAccessStatus =
         grantInspector.inspect(treeUri)
 

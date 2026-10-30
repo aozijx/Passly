@@ -17,7 +17,7 @@ fun interface BackupDirectoryStatusReader {
     fun inspect(treeUri: String?): PersistedDirectoryAccessStatus
 }
 
-interface BackupDirectoryAccess : BackupDirectoryStatusReader {
+interface BackupDirectoryAccess {
     suspend fun acquire(treeUri: String): BackupDirectoryGrantResult
     suspend fun release(treeUri: String)
 }
@@ -42,9 +42,6 @@ class BackupDirectorySettingsInteractor @Inject constructor(
     private val operationMutex = Mutex()
 
     val directoryUri: Flow<String?> = settingsRepository.backupDirectoryUri
-
-    fun inspect(treeUri: String?): PersistedDirectoryAccessStatus =
-        directoryAccess.inspect(treeUri)
 
     suspend fun select(treeUri: String?): BackupDirectorySelectionResult = operationMutex.withLock {
         if (treeUri == null) return@withLock BackupDirectorySelectionResult.Cancelled

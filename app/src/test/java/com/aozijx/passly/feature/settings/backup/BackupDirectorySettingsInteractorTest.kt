@@ -1,7 +1,6 @@
 package com.aozijx.passly.feature.settings.backup
 
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
-import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
@@ -82,23 +81,6 @@ class BackupDirectorySettingsInteractorTest {
             ),
             operations,
         )
-    }
-
-    @Test
-    fun `inspection delegates without changing repository state`() = runTest {
-        val repository = FakeRepository(initialUri = "content://tree/original")
-        val access = FakeAccess(
-            acquireResult = BackupDirectoryGrantResult.Unavailable,
-            inspectResult = PersistedDirectoryAccessStatus.GRANT_MISSING,
-        )
-        val interactor = BackupDirectorySettingsInteractor(repository, access)
-
-        assertEquals(
-            PersistedDirectoryAccessStatus.GRANT_MISSING,
-            interactor.inspect("content://tree/original"),
-        )
-        assertEquals("content://tree/original", repository.savedUri)
-        assertEquals(listOf("content://tree/original"), access.inspectedUris)
     }
 
     @Test
@@ -379,17 +361,9 @@ class BackupDirectorySettingsInteractorTest {
     private class FakeAccess(
         private val acquireResult: BackupDirectoryGrantResult,
         private val operations: MutableList<String> = mutableListOf(),
-        private val inspectResult: PersistedDirectoryAccessStatus =
-            PersistedDirectoryAccessStatus.GRANTED,
         private val failOnReleaseUri: String? = null,
     ) : BackupDirectoryAccess {
         val acquiredUris = mutableListOf<String>()
-        val inspectedUris = mutableListOf<String?>()
-
-        override fun inspect(treeUri: String?): PersistedDirectoryAccessStatus {
-            inspectedUris += treeUri
-            return inspectResult
-        }
 
         override suspend fun acquire(treeUri: String): BackupDirectoryGrantResult {
             operations += "acquire:$treeUri"
@@ -429,8 +403,6 @@ class BackupDirectorySettingsInteractorTest {
         val acquiredUris = mutableListOf<String>()
         val firstAcquireStarted = CompletableDeferred<Unit>()
         val finishFirstAcquire = CompletableDeferred<Unit>()
-
-        override fun inspect(treeUri: String?) = PersistedDirectoryAccessStatus.GRANTED
 
         override suspend fun acquire(treeUri: String): BackupDirectoryGrantResult {
             acquiredUris += treeUri
