@@ -107,20 +107,6 @@ class DefaultAppNoticeDispatcher @Inject constructor(
                     NoticeDispatchStatus.SUPPRESSED
                 )
             }
-            if (
-                policy.suppressWithinMs > 0 &&
-                deduplicator.claimSemantic(notice.code, policy.suppressWithinMs)
-            ) {
-                deduplicator.complete(claim)
-                return receipt(
-                    notice,
-                    settings.version,
-                    NoticeRoutePlan.suppressed(RouteReason.SUPPRESSED_BY_DEDUP),
-                    emptyMap(),
-                    NoticeDispatchStatus.SUPPRESSED
-                )
-            }
-
             val results = linkedMapOf<NoticeTarget, SinkResult>()
             for (target in plan.targets) {
                 results[target] = deliver(target, notice)
@@ -134,8 +120,8 @@ class DefaultAppNoticeDispatcher @Inject constructor(
             ) {
                 results[fallbackTarget] = deliver(fallbackTarget, notice)
             }
-            deduplicator.complete(claim)
             val delivered = results.values.count { it is SinkResult.Delivered }
+            if (delivered > 0) deduplicator.complete(claim) else deduplicator.release(claim)
             val status = when {
                 delivered == results.size && delivered > 0 -> NoticeDispatchStatus.DELIVERED
                 delivered > 0 -> NoticeDispatchStatus.PARTIALLY_DELIVERED

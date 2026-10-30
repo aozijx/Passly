@@ -37,16 +37,9 @@ Argon2id 参数后，旧备份可能无法恢复；头部也未作为明确 AAD 
 
 证据：`EncryptedBackupContainerCodec.kt`；当前协议文档已迁移到 `docs/features/backup/`。
 
-### P1：消息生产者同时“发布错误”和“返回错误”
+### 已解决：认证消息只有一个展示所有者
 
-`DefaultVerificationGateway` 在失败时发布 `AppMessageCenter`，随后仍把同一个 `AppResult.Failure`
-交给回调。任何调用方只要也按失败显示消息，就会恢复双 Toast 问题。当前 Verification
-的生物识别路径暂时没有再次发布，但契约本身没有保证单一所有权。
-
-建议二选一：Gateway 只返回结果，由页面级 effect 发布；或 Gateway 返回不含展示职责的结果并明确由它独占发布。更推荐前者，使
-Domain/认证编排不依赖全局 UI 消息中心。
-
-证据：`DefaultVerificationGateway.kt:34-59,93-110`。
+旧 `DefaultVerificationGateway` 已移除；解锁失败由 `UnlockViewModel` 保留为类型化 UI 状态，认证执行路径不再同时发布全局错误消息。
 
 ## 中优先级
 
@@ -70,16 +63,10 @@ Schema；Bootstrap Proto 保持唯一来源。
 
 证据：`app_settings.proto:18-20`。
 
-### P2：集中消息仍存在旁路 Toast 和脆弱去重
+### 已解决：认证 Toast 旁路和消息去重误抑制
 
-`BiometricAuthenticator` 对非取消错误直接调用 Android Toast，绕过设置、host 和测试边界。
-`AppMessageCenter` 的去重只记住最后一个 key，交替事件可以绕过；合法的相同事件也可能被吞。
-`MutableSharedFlow.tryEmit` 在没有收集者或缓冲溢出时不会提供可靠交付语义。
-
-建议删除底层直接 Toast；使用带稳定 event id/来源的 UI effect 或有界队列。去重只针对同一业务事件
-id，不基于文本猜测。
-
-证据：`BiometricAuthenticator.kt:40-48`、`AppMessageCenter.kt:19-38`。
+认证执行器不直接调用 Toast；当前消息 Host 负责展示，`eventId` 只对同一业务事件去重。此批次删除曾按 `NoticeCode` 时间窗抑制不同事件的逻辑，
+并令容量 64 的应用内队列在满载时明确返回失败而不丢旧消息；全失败的派发释放 claim，允许同一事件重试。
 
 ### 已解决：密钥擦除注释可能高估保证
 

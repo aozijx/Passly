@@ -44,7 +44,7 @@ flowchart LR
     Permission["Notification permission / channel"] --> Dispatcher
 ```
 
-同一业务事件使用稳定 eventId；可信注册表决定等级、主题、投递目标和去重窗口。通知偏好控制产品行为，
+同一业务事件使用稳定 eventId；可信注册表决定等级、主题、投递目标和 eventId TTL。通知偏好控制产品行为，
 系统权限决定状态栏通知是否可投递，两者不能混为一个布尔值。详细规则见[消息中心](message-center.md)。
 
 ## 备份

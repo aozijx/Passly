@@ -1,15 +1,11 @@
 package com.aozijx.passly.app.message.contract
 
-import com.aozijx.passly.app.message.model.NoticeCode
-
 /**
  * 消息去重。
  *
- * 两层策略：
- * 1. [claim] — eventId 精确去重，防止同一事件重复投递
- * 2. [claimSemantic] — 按 [NoticeCode] + 时间窗口的语义合并
+ * eventId 精确去重，防止同一业务事件重复投递。
  *
- * 两阶段（claim → complete）保证在分发完成前阻止重入。
+ * 两阶段 claim 阻止分发重入；至少一个目标成功后 complete，全部失败或取消时 release。
  */
 interface NoticeDeduplicator {
     fun begin(eventId: String, ttlMs: Long): DeduplicationClaim
@@ -17,8 +13,6 @@ interface NoticeDeduplicator {
     fun complete(claim: DeduplicationClaim.Acquired)
 
     fun release(claim: DeduplicationClaim.Acquired)
-
-    fun claimSemantic(code: NoticeCode, windowMs: Long): Boolean
 }
 
 sealed interface DeduplicationClaim {

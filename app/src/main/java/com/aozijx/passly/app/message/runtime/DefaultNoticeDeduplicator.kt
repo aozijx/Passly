@@ -1,7 +1,6 @@
 package com.aozijx.passly.app.message.runtime
 
 import android.os.SystemClock
-import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.contract.DeduplicationClaim
 import com.aozijx.passly.app.message.contract.NoticeDeduplicator
 import java.util.concurrent.atomic.AtomicLong
@@ -31,7 +30,6 @@ class DefaultNoticeDeduplicator internal constructor(
             eldest: MutableMap.MutableEntry<String, EventClaim>
         ): Boolean = size > MAX_EVENT_IDS
     }
-    private val semanticDeadlines = mutableMapOf<NoticeCode, Long>()
 
     @Synchronized
     override fun begin(eventId: String, ttlMs: Long): DeduplicationClaim {
@@ -66,23 +64,11 @@ class DefaultNoticeDeduplicator internal constructor(
         }
     }
 
-    @Synchronized
-    override fun claimSemantic(code: NoticeCode, windowMs: Long): Boolean {
-        require(windowMs > 0)
-        evictExpired()
-        val now = nowMs()
-        val current = semanticDeadlines[code]
-        if (current != null && now < current) return true
-        semanticDeadlines[code] = safeDeadline(now, windowMs)
-        return false
-    }
-
     private fun evictExpired() {
         val now = nowMs()
         eventClaims.entries.removeAll { (_, claim) ->
             !claim.inFlight && now >= claim.deadlineMs
         }
-        semanticDeadlines.entries.removeAll { (_, deadline) -> now >= deadline }
     }
 
     private fun safeDeadline(now: Long, duration: Long): Long =

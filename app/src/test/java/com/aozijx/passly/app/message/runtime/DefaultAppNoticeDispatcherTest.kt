@@ -2,6 +2,7 @@ package com.aozijx.passly.app.message.runtime
 
 import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.DeliveryPolicy
 import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.message.contract.AppVisibility
 import com.aozijx.passly.app.message.contract.AppVisibilityProvider
@@ -115,6 +116,70 @@ class DefaultAppNoticeDispatcherTest {
         assertEquals(1, deliveries)
         assertEquals(NoticeDispatchStatus.DUPLICATE, duplicate.status)
         assertTrue(duplicate.sinkResults.isEmpty())
+    }
+
+    @Test
+    fun distinctEventIdsWithSameNoticeCodeBothDeliver() = runBlocking {
+        var deliveries = 0
+        val dispatcher = DefaultAppNoticeDispatcher(
+            router = DefaultNoticeRouter(),
+            deduplicator = DefaultNoticeDeduplicator { 1_000L },
+            codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
+            settingsProvider = MessageSettingsSnapshotProvider {
+                MessageSettingsSnapshot.Ready(1, MessageSettings())
+            },
+            visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
+            systemStateProvider = availableSystemState(),
+            sinks = setOf(
+                sink(NoticeTarget.IN_APP) {
+                    deliveries++
+                    SinkResult.Delivered
+                }
+            )
+        )
+
+        val first = dispatcher.dispatch(
+            newAppNotice(NoticeCode.CLIPBOARD_CLEARED, eventId = "clipboard-clear-1")
+        )
+        val second = dispatcher.dispatch(
+            newAppNotice(NoticeCode.CLIPBOARD_CLEARED, eventId = "clipboard-clear-2")
+        )
+
+        assertEquals(2, deliveries)
+        assertEquals(NoticeDispatchStatus.DELIVERED, first.status)
+        assertEquals(NoticeDispatchStatus.DELIVERED, second.status)
+    }
+
+    @Test
+    fun failedDeliveryCanRetryWithTheSameEventId() = runBlocking {
+        var attempts = 0
+        val dispatcher = DefaultAppNoticeDispatcher(
+            router = DefaultNoticeRouter(),
+            deduplicator = DefaultNoticeDeduplicator { 1_000L },
+            codeRegistry = NoticeCodeRegistry { code ->
+                defaultNoticeCodePolicy(code).copy(deliveryPolicy = DeliveryPolicy.SYSTEM_ONLY)
+            },
+            settingsProvider = MessageSettingsSnapshotProvider {
+                MessageSettingsSnapshot.Ready(1, MessageSettings())
+            },
+            visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
+            systemStateProvider = availableSystemState(),
+            sinks = setOf(
+                sink(NoticeTarget.SYSTEM) {
+                    attempts++
+                    if (attempts == 1) SinkResult.Failed("notice.temporarily_unavailable")
+                    else SinkResult.Delivered
+                }
+            )
+        )
+        val notice = newAppNotice(NoticeCode.SECURITY_ACTION_FAILED, eventId = "retry-security-1")
+
+        val first = dispatcher.dispatch(notice)
+        val second = dispatcher.dispatch(notice)
+
+        assertEquals(2, attempts)
+        assertEquals(NoticeDispatchStatus.FAILED, first.status)
+        assertEquals(NoticeDispatchStatus.DELIVERED, second.status)
     }
 
     @Test

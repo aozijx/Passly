@@ -14,8 +14,7 @@ data class NoticeCodePolicy(
     val level: NoticeLevel,
     val deliveryPolicy: DeliveryPolicy,
     val mandatory: Boolean = false,
-    val eventIdTtlMs: Long = 2 * 60 * 1000L,
-    val suppressWithinMs: Long = 0L
+    val eventIdTtlMs: Long = 2 * 60 * 1000L
 )
 
 fun interface NoticeCodeRegistry {
@@ -26,71 +25,61 @@ fun defaultNoticeCodePolicy(code: NoticeCode): NoticeCodePolicy = when (code) {
     NoticeCode.CLIPBOARD_CLEARED -> NoticeCodePolicy(
         NoticeTopic.CLIPBOARD,
         NoticeLevel.INFO,
-        DeliveryPolicy.IN_APP_ONLY,
-        suppressWithinMs = 5_000
+        DeliveryPolicy.IN_APP_ONLY
     )
 
     NoticeCode.CLIPBOARD_CLEAR_FAILED -> NoticeCodePolicy(
         NoticeTopic.CLIPBOARD,
         NoticeLevel.ERROR,
-        DeliveryPolicy.IN_APP_ONLY,
-        suppressWithinMs = 5_000
+        DeliveryPolicy.IN_APP_ONLY
     )
 
     NoticeCode.APP_LOCKED -> NoticeCodePolicy(
         NoticeTopic.APP_LIFECYCLE,
         NoticeLevel.INFO,
-        DeliveryPolicy.IN_APP_ONLY,
-        suppressWithinMs = 10_000
+        DeliveryPolicy.IN_APP_ONLY
     )
 
     NoticeCode.APP_CLOSE_REMINDER -> NoticeCodePolicy(
         NoticeTopic.APP_LIFECYCLE,
         NoticeLevel.WARNING,
-        DeliveryPolicy.IN_APP_ONLY,
-        suppressWithinMs = 10_000
+        DeliveryPolicy.IN_APP_ONLY
     )
 
     NoticeCode.BACKUP_EXPORT_COMPLETED -> NoticeCodePolicy(
         NoticeTopic.BACKUP,
         NoticeLevel.SUCCESS,
-        DeliveryPolicy.PREFER_IN_APP,
-        suppressWithinMs = 30_000
+        DeliveryPolicy.PREFER_IN_APP
     )
 
     NoticeCode.BACKUP_EXPORT_FAILED -> NoticeCodePolicy(
         NoticeTopic.BACKUP,
         NoticeLevel.ERROR,
-        DeliveryPolicy.PREFER_IN_APP,
-        suppressWithinMs = 30_000
+        DeliveryPolicy.PREFER_IN_APP
     )
 
     NoticeCode.BACKUP_IMPORT_COMPLETED -> NoticeCodePolicy(
         NoticeTopic.BACKUP,
         NoticeLevel.SUCCESS,
-        DeliveryPolicy.PREFER_IN_APP,
-        suppressWithinMs = 30_000
+        DeliveryPolicy.PREFER_IN_APP
     )
 
     NoticeCode.BACKUP_IMPORT_FAILED -> NoticeCodePolicy(
         NoticeTopic.BACKUP,
         NoticeLevel.ERROR,
-        DeliveryPolicy.PREFER_IN_APP,
-        suppressWithinMs = 30_000
+        DeliveryPolicy.PREFER_IN_APP
     )
 
     NoticeCode.BACKUP_DIRECTORY_CHECK_COMPLETED -> NoticeCodePolicy(
         NoticeTopic.BACKUP,
         NoticeLevel.SUCCESS,
-        DeliveryPolicy.IN_APP_ONLY,
-        suppressWithinMs = 10_000
+        DeliveryPolicy.IN_APP_ONLY
     )
 
     NoticeCode.BACKUP_DIRECTORY_CHECK_FAILED -> NoticeCodePolicy(
         NoticeTopic.BACKUP,
         NoticeLevel.ERROR,
-        DeliveryPolicy.IN_APP_ONLY,
-        suppressWithinMs = 10_000
+        DeliveryPolicy.IN_APP_ONLY
     )
 
     NoticeCode.SECURITY_KEY_INVALIDATED -> NoticeCodePolicy(
@@ -117,15 +106,13 @@ fun defaultNoticeCodePolicy(code: NoticeCode): NoticeCodePolicy = when (code) {
     NoticeCode.DATABASE_INDEX_REBUILD_COMPLETED -> NoticeCodePolicy(
         NoticeTopic.DATABASE,
         NoticeLevel.SUCCESS,
-        DeliveryPolicy.PREFER_IN_APP,
-        suppressWithinMs = 30_000
+        DeliveryPolicy.PREFER_IN_APP
     )
 
     NoticeCode.DATABASE_INDEX_REBUILD_FAILED -> NoticeCodePolicy(
         NoticeTopic.DATABASE,
         NoticeLevel.ERROR,
-        DeliveryPolicy.PREFER_IN_APP,
-        suppressWithinMs = 30_000
+        DeliveryPolicy.PREFER_IN_APP
     )
 
     NoticeCode.DATABASE_OPERATION_FAILED -> NoticeCodePolicy(

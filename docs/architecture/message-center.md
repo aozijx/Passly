@@ -3,7 +3,7 @@
 ## 边界与数据流
 
 业务代码只发布 `AppNotice(eventId, code, arguments)`。`topic`、`level`、投递策略、强制性与
-去重窗口由可信 `NoticeCodeRegistry` 决定，发布者不能伪造。参数只能使用 `Count`、
+eventId TTL 由可信 `NoticeCodeRegistry` 决定，发布者不能伪造。参数只能使用 `Count`、
 `DurationMs`、`EnumCode`、`ReasonCode` 或 `Flag`，不得传入自由文本、凭据、路径或 URL。
 
 ```mermaid
@@ -28,36 +28,37 @@ flowchart LR
 3. 根据 `DeliveryPolicy` 与前后台状态生成初始目标。
 4. 系统目标同时检查产品设置、`POST_NOTIFICATIONS`、系统通知总开关和 channel。
 5. `PREFER_*` 在首选目标不可用或投递失败时按策略回退；`SYSTEM_ONLY` 不回退。
-6. 路由允许后再执行按 `NoticeCode` 的语义去重；成功完成 eventId claim，异常或取消则释放。
+6. 投递完成后，至少一个目标成功才完成 eventId claim；所有目标失败时释放 claim，允许同一事件重试。
 
 强制消息只绕过产品总开关、topic 和最低等级，不绕过 Android 权限或系统 channel。
 
 ## 事件注册表
 
 事件编号使用 `NoticeCode` 枚举名这一稳定字符串，不使用或持久化 Kotlin ordinal；枚举调整顺序不会改变事件编号。
-所有事件的精确 `eventId` TTL 当前为 120 秒。语义去重为 0 表示只做 eventId 去重。
+所有事件的精确 `eventId` TTL 当前为 120 秒。同一 `NoticeCode` 的不同 `eventId` 始终分别投递，避免吞掉合法的连续操作。
 
-| NoticeCode | Topic | Level | Delivery | Mandatory | 语义去重 |
-|---|---|---|---|---:|---:|
-| `CLIPBOARD_CLEARED` | CLIPBOARD | INFO | IN_APP_ONLY | 否 | 5 秒 |
-| `CLIPBOARD_CLEAR_FAILED` | CLIPBOARD | ERROR | IN_APP_ONLY | 否 | 5 秒 |
-| `APP_LOCKED` | APP_LIFECYCLE | INFO | IN_APP_ONLY | 否 | 10 秒 |
-| `APP_CLOSE_REMINDER` | APP_LIFECYCLE | WARNING | IN_APP_ONLY | 否 | 10 秒 |
-| `ICON_DOWNLOAD_COMPLETED` | ICON_DOWNLOAD | SUCCESS | PREFER_SYSTEM | 否 | 5 秒 |
-| `ICON_DOWNLOAD_FAILED` | ICON_DOWNLOAD | ERROR | PREFER_SYSTEM | 否 | 10 秒 |
-| `BACKUP_EXPORT_COMPLETED` | BACKUP | SUCCESS | PREFER_IN_APP | 否 | 30 秒 |
-| `BACKUP_EXPORT_FAILED` | BACKUP | ERROR | PREFER_IN_APP | 否 | 30 秒 |
-| `BACKUP_IMPORT_COMPLETED` | BACKUP | SUCCESS | PREFER_IN_APP | 否 | 30 秒 |
-| `BACKUP_IMPORT_FAILED` | BACKUP | ERROR | PREFER_IN_APP | 否 | 30 秒 |
-| `SECURITY_KEY_INVALIDATED` | SECURITY | CRITICAL | PREFER_SYSTEM | 是 | 0 |
-| `SECURITY_RECOVERY_REQUIRED` | SECURITY | CRITICAL | PREFER_IN_APP | 是 | 0 |
-| `SECURITY_ACTION_FAILED` | SECURITY | ERROR | PREFER_SYSTEM | 是 | 0 |
-| `DATABASE_INDEX_REBUILD_COMPLETED` | DATABASE | SUCCESS | PREFER_IN_APP | 否 | 30 秒 |
-| `DATABASE_INDEX_REBUILD_FAILED` | DATABASE | ERROR | PREFER_IN_APP | 否 | 30 秒 |
-| `DATABASE_OPERATION_FAILED` | DATABASE | ERROR | PREFER_IN_APP | 是 | 0 |
-| `NOTIFICATION_PERMISSION_DENIED` | APP_LIFECYCLE | WARNING | IN_APP_ONLY | 否 | 0 |
+| NoticeCode | Topic | Level | Delivery | Mandatory |
+|---|---|---|---|---:|
+| `CLIPBOARD_CLEARED` | CLIPBOARD | INFO | IN_APP_ONLY | 否 |
+| `CLIPBOARD_CLEAR_FAILED` | CLIPBOARD | ERROR | IN_APP_ONLY | 否 |
+| `APP_LOCKED` | APP_LIFECYCLE | INFO | IN_APP_ONLY | 否 |
+| `APP_CLOSE_REMINDER` | APP_LIFECYCLE | WARNING | IN_APP_ONLY | 否 |
+| `BACKUP_EXPORT_COMPLETED` | BACKUP | SUCCESS | PREFER_IN_APP | 否 |
+| `BACKUP_EXPORT_FAILED` | BACKUP | ERROR | PREFER_IN_APP | 否 |
+| `BACKUP_IMPORT_COMPLETED` | BACKUP | SUCCESS | PREFER_IN_APP | 否 |
+| `BACKUP_IMPORT_FAILED` | BACKUP | ERROR | PREFER_IN_APP | 否 |
+| `BACKUP_DIRECTORY_CHECK_COMPLETED` | BACKUP | SUCCESS | IN_APP_ONLY | 否 |
+| `BACKUP_DIRECTORY_CHECK_FAILED` | BACKUP | ERROR | IN_APP_ONLY | 否 |
+| `SECURITY_KEY_INVALIDATED` | SECURITY | CRITICAL | PREFER_SYSTEM | 是 |
+| `SECURITY_RECOVERY_REQUIRED` | SECURITY | CRITICAL | PREFER_IN_APP | 是 |
+| `SECURITY_ACTION_FAILED` | SECURITY | ERROR | PREFER_SYSTEM | 是 |
+| `DATABASE_INDEX_REBUILD_COMPLETED` | DATABASE | SUCCESS | PREFER_IN_APP | 否 |
+| `DATABASE_INDEX_REBUILD_FAILED` | DATABASE | ERROR | PREFER_IN_APP | 否 |
+| `DATABASE_OPERATION_FAILED` | DATABASE | ERROR | PREFER_IN_APP | 是 |
+| `NOTIFICATION_PERMISSION_DENIED` | APP_LIFECYCLE | WARNING | IN_APP_ONLY | 否 |
 
-新增事件必须同时增加：枚举、注册策略、受控文本资源与解析映射、参数契约、Router/Dispatcher 测试以及本表。
+应用内队列容量为 64；队列满时明确返回失败，不丢弃已排队消息。Dispatcher 仅在至少一个输出目标成功后保留 eventId claim，
+全部失败会释放 claim 以支持重试。新增事件必须同时增加：枚举、注册策略、受控文本资源与解析映射、参数契约、Router/Dispatcher 测试以及本表。
 不得增加 `StubSystemNotificationGateway` 或在 feature 中直接调用 `NotificationManager`。
 
 
