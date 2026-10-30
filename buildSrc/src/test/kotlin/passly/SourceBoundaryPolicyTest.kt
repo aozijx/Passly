@@ -244,6 +244,48 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun presentationSharedRejectsFullyQualifiedDomainReferencesWithoutImports() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/shared/components/Card.kt",
+            content = "val entry: com.aozijx.passly.domain.entry.model.Entry? = null",
+        )
+
+        val violation = SourceBoundaryVerifier.verify(
+            listOf(source),
+            SourceBoundaryPolicy.layerRules,
+        ).single()
+
+        assertEquals("LAYER_PRESENTATION_SHARED", violation.ruleId)
+        assertEquals(source.content, violation.evidence)
+    }
+
+    @Test
+    fun fullyQualifiedReferencesHonorExactAllowlistAndIgnoreCommentsAndStrings() {
+        val allowed = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/shared/components/Card.kt",
+            content = """
+                // com.aozijx.passly.domain.entry.model.Entry
+                val documentation = "com.aozijx.passly.domain.entry.model.Entry"
+                /* com.aozijx.passly.domain.entry.model.Entry */
+                val type: com.aozijx.passly.domain.entry.model.EntryType =
+                    com.aozijx.passly.domain.entry.model.EntryType.LOGIN
+            """.trimIndent(),
+        )
+        val sibling = allowed.copy(
+            content = "val metadata: com.aozijx.passly.domain.entry.model.EntryTypeMetadata",
+        )
+
+        assertEquals(
+            emptyList(),
+            SourceBoundaryVerifier.verify(listOf(allowed), SourceBoundaryPolicy.layerRules),
+        )
+        assertEquals(
+            "LAYER_PRESENTATION_SHARED",
+            SourceBoundaryVerifier.verify(listOf(sibling), SourceBoundaryPolicy.layerRules).single().ruleId,
+        )
+    }
+
+    @Test
     fun directDomainConsumersAreRequiredByTheModulePolicy() {
         val requiredEdges = setOf(
             edge(":app", ":domain"),

@@ -154,7 +154,7 @@ Mapper 应显式处理缺失字段、版本和错误，不用强制类型转换�
 
 ## 自动检查
 
-`verifyArchitecture` 通过 `verifyModuleBoundaries` 扫描项目依赖和源码 import，并包含以下禁止边：
+`verifyArchitecture` 通过 `verifyModuleBoundaries` 扫描项目依赖、源码 import 和代码中的完全限定名引用，并包含以下禁止边：
 
 ```text
 domain -> com.aozijx.passly.data
@@ -169,7 +169,7 @@ security -> *.data.repository / *.data.local
 `SourceBoundaryPolicy` 按 `feature/<业务>/presentation` 的单层业务路径和对应包名识别页面；新增业务无需
 登记名称。非 UI 源码不得反向导入任意业务的 Presentation，页面仍受 Data 实现导入禁令约束。
 匹配按完整路径段和包名段处理，`presentation_models` 等相似名称不作为页面。Windows 与 Unix 路径统一处理；
-带别名或通配符的 import 仍执行同一规则。受审查的精确文件例外保留在规则中。
+带别名或通配符的 import、未导入的完全限定名引用仍执行同一规则；注释和字符串字面量不作为依赖。受审查的精确文件例外保留在规则中。
 
 ## 代码位置
 
