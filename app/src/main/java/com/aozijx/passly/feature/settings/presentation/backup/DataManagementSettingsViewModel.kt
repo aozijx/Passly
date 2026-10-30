@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.settings.presentation.backup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
 import com.aozijx.passly.feature.settings.backup.BackupDirectorySelectionResult
 import com.aozijx.passly.feature.settings.backup.BackupDirectorySettingsInteractor
 import com.aozijx.passly.presentation.shared.event.PageEffects
@@ -14,6 +15,7 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class DataManagementSettingsViewModel @Inject constructor(
+    private val directorySource: BackupDirectorySettingsSource,
     private val directorySettings: BackupDirectorySettingsInteractor,
 ) : ViewModel() {
     private val pageEffects = PageEffects<DataManagementSettingsEffect>()
@@ -26,7 +28,7 @@ class DataManagementSettingsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            directorySettings.directoryUri.collect { directoryUri ->
+            directorySource.backupDirectoryUri.collect { directoryUri ->
                 _uiState.value = DataManagementSettingsUiState.Ready(
                     directoryUri = directoryUri,
                 )

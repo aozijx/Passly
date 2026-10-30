@@ -7,7 +7,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -41,11 +40,9 @@ class BackupDirectorySettingsInteractor @Inject constructor(
 ) {
     private val operationMutex = Mutex()
 
-    val directoryUri: Flow<String?> = settingsRepository.backupDirectoryUri
-
     suspend fun select(treeUri: String?): BackupDirectorySelectionResult = operationMutex.withLock {
         if (treeUri == null) return@withLock BackupDirectorySelectionResult.Cancelled
-        val previousTreeUri = directoryUri.first()
+        val previousTreeUri = settingsRepository.backupDirectoryUri.first()
         when (val result = directoryAccess.acquire(treeUri)) {
             is BackupDirectoryGrantResult.Granted -> {
                 persistGrantedDirectory(result.treeUri, previousTreeUri)
@@ -92,7 +89,7 @@ class BackupDirectorySettingsInteractor @Inject constructor(
     }
 
     suspend fun clear() = operationMutex.withLock {
-        val previousTreeUri = directoryUri.first()
+        val previousTreeUri = settingsRepository.backupDirectoryUri.first()
         var clearFailure: Throwable? = null
         try {
             settingsRepository.clearBackupDirectoryUri()

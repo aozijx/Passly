@@ -18,7 +18,8 @@ class DataManagementSettingsViewModelTest {
     @Test
     fun `remains loading until persisted backup preferences arrive`() = runTest {
         val viewModel = DataManagementSettingsViewModel(
-            BackupDirectorySettingsInteractor(EmptyRepository, NoOpAccess),
+            directorySource = EmptyRepository,
+            directorySettings = BackupDirectorySettingsInteractor(EmptyRepository, NoOpAccess),
         )
 
         assertEquals(DataManagementSettingsUiState.Loading, viewModel.uiState.value)
