@@ -16,6 +16,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpAction
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpCodeState
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpSavePhase
+import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
@@ -29,11 +30,12 @@ fun AddOtpEditorScreen(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
     saveActionModifier: Modifier = Modifier,
+    isEditingExisting: Boolean = false,
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val form = state.form
     AddEntryScaffold(
-        title = stringResource(R.string.vault_add_otp_title),
+        title = stringResource(if (isEditingExisting) R.string.vault_edit_otp_title else R.string.vault_add_otp_title),
         canSave = state.canSave,
         isSaving = state.savePhase == AddOtpSavePhase.Saving,
         snackbarHostState = snackbarHostState,
@@ -44,6 +46,7 @@ fun AddOtpEditorScreen(
         },
         modifier = modifier,
         saveActionModifier = saveActionModifier,
+        isLoading = state.loadPhase == EditorLoadPhase.Loading,
     ) {
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
             NextFocusTextField(

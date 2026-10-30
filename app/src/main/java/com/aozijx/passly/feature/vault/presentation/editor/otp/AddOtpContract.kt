@@ -1,11 +1,16 @@
 package com.aozijx.passly.feature.vault.presentation.editor.otp
 
+import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
+
 data class AddOtpCodeState(
     val form: OtpFormState = OtpFormState(),
     val savePhase: AddOtpSavePhase = AddOtpSavePhase.Idle,
+    val loadPhase: EditorLoadPhase = EditorLoadPhase.NotRequested,
+    val loadFailed: Boolean = false,
 ) {
     val canSave: Boolean
-        get() = form.isValid && savePhase == AddOtpSavePhase.Idle
+        get() = form.isValid && savePhase == AddOtpSavePhase.Idle &&
+            loadPhase != EditorLoadPhase.Loading && loadPhase != EditorLoadPhase.Failed
 }
 
 sealed interface AddOtpSavePhase {

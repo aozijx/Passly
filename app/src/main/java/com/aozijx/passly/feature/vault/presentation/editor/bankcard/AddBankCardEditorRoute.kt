@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -21,16 +22,26 @@ fun AddBankCardEditorRoute(
     onSaved: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    editEntryId: String? = null,
 ) {
     val viewModel = hiltViewModel<AddBankCardViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val saveFailedMessage = stringResource(R.string.vault_add_bank_card_save_failed)
+    val loadFailedMessage = stringResource(R.string.vault_edit_entry_load_failed)
     val saveActionModifier = Modifier.rememberAddEntryFabTransitionModifier(
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
     )
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
+    LaunchedEffect(viewModel, editEntryId) {
+        editEntryId?.let(viewModel::loadExistingEntry)
+    }
+    LaunchedEffect(uiState.loadFailed, editEntryId) {
+        if (editEntryId != null && uiState.loadFailed) {
+            snackbarHostState.showSnackbar(loadFailedMessage)
+        }
+    }
 
     AddBankCardEditorScreen(
         state = uiState,
@@ -38,5 +49,6 @@ fun AddBankCardEditorRoute(
         onBack = onBack,
         snackbarHostState = snackbarHostState,
         saveActionModifier = saveActionModifier,
+        isEditingExisting = editEntryId != null,
     )
 }

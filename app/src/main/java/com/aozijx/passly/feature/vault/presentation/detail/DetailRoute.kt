@@ -13,6 +13,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.Lifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.presentation.common.copyLabelRes
 import com.aozijx.passly.presentation.shared.media.ImageType
 import com.aozijx.passly.presentation.shared.media.rememberImagePicker
@@ -24,6 +25,7 @@ fun DetailRoute(
     entryId: String,
     onBack: () -> Unit,
     onOpenRelatedEntry: (String) -> Unit,
+    onEditFullForm: (EntryType) -> Unit,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
 ) {
     val viewModel = hiltViewModel<DetailViewModel>()
@@ -63,6 +65,7 @@ fun DetailRoute(
         onBack = onBack,
         onAction = viewModel::onAction,
         onOpenRelatedEntry = onOpenRelatedEntry,
+        onEditFullForm = onEditFullForm,
         onFaviconUploadRequested = { pickFaviconImage(ImageType.SCREEN) },
     )
 }

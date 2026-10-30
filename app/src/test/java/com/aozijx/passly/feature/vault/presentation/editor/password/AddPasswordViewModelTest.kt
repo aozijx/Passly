@@ -6,6 +6,15 @@ import com.aozijx.passly.core.platform.packageinfo.InstalledAppMetadata
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryIdentity
+import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.credential.LoginCredential
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.feature.vault.detail.EditableEntryUseCaseFixture
+import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
@@ -32,6 +41,43 @@ import org.junit.Rule
 class AddPasswordViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun fullEditLoadsAuthorizedPasswordSavesTheDraftAndClearsOnLock() = runTest {
+        val entry = Entry(
+            identity = EntryIdentity(EntryId("login-1"), EntryType.LOGIN, timestamps = EntryTimestamps(1)),
+            profile = EntryProfile("Mail"),
+            secret = EntrySecret(credential = LoginCredential(password = null)),
+        )
+        val fixture = EditableEntryUseCaseFixture(
+            entry,
+            setOf(SensitiveFieldKey.PASSWORD),
+            mapOf(SensitiveFieldKey.PASSWORD to "old-secret"),
+        )
+        val model = AddPasswordViewModel(
+            createEntryUseCase(fixture.access),
+            fixture.access,
+            installedAppDirectory = directory { emptyList() },
+            loadEditableEntry = fixture.loader,
+            editDetailEntry = fixture.editor,
+        )
+
+        model.loadExistingEntry("login-1")
+        advanceUntilIdle()
+        assertEquals(EditorLoadPhase.Ready, model.uiState.value.loadPhase)
+        assertEquals("old-secret", model.uiState.value.form.password)
+
+        model.onAction(AddPasswordAction.PasswordChanged("new-secret"))
+        model.onAction(AddPasswordAction.Save)
+        advanceUntilIdle()
+        assertEquals("new-secret", fixture.query.current?.secret?.login?.password)
+        assertTrue(!model.uiState.value.loadFailed)
+
+        fixture.access.authenticationState.value = AuthenticationState.Locked
+        advanceUntilIdle()
+        assertEquals("", model.uiState.value.form.password)
+        assertEquals(EditorLoadPhase.Failed, model.uiState.value.loadPhase)
+    }
 
     @Test
     fun lockedPickerRequestsDoNotQueryInstalledApplications() = runTest {

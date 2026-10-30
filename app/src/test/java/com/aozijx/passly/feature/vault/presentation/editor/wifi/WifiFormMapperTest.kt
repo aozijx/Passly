@@ -1,14 +1,36 @@
 package com.aozijx.passly.feature.vault.presentation.editor.wifi
 
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryIdentity
+import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
+import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class WifiFormMapperTest {
+    @Test
+    fun fromEntryRestoresWifiSecurityHiddenAndPasswordFields() {
+        val entry = Entry(
+            EntryIdentity(EntryId("wifi"), EntryType.WIFI, timestamps = EntryTimestamps(1)),
+            EntryProfile("Office"),
+            EntrySecret(credential = WifiCredential("Office", "wifi-secret", WifiSecurityType.Wep, true)),
+        )
+
+        val draft = AddWifiFormState().fromEntry(entry).toEntryDraft()
+
+        assertEquals(EntryDraftValue.Text("wifi-secret"), draft[FieldKey.PASSWORD])
+        assertEquals(EntryDraftValue.Text("WEP"), draft[FieldKey.WIFI_SECURITY])
+        assertEquals(EntryDraftValue.Toggle(true), draft[FieldKey.WIFI_HIDDEN])
+    }
+
     @Test
     fun `form maps every wifi and shared field into a typed draft`() {
         val draft = AddWifiFormState(

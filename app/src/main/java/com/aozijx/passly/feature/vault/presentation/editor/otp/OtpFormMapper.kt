@@ -10,6 +10,10 @@ import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.otp.OtpConfigInputResult
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.otp.toNewEntryDraft
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 
 fun OtpFormState.toEntryDraft(): EntryDraft {
     val definition = EntryTypeDefinitions[EntryType.OTP]
@@ -19,6 +23,25 @@ fun OtpFormState.toEntryDraft(): EntryDraft {
     var draft = config.toNewEntryDraft(title = title.trim())
     draft = draft.withOptionalText(definition, FieldKey.NOTES, notes)
     return draft.withTags(definition, tags)
+}
+
+internal fun OtpFormState.fromEntry(entry: Entry): OtpFormState {
+    val config = entry.secret.otp?.config
+    return copy(
+        title = entry.title,
+        issuer = config?.issuer.orEmpty(),
+        accountName = config?.accountName.orEmpty(),
+        secret = config?.secret.orEmpty(),
+        period = config?.periodSeconds?.toString() ?: "30",
+        digits = config?.digits?.toString() ?: "6",
+        type = config?.type ?: OtpType.TOTP,
+        algorithm = config?.algorithm ?: OtpHashAlgorithm.SHA1,
+        encoding = config?.encoding ?: OtpSecretEncoding.BASE32,
+        counter = config?.counter?.toString() ?: "0",
+        uriText = "",
+        notes = entry.secret.notes.orEmpty(),
+        tags = entry.tags.joinToString(", "),
+    )
 }
 
 private fun EntryDraft.withOptionalText(

@@ -29,11 +29,13 @@ fun AddWifiEditorRoute(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     loadInitialContent: () -> AddWifiInitialContent = { AddWifiInitialContent.Blank },
+    editEntryId: String? = null,
 ) {
     val viewModel = hiltViewModel<AddWifiViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val saveFailedMessage = stringResource(R.string.vault_add_wifi_save_failed)
+    val loadFailedMessage = stringResource(R.string.vault_edit_entry_load_failed)
     val seedUnavailableMessage = stringResource(R.string.wifi_scanned_seed_unavailable)
     val saveActionModifier = Modifier.rememberAddEntryFabTransitionModifier(
         sharedTransitionScope = sharedTransitionScope,
@@ -42,9 +44,15 @@ fun AddWifiEditorRoute(
     var overlay by remember { mutableStateOf<WifiEditorOverlay>(WifiEditorOverlay.None) }
 
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
-    LaunchedEffect(viewModel) {
-        if (viewModel.initialize(loadInitialContent) == AddWifiInitializationResult.Unavailable) {
+    LaunchedEffect(viewModel, editEntryId) {
+        if (editEntryId != null) viewModel.loadExistingEntry(editEntryId)
+        else if (viewModel.initialize(loadInitialContent) == AddWifiInitializationResult.Unavailable) {
             snackbarHostState.showSnackbar(seedUnavailableMessage)
+        }
+    }
+    LaunchedEffect(uiState.loadFailed, editEntryId) {
+        if (editEntryId != null && uiState.loadFailed) {
+            snackbarHostState.showSnackbar(loadFailedMessage)
         }
     }
 
@@ -55,6 +63,7 @@ fun AddWifiEditorRoute(
         onScan = { overlay = WifiEditorOverlay.Scanner },
         snackbarHostState = snackbarHostState,
         saveActionModifier = saveActionModifier,
+        isEditingExisting = editEntryId != null,
     )
 
     when (overlay) {

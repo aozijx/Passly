@@ -5,7 +5,15 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppDirectory
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
+import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
+import com.aozijx.passly.feature.vault.detail.EditableEntryLoadResult
+import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.policy.EntryEdit
+import com.aozijx.passly.core.error.model.ValidationError
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveSession
+import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -17,18 +25,27 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class AddPasswordViewModel @Inject constructor(
+class AddPasswordViewModel @Inject internal constructor(
     createEntryUseCase: CreateEntryUseCase,
     private val secureSessionAccessState: SecureSessionAccessState,
     private val installedAppDirectory: InstalledAppDirectory,
+    private val loadEditableEntry: LoadEditableEntryUseCase? = null,
+    private val editDetailEntry: EditDetailEntryUseCase? = null,
 ) : ViewModel() {
     private var associatedAppsLoadJob: Job? = null
+    private var editLoadJob: Job? = null
+    private var editingEntryId: EntryId? = null
     private val _uiState = MutableStateFlow(AddPasswordUiState())
     val uiState = _uiState.asStateFlow()
     private val saveSession = EditorSaveSession(
         scope = viewModelScope,
         access = secureSessionAccessState,
-        create = createEntryUseCase::invoke,
+        create = { draft ->
+            val entryId = editingEntryId
+            if (entryId == null) createEntryUseCase(draft)
+            else editDetailEntry?.edit(entryId, EntryEdit.ReplaceForm(draft))
+                ?: AppResult.Failure(ValidationError())
+        },
         onSaving = { _uiState.value = _uiState.value.copy(savePhase = AddPasswordSavePhase.Saving) },
         onIdle = {
             _uiState.value = _uiState.value.copy(savePhase = AddPasswordSavePhase.Idle)
@@ -36,6 +53,40 @@ class AddPasswordViewModel @Inject constructor(
         onClear = ::clearSensitiveContent,
     )
     internal val effects = saveSession.effects
+
+    fun loadExistingEntry(rawEntryId: String) {
+        if (editingEntryId != null) return
+        val entryId = runCatching { EntryId(rawEntryId) }.getOrNull() ?: run {
+            _uiState.value = _uiState.value.copy(loadPhase = EditorLoadPhase.Failed, loadFailed = true)
+            return
+        }
+        editingEntryId = entryId
+        if (!saveSession.canEdit()) {
+            _uiState.value = _uiState.value.copy(loadPhase = EditorLoadPhase.Failed, loadFailed = true)
+            return
+        }
+        val authentication = secureSessionAccessState.authenticationState.value
+        _uiState.value = _uiState.value.copy(loadPhase = EditorLoadPhase.Loading)
+        editLoadJob = viewModelScope.launch {
+            when (val result = loadEditableEntry?.invoke(entryId) ?: EditableEntryLoadResult.Unavailable) {
+                is EditableEntryLoadResult.Loaded -> {
+                    if (result.entry.type != com.aozijx.passly.domain.entry.model.EntryType.LOGIN ||
+                        result.entry.id != entryId || authentication !== result.authentication ||
+                        secureSessionAccessState.authenticationState.value !== result.authentication ||
+                        !secureSessionAccessState.hasFullSecureSessionAccess()
+                    ) {
+                        failEditLoad()
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            form = _uiState.value.form.fromEntry(result.entry),
+                            loadPhase = EditorLoadPhase.Ready,
+                        )
+                    }
+                }
+                else -> failEditLoad()
+            }
+        }
+    }
 
     fun onAction(action: AddPasswordAction) {
         when (action) {
@@ -83,7 +134,7 @@ class AddPasswordViewModel @Inject constructor(
     }
 
     private fun mutateForm(transform: (AddPasswordFormState) -> AddPasswordFormState) {
-        if (!saveSession.canEdit()) return
+        if (!saveSession.canEdit() || !canEditForm()) return
         val current = _uiState.value
         val form = transform(current.form)
         _uiState.value = current.copy(form = form)
@@ -91,14 +142,27 @@ class AddPasswordViewModel @Inject constructor(
 
     private fun save() {
         val current = _uiState.value
+        if (!canEditForm()) return
         if (!current.canSave) return
         saveSession.save { current.form.toEntryDraft() }
     }
 
     private fun clearSensitiveContent() {
+        editLoadJob?.cancel()
+        editLoadJob = null
         associatedAppsLoadJob?.cancel()
         associatedAppsLoadJob = null
-        _uiState.value = AddPasswordUiState()
+        _uiState.value = AddPasswordUiState(
+            loadPhase = if (editingEntryId == null) EditorLoadPhase.NotRequested else EditorLoadPhase.Failed,
+        )
+    }
+
+    private fun canEditForm() = editingEntryId == null || _uiState.value.loadPhase == EditorLoadPhase.Ready
+
+    private fun failEditLoad() {
+        _uiState.value = _uiState.value.copy(
+            form = AddPasswordFormState(), loadPhase = EditorLoadPhase.Failed, loadFailed = true,
+        )
     }
 
     override fun onCleared() {

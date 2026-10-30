@@ -31,6 +31,7 @@ import com.aozijx.passly.core.platform.packageinfo.rememberInstalledAppIconBitma
 import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordAction
 import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordSavePhase
 import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordUiState
+import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.SensitiveFieldVisibilityButton
@@ -45,6 +46,7 @@ fun AddPasswordEditorScreen(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
     saveActionModifier: Modifier = Modifier,
+    isEditingExisting: Boolean = false,
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -60,7 +62,7 @@ fun AddPasswordEditorScreen(
     }
 
     AddEntryScaffold(
-        title = stringResource(R.string.vault_add_password_title),
+        title = stringResource(if (isEditingExisting) R.string.vault_edit_password_title else R.string.vault_add_password_title),
         canSave = state.canSave,
         isSaving = state.savePhase == AddPasswordSavePhase.Saving,
         snackbarHostState = snackbarHostState,
@@ -68,6 +70,7 @@ fun AddPasswordEditorScreen(
         onSave = ::save,
         modifier = modifier,
         saveActionModifier = saveActionModifier,
+        isLoading = state.loadPhase == EditorLoadPhase.Loading,
     ) {
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
             NextFocusTextField(

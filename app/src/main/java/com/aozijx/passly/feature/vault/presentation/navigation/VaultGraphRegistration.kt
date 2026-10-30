@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.navigation
 
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -95,6 +96,37 @@ internal fun NavGraphBuilder.registerVaultGraph(
         )
     }
 
+    registerEditorEditDestination(
+        navGraphBuilder = this,
+        route = AppRoute.EditPassword.route,
+    ) { entryId ->
+        AddPasswordEditorRoute(
+            onBack = context.navigateBack,
+            onSaved = context.navigateBack,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = this,
+            editEntryId = entryId,
+        )
+    }
+    registerEditorEditDestination(
+        navGraphBuilder = this,
+        route = AppRoute.EditOtp.route,
+    ) { entryId ->
+        AddOtpEditorRoute(context.navigateBack, context.navigateBack, sharedTransitionScope, this, editEntryId = entryId)
+    }
+    registerEditorEditDestination(
+        navGraphBuilder = this,
+        route = AppRoute.EditBankCard.route,
+    ) { entryId ->
+        AddBankCardEditorRoute(context.navigateBack, context.navigateBack, sharedTransitionScope, this, editEntryId = entryId)
+    }
+    registerEditorEditDestination(
+        navGraphBuilder = this,
+        route = AppRoute.EditWifi.route,
+    ) { entryId ->
+        AddWifiEditorRoute(context.navigateBack, context.navigateBack, sharedTransitionScope, this, editEntryId = entryId)
+    }
+
     composable(
         route = AppRoute.AddWifiFromSeed.route,
         arguments = listOf(
@@ -147,7 +179,24 @@ internal fun NavGraphBuilder.registerVaultGraph(
             onOpenRelatedEntry = {
                 context.navigateToRoute(AppRoute.Detail.createRoute(it))
             },
+            onEditFullForm = { type ->
+                VaultEditorDestinationRegistry.editRouteFor(type, entryId)?.let(context.navigateToRoute)
+            },
         )
+    }
+}
+
+private fun NavGraphBuilder.registerEditorEditDestination(
+    navGraphBuilder: NavGraphBuilder,
+    route: String,
+    content: @Composable AnimatedVisibilityScope.(String) -> Unit,
+) {
+    navGraphBuilder.composable(
+        route = route,
+        arguments = listOf(navArgument("entryId") { type = NavType.StringType }),
+    ) { backStackEntry ->
+        val entryId = backStackEntry.arguments?.getString("entryId") ?: return@composable
+        content(entryId)
     }
 }
 

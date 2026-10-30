@@ -1,11 +1,18 @@
 package com.aozijx.passly.feature.vault.presentation.editor.otp
 
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryIdentity
+import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -14,6 +21,33 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class OtpFormMapperTest {
+    @Test
+    fun fromEntryRestoresCompleteOtpConfigurationForEditing() {
+        val config = com.aozijx.passly.domain.entry.model.otp.OtpConfig(
+            type = OtpType.HOTP,
+            secret = "JBSWY3DPEHPK3PXP",
+            algorithm = OtpHashAlgorithm.SHA512,
+            digits = 8,
+            periodSeconds = null,
+            counter = 99,
+            encoding = OtpSecretEncoding.BASE32,
+            issuer = "Example",
+            accountName = "ada",
+        )
+        val entry = Entry(
+            EntryIdentity(EntryId("otp"), EntryType.OTP, timestamps = EntryTimestamps(1)),
+            EntryProfile("Token", tags = setOf("work")),
+            EntrySecret(credential = OtpCredential(config), notes = "note"),
+        )
+
+        val draft = OtpFormState().fromEntry(entry).toEntryDraft()
+
+        assertEquals(EntryDraftValue.Text("JBSWY3DPEHPK3PXP"), draft[FieldKey.OTP_SECRET])
+        assertEquals(EntryDraftValue.Text(OtpType.HOTP.name), draft[FieldKey.OTP_TYPE])
+        assertEquals(EntryDraftValue.LongNumber(99), draft[FieldKey.OTP_COUNTER])
+        assertEquals(EntryDraftValue.Text("Example"), draft[FieldKey.OTP_ISSUER])
+    }
+
     @Test
     fun toEntryDraft_mapsTotpWithoutHotpCounter() {
         val draft = OtpFormState(

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -38,6 +39,7 @@ fun DetailTopBar(
     onTitleEditStarted: () -> Unit,
     onTitleSaved: () -> Unit,
     onFavoriteToggled: () -> Unit,
+    onEditFullForm: () -> Unit,
     onBack: () -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
@@ -90,6 +92,14 @@ fun DetailTopBar(
             }
         },
         actions = {
+            if (model.canEditFullForm) {
+                IconButton(onClick = onEditFullForm) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = stringResource(R.string.vault_detail_edit_form),
+                    )
+                }
+            }
             IconButton(onClick = {
                 onFavoriteToggled()
             }) {

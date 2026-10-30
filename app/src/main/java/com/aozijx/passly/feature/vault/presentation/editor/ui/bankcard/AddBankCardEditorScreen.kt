@@ -36,6 +36,7 @@ import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardU
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardSavePhase
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.CardType
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.CardTypeSelection
+import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.domain.entry.policy.CardNumberInvalidReason
 import com.aozijx.passly.domain.entry.policy.CardNumberValidationResult
 
@@ -48,6 +49,7 @@ fun AddBankCardEditorScreen(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
     saveActionModifier: Modifier = Modifier,
+    isEditingExisting: Boolean = false,
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -59,7 +61,7 @@ fun AddBankCardEditorScreen(
     }
 
     AddEntryScaffold(
-        title = stringResource(R.string.vault_add_bank_card_title),
+        title = stringResource(if (isEditingExisting) R.string.vault_edit_bank_card_title else R.string.vault_add_bank_card_title),
         canSave = state.canSave,
         isSaving = state.savePhase == AddBankCardSavePhase.Saving,
         snackbarHostState = snackbarHostState,
@@ -67,6 +69,7 @@ fun AddBankCardEditorScreen(
         onSave = ::save,
         modifier = modifier,
         saveActionModifier = saveActionModifier,
+        isLoading = state.loadPhase == EditorLoadPhase.Loading,
     ) {
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
             NextFocusTextField(

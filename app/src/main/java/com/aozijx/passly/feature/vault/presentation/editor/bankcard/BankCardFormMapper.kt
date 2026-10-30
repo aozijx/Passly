@@ -8,6 +8,9 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryTypeDefinition
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
+import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.credential.CardExpiry
+import com.aozijx.passly.domain.entry.model.credential.CardExpiryParseResult
 
 fun AddBankCardFormState.toEntryDraft(): EntryDraft {
     val definition = EntryTypeDefinitions[EntryType.BANK_CARD]
@@ -47,6 +50,37 @@ fun AddBankCardFormState.toEntryDraft(): EntryDraft {
         }
     }
     return draft.withTags(definition, tags)
+}
+
+internal fun AddBankCardFormState.fromEntry(entry: Entry): AddBankCardFormState {
+    val card = entry.secret.card
+    val type = when (card?.cardType) {
+        "DEBIT" -> CardTypeSelection.Selected(CardType.DEBIT)
+        "CREDIT" -> CardTypeSelection.Selected(CardType.CREDIT)
+        else -> CardTypeSelection.Unselected
+    }
+    val expiry = card?.cardExpiry?.let(CardExpiry::parse)
+    return copy(
+        title = entry.title,
+        cardType = type,
+        cardholder = card?.cardHolder.orEmpty(),
+        cardNumber = card?.cardNumber.orEmpty(),
+        cardCvv = card?.cardCvv.orEmpty(),
+        paymentPin = card?.paymentPin.orEmpty(),
+        cardExpiry = (expiry as? CardExpiryParseResult.Parsed)?.value?.let(CardExpirySelection::Selected)
+            ?: CardExpirySelection.NotSet,
+        billingAddress = card?.billingAddress.orEmpty(),
+        issuingBank = card?.issuingBank.orEmpty(),
+        bankBranch = card?.bankBranch.orEmpty(),
+        cardProduct = card?.cardProduct.orEmpty(),
+        currency = card?.currency.orEmpty(),
+        bankPhone = card?.bankPhone.orEmpty(),
+        tags = entry.tags.joinToString(", "),
+        notes = entry.secret.notes.orEmpty(),
+        isCardNumberVisible = false,
+        isCvvVisible = false,
+        isPinVisible = false,
+    )
 }
 
 private fun EntryDraft.withOptionalText(

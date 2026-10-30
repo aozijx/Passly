@@ -4,6 +4,8 @@ import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
@@ -17,8 +19,11 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
+import com.aozijx.passly.feature.vault.detail.EditableEntryUseCaseFixture
+import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffect
 import com.aozijx.passly.testing.testLogger
@@ -29,6 +34,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
@@ -146,6 +152,40 @@ class AddOtpViewModelTest {
     }
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun fullEditLoadsOtpAndWritesUpdatedConfiguration() = runTest {
+        val entry = Entry(
+            identity = EntryIdentity(
+                EntryId("otp-edit"), EntryType.OTP, timestamps = EntryTimestamps(1),
+            ),
+            profile = EntryProfile("Token"),
+            secret = EntrySecret(credential = com.aozijx.passly.domain.entry.model.credential.OtpCredential(
+                OtpConfig(secret = null),
+            )),
+        )
+        val secret = "JBSWY3DPEHPK3PXP"
+        val fixture = EditableEntryUseCaseFixture(
+            entry,
+            setOf(SensitiveFieldKey.OTP_SECRET),
+            mapOf(SensitiveFieldKey.OTP_SECRET to secret),
+        )
+        val model = AddOtpViewModel(
+            createEntryUseCase(session = fixture.access), fixture.access,
+            loadEditableEntry = fixture.loader,
+            editDetailEntry = fixture.editor,
+        )
+
+        model.loadExistingEntry("otp-edit")
+        advanceUntilIdle()
+        assertEquals(EditorLoadPhase.Ready, model.uiState.value.loadPhase)
+        assertEquals(secret, model.uiState.value.form.secret)
+
+        model.onAction(AddOtpAction.FormChanged(model.uiState.value.form.copy(issuer = "Updated issuer")))
+        model.onAction(AddOtpAction.Save)
+        advanceUntilIdle()
+        assertEquals("Updated issuer", fixture.query.current?.secret?.otp?.config?.issuer)
+    }
 
     @Test
     fun invalidInputCannotPersistGuessedOtpParameters() = runTest {

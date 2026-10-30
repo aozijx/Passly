@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryTypeDefinition
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
 import com.aozijx.passly.feature.vault.presentation.editor.parseRawTags
@@ -27,6 +28,19 @@ fun AddWifiFormState.toEntryDraft(): EntryDraft {
     }
     draft = draft.withOptionalText(definition, FieldKey.NOTES, notes)
     return draft.withTags(definition, tags)
+}
+
+internal fun AddWifiFormState.fromEntry(entry: Entry): AddWifiFormState {
+    val wifi = entry.secret.wifi
+    return copy(
+        ssid = wifi?.ssid.orEmpty(),
+        securityType = wifi?.securityType ?: WifiSecurityType.WpaPersonal,
+        password = wifi?.password.orEmpty(),
+        isPasswordVisible = false,
+        isHidden = wifi?.isHidden ?: false,
+        notes = entry.secret.notes.orEmpty(),
+        tags = entry.tags.joinToString(", "),
+    )
 }
 
 internal fun AddWifiFormState.withSsid(value: String): AddWifiFormState = copy(ssid = value)

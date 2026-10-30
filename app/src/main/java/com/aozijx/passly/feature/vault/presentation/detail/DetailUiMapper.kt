@@ -28,6 +28,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedEntry
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.ScopedSensitiveText
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorValidationErrorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorOverlayUiState
+import com.aozijx.passly.feature.vault.presentation.navigation.VaultEditorDestinationRegistry
 
 internal fun detailHeaderUiModel(
     entry: Entry,
@@ -37,6 +38,8 @@ internal fun detailHeaderUiModel(
     favorite = entry.favorite,
     editedTitle = state.editedTitle,
     isEditingTitle = state.isEditingTitle,
+    canEditFullForm = VaultEditorDestinationRegistry.editRouteFor(entry.type, entry.id.value) != null,
+    entryType = entry.type,
 )
 
 internal fun detailContentUiModel(

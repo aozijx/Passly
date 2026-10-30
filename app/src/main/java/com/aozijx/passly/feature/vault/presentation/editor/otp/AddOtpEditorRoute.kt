@@ -30,12 +30,14 @@ fun AddOtpEditorRoute(
     onSaved: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    editEntryId: String? = null,
 ) {
     val viewModel = hiltViewModel<AddOtpViewModel>()
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val saveFailedMessage = stringResource(R.string.vault_add_otp_save_failed)
+    val loadFailedMessage = stringResource(R.string.vault_edit_entry_load_failed)
     val uriParsedMessage = stringResource(R.string.vault_otp_uri_parsed)
     val uriParseFailedMessage = stringResource(R.string.vault_otp_uri_parse_failed)
     val saveActionModifier = Modifier.rememberAddEntryFabTransitionModifier(
@@ -45,6 +47,14 @@ fun AddOtpEditorRoute(
     var overlay by remember { mutableStateOf<OtpEditorOverlay>(OtpEditorOverlay.None) }
 
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
+    LaunchedEffect(viewModel, editEntryId) {
+        editEntryId?.let(viewModel::loadExistingEntry)
+    }
+    LaunchedEffect(uiState.loadFailed, editEntryId) {
+        if (editEntryId != null && uiState.loadFailed) {
+            snackbarHostState.showSnackbar(loadFailedMessage)
+        }
+    }
     LaunchedEffect(
         viewModel,
         context,
@@ -70,6 +80,7 @@ fun AddOtpEditorRoute(
         onScan = { overlay = OtpEditorOverlay.Scanner },
         snackbarHostState = snackbarHostState,
         saveActionModifier = saveActionModifier,
+        isEditingExisting = editEntryId != null,
     )
 
     when (overlay) {

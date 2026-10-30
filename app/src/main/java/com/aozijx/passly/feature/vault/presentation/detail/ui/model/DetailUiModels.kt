@@ -10,6 +10,8 @@ data class DetailHeaderUiModel(
     val favorite: Boolean,
     val editedTitle: String,
     val isEditingTitle: Boolean,
+    val canEditFullForm: Boolean,
+    val entryType: EntryType,
 )
 
 data class DetailContentUiModel(

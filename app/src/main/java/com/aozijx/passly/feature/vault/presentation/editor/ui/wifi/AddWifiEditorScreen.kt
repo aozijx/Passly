@@ -26,6 +26,7 @@ import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditor
 import com.aozijx.passly.feature.vault.presentation.editor.wifi.AddWifiAction
 import com.aozijx.passly.feature.vault.presentation.editor.wifi.AddWifiSavePhase
 import com.aozijx.passly.feature.vault.presentation.editor.wifi.AddWifiUiState
+import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 
 @Composable
@@ -37,6 +38,7 @@ fun AddWifiEditorScreen(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
     saveActionModifier: Modifier = Modifier,
+    isEditingExisting: Boolean = false,
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -48,7 +50,7 @@ fun AddWifiEditorScreen(
     }
 
     AddEntryScaffold(
-        title = stringResource(R.string.vault_add_wifi_title),
+        title = stringResource(if (isEditingExisting) R.string.vault_edit_wifi_title else R.string.vault_add_wifi_title),
         canSave = state.canSave,
         isSaving = state.savePhase == AddWifiSavePhase.Saving,
         snackbarHostState = snackbarHostState,
@@ -56,6 +58,7 @@ fun AddWifiEditorScreen(
         onSave = ::save,
         modifier = modifier,
         saveActionModifier = saveActionModifier,
+        isLoading = state.loadPhase == EditorLoadPhase.Loading,
     ) {
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
             NextFocusTextField(

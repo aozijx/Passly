@@ -26,6 +26,22 @@ sealed class AppRoute(val route: String) {
 
     data object AddWifi : AppRoute("vault/add/wifi")
 
+    data object EditPassword : AppRoute("vault/edit/password/{entryId}") {
+        fun createRoute(entryId: String) = "vault/edit/password/$entryId"
+    }
+
+    data object EditOtp : AppRoute("vault/edit/otp/{entryId}") {
+        fun createRoute(entryId: String) = "vault/edit/otp/$entryId"
+    }
+
+    data object EditBankCard : AppRoute("vault/edit/bankcard/{entryId}") {
+        fun createRoute(entryId: String) = "vault/edit/bankcard/$entryId"
+    }
+
+    data object EditWifi : AppRoute("vault/edit/wifi/{entryId}") {
+        fun createRoute(entryId: String) = "vault/edit/wifi/$entryId"
+    }
+
     data object AddWifiFromSeed : AppRoute("vault/add/wifi/from-seed/{seedToken}") {
         const val ARG_SEED_TOKEN = "seedToken"
         fun createRoute(token: String) = "vault/add/wifi/from-seed/$token"

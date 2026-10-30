@@ -122,12 +122,15 @@
     <string name="vault_editor_section_details">Details</string>
     <string name="vault_editor_section_otp_setup">OTP setup</string>
     <string name="vault_add_password_title">Add Password</string>
+    <string name="vault_edit_password_title">Edit Password</string>
     <string name="vault_add_password_website_url">Website address</string>
     <string name="vault_add_password_save_failed">Couldn\'t save password</string>
     <string name="vault_add_bank_card_title">Add Bank Card</string>
+    <string name="vault_edit_bank_card_title">Edit Bank Card</string>
     <string name="vault_add_bank_card_save_failed">Couldn\'t save bank card</string>
     <string name="vault_card_cvv_invalid">Enter 3 or 4 ASCII digits, or leave blank</string>
     <string name="vault_add_wifi_title">Add Wi-Fi</string>
+    <string name="vault_edit_wifi_title">Edit Wi-Fi</string>
     <string name="vault_add_wifi_save_failed">Couldn\'t save Wi-Fi</string>
     <string name="vault_reveal_info">Verify and reveal details</string>
     <string name="vault_edit_modified_hint">Modified, don\'t forget to save</string>
@@ -144,6 +147,7 @@
     <string name="vault_export_qr_message">Scan this QR code with another authenticator app</string>
 
     <string name="vault_add_otp_title">Add OTP</string>
+    <string name="vault_edit_otp_title">Edit OTP</string>
     <string name="vault_add_otp_save_failed">Couldn\'t save OTP</string>
     <string name="vault_otp_uri_parsed">URI parsed successfully</string>
     <string name="vault_otp_uri_parse_failed">Failed to parse URI</string>
@@ -156,6 +160,8 @@
 
     <!-- Detail page new strings -->
     <string name="vault_detail_totp_label">Two-Factor Code</string>
+    <string name="vault_detail_edit_form">Edit entry</string>
+    <string name="vault_edit_entry_load_failed">This entry could not be loaded or authentication expired. Go back and try again.</string>
     <string name="vault_detail_domain_label">Associated domain</string>
     <string name="vault_detail_domain_placeholder">e.g. example.com</string>
     <string name="vault_detail_username">Username</string>

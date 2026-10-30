@@ -4,6 +4,13 @@ import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryIdentity
+import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.credential.CardCredential
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
@@ -13,6 +20,8 @@ import com.aozijx.passly.domain.entry.policy.CardNetwork
 import com.aozijx.passly.domain.entry.policy.CardNetworkMatch
 import com.aozijx.passly.domain.entry.policy.CardNumberValidationResult
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
+import com.aozijx.passly.feature.vault.detail.EditableEntryUseCaseFixture
+import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffect
 import com.aozijx.passly.testing.testLogger
@@ -24,6 +33,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -32,6 +42,41 @@ import org.junit.Rule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AddBankCardViewModelTest {
+    @Test
+    fun fullEditRevealsCardSecretsAndSavesTheWholeCardForm() = runTest {
+        val entry = Entry(
+            identity = EntryIdentity(EntryId("card-edit"), EntryType.BANK_CARD, timestamps = EntryTimestamps(1)),
+            profile = EntryProfile("Card"),
+            secret = EntrySecret(credential = CardCredential(cardNumber = null, cardCvv = null)),
+        )
+        val fixture = EditableEntryUseCaseFixture(
+            entry,
+            setOf(SensitiveFieldKey.CARD_NUMBER, SensitiveFieldKey.CARD_CVV),
+            mapOf(
+                SensitiveFieldKey.CARD_NUMBER to "4111111111111111",
+                SensitiveFieldKey.CARD_CVV to "123",
+            ),
+        )
+        val model = AddBankCardViewModel(
+            createEntryUseCase(), fixture.access,
+            loadEditableEntry = fixture.loader,
+            editDetailEntry = fixture.editor,
+        )
+
+        model.loadExistingEntry("card-edit")
+        advanceUntilIdle()
+        assertEquals(EditorLoadPhase.Ready, model.uiState.value.loadPhase)
+        assertEquals("4111111111111111", model.uiState.value.form.cardNumber)
+        assertEquals("123", model.uiState.value.form.cardCvv)
+
+        model.onAction(AddBankCardAction.CardholderChanged("Ada"))
+        model.onAction(AddBankCardAction.Save)
+        advanceUntilIdle()
+        assertEquals("Ada", fixture.query.current?.secret?.card?.cardHolder)
+        assertEquals("4111111111111111", fixture.query.current?.secret?.card?.cardNumber)
+        assertEquals("123", fixture.query.current?.secret?.card?.cardCvv)
+    }
+
     @Test
     fun `invalid cvv does not attempt save or emit failure and correction saves normally`() = runTest {
         val created = mutableListOf<Entry>()

@@ -5,6 +5,12 @@ import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryIdentity
+import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
@@ -12,6 +18,8 @@ import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
+import com.aozijx.passly.feature.vault.detail.EditableEntryUseCaseFixture
+import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
 import com.aozijx.passly.domain.entry.policy.WifiQrPayloadFormatter
@@ -31,6 +39,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.advanceUntilIdle
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -41,6 +50,33 @@ import org.junit.Test
 class AddWifiViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun fullEditLoadsWifiBundleAndPersistsSecurityFields() = runTest {
+        val entry = Entry(
+            identity = EntryIdentity(EntryId("wifi-edit"), EntryType.WIFI, timestamps = EntryTimestamps(1)),
+            profile = EntryProfile("Office"),
+            secret = EntrySecret(credential = WifiCredential("Office", "wifi-secret")),
+        )
+        val fixture = EditableEntryUseCaseFixture(entry)
+        val model = AddWifiViewModel(
+            CreateEntryUseCase(RecordingRepository(), fixture.access, EntryDraftMaterializer(), testLogger()),
+            fixture.access,
+            loadEditableEntry = fixture.loader,
+            editDetailEntry = fixture.editor,
+        )
+
+        model.loadExistingEntry("wifi-edit")
+        advanceUntilIdle()
+        assertEquals(EditorLoadPhase.Ready, model.uiState.value.loadPhase)
+        assertEquals("wifi-secret", model.uiState.value.form.password)
+
+        model.onAction(AddWifiAction.HiddenChanged(true))
+        model.onAction(AddWifiAction.Save)
+        advanceUntilIdle()
+        assertTrue(fixture.query.current?.secret?.wifi?.isHidden == true)
+        assertEquals("wifi-secret", fixture.query.current?.secret?.wifi?.password)
+    }
 
     @Test
     fun `initial content is loaded once and not retained for reinitialization`() {

@@ -11,7 +11,16 @@ import com.aozijx.passly.domain.entry.otp.suggestedEntryTitle
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
+import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
+import com.aozijx.passly.feature.vault.detail.EditableEntryLoadResult
+import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.policy.EntryEdit
+import com.aozijx.passly.core.error.model.ValidationError
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveSession
+import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,12 +29,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class AddOtpViewModel @Inject constructor(
+class AddOtpViewModel @Inject internal constructor(
     createEntryUseCase: CreateEntryUseCase,
     private val secureSessionAccessState: SecureSessionAccessState,
+    private val loadEditableEntry: LoadEditableEntryUseCase? = null,
+    private val editDetailEntry: EditDetailEntryUseCase? = null,
 ) : ViewModel() {
     private sealed interface FeedbackScope {
         data object Closed : FeedbackScope
@@ -34,6 +46,8 @@ class AddOtpViewModel @Inject constructor(
     private data class InputEvent(val owner: FeedbackScope.Active, val event: AddOtpEvent)
 
     private val _uiState = MutableStateFlow(AddOtpCodeState())
+    private var editingEntryId: EntryId? = null
+    private var editLoadJob: kotlinx.coroutines.Job? = null
     val uiState = _uiState.asStateFlow()
     private var feedbackScope: FeedbackScope = FeedbackScope.Closed
     private val _events = Channel<InputEvent>(Channel.CONFLATED)
@@ -44,7 +58,12 @@ class AddOtpViewModel @Inject constructor(
     private val saveSession = EditorSaveSession(
         scope = viewModelScope,
         access = secureSessionAccessState,
-        create = createEntryUseCase::invoke,
+        create = { draft ->
+            val entryId = editingEntryId
+            if (entryId == null) createEntryUseCase(draft)
+            else editDetailEntry?.edit(entryId, EntryEdit.ReplaceForm(draft))
+                ?: AppResult.Failure(ValidationError())
+        },
         onSaving = { _uiState.value = _uiState.value.copy(savePhase = AddOtpSavePhase.Saving) },
         onIdle = {
             _uiState.value = _uiState.value.copy(savePhase = AddOtpSavePhase.Idle)
@@ -52,6 +71,41 @@ class AddOtpViewModel @Inject constructor(
         onClear = ::clearSensitiveContent,
     )
     internal val effects = saveSession.effects
+
+    fun loadExistingEntry(rawEntryId: String) {
+        if (editingEntryId != null) return
+        val entryId = runCatching { EntryId(rawEntryId) }.getOrNull() ?: run {
+            _uiState.value = _uiState.value.copy(loadPhase = EditorLoadPhase.Failed, loadFailed = true)
+            return
+        }
+        editingEntryId = entryId
+        if (!saveSession.canEdit()) {
+            _uiState.value = _uiState.value.copy(loadPhase = EditorLoadPhase.Failed, loadFailed = true)
+            return
+        }
+        val authentication = secureSessionAccessState.authenticationState.value
+        _uiState.value = _uiState.value.copy(loadPhase = EditorLoadPhase.Loading)
+        editLoadJob = viewModelScope.launch {
+            when (val result = loadEditableEntry?.invoke(entryId) ?: EditableEntryLoadResult.Unavailable) {
+                is EditableEntryLoadResult.Loaded -> {
+                    if (result.entry.type != EntryType.OTP || result.entry.id != entryId ||
+                        authentication !== result.authentication ||
+                        secureSessionAccessState.authenticationState.value !== result.authentication ||
+                        !secureSessionAccessState.hasFullSecureSessionAccess()
+                    ) {
+                        failEditLoad()
+                    } else {
+                        feedbackScope = FeedbackScope.Closed
+                        _uiState.value = _uiState.value.copy(
+                            form = _uiState.value.form.fromEntry(result.entry),
+                            loadPhase = EditorLoadPhase.Ready,
+                        )
+                    }
+                }
+                else -> failEditLoad()
+            }
+        }
+    }
 
     fun onAction(action: AddOtpAction) {
         when (action) {
@@ -63,7 +117,7 @@ class AddOtpViewModel @Inject constructor(
     }
 
     private fun mutateForm(transform: (OtpFormState) -> OtpFormState): Boolean {
-        if (!saveSession.canEdit()) return false
+        if (!saveSession.canEdit() || !canEditForm()) return false
         feedbackScope = FeedbackScope.Closed
         val current = _uiState.value
         val form = transform(current.form)
@@ -73,6 +127,7 @@ class AddOtpViewModel @Inject constructor(
 
     private fun save() {
         val current = _uiState.value
+        if (!canEditForm()) return
         if (!current.canSave) return
         feedbackScope = FeedbackScope.Closed
         saveSession.save { current.form.toEntryDraft() }
@@ -133,8 +188,21 @@ class AddOtpViewModel @Inject constructor(
     }
 
     private fun clearSensitiveContent() {
+        editLoadJob?.cancel()
+        editLoadJob = null
         feedbackScope = FeedbackScope.Closed
-        _uiState.value = AddOtpCodeState()
+        _uiState.value = AddOtpCodeState(
+            loadPhase = if (editingEntryId == null) EditorLoadPhase.NotRequested else EditorLoadPhase.Failed,
+        )
+    }
+
+    private fun canEditForm() = editingEntryId == null || _uiState.value.loadPhase == EditorLoadPhase.Ready
+
+    private fun failEditLoad() {
+        feedbackScope = FeedbackScope.Closed
+        _uiState.value = _uiState.value.copy(
+            form = OtpFormState(), loadPhase = EditorLoadPhase.Failed, loadFailed = true,
+        )
     }
 
     override fun onCleared() {

@@ -18,11 +18,11 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-/** Coordinates one create attempt without owning or copying a type-specific form. */
+/** Coordinates one editor write attempt without owning or copying a type-specific form. */
 internal class EditorSaveSession(
     private val scope: CoroutineScope,
     private val access: SecureSessionAccessState,
-    private val create: suspend (EntryDraft) -> AppResult<EntryId>,
+    private val create: suspend (EntryDraft) -> AppResult<*>,
     private val onSaving: () -> Unit,
     private val onIdle: () -> Unit,
     private val onClear: () -> Unit,
@@ -138,3 +138,5 @@ internal class EditorSaveSession(
         is Phase.Finished -> current.attempt.authentication
     }
 }
+
+enum class EditorLoadPhase { NotRequested, Loading, Ready, Failed }
