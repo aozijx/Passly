@@ -94,14 +94,15 @@ buffer、归档和资源缓冲也执行 best-effort 清零。协议文档明确�
 
 证据：`EncryptedBackupContainerCodec.kt`、`KeyDerivation.kt`。
 
-## 低优先级与维护项
+## 已解决的低优先级项
 
-- `vault_historys` 是公开 Schema 中的拼写错误。全新安装基线下应在冻结 v1 前改为 `vault_history` 或
-  `vault_snapshots`，否则后续只能通过迁移修正。
-- Proto 中 `card_style`、滑动动作、Autofill 模式、排序等固定集合仍使用 string；逐步改 enum，避免运行时无效值。
-- 仓库只有 CodeQL workflow，缺少文档声明的编译、单测、Lint 和 APK GitHub Actions 门禁；应新增独立 CI
-  workflow。
-- `QUERY_ALL_PACKAGES` 属于高敏 Manifest 权限。应确认应用商店政策必要性，能用 `<queries>` 精确声明时优先收窄。
+- Schema 不再包含 `vault_historys`；当前历史实体使用 `entry_activities` 与 `entry_revisions` 表名。
+- 滑动动作、Autofill 展示模式、Vault 排序等固定集合已使用 Proto enum；`card_style` 不再是持久化 Proto 字段。
+- Manifest 未声明 `QUERY_ALL_PACKAGES`，应用查询范围由 launcher intent `<queries>` 限定。
+
+### 已解决：Android GitHub Actions CI 门禁
+
+新增 `.github/workflows/android-ci.yml`，在 push 和 pull request 上运行架构校验、App Kotlin 编译、各 JVM/Android 模块单元测试、Lint、Debug APK 与 Android 测试 APK 构建。CodeQL workflow 保留独立手动构建，以供 CodeQL 提取分析数据库。
 
 ## 已核对的正向结果
 
