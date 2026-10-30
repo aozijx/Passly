@@ -10,7 +10,7 @@
 2. Run the focused mapper test and confirm it fails because LOGIN has no registered adapter.
 3. Add `LoginEntryPayloadAdapter`, register it by kind, and route both sealed credential encoding and enum-kind decoding through the registry.
 4. Run focused tests and full `:data:testDebugUnitTest`; verify JSON golden remains unchanged and run `git diff --check`.
-5. Review the diff. Keep this batch unstaged and uncommitted until requested.
+5. Review the diff and preserve unrelated changes. The final commit status is recorded below.
 
 ## Execution record
 
@@ -20,4 +20,4 @@
 - `:data:testDebugUnitTest`: 97 tests, 0 failures, 0 errors, 0 skipped.
 - `git diff --check`: passed.
 - Independent read-only review: no Critical, Important, or Minor findings.
-- This batch is left unstaged and uncommitted.
+- Committed with the CARD and WIFI adapters in `54e478d4b refactor(data): register login card and wifi adapters`.

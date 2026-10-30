@@ -6,7 +6,7 @@ API 31 Data and App instrumentation passed on OXF-AN00: Data 33 tests and App 55
 
 ## Open verification
 
-- [ ] Change biometric enrollment on hardware and verify the expected Keystore invalidation, recovery, and authentication behavior. Record the device/API and observed outcome without exposing credentials.
+- [ ] On a physical device, change biometric enrollment and verify Keystore invalidation, recovery, and authentication behavior. Record the device/API and observed outcome without exposing credentials. Current blocker (2026-10-30): `adb devices -l` lists only `emulator-5554` (`sdk_gphone64_x86_64`, API 36); emulator coverage cannot establish hardware-backed behavior.
 
 ## Completion rule
 

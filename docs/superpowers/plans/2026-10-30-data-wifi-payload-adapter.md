@@ -10,7 +10,7 @@
 2. Run the focused mapper tests and confirm the missing adapter registration fails.
 3. Add `WifiEntryPayloadAdapter`, move security type stored-value parsing into that adapter, register by `EntryCredentialKind.WIFI`, and delegate both mapper directions.
 4. Keep tests for missing/unsupported stored security and run focused plus full `:data:testDebugUnitTest`; run `git diff --check`.
-5. Review the batch. Leave all changes unstaged/uncommitted.
+5. Review the batch and preserve unrelated changes. The final commit status is recorded below.
 
 ## Execution Record
 
@@ -20,4 +20,4 @@
 - Focused `EntrySecretMapperTest`: passed.
 - Full `:data:testDebugUnitTest`: passed.
 - `git diff --check`: passed; Git reported only existing LF-to-CRLF working-copy notices.
-- Changes remain unstaged and uncommitted.
+- Committed with the LOGIN and CARD adapters in `54e478d4b refactor(data): register login card and wifi adapters`.

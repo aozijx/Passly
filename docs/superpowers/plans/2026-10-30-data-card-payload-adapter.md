@@ -2,7 +2,7 @@
 
 **Goal:** Route `EntryCredentialKind.CARD` payload conversion through a registered adapter, retaining the existing flat schema and all 13 card fields.
 
-**Constraints:** Register by credential kind. Keep all existing field values, JSON names/defaults/order, and expected EntryType validation. Do not add reflection to production code or silently fall back after adapter failure. Preserve the in-progress LOGIN changes and unrelated workspace edits; this batch stays unstaged/uncommitted.
+**Constraints:** Register by credential kind. Keep all existing field values, JSON names/defaults/order, and expected EntryType validation. Do not add reflection to production code or silently fall back after adapter failure. Preserve the in-progress LOGIN changes and unrelated workspace edits. The initial plan kept this batch uncommitted while LOGIN was in progress; the final combined commit is recorded below.
 
 ### Task 1: Migrate the CARD slot
 
@@ -20,4 +20,4 @@
 - `:data:testDebugUnitTest`: 98 tests, 0 failures, 0 errors, 0 skipped.
 - `git diff --check`: passed.
 - Independent read-only review: no findings.
-- Batch remains unstaged and uncommitted.
+- Committed with the LOGIN and WIFI adapters in `54e478d4b refactor(data): register login card and wifi adapters`.

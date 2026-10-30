@@ -20,4 +20,4 @@
 - Full `:data:testDebugUnitTest`: passed (101 tests, no failures, errors, or skips).
 - `git diff --check`: passed; Git emitted only LF-to-CRLF working-copy notices.
 - Independent read-only review: no Critical, Important, or Minor findings.
-- Changes are ready for exact-path staging and a separate commit.
+- Committed in `0dc9d15e6 refactor(data): register ssh payload adapter`.

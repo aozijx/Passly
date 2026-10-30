@@ -266,3 +266,37 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 回归：新增 deferred grant 屏障测试，覆盖 select/select 与 select/clear 顺序，并断言每个被替换或清除的 URI 正确释放。
 - 文档：同步更新备份 SAF 目录授权合同。
 - 验证：`BackupDirectorySettingsInteractorTest` 13 项通过；`verifyArchitecture` 与 `git diff --check` 通过。
+
+### 后续批次：恢复码提交、Room 观察与诊断日志清理（2026-10-30）
+
+- 恢复码提交：为 `RecoveryCodeSettingsViewModel` 增加同步进入的 `Committing` 状态，阻止并发确认、草稿替换和关闭；ViewModel 回归覆盖提交暂停、重复确认与终态不被覆盖。完整 App 单测、Security 定向测试和 `verifyArchitecture` 通过。
+- Room 观察：新增 `AppDatabaseSession.observeWhenReadable` 并迁移活动、链接、修订、列表和分页查询，移除各仓库重复的授权/数据库可读门控。真实 SQLCipher `AppDatabaseSession` collector 仪器测试覆盖封存、空结果和重开重订阅；35 项 Data 仪器测试通过，另有完整 Data 单测与架构门禁通过。此结果关闭本审查早期“缺少真实 Room collector 测试”的限制。
+- 诊断日志清除：`LogRecordStore.clear()` 通过 `LogClearResult` 明确表示成功或失败；加密 store 在写入接受边界内等待普通和 emergency writer 排空，超时保留原文件并报告失败，成功删除后再接受清除边界之后的写入。Data 写入屏障回归及 Storage Settings、Diagnostics 两个 ViewModel 的清理失败状态测试通过。完整 Data/App 单测、`verifyArchitecture`、Data/App lint 与 `git diff --check` 通过。
+- 诊断日志等级：新增持久化采集等级设置，写入过滤留在 `LogRecordStore` 边界并等待 DataStore 初始策略加载；设置只作用于本地加密记录，不影响 `LocalAlertPolicy`、Trace 或崩溃 handler。移除独立设置目的地，将设置放入 Data Management 日志区；完成 Proto 映射、策略、Storage Settings 和导航测试。Data/App 单测、`verifyArchitecture`、`:app:lintDebug` 通过。
+
+### 后续批次：Detail 修订恢复取消竞态（2026-10-30）
+
+- 根因：恢复事务已提交、仓储提交后清理仍挂起时，修订历史 Back 或 sheet dismiss 会取消 ViewModel job；恢复数据已经落库，但成功状态和详情刷新来不及执行。
+- 修复：Reducer 在 Restoring 时拒绝 Back/Closed；ViewModel 的 Back、Dismiss 和 revision 切换不再取消活动恢复；Compose sheet 禁用 Back 并拒绝关闭/下滑隐藏。
+- 覆盖：`DetailViewModelTest` 通过非取消清理屏障验证恢复完成后的详情刷新，以及条目替换、敏感会话关闭后的迟到结果不写回。`RevisionHistorySheetTest` 在 Pixel 8 Pro API 36 上验证 Back 和拖动关闭；5 项 reducer 测试、完整 App 单测、`verifyArchitecture`、`:app:lintDebug`、AndroidTest 编译和定向仪器测试通过。`git diff --check` 通过。
+- 结构审查：没有把 revision/favicon 工作流搬到新的 callback bag 或第二份状态源；现有 reducer/store/session 继续各自拥有纯状态、敏感揭示值和资源清理。
+
+### 后续复核：图标回收漏掉数据库单独重开（2026-10-30）
+
+- RED：数据库处于 `SEALED` 时图标回收请求被保留；随后数据库单独重开为 `UNLOCKED`、认证状态保持 `Authenticated`，旧队列不会收到重试信号，断言失败。
+- 修复：`IconResourceCleanupQueue` 同时监听认证状态与数据库会话 `lockStateFlow`；封存期间访问被拒后，数据库重开事件会触发再次 drain。`EntryResourceCleaner` 直接连接现有 `AppDatabaseSession`，未增加 Domain 契约或转发层。
+- 验证：`IconResourceCleanupQueueTest` 全部通过；完整 `:data:testDebugUnitTest`、`:data:lintDebug`、`:app:compileDebugKotlin`、`verifyArchitecture` 通过。
+
+### 后续复核：恢复码验证中的迟到输入事件（2026-10-30）
+
+- 根因：验证时 Compose 输入框已禁用，但 ViewModel 仍无条件接受 `VerificationInputChanged`。迟到事件会擦除正在验证的 `OwnedChars` 并替换 UI 输入；挂起的验证结束后仍可能把旧结果写入已变化的验证状态。
+- RED：增加 deferred 验证测试，验证进行中发送输入变化事件，旧实现会替换当前状态，断言失败。
+- 修复：ViewModel 在 `Verifying` 状态拒绝输入变化事件；现有单一状态持有者继续管理敏感输入与验证结果，没有增加策略层或状态副本。
+- 文档：认证主题页明确验证期间禁用输入及 ViewModel 对迟到事件的防护。
+- 验证：`RecoveryCodeSettingsViewModelTest` 定向测试先失败后通过；完整 `:app:testDebugUnitTest` 通过。
+
+### 后续复核：资源创建后取消导致会话句柄泄漏（2026-10-30）
+
+- RED：`SessionResource.open()` 创建句柄后取消当前 Job；旧路径未检查资源返回边界的协程状态，外层 `withContext(IO)` 最后抛出取消，但句柄仍保持打开。
+- 修复：资源返回后与状态发布后检查 Job；失败时在 `NonCancellable` 中关闭新句柄、撤销仍由本次 open 持有的句柄并保持 SEALED，清理异常保留为原始取消的 suppressed 异常。
+- 验证：新增 `RuntimeSessionManagerTest` 回归先因资源未关闭而失败；修复后 `:runtime:session:test` 与 `verifyArchitecture` 通过，提交 `4f093f71b`。

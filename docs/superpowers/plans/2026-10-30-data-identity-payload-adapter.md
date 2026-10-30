@@ -20,4 +20,4 @@
 - Full `:data:testDebugUnitTest`: passed (100 tests, 0 failures, errors, or skips).
 - `git diff --check`: passed; Git reported only LF-to-CRLF working-copy notices.
 - Independent read-only review: no Critical, Important, or Minor findings.
-- Changes are ready for exact-path staging and a separate commit.
+- Committed in `01c22d277 refactor(data): register identity payload adapter`.

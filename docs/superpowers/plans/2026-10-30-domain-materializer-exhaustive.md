@@ -19,4 +19,4 @@
 - Full `:domain:test`: passed (178 tests, 0 failures, errors, or skips).
 - Independent read-only review: no Critical, Important, or Minor findings.
 - `git diff --check`: passed; only LF-to-CRLF working-copy notices for unrelated files were emitted.
-- Ready for exact-path staging and commit.
+- Committed in `0c1758c64 refactor(domain): make materializer dispatch exhaustive`.

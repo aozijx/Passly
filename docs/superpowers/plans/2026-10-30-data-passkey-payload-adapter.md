@@ -21,4 +21,4 @@
 - Full `:data:testDebugUnitTest`: passed (103 tests, no failures, errors, or skips).
 - `git diff --check`: passed; Git emitted only LF-to-CRLF working-copy notices.
 - Independent read-only review: no Critical, Important, or Minor findings, including the registry coverage test.
-- Changes are ready for exact-path staging and a separate commit.
+- Committed in `a4ba05549 refactor(data): register passkey payload adapter`.
