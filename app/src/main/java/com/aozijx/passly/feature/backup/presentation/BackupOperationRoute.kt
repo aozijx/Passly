@@ -88,8 +88,9 @@ fun BackupOperationRoute(
     }
 
     DisposableEffect(viewModel) {
+        val owner = viewModel.onPageEntered()
         onDispose {
-            viewModel.onAction(BackupUiAction.DismissOptions)
+            viewModel.onPageExited(owner)
         }
     }
 

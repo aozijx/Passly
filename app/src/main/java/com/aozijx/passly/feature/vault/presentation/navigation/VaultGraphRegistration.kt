@@ -53,6 +53,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
                 vaultViewModel = vaultGraphViewModel(navController, backStackEntry),
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = this,
+                isEffectsPage = false,
             )
             TrashRoute(onDismiss = context.navigateBack)
         }

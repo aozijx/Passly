@@ -21,6 +21,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -35,8 +37,14 @@ internal class BackupViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(BackupUiState())
     val uiState: StateFlow<BackupUiState> = _uiState.asStateFlow()
 
-    private val _effects = Channel<BackupEffect>(Channel.BUFFERED)
-    val effects = _effects.receiveAsFlow()
+    private data class PageEffect(val owner: Any, val effect: BackupEffect)
+
+    private val pageEffects = Channel<PageEffect>(Channel.BUFFERED)
+    val effects = pageEffects.receiveAsFlow()
+        .filter { activePageOwner === it.owner }
+        .map { it.effect }
+
+    private var activePageOwner: Any? = null
 
     fun onAction(action: BackupUiAction) {
         when (action) {
@@ -152,34 +160,42 @@ internal class BackupViewModel @Inject constructor(
         password: SensitiveValue,
         block: suspend () -> BackupExecutionResult,
     ) {
+        val owner = activePageOwner ?: run {
+            password.wipe()
+            return
+        }
         mutate(BackupMutation.OperationStarted(operation))
         viewModelScope.launch {
             try {
-                applyResult(block(), operation)
+                applyResult(block(), operation, owner)
             } finally {
                 password.wipe()
             }
         }
     }
 
-    private fun applyResult(result: BackupExecutionResult, operation: BackupOperation) {
+    private fun applyResult(
+        result: BackupExecutionResult,
+        operation: BackupOperation,
+        owner: Any,
+    ) {
         when (result) {
             BackupExecutionResult.DirectoryWritable -> {
-                emitEffect(BackupNoticeEffect.DirectoryWritable)
-                mutate(BackupMutation.OperationSucceeded)
+                emitEffect(owner, BackupNoticeEffect.DirectoryWritable)
+                mutate(owner, BackupMutation.OperationSucceeded)
             }
             BackupExecutionResult.ExportSucceeded -> {
-                emitEffect(BackupNoticeEffect.ExportSucceeded)
-                mutate(BackupMutation.OperationSucceeded)
+                emitEffect(owner, BackupNoticeEffect.ExportSucceeded)
+                mutate(owner, BackupMutation.OperationSucceeded)
             }
             is BackupExecutionResult.ImportSucceeded -> {
-                emitEffect(BackupNoticeEffect.ImportSucceeded(result.result))
-                mutate(BackupMutation.OperationSucceeded)
+                emitEffect(owner, BackupNoticeEffect.ImportSucceeded(result.result))
+                mutate(owner, BackupMutation.OperationSucceeded)
             }
-            BackupExecutionResult.Cancelled -> mutate(BackupMutation.WorkflowClosed)
+            BackupExecutionResult.Cancelled -> mutate(owner, BackupMutation.WorkflowClosed)
             is BackupExecutionResult.Failure -> {
-                emitEffect(BackupNoticeEffect.Failed(operation))
-                mutate(BackupMutation.OperationFailed(operation, result.error))
+                emitEffect(owner, BackupNoticeEffect.Failed(operation))
+                mutate(owner, BackupMutation.OperationFailed(operation, result.error))
             }
         }
     }
@@ -219,11 +235,33 @@ internal class BackupViewModel @Inject constructor(
     }
 
     private fun emitEffect(effect: BackupEffect) {
-        _effects.trySend(effect)
+        activePageOwner?.let { emitEffect(it, effect) }
+    }
+
+    private fun emitEffect(owner: Any, effect: BackupEffect) {
+        if (activePageOwner === owner) {
+            pageEffects.trySend(PageEffect(owner, effect))
+        }
+    }
+
+    fun onPageEntered(): Any {
+        val owner = Any()
+        activePageOwner = owner
+        return owner
+    }
+
+    fun onPageExited(owner: Any) {
+        if (activePageOwner !== owner) return
+        activePageOwner = null
+        closeWorkflow()
     }
 
     private fun mutate(mutation: BackupMutation) {
         _uiState.update { state -> BackupReducer.reduce(state, mutation) }
+    }
+
+    private fun mutate(owner: Any, mutation: BackupMutation) {
+        if (activePageOwner === owner) mutate(mutation)
     }
 
     override fun onCleared() {

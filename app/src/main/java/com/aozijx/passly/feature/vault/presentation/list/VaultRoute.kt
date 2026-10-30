@@ -6,6 +6,7 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,13 +44,21 @@ internal fun VaultRoute(
     navigation: VaultNavigation,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    isEffectsPage: Boolean = true,
 ) {
+    var overlay by rememberSaveable { mutableStateOf(VaultOverlay.None) }
+    DisposableEffect(vaultViewModel, isEffectsPage, overlay) {
+        val active = isEffectsPage && overlay == VaultOverlay.None
+        val owner = if (active) vaultViewModel.onPageEntered() else null
+        onDispose {
+            owner?.let(vaultViewModel::onPageExited)
+        }
+    }
+
     val context = LocalContext.current
     val resources = LocalResources.current
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    var overlay by rememberSaveable { mutableStateOf(VaultOverlay.None) }
-
     val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
     val vaultDisplayState by vaultDisplayViewModel.config.collectAsStateWithLifecycle()
     val vaultDisplayConfig = when (val state = vaultDisplayState) {

@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -59,14 +60,20 @@ class VaultViewModel @Inject internal constructor(
     otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
 ) : ViewModel() {
 
-    private val _effects = Channel<VaultEffect>(Channel.BUFFERED)
-    val effects = _effects.receiveAsFlow()
+    private data class PageEffect(val owner: Any, val effect: VaultEffect)
+
+    private val pageEffects = Channel<PageEffect>(Channel.BUFFERED)
+    val effects = pageEffects.receiveAsFlow()
+        .filter { activePageOwner === it.owner }
+        .map { it.effect }
+
+    private var activePageOwner: Any? = null
 
     private val _uiState = MutableStateFlow(VaultUiState())
     val uiState: StateFlow<VaultUiState> = _uiState.asStateFlow()
 
     private fun emitError(message: UiErrorMessage) {
-        _effects.trySend(VaultEffect.ShowError(message))
+        emitEffect(VaultEffect.ShowError(message))
     }
 
     private val _refreshTrigger = MutableStateFlow(0L)
@@ -131,10 +138,11 @@ class VaultViewModel @Inject internal constructor(
     }
 
     private fun selectSortOption(sort: EntrySort) {
+        val owner = activePageOwner ?: return
         viewModelScope.launch {
             writePreferenceWithFeedback(
                 failureRes = R.string.vault_error_sort_failed,
-                onFailure = ::emitError,
+                onFailure = { emitError(owner, it) },
             ) { settingsRepository.setSort(sort) }
         }
     }
@@ -172,9 +180,10 @@ class VaultViewModel @Inject internal constructor(
         fieldKey: FieldKey,
     ) {
         if (!ensureFullSecureSessionAccess(R.string.vault_error_copy_access)) return
+        val owner = activePageOwner ?: return
         viewModelScope.launch {
             when (copyEntryField(EntryId(entryId), entryType, fieldKey)) {
-                CopyEntryFieldResult.Copied -> _effects.send(VaultEffect.FieldCopied(fieldKey))
+                CopyEntryFieldResult.Copied -> emitEffect(owner, VaultEffect.FieldCopied(fieldKey))
                 CopyEntryFieldResult.NotAuthorized,
                 CopyEntryFieldResult.Unavailable,
                 -> Unit
@@ -184,13 +193,14 @@ class VaultViewModel @Inject internal constructor(
 
     private fun copyOtp(entryId: String) {
         if (!ensureFullSecureSessionAccess(R.string.vault_error_copy_otp_access)) return
+        val owner = activePageOwner ?: return
         viewModelScope.launch {
             when (
                 copyOtpCode(EntryId(entryId)) {
                     (totp.states.value[entryId] as? OtpCodeState.Ready)?.code
                 }
             ) {
-                CopyEntryFieldResult.Copied -> _effects.send(VaultEffect.OtpCopied)
+                CopyEntryFieldResult.Copied -> emitEffect(owner, VaultEffect.OtpCopied)
                 CopyEntryFieldResult.NotAuthorized,
                 CopyEntryFieldResult.Unavailable,
                 -> Unit
@@ -199,17 +209,23 @@ class VaultViewModel @Inject internal constructor(
     }
 
     private fun moveToTrash(entryId: EntryId) {
+        val owner = activePageOwner ?: return
         if (!deletingEntryIds.add(entryId)) return
         viewModelScope.launch {
             try {
                 when (val result = moveEntryToTrash(entryId)) {
                     MoveEntryToTrashResult.Moved -> {
                         totp.entryRemoved(entryId.value)
-                        mutate(VaultMutation.DeletedEntryHandled(entryId.value))
+                        if (activePageOwner === owner) {
+                            mutate(VaultMutation.DeletedEntryHandled(entryId.value))
+                        }
                     }
 
                     MoveEntryToTrashResult.NotAuthorized -> Unit
-                    is MoveEntryToTrashResult.Failed -> emitError(result.error.toUiErrorMessage(R.string.vault_error_trash_failed))
+                    is MoveEntryToTrashResult.Failed -> emitError(
+                        owner,
+                        result.error.toUiErrorMessage(R.string.vault_error_trash_failed),
+                    )
                 }
             } finally {
                 deletingEntryIds.remove(entryId)
@@ -235,6 +251,30 @@ class VaultViewModel @Inject internal constructor(
             dataChangeSignal.changes().collect {
                 requestFullReload()
             }
+        }
+    }
+
+    fun onPageEntered(): Any {
+        val owner = Any()
+        activePageOwner = owner
+        return owner
+    }
+
+    fun onPageExited(owner: Any) {
+        if (activePageOwner === owner) activePageOwner = null
+    }
+
+    private fun emitEffect(effect: VaultEffect) {
+        activePageOwner?.let { emitEffect(it, effect) }
+    }
+
+    private fun emitError(owner: Any, message: UiErrorMessage) {
+        emitEffect(owner, VaultEffect.ShowError(message))
+    }
+
+    private fun emitEffect(owner: Any, effect: VaultEffect) {
+        if (activePageOwner === owner) {
+            pageEffects.trySend(PageEffect(owner, effect))
         }
     }
 
