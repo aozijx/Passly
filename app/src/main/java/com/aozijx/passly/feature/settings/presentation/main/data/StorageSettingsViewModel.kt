@@ -9,16 +9,13 @@ import com.aozijx.passly.domain.settings.model.DiagnosticsLogRecordingMode
 import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsRepository
 import com.aozijx.passly.feature.settings.data.AppCacheStore
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
+import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -34,12 +31,8 @@ class StorageSettingsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(StorageSettingsUiState())
     val uiState: StateFlow<StorageSettingsUiState> = _uiState.asStateFlow()
 
-    private data class PageEffect(val owner: Any, val effect: StorageSettingsEffect)
-
-    private val activePageEffects = Channel<PageEffect>(Channel.BUFFERED)
-    val effects = activePageEffects.receiveAsFlow()
-        .filter { activePageOwner === it.owner }
-        .map { it.effect }
+    private val pageEffects = PageEffects<StorageSettingsEffect>()
+    val effects = pageEffects.effects
 
     private var activePageOwner: Any? = null
     private var cacheRefreshJob: Job? = null
@@ -125,18 +118,18 @@ class StorageSettingsViewModel @Inject constructor(
     }
 
     private suspend fun emitEffect(owner: Any, effect: StorageSettingsEffect) {
-        if (activePageOwner === owner) {
-            activePageEffects.send(PageEffect(owner, effect))
-        }
+        pageEffects.send(owner, effect)
     }
 
     private fun pageEntered() {
         val owner = Any()
         activePageOwner = owner
+        pageEffects.enter(owner)
         refreshStorageUsage(owner)
     }
 
     private fun pageExited() {
+        activePageOwner?.let(pageEffects::exit)
         activePageOwner = null
         cacheRefreshJob?.cancel()
         cacheRefreshJob = null

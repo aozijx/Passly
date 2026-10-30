@@ -15,18 +15,15 @@ import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
 import com.aozijx.passly.feature.settings.diagnostics.ExportAction
 import com.aozijx.passly.feature.settings.diagnostics.ExportDiagnosticsUseCase
 import com.aozijx.passly.feature.settings.diagnostics.LogFormat
+import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -38,12 +35,8 @@ class DiagnosticsViewModel @Inject constructor(
     private val logger: Logger,
     private val clipboardWriter: SensitiveClipboardWriter,
 ) : ViewModel() {
-    private data class PageEffect(val owner: Any, val effect: DiagnosticsEffect)
-
-    private val effectChannel = Channel<PageEffect>(Channel.BUFFERED)
-    val effects = effectChannel.receiveAsFlow()
-        .filter { activePageOwner === it.owner }
-        .map { it.effect }
+    private val pageEffects = PageEffects<DiagnosticsEffect>()
+    val effects = pageEffects.effects
 
     private val _uiState = MutableStateFlow(DiagnosticsUiState())
     val uiState: StateFlow<DiagnosticsUiState> = _uiState.asStateFlow()
@@ -78,7 +71,7 @@ class DiagnosticsViewModel @Inject constructor(
     }
 
     private fun pageEntered() {
-        activePageOwner = Any()
+        activePageOwner = pageEffects.enter()
         refresh()
     }
 
@@ -164,6 +157,7 @@ class DiagnosticsViewModel @Inject constructor(
     }
 
     private fun pageExited() {
+        activePageOwner?.let(pageEffects::exit)
         activePageOwner = null
         activeCopyOwner = null
         copyJob?.cancel()
@@ -223,9 +217,7 @@ class DiagnosticsViewModel @Inject constructor(
     }
 
     private fun offerEffect(owner: Any, effect: DiagnosticsEffect) {
-        if (activePageOwner === owner) {
-            effectChannel.trySend(PageEffect(owner, effect))
-        }
+        pageEffects.tryEmit(owner, effect)
     }
 
     private fun mutate(mutation: DiagnosticsMutation) {

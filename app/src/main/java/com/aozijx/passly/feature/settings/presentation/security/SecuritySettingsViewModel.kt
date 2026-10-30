@@ -11,15 +11,12 @@ import com.aozijx.passly.presentation.shared.error.toUiErrorMessage
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
 import com.aozijx.passly.feature.settings.security.SecurityAuthenticationSettingsInteractor
+import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -33,14 +30,10 @@ class SecuritySettingsViewModel @Inject constructor(
     private val settingsRepository: SecuritySettingsRepository
 ) : ViewModel() {
     private enum class AuthenticationWork { Idle, Running, Destroyed }
-    private data class PageError(val owner: Any, val message: UiErrorMessage)
 
     private val authenticationWork = MutableStateFlow(AuthenticationWork.Idle)
-    private val errorChannel = Channel<PageError>(Channel.BUFFERED)
-    val errors = errorChannel.receiveAsFlow()
-        .filter { activePageOwner === it.owner }
-        .map { it.message }
-    private var activePageOwner: Any? = null
+    private val pageEffects = PageEffects<UiErrorMessage>()
+    val errors = pageEffects.effects
 
     val uiState: StateFlow<SecuritySettingsUiState> = combine(
         settingsRepository.security,
@@ -98,7 +91,7 @@ class SecuritySettingsViewModel @Inject constructor(
     }
 
     private fun changeAuthentication(change: suspend () -> AuthenticationResult) {
-        val owner = activePageOwner ?: return
+        val owner = pageEffects.currentOwner ?: return
         if (authenticationWork.value != AuthenticationWork.Idle) return
         authenticationWork.value = AuthenticationWork.Running
         viewModelScope.launch {
@@ -129,7 +122,7 @@ class SecuritySettingsViewModel @Inject constructor(
     }
 
     private fun saveSetting(write: suspend () -> Unit) {
-        val owner = activePageOwner ?: return
+        val owner = pageEffects.currentOwner ?: return
         viewModelScope.launch {
             writePreferenceWithFeedback(
                 failureRes = R.string.settings_security_save_failed,
@@ -140,17 +133,15 @@ class SecuritySettingsViewModel @Inject constructor(
     }
 
     fun onPageEntered(): Any {
-        val owner = Any()
-        activePageOwner = owner
-        return owner
+        return pageEffects.enter()
     }
 
     fun onPageExited(owner: Any) {
-        if (activePageOwner === owner) activePageOwner = null
+        pageEffects.exit(owner)
     }
 
     private fun emitError(owner: Any, error: UiErrorMessage) {
-        if (activePageOwner === owner) errorChannel.trySend(PageError(owner, error))
+        pageEffects.tryEmit(owner, error)
     }
 
     override fun onCleared() {

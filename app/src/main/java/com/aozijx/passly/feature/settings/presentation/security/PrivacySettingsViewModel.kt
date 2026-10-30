@@ -6,13 +6,11 @@ import com.aozijx.passly.R
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.domain.clipboard.port.OwnedClipboardCleaner
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
+import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -23,13 +21,8 @@ class PrivacySettingsViewModel @Inject constructor(
     private val clipboardCleaner: OwnedClipboardCleaner,
 ) : ViewModel() {
 
-    private data class PageEffect(val owner: Any, val effect: PrivacySettingsEffect)
-
-    private val _effects = Channel<PageEffect>(Channel.BUFFERED)
-    val effects = _effects.receiveAsFlow()
-        .filter { activePageOwner === it.owner }
-        .map { it.effect }
-    private var activePageOwner: Any? = null
+    private val pageEffects = PageEffects<PrivacySettingsEffect>()
+    val effects = pageEffects.effects
 
     val uiState: StateFlow<PrivacySettingsUiState> = settingsRepository.security.map { security ->
         PrivacySettingsUiState.Ready(
@@ -73,7 +66,7 @@ class PrivacySettingsViewModel @Inject constructor(
             }
 
             PrivacySettingsAction.ClearClipboardNow -> {
-                val owner = activePageOwner ?: return
+                val owner = pageEffects.currentOwner ?: return
                 val effect = if (clipboardCleaner.clearOwned()) {
                     PrivacySettingsEffect.ClipboardCleared
                 } else {
@@ -85,7 +78,7 @@ class PrivacySettingsViewModel @Inject constructor(
     }
 
     private fun saveSetting(write: suspend () -> Unit) {
-        val owner = activePageOwner ?: return
+        val owner = pageEffects.currentOwner ?: return
         viewModelScope.launch {
             writePreferenceWithFeedback(
                 failureRes = R.string.settings_privacy_save_failed,
@@ -96,16 +89,14 @@ class PrivacySettingsViewModel @Inject constructor(
     }
 
     fun onPageEntered(): Any {
-        val owner = Any()
-        activePageOwner = owner
-        return owner
+        return pageEffects.enter()
     }
 
     fun onPageExited(owner: Any) {
-        if (activePageOwner === owner) activePageOwner = null
+        pageEffects.exit(owner)
     }
 
     private fun emitEffect(owner: Any, effect: PrivacySettingsEffect) {
-        if (activePageOwner === owner) _effects.trySend(PageEffect(owner, effect))
+        pageEffects.tryEmit(owner, effect)
     }
 }

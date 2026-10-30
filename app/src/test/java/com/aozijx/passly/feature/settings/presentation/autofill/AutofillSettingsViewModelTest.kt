@@ -33,6 +33,7 @@ class AutofillSettingsViewModelTest {
             settingsRepository = repository,
             autofillServiceStatusSource = AutofillServiceStatusSource { MutableStateFlow(false) },
         )
+        viewModel.onPageEntered()
 
         assertEquals(AutofillSettingsUiState.Loading, viewModel.uiState.value)
     }
@@ -44,6 +45,7 @@ class AutofillSettingsViewModelTest {
             settingsRepository = repository,
             autofillServiceStatusSource = AutofillServiceStatusSource { MutableStateFlow(false) },
         )
+        viewModel.onPageEntered()
 
         viewModel.onAction(AutofillSettingsAction.SetSavePromptsEnabled(false))
         advanceUntilIdle()
@@ -56,6 +58,7 @@ class AutofillSettingsViewModelTest {
     fun `all autofill preference failures are reported without changing source state or opening settings`() = runTest {
         val repository = RecordingInteractionSettingsRepository(save = { throw IOException("synthetic failure") })
         val model = AutofillSettingsViewModel(repository, AutofillServiceStatusSource { MutableStateFlow(false) })
+        model.onPageEntered()
         val effects = mutableListOf<AutofillSettingsEffect>()
         backgroundScope.launch { model.effects.toList(effects) }
         backgroundScope.launch { model.uiState.collect {} }

@@ -6,11 +6,8 @@ import com.aozijx.passly.R
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
+import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -18,13 +15,8 @@ import javax.inject.Inject
 class AppearanceSettingsViewModel @Inject constructor(
     private val settingsRepository: AppearanceSettingsRepository
 ) : ViewModel() {
-    private data class PageError(val owner: Any, val message: UiErrorMessage)
-
-    private val errorChannel = Channel<PageError>(Channel.BUFFERED)
-    val errors = errorChannel.receiveAsFlow()
-        .filter { activePageOwner === it.owner }
-        .map { it.message }
-    private var activePageOwner: Any? = null
+    private val pageEffects = PageEffects<UiErrorMessage>()
+    val errors = pageEffects.effects
 
     fun onAction(action: AppearanceSettingsAction) {
         when (action) {
@@ -51,12 +43,12 @@ class AppearanceSettingsViewModel @Inject constructor(
     }
 
     private fun saveSetting(write: suspend () -> Unit) {
-        val owner = activePageOwner ?: return
+        val owner = pageEffects.currentOwner ?: return
         viewModelScope.launch {
             writePreferenceWithFeedback(
                 failureRes = R.string.settings_appearance_save_failed,
                 onFailure = {
-                    if (activePageOwner === owner) errorChannel.trySend(PageError(owner, it))
+                    pageEffects.tryEmit(owner, it)
                 },
                 write = write,
             )
@@ -64,12 +56,10 @@ class AppearanceSettingsViewModel @Inject constructor(
     }
 
     fun onPageEntered(): Any {
-        val owner = Any()
-        activePageOwner = owner
-        return owner
+        return pageEffects.enter()
     }
 
     fun onPageExited(owner: Any) {
-        if (activePageOwner === owner) activePageOwner = null
+        pageEffects.exit(owner)
     }
 }

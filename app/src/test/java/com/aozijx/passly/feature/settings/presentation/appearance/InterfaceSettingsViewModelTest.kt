@@ -35,6 +35,7 @@ class InterfaceSettingsViewModelTest {
     fun `all interface writes report storage failures and retain repository state`() = runTest {
         val repository = Repository { throw IOException("synthetic private diagnostic") }
         val model = InterfaceSettingsViewModel(repository, repository)
+        model.onPageEntered()
         val errors = mutableListOf<UiErrorMessage>()
         backgroundScope.launch { model.errors.toList(errors) }
         backgroundScope.launch { model.uiState.toList() }
@@ -58,6 +59,7 @@ class InterfaceSettingsViewModelTest {
         val stored = CompletableDeferred<Unit>()
         val repository = Repository { stored.await() }
         val model = InterfaceSettingsViewModel(repository, repository)
+        model.onPageEntered()
         val errors = mutableListOf<UiErrorMessage>()
         backgroundScope.launch { model.errors.toList(errors) }
         backgroundScope.launch { model.uiState.toList() }
@@ -86,6 +88,7 @@ class InterfaceSettingsViewModelTest {
             throw IOException("synthetic late failure")
         }
         val model = InterfaceSettingsViewModel(repository, repository)
+        model.onPageEntered()
         val errors = mutableListOf<UiErrorMessage>()
         backgroundScope.launch { model.errors.toList(errors) }
         model.onAction(InterfaceSettingsAction.SetHideSystemBars(true))

@@ -46,6 +46,7 @@ class PrivacySettingsViewModelTest {
         }
         var clipboardCalls = 0
         val model = PrivacySettingsViewModel(repository) { clipboardCalls++; false }
+        model.onPageEntered()
         val effects = mutableListOf<PrivacySettingsEffect>()
         backgroundScope.launch { model.effects.toList(effects) }
         backgroundScope.launch { model.uiState.collect {} }

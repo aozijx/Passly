@@ -9,16 +9,13 @@ import com.aozijx.passly.feature.settings.security.RecoveryCodeDraftResult
 import com.aozijx.passly.feature.settings.security.RecoveryCodeCommitResult
 import com.aozijx.passly.feature.settings.security.RecoveryCodeCopyResult
 import com.aozijx.passly.feature.settings.security.SecurityAuthenticationSettingsInteractor
+import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -38,14 +35,8 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
         ),
     )
     val uiState: StateFlow<RecoveryCodeSettingsUiState> = _uiState.asStateFlow()
-    private data class PageEffect(val owner: Any, val effect: RecoveryCodeSettingsEffect)
-
-    private val pageEffects = Channel<PageEffect>(Channel.BUFFERED)
-    val effects = pageEffects.receiveAsFlow()
-        .filter { activePageOwner === it.owner }
-        .map { it.effect }
-
-    private var activePageOwner: Any? = null
+    private val pageEffects = PageEffects<RecoveryCodeSettingsEffect>()
+    val effects = pageEffects.effects
 
     init {
         viewModelScope.launch {
@@ -94,7 +85,7 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
 
     private fun copy() {
         if (_uiState.value.draft !is RecoveryCodeDraftUiState.Ready) return
-        val owner = activePageOwner ?: return
+        val owner = pageEffects.currentOwner ?: return
         viewModelScope.launch {
             when (draftInteractor.copy()) {
                 RecoveryCodeCopyResult.Copied ->
@@ -105,19 +96,15 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
     }
 
     fun onPageEntered(): Any {
-        val owner = Any()
-        activePageOwner = owner
-        return owner
+        return pageEffects.enter()
     }
 
     fun onPageExited(owner: Any) {
-        if (activePageOwner === owner) activePageOwner = null
+        pageEffects.exit(owner)
     }
 
     private fun emitEffect(owner: Any, effect: RecoveryCodeSettingsEffect) {
-        if (activePageOwner === owner) {
-            pageEffects.trySend(PageEffect(owner, effect))
-        }
+        pageEffects.tryEmit(owner, effect)
     }
 
     private fun confirmAndEnable() {

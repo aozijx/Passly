@@ -5,14 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
+import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -21,7 +19,6 @@ class InteractionSettingsViewModel @Inject constructor(
     private val settingsRepository: InteractionSettingsRepository,
 ) : ViewModel() {
     private enum class SuccessFeedback { Silent, Saved }
-    private data class PageEffect(val owner: Any, val effect: InteractionSettingsEffect)
 
     val uiState: StateFlow<InteractionSettingsUiState> = settingsRepository.interaction
         .map { settings ->
@@ -38,11 +35,8 @@ class InteractionSettingsViewModel @Inject constructor(
             InteractionSettingsUiState.Loading,
         )
 
-    private val _effects = Channel<PageEffect>(Channel.BUFFERED)
-    val effects = _effects.receiveAsFlow()
-        .filter { activePageOwner === it.owner }
-        .map { it.effect }
-    private var activePageOwner: Any? = null
+    private val pageEffects = PageEffects<InteractionSettingsEffect>()
+    val effects = pageEffects.effects
 
     fun onAction(action: InteractionSettingsAction) {
         when (action) {
@@ -62,18 +56,16 @@ class InteractionSettingsViewModel @Inject constructor(
     }
 
     private fun saveSetting(feedback: SuccessFeedback, save: suspend () -> Unit) {
-        val owner = activePageOwner ?: return
+        val owner = pageEffects.currentOwner ?: return
         viewModelScope.launch {
             writePreferenceWithFeedback(
                 failureRes = R.string.settings_interaction_save_failed,
                 onFailure = {
-                    if (activePageOwner === owner) {
-                        _effects.trySend(PageEffect(owner, InteractionSettingsEffect.SaveFailed(it)))
-                    }
+                    pageEffects.tryEmit(owner, InteractionSettingsEffect.SaveFailed(it))
                 },
                 onSuccess = {
-                    if (feedback == SuccessFeedback.Saved && activePageOwner === owner) {
-                        _effects.trySend(PageEffect(owner, InteractionSettingsEffect.Saved))
+                    if (feedback == SuccessFeedback.Saved) {
+                        pageEffects.tryEmit(owner, InteractionSettingsEffect.Saved)
                     }
                 },
                 write = save,
@@ -82,12 +74,10 @@ class InteractionSettingsViewModel @Inject constructor(
     }
 
     fun onPageEntered(): Any {
-        val owner = Any()
-        activePageOwner = owner
-        return owner
+        return pageEffects.enter()
     }
 
     fun onPageExited(owner: Any) {
-        if (activePageOwner === owner) activePageOwner = null
+        pageEffects.exit(owner)
     }
 }

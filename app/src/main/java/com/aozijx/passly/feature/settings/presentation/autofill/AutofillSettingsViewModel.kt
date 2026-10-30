@@ -6,14 +6,11 @@ import com.aozijx.passly.R
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.feature.autofill.platform.AutofillServiceStatusSource
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
+import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,13 +21,8 @@ class AutofillSettingsViewModel @Inject constructor(
     private val autofillServiceStatusSource: AutofillServiceStatusSource,
 ) : ViewModel() {
 
-    private data class PageEffect(val owner: Any, val effect: AutofillSettingsEffect)
-
-    private val _effects = Channel<PageEffect>(Channel.BUFFERED)
-    val effects = _effects.receiveAsFlow()
-        .filter { activePageOwner === it.owner }
-        .map { it.effect }
-    private var activePageOwner: Any? = null
+    private val pageEffects = PageEffects<AutofillSettingsEffect>()
+    val effects = pageEffects.effects
 
     val uiState: StateFlow<AutofillSettingsUiState> = combine(
         settingsRepository.interaction,
@@ -81,7 +73,7 @@ class AutofillSettingsViewModel @Inject constructor(
     }
 
     private fun saveSetting(write: suspend () -> Unit) {
-        val owner = activePageOwner ?: return
+        val owner = pageEffects.currentOwner ?: return
         viewModelScope.launch {
             writePreferenceWithFeedback(
                 failureRes = R.string.settings_autofill_save_failed,
@@ -92,20 +84,18 @@ class AutofillSettingsViewModel @Inject constructor(
     }
 
     fun onPageEntered(): Any {
-        val owner = Any()
-        activePageOwner = owner
-        return owner
+        return pageEffects.enter()
     }
 
     fun onPageExited(owner: Any) {
-        if (activePageOwner === owner) activePageOwner = null
+        pageEffects.exit(owner)
     }
 
     private fun emitEffect(effect: AutofillSettingsEffect) {
-        activePageOwner?.let { emitEffect(it, effect) }
+        pageEffects.tryEmit(effect)
     }
 
     private fun emitEffect(owner: Any, effect: AutofillSettingsEffect) {
-        if (activePageOwner === owner) _effects.trySend(PageEffect(owner, effect))
+        pageEffects.tryEmit(owner, effect)
     }
 }

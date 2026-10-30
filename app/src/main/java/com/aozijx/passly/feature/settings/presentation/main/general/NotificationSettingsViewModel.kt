@@ -7,15 +7,12 @@ import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.app.message.contract.SystemNotificationState
 import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
 import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
+import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -32,14 +29,8 @@ class NotificationSettingsViewModel @Inject constructor(
     private var permissionRequestState: PermissionRequestState = PermissionRequestState.Idle
     private val systemNotificationState = MutableStateFlow(systemNotificationStateProvider.current())
 
-    private data class PageEffect(val owner: Any, val effect: NotificationSettingsEffect)
-
-    private val _effects = Channel<PageEffect>(Channel.BUFFERED)
-    val effects = _effects.receiveAsFlow()
-        .filter { activePageOwner === it.owner }
-        .map { it.effect }
-
-    private var activePageOwner: Any? = null
+    private val pageEffects = PageEffects<NotificationSettingsEffect>()
+    val effects = pageEffects.effects
 
     val uiState: StateFlow<NotificationSettingsUiState> = settingsRepository.messages
         .combine(systemNotificationState) { messages, system ->
@@ -139,7 +130,7 @@ class NotificationSettingsViewModel @Inject constructor(
     }
 
     private fun saveSetting(write: suspend () -> Unit) {
-        val owner = activePageOwner ?: return
+        val owner = pageEffects.currentOwner ?: return
         viewModelScope.launch {
             writePreferenceWithFeedback(
                 failureRes = R.string.settings_notifications_save_failed,
@@ -155,21 +146,19 @@ class NotificationSettingsViewModel @Inject constructor(
     }
 
     private fun emitEffect(effect: NotificationSettingsEffect) {
-        activePageOwner?.let { emitEffect(it, effect) }
+        pageEffects.tryEmit(effect)
     }
 
     private fun emitEffect(owner: Any, effect: NotificationSettingsEffect) {
-        if (activePageOwner === owner) _effects.trySend(PageEffect(owner, effect))
+        pageEffects.tryEmit(owner, effect)
     }
 
     fun onPageEntered(): Any {
-        val owner = Any()
-        activePageOwner = owner
-        return owner
+        return pageEffects.enter()
     }
 
     fun onPageExited(owner: Any) {
-        if (activePageOwner === owner) activePageOwner = null
+        pageEffects.exit(owner)
     }
 
     private fun readSystemNotificationState() =

@@ -12,14 +12,11 @@ import com.aozijx.passly.feature.recovery.presentation.RecoveryModeMutation
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeReducer
 import com.aozijx.passly.core.crypto.MemoryCleaner
 import com.aozijx.passly.domain.sensitive.OwnedChars
+import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -32,14 +29,8 @@ class RecoveryModeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(RecoveryModeUiState())
     val uiState: StateFlow<RecoveryModeUiState> = _uiState.asStateFlow()
 
-    private data class PageEffect(val owner: Any, val effect: RecoveryModeEffect)
-
-    private val _effect = Channel<PageEffect>(Channel.BUFFERED)
-    val effect = _effect.receiveAsFlow()
-        .filter { activePageOwner === it.owner }
-        .map { it.effect }
-
-    private var activePageOwner: Any? = null
+    private val pageEffects = PageEffects<RecoveryModeEffect>()
+    val effect = pageEffects.effects
 
     fun onAction(action: RecoveryModeUiAction) {
         when (action) {
@@ -72,7 +63,7 @@ class RecoveryModeViewModel @Inject constructor(
     private fun submitNewPassword() {
         val state = _uiState.value
         if (!ensureRecoveryMode()) return
-        val owner = activePageOwner ?: return
+        val owner = pageEffects.currentOwner ?: return
         val setup = state.passwordSetup as? RecoveryPasswordSetup.Editing ?: return
         if (setup.phase == RecoveryPasswordSetupPhase.Saving) return
         val password = setup.newPassword.toCharArray()
@@ -93,7 +84,7 @@ class RecoveryModeViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val result = methodProvisioner.setAppPassword(password)
-                if (activePageOwner !== owner) return@launch
+                if (!pageEffects.isActive(owner)) return@launch
                 when (result) {
                     is AuthenticationResult.Success -> {
                         wipePasswords()
@@ -119,26 +110,24 @@ class RecoveryModeViewModel @Inject constructor(
     }
 
     private fun exitRecovery() {
-        val owner = activePageOwner ?: return
+        val owner = pageEffects.currentOwner ?: return
         viewModelScope.launch {
             emitEffect(owner, RecoveryModeEffect.ExitRecovery)
         }
     }
 
     fun onPageEntered(): Any {
-        val owner = Any()
-        activePageOwner = owner
-        return owner
+        return pageEffects.enter()
     }
 
     fun onPageExited(owner: Any) {
-        if (activePageOwner !== owner) return
-        activePageOwner = null
+        if (!pageEffects.isActive(owner)) return
+        pageEffects.exit(owner)
         dismissPasswordDialog()
     }
 
     private fun emitEffect(owner: Any, effect: RecoveryModeEffect) {
-        if (activePageOwner === owner) _effect.trySend(PageEffect(owner, effect))
+        pageEffects.tryEmit(owner, effect)
     }
 
     private fun dismissPasswordDialog() {

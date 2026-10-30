@@ -16,14 +16,11 @@ import com.aozijx.passly.feature.backup.internal.operation.BackupOperationIntera
 import com.aozijx.passly.feature.backup.internal.presentation.BackupSessionDenial
 import com.aozijx.passly.feature.backup.internal.presentation.BackupSessionPolicy
 import com.aozijx.passly.presentation.mapping.entry.toDomainModels
+import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -37,14 +34,8 @@ internal class BackupViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(BackupUiState())
     val uiState: StateFlow<BackupUiState> = _uiState.asStateFlow()
 
-    private data class PageEffect(val owner: Any, val effect: BackupEffect)
-
-    private val pageEffects = Channel<PageEffect>(Channel.BUFFERED)
-    val effects = pageEffects.receiveAsFlow()
-        .filter { activePageOwner === it.owner }
-        .map { it.effect }
-
-    private var activePageOwner: Any? = null
+    private val pageEffects = PageEffects<BackupEffect>()
+    val effects = pageEffects.effects
 
     fun onAction(action: BackupUiAction) {
         when (action) {
@@ -160,7 +151,7 @@ internal class BackupViewModel @Inject constructor(
         password: SensitiveValue,
         block: suspend () -> BackupExecutionResult,
     ) {
-        val owner = activePageOwner ?: run {
+        val owner = pageEffects.currentOwner ?: run {
             password.wipe()
             return
         }
@@ -235,24 +226,20 @@ internal class BackupViewModel @Inject constructor(
     }
 
     private fun emitEffect(effect: BackupEffect) {
-        activePageOwner?.let { emitEffect(it, effect) }
+        pageEffects.tryEmit(effect)
     }
 
     private fun emitEffect(owner: Any, effect: BackupEffect) {
-        if (activePageOwner === owner) {
-            pageEffects.trySend(PageEffect(owner, effect))
-        }
+        pageEffects.tryEmit(owner, effect)
     }
 
     fun onPageEntered(): Any {
-        val owner = Any()
-        activePageOwner = owner
-        return owner
+        return pageEffects.enter()
     }
 
     fun onPageExited(owner: Any) {
-        if (activePageOwner !== owner) return
-        activePageOwner = null
+        if (!pageEffects.isActive(owner)) return
+        pageEffects.exit(owner)
         closeWorkflow()
     }
 
@@ -261,7 +248,7 @@ internal class BackupViewModel @Inject constructor(
     }
 
     private fun mutate(owner: Any, mutation: BackupMutation) {
-        if (activePageOwner === owner) mutate(mutation)
+        if (pageEffects.isActive(owner)) mutate(mutation)
     }
 
     override fun onCleared() {

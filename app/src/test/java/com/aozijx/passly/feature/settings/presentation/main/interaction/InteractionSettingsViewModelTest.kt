@@ -32,6 +32,7 @@ class InteractionSettingsViewModelTest {
     fun `toggle failures are reported while repository remains the state source`() = runTest {
         val repository = Repository { throw IOException("synthetic write failure") }
         val model = InteractionSettingsViewModel(repository)
+        model.onPageEntered()
         val effects = mutableListOf<InteractionSettingsEffect>()
         backgroundScope.launch { model.effects.toList(effects) }
         backgroundScope.launch { model.uiState.toList() }
@@ -50,6 +51,7 @@ class InteractionSettingsViewModelTest {
     fun `successful toggles stay silent and follow repository emissions`() = runTest {
         val repository = Repository { }
         val model = InteractionSettingsViewModel(repository)
+        model.onPageEntered()
         val effects = mutableListOf<InteractionSettingsEffect>()
         backgroundScope.launch { model.effects.toList(effects) }
         backgroundScope.launch { model.uiState.toList() }
@@ -75,6 +77,7 @@ class InteractionSettingsViewModelTest {
                 if (failsAfterCancellation) throw IOException("synthetic late failure")
             }
             val model = InteractionSettingsViewModel(repository)
+            model.onPageEntered()
             val effects = mutableListOf<InteractionSettingsEffect>()
             backgroundScope.launch { model.effects.toList(effects) }
             model.onAction(InteractionSettingsAction.SetSwipeLeftAction(SwipeActionType.DELETE))
@@ -89,6 +92,7 @@ class InteractionSettingsViewModelTest {
     @Test
     fun `cancelled setting write emits no failure notification`() = runTest {
         val model = InteractionSettingsViewModel(Repository { throw CancellationException() })
+        model.onPageEntered()
         val effects = mutableListOf<InteractionSettingsEffect>()
         backgroundScope.launch { model.effects.toList(effects) }
         model.onAction(InteractionSettingsAction.SetSwipeLeftAction(SwipeActionType.DELETE))
@@ -99,6 +103,7 @@ class InteractionSettingsViewModelTest {
     @Test
     fun `storage failure emits resource key without exception contents`() = runTest {
         val model = InteractionSettingsViewModel(Repository { throw IOException("synthetic private diagnostic") })
+        model.onPageEntered()
         val effects = mutableListOf<InteractionSettingsEffect>()
         backgroundScope.launch { model.effects.toList(effects) }
         model.onAction(InteractionSettingsAction.SetSwipeRightAction(SwipeActionType.DELETE))
@@ -109,6 +114,7 @@ class InteractionSettingsViewModelTest {
     @Test
     fun `successful setting write keeps saved feedback`() = runTest {
         val model = InteractionSettingsViewModel(Repository { })
+        model.onPageEntered()
         val effects = mutableListOf<InteractionSettingsEffect>()
         backgroundScope.launch { model.effects.toList(effects) }
         model.onAction(InteractionSettingsAction.SetSwipeLeftAction(SwipeActionType.DELETE))

@@ -13,7 +13,9 @@ import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -32,6 +34,7 @@ class AppearanceSettingsViewModelTest {
     fun `every appearance write reports a localized error without changing persisted state`() = runTest {
         val repository = Repository { throw IOException("synthetic private diagnostic") }
         val model = AppearanceSettingsViewModel(repository)
+        model.onPageEntered()
         val errors = mutableListOf<UiErrorMessage>()
         backgroundScope.launch { model.errors.toList(errors) }
         val before = repository.appearance.value
@@ -52,6 +55,7 @@ class AppearanceSettingsViewModelTest {
     fun `successful appearance writes remain silent`() = runTest {
         val repository = Repository { }
         val model = AppearanceSettingsViewModel(repository)
+        model.onPageEntered()
         val errors = mutableListOf<UiErrorMessage>()
         backgroundScope.launch { model.errors.toList(errors) }
         model.onAction(AppearanceSettingsAction.SetLanguage(AppLanguage.EN))
@@ -68,6 +72,7 @@ class AppearanceSettingsViewModelTest {
             throw IOException("synthetic late failure")
         }
         val model = AppearanceSettingsViewModel(repository)
+        model.onPageEntered()
         val errors = mutableListOf<UiErrorMessage>()
         backgroundScope.launch { model.errors.toList(errors) }
         model.onAction(AppearanceSettingsAction.SetThemeMode(ThemeMode.DARK))
@@ -76,6 +81,24 @@ class AppearanceSettingsViewModelTest {
         release.complete(Unit)
         runCurrent()
         assertEquals(emptyList<UiErrorMessage>(), errors)
+    }
+
+    @Test
+    fun `buffered failure from an exited page is skipped after reentry`() = runTest {
+        val repository = Repository { throw IOException("synthetic write failure") }
+        val model = AppearanceSettingsViewModel(repository)
+        val oldOwner = model.onPageEntered()
+
+        model.onAction(AppearanceSettingsAction.SetThemeMode(ThemeMode.DARK))
+        runCurrent()
+        model.onPageExited(oldOwner)
+        model.onPageEntered()
+
+        val currentError = async { model.errors.first() }
+        model.onAction(AppearanceSettingsAction.SetLanguage(AppLanguage.EN))
+        runCurrent()
+
+        assertEquals(UiErrorMessage(R.string.ui_error_file_io), currentError.await())
     }
 
     private class Repository(private val save: suspend () -> Unit) : AppearanceSettingsRepository {

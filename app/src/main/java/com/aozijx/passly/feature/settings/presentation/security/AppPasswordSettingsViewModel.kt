@@ -6,15 +6,12 @@ import com.aozijx.passly.feature.settings.security.AppPasswordChangeResult
 import com.aozijx.passly.feature.settings.security.AppPasswordChangeRequest
 import com.aozijx.passly.feature.settings.security.AppPasswordManagementAccess
 import com.aozijx.passly.feature.settings.security.AppPasswordSettingsInteractor
+import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -22,17 +19,12 @@ import kotlinx.coroutines.launch
 class AppPasswordSettingsViewModel @Inject constructor(
     private val appPasswordSettings: AppPasswordSettingsInteractor,
 ) : ViewModel() {
-
-    private data class PageEffect(val owner: Any, val effect: AppPasswordSettingsEffect)
+    private val pageEffects = PageEffects<AppPasswordSettingsEffect>()
 
     private val _uiState = MutableStateFlow(AppPasswordSettingsUiState())
     val uiState: StateFlow<AppPasswordSettingsUiState> = _uiState.asStateFlow()
 
-    private val _effects = Channel<PageEffect>(Channel.BUFFERED)
-    val effects = _effects.receiveAsFlow()
-        .filter { activePageOwner === it.owner }
-        .map { it.effect }
-    private var activePageOwner: Any? = null
+    val effects = pageEffects.effects
 
     init {
         observeAuthenticationMethods()
@@ -46,7 +38,7 @@ class AppPasswordSettingsViewModel @Inject constructor(
     }
 
     private fun runChange(request: AppPasswordChangeRequest) {
-        val owner = activePageOwner ?: return
+        val owner = pageEffects.currentOwner ?: return
         viewModelScope.launch {
             when (val result = appPasswordSettings.execute(request)) {
                 AppPasswordChangeResult.Completed -> emitEffect(owner,
@@ -68,7 +60,7 @@ class AppPasswordSettingsViewModel @Inject constructor(
     }
 
     private fun requestAppPasswordEntry() {
-        val owner = activePageOwner ?: return
+        val owner = pageEffects.currentOwner ?: return
         viewModelScope.launch {
             when (val result = appPasswordSettings.authorizeManagement()) {
                 is AppPasswordManagementAccess.Authorized -> emitEffect(owner,
@@ -95,16 +87,14 @@ class AppPasswordSettingsViewModel @Inject constructor(
     }
 
     fun onPageEntered(): Any {
-        val owner = Any()
-        activePageOwner = owner
-        return owner
+        return pageEffects.enter()
     }
 
     fun onPageExited(owner: Any) {
-        if (activePageOwner === owner) activePageOwner = null
+        pageEffects.exit(owner)
     }
 
     private fun emitEffect(owner: Any, effect: AppPasswordSettingsEffect) {
-        if (activePageOwner === owner) _effects.trySend(PageEffect(owner, effect))
+        pageEffects.tryEmit(owner, effect)
     }
 }

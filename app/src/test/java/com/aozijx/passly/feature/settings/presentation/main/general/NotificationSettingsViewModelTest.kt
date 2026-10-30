@@ -79,7 +79,7 @@ class NotificationSettingsViewModelTest {
         val viewModel = NotificationSettingsViewModel(
             settingsRepository = repository,
             systemNotificationStateProvider = SystemNotificationStateProvider { systemState },
-        )
+        ).also { it.onPageEntered() }
         viewModel.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
         val request = viewModel.nextPermissionRequest()
         systemState = availableState()
@@ -104,6 +104,7 @@ class NotificationSettingsViewModelTest {
         val repository = RecordingMessageSettingsRepository()
         var system = unavailableState(false)
         val model = NotificationSettingsViewModel(repository, SystemNotificationStateProvider { system })
+            .also { it.onPageEntered() }
         model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
         val request = model.nextPermissionRequest()
         model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(false))
@@ -119,6 +120,7 @@ class NotificationSettingsViewModelTest {
         val repository = RecordingMessageSettingsRepository()
         var system = unavailableState(false)
         val model = NotificationSettingsViewModel(repository, SystemNotificationStateProvider { system })
+            .also { it.onPageEntered() }
         val effects = mutableListOf<NotificationSettingsEffect>()
         backgroundScope.launch { model.effects.toList(effects) }
         model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
@@ -157,6 +159,7 @@ class NotificationSettingsViewModelTest {
         val repository = RecordingMessageSettingsRepository()
         var system = unavailableState(false)
         val model = NotificationSettingsViewModel(repository, SystemNotificationStateProvider { system })
+            .also { it.onPageEntered() }
         model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
         model.onAction(NotificationSettingsAction.CancelRuntimePermissionRequest)
         val oldRequest = model.nextPermissionRequest()
@@ -202,6 +205,7 @@ class NotificationSettingsViewModelTest {
         val repository = RecordingMessageSettingsRepository(save = { throw IOException("synthetic failure") })
         var system = unavailableState(false)
         val model = NotificationSettingsViewModel(repository, SystemNotificationStateProvider { system })
+            .also { it.onPageEntered() }
         model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
         val request = model.nextPermissionRequest()
         val effects = mutableListOf<NotificationSettingsEffect>()
@@ -249,7 +253,7 @@ class NotificationSettingsViewModelTest {
     ) = NotificationSettingsViewModel(
         settingsRepository = repository,
         systemNotificationStateProvider = SystemNotificationStateProvider { state },
-    )
+    ).also { it.onPageEntered() }
 
     private suspend fun NotificationSettingsViewModel.nextPermissionRequest(): NotificationPermissionRequest =
         (effects.first() as NotificationSettingsEffect.RequestRuntimeNotificationPermission).request

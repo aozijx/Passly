@@ -173,7 +173,7 @@ class SecuritySettingsViewModelTest {
                 },
             ),
             repository,
-        )
+        ).also { it.onPageEntered() }
     }
 
     private class Provisioner(private val operation: suspend () -> AuthenticationResult) : AuthenticationMethodProvisioner {
