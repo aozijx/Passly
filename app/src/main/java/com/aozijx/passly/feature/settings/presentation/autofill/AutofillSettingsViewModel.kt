@@ -24,6 +24,7 @@ class AutofillSettingsViewModel @Inject constructor(
 
     private val _effects = Channel<AutofillSettingsEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
+    private var activePageOwner: Any? = null
 
     val uiState: StateFlow<AutofillSettingsUiState> = combine(
         settingsRepository.interaction,
@@ -67,19 +68,38 @@ class AutofillSettingsViewModel @Inject constructor(
                 settingsRepository.setAutofillMaxSuggestions(action.count)
             }
             AutofillSettingsAction.OpenSystemAutofillSettings ->
-                _effects.trySend(AutofillSettingsEffect.OpenSystemAutofillSettings)
+                emitEffect(AutofillSettingsEffect.OpenSystemAutofillSettings)
             AutofillSettingsAction.OpenAccessibilitySettings ->
-                _effects.trySend(AutofillSettingsEffect.OpenAccessibilitySettings)
+                emitEffect(AutofillSettingsEffect.OpenAccessibilitySettings)
         }
     }
 
     private fun saveSetting(write: suspend () -> Unit) {
+        val owner = activePageOwner ?: return
         viewModelScope.launch {
             writePreferenceWithFeedback(
                 failureRes = R.string.settings_autofill_save_failed,
-                onFailure = { _effects.trySend(AutofillSettingsEffect.SaveFailed(it)) },
+                onFailure = { emitEffect(owner, AutofillSettingsEffect.SaveFailed(it)) },
                 write = write,
             )
         }
+    }
+
+    fun onPageEntered(): Any {
+        val owner = Any()
+        activePageOwner = owner
+        return owner
+    }
+
+    fun onPageExited(owner: Any) {
+        if (activePageOwner === owner) activePageOwner = null
+    }
+
+    private fun emitEffect(effect: AutofillSettingsEffect) {
+        activePageOwner?.let { emitEffect(it, effect) }
+    }
+
+    private fun emitEffect(owner: Any, effect: AutofillSettingsEffect) {
+        if (activePageOwner === owner) _effects.trySend(effect)
     }
 }
