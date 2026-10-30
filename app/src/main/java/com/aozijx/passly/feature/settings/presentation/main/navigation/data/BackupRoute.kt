@@ -5,6 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -34,6 +35,10 @@ internal fun BackupRoute(
 ) {
     val context = LocalContext.current
     val viewModel: DataManagementSettingsViewModel = hiltViewModel()
+    DisposableEffect(viewModel) {
+        val owner = viewModel.onPageEntered()
+        onDispose { viewModel.onPageExited(owner) }
+    }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val readyState = when (val current = state) {
         DataManagementSettingsUiState.Loading -> return
