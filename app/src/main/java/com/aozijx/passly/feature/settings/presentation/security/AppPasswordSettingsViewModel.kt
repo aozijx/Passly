@@ -12,6 +12,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -21,11 +23,16 @@ class AppPasswordSettingsViewModel @Inject constructor(
     private val appPasswordSettings: AppPasswordSettingsInteractor,
 ) : ViewModel() {
 
+    private data class PageEffect(val owner: Any, val effect: AppPasswordSettingsEffect)
+
     private val _uiState = MutableStateFlow(AppPasswordSettingsUiState())
     val uiState: StateFlow<AppPasswordSettingsUiState> = _uiState.asStateFlow()
 
-    private val _effects = Channel<AppPasswordSettingsEffect>(Channel.BUFFERED)
+    private val _effects = Channel<PageEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
+        .filter { activePageOwner === it.owner }
+        .map { it.effect }
+    private var activePageOwner: Any? = null
 
     init {
         observeAuthenticationMethods()
@@ -39,19 +46,20 @@ class AppPasswordSettingsViewModel @Inject constructor(
     }
 
     private fun runChange(request: AppPasswordChangeRequest) {
+        val owner = activePageOwner ?: return
         viewModelScope.launch {
             when (val result = appPasswordSettings.execute(request)) {
-                AppPasswordChangeResult.Completed -> _effects.trySend(
+                AppPasswordChangeResult.Completed -> emitEffect(owner,
                     when (request) {
                         is AppPasswordChangeRequest.Set -> AppPasswordSettingsEffect.AppPasswordSet
                         is AppPasswordChangeRequest.Change -> AppPasswordSettingsEffect.AppPasswordChanged
                         AppPasswordChangeRequest.Disable -> AppPasswordSettingsEffect.AppPasswordDisabled
                     },
                 )
-                is AppPasswordChangeResult.InvalidInput -> _effects.trySend(
+                is AppPasswordChangeResult.InvalidInput -> emitEffect(owner,
                     AppPasswordSettingsEffect.AppPasswordInputInvalid(result.reason),
                 )
-                is AppPasswordChangeResult.Failed -> _effects.trySend(
+                is AppPasswordChangeResult.Failed -> emitEffect(owner,
                     AppPasswordSettingsEffect.AppPasswordOperationFailed(result.failure),
                 )
                 AppPasswordChangeResult.Cancelled -> Unit
@@ -60,15 +68,16 @@ class AppPasswordSettingsViewModel @Inject constructor(
     }
 
     private fun requestAppPasswordEntry() {
+        val owner = activePageOwner ?: return
         viewModelScope.launch {
             when (val result = appPasswordSettings.authorizeManagement()) {
-                is AppPasswordManagementAccess.Authorized -> _effects.trySend(
+                is AppPasswordManagementAccess.Authorized -> emitEffect(owner,
                     AppPasswordSettingsEffect.AppPasswordEntryAuthorized(
                         alreadyEnabled = result.alreadyEnabled,
                     ),
                 )
                 AppPasswordManagementAccess.Cancelled -> Unit
-                is AppPasswordManagementAccess.Failed -> _effects.trySend(
+                is AppPasswordManagementAccess.Failed -> emitEffect(owner,
                     AppPasswordSettingsEffect.AppPasswordEntryAuthenticationFailed(result.failure),
                 )
             }
@@ -83,5 +92,19 @@ class AppPasswordSettingsViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun onPageEntered(): Any {
+        val owner = Any()
+        activePageOwner = owner
+        return owner
+    }
+
+    fun onPageExited(owner: Any) {
+        if (activePageOwner === owner) activePageOwner = null
+    }
+
+    private fun emitEffect(owner: Any, effect: AppPasswordSettingsEffect) {
+        if (activePageOwner === owner) _effects.trySend(PageEffect(owner, effect))
     }
 }

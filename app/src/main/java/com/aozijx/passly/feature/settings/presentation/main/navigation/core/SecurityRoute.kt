@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.settings.presentation.main.navigation.core
 
 import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
@@ -29,8 +30,16 @@ internal fun SecurityRoute(
 ) {
     val context = LocalContext.current
     val securityViewModel: SecuritySettingsViewModel = hiltViewModel()
-    ObserveSettingsWriteErrors(securityViewModel.errors)
     val appPasswordViewModel: AppPasswordSettingsViewModel = hiltViewModel()
+    DisposableEffect(securityViewModel, appPasswordViewModel) {
+        val securityOwner = securityViewModel.onPageEntered()
+        val appPasswordOwner = appPasswordViewModel.onPageEntered()
+        onDispose {
+            securityViewModel.onPageExited(securityOwner)
+            appPasswordViewModel.onPageExited(appPasswordOwner)
+        }
+    }
+    ObserveSettingsWriteErrors(securityViewModel.errors)
     val securityState by securityViewModel.uiState.collectAsStateWithLifecycle()
     val appPasswordState by appPasswordViewModel.uiState.collectAsStateWithLifecycle()
     val appPasswordDialogs = rememberAppPasswordDialogCoordinator()

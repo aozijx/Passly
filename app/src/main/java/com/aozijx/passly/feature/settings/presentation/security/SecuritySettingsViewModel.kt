@@ -16,7 +16,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -31,9 +33,14 @@ class SecuritySettingsViewModel @Inject constructor(
     private val settingsRepository: SecuritySettingsRepository
 ) : ViewModel() {
     private enum class AuthenticationWork { Idle, Running, Destroyed }
+    private data class PageError(val owner: Any, val message: UiErrorMessage)
+
     private val authenticationWork = MutableStateFlow(AuthenticationWork.Idle)
-    private val errorChannel = Channel<UiErrorMessage>(Channel.BUFFERED)
+    private val errorChannel = Channel<PageError>(Channel.BUFFERED)
     val errors = errorChannel.receiveAsFlow()
+        .filter { activePageOwner === it.owner }
+        .map { it.message }
+    private var activePageOwner: Any? = null
 
     val uiState: StateFlow<SecuritySettingsUiState> = combine(
         settingsRepository.security,
@@ -91,6 +98,7 @@ class SecuritySettingsViewModel @Inject constructor(
     }
 
     private fun changeAuthentication(change: suspend () -> AuthenticationResult) {
+        val owner = activePageOwner ?: return
         if (authenticationWork.value != AuthenticationWork.Idle) return
         authenticationWork.value = AuthenticationWork.Running
         viewModelScope.launch {
@@ -99,7 +107,7 @@ class SecuritySettingsViewModel @Inject constructor(
                 currentCoroutineContext().ensureActive()
                 when (result) {
                     is AuthenticationResult.Success, is AuthenticationResult.Cancelled -> Unit
-                    is AuthenticationResult.Failure -> errorChannel.trySend(
+                    is AuthenticationResult.Failure -> emitError(owner,
                         UiErrorMessage(when (result.failure.code) {
                             AuthenticationFailureCode.LAST_METHOD_REQUIRED -> R.string.settings_auth_last_method_required
                             AuthenticationFailureCode.SESSION_MODE_RESTRICTED -> R.string.settings_security_session_restricted
@@ -111,7 +119,7 @@ class SecuritySettingsViewModel @Inject constructor(
                 throw cancelled
             } catch (error: Exception) {
                 currentCoroutineContext().ensureActive()
-                errorChannel.trySend(error.toUiErrorMessage(R.string.settings_auth_operation_failed))
+                emitError(owner, error.toUiErrorMessage(R.string.settings_auth_operation_failed))
             } finally {
                 if (authenticationWork.value == AuthenticationWork.Running) {
                     authenticationWork.value = AuthenticationWork.Idle
@@ -121,13 +129,28 @@ class SecuritySettingsViewModel @Inject constructor(
     }
 
     private fun saveSetting(write: suspend () -> Unit) {
+        val owner = activePageOwner ?: return
         viewModelScope.launch {
             writePreferenceWithFeedback(
                 failureRes = R.string.settings_security_save_failed,
-                onFailure = { errorChannel.trySend(it) },
+                onFailure = { emitError(owner, it) },
                 write = write,
             )
         }
+    }
+
+    fun onPageEntered(): Any {
+        val owner = Any()
+        activePageOwner = owner
+        return owner
+    }
+
+    fun onPageExited(owner: Any) {
+        if (activePageOwner === owner) activePageOwner = null
+    }
+
+    private fun emitError(owner: Any, error: UiErrorMessage) {
+        if (activePageOwner === owner) errorChannel.trySend(PageError(owner, error))
     }
 
     override fun onCleared() {
