@@ -24,6 +24,7 @@ class PrivacySettingsViewModel @Inject constructor(
 
     private val _effects = Channel<PrivacySettingsEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
+    private var activePageOwner: Any? = null
 
     val uiState: StateFlow<PrivacySettingsUiState> = settingsRepository.security.map { security ->
         PrivacySettingsUiState.Ready(
@@ -67,23 +68,39 @@ class PrivacySettingsViewModel @Inject constructor(
             }
 
             PrivacySettingsAction.ClearClipboardNow -> {
+                val owner = activePageOwner ?: return
                 val effect = if (clipboardCleaner.clearOwned()) {
                     PrivacySettingsEffect.ClipboardCleared
                 } else {
                     PrivacySettingsEffect.ClipboardNotCleared
                 }
-                _effects.trySend(effect)
+                emitEffect(owner, effect)
             }
         }
     }
 
     private fun saveSetting(write: suspend () -> Unit) {
+        val owner = activePageOwner ?: return
         viewModelScope.launch {
             writePreferenceWithFeedback(
                 failureRes = R.string.settings_privacy_save_failed,
-                onFailure = { _effects.trySend(PrivacySettingsEffect.SaveFailed(it)) },
+                onFailure = { emitEffect(owner, PrivacySettingsEffect.SaveFailed(it)) },
                 write = write,
             )
         }
+    }
+
+    fun onPageEntered(): Any {
+        val owner = Any()
+        activePageOwner = owner
+        return owner
+    }
+
+    fun onPageExited(owner: Any) {
+        if (activePageOwner === owner) activePageOwner = null
+    }
+
+    private fun emitEffect(owner: Any, effect: PrivacySettingsEffect) {
+        if (activePageOwner === owner) _effects.trySend(effect)
     }
 }

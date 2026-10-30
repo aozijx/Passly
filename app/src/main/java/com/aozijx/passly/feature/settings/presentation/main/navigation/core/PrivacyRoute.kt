@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.main.navigation.core
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
@@ -27,6 +28,10 @@ internal fun PrivacyRoute(
     onBack: (() -> Unit)?,
 ) {
     val viewModel: PrivacySettingsViewModel = hiltViewModel()
+    DisposableEffect(viewModel) {
+        val owner = viewModel.onPageEntered()
+        onDispose { viewModel.onPageExited(owner) }
+    }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val resources = LocalResources.current

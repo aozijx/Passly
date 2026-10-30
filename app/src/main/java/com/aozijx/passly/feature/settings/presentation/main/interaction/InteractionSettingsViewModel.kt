@@ -38,6 +38,7 @@ class InteractionSettingsViewModel @Inject constructor(
 
     private val _effects = Channel<InteractionSettingsEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
+    private var activePageOwner: Any? = null
 
     fun onAction(action: InteractionSettingsAction) {
         when (action) {
@@ -57,15 +58,32 @@ class InteractionSettingsViewModel @Inject constructor(
     }
 
     private fun saveSetting(feedback: SuccessFeedback, save: suspend () -> Unit) {
+        val owner = activePageOwner ?: return
         viewModelScope.launch {
             writePreferenceWithFeedback(
                 failureRes = R.string.settings_interaction_save_failed,
-                onFailure = { _effects.trySend(InteractionSettingsEffect.SaveFailed(it)) },
+                onFailure = {
+                    if (activePageOwner === owner) {
+                        _effects.trySend(InteractionSettingsEffect.SaveFailed(it))
+                    }
+                },
                 onSuccess = {
-                    if (feedback == SuccessFeedback.Saved) _effects.trySend(InteractionSettingsEffect.Saved)
+                    if (feedback == SuccessFeedback.Saved && activePageOwner === owner) {
+                        _effects.trySend(InteractionSettingsEffect.Saved)
+                    }
                 },
                 write = save,
             )
         }
+    }
+
+    fun onPageEntered(): Any {
+        val owner = Any()
+        activePageOwner = owner
+        return owner
+    }
+
+    fun onPageExited(owner: Any) {
+        if (activePageOwner === owner) activePageOwner = null
     }
 }
