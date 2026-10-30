@@ -1,20 +1,10 @@
-# Passly 功能文件归属审计与迁移
+# Passly 功能文件归属审查
 
-## 目标
+**日期：** 2026-10-29
 
-让各功能的文件按真实职责和所有权更容易查找，减少仅因放在全局共享目录而显得“共享”、实际只由单一功能使用的代码。
+**范围：** Vault、Settings、Autofill、Backup、Database Reset/Recovery、Scanner、Shell、Unlock，以及应用组合根与共享展示层。
 
-## 当前架构基线
-
-现有架构约定：`feature/<name>` 放应用内业务流程和功能专属平台适配；页面、ViewModel、UI state/effect、导航和 Compose UI 放在 `feature/<name>/presentation`。根 `presentation/shared` 只放确实被多个功能消费的展示能力。Domain 规则/契约、Data 持久化、Security 编排和 app 级 Android 入口/适配器仍归各自现有边界。
-
-各功能内部目录不完全相同：Autofill 按 `core/runtime/platform/presentation` 分组，Backup 把实现放在 `internal`，Vault 按业务子流程分组。目录名称不同本身不是迁移理由；审计按所有权和复用证据进行，不强行套用相同目录模板。
-
-## 审计与迁移规则
-
-每个功能都检查生产调用方和 import、Gradle/包边界、Hilt/KSP、Manifest/导航注册、资源和稳定键、测试、正式文档。候选项记录为**迁移、保留或待查**并附证据。仅当目标目录准确反映实际所有权，且能改善功能内发现能力时才移动；不得因此增加转发层或违反依赖方向。保留运行行为、公开契约、序列化键、数据库 schema 和资源语义。
-
-逐功能审计和迁移，每个功能的变更保持独立可审查；同步更新 import 和受影响的路径文档，并运行改动边界要求的验证。验证完成后按精确路径暂存并提交独立批次；保留无关工作区改动，始终排除 `AGENTS.md` 与 `.agents/skills/`。
+本文记录该日期的源码归属审查、已完成迁移和保留决定。它是历史审查证据，不定义当前架构合同；当前模块边界见[包与模块边界](../architecture/package-boundaries.md)和[维护边界](../development/maintenance-boundaries.md)。
 
 ## 扩大后的源码布局扫描（2026-10-29）
 
@@ -77,34 +67,30 @@
 | `presentation/shared/components/AppPackagePickerBottomSheet.kt` | `feature/vault/presentation/common/ui/AppPackagePickerBottomSheet.kt` | Vault 详情页和密码编辑页的 Compose 使用点。 |
 | Picker 文件中的 `AppPackagePickerItemUiModel` | `feature/vault/presentation/common/AppPackagePickerItemUiModel.kt` | 独立于 Compose UI；供密码编辑 Contract/ViewModel、详情 mapper、详情 presentation model 和关联条目 UI 使用。 |
 
-Picker 的两个字符串资源仍留在 app 资源集中。组件实现与行为未改动；model 从 Compose 文件拆出，避免状态/映射所有者依赖 `ui` 包。四组组件都没有直接组件测试；现有密码编辑 ViewModel 测试覆盖已安装应用选择状态。本批次没有新增或改写行为测试，也未运行测试。除 `NextFocusTextField` 的正式文档提及已更新外，没有发现 Manifest、导航、DI 或其它路径文档入口。
+Picker 的两个字符串资源仍留在 app 资源集中。组件实现与行为未改动；model 从 Compose 文件拆出，避免状态/映射所有者依赖 `ui` 包。四组组件都没有直接组件测试；现有密码编辑 ViewModel 测试覆盖已安装应用选择状态。本批次没有新增或改写行为测试。除 `NextFocusTextField` 的正式文档提及已更新外，没有发现 Manifest、导航、DI 或其它路径文档入口。
 
-**验证状态：** 最终 `verifyModuleBoundaries` 与 `:app:compileDebugKotlin -Pkotlin.incremental=false` 均通过。Activity 初次放入 `app` 时被模块边界规则拒绝；最终与 `PasslyApp` 一起位于应用组合根，未增加 Security 例外。首次增量编译在 Kotlin 编译器回滚输出时报告临时 `.backup` 文件缺失，未给出源码诊断；关闭增量后完整编译通过，未清理或终止进程。最终 `git diff --check` 退出码为 0，仅报告现有文件 LF→CRLF 转换提示。本批次未运行测试。
+**验证状态：** 当前最终目录下 `verifyArchitecture` 和 `:app:compileDebugKotlin -Pkotlin.incremental=false` 均通过。`DetailUiMapperTest` 与 `AddPasswordViewModelTest` 定向单测通过。Activity 初次放入 `app` 时被模块边界规则拒绝；最终与 `PasslyApp` 一起位于应用组合根，未增加 Security 例外。首次增量编译在 Kotlin 编译器回滚输出时报告临时 `.backup` 文件缺失，未给出源码诊断；关闭增量后完整编译通过。最终 `git diff --check` 退出码为 0，仅报告现有文件 LF→CRLF 转换提示。
 
 ## 全局共享展示层：保留项
 
+- **保留 `presentation/mapping/entry/EntryTypePresentationMapper` 与共享 EntryType 展示模型/标签。** Mapper 被 Vault、Backup、Autofill 的选择、保存或展示流程调用；共享 UI model 和标签被这三个 feature 的页面消费。EntryType Domain 注册/元数据当前有未提交修改，后续若改变展示映射合同，应一并复核，而不是在本次审计中并行重写。
 - 保留 `VaultItemIcon`、`VaultIcons`、`VaultIconPalette`、`EntryVisualCategoryClassifier`：Autofill 候选页和 Vault 列表/详情/回收站都使用 `VaultItemIcon`，其图标注册表、分类与颜色映射随之共享。`toLocalIconImageModel` 被该共享图标和 Vault 详情/卡片消费，也保留共享。
-- 保留 `EntryTypeUiModel` 和 `EntryTypePresentationMapper`：Backup、Autofill、Vault 均消费这些展示类型或映射。
 - 保留设置分组控件：Settings 页面和 `BackupRestoreSettingsSection` 都使用。保留 `MenuOptionText` / `selectedMenuModifier`：Settings 与 Vault 菜单都使用。
 - 保留 `ImagePicker` / `ImageType`：Scanner 和 Vault Route 都使用 Activity Result 图片选择流程。保留 `UiErrorMessage` / `writePreferenceWithFeedback`：调用方横跨 Settings、Vault 和 Database Reset。
 - 保留 `AppPasswordSetDialog` / `PasswordFields`：Unlock 与 Settings 使用设置密码 UI；`InternalInputAutofillTest` 也验证密码字段的 Autofill 行为。
 - 保留顶栏颜色/组件：Settings 和 Vault 分别使用 `PasslyNavigationTopBar` 与 `passlyTopAppBarColors`。
 
-## 待查
+## 应用组合根与跨功能集成层复核（2026-10-29）
+
+- 根 `presentation` 当前只包含 `PasslyApp`、其 Activity host、按多消费者归类的 `shared` 和 `mapping/entry`；没有发现遗留在根包的业务页面或单 feature mapper。Activity 的 Manifest 和 Autofill/Credential Manager 设置入口已在上一批迁移中同步。
+- `app/message` 按 contract、model、runtime、presentation 和 system gateway 分组，为全局通知/消息宿主提供组合能力；`PasslyApp` 连接宿主，功能调用方横跨应用页面。将其归入某一个 feature 会让其它 feature 反向依赖该 feature，故保留在 app 集成边界。
+- `app/observability`、`app/cache`、`app/clipboard`、`app/platform/permission` 分别承载 Android 系统能力适配与生命周期控制；DI 或系统 API 使用点位于相应 app 模块，未发现只为目录统一而应迁移到 feature 的实现。
+- `app/entry/favicon` 与 `app/entry/paging` 连接 Entry Domain/Data 能力合同与 Android/Data 实现；feature 只依赖能力接口。数据库 Backup 与 Reset adapter 同理，保留其跨模块 adapter 所有权。
+
+## 范围限制与后续触发条件
 
 - 设置分组控件虽然名称带 Settings，但 Backup 也有真实调用。不能按命名将它们搬进 Settings；如后续拆分，必须保留 Backup 使用方或先证明存在更合适的共享所有者。
-- 本次静态扫描未发现源码路径与 package 声明不一致，也未发现这些迁移候选对应的 Manifest/导航注册问题。此文档扫描未运行构建或运行时验证。
 
-## 本轮审计范围与待查项
+## 审查限制
 
-本轮逐项核对了 Vault、Settings、Autofill、Backup、Database Reset/Recovery、Scanner、Shell、Unlock 的源码组织、关键生产调用方、Data/Security 依赖边界、Hilt/Manifest 注册、相关资源入口、既有测试位置与正式文档。除已记录的 Vault 专属共享展示 helper 和应用 Activity 归位外，其余候选按证据保留；未对整个工作区做按行数或目录名驱动的批量搬迁。后续若发现新的分散职责，应沿用同一证据表逐功能补记，不把未核对项描述为迁移结论。
-
-- 待查：`presentation/shared` 中实际跨功能使用的组件目前依赖调用分布判断；若未来消费者变化，再复核其共享所有者，不按名称归类。
-- 待查：本次检查是静态源码、注册、测试树和文档审阅；没有运行功能测试或设备级验证。
-
-## 验收条件
-
-- 每个移动文件都有生产所有权和真实使用方证据。
-- 不残留旧 import、package、DI 注册、Manifest/导航引用、测试路径或文档路径。
-- 受影响的模块边界与功能验证通过，`git diff --check` 无错误。
-- 审计记录明确区分迁移、保留和待查项；不改动无关的工作区内容。
+本轮逐项核对了源码组织、关键生产调用方、Data/Security 依赖边界、Hilt/Manifest 注册、资源入口、测试位置与正式文档。未按文件数量或目录名称批量搬迁。审查仅为静态检查，没有运行功能测试或设备级验证；后续只有在消费者、边界或目录职责变化时才需要重新评估保留项。
