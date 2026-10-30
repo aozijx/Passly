@@ -5,6 +5,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
@@ -53,6 +55,27 @@ class RuntimeSessionManagerTest {
 
         assertTrue(caught is CancellationException)
         assertEquals(cancellation.message, caught?.message)
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+    }
+
+    @Test
+    fun `unlock closes resource when cancelled after resource was opened`() = runBlocking {
+        val resource = FakeResource(cancelAfterOpen = CancellationException("cancelled after open"))
+        val manager = RuntimeSessionManager(
+            resource = resource,
+            keySource = SessionKeySource { byteArrayOf(9) },
+        )
+
+        val caught = try {
+            manager.unlock()
+            null
+        } catch (error: CancellationException) {
+            error
+        }
+
+        assertTrue(caught is CancellationException)
+        assertEquals("cancelled after open", caught?.message)
+        assertTrue(resource.closed)
         assertEquals(SecureSessionState.SEALED, manager.lockState)
     }
 
@@ -248,6 +271,7 @@ class RuntimeSessionManagerTest {
     private class FakeResource(
         private val openFailure: Throwable? = null,
         private val closeFailure: Throwable? = null,
+        private val cancelAfterOpen: CancellationException? = null,
     ) : SessionResource<FakeHandle> {
         var openedWith: ByteArray? = null
         var closed = false
@@ -255,6 +279,7 @@ class RuntimeSessionManagerTest {
         override suspend fun open(key: ByteArray): FakeHandle {
             openedWith = key.clone()
             openFailure?.let { throw it }
+            cancelAfterOpen?.let { currentCoroutineContext().cancel(it) }
             return FakeHandle(7)
         }
 

@@ -5,8 +5,10 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration
 
@@ -84,9 +87,17 @@ internal class SessionLeaseGate<Handle : Any>(
     suspend fun open(key: ByteArray): SessionUnlockResult {
         val startedAt = elapsedRealtimeMs()
         val fromState = mutableLockState.value
+        var opened: Handle? = null
+        var published = false
         return try {
-            val opened = resource.open(key)
-            resourceMutex.withLock { handle = opened }
+            val resourceHandle = resource.open(key)
+            opened = resourceHandle
+            currentCoroutineContext().ensureActive()
+            resourceMutex.withLock {
+                handle = resourceHandle
+                published = true
+            }
+            currentCoroutineContext().ensureActive()
             leaseMutex.withLock { mutableLockState.value = SecureSessionState.UNLOCKED }
             emitTransition(
                 startedAt,
@@ -95,12 +106,13 @@ internal class SessionLeaseGate<Handle : Any>(
                 SessionTransitionReason.OPEN,
                 SessionLockType.NONE,
             )
+            currentCoroutineContext().ensureActive()
             SessionUnlockResult.Success
         } catch (cancelled: CancellationException) {
+            discardOpened(opened, published, cancelled)
             throw cancelled
         } catch (error: Throwable) {
-            resourceMutex.withLock { handle = null }
-            leaseMutex.withLock { mutableLockState.value = SecureSessionState.SEALED }
+            discardOpened(opened, published, error)
             emitTransition(
                 startedAt,
                 fromState,
@@ -110,6 +122,39 @@ internal class SessionLeaseGate<Handle : Any>(
                 error = error,
             )
             SessionUnlockResult.OpenFailed(error)
+        }
+    }
+
+    private suspend fun discardOpened(
+        opened: Handle?,
+        published: Boolean,
+        cause: Throwable,
+    ) = withContext(NonCancellable) {
+        var shouldSeal = opened == null
+        if (opened != null) {
+            if (published) {
+                resourceMutex.withLock {
+                    if (handle === opened) {
+                        handle = null
+                        shouldSeal = true
+                        closeAfterFailedOpen(opened, cause)
+                    }
+                }
+            } else {
+                shouldSeal = true
+                closeAfterFailedOpen(opened, cause)
+            }
+        }
+        if (shouldSeal) {
+            leaseMutex.withLock { mutableLockState.value = SecureSessionState.SEALED }
+        }
+    }
+
+    private suspend fun closeAfterFailedOpen(opened: Handle, cause: Throwable) {
+        try {
+            resource.close(opened)
+        } catch (cleanupFailure: Throwable) {
+            if (cleanupFailure !== cause) cause.addSuppressed(cleanupFailure)
         }
     }
 
