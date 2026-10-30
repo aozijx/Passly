@@ -11,6 +11,7 @@ import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
 import com.aozijx.passly.core.observability.TraceSnapshot
 import com.aozijx.passly.core.observability.sink.LogDropCounts
+import com.aozijx.passly.core.observability.sink.LogClearResult
 import com.aozijx.passly.core.observability.sink.LogRecordCursor
 import com.aozijx.passly.core.observability.sink.LogRecordPage
 import com.aozijx.passly.core.observability.sink.LogRecordStore
@@ -388,7 +389,7 @@ class ObservabilityExportServiceTest {
             onFlush?.invoke()
             return true
         }
-        override fun clear() = Unit
+        override fun clear() = LogClearResult.Cleared
         override fun crashEmergencyWrite(record: SanitizedLogRecord, timeoutMs: Long) = true
         override fun close() = Unit
     }

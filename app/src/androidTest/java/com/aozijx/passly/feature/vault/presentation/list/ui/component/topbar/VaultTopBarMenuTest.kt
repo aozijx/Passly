@@ -47,7 +47,7 @@ class VaultTopBarMenuTest {
 
         composeRule.onNodeWithContentDescription(context.getString(R.string.more)).performClick()
         composeRule.waitForIdle()
-        composeRule.onNode(isPopup()).getUnclippedBoundsInRoot().assertNonZero()
+        composeRule.onNode(isPopup()).assertNonZero()
         composeRule.onNodeWithText(context.getString(R.string.vault_menu_scan_qr))
             .assertIsDisplayed()
             .performClick()
@@ -62,7 +62,7 @@ class VaultTopBarMenuTest {
         try {
             composeRule.onNodeWithContentDescription(context.getString(R.string.more)).performClick()
             composeRule.mainClock.advanceTimeByFrame()
-            composeRule.onNode(isPopup()).getUnclippedBoundsInRoot().assertNonZero()
+            composeRule.onNode(isPopup()).assertNonZero()
         } finally {
             composeRule.mainClock.autoAdvance = true
         }
@@ -84,7 +84,7 @@ class VaultTopBarMenuTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithText(context.getString(R.string.vault_menu_sort)).performClick()
         composeRule.waitForIdle()
-        composeRule.onNode(isPopup()).getUnclippedBoundsInRoot().assertNonZero()
+        composeRule.onNode(isPopup()).assertNonZero()
         composeRule.onNodeWithText(context.getString(R.string.sort_last_used)).assertIsDisplayed()
     }
 
