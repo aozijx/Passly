@@ -119,6 +119,7 @@ internal object UnlockReducer {
         AuthenticationFailureCode.RATE_LIMITED -> UnlockFailureMessage.RateLimited(
             retryAfterSeconds = (((retryAfterMs ?: 0L) + 999L) / 1000L).coerceAtLeast(1L),
         )
+        AuthenticationFailureCode.KEY_INVALIDATED -> UnlockFailureMessage.BiometricKeyInvalidated
         else -> UnlockFailureMessage.Generic
     }
 

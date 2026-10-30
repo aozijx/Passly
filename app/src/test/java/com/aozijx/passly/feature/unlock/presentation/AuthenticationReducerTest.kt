@@ -93,6 +93,25 @@ class AuthenticationReducerTest {
     }
 
     @Test
+    fun `invalidated biometric key gets a recovery-specific failure instead of generic verification text`() {
+        val started = UnlockReducer.reduce(
+            UnlockUiState(),
+            UnlockMutation.AuthenticationStarted(AuthenticationMethod.BIOMETRIC),
+        )
+
+        val failed = UnlockReducer.reduce(
+            started,
+            UnlockMutation.AuthenticationFailed(
+                method = AuthenticationMethod.BIOMETRIC,
+                failure = AuthenticationFailure(AuthenticationFailureCode.KEY_INVALIDATED),
+            ),
+        )
+
+        val failure = (failed.verificationPhase as UnlockVerificationPhase.Failed).failure
+        assertEquals(UnlockFailureMessage.BiometricKeyInvalidated, failure.message)
+    }
+
+    @Test
     fun `resetting unlock inputs clears only unlock state`() {
         val initial = UnlockUiState(
             recoveryUnlockVisible = true,

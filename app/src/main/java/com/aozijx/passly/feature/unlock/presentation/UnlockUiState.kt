@@ -10,6 +10,7 @@ import com.aozijx.passly.domain.sensitive.SensitiveValue
 sealed interface UnlockFailureMessage {
     data class IncorrectCredential(val remainingAttempts: Int?) : UnlockFailureMessage
     data class RateLimited(val retryAfterSeconds: Long) : UnlockFailureMessage
+    data object BiometricKeyInvalidated : UnlockFailureMessage
     data object PasswordTooShort : UnlockFailureMessage
     data object AppPasswordSetupFailed : UnlockFailureMessage
     data object Generic : UnlockFailureMessage

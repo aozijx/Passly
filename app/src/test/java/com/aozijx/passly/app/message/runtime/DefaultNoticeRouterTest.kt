@@ -60,7 +60,7 @@ class DefaultNoticeRouterTest {
 
     @Test
     fun mandatoryMessageBypassesContentFiltersButNotSystemCapability() {
-        val notice = newAppNotice(NoticeCode.SECURITY_KEY_INVALIDATED)
+        val notice = newAppNotice(NoticeCode.SECURITY_ACTION_FAILED)
         val plan = router.route(
             notice,
             defaultNoticeCodePolicy(notice.code),

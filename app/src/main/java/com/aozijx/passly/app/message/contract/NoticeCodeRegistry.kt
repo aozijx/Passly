@@ -82,13 +82,6 @@ fun defaultNoticeCodePolicy(code: NoticeCode): NoticeCodePolicy = when (code) {
         DeliveryPolicy.IN_APP_ONLY
     )
 
-    NoticeCode.SECURITY_KEY_INVALIDATED -> NoticeCodePolicy(
-        NoticeTopic.SECURITY,
-        NoticeLevel.CRITICAL,
-        DeliveryPolicy.PREFER_SYSTEM,
-        mandatory = true
-    )
-
     NoticeCode.SECURITY_RECOVERY_REQUIRED -> NoticeCodePolicy(
         NoticeTopic.SECURITY,
         NoticeLevel.CRITICAL,

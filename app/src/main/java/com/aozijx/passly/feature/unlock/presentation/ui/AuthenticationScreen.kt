@@ -281,6 +281,7 @@ private fun UnlockFailureMessage.localized(
         R.string.auth_error_rate_limited,
         retryAfterSeconds,
     )
+    UnlockFailureMessage.BiometricKeyInvalidated -> stringResource(R.string.notice_security_key_invalidated)
     UnlockFailureMessage.PasswordTooShort -> stringResource(
         R.string.auth_error_password_too_short,
     )

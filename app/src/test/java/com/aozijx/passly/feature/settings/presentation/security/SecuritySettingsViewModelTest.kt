@@ -84,6 +84,25 @@ class SecuritySettingsViewModelTest {
     }
 
     @Test
+    fun `invalidated biometric key explains that authentication must be configured again`() = runTest {
+        val fixture = Fixture {
+            AuthenticationResult.Failure(
+                AuthenticationFailure(AuthenticationFailureCode.KEY_INVALIDATED),
+            )
+        }
+        val model = fixture.model()
+        val errors = mutableListOf<UiErrorMessage>()
+        backgroundScope.launch { model.errors.toList(errors) }
+        backgroundScope.launch { model.uiState.collect {} }
+        runCurrent()
+
+        model.onAction(SecuritySettingsAction.SetInvalidateKeyOnBiometricChange(false))
+        runCurrent()
+
+        assertEquals(listOf(UiErrorMessage(R.string.notice_security_key_invalidated)), errors)
+    }
+
+    @Test
     fun `ordinary preference failures and authentication exceptions report localized errors and permit retry`() = runTest {
         val fixture = Fixture(save = { throw IOException("synthetic preference failure") }) {
             throw IOException("synthetic authentication failure")
