@@ -12,12 +12,14 @@ import com.aozijx.passly.app.observability.AndroidTraceSink
 import com.aozijx.passly.app.observability.CrashHandlerRegistry
 import com.aozijx.passly.app.observability.CrashRecordCaptureSink
 import com.aozijx.passly.app.observability.DiagnosticsExportStorageGateway
+import com.aozijx.passly.app.observability.DiagnosticsLogRecordingPolicy
 import com.aozijx.passly.app.observability.ExportClock
 import com.aozijx.passly.app.observability.ExportContextProvider
 import com.aozijx.passly.app.observability.LogcatSink
 import com.aozijx.passly.app.observability.LocalAlertPolicy
 import com.aozijx.passly.app.observability.ObservabilityExportService
 import com.aozijx.passly.app.observability.ObservabilityRuntimeController
+import com.aozijx.passly.app.observability.PolicyLogRecordStore
 import com.aozijx.passly.app.observability.PlatformCrashHandlerRegistry
 import com.aozijx.passly.app.observability.PreviousExitSource
 import com.aozijx.passly.app.observability.PreviousProcessExitReader
@@ -53,7 +55,10 @@ import javax.inject.Singleton
 internal object ObservabilityModule {
     @Provides
     @Singleton
-    fun provideLogRecordStore(factory: LogRecordStoreFactory): LogRecordStore = factory.create()
+    fun provideLogRecordStore(
+        factory: LogRecordStoreFactory,
+        policy: DiagnosticsLogRecordingPolicy,
+    ): LogRecordStore = PolicyLogRecordStore(factory.create(), policy)
 
     @Provides
     @Singleton

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.core.observability.sink.LogClearResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportRequest
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportResult
@@ -113,8 +114,20 @@ class DiagnosticsViewModel @Inject constructor(
             return@launch
         }
         refreshJob?.cancelAndJoin()
-        logStore.clear()
-        mutate(DiagnosticsMutation.LogsCleared)
+        val result = try {
+            logStore.clear()
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            LogClearResult.Failed
+        }
+        when (result) {
+            LogClearResult.Cleared -> mutate(DiagnosticsMutation.LogsCleared)
+            LogClearResult.Failed -> {
+                mutate(DiagnosticsMutation.ClearDismissed)
+                effectChannel.send(DiagnosticsEffect.ClearFailed)
+            }
+        }
     }
 
     private fun authenticateAndExport(request: DiagnosticsExportRequest) = viewModelScope.launch {

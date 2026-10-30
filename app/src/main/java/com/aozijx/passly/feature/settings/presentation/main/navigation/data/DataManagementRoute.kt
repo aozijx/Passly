@@ -46,11 +46,19 @@ internal fun DataManagementRoute(
     val cacheClearedMessage = stringResource(R.string.settings_storage_cache_cleared)
     val logsClearedMessage = stringResource(R.string.settings_log_cleared)
     val logClearFailedMessage = stringResource(R.string.settings_log_clear_failed)
+    val logRecordingSettingsSaveFailedMessage =
+        stringResource(R.string.settings_diagnostics_recording_save_failed)
 
     LaunchedEffect(viewModel) {
         viewModel.onAction(StorageSettingsAction.PageEntered)
     }
-    LaunchedEffect(viewModel, cacheClearedMessage, logsClearedMessage, logClearFailedMessage) {
+    LaunchedEffect(
+        viewModel,
+        cacheClearedMessage,
+        logsClearedMessage,
+        logClearFailedMessage,
+        logRecordingSettingsSaveFailedMessage,
+    ) {
         viewModel.effects.collect { effect ->
             when (effect) {
                 StorageSettingsEffect.CacheCleared ->
@@ -59,6 +67,8 @@ internal fun DataManagementRoute(
                     Toast.makeText(context, logsClearedMessage, Toast.LENGTH_SHORT).show()
                 StorageSettingsEffect.LogClearFailed ->
                     Toast.makeText(context, logClearFailedMessage, Toast.LENGTH_SHORT).show()
+                StorageSettingsEffect.LogRecordingSettingsSaveFailed ->
+                    Toast.makeText(context, logRecordingSettingsSaveFailedMessage, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -85,7 +95,11 @@ internal fun DataManagementRoute(
                 Spacer(Modifier.height(24.dp))
                 LogSettingsSection(
                     state = state.logs,
+                    logRecordingMode = state.logRecordingMode,
                     onOpenDiagnostics = onOpenDiagnostics,
+                    onLogRecordingModeChange = { mode ->
+                        viewModel.onAction(StorageSettingsAction.SetLogRecordingMode(mode))
+                    },
                     onClearLogs = { showLogClearConfirmation = true },
                 )
             }

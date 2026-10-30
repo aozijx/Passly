@@ -90,6 +90,11 @@
 ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原编号；决策变化时新增 ADR 并建立替代关系。
 
 - [2026-10-29 可维护性与冗余审查](reviews/2026-10-29-passly-maintainability-audit.md)
+- [2026-10-29 功能文件归属审查](reviews/2026-10-29-feature-file-ownership-audit.md)
+- [2026-10-29 Domain Entry Type 注册审查](reviews/2026-10-29-domain-entry-type-registration.md)
+- [2026-10-30 Entry Payload Adapter 注册审查](reviews/2026-10-30-entry-payload-adapter-registration.md)
+- [2026-10-30 诊断日志采集策略审查](reviews/2026-10-30-diagnostics-log-policy.md)
+- [2026-10-29 Data Secret Payload DTO 拆分审查](reviews/2026-10-29-data-secret-payload-dto-split.md)
 - [2026-10-27 历史、界面与输入边界交付记录](reviews/2026-10-27-history-ui-delivery.md)
 - [2026-07 代码审查](reviews/2026-07-code-review.md)（仅适用于该审查时点）
 

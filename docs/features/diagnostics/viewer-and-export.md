@@ -1,6 +1,6 @@
 # 诊断查看与导出
 
-状态：当前实现（代码核对：2026-10-29）。
+状态：当前实现（代码核对：2026-10-30）。
 
 诊断日志是“设置 → 数据管理”下的独立二级页面。数据管理页负责缓存/日志占用统计和清理入口；诊断页负责
 查看、过滤、搜索、复制、保存和分享。两页不共享 ViewModel 状态。记录和 Trace 合同见
@@ -13,8 +13,13 @@
 
 每行使用等宽文本，WARN 有有限强调，ERROR/FATAL 使用错误色，同时保留等级文字。长按只提供复制该行的
 已脱敏 TSV，或复制同一 Trace（最多 100 行）。复制内容使用 Android 敏感剪贴板标记，不进入可保存 Compose
-状态。清除成功后同时清空 retained 和 visible 状态。诊断页不统计加密日志占用，该数值在数据管理页的
+状态。清除成功后同时清空 retained 和 visible 状态；排队写入未能及时排空或文件删除失败时保留当前内容并显示
+清除失败提示。数据管理页也会将清除失败显示为不可用的日志占用状态，避免把旧占用误报为清空。诊断页不统计加密日志占用，该数值在数据管理页的
 “清除日志”行右侧显示。
+
+“数据管理”的日志 section 在“查看日志”上方以内嵌下拉框配置本地记录等级，默认 INFO 及以上，可选关闭、WARN 及以上
+或全部等级。它只控制新记录是否写入本地加密日志文件；诊断查看页的等级筛选仍只影响显示。关闭或降低等级不会
+删除已有日志，用户可从诊断页菜单显式清除。错误处理、崩溃原 handler 委托和 Trace 不受该设置控制。
 
 ## 保存与分享
 
@@ -43,5 +48,5 @@ Top app bar 提供保存、分享和清除。保存与分享分别打开相同�
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 诊断查看与操作界面 | `DiagnosticsScreen()` | [`DiagnosticsScreen.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/ui/diagnostics/DiagnosticsScreen.kt) |
-| 诊断页面状态与用户动作 | `DiagnosticsViewModel.onAction()` | [`DiagnosticsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/diagnostics/DiagnosticsViewModel.kt) |
+| 诊断页面状态与用户动作 | `DiagnosticsViewModel.onAction()`、`DiagnosticsEffect.ClearFailed` | [`DiagnosticsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/diagnostics/DiagnosticsViewModel.kt)、[`DiagnosticsContract.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/diagnostics/DiagnosticsContract.kt) |
 | 诊断文件导出、丢弃与过期文件清理 | `ObservabilityExportService.export()`、`discard()`、`clearStaleExports()` | [`ObservabilityExportService.kt`](../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityExportService.kt) |

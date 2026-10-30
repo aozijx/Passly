@@ -331,8 +331,14 @@
     <string name="settings_log_loading">正在加载日志…</string>
     <string name="settings_log_management_title">日志管理</string>
     <string name="settings_log_view_title">查看日志</string>
-    <string name="settings_log_view_subtitle">始终记录，按日加密保存</string>
+    <string name="settings_log_view_subtitle">按所选等级加密保存在本机</string>
     <string name="settings_diagnostics_title">诊断日志</string>
+    <string name="settings_diagnostics_recording_title">本地日志记录等级</string>
+    <string name="settings_diagnostics_recording_disabled">关闭</string>
+    <string name="settings_diagnostics_recording_warn">警告及以上</string>
+    <string name="settings_diagnostics_recording_info">信息及以上</string>
+    <string name="settings_diagnostics_recording_debug">全部等级</string>
+    <string name="settings_diagnostics_recording_save_failed">无法保存日志记录设置</string>
     <string name="settings_diagnostics_menu">日志操作</string>
     <string name="settings_diagnostics_search">搜索事件、错误代码、异常类或 Trace</string>
     <string name="settings_diagnostics_session_restricted">当前会话无权读取诊断日志</string>

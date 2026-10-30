@@ -1,6 +1,6 @@
 # 日志运行时与加密存储
 
-状态：当前实现（代码核对：2026-10-18）。
+状态：当前实现（代码核对：2026-10-30）。
 
 | 层 | 职责 |
 | --- | --- |
@@ -15,12 +15,18 @@
 
 ## Android 运行时
 
-`PasslyApplication` 启动一个 `ObservabilityRuntimeController`。Logger 与 store 装配完成后才注册未捕获异常
-handler，并读取 `ApplicationExitInfo` 的受控数值。系统 description、进程名和原始 ANR trace 不进入标准日志。
+`PasslyApplication` 启动一个 `ObservabilityRuntimeController`。Logger 与 store 装配完成后注册未捕获异常
+handler；首次 DataStore 采集策略加载后才读取并记录 `ApplicationExitInfo` 的受控数值，避免未加载策略时
+消费并丢弃上次退出记录。系统 description、进程名和原始 ANR trace 不进入标准日志。
 
 `LogcatSink.kt` 是 observability 生产代码中唯一允许导入 `android.util.Log` 的文件。它只接收已脱敏记录，
 输出有限 Tag 和有界单行摘要，并保留 `event_id/trace_id/span_id`。Release 默认关闭 Logcat；Debug 在格式化前
 检查 `Log.isLoggable`，且永远不把原始 `Throwable` 交给 Android Log API。
+
+本地加密日志默认保存 INFO 及以上；诊断页可设为关闭、WARN 及以上、INFO 及以上或全部等级。设置只在加密
+`LogRecordStore` 边界过滤，不改变 `LocalAlertPolicy`、内存崩溃捕获、原崩溃委托、业务控制流或 Android Trace。
+设置尚未从 DataStore 加载时暂不写入本地 store。降低等级或关闭采集不删除既有记录；Release Logcat 仍默认关闭，
+Debug Logcat 仍由 Android Log 可见性控制，两者独立于本地加密记录策略。
 
 受控 Span 名称同时写入 `android.os.Trace`，供 Perfetto 分析。业务层不得调用 `printStackTrace` 或创建第二套
 静态 Logger/Service Locator。
@@ -32,6 +38,10 @@ handler，并读取 `ApplicationExitInfo` 的受控数值。系统 description�
 
 队列恢复并发生生命周期 flush 时，运行时写入一条 `application.log.overflow` 计数汇总。汇总不包含被丢弃内容，
 也不递归进入已饱和队列。
+
+清除会在写入接受锁内等待普通队列和 emergency writer 排空，等待上限为 500 ms。若未排空或文件删除未完成，
+返回失败且界面不得报告清除成功；若排空并删除成功，清除前已接受的记录不会在成功提示后重新出现。清除边界之后
+的写入在清除完成后继续入队。`LogRecordStore.clear()` 与诊断界面使用 `LogClearResult` 表达明确结果。
 
 崩溃路径先等待普通 flush 300 ms，再最多等待 emergency writer 200 ms。应急数据密钥在运行时预生成；崩溃时
 不访问 Keystore、不获取普通 writer lock，最后始终委托原 handler。
@@ -58,5 +68,5 @@ handler，并读取 `ApplicationExitInfo` 的受控数值。系统 description�
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 观测运行时启动、读取、刷新与关闭 | `ObservabilityRuntimeController.start()`、`readLines()`、`flush()`、`shutdown()` | [`ObservabilityRuntimeController.kt`](../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityRuntimeController.kt) |
-| 加密日志记录读写与清理 | `EncryptedLogRecordStore.write()`、`readPage()`、`clear()` | [`EncryptedLogRecordStore.kt`](../../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogRecordStore.kt) |
+| 加密日志记录读写与清理 | `EncryptedLogRecordStore.write()`、`readPage()`、`clear()`、`LogClearResult` | [`EncryptedLogRecordStore.kt`](../../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogRecordStore.kt)、[`LogRecordStore.kt`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/sink/LogRecordStore.kt) |
 | 日志文件轮转与过期文件清理 | `EncryptedLogFileManager.cleanup()`、`clear()` | [`EncryptedLogFileManager.kt`](../../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogFileManager.kt) |

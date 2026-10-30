@@ -8,6 +8,7 @@ import com.aozijx.passly.data.preferences.proto.AutofillPreferences
 import com.aozijx.passly.data.preferences.proto.BackupPreferences
 import com.aozijx.passly.data.preferences.proto.InteractionPreferences
 import com.aozijx.passly.data.preferences.proto.InterfacePreferences
+import com.aozijx.passly.data.preferences.proto.DiagnosticsPreferences
 import com.aozijx.passly.data.preferences.proto.VaultViewPreferences
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntrySort
@@ -16,6 +17,7 @@ import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
+import com.aozijx.passly.domain.settings.model.DiagnosticsLogRecordingMode
 import com.aozijx.passly.domain.settings.model.MessageLevel
 import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.domain.settings.model.MessageTopic
@@ -27,6 +29,7 @@ import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
+import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -40,7 +43,8 @@ internal class ProtoAppPreferencesStore @Inject constructor(
     InterfaceSettingsRepository,
     InteractionSettingsRepository,
     LibraryViewSettingsRepository,
-    MessageSettingsRepository {
+    MessageSettingsRepository,
+    DiagnosticsLogSettingsRepository {
 
     private val dataStore = context.applicationContext.appPreferencesDataStore
 
@@ -50,6 +54,9 @@ internal class ProtoAppPreferencesStore @Inject constructor(
     override val interaction = dataStore.data.map { readInteraction(it.interaction) }
     override val libraryViewSettings = dataStore.data.map { readVault(it.vaultView) }
     override val messages = dataStore.data.map { decodeMessageSettings(it.message) }
+    override val diagnosticsLogRecordingMode = dataStore.data.map {
+        readDiagnosticsLogRecordingMode(it.diagnostics)
+    }
 
     override suspend fun setThemeMode(mode: ThemeMode) = updateAppearance { themeMode = mode.toProto() }
     override suspend fun setDynamicColor(enabled: Boolean) = updateAppearance { dynamicColorEnabled = enabled }
@@ -87,6 +94,10 @@ internal class ProtoAppPreferencesStore @Inject constructor(
     }
     override suspend fun setTopicMinimumLevel(topic: MessageTopic, level: MessageLevel) = updateMessages {
         copy(topicSettings = topicSettings + (topic to topic(topic).copy(minimumLevel = level)))
+    }
+
+    override suspend fun setDiagnosticsLogRecordingMode(mode: DiagnosticsLogRecordingMode) = update {
+        current -> setDiagnostics(current.diagnostics.toBuilder().setLogRecordingMode(mode.toProto()))
     }
 
     override suspend fun setBackupDirectoryUri(uri: String) = updateBackup { directoryTreeUri = uri }

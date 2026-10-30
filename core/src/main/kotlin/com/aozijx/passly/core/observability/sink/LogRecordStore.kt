@@ -25,6 +25,11 @@ data class LogRecordPage(
     val nextCursor: LogRecordCursor?,
 )
 
+enum class LogClearResult {
+    Cleared,
+    Failed,
+}
+
 interface LogRecordStore : LogSink, AutoCloseable {
     fun write(record: SanitizedLogRecord)
     override fun emit(record: SanitizedLogRecord) = write(record)
@@ -33,7 +38,7 @@ interface LogRecordStore : LogSink, AutoCloseable {
     fun flush(timeoutMs: Long): Boolean
     fun storageBytes(): Long
     fun drainDroppedCounts(): LogDropCounts
-    fun clear()
+    fun clear(): LogClearResult
     fun crashEmergencyWrite(record: SanitizedLogRecord, timeoutMs: Long): Boolean
 }
 

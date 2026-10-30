@@ -12,6 +12,20 @@ message AppPreferences {
     optional VaultViewPreferences vault_view = 4;
     optional MessagePreferences message = 5;
     optional BackupPreferences backup = 6;
+    optional DiagnosticsPreferences diagnostics = 7;
+}
+
+message DiagnosticsPreferences {
+    optional DiagnosticsLogRecordingPreference log_recording_mode = 1
+        [default = DIAGNOSTICS_LOG_RECORDING_INFO_AND_ABOVE];
+}
+
+enum DiagnosticsLogRecordingPreference {
+    DIAGNOSTICS_LOG_RECORDING_UNSPECIFIED = 0;
+    DIAGNOSTICS_LOG_RECORDING_DISABLED = 1;
+    DIAGNOSTICS_LOG_RECORDING_WARN_AND_ABOVE = 2;
+    DIAGNOSTICS_LOG_RECORDING_INFO_AND_ABOVE = 3;
+    DIAGNOSTICS_LOG_RECORDING_DEBUG_AND_ABOVE = 4;
 }
 
 message AppearancePreferences {

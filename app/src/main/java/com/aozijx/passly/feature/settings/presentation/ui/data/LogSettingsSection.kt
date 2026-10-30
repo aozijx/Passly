@@ -3,23 +3,53 @@ package com.aozijx.passly.feature.settings.presentation.ui.data
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
+import com.aozijx.passly.domain.settings.model.DiagnosticsLogRecordingMode
 import com.aozijx.passly.feature.settings.presentation.main.data.StorageSizeUiState
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
+import com.aozijx.passly.presentation.shared.components.group.dropdownSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 
 @Composable
 internal fun LogSettingsSection(
     state: StorageSizeUiState,
+    logRecordingMode: DiagnosticsLogRecordingMode,
     onOpenDiagnostics: () -> Unit,
+    onLogRecordingModeChange: (DiagnosticsLogRecordingMode) -> Unit,
     onClearLogs: () -> Unit,
 ) {
+    var recordingModeMenuExpanded by rememberSaveable { mutableStateOf(false) }
     SettingsSectionTitle(text = stringResource(R.string.settings_log_management_title))
     SegmentedSettingsGroup(
         items = listOf(
+            dropdownSettingsGroupItem(
+                key = "logs.recording_settings",
+                icon = Icons.Default.Settings,
+                title = stringResource(R.string.settings_diagnostics_recording_title),
+                selected = logRecordingMode,
+                selectedLabel = stringResource(R.string.settings_diagnostics_recording_info),
+                options = listOf(
+                    DiagnosticsLogRecordingMode.DISABLED to
+                        stringResource(R.string.settings_diagnostics_recording_disabled),
+                    DiagnosticsLogRecordingMode.WARN_AND_ABOVE to
+                        stringResource(R.string.settings_diagnostics_recording_warn),
+                    DiagnosticsLogRecordingMode.INFO_AND_ABOVE to
+                        stringResource(R.string.settings_diagnostics_recording_info),
+                    DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE to
+                        stringResource(R.string.settings_diagnostics_recording_debug),
+                ),
+                expanded = recordingModeMenuExpanded,
+                onExpandedChange = { recordingModeMenuExpanded = it },
+                onSelect = onLogRecordingModeChange,
+            ),
             navigationSettingsGroupItem(
                 key = "logs.view",
                 icon = Icons.Default.BugReport,

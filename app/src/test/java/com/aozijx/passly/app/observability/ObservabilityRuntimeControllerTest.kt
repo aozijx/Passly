@@ -5,8 +5,15 @@ import com.aozijx.passly.core.observability.internal.*
 import com.aozijx.passly.core.observability.metrics.EventAggregator
 import com.aozijx.passly.core.observability.privacy.*
 import com.aozijx.passly.core.observability.sink.*
+import com.aozijx.passly.domain.settings.model.DiagnosticsLogRecordingMode
+import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsRepository
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -24,10 +31,49 @@ class ObservabilityRuntimeControllerTest {
 
         controller.start()
         controller.start()
+        assertTrue(store.logWritten.await(2, TimeUnit.SECONDS))
 
         assertEquals(listOf("handler_install", "previous_exit_read", "log_write"), order)
         assertEquals(1, registry.installCalls)
         assertEquals(Events.Application.PreviousProcessExit, store.records.single().event)
+    }
+
+    @Test
+    fun `previous exit is not consumed until persistent recording mode is loaded`() {
+        val modeCollectionStarted = CountDownLatch(1)
+        val releaseMode = CountDownLatch(1)
+        val previousExitReads = AtomicBoolean(false)
+        val previous = PreviousExitSource {
+            previousExitReads.set(true)
+            PreviousExit(1, PreviousExitReason.CRASH, 9, PreviousExitImportance.FOREGROUND, 2, 3)
+        }
+        val delayedMode = flow {
+            modeCollectionStarted.countDown()
+            releaseMode.await(2, TimeUnit.SECONDS)
+            emit(DiagnosticsLogRecordingMode.INFO_AND_ABOVE)
+        }
+        val store = RecordingStore()
+        val controller = controller(
+            store = store,
+            previous = previous,
+            registry = RecordingCrashHandlerRegistry(),
+            recordingMode = delayedMode,
+        )
+
+        try {
+            controller.start()
+            assertTrue(modeCollectionStarted.await(2, TimeUnit.SECONDS))
+            assertFalse(previousExitReads.get())
+            assertTrue(store.records.isEmpty())
+
+            releaseMode.countDown()
+            assertTrue(store.logWritten.await(2, TimeUnit.SECONDS))
+            assertTrue(previousExitReads.get())
+            assertEquals(Events.Application.PreviousProcessExit, store.records.single().event)
+        } finally {
+            releaseMode.countDown()
+            controller.shutdown()
+        }
     }
 
     @Test
@@ -124,6 +170,7 @@ class ObservabilityRuntimeControllerTest {
         store: RecordingStore,
         previous: PreviousExitSource,
         registry: RecordingCrashHandlerRegistry,
+        recordingMode: Flow<DiagnosticsLogRecordingMode> = flowOf(DiagnosticsLogRecordingMode.DEFAULT),
         beforeController: (Logger) -> Unit = {},
     ): ObservabilityRuntimeController {
         val crashCapture = CrashRecordCaptureSink()
@@ -151,6 +198,11 @@ class ObservabilityRuntimeControllerTest {
             crashHandlers = registry,
             processTerminator = ProcessTerminator { },
             eventAggregator = EventAggregator(),
+            diagnosticsLogSettings = object : DiagnosticsLogSettingsRepository {
+                override val diagnosticsLogRecordingMode = recordingMode
+                override suspend fun setDiagnosticsLogRecordingMode(mode: DiagnosticsLogRecordingMode) = Unit
+            },
+            recordingPolicy = DiagnosticsLogRecordingPolicy(),
         )
     }
 
@@ -183,6 +235,7 @@ class ObservabilityRuntimeControllerTest {
         private val order: MutableList<String> = mutableListOf(),
     ) : LogRecordStore {
         val records = mutableListOf<SanitizedLogRecord>()
+        val logWritten = CountDownLatch(1)
         val flushTimeouts = mutableListOf<Long>()
         val emergencyTimeouts = mutableListOf<Long>()
         var closeCalls = 0
@@ -191,6 +244,7 @@ class ObservabilityRuntimeControllerTest {
         override fun write(record: SanitizedLogRecord) {
             records += record
             order += "log_write"
+            logWritten.countDown()
         }
         override fun readPage(cursor: LogRecordCursor?, limit: Int) =
             LogRecordPage(emptyList(), 0, null)
@@ -203,7 +257,7 @@ class ObservabilityRuntimeControllerTest {
             onFlush()
             return flushResult
         }
-        override fun clear() = Unit
+        override fun clear() = LogClearResult.Cleared
         override fun crashEmergencyWrite(record: SanitizedLogRecord, timeoutMs: Long): Boolean {
             emergencyTimeouts += timeoutMs
             return true

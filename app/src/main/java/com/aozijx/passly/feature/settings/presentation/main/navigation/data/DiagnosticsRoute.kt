@@ -27,6 +27,7 @@ internal fun DiagnosticsRoute(onBack: (() -> Unit)?) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val exportFailed = stringResource(R.string.settings_log_export_failed)
     val saveCompleted = stringResource(R.string.settings_log_save_completed)
+    val clearFailed = stringResource(R.string.settings_log_clear_failed)
     val jsonlPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(LogFormat.JSONL.mimeType),
     ) { uri -> viewModel.onDocumentSelected(uri?.toString()) }
@@ -40,7 +41,7 @@ internal fun DiagnosticsRoute(onBack: (() -> Unit)?) {
     LaunchedEffect(viewModel) {
         viewModel.onAction(DiagnosticsAction.PageEntered)
     }
-    LaunchedEffect(viewModel, context, exportFailed, saveCompleted) {
+    LaunchedEffect(viewModel, context, exportFailed, saveCompleted, clearFailed) {
         viewModel.effects.collect { effect ->
             when (effect) {
                 is DiagnosticsEffect.SelectSaveDocument -> when (effect.format) {
@@ -53,6 +54,8 @@ internal fun DiagnosticsRoute(onBack: (() -> Unit)?) {
                     Toast.makeText(context, saveCompleted, Toast.LENGTH_SHORT).show()
                 DiagnosticsEffect.ExportFailed ->
                     Toast.makeText(context, exportFailed, Toast.LENGTH_SHORT).show()
+                DiagnosticsEffect.ClearFailed ->
+                    Toast.makeText(context, clearFailed, Toast.LENGTH_SHORT).show()
             }
         }
     }

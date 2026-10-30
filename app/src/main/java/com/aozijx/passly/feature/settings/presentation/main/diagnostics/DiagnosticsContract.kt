@@ -64,4 +64,5 @@ sealed interface DiagnosticsEffect {
     data class CopyText(val text: String) : DiagnosticsEffect
     data object SaveCompleted : DiagnosticsEffect
     data object ExportFailed : DiagnosticsEffect
+    data object ClearFailed : DiagnosticsEffect
 }

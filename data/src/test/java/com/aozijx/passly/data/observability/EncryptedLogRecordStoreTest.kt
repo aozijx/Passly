@@ -16,12 +16,14 @@ import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
 import com.aozijx.passly.core.observability.TraceSnapshot
 import com.aozijx.passly.core.observability.sink.LogDropCounts
+import com.aozijx.passly.core.observability.sink.LogClearResult
 import java.io.File
 import java.nio.file.Files
 import java.io.RandomAccessFile
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import javax.crypto.spec.SecretKeySpec
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -201,6 +203,98 @@ class EncryptedLogRecordStoreTest {
     }
 
     @Test
+    fun `clear reports failure and preserves records when an accepted write misses the drain deadline`() {
+        val shouldBlock = AtomicBoolean(false)
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val store = newStore(
+            beforeWrite = {
+                if (shouldBlock.compareAndSet(true, false)) {
+                    entered.countDown()
+                    release.await(2, TimeUnit.SECONDS)
+                }
+            },
+        )
+        val existing = sampleRecord(1)
+        val pending = sampleRecord(2)
+        try {
+            store.write(existing)
+            assertTrue(store.flush(2_000))
+            shouldBlock.set(true)
+            store.write(pending)
+            assertTrue(entered.await(2, TimeUnit.SECONDS))
+
+            assertEquals(LogClearResult.Failed, store.clear())
+            assertEquals(listOf(existing), store.readPage(null, 10).records)
+
+            release.countDown()
+            assertTrue(store.flush(2_000))
+            assertEquals(listOf(existing, pending), store.readPage(null, 10).records)
+        } finally {
+            release.countDown()
+            store.close()
+        }
+    }
+
+    @Test
+    fun `clear defines a write boundary and retains only records accepted after successful clear`() {
+        val shouldBlock = AtomicBoolean(false)
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val store = newStore(
+            beforeWrite = {
+                if (shouldBlock.compareAndSet(true, false)) {
+                    entered.countDown()
+                    release.await(2, TimeUnit.SECONDS)
+                }
+            },
+        )
+        val existing = sampleRecord(1)
+        val acceptedBeforeClear = sampleRecord(2)
+        val acceptedAfterClear = sampleRecord(3)
+        val clearResult = AtomicReference<LogClearResult?>()
+        val clearFinished = CountDownLatch(1)
+        var clearThread: Thread? = null
+        var writeThread: Thread? = null
+        val writeStarted = CountDownLatch(1)
+        val writeReturned = CountDownLatch(1)
+
+        try {
+            store.write(existing)
+            assertTrue(store.flush(2_000))
+            shouldBlock.set(true)
+            store.write(acceptedBeforeClear)
+            assertTrue(entered.await(2, TimeUnit.SECONDS))
+
+            clearThread = Thread {
+                clearResult.set(store.clear())
+                clearFinished.countDown()
+            }.apply(Thread::start)
+            awaitTimedWaiting(clearThread)
+
+            writeThread = Thread {
+                writeStarted.countDown()
+                store.write(acceptedAfterClear)
+                writeReturned.countDown()
+            }.apply(Thread::start)
+            assertTrue(writeStarted.await(2, TimeUnit.SECONDS))
+            assertFalse(writeReturned.await(50, TimeUnit.MILLISECONDS))
+
+            release.countDown()
+            assertTrue(clearFinished.await(2, TimeUnit.SECONDS))
+            assertEquals(LogClearResult.Cleared, clearResult.get())
+            assertTrue(writeReturned.await(2, TimeUnit.SECONDS))
+            assertTrue(store.flush(2_000))
+            assertEquals(listOf(acceptedAfterClear), store.readPage(null, 10).records)
+        } finally {
+            release.countDown()
+            clearThread?.join(2_000)
+            writeThread?.join(2_000)
+            store.close()
+        }
+    }
+
+    @Test
     fun `store failure does not recursively log and later writes still succeed`() {
         val store = newStore()
         store.write(sampleRecord(1).copy(level = LogLevel.ERROR))
@@ -307,6 +401,14 @@ class EncryptedLogRecordStoreTest {
             ),
         ),
     )
+
+    private fun awaitTimedWaiting(thread: Thread) {
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2)
+        while (thread.isAlive && thread.state != Thread.State.TIMED_WAITING && System.nanoTime() < deadline) {
+            Thread.yield()
+        }
+        assertEquals(Thread.State.TIMED_WAITING, thread.state)
+    }
 
     private fun sampleRecord(index: Int) = SanitizedLogRecord(
         eventId = EventId("event_${index.toString().padStart(8, '0')}"),

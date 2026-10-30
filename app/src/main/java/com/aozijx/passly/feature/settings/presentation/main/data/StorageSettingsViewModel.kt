@@ -3,7 +3,10 @@ package com.aozijx.passly.feature.settings.presentation.main.data
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.platform.cache.ByteSizeFormatter
+import com.aozijx.passly.core.observability.sink.LogClearResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.settings.model.DiagnosticsLogRecordingMode
+import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsRepository
 import com.aozijx.passly.feature.settings.data.AppCacheStore
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,6 +25,7 @@ import javax.inject.Inject
 class StorageSettingsViewModel @Inject constructor(
     private val cacheStore: AppCacheStore,
     private val diagnosticsLogStore: DiagnosticsLogStore,
+    private val diagnosticsLogSettings: DiagnosticsLogSettingsRepository,
     private val secureSessionAccessState: SecureSessionAccessState,
 ) : ViewModel() {
 
@@ -35,11 +39,32 @@ class StorageSettingsViewModel @Inject constructor(
     private var cacheOperationJob: Job? = null
     private var logOperationJob: Job? = null
 
+    init {
+        viewModelScope.launch {
+            diagnosticsLogSettings.diagnosticsLogRecordingMode.collect { mode ->
+                _uiState.update { it.copy(logRecordingMode = mode) }
+            }
+        }
+    }
+
     fun onAction(action: StorageSettingsAction) {
         when (action) {
             StorageSettingsAction.PageEntered -> refreshStorageUsage()
             StorageSettingsAction.ClearCache -> clearCache()
             StorageSettingsAction.ClearLogs -> clearLogs()
+            is StorageSettingsAction.SetLogRecordingMode -> setLogRecordingMode(action.mode)
+        }
+    }
+
+    private fun setLogRecordingMode(mode: DiagnosticsLogRecordingMode) {
+        viewModelScope.launch {
+            try {
+                diagnosticsLogSettings.setDiagnosticsLogRecordingMode(mode)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                _effects.send(StorageSettingsEffect.LogRecordingSettingsSaveFailed)
+            }
         }
     }
 
@@ -52,7 +77,10 @@ class StorageSettingsViewModel @Inject constructor(
             }
             _uiState.update { it.copy(logs = StorageSizeUiState.Loading) }
             try {
-                diagnosticsLogStore.clear()
+                if (diagnosticsLogStore.clear() != LogClearResult.Cleared) {
+                    reportLogClearFailed()
+                    return@launch
+                }
                 _uiState.update { it.copy(logs = readLogSize()) }
                 _effects.send(StorageSettingsEffect.LogsCleared)
             } catch (cancelled: CancellationException) {
@@ -62,6 +90,11 @@ class StorageSettingsViewModel @Inject constructor(
                 _effects.send(StorageSettingsEffect.LogClearFailed)
             }
         }
+    }
+
+    private suspend fun reportLogClearFailed() {
+        _uiState.update { it.copy(logs = StorageSizeUiState.Unavailable) }
+        _effects.send(StorageSettingsEffect.LogClearFailed)
     }
 
     private fun refreshStorageUsage() {

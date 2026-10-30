@@ -331,8 +331,14 @@
     <string name="settings_log_loading">Loading logs…</string>
     <string name="settings_log_management_title">Logs</string>
     <string name="settings_log_view_title">View logs</string>
-    <string name="settings_log_view_subtitle">Always recorded and encrypted by day</string>
+    <string name="settings_log_view_subtitle">Encrypted locally at the selected level</string>
     <string name="settings_diagnostics_title">Diagnostic logs</string>
+    <string name="settings_diagnostics_recording_title">Local log recording level</string>
+    <string name="settings_diagnostics_recording_disabled">Off</string>
+    <string name="settings_diagnostics_recording_warn">Warnings and above</string>
+    <string name="settings_diagnostics_recording_info">Info and above</string>
+    <string name="settings_diagnostics_recording_debug">All levels</string>
+    <string name="settings_diagnostics_recording_save_failed">Couldn’t save the log recording setting</string>
     <string name="settings_diagnostics_menu">Log actions</string>
     <string name="settings_diagnostics_search">Search events, error codes, exception classes, or traces</string>
     <string name="settings_diagnostics_session_restricted">This session cannot read diagnostic logs</string>

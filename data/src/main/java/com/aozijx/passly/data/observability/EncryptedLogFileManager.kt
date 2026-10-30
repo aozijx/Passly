@@ -235,10 +235,13 @@ internal class EncryptedLogFileManager(
 
     fun storageBytes(): Long = listLogFiles().sumOf(File::length)
 
-    fun clear() {
+    fun clear(): Boolean {
         activeEntry?.destroy()
         activeEntry = null
-        listLogFiles().forEach(File::delete)
+        listLogFiles().forEach { file ->
+            if (file.exists()) file.delete()
+        }
+        return listLogFiles().isEmpty()
     }
 
     fun close() {

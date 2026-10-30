@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.settings.diagnostics
 
 import com.aozijx.passly.core.observability.LogLevel
+import com.aozijx.passly.core.observability.sink.LogClearResult
 
 data class DiagnosticsLogLine(
     val level: LogLevel,
@@ -16,5 +17,5 @@ data class DiagnosticsLogLine(
 interface DiagnosticsLogStore {
     suspend fun readLines(limit: Int): List<DiagnosticsLogLine>
     suspend fun storageBytes(): Long
-    suspend fun clear()
+    suspend fun clear(): LogClearResult
 }

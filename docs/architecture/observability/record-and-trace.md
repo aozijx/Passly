@@ -102,6 +102,9 @@ diagnostic/correlation ID。
 原始标识符。只有 `from_state == to_state` 的重复 DEBUG/INFO 观察可以抑制，窗口首条仍输出。
 真实状态转换以及 WARN/ERROR/FATAL 永不采样。聚合快照带递归保护，Logger 自身指标不会再次进入聚合器。
 
+采集等级只控制已脱敏记录进入本地加密文件 store；它与上述聚合/采样规则、Logcat 构建配置和 Trace 生命周期
+相互独立。默认持久记录 INFO 及以上，用户可在诊断页调整本地记录等级。
+
 ## 代码位置
 
 | 职责 | 类/函数 | 源码文件 |

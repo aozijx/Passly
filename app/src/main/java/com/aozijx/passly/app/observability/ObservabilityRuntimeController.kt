@@ -6,12 +6,20 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.metrics.EventAggregator
 import com.aozijx.passly.core.observability.sink.LogRecordStore
+import com.aozijx.passly.core.observability.sink.LogClearResult
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogLine
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
+import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsRepository
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.runBlocking
 
@@ -33,12 +41,16 @@ class ObservabilityRuntimeController @Inject internal constructor(
     private val crashHandlers: CrashHandlerRegistry,
     private val processTerminator: ProcessTerminator,
     private val eventAggregator: EventAggregator,
+    private val diagnosticsLogSettings: DiagnosticsLogSettingsRepository,
+    private val recordingPolicy: DiagnosticsLogRecordingPolicy,
     private val recordEncoder: TsvRecordEncoder = TsvRecordEncoder(),
 ) : DiagnosticsLogStore {
+    private val settingsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val started = AtomicBoolean(false)
     private val shutdown = AtomicBoolean(false)
     private val handlingCrash = AtomicBoolean(false)
     private var previousCrashHandler: Thread.UncaughtExceptionHandler? = null
+    private var settingsJob: Job? = null
 
     private val crashHandler = Thread.UncaughtExceptionHandler { thread, throwable ->
         if (!handlingCrash.compareAndSet(false, true)) {
@@ -62,7 +74,16 @@ class ObservabilityRuntimeController @Inject internal constructor(
         if (!started.compareAndSet(false, true)) return
         previousCrashHandler = crashHandlers.current()
         crashHandlers.install(crashHandler)
-        previousExitSource.readUnrecorded()?.let(::recordPreviousExit)
+        settingsJob = settingsScope.launch {
+            var initialModeLoaded = false
+            diagnosticsLogSettings.diagnosticsLogRecordingMode.collect { mode ->
+                recordingPolicy.update(mode)
+                if (!initialModeLoaded) {
+                    initialModeLoaded = true
+                    previousExitSource.readUnrecorded()?.let(::recordPreviousExit)
+                }
+            }
+        }
     }
 
     fun flush(timeoutMs: Long = LIFECYCLE_FLUSH_TIMEOUT_MS): Boolean {
@@ -99,12 +120,14 @@ class ObservabilityRuntimeController @Inject internal constructor(
         }
     }
 
-    override suspend fun clear() = withContext(Dispatchers.IO) { store.clear() }
+    override suspend fun clear(): LogClearResult = withContext(Dispatchers.IO) { store.clear() }
 
     override suspend fun storageBytes(): Long = withContext(Dispatchers.IO) { store.storageBytes() }
 
     fun shutdown() {
         if (!shutdown.compareAndSet(false, true)) return
+        settingsJob?.cancel()
+        settingsScope.cancel()
         runCatching { flush(LIFECYCLE_FLUSH_TIMEOUT_MS) }
         if (crashHandlers.current() === crashHandler) crashHandlers.install(previousCrashHandler)
         runCatching { store.close() }

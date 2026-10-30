@@ -11,6 +11,7 @@ import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
 import com.aozijx.passly.core.observability.TraceResumeResult
 import com.aozijx.passly.core.observability.TraceScope
+import com.aozijx.passly.core.observability.sink.LogClearResult
 import com.aozijx.passly.core.observability.trace.TraceToken
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthenticationState
@@ -62,6 +63,26 @@ class DiagnosticsViewModelTest {
 
         assertEquals(1, store.readCount)
         assertEquals(lines, viewModel.uiState.value.retainedLines)
+    }
+
+    @Test
+    fun `failed clear reports failure and keeps retained lines`() = runTest {
+        val lines = listOf(
+            DiagnosticsLogLine(LogLevel.INFO, "row-one", "trace_one", "application.one"),
+        )
+        val store = RecordingLogStore(lines, clearResult = LogClearResult.Failed)
+        val viewModel = viewModel(store)
+        viewModel.onAction(DiagnosticsAction.PageEntered)
+        runCurrent()
+        val effect = async { viewModel.effects.first() }
+
+        viewModel.onAction(DiagnosticsAction.RequestClear)
+        viewModel.onAction(DiagnosticsAction.ConfirmClear)
+        runCurrent()
+
+        assertEquals(DiagnosticsEffect.ClearFailed, effect.await())
+        assertEquals(lines, viewModel.uiState.value.retainedLines)
+        assertEquals(false, viewModel.uiState.value.isClearConfirmationVisible)
     }
 
     @Test
@@ -138,7 +159,10 @@ class DiagnosticsViewModelTest {
         logger = logger,
     )
 
-    private class RecordingLogStore(private val lines: List<DiagnosticsLogLine>) : DiagnosticsLogStore {
+    private class RecordingLogStore(
+        private val lines: List<DiagnosticsLogLine>,
+        private val clearResult: LogClearResult = LogClearResult.Cleared,
+    ) : DiagnosticsLogStore {
         var readCount = 0
 
         override suspend fun readLines(limit: Int): List<DiagnosticsLogLine> {
@@ -148,7 +172,7 @@ class DiagnosticsViewModelTest {
 
         override suspend fun storageBytes(): Long = 1_024L
 
-        override suspend fun clear() = Unit
+        override suspend fun clear() = clearResult
     }
 
     private object FullAccess : SecureSessionAccessState {

@@ -3,6 +3,7 @@ package com.aozijx.passly.data.observability
 import android.content.Context
 import com.aozijx.passly.core.observability.LogLevel
 import com.aozijx.passly.core.observability.SanitizedLogRecord
+import com.aozijx.passly.core.observability.sink.LogClearResult
 import com.aozijx.passly.core.observability.sink.LogDropCounts
 import com.aozijx.passly.core.observability.sink.LogRecordCursor
 import com.aozijx.passly.core.observability.sink.LogRecordPage
@@ -15,6 +16,7 @@ import java.io.FileOutputStream
 import java.io.RandomAccessFile
 import java.security.SecureRandom
 import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
@@ -40,6 +42,7 @@ internal class EncryptedLogRecordStore(
     private val beforeWrite: () -> Unit = {},
     private val insideWriteLock: () -> Unit = {},
 ) : LogRecordStore {
+    private val writeAcceptanceLock = Any()
     private val writeLock = Any()
     private val manager = EncryptedLogFileManager(
         directory = directory,
@@ -52,7 +55,7 @@ internal class EncryptedLogRecordStore(
     )
     private val crashClaimed = AtomicBoolean(false)
     private val overflowEmergencyClaimed = AtomicBoolean(false)
-    private val overflowEmergencyThread = AtomicReference<Thread?>(null)
+    private val emergencyThreads = ConcurrentHashMap.newKeySet<Thread>()
     private val droppedCounts = AtomicLongArray(LogLevel.entries.size)
     private val writer = ThreadPoolExecutor(
         1,
@@ -67,7 +70,7 @@ internal class EncryptedLogRecordStore(
         manager.prepareEntry(File(directory, "emergency_${nowMs()}.log"), nowMs()),
     )
 
-    override fun write(record: SanitizedLogRecord) {
+    override fun write(record: SanitizedLogRecord) = synchronized(writeAcceptanceLock) {
         val task = WriteTask(record)
         try {
             writer.execute(task)
@@ -75,12 +78,12 @@ internal class EncryptedLogRecordStore(
             val evicted = evictQueuedLowerPriority(record.level)
             if (evicted != null) {
                 recordDrop(evicted)
-                if (runCatching { writer.execute(task) }.isSuccess) return
+                if (runCatching { writer.execute(task) }.isSuccess) return@synchronized
             }
             if (record.level in setOf(LogLevel.ERROR, LogLevel.FATAL) &&
                 overflowEmergencyClaimed.compareAndSet(false, true)
             ) {
-                if (emergencyWriteAsync(record, "overflow")) return
+                if (emergencyWriteAsync(record, "overflow")) return@synchronized
             }
             recordDrop(record.level)
         }
@@ -187,11 +190,10 @@ internal class EncryptedLogRecordStore(
             if (!queued) return false
             var remaining = (deadline - System.nanoTime()).coerceAtLeast(0)
             if (!completed.await(remaining, TimeUnit.NANOSECONDS)) return false
-            overflowEmergencyThread.get()?.let { emergencyThread ->
+            emergencyThreads.toList().forEach { emergencyThread ->
                 remaining = (deadline - System.nanoTime()).coerceAtLeast(0)
                 TimeUnit.NANOSECONDS.timedJoin(emergencyThread, remaining)
                 if (emergencyThread.isAlive) return false
-                overflowEmergencyThread.compareAndSet(emergencyThread, null)
             }
             true
         } catch (_: InterruptedException) {
@@ -200,9 +202,11 @@ internal class EncryptedLogRecordStore(
         }
     }
 
-    override fun clear() {
-        flush(500)
-        synchronized(writeLock) { manager.clear() }
+    override fun clear(): LogClearResult = synchronized(writeAcceptanceLock) {
+        if (!flush(CLEAR_FLUSH_TIMEOUT_MS)) return@synchronized LogClearResult.Failed
+        synchronized(writeLock) {
+            if (manager.clear()) LogClearResult.Cleared else LogClearResult.Failed
+        }
     }
 
     override fun storageBytes(): Long = synchronized(writeLock) { manager.storageBytes() }
@@ -215,10 +219,11 @@ internal class EncryptedLogRecordStore(
         fatal = droppedCounts.getAndSet(LogLevel.FATAL.ordinal, 0),
     )
 
-    override fun crashEmergencyWrite(record: SanitizedLogRecord, timeoutMs: Long): Boolean {
+    override fun crashEmergencyWrite(record: SanitizedLogRecord, timeoutMs: Long): Boolean =
+        synchronized(writeAcceptanceLock) {
         require(timeoutMs > 0) { "Emergency timeout must be positive" }
-        if (!crashClaimed.compareAndSet(false, true)) return false
-        return emergencyWrite(record, timeoutMs, "crash")
+        if (!crashClaimed.compareAndSet(false, true)) return@synchronized false
+        emergencyWrite(record, timeoutMs, "crash")
     }
 
     override fun close() {
@@ -234,10 +239,12 @@ internal class EncryptedLogRecordStore(
             Thread.currentThread().interrupt()
             false
         }
-        overflowEmergencyThread.getAndSet(null)?.let { emergencyThread ->
-            runCatching { emergencyThread.join(CLOSE_TIMEOUT_MS) }
+        val emergencyDeadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(CLOSE_TIMEOUT_MS)
+        emergencyThreads.toList().forEach { emergencyThread ->
+            val remaining = (emergencyDeadline - System.nanoTime()).coerceAtLeast(0)
+            if (remaining > 0) runCatching { TimeUnit.NANOSECONDS.timedJoin(emergencyThread, remaining) }
         }
-        if (terminated) synchronized(writeLock) { manager.close() }
+        if (terminated && emergencyThreads.isEmpty()) synchronized(writeLock) { manager.close() }
         emergencyEntry.getAndSet(null)?.destroy()
     }
 
@@ -282,7 +289,7 @@ internal class EncryptedLogRecordStore(
 
     private fun emergencyWriteAsync(record: SanitizedLogRecord, prefix: String): Boolean {
         val entry = emergencyEntry.getAndSet(null) ?: return false
-        overflowEmergencyThread.set(launchEmergencyWrite(record, prefix, entry))
+        launchEmergencyWrite(record, prefix, entry)
         return true
     }
 
@@ -300,8 +307,9 @@ internal class EncryptedLogRecordStore(
         prefix: String,
         entry: EncryptedLogFileManager.Entry,
         completed: AtomicBoolean = AtomicBoolean(false),
-    ): Thread = Thread(
-        {
+    ): Thread {
+        val thread = Thread(
+            {
             var plain: ByteArray? = null
             var stagingFile: File? = null
             try {
@@ -318,11 +326,15 @@ internal class EncryptedLogRecordStore(
                 if (completed.get().not()) stagingFile?.delete()
                 plain?.fill(0)
                 entry.destroy()
+                emergencyThreads.remove(Thread.currentThread())
             }
-        },
-        "passly-observability-emergency",
-    ).apply { isDaemon = true }
-        .also(Thread::start)
+            },
+            "passly-observability-emergency",
+        ).apply { isDaemon = true }
+        emergencyThreads.add(thread)
+        thread.start()
+        return thread
+    }
 
     private fun append(
         file: File,
@@ -406,6 +418,7 @@ internal class EncryptedLogRecordStore(
         private const val MAX_FILE_BYTES = 1024 * 1024L
         private const val MAX_QUEUED_RECORDS = 256
         private const val MAX_PAGE_RECORDS = 500
+        private const val CLEAR_FLUSH_TIMEOUT_MS = 500L
         private const val CLOSE_TIMEOUT_MS = 500L
     }
 }
