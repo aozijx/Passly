@@ -3,7 +3,7 @@ package com.aozijx.passly.data.repository.entry
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
-import com.aozijx.passly.data.local.database.session.observeDatabaseReadAccess
+import com.aozijx.passly.data.local.database.session.observeWhenReadable
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
@@ -15,10 +15,7 @@ import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.policy.EntryLinkPolicy
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -34,32 +31,16 @@ internal class RoomEntryLinkRepository @Inject constructor(
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
 ) : EntryLinkRepository {
 
-    private val canRead = observeDatabaseReadAccess(sessionState.isAuthorized, databaseSession.lockStateFlow)
-
-    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeAll(): Flow<List<EntryLink>> =
-        canRead.flatMapLatest { readable ->
-            if (!readable) {
-                flowOf(emptyList())
-            } else {
-                databaseSession.observeFlow {
-                    entryLinkQueryDao().observeAll()
-                        .map { links -> links.map { it.toDomain() } }
-                }
-            }
+        databaseSession.observeWhenReadable(sessionState.isAuthorized, emptyValue = { emptyList() }) {
+            entryLinkQueryDao().observeAll()
+                .map { links -> links.map { it.toDomain() } }
         }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeLinks(entryId: EntryId): Flow<List<EntryLink>> =
-        canRead.flatMapLatest { readable ->
-            if (!readable) {
-                flowOf(emptyList())
-            } else {
-                databaseSession.observeFlow {
-                    entryLinkQueryDao().observeByEntryId(entryId.value)
-                        .map { links -> links.map { it.toDomain() } }
-                }
-            }
+        databaseSession.observeWhenReadable(sessionState.isAuthorized, emptyValue = { emptyList() }) {
+            entryLinkQueryDao().observeByEntryId(entryId.value)
+                .map { links -> links.map { it.toDomain() } }
         }
 
     override suspend fun getLinks(entryId: EntryId): List<EntryLink> =
