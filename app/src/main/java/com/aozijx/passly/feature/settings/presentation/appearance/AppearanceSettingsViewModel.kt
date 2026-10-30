@@ -18,6 +18,7 @@ class AppearanceSettingsViewModel @Inject constructor(
 ) : ViewModel() {
     private val errorChannel = Channel<UiErrorMessage>(Channel.BUFFERED)
     val errors = errorChannel.receiveAsFlow()
+    private var activePageOwner: Any? = null
 
     fun onAction(action: AppearanceSettingsAction) {
         when (action) {
@@ -44,12 +45,25 @@ class AppearanceSettingsViewModel @Inject constructor(
     }
 
     private fun saveSetting(write: suspend () -> Unit) {
+        val owner = activePageOwner ?: return
         viewModelScope.launch {
             writePreferenceWithFeedback(
                 failureRes = R.string.settings_appearance_save_failed,
-                onFailure = { errorChannel.trySend(it) },
+                onFailure = {
+                    if (activePageOwner === owner) errorChannel.trySend(it)
+                },
                 write = write,
             )
         }
+    }
+
+    fun onPageEntered(): Any {
+        val owner = Any()
+        activePageOwner = owner
+        return owner
+    }
+
+    fun onPageExited(owner: Any) {
+        if (activePageOwner === owner) activePageOwner = null
     }
 }

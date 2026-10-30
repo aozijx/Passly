@@ -24,6 +24,7 @@ class InterfaceSettingsViewModel @Inject constructor(
 ) : ViewModel() {
     private val errorChannel = Channel<UiErrorMessage>(Channel.BUFFERED)
     val errors = errorChannel.receiveAsFlow()
+    private var activePageOwner: Any? = null
 
     val uiState: StateFlow<InterfaceSettingsUiState> = combine(
         settingsRepository.interfaceSettings,
@@ -68,12 +69,25 @@ class InterfaceSettingsViewModel @Inject constructor(
     }
 
     private fun saveSetting(write: suspend () -> Unit) {
+        val owner = activePageOwner ?: return
         viewModelScope.launch {
             writePreferenceWithFeedback(
                 failureRes = R.string.settings_interface_save_failed,
-                onFailure = { errorChannel.trySend(it) },
+                onFailure = {
+                    if (activePageOwner === owner) errorChannel.trySend(it)
+                },
                 write = write,
             )
         }
+    }
+
+    fun onPageEntered(): Any {
+        val owner = Any()
+        activePageOwner = owner
+        return owner
+    }
+
+    fun onPageExited(owner: Any) {
+        if (activePageOwner === owner) activePageOwner = null
     }
 }

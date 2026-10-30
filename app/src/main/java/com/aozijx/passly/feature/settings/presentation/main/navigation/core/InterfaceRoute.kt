@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.main.navigation.core
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -18,6 +19,10 @@ internal fun InterfaceRoute(
     onBack: (() -> Unit)?
 ) {
     val viewModel: InterfaceSettingsViewModel = hiltViewModel()
+    DisposableEffect(viewModel) {
+        val owner = viewModel.onPageEntered()
+        onDispose { viewModel.onPageExited(owner) }
+    }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     ObserveSettingsWriteErrors(viewModel.errors)
 

@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.main.navigation.core
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.aozijx.passly.feature.settings.presentation.appearance.AppearanceSettingsAction
@@ -18,6 +19,10 @@ internal fun AppearanceRoute(
 ) {
     val viewModel: AppearanceSettingsViewModel = hiltViewModel()
     val appearance = LocalAppearanceSettings.current
+    DisposableEffect(viewModel) {
+        val owner = viewModel.onPageEntered()
+        onDispose { viewModel.onPageExited(owner) }
+    }
     ObserveSettingsWriteErrors(viewModel.errors)
     SettingsSecondaryPage(
         title = stringResource(SettingsGroup.APPEARANCE.titleRes),
