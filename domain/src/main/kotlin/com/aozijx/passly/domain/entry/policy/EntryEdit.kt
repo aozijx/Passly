@@ -1,6 +1,7 @@
 package com.aozijx.passly.domain.entry.policy
 
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.domain.entry.model.FieldKey
 
@@ -31,6 +32,9 @@ sealed interface EntryEdit {
     data class SetIcon(val value: EntryIcon) : EntryEdit {
         override fun toString() = "SetIcon(***)"
     }
+    data class ReplaceForm(val draft: EntryDraft) : EntryEdit {
+        override fun toString() = "ReplaceForm(***)"
+    }
 
     fun applyTo(entry: Entry): EntryEditResult {
         val updated = when (this) {
@@ -58,6 +62,7 @@ sealed interface EntryEdit {
                 entry.copy(profile = entry.profile.copy(tags = values))
             }
             is SetIcon -> entry.copy(profile = entry.profile.copy(icon = value))
+            is ReplaceForm -> return EntryFormEditor().apply(entry, draft)
         }
         return EntryEditResult.Updated(updated)
     }

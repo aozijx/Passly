@@ -25,14 +25,11 @@ import com.aozijx.passly.domain.entry.otp.OtpConfigValidation
 class EntryDraftMaterializer {
     fun materialize(draft: EntryDraft, identity: EntryIdentity): Entry {
         require(identity.type == draft.type) { "Draft and identity types must match" }
-        val definition = EntryTypeDefinitions[identity.type]
-        val invalidFields = draft.invalidProvidedFields(definition) + draft.missingRequiredFields(definition)
-        if (invalidFields.isNotEmpty()) throw InvalidEntryDraft(invalidFields)
-        return when (identity.type) {
-            EntryType.LOGIN -> materializeLogin(draft, identity)
-            EntryType.OTP -> materializeOtp(draft, identity)
-            EntryType.BANK_CARD -> materializeBankCard(draft, identity)
-            EntryType.WIFI -> materializeWifi(draft, identity)
+        val materialize = when (identity.type) {
+            EntryType.LOGIN -> ::materializeLogin
+            EntryType.OTP -> ::materializeOtp
+            EntryType.BANK_CARD -> ::materializeBankCard
+            EntryType.WIFI -> ::materializeWifi
             EntryType.ACCOUNT,
             EntryType.NOTE,
             EntryType.ID_CARD,
@@ -45,9 +42,12 @@ class EntryDraftMaterializer {
             EntryType.API_KEY,
             EntryType.CRYPTO_WALLET,
             EntryType.SEED_PHRASE,
-            EntryType.RECOVERY_CODE ->
-                throw IllegalArgumentException("Entry creation is not supported for ${identity.type}")
+            EntryType.RECOVERY_CODE -> throw UnsupportedEntryDraft(identity.type)
         }
+        val definition = EntryTypeDefinitions[identity.type]
+        val invalidFields = draft.invalidProvidedFields(definition) + draft.missingRequiredFields(definition)
+        if (invalidFields.isNotEmpty()) throw InvalidEntryDraft(invalidFields)
+        return materialize(draft, identity)
     }
 
     private fun materializeLogin(draft: EntryDraft, identity: EntryIdentity) = Entry(
@@ -203,3 +203,5 @@ class InvalidEntryDraft(fields: Set<FieldKey>) : IllegalArgumentException("Inval
         require(fields.isNotEmpty()) { "Invalid draft must identify a field" }
     }
 }
+
+class UnsupportedEntryDraft(type: EntryType) : IllegalArgumentException("Entry creation is not supported for $type")

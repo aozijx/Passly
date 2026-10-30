@@ -9,6 +9,8 @@ import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.LogFieldKeys
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryDraft
+import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -22,6 +24,7 @@ import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.CardCredential
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
+import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -38,6 +41,31 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EditDetailEntryUseCaseTest {
+    @Test
+    fun fullFormEditReappliesToLatestEntryAfterVersionConflict() = runTest {
+        val query = FakeQueryRepository(entry(version = 3, favorite = true))
+        val command = FakeCommandRepository(query).apply {
+            failures += Conflict(errorId = "first-conflict")
+            onFailure = { query.current = entry(version = 4, favorite = false, primaryUrl = "https://latest.example") }
+        }
+        val draft = listOf(
+            FieldKey.TITLE to EntryDraftValue.Text("Edited"),
+            FieldKey.PASSWORD to EntryDraftValue.Text("new-password"),
+            FieldKey.PRIMARY_URL to EntryDraftValue.Text("https://form.example"),
+        ).fold(EntryDraft(EntryType.LOGIN)) { current, (key, value) ->
+            current.withValue(EntryTypeDefinitions[EntryType.LOGIN], key, value)
+        }
+        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+
+        val result = useCase.edit(ENTRY_ID, EntryEdit.ReplaceForm(draft))
+
+        val updated = (result as AppResult.Success<Entry>).data
+        assertEquals(listOf(3, 4), command.expectedVersions)
+        assertEquals("new-password", updated.secret.login?.password)
+        assertEquals("https://form.example", updated.associations.primaryUrl)
+        assertEquals(false, updated.favorite)
+    }
+
     @Test
     fun invalidMetadataReturnsValidationFailureWithoutThrowingOrWriting() = runTest {
         for (edit in listOf(

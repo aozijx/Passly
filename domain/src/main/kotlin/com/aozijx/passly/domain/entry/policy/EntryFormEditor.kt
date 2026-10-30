@@ -9,10 +9,12 @@ class EntryFormEditor(
     private val materializer: EntryDraftMaterializer = EntryDraftMaterializer(),
 ) {
     fun apply(entry: Entry, draft: EntryDraft): EntryEditResult {
-        if (entry.type != draft.type || draft.type !in supportedTypes) return EntryEditResult.Unsupported
+        if (entry.type != draft.type) return EntryEditResult.Unsupported
 
         val replacement = try {
             materializer.materialize(draft, entry.identity)
+        } catch (_: UnsupportedEntryDraft) {
+            return EntryEditResult.Unsupported
         } catch (invalid: InvalidEntryDraft) {
             val required = draft.missingRequiredFields(EntryTypeDefinitions[draft.type])
             return EntryEditResult.Invalid(
@@ -45,7 +47,4 @@ class EntryFormEditor(
         return if (violations.isEmpty()) EntryEditResult.Updated(updated) else EntryEditResult.Invalid(violations)
     }
 
-    private companion object {
-        val supportedTypes = setOf(EntryType.LOGIN, EntryType.OTP, EntryType.BANK_CARD, EntryType.WIFI)
-    }
 }

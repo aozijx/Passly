@@ -1,6 +1,8 @@
 package com.aozijx.passly.domain.entry.policy
 
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryDraft
+import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -52,6 +54,9 @@ class EntryEditTest {
             EntryEdit.SetFieldValue(FieldKey.PASSWORD, marker), EntryEdit.SetNotes(marker),
             EntryEdit.SetPrimaryUrl(marker), EntryEdit.SetApplicationIds(setOf(marker)),
             EntryEdit.SetTags(setOf(marker)), EntryEdit.SetIcon(EntryIcon(name = marker)),
+            EntryEdit.ReplaceForm(EntryDraft(EntryType.LOGIN).withValue(
+                EntryTypeDefinitions[EntryType.LOGIN], FieldKey.PASSWORD, EntryDraftValue.Text(marker),
+            )),
         )) assertFalse(edit.toString().contains(marker))
     }
 
