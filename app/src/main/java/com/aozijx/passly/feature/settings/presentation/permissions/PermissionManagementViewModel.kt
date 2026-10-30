@@ -5,7 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.aozijx.passly.core.permission.model.RuntimePermissionAccess
 import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
-import com.aozijx.passly.feature.settings.backup.BackupDirectoryStatusInteractor
+import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
+import com.aozijx.passly.feature.settings.backup.BackupDirectoryStatusReader
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +19,8 @@ import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class PermissionManagementViewModel @Inject constructor(
-    private val directoryAccessStatus: BackupDirectoryStatusInteractor,
+    private val directorySettings: BackupDirectorySettingsSource,
+    private val directoryStatusReader: BackupDirectoryStatusReader,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(PermissionManagementUiState())
     val uiState: StateFlow<PermissionManagementUiState> = _uiState.asStateFlow()
@@ -29,7 +31,7 @@ class PermissionManagementViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            directoryAccessStatus.directoryUri.collectLatest { uri ->
+            directorySettings.backupDirectoryUri.collectLatest { uri ->
                 directoryUri = uri
                 directoryStatus = inspectDirectory(uri)
                 publishState()
@@ -54,7 +56,7 @@ class PermissionManagementViewModel @Inject constructor(
     }
 
     private suspend fun inspectDirectory(uri: String?): PersistedDirectoryAccessStatus =
-        withContext(Dispatchers.IO) { directoryAccessStatus.inspect(uri) }
+        withContext(Dispatchers.IO) { directoryStatusReader.inspect(uri) }
 
     private fun publishState() {
         _uiState.value = PermissionManagementUiMapper.map(

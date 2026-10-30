@@ -63,7 +63,7 @@ flowchart LR
 `BackupDirectoryGrantInspector` 是目录授权状态的唯一 Android 读取者。权限管理页、备份页和实际导出
 共用它，统一得到 `NOT_CONFIGURED`、`GRANTED`、`GRANT_MISSING` 或 `UNAVAILABLE`。权限管理页只展示
 目录名与授权状态，并导航到备份设置；备份页是选择、更换、重新授权和清除目录设置的唯一 UI 所有者。
-权限 ViewModel 只依赖 `BackupDirectoryStatusInteractor`，不能访问选择或清除操作。
+权限 ViewModel 直接依赖备份目录 URI 的只读设置源和状态读取合同，不接触选择或清除能力。
 清除只释放 grant 与设置，不删除已导出的文件。权限中心的状态检查只验证 URI、persisted write grant 及
 provider/tree 可用性，不修改文档。备份页的显式“测试写入权限”属于备份操作：它在实际导出子目录创建、写入并清理
 专用临时文件，不把 tree URI 当作普通文件打开，也不触碰已有备份。
