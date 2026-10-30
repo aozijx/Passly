@@ -68,7 +68,7 @@ class DiagnosticsViewModelTest {
             clipboardWriter = RecordingClipboardWriter(),
         )
 
-        viewModel.onAction(DiagnosticsAction.PageEntered)
+        viewModel.onPageEntered()
         runCurrent()
 
         assertEquals(1, store.readCount)
@@ -82,7 +82,7 @@ class DiagnosticsViewModelTest {
         )
         val store = RecordingLogStore(lines, clearResult = LogClearResult.Failed)
         val viewModel = viewModel(store)
-        viewModel.onAction(DiagnosticsAction.PageEntered)
+        viewModel.onPageEntered()
         runCurrent()
         val effect = async { viewModel.effects.first() }
 
@@ -105,7 +105,7 @@ class DiagnosticsViewModelTest {
             store = RecordingLogStore(traceLines),
             clipboardWriter = clipboard,
         )
-        viewModel.onAction(DiagnosticsAction.PageEntered)
+        viewModel.onPageEntered()
         runCurrent()
 
         viewModel.onAction(DiagnosticsAction.CopyRow(traceLines.first()))
@@ -125,13 +125,13 @@ class DiagnosticsViewModelTest {
         val clipboard = DelayedClipboardWriter()
         val lines = listOf(DiagnosticsLogLine(LogLevel.INFO, "row-one", "trace_one", "application.one"))
         val viewModel = viewModel(RecordingLogStore(lines), clipboardWriter = clipboard)
-        viewModel.onAction(DiagnosticsAction.PageEntered)
+        val pageOwner = viewModel.onPageEntered()
         runCurrent()
 
         viewModel.onAction(DiagnosticsAction.CopyRow(lines.single()))
         runCurrent()
         clipboard.writeStarted.await()
-        viewModel.onAction(DiagnosticsAction.PageExited)
+        viewModel.onPageExited(pageOwner)
         clipboard.finishWrite.complete(Unit)
         runCurrent()
 
@@ -145,12 +145,12 @@ class DiagnosticsViewModelTest {
         val store = DeferredReadLogStore()
         val viewModel = viewModel(store)
 
-        viewModel.onAction(DiagnosticsAction.PageEntered)
+        val oldOwner = viewModel.onPageEntered()
         runCurrent()
         store.readStarted[0].await()
 
-        viewModel.onAction(DiagnosticsAction.PageExited)
-        viewModel.onAction(DiagnosticsAction.PageEntered)
+        viewModel.onPageExited(oldOwner)
+        viewModel.onPageEntered()
         runCurrent()
         store.readStarted[1].await()
 
@@ -173,7 +173,7 @@ class DiagnosticsViewModelTest {
             gateway = gateway,
             logger = ExecutingLogger,
         )
-        viewModel.onAction(DiagnosticsAction.PageEntered)
+        val oldOwner = viewModel.onPageEntered()
         runCurrent()
 
         val pickerEffect = async { viewModel.effects.first() }
@@ -190,8 +190,8 @@ class DiagnosticsViewModelTest {
 
         viewModel.onAction(DiagnosticsAction.SaveToDocument("content://test/export"))
         gateway.exportStarted.await()
-        viewModel.onAction(DiagnosticsAction.PageExited)
-        viewModel.onAction(DiagnosticsAction.PageEntered)
+        viewModel.onPageExited(oldOwner)
+        viewModel.onPageEntered()
         gateway.exportResult.complete(Result.success(Unit))
         runCurrent()
 
@@ -201,7 +201,7 @@ class DiagnosticsViewModelTest {
     @Test
     fun `local format selection emits matching saf contract independent of level filters`() = runTest {
         val viewModel = viewModel(RecordingLogStore(emptyList()))
-        viewModel.onAction(DiagnosticsAction.PageEntered)
+        viewModel.onPageEntered()
         viewModel.onAction(DiagnosticsAction.ToggleLevel(LogLevel.INFO))
         viewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.EXPORT_LOCAL))
 
@@ -232,7 +232,7 @@ class DiagnosticsViewModelTest {
             gateway = gateway,
             logger = ExecutingLogger,
         )
-        viewModel.onAction(DiagnosticsAction.PageEntered)
+        viewModel.onPageEntered()
         viewModel.onAction(DiagnosticsAction.SearchChanged("trace_missing"))
         viewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.SHARE))
         viewModel.onAction(DiagnosticsAction.SelectFormat(LogFormat.ZIP))

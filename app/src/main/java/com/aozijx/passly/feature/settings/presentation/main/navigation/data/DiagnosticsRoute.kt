@@ -37,9 +37,9 @@ internal fun DiagnosticsRoute(onBack: (() -> Unit)?) {
     ) { uri -> viewModel.onDocumentSelected(uri?.toString()) }
 
     DisposableEffect(viewModel) {
-        viewModel.onAction(DiagnosticsAction.PageEntered)
+        val owner = viewModel.onPageEntered()
         onDispose {
-            viewModel.onAction(DiagnosticsAction.PageExited)
+            viewModel.onPageExited(owner)
         }
     }
     LaunchedEffect(viewModel, context, exportFailed, saveCompleted, clearFailed) {

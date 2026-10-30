@@ -38,8 +38,6 @@ data class DiagnosticsUiState(
 }
 
 sealed interface DiagnosticsAction {
-    data object PageEntered : DiagnosticsAction
-    data object PageExited : DiagnosticsAction
     data object Refresh : DiagnosticsAction
     data class ToggleLevel(val level: LogLevel) : DiagnosticsAction
     data class SearchChanged(val query: String) : DiagnosticsAction

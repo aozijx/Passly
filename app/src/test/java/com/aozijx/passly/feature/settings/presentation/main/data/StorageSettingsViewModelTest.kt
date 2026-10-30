@@ -39,7 +39,7 @@ class StorageSettingsViewModelTest {
             diagnosticsLogSettings = settings,
             secureSessionAccessState = FullAccess,
         )
-        viewModel.onAction(StorageSettingsAction.PageEntered)
+        viewModel.onPageEntered()
         runCurrent()
 
         viewModel.onAction(StorageSettingsAction.SetLogRecordingMode(DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE))
@@ -57,10 +57,31 @@ class StorageSettingsViewModelTest {
             diagnosticsLogSettings = RecordingLogSettingsRepository(saveFailure = IOException()),
             secureSessionAccessState = FullAccess,
         )
-        viewModel.onAction(StorageSettingsAction.PageEntered)
+        viewModel.onPageEntered()
         runCurrent()
         val effect = async { viewModel.effects.first() }
 
+        viewModel.onAction(StorageSettingsAction.SetLogRecordingMode(DiagnosticsLogRecordingMode.DISABLED))
+        runCurrent()
+
+        assertEquals(StorageSettingsEffect.LogRecordingSettingsSaveFailed, effect.await())
+    }
+
+    @Test
+    fun `late exit from previous page does not disable a reentered page`() = runTest {
+        val viewModel = StorageSettingsViewModel(
+            cacheStore = RecordingCacheStore(sizeBytes = 0L),
+            diagnosticsLogStore = RecordingLogStore(sizeBytes = 0L),
+            diagnosticsLogSettings = RecordingLogSettingsRepository(saveFailure = IOException()),
+            secureSessionAccessState = FullAccess,
+        )
+        val oldOwner = viewModel.onPageEntered()
+        runCurrent()
+        viewModel.onPageEntered()
+        runCurrent()
+        val effect = async { withTimeoutOrNull(1) { viewModel.effects.first() } }
+
+        viewModel.onPageExited(oldOwner)
         viewModel.onAction(StorageSettingsAction.SetLogRecordingMode(DiagnosticsLogRecordingMode.DISABLED))
         runCurrent()
 
@@ -75,7 +96,7 @@ class StorageSettingsViewModelTest {
             diagnosticsLogSettings = RecordingLogSettingsRepository(),
             secureSessionAccessState = FullAccess,
         )
-        viewModel.onAction(StorageSettingsAction.PageEntered)
+        viewModel.onPageEntered()
         runCurrent()
 
         assertEquals(StorageSizeUiState.Available("2.0 KB"), viewModel.uiState.value.cache)
@@ -91,7 +112,7 @@ class StorageSettingsViewModelTest {
             diagnosticsLogSettings = RecordingLogSettingsRepository(),
             secureSessionAccessState = FullAccess,
         )
-        viewModel.onAction(StorageSettingsAction.PageEntered)
+        viewModel.onPageEntered()
         runCurrent()
         val effect = async { viewModel.effects.first() }
 
@@ -112,7 +133,7 @@ class StorageSettingsViewModelTest {
             diagnosticsLogSettings = RecordingLogSettingsRepository(),
             secureSessionAccessState = NoAccess,
         )
-        viewModel.onAction(StorageSettingsAction.PageEntered)
+        viewModel.onPageEntered()
         runCurrent()
         val effect = async { viewModel.effects.first() }
 
@@ -133,7 +154,7 @@ class StorageSettingsViewModelTest {
             diagnosticsLogSettings = RecordingLogSettingsRepository(),
             secureSessionAccessState = FullAccess,
         )
-        viewModel.onAction(StorageSettingsAction.PageEntered)
+        viewModel.onPageEntered()
         runCurrent()
         val effect = async { viewModel.effects.first() }
 
@@ -154,13 +175,13 @@ class StorageSettingsViewModelTest {
             diagnosticsLogSettings = RecordingLogSettingsRepository(),
             secureSessionAccessState = FullAccess,
         )
-        viewModel.onAction(StorageSettingsAction.PageEntered)
+        val oldOwner = viewModel.onPageEntered()
         runCurrent()
 
         viewModel.onAction(StorageSettingsAction.ClearLogs)
         store.clearStarted.await()
-        viewModel.onAction(StorageSettingsAction.PageExited)
-        viewModel.onAction(StorageSettingsAction.PageEntered)
+        viewModel.onPageExited(oldOwner)
+        viewModel.onPageEntered()
         store.clearResult.complete(LogClearResult.Cleared)
         runCurrent()
 

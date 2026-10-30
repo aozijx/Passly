@@ -51,9 +51,9 @@ internal fun DataManagementRoute(
         stringResource(R.string.settings_diagnostics_recording_save_failed)
 
     DisposableEffect(viewModel) {
-        viewModel.onAction(StorageSettingsAction.PageEntered)
+        val owner = viewModel.onPageEntered()
         onDispose {
-            viewModel.onAction(StorageSettingsAction.PageExited)
+            viewModel.onPageExited(owner)
         }
     }
     LaunchedEffect(

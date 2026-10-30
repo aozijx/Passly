@@ -44,12 +44,9 @@ class DiagnosticsViewModel @Inject constructor(
     private var activeRefreshOwner: Any? = null
     private var copyJob: Job? = null
     private var activeCopyOwner: Any? = null
-    private var activePageOwner: Any? = null
 
     fun onAction(action: DiagnosticsAction) {
         when (action) {
-            DiagnosticsAction.PageEntered -> pageEntered()
-            DiagnosticsAction.PageExited -> pageExited()
             DiagnosticsAction.Refresh -> refresh()
             is DiagnosticsAction.ToggleLevel -> mutate(DiagnosticsMutation.LevelToggled(action.level))
             is DiagnosticsAction.SearchChanged -> mutate(DiagnosticsMutation.SearchChanged(action.query))
@@ -70,13 +67,14 @@ class DiagnosticsViewModel @Inject constructor(
         }
     }
 
-    private fun pageEntered() {
-        activePageOwner = pageEffects.enter()
+    fun onPageEntered(): Any {
+        val owner = pageEffects.enter()
         refresh()
+        return owner
     }
 
     private fun refresh() {
-        val pageOwner = activePageOwner ?: return
+        val pageOwner = pageEffects.currentOwner ?: return
         val owner = Any()
         activeRefreshOwner = owner
         refreshJob?.cancel()
@@ -84,13 +82,13 @@ class DiagnosticsViewModel @Inject constructor(
         val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             try {
                 if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
-                    if (activePageOwner === pageOwner && activeRefreshOwner === owner) {
+                    if (pageEffects.isActive(pageOwner) && activeRefreshOwner === owner) {
                         mutate(DiagnosticsMutation.SessionRestricted)
                     }
                     return@launch
                 }
                 val lines = logStore.readLines(MAX_VIEW_LINES)
-                if (activePageOwner === pageOwner && activeRefreshOwner === owner) {
+                if (pageEffects.isActive(pageOwner) && activeRefreshOwner === owner) {
                     mutate(DiagnosticsMutation.LinesLoaded(lines))
                 }
             } finally {
@@ -105,7 +103,7 @@ class DiagnosticsViewModel @Inject constructor(
     }
 
     private fun selectFormat(format: LogFormat) {
-        val pageOwner = activePageOwner ?: return
+        val pageOwner = pageEffects.currentOwner ?: return
         when (_uiState.value.pendingExportAction) {
             ExportAction.SHARE -> {
                 mutate(DiagnosticsMutation.FormatSheetDismissed)
@@ -127,14 +125,14 @@ class DiagnosticsViewModel @Inject constructor(
     }
 
     private fun saveToDocument(uri: String) {
-        val pageOwner = activePageOwner ?: return
+        val pageOwner = pageEffects.currentOwner ?: return
         val format = _uiState.value.pendingLocalFormat ?: return
         mutate(DiagnosticsMutation.LocalExportConsumed)
         authenticateAndExport(DiagnosticsExportRequest(ExportAction.EXPORT_LOCAL, format, uri), pageOwner)
     }
 
     private fun copyRows(lines: List<DiagnosticsLogLine>) {
-        val pageOwner = activePageOwner ?: return
+        val pageOwner = pageEffects.currentOwner ?: return
         if (lines.isEmpty()) return
         val text = lines.joinToString("\n") { it.text }
         val owner = Any()
@@ -143,7 +141,7 @@ class DiagnosticsViewModel @Inject constructor(
         val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             try {
                 clipboardWriter.writeSensitiveIf(text) {
-                    activePageOwner === pageOwner && activeCopyOwner === owner
+                    pageEffects.isActive(pageOwner) && activeCopyOwner === owner
                 }
             } finally {
                 if (activeCopyOwner === owner) {
@@ -156,9 +154,9 @@ class DiagnosticsViewModel @Inject constructor(
         job.start()
     }
 
-    private fun pageExited() {
-        activePageOwner?.let(pageEffects::exit)
-        activePageOwner = null
+    fun onPageExited(owner: Any) {
+        if (!pageEffects.isActive(owner)) return
+        pageEffects.exit(owner)
         activeCopyOwner = null
         copyJob?.cancel()
         copyJob = null
@@ -168,10 +166,10 @@ class DiagnosticsViewModel @Inject constructor(
     }
 
     private fun clearLogs() {
-        val pageOwner = activePageOwner ?: return
+        val pageOwner = pageEffects.currentOwner ?: return
         viewModelScope.launch {
             if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
-                if (activePageOwner === pageOwner) {
+                if (pageEffects.isActive(pageOwner)) {
                     mutate(DiagnosticsMutation.SessionRestricted)
                 }
                 return@launch
@@ -185,11 +183,11 @@ class DiagnosticsViewModel @Inject constructor(
                 LogClearResult.Failed
             }
             when (result) {
-                LogClearResult.Cleared -> if (activePageOwner != null) {
+                LogClearResult.Cleared -> if (pageEffects.currentOwner != null) {
                     mutate(DiagnosticsMutation.LogsCleared)
                 }
                 LogClearResult.Failed -> {
-                    if (activePageOwner != null) {
+                    if (pageEffects.currentOwner != null) {
                         mutate(DiagnosticsMutation.ClearDismissed)
                     }
                     offerEffect(pageOwner, DiagnosticsEffect.ClearFailed)
