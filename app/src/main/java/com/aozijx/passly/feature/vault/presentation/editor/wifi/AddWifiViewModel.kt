@@ -12,7 +12,7 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveSession
+import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSession
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -37,10 +37,10 @@ class AddWifiViewModel @Inject internal constructor(
     private var editLoadJob: kotlinx.coroutines.Job? = null
     private val _uiState = MutableStateFlow(AddWifiUiState())
     val uiState = _uiState.asStateFlow()
-    private val saveSession = EditorSaveSession(
+    private val writeSession = EditorWriteSession(
         scope = viewModelScope,
         access = secureSessionAccessState,
-        create = { draft ->
+        write = { draft ->
             val entryId = editingEntryId
             if (entryId == null) createEntryUseCase(draft)
             else editDetailEntry.edit(entryId, EntryEdit.ReplaceForm(draft))
@@ -52,7 +52,7 @@ class AddWifiViewModel @Inject internal constructor(
         },
         onClear = ::clearSensitiveContent,
     )
-    internal val effects = saveSession.effects
+    internal val effects = writeSession.effects
 
     fun loadExistingEntry(rawEntryId: String) {
         if (editingEntryId != null) return
@@ -62,7 +62,7 @@ class AddWifiViewModel @Inject internal constructor(
         }
         editingEntryId = entryId
         initializationPhase = InitializationPhase.Complete
-        if (!saveSession.canEdit()) {
+        if (!writeSession.canEdit()) {
             _uiState.value = _uiState.value.copy(loadPhase = EditorLoadPhase.Failed, loadFailed = true)
             return
         }
@@ -107,7 +107,7 @@ class AddWifiViewModel @Inject internal constructor(
         if (editingEntryId != null) return AddWifiInitializationResult.AlreadyInitialized
         if (initializationPhase == InitializationPhase.Complete) return AddWifiInitializationResult.AlreadyInitialized
         initializationPhase = InitializationPhase.Complete
-        if (!saveSession.canEdit()) return AddWifiInitializationResult.Unavailable
+        if (!writeSession.canEdit()) return AddWifiInitializationResult.Unavailable
         return when (val content = loadContent()) {
             AddWifiInitialContent.Blank -> AddWifiInitializationResult.Ready
             AddWifiInitialContent.SeedUnavailable -> AddWifiInitializationResult.Unavailable
@@ -121,7 +121,7 @@ class AddWifiViewModel @Inject internal constructor(
         mutateForm { it.applyScanned(payload) }
 
     private fun mutateForm(transform: (AddWifiFormState) -> AddWifiFormState): Boolean {
-        if (!saveSession.canEdit() || !canEditForm()) return false
+        if (!writeSession.canEdit() || !canEditForm()) return false
         val current = _uiState.value
         _uiState.value = current.withForm(transform(current.form))
         return true
@@ -131,7 +131,7 @@ class AddWifiViewModel @Inject internal constructor(
         val current = _uiState.value
         if (!canEditForm()) return
         if (!current.canSave) return
-        saveSession.save { current.form.toEntryDraft() }
+        writeSession.save { current.form.toEntryDraft() }
     }
 
     private fun clearSensitiveContent() {
@@ -151,6 +151,6 @@ class AddWifiViewModel @Inject internal constructor(
     }
 
     override fun onCleared() {
-        saveSession.close()
+        writeSession.close()
     }
 }

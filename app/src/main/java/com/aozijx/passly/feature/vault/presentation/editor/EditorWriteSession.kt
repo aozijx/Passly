@@ -4,7 +4,6 @@ import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryDraft
-import com.aozijx.passly.domain.entry.model.EntryId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -19,10 +18,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /** Coordinates one editor write attempt without owning or copying a type-specific form. */
-internal class EditorSaveSession(
+internal class EditorWriteSession(
     private val scope: CoroutineScope,
     private val access: SecureSessionAccessState,
-    private val create: suspend (EntryDraft) -> AppResult<*>,
+    private val write: suspend (EntryDraft) -> AppResult<*>,
     private val onSaving: () -> Unit,
     private val onIdle: () -> Unit,
     private val onClear: () -> Unit,
@@ -79,7 +78,7 @@ internal class EditorSaveSession(
                 return@launch
             }
             val effect = try {
-                when (create(draft())) {
+                when (write(draft())) {
                     is AppResult.Success -> EditorSaveEffect.Saved
                     is AppResult.Failure -> EditorSaveEffect.Failed
                 }

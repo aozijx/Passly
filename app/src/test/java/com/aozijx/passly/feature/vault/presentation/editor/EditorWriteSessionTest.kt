@@ -24,7 +24,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class EditorSaveSessionTest {
+class EditorWriteSessionTest {
     @Test
     fun domainFailureUsesLocalizedFallbackRatherThanInternalErrorCode() = runTest {
         val fixture = Fixture(backgroundScope) { AppResult.Failure(Conflict()) }
@@ -229,13 +229,13 @@ class EditorSaveSessionTest {
 
     private class Fixture(
         scope: CoroutineScope,
-        create: suspend (EntryDraft) -> AppResult<EntryId> = { AppResult.Success(EntryId("created")) },
+        write: suspend (EntryDraft) -> AppResult<EntryId> = { AppResult.Success(EntryId("created")) },
     ) {
         val access = Access()
         var form = "original"
         var saving = false
         var starts = 0
-        val session = EditorSaveSession(scope, access, create,
+        val session = EditorWriteSession(scope, access, write,
             onSaving = { saving = true; starts++ },
             onIdle = { saving = false },
             onClear = { form = ""; saving = false },

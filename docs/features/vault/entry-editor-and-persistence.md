@@ -47,13 +47,13 @@ Presentation 经用例或 Domain 端口访问数据，不直接使用 DAO。完�
 | Wi-Fi | `AddWifiFormState` / `AddWifiUiState`、`WifiFormMapper.kt` | 网络名原样保留并同时作为初始标题，安全类型、密码及隐藏标记一起转换；扫码种子只初始化一次 |
 
 每类 ViewModel 暴露不可变 `uiState`，保留类型专属表单和 `Idle / Saving` 展示阶段。
-共享的 `EditorSaveSession` 持有保存任务，驱动保存、失败恢复和清空回调；保存取点击时的表单快照，期间拒绝表单更新和重复保存。
+共享的 `EditorWriteSession` 持有保存任务，驱动保存、失败恢复和清空回调；保存取点击时的表单快照，期间拒绝表单更新和重复保存。
 成功清空表单并发送 `EditorSaveEffect.Saved`，失败回到可重试状态。当前成功 Effect 不携带条目 ID，不能按尚不存在的 `Saved(entryId)` 合同调用。
 
 Route 按生命周期收集状态；Screen 接收状态和 Action。`EditorSaveEffectHandler` 消费保存结果并调用宿主回调或显示失败提示。
 焦点、动画和展开状态留在 Compose；字段值、扫码结果和保存状态回到表单状态。敏感输入不进入导航参数或 SavedState。
 
-`EditorSaveSession` 观察认证状态，将表单和保存尝试绑定到当前完整认证对象；锁定或认证归属变化先使尝试失效，再取消保存并清空表单。
+`EditorWriteSession` 观察认证状态，将表单和保存尝试绑定到当前完整认证对象；锁定或认证归属变化先使尝试失效，再取消保存并清空表单。
 迟到结果不能清空新表单或发出新保存效果。缓冲效果在消费时再次核对归属，新的编辑或重试会淘汰旧效果；只保留最近一次结果。
 关闭 ViewModel 后协调器不能重新激活。取消继续传播，不生成失败效果；独立取消且认证仍有效时恢复可编辑状态。
 取消或丢弃 UI 结果不撤销已经提交的数据库事务。类型专属的应用列表加载、扫码初始化与事件仍由对应 ViewModel 管理，不能把保存协调器当作整个表单的生命周期实现。
@@ -128,7 +128,7 @@ Login、OTP 和 Bank Card 中实际存在的高敏字段会按字段存在集合
 验证以现有测试为准：`LoadEditableEntryUseCaseTest`、`EditDetailEntryUseCaseTest`、四类表单映射及 ViewModel 测试覆盖完整编辑；Domain 的
 `EntryDraftMaterializerTest`、`EntryEditTest`、`EntryFormEditorTest`、`EntryFieldEditorTest` 覆盖纯规则；详情状态测试覆盖逐项更新与发布边界。
 这些测试不证明未支持类型的完整编辑或真实设备交互已经完成。
-`EditorSaveSessionTest` 覆盖保存去重、锁定与重新认证、迟到结果、缓冲效果淘汰、取消和销毁边界；Wi-Fi 创建测试通过实际用例复现锁定期间的保存窗口。
+`EditorWriteSessionTest` 覆盖保存去重、锁定与重新认证、迟到结果、缓冲效果淘汰、取消和销毁边界；Wi-Fi 创建测试通过实际用例复现锁定期间的保存窗口。
 `VaultListUiMapperTest` 与 `VaultNavigationTest` 检查创建选项均有目的地、筛选能力独立保留；
 `AddEntryBottomSheetTest` 提供按传入选项渲染和转发选择的仪器用例，编译通过不等于设备运行通过。
 修改实现时按[测试要求](../../development/testing.md)运行相关模块、App 门禁及所需仪器测试。
