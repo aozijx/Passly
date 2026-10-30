@@ -21,7 +21,7 @@
 
 `RuntimeSessionManager` 通过 `SessionLeaseGate` 在同一互斥区拒绝新 lease 并计数活跃操作；封存先等待排干，超时记录剩余数量并取消所有活跃 lease 的 owner Job（包括读、写和观察流），再等待清理宽限期后关闭资源。
 资源关闭和打开失败后的句柄回收都在配置的 IO dispatcher 执行，避免 Room 的同步关闭阻塞锁定调用方线程。
-Runtime 单测覆盖 dispatcher、正常排干和超时取消写操作并在关闭前完成清理；API 36 SQLCipher 仪器测试用暂停的 Room 事务验证封存等待、拒绝新读取、提交后关闭并可重新打开。
+Runtime 单测覆盖 dispatcher、正常排干和超时取消写操作并在关闭前完成清理；API 36 SQLCipher 仪器测试分别验证封存等待、拒绝新读取、超时取消挂起事务并回滚后重开数据库，以及提交后关闭并重新打开。
 
 清理时删除了只被仪器测试调用的 `AppDatabaseSession.closeDatabase()` 和其下游 `RuntimeSessionManager.closeResource()` 转发；
 封存本身是唯一关闭所有者，测试不再在 `seal()` 后重复关库。

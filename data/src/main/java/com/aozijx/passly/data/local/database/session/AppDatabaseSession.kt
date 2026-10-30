@@ -19,8 +19,6 @@ import com.aozijx.passly.runtime.session.SessionUnlockResult
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 /** AppDatabase-typed adapter around the resource-agnostic session runtime. */
 @Singleton
@@ -57,9 +55,7 @@ class AppDatabaseSession @Inject internal constructor(
 
     override suspend fun softLock() = runtime.softLock()
 
-    override suspend fun seal() = runtime.seal(5.seconds)
-
-    suspend fun seal(timeout: Duration) = runtime.seal(timeout)
+    override suspend fun seal() = runtime.seal()
 }
 
 internal class DatabaseSessionEventLogger @Inject constructor(

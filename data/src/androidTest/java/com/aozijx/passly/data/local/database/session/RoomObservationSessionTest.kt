@@ -33,7 +33,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
@@ -96,6 +98,46 @@ class RoomObservationSessionTest {
             assertEquals("Committed", session.query { entryQueryDao().getById("lease-entry")?.title })
         } finally {
             releaseTransaction.complete(Unit)
+            session.seal()
+            context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+        }
+    }
+
+    @Test
+    fun sealingTimeoutCancelsRoomTransactionBeforeClosingDatabase() = runBlocking {
+        System.loadLibrary("sqlcipher")
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+        val logger = NoOpLogger
+        val session = AppDatabaseSession(
+            resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
+            keySource = SessionKeySource { DATABASE_KEY.copyOf() },
+            eventLogger = DatabaseSessionEventLogger(logger),
+        )
+        val transactionStarted = CompletableDeferred<Unit>()
+        var transaction: Job? = null
+
+        try {
+            assertNull(session.unlock())
+            val runningTransaction = async(Dispatchers.IO) {
+                session.transaction {
+                    entryCommandDao().insertStrict(EntryEntity(entryId = "timeout-lease-entry", title = "Rolled back"))
+                    transactionStarted.complete(Unit)
+                    awaitCancellation()
+                }
+            }
+            transaction = runningTransaction
+            transactionStarted.await()
+
+            session.seal()
+            runningTransaction.join()
+
+            assertTrue("timed-out transaction must be cancelled", runningTransaction.isCancelled)
+            assertEquals(SecureSessionState.SEALED, session.lockState)
+            assertNull(session.unlock())
+            assertNull(session.query { entryQueryDao().getById("timeout-lease-entry") })
+        } finally {
+            transaction?.cancelAndJoin()
             session.seal()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
         }
