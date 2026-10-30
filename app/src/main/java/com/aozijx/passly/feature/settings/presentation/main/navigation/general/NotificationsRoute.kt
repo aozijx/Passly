@@ -120,6 +120,7 @@ internal fun NotificationsRoute(
     }
 
     DisposableEffect(lifecycleOwner, viewModel) {
+        val owner = viewModel.onPageEntered()
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.onAction(NotificationSettingsAction.RefreshSystemNotificationState)
@@ -130,6 +131,7 @@ internal fun NotificationsRoute(
             lifecycleOwner.lifecycle.removeObserver(observer)
             permissionLaunch = NotificationPermissionLaunch.Idle
             viewModel.onAction(NotificationSettingsAction.CancelRuntimePermissionRequest)
+            viewModel.onPageExited(owner)
         }
     }
 

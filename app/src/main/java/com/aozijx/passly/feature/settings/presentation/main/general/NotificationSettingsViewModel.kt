@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -30,8 +32,14 @@ class NotificationSettingsViewModel @Inject constructor(
     private var permissionRequestState: PermissionRequestState = PermissionRequestState.Idle
     private val systemNotificationState = MutableStateFlow(systemNotificationStateProvider.current())
 
-    private val _effects = Channel<NotificationSettingsEffect>(Channel.BUFFERED)
+    private data class PageEffect(val owner: Any, val effect: NotificationSettingsEffect)
+
+    private val _effects = Channel<PageEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
+        .filter { activePageOwner === it.owner }
+        .map { it.effect }
+
+    private var activePageOwner: Any? = null
 
     val uiState: StateFlow<NotificationSettingsUiState> = settingsRepository.messages
         .combine(systemNotificationState) { messages, system ->
@@ -131,10 +139,11 @@ class NotificationSettingsViewModel @Inject constructor(
     }
 
     private fun saveSetting(write: suspend () -> Unit) {
+        val owner = activePageOwner ?: return
         viewModelScope.launch {
             writePreferenceWithFeedback(
                 failureRes = R.string.settings_notifications_save_failed,
-                onFailure = { emitEffect(NotificationSettingsEffect.SaveFailed(it)) },
+                onFailure = { emitEffect(owner, NotificationSettingsEffect.SaveFailed(it)) },
                 write = write,
             )
         }
@@ -146,7 +155,21 @@ class NotificationSettingsViewModel @Inject constructor(
     }
 
     private fun emitEffect(effect: NotificationSettingsEffect) {
-        _effects.trySend(effect)
+        activePageOwner?.let { emitEffect(it, effect) }
+    }
+
+    private fun emitEffect(owner: Any, effect: NotificationSettingsEffect) {
+        if (activePageOwner === owner) _effects.trySend(PageEffect(owner, effect))
+    }
+
+    fun onPageEntered(): Any {
+        val owner = Any()
+        activePageOwner = owner
+        return owner
+    }
+
+    fun onPageExited(owner: Any) {
+        if (activePageOwner === owner) activePageOwner = null
     }
 
     private fun readSystemNotificationState() =

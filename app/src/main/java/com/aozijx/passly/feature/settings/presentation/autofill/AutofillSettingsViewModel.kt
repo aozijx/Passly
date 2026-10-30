@@ -11,6 +11,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -22,8 +24,12 @@ class AutofillSettingsViewModel @Inject constructor(
     private val autofillServiceStatusSource: AutofillServiceStatusSource,
 ) : ViewModel() {
 
-    private val _effects = Channel<AutofillSettingsEffect>(Channel.BUFFERED)
+    private data class PageEffect(val owner: Any, val effect: AutofillSettingsEffect)
+
+    private val _effects = Channel<PageEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
+        .filter { activePageOwner === it.owner }
+        .map { it.effect }
     private var activePageOwner: Any? = null
 
     val uiState: StateFlow<AutofillSettingsUiState> = combine(
@@ -100,6 +106,6 @@ class AutofillSettingsViewModel @Inject constructor(
     }
 
     private fun emitEffect(owner: Any, effect: AutofillSettingsEffect) {
-        if (activePageOwner === owner) _effects.trySend(effect)
+        if (activePageOwner === owner) _effects.trySend(PageEffect(owner, effect))
     }
 }

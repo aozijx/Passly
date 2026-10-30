@@ -8,6 +8,8 @@ import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -16,8 +18,12 @@ import javax.inject.Inject
 class AppearanceSettingsViewModel @Inject constructor(
     private val settingsRepository: AppearanceSettingsRepository
 ) : ViewModel() {
-    private val errorChannel = Channel<UiErrorMessage>(Channel.BUFFERED)
+    private data class PageError(val owner: Any, val message: UiErrorMessage)
+
+    private val errorChannel = Channel<PageError>(Channel.BUFFERED)
     val errors = errorChannel.receiveAsFlow()
+        .filter { activePageOwner === it.owner }
+        .map { it.message }
     private var activePageOwner: Any? = null
 
     fun onAction(action: AppearanceSettingsAction) {
@@ -50,7 +56,7 @@ class AppearanceSettingsViewModel @Inject constructor(
             writePreferenceWithFeedback(
                 failureRes = R.string.settings_appearance_save_failed,
                 onFailure = {
-                    if (activePageOwner === owner) errorChannel.trySend(it)
+                    if (activePageOwner === owner) errorChannel.trySend(PageError(owner, it))
                 },
                 write = write,
             )

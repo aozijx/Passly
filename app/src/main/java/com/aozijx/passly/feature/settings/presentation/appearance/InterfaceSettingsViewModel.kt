@@ -11,6 +11,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.channels.Channel
@@ -22,8 +24,12 @@ class InterfaceSettingsViewModel @Inject constructor(
     private val settingsRepository: InterfaceSettingsRepository,
     private val librarySettingsRepository: LibraryViewSettingsRepository,
 ) : ViewModel() {
-    private val errorChannel = Channel<UiErrorMessage>(Channel.BUFFERED)
+    private data class PageError(val owner: Any, val message: UiErrorMessage)
+
+    private val errorChannel = Channel<PageError>(Channel.BUFFERED)
     val errors = errorChannel.receiveAsFlow()
+        .filter { activePageOwner === it.owner }
+        .map { it.message }
     private var activePageOwner: Any? = null
 
     val uiState: StateFlow<InterfaceSettingsUiState> = combine(
@@ -74,7 +80,7 @@ class InterfaceSettingsViewModel @Inject constructor(
             writePreferenceWithFeedback(
                 failureRes = R.string.settings_interface_save_failed,
                 onFailure = {
-                    if (activePageOwner === owner) errorChannel.trySend(it)
+                    if (activePageOwner === owner) errorChannel.trySend(PageError(owner, it))
                 },
                 write = write,
             )

@@ -10,6 +10,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -22,8 +23,12 @@ class PrivacySettingsViewModel @Inject constructor(
     private val clipboardCleaner: OwnedClipboardCleaner,
 ) : ViewModel() {
 
-    private val _effects = Channel<PrivacySettingsEffect>(Channel.BUFFERED)
+    private data class PageEffect(val owner: Any, val effect: PrivacySettingsEffect)
+
+    private val _effects = Channel<PageEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
+        .filter { activePageOwner === it.owner }
+        .map { it.effect }
     private var activePageOwner: Any? = null
 
     val uiState: StateFlow<PrivacySettingsUiState> = settingsRepository.security.map { security ->
@@ -101,6 +106,6 @@ class PrivacySettingsViewModel @Inject constructor(
     }
 
     private fun emitEffect(owner: Any, effect: PrivacySettingsEffect) {
-        if (activePageOwner === owner) _effects.trySend(effect)
+        if (activePageOwner === owner) _effects.trySend(PageEffect(owner, effect))
     }
 }
