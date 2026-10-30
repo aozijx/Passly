@@ -27,6 +27,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -49,12 +50,18 @@ fun RevisionHistorySheet(
     onAction: (DetailUiAction) -> Unit,
 ) {
     if (model == DetailRevisionSheetUiModel.Hidden) return
+    val comparison = (model as? DetailRevisionSheetUiModel.ComparisonPage)?.content
+    val restore = (comparison as? DetailRevisionComparisonUiState.Ready)?.restore
+    val dismissAllowed = rememberUpdatedState(restore != DetailRevisionRestoreUiState.Restoring)
     val sheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
         enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+        confirmValueChange = { target -> target != SheetValue.Hidden || dismissAllowed.value },
     )
     ModalBottomSheet(
-        onDismissRequest = { onAction(DetailUiAction.DismissRevisionHistory) },
+        onDismissRequest = {
+            if (dismissAllowed.value) onAction(DetailUiAction.DismissRevisionHistory)
+        },
         modifier = Modifier.testTag("revision-history-sheet"),
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -67,8 +74,6 @@ fun RevisionHistorySheet(
                 RevisionComparison(model.content, onAction)
         }
     }
-    val comparison = (model as? DetailRevisionSheetUiModel.ComparisonPage)?.content
-    val restore = (comparison as? DetailRevisionComparisonUiState.Ready)?.restore
     if (restore == DetailRevisionRestoreUiState.Confirming) {
         AlertDialog(
             onDismissRequest = { onAction(DetailUiAction.CancelRevisionRestore) },
@@ -150,7 +155,12 @@ private fun RevisionComparison(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = { onAction(DetailUiAction.RevisionBack) }) {
+            val restoreInProgress = (content as? DetailRevisionComparisonUiState.Ready)
+                ?.restore == DetailRevisionRestoreUiState.Restoring
+            IconButton(
+                enabled = !restoreInProgress,
+                onClick = { onAction(DetailUiAction.RevisionBack) },
+            ) {
                 Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
             }
             Text(

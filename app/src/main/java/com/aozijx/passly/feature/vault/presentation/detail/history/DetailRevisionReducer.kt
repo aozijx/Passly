@@ -31,12 +31,18 @@ internal sealed interface DetailRevisionMutation {
 }
 
 internal object DetailRevisionReducer {
+    fun isRestoreInProgress(state: DetailRevisionState): Boolean {
+        val comparison = (state as? DetailRevisionState.Open)?.page as? DetailRevisionPage.Comparison
+        val ready = comparison?.phase as? DetailRevisionComparisonPhase.Ready
+        return ready?.restore == DetailRevisionRestorePhase.Restoring
+    }
+
     fun reduce(
         state: DetailRevisionState,
         mutation: DetailRevisionMutation,
     ): DetailRevisionState = when (mutation) {
         is DetailRevisionMutation.Opened -> DetailRevisionState.Open(mutation.entryId)
-        DetailRevisionMutation.Closed -> DetailRevisionState.Closed
+        DetailRevisionMutation.Closed -> if (isRestoreInProgress(state)) state else DetailRevisionState.Closed
         is DetailRevisionMutation.MetadataChanged -> state.updateOpen(mutation.entryId) {
             copy(revisions = DetailRevisionListState.Ready(mutation.revisions))
         }
@@ -60,7 +66,11 @@ internal object DetailRevisionReducer {
                 }
             }
         }
-        DetailRevisionMutation.BackToList -> state.updateOpen { copy(page = DetailRevisionPage.List) }
+        DetailRevisionMutation.BackToList -> if (isRestoreInProgress(state)) {
+            state
+        } else {
+            state.updateOpen { copy(page = DetailRevisionPage.List) }
+        }
         DetailRevisionMutation.RestoreRequested -> state.updateReadyComparison {
             if (restore == DetailRevisionRestorePhase.Idle) copy(restore = DetailRevisionRestorePhase.Confirming) else this
         }

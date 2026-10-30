@@ -8,6 +8,7 @@ import android.graphics.Color
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -15,7 +16,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.swipeDown
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
@@ -139,6 +143,31 @@ class RevisionHistorySheetTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         compose.onAllNodesWithText(context.getString(R.string.revision_reveal_action)).assertCountEquals(1).onFirst().performClick()
         assertEquals(DetailUiAction.RevealRevisionField(SensitiveFieldKey.CARD_CVV), actions.single())
+    }
+
+    @Test
+    fun restoreInProgressCannotNavigateBackOrDismissTheSheet() {
+        val actions = mutableListOf<DetailUiAction>()
+        compose.setContent {
+            MaterialTheme {
+                RevisionHistorySheet(
+                    DetailRevisionSheetUiModel.ComparisonPage(
+                        "revision-1",
+                        DetailRevisionComparisonUiState.Ready(
+                            emptyList(),
+                            DetailRevisionRestoreUiState.Restoring,
+                        ),
+                    ),
+                    onAction = actions::add,
+                )
+            }
+        }
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+        compose.onNodeWithContentDescription(context.getString(R.string.back)).assertIsNotEnabled()
+        compose.onNodeWithTag("revision-history-sheet").performTouchInput { swipeDown() }
+
+        assertTrue(actions.isEmpty())
     }
 
     private fun captureSheet(name: String) {

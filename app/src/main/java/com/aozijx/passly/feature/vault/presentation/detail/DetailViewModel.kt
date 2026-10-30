@@ -33,6 +33,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisio
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionMutation
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionPage
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRevealStore
+import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionReducer
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionState
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionComparisonPhase
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRestorePhase
@@ -411,6 +412,7 @@ class DetailViewModel @Inject internal constructor(
             DetailUiAction.DismissRevisionHistory -> closeRevisionHistory()
             is DetailUiAction.SelectRevision -> selectRevision(event.revisionId)
             DetailUiAction.RevisionBack -> {
+                if (DetailRevisionReducer.isRestoreInProgress(_uiState.value.revisions)) return
                 revisionOperationJob?.cancel()
                 clearRevisionReveals()
                 mutate(DetailMutation.Revision(DetailRevisionMutation.BackToList))
@@ -605,6 +607,7 @@ class DetailViewModel @Inject internal constructor(
     }
 
     private fun closeRevisionHistory() {
+        if (DetailRevisionReducer.isRestoreInProgress(_uiState.value.revisions)) return
         revisionObservationJob?.cancel()
         revisionOperationJob?.cancel()
         clearRevisionReveals()
@@ -613,6 +616,7 @@ class DetailViewModel @Inject internal constructor(
 
     private fun selectRevision(rawRevisionId: String) {
         val revisionState = _uiState.value.revisions as? DetailRevisionState.Open ?: return
+        if (DetailRevisionReducer.isRestoreInProgress(revisionState)) return
         val entryId = revisionState.entryId
         val token = workSession.current(entryId) ?: return
         val revisionId = EntryRevisionId(rawRevisionId)
