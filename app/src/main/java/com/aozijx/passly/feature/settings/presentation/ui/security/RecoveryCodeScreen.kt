@@ -50,13 +50,19 @@ fun RecoveryCodeScreen(
         }
     }
 
-    (state.draft as? RecoveryCodeDraftUiState.Ready)?.let { ready ->
+    val disclosure = when (val draft = state.draft) {
+        is RecoveryCodeDraftUiState.Ready -> draft.disclosure to false
+        is RecoveryCodeDraftUiState.Committing -> draft.disclosure to true
+        else -> null
+    }
+    disclosure?.let { (value, isCommitting) ->
         RecoveryCodeSheet(
-            recoveryCode = ready.disclosure.toUiString(),
+            recoveryCode = value.toUiString(),
             sheetState = sheetState,
             onCopy = { onAction(RecoveryCodeSettingsAction.Copy) },
             onConfirm = { onAction(RecoveryCodeSettingsAction.ConfirmAndEnable) },
             onDismiss = { onAction(RecoveryCodeSettingsAction.DismissDisclosure) },
+            isCommitting = isCommitting,
         )
     }
 }

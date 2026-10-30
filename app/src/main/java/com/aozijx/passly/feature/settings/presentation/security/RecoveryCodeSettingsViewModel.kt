@@ -59,7 +59,9 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
     }
 
     private fun generate() {
-        if (_uiState.value.draft is RecoveryCodeDraftUiState.Creating) return
+        if (_uiState.value.draft is RecoveryCodeDraftUiState.Creating ||
+            _uiState.value.draft is RecoveryCodeDraftUiState.Committing
+        ) return
         viewModelScope.launch {
             replaceDraft(RecoveryCodeDraftUiState.Creating)
             savedStateHandle[WAS_DISCLOSURE_OPEN] = false
@@ -83,6 +85,7 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
     }
 
     private fun copy() {
+        if (_uiState.value.draft !is RecoveryCodeDraftUiState.Ready) return
         viewModelScope.launch {
             when (draftInteractor.copy()) {
                 RecoveryCodeCopyResult.Copied ->
@@ -93,8 +96,17 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
     }
 
     private fun confirmAndEnable() {
+        val ready = _uiState.value.draft as? RecoveryCodeDraftUiState.Ready ?: return
+        replaceDraft(RecoveryCodeDraftUiState.Committing(ready.disclosure))
         viewModelScope.launch {
-            when (draftInteractor.commit()) {
+            val result = try {
+                draftInteractor.commit()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Throwable) {
+                RecoveryCodeCommitResult.Failed
+            }
+            when (result) {
                 RecoveryCodeCommitResult.Committed -> {
                     savedStateHandle[WAS_DISCLOSURE_OPEN] = false
                     replaceDraft(RecoveryCodeDraftUiState.Committed)
@@ -111,12 +123,14 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
     }
 
     private fun dismissDisclosure() {
+        if (_uiState.value.draft is RecoveryCodeDraftUiState.Committing) return
         draftInteractor.dismiss()
         savedStateHandle[WAS_DISCLOSURE_OPEN] = false
         replaceDraft(RecoveryCodeDraftUiState.Empty)
     }
 
     private fun updateVerificationInput(value: String) {
+        if (_uiState.value.verification is RecoveryCodeVerificationUiState.Verifying) return
         val previous = _uiState.value.verification.input
         val replacement = OwnedChars.fromString(value)
         _uiState.update {
@@ -171,14 +185,14 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
     }
 
     private fun replaceDraft(draft: RecoveryCodeDraftUiState) {
-        val previous = (_uiState.value.draft as? RecoveryCodeDraftUiState.Ready)?.disclosure
+        val previous = _uiState.value.draft.disclosureOrNull()
         _uiState.update { it.copy(draft = draft) }
-        val current = (draft as? RecoveryCodeDraftUiState.Ready)?.disclosure
+        val current = draft.disclosureOrNull()
         if (previous !== current) previous?.wipe()
     }
 
     override fun onCleared() {
-        (_uiState.value.draft as? RecoveryCodeDraftUiState.Ready)?.disclosure?.wipe()
+        _uiState.value.draft.disclosureOrNull()?.wipe()
         _uiState.value.verification.input.wipe()
         draftInteractor.close()
     }
@@ -186,4 +200,10 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
     private companion object {
         const val WAS_DISCLOSURE_OPEN = "wasRecoveryDisclosureOpen"
     }
+}
+
+private fun RecoveryCodeDraftUiState.disclosureOrNull() = when (this) {
+    is RecoveryCodeDraftUiState.Ready -> disclosure
+    is RecoveryCodeDraftUiState.Committing -> disclosure
+    else -> null
 }

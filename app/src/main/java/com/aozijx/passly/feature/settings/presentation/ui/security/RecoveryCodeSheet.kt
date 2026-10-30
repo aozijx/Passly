@@ -31,7 +31,8 @@ fun RecoveryCodeSheet(
     sheetState: SheetState,
     onCopy: () -> Unit,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    isCommitting: Boolean = false,
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -81,6 +82,7 @@ fun RecoveryCodeSheet(
 
             Button(
                 onClick = onCopy,
+                enabled = !isCommitting,
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large
             ) {
@@ -91,6 +93,7 @@ fun RecoveryCodeSheet(
 
             Button(
                 onClick = onConfirm,
+                enabled = !isCommitting,
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large
             ) {
@@ -101,6 +104,7 @@ fun RecoveryCodeSheet(
 
             TextButton(
                 onClick = onDismiss,
+                enabled = !isCommitting,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(

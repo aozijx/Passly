@@ -7,6 +7,7 @@ sealed interface RecoveryCodeDraftUiState {
     data object Empty : RecoveryCodeDraftUiState
     data object Creating : RecoveryCodeDraftUiState
     data class Ready(val disclosure: SensitiveValue) : RecoveryCodeDraftUiState
+    data class Committing(val disclosure: SensitiveValue) : RecoveryCodeDraftUiState
     data object Expired : RecoveryCodeDraftUiState
     data object Committed : RecoveryCodeDraftUiState
     data object Failed : RecoveryCodeDraftUiState
