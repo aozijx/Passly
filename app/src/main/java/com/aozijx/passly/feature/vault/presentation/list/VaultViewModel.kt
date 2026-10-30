@@ -24,8 +24,8 @@ import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.entry.ImportScannedOtpUseCase
-import com.aozijx.passly.feature.vault.entry.MoveEntryToTrashUseCase
-import com.aozijx.passly.feature.vault.entry.MoveEntryToTrashResult
+import com.aozijx.passly.feature.vault.trash.TrashCommandResult
+import com.aozijx.passly.feature.vault.trash.TrashCommandUseCase
 import com.aozijx.passly.feature.vault.entry.VaultDataChangeSignal
 import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
 import com.aozijx.passly.feature.vault.model.OtpCodeState
@@ -50,7 +50,7 @@ class VaultViewModel @Inject internal constructor(
     private val entryPageSource: VaultEntryPageSource,
     private val settingsRepository: LibraryViewSettingsRepository,
     internal val importScannedOtp: ImportScannedOtpUseCase,
-    private val moveEntryToTrash: MoveEntryToTrashUseCase,
+    private val trashCommand: TrashCommandUseCase,
     private val copyEntryField: CopyEntryFieldUseCase,
     private val copyOtpCode: CopyOtpCodeUseCase,
     private val dataChangeSignal: VaultDataChangeSignal,
@@ -205,16 +205,16 @@ class VaultViewModel @Inject internal constructor(
         if (!deletingEntryIds.add(entryId)) return
         viewModelScope.launch {
             try {
-                when (val result = moveEntryToTrash(entryId)) {
-                    MoveEntryToTrashResult.Moved -> {
+                when (val result = trashCommand.moveToTrash(entryId)) {
+                    TrashCommandResult.Completed -> {
                         totp.entryRemoved(entryId.value)
                         if (pageEffects.isActive(owner)) {
                             mutate(VaultMutation.DeletedEntryHandled(entryId.value))
                         }
                     }
 
-                    MoveEntryToTrashResult.NotAuthorized -> Unit
-                    is MoveEntryToTrashResult.Failed -> emitError(
+                    TrashCommandResult.NotAuthorized -> Unit
+                    is TrashCommandResult.Failed -> emitError(
                         owner,
                         result.error.toUiErrorMessage(R.string.vault_error_trash_failed),
                     )

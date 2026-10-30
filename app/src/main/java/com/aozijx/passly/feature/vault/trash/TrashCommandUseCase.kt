@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.trash
 
 import com.aozijx.passly.core.error.model.AppError
+import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
@@ -11,10 +12,12 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
+import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import javax.inject.Inject
 
 internal class TrashCommandUseCase @Inject constructor(
     private val entryCommandRepository: EntryCommandRepository,
+    private val entryQueryRepository: EntryQueryRepository,
     private val secureSessionAccessState: SecureSessionAccessState,
     private val authorizationGate: AuthorizationGate,
 ) {
@@ -25,6 +28,15 @@ internal class TrashCommandUseCase @Inject constructor(
         val restriction = sessionRestriction()
         if (restriction != null) return restriction
         return entryCommandRepository.restoreEntry(entryId, expectedVersion).toTrashCommandResult()
+    }
+
+    suspend fun moveToTrash(entryId: EntryId): TrashCommandResult = authorizeDestructiveCommand {
+        val entry = entryQueryRepository.getById(entryId)
+        if (entry == null) {
+            TrashCommandResult.Failed(NotFound())
+        } else {
+            entryCommandRepository.moveToTrash(entry.id, entry.version).toTrashCommandResult()
+        }
     }
 
     suspend fun deletePermanently(

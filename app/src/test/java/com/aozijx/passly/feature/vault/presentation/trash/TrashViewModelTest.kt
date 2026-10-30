@@ -19,6 +19,7 @@ import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
+import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.feature.vault.trash.TrashCommandUseCase
 import com.aozijx.passly.testing.MainDispatcherRule
@@ -203,7 +204,12 @@ class TrashViewModelTest {
             override val authenticationState = MutableStateFlow<AuthenticationState>(AuthenticationState.Authenticated(1L))
             override fun isUnlocked() = true
         }
-        return TrashViewModel(queries, TrashCommandUseCase(commands, access, authorization))
+        val entryQueries = object : EntryQueryRepository {
+            override suspend fun getById(entryId: EntryId) = null
+            override suspend fun findEntriesWithCustomIcons() = emptyList<Entry>()
+            override suspend fun count() = 0
+        }
+        return TrashViewModel(queries, TrashCommandUseCase(commands, entryQueries, access, authorization))
     }
 
     private class RecordingAuthorization(private val allowed: suspend () -> Boolean) : AuthorizationGate {
