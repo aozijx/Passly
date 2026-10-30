@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.settings.presentation.main.navigation.core
 
 import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
@@ -24,6 +25,11 @@ internal fun RecoveryCodeRoute(
         R.string.field_copy_success_message,
         stringResource(R.string.recovery_code_label),
     )
+
+    DisposableEffect(viewModel) {
+        val owner = viewModel.onPageEntered()
+        onDispose { viewModel.onPageExited(owner) }
+    }
 
     LaunchedEffect(viewModel, context, copySuccessMessage) {
         viewModel.effects.collect { effect ->

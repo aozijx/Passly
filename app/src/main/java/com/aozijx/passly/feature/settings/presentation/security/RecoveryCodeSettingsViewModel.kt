@@ -16,6 +16,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -36,8 +38,14 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
         ),
     )
     val uiState: StateFlow<RecoveryCodeSettingsUiState> = _uiState.asStateFlow()
-    private val _effects = Channel<RecoveryCodeSettingsEffect>(Channel.BUFFERED)
-    val effects = _effects.receiveAsFlow()
+    private data class PageEffect(val owner: Any, val effect: RecoveryCodeSettingsEffect)
+
+    private val pageEffects = Channel<PageEffect>(Channel.BUFFERED)
+    val effects = pageEffects.receiveAsFlow()
+        .filter { activePageOwner === it.owner }
+        .map { it.effect }
+
+    private var activePageOwner: Any? = null
 
     init {
         viewModelScope.launch {
@@ -86,12 +94,29 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
 
     private fun copy() {
         if (_uiState.value.draft !is RecoveryCodeDraftUiState.Ready) return
+        val owner = activePageOwner ?: return
         viewModelScope.launch {
             when (draftInteractor.copy()) {
                 RecoveryCodeCopyResult.Copied ->
-                    _effects.send(RecoveryCodeSettingsEffect.Copied)
+                    emitEffect(owner, RecoveryCodeSettingsEffect.Copied)
                 RecoveryCodeCopyResult.NoActiveDraft -> Unit
             }
+        }
+    }
+
+    fun onPageEntered(): Any {
+        val owner = Any()
+        activePageOwner = owner
+        return owner
+    }
+
+    fun onPageExited(owner: Any) {
+        if (activePageOwner === owner) activePageOwner = null
+    }
+
+    private fun emitEffect(owner: Any, effect: RecoveryCodeSettingsEffect) {
+        if (activePageOwner === owner) {
+            pageEffects.trySend(PageEffect(owner, effect))
         }
     }
 
