@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.entry.command
 
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.runtime.session.SessionStateProvider
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
@@ -13,6 +14,7 @@ import kotlinx.coroutines.sync.withLock
 internal class IconResourceCleanupQueue(
     private val scope: CoroutineScope,
     private val access: SecureSessionAccessState,
+    private val databaseSession: SessionStateProvider,
     private val reclaim: suspend (String) -> AppResult<IconResourceReclaimOutcome>,
 ) {
     private class Request
@@ -22,6 +24,7 @@ internal class IconResourceCleanupQueue(
 
     init {
         scope.launch { access.authenticationState.collect { wakeups.trySend(Unit) } }
+        scope.launch { databaseSession.lockStateFlow.collect { wakeups.trySend(Unit) } }
         scope.launch {
             for (ignored in wakeups) {
                 // Database sealing may cancel a lease holder; keep the queue observer alive.

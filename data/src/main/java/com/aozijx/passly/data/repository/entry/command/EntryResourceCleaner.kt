@@ -6,6 +6,7 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
+import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -35,9 +36,10 @@ internal class EntryResourceCleaner @Inject constructor(
     private val databaseTransactions: DatabaseTransactionRunner,
     private val logger: Logger,
     access: SecureSessionAccessState,
+    databaseSession: AppDatabaseSession,
 ) : EntryIconResourceCleaner {
     private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val cleanupQueue = IconResourceCleanupQueue(cleanupScope, access) { path ->
+    private val cleanupQueue = IconResourceCleanupQueue(cleanupScope, access, databaseSession) { path ->
         logger.inSpan(Operations.ResourceCleanup) {
             attachmentGarbageCollector.withMutationLock {
                 databaseTransactions.write("entry_icon_reclaim") {

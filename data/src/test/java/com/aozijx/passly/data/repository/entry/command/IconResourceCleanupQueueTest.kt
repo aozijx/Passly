@@ -4,6 +4,9 @@ import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.runtime.session.SecureSessionState
+import com.aozijx.passly.runtime.session.SessionStateProvider
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.cancel
@@ -20,7 +23,7 @@ class IconResourceCleanupQueueTest {
     fun graphChangesDuringAReferenceCheckAreNotLost() = runTest {
         val gate = CompletableDeferred<Unit>()
         var calls = 0
-        val queue = IconResourceCleanupQueue(backgroundScope, Access()) {
+        val queue = cleanupQueue(backgroundScope) {
             calls++
             if (calls == 1) {
                 gate.await()
@@ -42,7 +45,7 @@ class IconResourceCleanupQueueTest {
     fun lockedRequestsAreRetainedAndDeduplicatedUntilUnlock() = runTest {
         val access = Access().apply { authenticationState.value = AuthenticationState.Locked }
         val calls = mutableListOf<String>()
-        val queue = IconResourceCleanupQueue(backgroundScope, access) { path ->
+        val queue = cleanupQueue(backgroundScope, access) { path ->
             calls += path
             AppResult.Success(IconResourceReclaimOutcome.COMPLETE)
         }
@@ -56,10 +59,30 @@ class IconResourceCleanupQueueTest {
     }
 
     @Test
+    fun databaseOnlyReopenRetriesPendingCleanupWithoutAuthenticationTransition() = runTest {
+        val access = Access().apply { databaseState.value = SecureSessionState.SEALED }
+        val calls = mutableListOf<String>()
+        val queue = cleanupQueue(backgroundScope, access) { path ->
+            calls += path
+            AppResult.Success(IconResourceReclaimOutcome.COMPLETE)
+        }
+        runCurrent()
+
+        queue.request("candidate")
+        runCurrent()
+        assertEquals(emptyList<String>(), calls)
+
+        access.databaseState.value = SecureSessionState.UNLOCKED
+        runCurrent()
+
+        assertEquals(listOf("candidate"), calls)
+    }
+
+    @Test
     fun storageFailureIsRetriedByTheNextRequest() = runTest {
         val calls = mutableListOf<String>()
         var available = false
-        val queue = IconResourceCleanupQueue(backgroundScope, Access()) { path ->
+        val queue = cleanupQueue(backgroundScope) { path ->
             calls += path
             if (available) AppResult.Success(IconResourceReclaimOutcome.COMPLETE)
             else AppResult.Failure(SessionModeRestricted())
@@ -78,7 +101,7 @@ class IconResourceCleanupQueueTest {
     fun referencesCompleteTheRequestUntilANewGraphChangeSchedulesItAgain() = runTest {
         val access = Access()
         var calls = 0
-        val queue = IconResourceCleanupQueue(backgroundScope, access) {
+        val queue = cleanupQueue(backgroundScope, access) {
             calls++
             AppResult.Success(IconResourceReclaimOutcome.REFERENCED)
         }
@@ -97,7 +120,7 @@ class IconResourceCleanupQueueTest {
     fun duplicateRequestsDuringAnAttemptCoalesceIntoOneFollowup() = runTest {
         val gate = CompletableDeferred<Unit>()
         var calls = 0
-        val queue = IconResourceCleanupQueue(backgroundScope, Access()) {
+        val queue = cleanupQueue(backgroundScope) {
             calls++
             gate.await()
             AppResult.Success(IconResourceReclaimOutcome.COMPLETE)
@@ -114,7 +137,7 @@ class IconResourceCleanupQueueTest {
     @Test
     fun cancelledDatabaseLeaseDoesNotKillFutureQueueAttempts() = runTest {
         var calls = 0
-        val queue = IconResourceCleanupQueue(backgroundScope, Access()) {
+        val queue = cleanupQueue(backgroundScope) {
             calls++
             if (calls == 1) {
                 currentCoroutineContext().cancel()
@@ -132,6 +155,16 @@ class IconResourceCleanupQueueTest {
 
     private class Access : SecureSessionAccessState {
         override val authenticationState = MutableStateFlow<AuthenticationState>(AuthenticationState.Authenticated(1L))
-        override fun isUnlocked() = authenticationState.value is AuthenticationState.Authenticated
+        val databaseState = MutableStateFlow(SecureSessionState.UNLOCKED)
+        override fun isUnlocked() = databaseState.value == SecureSessionState.UNLOCKED
     }
+
+    private fun cleanupQueue(
+        scope: CoroutineScope,
+        access: Access = Access(),
+        reclaim: suspend (String) -> AppResult<IconResourceReclaimOutcome>,
+    ) = IconResourceCleanupQueue(scope, access, object : SessionStateProvider {
+        override val lockStateFlow = access.databaseState
+        override val lockState get() = lockStateFlow.value
+    }, reclaim)
 }
