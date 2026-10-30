@@ -17,7 +17,7 @@ class RuntimeSessionManager<Handle : Any>(
     private val eventSink: SessionEventSink = SessionEventSink.None,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : SessionStateProvider {
-    private val leaseGate = SessionLeaseGate(resource, eventSink)
+    private val leaseGate = SessionLeaseGate(resource, eventSink, ioDispatcher)
 
     override val lockState: SecureSessionState
         get() = leaseGate.lockState.value
@@ -52,6 +52,4 @@ class RuntimeSessionManager<Handle : Any>(
     suspend fun softLock() = leaseGate.softLock()
 
     suspend fun seal(timeout: Duration = 5.seconds) = leaseGate.seal(timeout)
-
-    suspend fun closeResource() = leaseGate.close()
 }

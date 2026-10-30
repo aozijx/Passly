@@ -24,15 +24,20 @@ import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
+import com.aozijx.passly.runtime.session.SecureSessionState
+import com.aozijx.passly.runtime.session.SessionLockedException
 import com.aozijx.passly.runtime.session.SessionKeySource
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
@@ -40,12 +45,62 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.atomic.AtomicInteger
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class RoomObservationSessionTest {
+    @Test
+    fun sealingWaitsForActiveRoomTransactionBeforeClosingDatabase() = runBlocking {
+        System.loadLibrary("sqlcipher")
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+        val logger = NoOpLogger
+        val session = AppDatabaseSession(
+            resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
+            keySource = SessionKeySource { DATABASE_KEY.copyOf() },
+            eventLogger = DatabaseSessionEventLogger(logger),
+        )
+        val transactionStarted = CompletableDeferred<Unit>()
+        val releaseTransaction = CompletableDeferred<Unit>()
+
+        try {
+            assertNull(session.unlock())
+            val transaction = async(Dispatchers.IO) {
+                session.transaction {
+                    entryCommandDao().insertStrict(EntryEntity(entryId = "lease-entry", title = "Committed"))
+                    transactionStarted.complete(Unit)
+                    releaseTransaction.await()
+                }
+            }
+            transactionStarted.await()
+
+            val sealing = async(Dispatchers.IO) { session.seal() }
+            withTimeout(10_000L) {
+                session.lockStateFlow.first { it == SecureSessionState.SEALED }
+            }
+
+            assertFalse(transaction.isCompleted)
+            assertFalse(sealing.isCompleted)
+            val rejectedRead = runCatching { session.query { entryQueryDao().getById("lease-entry") } }
+            assertTrue(rejectedRead.exceptionOrNull() is SessionLockedException)
+
+            releaseTransaction.complete(Unit)
+            transaction.await()
+            sealing.await()
+
+            assertNull(session.unlock())
+            assertEquals("Committed", session.query { entryQueryDao().getById("lease-entry")?.title })
+        } finally {
+            releaseTransaction.complete(Unit)
+            session.seal()
+            context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+        }
+    }
+
     @Test
     fun activeRoomCollectorsEmitEmptyOnDatabaseOnlySealAndResubscribeAfterReopen() = runBlocking {
         System.loadLibrary("sqlcipher")
@@ -142,7 +197,6 @@ class RoomObservationSessionTest {
             jobs.forEach(Job::cancel)
             scope.cancel()
             session.seal()
-            session.closeDatabase()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
         }
     }

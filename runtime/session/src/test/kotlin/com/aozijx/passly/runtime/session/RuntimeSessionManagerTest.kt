@@ -1,8 +1,11 @@
 package com.aozijx.passly.runtime.session
 
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
@@ -60,23 +63,36 @@ class RuntimeSessionManagerTest {
 
     @Test
     fun `unlock closes resource when cancelled after resource was opened`() = runBlocking {
-        val resource = FakeResource(cancelAfterOpen = CancellationException("cancelled after open"))
+        val closeThread = AtomicReference<String?>()
+        val dispatcher = Executors.newSingleThreadExecutor { task ->
+            Thread(task, "session-resource-io")
+        }.asCoroutineDispatcher()
+        val resource = FakeResource(
+            cancelAfterOpen = CancellationException("cancelled after open"),
+            onClose = { closeThread.set(Thread.currentThread().name) },
+        )
         val manager = RuntimeSessionManager(
             resource = resource,
             keySource = SessionKeySource { byteArrayOf(9) },
+            ioDispatcher = dispatcher,
         )
 
-        val caught = try {
-            manager.unlock()
-            null
-        } catch (error: CancellationException) {
-            error
-        }
+        try {
+            val caught = try {
+                manager.unlock()
+                null
+            } catch (error: CancellationException) {
+                error
+            }
 
-        assertTrue(caught is CancellationException)
-        assertEquals("cancelled after open", caught?.message)
-        assertTrue(resource.closed)
-        assertEquals(SecureSessionState.SEALED, manager.lockState)
+            assertTrue(caught is CancellationException)
+            assertEquals("cancelled after open", caught?.message)
+            assertTrue(resource.closed)
+            assertTrue(closeThread.get()?.startsWith("session-resource-io") == true)
+            assertEquals(SecureSessionState.SEALED, manager.lockState)
+        } finally {
+            dispatcher.close()
+        }
     }
 
     @Test
@@ -100,6 +116,29 @@ class RuntimeSessionManagerTest {
         assertEquals(cancellation.message, caught?.message)
         assertEquals(SecureSessionState.SEALED, manager.lockState)
         assertTrue(resource.closed)
+    }
+
+    @Test
+    fun `seal closes resource on configured io dispatcher`() = runBlocking {
+        val closeThread = AtomicReference<String?>()
+        val dispatcher = Executors.newSingleThreadExecutor { task ->
+            Thread(task, "session-resource-io")
+        }.asCoroutineDispatcher()
+        val resource = FakeResource(onClose = { closeThread.set(Thread.currentThread().name) })
+        val manager = RuntimeSessionManager(
+            resource = resource,
+            keySource = SessionKeySource { byteArrayOf(9) },
+            ioDispatcher = dispatcher,
+        )
+
+        try {
+            manager.unlock()
+            manager.seal()
+
+            assertTrue(closeThread.get()?.startsWith("session-resource-io") == true)
+        } finally {
+            dispatcher.close()
+        }
     }
 
     @Test
@@ -231,7 +270,8 @@ class RuntimeSessionManagerTest {
         assertEquals(SecureSessionState.SEALED, closeFailure.fromState)
         assertEquals(SecureSessionState.SEALED, closeFailure.toState)
         assertEquals(SessionLockType.SEALED, closeFailure.lockType)
-        assertEquals(failure, closeFailure.error)
+        assertEquals(failure.javaClass, closeFailure.error?.javaClass)
+        assertEquals(failure.message, closeFailure.error?.message)
         assertEquals(SecureSessionState.SEALED, manager.lockState)
         runCatching { manager.read { value } }
             .onSuccess { error("failed close retained a readable handle") }
@@ -272,6 +312,7 @@ class RuntimeSessionManagerTest {
         private val openFailure: Throwable? = null,
         private val closeFailure: Throwable? = null,
         private val cancelAfterOpen: CancellationException? = null,
+        private val onClose: () -> Unit = {},
     ) : SessionResource<FakeHandle> {
         var openedWith: ByteArray? = null
         var closed = false
@@ -285,6 +326,7 @@ class RuntimeSessionManagerTest {
 
         override suspend fun close(handle: FakeHandle) {
             closed = true
+            onClose()
             closeFailure?.let { throw it }
         }
 

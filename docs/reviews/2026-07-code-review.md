@@ -12,21 +12,19 @@
 | 日志旁路与脆弱过滤 | 已解决 | 所有调用点进入 `Logger`，隐私策略在 Sink 前执行 |
 | Crash 路径锁与 Keystore 风险 | 已解决 | 有界 writer；预加载 emergency key；崩溃写入不取普通锁、不访问 Keystore |
 | 恢复码重新生成提前失效 | 已解决 | 候选草稿确认后才提交 Envelope；进程恢复显示 DraftExpired |
-| DatabaseSession 并发关闭 | 待设备复核 | 会话控制已接入 lease gate，事务故障注入仍需设备测试 |
-| 备份 v1 KDF 自描述 | 待后续 | 不属于本轮认证/诊断范围 |
+| DatabaseSession 并发关闭 | 已解决 | lease gate 拒绝新操作并排干活跃事务；API 36 SQLCipher 仪器回归通过，资源关闭运行于 IO dispatcher |
+| 备份 v1 KDF 自描述 | 已解决 | `PSLYBKP1` 头包含 KDF/cipher 参数并作为 AAD |
 
 ## 高优先级
 
-### P1：DatabaseSession 可能在数据库仍被使用时关闭
+### 已解决：DatabaseSession 并发关闭
 
-`withDatabase()` 只在取得/创建实例时持有 mutex，随后在锁外执行调用方 block；`closeAndAwait()` 可同时取得
-mutex 并调用 `RoomDatabase.close()`。长事务或查询与锁定并发时，可能在操作中关闭数据库。超时分支还会在
-mutex 外直接把引用置空；`RoomDatabase.close()` 是阻塞调用，协程超时不保证能中止它，因此日志可能声称“强制关闭”但实际资源仍在运行。
+`RuntimeSessionManager` 通过 `SessionLeaseGate` 在同一互斥区拒绝新 lease 并计数活跃操作；封存等待事务排干，超时则记录剩余 lease 并取消观察任务，再关闭资源。
+资源关闭和打开失败后的句柄回收都在配置的 IO dispatcher 执行，避免 Room 的同步关闭阻塞锁定调用方线程。
+Runtime 单测覆盖 dispatcher 与 lease 排干，API 36 SQLCipher 仪器测试用暂停的 Room 事务验证封存等待、拒绝新读取、提交后关闭并可重新打开。
 
-建议使用显式 session lease/read-write gate：新操作在 Locking
-后被拒绝，锁定等待活跃操作归零，再关闭实例并擦除密钥。不要把引用置空等同于资源关闭。
-
-证据：`DatabaseSession.kt:51-89`。
+清理时删除了只被仪器测试调用的 `AppDatabaseSession.closeDatabase()` 和其下游 `RuntimeSessionManager.closeResource()` 转发；
+封存本身是唯一关闭所有者，测试不再在 `seal()` 后重复关库。
 
 ### 已解决：旧实验备份不是自描述 KDF 格式
 

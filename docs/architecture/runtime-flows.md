@@ -30,7 +30,7 @@ sequenceDiagram
 `Authenticated`。恢复页面不挂载 Vault 导航，只能重建主认证、用新备份密码执行 `RECOVERY_EXPORT`，或退出锁定。
 
 Activity 只通过 `AuthenticationHost` 提供 UI 能力；认证请求本身不携带 Activity、Launcher、Cipher 或
-PendingIntent。锁定由 `VaultSessionController` 拒绝新 lease、等待活跃操作、关闭 Room，再擦除会话密钥与 DEK。
+PendingIntent。锁定由 `VaultSessionController` 拒绝新 lease、等待活跃操作、在 IO dispatcher 关闭 Room，再擦除会话密钥与 DEK。
 
 ## 一次性消息
 

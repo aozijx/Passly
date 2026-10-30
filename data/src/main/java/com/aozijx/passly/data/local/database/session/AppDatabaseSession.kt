@@ -60,9 +60,6 @@ class AppDatabaseSession @Inject internal constructor(
     override suspend fun seal() = runtime.seal(5.seconds)
 
     suspend fun seal(timeout: Duration) = runtime.seal(timeout)
-
-    suspend fun closeDatabase() = runtime.closeResource()
-
 }
 
 internal class DatabaseSessionEventLogger @Inject constructor(

@@ -3,6 +3,7 @@ package com.aozijx.passly.runtime.session
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -24,6 +25,7 @@ import kotlin.time.Duration
 internal class SessionLeaseGate<Handle : Any>(
     private val resource: SessionResource<Handle>,
     private val eventSink: SessionEventSink,
+    private val ioDispatcher: CoroutineDispatcher,
 ) {
     private val mutableLockState = MutableStateFlow(SecureSessionState.SEALED)
     val lockState: StateFlow<SecureSessionState> = mutableLockState.asStateFlow()
@@ -150,13 +152,14 @@ internal class SessionLeaseGate<Handle : Any>(
         }
     }
 
-    private suspend fun closeAfterFailedOpen(opened: Handle, cause: Throwable) {
-        try {
-            resource.close(opened)
-        } catch (cleanupFailure: Throwable) {
-            if (cleanupFailure !== cause) cause.addSuppressed(cleanupFailure)
+    private suspend fun closeAfterFailedOpen(opened: Handle, cause: Throwable) =
+        withContext(ioDispatcher) {
+            try {
+                resource.close(opened)
+            } catch (cleanupFailure: Throwable) {
+                if (cleanupFailure !== cause) cause.addSuppressed(cleanupFailure)
+            }
         }
-    }
 
     suspend fun softLock() {
         val startedAt = elapsedRealtimeMs()
@@ -204,12 +207,12 @@ internal class SessionLeaseGate<Handle : Any>(
         )
     }
 
-    suspend fun close() {
+    private suspend fun close() {
         val startedAt = elapsedRealtimeMs()
         resourceMutex.withLock {
             val current = handle ?: return
             try {
-                resource.close(current)
+                withContext(ioDispatcher) { resource.close(current) }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Throwable) {
