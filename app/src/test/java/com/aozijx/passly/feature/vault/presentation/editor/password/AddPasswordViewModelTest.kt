@@ -215,11 +215,16 @@ class AddPasswordViewModelTest {
         session: SecureSessionAccessState = AuthenticatedSession,
         apps: List<InstalledAppMetadata> = emptyList(),
         directory: InstalledAppDirectory = FakeInstalledAppDirectory(apps),
-    ) = AddPasswordViewModel(
-        createEntryUseCase = createEntryUseCase(session),
-        secureSessionAccessState = session,
-        installedAppDirectory = directory,
-    )
+    ): AddPasswordViewModel {
+        val editFixture = EditableEntryUseCaseFixture.unsupportedEntry()
+        return AddPasswordViewModel(
+            createEntryUseCase = createEntryUseCase(session),
+            secureSessionAccessState = session,
+            installedAppDirectory = directory,
+            loadEditableEntry = editFixture.loader,
+            editDetailEntry = editFixture.editor,
+        )
+    }
 
     private class FakeInstalledAppDirectory(
         private val apps: List<InstalledAppMetadata>,

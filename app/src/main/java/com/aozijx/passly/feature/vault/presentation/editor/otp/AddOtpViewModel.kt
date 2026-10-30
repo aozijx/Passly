@@ -17,7 +17,6 @@ import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.policy.EntryEdit
-import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveSession
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
@@ -36,8 +35,8 @@ import javax.inject.Inject
 class AddOtpViewModel @Inject internal constructor(
     createEntryUseCase: CreateEntryUseCase,
     private val secureSessionAccessState: SecureSessionAccessState,
-    private val loadEditableEntry: LoadEditableEntryUseCase? = null,
-    private val editDetailEntry: EditDetailEntryUseCase? = null,
+    private val loadEditableEntry: LoadEditableEntryUseCase,
+    private val editDetailEntry: EditDetailEntryUseCase,
 ) : ViewModel() {
     private sealed interface FeedbackScope {
         data object Closed : FeedbackScope
@@ -61,8 +60,7 @@ class AddOtpViewModel @Inject internal constructor(
         create = { draft ->
             val entryId = editingEntryId
             if (entryId == null) createEntryUseCase(draft)
-            else editDetailEntry?.edit(entryId, EntryEdit.ReplaceForm(draft))
-                ?: AppResult.Failure(ValidationError())
+            else editDetailEntry.edit(entryId, EntryEdit.ReplaceForm(draft))
         },
         onSaving = { _uiState.value = _uiState.value.copy(savePhase = AddOtpSavePhase.Saving) },
         onIdle = {
@@ -86,7 +84,7 @@ class AddOtpViewModel @Inject internal constructor(
         val authentication = secureSessionAccessState.authenticationState.value
         _uiState.value = _uiState.value.copy(loadPhase = EditorLoadPhase.Loading)
         editLoadJob = viewModelScope.launch {
-            when (val result = loadEditableEntry?.invoke(entryId) ?: EditableEntryLoadResult.Unavailable) {
+            when (val result = loadEditableEntry(entryId)) {
                 is EditableEntryLoadResult.Loaded -> {
                     if (result.entry.type != EntryType.OTP || result.entry.id != entryId ||
                         authentication !== result.authentication ||

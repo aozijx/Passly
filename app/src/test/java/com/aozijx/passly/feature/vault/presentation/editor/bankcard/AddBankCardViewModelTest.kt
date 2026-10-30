@@ -42,6 +42,14 @@ import org.junit.Rule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AddBankCardViewModelTest {
+    private fun createViewModel(
+        create: CreateEntryUseCase,
+        session: SecureSessionAccessState,
+    ): AddBankCardViewModel {
+        val editFixture = EditableEntryUseCaseFixture.unsupportedEntry()
+        return AddBankCardViewModel(create, session, editFixture.loader, editFixture.editor)
+    }
+
     @Test
     fun fullEditRevealsCardSecretsAndSavesTheWholeCardForm() = runTest {
         val entry = Entry(
@@ -86,7 +94,7 @@ class AddBankCardViewModelTest {
                 return AppResult.Success(entry.id)
             }
         }
-        val model = AddBankCardViewModel(createEntryUseCase(repository), AuthenticatedSession)
+        val model = createViewModel(createEntryUseCase(repository), AuthenticatedSession)
         val effects = mutableListOf<EditorSaveEffect>()
         backgroundScope.launch { model.effects.toList(effects) }
         model.onAction(AddBankCardAction.TitleChanged("Card"))
@@ -106,7 +114,7 @@ class AddBankCardViewModelTest {
 
     @Test
     fun `invalid optional cvv disables save until corrected or cleared`() {
-        val model = AddBankCardViewModel(createEntryUseCase(), AuthenticatedSession)
+        val model = createViewModel(createEntryUseCase(), AuthenticatedSession)
         model.onAction(AddBankCardAction.TitleChanged("Card"))
         model.onAction(AddBankCardAction.CardNumberChanged("4111111111111111"))
         for (value in listOf("12", "12345", "1 23", "１２３", "abc")) {
@@ -139,7 +147,7 @@ class AddBankCardViewModelTest {
                 return AppResult.Success(entry.id)
             }
         }
-        val viewModel = AddBankCardViewModel(createEntryUseCase(repository), AuthenticatedSession)
+        val viewModel = createViewModel(createEntryUseCase(repository), AuthenticatedSession)
         viewModel.onAction(AddBankCardAction.TitleChanged("Visa"))
         viewModel.onAction(AddBankCardAction.CardNumberChanged("4111 1111 1111 1111"))
         viewModel.onAction(AddBankCardAction.IssuingBankChanged("Example Bank"))
@@ -164,7 +172,7 @@ class AddBankCardViewModelTest {
 
     @Test
     fun validCardNumberEnablesSaveAndKeepsValidationOutsideMapper() {
-        val viewModel = AddBankCardViewModel(createEntryUseCase(), AuthenticatedSession)
+        val viewModel = createViewModel(createEntryUseCase(), AuthenticatedSession)
 
         viewModel.onAction(AddBankCardAction.TitleChanged("Visa"))
         viewModel.onAction(AddBankCardAction.CardNumberChanged("4111 1111 1111 1111"))

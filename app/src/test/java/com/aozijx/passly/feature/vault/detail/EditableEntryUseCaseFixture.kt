@@ -11,7 +11,11 @@ import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryIdentity
+import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntryTimestamps
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
@@ -40,6 +44,19 @@ internal class EditableEntryUseCaseFixture(
 
     val loader = LoadEditableEntryUseCase(query, sensitiveFields, authorization, access, activity)
     val editor = EditDetailEntryUseCase(query, command, access, testLogger())
+
+    companion object {
+        fun unsupportedEntry() = EditableEntryUseCaseFixture(
+            Entry(
+                identity = EntryIdentity(
+                    EntryId("unsupported-fixture"),
+                    EntryType.NOTE,
+                    timestamps = EntryTimestamps(1),
+                ),
+                profile = EntryProfile("Unsupported"),
+            ),
+        )
+    }
 
     internal class TestAccess : SecureSessionAccessState {
         override val authenticationState = MutableStateFlow<AuthenticationState>(AuthenticationState.Authenticated(1))

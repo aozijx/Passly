@@ -382,10 +382,15 @@ class AddWifiViewModelTest {
     private fun viewModel(
         repository: EntryCommandRepository,
         session: SecureSessionAccessState = AuthenticatedSession,
-    ) = AddWifiViewModel(
-        createEntryUseCase = CreateEntryUseCase(repository, session, EntryDraftMaterializer(), testLogger()),
-        secureSessionAccessState = session,
-    )
+    ): AddWifiViewModel {
+        val editFixture = EditableEntryUseCaseFixture.unsupportedEntry()
+        return AddWifiViewModel(
+            createEntryUseCase = CreateEntryUseCase(repository, session, EntryDraftMaterializer(), testLogger()),
+            secureSessionAccessState = session,
+            loadEditableEntry = editFixture.loader,
+            editDetailEntry = editFixture.editor,
+        )
+    }
 
     private object AuthenticatedSession : SecureSessionAccessState {
         override val authenticationState: StateFlow<AuthenticationState> =

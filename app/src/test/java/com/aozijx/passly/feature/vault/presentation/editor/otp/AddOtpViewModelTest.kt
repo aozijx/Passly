@@ -47,9 +47,17 @@ import org.junit.Rule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AddOtpViewModelTest {
+    private fun createViewModel(
+        create: CreateEntryUseCase = createEntryUseCase(),
+        session: SecureSessionAccessState = AuthenticatedSession,
+    ): AddOtpViewModel {
+        val editFixture = EditableEntryUseCaseFixture.unsupportedEntry()
+        return AddOtpViewModel(create, session, editFixture.loader, editFixture.editor)
+    }
+
     @Test
     fun `scanner editor and direct creation share complete identity title`() {
-        val model = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
+        val model = createViewModel()
         val config = OtpConfig(secret = "MY", issuer = " Example: West ", accountName = " alice:admin ")
         assertTrue(model.tryApplyScannedConfig(config))
         val directTitle = (config.toNewEntryDraft()[FieldKey.TITLE] as EntryDraftValue.Text).value
@@ -59,7 +67,7 @@ class AddOtpViewModelTest {
 
     @Test
     fun `scan without identity keeps the existing editor title`() {
-        val model = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
+        val model = createViewModel()
         model.onAction(AddOtpAction.FormChanged(OtpFormState(title = "My title")))
         assertTrue(model.tryApplyScannedConfig(OtpConfig(secret = "MY")))
         assertEquals("My title", model.uiState.value.form.title)
@@ -68,7 +76,7 @@ class AddOtpViewModelTest {
     @Test
     fun scannedConfigAcknowledgesOnlyAcceptedApplications() = runTest {
         val session = MutableSession()
-        val model = AddOtpViewModel(createEntryUseCase(session = session), session)
+        val model = createViewModel(createEntryUseCase(session = session), session)
         val config = OtpConfig(secret = "MY")
         session.state.value = AuthenticationState.Locked
         runCurrent()
@@ -89,7 +97,7 @@ class AddOtpViewModelTest {
                 return AppResult.Success(entry.id)
             }
         }
-        val model = AddOtpViewModel(createEntryUseCase(repository), AuthenticatedSession)
+        val model = createViewModel(createEntryUseCase(repository), AuthenticatedSession)
         model.onAction(AddOtpAction.FormChanged(OtpFormState(title = "Submitted", secret = "JBSWY3DPEHPK3PXP")))
         model.onAction(AddOtpAction.Save)
         runCurrent()
@@ -106,7 +114,7 @@ class AddOtpViewModelTest {
     @Test
     fun oldParseFeedbackDoesNotSurviveLockAndReauthentication() = runTest {
         val session = MutableSession()
-        val model = AddOtpViewModel(createEntryUseCase(session = session), session)
+        val model = createViewModel(createEntryUseCase(session = session), session)
         model.onAction(AddOtpAction.UriChanged(VALID_URI, true))
         session.state.value = AuthenticationState.Locked
         runCurrent()
@@ -120,7 +128,7 @@ class AddOtpViewModelTest {
 
     @Test
     fun manualEditingInvalidatesBufferedParseFeedback() = runTest {
-        val model = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
+        val model = createViewModel()
         model.onAction(AddOtpAction.UriChanged(VALID_URI, true))
         model.onAction(AddOtpAction.FormChanged(model.uiState.value.form.copy(title = "New draft")))
         val events = mutableListOf<AddOtpEvent>()
@@ -131,7 +139,7 @@ class AddOtpViewModelTest {
 
     @Test
     fun onlyTheLatestUriResultIsDeliveredToALateCollector() = runTest {
-        val model = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
+        val model = createViewModel()
         model.onAction(AddOtpAction.UriChanged("invalid", true))
         model.onAction(AddOtpAction.UriChanged(VALID_URI, true))
         val events = mutableListOf<AddOtpEvent>()
@@ -142,7 +150,7 @@ class AddOtpViewModelTest {
 
     @Test
     fun destroyedEditorDoesNotDeliverBufferedFailures() = runTest {
-        val model = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
+        val model = createViewModel()
         model.onAction(AddOtpAction.UriChanged("invalid", true))
         model.javaClass.getDeclaredMethod("onCleared").apply { isAccessible = true }.invoke(model)
         val events = mutableListOf<AddOtpEvent>()
@@ -205,7 +213,7 @@ class AddOtpViewModelTest {
                     return AppResult.Success(entry.id)
                 }
             }
-            val viewModel = AddOtpViewModel(createEntryUseCase(repository), AuthenticatedSession)
+            val viewModel = createViewModel(createEntryUseCase(repository), AuthenticatedSession)
             viewModel.onAction(AddOtpAction.FormChanged(form))
             viewModel.onAction(AddOtpAction.Save)
 
@@ -224,7 +232,7 @@ class AddOtpViewModelTest {
                 return AppResult.Success(entry.id)
             }
         }
-        val viewModel = AddOtpViewModel(createEntryUseCase(repository), AuthenticatedSession)
+        val viewModel = createViewModel(createEntryUseCase(repository), AuthenticatedSession)
         viewModel.onAction(AddOtpAction.FormChanged(OtpFormState(
             title = "Mail", secret = " my====== ", digits = "7", period = "60",
         )))
@@ -240,7 +248,7 @@ class AddOtpViewModelTest {
 
     @Test
     fun encodedUriPopulatesTheEditorWithoutChangingPlusOrPercentCharacters() = runTest {
-        val viewModel = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
+        val viewModel = createViewModel()
 
         viewModel.onAction(AddOtpAction.UriChanged(
             "otpauth://totp/Example%3Aalice+tag%2540mail?secret=JBSWY3DPEHPK3PXP&issuer=Example",
@@ -254,7 +262,7 @@ class AddOtpViewModelTest {
 
     @Test
     fun unsupportedUriReportsFailureWithoutReplacingExistingCredentials() = runTest {
-        val viewModel = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
+        val viewModel = createViewModel()
         viewModel.onAction(AddOtpAction.FormChanged(OtpFormState(title = "Keep", secret = "Existing")))
 
         viewModel.onAction(AddOtpAction.UriChanged(
@@ -269,7 +277,7 @@ class AddOtpViewModelTest {
 
     @Test
     fun scannedHotp_roundTripsThroughFormDraftAndMaterializer() {
-        val viewModel = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
+        val viewModel = createViewModel()
         val config = OtpConfig(
             type = OtpType.HOTP,
             secret = "Zm9v",
@@ -308,7 +316,7 @@ class AddOtpViewModelTest {
 
     @Test
     fun switchingFromSteamToHotpRestoresNumericDigits() {
-        val viewModel = AddOtpViewModel(createEntryUseCase(), AuthenticatedSession)
+        val viewModel = createViewModel()
         viewModel.onAction(AddOtpAction.FormChanged(OtpFormState(title = "OTP", secret = "MY")))
         viewModel.onAction(AddOtpAction.TypeChanged(OtpType.STEAM))
         assertEquals("5", viewModel.uiState.value.form.digits)
