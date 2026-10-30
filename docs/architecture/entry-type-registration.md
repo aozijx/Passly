@@ -14,7 +14,9 @@
 
 `EntryPayloadAdapterRegistry` 按 `EntryCredentialKind` 选择内部 `EntryPayloadAdapter`。当前 LOGIN、CARD、IDENTITY、SSH、WIFI、PASSKEY、OTP 均有 adapter；`NONE` 代表合法的无凭据类型，不登记 adapter。重复 kind 会在构建注册表时失败，测试确保所有非 `NONE` kind 都可解析。
 
-每个 adapter 只编码和解码 `SecretPayload` 中对应的 slot。`EntrySecretMapper` 继续统一处理 schema 版本、slot 数量、slot 与 `EntryType` 的匹配，以及 `notes` 和自定义字段。adapter 不做 fallback；载荷缺失或 credential 类型不匹配会明确失败。
+每个 adapter 只编码和解码 `SecretPayload` 中对应的 slot。`EntrySecretMapper` 继续统一处理 schema 版本、slot 数量、slot 与 `EntryType` 的匹配，以及 `notes` 和自定义字段。`SecretBundleCodec` 与 Revision snapshot codec 都传入持久化条目的实际 `EntryType`，因此当前载荷和历史恢复都按条目类型校验。adapter 不做 fallback；载荷缺失或 credential 类型不匹配会明确失败。
+
+多字段凭据的 mapper 测试用非默认字段值验证整个 payload slot 和 encode/decode 往返，防止新增字段在转换中遗漏；CARD 另有字段名与类型的结构对齐断言。反射只用于测试数据构造与 CARD 结构断言，生产 adapter 使用显式 Kotlin 构造，不做运行时反射映射。
 
 迁移保持版本 1 的 `SecretPayload` 字段、JSON 名称与序列化设置不变。JSON 编解码和加密仍属于 `SecretBundleCodec`；高敏字段拆分、合并仍属于 `SensitiveFieldSetMapper`。adapter 注册不改变数据库键、归档键、AAD、授权或存储策略。
 

@@ -73,14 +73,18 @@ stateDiagram-v2
     Stored --> Authenticating: 生成 / 重新生成
     Authenticating --> DraftReady: 创建候选 Envelope
     DraftReady --> Stored: 关闭页面，丢弃候选
-    DraftReady --> Committed: 我已安全保存并启用
+    DraftReady --> Committing: 我已安全保存并启用
+    Committing --> Committed: 持久化成功
+    Committing --> DraftFailed: 持久化失败并丢弃候选
     DraftReady --> DraftExpired: 进程死亡后恢复页面
 ```
 
 - 旧 Recovery Envelope 在用户确认前保持有效；确认提交后旧码才失效。
 - 可提交草稿由 Activity-retained `RecoveryCodeDraft` 持有；展示期间 presentation 只在
   `RecoveryCodeDraftUiState.Ready` 分支持有独立的可擦除 disclosure。该副本不进入 SavedStateHandle、
-  Bundle 或磁盘，并在关闭、提交、替换及 ViewModel 清理时擦除。
+  Bundle 或磁盘，并在关闭、提交进入终态、替换及 ViewModel 清理时擦除。
+- 确认操作会在启动协程前同步占用 `Committing` 状态，重复确认不会再次提交。提交期间页面保留同一 disclosure，
+  禁用复制、确认和丢弃，并忽略弹层关闭；成功进入 `Committed` 并更新恢复码可用状态，失败则丢弃候选并进入 `Failed`。
 - SavedStateHandle 只保存 disclosure 标记和 generation ID。进程恢复但草稿不存在时显示
   “恢复码草稿已过期，请重新认证后生成”。
 - 恢复码不再产生普通 `Authenticated` 会话。验证成功后进入受限 `RecoveryMode`：数据库可以为恢复任务打开，

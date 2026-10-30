@@ -13,7 +13,7 @@
 
 ## 映射完整性与验证
 
-- CARD、IDENTITY、SSH、PASSKEY 的 Domain 与 payload DTO 字段集合由测试反射比对，并用所有非默认字段验证 encode/decode 往返；新增字段不对齐时测试失败。DTO 仍留在 Data，当前 adapter 对字段的转换是显式 Kotlin 构造，不使用运行时反射映射。
+- CARD、IDENTITY、SSH、PASSKEY 的测试用非默认值覆盖全部构造字段并验证 payload 与往返；CARD 另以反射断言 Domain 与 DTO 的字段名/类型一致。DTO 仍留在 Data，生产 adapter 对字段显式构造，不使用运行时反射映射。
 - 各 kind 的适配批次先验证缺失注册/错误映射回归，再运行 `EntrySecretMapperTest` 和完整 `:data:testDebugUnitTest`；OTP 批次还将真实 `EntryType` 校验传至 bundle 与 revision codec。
 - 每批独立只读审查通过，完整 Data 测试及 `git diff --check` 均通过；版本 1 固定 JSON 样本持续覆盖全部 slot。
 
