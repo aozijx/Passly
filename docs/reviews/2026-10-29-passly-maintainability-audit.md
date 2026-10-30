@@ -300,3 +300,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - RED：`SessionResource.open()` 创建句柄后取消当前 Job；旧路径未检查资源返回边界的协程状态，外层 `withContext(IO)` 最后抛出取消，但句柄仍保持打开。
 - 修复：资源返回后与状态发布后检查 Job；失败时在 `NonCancellable` 中关闭新句柄、撤销仍由本次 open 持有的句柄并保持 SEALED，清理异常保留为原始取消的 suppressed 异常。
 - 验证：新增 `RuntimeSessionManagerTest` 回归先因资源未关闭而失败；修复后 `:runtime:session:test` 与 `verifyArchitecture` 通过，提交 `4f093f71b`。
+
+### 后续复核：诊断复制绕过敏感剪贴板策略（2026-10-30）
+
+- 根因：`DiagnosticsRoute` 自行调用 `ClipboardManager.setPrimaryClip()` 并设置 Android 敏感标记，但没有经过 `SensitiveClipboardWriter`，所以绕过隐私设置的自动清理策略；缓冲的复制 effect 也可能在页面离开后才被消费。
+- RED：更新 ViewModel 回归要求逐行/Trace 复制交给共享端口，并覆盖挂起写入在页面退出后的所有权校验；旧 ViewModel 缺少剪贴板端口与页面退出动作，测试编译失败。
+- 修复：`DiagnosticsViewModel` 直接通过 `writeSensitiveIf()` 发布，页面退出取消刷新和复制任务并使所有权 token 失效；删除 `CopyText` effect 与 Route 的直接剪贴板桥接。
+- 文档：诊断查看页明确敏感标记、用户保留策略和页面退出取消行为。
+- 验证：`DiagnosticsViewModelTest` 定向通过；完整 `:app:testDebugUnitTest` 896 项、`verifyArchitecture`、`:app:lintDebug`、`:app:compileDebugAndroidTestKotlin` 与 `git diff --check` 均通过。

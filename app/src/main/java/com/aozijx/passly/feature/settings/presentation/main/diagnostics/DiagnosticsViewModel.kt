@@ -7,6 +7,7 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.sink.LogClearResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportRequest
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportResult
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogLine
@@ -16,6 +17,7 @@ import com.aozijx.passly.feature.settings.diagnostics.ExportDiagnosticsUseCase
 import com.aozijx.passly.feature.settings.diagnostics.LogFormat
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
@@ -32,6 +34,7 @@ class DiagnosticsViewModel @Inject constructor(
     private val logStore: DiagnosticsLogStore,
     private val exportDiagnostics: ExportDiagnosticsUseCase,
     private val logger: Logger,
+    private val clipboardWriter: SensitiveClipboardWriter,
 ) : ViewModel() {
     private val effectChannel = Channel<DiagnosticsEffect>(Channel.BUFFERED)
     val effects = effectChannel.receiveAsFlow()
@@ -39,12 +42,18 @@ class DiagnosticsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DiagnosticsUiState())
     val uiState: StateFlow<DiagnosticsUiState> = _uiState.asStateFlow()
     private var refreshJob: Job? = null
+    private var copyJob: Job? = null
+    private var activeCopyOwner: Any? = null
+    private var isPageActive = false
 
     fun onAction(action: DiagnosticsAction) {
         when (action) {
-            DiagnosticsAction.PageEntered,
-            DiagnosticsAction.Refresh,
-                -> refresh()
+            DiagnosticsAction.PageEntered -> {
+                isPageActive = true
+                refresh()
+            }
+            DiagnosticsAction.PageExited -> pageExited()
+            DiagnosticsAction.Refresh -> refresh()
             is DiagnosticsAction.ToggleLevel -> mutate(DiagnosticsMutation.LevelToggled(action.level))
             is DiagnosticsAction.SearchChanged -> mutate(DiagnosticsMutation.SearchChanged(action.query))
             is DiagnosticsAction.CopyRow -> copyRows(
@@ -104,8 +113,34 @@ class DiagnosticsViewModel @Inject constructor(
     }
 
     private fun copyRows(lines: List<DiagnosticsLogLine>) {
-        if (lines.isEmpty()) return
-        effectChannel.trySend(DiagnosticsEffect.CopyText(lines.joinToString("\n") { it.text }))
+        if (lines.isEmpty() || !isPageActive) return
+        val text = lines.joinToString("\n") { it.text }
+        val owner = Any()
+        activeCopyOwner = owner
+        copyJob?.cancel()
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
+            try {
+                clipboardWriter.writeSensitiveIf(text) {
+                    isPageActive && activeCopyOwner === owner
+                }
+            } finally {
+                if (activeCopyOwner === owner) {
+                    activeCopyOwner = null
+                    copyJob = null
+                }
+            }
+        }
+        copyJob = job
+        job.start()
+    }
+
+    private fun pageExited() {
+        isPageActive = false
+        activeCopyOwner = null
+        copyJob?.cancel()
+        copyJob = null
+        refreshJob?.cancel()
+        refreshJob = null
     }
 
     private fun clearLogs() = viewModelScope.launch {

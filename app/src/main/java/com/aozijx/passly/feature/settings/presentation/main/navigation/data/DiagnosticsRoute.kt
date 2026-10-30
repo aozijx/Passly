@@ -1,12 +1,10 @@
 package com.aozijx.passly.feature.settings.presentation.main.navigation.data
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.os.PersistableBundle
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
@@ -41,6 +39,9 @@ internal fun DiagnosticsRoute(onBack: (() -> Unit)?) {
     LaunchedEffect(viewModel) {
         viewModel.onAction(DiagnosticsAction.PageEntered)
     }
+    DisposableEffect(viewModel) {
+        onDispose { viewModel.onAction(DiagnosticsAction.PageExited) }
+    }
     LaunchedEffect(viewModel, context, exportFailed, saveCompleted, clearFailed) {
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -49,7 +50,6 @@ internal fun DiagnosticsRoute(onBack: (() -> Unit)?) {
                     LogFormat.TSV -> tsvPicker.launch(effect.fileName)
                     LogFormat.ZIP -> zipPicker.launch(effect.fileName)
                 }
-                is DiagnosticsEffect.CopyText -> context.copySensitiveDiagnostics(effect.text)
                 DiagnosticsEffect.SaveCompleted ->
                     Toast.makeText(context, saveCompleted, Toast.LENGTH_SHORT).show()
                 DiagnosticsEffect.ExportFailed ->
@@ -67,18 +67,8 @@ internal fun DiagnosticsRoute(onBack: (() -> Unit)?) {
     )
 }
 
-private fun android.content.Context.copySensitiveDiagnostics(text: String) {
-    val clip = ClipData.newPlainText("Passly diagnostics", text)
-    clip.description.extras = PersistableBundle().apply {
-        putBoolean(EXTRA_IS_SENSITIVE, true)
-    }
-    getSystemService(ClipboardManager::class.java).setPrimaryClip(clip)
-}
-
 private fun DiagnosticsViewModel.onDocumentSelected(uri: String?) {
     onAction(
         uri?.let { DiagnosticsAction.SaveToDocument(it) } ?: DiagnosticsAction.SaveDocumentCancelled,
     )
 }
-
-private const val EXTRA_IS_SENSITIVE = "android.content.extra.IS_SENSITIVE"

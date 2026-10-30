@@ -20,6 +20,7 @@ import com.aozijx.passly.domain.access.model.AuthorizationResult
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportGateway
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportRequest
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogLine
@@ -29,10 +30,13 @@ import com.aozijx.passly.feature.settings.diagnostics.ExportDiagnosticsUseCase
 import com.aozijx.passly.feature.settings.diagnostics.LogFormat
 import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -56,6 +60,7 @@ class DiagnosticsViewModelTest {
             logStore = store,
             exportDiagnostics = ExportDiagnosticsUseCase(FullAccess, UnusedAuthorizationGate, UnusedExportGateway),
             logger = UnusedLogger,
+            clipboardWriter = RecordingClipboardWriter(),
         )
 
         viewModel.onAction(DiagnosticsAction.PageEntered)
@@ -86,24 +91,46 @@ class DiagnosticsViewModelTest {
     }
 
     @Test
-    fun `copy row and trace emit only sanitized bounded tsv rows`() = runTest {
+    fun `copy row and trace use the sensitive clipboard writer with bounded rows`() = runTest {
         val traceLines = (0..100).map { index ->
             DiagnosticsLogLine(LogLevel.INFO, "row-$index", "trace_shared", "application.row")
         }
-        val viewModel = viewModel(RecordingLogStore(traceLines))
+        val clipboard = RecordingClipboardWriter()
+        val viewModel = viewModel(
+            store = RecordingLogStore(traceLines),
+            clipboardWriter = clipboard,
+        )
         viewModel.onAction(DiagnosticsAction.PageEntered)
         runCurrent()
 
-        val rowEffect = async { viewModel.effects.first() }
         viewModel.onAction(DiagnosticsAction.CopyRow(traceLines.first()))
-        assertEquals(DiagnosticsEffect.CopyText("row-0"), rowEffect.await())
+        runCurrent()
+        assertEquals(listOf("row-0"), clipboard.values)
 
-        val traceEffect = async { viewModel.effects.first() }
         viewModel.onAction(DiagnosticsAction.CopyTrace("trace_shared"))
-        val copied = (traceEffect.await() as DiagnosticsEffect.CopyText).text
+        runCurrent()
+        val copied = clipboard.values.last()
         assertEquals(100, copied.lineSequence().count())
         assertEquals("row-0", copied.lineSequence().first())
         assertEquals("row-99", copied.lineSequence().last())
+    }
+
+    @Test
+    fun `page exit prevents a suspended diagnostics copy from publishing`() = runTest {
+        val clipboard = DelayedClipboardWriter()
+        val lines = listOf(DiagnosticsLogLine(LogLevel.INFO, "row-one", "trace_one", "application.one"))
+        val viewModel = viewModel(RecordingLogStore(lines), clipboardWriter = clipboard)
+        viewModel.onAction(DiagnosticsAction.PageEntered)
+        runCurrent()
+
+        viewModel.onAction(DiagnosticsAction.CopyRow(lines.single()))
+        runCurrent()
+        clipboard.writeStarted.await()
+        viewModel.onAction(DiagnosticsAction.PageExited)
+        clipboard.finishWrite.complete(Unit)
+        runCurrent()
+
+        assertEquals(emptyList<String>(), clipboard.values)
     }
 
     @Test
@@ -152,11 +179,13 @@ class DiagnosticsViewModelTest {
         gate: AuthorizationGate = UnusedAuthorizationGate,
         gateway: DiagnosticsExportGateway = UnusedExportGateway,
         logger: Logger = UnusedLogger,
+        clipboardWriter: SensitiveClipboardWriter = SensitiveClipboardWriter {},
     ) = DiagnosticsViewModel(
         secureSessionAccessState = FullAccess,
         logStore = store,
         exportDiagnostics = ExportDiagnosticsUseCase(FullAccess, gate, gateway),
         logger = logger,
+        clipboardWriter = clipboardWriter,
     )
 
     private class RecordingLogStore(
@@ -173,6 +202,33 @@ class DiagnosticsViewModelTest {
         override suspend fun storageBytes(): Long = 1_024L
 
         override suspend fun clear() = clearResult
+    }
+
+    private class RecordingClipboardWriter : SensitiveClipboardWriter {
+        val values = mutableListOf<String>()
+
+        override suspend fun writeSensitive(text: String) {
+            values += text
+        }
+    }
+
+    private class DelayedClipboardWriter : SensitiveClipboardWriter {
+        val writeStarted = CompletableDeferred<Unit>()
+        val finishWrite = CompletableDeferred<Unit>()
+        val values = mutableListOf<String>()
+
+        override suspend fun writeSensitive(text: String) {
+            values += text
+        }
+
+        override suspend fun writeSensitiveIf(text: String, canWrite: () -> Boolean): Boolean =
+            withContext(NonCancellable) {
+                writeStarted.complete(Unit)
+                finishWrite.await()
+                if (!canWrite()) return@withContext false
+                values += text
+                true
+            }
     }
 
     private object FullAccess : SecureSessionAccessState {
