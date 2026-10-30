@@ -1,14 +1,14 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.model
 
 import androidx.compose.runtime.Immutable
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import kotlinx.coroutines.flow.Flow
 
 @Immutable
 data class VaultListItemUiModel(
     val id: String,
-    val entryType: EntryTypeUiModel,
+    val entryType: EntryType,
     val title: String,
     val username: String,
     val category: String?,

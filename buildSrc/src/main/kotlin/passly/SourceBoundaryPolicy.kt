@@ -41,6 +41,9 @@ internal object SourceBoundaryPolicy {
                 "com.aozijx.passly.data.",
                 "com.aozijx.passly.security.",
             ),
+            allowedImports = setOf(
+                "com.aozijx.passly.domain.entry.model.EntryType",
+            ),
             message = "imports a forbidden namespace",
         ),
         SourceBoundaryRule(

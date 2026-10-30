@@ -107,6 +107,7 @@ class SourceBoundaryPolicyTest {
                     "com.aozijx.passly.feature.vault.presentation.VaultUiState",
                     "com.aozijx.passly.feature.vault.VaultEntryPageSource",
                     "com.aozijx.passly.domain.entry.model.Entry",
+                    "com.aozijx.passly.domain.entry.model.EntryType",
                     "com.aozijx.passly.data.repository.EntryRepositoryImpl",
                     "com.aozijx.passly.security.dek.DekManager",
                 ),
@@ -123,25 +124,13 @@ class SourceBoundaryPolicyTest {
                 allowed = listOf(
                     "androidx.compose.runtime.Composable",
                     "com.aozijx.passly.core.ui.theme.PasslyTheme",
+                    "com.aozijx.passly.domain.entry.model.EntryType",
                 ),
                 forbidden = listOf(
                     "com.aozijx.passly.feature.vault.presentation.VaultUiState",
                     "com.aozijx.passly.feature.vault.VaultEntryPageSource",
                     "com.aozijx.passly.domain.entry.model.Entry",
-                    "com.aozijx.passly.data.repository.EntryRepositoryImpl",
-                    "com.aozijx.passly.security.dek.DekManager",
-                ),
-            ),
-            LayerCase(
-                owner = "presentation.mapping",
-                path = "app/src/main/java/com/aozijx/passly/presentation/mapping/entry/EntryTypePresentationMapper.kt",
-                allowed = listOf(
-                    "com.aozijx.passly.domain.entry.model.EntryType",
-                    "com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel",
-                ),
-                forbidden = listOf(
-                    "com.aozijx.passly.feature.vault.presentation.VaultUiState",
-                    "com.aozijx.passly.feature.vault.VaultEntryPageSource",
+                    "com.aozijx.passly.domain.entry.model.EntryTypeMetadata",
                     "com.aozijx.passly.data.repository.EntryRepositoryImpl",
                     "com.aozijx.passly.security.dek.DekManager",
                 ),

@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.detail.ui.model
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 import androidx.annotation.StringRes
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.domain.entry.model.EntryType
 
 data class DetailHeaderUiModel(
     val title: String,
@@ -42,7 +42,7 @@ data class CredentialSectionUiState(
 data class RelatedEntryUiModel(
     val id: String,
     val title: String,
-    val entryType: EntryTypeUiModel,
+    val entryType: EntryType,
 )
 
 data class DetailAssociatedInfoUiModel(

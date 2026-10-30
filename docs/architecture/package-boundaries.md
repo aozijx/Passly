@@ -12,7 +12,7 @@
 | `feature/<name>` | app 内的业务流程、平台入口、能力合同与应用策略 | Data 实现；非 UI 代码不依赖 presentation |
 | `app` 适配器 | Android Application、DI 与跨模块实现连接；Backup 快照可读取 Data | 页面状态、领域规则真相源 |
 | `feature/<name>/presentation` | 对应业务的 Route、ViewModel、UI state/effect、Compose UI | DAO、Entity、Data Repository 实现 |
-| `presentation/shared` 等 | 跨业务的纯展示组件与映射 | 具体业务流程与数据实现 |
+| `presentation/shared` 等 | 跨业务的纯展示组件与映射；共享 `EntryType` 展示直接使用 Domain 类型 | 具体业务流程与数据实现；其他 Domain 模型 |
 | `service`  | Android Service 入口与系统生命周期桥接；与单一业务流程紧耦合的实现可放在对应 `feature/<name>` 下 | 独立业务真相源 |
 
 真实模块还要求源码命名空间与职责一致：`:data` 只包含 `com.aozijx.passly.data.*`。`:core:common` 保持为

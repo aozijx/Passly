@@ -41,13 +41,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.domain.entry.model.EntryType
 
 internal data class TrashEntryUiModel(
     val id: String,
     val version: Int,
     val title: String,
-    val entryType: EntryTypeUiModel,
+    val entryType: EntryType,
     val username: String,
     val deletedAtEpochMs: Long?,
     val associatedDomain: String?,

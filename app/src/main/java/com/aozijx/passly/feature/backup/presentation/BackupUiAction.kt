@@ -4,7 +4,7 @@ import android.net.Uri
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.domain.entry.model.EntryType
 
 /** User and host events accepted by the Backup state machine. */
 sealed interface BackupUiAction {
@@ -26,7 +26,7 @@ sealed interface BackupUiAction {
     data class UpdateIncludeIcons(val include: Boolean) : BackupUiAction
     data class UpdateIncludeAttachments(val include: Boolean) : BackupUiAction
     data class UpdateIncludeDeleted(val include: Boolean) : BackupUiAction
-    data class UpdateIncludedEntryTypes(val types: Set<EntryTypeUiModel>) : BackupUiAction
+    data class UpdateIncludedEntryTypes(val types: Set<EntryType>) : BackupUiAction
 
     data class SubmitExport(val useConfiguredDirectory: Boolean) : BackupUiAction
     data object SubmitImport : BackupUiAction

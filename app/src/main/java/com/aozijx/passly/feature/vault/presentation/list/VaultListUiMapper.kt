@@ -10,7 +10,6 @@ import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultEditorDestinationRegistry
-import com.aozijx.passly.presentation.mapping.entry.toUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardDensityUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardPresentationUiModel
@@ -29,7 +28,7 @@ import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortUiMod
 
 internal fun EntryListItem.toUiModel() = VaultListItemUiModel(
     id = id.value,
-    entryType = entryType.toUiModel(),
+    entryType = entryType,
     title = title,
     username = username,
     category = tags.firstOrNull { it.isNotBlank() }?.trim(),

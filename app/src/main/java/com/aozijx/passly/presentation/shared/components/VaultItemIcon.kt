@@ -19,7 +19,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aozijx.passly.core.platform.packageinfo.rememberInstalledAppIconBitmap
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.presentation.shared.media.toLocalIconImageModel
 
 @Composable
@@ -28,7 +28,7 @@ fun VaultItemIcon(
     iconName: String?,
     iconCustomPath: String?,
     associatedAppPackage: String?,
-    entryType: EntryTypeUiModel,
+    entryType: EntryType,
     title: String,
     username: String,
     associatedDomain: String?,

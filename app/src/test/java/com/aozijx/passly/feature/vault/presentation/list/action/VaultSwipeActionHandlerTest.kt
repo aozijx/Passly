@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.list.action
 
 import com.aozijx.passly.domain.settings.model.SwipeActionType
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -10,7 +10,7 @@ class VaultSwipeActionHandlerTest {
 
     private val item = VaultListItemUiModel(
         id = "entry",
-        entryType = EntryTypeUiModel.LOGIN,
+        entryType = EntryType.LOGIN,
         title = "Example",
         username = "user",
         category = null,

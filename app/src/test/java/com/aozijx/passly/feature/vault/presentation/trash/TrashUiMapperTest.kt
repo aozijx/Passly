@@ -9,7 +9,6 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -39,7 +38,7 @@ class TrashUiMapperTest {
 
         assertEquals("entry-1", result.id)
         assertEquals(3, result.version)
-        assertEquals(EntryTypeUiModel.LOGIN, result.entryType)
+        assertEquals(EntryType.LOGIN, result.entryType)
         assertEquals(20L, result.deletedAtEpochMs)
         assertEquals("example.com", result.associatedDomain)
         assertEquals("com.example", result.associatedAppPackage)

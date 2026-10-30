@@ -4,8 +4,6 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.presentation.ui.model.BackupRestoreSheetUiState
-import com.aozijx.passly.presentation.mapping.entry.toDomainModels
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
@@ -33,10 +31,7 @@ class BackupSheetUiMapperTest {
             assertEquals("Documents/Passly", result.configuredDirectoryLabel)
             assertEquals("temporary", result.password)
             assertEquals(BackupExportFormat.ENCRYPTED, result.format)
-            assertEquals(
-                setOf(EntryTypeUiModel.LOGIN, EntryTypeUiModel.NOTE),
-                result.includedEntryTypes,
-            )
+            assertEquals(setOf(EntryType.LOGIN, EntryType.NOTE), result.includedEntryTypes)
             assertFalse(result.includeIcons)
             assertEquals(true, result.includeAttachments)
             assertEquals(false, result.includeDeleted)
@@ -44,13 +39,5 @@ class BackupSheetUiMapperTest {
         } finally {
             password.close()
         }
-    }
-
-    @Test
-    fun `entry type ui choices map back to feature models`() {
-        assertEquals(
-            setOf(EntryType.WIFI, EntryType.SSH_KEY),
-            setOf(EntryTypeUiModel.WIFI, EntryTypeUiModel.SSH_KEY).toDomainModels(),
-        )
     }
 }

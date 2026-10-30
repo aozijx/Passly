@@ -8,7 +8,6 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
-import com.aozijx.passly.presentation.mapping.entry.toUiModel
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.CredentialFieldUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.CredentialSectionUiState
@@ -45,7 +44,7 @@ internal fun detailContentUiModel(
     state: DetailUiState,
 ) = DetailContentUiModel(
     relatedEntries = state.relatedEntries.map {
-        RelatedEntryUiModel(it.id.value, it.title, it.type.toUiModel())
+        RelatedEntryUiModel(it.id.value, it.title, it.type)
     },
     metadata = DetailMetadataUiModel(entry.createdAt, entry.updatedAt),
     activities = state.history.map {
@@ -84,7 +83,7 @@ internal fun toDetailPresentationModel(
                 iconCustomPath = entry.icon.customReference,
                 iconColor = entry.icon.color,
                 associatedAppPackage = entry.associations.applicationIds.firstOrNull(),
-                entryType = entry.type.toUiModel(),
+                entryType = entry.type,
                 title = entry.detailDisplayTitle,
                 username = entry.username,
                 associatedDomain = entry.associatedDomain,

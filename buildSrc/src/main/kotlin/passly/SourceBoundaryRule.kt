@@ -8,6 +8,7 @@ internal data class SourceBoundaryRule(
     val forbiddenImports: Set<String> = emptySet(),
     val forbiddenImportPrefixes: Set<String> = emptySet(),
     val forbiddenImportPatterns: Set<Regex> = emptySet(),
+    val allowedImports: Set<String> = emptySet(),
     val allowedImportPrefixes: Set<String> = emptySet(),
     val forbiddenContentMarkers: Set<String> = emptySet(),
     val allowedSourcePathContains: Set<String> = emptySet(),

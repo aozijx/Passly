@@ -1,6 +1,6 @@
 package com.aozijx.passly.presentation.shared.components
 
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.domain.entry.model.EntryType
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -9,7 +9,7 @@ class EntryVisualCategoryClassifierTest {
     fun entryTypeIsStrongerThanTextualHints() {
         val result = EntryVisualCategoryClassifier.classify(
             EntryClassificationInput(
-                entryType = EntryTypeUiModel.BANK_CARD,
+                entryType = EntryType.BANK_CARD,
                 title = "Work account",
             ),
         )
@@ -78,7 +78,7 @@ class EntryVisualCategoryClassifierTest {
         appNames: Set<String> = emptySet(),
     ): EntryVisualCategory = EntryVisualCategoryClassifier.classify(
         EntryClassificationInput(
-            entryType = EntryTypeUiModel.LOGIN,
+            entryType = EntryType.LOGIN,
             title = title,
             username = username,
             urls = urls,

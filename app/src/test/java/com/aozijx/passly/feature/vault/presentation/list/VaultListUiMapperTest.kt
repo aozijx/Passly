@@ -21,8 +21,6 @@ import com.aozijx.passly.feature.vault.presentation.navigation.VaultEditorDestin
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpKindUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortOptionUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortUiModel
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
-import com.aozijx.passly.presentation.mapping.entry.toUiModel
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -146,26 +144,7 @@ class VaultListUiMapperTest {
     }
 
     @Test
-    fun enumMappingsPreserveExplicitFeatureMeaning() {
-        val entryTypes = listOf(
-            EntryType.ACCOUNT to EntryTypeUiModel.ACCOUNT,
-            EntryType.LOGIN to EntryTypeUiModel.LOGIN,
-            EntryType.NOTE to EntryTypeUiModel.NOTE,
-            EntryType.BANK_CARD to EntryTypeUiModel.BANK_CARD,
-            EntryType.ID_CARD to EntryTypeUiModel.ID_CARD,
-            EntryType.PASSPORT to EntryTypeUiModel.PASSPORT,
-            EntryType.DRIVER_LICENSE to EntryTypeUiModel.DRIVER_LICENSE,
-            EntryType.SSH_KEY to EntryTypeUiModel.SSH_KEY,
-            EntryType.WIFI to EntryTypeUiModel.WIFI,
-            EntryType.PASSKEY to EntryTypeUiModel.PASSKEY,
-            EntryType.OTP to EntryTypeUiModel.OTP,
-            EntryType.DATABASE_CREDENTIAL to EntryTypeUiModel.DATABASE_CREDENTIAL,
-            EntryType.SERVER_CREDENTIAL to EntryTypeUiModel.SERVER_CREDENTIAL,
-            EntryType.API_KEY to EntryTypeUiModel.API_KEY,
-            EntryType.CRYPTO_WALLET to EntryTypeUiModel.CRYPTO_WALLET,
-            EntryType.SEED_PHRASE to EntryTypeUiModel.SEED_PHRASE,
-            EntryType.RECOVERY_CODE to EntryTypeUiModel.RECOVERY_CODE,
-        )
+    fun addTypeMappingsPreserveExplicitFeatureMeaning() {
         val addTypes = listOf(
             AddType.PASSWORD to VaultAddTypeUiModel.PASSWORD,
             AddType.TOTP to VaultAddTypeUiModel.TOTP,
@@ -178,7 +157,6 @@ class VaultListUiMapperTest {
             AddType.RECOVERY_CODE to VaultAddTypeUiModel.RECOVERY_CODE,
         )
 
-        entryTypes.forEach { (domain, ui) -> assertEquals(ui, domain.toUiModel()) }
         addTypes.forEach { (feature, ui) ->
             assertEquals(ui, feature.toUiModel())
             assertEquals(feature, ui.toFeatureModel())

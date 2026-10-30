@@ -1,6 +1,6 @@
 package com.aozijx.passly.presentation.shared.components
 
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.domain.entry.model.EntryType
 import java.net.URI
 import java.text.Normalizer
 
@@ -31,7 +31,7 @@ internal enum class EntryVisualCategory {
 }
 
 internal data class EntryClassificationInput(
-    val entryType: EntryTypeUiModel,
+    val entryType: EntryType,
     val title: String = "",
     val username: String = "",
     val urls: Set<String> = emptySet(),
@@ -176,21 +176,21 @@ internal object EntryVisualCategoryClassifier {
     )
 
     private val TYPE_CATEGORIES = mapOf(
-        EntryTypeUiModel.NOTE to EntryVisualCategory.NOTE,
-        EntryTypeUiModel.BANK_CARD to EntryVisualCategory.BANK,
-        EntryTypeUiModel.ID_CARD to EntryVisualCategory.IDENTITY,
-        EntryTypeUiModel.PASSPORT to EntryVisualCategory.IDENTITY,
-        EntryTypeUiModel.DRIVER_LICENSE to EntryVisualCategory.IDENTITY,
-        EntryTypeUiModel.SSH_KEY to EntryVisualCategory.TECHNICAL,
-        EntryTypeUiModel.WIFI to EntryVisualCategory.WIFI,
-        EntryTypeUiModel.PASSKEY to EntryVisualCategory.SECURITY,
-        EntryTypeUiModel.OTP to EntryVisualCategory.SECURITY,
-        EntryTypeUiModel.DATABASE_CREDENTIAL to EntryVisualCategory.TECHNICAL,
-        EntryTypeUiModel.SERVER_CREDENTIAL to EntryVisualCategory.TECHNICAL,
-        EntryTypeUiModel.API_KEY to EntryVisualCategory.TECHNICAL,
-        EntryTypeUiModel.CRYPTO_WALLET to EntryVisualCategory.WALLET,
-        EntryTypeUiModel.SEED_PHRASE to EntryVisualCategory.WALLET,
-        EntryTypeUiModel.RECOVERY_CODE to EntryVisualCategory.SECURITY,
+        EntryType.NOTE to EntryVisualCategory.NOTE,
+        EntryType.BANK_CARD to EntryVisualCategory.BANK,
+        EntryType.ID_CARD to EntryVisualCategory.IDENTITY,
+        EntryType.PASSPORT to EntryVisualCategory.IDENTITY,
+        EntryType.DRIVER_LICENSE to EntryVisualCategory.IDENTITY,
+        EntryType.SSH_KEY to EntryVisualCategory.TECHNICAL,
+        EntryType.WIFI to EntryVisualCategory.WIFI,
+        EntryType.PASSKEY to EntryVisualCategory.SECURITY,
+        EntryType.OTP to EntryVisualCategory.SECURITY,
+        EntryType.DATABASE_CREDENTIAL to EntryVisualCategory.TECHNICAL,
+        EntryType.SERVER_CREDENTIAL to EntryVisualCategory.TECHNICAL,
+        EntryType.API_KEY to EntryVisualCategory.TECHNICAL,
+        EntryType.CRYPTO_WALLET to EntryVisualCategory.WALLET,
+        EntryType.SEED_PHRASE to EntryVisualCategory.WALLET,
+        EntryType.RECOVERY_CODE to EntryVisualCategory.SECURITY,
     )
 
     private val RULES = listOf(

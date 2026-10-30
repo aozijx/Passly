@@ -4,7 +4,6 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
-import com.aozijx.passly.presentation.mapping.entry.toDomainModel
 
 sealed interface VaultCopyRequest {
     data class Field(
@@ -22,7 +21,7 @@ fun resolveCopyRequest(item: VaultListItemUiModel, fieldKey: FieldKey): VaultCop
     } else {
         VaultCopyRequest.Field(
             entryId = item.id,
-            entryType = item.entryType.toDomainModel(),
+            entryType = item.entryType,
             fieldKey = fieldKey,
         )
     }

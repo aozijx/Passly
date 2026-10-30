@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.model
 
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.domain.entry.model.EntryType
 
 sealed interface FaviconDraftSourceUiModel {
     data object InferredDefault : FaviconDraftSourceUiModel
@@ -60,7 +60,7 @@ data class DetailIconCardUiModel(
     val iconCustomPath: String?,
     val iconColor: String?,
     val associatedAppPackage: String?,
-    val entryType: EntryTypeUiModel,
+    val entryType: EntryType,
     val title: String,
     val username: String,
     val associatedDomain: String?,

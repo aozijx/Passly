@@ -31,7 +31,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.presentation.BackupUiAction
 import com.aozijx.passly.feature.backup.presentation.ui.model.BackupRestoreSheetUiState
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.presentation.shared.entry.labelRes
 
 @Composable
@@ -96,10 +96,10 @@ internal fun BackupExportOptionsContent(
                 onClick = {
                     onAction(
                         BackupUiAction.UpdateIncludedEntryTypes(
-                            if (state.includedEntryTypes.size == EntryTypeUiModel.entries.size) {
+                            if (state.includedEntryTypes.size == EntryType.entries.size) {
                                 emptySet()
                             } else {
-                                EntryTypeUiModel.entries.toSet()
+                                EntryType.entries.toSet()
                             },
                         ),
                     )
@@ -107,7 +107,7 @@ internal fun BackupExportOptionsContent(
             ) {
                 Text(
                     stringResource(
-                        if (state.includedEntryTypes.size == EntryTypeUiModel.entries.size) {
+                        if (state.includedEntryTypes.size == EntryType.entries.size) {
                             R.string.settings_backup_clear_selection
                         } else {
                             R.string.settings_backup_select_all
@@ -120,7 +120,7 @@ internal fun BackupExportOptionsContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            EntryTypeUiModel.entries.forEach { type ->
+            EntryType.entries.forEach { type ->
                 FilterChip(
                     selected = type in state.includedEntryTypes,
                     onClick = {

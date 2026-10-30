@@ -14,6 +14,7 @@ internal object SourceBoundaryVerifier {
                         if ((importedType in rule.forbiddenImports ||
                             rule.forbiddenImportPrefixes.any(importedType::startsWith) ||
                             rule.forbiddenImportPatterns.any { it.containsMatchIn(importedType) }) &&
+                            importedType !in rule.allowedImports &&
                             rule.allowedImportPrefixes.none(importedType::startsWith)
                         ) {
                             add(rule.violation(source.path, evidence))

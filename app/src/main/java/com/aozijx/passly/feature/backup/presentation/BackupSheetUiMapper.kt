@@ -2,7 +2,6 @@ package com.aozijx.passly.feature.backup.presentation
 
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.backup.presentation.ui.model.BackupRestoreSheetUiState
-import com.aozijx.passly.presentation.mapping.entry.toUiModel
 
 internal fun BackupUiState.toSheetUiState(
     configuredDirectoryLabel: String?,
@@ -25,7 +24,7 @@ private fun BackupExportOptions.toUiState(
     includeIcons = includeIcons,
     includeAttachments = includeAttachments,
     includeDeleted = includeDeleted,
-    includedEntryTypes = includedEntryTypes.mapTo(linkedSetOf()) { it.toUiModel() },
+    includedEntryTypes = includedEntryTypes,
     canSubmit = canSubmit,
 )
 

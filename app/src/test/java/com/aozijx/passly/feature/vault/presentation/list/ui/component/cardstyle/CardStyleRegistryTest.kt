@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle
 
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardDensityUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardPresentationUiModel
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -29,7 +29,7 @@ class CardStyleRegistryTest {
     }
 
     private fun entry(hasPassword: Boolean = false, hasOtp: Boolean = false) = VaultListItemUiModel(
-        id = "entry", entryType = EntryTypeUiModel.LOGIN, title = "Example", username = "user",
+        id = "entry", entryType = EntryType.LOGIN, title = "Example", username = "user",
         category = null, favorite = false, associatedDomain = null, associatedAppPackage = null,
         iconName = null, iconCustomPath = null, hasPassword = hasPassword, hasOtp = hasOtp, otpKind = null, otpPreview = null,
     )

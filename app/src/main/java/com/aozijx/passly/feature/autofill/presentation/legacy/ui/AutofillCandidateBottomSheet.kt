@@ -32,14 +32,14 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
-import com.aozijx.passly.presentation.shared.entry.EntryTypeUiModel
+import com.aozijx.passly.domain.entry.model.EntryType
 
 data class AutofillCandidateItem(
     val id: EntryId,
     val iconName: String?,
     val iconCustomPath: String?,
     val associatedAppPackage: String?,
-    val entryType: EntryTypeUiModel,
+    val entryType: EntryType,
     val title: String,
     val username: String,
     val associatedDomain: String?,

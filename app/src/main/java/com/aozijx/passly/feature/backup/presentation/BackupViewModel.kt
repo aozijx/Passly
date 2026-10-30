@@ -15,7 +15,6 @@ import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
 import com.aozijx.passly.feature.backup.internal.operation.BackupOperationInteractor
 import com.aozijx.passly.feature.backup.internal.presentation.BackupSessionDenial
 import com.aozijx.passly.feature.backup.internal.presentation.BackupSessionPolicy
-import com.aozijx.passly.presentation.mapping.entry.toDomainModels
 import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,7 +61,7 @@ internal class BackupViewModel @Inject constructor(
             is BackupUiAction.UpdateIncludeDeleted ->
                 mutate(BackupMutation.IncludeDeletedUpdated(action.include))
             is BackupUiAction.UpdateIncludedEntryTypes -> mutate(
-                BackupMutation.IncludedEntryTypesUpdated(action.types.toDomainModels()),
+                BackupMutation.IncludedEntryTypesUpdated(action.types),
             )
             is BackupUiAction.SubmitExport -> submitExport(action.useConfiguredDirectory)
             BackupUiAction.SubmitImport -> submitImport()
