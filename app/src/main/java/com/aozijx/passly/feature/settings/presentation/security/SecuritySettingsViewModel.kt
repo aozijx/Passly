@@ -6,6 +6,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.BiometricConfiguration
+import com.aozijx.passly.domain.access.port.BiometricConfigurationSource
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.presentation.shared.error.toUiErrorMessage
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
@@ -27,6 +28,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SecuritySettingsViewModel @Inject constructor(
     private val authenticationSettings: SecurityAuthenticationSettingsInteractor,
+    biometricConfigurationSource: BiometricConfigurationSource,
     private val settingsRepository: SecuritySettingsRepository
 ) : ViewModel() {
     private enum class AuthenticationWork { Idle, Running, Destroyed }
@@ -39,7 +41,7 @@ class SecuritySettingsViewModel @Inject constructor(
         settingsRepository.security,
         authenticationSettings.isBiometricEnabled,
         authenticationWork,
-        authenticationSettings.biometricConfiguration,
+        biometricConfigurationSource.biometricConfiguration,
     ) { security, isBiometricEnabled, work, configuration ->
         SecuritySettingsUiState.Ready(
             lockTimeout = security.lockTimeout,

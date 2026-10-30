@@ -29,7 +29,7 @@ class SecurityAuthenticationSettingsInteractorTest {
             AuthenticationResult.Success(AuthenticationMethod.BIOMETRIC),
             interactor.setKeyInvalidationPolicy(enabled = false),
         )
-        assertEquals(BiometricConfiguration.Configured(false), interactor.biometricConfiguration.first())
+        assertEquals(BiometricConfiguration.Configured(false), provisioner.configuration.value)
     }
 
     @Test
@@ -79,10 +79,10 @@ class SecurityAuthenticationSettingsInteractorTest {
         provisioner.configuration.value = BiometricConfiguration.Configured(true)
         val interactor = interactor(provisioner = provisioner)
         assertEquals(AuthenticationResult.Cancelled(CancellationReason.USER), interactor.setKeyInvalidationPolicy(false))
-        assertEquals(BiometricConfiguration.Configured(true), interactor.biometricConfiguration.first())
+        assertEquals(BiometricConfiguration.Configured(true), provisioner.configuration.value)
         provisioner.rotateResult = AuthenticationResult.Success(AuthenticationMethod.BIOMETRIC)
         assertEquals(AuthenticationResult.Success(AuthenticationMethod.BIOMETRIC), interactor.setKeyInvalidationPolicy(false))
-        assertEquals(BiometricConfiguration.Configured(false), interactor.biometricConfiguration.first())
+        assertEquals(BiometricConfiguration.Configured(false), provisioner.configuration.value)
     }
 
     private fun interactor(

@@ -165,13 +165,15 @@ class SecuritySettingsViewModelTest {
             )
             override fun isUnlocked() = true
         }
+        private val configurationSource = object : BiometricConfigurationSource {
+            override val biometricConfiguration = configuration
+        }
         fun model() = SecuritySettingsViewModel(
             SecurityAuthenticationSettingsInteractor(
                 object : AuthenticationMethodAvailability { override val methods = this@Fixture.methods },
-                session, provisioner, object : BiometricConfigurationSource {
-                    override val biometricConfiguration = configuration
-                },
+                session, provisioner, configurationSource,
             ),
+            configurationSource,
             repository,
         ).also { it.onPageEntered() }
     }

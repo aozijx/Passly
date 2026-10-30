@@ -20,7 +20,6 @@ class SecurityAuthenticationSettingsInteractor @Inject constructor(
     private val authenticationMethodProvisioner: AuthenticationMethodProvisioner,
     private val configurationSource: BiometricConfigurationSource,
 ) {
-    val biometricConfiguration = configurationSource.biometricConfiguration
     val isBiometricEnabled: Flow<Boolean> = authenticationMethodAvailability.methods
         .map { AuthenticationMethod.BIOMETRIC in it }
         .distinctUntilChanged()
@@ -43,7 +42,7 @@ class SecurityAuthenticationSettingsInteractor @Inject constructor(
         }
         return if (enabled) {
             authenticationMethodProvisioner.rotateBiometricPolicy(
-                biometricConfiguration.first().invalidateOnEnrollmentForNextKey,
+                configurationSource.biometricConfiguration.first().invalidateOnEnrollmentForNextKey,
             )
         } else {
             authenticationMethodProvisioner.disableBiometric()
