@@ -16,6 +16,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -32,12 +34,18 @@ class StorageSettingsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(StorageSettingsUiState())
     val uiState: StateFlow<StorageSettingsUiState> = _uiState.asStateFlow()
 
-    private val _effects = Channel<StorageSettingsEffect>(Channel.BUFFERED)
-    val effects = _effects.receiveAsFlow()
+    private data class PageEffect(val owner: Any, val effect: StorageSettingsEffect)
 
-    /** Each storage area serializes its own refresh and clear operations. */
-    private var cacheOperationJob: Job? = null
-    private var logOperationJob: Job? = null
+    private val activePageEffects = Channel<PageEffect>(Channel.BUFFERED)
+    val effects = activePageEffects.receiveAsFlow()
+        .filter { activePageOwner === it.owner }
+        .map { it.effect }
+
+    private var activePageOwner: Any? = null
+    private var cacheRefreshJob: Job? = null
+    private var logRefreshJob: Job? = null
+    private var isCacheClearInProgress = false
+    private var isLogClearInProgress = false
 
     init {
         viewModelScope.launch {
@@ -49,7 +57,8 @@ class StorageSettingsViewModel @Inject constructor(
 
     fun onAction(action: StorageSettingsAction) {
         when (action) {
-            StorageSettingsAction.PageEntered -> refreshStorageUsage()
+            StorageSettingsAction.PageEntered -> pageEntered()
+            StorageSettingsAction.PageExited -> pageExited()
             StorageSettingsAction.ClearCache -> clearCache()
             StorageSettingsAction.ClearLogs -> clearLogs()
             is StorageSettingsAction.SetLogRecordingMode -> setLogRecordingMode(action.mode)
@@ -57,71 +66,146 @@ class StorageSettingsViewModel @Inject constructor(
     }
 
     private fun setLogRecordingMode(mode: DiagnosticsLogRecordingMode) {
+        val owner = activePageOwner ?: return
         viewModelScope.launch {
             try {
                 diagnosticsLogSettings.setDiagnosticsLogRecordingMode(mode)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                _effects.send(StorageSettingsEffect.LogRecordingSettingsSaveFailed)
+                emitEffect(owner, StorageSettingsEffect.LogRecordingSettingsSaveFailed)
             }
         }
     }
 
     private fun clearLogs() {
-        logOperationJob?.cancel()
-        logOperationJob = viewModelScope.launch {
-            if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
-                _effects.send(StorageSettingsEffect.LogClearFailed)
-                return@launch
-            }
-            _uiState.update { it.copy(logs = StorageSizeUiState.Loading) }
+        val owner = activePageOwner ?: return
+        if (isLogClearInProgress) return
+        isLogClearInProgress = true
+        viewModelScope.launch {
             try {
-                if (diagnosticsLogStore.clear() != LogClearResult.Cleared) {
-                    reportLogClearFailed()
+                if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
+                    val currentOwner = activePageOwner
+                    if (currentOwner != null && currentOwner !== owner) {
+                        isLogClearInProgress = false
+                        refreshLogSize(currentOwner)
+                    }
+                    emitEffect(owner, StorageSettingsEffect.LogClearFailed)
                     return@launch
                 }
-                _uiState.update { it.copy(logs = readLogSize()) }
-                _effects.send(StorageSettingsEffect.LogsCleared)
+                logRefreshJob?.cancel()
+                if (activePageOwner === owner) {
+                    _uiState.update { it.copy(logs = StorageSizeUiState.Loading) }
+                }
+                val result = diagnosticsLogStore.clear()
+                if (result != LogClearResult.Cleared) {
+                    reportLogClearFailed(owner)
+                    return@launch
+                }
+                val logs = readLogSize()
+                if (activePageOwner != null) {
+                    _uiState.update { it.copy(logs = logs) }
+                }
+                emitEffect(owner, StorageSettingsEffect.LogsCleared)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                _uiState.update { it.copy(logs = StorageSizeUiState.Unavailable) }
-                _effects.send(StorageSettingsEffect.LogClearFailed)
+                reportLogClearFailed(owner)
+            } finally {
+                isLogClearInProgress = false
             }
         }
     }
 
-    private suspend fun reportLogClearFailed() {
-        _uiState.update { it.copy(logs = StorageSizeUiState.Unavailable) }
-        _effects.send(StorageSettingsEffect.LogClearFailed)
+    private suspend fun reportLogClearFailed(owner: Any) {
+        if (activePageOwner != null) {
+            _uiState.update { it.copy(logs = StorageSizeUiState.Unavailable) }
+        }
+        emitEffect(owner, StorageSettingsEffect.LogClearFailed)
     }
 
-    private fun refreshStorageUsage() {
-        cacheOperationJob?.cancel()
-        logOperationJob?.cancel()
-        cacheOperationJob = viewModelScope.launch {
-            _uiState.update { it.copy(cache = StorageSizeUiState.Loading) }
-            _uiState.update { it.copy(cache = readCacheSize()) }
+    private suspend fun emitEffect(owner: Any, effect: StorageSettingsEffect) {
+        if (activePageOwner === owner) {
+            activePageEffects.send(PageEffect(owner, effect))
         }
-        logOperationJob = viewModelScope.launch {
-            _uiState.update { it.copy(logs = StorageSizeUiState.Loading) }
-            _uiState.update { it.copy(logs = readLogSize()) }
+    }
+
+    private fun pageEntered() {
+        val owner = Any()
+        activePageOwner = owner
+        refreshStorageUsage(owner)
+    }
+
+    private fun pageExited() {
+        activePageOwner = null
+        cacheRefreshJob?.cancel()
+        cacheRefreshJob = null
+        logRefreshJob?.cancel()
+        logRefreshJob = null
+    }
+
+    private fun refreshStorageUsage(owner: Any) {
+        if (activePageOwner === owner) {
+            _uiState.update {
+                it.copy(
+                    cache = StorageSizeUiState.Loading,
+                    logs = StorageSizeUiState.Loading,
+                )
+            }
+        }
+        refreshCacheSize(owner)
+        refreshLogSize(owner)
+    }
+
+    private fun refreshCacheSize(owner: Any) {
+        cacheRefreshJob?.cancel()
+        cacheRefreshJob = null
+        if (activePageOwner !== owner || isCacheClearInProgress) return
+        cacheRefreshJob = viewModelScope.launch {
+            val cache = readCacheSize()
+            if (activePageOwner === owner) {
+                _uiState.update { it.copy(cache = cache) }
+            }
+        }
+    }
+
+    private fun refreshLogSize(owner: Any) {
+        logRefreshJob?.cancel()
+        logRefreshJob = null
+        if (activePageOwner !== owner || isLogClearInProgress) return
+        logRefreshJob = viewModelScope.launch {
+            val logs = readLogSize()
+            if (activePageOwner === owner) {
+                _uiState.update { it.copy(logs = logs) }
+            }
         }
     }
 
     private fun clearCache() {
-        cacheOperationJob?.cancel()
-        cacheOperationJob = viewModelScope.launch {
+        val owner = activePageOwner ?: return
+        if (isCacheClearInProgress) return
+        isCacheClearInProgress = true
+        cacheRefreshJob?.cancel()
+        if (activePageOwner === owner) {
             _uiState.update { it.copy(cache = StorageSizeUiState.Loading) }
+        }
+        viewModelScope.launch {
             try {
                 cacheStore.clear()
-                _uiState.update { it.copy(cache = readCacheSize()) }
-                _effects.trySend(StorageSettingsEffect.CacheCleared)
+                if (activePageOwner == null) return@launch
+                val cache = readCacheSize()
+                if (activePageOwner != null) {
+                    _uiState.update { it.copy(cache = cache) }
+                }
+                emitEffect(owner, StorageSettingsEffect.CacheCleared)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                _uiState.update { it.copy(cache = StorageSizeUiState.Unavailable) }
+                if (activePageOwner != null) {
+                    _uiState.update { it.copy(cache = StorageSizeUiState.Unavailable) }
+                }
+            } finally {
+                isCacheClearInProgress = false
             }
         }
     }

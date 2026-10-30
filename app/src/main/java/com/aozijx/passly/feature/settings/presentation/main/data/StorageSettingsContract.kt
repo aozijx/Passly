@@ -16,6 +16,7 @@ sealed interface StorageSizeUiState {
 
 sealed interface StorageSettingsAction {
     data object PageEntered : StorageSettingsAction
+    data object PageExited : StorageSettingsAction
     data object ClearCache : StorageSettingsAction
     data object ClearLogs : StorageSettingsAction
     data class SetLogRecordingMode(val mode: DiagnosticsLogRecordingMode) : StorageSettingsAction

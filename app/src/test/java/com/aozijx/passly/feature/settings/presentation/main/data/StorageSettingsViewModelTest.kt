@@ -10,6 +10,7 @@ import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogLine
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
 import com.aozijx.passly.testing.MainDispatcherRule
 import java.io.IOException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
@@ -18,7 +19,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 
@@ -36,6 +39,7 @@ class StorageSettingsViewModelTest {
             diagnosticsLogSettings = settings,
             secureSessionAccessState = FullAccess,
         )
+        viewModel.onAction(StorageSettingsAction.PageEntered)
         runCurrent()
 
         viewModel.onAction(StorageSettingsAction.SetLogRecordingMode(DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE))
@@ -53,6 +57,7 @@ class StorageSettingsViewModelTest {
             diagnosticsLogSettings = RecordingLogSettingsRepository(saveFailure = IOException()),
             secureSessionAccessState = FullAccess,
         )
+        viewModel.onAction(StorageSettingsAction.PageEntered)
         runCurrent()
         val effect = async { viewModel.effects.first() }
 
@@ -140,6 +145,29 @@ class StorageSettingsViewModelTest {
         assertEquals(StorageSizeUiState.Unavailable, viewModel.uiState.value.logs)
     }
 
+    @Test
+    fun `reentry refreshes logs after clear without replaying old feedback`() = runTest {
+        val store = DeferredClearLogStore()
+        val viewModel = StorageSettingsViewModel(
+            cacheStore = RecordingCacheStore(sizeBytes = 0L),
+            diagnosticsLogStore = store,
+            diagnosticsLogSettings = RecordingLogSettingsRepository(),
+            secureSessionAccessState = FullAccess,
+        )
+        viewModel.onAction(StorageSettingsAction.PageEntered)
+        runCurrent()
+
+        viewModel.onAction(StorageSettingsAction.ClearLogs)
+        store.clearStarted.await()
+        viewModel.onAction(StorageSettingsAction.PageExited)
+        viewModel.onAction(StorageSettingsAction.PageEntered)
+        store.clearResult.complete(LogClearResult.Cleared)
+        runCurrent()
+
+        assertEquals(StorageSizeUiState.Available("0 B"), viewModel.uiState.value.logs)
+        assertNull(withTimeoutOrNull(1) { viewModel.effects.first() })
+    }
+
     private class RecordingCacheStore(private var sizeBytes: Long) : AppCacheStore {
         override suspend fun sizeBytes(): Long = sizeBytes
         override suspend fun clear() {
@@ -159,6 +187,20 @@ class StorageSettingsViewModelTest {
             clearCount++
             if (clearResult == LogClearResult.Cleared) sizeBytes = 0L
             return clearResult
+        }
+    }
+
+    private class DeferredClearLogStore : DiagnosticsLogStore {
+        val clearStarted = CompletableDeferred<Unit>()
+        val clearResult = CompletableDeferred<LogClearResult>()
+
+        override suspend fun readLines(limit: Int): List<DiagnosticsLogLine> = emptyList()
+
+        override suspend fun storageBytes(): Long = 0
+
+        override suspend fun clear(): LogClearResult {
+            clearStarted.complete(Unit)
+            return clearResult.await()
         }
     }
 
